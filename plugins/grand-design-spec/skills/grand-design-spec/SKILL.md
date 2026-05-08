@@ -262,6 +262,15 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 └── 06-constraints.md    ← Technical, business, non-functional
 ```
 
+> **v0.6 conditional sections** (driven by Step 2 detection flags):
+>
+> - `02-architecture.md > UI components & patterns` sub-section: appears **only if** `HAS_UI_COMPONENTS = true`. Otherwise the sub-section is omitted entirely (no header, no placeholder, no OQ).
+> - `06-constraints.md > Design system` top-level section: appears **only if** at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`. Within the section, sub-blocks (Tokens / Accessibility / Voice & brand) appear only for the flags that are `true`.
+> - `00-index.md > Reading paths`: the "UI/UX or FE Dev" path appears **only if** at least one of `02-architecture#ui-components` or `06-constraints#design-system` is present in the vault.
+> - `00-index.md > Glossary`: design-system glossary entries (design tokens, design system, WCAG, a11y, semantic HTML) appear **only if** the term is actually used elsewhere in the generated vault.
+>
+> **No shape-based defaulting.** A project with `PROJECT_SHAPE=mobile-app` but no source coverage of design-system content produces a vault identical to v0.5 output. Skill never injects WCAG levels, color palettes, spacing scales, or component lists from prior knowledge.
+
 > Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag drives content of `00-index.md` "Implementation Notes for AI Consumers" section, not the file count.
 
 Use templates in `references/templates/` as scaffolds. **Resolve the path relative to where the skill is mounted**:
