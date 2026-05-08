@@ -63,6 +63,23 @@ Example for data-pipeline:
 **Client-side validation rules**: <list explicit ones from AC>
 **Tech stack ({this layer})**: <only if stated>
 
+#### UI components & patterns
+
+> **Conditional**: muncul hanya kalau `HAS_UI_COMPONENTS=true` di Step 2 (ada source eksplisit yang nyebut component). Tidak muncul karena shape inference atau prior knowledge. Untuk `multi-platform`, sub-section ini muncul independently per layer (Web / Mobile) berdasarkan per-layer source coverage.
+
+| Component | Purpose | Variants | Source |
+|-----------|---------|----------|--------|
+| `<ComponentName>` | <1-line purpose> | `<variant1 | variant2>` | Figma `<frame-name>` / tokens.json `<key-path>` / PRD §<X.Y> |
+
+**Patterns** (when-to-use rules — guide voice. Only state rules with explicit source):
+
+- **<Pattern title>**: <when-to-use, sourced from PRD / Figma annotation / user instruction>.
+- **<Next pattern>**: <text>.
+
+> Cross-ref: tokens used here → `06-constraints.md#design-system`. Flow steps that show this component → cross-ref ke flow ID di `04-flows.md`.
+
+**Source**: <list all Figma frames, tokens files, PRD sections used for this sub-section>
+
 ### {Layer 3, e.g. "Integrations"}
 
 | External system | Direction | Protocol | Purpose | Source |
