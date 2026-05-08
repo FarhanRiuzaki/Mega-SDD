@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.5.0
+version: 0.6.0
 description: Break down PRD/BRD and Figma into 7 markdown files for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
@@ -27,6 +27,8 @@ The skill is **anti-hallucination by construction**: every claim cites its sourc
 > **If it is not explicit in the source, it does NOT go in the body. It goes in Open Questions.**
 
 This applies to every doc. No "industry best practice" insertions, no "probably they meant X" guesses, no filler sentences. The source documents (PRD/BRD/Figma/uploaded files) are the ONLY ground truth. If the source is silent, the answer is "Open Question", not Claude's prior knowledge.
+
+> **v0.6 extension**: this rule applies to **section presence too**, not just content within sections. Design-system sections (`02-architecture#ui-components`, `06-constraints#design-system`) only appear if at least one source explicitly contains design-system content. Project shape is NOT a trigger. Skill never prompts for missing design-system sources. Industry standards (WCAG, Material Design, Tailwind defaults) are NOT defaults — they only appear if cited in source.
 
 ## Simplicity policy
 
