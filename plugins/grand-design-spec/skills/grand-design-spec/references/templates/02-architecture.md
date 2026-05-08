@@ -1,22 +1,24 @@
 # 02 — Architecture
 
-> **TL;DR**: Komponen sistem, bagaimana mereka saling terhubung, dan operasi API yang dibutuhkan. Disusun **per layer** sesuai PROJECT_SHAPE (mobile-app / web-app / api-only / multi-platform / data-pipeline / custom) supaya tiap role bisa langsung jump ke section relevan.
-> **Untuk siapa**: IT Architect, Tech Lead, dan dev role per layer (Mobile, FE, BE, Data, dst).
-> **Baca kalau**: lo lagi review struktur sistem, atau mau implement bagian sistem tertentu.
+> **TL;DR**: System components, how they connect, and the API surface they expose. Organized **per layer** according to PROJECT_SHAPE (mobile-app / web-app / api-only / multi-platform / data-pipeline / custom) so each role can deep-link to their relevant section.
+> **Audience**: IT Architect, Tech Lead, and per-layer dev roles (Mobile, FE, BE, Data, etc.).
+> **Read when**: you're reviewing system structure, or about to implement a specific part of the system.
+
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 ## System overview
 
-<1 paragraf high-level: produk ini terdiri dari [layer A], [layer B], [layer C] yang saling terhubung via [protocol]. Diagram below show high-level flow.>
+<1-paragraph high-level: this product consists of [layer A], [layer B], [layer C] connected via [protocol]. The diagram below shows the high-level flow.>
 
 ```
-[ASCII / text diagram showing all layers and their connections, sesuaikan dengan PROJECT_SHAPE]
+[ASCII / text diagram showing all layers and their connections, adjusted to PROJECT_SHAPE]
 
 Example for mobile-app:
   Mobile (FE)                      Backend                    External
   ───────────                      ────────                   ────────
   Mobile App   ──── HTTPS ────►  API Service  ────────►  External System / Host
                                        │                       
-                                       └────────────►  3rd-party SDKs (analytics, dst)
+                                       └────────────►  3rd-party SDKs (analytics, etc.)
 
 Example for api-only:
   External clients ──── HTTPS ────► API Service ──────► Database
@@ -33,8 +35,8 @@ Example for data-pipeline:
 
 ## By component layer
 
-> Sub-sections derived from `PROJECT_SHAPE` (lihat 00-index.md Vault Lock Status).
-> Replace section headers below with layers yang relevan untuk shape project ini.
+> Sub-sections derived from `PROJECT_SHAPE` (see `00-index.md` Vault Lock Status).
+> Replace section headers below with the layers relevant to this project's shape.
 >
 > Common layer sets:
 > - mobile-app: Mobile / Frontend, Backend, Integrations
@@ -65,7 +67,7 @@ Example for data-pipeline:
 
 #### UI components & patterns
 
-> **Conditional**: muncul hanya kalau `HAS_UI_COMPONENTS=true` di Step 2 (ada source eksplisit yang nyebut component). Tidak muncul karena shape inference atau prior knowledge. Untuk `multi-platform`, sub-section ini muncul independently per layer (Web / Mobile) berdasarkan per-layer source coverage.
+> **Conditional**: appears only if `HAS_UI_COMPONENTS=true` from Step 2 (an explicit source named the components). Does not appear from shape inference or prior knowledge. For `multi-platform`, this sub-section appears independently per layer (Web / Mobile) based on per-layer source coverage.
 
 | Component | Purpose | Variants | Source |
 |-----------|---------|----------|--------|
@@ -76,7 +78,7 @@ Example for data-pipeline:
 - **<Pattern title>**: <when-to-use, sourced from PRD / Figma annotation / user instruction>.
 - **<Next pattern>**: <text>.
 
-> Cross-ref: tokens used here → `06-constraints.md#design-system`. Flow steps that show this component → cross-ref ke flow ID di `04-flows.md`.
+> Cross-ref: tokens used here → `06-constraints.md#design-system`. Flow steps that show this component → cross-ref to the flow ID in `04-flows.md`.
 
 **Source**: <list all Figma frames, tokens files, PRD sections used for this sub-section>
 
@@ -144,5 +146,5 @@ Example for data-pipeline:
 
 ## Open Questions
 
-- [ ] **OQ-AR-1** [P{1|2|3}]: <e.g. "Tech stack BE — bahasa & framework belum disebut PRD">
+- [ ] **OQ-AR-1** [P{1|2|3}]: <e.g. "BE tech stack — language and framework not stated in PRD">
 - [ ] **OQ-AR-2** [P{1|2|3}]: <e.g. "Auth method for endpoint X not specified">

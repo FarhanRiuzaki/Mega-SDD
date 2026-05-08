@@ -1,8 +1,10 @@
 # 01 — Overview
 
-> **TL;DR**: Apa produknya, untuk siapa, kenapa dibikin, dan target sukses apa.
-> **Untuk siapa**: Product Manager, Business Owner, semua role yang baru join.
-> **Baca kalau**: lo perlu konteks dasar produk sebelum lihat detail teknis.
+> **TL;DR**: What the product is, who it's for, why it's being built, and what success looks like.
+> **Audience**: Product Manager, Business Owner, anyone newly joining the project.
+> **Read when**: you need basic product context before looking at technical detail.
+
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 ## Product
 
