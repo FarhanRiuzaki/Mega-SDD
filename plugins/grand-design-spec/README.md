@@ -53,8 +53,8 @@ This plugin ships through the `grand-design-spec` marketplace (this same reposit
 /plugin install grand-design-spec@grand-design-spec
 ```
 
-See the [marketplace README](../../README.md) for version pinning, private repo auth, and Claude.ai / Claude API installation paths.
+See the [marketplace README on GitLab](https://gitlab.com/airnd1/grand-design-spec/-/blob/main/README.md) for version pinning, private repo auth, and Claude.ai / Claude API installation paths.
 
 ## License
 
-MIT — see [LICENSE](../../LICENSE).
+MIT — see [LICENSE](./LICENSE).
