@@ -69,6 +69,10 @@ Examples (sesuaikan dengan PROJECT_SHAPE):
 - **PM / Business Owner**: `00-index.md` → `01-overview.md` → `05-decisions.md`
 - **<UI/UX or other UI-relevant role, kalau project punya UI>**: `01-overview.md` → `04-flows.md#<user-flow-anchor>`
 
+- **UI/UX or FE Dev** (v0.6, conditional): `01-overview.md` → `02-architecture.md#ui-components-patterns` → `06-constraints.md#design-system` → `04-flows.md`
+
+  > **Conditional**: muncul hanya kalau vault punya minimal salah satu dari `02-architecture.md#ui-components-patterns` atau `06-constraints.md#design-system` (i.e., Step 2 detection nemu source eksplisit). Kalau dua-duanya absent, hapus reading path ini.
+
 ## Reading order (full)
 
 1. `01-overview.md` — apa, untuk siapa, kenapa, success metrics
@@ -150,8 +154,15 @@ Istilah & singkatan yang dipakai lintas-doc:
 | RTO | Recovery Time Objective |
 | RPO | Recovery Point Objective |
 | SLO | Service Level Objective |
+| design tokens (v0.6, cond.) | Named design values (color, typography, spacing) shared across components. Source-mirrored from Figma variables / tokens.json / PRD. |
+| design system (v0.6, cond.) | Set of components + tokens + a11y + voice rules that constrain UI implementation. |
+| WCAG (v0.6, cond.) | Web Content Accessibility Guidelines — international standard for a11y. Vault uses level only if source explicitly states. |
+| a11y (v0.6, cond.) | Numeronym for "accessibility" (a + 11 letters + y). |
+| semantic HTML (v0.6, cond.) | Use of meaningful HTML elements (`<button>`, `<nav>`, `<main>`, etc.) for accessibility and structure. |
 
 > Tambahkan istilah produk-spesifik dari PRD di sini (misal: MPIN, CIF, OTP, parameterized, dll).
+
+> **v0.6 conditional entries**: `design tokens`, `design system`, `WCAG`, `a11y`, `semantic HTML` muncul hanya kalau term-nya dipakai di vault lain (yaitu `02-architecture#ui-components-patterns` atau `06-constraints#design-system` muncul). Kalau gak dipakai, hapus baris-baris bertanda `(v0.6, cond.)`.
 
 ## Open Questions (roll-up)
 
