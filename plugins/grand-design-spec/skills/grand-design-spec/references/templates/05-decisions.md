@@ -1,11 +1,13 @@
 # 05 — Decisions
 
-> **TL;DR**: Keputusan teknis & bisnis yang sudah locked, plus alasan & konsekuensinya.
-> **Untuk siapa**: Architect, Tech Lead, PM, semua role yang challenge "kenapa milih X bukan Y".
-> **Baca kalau**: lo perlu tahu alasan di balik keputusan, atau mau propose perubahan.
+> **TL;DR**: Locked technical and business decisions, plus their rationale and consequences.
+> **Audience**: Architect, Tech Lead, PM, anyone who needs to challenge "why X and not Y".
+> **Read when**: you need to know the reason behind a decision, or want to propose a change.
 
-> ADR-lite. One entry per technical decision with explicit source.
-> Kalau decision tidak ada source eksplisit, dia bukan ADR — masuk ke Open Questions di `00-index.md`.
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
+
+> ADR-lite. One entry per technical decision with an explicit source.
+> If a decision has no explicit source, it's not an ADR — it goes to Open Questions in `00-index.md`.
 
 ---
 

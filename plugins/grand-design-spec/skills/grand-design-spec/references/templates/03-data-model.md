@@ -1,8 +1,10 @@
 # 03 — Data Model
 
-> **TL;DR**: Skema database — entitas, field, relasi, dan constraint.
-> **Untuk siapa**: BE Developer, DBA, IT Architect.
-> **Baca kalau**: lo lagi design schema, write migration, atau review query plan.
+> **TL;DR**: Database schema — entities, fields, relations, and constraints.
+> **Audience**: BE Developer, DBA, IT Architect.
+> **Read when**: you're designing schema, writing a migration, or reviewing a query plan.
+
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 ## Entities (DBML)
 

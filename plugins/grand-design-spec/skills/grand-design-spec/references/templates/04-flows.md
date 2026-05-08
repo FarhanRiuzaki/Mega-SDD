@@ -1,13 +1,15 @@
 # 04 — Flows
 
-> **TL;DR**: Step-by-step user flow, system flow, dan Definition of Done per flow. Disusun **per type** sesuai PROJECT_SHAPE.
-> **Untuk siapa**: Developer per layer (Mobile/FE/BE/Data), QA, UI/UX.
-> **Baca kalau**: lo lagi build/test fitur tertentu atau perlu lihat behavior end-to-end.
+> **TL;DR**: Step-by-step user flows, system flows, and per-flow Definition of Done. Organized **per type** according to PROJECT_SHAPE.
+> **Audience**: Developers per layer (Mobile/FE/BE/Data), QA, UI/UX.
+> **Read when**: you're building/testing a specific feature or need to see end-to-end behavior.
+
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 ---
 
-> Sub-sections di bawah derived from `PROJECT_SHAPE` (lihat 00-index.md Vault Lock Status).
-> Replace section headers dengan flow types yang relevan.
+> Sub-sections below are derived from `PROJECT_SHAPE` (see `00-index.md` Vault Lock Status).
+> Replace section headers with the relevant flow types.
 >
 > Common flow type sets:
 > - mobile-app: User flows (mobile-facing), Backend / system flows, Cross-cutting flows
@@ -19,7 +21,7 @@
 
 ## {Flow Type 1, e.g. "User flows (mobile-facing)" or "Pipeline flows"}
 
-> Section description: e.g. "Flows yang trigger dari user di Mobile" or "Daily ETL processes from source to sink".
+> Section description: e.g. "Flows triggered by the user from Mobile" or "Daily ETL processes from source to sink".
 
 ### F-{prefix}-001: <flow name>
 
@@ -79,7 +81,7 @@
 
 ## {Flow Type 3, e.g. "Cross-cutting flows" — if applicable to PROJECT_SHAPE}
 
-> Flows yang involve multiple layers dengan handoff jelas. Architect jumps here.
+> Flows that involve multiple layers with explicit handoff points. Architects jump here.
 
 ### F-C-001: <flow name>
 

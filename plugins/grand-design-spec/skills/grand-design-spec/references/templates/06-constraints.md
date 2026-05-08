@@ -1,8 +1,10 @@
 # 06 — Constraints
 
-> **TL;DR**: Batasan teknis, bisnis, regulasi, dan NFR yang harus dipenuhi.
-> **Untuk siapa**: Architect, Tech Lead, PM, Compliance/Legal.
-> **Baca kalau**: lo lagi pilih solusi, validasi feasibility, atau review compliance.
+> **TL;DR**: Technical, business, regulatory, and NFR constraints that must be satisfied.
+> **Audience**: Architect, Tech Lead, PM, Compliance/Legal.
+> **Read when**: you're choosing a solution, validating feasibility, or reviewing compliance.
+
+> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 ## Technical constraints
 
@@ -33,11 +35,11 @@
 
 ## Design system
 
-> **Conditional**: muncul hanya kalau Step 2 detection menemukan minimal salah satu dari `HAS_TOKENS`, `HAS_A11Y`, atau `HAS_VOICE_BRAND` = true. Sub-block (Tokens / Accessibility / Voice & brand) hanya muncul untuk flag yang true. Tidak muncul karena shape inference atau prior knowledge — strict source-mirror per Step 2.
+> **Conditional**: appears only if Step 2 detection finds at least one of `HAS_TOKENS`, `HAS_A11Y`, or `HAS_VOICE_BRAND` = true. Sub-blocks (Tokens / Accessibility / Voice & brand) appear only for flags that are true. Does not appear from shape inference or prior knowledge — strict source-mirror per Step 2.
 
 ### Tokens
 
-> Muncul hanya kalau `HAS_TOKENS=true`. Source priority: Figma variables > user tokens file > PRD-stated.
+> Appears only if `HAS_TOKENS=true`. Source priority: Figma variables > user tokens file > PRD-stated.
 
 **Color**:
 | Token | Value | Use case | Source |
@@ -52,7 +54,7 @@
 
 ### Accessibility
 
-> Muncul hanya kalau `HAS_A11Y=true`. State only what source explicitly says.
+> Appears only if `HAS_A11Y=true`. State only what the source explicitly says.
 
 - WCAG level: <level stated by source — e.g. "WCAG 2.1 AA per PRD §X.Y">. **Do NOT default to AA if source silent.**
 - Color contrast: <values from source>
@@ -60,7 +62,7 @@
 
 ### Voice & brand (light)
 
-> Muncul hanya kalau `HAS_VOICE_BRAND=true`. Editorial guidance only when source provides it.
+> Appears only if `HAS_VOICE_BRAND=true`. Editorial guidance only when the source provides it.
 
 - Tone: <quoted from PRD or user instruction>
 - User-facing locale: <quoted from PRD or user instruction>
