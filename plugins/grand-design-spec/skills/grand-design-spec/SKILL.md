@@ -314,6 +314,14 @@ Verify every doc has:
 - [ ] Folder structure matches the 7-file spec.
 - [ ] Language matches source (PRD ID → docs ID; PRD EN → docs EN).
 
+**Design-system grounding (v0.6, only if any design-system section appears):**
+- [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.
+- [ ] Components table cites source per row (Figma frame name / tokens file path / PRD §). No invented components.
+- [ ] Tokens table cites source per row. No invented hex values, type scales, spacing values, radius values.
+- [ ] Patterns prose grounded in PRD note / Figma annotation / explicit user instruction. No best-practice insertions (no defaulted WCAG levels, no defaulted "max 1 CTA per screen" rules unless source explicitly states).
+- [ ] Within an appearing section, sub-elements the source is silent on become `OQ-AR-{N}` or `OQ-CN-{N}` — not body.
+- [ ] No design-system content appears in vault that did not originate from a cited source.
+
 ### Step 5: Present
 
 Files are already on disk under `<OUTPUT_DIR>` (written in Step 3). Step 5 is a chat-only summary:
@@ -572,6 +580,16 @@ Push-back rules are **conditional on `PRD_STATUS`** (set in Step 0.6).
 - Missing sections, contradictions, large gaps → all funnel into Open Questions roll-up with full context (quotes from PRD, what's missing, what would resolve it).
 - For contradictions specifically: write the OQ as `OQ-{DOC}-{N} [P1]: PRD inconsistency — §X.Y says "<quote A>" but §X.Z says "<quote B>". Need stakeholder ruling on which is canonical.`
 - Surface in Step 5 summary: total OQ count + reminder that user must triage with stakeholder before dev starts.
+
+### v0.6 — Design-system absence is acceptable (no push-back)
+
+Design-system content is **auxiliary**. Source silence on tokens, UI components, a11y, or brand voice is allowed and produces vault output without those sections. Skill MUST NOT:
+
+- Prompt the user "do you have a Figma URL / tokens file / Storybook export?"
+- Default to industry standards (WCAG 2.1 AA, Material Design, iOS HIG, Tailwind defaults).
+- Generate placeholder Open Questions for missing design-system content.
+
+If the user explicitly mentions design system in conversation but didn't upload a source, treat that as a regular request for clarification (one chat question), not a workflow gate. Otherwise stay silent.
 
 ---
 
