@@ -46,7 +46,7 @@ The naming format is `<plugin>@<marketplace>` — both happen to be `grand-desig
 For team installs, pin to a tag so everyone gets the same version:
 
 ```text
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.4.0
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.5.0
 /plugin install grand-design-spec@grand-design-spec
 ```
 
@@ -119,10 +119,13 @@ Or paraphrases — the skill matches intent, not exact wording.
 1. You attach the PRD/BRD (PDF, DOCX, MD, TXT).
    Optionally: drop a Figma URL.
 
-2. Claude asks 2–3 quick questions:
+2. Claude asks a few quick questions:
      - Output folder path?
-     - Project shape?  (mobile-app / web-app / api-only / …)
-     - If gap count > 10: proceed or clarify first?
+     - Implementation mode? (`new` greenfield / `existing` codebase)
+     - **PRD status?** (`final` signed-off / `draft` still in flux)
+     - Project shape? (mobile-app / web-app / api-only / …)
+     - If `draft` and gap count > 10: proceed or clarify first?
+       (`final` skips this — every gap auto-routes to Open Questions.)
 
 3. Claude reads the source, extracts components / entities / flows / gaps,
    and writes 7 markdown files into your folder.
@@ -277,7 +280,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.4.0** — restructured to Claude Code Plugin Marketplace format.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.5.0** — adds `PRD_STATUS=final|draft` flag, fixes Claude Code tool name references, and corrects plugin-relative template path.
 
 ## License
 
