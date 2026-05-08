@@ -378,6 +378,11 @@ In the chat message:
 3. Brief note on which sections are most likely to need stakeholder review.
 4. Path to vault: `<OUTPUT_DIR>` (absolute).
 5. If `OUTPUT_MODE=compact`, mention once that a prose-rich version is available: *"Re-run with `OUTPUT_MODE=full` if you need the prose-rich version for non-technical readers."*
+6. **Suggested next steps** — point the user to companion skills:
+   - *"After stakeholder triage, run `/grand-design-spec:resolve-oq` to walk the OQ list interactively and capture answers back into the vault."*
+   - If `PRD_STATUS=final` and OQ count > 10: *"Bring the P1 list to a stakeholder meeting first; resolve-oq picks up from current state when you re-run."*
+   - If `IMPLEMENTATION_MODE=existing`: *"Run `/grand-design-spec:drift-detect` to reconcile this vault against the live codebase — flags entity/flow/decision drift between target and current reality."*
+   - When the PRD eventually revises: *"Use `/grand-design-spec:vault-diff` to evolve the vault against the new PRD without losing resolved OQs or ADR history."*
 
 Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 

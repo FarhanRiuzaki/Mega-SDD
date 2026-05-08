@@ -1,18 +1,41 @@
 # grand-design-spec (plugin)
 
-A Claude Code plugin that bundles the **`grand-design-spec`** skill — converts a PRD/BRD + Figma into a 7-file dev handoff folder with anti-hallucination guarantees.
+A Claude Code plugin bundling **four paired skills** that cover the full vault lifecycle for PRD → dev-handoff workflows: from initial vault generation, through stakeholder OQ resolution, to vault evolution across PRD revisions, and reconciliation against live codebases for revamp projects.
 
-## What this plugin does
+## Skills in this plugin
 
-When triggered, the skill takes a product/business document (and optionally a Figma URL) and produces 7 markdown files inside a folder you choose:
+| Skill | Invoke as | Purpose |
+|-------|-----------|---------|
+| **`grand-design-spec`** | `/grand-design-spec:grand-design-spec` | Initial vault generation. PRD/BRD/Figma → 7-file dev handoff folder with anti-hallucination guarantees. |
+| **`resolve-oq`** | `/grand-design-spec:resolve-oq` | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with version bump + Changelog. Preserves OQ tag identity as audit trail. |
+| **`vault-diff`** | `/grand-design-spec:vault-diff` | Vault evolution when the PRD/BRD source revisions. Computes structured diff, surfaces conflicts (Resolved-OQ vs new PRD, ADR vs new PRD) for explicit user resolution, applies approved changes without losing prior history. |
+| **`drift-detect`** | `/grand-design-spec:drift-detect` | For `mode=existing` vaults only: scans the live codebase, compares against vault, flags drift (entity rename, type changed, decision violated, code shipped without ADR). Heuristic detection with confidence ratings. |
+
+## Lifecycle at a glance
+
+```
+   Initial PRD      Stakeholder mtg     PRD revisi      Live codebase
+       │                  │                  │                 │
+       ▼                  ▼                  ▼                 ▼
+ grand-design-spec → resolve-oq    →   vault-diff   →    drift-detect
+                                                         (existing only)
+       │                  │                  │                 │
+       ▼                  ▼                  ▼                 ▼
+  vault v1.0        vault v1.1         vault v1.2       DRIFT-REPORT.md
+                                                        DRIFT-ACTIONS.md
+```
+
+## What `grand-design-spec` produces
+
+When triggered, the main skill takes a product/business document (and optionally a Figma URL) and produces 7 markdown files inside a folder you choose:
 
 ```
 <your-output-folder>/
-├── 00-index.md          Navigation + Executive Summary + Project Readiness
+├── 00-index.md          Navigation + Vault Lock Status + AI consumer notes + OQ roll-up
 ├── 01-overview.md       What, who, why, success metrics
-├── 02-architecture.md   Components, relations, API contracts
+├── 02-architecture.md   Components per layer, API contracts
 ├── 03-data-model.md     Entities (DBML), relations, constraints
-├── 04-flows.md          User flows + system flows + Definition of Done
+├── 04-flows.md          User flows + system flows + per-flow Definition of Done
 ├── 05-decisions.md      ADR-lite: technical decisions with explicit source
 └── 06-constraints.md    Technical, business, non-functional requirements
 ```
@@ -21,19 +44,43 @@ Every claim cites its source. Ambiguities become tagged Open Questions (`OQ-{DOC
 
 ## Trigger phrases
 
-The skill activates automatically when you say things like:
+Each skill activates by intent matching, not exact wording. Examples per skill:
 
+**`grand-design-spec`**:
 - "Help me break down this PRD for the dev team" / "pecah PRD ini buat dev"
 - "Spec out this feature" / "buat dev handoff"
 - "Prepare context for AI-assisted dev" / "siapkan context buat AI dev"
 - "Translate this BRD into architecture docs"
-- Any request to convert a product/business document into structured dev specs
 
-Then attach the PRD (PDF preferred) and answer the few clarifying questions the skill asks (output path, project shape, gap-handling preference).
+**`resolve-oq`**:
+- "Resolve open questions" / "jawab OQ list"
+- "Walk through OQ list" / "tackle the P1 blockers"
+- "Answer the OQs from the meeting"
+
+**`vault-diff`**:
+- "PRD updated" / "PRD versi baru"
+- "Regenerate vault from new PRD"
+- "Vault diff against new source"
+
+**`drift-detect`**:
+- "Drift detect" / "vault vs code"
+- "Check codebase against vault" / "cek code vs vault"
+- "Is the code in sync with the vault?"
+
+Or paraphrases — each skill matches intent, not literal phrasing.
+
+## Hard guarantees across all 4 skills
+
+- **Grounded in source**: every claim cites PRD §, Figma frame, uploaded file, or live code reference. No invention.
+- **No silent overwrites**: every conflict between vault state and new input surfaces to the user. Skills never auto-decide on contested content.
+- **Tag stability**: OQ identifiers, flow IDs, ADR `D-XXX` numbers persist across rounds. New entries get next-available IDs; existing IDs preserved.
+- **Removed-not-deleted**: when content drops from a new PRD, vault marks it with a banner (`> **Removed in v1.2**`) but retains it for audit history.
+- **No code execution**: skills read vault and code, write reports and edit vault docs. They never open PRs, run migrations, or modify codebase files.
+- **Anti-halu invariants preserved in compact mode**: even when output is token-trimmed, every source citation, every OQ tag, every Definition of Done remains intact.
 
 ## Project shapes supported
 
-The skill is general-purpose. Pre-templated shapes:
+The main `grand-design-spec` skill is general-purpose. Pre-templated shapes:
 
 - `mobile-app` — Mobile UI + Backend + Integrations
 - `web-app` — Web Frontend + Backend + Integrations
@@ -42,7 +89,7 @@ The skill is general-purpose. Pre-templated shapes:
 - `data-pipeline` — ETL/batch processing, no user UI
 - `custom` — Any other shape (CLI, SDK, browser extension, IoT, etc.)
 
-The skill **infers** shape from PRD content during the extract phase, then **confirms** with the user before generating files.
+The skill **infers** shape from PRD content during the extract phase, then **confirms** with the user before generating files. Shape choice drives sub-section structure in `02-architecture.md` and `04-flows.md`.
 
 ## Install
 
@@ -52,6 +99,8 @@ This plugin ships through the `grand-design-spec` marketplace (this same reposit
 /plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
 /plugin install grand-design-spec@grand-design-spec
 ```
+
+All four skills install together — they share state via the vault directory.
 
 See the [marketplace README on GitLab](https://gitlab.com/airnd1/grand-design-spec/-/blob/main/README.md) for version pinning, private repo auth, and Claude.ai / Claude API installation paths.
 

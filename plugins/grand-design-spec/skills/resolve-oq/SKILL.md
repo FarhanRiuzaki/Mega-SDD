@@ -61,11 +61,16 @@ For each OQ, the user (with the skill prompting) can choose one of four outcomes
    - At least one `[ ]` OQ entry exists across the 6 numbered docs.
    - If any check fails → STOP, surface the issue. Suggest user run `grand-design-spec` first if vault is malformed/missing.
 
-3. **Persist** the vault path:
+3. **Lock check**: parse `00-index.md` Vault Lock Status section for the `Status:` line.
+   - If `Status: 🔒 LOCKED` → ask via `AskUserQuestion`: *"This vault is LOCKED for `<scope>`. Resolving OQs will edit it and require re-sign-off after. Proceed?"* → options `["Unlock and proceed (re-sign-off needed after)", "Cancel"]`.
+   - If user cancels → STOP. If proceeds → record in the resolution-round Changelog entry that the vault was unlocked for this round; user is responsible for re-locking via `lock-vault` (when available) or manual edit after.
+   - If `Status: ⚠️ DRAFT` → no lock; continue normally.
+
+4. **Persist** the vault path:
    - Echo: `VAULT_DIR=<resolved-absolute-path>`.
    - Re-echo at the start of each major step.
 
-> Skill never proceeds to Step 0.5 without a verified vault.
+> Skill never proceeds to Step 0.5 without a verified vault and lock-state acknowledged.
 
 ### Step 0.5: Resume detection (MANDATORY, after vault path)
 
