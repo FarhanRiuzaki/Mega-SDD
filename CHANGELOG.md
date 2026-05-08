@@ -5,6 +5,29 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-05-08
+
+### Added
+- **`drift-detect` skill (new, v0.1.0)** — detects drift between a `mode=existing` vault (target spec) and live codebase (current reality). Heuristic scan of entities, flows, endpoints, and decisions; produces a structured `DRIFT-REPORT.md` with confidence-rated findings. Closes the loop between vault generation and shipped code for revamp / extension projects. Invoke with `/grand-design-spec:drift-detect`.
+- **Eight drift outcome categories**: Missing in code, Missing in vault, Name drift, Type drift, Behavior drift, Decision violation, Decision unwritten, Confirmed match.
+- **Confidence ratings per finding** — `high` (exact name + type match found / not-found), `medium` (similar names but different signatures), `low` (heuristic keyword guess). Low-confidence findings carry explicit "verify manually" caveats.
+- **Direction-neutral framing** — every finding presents vault state and code state side-by-side. The skill never says "code is wrong" or "vault is stale"; only "they disagree, here's where each lives".
+- **Decision violations & unwritten ADRs surfaced PRIORITY-1** — these correspond to compliance / architectural debt and most often require stakeholder review.
+- **Framework auto-detection** — skill identifies the codebase framework (Laravel, Rails, Spring, Express, Django, Flutter, etc.) via lockfile / manifest signatures and proposes default scope dirs. User confirms or overrides.
+- **Drift scope selection** — `full` (default), `schema-only`, `flows-only`, `decisions-only`, or `single-doc`.
+- **`DRIFT-ACTIONS.md` artifact** — captured user decisions per finding (split into Code-side actions and Vault-side actions). The skill never executes code changes; it produces an actionable list for engineering team follow-up.
+- **OQ cross-reference scan** — detects when codebase mentions `OQ-{CODE}-{N}` tags and flags any references to still-open OQs as "code references unresolved OQ".
+
+### Changed
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.9.0 → 0.10.0 (new skill addition).
+
+### Notes
+- The skill is **heuristic**, not a static analyzer. False positives and false negatives both happen. Treat findings as triggers for human review, not verdicts.
+- Decision compliance is the lowest-confidence axis — keyword-based detection only catches obvious cases. For comprehensive compliance, this skill complements (not replaces) code review and architecture review.
+- The skill writes report artifacts but **never modifies the codebase or the vault directly**. All actions are captured for deliberate human follow-up.
+- For `mode=new` projects there's no codebase to scan — the skill bails politely and points to `vault-diff` if the user is comparing PRD versions.
+- The four skills now form a complete vault lifecycle: `grand-design-spec` (initial generation) → `resolve-oq` (interactive OQ resolution) → `vault-diff` (vault evolution across source revisions) → `drift-detect` (vault vs codebase reconciliation for `mode=existing`).
+
 ## [0.9.0] — 2026-05-08
 
 ### Added

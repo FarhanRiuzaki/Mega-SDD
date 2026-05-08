@@ -2,11 +2,12 @@
 
 > **Turn a PRD + Figma into a 7-file dev handoff folder that no one needs to guess at.**
 
-A Claude Code plugin marketplace that ships three paired skills covering the full vault lifecycle:
+A Claude Code plugin marketplace that ships four paired skills covering the full vault lifecycle:
 
 - **`grand-design-spec`** — converts product/business documents into a structured 7-file vault. Anti-hallucination by construction: every claim cites its source; gaps become tagged Open Questions, never guesses.
 - **`resolve-oq`** — interactive resolver that walks the Open Questions roll-up after a stakeholder meeting, captures answers, and updates the vault with a version bump + Changelog. Answers go where they belong (e.g., new ADR in `05-decisions.md`); OQ identifiers are preserved as audit trail.
 - **`vault-diff`** — evolves the vault when the PRD/BRD source revisions. Computes structured diff (added / changed / removed / conflicts), surfaces Resolved-OQ-vs-new-PRD conflicts for explicit user resolution, and applies approved changes without losing prior OQ history or ADR provenance. The naive alternative ("delete and regenerate") destroys every captured decision — this skill makes vaults survive past sprint 1.
+- **`drift-detect`** — for `mode=existing` (revamp / extension) projects: scans the live codebase, compares against the vault, flags drift (entity rename, field type changed, decision violated, code shipped without ADR). Heuristic detection with confidence ratings; produces `DRIFT-REPORT.md` for review. Closes the loop between "what the vault says" and "what the code does".
 
 ---
 
@@ -273,6 +274,60 @@ Skill: Done. Vault now at v1.2.
 
 ---
 
+## When the code drifts: `drift-detect` (mode=existing only)
+
+For revamp / extension projects, the vault is the target spec and the codebase is current reality. They drift apart silently — a field gets renamed in code without updating vault; a flow ships with a new step that violates a vault decision; a new endpoint lands without an ADR. By the time anyone notices in code review or production, fixing the drift is expensive.
+
+```text
+You: /grand-design-spec:drift-detect
+
+Skill: Vault detected at ./mega-rencana-spec (v1.2, mode=existing). ✓
+       Codebase root?
+You:   /Users/.../m-smile-backend/
+
+Skill: Detected Laravel 11 + PHP. Default scope dirs:
+       app/ · database/migrations/ · routes/ · app/Jobs/ · app/Models/
+       Use these? (y / customize)
+You:   y
+
+Skill: Drift scope? (full / schema-only / flows-only / decisions-only / single-doc)
+You:   full
+
+Skill: [scans 1,247 files in scope, ~2 min]
+       Wrote DRIFT-REPORT.md.
+
+       Findings:
+         Decision violations:    3 (medium confidence)
+         Decision unwritten:     2 (high)
+         Schema drift (high):    7
+         Flow drift (high):      4
+         Confirmed matches:    34
+       Total: 50 findings, 34 confirmed matches.
+
+       PRIORITY-1 to review first:
+         D-007 — source account filter only excludes 2 of 5 statuses.
+         Idempotency strategy implemented but no ADR.
+         monthly_failed_debit table missing in migrations.
+
+       Walk findings interactively now? (y / save report only)
+You:   y
+
+Skill: [walks each finding, captures user choices into DRIFT-ACTIONS.md]
+       Done. Action list:
+         Code-side actions: 8 (assign to engineering)
+         Vault-side actions: 5 (edit directly or via resolve-oq)
+         Deferred: 3
+```
+
+**Hard guarantees**:
+- **Direction-neutral**: every finding presents *"vault says X, code does Y"* — skill never picks a side.
+- **Confidence-rated**: every finding is `high`, `medium`, or `low`. Low-confidence findings carry "verify manually" caveats.
+- **No code execution**: skill writes reports. It never opens PRs, writes migrations, or modifies the vault directly. All actions captured for deliberate human follow-up via `DRIFT-ACTIONS.md`.
+- **Decision violations surface PRIORITY-1**: these are the highest-impact drifts (compliance / architectural debt).
+- **Heuristic, not static analysis**: false positives + false negatives both happen. Treat findings as triggers for review, not verdicts.
+
+---
+
 ## Why use this
 
 ### The two failure modes it prevents
@@ -355,6 +410,22 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 | 8 | Self-check | No silent drops, conflicts had user input, IDs unique, removed content retained |
 | 9 | Present | Stats summary, conflicts deferred, path to `VAULT-DIFF.md` |
 
+### `drift-detect` — vault vs codebase reconciliation (mode=existing only)
+
+| Step | Phase | What happens |
+|------|-------|--------------|
+| 0 | Inputs | Vault path + codebase path; verify `mode=existing`; git safety note |
+| 0.5 | Drift scope | `full` / `schema-only` / `flows-only` / `decisions-only` / `single-doc` |
+| 1 | Read vault | Read relevant docs based on scope; build vault-side model |
+| 1.5 | Framework detection | Heuristic detect (Laravel / Rails / Spring / Express / Django / Flutter / etc.); propose default scope dirs |
+| 2 | Scan codebase | Grep + Read across scope dirs: migrations, models, routes, jobs, ADR-related keywords, OQ tags |
+| 3 | Compute drift | 8 outcome categories with confidence ratings (high / medium / low) |
+| 4 | Generate report | Writes `DRIFT-REPORT.md` with Decision violations / unwritten at top |
+| 5 | Interactive walkthrough | Optional; per finding: action choices captured into `DRIFT-ACTIONS.md` (Code-side / Vault-side / Deferred) |
+| 6 | Update metadata | Append Changelog noting drift session (no version bump unless vault is also edited) |
+| 7 | Self-check | Every finding rated, decision findings PRIORITY-1, no code execution |
+| 8 | Present | Stats summary, PRIORITY-1 findings, path to artifacts |
+
 ---
 
 ## Customization
@@ -382,7 +453,9 @@ grand-design-spec/                            # marketplace repo root
 │       │   │   └── references/templates/*.md # 7 scaffolds
 │       │   ├── resolve-oq/                   # companion skill — OQ resolution
 │       │   │   └── SKILL.md
-│       │   └── vault-diff/                   # companion skill — vault evolution
+│       │   ├── vault-diff/                   # companion skill — vault evolution
+│       │   │   └── SKILL.md
+│       │   └── drift-detect/                 # companion skill — vault vs codebase
 │       │       └── SKILL.md
 │       ├── README.md                         # plugin-level README
 │       └── LICENSE
