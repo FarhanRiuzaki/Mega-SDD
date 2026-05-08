@@ -122,7 +122,8 @@ Or paraphrases — the skill matches intent, not exact wording.
 2. Claude asks a few quick questions:
      - Output folder path?
      - Implementation mode? (`new` greenfield / `existing` codebase)
-     - **PRD status?** (`final` signed-off / `draft` still in flux)
+     - PRD status? (`final` signed-off / `draft` still in flux)
+     - **Output mode?** (`compact` default — table-first, ~40% lighter / `full` — prose-rich for non-technical reviewers)
      - Project shape? (mobile-app / web-app / api-only / …)
      - If `draft` and gap count > 10: proceed or clarify first?
        (`final` skips this — every gap auto-routes to Open Questions.)

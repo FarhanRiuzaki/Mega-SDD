@@ -8,6 +8,7 @@
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
 - **PRD status**: `final` (signed-off by stakeholder) | `draft` (still in flux)
+- **Output mode**: `compact` (default — table-first, prose-cut) | `full` (verbose — prose-rich for cross-functional review)
 - **Locked at**: YYYY-MM-DD HH:MM (TZ)
 - **Locked by**: <PM name>, <Architect name>, <Tech Lead name>
 - **PRD source**: <filename, version, date> — <FINAL | DRAFT>
