@@ -2,10 +2,11 @@
 
 > **Turn a PRD + Figma into a 7-file dev handoff folder that no one needs to guess at.**
 
-A Claude Code plugin marketplace that ships two paired skills for the PRD → dev-handoff workflow:
+A Claude Code plugin marketplace that ships three paired skills covering the full vault lifecycle:
 
 - **`grand-design-spec`** — converts product/business documents into a structured 7-file vault. Anti-hallucination by construction: every claim cites its source; gaps become tagged Open Questions, never guesses.
 - **`resolve-oq`** — interactive resolver that walks the Open Questions roll-up after a stakeholder meeting, captures answers, and updates the vault with a version bump + Changelog. Answers go where they belong (e.g., new ADR in `05-decisions.md`); OQ identifiers are preserved as audit trail.
+- **`vault-diff`** — evolves the vault when the PRD/BRD source revisions. Computes structured diff (added / changed / removed / conflicts), surfaces Resolved-OQ-vs-new-PRD conflicts for explicit user resolution, and applies approved changes without losing prior OQ history or ADR provenance. The naive alternative ("delete and regenerate") destroys every captured decision — this skill makes vaults survive past sprint 1.
 
 ---
 
@@ -222,6 +223,56 @@ Skill: Done. Vault now at v1.1.
 
 ---
 
+## When the PRD revises: `vault-diff`
+
+PRDs change. New stakeholder asks come in, edge cases get specified, scope shifts. The naive answer ("delete vault, regenerate from new PRD") wipes every resolved OQ, every ADR rationale, every Changelog entry — turning the vault back into a draft. Run `/grand-design-spec:vault-diff` instead.
+
+```text
+You: /grand-design-spec:vault-diff
+
+Skill: Vault detected at ./mega-rencana-spec (v1.1).
+       Path to new PRD?
+You:   /Users/.../PRD_Mega_Rencana_v1.1.pdf
+
+Skill: Diff scope? (full / oq-only / specific-docs)
+You:   full
+
+Skill: [reads both vault state + new PRD, computes structured diff]
+       Wrote VAULT-DIFF.md to vault dir.
+       Summary:
+         Auto-resolved OQs: 4
+         New OQs: 6
+         Added: 2 flows, 1 decision
+         Changed: 3 flows, 1 entity
+         Removed (annotated): 1 flow
+         CONFLICTS requiring user input: 2 Resolved-OQ + 1 Decision
+
+       Walking conflicts first...
+
+Skill: Resolved-OQ conflict #1: OQ-DC-2 (idempotency).
+       Vault v1.1 resolved as 24h TTL (D-010, source: stakeholder meeting).
+       New PRD §X.Y says 7-day TTL (per security review).
+       Options: Supersede / Keep vault / Capture both / Skip
+You:   Supersede
+
+Skill: [walks remaining conflicts + auto-resolved OQs + added/changed/removed]
+       Apply approved changes? (Y/N)
+You:   Y
+
+Skill: Done. Vault now at v1.2.
+       Changelog updated. VAULT-DIFF.md retained for offline reference.
+       6 new OQs introduced — run resolve-oq next round to capture answers.
+```
+
+**Hard guarantees**:
+- Removed content is **annotated**, not deleted. Vault retains history.
+- Conflicts surface to the user — skill never auto-decides between vault and new PRD.
+- OQ identifiers, flow IDs, ADR `D-XXX` numbers are stable across diffs.
+- Git safety: skill recommends commit-before-diff so the round is rollback-able.
+- Refuses "auto-resolve all conflicts" — conflicts exist precisely because they need human judgment.
+
+---
+
 ## Why use this
 
 ### The two failure modes it prevents
@@ -288,6 +339,22 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 | 4 | Self-check | Every queue item ended in an outcome; cross-refs resolve; tags preserved |
 | 5 | Present | Stats summary + top remaining P1 blockers with tags |
 
+### `vault-diff` — vault evolution across PRD revisions
+
+| Step | Phase | What happens |
+|------|-------|--------------|
+| 0 | Inputs | Vault path + new source path(s); git safety check (commit-before-diff recommended) |
+| 0.5 | Diff scope | `full` / `oq-only` / `specific-docs` |
+| 1 | Read both states | Old vault (7 files) + new source (PDF/DOCX/MD); old source if available for precision |
+| 2 | Re-extract | Build internal model from new source per same logic as `grand-design-spec` Step 2 |
+| 3 | Compute diff | Per axis: entities, flows, decisions, OQs, constraints, design-system. 8 outcome categories |
+| 4 | Generate diff report | Writes `VAULT-DIFF.md` artifact with conflicts at top, then auto-resolved OQs, added/changed/removed |
+| 5 | Interactive walkthrough | Conflicts first (user decides Supersede / Keep / Both); then batch-confirm safe categories |
+| 6 | Apply changes | Edit vault files; mark removed content with banner (don't delete); preserve all IDs |
+| 7 | Update metadata | Bump vault version (patch or minor), append Changelog, update PRD source reference |
+| 8 | Self-check | No silent drops, conflicts had user input, IDs unique, removed content retained |
+| 9 | Present | Stats summary, conflicts deferred, path to `VAULT-DIFF.md` |
+
 ---
 
 ## Customization
@@ -313,7 +380,9 @@ grand-design-spec/                            # marketplace repo root
 │       │   ├── grand-design-spec/            # main skill — vault generation
 │       │   │   ├── SKILL.md
 │       │   │   └── references/templates/*.md # 7 scaffolds
-│       │   └── resolve-oq/                   # companion skill — OQ resolution
+│       │   ├── resolve-oq/                   # companion skill — OQ resolution
+│       │   │   └── SKILL.md
+│       │   └── vault-diff/                   # companion skill — vault evolution
 │       │       └── SKILL.md
 │       ├── README.md                         # plugin-level README
 │       └── LICENSE
