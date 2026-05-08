@@ -31,6 +31,41 @@
 
 > Only list NFRs with explicit source. Do not invent SLO targets.
 
+## Design system
+
+> **Conditional**: muncul hanya kalau Step 2 detection menemukan minimal salah satu dari `HAS_TOKENS`, `HAS_A11Y`, atau `HAS_VOICE_BRAND` = true. Sub-block (Tokens / Accessibility / Voice & brand) hanya muncul untuk flag yang true. Tidak muncul karena shape inference atau prior knowledge — strict source-mirror per Step 2.
+
+### Tokens
+
+> Muncul hanya kalau `HAS_TOKENS=true`. Source priority: Figma variables > user tokens file > PRD-stated.
+
+**Color**:
+| Token | Value | Use case | Source |
+|-------|-------|----------|--------|
+| `<token.name>` | `<value>` | <where used> | Figma var / tokens.json `<key>` / PRD §<X.Y> |
+
+**Typography**: `<token.name>` `<font-family> <weight> <size>/<line-height>` — Source: <Figma var / tokens.json / PRD §X.Y>
+
+**Spacing scale**: `<list of allowed values, e.g. "4 / 8 / 16 / 24 / 32 / 48 / 64 (px). Increments of 8 only.">` — Source: <...>
+
+**Radius**: `<list of allowed values>` — Source: <...>
+
+### Accessibility
+
+> Muncul hanya kalau `HAS_A11Y=true`. State only what source explicitly says.
+
+- WCAG level: <level stated by source — e.g. "WCAG 2.1 AA per PRD §X.Y">. **Do NOT default to AA if source silent.**
+- Color contrast: <values from source>
+- Keyboard / screen reader: <rules from source>
+
+### Voice & brand (light)
+
+> Muncul hanya kalau `HAS_VOICE_BRAND=true`. Editorial guidance only when source provides it.
+
+- Tone: <quoted from PRD or user instruction>
+- User-facing locale: <quoted from PRD or user instruction>
+- Copy guidelines: <quoted from PRD or user instruction>
+
 ---
 
 ## Sources
