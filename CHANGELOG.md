@@ -5,6 +5,17 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-08
+
+### Changed
+- **Repository restructured to Claude Code Plugin Marketplace format.** Added `.claude-plugin/marketplace.json` at repo root and `plugins/grand-design-spec/.claude-plugin/plugin.json` at plugin root. Skill files (`SKILL.md`, `references/templates/*.md`) moved to `plugins/grand-design-spec/skills/grand-design-spec/`. Marketplace catalog points to the plugin via relative path source `./plugins/grand-design-spec`.
+- **Install flow.** Now installable via `/plugin marketplace add <gitlab-url>` + `/plugin install grand-design-spec@grand-design-spec` instead of manual `git clone` to `~/.claude/skills/`. Version pinning via `#v0.4.0` ref appended to the GitLab URL.
+- **Plugin-level README** added at `plugins/grand-design-spec/README.md` (focused on what the plugin does + trigger phrases). Root `README.md` now describes the marketplace itself and installation across Claude Code, Claude.ai, and Claude API.
+- **`SKILL.md` frontmatter** version bumped 0.3.0 → 0.4.0. No skill content changes — behavior identical to v0.3.0.
+
+### Notes
+- Existing users who installed via `git clone` to `~/.claude/skills/` should remove the old clone (`rm -rf ~/.claude/skills/grand-design-spec`) before installing via `/plugin install` to avoid duplicate skill registration.
+
 ## [0.3.0] — 2026-05-08
 
 ### Added

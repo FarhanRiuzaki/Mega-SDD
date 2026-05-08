@@ -70,44 +70,68 @@ Every numbered doc (`01–06`) contains:
 
 ## Installation
 
-### Claude Code (personal — available across all projects)
+This repository is a **Claude Code Plugin Marketplace**. The recommended install path is via the `/plugin` slash commands inside Claude Code.
 
-```bash
-mkdir -p ~/.claude/skills
-cd ~/.claude/skills
+### Claude Code — via plugin marketplace (recommended)
 
-# Via SSH (requires SSH key configured on GitHub)
-git clone git@gitlab.com:airnd1/grand-design-spec.git
+Inside Claude Code, run:
 
-# Or via HTTPS (works without SSH setup)
-git clone https://gitlab.com/airnd1/grand-design-spec.git
+```text
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
+/plugin install grand-design-spec@grand-design-spec
 ```
 
-### Claude Code (project-scoped — committed to a specific repo)
+The form is `<plugin-name>@<marketplace-name>`. Both happen to be `grand-design-spec` here.
+
+#### Pin to a specific version (recommended for teams)
+
+Append `#<tag>` to pin the marketplace clone to a tag or branch:
+
+```text
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.4.0
+/plugin install grand-design-spec@grand-design-spec
+```
+
+To upgrade later, re-run `/plugin marketplace add` with a newer tag (e.g. `#v0.5.0`) and `/plugin marketplace update` to refresh, then `/plugin install` again to pick up changes.
+
+#### From the CLI (non-interactive)
 
 ```bash
-cd /path/to/your/project
-mkdir -p .claude/skills
-cd .claude/skills
-
-# Via SSH
-git clone git@gitlab.com:airnd1/grand-design-spec.git
-
-# Or via HTTPS
-git clone https://gitlab.com/airnd1/grand-design-spec.git
+claude plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
+claude plugin install grand-design-spec@grand-design-spec
 ```
+
+For a team-shared marketplace declaration, scope it to the project:
+
+```bash
+claude plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git --scope project
+```
+
+This writes the marketplace into `.claude/settings.json` so every teammate cloning the project gets prompted to install.
+
+### Private GitLab repository
+
+If your GitLab repo is private, set a token before installing so background updates work too:
+
+```bash
+export GITLAB_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx
+```
+
+Manual installs use your existing git credential helper (`git config --global credential.helper`), so HTTPS or SSH access that already works in your terminal will work here.
 
 ### Claude.ai / Claude Desktop (web/desktop)
 
-1. Download or zip the `grand-design-spec/` folder.
-2. In Claude.ai, go to **Customize → Skills**.
-3. Click **+ → Create skill** and upload the ZIP.
+The `/plugin` flow is Claude-Code-only. For Claude.ai or Claude Desktop, use the skill folder directly:
+
+1. Download the skill folder at `plugins/grand-design-spec/skills/grand-design-spec/` (contains `SKILL.md` + `references/`).
+2. Zip that folder.
+3. In Claude.ai, go to **Customize → Skills → + → Create skill** and upload the ZIP.
 
 > Custom skills uploaded to Claude.ai are private to your account.
 
 ### Claude API
 
-Available in beta for API users with the code execution tool. See [Skills API Quickstart](https://docs.claude.com).
+Available in beta for API users with the code execution tool. Same skill folder as above. See [Skills API Quickstart](https://docs.claude.com).
 
 ---
 
@@ -155,23 +179,33 @@ Skill: [generates 7 files]
 
 ---
 
-## Folder structure of this skill
+## Repository structure (marketplace layout)
 
 ```
-grand-design-spec/
-├── README.md                       (this file)
-├── LICENSE                         MIT
-├── .gitignore
-├── SKILL.md                        Skill instructions for Claude
-└── references/
-    └── templates/                  Scaffolds the skill fills in at generation time
-        ├── 00-index.md
-        ├── 01-overview.md
-        ├── 02-architecture.md
-        ├── 03-data-model.md
-        ├── 04-flows.md
-        ├── 05-decisions.md
-        └── 06-constraints.md
+grand-design-spec/                                      # marketplace repo root
+├── .claude-plugin/
+│   └── marketplace.json                                # marketplace catalog
+├── plugins/
+│   └── grand-design-spec/                              # the plugin
+│       ├── .claude-plugin/
+│       │   └── plugin.json                             # plugin manifest
+│       ├── skills/
+│       │   └── grand-design-spec/                      # the skill itself
+│       │       ├── SKILL.md                            # skill instructions for Claude
+│       │       └── references/
+│       │           └── templates/                      # 7 file scaffolds
+│       │               ├── 00-index.md
+│       │               ├── 01-overview.md
+│       │               ├── 02-architecture.md
+│       │               ├── 03-data-model.md
+│       │               ├── 04-flows.md
+│       │               ├── 05-decisions.md
+│       │               └── 06-constraints.md
+│       └── README.md                                   # plugin-level README
+├── README.md                                           # this file (marketplace-level)
+├── LICENSE                                             # MIT
+├── CHANGELOG.md
+└── .gitignore
 ```
 
 ---
@@ -180,9 +214,9 @@ grand-design-spec/
 
 The skill defaults match a specific stack & convention (PHP/Laravel + JS ecosystem, DBML for schema). To adapt to your stack:
 
-- Edit `SKILL.md` → "File-by-file content guide" → `03-data-model.md` to change the default schema format.
-- Edit `references/templates/02-architecture.md` to pre-fill known components or stack.
-- Edit `references/templates/00-index.md` Glossary to include your org-specific terms.
+- Edit `plugins/grand-design-spec/skills/grand-design-spec/SKILL.md` → "File-by-file content guide" → `03-data-model.md` to change the default schema format.
+- Edit `plugins/grand-design-spec/skills/grand-design-spec/references/templates/02-architecture.md` to pre-fill known components or stack.
+- Edit `plugins/grand-design-spec/skills/grand-design-spec/references/templates/00-index.md` Glossary to include your org-specific terms.
 
 ---
 

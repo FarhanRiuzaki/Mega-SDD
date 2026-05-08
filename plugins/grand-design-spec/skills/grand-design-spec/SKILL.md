@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.3.0
+version: 0.4.0
 description: Break down PRD/BRD and Figma into 7 markdown files for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
