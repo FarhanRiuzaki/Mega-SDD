@@ -213,6 +213,25 @@ Before generating any markdown, build an internal map of:
 - **Decisions**: technical choices stated with rationale
 - **Constraints**: technical, business, regulatory, non-functional
 - **Gaps**: every ambiguity → goes to Open Questions, never to body
+- **Design-system content** (v0.6, optional): scan all sources (PRD, Figma via MCP, uploaded tokens files, BRD, user-provided context) for explicit mentions of:
+  - **UI components**: Figma frame inventory under "Components" page, Storybook export entries, PRD-stated component names with variants
+  - **Design tokens**: Figma variables (call `mcp__claude_ai_Figma__get_variable_defs`), tokens.json entries, tailwind.config.js theme keys, PRD-stated hex/value rules
+  - **Accessibility standards**: PRD-stated WCAG level, Figma a11y annotations, contrast / keyboard / screen-reader rules
+  - **Voice / brand rules**: PRD-stated tone, locale, copy guidelines
+
+  Persist findings as four flags: `HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` (each `true | false`). These flags drive Step 3 conditional generation. **Do not infer from shape — only from explicit source content.**
+
+**Source merge rules** (when multiple sources cover the same token/component):
+
+1. Figma MCP (highest) — `get_variable_defs` for tokens, `get_design_context` for components.
+2. User-provided tokens file (tokens.json / tailwind.config.js / Storybook export).
+3. PRD-stated values.
+
+Higher priority wins for the same value. If a higher-priority source is silent on a value, use a lower one. **If two sources of equal precedence disagree (e.g., two Figma URLs, or Figma + tokens.json with different hex for `color.primary`), do NOT silently pick — emit `OQ-CN-{N} [P1]` with both quoted values side-by-side.**
+
+**Multi-platform note**: for `multi-platform` shape, Web and Mobile may have separate Figma URLs / token files. If user provided multiple sources, treat them independently per layer. If only one platform has a source → only that platform's design-system section appears.
+
+**Existing-mode note**: skill does NOT read the codebase. Even if `IMPLEMENTATION_MODE=existing` and the codebase already implements a design system, the vault reflects only PRD/Figma/tokens file sources. Reconciling vault with existing-codebase design system is the downstream AI consumer's job.
 
 **Confirm project shape with user**:
 
