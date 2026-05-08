@@ -5,6 +5,40 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-05-08
+
+### Added
+- **`OUTPUT_MODE=compact|full` flag (Step 0.7).** New mandatory step after PRD status flag. Captures the verbosity tier of vault output. Drives Step 3 generation rules per the Output mode policy table. Default: `compact`.
+  - `compact` (default) — table-first, prose-cut, ~40% lighter token output. 1-line TL;DR header, API contracts as tabel (skip JSON example unless payload non-trivial), DBML-only entity descriptions, ADR as 1-paragraf format, OQ entries as 1-line, glossary skips generic IT terms.
+  - `full` — verbose, prose-rich. 3-line TL;DR header, full request/response JSON per endpoint, prose entity descriptions alongside DBML, multi-bullet ✅⚠️ consequences per ADR. For audiences including non-technical reviewers (BO, legal, compliance).
+- **Output mode policy table** in `## File-by-file content guide` mapping per-doc behavior (TL;DR, API contracts, entity descriptions, flow blocks, decision blocks, glossary, OQ entries) across both modes. Replaces the prior vague "as simple as possible" guidance with concrete, measurable rules.
+- **Auto-default conditions** — skill picks `compact` without asking when user explicitly requested terse output or runs in autonomous / no-pause mode. Echoes auto-default with reason.
+- **Hard invariants section** — explicit list of anti-hallucination guarantees preserved in BOTH modes (source citation, OQ tag + priority, DoD per flow, decision source, Out of Scope never empty). Compact mode never weakens grounding.
+- **Step 4 self-check items** for output mode compliance — 8 new checks covering compact-mode formatting + 6 hard-invariant checks that apply regardless of mode.
+- **`Output mode` field in `00-index.md > Vault Lock Status`.** Surfaced to downstream AI consumers + readers so they know which verbosity tier the vault was generated in.
+- **Step 5 hint** — when `compact` mode used, summary mentions opt-in to `full` mode for re-run if needed.
+
+### Changed
+- **`## Length & simplicity policy`** renamed to **`## Output mode policy`** and rewritten from 4-bullet vague guidance to a 10-row aspect-by-mode tabel + invariants block + audience principle.
+- **Per-doc TL;DR template** updated to show both 1-line (compact) and 3-line (full) format with mode markers.
+- **`02-architecture.md` API contracts guidance** — adds explicit compact behavior (tabel default, JSON only for non-trivial payloads) vs full behavior (full JSON per endpoint).
+- **`03-data-model.md` guidance** — compact = DBML + 1-line `Purpose:` per entity, skip prose section. Full = DBML + per-entity prose + field-level validation tabel.
+- **`04-flows.md` guidance** — compact skips Preconditions/Postconditions blocks (derivable from steps + DoD), keeps Steps + DoD + cross-cutting handoffs. Full = all template sections.
+- **`05-decisions.md` guidance** — compact = 1-paragraf ADR format, full = multi-section block with Status/Date/Context/Decision/Consequences/Source.
+- **`00-index.md > Glossary` and `> Open Questions roll-up`** — compact mode cuts generic IT terms from glossary, OQ entries become single-line. Full mode preserves prior verbose format.
+- **`SKILL.md` frontmatter** version bumped 0.6.0 → 0.7.0.
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.6.0 → 0.7.0.
+
+### Backward compatibility
+- v0.6 vaults remain valid. No migration step.
+- v0.7 with `OUTPUT_MODE=full` produces output **structurally identical to v0.6** (modulo the new `Output mode` line in Vault Lock Status). Use `full` to retain v0.6 verbosity verbatim.
+- v0.7 with `OUTPUT_MODE=compact` (the new default) produces a leaner vault that preserves every source citation, every Open Question, every Definition of Done, every cross-cutting handoff — only narrative scaffolding is cut.
+- The four v0.6 design-system detection flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) and conditional sections continue to work unchanged in v0.7. Output mode only controls verbosity per-section, not section presence.
+
+### Notes
+- Anti-halu invariants are **hard guarantees** in both modes. Compact mode trades narrative scaffolding for token efficiency, never grounding strength. A compact-mode vault and a full-mode vault generated from the same PRD will list the same OQs (with same tags + priorities), cite the same sources, and contain the same DoD checklists — only the prose density differs.
+- The "audience principle" is documented inline: compact targets builders (architect, dev, QA) who can read tabel + DoD without prose hand-holding; full targets cross-functional reviewers (PM, BO, legal, compliance) who need narrative context.
+
 ## [0.6.0] — 2026-05-08
 
 ### Added

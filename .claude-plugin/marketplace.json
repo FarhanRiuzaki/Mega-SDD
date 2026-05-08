@@ -9,7 +9,7 @@
       "name": "grand-design-spec",
       "source": "./plugins/grand-design-spec",
       "description": "Skill that breaks down PRD/BRD + Figma into 7 markdown files for dev team handoff with anti-hallucination guarantees.",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "author": {
         "name": "Farhan Riuzaki"
       },

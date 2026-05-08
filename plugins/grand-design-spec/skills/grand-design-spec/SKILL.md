@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.6.0
+version: 0.7.0
 description: Break down PRD/BRD and Figma into 7 markdown files for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
@@ -179,7 +179,32 @@ The skill behaves differently when the source PRD/BRD is **declared final by sta
    - Skill MUST still refuse "just guess the rest" requests — `final` means the PRD is locked, not that Claude is licensed to invent. Gaps remain Open Questions, never silently filled.
    - Vault Lock Status reflects this: `PRD source: <filename> (FINAL, signed-off)`.
 
-> Skill never proceeds to Step 1 without a confirmed `PRD_STATUS`.
+> Skill never proceeds to Step 0.7 without a confirmed `PRD_STATUS`.
+
+### Step 0.7: Output verbosity flag (MANDATORY, after PRD status flag)
+
+The skill produces two verbosity tiers of the same vault. **Compact is the default** — token-efficient, table-heavy, cuts narrative scaffolding while preserving every source citation, every Open Question, and every Definition of Done. **Full** restores prose elaboration, API payload examples, and per-decision consequence bullets — useful when the vault doubles as onboarding doc for non-technical readers.
+
+1. **Ask** the user:
+   - **Claude Code**: use `AskUserQuestion` with two options (compact recommended, listed first).
+   - **Claude.ai sandbox**: use `ask_user_input_v0` if available.
+   - Fallback: plain chat question — *"Output mode: `compact` (default, ~40% lighter, table-first) atau `full` (verbose, prose elaboration)?"*
+
+   The two choices:
+   - **`compact`** (default) — table-first, prose-cut, 1-line TL;DR, no boilerplate API JSON examples, OQ as single-line entries, decisions as 1-paragraph blurbs. **Anti-halu invariants preserved**: every source citation, every OQ tag with priority, every DoD checklist still required.
+   - **`full`** — prose-rich, 3-line TL;DR header, full request/response JSON per endpoint, prose entity descriptions alongside DBML, multi-bullet ✅⚠️ consequences per ADR. Use when audience includes non-technical reviewers (BO, legal, compliance) who need narrative context.
+
+2. **Persist flag** explicitly:
+   - Echo: `OUTPUT_MODE=compact | full`
+   - This flag is recorded in `00-index.md` Vault Lock Status section.
+   - This flag drives Step 3 generation rules per "Output mode policy" below.
+
+3. **Auto-default conditions** (skill picks `compact` without asking):
+   - User explicitly requested terse / minimal / token-efficient output in conversation.
+   - User runs in autonomous / no-pause mode (e.g., "lanjut tanpa nanya").
+   - Echo the auto-default: *"Auto-default `OUTPUT_MODE=compact` karena <reason>. Override dengan `full` kalau perlu prose."*
+
+> Skill never proceeds to Step 1 without a confirmed `OUTPUT_MODE`.
 
 ### Step 1: Inventory and read
 
@@ -297,17 +322,32 @@ Verify every doc has:
 - [ ] **Open Questions** section filled. Tagged `OQ-{DOC_CODE}-{N}` + prioritized P1/P2/P3.
 
 **Readability (architect/PM/QA review-ready):**
-- [ ] **TL;DR header** ada di tiap doc 01–06 (3-baris format).
+- [ ] **TL;DR header** ada di tiap doc 01–06. Format: 1-baris kalau `OUTPUT_MODE=compact`, 3-baris kalau `OUTPUT_MODE=full`.
 - [ ] EN/ID convention konsisten — code term EN, prose ID, gak campur dalam 1 kalimat.
 - [ ] Read-aloud test: paragraf pertama tiap doc gak sounds like AI translation.
 - [ ] First-use acronym/jargon di-define inline; istilah lintas-doc ada di Glossary `00-index.md`.
 - [ ] Cross-ref ≤ 2 per section.
 - [ ] `00-index.md` punya: Executive Summary, Project Readiness Status, Reading paths by role, Glossary, OQ roll-up.
 
-**Simplicity:**
-- [ ] Doc 01, 02, 03, 05, 06: as simple as possible. Cut filler.
-- [ ] Doc 04 (flows): boleh lengkap-wajar tapi gak padding.
-- [ ] Bisa dibaca dalam <10 menit per doc oleh architect.
+**Output mode compliance (driven by `OUTPUT_MODE` from Step 0.7):**
+- [ ] If `compact`: TL;DR header 1-line di doc 01–06.
+- [ ] If `compact`: API contracts pakai tabel format; full request/response JSON only ada di endpoint dengan payload non-trivial (nested struct / polymorphic shape).
+- [ ] If `compact`: doc 03 entity descriptions dropped — DBML block + 1-line `Purpose:` per entity cukup.
+- [ ] If `compact`: doc 04 Preconditions/Postconditions sections cut; Steps + DoD tetap lengkap.
+- [ ] If `compact`: doc 05 ADR pakai 1-paragraf format, bukan multi-section block.
+- [ ] If `compact`: OQ entries 1-line, bukan multi-line elaboration.
+- [ ] If `compact`: Glossary hanya terms yang muncul di body + produk-spesifik; generic IT terms dropped.
+- [ ] If `full`: every section per template scaffold filled, including prose narrative, JSON examples, multi-bullet consequences.
+
+**Anti-halu invariants (mandatory in BOTH modes — never cut even in compact):**
+- [ ] Every claim cites source.
+- [ ] Every OQ tagged & prioritized.
+- [ ] Every flow has DoD checklist.
+- [ ] Every decision has explicit source.
+- [ ] Out of Scope section never empty.
+- [ ] Cross-cutting flow handoff points present.
+
+**Bisa dibaca dalam <10 menit per doc oleh architect (BOTH modes).**
 
 **Output integrity:**
 - [ ] All files written to `<OUTPUT_DIR>` (not the default sandbox path).
@@ -331,10 +371,11 @@ Files are already on disk under `<OUTPUT_DIR>` (written in Step 3). Step 5 is a 
 
 In the chat message:
 
-1. Summary: total docs, total Open Questions count, `PRD_STATUS` flag value.
+1. Summary: total docs, total Open Questions count, `PRD_STATUS` + `OUTPUT_MODE` flag values.
 2. **List of Open Questions (top blockers)** — what the user must resolve before dev starts. If `PRD_STATUS=final`, frame it as: *"Bawa OQ list ini ke stakeholder buat triage offline."*
 3. Brief note on which sections are most likely to need stakeholder review.
 4. Path to vault: `<OUTPUT_DIR>` (absolute).
+5. If `OUTPUT_MODE=compact`, mention sekali kalau user butuh prose-rich version: *"Re-run dengan `OUTPUT_MODE=full` kalau lo perlu version yang prose-rich untuk audience non-teknis."*
 
 Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 
@@ -342,12 +383,37 @@ Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 
 ## File-by-file content guide
 
-### Length & simplicity policy
+### Output mode policy (driven by `OUTPUT_MODE` from Step 0.7)
 
-- **Default: as simple as possible**, since audience includes IT Architect review, PM, Business Owner, UI/UX, QA — not just engineers.
-- **Exception**: `04-flows.md` boleh lengkap wajar (flow detail, branching, error paths, DoD).
-- Cut filler. If a sentence doesn't earn its place, delete it.
-- No padding to look thorough. No amputation to look minimal. Length follows content needed, not a target.
+| Aspect | `compact` (default) | `full` |
+|--------|---------------------|--------|
+| TL;DR header (doc 01–06) | 1 baris: `> **TL;DR**: <doc berisi apa> · <role pembaca> · <baca kalau>.` | 3 baris (TL;DR / Untuk siapa / Baca kalau) |
+| API contracts (doc 02) | Tabel: endpoint · method · purpose · auth · errors · source. Skip request/response JSON kecuali payload non-trivial atau ada nested struct yang gak jelas dari nama field. | Full request/response JSON example per endpoint |
+| Entity descriptions (doc 03) | DBML only + 1-line `Purpose:` per entity. No prose narrative. | DBML + per-entity prose: Purpose, Key fields, Relations |
+| Flow blocks (doc 04) | Steps numbered + DoD checklist per flow. Skip Preconditions/Postconditions sections (derivable dari steps). Source line tetap ada. | Actor / Trigger + Preconditions + Steps + Postconditions + DoD + Failure handling + Source |
+| Decision blocks (doc 05) | 1-paragraf format: `D-XXX: title — context dalam 1 kalimat. Decision: <X>. Consequences: <Y, Z>. Source: PRD §...` | Multi-section format: Status / Date / Context / Decision / Consequences (✅⚠️ bullets) / Source |
+| Glossary (doc 00) | Hanya istilah produk-spesifik dari PRD + acronym yang muncul di vault. Drop generic IT terms (FK, RTO, RPO, SLO, ADR, NFR) kecuali muncul di body. | Full glossary termasuk generic IT terms |
+| Open Questions per doc | 1-line format: `OQ-{CODE}-{N} [P{1\|2\|3}]: <question> — resolve: <PIC/source>` | Multi-line: question + reasoning + impact + resolution path |
+| Sources section | Bullet list, no prose intro. | Same |
+| "Catatan" / "Why X" asides in body | Cut. Reasoning belongs in `05-decisions.md`, not other docs. | Allowed when adds context. |
+| Cross-ref to other doc | 1 anchor link, no quote duplication. | Allowed inline quote of cited doc. |
+
+**Hard invariants — preserved in BOTH modes**:
+- Every claim cites source (PRD §, Figma frame, uploaded file).
+- Every Open Question tagged `OQ-{CODE}-{N}` with priority `P1|P2|P3`.
+- Every flow has Definition of Done as observable checklist.
+- Every decision has explicit source.
+- Out of Scope section never empty (write `TBD - confirm with PO` if genuinely unknown).
+
+**Audience principle**:
+- `compact` = optimized for builder reading (architect, dev, QA). Tabel + DoD + cite. Skip narrative scaffolding karena reader tahu domain.
+- `full` = optimized for cross-functional review (PM, BO, legal, compliance + builder). Prose context for non-technical readers, examples for clarity.
+
+**Doc 04 (flows) exception**:
+- `compact`: still cuts Preconditions/Postconditions sections, but Steps + DoD detail tetap lengkap (flow correctness > token saving for QA & implementation).
+- `full`: full structured blocks per template.
+
+Cut filler. No padding to look thorough. No amputation to look minimal. Length follows content needed, not a target — output mode adjusts the **granularity of context**, not the completeness of facts.
 
 ### Readability standards (mandatory for all 7 files)
 
@@ -377,9 +443,13 @@ These rules ensure docs are reviewable by humans across roles, not just AI dev a
 - `Last updated:` → `YYYY-MM-DD` (precision matters; reviewer needs to know if doc is 1 day vs 30 days old).
 - Decision dates, PRD versions, sprint/milestone refs → `YYYY-MM` (sprint/version-level granularity, per project convention).
 
-**Per-doc TL;DR (mandatory header for docs 01–06)**:
-Tiap doc 01–06 mulai dengan blok 3 baris:
+**Per-doc TL;DR (mandatory header for docs 01–06)** — format depends on `OUTPUT_MODE`:
+
 ```markdown
+# OUTPUT_MODE=compact (default) — 1 line:
+> **TL;DR**: <doc berisi apa> · <role pembaca utama> · <baca kalau kondisi X>.
+
+# OUTPUT_MODE=full — 3 lines:
 > **TL;DR**: <1 kalimat: doc ini berisi apa>.
 > **Untuk siapa**: <role pembaca utama, e.g. Architect / Dev / QA / PM>.
 > **Baca kalau**: <kondisi kapan dokumen ini relevan, e.g. "lo lagi review struktur sistem">.
@@ -405,7 +475,11 @@ Required sections, **dalam urutan ini**:
 5. **Reading order** (full sequence dengan 1-line purpose per doc).
 6. **Anti-hallucination rules** untuk dev/dev-AI.
 7. **Glossary** — istilah & singkatan lintas-doc.
+   - `OUTPUT_MODE=compact`: hanya istilah produk-spesifik dari PRD + acronym yang muncul di body vault. Drop generic IT terms (FK, RTO, RPO, SLO, ADR, NFR, DBML, DoD, OQ) kecuali muncul di body.
+   - `OUTPUT_MODE=full`: full glossary termasuk generic IT terms.
 8. **Open Questions roll-up** — categorized, sorted P1→P2→P3 within each (lihat "Mandatory section template").
+   - `OUTPUT_MODE=compact`: 1-line per OQ (`OQ-{CODE}-{N} [P{x}]: <question> — resolve: <PIC>`).
+   - `OUTPUT_MODE=full`: multi-line per OQ (question + reasoning + impact + resolution path).
 9. **Source documents** — files konsumsi.
 10. **Last updated** — YYYY-MM-DD.
 
@@ -428,6 +502,8 @@ Required sections, **dalam urutan ini**:
   - Example for `data-pipeline`: `### Source connectors`, `### Processors`, `### Sinks`, `### Integrations`
   - For `custom`: use layers from user's description.
 - **API contracts** (only if applicable to shape; e.g. `library/sdk` may have public API contracts but no HTTP endpoints): endpoint, method, req/res shape, error code — hanya yang explicit di PRD atau directly derivable. Else → Open Questions. Group endpoints under their consuming layer.
+  - `OUTPUT_MODE=compact`: tabel default (endpoint · method · purpose · auth · errors · source). Inline JSON example **only when** payload non-trivial (nested struct, polymorphic shape) — most CRUD endpoints don't need example.
+  - `OUTPUT_MODE=full`: full request/response JSON example per endpoint, including error envelope shape.
 - **Tech stack**: hanya yang stated/constrained. Group per layer.
 
 > **Why per-layer**: vault dipakai oleh multiple consumers. Per-layer sub-sections bikin mereka bisa langsung scroll/anchor ke section relevan tanpa baca semua. Reading paths di `00-index.md` bisa pointer ke `02-architecture.md#<layer-anchor>` directly.
@@ -439,6 +515,8 @@ Required sections, **dalam urutan ini**:
 - Per entity: name, purpose, key fields + types, mandatory/optional
 - Relations: 1-1, 1-N, M-N, dengan FK direction
 - Constraints: uniqueness, indexes, soft-delete, audit fields — hanya yang specified
+- `OUTPUT_MODE=compact`: DBML block dengan inline `note:` per field cukup; tambah max 1 baris `Purpose:` per entity di luar DBML. Skip "Entity descriptions" prose section. Field-level validation tabel only for fields with non-obvious constraints (min/max, enum, format).
+- `OUTPUT_MODE=full`: DBML + per-entity prose section (Purpose / Key fields / Relations) + field-level validation tabel.
 
 ### 04-flows.md
 
@@ -453,25 +531,36 @@ Required sections, **dalam urutan ini**:
   - For `custom`: use flow categories from user's description.
 - For each flow:
   - Numbered steps. Reference Figma frame kalau ada.
-  - **Per-flow Definition of Done**: observable behavior. Bullet list per flow.
-- For cross-cutting flows (or any flow that involves multiple layers), explicit handoff points: e.g. "Mobile sends to BE → BE responds → Mobile renders".
+  - **Per-flow Definition of Done**: observable behavior. Bullet list per flow. **Required in BOTH modes** — DoD adalah QA contract, gak boleh dipotong.
+  - `OUTPUT_MODE=compact`: skip Preconditions/Postconditions section (state changes derivable dari steps + DoD). Skip Failure handling section kecuali failure path non-trivial. Steps tetap detail.
+  - `OUTPUT_MODE=full`: full structured blocks per template (Actor, Preconditions, Steps, Postconditions, DoD, Failure handling, Source).
+- For cross-cutting flows (or any flow that involves multiple layers), explicit handoff points: e.g. "Mobile sends to BE → BE responds → Mobile renders". **Required in BOTH modes**.
 
 > **Why per-type**: same rationale as `02-architecture.md`. Multiple consumers, deep-link navigation. QA pakai DoD per flow, layer-specific dev focus on their flow type.
 
 ### 05-decisions.md
 
 - **TL;DR header**
-- ADR-lite format:
+- Format depends on `OUTPUT_MODE`:
 
 ```markdown
+# OUTPUT_MODE=compact (default) — 1 paragraf per ADR:
+### D-001: <short title>
+<Context dalam 1 kalimat>. **Decision**: <apa yang diputuskan, 1–2 kalimat>. **Consequences**: <pros + tradeoffs, dipisah koma, max 2 baris>. **Source**: <PRD §X>.
+
+# OUTPUT_MODE=full — multi-section per ADR:
 ### D-001: <short decision title>
-**Context**: <kenapa decision ini perlu>
-**Decision**: <apa yang diputuskan>
-**Consequences**: <implications, trade-offs>
+**Status**: Proposed | Accepted | Superseded by D-XXX
+**Date**: YYYY-MM
+**Context**: <kenapa decision ini perlu, 2–3 kalimat>
+**Decision**: <apa yang diputuskan, 1–3 kalimat>
+**Consequences**:
+- ✅ <positive>
+- ⚠️ <trade-off>
 **Source**: <PRD §X / explicit user instruction / meeting note>
 ```
 
-Hanya decision dengan source eksplisit. PRD silent → bukan ADR, jadi Open Question.
+Hanya decision dengan source eksplisit. PRD silent → bukan ADR, jadi Open Question. Berlaku di kedua mode.
 
 ### 06-constraints.md
 
