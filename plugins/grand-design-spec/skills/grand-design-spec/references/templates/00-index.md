@@ -140,6 +140,16 @@ This document is the **single source of truth for requirements**. When working f
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
 
+### Companion skills for vault evolution
+
+When the user needs to update or reconcile the vault, route them to the appropriate companion skill instead of editing the vault free-hand:
+
+- **Stakeholder OQ resolution round** → `/grand-design-spec:resolve-oq`. Walks the OQ roll-up by priority, captures answers, marks resolved entries with stable tags + bumps vault version + Changelog.
+- **PRD/BRD source revised** → `/grand-design-spec:vault-diff`. Computes structured diff between the new source and current vault state. Surfaces conflicts (Resolved-OQ vs new PRD) for explicit user decision; never silently overwrites.
+- **Codebase reconciliation (`Implementation mode: existing` only)** → `/grand-design-spec:drift-detect`. Scans the live codebase, flags entity/flow/decision drift between the vault target and current code reality. Produces `DRIFT-REPORT.md` for review.
+
+These skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds — running them is the safe way to evolve the vault. Direct edits are still allowed but must follow the same conventions (preserve identifiers, append to Changelog, bump version).
+
 ## Glossary
 
 Cross-doc terms and acronyms:
