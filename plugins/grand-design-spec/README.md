@@ -2,6 +2,26 @@
 
 A Claude Code plugin bundling **four paired skills** that cover the full vault lifecycle for PRD → dev-handoff workflows: from initial vault generation, through stakeholder OQ resolution, to vault evolution across PRD revisions, and reconciliation against live codebases for revamp projects.
 
+## What is this?
+
+> **Without it**: every dev session re-reads the PRD, re-derives architecture, AI bakes different assumptions into the code.
+> **With it**: PRD → 7-file vault → AI dev tools cite it → grounded code, less halu.
+
+The plugin lives at the boundary between **Inception** and **Construction** in your AI dev lifecycle (AWS AI-DLC framing).
+
+```
+User → PRD  →  IT Architect: grand-design-spec → vault  →  Developer + AI tools (Claude Code, Cursor) → code
+                                                  ↓
+                                          evolves via resolve-oq · vault-diff · drift-detect
+```
+
+| | |
+|---|---|
+| **Who runs it** | IT Architect (generates vault) → Developer (consumes via AI tools) |
+| **When** | After PRD signed off, before sprint-0 |
+| **Output** | 7 markdown files: anti-halu, source-cited, gap-honest |
+| **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault |
+
 ## Skills in this plugin
 
 | Skill | Invoke as | Purpose |
