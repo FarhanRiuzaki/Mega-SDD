@@ -46,7 +46,7 @@ The naming format is `<plugin>@<marketplace>` — both happen to be `grand-desig
 For team installs, pin to a tag so everyone gets the same version:
 
 ```text
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.5.0
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.6.0
 /plugin install grand-design-spec@grand-design-spec
 ```
 
@@ -183,6 +183,8 @@ Every numbered doc (`01–06`) follows the same shape:
 | **Out of Scope** | What this doc explicitly does NOT cover |
 | **Open Questions** | Tagged `OQ-{DOC_CODE}-{N}` with priority P1/P2/P3 |
 
+> **v0.6 — design-system coverage (when sources have it)**: if your PRD, Figma URL, or uploaded tokens file explicitly contains UI components, design tokens, a11y standards, or voice/brand rules, the vault adds two extra sections — `02-architecture.md > UI components & patterns` and `06-constraints.md > Design system`. If sources are silent on these (most non-UI and many UI projects), the vault omits them entirely. Skill never prompts for design-system sources and never defaults to industry standards.
+
 ---
 
 ## Why use this
@@ -280,7 +282,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.5.0** — adds `PRD_STATUS=final|draft` flag, fixes Claude Code tool name references, and corrects plugin-relative template path.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.6.0** — adds optional design-system coverage (UI components, tokens, a11y, voice/brand) when sources explicitly contain it. Strict source-mirror — never inferred from project shape, never defaulted to industry standards.
 
 ## License
 
