@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.4.0
+version: 0.5.0
 description: Break down PRD/BRD and Figma into 7 markdown files for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
@@ -80,7 +80,7 @@ If inference confidence is low (e.g. PRD ambiguous, mentions both mobile and web
 The user typically provides one or more of:
 
 - **PRD/BRD file**: PDF (priority), DOCX, MD, or TXT. Location auto-detected per environment (sandbox: `/mnt/user-data/uploads/`; local Claude Code: ask user or use CWD). See Step 1.
-- **Figma URL**: Use Figma MCP if connected. Run `tool_search(query="figma")` to check. If no Figma MCP and no screenshots, ASK the user before proceeding — do not guess UI structure.
+- **Figma URL**: Use Figma MCP if connected. To check whether Figma MCP tools are loaded — Claude Code: `ToolSearch` with `query: "figma"`; Claude.ai sandbox: `tool_search(query="figma")`. If no Figma MCP and no screenshots, ASK the user before proceeding — do not guess UI structure.
 - **Output folder path**: user MUST specify (see Step 0). Skill never assumes a path silently.
 - **Optional context**: existing system docs, tech stack constraints, prior architecture decisions.
 
@@ -95,8 +95,9 @@ If critical inputs are missing or unclear, **ask before generating**. Better 5 u
 Skill MUST get an explicit output folder path from the user before generating any file.
 
 1. **Ask** the user for the output folder path. Suggest a sensible default derived from the PRD project name (slug-cased).
-   - If `ask_user_input_v0` is available, use it with options like `["Pakai default '<slug>/'", "Custom path", "Cancel"]`.
-   - Otherwise ask plainly: *"Output folder path? (default: `<slug>/`)"*
+   - **Claude Code**: use `AskUserQuestion` with options like `["Pakai default '<slug>/'", "Custom path", "Cancel"]`.
+   - **Claude.ai sandbox**: if `ask_user_input_v0` is available, use it with the same options.
+   - Fallback: ask plainly in chat — *"Output folder path? (default: `<slug>/`)"*
 
 2. **Detect runtime environment** sebelum resolve path:
    - Run `pwd && uname -a 2>/dev/null` (or equivalent platform check).
@@ -134,7 +135,12 @@ Skill MUST get an explicit output folder path from the user before generating an
 
 The vault is a **lock against requirements** (PRD/BRD), not against existing codebase. This skill does NOT read the codebase. The mode flag is **metadata** that instructs downstream AI dev consumers (Claude Code, Cursor) how to behave when reading the vault.
 
-1. **Ask** the user (use `ask_user_input_v0` if available):
+1. **Ask** the user:
+   - **Claude Code**: use `AskUserQuestion` with two options.
+   - **Claude.ai sandbox**: use `ask_user_input_v0` if available.
+   - Fallback: plain chat question.
+
+   The two choices:
    - **`new`** — greenfield project, no existing codebase to reconcile with.
    - **`existing`** — extending or modifying a live codebase. Downstream AI consumers must verify with user before touching existing code.
 
@@ -145,7 +151,33 @@ The vault is a **lock against requirements** (PRD/BRD), not against existing cod
 
 3. **Do NOT ask for codebase path, repo URL, or existing entity names.** That is the job of downstream AI dev consumer when it reads the vault. This skill stays focused on the requirement → vault transformation.
 
-> Skill never proceeds to Step 1 without a confirmed `IMPLEMENTATION_MODE`.
+> Skill never proceeds to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
+
+### Step 0.6: PRD/source document status flag (MANDATORY, after mode flag)
+
+The skill behaves differently when the source PRD/BRD is **declared final by stakeholder** vs still **draft and editable**. This flag controls whether the skill pauses for clarification or generates straight through.
+
+1. **Ask** the user:
+   - **Claude Code**: use `AskUserQuestion` with two options.
+   - **Claude.ai sandbox**: use `ask_user_input_v0` if available.
+   - Fallback: plain chat question.
+
+   The two choices:
+   - **`final`** — PRD/BRD has been signed off by stakeholder. No more edits expected. Skill **does NOT pause** to ask "klarifikasi dulu" — every gap, ambiguity, or contradiction goes straight to Open Questions roll-up. User triages OQ list with stakeholder offline (post-vault).
+   - **`draft`** — PRD/BRD still in flux. Skill **may pause** when gap count is large (>10) and ask user whether to proceed or send back for clarification first. Default behavior.
+
+2. **Persist flag** explicitly:
+   - Echo: `PRD_STATUS=final | draft`
+   - This flag is recorded in `00-index.md` Vault Lock Status section.
+   - This flag drives gap-handling behavior in Step 2 and push-back behavior throughout.
+
+3. **Implications when `PRD_STATUS=final`**:
+   - Skill MUST NOT ask "Lanjut atau klarifikasi dulu?" when gap count is high — proceed and dump everything to Open Questions.
+   - Skill MUST NOT refuse to generate due to PRD inconsistencies — surface contradictions in Open Questions instead, with both PRD quotes side-by-side.
+   - Skill MUST still refuse "just guess the rest" requests — `final` means the PRD is locked, not that Claude is licensed to invent. Gaps remain Open Questions, never silently filled.
+   - Vault Lock Status reflects this: `PRD source: <filename> (FINAL, signed-off)`.
+
+> Skill never proceeds to Step 1 without a confirmed `PRD_STATUS`.
 
 ### Step 1: Inventory and read
 
@@ -159,9 +191,10 @@ The vault is a **lock against requirements** (PRD/BRD), not against existing cod
    - MD / TXT → read directly
 
 3. **For Figma URLs** (if PRD references one):
-   - Run `tool_search(query="figma")` to check if Figma MCP tools are loaded.
-   - If found (e.g. `Figma:get_design_context`, `Figma:get_screenshot`, `Figma:get_metadata`), use them with the URL/`node-id` to fetch frame info.
-   - If MCP not loaded but available in registry: optionally call `search_mcp_registry(["figma"])` then `suggest_connectors([directoryUuid])` to prompt user to connect.
+   - **Claude Code**: run `ToolSearch` with `query: "figma"` (keyword) or `query: "select:mcp__claude_ai_Figma__get_design_context,mcp__claude_ai_Figma__get_screenshot,mcp__claude_ai_Figma__get_metadata"` to load Figma MCP tool schemas.
+   - **Claude.ai sandbox**: run `tool_search(query="figma")` to check if Figma MCP tools are loaded.
+   - If found, use them with the URL / `node-id` to fetch frame info.
+   - If MCP not loaded but available in the platform's registry: optionally call `search_mcp_registry(["figma"])` then `suggest_connectors([directoryUuid])` to prompt user to connect (Claude.ai only — Claude Code uses `/mcp` command).
    - If user declines connection / no MCP / no screenshots → **ask user**: *"Figma not accessible. Skip dan rely PRD only, atau lo kasih screenshots manual?"* Do NOT invent UI structure from imagination.
 
 4. **Read every input fully**. No skimming. The whole point is grounding.
@@ -186,7 +219,12 @@ Before generating any markdown, build an internal map of:
 - If shape = `custom` (no clear fit) → ask user: *"Project shape gak fit ke 5 shape pre-templated. Lo describe layers (e.g. 'CLI tool, ada engine + plugin system') dan roles (e.g. 'developer + admin') yang ada."*
 - Persist shape: `PROJECT_SHAPE=<shape>`. This drives sub-section structure in Step 3.
 
-If the gap list is large (>10 items), stop and ask user whether to proceed or get clarification first.
+**Gap-handling depends on `PRD_STATUS` (set in Step 0.6)**:
+
+- **`PRD_STATUS=draft`**: if gap count > 10, stop and ask user whether to proceed or get clarification from stakeholder first. Default behavior.
+- **`PRD_STATUS=final`**: do NOT pause regardless of gap count. PRD is locked — every gap, ambiguity, and contradiction goes straight to Open Questions. User will triage the OQ list with stakeholder after the vault is generated.
+
+For `final` mode, surface a one-line note in the Step 5 summary: *"PRD final, semua {N} gap masuk Open Questions roll-up. Triage offline dengan stakeholder sebelum dev mulai."*
 
 ### Step 3: Generate 7 files
 
@@ -205,13 +243,18 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 
 > Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag drives content of `00-index.md` "Implementation Notes for AI Consumers" section, not the file count.
 
-Use templates in `references/templates/` as scaffolds. **Resolve the path relative to the SKILL.md location**:
+Use templates in `references/templates/` as scaffolds. **Resolve the path relative to where the skill is mounted**:
 
-- Claude Code personal: `~/.claude/skills/grand-design-spec/references/templates/<name>.md`
-- Claude Code project: `<project-root>/.claude/skills/grand-design-spec/references/templates/<name>.md`
-- Claude.ai upload: relative to where the skill is mounted in the sandbox (typically `/mnt/skills/user/grand-design-spec/references/templates/`)
+- **Claude Code (plugin install — primary distribution)**: `${CLAUDE_PLUGIN_ROOT}/skills/grand-design-spec/references/templates/<name>.md`
+- **Claude Code (manual install at `~/.claude/skills/`)**: `~/.claude/skills/grand-design-spec/references/templates/<name>.md`
+- **Claude Code (project-scoped manual install)**: `<project-root>/.claude/skills/grand-design-spec/references/templates/<name>.md`
+- **Claude.ai upload**: `/mnt/skills/user/grand-design-spec/references/templates/<name>.md`
 
-Read the relevant template via `view` or platform read tool, **then** fill it in based on extracted facts.
+Read the relevant template:
+- **Claude Code**: use the `Read` tool.
+- **Claude.ai sandbox**: use `view` or the platform's read tool.
+
+Then fill it in based on extracted facts. Never invent fields beyond what the source PRD/Figma supports.
 
 ### Step 4: Self-check before delivery
 
@@ -243,11 +286,17 @@ Verify every doc has:
 
 ### Step 5: Present
 
-Use `present_files` to deliver the folder. In the chat message:
+Files are already on disk under `<OUTPUT_DIR>` (written in Step 3). Step 5 is a chat-only summary:
 
-1. Summary: total docs, total Open Questions count.
-2. **List of Open Questions (top blockers)** — these are what the user must resolve before dev starts.
+- **Claude Code**: no special tool needed — files are accessible via filesystem. Just summarize in chat with absolute path so user can open them.
+- **Claude.ai sandbox**: use `present_files` to surface the folder in the UI.
+
+In the chat message:
+
+1. Summary: total docs, total Open Questions count, `PRD_STATUS` flag value.
+2. **List of Open Questions (top blockers)** — what the user must resolve before dev starts. If `PRD_STATUS=final`, frame it as: *"Bawa OQ list ini ke stakeholder buat triage offline."*
 3. Brief note on which sections are most likely to need stakeholder review.
+4. Path to vault: `<OUTPUT_DIR>` (absolute).
 
 Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 
@@ -472,10 +521,27 @@ Categorize by topic (not by doc), with overall priority of the category as the s
 
 ## When to push back on the user
 
-- Inputs missing critical sections (e.g. no flows in PRD) → ask before generating
-- Figma URL given but no MCP and no screenshots → ask
-- PRD is contradictory → surface contradictions, ask which is canonical
-- User says "just guess the rest" → refuse politely, explain that the whole point of this skill is to NOT guess. Offer to mark unknowns as Open Questions instead.
+Push-back rules are **conditional on `PRD_STATUS`** (set in Step 0.6).
+
+### Always (regardless of PRD_STATUS)
+
+- Figma URL given but no MCP and no screenshots → ask. Never invent UI structure.
+- User says "just guess the rest" → refuse politely. The whole point of this skill is to NOT guess. Offer to mark unknowns as Open Questions instead. `PRD_STATUS=final` does NOT license invention — it only changes whether the skill pauses to ask stakeholder, not whether Claude can fill in blanks.
+- Path mismatch with environment (alien path) → reject per Step 0 rules.
+- Output folder exists and non-empty → ask before overwriting.
+
+### Only when `PRD_STATUS=draft`
+
+- Inputs missing critical sections (e.g. no flows in PRD) → ask before generating.
+- PRD is contradictory → surface contradictions in chat, ask which version is canonical, wait for resolution.
+- Gap count > 10 → ask whether to proceed or get clarification first.
+
+### Only when `PRD_STATUS=final`
+
+- Do NOT pause for any of the three `draft` cases above. PRD is locked, stakeholder is unavailable for synchronous clarification.
+- Missing sections, contradictions, large gaps → all funnel into Open Questions roll-up with full context (quotes from PRD, what's missing, what would resolve it).
+- For contradictions specifically: write the OQ as `OQ-{DOC}-{N} [P1]: PRD inconsistency — §X.Y says "<quote A>" but §X.Z says "<quote B>". Need stakeholder ruling on which is canonical.`
+- Surface in Step 5 summary: total OQ count + reminder that user must triage with stakeholder before dev starts.
 
 ---
 

@@ -5,6 +5,36 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-05-08
+
+### Added
+- **`PRD_STATUS=final|draft` flag (Step 0.6).** New mandatory step after implementation mode flag. Captures whether the source PRD/BRD is signed-off (`final`) or still in flux (`draft`). Drives gap-handling and push-back behavior throughout the workflow.
+  - `final` → skill never pauses for clarification, even when gap count is large or PRD is contradictory. All ambiguities funnel into Open Questions roll-up. User triages OQ list with stakeholder offline, post-vault.
+  - `draft` → existing behavior preserved. Skill pauses when gap count > 10, surfaces contradictions inline, asks for resolution before generating.
+- **`PRD status` field in `00-index.md > Vault Lock Status`.** Surfaced to downstream AI consumers (Claude Code, Cursor) so they know the OQ list is the authoritative gap inventory under `final` mode.
+- **PRD source file annotation.** `<filename> — FINAL | DRAFT` marker in Vault Lock Status PRD source line.
+
+### Fixed
+- **Tool name references for Claude Code distribution.** SKILL.md previously used Claude.ai sandbox API names that don't resolve under `/plugin install`:
+  - `tool_search(query="figma")` → `ToolSearch` with `query: "figma"` or `query: "select:..."` syntax.
+  - `ask_user_input_v0` → `AskUserQuestion`.
+  - `present_files` → no tool needed in Claude Code (files already on disk after Step 3); fall back kept for Claude.ai sandbox.
+  - `view` (template read) → `Read`.
+- **Step 3 template path stale post-v0.4.0 restructure.** Plugin-installed skills no longer land at `~/.claude/skills/`. Updated to use `${CLAUDE_PLUGIN_ROOT}/skills/grand-design-spec/references/templates/` as the primary path. Manual-install and Claude.ai sandbox paths kept as fallbacks.
+- **Push-back rules** restructured to clearly distinguish always-push-back cases (Figma missing, "just guess the rest", path mismatch) from `draft`-only cases (missing sections, contradictions, large gap count).
+- **`03-data-model.md` template typo**: "follow project conventions Han already confirmed" → "follow project conventions you've already confirmed with the team".
+- **`.gitignore`**: removed project-specific `mega-rencana-spec/` entry (test fixture leak).
+
+### Changed
+- **`marketplace.json`**: dropped redundant top-level `version` field. Marketplace itself isn't versioned; each plugin entry now owns its version (`plugins[].version: "0.5.0"`).
+- **`plugin.json`** version bumped 0.4.0 → 0.5.0.
+- **`SKILL.md` frontmatter** version bumped 0.4.0 → 0.5.0.
+- **README "What happens next"** updated with the new PRD-status question.
+
+### Notes
+- `final` mode does NOT relax anti-hallucination guarantees. Skill still refuses "just guess the rest" — `final` only changes whether the skill pauses to ask stakeholder synchronously, not whether Claude can fill in blanks. Gaps remain Open Questions, never silently filled.
+- For `final` mode contradictions, the skill writes OQ entries with both PRD quotes side-by-side so stakeholder can rule which is canonical without re-reading the original doc.
+
 ## [0.4.0] — 2026-05-08
 
 ### Changed

@@ -1,7 +1,5 @@
 {
   "name": "grand-design-spec",
-  "description": "Anti-hallucination dev handoff skill marketplace — converts PRD/BRD + Figma into a 7-file grand design folder.",
-  "version": "0.4.0",
   "owner": {
     "name": "Farhan Riuzaki",
     "email": "riuzakif@gmail.com"
@@ -11,6 +9,7 @@
       "name": "grand-design-spec",
       "source": "./plugins/grand-design-spec",
       "description": "Skill that breaks down PRD/BRD + Figma into 7 markdown files for dev team handoff with anti-hallucination guarantees.",
+      "version": "0.5.0",
       "author": {
         "name": "Farhan Riuzaki"
       },

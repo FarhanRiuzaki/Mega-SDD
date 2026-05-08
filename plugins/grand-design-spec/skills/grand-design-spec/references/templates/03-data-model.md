@@ -48,7 +48,7 @@ Ref: <table>.<fk_field> - <other_table>.id  // one-to-one
 - **Audit**: `<table>` requires `created_by`, `updated_by` (FK to users)
 - **Indexes**: `<table>(<field>)` for `<query pattern>`
 
-> Only state constraints with explicit source or that follow project conventions Han already confirmed.
+> Only state constraints with explicit source or that follow project conventions you've already confirmed with the team.
 
 ---
 

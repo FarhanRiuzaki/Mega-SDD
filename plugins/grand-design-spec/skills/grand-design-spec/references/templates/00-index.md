@@ -7,10 +7,15 @@
 - **Vault version**: v1.0
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
+- **PRD status**: `final` (signed-off by stakeholder) | `draft` (still in flux)
 - **Locked at**: YYYY-MM-DD HH:MM (TZ)
 - **Locked by**: <PM name>, <Architect name>, <Tech Lead name>
-- **PRD source**: <filename, version, date>
+- **PRD source**: <filename, version, date> — <FINAL | DRAFT>
 - **Status**: 🔒 LOCKED for <scope, e.g. "sprint 1 implementation"> | ⚠️ DRAFT (not locked yet)
+
+> **PRD status semantics**:
+> - `final` → vault was generated under the assumption PRD is locked. All gaps captured as Open Questions; user triages OQ list with stakeholder offline.
+> - `draft` → vault may have been paused mid-generation for clarification; some gaps may have been resolved inline before generation completed.
 
 > Vault ini adalah **lock terhadap requirement** (PRD/BRD), bukan terhadap codebase. Setiap perubahan vault setelah lock = bump version + append Changelog + re-sign-off oleh stakeholder yang relevan. Dev/AI consumer WAJIB cek versi vault yang dipakai.
 
@@ -89,6 +94,7 @@ Dokumen ini adalah **single source of truth terhadap requirement**. Saat ngerjai
 **Vault metadata**:
 - Project shape: <set per Vault Lock Status di atas — drives which layers/flows exist>
 - Implementation mode: <set per Vault Lock Status di atas>
+- PRD status: <set per Vault Lock Status di atas — `final` means OQ list is the authoritative gap list, no synchronous stakeholder clarification expected>
 - Vault version: <set per Vault Lock Status di atas>
 
 ### WAJIB sebelum write/modify code apapun
