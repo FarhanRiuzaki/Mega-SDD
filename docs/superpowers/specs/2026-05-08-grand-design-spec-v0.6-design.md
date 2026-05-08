@@ -13,22 +13,34 @@ Current vault (v0.5.0) outputs 7 markdown files optimized for AI dev consumers (
 
 Trigger: project use cases increasingly include UI-heavy products (mobile-app, web-app, multi-platform). When the next FE dev joins mid-project or at kickoff, the vault is silent on the design system. They re-derive it from Figma + ad-hoc Slack threads.
 
+## Core invariant — strict PRD/source mirror
+
+> **Vault content strictly mirrors source documents (PRD + BRD + Figma + uploaded design files + user-provided tokens). Skill never creates a section because shape inference suggests it might apply. Section presence is determined by source coverage, not by project shape.**
+>
+> If PRD says nothing about FE / UI / design system, and no Figma / tokens file is provided → design-system sections are **absent from the vault**. No body, no Open Questions, no placeholder. The skill does not ask the user to provide design-system sources.
+>
+> This is the v0.5 anti-hallucination rule applied consistently: *if it's not explicit in the source, it does NOT go in the vault.* v0.6 extends this from "no invented content within sections" to "no invented sections."
+
 ## Goals
 
-1. Extend vault to cover design system content (tokens, components, patterns, a11y) **when the project has UI**.
+1. Extend vault to cover design system content (tokens, components, patterns, a11y) **when sources explicitly contain that content** — not when shape inference merely suggests UI.
 2. Keep the human-primary, AI-secondary stance (decided in brainstorm). Spec voice for tech sections; guide voice for design-system sections only.
 3. Stay within the 7-file cap. No new files.
-4. Stay backward compatible. Existing v0.5 vaults remain valid; non-UI shapes get identical output to v0.5.
-5. Preserve anti-hallucination guarantees. Design tokens / components / patterns must cite source (Figma / tokens file / PRD) — never invent.
+4. Stay backward compatible. Existing v0.5 vaults remain valid; projects without design-system source coverage produce output identical to v0.5.
+5. Preserve anti-hallucination guarantees. Every design token / component / pattern must cite a specific source location (Figma frame name, tokens file path, PRD §). Never invent values, names, or rules.
+6. **Never auto-prompt for missing design-system sources.** Skill remains passive — generates what sources cover, nothing more.
 
 ## Non-goals
 
 - No tone rewrite of existing tech sections. Spec voice stays for 02-architecture (non-UI parts), 03-data-model, 04-flows, 05-decisions, 06-constraints (non-design parts).
-- No new mandatory step in the workflow. Reuse `PROJECT_SHAPE`.
+- No new mandatory step in the workflow. Reuse existing Step 1 inventory.
+- No new prompts. Skill never asks "do you have design system sources?" — purely reactive to what's already in the inventory.
+- No section creation based on shape inference. `PROJECT_SHAPE=mobile-app` alone is NOT a trigger.
 - No expansion to >7 files. Concentrate within existing structure.
-- No support for design system as a standalone shape (e.g., "design-system-only" shape). Out of scope.
+- No support for design system as a standalone shape. Out of scope.
 - No interaction with 04-flows.md beyond cross-ref. Flow steps may reference UI components via anchor link, no new flow content.
 - No motion / animation specs as first-class content. If PRD specifies, captured under "Patterns" prose.
+- No "best-practice" insertions. Skill does NOT default to WCAG 2.1 AA, Material Design, iOS HIG, or any external standard unless the source documents explicitly cite them.
 
 ## Audience
 
@@ -40,42 +52,46 @@ Tertiary: PM, architect, QA reviewing the design layer.
 
 ### A. Workflow & extraction (skill-side)
 
-#### A.1 No new mandatory step
+#### A.1 Trigger: source-driven, not shape-driven
 
-Reuse `PROJECT_SHAPE` (Step 2 confirmation). Branch on whether shape has UI:
+Design-system sections appear in vault output **only if at least one source explicitly contains design-system content**. Sources are the same set already inventoried in v0.5 Step 1: PRD, BRD, Figma URL (if provided), uploaded tokens / design-system files, and any user-provided context.
 
-- **UI shapes** (`mobile-app`, `web-app`, `multi-platform`) → design system sections appear in templates.
-- **Non-UI shapes** (`api-only`, `data-pipeline`) → design system sections absent.
-- **`custom`** → skill asks user during shape elaboration whether the custom project has UI; if yes, treat as UI-shape branch.
+`PROJECT_SHAPE` is **not a trigger**. A project inferred as `mobile-app` does not get design-system sections by default. The trigger is source coverage.
 
-#### A.2 New optional input (Step 1 — Inventory and read)
+| Source coverage state                                              | Vault output                                                              |
+|--------------------------------------------------------------------|---------------------------------------------------------------------------|
+| Sources contain design tokens (Figma variables / tokens file / PRD)| `06-constraints#design-system` appears with the covered subset            |
+| Sources contain UI components (Figma frame inventory / PRD-stated) | `02-architecture#ui-components` appears with the covered subset           |
+| Sources contain a11y standards (PRD-stated WCAG level / Figma a11y annotations) | `06-constraints#design-system#accessibility` appears                      |
+| Sources contain none of the above                                  | All design-system sections **absent**. No empty section, no OQ, no prompt |
 
-When shape has UI, skill asks once during inventory:
+Within an appearing section, the existing v0.5 anti-halu rule applies: any sub-element the source is silent on (e.g., spacing scale not defined in Figma) → that sub-element is OQ within the appearing section. The presence-of-section gate is stricter than the within-section gate.
 
-> "Project punya UI. Lo punya design system source? (a) Figma URL with variables, (b) tokens file path (tokens.json / tailwind.config.js / Storybook export), (c) PRD spells out tokens, (d) none — semua jadi Open Questions."
+#### A.2 No new prompts in Step 1
 
-Multiple sources allowed (e.g. Figma + tokens.json). When sources conflict, follow merge rules in A.3.
+Skill does NOT ask the user "do you have design system sources?" Step 1 inventory continues to list whatever the user already provided (PRD, BRD, Figma URL if mentioned, files in upload location). If a Figma URL or tokens file is in the inventory, skill consumes it via existing Step 1 readers. If not, no prompt — vault simply has no design-system sections.
+
+This preserves the v0.5 user experience: skill is reactive to what's provided, not a hunter for additional inputs.
 
 #### A.3 Source extraction priority
 
-When multiple sources are available, **higher priority wins for the same token/component**. When a higher-priority source is silent on a value but a lower-priority source has it, use the lower one. **When two sources of equal precedence disagree (e.g., two Figma URLs, or Figma + tokens.json with different hex for `color.primary`), do NOT silently pick — emit an OQ with both quoted values side-by-side.**
+When multiple sources are available and they cover the same token/component, **higher priority wins for the same value**. When a higher-priority source is silent on a value but a lower-priority source has it, use the lower one. **When two sources of equal precedence disagree (e.g., two Figma URLs, or Figma + tokens.json with different hex for `color.primary`), do NOT silently pick — emit an OQ with both quoted values side-by-side.**
 
 1. **Figma MCP** (highest priority) — call `mcp__claude_ai_Figma__get_variable_defs` on the Figma URL/node-id to extract color/typography/spacing tokens. Call `get_design_context` to extract component definitions and frame inventory. Already wired via existing Figma MCP integration in v0.5.0.
 2. **User-provided tokens file** — read directly via `Read` tool. Common formats: `tokens.json` (W3C design tokens), `tailwind.config.js`, Storybook export, design-system repo path.
 3. **PRD-stated** — extract verbatim if PRD explicitly states ("use brand color #1A73E8 for CTAs"). Rare but supported.
-4. **None** (lowest) → all design-system content for that token/component becomes Open Questions tagged `OQ-AR-{N}` (components) and `OQ-CN-{N}` (tokens / a11y / brand).
 
-**Multi-platform note**: for `multi-platform` shape, Web and Mobile may have separate Figma projects / token files. Skill asks for sources per platform, treats them independently per layer (Web layer reads Web sources; Mobile layer reads Mobile sources). Cross-platform shared tokens (e.g., brand color used in both) are surfaced under the parent `06-constraints#design-system` section once; per-platform divergences (e.g., spacing scale differences) are flagged as `OQ-CN-{N} [P2]`.
+If none of the three priorities have content for a given token/component, that item is silent — it does NOT appear in the vault. (Difference from v0.5 OQ behavior: silent design-system items are absent, not OQ. Silence on design system is allowed; silence on flows / data model is not.)
+
+**Multi-platform note**: for `multi-platform` shape, Web and Mobile may have separate Figma projects / token files. If user has provided multiple Figma URLs or token files, skill treats them independently per layer (Web layer reads Web-tagged sources; Mobile layer reads Mobile-tagged sources). Per-platform divergences (e.g., spacing scale differences) are flagged as `OQ-CN-{N} [P2]` only if both platforms' sources are present and disagree. If only one platform has a source → only that platform's design-system section appears.
 
 **Existing-mode note**: skill does NOT read the codebase. Even if `IMPLEMENTATION_MODE=existing` and the codebase already has a design system implemented (e.g., a `design-system/` package), the vault reflects only PRD/Figma/tokens file sources. Reconciling vault with existing-codebase design system is the downstream AI consumer's job (instructed via `00-index.md > Implementation Notes for AI Consumers`, no change needed in v0.6).
 
-#### A.4 Push-back rule (new in v0.6)
+#### A.4 No push-back for missing design-system sources
 
-If shape has UI but no Figma + no tokens file + no PRD design specs → skill MUST ask user before generating:
+This is a deliberate departure from the v0.5 push-back pattern. Existing v0.5 push-back rules apply for **core content** (missing flows, contradictory PRD, Figma URL given but MCP not connected). For **design-system content specifically**, skill never asks "lo punya tokens?" — silence on design system is acceptable, sections simply don't appear.
 
-> "Project punya UI tapi gue gak punya akses ke design system source apapun. Lo kasih reference (Figma URL / tokens.json / Storybook), atau gue dump semuanya ke Open Questions?"
-
-Never invent tokens, components, or patterns. Existing anti-halu rule preserved.
+The justification: design-system is auxiliary content. PRDs frequently don't include it (handled separately by design team). Forcing the skill to ask would create false-positive prompts on every UI project.
 
 ### B. Template structure
 
@@ -93,13 +109,12 @@ Three template files change. One file reachable via cross-ref but unchanged. Thr
 
 #### B.1 `02-architecture.md` — new sub-section
 
-Appears under existing UI layer (`### Mobile / Frontend` or `### Web Frontend`). For `multi-platform`, appears under both Mobile and Web layers (each may have shape-specific patterns).
+Appears under existing UI layer (`### Mobile / Frontend` or `### Web Frontend`) **only when at least one source explicitly contains UI component data** (Figma frame inventory, Storybook export, or PRD-stated components). For `multi-platform`, appears independently under each layer based on per-layer source coverage.
 
 ```markdown
 #### UI components & patterns
 
-> Muncul kalau PROJECT_SHAPE punya UI + design system source tersedia.
-> Source: Figma frame inventory, Storybook export, PRD-stated.
+> Muncul hanya kalau ada source eksplisit (Figma frame inventory, Storybook export, atau PRD-stated components). Tidak muncul karena shape inference.
 
 | Component | Purpose                | Variants                       | Source        |
 |-----------|------------------------|--------------------------------|---------------|
@@ -119,12 +134,12 @@ Appears under existing UI layer (`### Mobile / Frontend` or `### Web Frontend`).
 
 #### B.2 `06-constraints.md` — new category
 
-Appears as a new top-level section alongside "Technical constraints", "Business constraints", "Non-functional requirements".
+Appears as a new top-level section alongside "Technical constraints", "Business constraints", "Non-functional requirements" **only when at least one source explicitly contains design tokens, a11y standards, or voice/brand rules**.
 
 ```markdown
 ## Design system
 
-> Muncul kalau PROJECT_SHAPE punya UI. Source: Figma variables, tokens file, atau PRD.
+> Muncul hanya kalau ada source eksplisit (Figma variables, tokens file, PRD-stated tokens / a11y level / brand rules). Tidak muncul karena shape inference.
 
 ### Tokens
 
@@ -152,21 +167,25 @@ Appears as a new top-level section alongside "Technical constraints", "Business 
 
 **Voice mix**: Tokens table = spec voice. Headers/intro/Patterns = guide voice. Voice & brand block = guide voice (it's editorial guidance).
 
-#### B.3 `00-index.md` — small additions
+#### B.3 `00-index.md` — small additions (conditional on actual section presence)
 
-- **Reading paths** gain new role (only when shape has UI):
+- **Reading paths** gain new role **only when** the corresponding design-system sections actually appear in the vault:
   - `**UI/UX or FE Dev**: 01-overview → 02-architecture#ui-components → 06-constraints#design-system → 04-flows`
-- **Glossary** entries (only when shape has UI): design tokens, design system, WCAG, a11y, semantic HTML.
-- No new top-level section in 00-index.
+- **Glossary** entries appear **only when** referenced terms are used elsewhere in the vault: design tokens, design system, WCAG, a11y, semantic HTML.
+- No new top-level section in 00-index. If neither `02-architecture#ui-components` nor `06-constraints#design-system` is present, 00-index output is identical to v0.5.
 
 ### C. Quality gates, OQ tagging, version
 
-#### C.1 Step 4 self-check additions (UI shapes only)
+#### C.1 Step 4 self-check additions
 
-- [ ] Components table in `02-architecture#ui-components` cites source (Figma frame name / tokens file path / PRD §). No invented components.
-- [ ] Tokens table in `06-constraints#design-system` cites source. No invented hex values, type scales, or spacing values.
-- [ ] Patterns prose grounded in PRD note / Figma annotation / explicit user instruction. No "best practice" insertions.
-- [ ] If design system source unavailable for any sub-section → that sub-section's content is OQ, not body.
+Apply only when at least one design-system section is present in the vault. If sections are absent (per A.1), skip these checks entirely.
+
+- [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ at least one source explicitly contains UI component data; `06-constraints#design-system` exists ⇒ at least one source explicitly contains tokens / a11y / brand data.
+- [ ] Components table in `02-architecture#ui-components` cites source per row (Figma frame name / tokens file path / PRD §). No invented components.
+- [ ] Tokens table in `06-constraints#design-system` cites source per row. No invented hex values, type scales, spacing values, or radius values.
+- [ ] Patterns prose grounded in PRD note / Figma annotation / explicit user instruction. No best-practice insertions (no defaulted WCAG levels, no defaulted "max 1 CTA per screen" rules unless source explicitly states).
+- [ ] Within an appearing section, sub-elements the source is silent on become `OQ-AR-{N}` or `OQ-CN-{N}` — not body.
+- [ ] No design-system content appears in vault that did not originate from a cited source.
 
 #### C.2 OQ tagging — no new doc codes
 
@@ -212,8 +231,8 @@ Files unchanged: `01-overview.md`, `03-data-model.md`, `04-flows.md`, `05-decisi
 - Tone rewrite of existing tech sections.
 - New project shape for "design-system-only" projects.
 - Motion / animation as first-class section.
-- Auto-detection of design system source (skill always asks user).
-- Token diff between Figma and tokens file when both provided (skill picks Figma if both, notes the conflict as OQ).
+- **Auto-prompting for design system sources.** Skill never asks "do you have tokens?" Silence on design system is acceptable; sections simply don't appear.
+- **Best-practice defaulting.** Skill does NOT default to WCAG 2.1 AA, Material Design, iOS HIG, Tailwind defaults, or any other external standard unless source documents explicitly cite them.
 - Component implementation snippets (React / Vue / Flutter code). Vault still describes contracts, not code.
 - Generation of Storybook stories or component scaffolds. Those belong to downstream AI dev consumer.
 
@@ -226,6 +245,7 @@ This spec was produced via `superpowers:brainstorming` skill on 2026-05-08. Deci
 - Scenario: **Both kickoff and existing-codebase enhancement**.
 - Tone: **Spec voice for tech sections, guide voice for design-system sections only**.
 - Distribution approach: **A — Split: components in 02, tokens/rules in 06**.
+- **Strict source-mirror invariant** (added after initial draft): vault content mirrors source documents exactly. Section presence is determined by source coverage, not project shape. Skill never prompts for missing design-system sources, never defaults to industry-standard values, never invents content. PRD silent on FE → vault silent on FE.
 
 ---
 
