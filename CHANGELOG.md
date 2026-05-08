@@ -5,6 +5,33 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-05-08
+
+### Added
+- **Optional design-system coverage for UI projects.** When source documents (PRD / Figma via MCP / uploaded tokens files) explicitly contain design-system content, the vault now emits two new sections:
+  - **`02-architecture.md > UI components & patterns`** sub-section under each UI layer. Components table (spec voice) + Patterns prose (guide voice — when-to-use rules). Triggered by `HAS_UI_COMPONENTS=true` flag from Step 2 detection.
+  - **`06-constraints.md > Design system`** top-level section alongside Technical / Business / NFR. Three sub-blocks (Tokens / Accessibility / Voice & brand), each independently conditional on its specific flag.
+- **Step 2 design-system content detection.** Skill scans all sources for explicit mentions of UI components, design tokens, a11y standards, and voice/brand rules. Persists four flags: `HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`. Flags drive Step 3 conditional generation.
+- **Source merge rules** when multiple design-system sources are provided (Figma + tokens.json, multiple Figma URLs, etc.). Higher priority wins for the same value (Figma > tokens file > PRD-stated). Equal-precedence disagreement → emit `OQ-CN-{N} [P1]` with both quoted values; never silent pick.
+- **Conditional UI/UX or FE Dev reading path** in `00-index.md`. Appears only when at least one of the new design-system sections is present.
+- **Conditional design-system glossary entries** in `00-index.md` (design tokens, design system, WCAG, a11y, semantic HTML). Appear only when terms are used elsewhere in the vault.
+- **Six new Step 4 self-check items** for design-system grounding. Apply only when at least one design-system section is present in the vault.
+
+### Changed
+- **Anti-hallucination rule extended** from v0.5's "no invented content within sections" to v0.6's "no invented sections." Section presence is determined by source coverage alone — `PROJECT_SHAPE` is NOT a trigger. Vault never auto-creates design-system sections because shape inference suggests UI. Vault never defaults to industry standards (WCAG 2.1 AA, Material Design, iOS HIG, Tailwind defaults) when sources are silent.
+- **Push-back rules** gain explicit "design-system absence is acceptable" sub-section. Skill MUST NOT prompt the user for missing design-system sources. PRD silent on FE → vault silent on FE. No exception, no questioning.
+- **`SKILL.md` frontmatter** version bumped 0.5.0 → 0.6.0.
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.5.0 → 0.6.0.
+
+### Backward compatibility
+- v0.5 vaults remain valid. No migration step.
+- v0.6 for projects without design-system source coverage produces output **identical to v0.5**. The four detection flags simply stay `false` and no sections are added.
+- v0.6 with full design-system coverage adds two sub-sections, one top-level section, one reading path, and up to five glossary entries — all conditional, all source-cited.
+
+### Notes
+- The four detection flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) are independent. A project might surface tokens but not components (e.g., PRD spells out brand colors but Figma is unavailable), and vice versa. Each flag is independently evaluated.
+- Existing-codebase reconciliation for design system remains the downstream AI consumer's job. Vault generator never reads codebase, even when `IMPLEMENTATION_MODE=existing` and a design-system package exists in the repo.
+
 ## [0.5.0] — 2026-05-08
 
 ### Added
