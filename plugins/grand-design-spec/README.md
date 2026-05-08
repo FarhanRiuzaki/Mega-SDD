@@ -1,18 +1,37 @@
+<div align="center">
+
 # grand-design-spec (plugin)
 
-A Claude Code plugin bundling **four paired skills** that cover the full vault lifecycle for PRD → dev-handoff workflows: from initial vault generation, through stakeholder OQ resolution, to vault evolution across PRD revisions, and reconciliation against live codebases for revamp projects.
+### Four skills covering the full vault lifecycle.
+
+*From initial PRD ingestion to live-codebase drift detection.*
+
+</div>
+
+---
 
 ## What is this?
 
 > **Without it**: every dev session re-reads the PRD, re-derives architecture, AI bakes different assumptions into the code.
 > **With it**: PRD → 7-file vault → AI dev tools cite it → grounded code, less halu.
 
-The plugin lives at the boundary between **Inception** and **Construction** in your AI dev lifecycle (AWS AI-DLC framing).
+The plugin lives at the boundary between **Inception** and **Construction** in your AI dev lifecycle (AI-DLC framing).
 
-```
-User → PRD  →  IT Architect: grand-design-spec → vault  →  Developer + AI tools (Claude Code, Cursor) → code
-                                                  ↓
-                                          evolves via resolve-oq · vault-diff · drift-detect
+```mermaid
+flowchart LR
+    User([User]) -->|writes| PRD[PRD / BRD / Figma]
+    PRD --> Arch([IT Architect])
+    Arch -->|grand-design-spec| Vault[(Vault<br/>7 .md files)]
+    Vault -->|grounded context| AI[AI Dev Tools<br/>Claude Code · Cursor]
+    AI -->|HITL review| Code([Shipped Code])
+
+    Vault -.->|resolve-oq| Vault
+    Vault -.->|vault-diff| Vault
+    Vault -.->|drift-detect| Vault
+
+    style Vault fill:#fef3c7,stroke:#d97706,stroke-width:3px
+    style PRD fill:#dbeafe,stroke:#2563eb
+    style Code fill:#d1fae5,stroke:#059669
 ```
 
 | | |
