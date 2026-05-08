@@ -5,6 +5,27 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-05-08
+
+### Added
+- **`vault-diff` skill (new, v0.1.0)** — evolves an existing vault when the PRD/BRD/Figma source revisions, without losing resolved OQs, ADR provenance, or Changelog history. Invoke with `/grand-design-spec:vault-diff`. The naive alternative ("delete vault, regenerate") destroys every captured stakeholder decision and starts the OQ list from zero — this skill exists specifically to make vaults survive past sprint 1.
+- **Eight diff outcome categories** with explicit handling rules: Auto-resolved OQ, New OQ, Added (entity/flow/decision/section), Changed, Removed (annotated, never deleted), Resolved-OQ conflict, Decision conflict, Unchanged.
+- **`VAULT-DIFF.md` artifact** — the skill writes a structured diff report into the vault directory before applying changes. Persistent record the user reviews offline; conflicts surfaced at the top of the file so reviewers see them first.
+- **Conflict-first walkthrough** — Step 5 prioritizes Resolved-OQ conflicts and Decision conflicts before any other category. User decision required for each (Supersede / Keep vault / Capture both / Skip). Skill never auto-decides on conflicts.
+- **Diff scope selection** — `full` (default), `oq-only` (fast pass for minor PRD clarifications), or `specific-docs` (surgical update of named docs only).
+- **Removed-content preservation** — entities/flows/decisions removed from new PRD are NOT deleted from vault; they get a `> **Removed in v{X.Y}**` banner. The vault retains history; the Changelog records the removal.
+- **Identifier stability** — OQ tags, flow IDs, ADR D-XXX numbers all survive the diff. New entries get next-available IDs; existing IDs preserved in place.
+- **Git safety check** — Step 0 runs `git status` and recommends commit-before-diff so the diff session is rollback-able. Doesn't refuse without git, but warns.
+
+### Changed
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.8.0 → 0.9.0 (new skill addition).
+
+### Notes
+- The skill never auto-resolves conflicts. "Auto-resolve all" requests are refused — conflicts (vault state vs new PRD) are exactly the cases requiring human judgment.
+- Major scope shifts (>50% removed entities, >30% added, project name divergence) trigger a "this looks like a different project, are you sure?" prompt before proceeding.
+- LOCKED vaults require explicit unlock confirmation before diff is applied (re-sign-off needed after).
+- The three skills now form a complete vault lifecycle: `grand-design-spec` (initial generation) → `resolve-oq` (interactive OQ resolution) → `vault-diff` (evolution across source revisions).
+
 ## [0.8.0] — 2026-05-08
 
 ### Added
