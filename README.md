@@ -1,18 +1,36 @@
+<div align="center">
+
 # grand-design-spec
 
-> **Turn a PRD + Figma into a 7-file dev handoff folder that no one needs to guess at.**
+### Turn a PRD into a grounded knowledge base for AI dev tools.
+
+*Bridge between **Inception** and **Construction** in your AI dev lifecycle (AI-DLC).*
+*Anti-hallucination · Source-cited · Gap-honest.*
+
+</div>
+
+---
 
 ## What is this?
 
 > **Without it**: every dev session re-reads the PRD, re-derives architecture, AI bakes different assumptions into the code.
 > **With it**: PRD → 7-file vault → AI dev tools cite it → grounded code, less halu.
 
-This plugin lives at the boundary between **Inception** and **Construction** in your AI dev lifecycle (AWS AI-DLC framing).
+```mermaid
+flowchart LR
+    User([User]) -->|writes| PRD[PRD / BRD / Figma]
+    PRD --> Arch([IT Architect])
+    Arch -->|grand-design-spec| Vault[(Vault<br/>7 .md files)]
+    Vault -->|grounded context| AI[AI Dev Tools<br/>Claude Code · Cursor]
+    AI -->|HITL review| Code([Shipped Code])
 
-```
-User → PRD  →  IT Architect: grand-design-spec → vault  →  Developer + AI tools (Claude Code, Cursor) → code
-                                                  ↓
-                                          evolves via resolve-oq · vault-diff · drift-detect
+    Vault -.->|resolve-oq| Vault
+    Vault -.->|vault-diff| Vault
+    Vault -.->|drift-detect| Vault
+
+    style Vault fill:#fef3c7,stroke:#d97706,stroke-width:3px
+    style PRD fill:#dbeafe,stroke:#2563eb
+    style Code fill:#d1fae5,stroke:#059669
 ```
 
 | | |
@@ -26,12 +44,14 @@ User → PRD  →  IT Architect: grand-design-spec → vault  →  Developer + A
 
 ## What's in the box
 
-Four paired skills covering the full vault lifecycle:
+| Skill | Use when | Invoke |
+|-------|----------|--------|
+| **`grand-design-spec`** | Initial vault from PRD/BRD/Figma | `/grand-design-spec:grand-design-spec` |
+| **`resolve-oq`** | Stakeholder meeting answered some OQs | `/grand-design-spec:resolve-oq` |
+| **`vault-diff`** | PRD got a new version | `/grand-design-spec:vault-diff` |
+| **`drift-detect`** | `mode=existing` — reconcile against live codebase | `/grand-design-spec:drift-detect` |
 
-- **`grand-design-spec`** — converts product/business documents into a structured 7-file vault. Anti-hallucination by construction: every claim cites its source; gaps become tagged Open Questions, never guesses.
-- **`resolve-oq`** — interactive resolver that walks the Open Questions roll-up after a stakeholder meeting, captures answers, and updates the vault with a version bump + Changelog. Answers go where they belong (e.g., new ADR in `05-decisions.md`); OQ identifiers are preserved as audit trail.
-- **`vault-diff`** — evolves the vault when the PRD/BRD source revisions. Computes structured diff (added / changed / removed / conflicts), surfaces Resolved-OQ-vs-new-PRD conflicts for explicit user resolution, and applies approved changes without losing prior OQ history or ADR provenance. The naive alternative ("delete and regenerate") destroys every captured decision — this skill makes vaults survive past sprint 1.
-- **`drift-detect`** — for `mode=existing` (revamp / extension) projects: scans the live codebase, compares against the vault, flags drift (entity rename, field type changed, decision violated, code shipped without ADR). Heuristic detection with confidence ratings; produces `DRIFT-REPORT.md` for review. Closes the loop between "what the vault says" and "what the code does".
+All four skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds.
 
 ---
 
