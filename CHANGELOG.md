@@ -5,6 +5,25 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-05-08
+
+### Added
+- **`resolve-oq` skill (new, v0.1.0)** — interactive resolver for Open Questions in an existing vault. Companion to the main `grand-design-spec` skill. Walks the OQ roll-up by priority (P1 → P2 → P3), captures stakeholder answers per OQ, updates the vault, and bumps version + Changelog. Invoke with `/grand-design-spec:resolve-oq`.
+- **Four resolution outcomes per OQ**: `Resolve` (capture answer inline or promote to a target section like new ADR / field constraint), `Out of Scope` (move to OOS section with rationale), `Defer` (keep open with stakeholder + target date), `Skip` (no change, return next round).
+- **Resume support** — re-running the skill on a partially-resolved vault detects prior rounds via Changelog entries and offers to continue from current state.
+- **Resolution scope selection** — `p1-only` (focused first pass), `p1-then-p2`, `all-priorities`, `by-category` (group by roll-up category, useful when each category aligns with a different stakeholder), or `single-oq` (jump to a tag).
+- **Auto-classification of resolution destination** by OQ code prefix (`OV-` → 01-overview, `AR-` → 02-architecture, `DM-` → 03-data-model, `FL-` → 04-flows, `DC-` → 05-decisions, `CN-` → 06-constraints), with explicit user override allowed.
+- **OQ tag preservation** through resolution — every OQ identifier survives via `[x]` resolved markers, `[~]` out-of-scope markers, or stays `[ ]` with a Deferred annotation. Full audit trail of what was decided when.
+- **Atomic per-OQ edits** — bail-out at any time preserves partial progress for the next run.
+
+### Changed
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.7.0 → 0.8.0 (new skill addition).
+
+### Notes
+- The new skill never auto-fills answers. Refusing "answer all OQs for me" is a hard guarantee — the skill exists to capture **stakeholder** input, not Claude's guesses. Offer Defer instead.
+- Resolution density adapts to the parent vault's `OUTPUT_MODE`. Compact vaults get inline resolutions or 1-paragraph promoted ADRs; full vaults get multi-section promoted ADRs.
+- The `grand-design-spec` skill itself remains at v0.7.0 — no changes to the main vault generator in this release.
+
 ## [0.7.0] — 2026-05-08
 
 ### Added

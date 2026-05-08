@@ -2,9 +2,10 @@
 
 > **Turn a PRD + Figma into a 7-file dev handoff folder that no one needs to guess at.**
 
-A Claude Code plugin marketplace that ships **`grand-design-spec`** — a skill that converts product/business documents into structured architecture specs ready for engineering teams (human or AI).
+A Claude Code plugin marketplace that ships two paired skills for the PRD → dev-handoff workflow:
 
-It is **anti-hallucination by construction**: every claim cites its source. If the PRD doesn't say it, the skill won't write it — it goes into a tagged Open Question instead.
+- **`grand-design-spec`** — converts product/business documents into a structured 7-file vault. Anti-hallucination by construction: every claim cites its source; gaps become tagged Open Questions, never guesses.
+- **`resolve-oq`** — interactive resolver that walks the Open Questions roll-up after a stakeholder meeting, captures answers, and updates the vault with a version bump + Changelog. Answers go where they belong (e.g., new ADR in `05-decisions.md`); OQ identifiers are preserved as audit trail.
 
 ---
 
@@ -188,6 +189,39 @@ Every numbered doc (`01–06`) follows the same shape:
 
 ---
 
+## After generation: resolving the Open Questions
+
+A vault is a **gap-honest** document — it surfaces every unanswered question as a tagged `OQ-{DOC}-{N}` entry with `P1|P2|P3` priority. The intended workflow:
+
+1. Generate the vault with `grand-design-spec`.
+2. Bring the P1 Open Questions to your stakeholders (PM, BO, Architect, Compliance).
+3. Run `/grand-design-spec:resolve-oq` to walk through the OQ list interactively and capture the answers back into the vault.
+
+```text
+You: /grand-design-spec:resolve-oq
+
+Skill: Vault detected at ./mega-rencana-spec (v1.0).
+       53 Open Questions: 13 P1, 29 P2, 11 P3.
+       Resolution scope? (p1-only / p1-then-p2 / all-priorities / by-category / single-oq)
+You:   p1-only
+
+Skill: [walks through 13 P1 OQs one by one]
+       For each: shows OQ + asks Resolve / Out of Scope / Defer / Skip.
+       Captured answers land in the right doc (e.g., new ADR in 05-decisions, field constraint in 03-data-model).
+
+Skill: Done. Vault now at v1.1.
+       Resolved 9 · Out of Scope 2 · Deferred 2 · Skipped 0 · Still open 0 (P1).
+       29 P2 + 11 P3 remain — re-run resolve-oq when you have answers.
+```
+
+**What `resolve-oq` does to the vault**:
+- Marks resolved OQs as `[x]` with a pointer to where the answer landed.
+- Promotes substantial answers into target sections (new `D-XXX` ADRs, new field constraints, new flow steps) — preserving the OQ tag as audit trail.
+- Bumps vault version (`v1.0 → v1.1`) + appends a Changelog entry.
+- Refuses "answer all OQs for me" — the skill captures **stakeholder** input, not Claude's guesses. Offers `Defer` instead.
+
+---
+
 ## Why use this
 
 ### The two failure modes it prevents
@@ -227,14 +261,32 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 
 ## How it works (workflow)
 
+### `grand-design-spec` — vault generation
+
 | Step | Phase | What happens |
 |------|-------|--------------|
 | 0 | Output path setup | Skill asks for folder, validates, auto-creates |
+| 0.5 | Mode flag | `new` (greenfield) or `existing` (live codebase to reconcile) |
+| 0.6 | PRD status | `final` (signed-off) or `draft` (still in flux) — drives gap-handling behavior |
+| 0.7 | Output mode | `compact` (default — table-first, ~40% lighter) or `full` (prose-rich for non-technical reviewers) |
 | 1 | Inventory & read | Lists uploaded files, routes each to right reader; tries Figma MCP if URL given |
 | 2 | Extract before writing | Builds internal map of components / entities / flows / decisions / gaps |
 | 3 | Generate 7 files | Uses templates in `references/templates/` as scaffolds |
 | 4 | Self-check | Verifies grounding, readability, simplicity, output integrity |
 | 5 | Present | Surfaces top P1 Open Questions for you to triage with PO |
+
+### `resolve-oq` — Open Questions resolution
+
+| Step | Phase | What happens |
+|------|-------|--------------|
+| 0 | Vault location | Auto-detects vault in CWD or asks; verifies 7 files + OQ roll-up exist |
+| 0.5 | Resume detection | Detects prior resolution rounds via Changelog; offers continue or fresh start |
+| 0.6 | Resolution scope | `p1-only` / `p1-then-p2` / `all-priorities` / `by-category` / `single-oq` |
+| 1 | Parse OQ list | Reads all 6 numbered docs + roll-up; builds work queue based on scope |
+| 2 | Loop per OQ | Per OQ: Resolve / Out of Scope / Defer / Skip; auto-classifies destination by tag prefix |
+| 3 | Update metadata | Bumps vault version, appends Changelog entry with resolved/OOS/deferred counts |
+| 4 | Self-check | Every queue item ended in an outcome; cross-refs resolve; tags preserved |
+| 5 | Present | Stats summary + top remaining P1 blockers with tags |
 
 ---
 
@@ -257,9 +309,12 @@ grand-design-spec/                            # marketplace repo root
 ├── plugins/
 │   └── grand-design-spec/                    # the plugin
 │       ├── .claude-plugin/plugin.json        # plugin manifest
-│       ├── skills/grand-design-spec/         # the skill itself
-│       │   ├── SKILL.md
-│       │   └── references/templates/*.md     # 7 scaffolds
+│       ├── skills/
+│       │   ├── grand-design-spec/            # main skill — vault generation
+│       │   │   ├── SKILL.md
+│       │   │   └── references/templates/*.md # 7 scaffolds
+│       │   └── resolve-oq/                   # companion skill — OQ resolution
+│       │       └── SKILL.md
 │       ├── README.md                         # plugin-level README
 │       └── LICENSE
 ├── README.md                                 # this file (marketplace-level)
