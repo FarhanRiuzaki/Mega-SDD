@@ -2,7 +2,31 @@
 
 > **Turn a PRD + Figma into a 7-file dev handoff folder that no one needs to guess at.**
 
-A Claude Code plugin marketplace that ships four paired skills covering the full vault lifecycle:
+## What is this?
+
+> **Without it**: every dev session re-reads the PRD, re-derives architecture, AI bakes different assumptions into the code.
+> **With it**: PRD → 7-file vault → AI dev tools cite it → grounded code, less halu.
+
+This plugin lives at the boundary between **Inception** and **Construction** in your AI dev lifecycle (AWS AI-DLC framing).
+
+```
+User → PRD  →  IT Architect: grand-design-spec → vault  →  Developer + AI tools (Claude Code, Cursor) → code
+                                                  ↓
+                                          evolves via resolve-oq · vault-diff · drift-detect
+```
+
+| | |
+|---|---|
+| **Who runs it** | IT Architect (generates vault) → Developer (consumes via AI tools) |
+| **When** | After PRD signed off, before sprint-0 |
+| **Output** | 7 markdown files: anti-halu, source-cited, gap-honest |
+| **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault |
+
+---
+
+## What's in the box
+
+Four paired skills covering the full vault lifecycle:
 
 - **`grand-design-spec`** — converts product/business documents into a structured 7-file vault. Anti-hallucination by construction: every claim cites its source; gaps become tagged Open Questions, never guesses.
 - **`resolve-oq`** — interactive resolver that walks the Open Questions roll-up after a stakeholder meeting, captures answers, and updates the vault with a version bump + Changelog. Answers go where they belong (e.g., new ADR in `05-decisions.md`); OQ identifiers are preserved as audit trail.
