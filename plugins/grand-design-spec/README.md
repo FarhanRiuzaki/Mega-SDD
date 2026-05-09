@@ -2,7 +2,7 @@
 
 # grand-design-spec (plugin)
 
-### Four skills covering the full vault lifecycle.
+### Four skills covering the full vault lifecycle, plus an update command.
 
 *From initial PRD ingestion to live-codebase drift detection.*
 
@@ -41,14 +41,15 @@ flowchart LR
 | **Output** | 7 markdown files: anti-halu, source-cited, gap-honest |
 | **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault |
 
-## Skills in this plugin
+## Skills + commands in this plugin
 
-| Skill | Invoke as | Purpose |
-|-------|-----------|---------|
-| **`grand-design-spec`** | `/grand-design-spec:grand-design-spec` | Initial vault generation. PRD/BRD/Figma → 7-file dev handoff folder with anti-hallucination guarantees. |
-| **`resolve-oq`** | `/grand-design-spec:resolve-oq` | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with version bump + Changelog. Preserves OQ tag identity as audit trail. |
-| **`vault-diff`** | `/grand-design-spec:vault-diff` | Vault evolution when the PRD/BRD source revisions. Computes structured diff, surfaces conflicts (Resolved-OQ vs new PRD, ADR vs new PRD) for explicit user resolution, applies approved changes without losing prior history. |
-| **`drift-detect`** | `/grand-design-spec:drift-detect` | For `mode=existing` vaults only: scans the live codebase, compares against vault, flags drift (entity rename, type changed, decision violated, code shipped without ADR). Heuristic detection with confidence ratings. |
+| Slash command | Skill | Purpose |
+|---------------|-------|---------|
+| `/grand-design-spec:grand-design-spec` | **`grand-design-spec`** | Initial vault generation. PRD/BRD/Figma → 7-file dev handoff folder with anti-hallucination guarantees. Also writes a `vault.json` manifest for machine consumption. |
+| `/grand-design-spec:resolve-oq` | **`resolve-oq`** | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with version bump + Changelog. Preserves OQ tag identity as audit trail. Cross-cutting OQs land in a primary doc with cross-refs in others. |
+| `/grand-design-spec:vault-diff` | **`vault-diff`** | Vault evolution when the PRD/BRD source revisions. Computes structured diff, surfaces conflicts (Resolved-OQ vs new PRD, ADR vs new PRD) for explicit user resolution, applies approved changes without losing prior history. |
+| `/grand-design-spec:drift-detect` | **`drift-detect`** | For `mode=existing` vaults: scans the live codebase, compares against vault, flags drift (entity rename, type changed, decision violated, code shipped without ADR). For `mode=new` vaults, surfaces the `mode_migrate_after` trigger so you know what to do before re-running. |
+| `/grand-design-spec:update` | _(no skill — bash wrapper)_ | Plugin maintenance. `git pull --ff-only` inside `~/.claude/plugins/marketplaces/grand-design-spec/`, prints before/after version, then prompts you to run the built-in `/plugin marketplace update grand-design-spec` to rebuild the cache. |
 
 ## Lifecycle at a glance
 
@@ -139,7 +140,7 @@ This plugin ships through the `grand-design-spec` marketplace (this same reposit
 /plugin install grand-design-spec@grand-design-spec
 ```
 
-All four skills install together — they share state via the vault directory.
+All four lifecycle skills install together — they share state via the vault directory. The maintenance command (`/grand-design-spec:update`) installs alongside them.
 
 See the [marketplace README on GitLab](https://gitlab.com/airnd1/grand-design-spec/-/blob/main/README.md) for version pinning, private repo auth, and Claude.ai / Claude API installation paths.
 
