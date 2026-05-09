@@ -5,6 +5,16 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] — 2026-05-09
+
+### Added
+
+- **`/grand-design-spec:update`** — convenience command that pulls the latest plugin from `origin/main` (fast-forward only), shows before/after versions, and instructs the user to finish with the built-in `/plugin marketplace update grand-design-spec` to rebuild the cache. Custom slash commands can't invoke built-ins, so the cache-refresh step stays explicit.
+
+### Changed
+
+- `plugin.json` and `marketplace.json` plugins[0].version bumped 0.12.0 → 0.12.1 (additive command).
+
 ## [0.12.0] — 2026-05-09
 
 Surfacing companion skills as user-typeable slash commands.
