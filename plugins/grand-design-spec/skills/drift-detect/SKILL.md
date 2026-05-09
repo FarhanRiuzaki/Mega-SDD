@@ -355,6 +355,19 @@ Drift detection performed against codebase at <commit SHA / "current working tre
 
 3. Do NOT bump vault version yet — version bump happens when actions are actually applied to vault content.
 
+### `vault.json` reconciliation boundary (v0.13)
+
+`drift-detect` deliberately does NOT regenerate `vault.json`. The skill's core principle is *"no code execution, write reports only"* — auto-reconciling the manifest would contradict that.
+
+**What this means in practice:**
+
+- When the user accepts a vault-side action that *would* alter vault content (e.g., "promote unwritten decision to ADR"), the actual vault edit happens later, via `resolve-oq` (for OQ-tagged items) or direct manual edit followed by re-running `grand-design-spec` to regenerate the full vault.
+- Until the edit lands and a regen runs, `vault.json` stays at the pre-drift-session state. AI consumers loading the manifest will not see the proposed-but-unlanded changes.
+- The Changelog entry written in step 1 above flags this — it records the drift session, not vault content changes. Vault version stays unchanged.
+- If a later manual edit lands the proposed change, the user is responsible for triggering `vault.json` regeneration: easiest path is to edit the markdown then re-run `/grand-design-spec:grand-design-spec` against the same PRD with the same flags, OR use `resolve-oq` if the change is OQ-driven (resolve-oq writes back vault.json automatically).
+
+**Why this is acceptable**: drift-detect findings are always advisory. The action list in `DRIFT-ACTIONS.md` makes the boundary explicit so the user knows what's tentative vs landed.
+
 ### Step 7: Self-check before delivery
 
 - [ ] `mode=existing` confirmed before scan started.
@@ -416,6 +429,6 @@ Do NOT pad with "I have completed the scan..." preamble.
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with `Implementation mode: existing` in Vault Lock Status. The 7-file structure, OQ tagging convention, and ADR `D-XXX` numbering are all assumed.
-- For OQ tagging convention details, see the parent skill `grand-design-spec` SKILL.md, section "Open Question tagging convention".
+- OQ tagging conventions and `vault.json` field rules: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema). Note: drift-detect reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
 - For vault evolution from a new PRD, see `vault-diff` SKILL.md — different concern (source revisions vs codebase reality).
 - For OQ resolution mechanics (when drift findings produce new OQs that need stakeholder input), see `resolve-oq` SKILL.md.
