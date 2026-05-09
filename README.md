@@ -93,10 +93,10 @@ The naming format is `<plugin>@<marketplace>` — both happen to be `grand-desig
 
 #### Pin to a specific version
 
-For team installs, pin to a tag so everyone gets the same version:
+For team installs, pin to a tag so everyone gets the same version. Replace `<tag>` with a published release tag (see GitLab → Tags for the current list, e.g. `v0.6.0`):
 
 ```text
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.12.1
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#<tag>
 /plugin install grand-design-spec@grand-design-spec
 ```
 
@@ -227,14 +227,18 @@ Skill:  [generates 7 files into my-product-spec/]
 ├── 03-data-model.md     Entities (DBML), relations, constraints
 ├── 04-flows.md          User flows + system flows + Definition of Done
 ├── 05-decisions.md      ADR-lite — technical decisions with explicit source
-└── 06-constraints.md    Technical, business, and non-functional requirements
+├── 06-constraints.md    Technical, business, and non-functional requirements
+└── vault.json           Machine-readable manifest: entities, flows, ADRs, OQs
+                         (with status + priority), source docs. Markdown stays
+                         human-authoritative; JSON is a derived index for AI dev
+                         tools (Claude Code, Cursor) that load context fast.
 ```
 
 Every numbered doc (`01–06`) follows the same shape:
 
 | Section | Purpose |
 |---------|---------|
-| **TL;DR header** | 3 lines: what / for whom / when to read |
+| **TL;DR header** | 1 line in `compact` mode (default), 3 lines in `full` mode: what / for whom / when to read |
 | **Body** | The actual content, grounded in PRD |
 | **Sources** | Citations to PRD section / Figma frame / uploaded file |
 | **Out of Scope** | What this doc explicitly does NOT cover |
@@ -401,6 +405,8 @@ This skill produces an artifact that:
 - **No invented entities, fields, endpoints, decisions, or behaviors.** Every non-trivial claim cites a PRD section, Figma frame, or source file.
 - **Push-back built in.** If you say "just guess the rest", the skill refuses and offers to mark unknowns as Open Questions instead.
 - **Open Question tagging.** Every gap gets `OQ-{DOC_CODE}-{N}` with priority P1/P2/P3 for stakeholder triage.
+- **Halt protocol for autonomous AI runs.** When an AI agent runs the vault non-interactively and hits an unresolved P1 Open Question, it emits a structured `OQ_BLOCKER` YAML artifact (with tag, priority, blocking task, resolver owner) instead of silently halting — so downstream runners can route to ticketing / Slack / on-call. Documented in `00-index.md`.
+- **vault.json kept in sync.** Every regeneration / `resolve-oq` / `vault-diff` round updates the JSON manifest so AI consumers see the same state as humans reading markdown.
 - **Reading paths by role.** Architect, Developer, QA, PM, and UI/UX each get a recommended reading order in `00-index.md`.
 
 ### Project shapes supported
@@ -425,14 +431,14 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 | Step | Phase | What happens |
 |------|-------|--------------|
 | 0 | Output path setup | Skill asks for folder, validates, auto-creates |
-| 0.5 | Mode flag | `new` (greenfield) or `existing` (live codebase to reconcile) |
+| 0.5 | Mode flag | `new` (greenfield) or `existing` (live codebase to reconcile). For `new`, also captures `mode_migrate_after` — the trigger event that flips the vault to `existing` (e.g., "first commit on main") |
 | 0.6 | PRD status | `final` (signed-off) or `draft` (still in flux) — drives gap-handling behavior |
 | 0.7 | Output mode | `compact` (default — table-first, ~40% lighter) or `full` (prose-rich for non-technical reviewers) |
 | 1 | Inventory & read | Lists uploaded files, routes each to right reader; tries Figma MCP if URL given |
-| 2 | Extract before writing | Builds internal map of components / entities / flows / decisions / gaps |
-| 3 | Generate 7 files | Uses templates in `references/templates/` as scaffolds |
-| 4 | Self-check | Verifies grounding, readability, simplicity, output integrity |
-| 5 | Present | Surfaces top P1 Open Questions for you to triage with PO |
+| 2 | Extract before writing | Builds internal map of components / entities / flows / decisions / gaps; also detects design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) from sources |
+| 3 | Generate 7 files + vault.json | Uses templates in `references/templates/` as scaffolds. Writes `vault.json` manifest alongside, with entities / flows / ADRs / OQs indexed for AI consumers |
+| 4 | Self-check | Verifies grounding, readability, simplicity, output integrity, and markdown ↔ vault.json consistency |
+| 5 | Present | Surfaces top P1 Open Questions for triage; points to companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) for next steps |
 
 ### `resolve-oq` — Open Questions resolution
 
