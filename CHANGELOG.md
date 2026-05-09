@@ -5,6 +5,30 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] — 2026-05-09
+
+Surfacing companion skills as user-typeable slash commands.
+
+### Added
+
+- **`/grand-design-spec:grand-design-spec`** — main vault generator now invokable from autocomplete with optional `[prd-path] [figma-url]` arguments.
+- **`/grand-design-spec:resolve-oq`** — interactive Open Questions resolver, callable directly with `[vault-path] [optional OQ tag]`.
+- **`/grand-design-spec:vault-diff`** — vault ↔ revised PRD diff report, callable with `[old-vault] [new-prd]`.
+- **`/grand-design-spec:drift-detect`** — vault ↔ codebase reconciliation, callable with `[vault-path] [codebase-root]`.
+
+### Why
+
+Until v0.11, the three companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) were Claude-invoked only via the Skill tool — they did not appear in the `/` autocomplete menu, so users had to ask Claude in prose to trigger them. v0.12 adds explicit command files in `plugins/grand-design-spec/commands/` that mirror each skill, making the full lifecycle (generate → resolve → diff → drift) discoverable from the slash menu.
+
+### Changed
+
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.11.0 → 0.12.0 (additive feature: command surface).
+
+### Backward compatibility
+
+- No skill behavior changed — command files are thin wrappers that delegate to the existing skills.
+- Users on v0.11 can keep invoking skills via prose; v0.12 simply exposes a faster discovery path.
+
 ## [0.11.0] — 2026-05-09
 
 Driven by audit findings from the TimeOff smoke-test dogfood (commit `e6bada4`). Three Tier-1 refinements + two Tier-2 quick wins, focused on bridging vault generation to actual consumption by AI dev tools.
