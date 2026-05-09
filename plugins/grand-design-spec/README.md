@@ -38,7 +38,7 @@ flowchart LR
 |---|---|
 | **Who runs it** | IT Architect (generates vault) → Developer (consumes via AI tools) |
 | **When** | After PRD signed off, before sprint-0 |
-| **Output** | 7 markdown files: anti-halu, source-cited, gap-honest |
+| **Output** | 7 markdown files + `vault.json` manifest: anti-halu, source-cited, gap-honest |
 | **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault |
 
 ## Skills + commands in this plugin
@@ -67,7 +67,7 @@ flowchart LR
 
 ## What `grand-design-spec` produces
 
-When triggered, the main skill takes a product/business document (and optionally a Figma URL) and produces 7 markdown files inside a folder you choose:
+When triggered, the main skill takes a product/business document (and optionally a Figma URL) and produces 7 markdown files plus a JSON manifest inside a folder you choose:
 
 ```
 <your-output-folder>/
@@ -77,10 +77,15 @@ When triggered, the main skill takes a product/business document (and optionally
 ├── 03-data-model.md     Entities (DBML), relations, constraints
 ├── 04-flows.md          User flows + system flows + per-flow Definition of Done
 ├── 05-decisions.md      ADR-lite: technical decisions with explicit source
-└── 06-constraints.md    Technical, business, non-functional requirements
+├── 06-constraints.md    Technical, business, non-functional requirements
+└── vault.json           Machine-readable manifest mirroring the markdown:
+                         entities, flows, ADRs, OQs (with status + priority),
+                         source documents, design-system flags. AI dev tools
+                         load this for fast structural lookup; markdown stays
+                         the human-authoritative source.
 ```
 
-Every claim cites its source. Ambiguities become tagged Open Questions (`OQ-{DOC_CODE}-{N}`) with priority P1/P2/P3. Out of Scope is always explicit. No invented entities, fields, endpoints, or behaviors.
+Every claim cites its source. Ambiguities become tagged Open Questions (`OQ-{DOC_CODE}-{N}`) with priority P1/P2/P3. Out of Scope is always explicit. No invented entities, fields, endpoints, or behaviors. The companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) keep `vault.json` in sync as state evolves.
 
 ## Trigger phrases
 
@@ -115,6 +120,8 @@ Or paraphrases — each skill matches intent, not literal phrasing.
 - **No silent overwrites**: every conflict between vault state and new input surfaces to the user. Skills never auto-decide on contested content.
 - **Tag stability**: OQ identifiers, flow IDs, ADR `D-XXX` numbers persist across rounds. New entries get next-available IDs; existing IDs preserved.
 - **Removed-not-deleted**: when content drops from a new PRD, vault marks it with a banner (`> **Removed in v1.2**`) but retains it for audit history.
+- **vault.json kept in sync**: every regeneration / `resolve-oq` / `vault-diff` round updates the JSON manifest so AI consumers and human reviewers see the same state.
+- **Halt protocol for autonomous runs**: when an AI agent hits an unresolved P1 OQ in non-interactive mode, the vault emits a structured `OQ_BLOCKER` YAML artifact (tag, priority, blocking task, resolver owner) instead of silently failing — see `00-index.md` "Halt protocol for autonomous runs".
 - **No code execution**: skills read vault and code, write reports and edit vault docs. They never open PRs, run migrations, or modify codebase files.
 - **Anti-halu invariants preserved in compact mode**: even when output is token-trimmed, every source citation, every OQ tag, every Definition of Done remains intact.
 

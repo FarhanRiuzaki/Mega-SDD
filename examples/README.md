@@ -39,7 +39,7 @@ When prompted by the skill:
 | Project shape | `web-app` (skill should infer this; confirm) |
 | Source file path | `examples/timeoff/PRD-Examples.pdf` |
 
-Generation should produce 7 markdown files in `examples/timeoff/vault/`. Expected characteristics:
+Generation under v0.11+ should produce 7 markdown files **plus a `vault.json` manifest** in `examples/timeoff/vault/`. (The committed reference vault in this directory was generated under v0.10, before `vault.json` was introduced — re-running the skill will add it.) Expected characteristics:
 
 - Vault picks up the 5 explicit PRD-level open questions from §L and surfaces them as tagged OQs.
 - Additional OQs surface for: tech stack (TBD in §M), accessibility level (TBD in §J), Slack integration scope (Q4 in §L), specific accrual model (Q2), pricing tier (Q5).
