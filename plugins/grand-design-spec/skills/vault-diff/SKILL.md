@@ -1,6 +1,6 @@
 ---
 name: vault-diff
-version: 0.1.0
+version: 0.2.0
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -262,6 +262,26 @@ For each approved change, use `Edit` (preferred) or `Write` (when restructuring 
    - Capture both: split into two ADRs / two field constraints with explicit scope qualifiers.
 7. **Decision conflicts** (per user choice): same logic as Resolved-OQ conflicts.
 
+### Step 6.5: Refresh `vault.json` (v0.2)
+
+After applying approved changes, regenerate `vault.json` from the now-updated markdown so AI consumers don't see stale state.
+
+1. Read all 7 markdown files (post-apply state).
+2. Rebuild the manifest fields per `references/vault-contract.md` §schema:
+   - `entities[]` from `03-data-model.md` DBML — add new entries from this round, preserve existing.
+   - `flows[]` from `04-flows.md` — add new flow IDs, mark removed flows with their banner annotation in metadata if useful (optional). Existing flow IDs stay even when their content changed.
+   - `adrs[]` from `05-decisions.md` — new D-XXX entries from this round get added with `status: accepted` (or `superseded` if this round flipped a prior decision).
+   - `open_questions[]` — refresh `status` per markdown checkbox state. Auto-resolved OQs flip `open` → `resolved`. New OQs added by this diff get `status: open`.
+   - `open_questions_summary.total` and `by_priority` / `by_status` — recompute from the new array.
+   - `vault_version` — match the post-bump version from Step 7 (this step writes both; sequence them so vault.json reflects the new version).
+   - `generated_at` — update to current timestamp.
+   - `source_documents[]` — replace prior PRD entry with the new source per Step 7 step 4.
+3. Write to `<VAULT_DIR>/vault.json`. Overwrites prior manifest.
+
+> **Idempotency**: re-running vault-diff against an unchanged source produces an unchanged `vault.json` (same field values, only `generated_at` updates). The Step 8 self-check verifies markdown ↔ JSON consistency.
+
+> **Why a separate step**: the markdown edits in Step 6 are content; the JSON regen is structural. Keeping them adjacent but distinct lets self-check verify each independently.
+
 ### Step 7: Update vault metadata
 
 1. **Bump vault version** in `00-index.md` Vault Lock Status:
@@ -299,6 +319,10 @@ Vault diff applied from <new source filename + version>.
 - [ ] OQ identifiers are still unique across the vault (no `OQ-AR-1` duplicates after diff).
 - [ ] Vault version bumped; Changelog entry appended; `Last updated` updated.
 - [ ] If git is available: skill ran `git status` to confirm changes are stage-able.
+- [ ] `vault.json` regenerated and reflects post-apply state. `entities[]` / `flows[]` / `adrs[]` / `open_questions[]` arrays match the markdown.
+- [ ] `vault.json.open_questions_summary.total` equals the count of OQ entries in `00-index.md` roll-up.
+- [ ] `vault.json.vault_version` equals the new version from Step 7. `generated_at` is updated to the current timestamp.
+- [ ] `vault.json.source_documents[]` reflects the new PRD source from Step 7 step 4.
 
 ### Step 9: Present summary
 
@@ -341,5 +365,5 @@ Do NOT pad with "I have completed..." preamble.
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure, Vault Lock Status, OQ tagging convention, and Changelog.
-- For OQ tagging convention details, see the parent skill `grand-design-spec` SKILL.md, section "Open Question tagging convention".
+- OQ tagging conventions, status marker semantics, and `vault.json` field rules + regeneration trigger points: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema).
 - For OQ resolution mechanics (how `[x]` markers and resolution pointers are formatted), see `resolve-oq` SKILL.md.
