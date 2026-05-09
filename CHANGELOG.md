@@ -5,6 +5,48 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] — 2026-05-09
+
+Driven by the ship-readiness audit at `docs/superpowers/specs/2026-05-09-plugin-audit-design.md`. Closes 3 HIGH and 4 MED audit findings. Acknowledges that v0.11 vault.json parity was incomplete (only `resolve-oq` got write-back; `vault-diff` was missed) and lands the fix.
+
+### Skill version moves
+
+- `grand-design-spec`: 0.8.0 → 0.9.0 (references shared `vault-contract.md`, adds OQ_BLOCKER halt-protocol self-check)
+- `resolve-oq`: 0.2.0 → 0.3.0 (removes `lock-vault` forward-references, adds vault.json count-match self-check)
+- `vault-diff`: 0.1.0 → 0.2.0 (**adds Step 6.5 vault.json refresh** — closes the v0.11 parity gap)
+- `drift-detect`: unchanged at 0.2.0 (documentation-only change: explicit `vault.json` reconciliation boundary)
+
+### Added
+
+- **`references/vault-contract.md`** (M-1, L-8, L-9) — single source of truth for the `vault.json` schema, OQ tagging conventions, status marker semantics, ID stability rules, and "Skill instruction language" boilerplate. All 4 skills now reference it instead of duplicating content.
+- **`vault-diff` Step 6.5 — Refresh `vault.json`** (H-1) — after applying approved changes in Step 6, regenerate the manifest from post-apply markdown so `entities[]`, `flows[]`, `adrs[]`, `open_questions[]`, and `open_questions_summary` reflect the new state. Step 8 self-check gains 4 vault.json invariants.
+- **`drift-detect` `vault.json` reconciliation boundary** (H-2) — Step 6 now explicitly documents that drift-detect produces reports only and never regenerates `vault.json`. Vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual edit + `grand-design-spec` re-run (for entity/flow/ADR additions). Per audit OQ-AUDIT-1 decision: explicit boundary, not auto-reconcile.
+- **Template compact/full markers** (M-5) — `01-overview`, `02-architecture`, `03-data-model`, `04-flows`, `05-decisions` templates now carry `<!-- compact-skip -->` and `<!-- full-only -->` HTML comments around mode-conditional content. Replaces 5 memorized runtime transformation rules with mechanical markers. `00-index` and `06-constraints` have no compact-conditional content (unchanged).
+- **`grand-design-spec` Step 4 self-check** (M-6) — verifies `00-index.md` contains the "Halt protocol for autonomous runs", "Parallel-work guidance", and "Companion skills for vault evolution" sub-sections per template.
+- **`resolve-oq` Step 4 self-check** (M-8) — verifies `vault.json.open_questions_summary.total` matches markdown roll-up; verifies promoted ADRs appear in `vault.json.adrs[]`.
+- **`CONTRIBUTING.md`** (M-3) — documents the versioning rule (independent semver per skill, with CHANGELOG enumerating per-skill moves), commit-message scopes, tagging discipline, new-skill checklist, and spec/plan workflow.
+
+### Removed
+
+- **`lock-vault` forward-references** (H-3) — `resolve-oq/SKILL.md` previously mentioned a `lock-vault` skill "(when available)" twice. Replaced with explicit manual-edit instructions for `00-index.md` Vault Lock Status. Building a real `lock-vault` skill is a v0.14+ candidate.
+
+### Changed
+
+- `plugin.json` and `marketplace.json` plugins[0].version bumped 0.12.1 → 0.13.0 (skill behavior changes + new file structure).
+- `grand-design-spec/SKILL.md` body shrinks ~60 lines as the duplicated `vault.json` schema and OQ tagging convention move to `vault-contract.md`. Net change: smaller skill body + one new reference file.
+
+### Backward compatibility
+
+- Existing v0.12 vaults continue to work read-only.
+- Re-running `vault-diff` against a v0.12 vault now produces an updated `vault.json` (previously skipped). If the v0.12 vault was created before vault.json was introduced (pre-v0.11), Step 6.5 generates a fresh manifest from the markdown.
+- Skills that don't bump (drift-detect) maintain the same input/output contract.
+- The new `references/vault-contract.md` is referenced by skills but loaded on-demand — no eager-load cost on existing flows that don't touch the schema.
+
+### Notes
+
+- The v0.11 CHANGELOG entry implied vault.json parity that didn't exist for `vault-diff`. v0.13 explicitly closes that gap and the CHANGELOG now enumerates per-skill version moves to prevent the same drift.
+- Audit findings deferred to v0.14+: a real `lock-vault` skill (H-3 alternative), template footer extraction (L-10), trigger-phrase canonical source (L-11), OQ category enumeration (M-2), `grand-design-spec/SKILL.md` progressive disclosure (L-12), tag backfill for v0.7-v0.12 (L-7).
+
 ## [0.12.1] — 2026-05-09
 
 ### Added
