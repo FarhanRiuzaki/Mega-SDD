@@ -28,6 +28,7 @@ Ref: <table>.<fk_field> - <other_table>.id  // one-to-one
 
 > Default to DBML for consistency with existing project conventions. Fall back to entity tables only if DBML cannot express something.
 
+<!-- compact-skip -->
 ## Entity descriptions
 
 ### <entity_name>
@@ -42,6 +43,9 @@ Ref: <table>.<fk_field> - <other_table>.id  // one-to-one
 ### <next_entity>
 
 <repeat>
+<!-- /compact-skip -->
+
+<!-- compact-mode rendering: omit the entire Entity descriptions section. DBML block + 1-line `Purpose:` per entity (added inline before each Table) is sufficient. -->
 
 ## Constraints
 

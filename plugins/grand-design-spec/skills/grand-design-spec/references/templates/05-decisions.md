@@ -13,6 +13,7 @@
 
 ### D-001: <short decision title, e.g. "Use Redis for session cache">
 
+<!-- full-only -->
 **Status**: <Proposed / Accepted / Superseded by D-XXX>
 **Date**: YYYY-MM
 
@@ -29,6 +30,11 @@
 - ⚠️ <trade-off / cost>
 
 **Source**: PRD §<X.Y> / explicit user instruction / meeting <date>
+<!-- /full-only -->
+
+<!-- compact-mode rendering: replace the multi-section block above with a 1-paragraph format:
+<Context in one sentence>. **Decision**: <what was decided, 1–2 sentences>. **Consequences**: <pros + tradeoffs, comma-separated, max 2 lines>. **Source**: <PRD §X>.
+-->
 
 ---
 

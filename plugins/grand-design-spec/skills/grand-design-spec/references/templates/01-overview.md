@@ -1,8 +1,14 @@
 # 01 — Overview
 
+<!-- compact-skip -->
 > **TL;DR**: What the product is, who it's for, why it's being built, and what success looks like.
 > **Audience**: Product Manager, Business Owner, anyone newly joining the project.
 > **Read when**: you need basic product context before looking at technical detail.
+<!-- /compact-skip -->
+
+<!-- compact-mode rendering: replace the 3-line block above with a single line:
+> **TL;DR**: <doc summary> · <primary audience> · <when to read>.
+-->
 
 > **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
