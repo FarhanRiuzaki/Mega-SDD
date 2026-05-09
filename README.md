@@ -515,7 +515,9 @@ grand-design-spec/                            # marketplace repo root
 │       ├── skills/
 │       │   ├── grand-design-spec/            # main skill — vault generation
 │       │   │   ├── SKILL.md
-│       │   │   └── references/templates/*.md # 7 scaffolds
+│       │   │   └── references/
+│       │   │       ├── vault-contract.md     # shared schema + OQ + ID conventions (v0.13)
+│       │   │       └── templates/*.md        # 7 scaffolds (compact/full markers, v0.13)
 │       │   ├── resolve-oq/                   # companion skill — OQ resolution
 │       │   │   └── SKILL.md
 │       │   ├── vault-diff/                   # companion skill — vault evolution
@@ -529,7 +531,11 @@ grand-design-spec/                            # marketplace repo root
 │   └── timeoff/
 │       ├── PRD-Examples.pdf
 │       └── vault/                            # 7-file reference output
+├── docs/superpowers/                         # spec + plan artifacts (v0.13+)
+│   ├── specs/                                # audit findings, design docs
+│   └── plans/                                # implementation plans
 ├── README.md                                 # this file (marketplace-level)
+├── CONTRIBUTING.md                           # versioning + commit conventions (v0.13)
 ├── LICENSE                                   # MIT
 ├── CHANGELOG.md
 └── .gitignore
@@ -550,7 +556,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.12.1** — exposes the four lifecycle skills as user-typeable slash commands (`/grand-design-spec:grand-design-spec`, `:resolve-oq`, `:vault-diff`, `:drift-detect`) plus a maintenance command `/grand-design-spec:update` that pulls the latest plugin from `origin/main`. Earlier highlights: v0.11 added a `vault.json` machine-readable manifest, an `OQ_BLOCKER` halt protocol for autonomous AI runs, and a mode-migration trigger for greenfield → existing transitions.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.13.0** — closes 3 HIGH and 4 MED ship-readiness audit findings: `vault-diff` now refreshes `vault.json` after applying changes (the v0.11 parity gap), `drift-detect` documents its no-auto-regen boundary, `lock-vault` forward-references replaced with manual-edit instructions, and a shared `references/vault-contract.md` becomes the single source of truth for the JSON schema and OQ conventions. Templates gain `<!-- compact-skip -->` / `<!-- full-only -->` markers replacing 5 memorized runtime transformations. New [`CONTRIBUTING.md`](./CONTRIBUTING.md) documents independent skill semver. Earlier highlights: v0.12.x exposed lifecycle skills as slash commands; v0.11 introduced `vault.json` + `OQ_BLOCKER` halt protocol + mode-migration trigger.
 
 ## License
 
