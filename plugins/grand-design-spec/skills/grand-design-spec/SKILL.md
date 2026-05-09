@@ -1,7 +1,7 @@
 ---
 name: grand-design-spec
-version: 0.7.0
-description: Break down PRD/BRD and Figma into 7 markdown files for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
+version: 0.8.0
+description: Break down PRD/BRD and Figma into 7 markdown files + a vault.json manifest for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
 # Grand Design Spec Generator
@@ -155,6 +155,16 @@ The vault is a **lock against requirements** (PRD/BRD), not against existing cod
 
 3. **Do NOT ask for codebase path, repo URL, or existing entity names.** That is the job of downstream AI dev consumer when it reads the vault. This skill stays focused on the requirement → vault transformation.
 
+4. **Migration trigger** (v0.11, applies to `mode=new` only):
+   - A `mode=new` vault should plan its transition to `mode=existing` because the moment real code lands, the vault risks drifting from reality.
+   - Capture the trigger event in Vault Lock Status field `mode_migrate_after`. Default suggestions:
+     - `"first commit on main"` — flips to `existing` once any non-trivial implementation lands.
+     - `"first prod deploy"` — flips later, after the system is observable.
+     - `"sprint-1 demo"` — flips at first stakeholder review.
+   - When the trigger fires, the user manually flips the flag (edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version) OR runs `/grand-design-spec:vault-diff` against the current PRD with `mode=existing` selected.
+   - **After flip**, `/grand-design-spec:drift-detect` becomes applicable and recommended for ongoing reconciliation.
+   - For `mode=existing` vaults, set `mode_migrate_after = null` (already in target state).
+
 > Skill never proceeds to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
 
 ### Step 0.6: PRD/source document status flag (MANDATORY, after mode flag)
@@ -300,6 +310,62 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 
 > Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag drives content of `00-index.md` "Implementation Notes for AI Consumers" section, not the file count.
 
+### Bonus output: `vault.json` machine-readable manifest (v0.11)
+
+Alongside the 7 markdown files, generate `vault.json` — a structured manifest that AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index.
+
+Write the file to `<OUTPUT_DIR>/vault.json` with this schema:
+
+```json
+{
+  "vault_version": "1.0",
+  "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "project_shape": "web-app",
+  "implementation_mode": "new",
+  "prd_status": "draft",
+  "output_mode": "compact",
+  "mode_migrate_after": "first commit lands on main branch (mode=new only)",
+  "source_documents": [
+    {"type": "PRD", "path": "examples/timeoff/PRD.pdf", "version": "1.0", "date": "YYYY-MM-DD"}
+  ],
+  "entities": [
+    {"name": "leave_request", "purpose": "Lifecycle entity for a leave request", "doc": "03-data-model.md", "fields_count": 13}
+  ],
+  "flows": [
+    {"id": "F-U-001", "title": "Submit leave request", "type": "user", "doc": "04-flows.md", "dod_count": 7, "source_acs": ["AC1-1","AC1-2","AC1-3","AC1-4","AC1-5"]}
+  ],
+  "adrs": [
+    {"id": "D-001", "title": "Multi-tenant SaaS-only deployment", "doc": "05-decisions.md", "status": "accepted"}
+  ],
+  "open_questions": [
+    {"tag": "OQ-AR-1", "priority": "P1", "doc": "02-architecture.md", "status": "open", "category": "Tech stack & architecture", "resolver_owner": "Mike Patel"}
+  ],
+  "open_questions_summary": {
+    "total": 48,
+    "by_priority": {"P1": 12, "P2": 22, "P3": 14},
+    "by_status": {"open": 48, "resolved": 0, "deferred": 0, "out_of_scope": 0}
+  },
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": false,
+    "HAS_TOKENS": false,
+    "HAS_A11Y": false,
+    "HAS_VOICE_BRAND": true
+  }
+}
+```
+
+**Field rules**:
+- Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`).
+- `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
+- `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.
+- `open_questions[].resolver_owner` is best-effort — extract from the OQ entry's "Resolve: ..." or "owner" hint when present; otherwise `null`.
+- `mode_migrate_after` is informational metadata for `mode=new` vaults only; populate based on what the user (or default policy) sets in Step 0.5. For `mode=existing` vaults, use `null`.
+- Keep this file in sync with the markdown on every regeneration / `vault-diff` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
+
+**Why both formats**:
+- Humans review markdown — narrative, citations, nuance.
+- AI consumers read `vault.json` — fast structural lookup, no token-heavy prose parsing, reliable enum-based status/priority filtering.
+
 Use templates in `references/templates/` as scaffolds. **Resolve the path relative to where the skill is mounted**:
 
 - **Claude Code (plugin install — primary distribution)**: `${CLAUDE_PLUGIN_ROOT}/skills/grand-design-spec/references/templates/<name>.md`
@@ -355,6 +421,17 @@ Verify every doc has:
 - [ ] All files written to `<OUTPUT_DIR>` (not the default sandbox path).
 - [ ] Folder structure matches the 7-file spec.
 - [ ] Language matches source (PRD ID → docs ID; PRD EN → docs EN).
+
+**`vault.json` manifest (v0.11):**
+- [ ] `vault.json` exists at `<OUTPUT_DIR>/vault.json` alongside the 7 markdown files.
+- [ ] Every entity defined in `03-data-model.md` DBML appears in `entities[]` array.
+- [ ] Every flow ID in `04-flows.md` (one per `F-{prefix}-NNN`) appears in `flows[]`.
+- [ ] Every ADR `D-NNN` in `05-decisions.md` appears in `adrs[]`.
+- [ ] Every OQ tag across docs 01–06 appears in `open_questions[]` with matching priority and status.
+- [ ] `open_questions_summary.total` equals the count in `open_questions[]` and matches the count in the `00-index.md` roll-up.
+- [ ] `open_questions_summary.by_priority` counts match the per-priority counts in the roll-up.
+- [ ] All four metadata flags (`project_shape`, `implementation_mode`, `prd_status`, `output_mode`) match `00-index.md` Vault Lock Status.
+- [ ] Design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) match the values used to drive Step 3 conditional generation.
 
 **Design-system grounding (v0.6, only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.
