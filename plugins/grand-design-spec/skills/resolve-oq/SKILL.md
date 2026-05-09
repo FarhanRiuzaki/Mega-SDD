@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.2.0
+version: 0.3.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -63,7 +63,7 @@ For each OQ, the user (with the skill prompting) can choose one of four outcomes
 
 3. **Lock check**: parse `00-index.md` Vault Lock Status section for the `Status:` line.
    - If `Status: 🔒 LOCKED` → ask via `AskUserQuestion`: *"This vault is LOCKED for `<scope>`. Resolving OQs will edit it and require re-sign-off after. Proceed?"* → options `["Unlock and proceed (re-sign-off needed after)", "Cancel"]`.
-   - If user cancels → STOP. If proceeds → record in the resolution-round Changelog entry that the vault was unlocked for this round; user is responsible for re-locking via `lock-vault` (when available) or manual edit after.
+   - If user cancels → STOP. If proceeds → record in the resolution-round Changelog entry that the vault was unlocked for this round. User is responsible for re-locking after the round: edit `00-index.md` Vault Lock Status — change `Status: ⚠️ DRAFT (unlocked for resolve-oq round)` back to `Status: 🔒 LOCKED for <scope>`, refresh `Locked at` / `Locked by`, append a Changelog entry confirming the relock.
    - If `Status: ⚠️ DRAFT` → no lock; continue normally.
 
 4. **Persist** the vault path:
@@ -225,6 +225,9 @@ Resolved {R} OQs via `resolve-oq` session.
 - [ ] `Last updated` date updated.
 - [ ] If any resolution was `Promoted`, the target doc has the new entry (e.g., new ADR `D-XXX` exists in `05-decisions.md`) — verify via grep that the cross-reference resolves.
 - [ ] No invented answers. Every resolution traces to user input from this session. Skill never auto-fills "best practice" defaults.
+- [ ] `vault.json.open_questions_summary.total` matches the count of OQ entries in `00-index.md` roll-up after the round.
+- [ ] Every OQ marked `[x]` / `[~]` / Deferred in markdown has matching `status` (`resolved` / `out_of_scope` / `deferred`) in `vault.json.open_questions[]`.
+- [ ] If any resolution was Promoted to a new ADR, `vault.json.adrs[]` contains the new entry.
 
 ### Step 5: Present summary
 
@@ -234,7 +237,7 @@ Output to chat (no file generation needed at this step):
 2. New vault version: `v{X.Y}`.
 3. Path to vault: `<VAULT_DIR>` (absolute).
 4. If still-open count > 0: top 3 remaining P1 blockers (one-line each) with their tags.
-5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up, or run `lock-vault` (when available) to declare the vault locked.
+5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up. To lock the vault for sprint implementation, edit `00-index.md` Vault Lock Status manually (`Status: 🔒 LOCKED for <scope>`, fill `Locked at` / `Locked by`, append a Changelog entry).
 
 Do NOT pad with "I have resolved..." preamble. Just report numbers and surface remaining blockers.
 
@@ -268,4 +271,4 @@ Do NOT pad with "I have resolved..." preamble. Just report numbers and surface r
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure and OQ tagging convention (`OQ-{DOC_CODE}-{N}` with `P1|P2|P3` priority).
-- For OQ tagging convention details, see the parent skill `grand-design-spec` SKILL.md, section "Open Question tagging convention".
+- OQ tagging conventions, status marker semantics, and `vault.json` field rules: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema).
