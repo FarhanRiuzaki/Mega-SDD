@@ -1,0 +1,72 @@
+# Examples
+
+Sample inputs (and outputs, when generated) demonstrating the `grand-design-spec` plugin end-to-end.
+
+## What's here
+
+| Path | Contents |
+|------|----------|
+| `timeoff/PRD.md` | Sample PRD for a fictional product called **TimeOff** — a lightweight leave management web app. Greenfield project (mode=new), web-app shape. Mid-complexity (8 user stories, 25+ acceptance criteria). Written in standard PRD format used in tech companies. |
+| `timeoff/vault/` | _(generated)_ Output vault produced by running `grand-design-spec` on `timeoff/PRD.md`. **Not yet committed** — see "How to generate" below. |
+
+## Why this study case
+
+Every plugin needs a "see it in action" example. Mega Rencana smoke tests in `commits 7835c53` and `60f439b` cover an Indonesian PRD for a `mode=existing` revamp project; this example complements that by exercising:
+
+- **English language** input and output.
+- **`mode=new`** (greenfield) — most common entry point for new users.
+- **`web-app` shape** — common shape, complements Mega Rencana's `mobile-app`.
+- **Standard PRD section conventions** (sections A–P, similar to many tech-company templates).
+- **Multi-role personas** (Employee, Manager, HR Admin, IT) — exercises persona section coverage.
+- **Intentional gaps** (5 explicit PRD-level open questions, plus implicit gaps in tech stack, NFR specifics, accessibility level) — produces a realistic vault with non-trivial OQ count.
+
+## How to generate the vault from this PRD
+
+Inside Claude Code, with the plugin installed:
+
+```text
+/grand-design-spec:grand-design-spec
+```
+
+When prompted by the skill:
+
+| Prompt | Suggested answer |
+|--------|------------------|
+| Output folder path | `examples/timeoff/vault/` |
+| Implementation mode | `new` |
+| PRD status | `draft` (the example PRD has explicit unresolved questions in §L) |
+| Output mode | `compact` (recommended) or `full` (to see prose-rich version) |
+| Project shape | `web-app` (skill should infer this; confirm) |
+| Source file path | `examples/timeoff/PRD.md` |
+
+Generation should produce 7 markdown files in `examples/timeoff/vault/`. Expected characteristics:
+
+- Vault picks up the 5 explicit PRD-level open questions from §L and surfaces them as tagged OQs.
+- Additional OQs surface for: tech stack (TBD in §M), accessibility level (TBD in §J), Slack integration scope (Q4 in §L), specific accrual model (Q2), pricing tier (Q5).
+- 4 personas captured in `01-overview.md`.
+- 8 user stories converted to flow blocks with DoD in `04-flows.md`.
+- Multi-tenancy + RBAC architecture surfaced in `02-architecture.md`.
+- GDPR/CCPA, SLA, retention surfaced in `06-constraints.md`.
+
+## What this example demonstrates
+
+After running the skill, the vault should illustrate:
+
+1. **Anti-hallucination**: the skill cites every claim back to PRD sections (§A through §P). No invented entities or flows.
+2. **Gap surfacing**: TBDs in the PRD become OQs with priority labels — including ones the PRD doesn't list explicitly.
+3. **Project-shape-driven structure**: `02-architecture.md` and `04-flows.md` use `web-app` layer/flow conventions (Web Frontend, Backend, Integrations / User flows + Backend flows + Cross-cutting flows).
+4. **Output mode behavior**: same PRD generates a noticeably leaner vault under `compact` than under `full`, but anti-halu invariants are preserved in both.
+
+## Continuing the lifecycle on this example
+
+Once the vault exists, the companion skills can be exercised against it:
+
+- **`/grand-design-spec:resolve-oq`** — walk the OQs that were surfaced. Try resolving Q1 (half-day leave) and observe how the answer lands in the vault.
+- **`/grand-design-spec:vault-diff`** — when (hypothetically) the PRD revises (e.g., team decides Slack integration is in scope after all), use this to evolve the vault without losing what's already resolved.
+- **`/grand-design-spec:drift-detect`** — does NOT apply here, because TimeOff is `mode=new`. To exercise drift-detect, an `mode=existing` example is needed (Mega Rencana-style).
+
+## Notes for contributors
+
+- The PRD is **fictional** but realistic — don't treat any numbers, names, or business decisions as real product strategy.
+- Personas and stakeholder names are placeholder; not modeled on any real people.
+- If you regenerate the vault, please commit the output to `timeoff/vault/` so the example stays current. Tag the generation commit with the plugin version used (e.g., `chore(examples): regenerate timeoff vault under v0.10.0`).

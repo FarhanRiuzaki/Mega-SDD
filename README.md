@@ -53,6 +53,8 @@ flowchart LR
 
 All four skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds.
 
+> **See it before you install** → [`examples/`](./examples/) ships a sample PRD (a fictional leave-management web app called "TimeOff") that you can run through the skill to produce a reference vault. Read [`examples/README.md`](./examples/README.md) for the walkthrough.
+
 ---
 
 ## Quick start
