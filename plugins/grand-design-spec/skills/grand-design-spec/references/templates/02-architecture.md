@@ -106,6 +106,7 @@ Example for data-pipeline:
 **Purpose**: <1 line>
 **Auth**: <required / public / role-based — if applicable>
 
+<!-- full-only -->
 **Request / Input**:
 ```json
 {
@@ -119,6 +120,7 @@ Example for data-pipeline:
   "field": "type — note"
 }
 ```
+<!-- /full-only -->
 
 **Errors / Failure modes**:
 - `400` / `<error type>` — <when>
@@ -131,6 +133,11 @@ Example for data-pipeline:
 ### {Group 2, only if applicable, e.g. "Backend-internal / system endpoints", "Webhook inbound"}
 
 <repeat structure>
+
+<!-- compact-mode rendering: replace JSON request/response blocks with a table row in a per-group endpoints table:
+| Endpoint | Method | Purpose | Auth | Errors | Source |
+|----------|--------|---------|------|--------|--------|
+-->
 
 ---
 

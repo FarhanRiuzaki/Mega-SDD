@@ -33,14 +33,18 @@
 > - `F-X-` = Custom prefix per project shape
 
 **Actor / Trigger**: <persona, or "scheduled cron at HH:MM", or "external API call">
+<!-- full-only -->
 **Preconditions**: <state required before flow starts>
+<!-- /full-only -->
 
 **Steps**:
 1. <action>
 2. <action>
 3. <action>
 
+<!-- full-only -->
 **Postconditions**: <state after flow completes>
+<!-- /full-only -->
 
 **Definition of Done**:
 - [ ] <observable behavior 1>
@@ -69,7 +73,9 @@
 2. <action>
 
 **Outputs**: <what data is written / emitted>
+<!-- full-only -->
 **Failure handling**: <retry / DLQ / alert>
+<!-- /full-only -->
 
 **Definition of Done**:
 - [ ] <observable behavior>
