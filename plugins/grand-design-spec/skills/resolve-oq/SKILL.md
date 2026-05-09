@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.1.0
+version: 0.2.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -147,13 +147,21 @@ Use `AskUserQuestion` with four outcomes:
 4. Choose resolution density:
    - **Inline** (default for short answers) — the answer goes inline in the OQ entry: `[x] **OQ-XXX-N** [P{x}]: <original question> → **Resolved v{X.Y}** (YYYY-MM-DD): <answer>.`
    - **Promoted** (for substantial answers) — the answer is added to the target doc as a new entry (e.g., new ADR `D-XXX` in `05-decisions.md`, new field constraint in `03-data-model.md`), and the OQ entry points to it: `[x] **OQ-XXX-N** [P{x}]: <original question> → Resolved as **D-010** in `05-decisions.md` (v{X.Y}).`
-5. For `Promoted`, format the new entry per the target doc's existing convention:
+5. **Cross-cutting check (v0.2)**: some OQs legitimately affect 3+ docs (e.g., a tech-stack decision touches `02-architecture.md` "Tech stack" line + a new ADR in `05-decisions.md` + a constraint in `06-constraints.md`). For these:
+   - After auto-classification, ask the user: *"This OQ looks cross-cutting (touches multiple docs). Land primary content in `<auto-classified primary doc>` and add cross-references in `<other affected docs>`?"*
+   - User confirms or overrides which doc is primary.
+   - Skill writes the **primary entry** in full (e.g., new ADR `D-XXX` in `05-decisions.md`).
+   - Skill adds **cross-reference lines** in the other affected docs, format: `> Resolves OQ-{tag}: see {primary-doc.md}#{anchor or D-XXX}`. The cross-ref stays terse — no content duplication.
+   - All entries point back to the OQ tag for audit trail.
+   - Heuristic for cross-cutting: tech stack, multi-tenancy isolation, auth specifics, compliance items — these almost always touch ≥3 docs. Single-AC clarifications usually don't.
+6. For `Promoted`, format the new entry per the target doc's existing convention:
    - `05-decisions.md`: ADR-lite per the `OUTPUT_MODE` of the vault (compact = 1-paragraph; full = multi-section). Set `**Status**: Accepted`, `**Date**: YYYY-MM`, `**Source**: resolve-oq session YYYY-MM-DD + <stakeholder/PIC if user named one>`. Cross-reference the resolved OQ tag in the Context line.
    - `03-data-model.md`: append constraint to relevant entity's DBML notes, or update the field-level validation table. Add comment `// Resolves OQ-DM-N`.
    - Other docs: append to the appropriate sub-section, with a `> Resolves OQ-{tag}` annotation.
-6. Write the changes to the file(s) using `Edit`.
-7. Update the OQ roll-up entry in `00-index.md` to also show `[x]` resolved with the same pointer.
-8. Show the user a confirmation summary of the diff.
+7. Write the changes to the file(s) using `Edit`.
+8. Update the OQ roll-up entry in `00-index.md` to also show `[x]` resolved with the same pointer.
+9. **Update `vault.json` (v0.2)**: change the OQ's `status` from `open` to `resolved` in the manifest, recompute `open_questions_summary` counts. If a new ADR was created, add it to `adrs[]`. If a new entity field was added, update that entity in `entities[]`.
+10. Show the user a confirmation summary of the diff.
 
 **If `Out of Scope`**:
 
@@ -161,6 +169,7 @@ Use `AskUserQuestion` with four outcomes:
 2. Move the OQ entry to the same doc's `## Out of Scope` section with format: `- <original question text>. (was OQ-XXX-N, declared OOS v{X.Y} on YYYY-MM-DD: <rationale>)`.
 3. In the original `## Open Questions` section, mark the OQ `[~]` with a one-line pointer: `[~] **OQ-XXX-N** [P{x}]: <original question> → Out of Scope v{X.Y}: see Out of Scope section.`
 4. Update the roll-up entry in `00-index.md` similarly.
+5. **Update `vault.json` (v0.2)**: set the OQ's `status` to `out_of_scope` in the manifest; recompute `open_questions_summary.by_status`.
 
 **If `Defer`**:
 
@@ -168,6 +177,7 @@ Use `AskUserQuestion` with four outcomes:
 2. Append to the OQ entry: `**Deferred (v{X.Y})**: <reason / PIC / target date>`.
 3. Leave `[ ]` open (it's still an Open Question, just waiting).
 4. Update the roll-up annotation in `00-index.md` so readers see the defer reason at-a-glance.
+5. **Update `vault.json` (v0.2)**: set the OQ's `status` to `deferred` in the manifest; add a `defer_note` field with the user-provided reason; recompute `open_questions_summary.by_status`.
 
 **If `Skip`**:
 

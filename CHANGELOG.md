@@ -5,6 +5,40 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] — 2026-05-09
+
+Driven by audit findings from the TimeOff smoke-test dogfood (commit `e6bada4`). Three Tier-1 refinements + two Tier-2 quick wins, focused on bridging vault generation to actual consumption by AI dev tools.
+
+### Added
+
+- **`vault.json` machine-readable manifest** (R1, generated alongside the 7 markdown files in Step 3). Structured index of entities, flows, ADRs, OQs (with state + priority + category + resolver_owner), source documents, and Step-2 design-system flags. Markdown stays human-authoritative; JSON optimizes machine consumption — AI dev tools load context in <1K tokens instead of brute-parsing 25K+ of prose. Schema documented inline in SKILL.md Step 3. Step 4 self-check verifies markdown ↔ JSON consistency on every regeneration.
+- **`OQ_BLOCKER` halt artifact format** for autonomous AI consumers (R2). Defined in `00-index.md` template "Halt protocol for autonomous runs" sub-section. When an AI agent hits an unresolved P1 OQ in non-interactive mode, instead of silent halt it emits a structured YAML artifact with `tag`, `priority`, `blocking_task`, `resolver_owner`, `resolver_route`, `vault_version`. Agent runners can route this to ticketing / Slack / on-call pages reliably. Single-blocker and multi-blocker formats both defined.
+- **Mode migration trigger** (R3) — new Vault Lock Status field `mode_migrate_after`. Captures the event that flips a `mode=new` vault to `mode=existing` (e.g., "first commit on main", "first prod deploy", "sprint-1 demo"). Step 0.5 of `grand-design-spec` now prompts for this when mode=new. After trigger fires, user manually flips mode + bumps version + adds Changelog, OR runs `vault-diff`. Once flipped, `drift-detect` becomes applicable.
+- **Parallel-work guidance** in `00-index.md` template (R5) — when P1 OQs block a task, lists artifact types the dev/AI can still produce in parallel (test specs from DoD, scaffolded ORM models with TODO markers, UI stubs, OOS confirmations). Each parallel artifact must carry the OQ tag(s) it depends on so it's revisited on resolution.
+- **Cross-cutting OQ multi-doc landing pattern** in `resolve-oq` Step 2c (R7). When a single OQ resolution legitimately affects 3+ docs (tech-stack, multi-tenancy, auth, compliance), skill writes the primary entry once and adds terse cross-reference lines in other affected docs (`> Resolves OQ-{tag}: see {primary-doc}.md#{anchor}`). All point back to the OQ tag for audit. Heuristic for "cross-cutting" documented inline.
+- **`vault.json` write-back in `resolve-oq`** — every Resolve / Out-of-Scope / Defer outcome updates the manifest's `open_questions[]` status field, recomputes `open_questions_summary` counts, and (for promoted Resolve) appends new ADRs to `adrs[]`. Keeps machine-readable index in sync with markdown.
+- **`drift-detect` mode-migration awareness** — when run on a `mode=new` vault, surfaces the `mode_migrate_after` trigger so the user knows what to do before re-running. Better failure mode than the previous flat "this skill doesn't apply".
+
+### Changed
+
+- **`grand-design-spec` SKILL.md** version bumped 0.7.0 → 0.8.0 (added `vault.json` generation in Step 3 + Step 4 self-check + Step 0.5 migration trigger + halt protocol section in template).
+- **`resolve-oq` SKILL.md** version bumped 0.1.0 → 0.2.0 (cross-cutting OQ multi-doc landing + vault.json write-back).
+- **`drift-detect` SKILL.md** version bumped 0.1.0 → 0.2.0 (mode-migration awareness in Step 0).
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.10.0 → 0.11.0 (skill behavior changes).
+- **`00-index.md` template** — Vault Lock Status gains `mode_migrate_after` field; Implementation Notes section gains "Halt protocol for autonomous runs" + "Parallel-work guidance" sub-sections.
+
+### Backward compatibility
+
+- Existing v0.10 vaults continue to work read-only. Companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) handle the absence of `vault.json` gracefully — they fall back to parsing markdown.
+- To upgrade an existing v0.10 vault to v0.11: re-run `/grand-design-spec:vault-diff` against the same PRD; the diff session writes `vault.json` and adds `mode_migrate_after` to Vault Lock Status. Or edit `00-index.md` manually.
+- Existing OQs resolved before v0.11 carry no `vault.json` entry; the next resolve-oq round repopulates the manifest from current markdown state.
+
+### Notes
+
+- The audit that drove this release: vault generation works (TimeOff smoke test, 1187 lines, 48 OQs, 95% anti-halu compliance), but AI dev consumption was the bottleneck — 25K+ tokens to load full markdown, no halt protocol for autonomous runs, no migration path for greenfield projects, fuzzy boundaries on cross-cutting OQ resolution. v0.11 directly addresses these.
+- Tier 2 items deferred to v0.12+: `extract-context <flow-id>` skill (return min vault subset for a specific flow), DoD → test spec auto-conversion, pre-commit drift-detect integration, vault → tickets generator.
+- Mega Rencana (`mode=existing`, mobile-app, ID) and TimeOff (`mode=new`, web-app, EN) smoke fixtures remain valid as v0.11 examples; regenerating them produces vault.json automatically.
+
 ## [0.10.0] — 2026-05-08
 
 ### Added

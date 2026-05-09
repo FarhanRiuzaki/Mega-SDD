@@ -1,6 +1,6 @@
 ---
 name: drift-detect
-version: 0.1.0
+version: 0.2.0
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -59,7 +59,9 @@ Each finding carries a **confidence**: `high` (exact name + type match found / n
 
 ### Step 0: Inputs (MANDATORY)
 
-1. **Vault path** — auto-detect from CWD (looks for the 7 standard files). Verify `00-index.md` Vault Lock Status has `Implementation mode: existing`. If `Implementation mode: new` → STOP, this skill doesn't apply.
+1. **Vault path** — auto-detect from CWD (looks for the 7 standard files). Verify `00-index.md` Vault Lock Status has `Implementation mode: existing`.
+   - If `Implementation mode: new` → STOP. Surface the `mode_migrate_after` field (v0.11) from Vault Lock Status if present: *"This vault is `mode=new`. Migration trigger declared: `<event>`. If that trigger has fired (first commit landed on main, first deploy, etc.), flip mode to `existing` first — edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version, OR run `/grand-design-spec:vault-diff`. Then re-run drift-detect."*
+   - If `mode_migrate_after` is missing or null and mode=new → suggest the user define a trigger before re-running.
 2. **Codebase path** — root of the live codebase repo (typically the project root or a subdirectory).
    - **Claude Code**: use `AskUserQuestion` with options like `["Use CWD as codebase root", "Specify subdirectory", "Different path"]`.
    - Fallback: ask plainly — *"Path to codebase root? (must contain the live source for the project this vault describes)"*

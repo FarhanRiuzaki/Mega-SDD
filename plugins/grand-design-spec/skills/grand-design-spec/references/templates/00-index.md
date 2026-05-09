@@ -7,6 +7,7 @@
 - **Vault version**: v1.0
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
+- **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `/grand-design-spec:vault-diff`).
 - **PRD status**: `final` (signed-off by stakeholder) | `draft` (still in flux)
 - **Output mode**: `compact` (default — table-first, prose-cut) | `full` (verbose — prose-rich for cross-functional review)
 - **Locked at**: YYYY-MM-DD HH:MM (TZ)
@@ -139,6 +140,51 @@ This document is the **single source of truth for requirements**. When working f
 - Vault internal conflict (e.g., doc 03 vs doc 04) → STOP, surface to the user with quotes from both sides.
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
+
+### Halt protocol for autonomous runs (v0.11)
+
+In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows), silent halt loses the signal. Instead, emit a structured `OQ_BLOCKER` artifact so the runner can route it.
+
+When you hit an unresolved P1 OQ that blocks your current task, emit (in addition to any chat response):
+
+```yaml
+oq_blocker:
+  tag: OQ-AR-1
+  priority: P1
+  category: "Tech stack & architecture"
+  blocking_task: "Implementing F-U-001 backend"
+  resolver_owner: "Mike Patel (Eng Lead)"
+  resolver_route: "ask in PM Slack channel #timeoff-team or via PRD §L review"
+  vault_version: "1.0"
+  doc: "02-architecture.md"
+```
+
+For multiple blockers in one task, emit an array:
+
+```yaml
+oq_blockers:
+  - tag: OQ-AR-1
+    priority: P1
+    blocking_task: "Implementing F-U-001 backend"
+    resolver_owner: "Mike Patel"
+  - tag: OQ-DM-1
+    priority: P1
+    blocking_task: "Implementing F-U-001 backend"
+    resolver_owner: "Mike Patel + security"
+```
+
+The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields.
+
+### Parallel-work guidance while P1s are unresolved (v0.11)
+
+If your task is fully blocked by P1 OQs but you want to make incremental progress, work on artifacts that don't depend on the unresolved decisions:
+
+- **From DoD bullets** (in `04-flows.md`): draft test specs / Gherkin scenarios. The DoD is the test contract.
+- **From entities** (in `03-data-model.md`): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
+- **From flows**: sketch UI mocks / API stub signatures using vault-stated names but no business logic yet.
+- **From OOS section**: confirm with PM what's NOT in scope — saves wasted scaffolding.
+
+Mark each artifact with the OQ tag(s) it depends on so it can be revisited once resolved. Keep these artifacts in a `WIP/` or feature-flagged path so they don't accidentally ship.
 
 ### Companion skills for vault evolution
 
