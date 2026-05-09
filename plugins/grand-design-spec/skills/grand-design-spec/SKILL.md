@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.8.0
+version: 0.9.0
 description: Break down PRD/BRD and Figma into 7 markdown files + a vault.json manifest for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
@@ -314,53 +314,7 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 
 Alongside the 7 markdown files, generate `vault.json` — a structured manifest that AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index.
 
-Write the file to `<OUTPUT_DIR>/vault.json` with this schema:
-
-```json
-{
-  "vault_version": "1.0",
-  "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
-  "project_shape": "web-app",
-  "implementation_mode": "new",
-  "prd_status": "draft",
-  "output_mode": "compact",
-  "mode_migrate_after": "first commit lands on main branch (mode=new only)",
-  "source_documents": [
-    {"type": "PRD", "path": "examples/timeoff/PRD.pdf", "version": "1.0", "date": "YYYY-MM-DD"}
-  ],
-  "entities": [
-    {"name": "leave_request", "purpose": "Lifecycle entity for a leave request", "doc": "03-data-model.md", "fields_count": 13}
-  ],
-  "flows": [
-    {"id": "F-U-001", "title": "Submit leave request", "type": "user", "doc": "04-flows.md", "dod_count": 7, "source_acs": ["AC1-1","AC1-2","AC1-3","AC1-4","AC1-5"]}
-  ],
-  "adrs": [
-    {"id": "D-001", "title": "Multi-tenant SaaS-only deployment", "doc": "05-decisions.md", "status": "accepted"}
-  ],
-  "open_questions": [
-    {"tag": "OQ-AR-1", "priority": "P1", "doc": "02-architecture.md", "status": "open", "category": "Tech stack & architecture", "resolver_owner": "Mike Patel"}
-  ],
-  "open_questions_summary": {
-    "total": 48,
-    "by_priority": {"P1": 12, "P2": 22, "P3": 14},
-    "by_status": {"open": 48, "resolved": 0, "deferred": 0, "out_of_scope": 0}
-  },
-  "design_system_flags": {
-    "HAS_UI_COMPONENTS": false,
-    "HAS_TOKENS": false,
-    "HAS_A11Y": false,
-    "HAS_VOICE_BRAND": true
-  }
-}
-```
-
-**Field rules**:
-- Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`).
-- `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
-- `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.
-- `open_questions[].resolver_owner` is best-effort — extract from the OQ entry's "Resolve: ..." or "owner" hint when present; otherwise `null`.
-- `mode_migrate_after` is informational metadata for `mode=new` vaults only; populate based on what the user (or default policy) sets in Step 0.5. For `mode=existing` vaults, use `null`.
-- Keep this file in sync with the markdown on every regeneration / `vault-diff` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
+**Schema, field rules, and regeneration trigger points** — see `references/vault-contract.md` §schema. Read this file before generating `vault.json`.
 
 **Why both formats**:
 - Humans review markdown — narrative, citations, nuance.
@@ -432,6 +386,11 @@ Verify every doc has:
 - [ ] `open_questions_summary.by_priority` counts match the per-priority counts in the roll-up.
 - [ ] All four metadata flags (`project_shape`, `implementation_mode`, `prd_status`, `output_mode`) match `00-index.md` Vault Lock Status.
 - [ ] Design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) match the values used to drive Step 3 conditional generation.
+
+**Halt protocol & implementation notes (v0.13):**
+- [ ] `00-index.md` contains "Halt protocol for autonomous runs" sub-section under Implementation Notes for AI Consumers (per template).
+- [ ] `00-index.md` contains "Parallel-work guidance while P1s are unresolved" sub-section.
+- [ ] `00-index.md` contains "Companion skills for vault evolution" sub-section pointing to `resolve-oq` / `vault-diff` / `drift-detect`.
 
 **Design-system grounding (v0.6, only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.
@@ -680,26 +639,7 @@ Append at the bottom of every numbered doc:
 
 ### Open Question tagging convention
 
-Every Open Question MUST have a unique tag and priority marker.
-
-**Tag format**: `OQ-{DOC_CODE}-{N}` where:
-
-| Doc | Code |
-|-----|------|
-| `01-overview.md` | `OV` |
-| `02-architecture.md` | `AR` |
-| `03-data-model.md` | `DM` |
-| `04-flows.md` | `FL` |
-| `05-decisions.md` | `DC` |
-| `06-constraints.md` | `CN` |
-
-`N` is sequential within each doc (1, 2, 3 …). Tags are stable identifiers — once assigned, do not renumber when adding new questions.
-
-**Priority levels**:
-
-- **P1 — Sprint-0 blocker**: Must be answered before any coding starts. Examples: tech stack, API contracts, source-data inconsistencies, missing sign-off, regulatory/compliance scope.
-- **P2 — Feature blocker**: Blocks a specific feature/flow but not the whole project. Examples: edge-case behavior, channel mapping for notifications, max value limits.
-- **P3 — Refinement**: Useful to clarify but project can move without it. Examples: future-proofing, optimization details, optional analytics.
+See `references/vault-contract.md` §OQ-conventions for tag format, doc-code table, and priority definitions. Every Open Question generated by this skill MUST follow that convention.
 
 ### 00-index.md Open Questions roll-up structure
 
