@@ -44,14 +44,15 @@ flowchart LR
 
 ## What's in the box
 
-| Skill | Use when | Invoke |
-|-------|----------|--------|
-| **`grand-design-spec`** | Initial vault from PRD/BRD/Figma | `/grand-design-spec:grand-design-spec` |
-| **`resolve-oq`** | Stakeholder meeting answered some OQs | `/grand-design-spec:resolve-oq` |
-| **`vault-diff`** | PRD got a new version | `/grand-design-spec:vault-diff` |
-| **`drift-detect`** | `mode=existing` — reconcile against live codebase | `/grand-design-spec:drift-detect` |
+| Slash command | Use when | Skill |
+|---------------|----------|-------|
+| `/grand-design-spec:grand-design-spec` | Initial vault from PRD/BRD/Figma | vault generator |
+| `/grand-design-spec:resolve-oq` | Stakeholder meeting answered some OQs | OQ resolver |
+| `/grand-design-spec:vault-diff` | PRD got a new version | vault evolution |
+| `/grand-design-spec:drift-detect` | `mode=existing` — reconcile against live codebase | vault ↔ code drift |
+| `/grand-design-spec:update` | Pull latest plugin from `origin/main` and refresh cache | plugin maintenance |
 
-All four skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds.
+The four lifecycle skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds. `update` is a maintenance command (no vault interaction).
 
 > **See it before you install** → [`examples/`](./examples/) ships a sample PRD (a fictional leave-management web app called "TimeOff") that you can run through the skill to produce a reference vault. Read [`examples/README.md`](./examples/README.md) for the walkthrough.
 
@@ -95,11 +96,17 @@ The naming format is `<plugin>@<marketplace>` — both happen to be `grand-desig
 For team installs, pin to a tag so everyone gets the same version:
 
 ```text
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.6.0
+/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git#v0.12.1
 /plugin install grand-design-spec@grand-design-spec
 ```
 
-To upgrade later:
+To upgrade later, the easiest path is the bundled command:
+
+```text
+/grand-design-spec:update
+```
+
+It pulls `origin/main` (fast-forward only) and shows you the version diff, then prompts you to run the built-in `/plugin marketplace update grand-design-spec` to rebuild the cache. You can also do both steps manually:
 
 ```text
 /plugin marketplace update grand-design-spec
@@ -493,6 +500,12 @@ grand-design-spec/                            # marketplace repo root
 ├── plugins/
 │   └── grand-design-spec/                    # the plugin
 │       ├── .claude-plugin/plugin.json        # plugin manifest
+│       ├── commands/                         # user-typeable slash commands
+│       │   ├── grand-design-spec.md          # → main vault generator skill
+│       │   ├── resolve-oq.md                 # → OQ resolver skill
+│       │   ├── vault-diff.md                 # → vault evolution skill
+│       │   ├── drift-detect.md               # → vault ↔ code drift skill
+│       │   └── update.md                     # plugin maintenance: git pull + cache nudge
 │       ├── skills/
 │       │   ├── grand-design-spec/            # main skill — vault generation
 │       │   │   ├── SKILL.md
@@ -505,6 +518,11 @@ grand-design-spec/                            # marketplace repo root
 │       │       └── SKILL.md
 │       ├── README.md                         # plugin-level README
 │       └── LICENSE
+├── examples/                                 # sample PRD + reference vault
+│   ├── README.md
+│   └── timeoff/
+│       ├── PRD-Examples.pdf
+│       └── vault/                            # 7-file reference output
 ├── README.md                                 # this file (marketplace-level)
 ├── LICENSE                                   # MIT
 ├── CHANGELOG.md
@@ -526,7 +544,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.6.0** — adds optional design-system coverage (UI components, tokens, a11y, voice/brand) when sources explicitly contain it. Strict source-mirror — never inferred from project shape, never defaulted to industry standards.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.12.1** — exposes the four lifecycle skills as user-typeable slash commands (`/grand-design-spec:grand-design-spec`, `:resolve-oq`, `:vault-diff`, `:drift-detect`) plus a maintenance command `/grand-design-spec:update` that pulls the latest plugin from `origin/main`. Earlier highlights: v0.11 added a `vault.json` machine-readable manifest, an `OQ_BLOCKER` halt protocol for autonomous AI runs, and a mode-migration trigger for greenfield → existing transitions.
 
 ## License
 
