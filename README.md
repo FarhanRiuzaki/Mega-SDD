@@ -46,8 +46,9 @@ flowchart LR
 
 | Slash command | Use when | Skill |
 |---------------|----------|-------|
-| `/grand-design-spec:flow` ⭐ (v0.14) | "Do the next thing" — inspects state, proposes a chain, runs sub-skills with `--auto` | lifecycle orchestrator |
-| `/grand-design-spec:grand-design-spec` | Initial vault from PRD/BRD/Figma | vault generator |
+| `/grand-design-spec:flow` ⭐ (v0.14, chains all v0.15) | "Do the next thing" — inspects state, proposes a chain, runs sub-skills with `--auto`. v0.15 chains all applicable skills by default. | lifecycle orchestrator |
+| `/grand-design-spec:from-prompt` 🆕 (v0.15) | No PRD doc — just a free-text brief. Skill runs adaptive Q&A, writes seed-PRD.md as source for grand-design-spec | brief → seed-PRD elaborator |
+| `/grand-design-spec:grand-design-spec` | Initial vault from PRD/BRD/Figma (or seed-PRD.md from from-prompt) | vault generator |
 | `/grand-design-spec:resolve-oq` | Stakeholder meeting answered some OQs | OQ resolver |
 | `/grand-design-spec:vault-diff` | PRD got a new version | vault evolution |
 | `/grand-design-spec:drift-detect` | `mode=existing` — reconcile against live codebase | vault ↔ code drift |
@@ -509,13 +510,16 @@ grand-design-spec/                            # marketplace repo root
 │       ├── .claude-plugin/plugin.json        # plugin manifest
 │       ├── commands/                         # user-typeable slash commands
 │       │   ├── flow.md                       # → orchestrator skill (v0.14)
+│       │   ├── from-prompt.md                # → brief→seed-PRD skill (v0.15)
 │       │   ├── grand-design-spec.md          # → main vault generator skill
 │       │   ├── resolve-oq.md                 # → OQ resolver skill
 │       │   ├── vault-diff.md                 # → vault evolution skill
 │       │   ├── drift-detect.md               # → vault ↔ code drift skill
 │       │   └── update.md                     # plugin maintenance: git pull + cache nudge
 │       ├── skills/
-│       │   ├── flow/                         # orchestrator skill (v0.14)
+│       │   ├── flow/                         # orchestrator skill (v0.14, chains all v0.15)
+│       │   │   └── SKILL.md
+│       │   ├── from-prompt/                  # brief→seed-PRD elaborator (v0.15)
 │       │   │   └── SKILL.md
 │       │   ├── grand-design-spec/            # main skill — vault generation
 │       │   │   ├── SKILL.md
@@ -560,7 +564,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.14.0** — adds `/grand-design-spec:flow`, the multi-skill lifecycle orchestrator. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms with user once, then executes in `--auto` mode. Existing skills gain a `--auto` flag that skips logistical prompts but never substance prompts (anti-halu rails preserved by composition). The v0.11 `OQ_BLOCKER` halt-artifact unifies into a `blocker` envelope with new `diff_conflict` and `drift_framework_mismatch` types. Earlier highlights: v0.13 closed audit findings + extracted shared `vault-contract.md`; v0.12.x exposed lifecycle skills as slash commands; v0.11 introduced `vault.json` + halt protocol + mode-migration trigger.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.15.0** — adds `/grand-design-spec:from-prompt` for prompt-input mode (eliminates ChatGPT-to-Claude round-trip — type a brief, skill runs ≤10-question Q&A, writes seed-PRD.md as source for the existing pipeline). `flow` orchestrator gains Rule 0 (auto-chain from-prompt → grand-design-spec → resolve-oq when prompt detected) and shifts Rules 1, 2, 4, 5, 6 from opt-in/conditional chaining to default-on — every flow invocation now naturally walks the lifecycle to its endpoint. Anti-halu rails preserved by composition. Earlier highlights: v0.14 introduced the flow orchestrator + `--auto` flag + unified `blocker` envelope; v0.13 closed audit findings + extracted shared `vault-contract.md`; v0.11 introduced `vault.json` + halt protocol + mode-migration trigger.
 
 ## License
 
