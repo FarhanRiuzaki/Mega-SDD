@@ -1,6 +1,6 @@
 ---
 name: drift-detect
-version: 0.2.0
+version: 0.3.0
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -54,6 +54,54 @@ Each finding lands in one of these:
 | **Confirmed match** | Vault says X, code does X. (Surfaced in summary, not detailed in report.) | — |
 
 Each finding carries a **confidence**: `high` (exact name + type match found / not-found), `medium` (similar names but different signatures), `low` (heuristic guess based on keyword search).
+
+## --auto flag (v0.3+)
+
+The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip logistical prompts and the optional Step 5 interactive walkthrough.
+
+| Step | Interactive behavior | `--auto` behavior |
+|------|---------------------|-------------------|
+| Step 0 (vault path) | Ask | Auto-detect from CWD if exactly 1. |
+| Step 0 (codebase path) | Ask | If CWD obviously a code repo (has `composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod`), use CWD. Otherwise REQUIRE explicit arg — never guess. |
+| Step 0 (mode=new bail-out) | Surface migration trigger | Same — but emit `blocker` (type=`drift_framework_mismatch` if trigger isn't detectable, OR refuse cleanly with a structured message). |
+| Step 0.5 (drift scope) | Ask | Default to `full`. |
+| Step 1.5 (framework detection) | Auto-detect, propose scope dirs, ask user to confirm | Auto-confirm if confidence high (single framework signature found). If multi-framework or ambiguous → emit `blocker` (type=`drift_framework_mismatch`). |
+| Step 5 (interactive walkthrough) | Ask "walk now / save report only / cancel" | **Skip walkthrough.** Write `DRIFT-REPORT.md`. Surface top 3 PRIORITY-1 findings in chat. **Do NOT generate `DRIFT-ACTIONS.md`** — the action list is a deliberate human decision. |
+
+What stays interactive even with `--auto`:
+
+- **Major framework mismatch warning** — when vault implies one stack but codebase is another (e.g., vault says Java/Spring, code is PHP). Emits `blocker` per Step 0/1.5. Never assume vault is wrong.
+- **mode=new bail-out** — drift-detect refuses cleanly when vault is `mode=new`; this is a hard rule that `--auto` doesn't change.
+
+### `drift_framework_mismatch` blocker emission
+
+When framework detection fails or finds a mismatch with vault expectations:
+
+```yaml
+blocker:
+  type: drift_framework_mismatch
+  tag: n/a
+  priority: n/a
+  context: "<e.g. 'drift-detect Step 1.5: vault implies Java/Spring per 02-architecture; codebase is PHP/Laravel per composer.json'>"
+  resolver_owner: null
+  resolver_route: null
+  vault_version: "<current>"
+  source_skill: drift-detect
+  detected_framework: "<e.g. 'PHP/Laravel'>"
+  expected_framework: "<e.g. 'Java/Spring'>"
+```
+
+After emit, the skill stops. No `DRIFT-REPORT.md` is generated for the mismatched scope. Caller decides whether to override scope or correct vault.
+
+What `--auto` does NOT do:
+
+- ❌ Generate `DRIFT-ACTIONS.md` (deliberate human decision; `--auto` only writes reports).
+- ❌ Modify vault content (drift-detect is read-only by design).
+- ❌ Open PRs or run code changes.
+
+When this skill is invoked without `--auto`, behavior is unchanged from v0.2.
+
+---
 
 ## Workflow
 
