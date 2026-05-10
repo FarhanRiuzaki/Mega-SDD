@@ -46,13 +46,14 @@ flowchart LR
 
 | Slash command | Use when | Skill |
 |---------------|----------|-------|
+| `/grand-design-spec:flow` ⭐ (v0.14) | "Do the next thing" — inspects state, proposes a chain, runs sub-skills with `--auto` | lifecycle orchestrator |
 | `/grand-design-spec:grand-design-spec` | Initial vault from PRD/BRD/Figma | vault generator |
 | `/grand-design-spec:resolve-oq` | Stakeholder meeting answered some OQs | OQ resolver |
 | `/grand-design-spec:vault-diff` | PRD got a new version | vault evolution |
 | `/grand-design-spec:drift-detect` | `mode=existing` — reconcile against live codebase | vault ↔ code drift |
 | `/grand-design-spec:update` | Pull latest plugin from `origin/main` and refresh cache | plugin maintenance |
 
-The four lifecycle skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds. `update` is a maintenance command (no vault interaction).
+The four lifecycle skills share the vault as state. `flow` orchestrates them — inspects CWD, proposes a chain (e.g., "vault-diff → resolve-oq for new P1s"), confirms once, runs the chain in `--auto` mode while preserving every anti-halu rail. They all preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds. `update` is a maintenance command (no vault interaction).
 
 > **See it before you install** → [`examples/`](./examples/) ships a sample PRD (a fictional leave-management web app called "TimeOff") that you can run through the skill to produce a reference vault. Read [`examples/README.md`](./examples/README.md) for the walkthrough.
 
@@ -507,16 +508,19 @@ grand-design-spec/                            # marketplace repo root
 │   └── grand-design-spec/                    # the plugin
 │       ├── .claude-plugin/plugin.json        # plugin manifest
 │       ├── commands/                         # user-typeable slash commands
+│       │   ├── flow.md                       # → orchestrator skill (v0.14)
 │       │   ├── grand-design-spec.md          # → main vault generator skill
 │       │   ├── resolve-oq.md                 # → OQ resolver skill
 │       │   ├── vault-diff.md                 # → vault evolution skill
 │       │   ├── drift-detect.md               # → vault ↔ code drift skill
 │       │   └── update.md                     # plugin maintenance: git pull + cache nudge
 │       ├── skills/
+│       │   ├── flow/                         # orchestrator skill (v0.14)
+│       │   │   └── SKILL.md
 │       │   ├── grand-design-spec/            # main skill — vault generation
 │       │   │   ├── SKILL.md
 │       │   │   └── references/
-│       │   │       ├── vault-contract.md     # shared schema + OQ + ID conventions (v0.13)
+│       │   │       ├── vault-contract.md     # shared schema + OQ + ID + halt-protocol (v0.13/v0.14)
 │       │   │       └── templates/*.md        # 7 scaffolds (compact/full markers, v0.13)
 │       │   ├── resolve-oq/                   # companion skill — OQ resolution
 │       │   │   └── SKILL.md
@@ -556,7 +560,7 @@ Issues and PRs welcome. High-leverage contributions:
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.13.0** — closes 3 HIGH and 4 MED ship-readiness audit findings: `vault-diff` now refreshes `vault.json` after applying changes (the v0.11 parity gap), `drift-detect` documents its no-auto-regen boundary, `lock-vault` forward-references replaced with manual-edit instructions, and a shared `references/vault-contract.md` becomes the single source of truth for the JSON schema and OQ conventions. Templates gain `<!-- compact-skip -->` / `<!-- full-only -->` markers replacing 5 memorized runtime transformations. New [`CONTRIBUTING.md`](./CONTRIBUTING.md) documents independent skill semver. Earlier highlights: v0.12.x exposed lifecycle skills as slash commands; v0.11 introduced `vault.json` + `OQ_BLOCKER` halt protocol + mode-migration trigger.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **v0.14.0** — adds `/grand-design-spec:flow`, the multi-skill lifecycle orchestrator. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms with user once, then executes in `--auto` mode. Existing skills gain a `--auto` flag that skips logistical prompts but never substance prompts (anti-halu rails preserved by composition). The v0.11 `OQ_BLOCKER` halt-artifact unifies into a `blocker` envelope with new `diff_conflict` and `drift_framework_mismatch` types. Earlier highlights: v0.13 closed audit findings + extracted shared `vault-contract.md`; v0.12.x exposed lifecycle skills as slash commands; v0.11 introduced `vault.json` + halt protocol + mode-migration trigger.
 
 ## License
 

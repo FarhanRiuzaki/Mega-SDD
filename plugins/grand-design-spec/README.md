@@ -45,15 +45,21 @@ flowchart LR
 
 | Slash command | Skill | Purpose |
 |---------------|-------|---------|
-| `/grand-design-spec:grand-design-spec` | **`grand-design-spec`** | Initial vault generation. PRD/BRD/Figma → 7-file dev handoff folder with anti-hallucination guarantees. Also writes a `vault.json` manifest for machine consumption. |
-| `/grand-design-spec:resolve-oq` | **`resolve-oq`** | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with version bump + Changelog. Preserves OQ tag identity as audit trail. Cross-cutting OQs land in a primary doc with cross-refs in others. |
-| `/grand-design-spec:vault-diff` | **`vault-diff`** | Vault evolution when the PRD/BRD source revisions. Computes structured diff, surfaces conflicts (Resolved-OQ vs new PRD, ADR vs new PRD) for explicit user resolution, applies approved changes without losing prior history. |
-| `/grand-design-spec:drift-detect` | **`drift-detect`** | For `mode=existing` vaults: scans the live codebase, compares against vault, flags drift (entity rename, type changed, decision violated, code shipped without ADR). For `mode=new` vaults, surfaces the `mode_migrate_after` trigger so you know what to do before re-running. |
+| `/grand-design-spec:flow` ⭐ | **`flow`** (v0.14) | Lifecycle orchestrator. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms with user once, then executes the chain in `--auto` mode. Stateless. Pauses on `blocker` artifacts. Anti-halu rails preserved by composition. |
+| `/grand-design-spec:grand-design-spec` | **`grand-design-spec`** | Initial vault generation. PRD/BRD/Figma → 7-file dev handoff folder with anti-hallucination guarantees. Also writes a `vault.json` manifest for machine consumption. Supports `--auto` (v0.10+). |
+| `/grand-design-spec:resolve-oq` | **`resolve-oq`** | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with version bump + Changelog. Preserves OQ tag identity as audit trail. Cross-cutting OQs land in a primary doc with cross-refs in others. Supports `--auto` for logistical prompts (v0.4+); per-OQ choices stay interactive. |
+| `/grand-design-spec:vault-diff` | **`vault-diff`** | Vault evolution when the PRD/BRD source revisions. Computes structured diff, surfaces conflicts (Resolved-OQ vs new PRD, ADR vs new PRD) for explicit user resolution, applies approved changes without losing prior history. Supports `--auto` (v0.3+); conflicts emit `blocker` (type=`diff_conflict`) and pause. |
+| `/grand-design-spec:drift-detect` | **`drift-detect`** | For `mode=existing` vaults: scans the live codebase, compares against vault, flags drift (entity rename, type changed, decision violated, code shipped without ADR). For `mode=new` vaults, surfaces the `mode_migrate_after` trigger so you know what to do before re-running. Supports `--auto` (v0.3+); skips interactive walkthrough, writes `DRIFT-REPORT.md` only. |
 | `/grand-design-spec:update` | _(no skill — bash wrapper)_ | Plugin maintenance. `git pull --ff-only` inside `~/.claude/plugins/marketplaces/grand-design-spec/`, prints before/after version, then prompts you to run the built-in `/plugin marketplace update grand-design-spec` to rebuild the cache. |
 
 ## Lifecycle at a glance
 
 ```
+                                  flow (v0.14)
+                          ────────────────────────────
+                          orchestrates the row below
+                          based on CWD state, in --auto
+
    Initial PRD      Stakeholder mtg     PRD revisi      Live codebase
        │                  │                  │                 │
        ▼                  ▼                  ▼                 ▼
@@ -64,6 +70,8 @@ flowchart LR
   vault v1.0        vault v1.1         vault v1.2       DRIFT-REPORT.md
                                                         DRIFT-ACTIONS.md
 ```
+
+`flow` is the recommended entry point: it inspects state, proposes a chain across the row above, confirms once, runs sub-skills in `--auto` mode. Direct invocation of any sub-skill still works (and bypasses orchestration when you want full interactive control).
 
 ## What `grand-design-spec` produces
 
