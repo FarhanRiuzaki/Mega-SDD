@@ -5,6 +5,48 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] — 2026-05-10
+
+The agentic upgrade. Adds `/grand-design-spec:flow`, a multi-skill lifecycle orchestrator that turns the plugin from "4 separate tools" into "one workflow." Inspects CWD, proposes a sub-skill chain (e.g., "vault-diff → resolve-oq for new P1s"), confirms once, executes in `--auto` mode. Anti-halu rails preserved by composition — every rail lives in a sub-skill, untouched.
+
+### Skill version moves
+
+- `flow`: **NEW at 0.1.0** (lifecycle orchestrator)
+- `grand-design-spec`: 0.9.0 → **0.10.0** (added `--auto` flag for logistical prompts)
+- `resolve-oq`: 0.3.0 → **0.4.0** (added `--auto` for logistics; per-OQ choices stay interactive)
+- `vault-diff`: 0.2.0 → **0.3.0** (added `--auto` flag; conflicts emit `blocker` type=`diff_conflict`)
+- `drift-detect`: 0.2.0 → **0.3.0** (added `--auto` flag; skips interactive walkthrough; framework mismatch emits `blocker` type=`drift_framework_mismatch`)
+
+### Added
+
+- **`/grand-design-spec:flow`** — the orchestrator command. Inspects WORK_DIR for vault, PRD, codebase signals, P1 count, mode-migration trigger, git state. Applies a 7-rule decision matrix to build a proposed chain (max 3 skills). Single user confirmation (Run / Edit / Cancel). Edit supports `skip step N` and `stop after step N` in v0.1; reordering deferred. Stateless — resumption is just re-invoking. Pauses on `blocker` artifacts; surfaces YAML verbatim in chat.
+- **`§halt-protocol`** in `references/vault-contract.md` — unified `blocker` envelope with three types: `oq_blocker` (per v0.11), `diff_conflict` (vault-diff conflicts), `drift_framework_mismatch` (drift-detect framework mismatches). Schema, field rules, type-specific guidance, multi-blocker array form, and v0.11 → v0.14 backward-compat note.
+- **`--auto` convention** documented in CONTRIBUTING.md — required for any future skill with prompts. Skips logistical prompts (paths, modes, scopes); never skips substance prompts (stakeholder answers, conflict resolutions); emits `blocker` when halted autonomously.
+
+### Changed
+
+- **`00-index.md` template Halt protocol section** — emits `blocker: type: oq_blocker` (new unified envelope) instead of legacy `oq_blocker:` form. Backward-compat note appended for AI consumers reading v0.13 vaults.
+- **`grand-design-spec/SKILL.md`** — adds `## --auto flag` section before Workflow describing how Step 0–0.7 prompts default in `--auto` mode (output folder slug-derived, mode inferred from codebase signals, PRD_STATUS=draft, OUTPUT_MODE=compact). Anti-halu rails (Figma "do you have screenshots?", destructive overwrite confirmation, OQ tagging, source citation) NEVER bypassed.
+- **`resolve-oq/SKILL.md`** — adds `## --auto flag` section. Substance prompts (per-OQ Resolve/OOS/Defer/Skip choice, cross-cutting landing) ALWAYS interactive. Logistics (vault path, resume detection, scope, lock ack default) auto-defaulted.
+- **`vault-diff/SKILL.md`** — adds `## --auto flag` section. Conflicts (Resolved-OQ, Decision) emit `blocker` (type=`diff_conflict`) and pause. Auto-applies non-conflict changes ≤ 50; emits `blocker` if change count exceeds cap (per OQ-FLOW-3 spec decision).
+- **`drift-detect/SKILL.md`** — adds `## --auto flag` section. Skips Step 5 interactive walkthrough; writes `DRIFT-REPORT.md` only (no `DRIFT-ACTIONS.md` — deliberate human decision). Framework mismatch emits `blocker` (type=`drift_framework_mismatch`).
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.13.0 → 0.14.0.
+- **`README.md`** + **`plugins/grand-design-spec/README.md`** — add `/grand-design-spec:flow` to commands tables, update lifecycle diagram (flow as recommended entry point), update repo structure with `flow/` skill dir.
+
+### Backward compatibility
+
+- v0.13 vaults continue to work read-only.
+- AI consumers reading vault halts should accept both `oq_blocker:` (legacy v0.11–v0.13 form) and `blocker: type: oq_blocker` (new v0.14 form) for one release cycle. v0.15+ may drop legacy support.
+- Direct sub-skill invocation (without `flow`) is unchanged when `--auto` is not passed — full interactive behavior per v0.13.
+- `flow` is opt-in. Users who prefer manual sub-skill invocation can ignore it entirely.
+
+### Notes
+
+- The orchestrator is **stateless by design**. No `.gds-state.json` is written. This simplifies the contract (every flow run re-inspects CWD) but means "did I forget drift-detect?" recall depends on user re-running flow.
+- **Hard cap of 3 skills per chain** prevents runaway chains. Beyond 3, orchestrator surfaces and asks for explicit confirmation.
+- **`flow` does NOT run sub-skills in parallel** — sequential only. Sub-skills modifying the same vault would race otherwise.
+- Audit findings deferred to v0.15+: state file with lifecycle position tracking (Approach 2 from brainstorming), reorder-and-edit-args plan editing, scheduled-mode drift-detect via `schedule` skill, self-critiquing loops (Approach 4 from brainstorming).
+
 ## [0.13.0] — 2026-05-09
 
 Driven by the ship-readiness audit at `docs/superpowers/specs/2026-05-09-plugin-audit-design.md`. Closes 3 HIGH and 4 MED audit findings. Acknowledges that v0.11 vault.json parity was incomplete (only `resolve-oq` got write-back; `vault-diff` was missed) and lands the fix.
