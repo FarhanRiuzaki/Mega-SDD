@@ -5,6 +5,48 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] — 2026-05-10
+
+The prompt-input release. Adds `/grand-design-spec:from-prompt` so users can start from a free-text brief instead of a PRD doc — eliminating the ChatGPT-to-Claude round-trip for prompt engineering. The orchestrator's `flow` chain becomes default-on across all rules: every invocation now walks the lifecycle to its natural endpoint without opt-in friction.
+
+### Skill version moves
+
+- `from-prompt`: **NEW at 0.1.0** (brief → seed-PRD elaborator)
+- `flow`: 0.1.0 → **0.2.0** (Rule 0 + default-on chaining for Rules 1, 2, 4, 5, 6 + arg parsing extension for free-text prompts)
+- `grand-design-spec`: unchanged at 0.10.0 (consumes seed-PRD.md as a normal source — no behavior change needed)
+- `resolve-oq`: unchanged at 0.4.0
+- `vault-diff`: unchanged at 0.3.0
+- `drift-detect`: unchanged at 0.3.0
+
+### Added
+
+- **`/grand-design-spec:from-prompt`** — converts a free-text brief into `<output-dir>/source/seed-PRD.md`. Workflow: capture brief verbatim → adaptive Q&A across 10 fixed taxonomy topics (skip topics already covered in brief, hard cap at 10 questions) → compose seed-PRD with citation markers (`(brief)` / `(Q&A §N)` / `(unspecified)`) on every claim → write to disk. Substance prompts always interactive even with `--auto`. Halt protocol: emits `blocker` (type=`oq_blocker`, tag=`OQ-FROMPROMPT-0`) when brief is unparseable in `--auto` mode.
+- **Rule 0 in `flow`'s decision matrix** — fires when no vault and no PRD file detected and prompt arg given. Auto-chains `from-prompt → grand-design-spec → resolve-oq (scope=p1-only)`. drift-detect not applicable (mode=new for prompt-input vaults).
+- **Default-on chaining for `flow` Rules 1, 2, 4, 5, 6** — `resolve-oq` and `drift-detect` (when applicable) now chain automatically instead of being opt-in/conditional. User skips individual steps via `Edit plan: skip step N` in Step 3 confirmation. Plan-confirmation step still surfaces full chain before any skill runs.
+- **Free-text arg parsing in `flow` Step 0** — args >20 chars without path-like characters are recognized as prompts (persisted as `EXPLICIT_PROMPT`). Borderline ambiguous args trigger `AskUserQuestion` clarification.
+- **`seed-PRD` as a recognized `vault.json.source_documents[].type`** value — documented in `from-prompt/SKILL.md` references; `vault-contract.md` §schema treats `type` as free-form so no contract change required.
+
+### Changed
+
+- **`flow/SKILL.md`** Step 0 arg-parsing block extended to recognize free-text prompts; Decision matrix block fully replaced with v0.2 7-rule revision (adds Rule 0, marks Rules 1/2/4/5/6 as default-on); version 0.1.0 → 0.2.0.
+- **`plugin.json`** and **`marketplace.json` plugins[0].version** bumped 0.14.0 → 0.15.0.
+- **`README.md`** + **`plugins/grand-design-spec/README.md`** — add `/grand-design-spec:from-prompt` row, update lifecycle diagram (from-prompt as new entry point), update repo structure with `from-prompt/` skill dir, bump changelog footer.
+
+### Backward compatibility
+
+- v0.14 vaults continue to work unchanged. seed-PRD.md is just another source for `grand-design-spec` — no schema or vault structure changes.
+- Direct invocation of `flow` with file/dir args works exactly as v0.14 (Rule 0 only fires when args are free text).
+- Direct invocation of `flow` without args produces a Rule 7 STOP if WORK_DIR is empty — same as v0.14, with updated error message mentioning prompt option.
+- Default-on chaining is a behavior change for users who relied on opt-in chains in v0.14. Mitigation: plan-confirmation step shows the full chain; user edits to skip steps they don't want. No anti-halu rail changes.
+- Direct invocation of any sub-skill (`from-prompt`, `grand-design-spec`, etc.) without `flow` is unchanged — full interactive behavior when `--auto` is not passed.
+
+### Notes
+
+- The orchestrator stays **stateless by design**. Re-running `flow` re-inspects CWD; no `.gds-state.json` is written.
+- **Hard cap of 3 skills per chain** stays at 3 (verified across all 7 rules including the new Rule 0).
+- **`flow` does NOT run sub-skills in parallel** — sequential only.
+- Audit findings deferred to v0.16+: vault evolution from a new prompt (`from-prompt → vault-diff` chain), multi-turn brief refinement, seed-PRD versioning across runs, voice-input briefs, reorder-and-edit-args plan editing in flow.
+
 ## [0.14.0] — 2026-05-10
 
 The agentic upgrade. Adds `/grand-design-spec:flow`, a multi-skill lifecycle orchestrator that turns the plugin from "4 separate tools" into "one workflow." Inspects CWD, proposes a sub-skill chain (e.g., "vault-diff → resolve-oq for new P1s"), confirms once, executes in `--auto` mode. Anti-halu rails preserved by composition — every rail lives in a sub-skill, untouched.
