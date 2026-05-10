@@ -1,6 +1,6 @@
 ---
 name: vault-diff
-version: 0.2.0
+version: 0.3.0
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -49,6 +49,54 @@ Every diff item lands in one of these categories. The skill walks them in this o
 | **Resolved-OQ conflict** | An OQ resolved in a prior round (`[x]` in vault) now has a different answer in the new PRD. | Surface inline; user must decide: keep prior resolution (and OOS the new PRD line), supersede the prior with new content, or capture both as independent decisions. | **Yes — always.** Never silently overwrite. |
 | **Decision conflict** | An ADR in vault contradicts new PRD §X.Y. | Surface inline; user decides supersede vs reformulate. | **Yes — always.** |
 | **Unchanged** | Old vault content is still accurate per new PRD. | No-op. | No. |
+
+## --auto flag (v0.3+)
+
+The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip logistical prompts. **Substance prompts — Resolved-OQ conflicts and Decision conflicts — ALWAYS stay interactive OR emit a blocker artifact.** Conflicts represent disagreement between vault state and new source; auto-deciding would silently overwrite stakeholder choices.
+
+| Step | Interactive behavior | `--auto` behavior |
+|------|---------------------|-------------------|
+| Step 0 (vault path) | Auto-detect or ask | Use auto-detected if exactly 1 vault in CWD. |
+| Step 0 (git safety check) | Ask if uncommitted | Continue but record uncommitted state in the diff report's metadata. |
+| Step 0.5 (diff scope) | Ask | Default to `full`. |
+| Step 1 (old source path) | Ask once | Skip — use vault-state-only. |
+| Step 5 (per-conflict resolution) | Ask Supersede/Keep/Both/Skip | **Emit `blocker` (type=`diff_conflict`)** per conflict and pause. Caller decides next steps. |
+| Step 5 (auto-resolved OQs batch confirm) | Ask "Apply all / one-by-one / skip" | Default to "Apply all". |
+| Step 5 (added/changed/removed batch confirm) | Ask | Auto-apply if total change count ≤ 50; otherwise pause and emit `blocker` (type=`diff_conflict`, tag=`OQ-FLOW-3-cap`, context="change count exceeds auto-apply cap"). |
+| Step 6 (apply changes Y/N) | Ask | Skip — apply approved (non-conflict) changes. |
+| Step 7 (vault version bump type) | Ask patch vs minor | Use heuristic: minor if any conflicts had user input OR added entities/flows ≥ 5; patch otherwise. |
+
+What stays interactive even with `--auto`:
+
+- **Resolved-OQ conflicts** — emit `blocker` per conflict, never auto-decide.
+- **Decision conflicts** — same.
+- **Major scope shift detection** — push-back rule from existing skill (e.g., >50% entity churn) still triggers.
+- **LOCKED vault confirmation** — destructive, audit-significant.
+
+### `diff_conflict` blocker emission
+
+When a conflict is hit in `--auto` mode, instead of `AskUserQuestion`, emit:
+
+```yaml
+blocker:
+  type: diff_conflict
+  tag: <OQ-DC-2 | D-007 | etc.>
+  priority: n/a
+  context: "<e.g. 'vault-diff Step 5: Resolved-OQ conflict on idempotency strategy'>"
+  resolver_owner: "<from vault metadata or null>"
+  resolver_route: "<from vault metadata or null>"
+  vault_version: "<current>"
+  source_skill: vault-diff
+  conflict_old: "<vault state, verbatim from VAULT-DIFF.md>"
+  conflict_new: "<new PRD state, verbatim from VAULT-DIFF.md>"
+  options: ["supersede", "keep_vault", "capture_both"]
+```
+
+After emit, halt the apply phase. The diff report (`VAULT-DIFF.md`) is still written with the conflict surfaced. The caller (orchestrator or human) handles resolution and re-invokes `vault-diff` (without `--auto`) to walk it interactively.
+
+When this skill is invoked without `--auto`, behavior is unchanged from v0.2.
+
+---
 
 ## Workflow
 
