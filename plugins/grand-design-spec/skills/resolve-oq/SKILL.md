@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.3.0
+version: 0.4.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -34,6 +34,30 @@ Every Open Question carries a stable identifier (`OQ-{CODE}-{N}`) that tracks th
 3. The vault version bumps; the Changelog records which OQs were resolved in this round.
 
 This preserves auditability — anyone reviewing the vault later can trace each OQ tag from its origin in the PRD gap analysis to its final resolution.
+
+## --auto flag (v0.4+)
+
+The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That's the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
+
+| Step | Interactive behavior | `--auto` behavior |
+|------|---------------------|-------------------|
+| Step 0 (vault location) | Ask via `AskUserQuestion` | If exactly 1 vault detected in CWD, use it without prompting. If 0 or >1, ask (or fail loudly if called with `--auto` from a non-orchestrator context). |
+| Step 0 (lock check, if `Status: 🔒 LOCKED`) | Ask user to confirm unlock | Default to "proceed if DRAFT" (no unlock implied). If LOCKED, **STILL ASK** — unlocking has audit consequences. |
+| Step 0.5 (resume detection) | Ask continue / fresh / cancel | Default to "continue from current state". |
+| Step 0.6 (resolution scope) | Ask scope | Default to `p1-only`. |
+| Step 2 (per-OQ Resolve/OOS/Defer/Skip) | **Always ask** | **Always ask** (substance prompt — no override) |
+| Step 2c (cross-cutting multi-doc landing) | Ask user to confirm primary doc | Always ask (substance prompt — landing affects content placement) |
+
+What stays interactive even with `--auto`:
+
+- **Per-OQ choice** (Resolve / OOS / Defer / Skip) — captures stakeholder answers; never auto-decides.
+- **Resolution destination override** when auto-classification is wrong.
+- **Cross-cutting OQ landing prompts** — affects which doc the answer lives in.
+- **LOCKED vault unlock confirmation** — audit-significant.
+
+When this skill is invoked without `--auto`, behavior is unchanged from v0.3.
+
+---
 
 ## Resolution outcomes
 
