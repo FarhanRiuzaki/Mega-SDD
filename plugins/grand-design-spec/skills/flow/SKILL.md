@@ -1,6 +1,6 @@
 ---
 name: flow
-version: 0.1.0
+version: 0.2.0
 description: Multi-skill lifecycle orchestrator for grand-design-spec. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms with user once, then executes the chain in --auto mode. Triggers — "run the flow", "orchestrate vault lifecycle", "auto vault", "do the next thing", or paraphrases.
 ---
 
@@ -48,14 +48,17 @@ Accept arguments:
 - **No args** → operate on CWD.
 - **One arg = directory path** → operate on this vault.
 - **One arg = file path** (`.pdf`/`.docx`/`.md`) → bias toward "vault-diff this PRD against the closest vault in CWD".
+- **One arg = free text** (>20 chars, no path-like characters such as `/`, `.`, or starting with `~`) → treat as prompt for Rule 0 chain.
+- **Borderline ambiguous arg** (e.g., 15-char input, or contains both file-like and prose-like content) → ask user via `AskUserQuestion`: "Treat this as a prompt or look for it as a file path?".
 
 Persist:
 
 - `WORK_DIR=<resolved CWD>`
 - `EXPLICIT_VAULT_PATH=<path or null>`
 - `EXPLICIT_PRD_PATH=<path or null>`
+- `EXPLICIT_PROMPT=<text or null>` (v0.2+)
 
-If WORK_DIR is empty (no files at all) and no args, STOP and tell the user: *"No vault, no PRD detected. Point me at one: `/grand-design-spec:flow ./vault-dir/` or `/grand-design-spec:flow PRD-v2.pdf`."*
+If WORK_DIR is empty (no files at all) and no args, STOP and tell the user: *"No vault, no PRD, no prompt detected. Point me at one: `/grand-design-spec:flow ./vault-dir/`, `/grand-design-spec:flow PRD-v2.pdf`, or `/grand-design-spec:flow \"<your brief>\"`."*
 
 ### Step 1: CWD inspection
 
@@ -76,36 +79,41 @@ Persist findings as a structured state object that Step 2 reads.
 
 ### Step 2: Build proposed chain
 
-Apply the decision matrix in order. First match wins; conditional chains add subsequent steps when their preconditions are met.
+Apply the decision matrix in order. First match wins; chains include all applicable downstream skills by default. User can skip individual steps via `Edit plan: skip step N` in Step 3 confirmation.
 
 ```
-RULE 1 — IF no vault AND PRD detected:
-    → propose: grand-design-spec (generate)
-    → optional chain: resolve-oq (offered as opt-in in confirmation, since user may not have stakeholder answers yet)
+RULE 0 (NEW v0.2) — IF no vault AND no PRD file detected AND prompt arg given:
+    → chain: from-prompt → grand-design-spec → resolve-oq (scope=p1-only)
+    → drift-detect not applicable (mode=new vault, no codebase yet)
 
-RULE 2 — IF vault exists AND new PRD detected
+RULE 1 (default-on v0.2) — IF no vault AND PRD detected:
+    → chain: grand-design-spec → resolve-oq (scope=p1-only)
+    → drift-detect chained ONLY IF user selected mode=existing during gds
+
+RULE 2 (default-on v0.2) — IF vault exists AND new PRD detected
     (filename or version differs from vault's PRD source):
-    → propose: vault-diff
-    → conditional chain: resolve-oq IF vault-diff is expected to introduce ≥1 new P1 OQ
-      (heuristic estimate from PRD content delta; surfaced as estimate in plan)
+    → chain: vault-diff → resolve-oq (scope=p1-only, only if new P1s introduced)
+    → drift-detect chained ONLY IF mode=existing AND codebase available in CWD
 
-RULE 3 — IF vault exists AND vault.json missing:
-    → propose: grand-design-spec re-run with vault's existing flags (regenerates manifest)
+RULE 3 (unchanged) — IF vault exists AND vault.json missing:
+    → chain: grand-design-spec re-run with vault's existing flags (regenerates manifest only)
 
-RULE 4 — IF vault exists AND P1 count > 0 AND no new PRD:
-    → propose: resolve-oq (scope=p1-only)
+RULE 4 (default-on v0.2) — IF vault exists AND P1 count > 0 AND no new PRD:
+    → chain: resolve-oq (scope=p1-only)
+    → drift-detect chained ONLY IF mode=existing AND codebase available
 
-RULE 5 — IF vault exists AND mode=existing AND codebase detected:
-    → propose: drift-detect
-    → conditional chain: resolve-oq IF drift findings produce vault-side actions
+RULE 5 (default-on v0.2) — IF vault exists AND mode=existing AND codebase detected:
+    → chain: drift-detect → resolve-oq (scope=p1-only, only if vault-side actions queued)
 
-RULE 6 — IF vault exists AND mode=new AND mode_migrate_after trigger has fired:
-    → propose: vault-diff with mode flip prompt OR manual edit instruction
+RULE 6 (default-on v0.2) — IF vault exists AND mode=new AND mode_migrate_after trigger has fired:
+    → chain: vault-diff with mode flip prompt OR manual edit instruction → resolve-oq (only if new P1s introduced)
       (only if trigger is auto-detectable — e.g., "first commit on main")
 
-RULE 7 — IF nothing matched:
+RULE 7 (unchanged) — IF nothing matched:
     → STOP, surface "no vault or PRD found, or no actionable state — point me at a PRD or vault dir"
 ```
+
+**Default-on behavior change** (v0.1 → v0.2): Rules 1, 2, 4, 5, 6 previously had opt-in / conditional chaining for `resolve-oq` and `drift-detect`. v0.2 makes those chains default-on. User skips via `Edit plan: skip N` in the Step 3 confirmation. Friction shifts from "remember to opt in" to "edit out if not wanted." Plan-confirmation step still surfaces full chain before any skill runs.
 
 **Hard cap**: max 3 skills per chain. If the matrix produces more than 3, surface and ask for explicit confirmation before proceeding.
 
