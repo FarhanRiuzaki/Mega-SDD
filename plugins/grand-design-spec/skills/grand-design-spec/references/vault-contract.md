@@ -108,3 +108,94 @@ Across all skills, these identifiers are **stable across rounds**:
 - Entity names — DBML table names; preserve casing across edits.
 
 When a sibling skill creates new entries, use **next-available** number, never reuse.
+
+## §halt-protocol — Unified `blocker` envelope (v0.14)
+
+When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, vault-diff conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/grand-design-spec:flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
+
+The envelope is uniform across types so a single consumer can handle all of them.
+
+### Schema
+
+```yaml
+blocker:
+  type: oq_blocker | diff_conflict | drift_framework_mismatch
+  tag: <stable identifier — OQ-AR-1, D-007, etc.>
+  priority: P1 | P2 | P3 | n/a
+  context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
+  resolver_owner: "<name or role, e.g. 'Mike Patel (Eng Lead)'>"
+  resolver_route: "<where to find them, e.g. 'ask in #timeoff-team'>"
+  vault_version: "<current vault version, e.g. '1.1'>"
+  source_skill: grand-design-spec | vault-diff | drift-detect
+  # type-specific fields below
+  conflict_old: "<vault state>"            # diff_conflict only
+  conflict_new: "<new PRD state>"          # diff_conflict only
+  options: ["supersede", "keep_vault", "capture_both"]  # diff_conflict only
+  detected_framework: "<e.g. 'Java/Spring'>"  # drift_framework_mismatch only
+  expected_framework: "<e.g. 'PHP/Laravel'>"  # drift_framework_mismatch only
+```
+
+### Type-specific guidance
+
+**`oq_blocker`** — emitted by `grand-design-spec` (when generation surfaces a P1 that would block downstream tasks) or by AI consumers reading the vault non-interactively. The `tag` is the OQ identifier. `priority` is always `P1` (lower priorities don't halt).
+
+**`diff_conflict`** — emitted by `vault-diff` Step 5 when a Resolved-OQ conflict or Decision conflict requires stakeholder input. `tag` is the OQ or ADR ID. `priority` is `n/a` (conflicts aren't priority-tagged). `conflict_old`, `conflict_new`, `options` are required.
+
+**`drift_framework_mismatch`** — emitted by `drift-detect` Step 1.5 when the vault implies one framework but the codebase is another. `tag` is `n/a`. `priority` is `n/a`. `detected_framework` and `expected_framework` are required.
+
+### Multiple blockers in one run
+
+For multiple blockers in a single sub-skill run, emit an array:
+
+```yaml
+blockers:
+  - type: oq_blocker
+    tag: OQ-AR-1
+    priority: P1
+    context: "Implementing F-U-001 backend"
+    resolver_owner: "Mike Patel"
+    resolver_route: "ask in #timeoff-team"
+    vault_version: "1.0"
+    source_skill: grand-design-spec
+  - type: diff_conflict
+    tag: OQ-DC-2
+    priority: n/a
+    context: "Applying vault-diff to PRD-v2.pdf"
+    resolver_owner: "Mike Patel"
+    resolver_route: "ask in #timeoff-team"
+    vault_version: "1.1"
+    source_skill: vault-diff
+    conflict_old: "Idempotency 24h TTL (D-010)"
+    conflict_new: "Idempotency 7d TTL (PRD §X.Y)"
+    options: ["supersede", "keep_vault", "capture_both"]
+```
+
+### Backward compatibility
+
+Vaults generated under v0.13 still emit the legacy `oq_blocker:` YAML form (without the unified envelope). AI consumers reading vaults should accept both shapes for one release cycle:
+
+```yaml
+# Legacy v0.13 form (still valid):
+oq_blocker:
+  tag: OQ-AR-1
+  priority: P1
+  ...
+
+# New v0.14 form:
+blocker:
+  type: oq_blocker
+  tag: OQ-AR-1
+  priority: P1
+  ...
+```
+
+Vaults regenerated under v0.14+ produce only the new form.
+
+### Field rules
+
+- `tag` mirrors the markdown identifier (OQ tag, ADR ID, or `n/a`). Never invent.
+- `resolver_owner` is best-effort; use `null` if not declared in the OQ entry.
+- `vault_version` is the current vault version at emit time, not the target post-resolution version.
+- `source_skill` identifies the emitting skill — needed because consumers may dispatch differently per source.
+- `context` is human-readable; keep it short (one line). It's not a structured field.
+- For `diff_conflict`, `options` MUST list the user choices verbatim from the diff report (e.g., "supersede", "keep_vault", "capture_both").
