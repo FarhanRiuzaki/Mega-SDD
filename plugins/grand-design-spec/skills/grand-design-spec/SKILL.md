@@ -1,6 +1,6 @@
 ---
 name: grand-design-spec
-version: 0.9.0
+version: 0.10.0
 description: Break down PRD/BRD and Figma into 7 markdown files + a vault.json manifest for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
 ---
 
@@ -89,6 +89,38 @@ The user typically provides one or more of:
 - **Optional context**: existing system docs, tech stack constraints, prior architecture decisions.
 
 If critical inputs are missing or unclear, **ask before generating**. Better 5 upfront questions than 7 docs of guesses.
+
+---
+
+## --auto flag (v0.10+)
+
+The `--auto` flag is set by upstream callers — typically `/grand-design-spec:flow`, the lifecycle orchestrator — to skip logistical prompts. When `--auto` is set, the Workflow steps below behave differently:
+
+| Step | Interactive behavior | `--auto` behavior |
+|------|---------------------|-------------------|
+| Step 0 (output path) | Ask user via `AskUserQuestion` | Default to `./<slug>-spec/` derived from PRD project name (slug-cased). If folder exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
+| Step 0.5 (IMPLEMENTATION_MODE) | Ask | Infer from codebase signals: `composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / etc. detected in CWD or vault parent → `existing`; else `new`. |
+| Step 0.5 (`mode_migrate_after`, mode=new only) | Ask | Default to `"first commit on main"`. |
+| Step 0.6 (PRD_STATUS) | Ask | Default to `draft` (safe default — generates more OQs, less assertion). |
+| Step 0.7 (OUTPUT_MODE) | Ask | Default to `compact`. |
+| Step 2 (gap-count push-back when PRD_STATUS=draft) | Pause if gap count > 10 | Skip the pause; dump all gaps to OQs (matches PRD_STATUS=final behavior). |
+
+What stays interactive even with `--auto`:
+
+- **Figma "do you have screenshots?" prompt** if Figma was referenced but no MCP loaded — must NOT invent UI structure.
+- **Destructive overwrite confirmations** when output folder exists and is non-empty.
+- **PROJECT_SHAPE confirmation** if inference confidence is low (skill's existing rule). Otherwise auto-confirm the inferred shape.
+
+What `--auto` does NOT do (anti-halu rails — NEVER bypass):
+
+- ❌ Auto-answer Open Questions or invent values for any field.
+- ❌ Skip source citation requirements.
+- ❌ Skip OQ tagging for gaps.
+- ❌ Pretend the PRD is final when stakeholder hasn't said so.
+
+When the skill is invoked via the `Skill` tool without an explicit `--auto` argument, default to interactive (current v0.9 behavior). Only enter `--auto` mode when the caller explicitly passes it.
+
+When `--auto` is active and the skill produces a P1 Open Question that would block downstream work, additionally emit a `blocker` artifact per `references/vault-contract.md` §halt-protocol. The orchestrator (or other autonomous caller) catches this and surfaces it to the human.
 
 ---
 
