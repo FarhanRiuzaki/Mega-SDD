@@ -141,39 +141,51 @@ This document is the **single source of truth for requirements**. When working f
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
 
-### Halt protocol for autonomous runs (v0.11)
+### Halt protocol for autonomous runs (v0.11, unified envelope v0.14)
 
-In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows), silent halt loses the signal. Instead, emit a structured `OQ_BLOCKER` artifact so the runner can route it.
+In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows, the `flow` orchestrator), silent halt loses the signal. Instead, emit a structured `blocker` artifact so the runner can route it.
+
+The unified envelope (per `references/vault-contract.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (vault-diff conflict), and `drift_framework_mismatch` (drift-detect framework mismatch).
 
 When you hit an unresolved P1 OQ that blocks your current task, emit (in addition to any chat response):
 
 ```yaml
-oq_blocker:
+blocker:
+  type: oq_blocker
   tag: OQ-AR-1
   priority: P1
-  category: "Tech stack & architecture"
-  blocking_task: "Implementing F-U-001 backend"
+  context: "Implementing F-U-001 backend"
   resolver_owner: "Mike Patel (Eng Lead)"
   resolver_route: "ask in PM Slack channel #timeoff-team or via PRD §L review"
   vault_version: "1.0"
-  doc: "02-architecture.md"
+  source_skill: grand-design-spec
 ```
 
 For multiple blockers in one task, emit an array:
 
 ```yaml
-oq_blockers:
-  - tag: OQ-AR-1
+blockers:
+  - type: oq_blocker
+    tag: OQ-AR-1
     priority: P1
-    blocking_task: "Implementing F-U-001 backend"
+    context: "Implementing F-U-001 backend"
     resolver_owner: "Mike Patel"
-  - tag: OQ-DM-1
+    resolver_route: "ask in #timeoff-team"
+    vault_version: "1.0"
+    source_skill: grand-design-spec
+  - type: oq_blocker
+    tag: OQ-DM-1
     priority: P1
-    blocking_task: "Implementing F-U-001 backend"
+    context: "Implementing F-U-001 backend"
     resolver_owner: "Mike Patel + security"
+    resolver_route: "ask in #timeoff-team"
+    vault_version: "1.0"
+    source_skill: grand-design-spec
 ```
 
-The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields.
+The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See `references/vault-contract.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).
+
+> **Backward compat note (v0.11→v0.14)**: vaults generated under v0.13 emit `oq_blocker:` (legacy form). AI consumers should accept both `oq_blocker:` and `blocker: type: oq_blocker` shapes for one release cycle.
 
 ### Parallel-work guidance while P1s are unresolved (v0.11)
 
