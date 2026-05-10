@@ -18,9 +18,12 @@
 
 ```mermaid
 flowchart LR
-    User([User]) -->|writes| PRD[PRD / BRD / Figma]
-    PRD --> Arch([IT Architect])
-    Arch -->|grand-design-spec| Vault[(Vault<br/>7 .md files)]
+    User([User]) -->|writes brief or attaches| Input[PRD / BRD / Figma<br/>or free-text brief]
+    Input --> Flow{flow<br/>orchestrator}
+    Flow -->|from-prompt v0.15| Seed[(seed-PRD.md)]
+    Seed --> GDS[grand-design-spec]
+    Flow -->|with PRD| GDS
+    GDS --> Vault[(Vault<br/>7 .md + vault.json)]
     Vault -->|grounded context| AI[AI Dev Tools<br/>Claude Code · Cursor]
     AI -->|HITL review| Code([Shipped Code])
 
@@ -29,16 +32,18 @@ flowchart LR
     Vault -.->|drift-detect| Vault
 
     style Vault fill:#fef3c7,stroke:#d97706,stroke-width:3px
-    style PRD fill:#dbeafe,stroke:#2563eb
+    style Seed fill:#fde68a,stroke:#d97706
+    style Input fill:#dbeafe,stroke:#2563eb
+    style Flow fill:#e9d5ff,stroke:#7e22ce,stroke-width:2px
     style Code fill:#d1fae5,stroke:#059669
 ```
 
 | | |
 |---|---|
-| **Who runs it** | IT Architect (generates vault) → Developer (consumes via AI tools) |
-| **When** | After PRD signed off, before sprint-0 |
-| **Output** | 7 markdown files: anti-halu, source-cited, gap-honest |
-| **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault |
+| **Who runs it** | IT Architect or Developer (one command via `flow`) → Developer consumes via AI tools |
+| **When** | Anytime — start from a brief, an attached PRD, or after a stakeholder meeting / PRD revision |
+| **Output** | 7 markdown files + `vault.json` manifest: anti-halu, source-cited, gap-honest |
+| **Mode** | Human-in-the-loop — stakeholders triage OQs; devs approve AI code citing vault. `flow` orchestrates skills with `--auto` for logistics; substance prompts always interactive |
 
 ---
 
@@ -69,14 +74,31 @@ Inside Claude Code, paste these two lines:
 /plugin install grand-design-spec@grand-design-spec
 ```
 
-Then in any session:
+Then in any session, pick whichever entry point matches your situation:
+
+**A. You have a PRD/BRD doc** — attach it and let `flow` drive:
+
+```text
+You: /grand-design-spec:flow
+     [attach PRD.pdf]
+```
+
+**B. You only have an idea** (no PRD yet) — type a free-text brief:
+
+```text
+You: /grand-design-spec:flow
+     I want to build a leave-management web app for a 50-person team.
+     Mobile + web, integrates with our HRIS, manager approval flow.
+```
+
+**C. Direct invocation** (skip orchestration, run one skill at a time):
 
 ```text
 You: pecah PRD ini buat dev team
      [attach PRD.pdf]
 ```
 
-The skill takes over from there — asks you a few questions, then writes 7 markdown files into the folder you choose. That's it.
+`flow` is the recommended entry point — it inspects your CWD, proposes the right chain (e.g., `from-prompt → grand-design-spec → resolve-oq`), confirms once, and runs everything in `--auto` mode. Substance prompts (per-OQ resolutions, conflict choices) still pause for you. Anti-halu rails preserved at every step.
 
 ---
 
@@ -158,62 +180,109 @@ Available in beta with the code execution tool. Use the same skill folder as Opt
 
 ## How to use
 
-Once installed, just talk to Claude Code normally. The skill triggers automatically on phrases like:
+Once installed, just talk to Claude Code normally. Each skill triggers on intent — paraphrases work. Common phrases:
 
-| Trigger phrase | Language |
-|----------------|----------|
-| "Pecah PRD ini buat dev team" | ID |
-| "Spec out this feature" | EN |
-| "Buat dev handoff dari PRD ini" | ID |
-| "Translate this BRD into architecture docs" | EN |
-| "Prepare context for AI-assisted dev" | EN |
-| "Siapkan context buat AI dev" | ID |
+| Skill | Trigger examples |
+|-------|------------------|
+| `flow` ⭐ (recommended) | "/grand-design-spec:flow" / "do the next thing" / "what should we run next?" |
+| `from-prompt` 🆕 | Free-text brief in any session (auto-detected by `flow` Rule 0) — e.g. "I want to build a leave-management app, mobile + web, HRIS integration…" |
+| `grand-design-spec` | "Pecah PRD ini buat dev team" / "Spec out this feature" / "Buat dev handoff" / "Prepare context for AI-assisted dev" |
+| `resolve-oq` | "Resolve open questions" / "Walk through OQ list" / "Tackle the P1 blockers" |
+| `vault-diff` | "PRD updated" / "PRD versi baru" / "Regenerate vault from new PRD" |
+| `drift-detect` | "Drift detect" / "Vault vs code" / "Check codebase against vault" |
 
-Or paraphrases — the skill matches intent, not exact wording.
-
-### What happens next
+### What happens with `flow`
 
 ```
-1. You attach the PRD/BRD (PDF, DOCX, MD, TXT).
-   Optionally: drop a Figma URL.
+1. You invoke /grand-design-spec:flow.
+   Optionally: attach a PRD/BRD/Figma OR type a free-text brief
+   (orchestrator auto-detects which mode you're in).
 
-2. Claude asks a few quick questions:
-     - Output folder path?
-     - Implementation mode? (`new` greenfield / `existing` codebase)
-     - PRD status? (`final` signed-off / `draft` still in flux)
-     - **Output mode?** (`compact` default — table-first, ~40% lighter / `full` — prose-rich for non-technical reviewers)
-     - Project shape? (mobile-app / web-app / api-only / …)
-     - If `draft` and gap count > 10: proceed or clarify first?
-       (`final` skips this — every gap auto-routes to Open Questions.)
+2. flow inspects your CWD:
+     - No vault + brief detected → from-prompt → grand-design-spec → resolve-oq
+     - No vault + PRD attached    → grand-design-spec → resolve-oq
+     - Vault exists + new PRD     → vault-diff → resolve-oq
+     - Vault exists + mode=existing + codebase → drift-detect
+     - Vault exists + open OQs    → resolve-oq
 
-3. Claude reads the source, extracts components / entities / flows / gaps,
-   and writes 7 markdown files into your folder.
+3. flow proposes the chain, confirms once, then runs each sub-skill
+   with --auto for logistical prompts (output paths, scopes, batches).
+   Substance prompts still interactive:
+     - Per-OQ Resolve / OOS / Defer / Skip
+     - Conflict resolution (vault-diff)
+     - Drift action choices
+     - Q&A elaboration in from-prompt (≤10 questions)
 
-4. Claude surfaces the top P1 Open Questions for you to resolve
-   with your PO before dev starts.
+4. Each sub-skill emits a structured `blocker` artifact when it can't
+   proceed (unresolved P1 in non-interactive mode, diff_conflict, etc.).
+   flow halts the chain on blocker — no silent failures.
+
+5. Final state: 7 markdown files + vault.json in your output folder,
+   plus any companion artifacts (VAULT-DIFF.md, DRIFT-REPORT.md,
+   DRIFT-ACTIONS.md, seed-PRD.md if from-prompt ran).
 ```
 
-### Sample session
+### Sample session — `flow` with prompt-input (v0.15)
 
 ```
-You:    Help me pecah PRD ini buat dev team. PRD-nya gue attach.
+You:    /grand-design-spec:flow
+        I want to build a leave-management web app for a 50-person team.
+        Mobile + web, integrates with our HRIS, manager approval flow.
+
+flow:   No vault detected. Free-text brief detected (Rule 0).
+        Proposed chain: from-prompt → grand-design-spec → resolve-oq.
+        Confirm? [Y/n]
+You:    Y
+
+flow:   [from-prompt] Running adaptive Q&A. I'll skip topics already in
+        your brief. Max 10 questions.
+        Q1: Approval depth — single-step (manager only) or multi-step
+            (manager → HR → CEO for >5 days)?
+You:    Multi-step: manager always, HR for >5 days, no CEO.
+
+        [...8 more questions on auth, edge cases, success metrics, etc.]
+
+flow:   [from-prompt] Wrote ./seed-PRD.md (verbatim brief + 9 Q&A + body).
+        [grand-design-spec] Project shape: web-app (inferred). Confirm? [Y/n]
+You:    Y
+
+flow:   [grand-design-spec] Generated 7 files + vault.json into
+        ./leave-management-spec/. 14 Open Questions (4 P1, 7 P2, 3 P3).
+        [resolve-oq] Resolution scope? (p1-only / p1-then-p2 / all / by-cat / single)
+You:    p1-only
+
+        [walks 4 P1 OQs interactively]
+
+flow:   Chain complete. Vault at v1.1.
+        4/4 P1 resolved · 10 OQs remain (P2/P3) · run resolve-oq again later.
+```
+
+### Sample session — `flow` with PRD attachment
+
+```
+You:    /grand-design-spec:flow
         [attach PRD.pdf]
 
-Skill:  Output folder path? (default: my-product-spec/)
-You:    my-product-spec/
+flow:   No vault detected. PRD attached.
+        Proposed chain: grand-design-spec → resolve-oq.
+        Confirm? [Y/n]
+You:    Y
 
-Skill:  Project shape: detected `web-app` from PRD. Confirm?
-You:    Ya.
+flow:   [grand-design-spec] Output folder? (default: ./my-product-spec/)
+You:    [enter]
 
-Skill:  [reads PRD]
-        [identifies 12 gaps in PRD]
-        Gap list > 10 — proceed atau klarifikasi dulu?
-You:    Lanjut, semua gap masuk Open Questions.
+flow:   Project shape: web-app (inferred). Confirm? [Y/n]
+You:    Y
 
-Skill:  [generates 7 files into my-product-spec/]
-        Done. 12 Open Questions across 6 docs.
-        Top blockers: 5 P1 items in tech stack and PRD inconsistencies.
-        See 00-index.md → Open Questions roll-up.
+        [reads PRD, generates 7 files + vault.json]
+
+flow:   12 Open Questions (5 P1, 5 P2, 2 P3).
+        [resolve-oq] Walk P1 first? [Y/n]
+You:    Y
+
+        [walks 5 P1 OQs interactively]
+
+flow:   Chain complete. Top remaining: 5 P2 in tech-stack section.
 ```
 
 ---
@@ -254,9 +323,9 @@ Every numbered doc (`01–06`) follows the same shape:
 
 A vault is a **gap-honest** document — it surfaces every unanswered question as a tagged `OQ-{DOC}-{N}` entry with `P1|P2|P3` priority. The intended workflow:
 
-1. Generate the vault with `grand-design-spec`.
+1. Generate the vault with `grand-design-spec` (or let `flow` chain it for you).
 2. Bring the P1 Open Questions to your stakeholders (PM, BO, Architect, Compliance).
-3. Run `/grand-design-spec:resolve-oq` to walk through the OQ list interactively and capture the answers back into the vault.
+3. Run `/grand-design-spec:resolve-oq` directly, or just run `/grand-design-spec:flow` again — v0.15 chains `resolve-oq` by default whenever the vault has open OQs.
 
 ```text
 You: /grand-design-spec:resolve-oq
@@ -285,7 +354,7 @@ Skill: Done. Vault now at v1.1.
 
 ## When the PRD revises: `vault-diff`
 
-PRDs change. New stakeholder asks come in, edge cases get specified, scope shifts. The naive answer ("delete vault, regenerate from new PRD") wipes every resolved OQ, every ADR rationale, every Changelog entry — turning the vault back into a draft. Run `/grand-design-spec:vault-diff` instead.
+PRDs change. New stakeholder asks come in, edge cases get specified, scope shifts. The naive answer ("delete vault, regenerate from new PRD") wipes every resolved OQ, every ADR rationale, every Changelog entry — turning the vault back into a draft. Run `/grand-design-spec:vault-diff` instead — or `/grand-design-spec:flow` with the new PRD attached, and the orchestrator chains `vault-diff → resolve-oq` automatically (v0.15 default-on chaining).
 
 ```text
 You: /grand-design-spec:vault-diff
@@ -335,7 +404,7 @@ Skill: Done. Vault now at v1.2.
 
 ## When the code drifts: `drift-detect` (mode=existing only)
 
-For revamp / extension projects, the vault is the target spec and the codebase is current reality. They drift apart silently — a field gets renamed in code without updating vault; a flow ships with a new step that violates a vault decision; a new endpoint lands without an ADR. By the time anyone notices in code review or production, fixing the drift is expensive.
+For revamp / extension projects, the vault is the target spec and the codebase is current reality. They drift apart silently — a field gets renamed in code without updating vault; a flow ships with a new step that violates a vault decision; a new endpoint lands without an ADR. By the time anyone notices in code review or production, fixing the drift is expensive. Run `/grand-design-spec:drift-detect` directly, or invoke `flow` from inside the codebase root — v0.15 chains `drift-detect` whenever the vault is `mode=existing` and a sibling codebase is detected.
 
 ```text
 You: /grand-design-spec:drift-detect
@@ -389,7 +458,7 @@ Skill: [walks each finding, captures user choices into DRIFT-ACTIONS.md]
 
 ## Why use this
 
-### The two failure modes it prevents
+### The three failure modes it prevents
 
 1. **Devs (or AI agents) interpret ambiguity as license to invent.**
    When the PRD is silent on a detail, the implementer fills it with "industry best practice" — which often doesn't match business intent. By the time anyone notices, the feature is built wrong.
@@ -397,19 +466,25 @@ Skill: [walks each finding, captures user choices into DRIFT-ACTIONS.md]
 2. **Architects can't review effectively.**
    The PRD is too business-focused. The Figma is visual-only. There's no structured artifact at architecture-review depth, so reviews become vibes-based.
 
-This skill produces an artifact that:
+3. **The ChatGPT-to-Claude prompt-engineering round-trip wastes time.**
+   Without a PRD, you'd type a brief into ChatGPT, refine it through 10+ turns, paste the result into Claude, then re-prompt to get a structured spec. v0.15's `from-prompt` collapses that into a single in-Claude flow: brief → ≤10-question Q&A → seed-PRD → vault.
+
+This plugin produces an artifact that:
 - An IT Architect can review in **under 60 minutes**
 - A developer (human or AI) can implement against **without inventing requirements**
 - Surfaces **every gap** in the source material as a tagged, prioritized question
+- Stays in sync as the PRD revises (`vault-diff`), as stakeholder meetings answer OQs (`resolve-oq`), and as the codebase drifts (`drift-detect`) — all chained automatically by `flow`
 
 ### Anti-hallucination guarantees
 
 - **No invented entities, fields, endpoints, decisions, or behaviors.** Every non-trivial claim cites a PRD section, Figma frame, or source file.
 - **Push-back built in.** If you say "just guess the rest", the skill refuses and offers to mark unknowns as Open Questions instead.
 - **Open Question tagging.** Every gap gets `OQ-{DOC_CODE}-{N}` with priority P1/P2/P3 for stakeholder triage.
-- **Halt protocol for autonomous AI runs.** When an AI agent runs the vault non-interactively and hits an unresolved P1 Open Question, it emits a structured `OQ_BLOCKER` YAML artifact (with tag, priority, blocking task, resolver owner) instead of silently halting — so downstream runners can route to ticketing / Slack / on-call. Documented in `00-index.md`.
+- **Verbatim brief capture in `from-prompt`.** When you input a free-text brief, `from-prompt` quotes it verbatim into `seed-PRD.md` — no paraphrasing, no "I think you meant…". Q&A answers also captured verbatim. Body sections cite the brief or specific Q&A turns. seed-PRD then becomes a normal source artifact for `grand-design-spec`, so the same anti-halu rails apply downstream.
+- **Unified `blocker` envelope (v0.14).** When any sub-skill can't proceed in non-interactive mode, it emits a structured YAML `blocker` artifact with `type` (`oq_blocker` / `diff_conflict` / `drift_framework_mismatch` / etc.), context, and resolver owner — so `flow` halts the chain cleanly and downstream runners can route to ticketing / Slack / on-call. (Replaces v0.11's `OQ_BLOCKER`-only protocol.)
 - **vault.json kept in sync.** Every regeneration / `resolve-oq` / `vault-diff` round updates the JSON manifest so AI consumers see the same state as humans reading markdown.
 - **Reading paths by role.** Architect, Developer, QA, PM, and UI/UX each get a recommended reading order in `00-index.md`.
+- **`flow` preserves rails by composition.** The orchestrator never touches content — it only inspects state, proposes chains, and dispatches sub-skills with `--auto` for logistics. Every per-OQ choice, conflict resolution, and substance decision still flows through the sub-skill's interactive prompts.
 
 ### Project shapes supported
 
@@ -428,21 +503,44 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 
 ## How it works (workflow)
 
-### `grand-design-spec` — vault generation
+### `flow` — lifecycle orchestrator (v0.14, default-on chaining v0.15)
 
 | Step | Phase | What happens |
 |------|-------|--------------|
-| 0 | Output path setup | Skill asks for folder, validates, auto-creates |
+| 0 | Inspect CWD | Detects vault presence, vault mode (`new`/`existing`), open OQs, sibling codebase, free-text brief in user prompt |
+| 1 | Apply 7-rule decision matrix | Rule 0: prompt detected → `from-prompt → grand-design-spec → resolve-oq` · Rule 1: no vault + PRD → `grand-design-spec → resolve-oq` · Rule 2: vault + new PRD → `vault-diff → resolve-oq` · Rule 4: vault + open OQs → `resolve-oq` · Rule 5: vault + mode=existing + codebase → `drift-detect` · Rules 3/6: edge cases. Rules 1/2/4/5/6 are default-on in v0.15 — every applicable lifecycle step chains automatically. |
+| 2 | Propose chain | Echoes the proposed chain back to the user with one-line rationale per sub-skill |
+| 3 | Confirm once | Single Y/n. After approval, runs the entire chain without re-prompting on logistics |
+| 4 | Dispatch with `--auto` | Each sub-skill runs in `--auto` mode: logistical prompts auto-default, substance prompts (per-OQ choices, conflict resolutions, Q&A turns) still pause for user input |
+| 5 | Halt on `blocker` | If any sub-skill emits a structured `blocker` artifact (unresolved P1, diff conflict, framework mismatch, etc.), `flow` halts the chain and surfaces the artifact for human resolution |
+| 6 | Present | Final state summary: artifacts written, vault version, blockers raised, next-run hints |
+
+### `from-prompt` — brief → seed-PRD elaborator (v0.15)
+
+| Step | Phase | What happens |
+|------|-------|--------------|
+| 0 | Capture brief | User's free-text brief stored verbatim — no paraphrasing |
+| 1 | Topic coverage scan | Internal map of which standard PRD topics (problem, users, success, scope, integrations, constraints, etc.) the brief already covers |
+| 2 | Adaptive Q&A | Asks only uncovered topics. Hard cap: ≤10 questions. Skips anything explicit in brief. Always interactive — `--auto` does not bypass substance prompts here. |
+| 3 | Body generation | Composes seed-PRD.md body sections with explicit citations: each claim points to "brief" or "Q&A turn N" |
+| 4 | Write seed-PRD.md | Output: verbatim brief + Q&A transcript + cited body. Becomes a normal source artifact for `grand-design-spec` |
+| 5 | Hand off | Returns path to seed-PRD.md so `grand-design-spec` (or `flow`) can pick up from there |
+
+### `grand-design-spec` — vault generation (v0.10+ supports `--auto`)
+
+| Step | Phase | What happens |
+|------|-------|--------------|
+| 0 | Output path setup | Skill asks for folder, validates, auto-creates. With `--auto`: defaults to project-name slug |
 | 0.5 | Mode flag | `new` (greenfield) or `existing` (live codebase to reconcile). For `new`, also captures `mode_migrate_after` — the trigger event that flips the vault to `existing` (e.g., "first commit on main") |
 | 0.6 | PRD status | `final` (signed-off) or `draft` (still in flux) — drives gap-handling behavior |
 | 0.7 | Output mode | `compact` (default — table-first, ~40% lighter) or `full` (prose-rich for non-technical reviewers) |
-| 1 | Inventory & read | Lists uploaded files, routes each to right reader; tries Figma MCP if URL given |
+| 1 | Inventory & read | Lists uploaded files (or reads seed-PRD.md from `from-prompt`), routes each to right reader; tries Figma MCP if URL given |
 | 2 | Extract before writing | Builds internal map of components / entities / flows / decisions / gaps; also detects design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) from sources |
 | 3 | Generate 7 files + vault.json | Uses templates in `references/templates/` as scaffolds. Writes `vault.json` manifest alongside, with entities / flows / ADRs / OQs indexed for AI consumers |
 | 4 | Self-check | Verifies grounding, readability, simplicity, output integrity, and markdown ↔ vault.json consistency |
-| 5 | Present | Surfaces top P1 Open Questions for triage; points to companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) for next steps |
+| 5 | Present | Surfaces top P1 Open Questions for triage; points to companion skills (`resolve-oq`, `vault-diff`, `drift-detect`) — or `flow` chains them automatically |
 
-### `resolve-oq` — Open Questions resolution
+### `resolve-oq` — Open Questions resolution (v0.4+ supports `--auto` for logistics)
 
 | Step | Phase | What happens |
 |------|-------|--------------|
@@ -455,7 +553,7 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 | 4 | Self-check | Every queue item ended in an outcome; cross-refs resolve; tags preserved |
 | 5 | Present | Stats summary + top remaining P1 blockers with tags |
 
-### `vault-diff` — vault evolution across PRD revisions
+### `vault-diff` — vault evolution across PRD revisions (v0.3+ supports `--auto`; conflicts emit `blocker` and pause)
 
 | Step | Phase | What happens |
 |------|-------|--------------|
@@ -471,7 +569,7 @@ The skill is general-purpose. It infers the shape from your PRD, then confirms w
 | 8 | Self-check | No silent drops, conflicts had user input, IDs unique, removed content retained |
 | 9 | Present | Stats summary, conflicts deferred, path to `VAULT-DIFF.md` |
 
-### `drift-detect` — vault vs codebase reconciliation (mode=existing only)
+### `drift-detect` — vault vs codebase reconciliation (mode=existing only; v0.3+ supports `--auto` — skips interactive walkthrough, writes `DRIFT-REPORT.md` only)
 
 | Step | Phase | What happens |
 |------|-------|--------------|
