@@ -225,11 +225,18 @@ After action selection, write the field updates to `vault.json` immediately and 
 
 **If `Defer`**:
 
-1. Ask the user for the defer reason — typically: who needs to answer, by when, or what condition unblocks it (e.g., "waiting on legal review by 2026-06-01").
+There are TWO defer targets (per `vault-contract.md §schema` `defer_to` field):
+
+- **`defer_to: stakeholder`** (default) — waiting on a human decision (legal review, PM, security, target date)
+- **`defer_to: binding`** — code-aware OQ; offered ONLY in brownfield context (vault.mode=existing AND repo signals present); resolved at `bind-codebase` phase against codebase-map
+
+For brownfield code-aware OQs, prefer the new 4-action menu's `[B] Defer to binding` option (see "Per-OQ action menu" section above). The procedure below applies to stakeholder-defer specifically.
+
+1. Ask the user for the defer reason — who needs to answer, by when, or what condition unblocks it (e.g., "waiting on legal review by 2026-06-01").
 2. Append to the OQ entry: `**Deferred (v{X.Y})**: <reason / PIC / target date>`.
 3. Leave `[ ]` open (it's still an Open Question, just waiting).
 4. Update the roll-up annotation in `00-index.md` so readers see the defer reason at-a-glance.
-5. **Update `vault.json` (v0.2)**: set the OQ's `status` to `deferred` in the manifest; add a `defer_note` field with the user-provided reason; recompute `open_questions_summary.by_status`.
+5. **Update `vault.json`**: set the OQ's `status` to `deferred` in the manifest; set `defer_to: stakeholder`; set `deferred_at: <iso>`; set `deferred_reason: <user-provided text>` (per v1.1 OQ schema in `vault-contract.md`); recompute `open_questions_summary.by_status`.
 
 **If `Skip`**:
 
