@@ -48,8 +48,19 @@ done
 # Update ATTRIBUTION.md metadata
 SP_VERSION="$(basename "$SP_DIR")"
 SP_COMMIT="unknown"
+# Try multiple sources for commit SHA / identifier:
+# 1. .git directory (if vendored from git clone)
 if [ -d "${SP_DIR}/.git" ]; then
   SP_COMMIT="$(git -C "$SP_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")"
+fi
+# 2. .version-bump.json (if vendored from superpowers release)
+if [ "$SP_COMMIT" = "unknown" ] && [ -f "${SP_DIR}/.version-bump.json" ]; then
+  v="$(jq -r '.commit // empty' "${SP_DIR}/.version-bump.json" 2>/dev/null)"
+  [ -n "$v" ] && SP_COMMIT="$v"
+fi
+# 3. Fall back to version-only marker if nothing else available
+if [ "$SP_COMMIT" = "unknown" ]; then
+  SP_COMMIT="version=${SP_VERSION}"
 fi
 TODAY="$(date -u +%Y-%m-%d)"
 
