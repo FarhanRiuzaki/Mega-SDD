@@ -94,7 +94,7 @@ If critical inputs are missing or unclear, **ask before generating**. Better 5 u
 
 ## --auto flag (v0.10+)
 
-The `--auto` flag is set by upstream callers — typically `/grand-design-spec:flow`, the lifecycle orchestrator — to skip logistical prompts. When `--auto` is set, the Workflow steps below behave differently:
+The `--auto` flag is set by upstream callers — typically `/mega-sdd:orchestrate-flow`, the lifecycle orchestrator — to skip logistical prompts. When `--auto` is set, the Workflow steps below behave differently:
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -193,8 +193,8 @@ The vault is a **lock against requirements** (PRD/BRD), not against existing cod
      - `"first commit on main"` — flips to `existing` once any non-trivial implementation lands.
      - `"first prod deploy"` — flips later, after the system is observable.
      - `"sprint-1 demo"` — flips at first stakeholder review.
-   - When the trigger fires, the user manually flips the flag (edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version) OR runs `/grand-design-spec:vault-diff` against the current PRD with `mode=existing` selected.
-   - **After flip**, `/grand-design-spec:drift-detect` becomes applicable and recommended for ongoing reconciliation.
+   - When the trigger fires, the user manually flips the flag (edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version) OR runs `/mega-sdd:diff-vault` against the current PRD with `mode=existing` selected.
+   - **After flip**, `/mega-sdd:detect-drift` becomes applicable and recommended for ongoing reconciliation.
    - For `mode=existing` vaults, set `mode_migrate_after = null` (already in target state).
 
 > Skill never proceeds to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
@@ -447,10 +447,10 @@ In the chat message:
 4. Path to vault: `<OUTPUT_DIR>` (absolute).
 5. If `OUTPUT_MODE=compact`, mention once that a prose-rich version is available: *"Re-run with `OUTPUT_MODE=full` if you need the prose-rich version for non-technical readers."*
 6. **Suggested next steps** — point the user to companion skills:
-   - *"After stakeholder triage, run `/grand-design-spec:resolve-oq` to walk the OQ list interactively and capture answers back into the vault."*
+   - *"After stakeholder triage, run `/mega-sdd:resolve-oq` to walk the OQ list interactively and capture answers back into the vault."*
    - If `PRD_STATUS=final` and OQ count > 10: *"Bring the P1 list to a stakeholder meeting first; resolve-oq picks up from current state when you re-run."*
-   - If `IMPLEMENTATION_MODE=existing`: *"Run `/grand-design-spec:drift-detect` to reconcile this vault against the live codebase — flags entity/flow/decision drift between target and current reality."*
-   - When the PRD eventually revises: *"Use `/grand-design-spec:vault-diff` to evolve the vault against the new PRD without losing resolved OQs or ADR history."*
+   - If `IMPLEMENTATION_MODE=existing`: *"Run `/mega-sdd:detect-drift` to reconcile this vault against the live codebase — flags entity/flow/decision drift between target and current reality."*
+   - When the PRD eventually revises: *"Use `/mega-sdd:diff-vault` to evolve the vault against the new PRD without losing resolved OQs or ADR history."*
 
 Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 

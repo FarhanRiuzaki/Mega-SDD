@@ -37,7 +37,7 @@ This preserves auditability — anyone reviewing the vault later can trace each 
 
 ## --auto flag (v0.4+)
 
-The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That's the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That's the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|

@@ -57,7 +57,7 @@ Each finding carries a **confidence**: `high` (exact name + type match found / n
 
 ## --auto flag (v0.3+)
 
-The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip logistical prompts and the optional Step 5 interactive walkthrough.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logistical prompts and the optional Step 5 interactive walkthrough.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -108,7 +108,7 @@ When this skill is invoked without `--auto`, behavior is unchanged from v0.2.
 ### Step 0: Inputs (MANDATORY)
 
 1. **Vault path** — auto-detect from CWD (looks for the 7 standard files). Verify `00-index.md` Vault Lock Status has `Implementation mode: existing`.
-   - If `Implementation mode: new` → STOP. Surface the `mode_migrate_after` field (v0.11) from Vault Lock Status if present: *"This vault is `mode=new`. Migration trigger declared: `<event>`. If that trigger has fired (first commit landed on main, first deploy, etc.), flip mode to `existing` first — edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version, OR run `/grand-design-spec:vault-diff`. Then re-run drift-detect."*
+   - If `Implementation mode: new` → STOP. Surface the `mode_migrate_after` field (v0.11) from Vault Lock Status if present: *"This vault is `mode=new`. Migration trigger declared: `<event>`. If that trigger has fired (first commit landed on main, first deploy, etc.), flip mode to `existing` first — edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version, OR run `/mega-sdd:diff-vault`. Then re-run drift-detect."*
    - If `mode_migrate_after` is missing or null and mode=new → suggest the user define a trigger before re-running.
 2. **Codebase path** — root of the live codebase repo (typically the project root or a subdirectory).
    - **Claude Code**: use `AskUserQuestion` with options like `["Use CWD as codebase root", "Specify subdirectory", "Different path"]`.
@@ -412,7 +412,7 @@ Drift detection performed against codebase at <commit SHA / "current working tre
 - When the user accepts a vault-side action that *would* alter vault content (e.g., "promote unwritten decision to ADR"), the actual vault edit happens later, via `resolve-oq` (for OQ-tagged items) or direct manual edit followed by re-running `grand-design-spec` to regenerate the full vault.
 - Until the edit lands and a regen runs, `vault.json` stays at the pre-drift-session state. AI consumers loading the manifest will not see the proposed-but-unlanded changes.
 - The Changelog entry written in step 1 above flags this — it records the drift session, not vault content changes. Vault version stays unchanged.
-- If a later manual edit lands the proposed change, the user is responsible for triggering `vault.json` regeneration: easiest path is to edit the markdown then re-run `/grand-design-spec:grand-design-spec` against the same PRD with the same flags, OR use `resolve-oq` if the change is OQ-driven (resolve-oq writes back vault.json automatically).
+- If a later manual edit lands the proposed change, the user is responsible for triggering `vault.json` regeneration: easiest path is to edit the markdown then re-run `/mega-sdd:generate-intent` against the same PRD with the same flags, OR use `resolve-oq` if the change is OQ-driven (resolve-oq writes back vault.json automatically).
 
 **Why this is acceptable**: drift-detect findings are always advisory. The action list in `DRIFT-ACTIONS.md` makes the boundary explicit so the user knows what's tentative vs landed.
 
