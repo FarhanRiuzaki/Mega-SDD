@@ -1,10 +1,10 @@
 # mega-sdd
 
-Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination guarantees.
+Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination at every handoff.
 
-**Version:** 1.1.0 · **License:** MIT
+**Version:** 1.2.0 · **License:** MIT
 
-> 📖 **The full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for the comprehensive overview — 5W1H, actor flowchart, full command reference, anti-hallucination layers, migration guide, halt protocol.
+> 📖 **Full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for TL;DR, 5W1H, full command reference, anti-hallucination layers, migration guide, halt protocol, and architecture deep dive.
 
 ## Quick start
 
@@ -14,7 +14,7 @@ Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code)
 /plugin install superpowers   # recommended companion
 ```
 
-Then:
+Then in any project:
 
 ```bash
 /mega-sdd:orchestrate-flow
@@ -25,9 +25,9 @@ Then:
 ```
 plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest
-├── skills/                       # 11 skills
+├── skills/                       # 10 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (injected at session start)
-│   ├── generate-intent/          # PRD/brief → vault
+│   ├── generate-intent/          # PRD/brief → vault (auto-detect Mode A/B since v1.2)
 │   ├── scan-codebase/            # brownfield repo mapper
 │   ├── bind-codebase/            # vault ↔ code validation gate (BLOCKING)
 │   ├── generate-units/           # vault → atomic AI prompts
@@ -36,9 +36,8 @@ plugins/mega-sdd/
 │   ├── resolve-oq/               # Open Question walker
 │   ├── detect-drift/             # code vs vault reconciliation
 │   ├── diff-vault/               # handle PRD revisions
-│   ├── update-plugin/            # maintenance + dep doctor
 │   └── _vendored/                # vendored superpowers skills (fallback)
-├── commands/                     # 11 slash commands
+├── commands/                     # 11 slash commands (10 skill + 1 command-only update-plugin)
 ├── hooks/                        # SessionStart hook (anchor injection)
 ├── scripts/sync-superpowers.sh   # vendor sync automation
 ├── CLAUDE.md                     # AI-agent contributor guidelines
