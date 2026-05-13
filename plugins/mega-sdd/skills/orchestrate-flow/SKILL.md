@@ -61,6 +61,20 @@ If CWD signals say "brownfield" but vault says `mode: greenfield` (or vice versa
 - Halt
 - Emit mode-migration prompt — user chooses to update vault or re-detect
 
+**Structured halt per `vault-contract.md §halt-protocol`:**
+
+```yaml
+blocker:
+  type: mode_migrate
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: orchestrate-flow
+  details:
+    vault_mode: greenfield | existing  # what vault.json says
+    cwd_signals: [.git, package.json, ...]  # what was detected
+    resolution: "update vault.mode to match CWD" | "re-detect by moving to clean dir"
+  next_action: "Confirm correct mode then re-run /mega-sdd:orchestrate-flow"
+```
+
 ## Flags
 
 - `--from=<phase>`: resume from a specific phase (skip earlier phases even if state says they're needed)
