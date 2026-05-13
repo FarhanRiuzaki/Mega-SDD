@@ -26,8 +26,13 @@
 | Bound-vault exists, no units | `generate-units` |
 | Units exist, some not in bolts | `execute-bolts --all` |
 | All units executed, no recent drift check | `detect-drift` |
-| Vault P0/P1 OQ count > 0 | `resolve-oq` first (before any other chain) |
+| Vault has unresolved P0/P1 OQs with status != deferred | `resolve-oq` first (intent gate, before any other chain) |
+| Vault has only deferred P0/P1 OQs + brownfield context | `scan-codebase` → `bind-codebase` (which auto-resolves deferred OQs) |
 | New PRD revision detected (file newer than vault) | `diff-vault <new-prd>` first |
+
+**OQ counting note (v1.1+):** When inspecting vault for P0/P1 OQ counts, distinguish:
+- `pending_p0_p1_count`: OQs with `status: pending` (or status field absent) at P0/P1 priority. These gate the chain via the intent rule above.
+- `deferred_p0_p1_count`: OQs with `status: deferred`. These do NOT gate; they propagate to binding phase.
 
 ## Chain depth limit
 
