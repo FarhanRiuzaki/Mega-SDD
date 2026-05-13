@@ -1,15 +1,20 @@
 ---
-description: Convert PRD/BRD (+ optional Figma) into a 7-file dev handoff vault with anti-hallucination guarantees.
-argument-hint: [path/to/prd.pdf] [optional figma URL]
+description: Generate a 7-file SDD intent vault from PRD/BRD/Figma OR free-text brief. Anti-hallucination guarantees.
+argument-hint: [path-to-prd.md OR --from-prompt "free-text brief"]
 ---
 
-Invoke the `mega-sdd:generate-intent` skill via the Skill tool to generate a 7-file vault from the user's PRD/BRD inputs.
+Invoke the `mega-sdd:generate-intent` skill via the Skill tool.
 
-User arguments (PRD path, Figma URL, output folder, etc.) if provided: $ARGUMENTS
+User arguments: $ARGUMENTS
 
-Follow the skill exactly:
-- Ask for output folder, IMPLEMENTATION_MODE (new/existing), OUTPUT_MODE (compact/full), and PRD_STATUS before generating.
-- Read every input fully — never skim, never invent requirements.
-- Every claim must cite its source; every gap becomes an Open Question (P1/P2/P3).
-- Write all 7 files (00-index through 06-constraints) plus `vault.json` manifest to the resolved OUTPUT_DIR.
-- Surface top P1 Open Questions as blockers in the final summary.
+Mode resolution:
+- If `$ARGUMENTS` starts with `--from-prompt`, run Mode B (free-text, adaptive Q&A)
+- If `$ARGUMENTS` is a path to a .md / .pdf file, run Mode A (structured parse)
+- If `$ARGUMENTS` is empty, smart auto-detect: scan CWD for `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates. If exactly one found, confirm with user. Otherwise prompt for path or free-text input.
+
+Follow `skills/generate-intent/SKILL.md` invocation modes exactly. Output goes to `docs/mega-sdd/vaults/<auto-named>/` unless user overrides via `--out=<path>`.
+
+Hard rails:
+- Anti-hallucination: every claim cites source; ambiguities → Open Questions.
+- Language: vault language matches input PRD language.
+- Halt on critical gaps; do not invent.
