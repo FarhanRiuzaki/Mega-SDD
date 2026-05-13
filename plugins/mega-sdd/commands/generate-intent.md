@@ -3,7 +3,7 @@ description: Convert PRD/BRD (+ optional Figma) into a 7-file dev handoff vault 
 argument-hint: [path/to/prd.pdf] [optional figma URL]
 ---
 
-Invoke the `grand-design-spec:grand-design-spec` skill via the Skill tool to generate a 7-file vault from the user's PRD/BRD inputs.
+Invoke the `mega-sdd:generate-intent` skill via the Skill tool to generate a 7-file vault from the user's PRD/BRD inputs.
 
 User arguments (PRD path, Figma URL, output folder, etc.) if provided: $ARGUMENTS
 
