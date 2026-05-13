@@ -34,6 +34,25 @@ The terminal phase of the SDD pipeline — turns units into code.
    - Vendored fallback ready? → use local paths
    - Neither? → halt with install instructions
 
+**Structured halt per `vault-contract.md §halt-protocol`:**
+
+```yaml
+blocker:
+  type: dep_missing
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: execute-bolts
+  details:
+    required_skills:
+      - executing-plans
+      - subagent-driven-development
+      - test-driven-development
+      - using-git-worktrees
+    missing_real: <list of skills not found in real superpowers install>
+    missing_vendored: <list of skills not found in _vendored/>
+    install_command: "/plugin install superpowers"
+  next_action: "Install superpowers (recommended) OR run: bash plugins/mega-sdd/scripts/sync-superpowers.sh"
+```
+
 2. **Unit validity.** For each target unit:
    - Frontmatter parses and matches `unit-schema.md`
    - `target_files` non-empty
@@ -62,6 +81,26 @@ blocker:
   cause: <category>
   details: <verbatim error / test output>
   next_action: <retry | edit unit | manual fix>
+```
+
+When retries exhaust for a unit's acceptance test, emit:
+
+**Structured halt per `vault-contract.md §halt-protocol`:**
+
+```yaml
+blocker:
+  type: test_fail
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: execute-bolts
+  details:
+    unit_id: U-XXX
+    retries_attempted: <N, default 3>
+    test_command: <exact command run>
+    last_failure_output: |
+      <verbatim output of last failing test invocation>
+    files_touched:
+      - <list of files touched during the attempts>
+  next_action: "Review bolt-report.md; edit unit acceptance criteria, fix code manually, or skip via --force"
 ```
 
 ## Anti-hallucination rails
