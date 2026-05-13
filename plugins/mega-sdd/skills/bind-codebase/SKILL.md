@@ -133,6 +133,27 @@ strict: <true/false>
      - **Announce blocker:** "Binding BLOCKED. <N> conflicts must be resolved. Run `/mega-sdd:resolve-oq --binding <binding.md>` or edit vault manually, then re-run bind-codebase."
      - Emit blocker YAML per `vault-contract.md` §halt-protocol
 
+**Emit structured halt per `vault-contract.md §halt-protocol`:**
+
+```yaml
+blocker:
+  type: bind_conflict
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: bind-codebase
+  details:
+    vault: <vault path>
+    conflict_count: N
+    conflicts:
+      - id: C-001
+        vault_claim: <verbatim from binding.md>
+        codebase_reality: <verbatim from binding.md>
+        suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+      # ... one entry per conflict
+  next_action: "Run /mega-sdd:resolve-oq --binding <binding.md>"
+```
+
+This YAML is the canonical halt artifact. Prose announcement remains for human readability; the structured form is for orchestrate-flow consumption and automation parsing.
+
 6. **Audit log.** Append entry to `<vault>/vault.json` changelog: `{ "event": "bind", "at": "...", "summary": "N confirmed, N conflict, N oq" }`.
 
 ## Anti-hallucination rails
