@@ -6,7 +6,7 @@
 
 *Intent → Unit → Bolt. From brief to working code with anti-hallucination guarantees end to end.*
 
-**Plugin:** `mega-sdd` · **Version:** 1.0.1 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 1.1.0 · **License:** MIT
 **Predecessor:** `grand-design-spec@0.15` (deprecated — see Migration below)
 
 </div>
@@ -45,13 +45,18 @@ flowchart LR
     PRD --> Arch([IT Architect])
     Arch -->|generate-intent| Vault[(Vault<br/>7 .md + vault.json)]
 
-    Vault -->|"scan + bind-codebase<br/>brownfield only"| BV[(Bound-vault<br/>+ binding.md)]
+    Vault --> OQGate{P0/P1 non-deferred OQs?}
+    OQGate -->|yes| RO[resolve-oq<br/>intent gate] -.-> Vault
+    OQGate -->|no, or only deferred| BG{brownfield?}
+
+    BG -->|yes| SB["scan + bind-codebase<br/>brownfield"]
+    SB --> BV[(Bound-vault<br/>+ binding.md)]
     BV --> Units[(Units<br/>U-*.md)]
-    Vault -.->|"greenfield<br/>direct"| Units
+    BG -.->|"no, greenfield"| Units
+
     Units -->|execute-bolts| AI[AI Agent<br/>superpowers TDD]
     AI -->|atomic commits| Code([Shipped Code])
 
-    Vault -.->|resolve-oq| Vault
     Vault -.->|diff-vault| Vault
     Code -.->|detect-drift| Vault
 
@@ -61,6 +66,8 @@ flowchart LR
     style PRD fill:#dbeafe,stroke:#2563eb
     style Code fill:#d1fae5,stroke:#059669,stroke-width:2px
     style AI fill:#fce7f3,stroke:#be185d
+    style RO fill:#fef9c3,stroke:#a16207
+    style OQGate fill:#fff7ed,stroke:#ea580c
 ```
 
 ## Pipeline (detailed)
@@ -70,7 +77,9 @@ flowchart TD
     A[free-text brief<br/>OR PRD/BRD/Figma] --> B[generate-intent]
     B --> V[(vault/<br/>7 files + vault.json)]
 
-    V --> C{brownfield?}
+    V --> OQG{P0/P1 non-deferred OQs?}
+    OQG -->|yes| RO[resolve-oq] --> V
+    OQG -->|no| C{brownfield?}
     C -->|no, greenfield| GU[generate-units]
     C -->|yes| S[scan-codebase]
     S --> M[(codebase-map.md)]
@@ -84,13 +93,10 @@ flowchart TD
     E --> CO[(code commits)]
 
     CO --> DD[detect-drift]
-    DD -.drift found.-> RO[resolve-oq]
+    DD -.drift found.-> RO
 
     PRD2[new PRD revision] --> DV[diff-vault]
     DV --> B
-
-    OQ[stalled OQs] --> RO
-    RO --> V
 
     OF([/mega-sdd:orchestrate-flow]) -.auto-route.-> B
     OF -.auto-route.-> GU
@@ -99,7 +105,7 @@ flowchart TD
     classDef phase fill:#d4f1f4,stroke:#0a7e8c
     classDef artifact fill:#fff4d4,stroke:#b58a00
     classDef entry fill:#e0d4f7,stroke:#5e3aa0
-    class B,S,BI,GU,E,DD,DV,RO phase
+    class B,S,BI,GU,E,DD,DV,RO,OQG phase
     class V,M,BV,U,CO artifact
     class OF entry
 ```
@@ -152,9 +158,10 @@ flowchart TD
 | `/mega-sdd:execute-bolts` 🆕 | **execute-bolts** (v1.0) | Executes units via superpowers integration. TDD-first (failing test → impl → passing → commit). Halt protocol after 3 retries. Whitelist enforcement (no out-of-bounds writes). Optional `--parallel` via `subagent-driven-development`. |
 | `/mega-sdd:resolve-oq` | **resolve-oq** (v0.4 — untouched) | Interactive Open Questions resolver. Walks the OQ roll-up by priority, captures stakeholder answers, updates vault with version bump + Changelog. **Binding mode** (`--binding`) walks CONFLICT entries from bind-codebase. |
 | `/mega-sdd:diff-vault` | **diff-vault** (v1.0) | Vault evolution when PRD source revisions. Computes structured diff, surfaces Resolved-OQ vs new PRD conflicts. Preserves prior decisions. Emits `blocker` (type=`diff_conflict`) on contradictions. |
-| `/mega-sdd:detect-drift` | **detect-drift** (v1.0) | For `mode=existing` vaults: compares vault claims against live codebase. Flags drift (rename, type change, decision violation, code shipped without ADR). Auto-runs post-`execute-bolts`. |
-| `/mega-sdd:update-plugin` | **update-plugin** (v1.0, bash) | Plugin maintenance. `git pull --ff-only` inside `~/.claude/plugins/marketplaces/`, prints version diff, prompts to rebuild cache. Also runs dep-doctor (verifies superpowers presence or vendored fallback). |
+| `/mega-sdd:detect-drift` | **detect-drift** (v1.0) | For `mode=existing` vaults: compares vault claims against live codebase. Flags drift (rename, type change, decision violation, code shipped without ADR). Suggested post-`execute-bolts`; runs on demand. |
 | `/mega-sdd:from-prompt` | _(deprecated alias)_ | Routes to `generate-intent --from-prompt`. Will be removed in v1.2. |
+
+> **Note on `update-plugin`:** Implemented as a command-only entry (no backing `SKILL.md`) — a self-contained bash procedure under `commands/update-plugin.md`. Pulls latest plugin version, runs dep-doctor (verifies superpowers presence or vendored fallback), prompts cache rebuild. **Not counted** in the skill total above.
 
 ## What each phase produces
 
@@ -224,7 +231,8 @@ Common natural-language invocations (the anchor skill recognizes these and route
 
 | Scenario | Commands |
 |---|---|
-| New idea → working code (greenfield, fully autonomous) | `/mega-sdd:generate-intent --from-prompt "..." --chain` |
+| New idea → working code (greenfield, fully autonomous) | `/mega-sdd:generate-intent --from-prompt "..."` then `/mega-sdd:orchestrate-flow` |
+| Vault has unresolved P0/P1 OQs (non-deferred) | `/mega-sdd:resolve-oq` (intent gate — runs before scan/bind/units) |
 | Existing PRD → working code (brownfield) | `/mega-sdd:generate-intent ./prd.md` → `/mega-sdd:orchestrate-flow` |
 | PRD revision arrived | `/mega-sdd:diff-vault ./new-prd.md` |
 | Code drift detected | `/mega-sdd:detect-drift` → `/mega-sdd:resolve-oq` |
@@ -236,7 +244,7 @@ Common natural-language invocations (the anchor skill recognizes these and route
 1. **Intent layer** — uncertain claims promote to Open Questions (P0/P1/P2/P3). Architect never guesses.
 2. **Binding gate** — vault claims validated against codebase-map. CONFLICTs **BLOCK** pipeline. Never auto-resolved. Always human-in-the-loop.
 3. **Unit-level grounding** — each unit carries `target_files` whitelist + mandatory `acceptance_test`. No invention possible at unit boundary.
-4. **Drift detection** — code vs vault reconciliation runs post-bolt and on demand. Surfaces silent divergence early.
+4. **Drift detection** — code vs vault reconciliation suggested post-bolt; runs on demand via `/mega-sdd:detect-drift`. Surfaces silent divergence early.
 
 ## Architect/Dev separation
 
@@ -295,14 +303,16 @@ After installation, verify with:
 
 ## Halt protocol (across all skills)
 
-Any skill MAY emit a `blocker` artifact and pause the pipeline. The user MUST acknowledge before the chain continues. Categories:
+Any skill MAY emit a structured `blocker` artifact (YAML, per `vault-contract.md §halt-protocol`) and pause the pipeline. The user MUST acknowledge before the chain continues. The 8 types are:
 
-- `bind_conflict` — bind-codebase detected unresolvable claim vs code
-- `diff_conflict` — diff-vault detected new PRD vs resolved OQ contradiction
-- `mode_migrate` — vault mode (greenfield/existing) inconsistent with CWD signals
-- `dep_missing` — execute-bolts can't find superpowers OR vendored fallback
-- `test_fail` — bolt acceptance test failed after max retries
-- `cycle_detected` — generate-units found dependency cycle
+- `oq_blocker` — `generate-intent` on P1 OQ surfaced in `--auto` mode
+- `diff_conflict` — `diff-vault` on new PRD vs resolved-OQ/ADR contradiction
+- `drift_framework_mismatch` — `detect-drift` on vault/code framework signal mismatch
+- `bind_conflict` — `bind-codebase` on CONFLICT count > 0
+- `dep_missing` — `execute-bolts` missing superpowers + vendored fallback
+- `test_fail` — `execute-bolts` acceptance test fails after max retries
+- `cycle_detected` — `generate-units` dependency DAG has a cycle
+- `mode_migrate` — `orchestrate-flow` CWD signals contradict vault.mode
 
 Blockers are surfaced verbatim with `next_action` suggestions. Pipeline never silently skips.
 
@@ -320,7 +330,7 @@ Blockers are surfaced verbatim with `next_action` suggestions. Pipeline never si
 ├── .claude-plugin/marketplace.json     # marketplace manifest
 ├── plugins/mega-sdd/                   # the plugin itself
 │   ├── README.md                       # plugin-folder shortform (points back here)
-│   ├── skills/                         # 11 skills (5 new SDD + 5 renamed + 1 anchor) + _vendored/
+│   ├── skills/                         # 10 skills (5 new SDD + 4 renamed + 1 anchor) + _vendored/
 │   ├── commands/                       # 11 slash commands
 │   ├── hooks/                          # SessionStart hook for anchor injection
 │   ├── scripts/                        # sync-superpowers + version bump
