@@ -354,9 +354,9 @@ Alongside the 7 markdown files, generate `vault.json` — a structured manifest 
 
 Use templates in `references/templates/` as scaffolds. **Resolve the path relative to where the skill is mounted**:
 
-- **Claude Code (plugin install — primary distribution)**: `${CLAUDE_PLUGIN_ROOT}/skills/grand-design-spec/references/templates/<name>.md`
-- **Claude Code (manual install at `~/.claude/skills/`)**: `~/.claude/skills/grand-design-spec/references/templates/<name>.md`
-- **Claude Code (project-scoped manual install)**: `<project-root>/.claude/skills/grand-design-spec/references/templates/<name>.md`
+- **Claude Code (plugin install — primary distribution)**: `${CLAUDE_PLUGIN_ROOT}/skills/generate-intent/references/templates/<name>.md`
+- **Claude Code (manual install at `~/.claude/skills/`)**: `~/.claude/skills/generate-intent/references/templates/<name>.md`
+- **Claude Code (project-scoped manual install)**: `<project-root>/.claude/skills/generate-intent/references/templates/<name>.md`
 - **Claude.ai upload**: `/mnt/skills/user/grand-design-spec/references/templates/<name>.md`
 
 Read the relevant template:
