@@ -5,6 +5,40 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-05-13
+
+### Added — Mode auto-detect for generate-intent
+
+- **`generate-intent` auto-detects Mode A (PRD parse) vs Mode B (free-text Q&A)** from positional argument shape — no flag required.
+  - Existing file path → Mode A
+  - Quoted brief or whitespace input → Mode B
+  - `--from-prompt` flag still works for explicit override
+  - Edge cases (missing file, bare word, flag+positional conflict) handled with user-facing warnings
+- New test fixture `tests/skill-triggering/generate-intent.test.md` covers 10 auto-detect cases (AD1-AD10) mapping to 6 detection rules + 2 edge cases.
+
+### Changed — Tiered README
+
+- **Root `README.md`** restructured for tiered surface:
+  - Front-page (always visible): TL;DR + Why + actor flow diagram + 3 Primary commands + Anti-hallucination + Install (~150 lines visible)
+  - 5 collapsed `<details>` sections preserve full content: Advanced commands (8 more), Architecture deep dive (5W1H, detailed Mermaid, ASCII, halt protocol, etc.), Repository structure, Migration from grand-design-spec, Procedure cheat-sheet
+  - Single visible Mermaid (actor flow); detailed pipeline moved to Architecture deep dive
+  - All v1.1 content preserved — just relocated/collapsed
+- **`plugins/mega-sdd/README.md`** refreshed to mirror tiered style at smaller scale.
+- **Cheat-sheet** updated: greenfield scenario now shows `/mega-sdd:generate-intent "your idea"` (no `--from-prompt` needed thanks to auto-detect).
+
+### Migration
+
+Fully backwards compatible. Existing v1.0.x/v1.1.x vaults load unchanged. All existing invocation patterns continue to work:
+- `--from-prompt "..."` — still works, takes precedence as explicit override
+- `./prd.md` — still works
+- Empty args + CWD scan — still works
+- New: just type `"your brief"` directly without any flag — auto-detected as Mode B.
+
+### Marketplace
+
+- `mega-sdd@1.2.0` published
+- `grand-design-spec@0.16.0` continues deprecated; removed at v1.3.0 per existing schedule
+
 ## [1.1.0] — 2026-05-13
 
 ### Added — Source-code OQ deferral + structured halt protocol
