@@ -78,9 +78,9 @@ oqs:
     resolved_at: <ISO8601 timestamp>
     resolution: <answer text>
     # When status=deferred:
-    defer_to: binding                                       # only "binding" in v1.1
+    defer_to: binding | stakeholder                         # binding = brownfield code-aware; stakeholder = waiting on human (e.g., legal review, target date)
     deferred_at: <ISO8601 timestamp>
-    deferred_reason: <optional explanation>
+    deferred_reason: <reason / PIC / target date — e.g., "waiting on legal review by 2026-06-01">
     # When status=out-of-scope:
     out_of_scope_reason: <text>
 ```
