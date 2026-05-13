@@ -324,6 +324,57 @@ Do NOT pad with "I have resolved..." preamble. Just report numbers and surface r
 
 ---
 
+## Binding mode (`--binding`)
+
+**Invocation:** `/mega-sdd:resolve-oq --binding <path-to-binding.md>`
+
+**Purpose:** Walk CONFLICT entries and propagated deferred-OQ entries from a `binding.md` file produced by `bind-codebase`. Updates resolutions back to `binding.md` + `vault.json` changelog.
+
+**Procedure:**
+
+1. **Load and parse binding.md.** Expect sections:
+   - "## Confirmed Claims" (no action needed — informational)
+   - "## Conflicts (N) — BLOCKING" with table columns: ID | Vault Claim | Codebase Reality | Resolution Needed
+   - "## Open Questions (N)" — auto-propagated deferred OQs that couldn't be auto-resolved
+
+2. **Walk Conflicts table.** For each conflict, present:
+
+   ```
+   C-NNN (BLOCKING)
+   > Vault claim: <text from binding.md>
+   > Codebase reality: <text from binding.md>
+
+   Choose action:
+     [K] KEEP_VAULT  — vault is correct; code patch will be required later
+     [C] KEEP_CODE   — vault is wrong; patch vault inline to match code
+     [D] DEFER       — downgrade CONFLICT to OQ; re-resolve later
+     [S] SPLIT       — break vault claim into sub-claims (user provides splits)
+   ```
+
+   Per-action behavior:
+
+   | Action | binding.md update | vault.json update |
+   |---|---|---|
+   | K — KEEP_VAULT | Mark conflict resolved as `CONFIRMED_PENDING_CODE_UPDATE` | Append changelog entry; vault claim unchanged |
+   | C — KEEP_CODE | Mark conflict resolved as `vault patched` | Edit vault claim inline to match code; changelog entry |
+   | D — DEFER | Move conflict to "Open Questions" table; tag as `deferred-binding` | Add new OQ entry (status=deferred, defer_to=binding); changelog |
+   | S — SPLIT | Mark original conflict resolved; insert N sub-conflicts under it | For each sub-claim: edit vault to split; changelog |
+
+3. **Walk Open Questions table.** For each propagated deferred-OQ, use the 4-action menu from the standard procedure section ABOVE, with **Option [B] Defer hidden** (already in binding context — nested deferral not supported in v1.1; re-binding flow is via re-running `bind-codebase`).
+
+4. **Write back.** All resolutions persist to:
+   - `binding.md` — conflict rows updated with resolution column; OQ rows updated with action
+   - `vault.json` — append changelog: `{ "event": "resolve-oq-binding", "at": "<iso>", "summary": "N conflicts resolved, M OQs resolved" }`
+
+5. **Hand-off.** After loop completes:
+   - If any DEFER chosen → suggest `/mega-sdd:bind-codebase` re-run (deferred CONFLICTs become OQs in next bind pass)
+   - If no DEFERs → all conflicts cleared, suggest `/mega-sdd:bind-codebase` re-run (now should produce bound-vault cleanly)
+
+**Hard rails:**
+- Never auto-resolve conflicts. Always user choice per row.
+- Never modify code files. resolve-oq is read-only on the repo; KEEP_VAULT marks the conflict but does NOT patch code (that happens in execute-bolts later).
+- Cycle protection: if `--binding` invoked but binding.md is malformed or empty, halt with helpful error.
+
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure and OQ tagging convention (`OQ-{DOC_CODE}-{N}` with `P1|P2|P3` priority).
