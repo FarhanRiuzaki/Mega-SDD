@@ -1,4 +1,42 @@
-# Contributing to grand-design-spec
+# Contributing to Mega-SDD
+
+(See `plugins/mega-sdd/CLAUDE.md` for the AI-agent contributor protocol — read that first if you're an AI.)
+
+## Repository layout
+
+This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Specs/plans live under `docs/superpowers/`.
+
+## SDD invariants
+
+These are the non-negotiable rails. Any PR violating them will be closed:
+
+1. **Anti-hallucination at intent layer:** uncertain claims → Open Question, never guess.
+2. **Binding gate is BLOCKING:** `bind-codebase` MUST NOT produce `bound-vault/` while conflicts exist.
+3. **Unit grounding:** every unit has `target_files` whitelist + ≥1 acceptance test.
+4. **Bolt isolation:** every bolt produces exactly one PR's worth of commits; no skipping pre-commit hooks.
+5. **Drift surfaces, never silently:** detect-drift writes a report, even when clean.
+
+## Skill changes
+
+Skills are content-driven. Edit `SKILL.md` (the agent reads it) NOT supporting `references/*.md` (unless adding new contracts).
+
+Before submitting:
+- Bump skill `version:` in frontmatter
+- Update relevant `tests/skill-triggering/<skill>.test.md` if behavior changes
+- Add CHANGELOG.md entry
+
+## Testing
+
+Most tests are manual fixtures (markdown checklists). Hook + vendoring tests are bash scripts under `tests/hooks/` and `tests/vendoring/`. Run those automatically:
+
+```bash
+bash tests/hooks/session-start.test.sh
+bash tests/vendoring/sync-superpowers.test.sh
+```
+
+Run manual fixtures by reading them and walking through each case in a fresh Claude Code session.
+
+(rest of original CONTRIBUTING.md follows...)
 
 ## Versioning rules
 
@@ -30,10 +68,10 @@ Every plugin release entry MUST enumerate per-skill version moves:
 ## [0.13.0] — 2026-05-09
 
 ### Skill version moves
-- `grand-design-spec`: 0.8.0 → 0.9.0 (referenced shared vault-contract.md, added OQ_BLOCKER self-check)
+- `mega-sdd`: 0.8.0 → 0.9.0 (referenced shared vault-contract.md, added OQ_BLOCKER self-check)
 - `resolve-oq`: 0.2.0 → 0.3.0 (removed lock-vault forward-refs, added vault.json count-match self-check)
-- `vault-diff`: 0.1.0 → 0.2.0 (added Step 6.5 vault.json refresh)
-- `drift-detect`: unchanged (0.2.0) — boundary documentation only
+- `diff-vault`: 0.1.0 → 0.2.0 (added Step 6.5 vault.json refresh)
+- `detect-drift`: unchanged (0.2.0) — boundary documentation only
 
 ### Added
 ...
@@ -65,9 +103,9 @@ Tags enable `git#vX.Y.Z` pin examples in the README. Tagging is currently spotty
 
 When adding a new skill to the plugin:
 
-1. Create directory under `plugins/grand-design-spec/skills/<skill-name>/`.
+1. Create directory under `plugins/mega-sdd/skills/<skill-name>/`.
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
-3. Add a corresponding command at `plugins/grand-design-spec/commands/<skill-name>.md` so it appears in slash autocomplete.
+3. Add a corresponding command at `plugins/mega-sdd/commands/<skill-name>.md` so it appears in slash autocomplete.
 4. Reference `references/vault-contract.md` for shared definitions instead of duplicating.
 5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `vault-contract.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.

@@ -12,6 +12,7 @@ Thumbs.db
 # Test outputs (skill-generated)
 test-output/
 *.test.md
+!tests/**/*.test.md
 
 # Archive
 *.zip
