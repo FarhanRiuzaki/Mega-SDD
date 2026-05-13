@@ -109,17 +109,12 @@ strict: <true/false>
 | X-001 | ... | ... | KEEP_VAULT / KEEP_CODE / DEFER / SPLIT |
 
 ## Open Questions (N)
-| ID | Question | Source |
-|---|---|---|
-| OQ-001 | ... | <vault file:line> |
+| ID | Question | Source | Auto-resolve attempted |
+|---|---|---|---|
+| OQ-001 | ... | <vault file:line> | N/A (fresh OQ) |
 
 ## Auto-Resolved Deferred OQs (N)
 | OQ-ID | Question | Evidence (codebase-map) | Status |
-|---|---|---|---|
-...
-
-## Open Questions (N)
-| ID | Question | Source | Auto-resolve attempted |
 |---|---|---|---|
 ...
 ```
