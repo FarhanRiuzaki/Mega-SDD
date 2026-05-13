@@ -119,7 +119,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
@@ -199,3 +199,42 @@ Vaults regenerated under v0.14+ produce only the new form.
 - `source_skill` identifies the emitting skill — needed because consumers may dispatch differently per source.
 - `context` is human-readable; keep it short (one line). It's not a structured field.
 - For `diff_conflict`, `options` MUST list the user choices verbatim from the diff report (e.g., "supersede", "keep_vault", "capture_both").
+
+### Type-specific schemas (v1.1 additions)
+
+```yaml
+# bind_conflict — emitted by bind-codebase when CONFLICT count > 0
+details:
+  vault: <path>
+  conflict_count: N
+  conflicts:
+    - id: C-001
+      vault_claim: <text>
+      codebase_reality: <text>
+      suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+
+# dep_missing — emitted by execute-bolts when superpowers AND vendored fallback both absent
+details:
+  required_skills: [executing-plans, subagent-driven-development, test-driven-development, using-git-worktrees]
+  missing_real: [...]
+  missing_vendored: [...]
+  install_command: "/plugin install superpowers"
+
+# test_fail — emitted by execute-bolts after max retries
+details:
+  unit_id: U-XXX
+  retries_attempted: N
+  test_command: <cmd>
+  last_failure_output: <verbatim test output>
+  files_touched: [...]
+
+# cycle_detected — emitted by generate-units when dependency DAG has cycle
+details:
+  cycle_path: [U-001, U-002, U-001]
+
+# mode_migrate — emitted by orchestrate-flow on vault.mode vs CWD signal mismatch
+details:
+  vault_mode: greenfield | existing
+  cwd_signals: [.git, package.json, ...]
+  resolution: "update vault mode" | "re-detect"
+```
