@@ -148,12 +148,40 @@ Show the user:
 
 #### Step 2b: Action prompt
 
-Use `AskUserQuestion` with four outcomes:
+For each OQ presented (in priority order P0 → P1 → P2 → P3), display:
 
-- **`Resolve`** (recommended for ready-to-answer)
-- **`Out of Scope`**
-- **`Defer`**
-- **`Skip`** (move on, return next round)
+```
+OQ-<DOC>-<NNN> (<priority>, section <filename>)
+> <question text>
+
+Choose action:
+  [A] Answer now              — provide stakeholder resolution inline
+  [B] Defer to binding        — code-dependent OQ; resolve at bind-codebase phase
+  [C] Out of scope            — declare irrelevant to current spec
+  [D] Skip                    — leave pending, decide later
+```
+
+**Conditional display of Option [B]:**
+
+Option [B] appears ONLY when ALL of these are true:
+- Vault `mode: existing` (brownfield)
+- CWD has repo signals (any of `.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`)
+
+In greenfield contexts OR when no repo signals detected, suppress Option [B] from the menu. The user sees only [A], [C], [D].
+
+**Per-action state transitions:**
+
+| Action | OQ field changes |
+|---|---|
+| A — Answer | `status: resolved`, `resolved_at: <now>`, `resolution: <answer text>` |
+| B — Defer to binding | `status: deferred`, `defer_to: binding`, `deferred_at: <now>`, `deferred_reason: <optional user-provided text>` |
+| C — Out of scope | `status: out-of-scope`, `out_of_scope_reason: <text>` |
+| D — Skip | (no field changes; OQ remains pending) |
+
+After action selection, write the field updates to `vault.json` immediately and append to the vault's changelog:
+```
+{ "event": "oq-resolved" | "oq-deferred" | "oq-out-of-scope", "id": "OQ-XXX", "at": "<iso>", "action": "A|B|C|D" }
+```
 
 #### Step 2c: Apply outcome
 
@@ -262,6 +290,10 @@ Output to chat (no file generation needed at this step):
 3. Path to vault: `<VAULT_DIR>` (absolute).
 4. If still-open count > 0: top 3 remaining P1 blockers (one-line each) with their tags.
 5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up. To lock the vault for sprint implementation, edit `00-index.md` Vault Lock Status manually (`Status: 🔒 LOCKED for <scope>`, fill `Locked at` / `Locked by`, append a Changelog entry).
+
+After completion, if any OQs were deferred to binding, suggest:
+- For brownfield: `/mega-sdd:scan-codebase && /mega-sdd:bind-codebase <vault>` (binding will auto-resolve deferred OQs against codebase-map)
+- For greenfield: warn user — deferred OQs in greenfield have no resolution path (no binding phase will run)
 
 Do NOT pad with "I have resolved..." preamble. Just report numbers and surface remaining blockers.
 
