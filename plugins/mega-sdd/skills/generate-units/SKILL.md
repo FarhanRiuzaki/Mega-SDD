@@ -40,6 +40,18 @@ Turns intent into actionable atomic specs for AI dev execution.
    - Build DAG from semantic deps (entity before flow that uses it, schema migration before code that depends on column)
    - **Reject cycles.** If detected, halt and instruct user to restructure vault sections.
 
+**Structured halt per `vault-contract.md §halt-protocol`:**
+
+```yaml
+blocker:
+  type: cycle_detected
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: generate-units
+  details:
+    cycle_path: [U-001, U-002, ..., U-001]  # node sequence forming the cycle
+  next_action: "Restructure vault sections so unit dependencies form a DAG (no back-edges)"
+```
+
 5. **Allocate IDs.** Stable scheme:
    - Sort candidates topologically
    - Number U-001, U-002, ...
