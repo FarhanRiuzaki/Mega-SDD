@@ -62,6 +62,31 @@ Every `grand-design-spec` vault has a `vault.json` alongside the 7 markdown file
 - `vault-diff` Step 6.5 — after applying approved changes (added/changed/removed entities, flows, ADRs, auto-resolved or new OQs).
 - `drift-detect` — does NOT regenerate. Drift-detect produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + grand-design-spec re-run (for entity/flow/ADR additions).
 
+### OQ status tracking (v1.1+)
+
+OQ entries in vault.json now support optional status-tracking fields. The full OQ entry shape:
+
+```yaml
+oqs:
+  - id: OQ-DATA-001
+    priority: P1 | P2 | P3
+    section: <vault-filename.md>
+    text: <question text>
+    # NEW in v1.1 — additive, backwards compatible:
+    status: pending | resolved | deferred | out-of-scope    # default: pending if absent
+    # When status=resolved:
+    resolved_at: <ISO8601 timestamp>
+    resolution: <answer text>
+    # When status=deferred:
+    defer_to: binding                                       # only "binding" in v1.1
+    deferred_at: <ISO8601 timestamp>
+    deferred_reason: <optional explanation>
+    # When status=out-of-scope:
+    out_of_scope_reason: <text>
+```
+
+**Backwards compatibility:** OQ entries without a `status` field are treated as `status: pending` by all skills. vault.json writers MAY omit `status` for pending OQs to minimize diff churn. Existing v1.0.x vaults load unchanged.
+
 ## §OQ-conventions — Open Question tagging
 
 Every Open Question MUST have a unique tag and priority marker.
