@@ -1,7 +1,7 @@
 ---
 name: bind-codebase
 version: 1.0.0
-description: Validate a vault against `codebase-map.md`. Produces `bound-vault/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim. BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
+description: Validate a vault against `codebase-map.md`. Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim. BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
 # Bind-Codebase
@@ -25,7 +25,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 ## Outputs
 
 - `binding.md` — always written, even when blocking
-- `bound-vault/` — written only when no CONFLICTs (or `--strict` and no OQs)
+- `<vault>-bound/` (sibling of vault dir) — written only when no CONFLICTs (or `--strict` and no OQs)
 
 ## Procedure
 
@@ -126,10 +126,10 @@ strict: <true/false>
 
 5. **Decision gate:**
    - If `conflict == 0` AND (`oq == 0` OR `--strict` not set):
-     - **Produce `bound-vault/`** — copy vault dir; inject inline binding annotations (HTML comments per binding-contract.md)
-     - **Announce:** "Binding clean. Bound-vault written to `<path>`. Next: `/mega-sdd:generate-units <bound-vault>`."
+     - **Produce `<vault>-bound/`** — copy vault dir; inject inline binding annotations (HTML comments per binding-contract.md)
+     - **Announce:** "Binding clean. Bound-vault written to `<vault>-bound/` (sibling of vault directory). Next: `/mega-sdd:generate-units <vault>-bound/`."
    - If `conflict > 0` OR (`--strict` AND `oq > 0`):
-     - **DO NOT** write bound-vault directory
+     - **DO NOT** write the <vault>-bound/ sibling directory
      - **Announce blocker:** "Binding BLOCKED. <N> conflicts must be resolved. Run `/mega-sdd:resolve-oq --binding <binding.md>` or edit vault manually, then re-run bind-codebase."
      - Emit blocker YAML per `vault-contract.md` §halt-protocol
 
@@ -150,5 +150,5 @@ strict: <true/false>
 
 ## Hand-off
 
-- Clean binding → suggest `/mega-sdd:generate-units <bound-vault>`
+- Clean binding → suggest `/mega-sdd:generate-units <vault>-bound/`
 - Blocked → suggest `/mega-sdd:resolve-oq --binding <binding.md>`
