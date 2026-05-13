@@ -53,6 +53,29 @@
 - **Setup:** malformed vault directory
 - **Expect:** halt with vault repair instruction
 
+### B6: Deferred-OQ auto-resolution (v1.1+)
+- **Setup:** vault has OQ-X with `status: deferred, defer_to: binding`, AND codebase-map.md has an exact unambiguous match for the entity/endpoint/file referenced in OQ-X.text
+- **Run:** `/mega-sdd:bind-codebase ./vault`
+- **Expect:**
+  - `binding.md` has a "## Auto-Resolved Deferred OQs" section listing OQ-X with evidence citation
+  - vault.json: OQ-X is now `status: resolved`, has `resolved_at` and `resolution` (citing evidence)
+  - aggregate counts: OQ-X is included in `confirmed`, not in `oq`
+
+### B7: Deferred-OQ propagation when no match
+- **Setup:** vault has OQ-Y with `status: deferred, defer_to: binding`, AND codebase-map.md has NO evidence for it
+- **Run:** `/mega-sdd:bind-codebase ./vault`
+- **Expect:**
+  - `binding.md` has "## Open Questions" section with OQ-Y as a row
+  - vault.json: OQ-Y still `status: deferred` (unchanged)
+  - Hand-off message suggests `/mega-sdd:resolve-oq --binding`
+
+### B8: Mixed deferred + CONFLICT scenario
+- **Setup:** vault has 1 OQ deferred (auto-resolves) + 1 OQ deferred (propagates) + 1 vault claim that conflicts with code
+- **Expect:**
+  - `bound-vault/` NOT produced (CONFLICT blocks)
+  - binding.md has all three sections: Auto-Resolved Deferred OQs (1), Open Questions (1), Conflicts (1, BLOCKING)
+  - Hand-off points to `resolve-oq --binding`
+
 ## Pass criteria
 
-All triggers fire. Blocking gate behaves per binding-contract.md. No auto-resolution under any condition.
+All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. No unguarded auto-resolution under any condition.
