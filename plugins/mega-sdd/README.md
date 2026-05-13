@@ -2,7 +2,7 @@
 
 Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination guarantees.
 
-**Version:** 1.0.1 · **License:** MIT
+**Version:** 1.1.0 · **License:** MIT
 
 > 📖 **The full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for the comprehensive overview — 5W1H, actor flowchart, full command reference, anti-hallucination layers, migration guide, halt protocol.
 
