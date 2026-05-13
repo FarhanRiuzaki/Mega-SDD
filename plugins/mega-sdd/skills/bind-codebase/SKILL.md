@@ -42,6 +42,43 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
      - Found but contradicts → CONFLICT
      - Not found → OQ
 
+2.5. **Deferred-OQ auto-resolution.**
+
+   For each OQ in the vault with `status: deferred` AND `defer_to: binding`:
+
+   a. **Extract** the OQ text and section context.
+
+   b. **Search codebase-map.md for evidence:**
+      - If OQ mentions a specific entity name → search §3 (data models / schemas) for exact match
+      - If OQ mentions an endpoint path → search §4 (routes / endpoints) for exact match
+      - If OQ mentions a file path or symbol name → search §2 (public interfaces) for exact match
+      - Otherwise → string-search across all map sections with conservative fuzzy threshold
+
+   c. **High-confidence match** (single unambiguous hit):
+      - Set OQ status: `resolved`
+      - Set `resolved_at: <now>`
+      - Set `resolution: "Auto-resolved by bind-codebase. Evidence: <codebase-map citation>"`
+      - Append entry to `binding.md` under a "## Auto-Resolved Deferred OQs" section:
+        ```
+        | OQ-ID | Question | Evidence (codebase-map) | Status |
+        |---|---|---|---|
+        | OQ-DATA-001 | ... | §3 entry: User table line 42 | auto-resolved |
+        ```
+
+   d. **No match found OR ambiguous match** (multiple hits or low confidence):
+      - Do NOT modify OQ status (remains `deferred`)
+      - Propagate to `binding.md` under "## Open Questions" section:
+        ```
+        | ID | Question | Source vault section | Auto-resolve attempted |
+        |---|---|---|---|
+        | OQ-DATA-001 | ... | 03-data-model.md | no match found |
+        ```
+      - These get walked by user via `/mega-sdd:resolve-oq --binding <binding.md>`
+
+   e. **Conservative threshold:** When in doubt, prefer falling back to manual resolution (d). Never silently auto-resolve a deferred OQ that could be wrong. The user trusts the citation in (c); never write an evidence string that doesn't exist in codebase-map.
+
+   Update aggregate counts (claims_total / confirmed / conflict / oq) to include any newly auto-resolved deferred OQs in `confirmed`.
+
 3. **Aggregate counts.** Track `claims_total`, `confirmed`, `conflict`, `oq`.
 
 4. **Write `binding.md`.** Use the template from `references/binding-contract.md`:
@@ -75,6 +112,16 @@ strict: <true/false>
 | ID | Question | Source |
 |---|---|---|
 | OQ-001 | ... | <vault file:line> |
+
+## Auto-Resolved Deferred OQs (N)
+| OQ-ID | Question | Evidence (codebase-map) | Status |
+|---|---|---|---|
+...
+
+## Open Questions (N)
+| ID | Question | Source | Auto-resolve attempted |
+|---|---|---|---|
+...
 ```
 
 5. **Decision gate:**
