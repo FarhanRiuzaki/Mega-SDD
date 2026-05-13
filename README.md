@@ -1,3 +1,5 @@
+> ⚠️ **v1.0 migration in progress.** This repo is being renamed from `grand-design-spec` to `mega-sdd`. The full revamp adds Spec-Driven Development (intent → units → bolts pipeline). See `docs/superpowers/specs/2026-05-13-mega-sdd-revamp-design.md`.
+
 <div align="center">
 
 # grand-design-spec
