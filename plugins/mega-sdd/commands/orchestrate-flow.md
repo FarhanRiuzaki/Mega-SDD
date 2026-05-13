@@ -3,7 +3,7 @@ description: Multi-skill lifecycle orchestrator. Inspects CWD, proposes a chain 
 argument-hint: [optional vault-path or PRD-path]
 ---
 
-Invoke the `grand-design-spec:flow` skill via the Skill tool to orchestrate a lifecycle round across the grand-design-spec sub-skills.
+Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool to orchestrate a lifecycle round across the grand-design-spec sub-skills.
 
 User arguments (vault-path, PRD-path, or empty for CWD auto-detect): $ARGUMENTS
 

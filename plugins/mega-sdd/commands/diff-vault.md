@@ -3,7 +3,7 @@ description: Diff a vault against a new PRD revision and produce a structured ch
 argument-hint: [path/to/old-vault] [path/to/new-prd]
 ---
 
-Invoke the `grand-design-spec:vault-diff` skill via the Skill tool to compare an existing vault against a revised PRD/BRD.
+Invoke the `mega-sdd:diff-vault` skill via the Skill tool to compare an existing vault against a revised PRD/BRD.
 
 User arguments (old vault path, new PRD path, output report path): $ARGUMENTS
 

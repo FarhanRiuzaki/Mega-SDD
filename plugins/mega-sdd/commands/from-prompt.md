@@ -3,7 +3,7 @@ description: Convert a free-text brief into a seed-PRD.md ready for vault genera
 argument-hint: [optional brief text]
 ---
 
-Invoke the `grand-design-spec:from-prompt` skill via the Skill tool to convert a user brief into a seed-PRD.md.
+Invoke the `mega-sdd:generate-intent` skill via the Skill tool to convert a user brief into a seed-PRD.md.
 
 User arguments (brief text, or empty to be prompted in chat): $ARGUMENTS
 

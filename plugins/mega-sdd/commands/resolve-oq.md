@@ -3,7 +3,7 @@ description: Interactively resolve Open Questions in an existing vault and write
 argument-hint: [path/to/vault] [optional OQ tag like OQ-FLOWS-3]
 ---
 
-Invoke the `grand-design-spec:resolve-oq` skill via the Skill tool to walk through unresolved Open Questions in a generated vault.
+Invoke the `mega-sdd:resolve-oq` skill via the Skill tool to walk through unresolved Open Questions in a generated vault.
 
 User arguments (vault path, specific OQ tag, priority filter): $ARGUMENTS
 

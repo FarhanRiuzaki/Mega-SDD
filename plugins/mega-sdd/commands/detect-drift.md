@@ -3,7 +3,7 @@ description: Compare a vault against the actual codebase and report drift (missi
 argument-hint: [path/to/vault] [path/to/codebase]
 ---
 
-Invoke the `grand-design-spec:drift-detect` skill via the Skill tool to reconcile a vault against a live codebase.
+Invoke the `mega-sdd:detect-drift` skill via the Skill tool to reconcile a vault against a live codebase.
 
 User arguments (vault path, codebase root, scope filters): $ARGUMENTS
 
