@@ -1,7 +1,7 @@
 ---
 name: generate-intent
 version: 1.0.0
-description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief into a 7-file vault with anti-hallucination guarantees. Mode auto-detected from input: structured PRD path → parse; --from-prompt or free-text → adaptive Q&A first. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", or paraphrases.
+description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", or paraphrases.
 ---
 
 # Grand Design Spec Generator
@@ -23,6 +23,30 @@ Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected
 Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 questions) to fill gaps, then produces seed-PRD + vault in one pass.
 
 The two modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
+
+### Detection rules (v1.2+ — deterministic, no LLM judgment)
+
+When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules in order. First match wins:
+
+| Rule | Match condition | Mode |
+|---|---|---|
+| 1 | `--from-prompt` flag is present | **B** (explicit override; positional ignored as path) |
+| 2 | Positional arg resolves to an existing file on disk | **A** |
+| 3 | Positional arg matches glob `*.md` / `*.pdf` / `*.docx` (regardless of whether file exists) | **A** — warn if file missing; offer to switch to B |
+| 4 | Positional arg contains whitespace OR is wrapped in quotes OR is longer than 80 chars | **B** (treat as brief) |
+| 5 | Positional arg has no path separators (`/`, `\`) AND no recognized extension | **B** |
+| 6 | No positional arg | CWD scan: search for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
+
+The `--from-prompt` flag remains supported for explicit invocation; new users typically won't need it.
+
+### Edge cases
+
+- **Quoted single word** (`"buildTodoCLI"`) — Rule 4 matches (wrapped in quotes) → Mode B. The user explicitly quoted the input; treat it as a brief.
+- **Looks-like-path but doesn't exist** (`./missing.md`) — Rule 2 fails (file doesn't resolve) but Rule 3 catches the `.md` extension → Mode A. Skill warns the user `"File ./missing.md not found. Treating as Mode A path. To use free-text, wrap in quotes or use --from-prompt."` and offers to abort.
+- **Bare single word** (`prd`) — Rule 5 matches (no path separator, no extension) → Mode B. If the user actually meant a path, ask them to provide an extension (`prd.md`) or relative path (`./prd`).
+- **Flag + positional conflict** (`--from-prompt "build X" ./prd.md`) — Rule 1 wins → Mode B. The trailing `./prd.md` is ignored. Skill warns: `"--from-prompt set; ignoring positional ./prd.md. Provide just the brief or just a path, not both."`
+
+When detection is ambiguous (Rule 3 with missing file, Rule 6 with multiple candidates), the skill always confirms with the user before proceeding. Detection silently when high-confidence.
 
 ## When to use this skill
 
