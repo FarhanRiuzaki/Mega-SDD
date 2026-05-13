@@ -58,7 +58,7 @@ Persist:
 - `EXPLICIT_PRD_PATH=<path or null>`
 - `EXPLICIT_PROMPT=<text or null>` (v0.2+)
 
-If WORK_DIR is empty (no files at all) and no args, STOP and tell the user: *"No vault, no PRD, no prompt detected. Point me at one: `/grand-design-spec:flow ./vault-dir/`, `/grand-design-spec:flow PRD-v2.pdf`, or `/grand-design-spec:flow \"<your brief>\"`."*
+If WORK_DIR is empty (no files at all) and no args, STOP and tell the user: *"No vault, no PRD, no prompt detected. Point me at one: `/mega-sdd:orchestrate-flow ./vault-dir/`, `/mega-sdd:orchestrate-flow PRD-v2.pdf`, or `/mega-sdd:orchestrate-flow \"<your brief>\"`."*
 
 ### Step 1: CWD inspection
 
@@ -124,7 +124,7 @@ RULE 7 (unchanged) — IF nothing matched:
 Format the plan per this template (placeholders filled from Step 1 findings):
 
 ```
-grand-design-spec:flow — proposed chain
+mega-sdd:orchestrate-flow — proposed chain
 
 Detected state:
   • Vault: <path> (v<version>, mode=<new|existing>, output_mode=<compact|full>, prd_status=<draft|final>)

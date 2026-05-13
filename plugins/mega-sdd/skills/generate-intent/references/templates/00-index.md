@@ -7,7 +7,7 @@
 - **Vault version**: v1.0
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
-- **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `/grand-design-spec:vault-diff`).
+- **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `/mega-sdd:diff-vault`).
 - **PRD status**: `final` (signed-off by stakeholder) | `draft` (still in flux)
 - **Output mode**: `compact` (default — table-first, prose-cut) | `full` (verbose — prose-rich for cross-functional review)
 - **Locked at**: YYYY-MM-DD HH:MM (TZ)
@@ -202,9 +202,9 @@ Mark each artifact with the OQ tag(s) it depends on so it can be revisited once 
 
 When the user needs to update or reconcile the vault, route them to the appropriate companion skill instead of editing the vault free-hand:
 
-- **Stakeholder OQ resolution round** → `/grand-design-spec:resolve-oq`. Walks the OQ roll-up by priority, captures answers, marks resolved entries with stable tags + bumps vault version + Changelog.
-- **PRD/BRD source revised** → `/grand-design-spec:vault-diff`. Computes structured diff between the new source and current vault state. Surfaces conflicts (Resolved-OQ vs new PRD) for explicit user decision; never silently overwrites.
-- **Codebase reconciliation (`Implementation mode: existing` only)** → `/grand-design-spec:drift-detect`. Scans the live codebase, flags entity/flow/decision drift between the vault target and current code reality. Produces `DRIFT-REPORT.md` for review.
+- **Stakeholder OQ resolution round** → `/mega-sdd:resolve-oq`. Walks the OQ roll-up by priority, captures answers, marks resolved entries with stable tags + bumps vault version + Changelog.
+- **PRD/BRD source revised** → `/mega-sdd:diff-vault`. Computes structured diff between the new source and current vault state. Surfaces conflicts (Resolved-OQ vs new PRD) for explicit user decision; never silently overwrites.
+- **Codebase reconciliation (`Implementation mode: existing` only)** → `/mega-sdd:detect-drift`. Scans the live codebase, flags entity/flow/decision drift between the vault target and current code reality. Produces `DRIFT-REPORT.md` for review.
 
 These skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX` numbering, and Changelog history across rounds — running them is the safe way to evolve the vault. Direct edits are still allowed but must follow the same conventions (preserve identifiers, append to Changelog, bump version).
 

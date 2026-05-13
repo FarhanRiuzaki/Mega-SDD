@@ -52,7 +52,7 @@ Every diff item lands in one of these categories. The skill walks them in this o
 
 ## --auto flag (v0.3+)
 
-The `--auto` flag is passed by upstream callers (typically `/grand-design-spec:flow`) to skip logistical prompts. **Substance prompts — Resolved-OQ conflicts and Decision conflicts — ALWAYS stay interactive OR emit a blocker artifact.** Conflicts represent disagreement between vault state and new source; auto-deciding would silently overwrite stakeholder choices.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logistical prompts. **Substance prompts — Resolved-OQ conflicts and Decision conflicts — ALWAYS stay interactive OR emit a blocker artifact.** Conflicts represent disagreement between vault state and new source; auto-deciding would silently overwrite stakeholder choices.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|

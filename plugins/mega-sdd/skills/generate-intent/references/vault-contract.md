@@ -111,7 +111,7 @@ When a sibling skill creates new entries, use **next-available** number, never r
 
 ## §halt-protocol — Unified `blocker` envelope (v0.14)
 
-When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, vault-diff conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/grand-design-spec:flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
+When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, vault-diff conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
 
 The envelope is uniform across types so a single consumer can handle all of them.
 
