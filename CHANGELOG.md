@@ -5,6 +5,44 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-05-13
+
+### Added — Source-code OQ deferral + structured halt protocol
+
+- **resolve-oq 4-action menu** — Per OQ: Answer / Defer-to-binding / Out-of-scope / Skip. Defer option appears only in brownfield context (vault.mode=existing AND repo signals present).
+- **resolve-oq `--binding` mode** — Procedure documented for walking CONFLICT + propagated deferred-OQ entries from `binding.md`. Per-conflict actions: KEEP_VAULT / KEEP_CODE / DEFER / SPLIT.
+- **bind-codebase auto-resolution** — Deferred-binding OQs auto-resolve against codebase-map evidence (high-confidence single match); else propagate to `binding.md` Open Questions for user resolution via `resolve-oq --binding`.
+- **vault-contract §halt-protocol** extended 3 → 8 structured types: + `bind_conflict`, `dep_missing`, `test_fail`, `cycle_detected`, `mode_migrate`.
+- **routing-rules.md** intent gate excludes deferred OQs (`Vault has unresolved P0/P1 OQs with status != deferred` — deferred propagate to binding).
+
+### Changed — Skill alignment
+
+- **vault.json OQ schema** gains optional fields: `status` (pending|resolved|deferred|out-of-scope), `defer_to` (binding|stakeholder), `deferred_at`, `deferred_reason`, `out_of_scope_reason`. Backwards compatible — absent `status` treated as `pending`. Pre-v1.1 `defer_note` semantics now unified under `deferred_reason`.
+- **bind-codebase SKILL.md** standardizes `<vault>-bound/` sibling naming throughout (was mixed with generic `bound-vault/`).
+- **generate-intent SKILL.md** `--auto` default output path aligned to `docs/mega-sdd/vaults/<slug>/` (was `./<slug>-spec/`).
+- **commands/detect-drift.md** output filename corrected to `DRIFT-REPORT.md` (matches skill SKILL.md).
+- **bind-codebase, execute-bolts, generate-units, orchestrate-flow** emit structured halt YAML per §halt-protocol (was prose-only).
+- **resolve-oq stakeholder-defer reconciliation** — Old Step 2c bespoke `defer_note` semantic merged into the new unified OQ schema (`defer_to: stakeholder` + `deferred_reason`).
+
+### Fixed — README defects (audit findings F1-F8)
+
+- Halt protocol section: 5 fabricated types replaced with the now-real 8-type list.
+- `--chain` flag references removed (3 spots in cheat-sheet) — flag never existed.
+- `update-plugin` moved from skills table to commands footnote (no backing SKILL.md).
+- Skill count "11" corrected to "10 + 1 command-only".
+- Plugin version aligned across `plugin.json`, marketplace.json, and both READMEs.
+- Both diagrams add `{P0/P1 non-deferred OQs?}` intent-gate decision node visible in actor flow + detailed pipeline.
+- Defense layer 4 wording: "runs post-bolt" → "suggested post-bolt; runs on demand".
+
+### Migration
+
+Fully backwards compatible. Existing v1.0.x vaults load without conversion. To benefit from new resolve-oq actions, re-invoke `resolve-oq` on existing vaults — 4-action menu appears for any pending OQ.
+
+### Marketplace
+
+- `mega-sdd@1.1.0` published
+- `grand-design-spec@0.16.0` continues deprecated; removed at v1.2.0 per existing schedule
+
 ## [1.0.0] — 2026-05-13
 
 ### BREAKING — rename to mega-sdd
