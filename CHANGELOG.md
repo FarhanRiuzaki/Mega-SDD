@@ -5,6 +5,61 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-05-13
+
+### BREAKING — rename to mega-sdd
+
+The plugin is renamed from `grand-design-spec` to `mega-sdd`. All skill, command, and namespace identifiers change. See migration table in `plugins/mega-sdd/README.md`.
+
+### Added — Spec-Driven Development pipeline
+
+- **`scan-codebase` skill** — heuristic repo mapping → `codebase-map.md` (brownfield prep)
+- **`bind-codebase` skill** — vault validation gate; produces `bound-vault/` + `binding.md`; BLOCKS unit generation on conflicts (the keystone anti-hallucination layer)
+- **`generate-units` skill** — bound-vault → atomic AI-executable unit specs with dependency graph
+- **`execute-bolts` skill** — unit → code via superpowers integration; TDD discipline; halt protocol
+- **`using-mega-sdd` anchor skill** — session-start injected for SDD-scoped sessions (scoped triggers)
+- **SessionStart hook** — injects anchor when SDD signals detected in CWD; surfaces install hint if superpowers missing
+- **Vendored superpowers fallback** — `_vendored/` namespace ensures bolts execute even when superpowers plugin not installed; `scripts/sync-superpowers.sh` automates refresh
+
+### Changed
+
+- `grand-design-spec` skill → `generate-intent` (absorbs `from-prompt` mode as `--from-prompt` flag)
+- `flow` skill → `orchestrate-flow` (extended routing for new SDD phases; 3-skill chain cap preserved)
+- `drift-detect` skill → `detect-drift`
+- `vault-diff` skill → `diff-vault`
+- `update` skill → `update-plugin` (now also runs dep-doctor)
+- All version frontmatters → `1.0.0`
+
+### Removed
+
+- `from-prompt` skill (absorbed into `generate-intent`)
+- `from-prompt` command (deprecated alias retained for back-compat, removed in v1.2)
+
+### Deprecated
+
+- `grand-design-spec` listing in marketplace (will be removed in 2 release cycles)
+- `/mega-sdd:from-prompt` command alias (use `--from-prompt` flag instead)
+
+### Marketplace
+
+- Added `mega-sdd` entry (version 1.0.0)
+- Marked `grand-design-spec` entry as deprecated, pointing to `mega-sdd`
+
+### Documentation
+
+- Plugin README rewritten with Mermaid flow diagram + ASCII fallback + procedure cheat-sheet
+- New CLAUDE.md (contributor guidelines for AI agents)
+- New tests/ tree with skill-triggering fixtures + hook + vendoring tests
+- New `docs/mega-sdd/` output convention dirs
+
+### Migration
+
+Existing `grand-design-spec` users:
+1. `/plugin install mega-sdd`
+2. Replace `grand-design-spec:` → `mega-sdd:` in any scripts/docs (use rename table in plugin README)
+3. Existing vaults are compatible — no manual conversion needed
+4. To benefit from binding gate on existing vaults: run `/mega-sdd:scan-codebase` then `/mega-sdd:bind-codebase <vault>`
+
 ## [0.15.0] — 2026-05-10
 
 The prompt-input release. Adds `/grand-design-spec:from-prompt` so users can start from a free-text brief instead of a PRD doc — eliminating the ChatGPT-to-Claude round-trip for prompt engineering. The orchestrator's `flow` chain becomes default-on across all rules: every invocation now walks the lifecycle to its natural endpoint without opt-in friction.
