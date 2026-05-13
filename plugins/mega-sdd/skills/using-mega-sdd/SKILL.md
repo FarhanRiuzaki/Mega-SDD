@@ -1,5 +1,6 @@
 ---
 name: using-mega-sdd
+version: 1.0.0
 description: Use at session start when SDD topics arise — establishes how to route SDD work through mega-sdd phases. Triggers on SDD keywords (intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault) and Indonesian variants (pecah PRD, buat dev, spec ini, siapkan context buat AI dev).
 ---
 
