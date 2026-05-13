@@ -1,7 +1,7 @@
 ---
 name: generate-intent
 version: 1.0.0
-description: Break down PRD/BRD and Figma into 7 markdown files + a vault.json manifest for dev team handoff. Triggers — "spec out this feature", "buat dev handoff", "pecah PRD ini buat dev", or paraphrases for dev / AI dev context.
+description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief into a 7-file vault with anti-hallucination guarantees. Mode auto-detected from input: structured PRD path → parse; --from-prompt or free-text → adaptive Q&A first. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", or paraphrases.
 ---
 
 # Grand Design Spec Generator
@@ -9,6 +9,20 @@ description: Break down PRD/BRD and Figma into 7 markdown files + a vault.json m
 Converts PRD/BRD + Figma into 7 markdown files inside a user-specified folder, optimized for **anti-hallucination dev handoff** — meaning a downstream dev (human or AI) can implement from these docs without inventing requirements.
 
 > **Skill instruction language**: this skill is written in English for reasoning quality. **Generated docs match the input PRD language** — if the PRD is in Indonesian, the seven output files are in Indonesian; if the PRD is in English, output is English. The skill's chat prompts to the user adapt to the user's language at runtime.
+
+## Invocation modes
+
+`generate-intent` has TWO input modes:
+
+### Mode A — Structured input (PRD / BRD / Figma)
+Invocation: `/mega-sdd:generate-intent ./prd.md` (or any structured doc path)
+Behavior: parse + decompose directly per `references/vault-contract.md`. No Q&A unless source is critically incomplete.
+
+### Mode B — Free-text brief (--from-prompt)
+Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected when no structured PRD path provided.
+Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 questions) to fill gaps, then produces seed-PRD + vault in one pass.
+
+The two modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
 
 ## When to use this skill
 
@@ -20,6 +34,8 @@ Trigger this skill for any of the following user requests, **whether stated lite
 - "Translate business requirements into architecture docs"
 - "Convert PRD + Figma into dev-ready specifications"
 - Any request to take a product/business document and produce structured dev specs
+- "from this prompt" / "from a brief" / "baku dari ide" — invokes Mode B (free-text)
+- "I only have an idea, not a PRD" / "ide aja gue belum sempat PRD" — invokes Mode B
 
 The skill is **anti-hallucination by construction**: every claim cites its source, ambiguities become Open Questions (not guesses), Out of Scope is always explicit.
 
