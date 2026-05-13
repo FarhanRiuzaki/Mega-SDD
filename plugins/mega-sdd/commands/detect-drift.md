@@ -12,4 +12,4 @@ Follow the skill exactly:
 - Inspect the codebase for entities, fields, endpoints, and flows.
 - Categorize drift: vault-only (documented but missing in code), code-only (implemented but undocumented), name/shape mismatches.
 - For `IMPLEMENTATION_MODE=existing` vaults past `mode_migrate_after`, surface migration-readiness gaps separately.
-- Produce `DRIFT.md` with severity-tagged findings; never edit the vault or code automatically.
+- Produce `DRIFT-REPORT.md` with confidence-rated findings; never edit the vault or code automatically.
