@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# SessionStart hook for mega-sdd plugin.
+# Inject `using-mega-sdd` anchor skill content when SDD signals detected in CWD.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
+
+# Detect SDD signals in CWD (purely heuristic, no false positives in casual sessions)
+cwd="$(pwd)"
+has_sdd_signal=0
+for signal in "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
+  if [ -e "${cwd}/${signal}" ]; then
+    has_sdd_signal=1
+    break
+  fi
+done
+
+# If no signals, skip injection
+if [ "$has_sdd_signal" -eq 0 ]; then
+  exit 0
+fi
+
+# Build context injection JSON for Claude Code SessionStart spec
+if [ ! -f "$ANCHOR_SKILL" ]; then
+  echo "WARN: anchor skill missing: $ANCHOR_SKILL" >&2
+  exit 0
+fi
+
+ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"
+
+# Check superpowers presence
+sp_cache="${HOME}/.claude/plugins/cache"
+sp_present=0
+if find "$sp_cache" -maxdepth 4 -type d -name "superpowers" 2>/dev/null | grep -q .; then
+  sp_present=1
+fi
+
+WARN=""
+if [ "$sp_present" -eq 0 ]; then
+  WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Bolts phase will use vendored fallback. For full features run: `/plugin install superpowers`</important-reminder>'
+fi
+
+cat <<EOF
+<<EXTREMELY_IMPORTANT>>
+You have mega-sdd skills available. SDD context detected in CWD.
+
+${ANCHOR_CONTENT}${WARN}
+<</EXTREMELY_IMPORTANT>>
+EOF
