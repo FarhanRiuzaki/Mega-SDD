@@ -19,9 +19,9 @@ Mega-SDD requires superpowers' execution skills for the `bolts` phase. When the 
 
 - **Source repo:** https://github.com/obra/superpowers
 - **License:** MIT (see https://github.com/obra/superpowers/blob/main/LICENSE)
-- **Vendored from version:** TBD (filled by sync-superpowers.sh)
-- **Vendored at commit:** TBD (filled by sync-superpowers.sh)
-- **Vendored on date:** TBD (filled by sync-superpowers.sh)
+- **Vendored from version:** 5.1.0
+- **Vendored at commit:** unknown
+- **Vendored on date:** 2026-05-13
 
 ## Sync policy
 
