@@ -1,6 +1,6 @@
 ---
-name: flow
-version: 0.2.0
+name: orchestrate-flow
+version: 1.0.0
 description: Multi-skill lifecycle orchestrator for grand-design-spec. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms with user once, then executes the chain in --auto mode. Triggers — "run the flow", "orchestrate vault lifecycle", "auto vault", "do the next thing", or paraphrases.
 ---
 
