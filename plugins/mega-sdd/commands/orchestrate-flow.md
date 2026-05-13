@@ -1,23 +1,21 @@
 ---
-description: Multi-skill lifecycle orchestrator. Inspects CWD, proposes a chain of sub-skills (generate / resolve-oq / vault-diff / drift-detect), confirms once, then executes in --auto mode.
-argument-hint: [optional vault-path or PRD-path]
+description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills (max 3 per chain) with single confirmation. Halt-pauses on blockers.
+argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run]
 ---
 
-Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool to orchestrate a lifecycle round across the grand-design-spec sub-skills.
+Invoke `mega-sdd:orchestrate-flow` via the Skill tool.
 
-User arguments (vault-path, PRD-path, or empty for CWD auto-detect): $ARGUMENTS
+User arguments: $ARGUMENTS
 
-Follow the skill exactly:
+Argument parsing:
+- First positional (if not a flag): vault path or PRD path; otherwise auto-detect from CWD.
+- Flags: --from, --to, --dry-run.
 
-- Step 0: parse args, persist `WORK_DIR`, `EXPLICIT_VAULT_PATH`, `EXPLICIT_PRD_PATH`.
-- Step 1: deterministic CWD inspection (vault detection, PRD detection, vault metadata, codebase signals, P1 count, mode-migration trigger, git state).
-- Step 2: build proposed chain via the 7-rule decision matrix. Hard cap of 3 skills.
-- Step 3: present plan + single `AskUserQuestion` (Run / Edit / Cancel). Edit supports `skip step N` and `stop after step N` only.
-- Step 4: execute chain by dispatching sub-skills with `--auto` flag. Pause on `blocker` artifacts (any type) per vault-contract.md §halt-protocol. `resolve-oq` step is always interactive on per-OQ choices.
-- Step 5: emit final summary with completed/paused/skipped per step + verbatim blocker YAMLs if any.
+Follow `skills/orchestrate-flow/SKILL.md` procedure. Hard cap 3 sub-skills per chain.
 
 Hard rails:
-- No content generation by the orchestrator itself.
-- No state file (`.gds-state.json` is explicitly out of scope — resumption = re-invoke `flow`).
-- No skill runs in parallel.
-- Sub-skill substance prompts (per-OQ choices, conflict resolutions) ALWAYS surface to human.
+- No content generation by orchestrator itself
+- No state file (re-invoke to resume)
+- No parallel sub-skills
+- All substance prompts surface to human
+- Blocker artifacts pause chain
