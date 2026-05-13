@@ -114,7 +114,7 @@ The `--auto` flag is set by upstream callers — typically `/mega-sdd:orchestrat
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
-| Step 0 (output path) | Ask user via `AskUserQuestion` | Default to `./<slug>-spec/` derived from PRD project name (slug-cased). If folder exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
+| Step 0 (output path) | Ask user via `AskUserQuestion` | Default to `docs/mega-sdd/vaults/<slug>/` derived from PRD project name (slug-cased). If folder exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
 | Step 0.5 (IMPLEMENTATION_MODE) | Ask | Infer from codebase signals: `composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / etc. detected in CWD or vault parent → `existing`; else `new`. |
 | Step 0.5 (`mode_migrate_after`, mode=new only) | Ask | Default to `"first commit on main"`. |
 | Step 0.6 (PRD_STATUS) | Ask | Default to `draft` (safe default — generates more OQs, less assertion). |
