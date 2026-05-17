@@ -25,6 +25,9 @@
 | Vault exists, codebase-map exists, no bound-vault | `bind-codebase` (alone if blocking; chain if clean) |
 | Bound-vault exists, no units | `generate-units` |
 | Units exist, some not in bolts | `execute-bolts --all` |
+| (v1.1+) Vault has `squad_count: ≥2`, units exist, some not in bolts | `execute-bolts --per-squad` |
+| (v1.1+) Vault has `squad_count: ≥2`, units exist, user invokes from a single-squad context (e.g., on a dev's laptop with a specific role) | Ask: "Run for which squad?" then propose `execute-bolts --squad=<answer>` |
+| (v1.1+) Vault has `squad_count: ≥2` but `interfaces_count: 0` and ≥1 unit has cross-squad coupling hint in vault_source | `generate-units` (re-run, will surface `interface_ref_missing` halts as needed) |
 | All units executed, no recent drift check | `detect-drift` |
 | Vault has unresolved P0/P1 OQs with status != deferred | `resolve-oq` first (intent gate, before any other chain) |
 | Vault has only deferred P0/P1 OQs + brownfield context | `scan-codebase` → `bind-codebase` (which auto-resolves deferred OQs) |
@@ -33,6 +36,26 @@
 **OQ counting note (v1.1+):** When inspecting vault for P0/P1 OQ counts, distinguish:
 - `pending_p0_p1_count`: OQs with `status: pending` (or status field absent) at P0/P1 priority. These gate the chain via the intent rule above.
 - `deferred_p0_p1_count`: OQs with `status: deferred`. These do NOT gate; they propagate to binding phase.
+
+## Multi-squad detection (v1.1+)
+
+When CWD inspection finds `<vault>/_meta/squads.yaml` with ≥2 squads:
+
+- Set `squad_count` in state snapshot to the count
+- Read declared squad IDs to validate any `--squad=<id>` user input
+- Adjust execute-bolts proposal:
+  - Default to `--per-squad` (parallel subagent fan-out)
+  - If user is running in a context that suggests single-squad focus
+    (e.g., explicit `--squad=<id>` arg passed to orchestrate-flow, or
+    a hint like "I'm on the FE team"), use `--squad=<id>` instead
+
+If the count is exactly 1 (or file absent): treat as single-squad mode,
+do NOT propose `--per-squad` (it would halt). Use `--all` or unit-by-unit.
+
+If interface files exist (`<vault>/interfaces/*.md`):
+- Report `interfaces_count` in state snapshot
+- Don't read content (cheap inspection); just count files
+- Trust execute-bolts pre-flight to validate interface lock states at run time
 
 ## Chain depth limit
 

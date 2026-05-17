@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 1.0.0
+version: 1.1.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -29,6 +29,8 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
    git_repo: yes | no
    oq_p0_p1_count: N
    mode_inferred: greenfield | brownfield
+   squad_count: N  # (v1.1+) from <vault>/_meta/squads.yaml; 0 if file absent or single squad
+   interfaces_count: N  # (v1.1+) count of files in <vault>/interfaces/ (excluding _index.md); 0 if folder absent
    ```
 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix. Hard cap 3 sub-skills.
