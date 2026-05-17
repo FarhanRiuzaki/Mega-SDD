@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 06-constraints
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Constraints, NFR, Non-Functional Requirements]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/constraints"]
+---
+
 # 06 — Constraints
 
 > **TL;DR**: Technical, business, regulatory, and NFR constraints that must be satisfied.

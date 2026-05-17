@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 04-flows
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Flows, User Flows, System Flows]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
+---
+
 # 04 — Flows
 
 > **TL;DR**: Step-by-step user flows, system flows, and per-flow Definition of Done. Organized **per type** according to PROJECT_SHAPE.
@@ -8,7 +16,7 @@
 
 ---
 
-> Sub-sections below are derived from `PROJECT_SHAPE` (see `00-index.md` Vault Lock Status).
+> Sub-sections below are derived from `PROJECT_SHAPE` (see [[00-index]] Vault Lock Status).
 > Replace section headers with the relevant flow types.
 >
 > Common flow type sets:

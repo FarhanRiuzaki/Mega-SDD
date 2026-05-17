@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 03-data-model
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Data Model, DBML, Schema]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/data-model"]
+---
+
 # 03 — Data Model
 
 > **TL;DR**: Database schema — entities, fields, relations, and constraints.

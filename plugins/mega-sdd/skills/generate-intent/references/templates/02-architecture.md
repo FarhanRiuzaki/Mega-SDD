@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 02-architecture
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Architecture, Arch, System Architecture]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/architecture"]
+---
+
 # 02 — Architecture
 
 > **TL;DR**: System components, how they connect, and the API surface they expose. Organized **per layer** according to PROJECT_SHAPE (mobile-app / web-app / api-only / multi-platform / data-pipeline / custom) so each role can deep-link to their relevant section.
@@ -35,7 +43,7 @@ Example for data-pipeline:
 
 ## By component layer
 
-> Sub-sections derived from `PROJECT_SHAPE` (see `00-index.md` Vault Lock Status).
+> Sub-sections derived from `PROJECT_SHAPE` (see [[00-index]] Vault Lock Status).
 > Replace section headers below with the layers relevant to this project's shape.
 >
 > Common layer sets:
@@ -78,7 +86,7 @@ Example for data-pipeline:
 - **<Pattern title>**: <when-to-use, sourced from PRD / Figma annotation / user instruction>.
 - **<Next pattern>**: <text>.
 
-> Cross-ref: tokens used here → `06-constraints.md#design-system`. Flow steps that show this component → cross-ref to the flow ID in `04-flows.md`.
+> Cross-ref: tokens used here → [[06-constraints#Design System]]. Flow steps that show this component → cross-ref to the flow ID in [[04-flows]].
 
 **Source**: <list all Figma frames, tokens files, PRD sections used for this sub-section>
 
