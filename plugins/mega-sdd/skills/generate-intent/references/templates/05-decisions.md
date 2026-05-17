@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 05-decisions
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Decisions, ADRs, ADR Log]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/decisions"]
+---
+
 # 05 — Decisions
 
 > **TL;DR**: Locked technical and business decisions, plus their rationale and consequences.
@@ -7,7 +15,7 @@
 > **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language.
 
 > ADR-lite. One entry per technical decision with an explicit source.
-> If a decision has no explicit source, it's not an ADR — it goes to Open Questions in `00-index.md`.
+> If a decision has no explicit source, it's not an ADR — it goes to Open Questions in [[00-index]].
 
 ---
 

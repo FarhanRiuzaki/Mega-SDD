@@ -1,3 +1,11 @@
+---
+type: prose
+doc_id: 01-overview
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Overview, Product Overview]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/overview"]
+---
+
 # 01 — Overview
 
 <!-- compact-skip -->

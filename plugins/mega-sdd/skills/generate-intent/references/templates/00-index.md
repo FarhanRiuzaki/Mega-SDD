@@ -1,6 +1,14 @@
+---
+type: prose
+doc_id: 00-index
+vault_version: "{{VAULT_VERSION}}"
+aliases: [Index, Vault Index, Grand Design Index]
+tags: ["vault/{{PROJECT_SLUG}}", "doc/index"]
+---
+
 # <Project Name> — Grand Design
 
-> 1-line product description (mirrors `01-overview.md`).
+> 1-line product description (mirrors [[01-overview]]).
 
 ## Vault Lock Status
 
@@ -65,24 +73,24 @@
 
 Examples (adjust to `PROJECT_SHAPE`):
 
-- **IT Architect / Tech Lead**: `02-architecture.md` (full) → `03-data-model.md` → `05-decisions.md` → `06-constraints.md`
-- **<Layer-specific Dev, e.g. "Backend Developer">**: `02-architecture.md#<layer-anchor>` → `03-data-model.md` → `04-flows.md#<flow-type-anchor>`
-- **QA**: `04-flows.md` (all sections, focusing on Definition of Done per flow)
-- **PM / Business Owner**: `00-index.md` → `01-overview.md` → `05-decisions.md`
-- **<UI/UX or other UI-relevant role, if the project has UI>**: `01-overview.md` → `04-flows.md#<user-flow-anchor>`
+- **IT Architect / Tech Lead**: [[02-architecture]] (full) → [[03-data-model]] → [[05-decisions]] → [[06-constraints]]
+- **<Layer-specific Dev, e.g. "Backend Developer">**: [[02-architecture#<layer-anchor>]] → [[03-data-model]] → [[04-flows#<flow-type-anchor>]]
+- **QA**: [[04-flows]] (all sections, focusing on Definition of Done per flow)
+- **PM / Business Owner**: [[00-index]] → [[01-overview]] → [[05-decisions]]
+- **<UI/UX or other UI-relevant role, if the project has UI>**: [[01-overview]] → [[04-flows#<user-flow-anchor>]]
 
-- **UI/UX or FE Dev** (v0.6, conditional): `01-overview.md` → `02-architecture.md#ui-components-patterns` → `06-constraints.md#design-system` → `04-flows.md`
+- **UI/UX or FE Dev** (v0.6, conditional): [[01-overview]] → [[02-architecture#UI Components Patterns]] → [[06-constraints#Design System]] → [[04-flows]]
 
-  > **Conditional**: appears only if the vault has at least one of `02-architecture.md#ui-components-patterns` or `06-constraints.md#design-system` (i.e., Step 2 detection found explicit source). If both are absent, remove this reading path.
+  > **Conditional**: appears only if the vault has at least one of [[02-architecture#UI Components Patterns]] or [[06-constraints#Design System]] (i.e., Step 2 detection found explicit source). If both are absent, remove this reading path.
 
 ## Reading order (full)
 
-1. `01-overview.md` — what, who, why, success metrics
-2. `02-architecture.md` — system components (per layer), API contracts
-3. `03-data-model.md` — entities, relations, constraints
-4. `04-flows.md` — user flows, backend flows, cross-cutting flows + Definition of Done
-5. `05-decisions.md` — technical decisions and their rationale (ADR-lite)
-6. `06-constraints.md` — technical, business, NFR constraints
+1. [[01-overview]] — what, who, why, success metrics
+2. [[02-architecture]] — system components (per layer), API contracts
+3. [[03-data-model]] — entities, relations, constraints
+4. [[04-flows]] — user flows, backend flows, cross-cutting flows + Definition of Done
+5. [[05-decisions]] — technical decisions and their rationale (ADR-lite)
+6. [[06-constraints]] — technical, business, NFR constraints
 
 ## Anti-hallucination rules for dev / dev AI
 
@@ -111,22 +119,22 @@ This document is the **single source of truth for requirements**. When working f
 
 2. **For mode `existing`** — additional MANDATORY steps:
    - Ask the user: *"Share a short description of the existing codebase (project root, framework, key tables that are relevant), or confirm I should scan first before continuing."*
-   - **Cross-check entities** (`03-data-model.md`) against the existing schema:
+   - **Cross-check entities** ([[03-data-model]]) against the existing schema:
      - New entity in vault, name doesn't collide with existing → safe to create.
      - Vault entity that shares a name with an existing one → STOP, clarify extend vs replace.
-   - **Cross-check flows** (`04-flows.md`) against existing routes/handlers/cron jobs:
+   - **Cross-check flows** ([[04-flows]]) against existing routes/handlers/cron jobs:
      - New flow, no collision → safe to add.
      - Flow that touches an existing endpoint/job → STOP, clarify extend vs replace.
-   - **Cross-check decisions** (`05-decisions.md`) against existing patterns:
+   - **Cross-check decisions** ([[05-decisions]]) against existing patterns:
      - Decision that **conflicts** with an existing pattern → STOP, escalate to architect for a transition plan.
 
 3. **For mode `new`** — checks still apply:
-   - Confirm tech stack from the vault with the user (`02-architecture.md` may still have Open Questions on stack).
+   - Confirm tech stack from the vault with the user ([[02-architecture]] may still have Open Questions on stack).
    - If P1 Open Questions are unresolved → STOP, do not auto-pick a stack default.
 
 4. **Use the relevant layer section based on what you're implementing**:
-   - Working on backend → focus on `02-architecture.md#backend` + the backend section of `04-flows.md`.
-   - Working on UI (mobile/web) → focus on the relevant UI layer in `02-architecture.md` + user flows in `04-flows.md`.
+   - Working on backend → focus on [[02-architecture#Backend]] + the backend section of [[04-flows]].
+   - Working on UI (mobile/web) → focus on the relevant UI layer in [[02-architecture]] + user flows in [[04-flows]].
    - Cross-cutting feature → check the cross-cutting flows section + multiple layer sections.
 
 ### During implementation
@@ -191,8 +199,8 @@ The agent runner decides what to do (page resolver, create ticket, post to Slack
 
 If your task is fully blocked by P1 OQs but you want to make incremental progress, work on artifacts that don't depend on the unresolved decisions:
 
-- **From DoD bullets** (in `04-flows.md`): draft test specs / Gherkin scenarios. The DoD is the test contract.
-- **From entities** (in `03-data-model.md`): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
+- **From DoD bullets** (in [[04-flows]]): draft test specs / Gherkin scenarios. The DoD is the test contract.
+- **From entities** (in [[03-data-model]]): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
 - **From flows**: sketch UI mocks / API stub signatures using vault-stated names but no business logic yet.
 - **From OOS section**: confirm with PM what's NOT in scope — saves wasted scaffolding.
 
@@ -239,17 +247,17 @@ Cross-doc terms and acronyms:
 
 ### {Category 1 — e.g. "PRD inconsistencies"} (PRIORITY-1)
 
-- [ ] **OQ-DM-1** [P1]: <text> `[03-data-model.md]`
-- [ ] **OQ-FL-1** [P1]: <text> `[04-flows.md]`
+- [ ] **OQ-DM-1** [P1]: <text> [[03-data-model]]
+- [ ] **OQ-FL-1** [P1]: <text> [[04-flows]]
 
 ### {Category 2 — e.g. "Tech stack & architecture"} (PRIORITY-1)
 
-- [ ] **OQ-AR-1** [P1]: <text> `[02-architecture.md]`
-- [ ] **OQ-AR-2** [P1]: <text> `[02-architecture.md]`
+- [ ] **OQ-AR-1** [P1]: <text> [[02-architecture]]
+- [ ] **OQ-AR-2** [P1]: <text> [[02-architecture]]
 
 ### {Category 3 — e.g. "Data model details"} (PRIORITY-2)
 
-- [ ] **OQ-DM-2** [P2]: <text> `[03-data-model.md]`
+- [ ] **OQ-DM-2** [P2]: <text> [[03-data-model]]
 
 > Add categories as needed. Suggested: PRD inconsistencies, Tech stack & architecture, Data model, Flow & timing, Decisions, Constraints / sign-off / NFR / compliance, Overview & metrics.
 
