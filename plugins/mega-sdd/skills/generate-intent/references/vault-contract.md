@@ -134,7 +134,7 @@ Across all skills, these identifiers are **stable across rounds**:
 
 When a sibling skill creates new entries, use **next-available** number, never reuse.
 
-## §halt-protocol — Unified `blocker` envelope (v0.14)
+## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
 
 When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, vault-diff conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
 
@@ -144,7 +144,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
@@ -262,4 +262,39 @@ details:
   vault_mode: greenfield | existing
   cwd_signals: [.git, package.json, ...]
   resolution: "update vault mode" | "re-detect"
+
+# cross_squad_dep_invalid — emitted by generate-units in multi-squad mode
+# when a unit's depends_on references a unit in a different squad
+details:
+  unit_id: U-XXX
+  unit_squad: <squad-id>
+  dependency_id: U-YYY
+  dependency_squad: <squad-id-different>
+
+# interface_ref_missing — emitted by generate-units when a unit's
+# produces_interfaces or consumes_interfaces references an interface ID
+# that has no corresponding file in <vault>/interfaces/
+details:
+  unit_id: U-XXX
+  missing_interface_id: <kebab-id>
+  referenced_in: consumes_interfaces | produces_interfaces
+
+# cross_squad_ambiguous — emitted by generate-units when two or more
+# squads in _meta/squads.yaml claim ownership of the same artifact at
+# the same precedence level
+details:
+  artifact: <flow-id or entity-name or component-name>
+  artifact_kind: flow | entity | component | adr | oq
+  claimed_by_squads: [<id-1>, <id-2>, ...]
+  matched_via: owns_layers | owns_components | owns_flow_prefixes | owns_feature_tags
+
+# cross_squad_interface_draft — emitted by execute-bolts (specifically
+# --per-squad or --squad=<id> modes) when a unit consumes an interface
+# whose status is draft, blocking consumer execution until producer locks
+details:
+  unit_id: U-XXX
+  unit_squad: <consumer-squad-id>
+  consumed_interface_id: <kebab-id>
+  producer_squad: <producer-squad-id>
+  interface_status: draft
 ```
