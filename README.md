@@ -6,7 +6,7 @@
 
 *Turn a PRD or brief into working code via AI dev, with anti-hallucination at every handoff.*
 
-**Plugin:** `mega-sdd` · **Version:** 1.2.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 1.3.0 · **License:** MIT
 **Predecessor:** `grand-design-spec@0.15` (deprecated — see Migration below)
 
 </div>
@@ -16,6 +16,8 @@
 ## TL;DR
 
 A 5-phase pipeline (intent → scan → bind → units → bolts) plus 4 lifecycle skills wrap your existing AI dev tools (via [superpowers](https://github.com/obra/superpowers)) with anti-hallucination guarantees at every handoff.
+
+**v1.3 — multi-squad mode**: one PRD can ship across N dev squads. `/mega-sdd:execute-bolts --per-squad` spawns one Claude subagent per declared squad in parallel; `--squad=<id>` filters for human-team handoff. Cross-squad coupling forced through explicit interface contracts. Vault remains a single source of truth (anti-hallucination preserved). Vaults are Obsidian-graph friendly via lightweight frontmatter + wikilinks.
 
 ```bash
 /plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
@@ -75,12 +77,13 @@ flowchart LR
 
 Most users only need these three. Advanced commands available in the section below.
 
-## Anti-hallucination defense (4 layers)
+## Anti-hallucination defense (5 layers)
 
 1. **Intent layer** — uncertain claims promote to Open Questions. Architect never guesses.
 2. **Binding gate** — vault claims validated against codebase-map. CONFLICTs BLOCK pipeline. Never auto-resolved.
 3. **Unit-level grounding** — each unit carries `target_files` whitelist + mandatory `acceptance_test`. No invention at unit boundary.
 4. **Drift detection** — code vs vault reconciliation suggested post-bolt; runs on demand.
+5. **Interface lock gate (v1.3+, multi-squad only)** — cross-squad consumed interfaces must be `status: locked` before consumer execution. Prevents premature consumer coupling to draft producer contracts. Same-squad units unaffected.
 
 ---
 
@@ -93,11 +96,11 @@ Full table for power users and AI agents needing granular control:
 |---|---|---|
 | `/mega-sdd:scan-codebase` | **scan-codebase** (v1.0) | Heuristic repo mapper. Walks codebase, extracts public interfaces, routes/endpoints, data models, naming conventions, test framework. Produces `codebase-map.md`. Brownfield prep — required before binding. |
 | `/mega-sdd:bind-codebase` | **bind-codebase** (v1.1) | **The keystone gate.** Validates each vault claim against `codebase-map.md`. Verdicts: CONFIRMED / CONFLICT / OQ. Produces `<vault>-bound/` + `binding.md`. **BLOCKS** unit generation when conflicts exist. Auto-resolves deferred OQs against codebase evidence. |
-| `/mega-sdd:generate-units` | **generate-units** (v1.0) | Decomposes bound-vault into atomic AI-executable unit specs (`U-*.md`). Each unit has `target_files` whitelist, `acceptance_test`, dependency DAG. Atomicity: 1 unit = 1 PR-sized commit. Rejects cycles. |
-| `/mega-sdd:execute-bolts` | **execute-bolts** (v1.0) | Executes units via superpowers integration. TDD-first (failing test → impl → passing → commit). Halt protocol after 3 retries. Whitelist enforcement. Optional `--parallel` via `subagent-driven-development`. |
+| `/mega-sdd:generate-units` | **generate-units** (v1.1) | Decomposes bound-vault into atomic AI-executable unit specs (`U-*.md`). Each unit has `target_files` whitelist, `acceptance_test`, dependency DAG. Atomicity: 1 unit = 1 PR-sized commit. Rejects cycles. **v1.1**: reads `_meta/squads.yaml` to assign `squad:` per unit, rejects cross-squad direct `depends_on` (must route via interface notes), validates `consumes_interfaces`/`produces_interfaces` references resolve. |
+| `/mega-sdd:execute-bolts` | **execute-bolts** (v1.1) | Executes units via superpowers integration. TDD-first (failing test → impl → passing → commit). Halt protocol after 3 retries. Whitelist enforcement. Optional `--parallel` via `subagent-driven-development`. **v1.1**: `--per-squad` spawns one Claude subagent per declared squad (fan-out via `subagent-driven-development`); `--squad=<id>` filters units to a single squad for human-team handoff; halts on `cross_squad_interface_draft` if consumer depends on draft interface. |
 | `/mega-sdd:diff-vault` | **diff-vault** (v1.0) | Vault evolution when PRD source revisions. Computes structured diff, surfaces Resolved-OQ vs new PRD conflicts. Emits `blocker` (type=`diff_conflict`) on contradictions. |
 | `/mega-sdd:detect-drift` | **detect-drift** (v1.0) | For `mode=existing` vaults: compares vault claims against live codebase. Flags drift (rename, type change, decision violation, code shipped without ADR). |
-| `/mega-sdd:from-prompt` | _(deprecated alias)_ | Routes to `generate-intent --from-prompt`. Will be removed in v1.3. |
+| `/mega-sdd:from-prompt` | _(deprecated alias)_ | Routes to `generate-intent --from-prompt`. Will be removed in v1.4. |
 
 > **Note on `update-plugin`:** Implemented as a command-only entry (no backing `SKILL.md`) — a self-contained bash procedure under `commands/update-plugin.md`. Pulls latest plugin version, runs dep-doctor (verifies superpowers presence or vendored fallback), prompts cache rebuild. **Not counted** in the skill total above.
 
@@ -214,11 +217,24 @@ After **generate-units**: `<vault>/units/U-*.md` (atomic units with target_files
 
 After **execute-bolts**: git commits (atomic, one per unit) + `<vault>/bolts/U-XXX/bolt-report.md` (test results, files touched, retries)
 
+**Multi-squad mode only (v1.3+, when ≥2 squads declared in generate-intent Q&A):**
+
+```
+docs/mega-sdd/vaults/<name>/
+├── _meta/squads.yaml             Squad partition (id, label, ownership rules per layer/feature/hybrid model)
+├── interfaces/_index.md          Cross-squad contract index (stub — architect authors individual interfaces/<kebab-id>.md as needed)
+└── .obsidian/graph.json          Obsidian graph view config with per-squad color groups
+```
+
+Each unit in `<vault>/units/U-*.md` gains `squad:` field (assigned by `generate-units` per squad-partition rules) plus optional `produces_interfaces:` / `consumes_interfaces:` lists when the unit crosses squad boundaries.
+
 ### Trigger phrases
 
 **English:** "spec out this feature" / "from this prompt" / "I only have an idea, not a PRD" / "scan codebase" / "bind vault to code" / "generate units" / "execute bolts" / "what's next?" / "drift detect"
 
 **Indonesian:** "pecah PRD ini buat dev" / "siapkan context buat AI dev" / "baku dari ide" / "spec ini" / "kontrak handoff" / "pecah vault jadi unit" / "jalanin unit" / "cek code vs vault"
+
+**Multi-squad (v1.3+):** "multi-squad mode" / "per-squad execution" / "subagent per squad" / "run for one squad" / "deliver to dev team" / "split into N squads" / "buat per tim" / "bagi ke squad" / "jalanin per squad"
 
 ### Architect/Dev separation
 
@@ -234,7 +250,7 @@ Architects produce intent on a laptop with **zero repo access**. The binding gat
 
 ### Halt protocol (across all skills)
 
-Any skill MAY emit a structured `blocker` artifact (YAML, per `vault-contract.md §halt-protocol`) and pause the pipeline. The 8 types are:
+Any skill MAY emit a structured `blocker` artifact (YAML, per `vault-contract.md §halt-protocol`) and pause the pipeline. The 12 types are:
 
 - `oq_blocker` — `generate-intent` on P1 OQ surfaced in `--auto` mode
 - `diff_conflict` — `diff-vault` on new PRD vs resolved-OQ/ADR contradiction
@@ -244,6 +260,10 @@ Any skill MAY emit a structured `blocker` artifact (YAML, per `vault-contract.md
 - `test_fail` — `execute-bolts` acceptance test fails after max retries
 - `cycle_detected` — `generate-units` dependency DAG has a cycle
 - `mode_migrate` — `orchestrate-flow` CWD signals contradict vault.mode
+- `cross_squad_dep_invalid` (v1.3+) — `generate-units` rejects cross-squad direct `depends_on` (must route via interface notes)
+- `interface_ref_missing` (v1.3+) — `generate-units` dangling `consumes_interfaces` / `produces_interfaces` reference (no matching file in `interfaces/`)
+- `cross_squad_ambiguous` (v1.3+) — `generate-units` finds two squads claiming the same artifact at the same precedence level
+- `cross_squad_interface_draft` (v1.3+) — `execute-bolts --per-squad` / `--squad=<id>` halts when a consumer unit depends on an interface still `status: draft`; producer must lock first
 
 ### Versioning
 
@@ -321,6 +341,8 @@ Any skill MAY emit a structured `blocker` artifact (YAML, per `vault-contract.md
 | Code drift detected | `/mega-sdd:detect-drift` then `/mega-sdd:resolve-oq` |
 | Resume from interrupted phase | `/mega-sdd:orchestrate-flow --from=<phase>` |
 | One-shot per phase | `/mega-sdd:<phase>` (e.g., `:bind-codebase ./vaults/v1`) |
+| Multi-squad project (v1.3+, ≥2 dev teams) | `/mega-sdd:generate-intent ./prd.md` (select ≥2 squads in Q&A) → `/mega-sdd:orchestrate-flow` → `/mega-sdd:execute-bolts --per-squad` (parallel subagents) |
+| Dev team runs only their squad (v1.3+) | `/mega-sdd:execute-bolts --squad=<squad-id>` (filters to one squad's units) |
 
 </details>
 
