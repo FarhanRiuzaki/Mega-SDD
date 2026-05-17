@@ -1,9 +1,11 @@
 ---
-description: Pull the latest grand-design-spec from the marketplace repo and refresh the local plugin cache.
+description: Pull the latest mega-sdd plugin from the grand-design-spec marketplace repo and refresh the local plugin cache.
 argument-hint: (no args)
 ---
 
-The user wants to update grand-design-spec to the latest version. Do this exactly:
+The user wants to update the `mega-sdd` plugin (shipped via the `grand-design-spec` marketplace) to the latest version. Do this exactly:
+
+> **Path note**: the marketplace repo and its local clone keep the historical name `grand-design-spec`. The plugin inside it was renamed to `mega-sdd` in v1.2. So marketplace-level paths use `grand-design-spec/`; plugin-level paths inside that clone use `plugins/mega-sdd/`.
 
 **Step 1 — Locate the marketplace clone.**
 
@@ -18,12 +20,18 @@ If the directory does not exist, tell the user the plugin isn't installed via ma
 **Step 2 — Capture the current version (before pulling).**
 
 ```
-cat ~/.claude/plugins/marketplaces/grand-design-spec/plugins/grand-design-spec/.claude-plugin/plugin.json | grep -E '"version"' | head -1
+cat ~/.claude/plugins/marketplaces/grand-design-spec/plugins/mega-sdd/.claude-plugin/plugin.json | grep -E '"version"' | head -1
 ```
 
 Save the value as `BEFORE_VERSION`.
 
-Also list current cache versions:
+If that path returns nothing, the user may be on a pre-v1.2 clone where the plugin folder was still named `grand-design-spec/`. Fall back to:
+
+```
+cat ~/.claude/plugins/marketplaces/grand-design-spec/plugins/grand-design-spec/.claude-plugin/plugin.json | grep -E '"version"' | head -1
+```
+
+Also list current cache versions (cache keeps the historical `grand-design-spec/grand-design-spec/` shape because it's keyed by marketplace slug):
 
 ```
 ls ~/.claude/plugins/cache/grand-design-spec/grand-design-spec/ 2>/dev/null
@@ -40,17 +48,17 @@ If `git pull` fails (non-fast-forward, conflict, detached HEAD, dirty working tr
 **Step 4 — Read the new version.**
 
 ```
-cat ~/.claude/plugins/marketplaces/grand-design-spec/plugins/grand-design-spec/.claude-plugin/plugin.json | grep -E '"version"' | head -1
+cat ~/.claude/plugins/marketplaces/grand-design-spec/plugins/mega-sdd/.claude-plugin/plugin.json | grep -E '"version"' | head -1
 ```
 
-Save as `AFTER_VERSION`.
+Save as `AFTER_VERSION`. (If on a pre-v1.2 fallback clone, use the `plugins/grand-design-spec/...` path from Step 2.)
 
 **Step 5 — Report and instruct cache refresh.**
 
 Output a short status block:
 
 ```
-grand-design-spec update
+mega-sdd update (via grand-design-spec marketplace)
 - before: <BEFORE_VERSION>
 - after:  <AFTER_VERSION>
 - repo:   pulled cleanly from origin/main
