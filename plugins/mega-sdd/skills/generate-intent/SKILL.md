@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.0.0
+version: 1.1.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", or paraphrases.
 ---
 
@@ -290,6 +290,45 @@ The skill produces two verbosity tiers of the same vault. **Compact is the defau
 
 > Skill never proceeds to Step 1 without a confirmed `OUTPUT_MODE`.
 
+### Squad partition (v1.1+)
+
+After project shape and implementation mode are decided, ask:
+
+> **Q (squad count):** "How many development squads will work on this project?
+> Single-squad (1) = current default; multi-squad (≥2) enables per-squad
+> execution via `/mega-sdd:execute-bolts --per-squad` with one Claude
+> subagent per squad."
+
+If answer is `1`:
+- Skip remaining squad questions
+- Do NOT emit `_meta/squads.yaml`
+- Do NOT emit `interfaces/` folder
+- Set `multi_squad_mode: false` in `vault.json`
+
+If answer is `≥2`:
+
+> **Q (partition model):** "How should squads be partitioned?
+>   1. layer-based  — each squad owns architectural layers from `02-architecture.md`
+>      (e.g., Backend Squad, Frontend Squad, Integrations Squad)
+>   2. feature-based — each squad owns one or more feature tags
+>      (e.g., Auth Squad, Billing Squad, Leave-Mgmt Squad)
+>   3. hybrid       — feature wins over layer when both match"
+
+Then per squad (loop until user signals "done"):
+
+> **Q (squad declaration):** "Declare a squad. Provide:
+>   - id (format: squad-<kebab-case>, e.g., squad-be)
+>   - label (display name, e.g., Backend Squad)
+>   - ownership rules per the chosen partition model:
+>     - layer: list of layer names from architecture (e.g., backend, data-model)
+>     - feature: list of feature tags (e.g., auth, billing)
+>     - hybrid: both"
+
+Validate per `references/squad-partition.md`. If validation fails (duplicate
+ownership, malformed id), re-ask the failed field only.
+
+After all squads declared, emit `_meta/squads.yaml` from `references/templates/squads.yaml.template`, replacing `{{PROJECT_SHAPE}}`, `{{PARTITION_MODEL}}`, and `{{SQUAD_*}}` placeholders with collected answers. Set `multi_squad_mode: true` in `vault.json`.
+
 ### Step 1: Inventory and read
 
 1. **Identify input file location** based on environment detected in Step 0:
@@ -404,6 +443,32 @@ Read the relevant template:
 - **Claude.ai sandbox**: use `view` or the platform's read tool.
 
 Then fill it in based on extracted facts. Never invent fields beyond what the source PRD/Figma supports.
+
+### Multi-squad artifact emission (v1.1+)
+
+After emitting the 7 prose docs + `vault.json`, if `multi_squad_mode: true`:
+
+1. **Emit `_meta/squads.yaml`** from `references/templates/squads.yaml.template`,
+   substituting `{{PROJECT_SHAPE}}`, `{{PARTITION_MODEL}}`, and per-squad
+   `{{SQUAD_ID_N}}`, `{{SQUAD_LABEL_N}}`, ownership lists.
+
+2. **Emit `interfaces/_index.md`** from `references/templates/interfaces-index.template.md`,
+   substituting `{{VAULT_VERSION}}` and `{{PROJECT_SLUG}}`. Do NOT emit any
+   `interfaces/<id>.md` files — those are authored manually by the architect
+   when cross-squad contracts emerge during design.
+
+3. **Emit `.obsidian/graph.json`** from `references/templates/obsidian-graph.json.template`,
+   then ADD per-squad `colorGroups` entries — one for each declared squad with
+   a distinct color from this palette in order:
+   - `squad-be` → `{ "a": 1, "rgb": 3911867 }`     (blue: #3b82f6)
+   - `squad-fe-web` → `{ "a": 1, "rgb": 11048700 }` (purple: #a855f7)
+   - `squad-integrations` → `{ "a": 1, "rgb": 16330027 }` (orange: #f97316)
+   - additional squads → cycle through standard Obsidian palette
+
+4. **Single-squad mode**: skip steps 1-3 above. Plugin behaves as v1.0.
+
+After emission, suggest next step per the existing hand-off message but
+include squad count: "Generated vault for N squads. Next: …".
 
 ### Step 4: Self-check before delivery
 
@@ -777,6 +842,15 @@ Design-system content is **auxiliary**. Source silence on tokens, UI components,
 - Generate placeholder Open Questions for missing design-system content.
 
 If the user explicitly mentions design system in conversation but didn't upload a source, treat that as a regular request for clarification (one chat question), not a workflow gate. Otherwise stay silent.
+
+---
+
+## Outputs (v1.1+ additions)
+
+**Additional outputs in multi-squad mode (≥2 squads):**
+- `_meta/squads.yaml` — squad partition declaration
+- `interfaces/_index.md` — cross-squad contract index (stub; architect authors actual contracts)
+- `.obsidian/graph.json` — Obsidian graph view defaults with squad color groups
 
 ---
 
