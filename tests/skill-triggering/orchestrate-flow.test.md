@@ -60,3 +60,25 @@
 ## Pass criteria
 
 All routing rules per routing-rules.md fire deterministically. Pre-flight gates correctly.
+
+## Multi-squad routing (v1.1+)
+
+### MS1: CWD inspection reports squad count
+- **Setup:** vault has `_meta/squads.yaml` with 3 squads
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** state snapshot includes `squad_count: 3`
+
+### MS2: Multi-squad + pending units → suggest --per-squad
+- **Setup:** vault with 3 squads, units exist, no bolts yet
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** proposed chain contains `execute-bolts --per-squad`
+
+### MS3: Single-squad (squad_count=1) → existing behavior
+- **Setup:** vault has `_meta/squads.yaml` with exactly 1 squad declared
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** proposes `execute-bolts --all` (NOT `--per-squad`)
+
+### MS4: No squads.yaml → existing behavior
+- **Setup:** vault has no `_meta/squads.yaml`
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all`
