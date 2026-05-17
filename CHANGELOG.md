@@ -5,6 +5,53 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.3.0 — 2026-05-17
+
+### Added — Obsidian-friendly vault + multi-squad subagent execution
+
+Per spec `docs/superpowers/specs/2026-05-17-obsidian-multi-squad-vault-design.md`.
+
+Lightweight Obsidian compatibility:
+- 7 prose templates gain minimal YAML frontmatter (`type`, `doc_id`, `aliases`, `tags`)
+- Internal cross-refs converted to Obsidian wikilink syntax `[[file#heading]]`
+- Optional `.obsidian/graph.json` template with squad color groups
+
+Multi-squad partition as a dimension threaded through the existing 5-phase pipeline (zero pipeline change, README flowchart intact):
+- New `_meta/squads.yaml` declaring squad partition (layer / feature / hybrid models)
+- New `interfaces/` folder for cross-squad contracts (architect-authored, status: draft → locked)
+- Units gain optional `squad:`, `produces_interfaces:`, `consumes_interfaces:` frontmatter fields
+- `execute-bolts --per-squad` spawns one Claude subagent per declared squad via existing `subagent-driven-development`
+- `execute-bolts --squad=<id>` filters to one squad for dev-team handoff
+- `generate-units` validates intra-squad-only `depends_on` and interface reference resolution
+- `orchestrate-flow` detects multi-squad mode and suggests appropriate flags
+
+### Halt protocol extensions (vault-contract.md §halt-protocol)
+
+Four new blocker types:
+- `cross_squad_dep_invalid` (generate-units rejects cross-squad direct depends_on)
+- `interface_ref_missing` (generate-units dangling interface reference)
+- `cross_squad_ambiguous` (generate-units two squads claim same artifact)
+- `cross_squad_interface_draft` (execute-bolts consumer waits for producer to lock interface)
+
+### Skill versions
+
+- `generate-intent`: 1.0.0 → 1.1.0
+- `generate-units`: 1.0.0 → 1.1.0
+- `execute-bolts`: 1.0.0 → 1.1.0
+- `orchestrate-flow`: 1.0.0 → 1.1.0
+
+### Backward compatibility
+
+- Existing v1.0–v1.2 vaults work unchanged (single-squad / no-squad-config mode active)
+- Multi-squad is OPT-IN via the new Q&A in `generate-intent`
+- No new skills; plugin skill count unchanged
+- AI consumer skills (`bind-codebase`, `resolve-oq`, `detect-drift`, `diff-vault`) behave identically across v1.2 and v1.3 single-squad vaults
+
+### New tests
+
+- `tests/skill-triggering/`: 14 new cases across `generate-units`, `execute-bolts`, `orchestrate-flow`
+- `tests/integration/e2e-multi-squad.test.md`: full multi-squad pipeline walkthrough
+
 ## [1.2.0] — 2026-05-13
 
 ### Added — Mode auto-detect for generate-intent
