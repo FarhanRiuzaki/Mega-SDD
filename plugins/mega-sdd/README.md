@@ -2,7 +2,7 @@
 
 Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination at every handoff.
 
-**Version:** 1.2.0 · **License:** MIT
+**Version:** 1.3.0 · **License:** MIT
 
 > 📖 **Full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for TL;DR, 5W1H, full command reference, anti-hallucination layers, migration guide, halt protocol, and architecture deep dive.
 
@@ -27,11 +27,11 @@ plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest
 ├── skills/                       # 10 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (injected at session start)
-│   ├── generate-intent/          # PRD/brief → vault (auto-detect Mode A/B since v1.2)
+│   ├── generate-intent/          # PRD/brief → vault (auto-detect Mode A/B since v1.2; multi-squad Q&A since v1.3)
 │   ├── scan-codebase/            # brownfield repo mapper
 │   ├── bind-codebase/            # vault ↔ code validation gate (BLOCKING)
-│   ├── generate-units/           # vault → atomic AI prompts
-│   ├── execute-bolts/            # units → code commits (via superpowers)
+│   ├── generate-units/           # vault → atomic AI prompts (v1.3: assigns squad: + validates cross-squad-via-interface)
+│   ├── execute-bolts/            # units → code commits via superpowers (v1.3: --per-squad / --squad=<id> flags)
 │   ├── orchestrate-flow/         # lifecycle auto-router
 │   ├── resolve-oq/               # Open Question walker
 │   ├── detect-drift/             # code vs vault reconciliation
