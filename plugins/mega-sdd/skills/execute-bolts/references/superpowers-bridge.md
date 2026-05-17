@@ -102,3 +102,11 @@ retries: N
 ## Failures (if any)
 <test output, error messages, hypothesis>
 ```
+
+## Squad-level fan-out (v1.1+)
+
+When `execute-bolts --per-squad` is invoked, fan-out happens at the squad
+level BEFORE the per-unit skill mapping above. See
+`references/squad-subagent.md` for the dispatch protocol. Each squad's
+subagent then independently follows the per-unit flow described in this
+document.
