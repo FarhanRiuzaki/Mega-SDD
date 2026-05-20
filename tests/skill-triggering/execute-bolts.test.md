@@ -71,6 +71,73 @@
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad --parallel`
 - **Expect:** 2 squad-level subagents, each internally using subagent-driven-development for parallel unit dispatch; no resource collision (different working sets)
 
+## Hard Rule pre-flight + post-flight (v1.2+, Iter 3)
+
+### HR1: Pre-flight snapshot persisted
+- **Setup:** unit U-001 has `## Hard rules` with 2 rules: `DO NOT modify src/Models/User.php` + `function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>`
+- **Expect:**
+  - Pre-flight runs before bolt execution
+  - `<vault>/bolts/U-001/preflight.json` exists with sha256 of User.php + signature snapshot of authenticateUser
+  - Bolt proceeds to executing-plans
+
+### HR2: Hard rule violated — DO_NOT_MODIFY
+- **Setup:** unit U-002 has `DO NOT modify src/Models/User.php`; bolt's implementation steps modify User.php
+- **Expect:**
+  - Pre-flight snapshot captured (sha256 = X)
+  - executing-plans runs, modifies User.php
+  - acceptance tests pass
+  - Post-flight: new sha256 ≠ snapshot
+  - HALT with `hard_rule_violated` blocker YAML
+  - Code changes remain in working tree (NOT committed)
+  - bolt-report.md has `status: halted_postflight` with violation list
+
+### HR3: Hard rule violated — DO_NOT_ADD_DEPS
+- **Setup:** unit U-003 has `DO NOT add new package.json dependencies`; bolt adds a new dependency to package.json
+- **Expect:** post-flight diff detects new top-level dep entry; HALT with `hard_rule_violated`; violation evidence quotes added entry
+
+### HR4: Hard rule violated — SIGNATURE_RULE
+- **Setup:** unit U-004 has `function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>`; bolt modifies the function to add a `twoFactor?: string` parameter
+- **Expect:** signature re-extract shows extra param; HALT with violation evidence quoting old vs new signature
+
+### HR5: Hard rule violated — FILE_PRESENCE_RULE
+- **Setup:** unit U-005 has `file src/Models/AuditLog.php MUST exist after bolt`; bolt forgets to create the file (or deletes it)
+- **Expect:** post-flight probe shows file missing; HALT with violation
+
+### HR6: Hard rule violated — NAMING_RULE
+- **Setup:** unit U-006 has `file:src/api/*.ts MUST follow kebab-case naming`; bolt creates `src/api/auditLog.ts` (camelCase)
+- **Expect:** post-flight scans new files matching glob; auditLog.ts fails kebab-case regex; HALT with violation listing the file
+
+### HR7: Hard rule unparseable → halt at pre-flight
+- **Setup:** unit U-007 has `## Hard rules` with an unrecognized rule: `forbid users from x`
+- **Expect:** pre-flight halts BEFORE bolt execution with `hard_rule_unparseable` listing the offending line + the 5 expected grammar productions
+
+### HR8: Hard rule unanchored — function not in codebase-map
+- **Setup:** unit U-008 has `function doesNotExist MUST preserve signature: () => void`; codebase-map has no symbol with that name
+- **Expect:** pre-flight halts with `hard_rule_unanchored`; rule references a symbol that can't be snapshotted
+
+### HR9: Verify-unit special path
+- **Setup:** unit U-009 with `task_type: verify`, empty target_files, Anchors cite existing implementation, acceptance_test runs existing test suite
+- **Expect:**
+  - Pre-flight passes (no Hard rules required for verify; if present, parsed normally)
+  - Skip executing-plans (no code to write)
+  - Run acceptance tests
+  - Skip post-flight Hard rule scan
+  - Commit only bolt-report.md (or skip commit on `--no-empty-commits`)
+
+### HR10: All clean — bolt proceeds normally
+- **Setup:** unit U-010 has Hard rules; bolt's implementation respects all rules
+- **Expect:**
+  - Pre-flight snapshot taken
+  - executing-plans runs
+  - acceptance tests pass
+  - Post-flight: all rules clean (snapshot matches / new files conform / file presence verified)
+  - Commit proceeds
+  - postflight.json shows all rules `status: passed`
+
+### HR11: Multiple rules, one violated → halt
+- **Setup:** unit U-011 has 3 Hard rules; bolt violates one
+- **Expect:** post-flight detects 1 violation; HALT with `hard_rule_violated` listing all 3 rules in evidence (passed + failed); bolt-report.md captures per-rule status
+
 ## Pass criteria
 
-All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works.
+All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — always halt before commit with code changes preserved in working tree for user review.

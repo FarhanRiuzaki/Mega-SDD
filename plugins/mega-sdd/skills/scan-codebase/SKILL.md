@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 1.0.0
+version: 1.1.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -106,3 +106,23 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 ## Hand-off
 
 On completion, announce: "Codebase map written to `<path>`. Run `/mega-sdd:bind-codebase <vault>` to validate your vault against it."
+
+## Handoff emission (v1.1+, Iter 4)
+
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: scan-codebase
+  emitted_at: <ISO8601 timestamp>
+  status: completed | halted
+  artifacts:
+    - <absolute path to codebase-map.md>
+  next_action:
+    suggested_skill: mega-sdd:bind-codebase
+    suggested_args: ["<absolute vault path>", "--auto"]
+    rationale: "Codebase mapped; validate vault claims against it."
+  blockers: []
+```
+
+Status `halted` only when repo > 100k files without `--force-large` (per existing halt-condition). Required ONLY under `--auto`.

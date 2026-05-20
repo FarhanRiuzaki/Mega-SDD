@@ -1,0 +1,89 @@
+# /mega-sdd:auto Trigger + Input Detection Test
+
+The Iter 4 one-shot autonomous pipeline entrypoint. Tests input shape detection and routing to `orchestrate-flow --deep --auto`.
+
+## Trigger cases
+
+### A1: Empty input → CWD inspection drives chain
+- **Setup:** CWD has `prd.md`, no vault
+- **Prompt:** `/mega-sdd:auto`
+- **Expect:** routes to `orchestrate-flow --deep --auto`; CWD inspection detects PRD; proposes `generate-intent ./prd.md → scan → bind → units → bolts`
+
+### A2: Directory path with code files → legacy rebuild
+- **Setup:** `./legacy-php/` contains `.php` files + `composer.json`; no vault
+- **Prompt:** `/mega-sdd:auto ./legacy-php/ --out=./rebuild-laravel/`
+- **Expect:** input detected as legacy codebase; chain proposes `extract-intelligence ./legacy-php/ --out=./rebuild-laravel/ → generate-intent --kb=./rebuild-laravel/docs/knowledge-base/ → scan → bind → units → bolts`
+
+### A3: Directory path with vault.json → existing vault
+- **Setup:** `./my-vault/vault.json` exists; no bound-vault
+- **Prompt:** `/mega-sdd:auto ./my-vault/`
+- **Expect:** input detected as existing vault; chain proposes `scan-codebase → bind-codebase ./my-vault/ → generate-units → execute-bolts`
+
+### A4: File path with .md → PRD Mode A
+- **Setup:** `./prd-feature-x.md` exists
+- **Prompt:** `/mega-sdd:auto ./prd-feature-x.md`
+- **Expect:** input detected as PRD; chain proposes `generate-intent ./prd-feature-x.md → scan → bind → units → bolts`
+
+### A5: Quoted free-text → Mode B brief
+- **Prompt:** `/mega-sdd:auto "build a clinic appointment system"`
+- **Expect:** input detected as Mode B brief; chain proposes `generate-intent --from-prompt "build a clinic appointment system" → generate-units → bolts` (3 phases — no codebase, no scan/bind)
+
+## Halt cases
+
+### H1: Legacy codebase WITHOUT --out
+- **Setup:** `./legacy-php/` contains code; no vault
+- **Prompt:** `/mega-sdd:auto ./legacy-php/`
+- **Expect:** halt asking for explicit `--out=<path>` (per AUTONOMY-OQ-7 — legacy rebuild output path must be explicit; never conflate extract output with rebuild project dir)
+
+### H2: Directory with neither code nor vault.json
+- **Setup:** `./empty-dir/` exists but is empty (or has only non-code files)
+- **Prompt:** `/mega-sdd:auto ./empty-dir/`
+- **Expect:** halt asking to clarify directory purpose
+
+### H3: File with unrecognized extension
+- **Setup:** `./notes.xyz` exists
+- **Prompt:** `/mega-sdd:auto ./notes.xyz`
+- **Expect:** halt asking to clarify file type
+
+## Flag behavior
+
+### F1: --shallow reverts to cap-3
+- **Prompt:** `/mega-sdd:auto ./prd.md --shallow`
+- **Expect:** chain proposed has at most 3 phases; standard `orchestrate-flow` behavior
+
+### F2: --step-after=<phase>
+- **Prompt:** `/mega-sdd:auto ./prd.md --step-after=bind-codebase`
+- **Expect:** chain runs up to and including bind-codebase; then switches to manual handoff (subsequent phases require explicit invocation)
+
+### F3: --stop-after=<phase>
+- **Prompt:** `/mega-sdd:auto ./prd.md --stop-after=generate-units`
+- **Expect:** chain runs up to and including generate-units; STOPS even if state would allow execute-bolts
+
+### F4: --resume picks up from halt point
+- **Setup:** prior `/mega-sdd:auto` halted at bind-codebase; user resolved blocker
+- **Prompt:** `/mega-sdd:auto --resume`
+- **Expect:** no upfront confirmation; CWD inspection rebuilds cursor; resumes from `bind-codebase` (re-runs binding) or `generate-units` (if binding now clean)
+
+### F5: --manual disables autonomy entirely
+- **Prompt:** `/mega-sdd:auto ./prd.md --manual`
+- **Expect:** invokes only `generate-intent ./prd.md` (the first phase); standard chat hint at end; no auto-continue to next phase; reverts to current per-skill explicit-invocation behavior
+
+## Halt-protocol preservation (Iter 4 invariant)
+
+### HP1: bind_conflict still blocks
+- **Setup:** PRD with claim that conflicts with codebase
+- **Prompt:** `/mega-sdd:auto ./prd.md`
+- **Expect:** chain runs through `generate-intent → scan-codebase`; bind-codebase emits `status: halted` with `bind_conflict` blocker; chain STOPS at bind phase; user resolves via resolve-oq; runs `/mega-sdd:auto --resume`
+
+### HP2: hard_rule_violated still halts pre-commit
+- **Setup:** unit U-002 has `DO NOT modify src/Models/User.php`; bolt's code modifies it
+- **Prompt:** `/mega-sdd:auto ./vault/` running in --deep
+- **Expect:** chain reaches execute-bolts; bolt halts post-flight with `hard_rule_violated`; code stays in working tree; chain STOPS; user reviews/reverts
+
+### HP3: Business OQ P1 pauses chain (when --strict)
+- **Setup:** PRD produces P1 business OQs requiring stakeholder; `bind-codebase --strict`
+- **Expect:** chain pauses after bind-codebase emits `status: paused`; chat shows paused-item summary; user triages OQs offline; runs `--resume`
+
+## Pass criteria
+
+All input detection (A1-A5) correctly identifies starting phase. Halt cases (H1-H3) reject ambiguous inputs without silent guess. Flag behavior (F1-F5) honors each flag's semantics per `commands/auto.md`. Halt-protocol invariants (HP1-HP3) preserved — Iter 4 autonomy does NOT relax any existing halt-condition. Single upfront confirmation required for ALL chains per AUTONOMY-OQ-1.

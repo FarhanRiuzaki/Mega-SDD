@@ -1,7 +1,7 @@
 ---
 name: execute-bolts
-version: 1.1.0
-description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
+version: 1.3.0
+description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
 # Execute-Bolts
@@ -57,15 +57,129 @@ blocker:
 
 2. **Unit validity.** For each target unit:
    - Frontmatter parses and matches `unit-schema.md`
-   - `target_files` non-empty
+   - `target_files` non-empty (EXCEPT `task_type: verify` units — empty/`operation: none` is required)
    - `acceptance_test` has ≥1 `type: test` entry
    - `depends_on` references resolve (no dangling)
+   - (v1.2+, Iter 1) `task_type: verify` units MUST NOT have any `target_files` with `operation: create | modify | delete` — verify is read-only. Violation → halt `verify_unit_writable`.
 
 3. **Repo state.** Working tree clean (or `--force` to proceed). Bolts produce commits, so dirty state could be lost.
 
+4. **Hard Rule pre-flight scan (v1.2+, Iter 3).**
+
+   For each unit with non-empty `## Hard rules` body section:
+
+   a. **Parse each rule line** against the 5-grammar set per `unit-schema.md` §Hard rule grammar:
+      - `DO NOT modify <path>`
+      - `DO NOT add new <manifest> dependencies`
+      - `<path-glob> MUST follow <case-style> naming`
+      - `function <name> MUST preserve signature: <type-sig>`
+      - `file <path> MUST exist after bolt`
+
+   b. **Unparseable line** → halt `hard_rule_unparseable` with verbatim offending line + which production tried. NEVER silently skip a rule.
+
+   c. **Capture pre-flight snapshot** per rule type (deterministic state for post-flight diff):
+      - `DO_NOT_MODIFY <path>` → record `sha256(file content)` if file exists; record "absent" otherwise
+      - `DO_NOT_ADD_DEPS <manifest>` → record manifest's dependency-section content (e.g., `package.json#dependencies + devDependencies`); record "manifest absent" otherwise
+      - `NAMING_RULE <path-glob> <case-style>` → no pre-snapshot (post-flight checks new files only)
+      - `SIGNATURE_RULE function <name>` → read codebase-map §2 (public interfaces) for the function's current signature; record verbatim. If not in codebase-map → halt `hard_rule_unanchored` (rule references symbol that doesn't exist; rule cannot validate)
+      - `FILE_PRESENCE_RULE file <path>` → no pre-snapshot
+
+   d. **Persist snapshot** as `<vault>/bolts/U-XXX/preflight.json` for post-flight comparison. Format:
+      ```json
+      {
+        "unit_id": "U-001",
+        "snapshot_at": "2026-05-20T10:00:00Z",
+        "rules": [
+          {"type": "DO_NOT_MODIFY", "path": "src/Models/User.php", "sha256": "abc123..."},
+          {"type": "DO_NOT_ADD_DEPS", "manifest": "package.json", "deps_section": "..."},
+          {"type": "SIGNATURE_RULE", "function": "authenticateUser", "signature_at_preflight": "(email: string, password: string) => Promise<User>"}
+        ]
+      }
+      ```
+
+   **Halt YAML for hard_rule_unparseable:**
+
+   ```yaml
+   blocker:
+     type: hard_rule_unparseable
+     emitted_at: <ISO8601>
+     emitted_by: execute-bolts
+     details:
+       unit_id: U-XXX
+       offending_line: "<verbatim>"
+       expected_grammar: [DO_NOT_MODIFY, DO_NOT_ADD_DEPS, NAMING_RULE, SIGNATURE_RULE, FILE_PRESENCE_RULE]
+     next_action: "Fix the unit's ## Hard rules section per references/unit-schema.md §Hard rule grammar."
+   ```
+
+   **Halt YAML for hard_rule_unanchored:**
+
+   ```yaml
+   blocker:
+     type: hard_rule_unanchored
+     emitted_at: <ISO8601>
+     emitted_by: execute-bolts
+     details:
+       unit_id: U-XXX
+       rule: "function <name> MUST preserve signature: ..."
+       reason: "Referenced function not found in codebase-map; cannot snapshot or validate"
+     next_action: "Verify the function name is correct OR remove this rule if the function doesn't exist yet."
+   ```
+
 ## Procedure (per unit)
 
-Follow `references/superpowers-bridge.md` per-unit flow.
+Follow `references/superpowers-bridge.md` per-unit flow. Standard sequence (Iter 3 additions in **bold**):
+
+1. **Pre-flight: parse and snapshot Hard rules** (per §Pre-flight checks step 4)
+2. Read unit body; pass to superpowers `executing-plans` for code implementation
+3. Run acceptance tests (per superpowers `test-driven-development`)
+4. **Post-flight: re-validate Hard rules** (see §Post-flight Hard Rule validation below)
+5. Commit (via superpowers); write bolt-report.md
+
+### Post-flight Hard Rule validation (v1.2+, Iter 3) — runs BEFORE commit
+
+After superpowers' executing-plans completes and acceptance tests pass, run the post-flight scan BEFORE committing. This is the safety net.
+
+For each rule in the unit's `## Hard rules`:
+
+| Rule type | Post-flight check |
+|---|---|
+| `DO_NOT_MODIFY <path>` | Compute current `sha256(file)`. Compare to preflight snapshot. Differs OR file appeared (preflight=absent, post=exists) → VIOLATED. |
+| `DO_NOT_ADD_DEPS <manifest>` | Read current manifest deps section. Diff against preflight snapshot. ANY new entry → VIOLATED. Removal/version-bump-existing → NOT violated. |
+| `NAMING_RULE <path-glob> <case-style>` | Enumerate files matching `path-glob` that exist post-flight AND did NOT exist pre-flight (new files only). Each new file: apply case-style regex. Mismatch → VIOLATED. |
+| `SIGNATURE_RULE function <name>` | Re-extract current signature from codebase. Compare to preflight `signature_at_preflight`. Differs → VIOLATED. (Special case: function deleted → VIOLATED with note "function removed".) |
+| `FILE_PRESENCE_RULE file <path>` | Probe `<path>` exists. Absent → VIOLATED. |
+
+### Violation handling
+
+- **ANY rule violated** → **HALT BEFORE COMMIT.** Bolt's code changes remain in working tree (uncommitted). User reviews + reverts/edits.
+- Emit `hard_rule_violated` blocker YAML with violated_rule + evidence.
+- bolt-report.md MUST be written with `status: halted_postflight` and list violations.
+
+**Halt YAML for hard_rule_violated:**
+
+```yaml
+blocker:
+  type: hard_rule_violated
+  emitted_at: <ISO8601>
+  emitted_by: execute-bolts
+  details:
+    unit_id: U-XXX
+    violations:
+      - rule: "DO NOT modify src/Models/User.php"
+        evidence: "sha256 mismatch — preflight: abc123..., postflight: def456..."
+      - rule: "function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>"
+        evidence: "Signature changed; postflight: (email: string, password: string, twoFactor?: string) => Promise<User>"
+  next_action: "Review changes in working tree; revert the offending modification OR edit the unit's Hard rules + re-run execute-bolts."
+```
+
+### verify-unit special path
+
+`task_type: verify` units run a simplified flow (no code write):
+1. Pre-flight: validate unit `target_files` is empty / all `operation: none` (else halt `verify_unit_writable`)
+2. Skip executing-plans (no code to write)
+3. Run acceptance tests
+4. Skip post-flight Hard rule scan (no changes to validate)
+5. Commit only the bolt-report.md (no source code changes); OR skip commit entirely on `--no-empty-commits` flag
 
 For `--all`:
 1. Topologically sort units by `depends_on`
@@ -144,12 +258,20 @@ blocker:
 - No auto-bypass of pre-commit hooks
 - No --force commits or push to remote
 - OQ in unit body → prompt user before bolt finalizes
+- (v1.2+, Iter 1) `task_type: verify` units MUST NOT write code; halt `verify_unit_writable` if target_files has writable operations
+- (v1.2+, Iter 3) Hard rules pre-flight snapshot is mandatory when `## Hard rules` is non-empty. NEVER skip the snapshot to save time.
+- (v1.2+, Iter 3) Post-flight Hard rule validation runs BEFORE commit. Violations halt with code changes still in working tree (NOT auto-reverted; user decides).
+- (v1.2+, Iter 3) Unparseable hard rules halt at pre-flight — NEVER silently skip rules whose grammar isn't recognized.
+- (v1.2+, Iter 3) `SIGNATURE_RULE` referencing a symbol absent in codebase-map → halt `hard_rule_unanchored` (cannot validate what doesn't exist).
+- (v1.2+, Iter 3) No `--skip-preflight` flag per DESIGN-OQ-5. Pre-flight scan is the contract.
 
 ## Outputs
 
 Per unit:
-- Code commits (1+) on current branch
+- Code commits (1+) on current branch (skipped for `task_type: verify` if no changes)
 - `<vault>/bolts/U-XXX/bolt-report.md`
+- (v1.2+, Iter 3) `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff
+- (v1.2+, Iter 3) `<vault>/bolts/U-XXX/postflight.json` — Hard rule post-flight check results (per-rule pass/fail + evidence)
 
 Global:
 - Update `<vault>/vault.json` changelog: `{ "event": "bolt_completed", "unit": "U-XXX", "commits": [...] }`
@@ -159,3 +281,28 @@ Global:
 After last unit:
 - Suggest `/mega-sdd:detect-drift` to verify all bolts honored the vault
 - Show summary: N units done, M failed, P skipped
+
+## Handoff emission (v1.3+, Iter 4)
+
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: execute-bolts
+  emitted_at: <ISO8601 timestamp>
+  status: completed | halted
+  artifacts:
+    - <absolute path to vault/bolts/U-001/>
+    - <absolute path to vault/bolts/U-002/>
+    # ... one per unit executed
+  next_action:
+    suggested_skill: mega-sdd:detect-drift
+    suggested_args: []
+    rationale: "All bolts executed; recommend periodic drift check."
+  blockers: []   # populated on test_fail / hard_rule_violated / hard_rule_unparseable / hard_rule_unanchored / cross_squad_interface_draft / verify_unit_writable
+  metrics:
+    items_processed: <N units executed>
+    items_blocked: <N halts encountered>
+```
+
+Status `halted` on `test_fail` (acceptance test exhausted retries) / `hard_rule_violated` (post-flight scan) / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.

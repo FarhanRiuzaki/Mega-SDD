@@ -1,0 +1,256 @@
+# Handoff Contract — Skill → Orchestrator (v2.0+, Iter 4)
+
+When mega-sdd skills run under `--auto` (i.e., dispatched by `orchestrate-flow --deep` or `/mega-sdd:auto`), they MUST emit a structured **handoff record** at the end of their chat output. The orchestrator parses this record to decide whether to auto-continue the chain, pause on blocker, or stop.
+
+This contract is required ONLY when `--auto` is in effect. Standalone skill invocations (user typed `/mega-sdd:<specific-skill>`) MAY emit the YAML but it is informational — no orchestrator consumes it.
+
+---
+
+## Handoff YAML schema
+
+```yaml
+handoff:
+  emitted_by: <skill-name>              # e.g., generate-intent, bind-codebase
+  emitted_at: <ISO8601 timestamp>
+  status: completed | paused | halted
+  artifacts:
+    - <absolute path to primary output 1>
+    - <absolute path to primary output 2>
+    # ... list every file/dir this skill wrote
+  next_action:
+    suggested_skill: mega-sdd:<next-skill>     # e.g., mega-sdd:scan-codebase
+    suggested_args: ["--flag=value", "positional"]  # exact CLI args to invoke
+    rationale: "<1-sentence why this is the right next step>"
+  blockers: []                          # empty when status=completed
+                                        # populated when status=paused/halted (per halt-protocol §blocker envelope)
+  metrics:                              # optional but encouraged
+    duration_ms: <int>
+    items_processed: <int>              # OQs / claims / units / etc — context-dependent
+    items_blocked: <int>                # number that require human input
+```
+
+### Status values
+
+- **`completed`** — skill ran successfully end-to-end. Orchestrator auto-continues to `next_action.suggested_skill` if `--deep` mode active.
+- **`paused`** — skill completed its work BUT something downstream needs user attention (e.g., business OQs needing resolution, tech-OQ recommendations needing review). Chain pauses; user reviews surfaced items; resumes via `/mega-sdd:auto --resume` or `/mega-sdd:orchestrate-flow --deep --resume`.
+- **`halted`** — hard blocker fired (CONFLICT, hard_rule_violated, dedup_ambiguous, etc.). `blockers` populated with one or more entries per halt-protocol. Chain stops. User resolves manually.
+
+### Block of artifacts
+
+Every skill MUST list its primary output paths (absolute). `orchestrate-flow` uses these to:
+- Verify the skill actually produced output (sanity check before continuing)
+- Locate the next skill's input (e.g., `bind-codebase` needs the vault path from `generate-intent`'s artifact list)
+- Generate the final pipeline summary at chain end
+
+---
+
+## Per-skill expected emissions
+
+### `extract-intelligence`
+
+```yaml
+handoff:
+  emitted_by: extract-intelligence
+  status: completed
+  artifacts:
+    - /path/to/docs/knowledge-base/
+    - /path/to/docs/knowledge-base/README.md
+  next_action:
+    suggested_skill: mega-sdd:generate-intent
+    suggested_args: ["--kb=docs/knowledge-base/", "--auto"]
+    rationale: "Knowledge base extracted; generate vault using KB as Mode B brief."
+  metrics:
+    items_processed: 35    # MD files written
+    items_blocked: 0
+```
+
+Status `halted` when quality gate fails twice (per `extract-intelligence/references/wave-dispatch-templates.md` §gate failures).
+
+### `generate-intent`
+
+```yaml
+handoff:
+  emitted_by: generate-intent
+  status: completed | paused
+  artifacts:
+    - /path/to/docs/mega-sdd/vaults/<slug>/
+    - /path/to/docs/mega-sdd/vaults/<slug>/vault.json
+  next_action:
+    suggested_skill: mega-sdd:scan-codebase  # if brownfield
+    # OR
+    suggested_skill: mega-sdd:generate-units  # if greenfield
+    suggested_args: ["--auto"]
+    rationale: "..."
+  metrics:
+    items_processed: 48    # OQs generated
+    items_blocked: 12      # OQs requiring stakeholder input (business / blocking)
+```
+
+Status `paused` when P1 business OQs are produced (downstream still works, but user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`.
+
+### `scan-codebase`
+
+```yaml
+handoff:
+  emitted_by: scan-codebase
+  status: completed
+  artifacts:
+    - /path/to/codebase-map.md
+  next_action:
+    suggested_skill: mega-sdd:bind-codebase
+    suggested_args: ["/path/to/vault/", "--auto"]
+    rationale: "Codebase mapped; validate vault claims against it."
+```
+
+### `bind-codebase`
+
+```yaml
+handoff:
+  emitted_by: bind-codebase
+  status: completed | paused | halted
+  artifacts:
+    - /path/to/binding.md
+    - /path/to/vault-bound/    # only if no CONFLICTs
+  next_action:
+    suggested_skill: mega-sdd:generate-units    # status=completed
+    # OR
+    suggested_skill: mega-sdd:resolve-oq        # status=halted on conflict
+    suggested_args: ["--auto"]
+  blockers: []  # OR populated on halt
+  metrics:
+    items_processed: 87    # claims
+    items_blocked: 0       # CONFLICTs
+```
+
+Status `halted` on `bind_conflict` (per existing halt-protocol). Status `paused` when tech-OQ recommendations need user review (informational pause; downstream still runs).
+
+### `generate-units`
+
+```yaml
+handoff:
+  emitted_by: generate-units
+  status: completed | halted
+  artifacts:
+    - /path/to/vault/units/
+    - /path/to/vault/units/_index.md
+  next_action:
+    suggested_skill: mega-sdd:execute-bolts
+    suggested_args: ["--all", "--auto"]
+    rationale: "Units generated; execute via bolts."
+  metrics:
+    items_processed: 12    # units
+    items_blocked: 0
+```
+
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable`.
+
+### `execute-bolts`
+
+```yaml
+handoff:
+  emitted_by: execute-bolts
+  status: completed | halted
+  artifacts:
+    - /path/to/vault/bolts/U-001/
+    - /path/to/vault/bolts/U-002/
+    # ... one per unit executed
+  next_action:
+    suggested_skill: mega-sdd:detect-drift
+    suggested_args: []
+    rationale: "All bolts executed; recommend periodic drift check."
+  metrics:
+    items_processed: 12    # units executed
+    items_blocked: 0       # halts
+```
+
+Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft`.
+
+---
+
+## Orchestrator consumption logic
+
+`orchestrate-flow --deep` (or `/mega-sdd:auto`) implements this control loop:
+
+```
+loop:
+  invoke current skill with --auto
+  parse handoff YAML from skill output
+  if handoff.status == completed:
+    log: "✓ Phase {N} of {M} completed: {skill}"
+    if --deep AND no --stop-after match:
+      current = handoff.next_action.suggested_skill
+      args = handoff.next_action.suggested_args
+      continue loop
+    else:
+      exit loop with summary
+  if handoff.status == paused:
+    log: "⏸ Phase {N} paused: {skill}. Items needing review: {items_blocked}"
+    surface paused-item summary in chat
+    exit loop awaiting user review
+  if handoff.status == halted:
+    log: "⛔ Phase {N} halted: {skill}. Blockers: {blockers list}"
+    surface verbatim blocker YAMLs in chat
+    exit loop awaiting user resolution
+
+emit final summary:
+  - Phases completed: {count} of {total proposed}
+  - Phases paused: {count} (list)
+  - Phases halted: {count} (list)
+  - Artifacts produced: {flat list of all artifacts paths}
+```
+
+### Progress indication (AUTONOMY-OQ-4 resolved)
+
+Before each skill invocation, orchestrator emits one line:
+```
+▶ Phase {current} of {total}: invoking {skill} ({args})
+```
+
+After each skill completes, orchestrator emits one line:
+```
+{status-icon} Phase {current} of {total}: {skill} → status: {status}, items: {items_processed}, blocked: {items_blocked}
+```
+
+This gives the user real-time visibility without polluting chat with verbose per-skill output (the skill's own output remains visible too, since skill invocations write directly to chat).
+
+### Resume mechanics (AUTONOMY-OQ-2 resolved: CWD-driven)
+
+`/mega-sdd:auto --resume` does NOT read a persisted state file. It re-runs CWD inspection per `routing-rules.md`, proposes the same chain, and:
+- If artifacts already exist for earlier phases → skip them (cursor advances past them automatically based on CWD signals)
+- If the cursor lands on a previously-halted phase → user must have resolved the blocker manually (else the same halt fires again, which is correct safety behavior)
+- If user wants to RE-RUN a previously-completed phase → use `orchestrate-flow --from=<phase>` explicit override
+
+This keeps orchestrator stateless (per the spec's "no state file" decision).
+
+---
+
+## Anti-halu invariants for handoff YAML
+
+- Skills MUST NOT lie about status. If acceptance tests failed, status is `halted`, not `completed`.
+- Skills MUST list every artifact they wrote. Missing artifacts means orchestrator can't find downstream input → cascade failure.
+- Skills MUST emit `next_action` even on `halted` status — it should point to the resolution path (e.g., `resolve-oq` for binding conflicts, manual review for `dedup_ambiguous`).
+- Orchestrator MUST surface blocker YAMLs verbatim. No paraphrasing.
+- Orchestrator MUST NOT invoke `next_action.suggested_skill` if status is `paused` or `halted`. Chain pauses; user resumes manually.
+
+---
+
+## Backward compatibility
+
+- Skills WITHOUT handoff emission (pre-v2.0) → orchestrator treats their completion as `status: completed` with `next_action: null`. Chain stops after that skill. Acceptable degraded behavior.
+- Skills with handoff emission but invoked WITHOUT `--auto` → chat hint still visible to human. YAML is harmless (parseable but unused).
+- v1.x `orchestrate-flow` (3-skill cap, no --deep) → unchanged behavior. The cap-lift is opt-in via `--deep`.
+
+---
+
+## Slash-command flag surface (v2.0+)
+
+```
+/mega-sdd:orchestrate-flow [--from=<phase>] [--to=<phase>] [--dry-run]
+  + [--deep]      # NEW (v2.0): lift 3-skill cap; chain to pipeline-end when state clean
+  + [--resume]    # NEW (v2.0): CWD-driven resume (no persisted state)
+```
+
+```
+/mega-sdd:auto [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual]
+                # NEW (v2.0) — one-shot autonomous pipeline
+```
