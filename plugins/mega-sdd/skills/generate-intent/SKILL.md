@@ -1,7 +1,7 @@
 ---
 name: generate-intent
-version: 1.1.0
-description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", or paraphrases.
+version: 1.5.0
+description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
 # Grand Design Spec Generator
@@ -12,7 +12,7 @@ Converts PRD/BRD + Figma into 7 markdown files inside a user-specified folder, o
 
 ## Invocation modes
 
-`generate-intent` has TWO input modes:
+`generate-intent` has TWO input modes (with a v1.2+ KB sub-mode under Mode B):
 
 ### Mode A — Structured input (PRD / BRD / Figma)
 Invocation: `/mega-sdd:generate-intent ./prd.md` (or any structured doc path)
@@ -22,7 +22,21 @@ Behavior: parse + decompose directly per `references/vault-contract.md`. No Q&A 
 Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected when no structured PRD path provided.
 Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 questions) to fill gaps, then produces seed-PRD + vault in one pass.
 
-The two modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
+### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario)
+
+Invocation: `/mega-sdd:generate-intent --kb=docs/knowledge-base/`
+
+Behavior:
+- Read `<kb>/README.md` as the primary brief (replaces free-text or PRD as the seed).
+- For each domain file under `<kb>/10-domains/`, treat `## 1. Purpose` + `## 5. Process` + `## 7. Business Rules` as PRD-equivalent source quotes when populating vault sections.
+- Marker propagation:
+  - KB `[VERIFIED]` items → vault body without re-asking the user in Q&A.
+  - KB `[INFERRED]` items → surface as a single confirmation question per domain; default is "keep as INFERRED" (vault note).
+  - KB `[OPEN]` items → carry over directly to vault `Open Questions` with the original OQ tag preserved.
+- Q&A loop in Mode B is SHORTER when `--kb` is set (KB already covers most gaps). Aim ≤5 questions instead of ≤10.
+- Auto-detection: if CWD has `docs/knowledge-base/README.md` (or `docs/mega-sdd/knowledge-base/README.md` or `old-reference/knowledge-base/README.md`) AND no `--from-prompt` / positional PRD argument → set `--kb=<detected-path>` implicitly. Confirm with user before proceeding.
+
+The three modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
 
 ### Detection rules (v1.2+ — deterministic, no LLM judgment)
 
@@ -30,12 +44,14 @@ When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules in order
 
 | Rule | Match condition | Mode |
 |---|---|---|
+| 0 | `--kb=<path>` flag is present | **B (KB sub-mode)** — explicit; positional and `--from-prompt` ignored |
 | 1 | `--from-prompt` flag is present | **B** (explicit override; positional ignored as path) |
 | 2 | Positional arg resolves to an existing file on disk | **A** |
 | 3 | Positional arg matches glob `*.md` / `*.pdf` / `*.docx` (regardless of whether file exists) | **A** — warn if file missing; offer to switch to B |
 | 4 | Positional arg contains whitespace OR is wrapped in quotes OR is longer than 80 chars | **B** (treat as brief) |
 | 5 | Positional arg has no path separators (`/`, `\`) AND no recognized extension | **B** |
-| 6 | No positional arg | CWD scan: search for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
+| 6 | No positional arg AND CWD has `docs/knowledge-base/README.md` (or `docs/mega-sdd/knowledge-base/README.md` or `old-reference/knowledge-base/README.md`) | **B (KB sub-mode)** — auto-detect, confirm with user |
+| 7 | No positional arg AND no KB | CWD scan: search for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
 
 The `--from-prompt` flag remains supported for explicit invocation; new users typically won't need it.
 
@@ -470,6 +486,49 @@ After emitting the 7 prose docs + `vault.json`, if `multi_squad_mode: true`:
 After emission, suggest next step per the existing hand-off message but
 include squad count: "Generated vault for N squads. Next: …".
 
+### Step 3.5: OQ auto-classification (v1.4+, Iter 2)
+
+After Step 3 writes the 7 files but BEFORE Step 4 self-check, run the auto-classifier on every generated OQ:
+
+1. **For each OQ in docs 01-06**, apply the heuristic table from `references/vault-contract.md` §Auto-classifier heuristics:
+   - Match OQ text against pattern column
+   - Assign `category`, `resolution_mode`, `classification_confidence`
+   - Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`
+
+2. **For `resolution_mode: scan`**: populate `scan_query` from the OQ's "Resolves:" hint or infer the codebase-map section to probe (e.g., "what test framework?" → `scan_query: "codebase-map §test_frameworks"`).
+
+3. **For `resolution_mode: recommend`**: populate the four required fields:
+   - `recommendation` — Claude's pick (1-2 sentences)
+   - `rationale` — why this pick; what trade-off was considered (2-3 sentences)
+   - `scan_citations` — at least 1 entry; cite related-pattern anchor in codebase-map / KB / source PRD (e.g., `app/Http/Resources/ErrorResource.php:12`). If no exact match exists, cite the closest pattern with a "no exact match; closest: ..." note.
+   - `fallback_if_wrong` — what to revisit if this recommendation turns out incorrect (1 sentence)
+   - **Anti-halu rail**: NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
+
+4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
+
+5. **Write classified OQ data** back to both the markdown body and `vault.json` per `references/vault-contract.md` §Updated OQ schema.
+
+6. **Generate `00-index.md` "## Auto-Classification Review" section** before the main OQ roll-up. List every tech-tagged OQ + every flipped/manually-overridden OQ. Per DESIGN-OQ-3, only `high`-confidence tech OQs auto-resolve in downstream `bind-codebase`; `medium`/`low` are flagged for user review.
+
+7. **Validation gate**: before proceeding to Step 4, validate every OQ entry per `references/vault-contract.md` §Validation rules:
+   - Tech OQ missing `resolution_mode` → halt `oq_tech_missing_mode`
+   - `recommend` OQ missing any of `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong` → halt `oq_recommend_underspecified`
+   - `scan` OQ missing `scan_query` → halt `oq_scan_missing_query`
+
+**Halt YAML format:**
+
+```yaml
+blocker:
+  type: oq_recommend_underspecified
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: generate-intent
+  details:
+    oq_id: OQ-AR-7
+    missing_fields: [scan_citations, fallback_if_wrong]
+    oq_text: "<verbatim from vault>"
+  next_action: "Re-run generate-intent OR manually populate the missing fields in vault.json before bind-codebase."
+```
+
 ### Step 4: Self-check before delivery
 
 Verify every doc has:
@@ -505,6 +564,9 @@ Verify every doc has:
 - [ ] Every decision has explicit source.
 - [ ] Out of Scope section never empty.
 - [ ] Cross-cutting flow handoff points present.
+- [ ] (v1.4+, Iter 2) Every OQ carries `category` + (if tech) `resolution_mode` + `classification_confidence`.
+- [ ] (v1.4+, Iter 2) Every `recommend`-mode OQ has at least one `scan_citations` entry; no fabricated citations.
+- [ ] (v1.4+, Iter 2) `00-index.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
 
 **Each doc must be readable in <10 minutes by an architect (BOTH modes).**
 
@@ -853,6 +915,32 @@ If the user explicitly mentions design system in conversation but didn't upload 
 - `.obsidian/graph.json` — Obsidian graph view defaults with squad color groups
 
 ---
+
+## Handoff emission (v1.5+, Iter 4)
+
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`. The orchestrator parses this to decide auto-continue.
+
+```yaml
+handoff:
+  emitted_by: generate-intent
+  emitted_at: <ISO8601 timestamp>
+  status: completed | paused | halted
+  artifacts:
+    - <absolute path to vault directory>
+    - <absolute path to vault.json>
+  next_action:
+    suggested_skill: mega-sdd:scan-codebase     # if mode=existing (brownfield)
+    # OR
+    suggested_skill: mega-sdd:generate-units    # if mode=new (greenfield)
+    suggested_args: ["--auto"]
+    rationale: "<1-sentence why this is next>"
+  blockers: []   # populated on halt
+  metrics:
+    items_processed: <N OQs generated>
+    items_blocked: <N business-blocking OQs requiring stakeholder input>
+```
+
+Status `paused` when P1 business OQs are produced (downstream still works; user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.
 
 ## References
 

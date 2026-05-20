@@ -117,6 +117,126 @@ Every Open Question MUST have a unique tag and priority marker.
 - `[~]` — out of scope (followed by `→ Out of Scope v{X.Y}: <reason>`)
 - `[ ]` + `**Deferred (v{X.Y})**: <reason>` — deferred (still open, but waiting on something specific)
 
+### Category (v1.3+, Iter 1 — tagging; v1.4+, Iter 2 — auto-resolution activates)
+
+Every OQ carries `category`:
+
+- `business` — needs stakeholder judgment. Examples: feature scope, edge-case behavior, regulatory threshold, UI copy, pricing logic.
+- `tech` — answerable from codebase or convention. Examples: test framework, error code format, naming convention, library version, file location.
+
+**Default**: `business`.
+
+### Resolution mode (v1.4+, Iter 2 — required when category=tech)
+
+Tech OQs carry a `resolution_mode` describing how the OQ is answered without blocking human review:
+
+- `scan` — answer deterministically found by probing codebase-map / KB. Requires `scan_query`. `bind-codebase` auto-resolves on single unambiguous match.
+- `recommend` — AI picks with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation). `bind-codebase` surfaces in `binding.md` review section; user ACCEPTS / OVERRIDES / REJECTS.
+- `hard_rule` — encoded as bolt-time constraint (Iter 3). Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
+- `blocking` — explicit "no auto-resolve; still needs human". Rare for tech (used when scan is inconclusive AND no safe default).
+
+A tech OQ MUST specify `resolution_mode`; absence is a generate-intent validation error (halt with `oq_tech_missing_mode` blocker).
+
+### Classification confidence (v1.4+, Iter 2 — DESIGN-OQ-3 resolved)
+
+Auto-classification per Iter 2's heuristic carries a confidence label:
+
+- `high` — heuristic matched strongly (single clear pattern hit)
+- `medium` — partial match (some signal, but not unambiguous)
+- `low` — fallback default; classifier defaulted to `business/blocking` because no strong signal
+
+**Auto-resolve gate**: only `high`-confidence tech OQs auto-resolve in `bind-codebase`. `medium`/`low` confidence OQs go to `00-index.md` "## Auto-Classification Review" section. User reviews tags one-pass before binding runs; any OQ user flips from tech-to-business stays human-decided.
+
+### Auto-classifier heuristics (v1.4+, Iter 2)
+
+`generate-intent` tags new OQs with `category` + `resolution_mode` + `classification_confidence` at generation time. Heuristic table:
+
+| OQ text pattern | Likely category | Resolution mode | Confidence |
+|---|---|---|---|
+| "what test framework" / "which testing library" / "test runner" | tech | scan | high |
+| "naming convention for X" / "case style for Y" / "file naming" | tech | scan | high |
+| "file location for Z" / "where should X live" / "directory structure" | tech | scan | high |
+| "what error code format" / "what response shape" / "API envelope" | tech | recommend | medium |
+| "which library for X" / "which version of Y" / "dependency choice" | tech | recommend | medium |
+| "should we support X feature" / "does Y count as in-scope" | business | blocking | high |
+| "what is the limit for X" / "how many Y" / "max value for Z" | business | blocking | high |
+| "is X regulated" / "POJK reference for Y" / "compliance for Z" | business | blocking | high |
+| "edge case: when Z happens" / "behavior on edge case" | business | blocking | high |
+| any mention of "stakeholder", "PO", "compliance team", "legal", "finance" | business | blocking | high |
+| any mention of "scan codebase", "check existing", "convention", "framework standard" | tech | scan | high |
+| anything else (no strong signal) | business | blocking | low (default) |
+
+**Conservative default**: when no heuristic matches → `business / blocking / low`. Safe — preserves current blocking behavior.
+
+### Auto-Classification Review section in `00-index.md`
+
+After OQ classification, `00-index.md` MUST include a new section before the main OQ roll-up:
+
+```markdown
+## Auto-Classification Review (v1.4+)
+
+> Total classified: {N} OQs. Auto-resolution active: {M} (tech, high-confidence).
+> Manual review recommended: {K} (tech medium/low-confidence + any flipped from business to tech).
+
+| OQ-ID | Question | Auto-tagged | Confidence | Action |
+|---|---|---|---|---|
+| OQ-AR-1 | which test framework? | tech / scan | high | will auto-resolve via scan |
+| OQ-AR-7 | what HTTP error envelope? | tech / recommend | medium | needs review — confirm recommend mode |
+| OQ-FL-3 | does cancellation refund? | business / blocking | high | blocking — needs stakeholder |
+```
+
+User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "what error envelope" actually needs a product call, not a tech recommendation). Override mechanism: user edits `00-index.md` OR `vault.json`; `bind-codebase` re-reads at run time.
+
+### Updated OQ schema in markdown body
+
+```markdown
+- [ ] **OQ-AR-1** [P1] [tech / scan] [conf: high]: which test framework? — resolve: scan codebase-map §test_frameworks
+- [ ] **OQ-AR-7** [P2] [tech / recommend] [conf: medium]: what HTTP error envelope shape? — resolve: see Auto-Classification Review
+- [ ] **OQ-FL-3** [P1] [business] [conf: high]: does the cancellation flow refund prior payments? — resolve: PM/finance team
+```
+
+### Updated `vault.json` OQ schema
+
+```json
+{
+  "tag": "OQ-AR-1",
+  "priority": "P1",
+  "category": "tech",
+  "resolution_mode": "scan",
+  "classification_confidence": "high",
+  "scan_query": "codebase-map §test_frameworks",
+  "doc": "02-architecture.md",
+  "status": "pending"
+}
+```
+
+For `resolution_mode: recommend`:
+```json
+{
+  "tag": "OQ-AR-7",
+  "priority": "P2",
+  "category": "tech",
+  "resolution_mode": "recommend",
+  "classification_confidence": "medium",
+  "recommendation": "Use RFC 7807 problem+json envelope",
+  "rationale": "Industry standard; integrates with most HTTP clients. Existing pattern at app/Http/Resources/ErrorResource.php uses ad-hoc shape — recommendation moves toward consistency.",
+  "scan_citations": ["app/Http/Resources/ErrorResource.php:12"],
+  "fallback_if_wrong": "If RFC 7807 doesn't fit client expectations, revisit and consider JSON:API error format",
+  "doc": "02-architecture.md",
+  "status": "pending"
+}
+```
+
+### Validation rules (enforced by generate-intent at write time)
+
+- Every OQ with `category: tech` MUST have `resolution_mode` set; absence → halt `oq_tech_missing_mode`.
+- Every OQ with `resolution_mode: scan` MUST have `scan_query` populated.
+- Every OQ with `resolution_mode: recommend` MUST have `recommendation` + `rationale` + at least one `scan_citations` entry + `fallback_if_wrong`. Missing any → halt `oq_recommend_underspecified`.
+- Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (Iter 3 enforces grammar).
+- `classification_confidence` MUST be one of `high | medium | low`.
+
+**Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing v1.0–v1.5 vaults load unchanged.
+
 ## §boilerplate — Skill instruction language
 
 Reusable shim. Each skill's SKILL.md should reference this section:

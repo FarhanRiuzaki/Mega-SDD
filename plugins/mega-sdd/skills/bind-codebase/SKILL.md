@@ -1,7 +1,7 @@
 ---
 name: bind-codebase
-version: 1.0.0
-description: Validate a vault against `codebase-map.md`. Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim. BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
+version: 1.5.0
+description: Validate a vault against `codebase-map.md` (primary ground truth) + `docs/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
 # Bind-Codebase
@@ -20,7 +20,8 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 - Vault path (positional, required) — directory containing the 7-file vault
 - Codebase map path (optional, default: `<repo-root>/codebase-map.md` or `./codebase-map.md`)
-- Flags: `--strict` (block on OQ too, not just CONFLICT), `--auto`
+- Knowledge-base path (optional, v1.1+; auto-probed in `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/` — first hit wins; override with `--kb=<path>`)
+- Flags: `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>` (override KB auto-probe), `--no-kb` (skip KB consultation entirely)
 
 ## Outputs
 
@@ -36,11 +37,162 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 2. **Per claim type (per `references/binding-contract.md`), produce verdict.**
    For each vault claim referencing code:
-   - Search codebase-map for matching evidence
+   - **Primary ground truth: search codebase-map for matching evidence.**
    - Apply verdict logic:
      - Exact match (file path + signature) → CONFIRMED
-     - Found but contradicts → CONFLICT
-     - Not found → OQ
+     - Found but contradicts → CONFLICT (NEVER overridden by KB; codebase-map wins for conflicts)
+     - Not found → **secondary ground truth: consult KB if present (v1.1+).**
+
+   **KB consultation (v1.1+, when codebase-map verdict is "not found" only):**
+   - Skip if `--no-kb` set or no KB detected
+   - Locate the domain file in KB matching the claim's domain tag
+   - Search for the claim text in the matching domain file (focus on `## 5. Process`, `## 6. Outputs`, `## 7. Business Rules`)
+   - Apply marker-aware verdict:
+     - KB `[VERIFIED]` match → **CONFIRMED** (note: `via KB §<file>` in binding.md)
+     - KB `[INFERRED]` match → **CONFIRMED with note** (binding.md flags `verified via KB inference; downstream may revisit`)
+     - KB `[OPEN]` match → **OQ** (propagate KB OQ tag if present)
+     - No KB match → **OQ** (fresh — no auto-resolve attempted)
+   - **Never override a codebase-map CONFLICT verdict via KB.** KB is consulted only when codebase-map is silent. This preserves the binding gate's primary contract.
+
+2.5. **Implementation-state classification (v1.2+, Iter 1).**
+
+   For each claim now marked CONFIRMED, classify implementation readiness per `references/binding-contract.md` §Implementation-State Classification. Iter 1 emits **binary states only**: `IMPLEMENTED` / `NEW` (with `UNKNOWN` for ambiguous heuristics). PARTIAL is deferred to Iter 2.
+
+   **Endpoint claims** (`POST /api/foo`, `GET /bar`, …):
+   - Route found in codebase-map §4 AND handler symbol present in §2 → state: `IMPLEMENTED` (confidence: high)
+   - Route found, handler symbol absent in §2 → state: `UNKNOWN` (confidence: low; Iter 2 will refine via stub detection)
+   - Route not found AND handler absent → state: `NEW`
+
+   **Entity claims** (User has email + role; Order has line_items):
+   - Entity found in §3 AND ALL claimed fields detected → state: `IMPLEMENTED` (confidence: high)
+   - Entity found but only subset of claimed fields detected → state: `UNKNOWN` (confidence: low; Iter 2 handles PARTIAL)
+   - Entity not in §3 → state: `NEW`
+
+   **Method/handler claims** (`sendEmail()`, `processPayment()`):
+   - Symbol in §2 with matching signature → state: `IMPLEMENTED` (confidence: high)
+   - Symbol in §2 with different signature → state: `UNKNOWN` (confidence: low)
+   - Symbol not in §2 → state: `NEW`
+
+   **KB-confirmed claims**: when CONFIRMED was reached via KB consultation (codebase-map silent, KB had `[VERIFIED]` match), classify as `UNKNOWN` with `low` confidence — KB documents domain knowledge, not necessarily implementation. Iter 2 refines.
+
+   **Conservative default**: when heuristic cannot classify → `UNKNOWN` with confidence `low`. Never silently claim `IMPLEMENTED` without a concrete anchor.
+
+   **Anchor recording**: every state assignment carries an `anchor` field with the source-of-truth citation (e.g., `UserController.php:45 + routes/api.php:12`). For state `NEW`, anchor is `—`.
+
+   Write the result to `binding.md` under a new "## Implementation State Map" section. Schema and template in `references/binding-contract.md`.
+
+   **Anti-halu rails**:
+   - Never promote `NEW` to `IMPLEMENTED` based on inference; only direct codebase-map (or KB-VERIFIED) evidence.
+   - `UNKNOWN` with low confidence is surfaced in binding.md; downstream `generate-units` defaults to `task_type: create` (safer).
+   - Implementation state classification does NOT change blocking rules. CONFLICT still blocks. IMPLEMENTED is still CONFIRMED — just annotated for downstream task_type assignment.
+
+2.6. **Tech-OQ auto-resolution via scan (v1.3+, Iter 2).**
+
+   For each OQ in the vault with `category: tech` AND `resolution_mode: scan` AND `classification_confidence: high` (per DESIGN-OQ-3 gate — only high-conf auto-resolves):
+
+   a. Read the OQ's `scan_query` (codebase-map section reference or grep pattern).
+   b. Execute the scan against codebase-map (and KB if present).
+   c. Apply outcome:
+      - **Single unambiguous match** → set OQ `status: resolved`, `resolution: <found value>`, `resolved_at: <now>`, `scan_citations: [<found at>]`. Update vault.json.
+      - **No match** → keep OQ `status: pending`; flip `resolution_mode: scan` → `resolution_mode: blocking`; note "scan returned no match" in the OQ entry. User reviews.
+      - **Multiple ambiguous matches** → keep OQ `status: pending`; flip to `blocking`; list candidates in the OQ entry.
+
+   d. Append to `binding.md` under new "## Tech-OQ Auto-Resolved (Scan)" section:
+      ```markdown
+      | OQ-ID | Category | Question | Scan target | Resolution | Citations |
+      |---|---|---|---|---|---|
+      | OQ-AR-1 | tech / scan | which test framework? | codebase-map §test_frameworks | phpunit | phpunit.xml:1 |
+      ```
+
+   e. **Medium/low confidence tech-scan OQs**: skip auto-resolution (per DESIGN-OQ-3); pass through unchanged to downstream consumption. They appear in `00-index.md` "## Auto-Classification Review" section already.
+
+2.7. **Tech-OQ recommendation surfacing (v1.3+, Iter 2).**
+
+   For each OQ with `category: tech` AND `resolution_mode: recommend` AND `classification_confidence: high`:
+
+   a. **Validate required fields**: `recommendation`, `rationale`, `scan_citations` (≥1), `fallback_if_wrong`. Missing any → halt with `oq_recommend_underspecified` (this should have been caught at generate-intent time; if reaches binding, fix the vault upstream first).
+
+   b. **Verify scan_citations exist in codebase-map / KB**: each citation MUST resolve to an entry in codebase-map (or KB if KB present). Citations that don't resolve indicate fabrication → halt with `oq_recommend_citation_invalid`.
+
+   c. **Surface in `binding.md`** under new "## Tech-OQ Recommendations (review required)" section:
+      ```markdown
+      ### OQ-AR-7 [P2] [tech / recommend] [conf: high]
+
+      **Question**: What HTTP error envelope shape?
+
+      **Recommendation**: Use RFC 7807 problem+json envelope.
+
+      **Rationale**: Industry standard; integrates with most HTTP clients. Existing pattern at app/Http/Resources/ErrorResource.php uses ad-hoc shape — recommendation moves toward consistency.
+
+      **Citations**:
+      - app/Http/Resources/ErrorResource.php:12
+
+      **Fallback if wrong**: If RFC 7807 doesn't fit client expectations, revisit and consider JSON:API error format.
+
+      **User actions**:
+      - [ACCEPT] — flip OQ status to `resolved` with this recommendation
+      - [OVERRIDE] — provide your own resolution
+      - [REJECT] — flip to `blocking`; needs different resolution path
+      ```
+
+   d. **Recommendations are NOT auto-resolved**. They appear in binding.md for one-pass user review. The bind-codebase run does NOT block on recommendations (they don't block downstream pipeline). User can ACCEPT later via `resolve-oq --binding` (which gets a new `--accept-recommendations` flag in Iter 2; pre-Iter-2 users edit vault manually).
+
+   e. **Medium/low confidence tech-recommend OQs**: skip surfacing (per DESIGN-OQ-3 gate). They flow through as blocking. Already listed in `00-index.md` "## Auto-Classification Review".
+
+   **Anti-halu rails**:
+   - NEVER auto-accept a recommendation. Always user-in-the-loop for `recommend` mode.
+   - NEVER pass a recommendation with unverifiable citations downstream. Citation verification is mandatory.
+   - `rationale` and `fallback_if_wrong` provide audit trail — if either is missing, the recommendation cannot be trusted; halt.
+
+2.8. **Emit Suggested Unit Hard Rules (v1.4+, Iter 3).**
+
+   Bind-codebase suggests Hard Rules that `generate-units` will pull into per-unit `## Hard rules` sections. These are the bridge from binding intelligence → per-unit pre/post-flight enforcement.
+
+   Per DESIGN-OQ-6 (locked): KB gotchas → Anti-patterns by default; promoted to Hard rules ONLY when KB marker is `[VERIFIED]` AND the gotcha is mechanically detectable.
+
+   Sources for suggestions:
+
+   **a. Binding state-derived suggestions** (per claim with `state: IMPLEMENTED` or `state: UNKNOWN`):
+   - Anchor file exists + claim is CONFIRMED → suggest `DO NOT modify <anchor-file>` rule for any unit whose vault_source overlaps this claim, UNLESS the claim is explicitly subject to extension (task_type=extend candidate). The rule is conservative — defaults to "don't touch what's working."
+
+   **b. CONFLICT-derived hard rules** (per CONFLICT after user resolution via resolve-oq):
+   - If user resolved CONFLICT with `KEEP_CODE` action → suggest `DO NOT modify <conflicting-file>` rule for any downstream unit that might touch this file.
+   - If user resolved with `KEEP_VAULT` → no Hard rule (the conflict is being intentionally rewritten).
+   - If user resolved with `DEFER` → no Hard rule (OQ propagates instead).
+
+   **c. KB-derived hard rules** (only when KB present AND marker = `[VERIFIED]`):
+   - Domain file `## 9. Edge Cases & Gotchas` entry marked `[VERIFIED]` AND mechanically detectable (file path + signature stable) → suggest `DO NOT modify <gotcha-anchor-file>` rule
+   - Domain file `## 8. State Machine` entry marked `[VERIFIED]` for a function with stable signature → suggest `function <name> MUST preserve signature: <sig>` rule
+   - KB items marked `[INFERRED]` or `[OPEN]` → DO NOT promote to Hard rule (per DESIGN-OQ-6); they go to Anti-patterns suggestion instead
+
+   **d. KB-derived Anti-pattern suggestions** (informational, NOT machine-validated):
+   - Every `## 9. Edge Cases & Gotchas` entry in KB → suggested Anti-pattern with brief description + KB anchor
+   - Every "do-not-replicate" critical finding in KB README → suggested Anti-pattern
+
+   Write to `binding.md` under new section "## Suggested Unit Hard Rules" (v1.4+):
+
+   ```markdown
+   ## Suggested Unit Hard Rules (v1.4+)
+
+   > These suggestions are picked up by `generate-units` and inserted into each relevant unit's `## Hard rules` (machine-validated at bolt time) or `## Anti-patterns` (informational guidance) sections.
+
+   ### Hard rules (machine-validated at bolt time)
+   | Source | Suggested rule | Applies to units derived from |
+   |---|---|---|
+   | Implementation state | DO NOT modify app/Http/Controllers/UserController.php | 04-flows.md §read-endpoints |
+   | KB [VERIFIED] gotcha | DO NOT modify app/Services/MT202Dispatcher.php | 05-decisions.md §IDR-routing |
+
+   ### Anti-patterns (informational guidance)
+   | Source | Suggested guidance | Applies to units derived from |
+   |---|---|---|
+   | KB gotcha G-002 | Don't replicate the IDR MT202 dispatch path — file written but never sent; see knowledge-base/10-domains/30-swift-messaging.md §G-002 | 04-flows.md §payment-settlement |
+   | KB critical finding | Don't replicate cfkdhl→CFKDDL silent typo; see knowledge-base/10-domains/10-cif-customer.md §Edge Case 9 | 04-flows.md §customer-edit |
+   ```
+
+   **Anti-halu rails**:
+   - NEVER promote `[INFERRED]` or `[OPEN]` KB items to Hard rules. Anti-patterns only.
+   - NEVER suggest a Hard rule whose anchor file doesn't exist in codebase-map (`hard_rule_unanchored` would fire at bolt time anyway — surface here).
+   - Suggestions are RECOMMENDATIONS, not impositions. `generate-units` reviews + filters before inserting into units.
 
 2.5. **Deferred-OQ auto-resolution.**
 
@@ -103,6 +255,37 @@ strict: <true/false>
 - C-001 | <vault file:line> | <codebase evidence> | <claim text>
 ...
 
+## Implementation State Map (N, v1.2+)
+| Claim ID | Verdict | State | Anchor | Confidence |
+|---|---|---|---|---|
+| C-001 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high |
+| C-007 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic cannot classify | low |
+| C-012 | OQ | NEW | — | n/a |
+
+## Tech-OQ Auto-Resolved (Scan) (N, v1.3+)
+| OQ-ID | Category | Question | Scan target | Resolution | Citations |
+|---|---|---|---|---|---|
+| OQ-AR-1 | tech / scan | which test framework? | codebase-map §test_frameworks | phpunit | phpunit.xml:1 |
+
+## Tech-OQ Recommendations (review required) (N, v1.3+)
+> Listed below — each has ACCEPT / OVERRIDE / REJECT action options. Recommendations do NOT block; user reviews one-pass after binding completes.
+
+### OQ-AR-7 [P2] [tech / recommend] [conf: high]
+…
+
+## Suggested Unit Hard Rules (v1.4+, Iter 3)
+> Picked up by generate-units; inserted into each relevant unit's ## Hard rules (machine-validated) or ## Anti-patterns (informational) sections per DESIGN-OQ-6.
+
+### Hard rules (machine-validated)
+| Source | Suggested rule | Applies to units derived from |
+|---|---|---|
+…
+
+### Anti-patterns (informational)
+| Source | Suggested guidance | Applies to units derived from |
+|---|---|---|
+…
+
 ## Conflicts (N) — BLOCKING
 | ID | Vault Claim | Codebase Reality | Resolution Needed |
 |---|---|---|---|
@@ -157,14 +340,50 @@ This YAML is the canonical halt artifact. Prose announcement remains for human r
 - Never write bound-vault while conflicts exist. The gate is non-negotiable.
 - When evidence is ambiguous, default to OQ not CONFIRMED.
 - Claim text in binding.md is verbatim from vault — no paraphrasing.
+- (v1.2+, Iter 1) Implementation state defaults to `UNKNOWN` with low confidence when heuristic cannot decide. Never silently mark `IMPLEMENTED` without a concrete anchor.
+- (v1.2+, Iter 1) Implementation state classification annotates CONFIRMED claims; it does NOT relax the binding gate. CONFLICT still blocks.
+- (v1.3+, Iter 2) Tech-OQ scan resolution ONLY fires for `classification_confidence: high`. Medium/low confidence skip auto-resolve (per DESIGN-OQ-3 gate).
+- (v1.3+, Iter 2) Tech-OQ scan with no/multiple matches → flip to `blocking`, NEVER guess.
+- (v1.3+, Iter 2) Tech-OQ recommendations NEVER auto-accept; surfaced for user review.
+- (v1.3+, Iter 2) Recommendation `scan_citations` MUST verify against codebase-map / KB. Unverifiable citation → halt `oq_recommend_citation_invalid`.
+- (v1.4+, Iter 3) Suggested Hard Rules ONLY promoted from KB `[VERIFIED]` markers (per DESIGN-OQ-6). `[INFERRED]` and `[OPEN]` KB items → Anti-patterns only.
+- (v1.4+, Iter 3) Suggested Hard Rules referencing anchors NOT in codebase-map are NOT emitted (would fail `hard_rule_unanchored` at bolt time).
 
 ## Halt conditions
 
 - Missing `codebase-map.md`: halt, instruct `scan-codebase` first
 - Vault missing required files (00-index, vault.json): halt, instruct vault repair
 - `claims_total == 0`: halt, vault has no code-referencing claims (likely greenfield — pipeline should skip binding)
+- (v1.3+, Iter 2) Tech-OQ with `resolution_mode: recommend` missing required fields → halt `oq_recommend_underspecified`
+- (v1.3+, Iter 2) Tech-OQ recommendation `scan_citations` doesn't resolve in codebase-map / KB → halt `oq_recommend_citation_invalid`
 
 ## Hand-off
 
 - Clean binding → suggest `/mega-sdd:generate-units <vault>-bound/`
 - Blocked → suggest `/mega-sdd:resolve-oq --binding <binding.md>`
+
+## Handoff emission (v1.5+, Iter 4)
+
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: bind-codebase
+  emitted_at: <ISO8601 timestamp>
+  status: completed | paused | halted
+  artifacts:
+    - <absolute path to binding.md>
+    - <absolute path to vault-bound/>   # only if no CONFLICTs
+  next_action:
+    suggested_skill: mega-sdd:generate-units    # status=completed
+    # OR
+    suggested_skill: mega-sdd:resolve-oq        # status=halted on conflict
+    suggested_args: ["--auto"]
+    rationale: "<1-sentence>"
+  blockers: []   # populated on bind_conflict
+  metrics:
+    items_processed: <N claims>
+    items_blocked: <N CONFLICTs>
+```
+
+Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` (Iter 2 halts). Status `paused` when tech-OQ recommendations need user review (informational; downstream still runs). Required ONLY under `--auto`.

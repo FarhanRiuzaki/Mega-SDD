@@ -11,14 +11,17 @@
 5. **Bolts detection.** Any `bolts/U-*/bolt-report.md`?
 6. **Repo detection.** Is CWD inside a git repo? Any package manifests?
 7. **Codebase-map detection.** `codebase-map.md` exists?
-8. **Open Questions count.** Aggregate P0/P1 OQ count across vault files.
-9. **Drift signals.** Has detect-drift been run recently?
+8. **Knowledge-base detection.** Probe in order — `docs/knowledge-base/README.md`, `docs/mega-sdd/knowledge-base/README.md`, `old-reference/knowledge-base/README.md`. First hit wins; report as `knowledge_base: present (path: <hit>)` or `absent`.
+9. **Open Questions count.** Aggregate P0/P1 OQ count across vault files.
+10. **Drift signals.** Has detect-drift been run recently?
 
 ## Decision matrix
 
 | State (from inspection) | Proposed chain |
 |---|---|
-| Brief only (no vault, no PRD) | `generate-intent --from-prompt` (Q&A first) |
+| Legacy codebase + no PRD + no vault + rebuild intent (user mentioned "rebuild di stack baru" / "reverse engineer" / "extract intelligence") | `extract-intelligence <legacy>` → `generate-intent --kb=<kb>` |
+| `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` (skip extract-intelligence — already done) |
+| Brief only (no vault, no PRD, no KB) | `generate-intent --from-prompt` (Q&A first) |
 | PRD exists, no vault | `generate-intent <prd>` |
 | Vault exists, mode=greenfield, no units | `generate-units` |
 | Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` |
@@ -59,7 +62,46 @@ If interface files exist (`<vault>/interfaces/*.md`):
 
 ## Chain depth limit
 
-Hard cap: **3 sub-skills per chain**. Beyond that, user must explicitly request next chain.
+Hard cap: **3 sub-skills per chain** (default mode).
+
+**v1.3+ (Iter 4)**: `--deep` flag LIFTS the cap. Chain extends to pipeline-end with auto-continue via handoff YAML (per `references/handoff-contract.md`). Cap-lift is opt-in; default mode unchanged for backward compatibility.
+
+## Deep-chain decision matrix (v1.3+, Iter 4)
+
+When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains:
+
+| State (from inspection) | `--deep` proposed chain |
+|---|---|
+| Legacy + no PRD + no vault + rebuild intent | `extract-intelligence` → `generate-intent --kb` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (6 phases) |
+| PRD exists, no vault | `generate-intent <prd>` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
+| `knowledge_base: present` + no vault | `generate-intent --kb` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
+| Brief only (no vault, no PRD, no KB) | `generate-intent --from-prompt` → `generate-units` → `execute-bolts` (3 phases — greenfield, no codebase) |
+| Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (4 phases) |
+| Vault exists, codebase-map exists, no bound-vault | `bind-codebase` → `generate-units` → `execute-bolts` (3 phases — same as cap-3 mode) |
+| Bound-vault exists, no units | `generate-units` → `execute-bolts` (2 phases) |
+| Units exist, some not in bolts | `execute-bolts --all` (1 phase) |
+
+**Halt behavior unchanged**: any blocker (CONFLICT, business OQ, hard_rule_violated, dedup_ambiguous, etc.) pauses the deep chain identically to current cap-3 behavior. User resolves, then runs `orchestrate-flow --deep --resume`.
+
+**Confirmation behavior in `--deep`**: ONE upfront confirmation listing ALL phases. User picks Run / Edit / Cancel. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers the entire chain INCLUDING destructive phases (`execute-bolts`); bolts have their own existing safety (target_files whitelist, Hard rules from Iter 3).
+
+### `--from=<phase>` and `--to=<phase>` interaction with `--deep`
+
+- `--from=<phase>` skips earlier phases regardless of CWD state. Useful for forcing re-execution of a specific later phase.
+- `--to=<phase>` stops at that phase. Useful for staging (run extract + intent, review, then run bind + units + bolts separately).
+- `--from` + `--to` + `--deep` combine cleanly. Example: `/mega-sdd:orchestrate-flow --deep --from=bind-codebase --to=generate-units` runs only the 2-phase window.
+
+### `--resume` mechanics (v1.3+, AUTONOMY-OQ-2 resolved)
+
+`--resume` does NOT read a persisted state file. It:
+1. Skips upfront confirmation (chain was approved before)
+2. Re-runs CWD inspection (same as a fresh invocation)
+3. Builds chain per routing-rules
+4. Automatically skips phases whose artifacts already exist (e.g., if `vault.json` exists, skip `generate-intent`)
+5. Resumes execution from the first phase whose artifacts are absent
+6. If the resumed phase still has its blocker unresolved → halt re-fires (correct safety behavior)
+
+User MUST resolve halt-blockers manually BEFORE re-running `--resume`.
 
 ## Resume + skip
 

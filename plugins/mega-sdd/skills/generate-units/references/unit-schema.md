@@ -9,14 +9,20 @@ A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Ea
 id: U-001                         # zero-padded, monotonic
 title: <short imperative phrase>
 vault_source: <vault-file:section>  # which vault section this unit derives from
+task_type: create                  # (v1.2+) create | extend | verify
+                                   # create: new code, target_files all `create`
+                                   # extend: modify existing; Migration notes mandatory; reserved (Iter 1 does not auto-emit; Iter 2/3 will)
+                                   # verify: NO code generation; only acceptance_test against existing implementation
+                                   # Default: create. Auto-assigned from binding.md Implementation State Map when present.
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
 depends_on: []                     # list of unit IDs that must complete first
                                    # MUST be same-squad units only when multi-squad mode active.
                                    # Cross-squad coupling MUST route through `consumes_interfaces` (see below).
 target_files:                      # exact files this unit MAY touch (whitelist)
+                                   # For task_type=verify: may be empty OR all entries `operation: none`
   - path: src/api/auth.ts
-    operation: modify              # create | modify | delete
+    operation: modify              # create | modify | delete | none (none for verify-type)
   - path: tests/auth.test.ts
     operation: create
 existing_interfaces:               # contracts that MUST be preserved (in-codebase interfaces)
@@ -45,33 +51,124 @@ estimated_complexity: small        # small | medium | large
 ---
 ```
 
-## Required body sections
+## Required body sections (v1.3+, Iter 3 — polished AI-coding-prompt shape)
 
 ```markdown
 ## Goal
 <1-2 sentences — what this unit produces>
 
-## Context
-<which vault sections, which binding entries, why this scope>
+## Context (read first)
+<which vault sections, which binding entries, KB sections (if KB present), and WHY this scope exists. Conversational directive prose, NOT bullets. Aim for 2-4 sentences that orient an AI coding agent: what's the surrounding system, what's the user-visible outcome, what changes nothing.>
 
-## Implementation steps
-<numbered list — bite-sized, like a writing-plans plan but for ONE unit>
+## Anchors  (v1.2+ schema; v1.3+ mandatory for ALL task_types when binding evidence exists)
+<file:line where existing code lives that this unit references or modifies. AI coding agent reads these BEFORE writing.>
+<For task_type=verify and task_type=extend: MANDATORY — cite the implementation anchor from binding.>
+<For task_type=create: MANDATORY when at least one binding entry exists pointing to a related pattern in codebase-map. Cite the closest pattern to follow. Optional when fully greenfield.>
 
-1. Step 1...
-2. Step 2...
+- src/Http/Controllers/UserController.php:45-67 — existing pattern; follow this shape
+- src/Models/User.php:12 — entity to extend
+- docs/knowledge-base/10-domains/10-cif-customer.md §5 (if KB present) — domain behavior to honor
+
+## Hard rules  (v1.3+, Iter 3 — validated at bolt time by execute-bolts pre/post-flight)
+<Machine-parseable constraints. Grammar closed in v1 per DESIGN-OQ-4 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>
+
+- DO NOT modify <path>
+- DO NOT add new <manifest-file> dependencies
+- file:<path-glob> MUST follow <case-style> naming
+- function <name> MUST preserve signature: <type-signature>
+- file <path> MUST exist after bolt
+
+## Anti-patterns  (v1.3+ — guidance, NOT validated)
+<Conversational don'ts drawn from binding CONFLICTS + KB gotchas + tech-OQ recommendations + experience. AI agent reads these as context; not machine-enforced.>
+
+- Don't bypass middleware `auth.role` — RBAC pattern in routes/web.php:34
+- Don't replicate the typo `cfkdhl → CFKDDL` from legacy at <legacy-anchor>
+- Don't add a new HTTP error envelope; existing pattern at ErrorResource.php:12 is canonical
+
+## Implementation steps  (v1.3+ — directive prose, not bullet schema)
+<Written like a senior teammate briefing another teammate. AT LEAST one sentence >15 words. Reference Anchors inline. Avoid pure bullet checklists.>
+<For task_type=verify: ONE line — "No code changes. Run acceptance tests against existing implementation at <anchor>.">
+<For task_type=create: directive prose explaining the build sequence with anchor references.>
+<For task_type=extend: directive prose with explicit "first read Anchor A to see existing shape; then add X following that shape" framing.>
+
+First, open `app/Http/Controllers/UserController.php` and look at the `index` method at line 45 to see how the existing read endpoints structure their response. Then add a `store` method that mirrors this shape but accepts validated input from `StoreUserRequest`. The trickier part is the role assignment — see the Anchor at `routes/api.php:34` for how roles are attached after the existing flow.
+
+## Migration notes  (v1.2+; mandatory for task_type=extend; omitted otherwise)
+<Three sub-lists when this section is present:>
+- **REMOVE**: <code to delete>
+- **KEEP**: <code to preserve, do not touch>
+- **ADD**: <new code to write>
 
 ## Acceptance criteria
 <expanded form of frontmatter acceptance_test — exactly what passing means>
+<For task_type=verify: ALL acceptance criteria must assert behavior of existing implementation — not new behavior.>
 
 ## Out of scope (for this unit)
 <explicit list — prevents scope creep into adjacent units>
 ```
+
+## Hard rule grammar (v1.3+, Iter 3 — closed v1 per DESIGN-OQ-4)
+
+Five rule types supported. Unsupported grammar → halt at bolt time with `hard_rule_unparseable`.
+
+```ebnf
+RULE := DO_NOT_MODIFY | DO_NOT_ADD_DEPS | NAMING_RULE | SIGNATURE_RULE | FILE_PRESENCE_RULE
+
+DO_NOT_MODIFY        := "DO NOT modify " <path>
+DO_NOT_ADD_DEPS      := "DO NOT add new " <manifest> " dependencies"
+NAMING_RULE          := <path-glob> " MUST follow " <case-style> " naming"
+SIGNATURE_RULE       := "function " <name> " MUST preserve signature: " <type-sig>
+FILE_PRESENCE_RULE   := "file " <path> " MUST exist after bolt"
+
+where:
+  <path>          = relative or absolute file path
+  <path-glob>     = glob pattern (file:src/api/*.ts)
+  <manifest>      = package.json | composer.json | Cargo.toml | go.mod | etc.
+  <case-style>    = kebab-case | camelCase | snake_case | PascalCase
+  <name>          = identifier (function name)
+  <type-sig>      = parenthesized parameter list with types + return type
+```
+
+### Examples
+
+```
+DO NOT modify src/Models/User.php
+DO NOT add new package.json dependencies
+file:src/api/*.ts MUST follow kebab-case naming
+function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>
+file src/Models/AuditLog.php MUST exist after bolt
+```
+
+### Validation by execute-bolts
+
+| Rule type | Pre-flight check | Post-flight check |
+|---|---|---|
+| `DO_NOT_MODIFY` | Snapshot file checksum | Compare checksum; differs → violated |
+| `DO_NOT_ADD_DEPS` | Snapshot manifest content | Diff manifest; new top-level entry under deps/dependencies/etc. → violated |
+| `NAMING_RULE` | (none — new-file only) | Apply case-style regex against all new files matching glob; mismatch → violated |
+| `SIGNATURE_RULE` | Snapshot function signature via codebase-map symbol lookup | Re-extract signature; differs → violated |
+| `FILE_PRESENCE_RULE` | (none) | Probe path exists in repo; missing → violated |
+
+Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip.
+
+### Per-task_type contracts (v1.2+)
+
+| task_type | target_files | Anchors | Migration notes | acceptance_test | Implementation steps body |
+|---|---|---|---|---|---|
+| `create` | All `operation: create` | Optional (cite related patterns) | Omitted | Tests for new functionality | Numbered build steps |
+| `extend` | At least one `operation: modify`; new files allowed `operation: create` | MANDATORY | MANDATORY (REMOVE/KEEP/ADD) | Tests for new behavior; existing-behavior assertions in `existing_interfaces` | Numbered modification steps |
+| `verify` | Empty OR all `operation: none` | MANDATORY (cite the existing implementation) | Omitted | All assertions against existing implementation | ONE line: "No code changes. Run acceptance tests against existing implementation at <anchor>." |
+
+> **Iter 1 scope**: `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map. `extend` type is in the schema (forward-compat for Iter 2/3) but `generate-units` in v1.2 does NOT auto-emit it from `UNKNOWN` states (those default to `create`). When `extend` is needed in Iter 1, a manual override path applies — user edits unit frontmatter and fills Migration notes.
 
 ## Atomicity rules
 
 - One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into U-001, U-001.1, U-001.2.
 - `target_files` whitelist is enforced by `execute-bolts` — bolt may not touch files outside this list.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
+- (v1.2+) `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
+- (v1.3+, Iter 3) `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight (before commit) validates. Violations halt with `hard_rule_violated`.
+- (v1.3+, Iter 3) `## Implementation steps` MUST contain at least one sentence >15 words (directive prose check). Pure bullet checklists trigger render-pass warning.
 
 ## Multi-squad rules (v1.1+)
 

@@ -1,10 +1,10 @@
 # mega-sdd
 
-Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination at every handoff.
+Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination at every handoff, plus an Autonomy Layer (`/mega-sdd:auto`) that runs the full pipeline end-to-end with single upfront confirmation.
 
-**Version:** 1.3.0 · **License:** MIT
+**Version:** 2.0.0 · **License:** MIT
 
-> 📖 **Full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for TL;DR, 5W1H, full command reference, anti-hallucination layers, migration guide, halt protocol, and architecture deep dive.
+> 📖 **Full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for TL;DR, 5W1H, full command reference, 8-layer anti-hallucination defense, Autonomy Layer details, migration guide, halt protocol, and architecture deep dive.
 
 ## Quick start
 
@@ -17,27 +17,32 @@ Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code)
 Then in any project:
 
 ```bash
-/mega-sdd:orchestrate-flow
+/mega-sdd:auto ./prd.md                   # one-shot end-to-end (recommended)
+# OR
+/mega-sdd:orchestrate-flow                # phase-by-phase router (cap-3 default)
 ```
 
 ## What's in this folder
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest
-├── skills/                       # 10 skills + _vendored/
-│   ├── using-mega-sdd/           # anchor skill (injected at session start)
-│   ├── generate-intent/          # PRD/brief → vault (auto-detect Mode A/B since v1.2; multi-squad Q&A since v1.3)
-│   ├── scan-codebase/            # brownfield repo mapper
-│   ├── bind-codebase/            # vault ↔ code validation gate (BLOCKING)
-│   ├── generate-units/           # vault → atomic AI prompts (v1.3: assigns squad: + validates cross-squad-via-interface)
-│   ├── execute-bolts/            # units → code commits via superpowers (v1.3: --per-squad / --squad=<id> flags)
-│   ├── orchestrate-flow/         # lifecycle auto-router
-│   ├── resolve-oq/               # Open Question walker
-│   ├── detect-drift/             # code vs vault reconciliation
-│   ├── diff-vault/               # handle PRD revisions
+├── .claude-plugin/plugin.json    # plugin manifest (v2.0.0)
+├── skills/                       # 11 skills + _vendored/
+│   ├── using-mega-sdd/           # anchor skill (v1.2; sharper auto-trigger)
+│   ├── extract-intelligence/     # legacy → knowledge-base (v1.1)
+│   ├── generate-intent/          # PRD/brief/KB → vault (v1.5; OQ auto-classifier)
+│   ├── scan-codebase/            # brownfield repo mapper (v1.1)
+│   ├── bind-codebase/            # vault ↔ code validation gate (v1.5; impl-state + tech-OQ + Suggested Hard Rules)
+│   ├── generate-units/           # vault → atomic AI prompts (v1.4; task_type + polished prompt-shape)
+│   ├── execute-bolts/            # units → code commits via superpowers (v1.3; Hard Rule pre/post-flight)
+│   ├── orchestrate-flow/         # lifecycle auto-router (v1.3; --deep mode + --resume)
+│   ├── resolve-oq/               # Open Question walker (v1.0)
+│   ├── detect-drift/             # code vs vault reconciliation (v1.0)
+│   ├── diff-vault/               # handle PRD revisions (v1.0)
 │   └── _vendored/                # vendored superpowers skills (fallback)
-├── commands/                     # 11 slash commands (10 skill + 1 command-only update-plugin)
+├── commands/                     # 12 slash commands (11 skill + 1 command-only update-plugin)
+│   ├── auto.md                   # NEW v2.0 — one-shot end-to-end
+│   └── extract-intelligence.md   # NEW v1.4 — legacy KB extraction
 ├── hooks/                        # SessionStart hook (anchor injection)
 ├── scripts/sync-superpowers.sh   # vendor sync automation
 ├── CLAUDE.md                     # AI-agent contributor guidelines
@@ -47,14 +52,16 @@ plugins/mega-sdd/
 ## Pipeline (one-line)
 
 ```
-brief/PRD → generate-intent → (scan + bind for brownfield) → generate-units → execute-bolts
+[legacy → extract-intelligence] → brief/PRD → generate-intent → (scan + bind for brownfield) → generate-units → execute-bolts
 ```
 
-See the [root README](../../README.md) for diagrams, full command table, trigger phrases, anti-hallucination layers, and migration from `grand-design-spec`.
+Wrapped by **`/mega-sdd:auto`** (v2.0) for autonomous end-to-end execution with single upfront confirmation. Halt-protocol preserved — every blocker (binding conflict, business OQ, Hard Rule violation, dedup ambiguity, cross-squad halts, quality-gate failure) still fires.
+
+See the [root README](../../README.md) for diagrams, full command table, trigger phrases, 8-layer anti-hallucination defense, Autonomy Layer mechanics, and migration from `grand-design-spec`.
 
 ## Contributing
 
-Read [`CLAUDE.md`](./CLAUDE.md) first if you're an AI agent submitting a PR — anti-slop protocol applies.
+Read [`CLAUDE.md`](./CLAUDE.md) first if you're an AI agent submitting a PR — anti-slop protocol applies. Every behavior change traces back to a spec doc in [`../../docs/superpowers/specs/`](../../docs/superpowers/specs/).
 
 For human contributors: [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
 

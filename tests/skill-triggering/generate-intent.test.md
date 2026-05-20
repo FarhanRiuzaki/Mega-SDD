@@ -79,3 +79,47 @@ Manual-run fixture for the 6 detection rules. Each case maps to one rule.
 ## Pass criteria (Mode auto-detect)
 
 All 10 cases above invoke the correct mode per the rule table. No false positives where a path-looking string opens Q&A, or a brief gets treated as a file path. Ambiguous cases (AD3, AD8) prompt the user; do not silently proceed.
+
+## OQ Auto-classifier (v1.4+, Iter 2)
+
+### CL1: Tech-scan high-confidence
+- **Setup:** PRD requires "API uses standard error response shape"; ambiguity → OQ candidate "what HTTP error envelope?"
+- **Expect:** generate-intent's auto-classifier tags it `category: tech`, `resolution_mode: recommend`, `classification_confidence: medium` (recommend mode, not scan, because "error envelope shape" requires AI judgment)
+- vault.json populates `recommendation`, `rationale`, `scan_citations` (cites closest existing pattern), `fallback_if_wrong`
+- 00-index.md "## Auto-Classification Review" lists it
+
+### CL2: Pure scan-mode tech OQ
+- **Setup:** OQ candidate "what test framework should new tests use?"
+- **Expect:** Tagged `category: tech`, `resolution_mode: scan`, `classification_confidence: high`
+- `scan_query` populated as `codebase-map §test_frameworks`
+- bind-codebase will auto-resolve later via Iter 2 logic
+
+### CL3: Business OQ (default)
+- **Setup:** OQ candidate "does cancellation refund prior payments?"
+- **Expect:** Tagged `category: business`, `resolution_mode: blocking`, `classification_confidence: high`
+- No recommendation / scan_query fields populated
+- Listed in main OQ roll-up, NOT in Auto-Classification Review
+
+### CL4: No-pattern-match → conservative default
+- **Setup:** OQ candidate with text that matches NO heuristic pattern
+- **Expect:** Tagged `category: business`, `resolution_mode: blocking`, `classification_confidence: low`
+- Listed in Auto-Classification Review (low confidence flagged for review)
+- User can flip to tech if appropriate
+
+### CL5: Recommend-mode validation failure
+- **Setup:** PRD has tech ambiguity where Claude's recommendation would lack codebase context entirely (no related pattern at all in codebase-map or KB)
+- **Expect:** Auto-classifier degrades the OQ: stays `category: business`, `resolution_mode: blocking`, with note "no codebase context to ground recommendation; needs human decision"
+- NOT a fake recommendation with fabricated citations
+
+### CL6: Halt on recommend-mode missing fields
+- **Setup:** Manually-crafted vault.json with OQ `resolution_mode: recommend` but missing `fallback_if_wrong`
+- **Run:** `/mega-sdd:generate-intent` (re-generation or validation step)
+- **Expect:** HALT with `oq_recommend_underspecified` blocker YAML listing `missing_fields: [fallback_if_wrong]`
+
+### CL7: Auto-Classification Review section exists
+- **Setup:** Any PRD producing ≥1 tech-tagged OQ at medium/low confidence
+- **Expect:** 00-index.md has `## Auto-Classification Review (v1.4+)` section listing every tech-tagged OQ with confidence column
+
+## Pass criteria (Auto-classifier)
+
+All 7 cases above (CL1-CL7) classify correctly per `references/vault-contract.md` §Auto-classifier heuristics. No fabricated recommendation citations. Halt fires cleanly on validation failure. Conservative default (business/blocking/low) when no pattern matches.

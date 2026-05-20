@@ -5,6 +5,351 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-05-20
+
+### Added — Autonomy Layer (Iter 4 of vision; major version bump)
+
+Per spec `docs/superpowers/specs/2026-05-20-autonomy-layer-design.md`. All 7 AUTONOMY-OQs resolved per recommended defaults.
+
+Realizes the user-stated vision: "skills as agents that auto-route through the pipeline" + "PRD upload → vault → units in one motion" + "legacy code → rebuild project in one motion". The pipeline shape stays identical; the orchestration becomes autonomous through clean paths while preserving every existing halt-protocol blocker.
+
+**Four coordinated pillars:**
+
+1. **Deep-chain mode in `orchestrate-flow`**
+   - New `--deep` flag lifts the 3-skill cap; chain extends to pipeline-end
+   - Per AUTONOMY-OQ-1: single upfront confirmation covers ALL phases including `execute-bolts` (bolts have their own safety via target_files whitelist + Hard rules)
+   - Per AUTONOMY-OQ-2: `--resume` is CWD-driven (no persisted state file). Cursor position derives from artifact presence.
+   - Per AUTONOMY-OQ-4: One-line progress indication before/after each phase (`▶ Phase N of M: ...`)
+   - Backward compatible: default mode (no `--deep`) still cap-3.
+
+2. **Auto-continue handoffs via handoff YAML protocol**
+   - New `references/handoff-contract.md` defines the shared protocol
+   - Every skill emits a `handoff:` YAML record when invoked with `--auto` (per AUTONOMY-OQ-5: required only under `--auto`)
+   - Orchestrator parses `next_action.suggested_skill` + `next_action.suggested_args` and auto-invokes the next phase
+   - Status values: `completed` (auto-continue), `paused` (chain stops awaiting user), `halted` (blocker fires; chain stops)
+   - Required schema includes `artifacts` (orchestrator verifies skill output exists) + `blockers` (verbatim halt YAMLs)
+
+3. **Sharper `using-mega-sdd` auto-trigger**
+   - Auto-invoke `/mega-sdd:auto` (or `orchestrate-flow --deep`) when BOTH strong CWD signal AND user prompt intent keyword present
+   - Per AUTONOMY-OQ-3: general questions ("explain X", "fix bug Y") do NOT auto-trigger even with strong CWD; prompt MUST contain mega-sdd intent
+   - New trigger keywords: `auto`, `rebuild`, `lanjut`, `next`, `jalankan otomatis`, `proceed`, `go`
+
+4. **One-shot `/mega-sdd:auto` entrypoint**
+   - NEW slash command at `commands/auto.md`
+   - Input shape detection: legacy codebase / vault dir / PRD file / quoted brief / empty → CWD inspection
+   - Routes to `orchestrate-flow --deep --auto` with detected starting phase
+   - Per AUTONOMY-OQ-7: `--out=<path>` REQUIRED for legacy rebuild scenarios (extract-intelligence) — never conflate extract output with rebuild project dir
+   - Flag surface: `--deep` / `--shallow` / `--step-after=<phase>` / `--stop-after=<phase>` / `--resume` / `--manual`
+
+### Changed — Schema additions
+
+- **New reference**: `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` — shared protocol definition + per-skill expected emissions + orchestrator consumption logic + anti-halu invariants
+- `orchestrate-flow/references/routing-rules.md`: new §Deep-chain decision matrix + §Resume mechanics
+- `orchestrate-flow/SKILL.md`: new Step 8 (Resume support); Procedure §3 splits cap-3 vs `--deep`; progress indication mandate; new flags
+
+### Changed — Skill versions
+
+- `orchestrate-flow`: 1.2.0 → 1.3.0 (--deep flag + --resume + auto-continue + progress indication)
+- `using-mega-sdd`: 1.1.0 → 1.2.0 (sharper auto-trigger rules + new keywords)
+- `extract-intelligence`: 1.0.0 → 1.1.0 (handoff YAML emission)
+- `generate-intent`: 1.4.0 → 1.5.0 (handoff YAML emission)
+- `scan-codebase`: 1.0.0 → 1.1.0 (handoff YAML emission)
+- `bind-codebase`: 1.4.0 → 1.5.0 (handoff YAML emission)
+- `generate-units`: 1.3.0 → 1.4.0 (handoff YAML emission)
+- `execute-bolts`: 1.2.0 → 1.3.0 (handoff YAML emission)
+
+### New command
+
+- `commands/auto.md` — `/mega-sdd:auto` one-shot entrypoint
+
+### Anti-hallucination invariants — PRESERVED (the core promise)
+
+`--deep` mode is autonomy through CLEAN paths only. EVERY existing halt fires identically:
+- `bind_conflict` — bound-vault not produced; chain halts
+- `oq_business_p1_unresolved` (Iter 2 + --strict) — chain pauses for stakeholder triage
+- `dedup_ambiguous` (Iter 1) — chain halts; user reviews
+- `hard_rule_violated` (Iter 3 post-flight) — code stays in working tree; bolt halts pre-commit
+- `hard_rule_unparseable` / `hard_rule_unanchored` (Iter 3) — chain halts
+- `cross_squad_*` (multi-squad halts) — chain halts
+- `quality_gate_failed` (extract-intelligence wave gates) — chain halts
+- `oq_recommend_underspecified` / `oq_recommend_citation_invalid` (Iter 2) — chain halts
+- `mode_migrate` — chain halts
+- `dep_missing` (superpowers unavailable) — chain halts
+- `cycle_detected` / `interface_ref_missing` / `cross_squad_ambiguous` / `verify_unit_writable` — chain halts
+
+Additional rails for autonomy mode:
+- ONE upfront confirmation required (NEVER zero). Single confirm = OK; confirm zero = unsafe.
+- Per AUTONOMY-OQ-5: handoff YAML required ONLY under `--auto`. Standalone skill invocations may emit informationally.
+- Per AUTONOMY-OQ-2: no persisted state file. `--resume` rebuilds state from CWD. Halts re-fire if blockers unresolved.
+- Skills MUST NOT lie about status. If acceptance tests failed → status: halted, never completed.
+- Skills MUST list every artifact in handoff YAML. Missing artifacts → orchestrator detects gap → chain halts.
+
+### Backward compatibility
+
+All changes additive:
+- v1.7 `orchestrate-flow` (no --deep) → unchanged behavior. 3-skill cap intact.
+- v1.7 standalone skill invocations (no --auto) → unchanged behavior. No handoff YAML emitted.
+- v1.7 existing pipelines (PRD → vault → … manually invoked per phase) → continue to work.
+- New `/mega-sdd:auto` command is opt-in. Existing per-skill commands all still work.
+- v1.7 skills missing handoff emission (pre-Iter-4 skills) → orchestrator treats them as `status: completed` with `next_action: null`. Chain stops after. Degraded but safe.
+
+### Why major version bump (per AUTONOMY-OQ-6)
+
+- New top-level entrypoint (`/mega-sdd:auto`)
+- Cap-lift in `orchestrate-flow` (semantic change in chain depth)
+- `using-mega-sdd` auto-invokes orchestrate-flow without user typing commands (behavior change in anchor skill)
+- All 8 skills add handoff emission contract (behavior change collectively)
+
+Major bump (2.0) signals "the orchestration model has evolved". Skills still behave identically when not invoked with --auto.
+
+### New tests
+
+- `tests/skill-triggering/auto.test.md` — NEW. 13 cases: A1-A5 input detection, H1-H3 halt cases, F1-F5 flag behavior, HP1-HP3 halt-protocol preservation
+- `tests/skill-triggering/orchestrate-flow.test.md` — extended with DC1-DC6 (deep-chain mode) + RES1-RES3 (resume mechanics)
+- `tests/integration/e2e-autonomy-clean.test.md` — NEW. End-to-end full pipeline clean run with V1-V5 validation checks
+- `tests/integration/e2e-autonomy-halt.test.md` — NEW. End-to-end halt + resolve + resume cycle with V1-V5 validation checks
+
+### Iteration vision complete
+
+| Iter | Plugin | Status |
+|---|---|---|
+| extract-intelligence | 1.4.0 | ✅ Shipped |
+| Iter 1 (impl-state + task_type) | 1.5.0 | ✅ Shipped |
+| Iter 2 (tech-OQ classifier + scan/recommend) | 1.6.0 | ✅ Shipped |
+| Iter 3 (Hard rules + pre/post-flight + polished prompts) | 1.7.0 | ✅ Shipped |
+| Iter 4 (Autonomy Layer + /mega-sdd:auto) | 2.0.0 | ✅ Shipped (this entry) |
+
+The full vision from `2026-05-20-tech-oq-autoresolve-design.md` + `2026-05-20-autonomy-layer-design.md` + `2026-05-20-extract-intelligence-skill-design.md` is now realized. Pipeline maps cleanly to superpowers' `read → scan → writing-plans → executing-plans (subagent-driven)` shape.
+
+## [1.7.0] — 2026-05-20
+
+### Added — Polished AI-Coding-Prompt Units + Hard Rule Pre/Post-Flight (Iter 3 of tech-OQ vision)
+
+Per spec `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (Iter 3). DESIGN-OQ-4, OQ-5, OQ-6 locked.
+
+Solves "unit reads like a Jira ticket, not an AI coding prompt" pain — and adds the runtime safety net so bolts execute autonomously without violating constraints:
+
+- **Unit body restructure** — `## Anchors` mandatory when binding evidence exists; `## Anti-patterns` for informational don'ts; `## Hard rules` for machine-validated constraints; `## Implementation steps` rendered as directive prose (not bullet schema).
+- **Hard Rule grammar (closed v1 per DESIGN-OQ-4)** — 5 rule types: `DO NOT modify <path>`, `DO NOT add new <manifest> dependencies`, `<path-glob> MUST follow <case-style> naming`, `function <name> MUST preserve signature: <type-sig>`, `file <path> MUST exist after bolt`. Unparseable → halt `hard_rule_unparseable`.
+- **`execute-bolts` pre-flight scan** — captures deterministic state snapshot per rule before bolt runs (sha256 for DO_NOT_MODIFY, manifest deps section for DO_NOT_ADD_DEPS, function signature for SIGNATURE_RULE). Persisted to `<vault>/bolts/U-XXX/preflight.json`.
+- **`execute-bolts` post-flight validation** — runs BEFORE commit. Re-validates each rule against current state. ANY violation → halt `hard_rule_violated`; code changes remain in working tree (NOT committed); user reviews + reverts/edits.
+- **`bind-codebase` Suggested Unit Hard Rules** — emits machine-parseable Hard rules + Anti-patterns drawn from Implementation State Map + CONFLICT resolutions + KB `[VERIFIED]` gotchas. Per DESIGN-OQ-6: KB items default to Anti-patterns; promoted to Hard rules ONLY when `[VERIFIED]` AND mechanically detectable.
+- **`generate-units` render pass** (new Step 12.4) — validates Anchors mandatory rule, Hard rule grammar, Migration notes structure, directive prose density. Halts with `unit_underspecified` or `hard_rule_unparseable`. Auto-pulls Hard rules + Anti-patterns from `binding.md` Suggested Unit Hard Rules section.
+- **`task_type: verify` special path** in execute-bolts — skips code generation; runs acceptance tests against existing implementation; skips post-flight Hard rule scan (no changes to validate).
+
+### Changed — Schema additions
+
+- `generate-units/references/unit-schema.md`: body sections restructured with directive prose guidance, Anchors mandatory rules per task_type, Anti-patterns section, Hard rules section with 5-grammar productions + validation table.
+- `bind-codebase/SKILL.md` + `references/binding-contract.md`: new Procedure §2.8 (Suggested Unit Hard Rules emission) + new "## Suggested Unit Hard Rules" section in binding.md template.
+
+### Changed — Skill versions
+
+- `generate-units`: 1.2.0 → 1.3.0 (new Step 12.4 render pass; auto-pull from binding suggestions)
+- `execute-bolts`: 1.1.0 → 1.2.0 (Pre-flight Step 4 + Post-flight validation step; new outputs preflight.json + postflight.json)
+- `bind-codebase`: 1.3.0 → 1.4.0 (new Procedure §2.8 Suggested Unit Hard Rules; new section in binding.md)
+
+### Anti-hallucination invariants
+
+- Hard rule grammar closed v1 (5 productions per DESIGN-OQ-4). Unparseable → halt; NEVER silently skip.
+- Pre-flight snapshot is mandatory when `## Hard rules` non-empty per DESIGN-OQ-5. No `--skip-preflight` flag.
+- Post-flight runs BEFORE commit. Violations preserve code changes in working tree for user review.
+- `SIGNATURE_RULE` referencing symbol absent in codebase-map → halt `hard_rule_unanchored` (can't validate what doesn't exist).
+- `verify` units cannot write code — task_type enforcement at bolt time.
+- KB `[INFERRED]` and `[OPEN]` items → Anti-patterns ONLY (per DESIGN-OQ-6); never auto-promoted to Hard rules.
+- Suggested Hard Rules referencing unanchored files → suppressed (would fail at bolt time anyway).
+- Auto-population from binding does NOT bypass render-pass validation — emitted rules must parse.
+
+### Backward compatibility
+
+All changes additive. Behaviors preserved:
+- v1.6 units without `## Hard rules` body section → execute-bolts skips pre/post-flight (current behavior).
+- v1.6 units without `## Anchors` / `## Anti-patterns` → render pass treats schema as legacy; halts only when binding evidence dictates Anchors required.
+- v1.6 binding.md without "## Suggested Unit Hard Rules" → generate-units fills sections from vault-only context (no auto-pull).
+- Greenfield projects (no binding) → no Anchors mandatory; no Hard rules suggestions; standard create-unit shape.
+- Existing per-skill `--auto` flags unchanged.
+
+### New tests
+
+- `tests/skill-triggering/execute-bolts.test.md` — 11 cases HR1-HR11 covering Hard Rule pre-flight snapshot, post-flight violations per rule type (DO_NOT_MODIFY / DO_NOT_ADD_DEPS / SIGNATURE / NAMING / FILE_PRESENCE), unparseable / unanchored rule halts, verify-unit path, all-clean path, multi-rule violation.
+- `tests/skill-triggering/generate-units.test.md` — 9 cases PP1-PP9 covering Anchors mandatory rule per task_type, grammar parse, Migration notes structure, directive prose density, verify single-line allowed, Anti-patterns + Hard rules auto-pull from binding.
+- `tests/skill-triggering/bind-codebase.test.md` — 8 cases SHR1-SHR8 covering implementation-state-derived rules, KB [VERIFIED] → Hard rules, KB [INFERRED]/[OPEN] → Anti-patterns only, unanchored suggestion suppression, CONFLICT resolution paths, empty section default.
+
+### Locked DESIGN-OQ resolutions (from parent spec, restated)
+
+- DESIGN-OQ-4: Hard rule grammar closed v1 — 5 rule types. Revisit extensibility in v2 if real-world need emerges.
+- DESIGN-OQ-5: No `--skip-preflight`. Pre-flight scan is the contract.
+- DESIGN-OQ-6: KB gotchas → Anti-patterns by default. Promoted to Hard rules ONLY when `[VERIFIED]` AND mechanically detectable.
+
+### Iter 4 — Designed, awaiting kick-off
+
+Per spec `2026-05-20-autonomy-layer-design.md`, Iter 4 (plugin 2.0.0) ships the Autonomy Layer: `--deep` chain mode in `orchestrate-flow`, auto-continue at skill handoffs, sharper `using-mega-sdd` auto-trigger, one-shot `/mega-sdd:auto` entrypoint. Bridges to superpowers' `executing-plans` shape literally.
+
+## [1.6.0] — 2026-05-20
+
+### Added — Tech-OQ Auto-Classification + Scan/Recommend Resolution Modes (Iter 2 of tech-OQ vision)
+
+Per spec `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §5 (Iter 2). DESIGN-OQ-3 locked: only `classification_confidence: high` auto-resolves; medium/low go to review.
+
+Solves "OQ list buried in technical noise" pain — tech ambiguities deterministically answerable from codebase no longer clog the human review channel:
+
+- **OQ schema extended** (`vault-contract.md`) with `category` (business | tech), `resolution_mode` (blocking | scan | recommend | hard_rule), `classification_confidence` (high | medium | low), plus mode-specific fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`).
+- **Auto-classifier** in `generate-intent` (new Step 3.5) tags every OQ at generation time per heuristic table. Conservative default: `business / blocking / low` when no pattern matches.
+- **`00-index.md` Auto-Classification Review section** lists every tech-tagged OQ + medium/low confidence cases for one-pass user review before binding runs.
+- **`bind-codebase` scan resolution** (new Procedure §2.6): tech OQs with `resolution_mode: scan` AND `confidence: high` auto-resolve via codebase-map probe. Single match → resolved. No match / ambiguous → flip to `blocking` (NEVER guess).
+- **`bind-codebase` recommend surfacing** (new Procedure §2.7): tech OQs with `resolution_mode: recommend` AND `confidence: high` surface in `binding.md` "## Tech-OQ Recommendations (review required)" section. Recommendations carry full audit trail (rationale + scan_citations + fallback_if_wrong) + ACCEPT/OVERRIDE/REJECT actions. NEVER auto-accepted.
+- **DESIGN-OQ-3 gate**: ONLY `classification_confidence: high` tech OQs are processed by scan/recommend. Medium/low confidence skip auto-resolution.
+
+### Changed — Schema additions
+
+- `generate-intent/references/vault-contract.md`: extended §OQ-conventions with Category + Resolution mode + Classification confidence + Auto-classifier heuristic table (10 patterns) + Auto-Classification Review section template + Updated OQ schema (markdown + vault.json) + Validation rules.
+- `bind-codebase/references/binding-contract.md`: new §Tech-OQ Auto-Resolution covering scan + recommend mode mechanics, confidence gate, anti-halu enforcement, blocking rule interaction.
+
+### Changed — Skill versions
+
+- `generate-intent`: 1.3.0 → 1.4.0 (new Step 3.5: OQ auto-classification; validation gate)
+- `bind-codebase`: 1.2.0 → 1.3.0 (new Procedure §2.6 scan resolution + §2.7 recommend surfacing)
+
+### Anti-hallucination invariants
+
+- Tech-OQ scan with no/multiple matches → flip to `blocking`, NEVER guess.
+- Recommendations NEVER auto-accepted. ACCEPT requires explicit user action.
+- Recommend mode `scan_citations` MUST verify in codebase-map / KB. Unverifiable citation → halt `oq_recommend_citation_invalid` (detects fabrication).
+- Recommend mode requires all 4 audit-trail fields (`recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`). Missing any → halt `oq_recommend_underspecified`.
+- Confidence gate enforced: medium/low confidence skip auto-resolve (per DESIGN-OQ-3); preserves safety-by-default.
+- Conservative default at classification time: when heuristic ambiguous, → `business / blocking / low` (NEVER fabricate tech tag).
+- Tech-OQ resolution operates orthogonally to verdict layer: CONFLICT still blocks bound-vault production.
+
+### Backward compatibility
+
+- OQs without `category` field → treated as `business` by all skills (no auto-resolve).
+- v1.5 vaults without `resolution_mode` field on business OQs → defaults to `blocking` (current behavior).
+- Greenfield projects → auto-classifier runs but most OQs default to `business/blocking/low` (limited codebase context); zero behavior change vs v1.5.
+- `--no-kb` flag (from v1.1) still respected; KB consultation in recommend mode citation validation is gated on KB presence.
+
+### New tests
+
+- `tests/skill-triggering/generate-intent.test.md` — 7 new cases (CL1-CL7) for auto-classifier behavior including fabrication-detection guard.
+- `tests/skill-triggering/bind-codebase.test.md` — 8 new cases (TQ1-TQ8) for scan resolution + recommend surfacing including no-match, ambiguous, citation-invalid, underspecified halt cases.
+
+### Iter 3 + Iter 4 — Designed, awaiting kick-off
+
+Per spec, Iter 3 (plugin 1.7) ships polished unit prompt-shape body (Anchors + Anti-patterns + Migration notes + Hard rules) + execute-bolts pre-flight + post-flight hard-rule validation. Iter 4 (Autonomy Layer, plugin 2.0) wraps the pipeline in `/mega-sdd:auto` one-shot entrypoint with deep-chain mode. Both are documented in their respective spec files.
+
+## [1.5.0] — 2026-05-20
+
+### Added — Implementation-State Classification + task_type Units (Iter 1 of tech-OQ vision)
+
+Per spec `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` Iter 1 (DESIGN-OQ resolutions locked at approval).
+
+Solves the brownfield pain "unit is generated even when the target function already exists":
+
+- **bind-codebase** classifies every CONFIRMED claim with `state: IMPLEMENTED | NEW | UNKNOWN` (Iter 1 binary set; PARTIAL deferred to Iter 2 where `recommend` resolution handles ambiguity). Each row carries an `anchor` citation + `confidence` label (high/medium/low). Recorded in `binding.md` under new "## Implementation State Map" section.
+- **generate-units** reads the map and assigns `task_type: create | verify` per unit:
+  - All NEW claims (or no binding) → `task_type: create` (current behavior)
+  - All IMPLEMENTED with high confidence → `task_type: verify` — NO code generation; only acceptance tests against the existing implementation cited via the `## Anchors` body section
+  - Mix of NEW + IMPLEMENTED → SPLIT into one `verify` + one `create` chained via `depends_on`
+  - UNKNOWN (any confidence) → conservative `create` with a body note about the unclassified anchor
+- **`extend` task_type** added to the schema (forward-compat for Iter 2/3). Iter 1 does NOT auto-emit `extend` from UNKNOWN states; user manually edits frontmatter + fills Migration notes when needed.
+- **Dedup gate** (`generate-units` step 12.5) — halts with `dedup_ambiguous` blocker if a `create` unit's `target_files` all already exist in codebase-map. NEVER silent-rewrites.
+- **OQ category tagging** (Iter 1 scaffolding) — every OQ carries `category: business | tech` (default `business`). Iter 1 records the tag only; Iter 2 (plugin 1.6) will activate `scan` + `recommend` auto-resolve.
+
+### Changed — Schema additions
+
+- `bind-codebase/references/binding-contract.md`: new §Implementation-State Classification with classification logic per claim type (endpoint / entity / method) + confidence labeling + binding.md template extension.
+- `generate-units/references/unit-schema.md`: new frontmatter field `task_type`; new body sections `## Anchors` (mandatory for verify/extend) and `## Migration notes` (mandatory for extend); per-task_type contract table.
+- `generate-intent/references/vault-contract.md`: new §Category in §OQ-conventions with markdown + vault.json schema and the heuristic table.
+
+### Changed — Skill versions
+
+- `bind-codebase`: 1.1.0 → 1.2.0 (Procedure step 2.5 added; binding.md template extended; anti-halu rails extended)
+- `generate-units`: 1.1.0 → 1.2.0 (Procedure step 2.5 + step 12.5 added; per-task_type unit emission; dedup halt)
+- `generate-intent`: 1.2.0 → 1.3.0 (OQ category tagging; no auto-resolve in Iter 1)
+
+### Anti-hallucination invariants preserved
+
+- Binding gate non-negotiable: CONFLICT still BLOCKS. Implementation-state classification annotates CONFIRMED only.
+- Never promote `NEW` to `IMPLEMENTED` via inference. Anchor citations required for IMPLEMENTED.
+- `UNKNOWN` defaults to conservative `create` (downstream); never silently advanced to a higher-confidence label.
+- `verify` units NEVER generate code; only run acceptance tests. Missing anchor → downgrade to create.
+- `extend` task_type requires Migration notes; missing → halt (forward-compat enforcement).
+- Dedup ambiguity → halt with `dedup_ambiguous`; never silent-rewrite a unit.
+
+### Backward compatibility
+
+All changes are additive. Behaviors preserved when:
+- v1.4 vault loaded — OQs without `category` → treated as `business` (no auto-resolve). No behavior change.
+- v1.4 binding.md without Implementation State Map → generate-units treats every claim as `NEW`-equivalent → all units `task_type: create`. Identical to v1.4 output.
+- v1.4 units without `task_type` field → bolt-time behavior unchanged; new fields ignored.
+- Greenfield projects (no scan-codebase / no binding) → no Impl State Map → all units `task_type: create`. Identical to v1.4.
+
+### New tests
+
+- `tests/skill-triggering/bind-codebase.test.md` — 5 new cases (IS1-IS5) for Implementation-State Classification.
+- `tests/skill-triggering/generate-units.test.md` — 8 new cases (TT1-TT8) for task_type assignment + dedup halt.
+- `tests/integration/e2e-impl-state.test.md` (new) — full pipeline on a brownfield Laravel fixture with partial existing implementation; covers verify/create split + dedup negative cases.
+
+### Locked DESIGN-OQ resolutions (from spec)
+
+- Iter 1 uses binary states (IMPLEMENTED / NEW / UNKNOWN); PARTIAL deferred to Iter 2.
+- Dedup halts on ambiguity — never silent rewrites.
+- Iter 2 classifier accuracy: high-conf only auto-resolves; medium/low go to review.
+- Iter 3 hard-rule grammar closed v1 (5 rule types).
+- Pre-flight scan is the contract (no `--skip-preflight`).
+- KB gotchas → Anti-patterns by default; promoted to Hard rules only when `[VERIFIED]` + mechanically detectable.
+
+### Iter 2 + Iter 3 — Designed, awaiting kick-off
+
+The full 3-iteration vision is in the spec doc. Iter 2 activates tech-OQ auto-resolve via `scan`/`recommend` modes. Iter 3 introduces hard rules + bolt-time pre-flight validation + polished prompt-shape unit body (Anchors + Anti-patterns + Migration notes + Hard rules). Each iteration is its own PR with its own version bump.
+
+## [1.4.0] — 2026-05-20
+
+### Added — `extract-intelligence` skill + KB-as-context pipeline integration
+
+Per spec `docs/superpowers/specs/2026-05-20-extract-intelligence-skill-design.md`.
+
+New skill for the legacy-rebuild scenario where the legacy codebase is the only "spec" — no PRD exists and the rebuild is on a different stack:
+
+- **New skill `extract-intelligence`** (v1.0.0) — wave-based parallel-subagent extractor. 5 sequential waves (Prep → Foundation → Masters → Workflows → Integrations → Synthesis), ≤5 parallel subagents per wave, hard cap 8. Produces `docs/knowledge-base/` — multi-file tech-agnostic knowledge base organized by business domain (not by code structure).
+- **Output contract** — every domain file carries YAML frontmatter (`generated_by`, classification, criticality, `verified_count`, `inferred_count`, `open_count`, `source_files_cited`) plus the mandatory 11-section template (Purpose → Source References).
+- **Anti-hallucination discipline** — `[VERIFIED] / [INFERRED] / [OPEN]` markers on every non-trivial claim, `file:line` citations required, tech-agnostic vocabulary outside `## 11. Source References` and `50-integrations/`, ambiguous → `[OPEN]` never silent default, Wave 5 synthesis on main thread only.
+- **Quality gates between waves** — grep checks for section presence, frontmatter compliance, and forbidden patterns. Halt on second gate failure.
+- **New slash command** `/mega-sdd:extract-intelligence <legacy-path> [--out=<path>] [--seed=<path>] [--max-parallel=N] [--auto]`.
+- **References split** — `references/knowledge-base-schema.md` (output shape, frontmatter contract, 11-section template) + `references/wave-dispatch-templates.md` (per-wave agent prompts, gate grep commands, token budget guidance).
+- **Trigger test** — `tests/skill-triggering/extract-intelligence.test.md` covers explicit + natural English + Indonesian + orchestrate-flow auto-route + behavior checks (B1-B7).
+
+### Changed — KB consumption integrated into existing pipeline
+
+`extract-intelligence` is a side-lane upstream of `generate-intent`. Three existing skills updated so the rest of the pipeline can read KB as context:
+
+- **`using-mega-sdd`** (1.0.0 → 1.1.0) — adds `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/` to CWD signals. Adds trigger keywords (`reverse engineer`, `extract intelligence`, `legacy intelligence`) + Indonesian variants (`pecah legacy`, `rebuild di stack baru`, `source of truth dari legacy`). Phase ownership table extended.
+- **`orchestrate-flow`** (1.1.0 → 1.2.0) — CWD inspection adds knowledge-base detection (probe order: `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/`). Decision matrix adds two new rows: legacy + no PRD + rebuild intent → propose `extract-intelligence` → `generate-intent --kb=<kb>`; KB present + no vault → propose `generate-intent --kb=<kb>` directly.
+- **`generate-intent`** (1.1.0 → 1.2.0) — new `--kb=<path>` flag (Mode B sub-mode). Consumes KB README + domain files as PRD-equivalent source quotes. Marker-aware: KB `[VERIFIED]` → vault body without re-asking; `[INFERRED]` → confirmation prompt; `[OPEN]` → vault OQ with original tag preserved. Q&A shorter (≤5) when `--kb` set. Detection rule 0 (kb flag) takes precedence; rule 6 auto-detects CWD knowledge-base.
+- **`bind-codebase`** (1.0.0 → 1.1.0) — adds KB consultation as secondary ground truth when codebase-map verdict is "not found" (never overrides CONFLICT). KB `[VERIFIED]` → CONFIRMED (via KB note); `[INFERRED]` → CONFIRMED with downstream-revisit note; `[OPEN]` → OQ. Flags: `--kb=<path>` (override auto-probe), `--no-kb` (skip).
+
+### Backward compatibility
+
+All changes are additive. Projects without a knowledge-base behave identically to v1.3. KB consultation in `bind-codebase` is gated on KB presence; absence skips it. The `--kb` flag in `generate-intent` is opt-in (or auto-detected from CWD only when no other input is provided).
+
+### Naming notice
+
+`extract-intelligence` is the mega-sdd-flavored counterpart to `superpowers:reverse-engineering-legacy-codebase`. The skill name was chosen to avoid collision with the superpowers skill of similar purpose. Use the mega-sdd version when the next step is mega-sdd unit/bolt generation. Use the superpowers version when the workflow is standalone reverse-engineering with no downstream mega-sdd pipeline.
+
+### Skill versions
+
+- `extract-intelligence`: new at 1.0.0
+- `using-mega-sdd`: 1.0.0 → 1.1.0
+- `orchestrate-flow`: 1.1.0 → 1.2.0
+- `generate-intent`: 1.1.0 → 1.2.0
+- `bind-codebase`: 1.0.0 → 1.1.0
+
+### New tests
+
+- `tests/skill-triggering/extract-intelligence.test.md` — 6 trigger cases (E1-E6) + 7 behavior checks (B1-B7)
+
+### Validated against
+
+Bank Mega Trade Finance legacy PHP system (~600 files, MySQL + MSSQL + LDAP + SWIFT FTP) — 35 MD files, ~968 KB output, 13 business domains, 430 OQs surfaced, 41 hidden gotchas catalogued in ~3 hours wall-clock for 15 agent dispatches across 5 waves.
+
 ## [1.3.0] — 2026-05-17
 
 ### Added — Obsidian-friendly vault + multi-squad subagent execution

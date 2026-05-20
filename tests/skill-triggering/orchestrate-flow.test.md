@@ -82,3 +82,56 @@ All routing rules per routing-rules.md fire deterministically. Pre-flight gates 
 - **Setup:** vault has no `_meta/squads.yaml`
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all`
+
+## Deep-chain mode (v1.3+, Iter 4)
+
+### DC1: `--deep` lifts the 3-skill cap
+- **Setup:** legacy codebase + no PRD + no vault; user mentions rebuild intent
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep`
+- **Expect:** chain proposes ALL 6 phases (extract-intelligence → generate-intent --kb → scan-codebase → bind-codebase → generate-units → execute-bolts) in single upfront confirmation
+
+### DC2: Default mode (no `--deep`) still cap-3
+- **Setup:** same as DC1
+- **Prompt:** `/mega-sdd:orchestrate-flow` (no --deep)
+- **Expect:** chain proposes 3 phases (extract → generate-intent → scan-codebase); user re-invokes after for next chain
+
+### DC3: Auto-continue via handoff YAML
+- **Setup:** `--deep` mode chain proposed and approved; first skill (extract-intelligence) completes with `status: completed` handoff
+- **Expect:** orchestrator parses handoff YAML; auto-invokes `next_action.suggested_skill` with `next_action.suggested_args`; user does NOT need to type next command
+
+### DC4: Progress indication
+- **Setup:** `--deep` chain running, currently on phase 3 of 5
+- **Expect:** chat shows `▶ Phase 3 of 5: invoking bind-codebase (--auto)` before invocation and `✓ Phase 3 of 5: bind-codebase → status: completed, items: 87, blocked: 0` after
+
+### DC5: Pause on `status: paused`
+- **Setup:** `--deep` chain; generate-intent emits `status: paused` because P1 business OQs were produced
+- **Expect:** chain STOPS after generate-intent; chat shows paused-item summary; orchestrator does NOT auto-invoke next phase; awaits user `--resume` after OQs triaged
+
+### DC6: Halt on `status: halted`
+- **Setup:** `--deep` chain; bind-codebase emits `status: halted` with `bind_conflict` blocker
+- **Expect:** chain STOPS; blocker YAML surfaced verbatim; user resolves via resolve-oq
+
+## Resume mechanics (v1.3+, Iter 4)
+
+### RES1: --resume re-enters paused chain
+- **Setup:** previous `--deep` run paused after generate-intent (P1 business OQs); user resolved OQs via `/mega-sdd:resolve-oq`
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
+- **Expect:**
+  - NO upfront confirmation (chain was approved earlier)
+  - CWD inspection rebuilds state: vault.json exists, codebase-map absent
+  - Chain resumes from `scan-codebase` (cursor advances past `generate-intent` because artifact exists)
+  - Runs forward to pipeline-end
+
+### RES2: --resume halts again if blocker unresolved
+- **Setup:** previous run halted on bind_conflict; user did NOT resolve
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
+- **Expect:** chain re-runs bind-codebase; same halt fires; user gets identical blocker (correct safety behavior)
+
+### RES3: --from override skips earlier completed phases
+- **Setup:** all 6 phases completed; user wants to re-run only `generate-units` + `execute-bolts`
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --from=generate-units`
+- **Expect:** chain skips first 4 phases regardless of artifact presence; runs generate-units forward
+
+## Pass criteria (Iter 4)
+
+All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain decision matrix + `references/handoff-contract.md` §Orchestrator consumption logic. All resume mechanics (RES1-RES3) follow §Resume mechanics. Halt-protocol behavior unchanged in `--deep` mode vs cap-3 mode. No persisted state file.
