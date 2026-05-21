@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.5.0
+version: 0.6.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -381,6 +381,52 @@ Do NOT pad with "I have resolved..." preamble. Just report numbers and surface r
 - Never auto-resolve conflicts. Always user choice per row.
 - Never modify code files. resolve-oq is read-only on the repo; KEEP_VAULT marks the conflict but does NOT patch code (that happens in execute-bolts later).
 - Cycle protection: if `--binding` invoked but binding.md is malformed or empty, halt with helpful error.
+
+## Context-aware recommendations (v0.6+, Iter 7)
+
+Per `references/recommendation-context.md`. Before presenting `AskUserQuestion` for each OQ, build a context-aware recommendation from multiple sources (KB `[VERIFIED]` markers, memory decisions, vault ADRs, codebase-map patterns). If a confident recommendation exists, label the default option `(recommended)` with rationale + citation + fallback_if_wrong.
+
+### Source priority order
+
+1. **KB `[VERIFIED]` markers** (strongest) — search KB domain files matching OQ tag/text
+2. **Memory project-scope decisions** — search `<project>/.mega-sdd-memory/decisions.md` for past resolutions of similar OQ patterns
+3. **Memory user-scope patterns** — `~/.mega-sdd/memory/patterns.md` for cross-project patterns
+4. **Vault context** — related ADRs / flows / constraints in current vault
+5. **Codebase-map** (brownfield) — existing code patterns relevant to OQ
+6. **Silent fallback** — no confident source → no recommendation surfaced; fall back to plain interactive walk
+
+### Anti-halu rails (mandatory)
+
+- Citation MANDATORY (file:line / memory entry / KB section). No citation → no recommendation.
+- Rationale MANDATORY (1-3 sentences in description).
+- Fallback-if-wrong MANDATORY (1 sentence).
+- User confirms ALWAYS — recommendation is `(recommended)` label on default option; user can pick "Other" or override.
+- Business + P1 OQs prefix description with ⚠️ "High-stakes — review carefully".
+- No fabrication — silent fallback when sources insufficient.
+
+### AskUserQuestion presentation pattern
+
+When recommendation built:
+
+```
+Question: <OQ text>
+
+Options:
+  1. <recommended answer text> (recommended)
+     description: <rationale>. Source: <citation>. Fallback-if-wrong: <fallback>. Confidence: <HIGH|MEDIUM>.
+  2. <alternative 1>
+  3. <alternative 2>
+  4. Defer
+  5. Out of scope
+```
+
+### Audit trail integration
+
+- **Picked recommended** → vault OQ entry gains `resolution_source: recommendation` + `recommendation_citation: <citation>`; memory `decisions.md` row marked `source: ai_recommended`
+- **Picked alternative (override)** → vault OQ entry `resolution_source: user_override`; memory row marked `source: user_override`, `recommendation_ignored: <recommended-answer>` — feeds Iter 5 self-learning override tracking
+- After 5 consistent overrides for same OQ pattern → Iter 5 fires suggestion to disable recommendation for that pattern; user reviews via `/mega-sdd:memory review`
+
+This is a **suggestion-only** enhancement — same discipline as Iter 2 `resolution_mode: recommend` (tech-OQ-only) extended to all OQ resolutions at resolve-time.
 
 ## Memory layer (v0.5+, Iter 5)
 
