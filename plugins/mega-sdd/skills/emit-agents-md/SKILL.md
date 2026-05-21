@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.0.0
+version: 1.1.0
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -83,9 +83,17 @@ For tools that understand mega-sdd:
 For AGENTS.md-only tools: the sections above contain everything you need.
 ```
 
+## Path resolution (v1.1+, Iter 10)
+
+Per `plugins/mega-sdd/references/paths.md`:
+
+- **AGENTS.md output**: `<repo-root>/AGENTS.md` (UNCHANGED — interop file MUST be at repo root for discovery by Continue.dev, Cursor, Aider, etc.)
+- **Vault detection**: probe BOTH `<project>/.mega-sdd/vaults/*/vault.json` (v3.4+) AND `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy) — use first match
+- **Generation marker**: HTML comment cites the vault path actually used so future regen knows source
+
 ## Procedure
 
-1. **Detect vault**. Walk CWD for `docs/mega-sdd/vaults/*/vault.json` OR accept explicit positional arg.
+1. **Detect vault**. Walk CWD for `<project>/.mega-sdd/vaults/*/vault.json` (v3.4+) FIRST, then fall back to `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy). OR accept explicit positional arg.
 2. **Check existing AGENTS.md**:
    - If `<repo-root>/AGENTS.md` exists AND has no mega-sdd generation marker → halt; ask user choice (overwrite / append / sibling)
    - If exists AND has mega-sdd marker → safe to regenerate (idempotent)

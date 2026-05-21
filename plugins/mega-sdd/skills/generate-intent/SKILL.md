@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.6.0
+version: 1.7.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -915,6 +915,16 @@ If the user explicitly mentions design system in conversation but didn't upload 
 - `.obsidian/graph.json` — Obsidian graph view defaults with squad color groups
 
 ---
+
+## Path resolution (v1.7+, Iter 10)
+
+Per `plugins/mega-sdd/references/paths.md`:
+
+- **Default vault path** (v3.4+): `<project-root>/.mega-sdd/vaults/<slug>/`
+- **Legacy vault path** (≤v3.3): `<project-root>/docs/mega-sdd/vaults/<slug>/`
+- **Detection**: probe `<project-root>/.mega-sdd/` directory + `config.yaml layout:` field
+- **Slug derivation**: from project name OR PRD title (unchanged from prior iters)
+- **Read-side back-compat**: skill probes both candidate dirs when resuming or diffing existing vault
 
 ## Handoff emission (v1.5+, Iter 4)
 

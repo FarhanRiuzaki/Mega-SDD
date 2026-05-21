@@ -5,6 +5,109 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] — 2026-05-21
+
+### Added — Iter 10: Folder Consolidation under `.mega-sdd/`
+
+Per user UX request — "by default semua file output md hasil skill itu masuk saja otomatis ke `.mega-sdd/*`".
+
+Consolidates all mega-sdd outputs under a single `<project-root>/.mega-sdd/` container. Replaces scattered paths (`docs/mega-sdd/vaults/`, `.mega-sdd-memory/`, top-level `codebase-map.md`, `docs/knowledge-base/`) with unified canonical layout. Backward compatible: legacy paths still detected on read; new outputs go to `.mega-sdd/` by default.
+
+**New canonical layout** (per `plugins/mega-sdd/references/paths.md`):
+
+```
+<project-root>/
+├── .mega-sdd/                              # ALL mega-sdd outputs
+│   ├── config.yaml                          # project-level config (output_root, opt-outs)
+│   ├── vaults/<slug>/                       # vault content (was docs/mega-sdd/vaults/)
+│   │   ├── 00-index.md ... 06-constraints.md, vault.json
+│   │   ├── binding.md, bound/
+│   │   ├── units/U-*.md
+│   │   ├── bolts/U-*/preflight.json, postflight.json, bolt-report.md
+│   │   ├── .memory/                         # vault-scope memory (Iter 5; unchanged)
+│   │   └── .internal/                       # vault-internal (renamed from .mega-sdd/)
+│   │       ├── checkpoints/                 # Iter 6 JSONL checkpoints
+│   │       └── symbol-graph.json            # Iter 6 PageRank cache
+│   ├── knowledge-base/                      # was docs/knowledge-base/
+│   ├── codebase/codebase-map.md             # was <repo>/codebase-map.md
+│   ├── memory/                              # PROJECT memory (was .mega-sdd-memory/)
+│   │   ├── decisions.md, conventions.md, outcomes.md
+│   │   └── archived-vaults/<slug>/          # MEMORY-OQ-5 archive (now naturally inside container)
+│   └── exports/                             # future tool-agnostic exports
+├── AGENTS.md                                 # UNCHANGED — interop file MUST be at repo root
+├── CLAUDE.md                                 # UNCHANGED — project AI context
+└── (project source: app/, routes/, src/, etc.)
+```
+
+User-scope `~/.mega-sdd/memory/` UNCHANGED (cross-project).
+
+### Added — `/mega-sdd:migrate-paths` command
+
+Walks legacy paths, shows preview, asks confirm, moves via `git mv` (preserves history when in git repo) or plain `mv` fallback. Updates internal references in vault.json + binding.md + per-file frontmatter. Idempotent; safe to re-run. Flag surface:
+- `--dry-run` — preview only
+- `--from=auto|legacy|mixed`
+- `--to=new|legacy`
+- `--auto-confirm`
+
+Creates `<project>/.mega-sdd/config.yaml` with `layout: new` + `output_root` + `probe_paths` configuration. Writes migration audit to `.mega-sdd/migration-log.md`.
+
+### Added — Canonical path convention reference
+
+`plugins/mega-sdd/references/paths.md` — full mapping (per-skill old → new paths) + detection logic + config.yaml schema + .gitignore recommendations. Single source of truth for path resolution across all skills.
+
+### Changed — Skill versions
+
+- `extract-intelligence`: 1.1.0 → 1.2.0 (default --out points to `.mega-sdd/knowledge-base/`)
+- `scan-codebase`: 2.1.0 → 2.2.0 (default --out points to `.mega-sdd/codebase/codebase-map.md`)
+- `generate-intent`: 1.6.0 → 1.7.0 (default vault path `.mega-sdd/vaults/<slug>/`)
+- `memory`: 1.1.0 → 1.2.0 (project-scope path moved to `.mega-sdd/memory/`)
+- `emit-agents-md`: 1.0.0 → 1.1.0 (vault detection probes new path first, legacy fallback)
+
+### Detection & back-compat
+
+Skills probe in priority order:
+1. New layout (`.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, etc.)
+2. Legacy layout (`docs/mega-sdd/vaults/`, `docs/knowledge-base/`, etc.)
+3. Use first match for READ
+4. Use NEW path for WRITE (unless `layout: legacy` in config.yaml)
+
+Existing v3.3 projects continue working unchanged. User migrates when ready via `/mega-sdd:migrate-paths`.
+
+### Why `.mega-sdd/` vs `docs/mega-sdd/`
+
+| Aspect | Old (`docs/mega-sdd/`) | New (`.mega-sdd/`) |
+|---|---|---|
+| Visibility | Visible in tree | Hidden by default |
+| Tool/IDE separation | Mixed with project docs | Tool state convention (parity with .git/, .vscode/) |
+| Git tracking | Often all-tracked | Per-file decision (recommend track vaults/, gitignore .internal/, .memory/, outcomes.md) |
+| Interop discovery | AGENTS.md needs to be at root anyway | AGENTS.md still at root; everything else consolidated |
+
+User explicitly chose this trade-off (visibility for vault content → emit-agents-md provides external visibility surface).
+
+### Anti-halu invariants preserved
+
+- Path detection is DETERMINISTIC (file probe; no fuzzy matching)
+- Back-compat ensures no silent data loss
+- Migration via `git mv` preserves history
+- Reference updates via sed are scoped + backed up with .bak suffix
+- `--dry-run` mandatory for first-time users
+- Idempotent: re-running migration on already-migrated project is no-op
+
+### Backward compatibility
+
+- v3.3 projects with legacy paths → skills probe legacy first, continue writing there until user migrates
+- v3.3 vaults → readable as-is; migration is opt-in
+- User-scope memory `~/.mega-sdd/memory/` unchanged
+- Vault-scope memory `<vault>/.memory/` unchanged (already inside vault)
+- AGENTS.md at repo root unchanged (interop file)
+- Optional `.gitignore` updates user-decided per team norms
+
+### Outstanding (Iter 11+)
+
+- Path convention pages in `plugins/mega-sdd/skills/bind-codebase/SKILL.md`, `execute-bolts/SKILL.md`, `generate-units/SKILL.md` not yet added (they operate INSIDE the vault dir, less affected)
+- README + plugin-folder README update to v3.4 layout illustrations (defer or do in next release polish)
+- AGENTS.md emit could optionally output to `.mega-sdd/exports/AGENTS.mega-sdd.md` AS WELL as repo root (dual-write for tool ecosystems that scan dot-dirs)
+
 ## [3.3.0] — 2026-05-21
 
 ### Fixed — Iter 9 Audit Fixes Patch
