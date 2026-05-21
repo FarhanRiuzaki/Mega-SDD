@@ -5,6 +5,300 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] — 2026-05-21
+
+### Added — Tech Upgrades (Iter 6, major version bump)
+
+Per spec `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md`. All 7 ITER6-OQs resolved per recommended defaults. Research-driven: deep-search of 30+ tools/libs (Aider, Cline, Plandex, ast-grep, tree-sitter, AGENTS.md ecosystem, LangGraph) identified 5 high-leverage swaps that strengthen mega-sdd without violating core invariants.
+
+Realizes "more robust, more intelligent, still markdown-driven". Pipeline architecture unchanged; engines swapped at key points.
+
+**Five swaps:**
+
+1. **scan-codebase → tree-sitter engine** (Swap #1)
+   - AST-precise symbol extraction replaces regex (Aider's proven pattern, 45k ⭐)
+   - 100+ language grammars via tree-sitter CLI (~5MB native binary)
+   - `.scm` query files bundled in `skills/scan-codebase/queries/`
+   - Engine auto-detected via `command -v tree-sitter`; graceful fallback to regex (v1.2 behavior preserved)
+   - `--engine=tree-sitter|regex` flag for forced engine
+   - Codebase-map.md gains `engine` + `precision_tier` + `tree_sitter_version` + `grammars_used` frontmatter
+
+2. **Hard Rule grammar v2 → ast-grep YAML** (Swap #2)
+   - Replaces bespoke 5-type grammar (Iter 3 v1) with ast-grep YAML rules
+   - 5-10× expressivity (semantic patterns + fix templates + constraints)
+   - Single Rust binary (no Python/Node)
+   - Single ast-grep covers 100+ langs via shared tree-sitter grammars
+   - v1 grammar preserved as legacy path; auto-detected per unit (YAML blocks = v2; bullet lines = v1)
+   - Mixed-grammar unit halts (`hard_rule_mixed_grammar`); user migrates via new `/mega-sdd:migrate-rules` command
+   - Per ITER6-OQ-2: explicit per-unit migration confirm; v1 rules preserved as HTML comments for audit
+
+3. **PageRank symbol-graph for generate-units target_files** (Swap #3)
+   - Personalized PageRank on file-level symbol-reference graph (Aider's repo-map algorithm)
+   - Seed = binding citations + existing target_files; rank top-K (default 5) non-seed files
+   - Surfaces in unit body as `## PageRank suggestions` section (informational only — NEVER silent rewrite)
+   - User reviews + manually promotes to `target_files` frontmatter
+   - Requires `precision_tier: ast` (tree-sitter scan); skipped gracefully on regex tier
+   - Symbol graph cached at `<vault>/.mega-sdd/symbol-graph.json` per scan run
+   - `--skip-pagerank` flag disables; `--target-suggestions=N` configures K
+
+4. **AGENTS.md emitter (new skill)** (Swap #4)
+   - NEW skill `mega-sdd:emit-agents-md` (v1.0)
+   - NEW command `/mega-sdd:emit-agents-md`
+   - Flattens vault + binding + units summary into AGENTS.md schema (Linux Foundation AAIF; 60k+ repo ecosystem)
+   - Tool-agnostic visibility — Continue.dev, Cursor, Aider, Copilot can consume mega-sdd intelligence without knowing mega-sdd specifics
+   - 8 conditional sections: Project overview, Build commands, Test commands, Code style, Architecture, Decisions, Open questions, Mega-sdd interop notes
+   - Generation marker (HTML comment) MANDATORY for idempotent re-emission
+   - `--mode=overwrite|append|sibling` (default `sibling` if user-authored AGENTS.md detected)
+   - Per ITER6-OQ-4: config-flag default-on; per-project opt-out via `~/.mega-sdd/memory/config.yaml` `defaults.emit_agents_md: false`
+   - Auto-emitted at chain end when `orchestrate-flow --deep` runs (opt-out via `--no-agents-md`)
+
+5. **Checkpoint-graph for orchestrate-flow** (Swap #5)
+   - Per-step JSONL checkpoints at `<vault>/.mega-sdd/checkpoints/` (LangGraph-inspired pattern)
+   - Enables mid-skill resume (e.g., bind-codebase crashed at claim 45 of 100 → resume at claim 46)
+   - Per ITER6-OQ-5: JSONL format (append-only, race-tolerant, aligns with memory layer convention)
+   - Per ITER6-OQ-7: rotate last 3 runs; archive rest; prune >180d (matches memory layer)
+   - Skill responsibilities: extract-intelligence per wave, bind-codebase per claim, generate-units per unit, execute-bolts per bolt
+   - Handoff YAML extended with `checkpoints` field (latest_step_id, checkpoint_file, resume_command)
+   - Backward compat: v2.1 skills without checkpoint emission fall back to Iter 4 CWD-driven resume
+
+### Added — New skills + commands
+
+- `mega-sdd:emit-agents-md` v1.0 (AGENTS.md flattener)
+- `/mega-sdd:emit-agents-md` command
+- `/mega-sdd:migrate-rules` command (v1 → v2 Hard Rule migration helper)
+
+### Added — New references
+
+- `scan-codebase/references/tree-sitter-integration.md` (Swap #1 mechanics + fallback behavior)
+- `scan-codebase/queries/tags-{typescript,php,python}.scm` (initial language coverage)
+- `scan-codebase/queries/VERSIONS.md` (tested tree-sitter grammar version matrix)
+- `execute-bolts/references/hard-rule-grammar-v2.md` (Swap #2 grammar + v1→v2 mapping)
+- `execute-bolts/scripts/migrate-v1-rules.sh` (migration scaffold)
+- `generate-units/references/pagerank-targeting.md` (Swap #3 algorithm + render-pass integration)
+- `emit-agents-md/SKILL.md` + `references/agents-md-schema.md` (Swap #4)
+- `orchestrate-flow/references/checkpoint-protocol.md` (Swap #5)
+
+### Changed — Skill versions
+
+- `scan-codebase`: 1.2.0 → 2.0.0 (tree-sitter engine; graceful regex fallback)
+- `execute-bolts`: 1.4.0 → 2.0.0 (ast-grep v2 grammar; v1 legacy path preserved)
+- `generate-units`: 1.5.0 → 2.0.0 (PageRank target_files suggestions; opt-out via `--skip-pagerank`)
+- `emit-agents-md`: NEW at 1.0.0
+- `orchestrate-flow`: 1.4.0 → 2.0.0 (checkpoint protocol; mid-skill resume)
+
+(Other skills unchanged — generate-intent v1.6, bind-codebase v1.6, memory v1.0, resolve-oq v0.5, using-mega-sdd v1.2, extract-intelligence v1.1.)
+
+### Anti-hallucination invariants — PRESERVED
+
+Iter 6 adds DETERMINISTIC tech (AST parses, ast-grep matches, PageRank ranks) — NO new fuzzy logic introduced. All 8 anti-halu layers (Iters 1-5) + memory layer invariants intact:
+
+1. Tree-sitter parses are deterministic (AST nodes exact, not approximate)
+2. ast-grep matches are exact AST pattern matches (no semantic similarity / vector retrieval)
+3. PageRank suggestions surface in unit body as SUGGESTIONS (never silent rewrite of `target_files`)
+4. AGENTS.md emission is pure transformation (no inference; cites every claim's source)
+5. Checkpoint resume replays deterministically (no LLM in the loop; cursor-driven)
+6. v1 → v2 Hard Rule migration: explicit per-unit confirm (per ITER6-OQ-2); v1 preserved as HTML comments for audit
+7. Engine fallbacks graceful: scan-codebase regex when tree-sitter absent; v1 grammar when ast-grep absent
+
+### Backward compatibility
+
+- v2.1 codebase-map.md (regex output) → re-scan with tree-sitter produces higher-precision map; old preserved as `.bak`
+- v2.1 units with v1 Hard Rules → execute-bolts v1.4 path preserved; explicit migration via `/mega-sdd:migrate-rules` when ready
+- v2.1 vaults without checkpoints/ dir → CWD-driven resume continues to work (Iter 4 behavior)
+- Tree-sitter not installed → regex fallback; warning emitted; pipeline functional
+- ast-grep not installed AND unit has v2 rules → halt with install commands; v1 rules still work
+- AGENTS.md user-authored without marker → halt; ask user for overwrite/append/sibling choice
+
+### Breaking changes (justifies major bump per ITER6-OQ-6)
+
+ONLY ast-grep v1→v2 migration is breaking — and even that has a legacy preservation path. Specifically:
+
+- Generating NEW units in v3.0 produces v2 grammar by default (v1 still selectable via `--hard-rule-grammar=v1`)
+- Mixed-grammar units in same vault → halt `hard_rule_mixed_grammar`; user migrates first
+- Otherwise everything is additive
+
+### New tests
+
+- `tests/skill-triggering/scan-codebase.test.md` — extended with TS1-TS5 (tree-sitter cases + fallback)
+- `tests/skill-triggering/execute-bolts.test.md` — extended with AG1-AG6 (ast-grep v2 cases) + MIG1-MIG3 (v1→v2 migration)
+- `tests/skill-triggering/generate-units.test.md` — extended with PR1-PR3 (PageRank suggestion cases)
+- `tests/skill-triggering/emit-agents-md.test.md` — NEW (AM1-AM4: detect mode, sibling write, idempotent regen, conditional sections)
+- `tests/skill-triggering/orchestrate-flow.test.md` — extended with CP1-CP3 (checkpoint emission + mid-skill resume)
+- `tests/integration/e2e-iter6.test.md` — NEW (full pipeline E2E validating all 5 swaps)
+
+### Locked ITER6-OQ resolutions (from spec §8)
+
+- ITER6-OQ-1: Tree-sitter dist — document install commands; don't bundle binaries (keeps plugin small)
+- ITER6-OQ-2: ast-grep v1→v2 migration — explicit per-unit confirm via `/mega-sdd:migrate-rules`; v1 preserved as audit
+- ITER6-OQ-3: PageRank graph — bidirectional + weighted by ref count (Aider's proven approach)
+- ITER6-OQ-4: AGENTS.md trigger — config flag default-on; per-project opt-out via `~/.mega-sdd/memory/config.yaml`
+- ITER6-OQ-5: Checkpoint format — JSONL (append-only, race-tolerant; aligns with memory layer)
+- ITER6-OQ-6: Major version 3.0 justified — only ast-grep v1→v2 migration breaks; everything else additive
+- ITER6-OQ-7: Checkpoint rotation — keep last 3 runs; archive rest; prune >180d (consistent with memory layer)
+
+### Iteration vision update
+
+| Iter | Plugin | Status |
+|---|---|---|
+| extract-intelligence | 1.4.0 | ✅ Shipped |
+| Iter 1 (impl-state + task_type) | 1.5.0 | ✅ Shipped |
+| Iter 2 (tech-OQ classifier + scan/recommend) | 1.6.0 | ✅ Shipped |
+| Iter 3 (Hard rules + pre/post-flight + polished prompts) | 1.7.0 | ✅ Shipped |
+| Iter 4 (Autonomy Layer + /mega-sdd:auto) | 2.0.0 | ✅ Shipped |
+| Iter 5 (Memory + self-learning) | 2.1.0 | ✅ Shipped |
+| Iter 6 (Tech upgrades: tree-sitter + ast-grep + PageRank + AGENTS.md + checkpoint-graph) | 3.0.0 | ✅ Shipped (this entry) |
+
+Pipeline now uses production-grade tech (proven at scale by Aider 45k ⭐, ast-grep 14k ⭐, AGENTS.md 60k+ repos, LangGraph 33k ⭐ patterns) while preserving the markdown-driven + citation-disciplined + halt-on-blocker core.
+
+## [2.1.0] — 2026-05-21
+
+### Added — Memory + Self-Learning Layer (Iter 5)
+
+Per spec `docs/superpowers/specs/2026-05-21-memory-self-learning-design.md`. All 7 MEMORY-OQs resolved per recommended defaults. Inspired by ruflo (memory persistence concept; NOT vector-DB / binary-store implementation — mega-sdd stays markdown-driven).
+
+Solves: context discontinuity across sessions + no self-learning from past outcomes + cross-vault patterns lost. Complementary to (NOT duplicative of) Claude Code's built-in `auto memory` — mega-sdd memory is OPERATIONAL (pipeline state); Claude Code memory is SOCIAL (working style).
+
+**Three memory scopes:**
+
+```
+~/.mega-sdd/memory/                       # USER scope (cross-project, opt-in promotion only)
+├── preferences.md                         # observed flag/mode defaults
+├── patterns.md                            # learned cross-project patterns + pending suggestions
+├── learning-log.md                        # audit log of accepted/rejected learnings
+└── config.yaml                            # thresholds + opt-outs
+
+<project-root>/.mega-sdd-memory/           # PROJECT scope (per-repo, git-trackable per-file)
+├── decisions.md                           # OQ resolutions + CONFLICT actions + Recommendation outcomes
+├── conventions.md                         # detected conventions (test framework, naming, error format)
+└── outcomes.md                            # halt patterns + retry counts + success rates per run
+
+<vault-path>/.memory/                      # VAULT scope (per-vault, ephemeral; archived on delete)
+├── classifier-accuracy.json               # auto-classifier tag vs user-override metrics
+├── bind-history.md                        # per-binding-run verdicts + state map summaries
+└── bolt-outcomes.json                     # per-bolt success/failure + Hard Rule violations
+```
+
+**Self-learning** — threshold-based + suggestion-only (per Iter 5 design lock):
+- 5 consistent classifier overrides → propose heuristic table update
+- 5 same-resolution CONFLICTs → propose pre-fill default in resolve-oq
+- 3 Hard Rule violation+reverts → propose removing rule from binding suggestions
+- 3 recommendation REJECTs → propose flipping `resolution_mode` from `recommend` to `blocking`
+- 2 convention detections → promote to "established" (skip verbose re-detection)
+- 5 same flag picks → propose pre-fill in AskUserQuestion
+
+All learnings reviewed via `/mega-sdd:memory review`. User picks ACCEPT / REJECT / DEFER per suggestion. Accepted learnings written to `learning-log.md` with rollback path (edit log entry, add `rolled_back_at: <date>`).
+
+### Added — New skill `mega-sdd:memory`
+
+```bash
+/mega-sdd:memory list [--scope=<user|project|vault>] [--format=table|json]
+/mega-sdd:memory show <topic> [--scope=<scope>]
+/mega-sdd:memory search <query> [--scope=<scope>]
+/mega-sdd:memory review [--auto-accept-threshold=N]
+/mega-sdd:memory prune [--older-than=<duration>] [--dry-run]
+/mega-sdd:memory promote <key> --to=<user|project>
+/mega-sdd:memory diff [--since=<date>] [--scope=<scope>]
+/mega-sdd:memory export <output-path> [--scope=<scope>]
+/mega-sdd:memory import <input-path> [--scope=<scope>]
+/mega-sdd:memory clear --scope=<user|project|vault> [--confirm-twice]
+```
+
+### Added — `--memory-off` flag on all skills
+
+Disables both memory reads AND writes for that invocation. Honored across all 8 skills (extract-intelligence skipped — its outputs flow through generate-intent which respects the flag).
+
+### Changed — Handoff YAML extended with `metadata` field
+
+Per `orchestrate-flow/references/handoff-contract.md` §metadata extension. Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (both single-read-at-orchestrator):
+
+```yaml
+handoff:
+  # ... existing fields ...
+  metadata:                             # v2.1+ (Iter 5)
+    memory_context:                     # IN — orchestrator provides relevant memory slices
+      project_decisions_relevant: []
+      project_conventions_relevant: []
+      vault_outcomes_relevant: []
+      user_patterns_relevant: []
+      user_preferences_relevant: []
+    memory_writes:                      # OUT — skill emits writes for orchestrator to persist
+      - file: <relative-or-absolute-path>
+        scope: user | project | vault
+        action: append | update
+        content: |
+          <markdown row or JSON entry>
+        source_run: <skill-name>@<timestamp>
+```
+
+Orchestrator reads memory ONCE at chain start, passes slices to skills via handoff (no per-skill disk re-read), batches writes at chain end (atomic per-file via append-only per MEMORY-OQ-6).
+
+### Changed — Skill versions
+
+- `memory`: NEW at 1.0.0
+- `orchestrate-flow`: 1.3.0 → 1.4.0 (chain-start memory read + per-phase write batching)
+- `using-mega-sdd`: 1.2.0 (unchanged — auto-trigger logic same; memory layer is downstream)
+- `generate-intent`: 1.5.0 → 1.6.0 (reads preferences + conventions; writes preferences + classifier-accuracy)
+- `scan-codebase`: 1.1.0 → 1.2.0 (writes conventions; reads to skip established convention re-detection)
+- `bind-codebase`: 1.5.0 → 1.6.0 (reads decisions + patterns for CONFLICT resolution suggestions; writes bind-history + Hard Rule downgrade based on violation patterns)
+- `generate-units`: 1.4.0 → 1.5.0 (reads bolt-outcomes for Anti-pattern suggestions; reads decisions for past CONFLICT KEEP_CODE files; no direct writes)
+- `execute-bolts`: 1.3.0 → 1.4.0 (writes bolt-outcomes + outcomes; reads to surface past-halt warnings)
+- `resolve-oq`: 0.4.0 → 0.5.0 (writes decisions on each OQ + CONFLICT resolution + Recommendation outcome)
+- `extract-intelligence`: 1.1.0 (unchanged — operates outside project memory context)
+
+### New command
+
+- `commands/memory.md` — `/mega-sdd:memory` operations entrypoint
+
+### New tests
+
+- `tests/skill-triggering/memory.test.md` — 9 operations (M1-M9) + 7 anti-halu invariants (AH1-AH7)
+- `tests/integration/e2e-memory-self-learning.test.md` — 6 scenarios (A-F) covering accumulation, threshold-fire, accept-learning, rollback, --memory-off graceful degradation, cross-vault consistency, archival
+
+### Anti-hallucination invariants — PRESERVED
+
+Memory layer is SUGGESTION-ONLY across all touchpoints. The 10 invariants from spec §10:
+
+1. Memory is suggestion only — never enforcement
+2. Every suggestion cites source memory entry
+3. Current evidence wins over memory
+4. No silent auto-tuning (explicit ACCEPT via `/mega-sdd:memory review`)
+5. Audit log mandatory (every learning has rollback path)
+6. No fabricated citations (writers cite source artifact; readers cite memory entry)
+7. Cross-project promotion explicit (NEVER automatic)
+8. `--memory-off` honored everywhere
+9. Memory does NOT affect halt-protocol (CONFLICT still blocks, business OQ P1 still pauses, hard_rule_violated still halts)
+10. Memory files are human-reviewable markdown / JSON (never binary)
+
+### Backward compatibility
+
+PURELY ADDITIVE:
+- v2.0 pipelines work without memory dirs — skills lazily create on first write
+- Memory dirs don't exist yet → readers find no files → default behavior unchanged
+- `--memory-off` opt-out preserves identical behavior to v2.0
+- Schema versions (`memory_schema: 1`) stamped; future migration supported per MEMORY-OQ-1
+- Existing handoff YAML producers (Iter 4) keep working; new `metadata` field is optional
+
+### Locked MEMORY-OQ resolutions (from spec §13)
+
+- MEMORY-OQ-1: Schema versioning + auto-migrate with audit log
+- MEMORY-OQ-2: Per-file gitignore (decisions.md + conventions.md tracked; outcomes.md gitignored)
+- MEMORY-OQ-3: Plain markdown (no encryption); document privacy risk; `--memory-off` for sensitive contexts
+- MEMORY-OQ-4: Configurable thresholds via `~/.mega-sdd/memory/config.yaml`
+- MEMORY-OQ-5: Vault-scope memory archived to `<project>/.mega-sdd-memory/archived-vaults/<vault-id>/` on vault delete
+- MEMORY-OQ-6: Append-only writes (race-tolerant via atomic single-write fs.append)
+- MEMORY-OQ-7: Single memory read at orchestrator chain-start; slices passed via handoff YAML
+
+### Iteration vision update
+
+| Iter | Plugin | Status |
+|---|---|---|
+| extract-intelligence | 1.4.0 | ✅ Shipped |
+| Iter 1 (impl-state + task_type) | 1.5.0 | ✅ Shipped |
+| Iter 2 (tech-OQ classifier + scan/recommend) | 1.6.0 | ✅ Shipped |
+| Iter 3 (Hard rules + pre/post-flight + polished prompts) | 1.7.0 | ✅ Shipped |
+| Iter 4 (Autonomy Layer + /mega-sdd:auto) | 2.0.0 | ✅ Shipped |
+| Iter 5 (Memory + self-learning) | 2.1.0 | ✅ Shipped (this entry) |
+
 ## [2.0.0] — 2026-05-20
 
 ### Added — Autonomy Layer (Iter 4 of vision; major version bump)

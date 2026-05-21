@@ -1,7 +1,7 @@
 {
   "name": "mega-sdd",
-  "version": "2.0.0",
-  "description": "Spec-Driven Development as an autonomous agent pipeline. PRD/legacy → vault → units → bolts with anti-hallucination guarantees throughout. v2.0 adds the Autonomy Layer: /mega-sdd:auto one-shot entrypoint + --deep mode lifts orchestrate-flow's 3-skill cap for pipeline-end execution with handoff-YAML auto-continue. Halt-protocol preserved (binding gate non-negotiable, business OQs stay human-decided, Hard Rule violations halt pre-commit). Builds on extract-intelligence (legacy-rebuild KB), implementation-state-aware unit generation, tech-OQ auto-classification (scan/recommend modes), and polished AI-coding-prompt unit body shape with Hard Rule pre/post-flight validation.",
+  "version": "3.0.0",
+  "description": "Spec-Driven Development as an autonomous agent pipeline with persistent memory, self-learning, AST-precise codebase analysis, and ast-grep-validated Hard Rules. v3.0 swaps regex → tree-sitter for scan-codebase, bespoke grammar → ast-grep YAML for Hard Rules, adds personalized PageRank for target_files suggestions (Aider pattern), emits AGENTS.md for tool-agnostic interop (60k+ repo ecosystem), and per-step JSONL checkpoints for mid-skill resume (LangGraph pattern). Builds on v2.1 Memory Layer + v2.0 Autonomy Layer + Iter 1-3 invariants. Native binary deps (tree-sitter + ast-grep) — graceful regex/v1 fallback when unavailable. Halt-protocol preserved across all iters; anti-hallucination via citation discipline throughout.",
   "author": {
     "name": "Farhan Riuzaki"
   },
