@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 1.1.0
+version: 2.0.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -30,6 +30,13 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 ## Procedure
 
+0. **Engine detection (v2.0+, Iter 6).**
+   - Probe for tree-sitter: `command -v tree-sitter`
+   - Found → `engine: tree-sitter` (AST-precise extraction per `references/tree-sitter-integration.md`)
+   - Not found AND `--engine=tree-sitter` flag set → halt `dep_missing` with install commands
+   - Not found AND no flag → fall back to `engine: regex` (v1 behavior); emit chat warning: "⚠️ tree-sitter not found; using regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli"
+   - Override via `--engine=tree-sitter|regex` flag
+
 1. **Detect repo root.** Walk up from CWD until `.git` directory found. If none, treat CWD as root and warn user.
 
 2. **Detect package manager / language.** Probe in order:
@@ -49,7 +56,16 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respect `--exclude`. Output as markdown tree.
 
-5. **Extract public interfaces.** Per language:
+5. **Extract public interfaces.**
+
+   **If `engine: tree-sitter` (v2.0+, default when available):**
+   - For each detected language, locate `queries/tags-<lang>.scm` in plugin dir
+   - Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file
+   - Parse capture output (line + col + capture name + symbol text) into interface table
+   - Capture names map: `name.definition.<kind>` → §2 (public interfaces); `name.reference.<kind>` → symbol graph (used by generate-units PageRank per Iter 6 Swap #3)
+   - Languages without `.scm` file → fall back to regex (graceful per-language degradation)
+
+   **If `engine: regex` (v1 fallback):**
    - **TypeScript/JS:** grep `^export (default |async )?(function|class|const|interface|type)` in `--include` files
    - **PHP:** grep `^(class|interface|trait|function) ` and `public function `
    - **Python:** grep `^(class|def) ` (exclude `_private`)
@@ -79,7 +95,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
    - State management: imports of `redux`, `zustand`, `mobx`, `react context`
    - Error handling: ratio of `try/catch` vs `Result<T>` patterns
 
-10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark genuinely empty sections as "None detected" not omitted.
+10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark genuinely empty sections as "None detected" not omitted. Frontmatter stamps `engine: tree-sitter | regex` + `precision_tier: ast | regex` so downstream `bind-codebase` knows the confidence level.
 
 11. **Suggest next step:** `/mega-sdd:bind-codebase <vault-path>` to validate a vault against this map.
 
@@ -93,6 +109,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 - Repo > 100k files: confirm with user (`--force-large` flag required to proceed).
 - Detection produces 0 public interfaces: warn user — likely scan misconfiguration; offer to re-run with different `--include`.
+- (v2.0+) `--engine=tree-sitter` set AND tree-sitter not on PATH → halt `dep_missing` with install commands (per `references/tree-sitter-integration.md` §Installation guidance).
 
 ## Flags
 
@@ -102,6 +119,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 - `--out=<path>`: override output location (default `./codebase-map.md`)
 - `--auto`: skip confirmation prompts
 - `--force-large`: proceed on >100k file repos
+- `--engine=tree-sitter|regex` (v2.0+): force engine; default auto-detect via `command -v tree-sitter`
 
 ## Hand-off
 
@@ -126,3 +144,26 @@ handoff:
 ```
 
 Status `halted` only when repo > 100k files without `--force-large` (per existing halt-condition). Required ONLY under `--auto`.
+
+## Memory layer (v1.2+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+
+### Writes
+
+| When | File | Content |
+|---|---|---|
+| After scan completes | `<project>/.mega-sdd-memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (per MEMORY-OQ-4 threshold) |
+
+### Reads
+
+| What | Source | How used |
+|---|---|---|
+| Past convention detections | `<project>/.mega-sdd-memory/conventions.md` | SKIP re-detection for conventions marked `status: established` (per learning-rules.md §2.5); just confirm signal still present |
+
+### Anti-halu rails
+
+- Memory write happens AFTER `codebase-map.md` is written (memory is derivative)
+- Conventions marked `established` STILL get re-verified each scan; status only affects whether the verbose detection is re-emitted
+- `--memory-off` disables both reads and writes
+- Skipped conventions are logged in scan output for transparency

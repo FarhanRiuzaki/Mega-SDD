@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 1.3.0
+version: 2.0.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -108,3 +108,73 @@ blocker:
 - `--dry-run`: show proposed chain without executing
 - (v1.3+) `--deep`: lift 3-skill cap; chain to pipeline-end via handoff-YAML auto-continue
 - (v1.3+) `--resume`: re-enter a paused/halted chain; skip upfront confirmation; CWD inspection rebuilds cursor position; halts re-fire if blockers unresolved
+- (v1.4+) `--memory-off`: disable memory layer (no reads, no writes) for this chain
+- (v2.0+) Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.mega-sdd/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
+
+## Checkpoint protocol (v2.0+, Iter 6)
+
+Per `references/checkpoint-protocol.md`:
+
+- Each long-running skill emits per-step checkpoints (JSONL) at `<vault>/.mega-sdd/checkpoints/`
+- Resume via `--resume-from=<step-id>` (per-skill) OR `/mega-sdd:auto --resume` (chain-wide; orchestrator finds latest checkpoint automatically)
+- Granularity per skill — extract-intelligence per wave, bind-codebase per claim, etc.
+- Rotation: last 3 runs kept; older archived; prune >180d via `mega-sdd:memory prune`
+- Checkpoint emission integrates with handoff YAML via new `checkpoints` field
+
+### Resume logic in orchestrator (v2.0+)
+
+When `/mega-sdd:auto --resume` invoked:
+
+1. Scan `<vault>/.mega-sdd/checkpoints/*.jsonl` for current vault context
+2. Identify last incomplete skill invocation (most recent checkpoint without "completed" marker)
+3. Build chain starting from that skill with `--resume-from=<latest-step-id>` flag
+4. Skill resumes mid-execution
+5. After skill completes, chain auto-continues per Iter 4 handoff YAML protocol
+
+If NO checkpoints found → fall back to Iter 4 CWD-driven resume (artifact presence).
+
+## Memory layer (v1.4+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), the orchestrator is the SINGLE memory I/O point for the chain per MEMORY-OQ-7. Skills do not re-read disk; they receive slices via handoff YAML.
+
+### Chain start (single memory read)
+
+Before invoking first skill in `--deep` mode:
+
+1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
+2. Read project-scope: `<cwd-project>/.mega-sdd-memory/decisions.md` + `conventions.md` + `outcomes.md`
+3. Read vault-scope (if vault detected): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
+4. Verify all `memory_schema` versions match expected; halt with `memory_schema_mismatch` blocker if any differ (per MEMORY-OQ-1)
+5. Build per-skill memory slices (filter to only what each skill needs)
+6. Surface chain history in confirmation: "Past 3 runs: 2 completed, 1 halted on bind_conflict. Continue?"
+
+### Per-phase invocation
+
+When invoking each skill via Skill tool:
+
+1. Pass that skill's memory slice via handoff YAML `metadata.memory_context` field (per `references/handoff-contract.md` §Memory layer integration)
+2. Skill reads from in-memory slice — no disk re-read
+
+### Per-phase write batching
+
+When skill emits handoff with `metadata.memory_writes`:
+
+1. Validate each write entry (file, scope, action, content)
+2. Append to target file per scope rules (resolve absolute path from CWD + vault)
+3. Atomic per-file append (per MEMORY-OQ-6 race-tolerant)
+4. Log writes to chain progress chat (one line per write)
+5. Failed writes logged but do NOT halt chain (memory is optional)
+
+### Chain end
+
+After last skill completes:
+
+1. Final memory summary in chat: "Chain wrote N memory entries across scopes: user (X), project (Y), vault (Z)"
+2. If pending suggestions accumulated (≥1 threshold crossed): announce "Mega-SDD has N pending learning suggestions. Review via `/mega-sdd:memory review`"
+
+### Anti-halu rails
+
+- Memory schema mismatch HALTS the chain (cannot continue with mixed schemas)
+- Memory I/O failures (disk, perm) logged but do NOT halt (graceful degradation)
+- Suggestions surfaced at chain end; NEVER auto-applied
+- `--memory-off` propagates to all sub-skills automatically (passed as flag in handoff invocation args)

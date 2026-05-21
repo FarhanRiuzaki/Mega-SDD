@@ -27,6 +27,24 @@ handoff:
     duration_ms: <int>
     items_processed: <int>              # OQs / claims / units / etc — context-dependent
     items_blocked: <int>                # number that require human input
+  checkpoints:                          # v3.0+ (Iter 6) — checkpoint protocol; optional
+    latest_step_id: <string>            # e.g., "claim-45" for bind-codebase, "wave-3" for extract-intelligence
+    checkpoint_file: <absolute-path>    # <vault>/.mega-sdd/checkpoints/<timestamp>-<skill>-<step>.jsonl
+    resume_command: <string>            # e.g., "/mega-sdd:bind-codebase --resume-from=claim-46"
+  metadata:                             # v2.1+ (Iter 5) — memory layer integration; optional otherwise
+    memory_context:                     # IN — orchestrator provides relevant memory slices to skill at invocation
+      project_decisions_relevant: []    # rows from <project>/.mega-sdd-memory/decisions.md matching the skill's domain
+      project_conventions_relevant: []  # rows from conventions.md
+      vault_outcomes_relevant: []       # rows from <vault>/.memory/*.json matching this skill
+      user_patterns_relevant: []        # rows from ~/.mega-sdd/memory/patterns.md (when ≥1 matching pattern)
+      user_preferences_relevant: []     # rows from preferences.md (flag defaults)
+    memory_writes:                      # OUT — skill emits writes for orchestrator to persist
+      - file: <relative-or-absolute-path>
+        scope: user | project | vault
+        action: append | update
+        content: |
+          <markdown row or JSON entry to append>
+        source_run: <skill-name>@<timestamp>
 ```
 
 ### Status values
@@ -166,6 +184,50 @@ handoff:
 Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft`.
 
 ---
+
+## Memory layer integration (v2.1+, Iter 5)
+
+When `--auto` mode is active AND memory layer enabled (default; opt-out via `--memory-off`):
+
+### Orchestrator memory read (chain start, ONCE per chain per MEMORY-OQ-7)
+
+Before invoking the first skill in `--deep` mode:
+
+1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
+2. Read project-scope: `<cwd-project-root>/.mega-sdd-memory/decisions.md` + `conventions.md` + `outcomes.md`
+3. Read vault-scope (if vault path detected in CWD): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
+4. Build per-skill memory slices (only what's relevant to each skill's domain)
+5. Pass slices to each skill via handoff YAML `metadata.memory_context` field at invocation
+
+### Orchestrator memory write (after each phase, atomic per file)
+
+After each skill emits its handoff YAML with `metadata.memory_writes`:
+
+1. Parse each write entry (file, scope, action, content)
+2. Resolve target path based on scope (user/project/vault)
+3. Append (or update with supersedes marker) the content to the target file
+4. Per MEMORY-OQ-6: append-only writes are atomic at fs level; concurrent runs do not collide
+5. Failed writes logged to chat but do NOT halt the chain (memory is optional)
+
+### Skill responsibilities
+
+Per `references/handoff-contract.md` §metadata extension:
+
+- Skill READS its memory slice from `metadata.memory_context` at startup (no disk re-read)
+- Skill applies memory consultations per its own SKILL.md §Memory layer section
+- Skill builds its memory writes during execution
+- Skill emits all writes in `metadata.memory_writes` array at end
+
+This keeps autonomy mode FAST (memory I/O batched at orchestrator level) and CONSISTENT (single source of truth for memory state per chain run).
+
+### Schema mismatch handling (per MEMORY-OQ-1)
+
+If orchestrator detects memory schema version mismatch during chain-start read:
+
+1. Halt chain BEFORE first skill invocation
+2. Emit `memory_schema_mismatch` blocker YAML
+3. User runs migration helper via `mega-sdd:memory` skill
+4. Resume chain via `--resume` after migration
 
 ## Orchestrator consumption logic
 

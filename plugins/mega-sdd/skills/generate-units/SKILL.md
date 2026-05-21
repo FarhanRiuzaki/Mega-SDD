@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 1.4.0
+version: 2.0.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -155,6 +155,19 @@ blocker:
    - Brownfield: list bound-vault citations (specific file paths from binding)
    - If a unit can't determine target_files: halt — vault too vague
 
+7.5. **PageRank target_files suggestions (v2.0+, Iter 6).**
+
+   When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan, Iter 6 Swap #1):
+
+   - Build/load symbol-reference graph per `references/pagerank-targeting.md` §Algorithm
+   - For each unit, compute personalized PageRank with seed = current `target_files` + binding citations
+   - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
+   - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
+
+   Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to v1.5 behavior (binding-only target_files).
+
+   Symbol graph cached at `<vault>/.mega-sdd/symbol-graph.json` per scan-codebase run; reused across all units.
+
 8. **Fill `existing_interfaces`.**
    - Brownfield only: pull from binding manifest CONFIRMED entries for the targeted files
    - Greenfield: empty (no existing interfaces)
@@ -253,6 +266,8 @@ blocker:
 - (v1.3+, Iter 3) Anchors section is MANDATORY when binding evidence exists (per task_type rules). Missing → halt `unit_underspecified`.
 - (v1.3+, Iter 3) Hard rules grammar is parseable (5 closed grammar types). Unparseable rule → halt `hard_rule_unparseable`. NEVER silently skip.
 - (v1.3+, Iter 3) Anti-patterns drawn from binding CONFLICTs + KB gotchas; suggestion only (not halt-condition).
+- (v2.0+, Iter 6) PageRank symbol-graph suggestions surface as informational `## PageRank suggestions` body section; NEVER auto-added to target_files. User must manually promote.
+- (v2.0+, Iter 6) Symbol graph requires `precision_tier: ast` in codebase-map; skipped gracefully on regex tier.
 
 ## Halt conditions
 
@@ -295,3 +310,25 @@ handoff:
 ```
 
 Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable`. Required ONLY under `--auto`.
+
+## Memory layer (v1.5+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+
+### Reads
+
+| What | Source | How used |
+|---|---|---|
+| Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
+| Project decision history | `<project>/.mega-sdd-memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
+| Classifier override patterns | `<vault>/.memory/classifier-accuracy.json` | When unit derives from a vault OQ that was overridden by user, surface in unit's `## Context` as note: "this OQ was reclassified manually; original heuristic may not match" |
+
+### Writes
+
+This skill does NOT write to memory directly. Unit generation is read-mostly; bolt-time outcomes (success / Hard Rule violation / acceptance test results) are written by `execute-bolts` to `<vault>/.memory/bolt-outcomes.json`.
+
+### Anti-halu rails
+
+- Memory consultation surfaces in unit body (Anti-patterns section or Context note); never modifies frontmatter without user review
+- Downgraded Hard Rules (memory-derived) cite the violation history in Anti-pattern line
+- `--memory-off` disables memory reads; units fall back to binding-only suggestions

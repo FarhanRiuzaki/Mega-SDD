@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.5.0
+version: 1.6.0
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `docs/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -387,3 +387,30 @@ handoff:
 ```
 
 Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` (Iter 2 halts). Status `paused` when tech-OQ recommendations need user review (informational; downstream still runs). Required ONLY under `--auto`.
+
+## Memory layer (v1.6+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+
+### Writes
+
+| When | File | Content |
+|---|---|---|
+| After binding completes | `<vault>/.memory/bind-history.md` | Append run summary: claims_total, confirmed, conflict, oq counts + Implementation State Map summary (IMPLEMENTED / NEW / UNKNOWN distribution) + Tech-OQ resolution counts |
+| When new convention detected via codebase-map consultation | `<project>/.mega-sdd-memory/conventions.md` | Append (additive; no overwrite) |
+
+### Reads
+
+| What | Source | How used |
+|---|---|---|
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd-memory/decisions.md` | When CONFLICT detected, SUGGEST same resolution as past pattern (via blocker YAML `next_action.suggested_resolution` field). User still picks via resolve-oq. |
+| Cross-project CONFLICT patterns | `~/.mega-sdd/memory/patterns.md` | When project memory has no match AND user-scope has ≥3 cross-project matches, SUGGEST that resolution |
+| Past Hard Rule violation patterns | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When emitting Suggested Unit Hard Rules (Iter 3 §2.8), DOWNGRADE rules that have been violated+reverted ≥3 times to Anti-patterns (per learning-rules.md §2.3) |
+
+### Anti-halu rails
+
+- Memory suggestions surface in `binding.md` "## Past Resolution Suggestions" section AND in halt blocker YAML
+- Every suggestion cites source memory entry
+- CONFLICT verdict NEVER bypassed by memory; memory only suggests resolution direction
+- `--memory-off` disables both reads and writes
+- Suggestions never override current codebase-map evidence
