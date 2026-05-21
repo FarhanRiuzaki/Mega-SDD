@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.1.0
+version: 2.2.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -162,6 +162,18 @@ blocker:
   next_action: "Two squads claim ownership at the same precedence level. Refine _meta/squads.yaml so exactly one squad matches this artifact, then re-run generate-units."
 ```
 
+4.5. **Module assignment (v2.2+, Iter 11).**
+
+   Per `references/modules-schema.md`. Semantic grouping layer ABOVE atomic units (units stay atomic; modules group related units per domain/flow/component).
+
+   - **Load `_meta/modules.yaml`** if present
+   - **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `02-architecture.md`); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
+   - **For each unit candidate**: match `vault_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
+   - **Unassigned units** → `module: M-unassigned` (fallback); emit chat warning if ≥10% of units unassigned
+   - **Cross-module dependency validation**: every unit `depends_on` edge crossing module boundary requires explicit `blocked_by` declaration in the dependent module's modules.yaml entry. Cycle through Step 4 if module DAG has cycle.
+
+   Backward compat: v3.4 vaults without modules → all units get `module: M-default` (single implicit module); `_index.md` falls back to flat list.
+
 5. **Squad assignment (v1.1+).** Load `_meta/squads.yaml` if present.
 
    **If file absent OR single squad declared:**
@@ -245,9 +257,12 @@ blocker:
 10. **Write each unit file** using `references/templates/unit.md` as the body template.
 
 11. **Write `_index.md`** with:
-    - Total unit count
-    - Dependency DAG (Mermaid graph)
-    - Suggested execution order (topological)
+    - Total unit count + **module count (v2.2+)**
+    - **Grouped by module** (v2.2+) — per module section: name, status (X/Y complete), priority, DoD checklist, units table (ID, title, task_type, depends_on, status); `M-unassigned` group rendered if non-empty with warning
+    - Per-module dependency DAG (Mermaid graph) — units within module
+    - Cross-module dependency graph — high-level
+    - Suggested execution order (topological within + across modules)
+    - Backward compat: when only `M-default` exists → fall back to flat unit list (v3.4 behavior)
 
 12. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`.
 
@@ -352,6 +367,9 @@ blocker:
 - (v2.1+, Iter 8) `PARTIAL_FIELDS_*` states from bind-codebase v1.7+ auto-populate Migration notes from binding's `field_diff` — bolt knows EXACTLY which fields to add/keep/remove.
 - (v2.1+, Iter 8) `grounding_confidence: HIGH | MEDIUM | LOW` field in unit frontmatter reflects upstream + anchor + collision verification.
 - (v2.1+, Iter 8) Anchor warnings are SOFT — visible in chat + body footer but do NOT halt. Anchors can be aspirational for new files in `create` units.
+- (v2.2+, Iter 11) Module assignment is derived from `vault_source` matching against `_meta/modules.yaml`. Unmatched units → `M-unassigned` (warning); never silently grouped.
+- (v2.2+, Iter 11) Cross-module dependencies require explicit `blocked_by` declaration in modules.yaml; violation → halt `cross_module_dep_invalid`.
+- (v2.2+, Iter 11) Module DAG validated for cycles same as unit DAG. `module_cycle_detected` halt if cycle found.
 
 ## Halt conditions
 

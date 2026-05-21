@@ -5,6 +5,140 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] — 2026-05-21
+
+### Added — Iter 11: Module Layer (semantic grouping ABOVE atomic units)
+
+Per user UX feedback — units felt "too small" cognitively (30+ atomic units overwhelms; team mental model thinks "auth phase done", not "U-007 done"). After critical analysis, the right fix is NOT bigger atomic units (would break TDD discipline + bolt focus + rollback granularity preserved over 8 iters) but ADDING a semantic grouping layer ABOVE atomic units.
+
+Module = semantic group of related units (like Jira Epic over Stories). Units stay atomic; modules aggregate for human mental-model fit + progress tracking + filtered execution.
+
+**Module concept**:
+
+- **id**: kebab-case identifier with `M-` prefix (e.g., `M-auth`, `M-leave-mgmt`)
+- **name**: human display name
+- **vault_sections**: which vault sections this module covers (e.g., `04-flows.md#F-U-001-login`)
+- **dod**: Definition of Done checklist (auto-runnable test commands supported)
+- **priority**: P0/P1/P2/P3
+- **blocked_by / blocks**: module-level dependency graph (inter-module ordering)
+
+**Unit gains `module: <id>` frontmatter field** — auto-derived from `vault_source` matching against modules.yaml. Unmatched units → `M-unassigned` (warning, not halt).
+
+**Vault layout extension**:
+
+```
+<vault>/
+├── _meta/
+│   ├── squads.yaml          # Iter 1.1 (orthogonal to modules — squads = WHO, modules = WHAT)
+│   └── modules.yaml         # NEW v2.2+ (Iter 11)
+├── units/
+│   ├── U-*.md               # each gains `module: <id>` frontmatter
+│   └── _index.md            # NOW grouped by module (with DoD + status per module)
+└── (vault content + binding.md + bolts/)
+```
+
+**Auto-derivation**: when `_meta/modules.yaml` absent, `generate-units` scans vault structure (user flows in `04-flows.md`, components in `02-architecture.md`) and writes `_meta/modules.yaml.auto`. User renames to `.yaml` to lock in, or edits before re-generating.
+
+**New `_index.md` format** — grouped by module with:
+- Module name + status (X/Y units complete) + priority + DoD checklist
+- Units table within module (ID, title, task_type, depends_on, status)
+- Cross-module dependency graph + topological order
+- Fallback to flat list when only `M-default` exists (backward-compat with pre-v2.2 vaults)
+
+**New command `/mega-sdd:list-modules`**:
+
+```bash
+/mega-sdd:list-modules                          # show all modules with progress
+/mega-sdd:list-modules --module=M-auth          # detail for specific module
+/mega-sdd:list-modules --mark-dod=M-auth        # interactive DoD checklist marking
+/mega-sdd:list-modules --format=json            # machine-parseable
+```
+
+Output format:
+
+```
+ID              Name                          Status         Units   DoD     Priority   Blocked-by
+M-auth          Authentication & Auth         in-progress    2/5     2/3     P0         (none)
+M-leave-mgmt    Leave Management              not-started    0/3     0/2     P1         M-auth (pending)
+M-reporting     Reporting & Analytics         completed      2/2     3/3     P2         M-auth (ok)
+
+Next actionable:
+  → Complete M-auth: 3 units pending (U-003, U-007, U-008)
+  → Run: /mega-sdd:execute-bolts --module=M-auth
+```
+
+**`execute-bolts --module=<id>` flag** — filtered execution per module:
+
+- Loads modules.yaml
+- Checks `blocked_by` modules are completed (else halt `module_blocked_by`)
+- Filters units to `module: <id>`
+- Topologically sorts within module
+- Runs sequentially (or with `--parallel`)
+- Post-completion: probes module DoD checklist; user marks via `/mega-sdd:list-modules --mark-dod`
+
+### Changed — Skill versions
+
+- `generate-units`: 2.1.0 → 2.2.0 (Step 4.5 module assignment + grouped _index.md template)
+- `execute-bolts`: 2.1.0 → 2.2.0 (`--module=<id>` flag + module DoD validation)
+
+### Added — New reference + command
+
+- `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — full module schema + auto-derivation algorithm + cross-module dependency validation + backward compat
+- `plugins/mega-sdd/commands/list-modules.md` — module progress command + interactive `--mark-dod` flow
+
+### Changed — Unit schema
+
+- `plugins/mega-sdd/skills/generate-units/references/unit-schema.md` — added optional `module: <id>` frontmatter field with format guidance
+
+### Halt protocol additions
+
+- `module_unassigned_warn` — ≥10% units unassigned (warning unless `--strict-modules`)
+- `module_blocked_by` — execute-bolts --module=X invoked but X's blocked_by has incomplete prerequisites
+- `module_dod_unsat` — module declared completed but DoD items still pending
+- `cross_module_dep_invalid` — unit's depends_on crosses module boundary without explicit blocked_by declaration
+- `module_cycle_detected` — cycle in module DAG
+
+### Why modules ≠ bigger units (design rationale)
+
+User asked "kalau units jadiin per module seperti phase, gimana?" — instinct correct on the pain (cognitive overload + missing grouping), but solution NOT bigger atomic units. Critical analysis preserved in CHANGELOG:
+
+| Concern | Larger atomic units | Modules over atomic units (THIS DESIGN) |
+|---|---|---|
+| TDD cycle | One test per huge unit — long cycle | One test per atomic unit — fast cycle |
+| Hard Rule scoping | Muddled | Clear per atomic boundary |
+| Bolt focus | LLM context diluted | LLM holds one unit at a time |
+| Git rollback | Coarse | Per-unit |
+| Parallelism | Lower | Preserved |
+| Semantic grouping | "Sort of" via size | Explicit via module field |
+| Progress tracking | Per-unit (overwhelming) | Per-module (meaningful) + per-unit (detail) |
+
+Atomic invariant (1 unit = 1 PR-sized commit, <300 LOC, ≤5 files) PRESERVED. Module is purely additive cognitive layer.
+
+### Anti-halu invariants preserved
+
+- Module status DERIVED from filesystem signals (unit count, bolt-outcomes.json), DoD checklist markers, blocked-by status — NEVER inferred
+- DoD test commands invoked via Bash (deterministic pass/fail)
+- Cross-module dependencies require explicit `blocked_by` declaration — silent cross-edges halted
+- Auto-derivation writes `.auto` suffix file — never overwrites user-curated `modules.yaml`
+- `M-unassigned` fallback for unmatched units — never silently grouped
+- Module DAG cycle detection same as unit DAG (cycle_detected halt extended for module-level)
+
+### Backward compatibility
+
+PURELY ADDITIVE:
+- v3.4 vaults without `_meta/modules.yaml` → all units `module: M-default` (single implicit module); _index.md flat list (v3.4 behavior preserved)
+- v3.4 units without `module:` field → treated as M-default
+- `execute-bolts --module=M-default` works for legacy vaults
+- `--per-squad` / `--squad=<id>` (Iter 1.1) unchanged and orthogonal to modules
+- Existing pipelines using `/mega-sdd:execute-bolts --all` unchanged
+
+### Outstanding (Iter 12+)
+
+- Module-level DoD test command auto-detection patterns (currently text-match heuristic; could be more robust)
+- Module groupings could integrate with AGENTS.md emit (per-module "what's done / what's pending" surface)
+- Module-level memory rollups (e.g., `memory show modules` showing per-module decision history)
+- README + plugin README updates for v3.5 layout (defer to release polish)
+
 ## [3.4.0] — 2026-05-21
 
 ### Added — Iter 10: Folder Consolidation under `.mega-sdd/`

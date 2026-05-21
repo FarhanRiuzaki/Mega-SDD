@@ -28,6 +28,9 @@ grounding_evidence:                # (v2.1+, Iter 8) — descriptive metadata; n
   binding_state_summary: {}        # { IMPLEMENTED: N, PARTIAL_FIELDS_MISSING: N, ... }
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
+module: <module-id>                # (v2.2+, Iter 11) — semantic grouping per _meta/modules.yaml
+                                   # Format: M-<kebab-case>. Auto-derived from vault_source matching modules.yaml.
+                                   # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source not matching any module.
 depends_on: []                     # list of unit IDs that must complete first
                                    # MUST be same-squad units only when multi-squad mode active.
                                    # Cross-squad coupling MUST route through `consumes_interfaces` (see below).
