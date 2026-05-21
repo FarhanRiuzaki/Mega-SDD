@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.4.0
+version: 0.5.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -382,7 +382,35 @@ Do NOT pad with "I have resolved..." preamble. Just report numbers and surface r
 - Never modify code files. resolve-oq is read-only on the repo; KEEP_VAULT marks the conflict but does NOT patch code (that happens in execute-bolts later).
 - Cycle protection: if `--binding` invoked but binding.md is malformed or empty, halt with helpful error.
 
+## Memory layer (v0.5+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), this skill participates in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+
+### Writes
+
+| When | File | Content |
+|---|---|---|
+| After each OQ resolved (standard mode) | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## OQ resolutions` table: date, oq-id, category, resolution-text, source-run |
+| After each CONFLICT resolved (--binding mode) | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## CONFLICT resolutions` table: date, conflict-id, claim, KEEP_CODE/KEEP_VAULT/DEFER/SPLIT, user-rationale, source-run |
+| After each recommend-mode OQ ACCEPT/OVERRIDE/REJECT | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## Recommendation outcomes` table |
+
+### Reads
+
+| What | Source | How used |
+|---|---|---|
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd-memory/decisions.md` (passed via handoff `metadata.memory_context.project_decisions_relevant` when under --auto) | SUGGEST pre-filled action in AskUserQuestion (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
+| Cross-project patterns (when project memory has no match) | `~/.mega-sdd/memory/patterns.md` | SUGGEST per-pattern action with confidence + source observation count |
+
+### Anti-halu rails
+
+- Memory consultation surfaces as SUGGESTION, never enforcement
+- Every suggestion cites source memory entry
+- Current evidence (current conflict's full context) always wins over memory
+- `--memory-off` disables both reads and writes
+
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure and OQ tagging convention (`OQ-{DOC_CODE}-{N}` with `P1|P2|P3` priority).
 - OQ tagging conventions, status marker semantics, and `vault.json` field rules: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema).
+- Memory schema + scope architecture: see `../memory/references/memory-schema.md`.
+- Self-learning thresholds + rollback path: see `../memory/references/learning-rules.md`.

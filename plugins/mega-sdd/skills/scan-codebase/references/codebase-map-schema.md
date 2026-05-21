@@ -15,6 +15,11 @@ scan_excludes: ["node_modules/**", "dist/**", "vendor/**"]
 languages_detected: ["typescript", "php", "javascript"]
 package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
+# v2.0+ (Iter 6): engine + precision metadata
+engine: tree-sitter | regex
+precision_tier: ast | regex
+tree_sitter_version: <version-string>          # only when engine=tree-sitter
+grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 ---
 
 # Codebase Map

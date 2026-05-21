@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.5.0
+version: 1.6.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -941,6 +941,32 @@ handoff:
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works; user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.
+
+## Memory layer (v1.6+, Iter 5)
+
+When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+
+### Writes
+
+| When | File | Content |
+|---|---|---|
+| At Step 0.5-0.7 flag setup | `~/.mega-sdd/memory/preferences.md` | Update flag tally: increment count for the picked value (OUTPUT_MODE, PRD_STATUS, IMPLEMENTATION_MODE, PROJECT_SHAPE) |
+| After OQ auto-classifier runs (Step 3.5) | `<vault>/.memory/classifier-accuracy.json` | Append run entry with tags_emitted + user_overrides (when user flips a tag in review) + accuracy_estimate |
+
+### Reads
+
+| What | Source | How used |
+|---|---|---|
+| Past flag picks for this user | `~/.mega-sdd/memory/preferences.md` | At Step 0.5-0.7: SUGGEST default by pre-filling AskUserQuestion. Surface as "Past observed default: <value> (picked N/N times). Use? Y/N/Other" |
+| Project conventions (test framework, naming) | `<project>/.mega-sdd-memory/conventions.md` | At Step 2 extraction: when generating tech OQs about conventions, set `resolution_mode: scan` with `scan_query: codebase-map §<convention>` (instead of `recommend`) since the convention is already established |
+| Past classifier overrides on same pattern | `<vault>/.memory/classifier-accuracy.json` | If past pattern shows consistent override `tech/recommend → business/blocking`, bias new classifier toward `business/blocking` (per learning-rules.md §2.1) — SUGGEST not impose |
+
+### Anti-halu rails
+
+- All flag suggestions surface via AskUserQuestion; user picks final value
+- Convention-derived OQ downgrades cite the convention entry in OQ rationale
+- Classifier biases never bypass the heuristic table; they pre-rank options for review
+- `--memory-off` disables both reads and writes
 
 ## References
 
