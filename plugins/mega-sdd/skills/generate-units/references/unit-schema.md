@@ -11,9 +11,21 @@ title: <short imperative phrase>
 vault_source: <vault-file:section>  # which vault section this unit derives from
 task_type: create                  # (v1.2+) create | extend | verify
                                    # create: new code, target_files all `create`
-                                   # extend: modify existing; Migration notes mandatory; reserved (Iter 1 does not auto-emit; Iter 2/3 will)
+                                   # extend: modify existing; Migration notes mandatory
+                                   #   Iter 1 (v1.2): reserved (no auto-emit; manual only)
+                                   #   Iter 8 (v2.1+): AUTO-emitted for PARTIAL_FIELDS_* binding states with Migration notes populated from binding's field_diff
                                    # verify: NO code generation; only acceptance_test against existing implementation
                                    # Default: create. Auto-assigned from binding.md Implementation State Map when present.
+grounding_confidence: HIGH | MEDIUM | LOW   # (v2.1+, Iter 8) — reflects defensive generation checks
+                                   # HIGH = binding present + all anchors verified + no target collisions + binding state all HIGH-conf
+                                   # MEDIUM = binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex
+                                   # LOW = no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors
+                                   # Required when v2.1+ generated; omitted in pre-v2.1 units.
+grounding_evidence:                # (v2.1+, Iter 8) — descriptive metadata; not enforced downstream
+  upstream_artifacts: []           # what was consulted: [codebase-map.md, binding.md]
+  anchors_verified: <N>/<M>        # how many of M anchors resolved (file exists + line valid)
+  target_files_collision_check: passed | warning | resolved-via-prompt
+  binding_state_summary: {}        # { IMPLEMENTED: N, PARTIAL_FIELDS_MISSING: N, ... }
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
 depends_on: []                     # list of unit IDs that must complete first
@@ -159,7 +171,9 @@ Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip
 | `extend` | At least one `operation: modify`; new files allowed `operation: create` | MANDATORY | MANDATORY (REMOVE/KEEP/ADD) | Tests for new behavior; existing-behavior assertions in `existing_interfaces` | Numbered modification steps |
 | `verify` | Empty OR all `operation: none` | MANDATORY (cite the existing implementation) | Omitted | All assertions against existing implementation | ONE line: "No code changes. Run acceptance tests against existing implementation at <anchor>." |
 
-> **Iter 1 scope**: `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map. `extend` type is in the schema (forward-compat for Iter 2/3) but `generate-units` in v1.2 does NOT auto-emit it from `UNKNOWN` states (those default to `create`). When `extend` is needed in Iter 1, a manual override path applies — user edits unit frontmatter and fills Migration notes.
+> **Iter 1 scope** (v1.2): `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map. `extend` type is in the schema (forward-compat for Iter 2/3) but does NOT auto-emit.
+>
+> **Iter 8 scope** (v2.1+): `extend` type AUTO-EMITTED when bind-codebase v1.7+ detects `PARTIAL_FIELDS_MISSING` or `PARTIAL_FIELDS_SURPLUS` or `PARTIAL_FIELDS_BOTH` states. Migration notes populated from binding's `field_diff` column (ADD/KEEP/REMOVE lists). User can override via interactive prompt for PARTIAL_FIELDS_SURPLUS (which signals ambiguity between feature drift / vault gap / legacy / rename).
 
 ## Atomicity rules
 

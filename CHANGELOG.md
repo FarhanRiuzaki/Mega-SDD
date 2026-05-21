@@ -5,6 +5,90 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] — 2026-05-21
+
+### Added — Defensive Generation + Field-level Diff (Iter 8)
+
+Per user UX request — "skills ini lebih pintar. ketika generate units. dan ketika generate itu ada di source code base, bisa auto detecs, atau kasih pertanyaan terlebih dahulu... hasil yg di generate sudah cross check dlu/scan codebase dlu. jadi hasil nya lebih robust tidak ngawang".
+
+Plus clarifying example: "PRD/BRD ketika login harus ada nip, nama, password. tapi di current code base baru ada nip dan password. skill harus tau hal itu."
+
+Mitigates "ngawang" (floating/disconnected) units at two granularities:
+
+**File-level** (generate-units defensive checks):
+- **Step 0.5 (NEW)** — Pre-flight upstream check. Detects missing codebase-map.md / binding.md. Interactive prompt offers auto-route (scan-codebase + bind-codebase) before generation. ONE prompt at chain start (not per-unit) avoids death-by-prompts.
+- **Step 7.6 (NEW)** — Per-unit target_files collision check. When unit's `task_type: create` targets a file that already exists, INTERACTIVE prompt offers: convert to verify / extend / rename / force-overwrite / skip. Fires only on genuine collision.
+- **Step 12.4.5 (NEW)** — Per-anchor verification. Each Anchor `<file>:<line>` probed for existence. Missing anchors → SOFT WARNING in unit body footer (not halt; anchors can be aspirational for new files in create units).
+- **`grounding_confidence: HIGH | MEDIUM | LOW`** field added to unit frontmatter — visual feedback per unit on how well-grounded it is.
+
+**Field-level** (bind-codebase + generate-units, addressing user's login example):
+- **bind-codebase v1.7+** — Adds two new Implementation State Map states:
+  - `PARTIAL_FIELDS_MISSING` (C ⊂ V) — code missing fields from claim
+  - `PARTIAL_FIELDS_SURPLUS` (V ⊂ C) — code has fields not in claim
+  - `PARTIAL_FIELDS_BOTH` (both diffs non-empty) — semantic mismatch needing review
+- Detects via tree-sitter signature extraction (Iter 6 precision_tier=ast); falls back to v1.6 binary on regex tier
+- New `field_diff` column in binding.md Implementation State Map: `ADD: [...] · KEEP: [...] · REMOVE: [...]`
+- Fills the PARTIAL state DEFERRED by Iter 1 per DESIGN-OQ-1
+
+- **generate-units v2.1+** — Consumes PARTIAL_FIELDS_* states:
+  - `PARTIAL_FIELDS_MISSING` → auto-emit `task_type: extend` with Migration notes populated from field_diff (ADD = missing fields; KEEP = shared; REMOVE = none)
+  - `PARTIAL_FIELDS_SURPLUS` → auto-emit `task_type: extend` with HUMAN REVIEW interactive prompt (feature drift / vault gap / legacy / rename ambiguity)
+  - `PARTIAL_FIELDS_BOTH` → strong warning + interactive prompt mandatory
+
+### Concrete example (user's login scenario)
+
+```
+Vault claim C-LOGIN-1: POST /api/login accepts { nip, nama, password }
+Codebase: LoginController@store(nip: string, password: string)
+
+bind-codebase v1.7 output:
+  C-LOGIN-1 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high |
+  field_diff: ADD: [nama] · KEEP: [nip, password] · REMOVE: []
+
+generate-units v2.1 output:
+  U-001 (task_type: extend, grounding: HIGH)
+    ## Migration notes
+    - ADD: nama field — new validated input on POST /api/login
+    - KEEP: nip, password (existing logic preserved)
+    - REMOVE: (none)
+```
+
+Bolt now KNOWS exactly what to add. No more "ngawang" implementations that miss spec-required fields.
+
+### Changed — Skill versions
+
+- `bind-codebase`: 1.6.0 → 1.7.0 (PARTIAL_FIELDS_* states + field_diff)
+- `generate-units`: 2.0.0 → 2.1.0 (defensive Step 0.5 + 7.6 + 12.4.5; grounding_confidence; PARTIAL_FIELDS_* consumption)
+
+### Added — New reference
+
+- `plugins/mega-sdd/skills/generate-units/references/defensive-generation.md` (385+ lines — algorithm + UX + field-level diff + examples)
+
+### Changed — Schema
+
+- `plugins/mega-sdd/skills/generate-units/references/unit-schema.md` — added `grounding_confidence` + `grounding_evidence` frontmatter fields; updated task_type table for v2.1 PARTIAL_FIELDS_* auto-emission
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — Five-state Implementation State Map (extends Iter 1 binary); field-level diff detection logic; `field_diff` column in binding.md template
+
+### New tests
+
+- `tests/skill-triggering/generate-units.test.md` — 10 new cases DG1-DG10 covering: pre-flight upstream detection, PARTIAL_FIELDS_MISSING auto-extends, PARTIAL_FIELDS_SURPLUS interactive prompt, per-unit collision, anchor warnings, grounding confidence labels, --no-defensive opt-out, --auto chain mode, --collision-policy batch
+
+### Anti-halu invariants preserved
+
+- Field-level diff REQUIRES `precision_tier: ast` (tree-sitter); on regex precision, PARTIAL collapsed to UNKNOWN (no false-precision claims)
+- `PARTIAL_FIELDS_SURPLUS` ALWAYS triggers human review (ambiguous semantic intent)
+- Anchor warnings are SOFT (allow aspirational anchors for new code in create units)
+- Per-unit collision NEVER silent-rewrites (always user confirms via prompt; --auto picks safest default)
+- `--no-defensive` flag opt-out preserves v3.1 behavior exactly
+- Diff calculation is DETERMINISTIC (set operations on extracted token lists; no fuzzy similarity)
+
+### Backward compatibility
+
+- v3.1 vaults without `precision_tier: ast` codebase-map → bind-codebase v1.7 falls back to v1.6 binary states; no PARTIAL_FIELDS emission
+- v3.1 units without `grounding_confidence` field → schema field optional; downstream ignores when absent
+- `--no-defensive` flag disables Iter 8 steps; behavior identical to v3.1
+- Existing CONFIRMED/CONFLICT/OQ verdicts unchanged
+
 ## [3.1.0] — 2026-05-21
 
 ### Added — Context-aware recommendations in resolve-oq (Iter 7, minor patch)

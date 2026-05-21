@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.6.0
+version: 1.7.0
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `docs/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -59,19 +59,71 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
    For each claim now marked CONFIRMED, classify implementation readiness per `references/binding-contract.md` §Implementation-State Classification. Iter 1 emits **binary states only**: `IMPLEMENTED` / `NEW` (with `UNKNOWN` for ambiguous heuristics). PARTIAL is deferred to Iter 2.
 
    **Endpoint claims** (`POST /api/foo`, `GET /bar`, …):
-   - Route found in codebase-map §4 AND handler symbol present in §2 → state: `IMPLEMENTED` (confidence: high)
-   - Route found, handler symbol absent in §2 → state: `UNKNOWN` (confidence: low; Iter 2 will refine via stub detection)
+   - Route found in codebase-map §4 AND handler symbol present in §2 with matching signature → state: `IMPLEMENTED` (confidence: high)
+   - Route found, handler present but **signature field set mismatches claim** → state: `PARTIAL_FIELDS_MISSING` or `PARTIAL_FIELDS_SURPLUS` (v1.7+, Iter 8 — see §field-level-diff below)
+   - Route found, handler symbol absent in §2 → state: `UNKNOWN` (confidence: low)
    - Route not found AND handler absent → state: `NEW`
 
    **Entity claims** (User has email + role; Order has line_items):
-   - Entity found in §3 AND ALL claimed fields detected → state: `IMPLEMENTED` (confidence: high)
-   - Entity found but only subset of claimed fields detected → state: `UNKNOWN` (confidence: low; Iter 2 handles PARTIAL)
+   - Entity found in §3 AND ALL claimed fields detected (V == C) → state: `IMPLEMENTED` (confidence: high)
+   - Entity found but **field set diff detected** (V ⊂ C OR C ⊂ V) → state: `PARTIAL_FIELDS_MISSING` (code missing some claim fields) or `PARTIAL_FIELDS_SURPLUS` (code has fields not in claim)
+   - Entity found but disjoint field sets → state: `UNKNOWN`
    - Entity not in §3 → state: `NEW`
 
    **Method/handler claims** (`sendEmail()`, `processPayment()`):
-   - Symbol in §2 with matching signature → state: `IMPLEMENTED` (confidence: high)
-   - Symbol in §2 with different signature → state: `UNKNOWN` (confidence: low)
+   - Symbol in §2 with matching signature (param names + types) → state: `IMPLEMENTED` (confidence: high)
+   - Symbol in §2 with different signature (V \ C or C \ V non-empty) → state: `PARTIAL_FIELDS_*` per direction
+   - Symbol absent disjoint signature → state: `UNKNOWN`
    - Symbol not in §2 → state: `NEW`
+
+### Field-level diff detection (v1.7+, Iter 8 — fills the PARTIAL state DEFERRED in Iter 1 per DESIGN-OQ-1)
+
+For each CONFIRMED claim that specifies fields/params explicitly (entity field list, endpoint request body schema, function signature):
+
+1. **Extract V** = field set asserted by vault claim
+2. **Extract C** = field set extracted from codebase-map (tree-sitter signature extraction per Iter 6 precision_tier=ast; regex fallback gives lower confidence)
+3. **Compute diff**:
+   - `ADD = V \ C` (missing in code; need to add)
+   - `KEEP = V ∩ C` (shared)
+   - `REMOVE = C \ V` (surplus in code; vault might need update OR code might need cleanup)
+4. **Assign state**:
+   - V == C → `IMPLEMENTED`
+   - C ⊂ V (ADD non-empty, REMOVE empty) → `PARTIAL_FIELDS_MISSING`
+   - V ⊂ C (REMOVE non-empty, ADD empty) → `PARTIAL_FIELDS_SURPLUS`
+   - Both ADD and REMOVE non-empty → `PARTIAL_FIELDS_BOTH` (rare; signals semantic mismatch)
+   - V ∩ C empty but symbol exists → `UNKNOWN`
+5. **Record diff** in Implementation State Map's `field_diff` column
+
+### Example — user's login scenario
+
+```
+Vault claim C-LOGIN-1: POST /api/login accepts { nip, nama, password }
+Codebase-map §4: POST /api/login → LoginController@store
+Codebase-map §2: LoginController@store(nip: string, password: string)
+
+Field extraction:
+  V = { nip, nama, password }
+  C = { nip, password }
+
+Diff:
+  ADD    = V \ C = { nama }
+  KEEP   = V ∩ C = { nip, password }
+  REMOVE = C \ V = { }
+
+State = PARTIAL_FIELDS_MISSING
+```
+
+This state propagates to `generate-units`, which assigns `task_type: extend` with Migration notes auto-populated as:
+- **ADD**: nama field
+- **KEEP**: nip, password
+- **REMOVE**: (none)
+
+### Anti-halu rails (Iter 8)
+
+- Field-level diff REQUIRES tree-sitter precision (`precision_tier: ast` in codebase-map). On `precision_tier: regex`, field extraction is unreliable → fall back to v1.6 binary classification (PARTIAL collapsed to UNKNOWN)
+- `PARTIAL_FIELDS_SURPLUS` ALWAYS triggers human review prompt in generate-units (code has things spec doesn't mention → ambiguous intent)
+- `PARTIAL_FIELDS_BOTH` (both ADD and REMOVE non-empty) is rare AND high-stakes — surfaced with strong warning; user typically needs to update vault OR triage code drift
+- Diff calculation is DETERMINISTIC (set operations on extracted token lists); no fuzzy similarity matching
 
    **KB-confirmed claims**: when CONFIRMED was reached via KB consultation (codebase-map silent, KB had `[VERIFIED]` match), classify as `UNKNOWN` with `low` confidence — KB documents domain knowledge, not necessarily implementation. Iter 2 refines.
 
@@ -255,12 +307,14 @@ strict: <true/false>
 - C-001 | <vault file:line> | <codebase evidence> | <claim text>
 ...
 
-## Implementation State Map (N, v1.2+)
-| Claim ID | Verdict | State | Anchor | Confidence |
-|---|---|---|---|---|
-| C-001 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high |
-| C-007 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic cannot classify | low |
-| C-012 | OQ | NEW | — | n/a |
+## Implementation State Map (N, v1.2+; field_diff column v1.7+)
+| Claim ID | Verdict | State | Anchor | Confidence | Field diff |
+|---|---|---|---|---|---|
+| C-001 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high | (exact match) |
+| C-LOGIN-1 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
+| C-007 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic cannot classify | low | n/a |
+| C-012 | OQ | NEW | — | n/a | n/a |
+| C-023 | CONFIRMED | PARTIAL_FIELDS_SURPLUS | OrderController.php:88 | medium | ADD: [] · KEEP: [order_id, items] · REMOVE: [legacy_ref] (CAUTION: code has fields vault doesn't mention) |
 
 ## Tech-OQ Auto-Resolved (Scan) (N, v1.3+)
 | OQ-ID | Category | Question | Scan target | Resolution | Citations |
