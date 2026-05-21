@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.1.0
+version: 1.2.0
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -40,6 +40,16 @@ Markdown-driven memory that persists pipeline outcomes across sessions. Skills W
 /mega-sdd:memory import <input-path> [--scope=<scope>]
 /mega-sdd:memory clear --scope=<user|project|vault> [--confirm-twice]
 ```
+
+## Path resolution (v1.2+, Iter 10)
+
+Per `plugins/mega-sdd/references/paths.md`:
+
+- **Project-scope memory** (v3.4+): `<project-root>/.mega-sdd/memory/` (was `<project-root>/.mega-sdd-memory/` in v3.3)
+- **User-scope memory** (unchanged): `~/.mega-sdd/memory/`
+- **Vault-scope memory** (unchanged): `<vault>/.memory/`
+- **Detection**: probe both `<project>/.mega-sdd/memory/` AND `<project>/.mega-sdd-memory/` for back-compat
+- **Migration**: `/mega-sdd:migrate-paths` moves legacy `.mega-sdd-memory/` to `.mega-sdd/memory/`
 
 ## Memory architecture
 

@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.1.0
+version: 1.2.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `docs/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` markers. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -148,6 +148,16 @@ If the rebuild lives in a different directory: copy `knowledge-base/` to the new
 - `--max-parallel` > 8 → halt; warn token budget collapse risk.
 - Same wave's quality gate fails twice for the same agent → halt; surface the gate output verbatim.
 - Wave 5 dispatched as a subagent → halt; config error, must be main thread.
+
+## Path resolution (v1.2+, Iter 10)
+
+Per `plugins/mega-sdd/references/paths.md`:
+
+- **Default `--out` value** (v3.4+ layout): `<project-root>/.mega-sdd/knowledge-base/`
+- **Legacy `--out` value** (≤v3.3): `<project-root>/docs/knowledge-base/` OR explicit `--out=<path>` from user
+- **Detection**: if `<project-root>/.mega-sdd/` exists OR `<project-root>/.mega-sdd/config.yaml` has `layout: new` → use new default
+- **User explicit `--out=<path>`**: always respected; overrides defaults
+- **Read-side back-compat**: downstream `generate-intent --kb` probes both new + legacy paths
 
 ## Hand-off
 

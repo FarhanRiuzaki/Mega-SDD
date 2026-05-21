@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.1.0
+version: 2.2.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -121,7 +121,10 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 - `--depth=N`: tree depth (default 8)
 - `--include=<glob>`: scan only matching files (repeatable)
 - `--exclude=<glob>`: skip matching files (repeatable)
-- `--out=<path>`: override output location (default `./codebase-map.md`)
+- `--out=<path>`: override output location
+  - **v2.2+ default (Iter 10)**: `<project-root>/.mega-sdd/codebase/codebase-map.md` per `plugins/mega-sdd/references/paths.md`
+  - **Legacy default (≤v2.1)**: `<project-root>/codebase-map.md` (preserved when `.mega-sdd/` dir absent OR `layout: legacy` in config)
+  - User explicit `--out=<path>` always respected
 - `--auto`: skip confirmation prompts
 - `--force-large`: proceed on >100k file repos
 - `--engine=tree-sitter|regex` (v2.0+): force engine; default auto-detect via `command -v tree-sitter`
