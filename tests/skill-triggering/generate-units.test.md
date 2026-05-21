@@ -144,6 +144,83 @@
 - **Setup:** binding.md "## Suggested Unit Hard Rules" has Hard rule entry `DO NOT modify app/Models/User.php` for the unit's vault_source
 - **Expect:** generate-units auto-fills the unit's `## Hard rules` with this rule; line is parseable per grammar (passes render-pass check)
 
+## Defensive generation (v2.1+, Iter 8)
+
+### DG1: Pre-flight detects missing upstream artifacts
+- **Setup:** brownfield vault (`mode=existing`); no codebase-map.md; no binding.md
+- **Run:** `/mega-sdd:generate-units ./vault/`
+- **Expect:** INTERACTIVE prompt — "Brownfield vault but upstream artifacts missing. Options: (1) auto-run scan-codebase + bind-codebase first (recommended) / (2) proceed with LOW confidence / (3) cancel"
+- User picks (1) → skill invokes scan-codebase + bind-codebase via auto-route; returns to generate-units Step 1
+
+### DG2: Pre-flight skipped for clean greenfield
+- **Setup:** greenfield vault; no codebase-map (expected); no binding (expected)
+- **Expect:** NO prompt; proceeds directly to Step 1 with MEDIUM grounding confidence (no codebase context expected)
+
+### DG3: PARTIAL_FIELDS_MISSING auto-extends with Migration notes
+- **Setup:** binding has C-LOGIN-1 state=PARTIAL_FIELDS_MISSING with field_diff: ADD=[nama], KEEP=[nip, password], REMOVE=[]
+- **Run:** generate-units
+- **Expect:**
+  - Unit emitted with `task_type: extend`
+  - Migration notes auto-populated:
+    - ADD: `nama` field — new validated input on POST /api/login
+    - KEEP: `nip`, `password` (existing logic preserved)
+    - REMOVE: (none)
+  - `grounding_confidence: HIGH` in frontmatter
+  - `grounding_evidence.binding_state_summary: { PARTIAL_FIELDS_MISSING: 1 }`
+
+### DG4: PARTIAL_FIELDS_SURPLUS triggers interactive prompt
+- **Setup:** binding has state=PARTIAL_FIELDS_SURPLUS with field_diff: ADD=[], KEEP=[order_id, items], REMOVE=[legacy_ref]
+- **Expect:** INTERACTIVE prompt with options:
+  - (1) Feature drift — vault is incomplete (suggest update vault)
+  - (2) Legacy deprecation — REMOVE `legacy_ref` is intentional cleanup (extend with REMOVE)
+  - (3) Field rename — `legacy_ref` was renamed (specify new name)
+  - (4) Vault correct as-is — code has fields vault explicitly excludes (extend with REMOVE)
+- User pick determines Migration notes content
+
+### DG5: Per-unit collision INTERACTIVE prompt
+- **Setup:** unit U-007 candidate has target_files `[app/Http/Controllers/UserController.php]` with `operation: create`; binding has IMPLEMENTED state for related claim; file exists on disk
+- **Expect:** INTERACTIVE prompt:
+  - "Target file `app/Http/Controllers/UserController.php` already exists. Binding marked claim IMPLEMENTED with high confidence."
+  - Options: (1) Convert to `verify` (recommended) / (2) Convert to `extend` / (3) Rename / (4) Force `create` overwrite (DANGEROUS) / (5) Skip
+- User picks (1) → unit converted to verify; target_files cleared; acceptance_test populated
+
+### DG6: Anchor verification — file missing = WARNING (not halt)
+- **Setup:** unit has Anchor `app/Http/Controllers/AuditLogController.php:1 — existing pattern`; file does not exist
+- **Expect:**
+  - WARNING in unit body footer: `<!-- ⚠️ Anchor warning: app/Http/Controllers/AuditLogController.php:1 file not found; anchor may be aspirational -->`
+  - Unit STILL written (no halt)
+  - `grounding_evidence.anchors_verified: 0/1` in frontmatter
+
+### DG7: Grounding confidence label visible in chat output
+- **Setup:** generate 3 units with varying confidence
+- **Expect chat lines:**
+  ```
+  ✓ U-001 generated (task_type: verify, grounding: HIGH, anchors: 3/3 verified, target_files: 0 modify)
+  ✓ U-002 generated (task_type: extend, grounding: HIGH, anchors: 2/2 verified, target_files: 2 modify + 0 create)
+  ⚠️ U-003 generated (task_type: create, grounding: LOW, anchors: 0/2 verified — 2 aspirational, target_files: 4 create)
+  ```
+
+### DG8: --no-defensive flag disables Iter 8 steps
+- **Run:** `/mega-sdd:generate-units ./vault/ --no-defensive`
+- **Expect:**
+  - Step 0.5 skipped (no pre-flight prompt)
+  - Step 7.6 skipped (no per-unit collision prompt)
+  - Step 12.4.5 skipped (no anchor verification)
+  - Behavior identical to v2.0 (Iter 6)
+  - All units get `grounding_confidence: LOW` (no defensive evidence)
+
+### DG9: --auto + --deep mode picks safest defaults silently
+- **Run:** invoked under `orchestrate-flow --deep` (autonomous chain)
+- **Expect:**
+  - Pre-flight auto-routes scan + bind without prompt
+  - Per-unit collision defaults to `extend` (no prompt)
+  - Anchor warnings emitted but no halt
+  - User reviews after chain ends via unit-by-unit inspection
+
+### DG10: --collision-policy flag overrides batch behavior
+- **Run:** `/mega-sdd:generate-units ./vault/ --collision-policy=verify`
+- **Expect:** All target_files collisions auto-convert to `verify` task_type without prompts; useful for "I trust binding; just give me verify units for everything existing"
+
 ## Pass criteria
 
-All triggers fire. Behavior checks pass. No unit generated without valid frontmatter per unit-schema.md. Task-type assignment (TT1-TT8) follows generate-units §2.5 + §12.5 per Iter 1. Polished-prompt render pass (PP1-PP9) follows §12.4 per Iter 3 spec. Anchors mandatory + Hard rules parseable + Migration notes structural rules + directive prose guidance — all enforced.
+All triggers fire. Behavior checks pass. No unit generated without valid frontmatter per unit-schema.md. Task-type assignment (TT1-TT8) follows generate-units §2.5 + §12.5 per Iter 1. Polished-prompt render pass (PP1-PP9) follows §12.4 per Iter 3 spec. Defensive generation (DG1-DG10) follows `references/defensive-generation.md` per Iter 8 — auto-detect upstream, per-unit collision interactive prompts, anchor warnings (soft), PARTIAL_FIELDS_* auto-extends with Migration notes populated from field_diff, grounding_confidence label visible in frontmatter + chat. Anchors mandatory + Hard rules parseable + Migration notes structural rules + directive prose guidance — all enforced.

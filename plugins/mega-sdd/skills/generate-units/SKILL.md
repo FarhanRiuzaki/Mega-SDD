@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.0.0
+version: 2.1.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -27,6 +27,25 @@ Turns intent into actionable atomic specs for AI dev execution.
 
 ## Procedure
 
+0.5. **Defensive pre-flight check (v2.1+, Iter 8).**
+
+   Per `references/defensive-generation.md` §Step 0.5. Probe upstream artifacts before vault parsing:
+
+   - `codebase-map.md` presence (current dir / repo root / vault parent)
+   - `binding.md` presence (vault-bound/ or vault parent)
+   - vault.json `implementation_mode` (greenfield | existing)
+
+   Decision matrix:
+   - Both present → ✅ proceed (HIGH grounding confidence)
+   - Both absent + greenfield → ✅ proceed (MEDIUM confidence — expected)
+   - Both absent + existing → ⚠️ INTERACTIVE prompt: (1) auto-run scan-codebase + bind-codebase (recommended) (2) proceed with LOW confidence (3) cancel
+   - codebase-map present, binding absent + existing → ⚠️ INTERACTIVE prompt: (1) run bind-codebase first (recommended) (2) proceed with MEDIUM confidence (3) cancel
+   - codebase-map absent, binding present → warn (stale binding); proceed MEDIUM
+
+   On "auto-run upstream": invoke scan-codebase / bind-codebase (per orchestrate-flow auto-route pattern); return to Step 1 after they complete (halts in upstream skills propagate normally).
+
+   `--no-defensive` flag skips this step entirely (back to v2.0 behavior). `--auto` flag in chain mode defaults to safest option (auto-run upstream).
+
 1. **Load vault.** Read 7 files + vault.json. If bound-vault path provided, also read binding.md.
 
 2. **Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (a component, endpoint, schema migration, etc.) becomes a candidate unit.
@@ -37,10 +56,13 @@ Turns intent into actionable atomic specs for AI dev execution.
 
    For each candidate unit, find the binding claims it derives from (via vault claim → binding C-XXX mapping). Aggregate their states:
 
-   | Bound claim states (Iter 1 set: IMPLEMENTED / NEW / UNKNOWN) | Unit task_type |
+   | Bound claim states (v1.7+ set: IMPLEMENTED / PARTIAL_FIELDS_MISSING / PARTIAL_FIELDS_SURPLUS / NEW / UNKNOWN) | Unit task_type |
    |---|---|
    | All NEW, or no binding | `create` |
    | All IMPLEMENTED with `confidence: high` | `verify` |
+   | **PARTIAL_FIELDS_MISSING** (v2.1+, Iter 8) — code missing fields from claim | `extend` with Migration notes auto-populated from binding's `field_diff`: ADD/KEEP/REMOVE lists |
+   | **PARTIAL_FIELDS_SURPLUS** (v2.1+, Iter 8) — code has fields not in claim | `extend` with HUMAN REVIEW interactive prompt (could be feature drift, vault gap, legacy deprecation, or rename) |
+   | **PARTIAL_FIELDS_BOTH** (v2.1+, Iter 8) — both directions diff | strong warning; surface interactive prompt; usually signals semantic mismatch needing vault update OR code triage |
    | Mix of NEW + IMPLEMENTED | SPLIT — emit one `create` unit for NEW claims, one `verify` unit for IMPLEMENTED claims; chain via `depends_on` so verify runs first |
    | Any UNKNOWN (regardless of confidence) | `create` (conservative default per DESIGN-OQ-1) — surface a note in unit body: "Binding marked one or more claims as UNKNOWN (anchor: ...). Verify manually whether this work is needed." |
    | Mix of CONFIRMED + CONFLICT | Halt — binding gate should have blocked already; report inconsistency |
@@ -52,7 +74,24 @@ Turns intent into actionable atomic specs for AI dev execution.
    - Body's `## Anchors` section is MANDATORY — cite the file:line where the implementation lives (from binding's `anchor` field)
    - Estimated complexity: small
 
-   `extend` is in the schema (forward-compat for Iter 2/3) but **Iter 1 does not auto-emit it**. UNKNOWN states default to `create` (safer). A user who wants `extend` semantics in Iter 1 must edit the unit frontmatter and fill Migration notes manually.
+   `extend` was forward-compat-only in Iter 1 (deferred PARTIAL state). **Iter 8 (v2.1+) activates auto-emission** for `PARTIAL_FIELDS_*` states with Migration notes populated from binding's `field_diff` column. UNKNOWN states still default to `create` (conservative — no field-diff signal available).
+
+   **Migration notes auto-population from binding field_diff (Iter 8):**
+
+   When binding state is PARTIAL_FIELDS_MISSING:
+   - **ADD** sub-list = `field_diff.ADD` from binding (missing fields to add)
+   - **KEEP** sub-list = `field_diff.KEEP` (shared fields; bolt MUST NOT modify their behavior)
+   - **REMOVE** sub-list = (empty)
+
+   When binding state is PARTIAL_FIELDS_SURPLUS:
+   - **ADD** sub-list = (empty)
+   - **KEEP** sub-list = `field_diff.KEEP`
+   - **REMOVE** sub-list = `field_diff.REMOVE` with CAUTION note
+   - INTERACTIVE prompt fires: user decides if surplus is feature drift / vault gap / legacy / rename
+
+   When binding state is PARTIAL_FIELDS_BOTH:
+   - Both lists populated; HUMAN REVIEW mandatory before bolt
+   - Strong warning in unit body
 
 3. **Group + atomize.** For each candidate:
    - If estimated change < 300 LOC and touches ≤ 5 files → single unit
@@ -155,6 +194,32 @@ blocker:
    - Brownfield: list bound-vault citations (specific file paths from binding)
    - If a unit can't determine target_files: halt — vault too vague
 
+7.6. **Per-unit target_files collision check (v2.1+, Iter 8).**
+
+   Per `references/defensive-generation.md` §Step 7.6. Before writing each unit:
+
+   For EACH `target_files` entry where `operation: create`:
+   1. Probe path existence (fs check OR codebase-map §1)
+   2. If file does NOT exist → proceed normally (true create)
+   3. If file EXISTS:
+      - If binding has IMPLEMENTED state for related claim → INTERACTIVE prompt:
+        ```
+        "Target `<path>` already exists. Binding state: IMPLEMENTED.
+         Options for unit U-XXX:
+           1. Convert to `verify` (no code change) (recommended)
+           2. Convert to `extend` (modify; fill Migration notes)
+           3. Rename target file
+           4. Force `create` (overwrite — DANGEROUS)
+           5. Skip this unit"
+        ```
+      - If binding state PARTIAL_FIELDS_* or NEW or UNKNOWN → INTERACTIVE prompt with `extend` as recommended default
+
+   **Prompt frequency control**:
+   - Prompts fire ONLY on genuine collision (file exists + task_type=create)
+   - Same-session memory: previous picks default future similar collisions
+   - `--auto` flag suppresses interactive — picks safest default (`extend`)
+   - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
+
 7.5. **PageRank target_files suggestions (v2.0+, Iter 6).**
 
    When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan, Iter 6 Swap #1):
@@ -185,6 +250,20 @@ blocker:
     - Suggested execution order (topological)
 
 12. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`.
+
+12.4.5. **Per-anchor verification (v2.1+, Iter 8).**
+
+   Per `references/defensive-generation.md` §Step 12.4.5. For each Anchor entry in each unit's `## Anchors` section:
+
+   1. Parse `<file>:<line-range> — <description>` format
+   2. Probe file existence (fs OR codebase-map §1)
+   3. Apply outcome:
+      - **File MISSING + greenfield unit** → WARNING in unit body footer (HTML comment): "anchor aspirational for new file; verify before bolt"
+      - **File MISSING + brownfield unit** → stronger WARNING: "anchor points to non-existent file; binding may be incomplete; review"
+      - **File EXISTS, line out of bounds** → WARNING: "anchor line-range may have drifted; current file has N lines"
+      - **File EXISTS, line valid** → ✓ verified
+
+   Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirational (especially for new files in `create` units). Warnings surface visually in chat output + unit body footer so user can review.
 
 12.4. **Polished-prompt render pass (v1.3+, Iter 3).**
 
@@ -268,6 +347,11 @@ blocker:
 - (v1.3+, Iter 3) Anti-patterns drawn from binding CONFLICTs + KB gotchas; suggestion only (not halt-condition).
 - (v2.0+, Iter 6) PageRank symbol-graph suggestions surface as informational `## PageRank suggestions` body section; NEVER auto-added to target_files. User must manually promote.
 - (v2.0+, Iter 6) Symbol graph requires `precision_tier: ast` in codebase-map; skipped gracefully on regex tier.
+- (v2.1+, Iter 8) Defensive pre-flight auto-detects missing upstream artifacts; offers auto-route (no death-by-prompts in clean chains).
+- (v2.1+, Iter 8) Per-unit target_files collision triggers INTERACTIVE prompt ONLY when file exists + task_type=create (otherwise silent). Prompts cap-limited by `--collision-policy` batch flag.
+- (v2.1+, Iter 8) `PARTIAL_FIELDS_*` states from bind-codebase v1.7+ auto-populate Migration notes from binding's `field_diff` — bolt knows EXACTLY which fields to add/keep/remove.
+- (v2.1+, Iter 8) `grounding_confidence: HIGH | MEDIUM | LOW` field in unit frontmatter reflects upstream + anchor + collision verification.
+- (v2.1+, Iter 8) Anchor warnings are SOFT — visible in chat + body footer but do NOT halt. Anchors can be aspirational for new files in `create` units.
 
 ## Halt conditions
 
