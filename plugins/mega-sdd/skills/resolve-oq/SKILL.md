@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.6.0
+version: 0.7.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 

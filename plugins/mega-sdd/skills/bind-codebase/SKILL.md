@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.7.0
+version: 1.7.1
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `docs/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -93,6 +93,8 @@ For each CONFIRMED claim that specifies fields/params explicitly (entity field l
    - Both ADD and REMOVE non-empty → `PARTIAL_FIELDS_BOTH` (rare; signals semantic mismatch)
    - V ∩ C empty but symbol exists → `UNKNOWN`
 5. **Record diff** in Implementation State Map's `field_diff` column
+
+**Disjoint-set check (v1.7+, Iter 9 Bug 1 fix)**: BEFORE computing PARTIAL_*, check if V ∩ C is empty. If empty AND both V and C non-empty → state is `UNKNOWN` (totally disjoint field sets = symbol name matches but semantic intent unrelated; needs human review), NOT `PARTIAL_FIELDS_BOTH`. PARTIAL_FIELDS_BOTH applies only when V ∩ C non-empty (some shared fields) AND both V\C and C\V non-empty (genuine bidirectional drift).
 
 ### Example — user's login scenario
 
