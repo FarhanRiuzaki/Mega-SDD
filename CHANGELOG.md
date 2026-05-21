@@ -5,6 +5,61 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] — 2026-05-21
+
+### Added — Context-aware recommendations in resolve-oq (Iter 7, minor patch)
+
+Per user UX request — "kasih (recommended) base on dia baca context, dan kasih suggest yg paling sesuai".
+
+Extends the Iter 2 `resolution_mode: recommend` pattern (currently tech-OQ-only at generate-intent time) to ALL OQ resolutions at resolve-time. `resolve-oq` v0.6+ builds context-aware recommendations from multiple sources BEFORE presenting `AskUserQuestion`. If a confident recommendation exists, default option labeled `(recommended)` with rationale + citation + fallback_if_wrong.
+
+**Six context sources** (priority order):
+1. KB `[VERIFIED]` markers (strongest; HIGH confidence) — search KB domain files matching OQ
+2. Memory project-scope decisions (`<project>/.mega-sdd-memory/decisions.md`)
+3. Memory user-scope patterns (`~/.mega-sdd/memory/patterns.md`; cross-project)
+4. Vault — related ADRs / flows / constraints (MEDIUM confidence; extrapolated)
+5. Codebase-map (brownfield only; existing pattern observed)
+6. Silent fallback — no confident source → no recommendation surfaced (better silent than wrong)
+
+**Anti-halu invariants** (mirror Iter 2 recommend mode):
+- Citation MANDATORY (file:line / memory entry / KB section). No citation → no recommendation.
+- Rationale MANDATORY (1-3 sentences in description)
+- Fallback-if-wrong MANDATORY (1 sentence)
+- User confirms ALWAYS — recommendation is `(recommended)` label on default option; user can pick "Other"/override freely
+- Business + P1 OQs prefix description with ⚠️ "High-stakes — review carefully"
+- No fabrication — silent fallback when sources insufficient
+- Override capture feeds Iter 5 self-learning loop
+
+**Self-correction loop** (Iter 5 integration):
+- Every override (user picks NOT-recommended) captured in memory
+- After 5 consistent overrides for same OQ pattern → pending suggestion in `patterns.md`: "Disable recommendation for OQ pattern X"
+- User reviews via `/mega-sdd:memory review`; ACCEPT silences future recommendations for that pattern
+- Self-corrects bad recommendations over time
+
+### Changed — Skill versions
+
+- `resolve-oq`: 0.5.0 → 0.6.0 (context-aware recommendations procedure step)
+
+### Added — New reference
+
+- `plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md` (full algorithm + source priorities + audit trail + examples)
+
+### New tests
+
+- `tests/skill-triggering/resolve-oq.test.md` — 10 new cases REC1-REC10 covering KB-derived / memory-derived / vault-derived recommendations, silent fallback, anti-halu (no citation = no recommendation), high-stakes warning, audit trail on ACCEPT + OVERRIDE, self-correction loop
+
+### Backward compatibility
+
+PURELY ADDITIVE:
+- v3.0 resolve-oq behavior unchanged when no context sources yield confident recommendation
+- Existing OQ resolution flows continue working — recommendation is just an opt-in label on the default option
+- Memory layer integration uses existing Iter 5 infrastructure (no schema changes)
+- `--memory-off` flag disables both memory consultation AND recommendation building
+
+### Why patch version (3.1) not minor
+
+Surface area is tiny — 1 skill enhanced, 1 new reference file. No new skills, no new commands, no breaking changes. Treat as additive UX improvement. Bumped to 3.1.0 (not 3.0.1) because new user-facing behavior (the `(recommended)` label) is observable.
+
 ## [3.0.0] — 2026-05-21
 
 ### Added — Tech Upgrades (Iter 6, major version bump)

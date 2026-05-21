@@ -73,6 +73,51 @@ Manual-run fixture for the `resolve-oq` skill.
 ### BM4: Hand-off after binding mode
 - **After loop:** suggests `/mega-sdd:bind-codebase` re-run (since conflicts now resolved)
 
+## Context-aware recommendations (v0.6+, Iter 7)
+
+### REC1: KB-derived recommendation surfaced
+- **Setup:** KB at `docs/knowledge-base/` has `[VERIFIED]` entry matching OQ-AR-7 in `10-domains/50-parameter-reference.md`
+- **Expect:** AskUserQuestion option 1 labeled `<answer> (recommended)`; description shows rationale + KB citation + fallback_if_wrong + confidence: HIGH
+
+### REC2: Memory-derived recommendation surfaced
+- **Setup:** No KB. `<project>/.mega-sdd-memory/decisions.md` has 5 consistent rows resolving auth-pattern OQs as KEEP_CODE
+- **Expect:** AskUserQuestion option 1 labeled `KEEP_CODE (recommended)`; cites memory rows; confidence: HIGH
+
+### REC3: Vault/codebase MEDIUM-confidence recommendation
+- **Setup:** No KB. No memory match. Vault `05-decisions.md` has D-003 about error envelope; codebase-map has existing `ErrorResource.php`
+- **Expect:** Option 1 labeled `<extrapolated answer> (recommended)`; description marks confidence MEDIUM with vault + codebase-map citation; user warned to review carefully
+
+### REC4: Silent fallback when no confident sources
+- **Setup:** Greenfield project, no KB, fresh memory, no relevant vault context
+- **Expect:** AskUserQuestion presents WITHOUT `(recommended)` label; falls back to plain interactive walk (v0.5 behavior)
+- **Critical:** NO fabricated recommendation; better silent than wrong
+
+### REC5: Anti-halu — no citation = no recommendation
+- **Setup:** Claude (LLM) suggests an answer based on prior knowledge alone (no KB/memory/vault/codebase match)
+- **Expect:** Skill REJECTS the suggestion at recommendation-build phase; no `(recommended)` surfaced
+
+### REC6: High-stakes business OQ warning
+- **Setup:** OQ category=business, priority=P1; memory has matching pattern
+- **Expect:** AskUserQuestion description prefixed with ⚠️ "High-stakes business OQ. Review citation + rationale carefully before accepting."
+
+### REC7: Audit trail on ACCEPT
+- **Setup:** User picks option 1 (recommended)
+- **Expect:** vault.json OQ entry has `resolution_source: recommendation` + `recommendation_citation: <full-citation>`
+- **Memory write:** `.mega-sdd-memory/decisions.md` row marked `source: ai_recommended`
+
+### REC8: Audit trail on OVERRIDE
+- **Setup:** User picks alternative option (not recommended)
+- **Expect:** vault OQ entry has `resolution_source: user_override`; memory row marked `recommendation_ignored: <recommended-text>`
+- **Self-learning feedback:** override counter incremented for this OQ pattern
+
+### REC9: Self-correction loop after 5 overrides
+- **Setup:** Same OQ pattern has been overridden 5 times across runs
+- **Expect:** `~/.mega-sdd/memory/patterns.md` pending suggestion: "Disable recommendation for OQ pattern X (5/5 overrides)"; user reviews via `/mega-sdd:memory review`; ACCEPT disables future recommendations for that pattern
+
+### REC10: Override reason captured (optional)
+- **Setup:** User picks alternative + provides override reason via free-text
+- **Expect:** memory row includes `override_reason: <user-text>`; aids future pattern analysis
+
 ## Pass criteria
 
-All R1-R7 invoke skill correctly. 4-action menu obeys brownfield/greenfield/repo-signal conditions. State transitions match B4. Binding mode walks conflicts and OQs per BM1-BM3.
+All R1-R7 invoke skill correctly. 4-action menu obeys brownfield/greenfield/repo-signal conditions. State transitions match B4. Binding mode walks conflicts and OQs per BM1-BM3. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.
