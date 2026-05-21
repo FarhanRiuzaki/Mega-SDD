@@ -398,6 +398,33 @@ Append-only writes are atomic if each write is a single fs.append. Concurrent ru
 
 If a write fails (disk full, permission), skill logs the failure and continues — memory is OPTIONAL.
 
+### Append mechanism (v0.6+, Iter 9 Bug 3 fix)
+
+**CRITICAL**: Memory writes MUST use POSIX append (`>>`) for atomicity, NOT Claude Code's `Write` tool (which is overwrite, not atomic-append).
+
+**Correct (Iter 9+)**:
+```bash
+# Single-line append (atomic on POSIX file systems for small writes):
+echo "| 2026-05-21 | OQ-AR-7 | tech/recommend | ACCEPT: ... | resolve-oq@<timestamp> |" >> "$PROJECT_MEM/decisions.md"
+
+# Multi-line block append (uses heredoc; still single fs operation):
+cat >> "$VAULT_MEM/bind-history.md" << 'APPENDEOF'
+
+## Run #N — <ISO8601>
+- claims_total: 24
+- confirmed: 22
+- ...
+APPENDEOF
+```
+
+**Wrong (pre-Iter-9 mistake)**: Using `Write` or `Edit` tools to append. These read-modify-write the entire file → two concurrent runs would overwrite each other.
+
+### Per-skill memory write protocol
+
+Each writer skill's `## Memory layer` section MUST specify: "Append to `<path>` via Bash `>>` heredoc". NEVER `Write` or `Edit` for memory files.
+
+For schema initialization (first write to a new memory file), use `Write` tool ONCE to create the file with frontmatter + empty section headers. Subsequent writes append below those headers via `>>`.
+
 ## 7. Schema migration (per MEMORY-OQ-1)
 
 When `memory_schema` version bumps in future iters:

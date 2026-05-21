@@ -94,7 +94,13 @@ message: "Function authenticateUser signature is locked by Hard Rule"
 For each rule in unit's `## Hard rules`:
 
 1. Parse YAML block
-2. Validate against ast-grep schema (`ast-grep test --validate <rule>`)
+2. Validate via ast-grep parse (v2.1+, Iter 9 Bug 7 fix — `ast-grep test --validate` flag does not exist in CLI; use parse-via-scan instead):
+   ```bash
+   # Parse the rule by running scan with --dry-run against /dev/null (or empty input)
+   echo "" | ast-grep scan --rule <rule-yaml-tempfile> --json /dev/stdin 2>&1
+   ```
+   - Exit 0 → rule parses cleanly (zero matches on empty input is the expected baseline)
+   - Exit non-zero with parse error in stderr → halt `hard_rule_unparseable` with stderr verbatim
 3. Snapshot relevant files (sha256 for `files:` paths)
 4. Persist to `<vault>/bolts/U-XXX/preflight.json`:
    ```json

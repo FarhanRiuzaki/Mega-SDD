@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.0.0
+version: 2.1.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -45,6 +45,25 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
 5. **Present plan + single `AskUserQuestion`** (Run / Edit / Cancel). Edit supports `skip step N` and `stop after step N` only.
 
 6. **Execute chain.** Dispatch sub-skills with `--auto` flag. Pause on blocker artifacts (any type) per `vault-contract.md` §halt-protocol. `resolve-oq` step is always interactive on per-OQ choices.
+
+   **Chain proposal UX clarity (v1.4+, Iter 9 Bug 4 fix)**: when surfacing the upfront confirmation, include a "Halts may re-engage you" line so users have accurate expectations:
+
+   ```
+   Proposed pipeline (--deep):
+     1. generate-intent ./prd.md  → vault
+     2. scan-codebase             → codebase-map.md
+     3. bind-codebase             → binding.md + bound-vault/
+     4. generate-units            → units/
+     5. execute-bolts --all       → bolts/
+
+   Halts may re-engage you mid-chain (test failures, business OQ
+   resolutions, hard-rule violations, dedup ambiguity, recommendation
+   reviews). Otherwise runs end-to-end silently with progress indicators.
+
+   [Run] [Edit] [Cancel]
+   ```
+
+   User confirmation is ONE-TIME for chain proposal; halts are NOT additional confirmations — they're interventions on real issues.
 
    **Progress indication (v1.3+, per AUTONOMY-OQ-4)**: before each skill invocation, emit one chat line:
    ```

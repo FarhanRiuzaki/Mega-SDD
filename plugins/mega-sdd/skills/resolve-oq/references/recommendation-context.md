@@ -116,9 +116,37 @@ function build_recommendation(oq):
   return None  # silent fallback; no recommendation surfaced
 ```
 
+## Citation probe step (v0.7+, Iter 9 Bug 2 fix)
+
+BEFORE surfacing the recommendation in `AskUserQuestion`, probe each citation in `Recommendation.citation` for resolution. This prevents LLM-fabricated citations from surfacing (mirrors Iter 2 bind-codebase `oq_recommend_citation_invalid` halt for tech-OQ recommend mode).
+
+### Probe logic
+
+For each citation in the recommendation:
+
+| Citation source | Probe |
+|---|---|
+| KB section (`docs/knowledge-base/<file>.md §<section>:<line>`) | `Bash test -f <file>` + `Bash grep -n "<section>" <file>` to verify section exists |
+| Memory entry (`.mega-sdd-memory/<file>.md row N`) | `Read <file>` + count rows in target table; verify N within range |
+| User patterns (`~/.mega-sdd/memory/patterns.md §<section>`) | `Read patterns.md` + grep for section header |
+| Vault ADR (`docs/mega-sdd/vaults/<slug>/05-decisions.md §D-XXX`) | `Read 05-decisions.md` + grep for D-XXX heading |
+| Codebase-map line (`codebase-map.md §N + <file>:<line>`) | `Read codebase-map.md` + verify referenced file path exists |
+
+### Outcomes
+
+- **All citations resolve** → ✅ surface recommendation in AskUserQuestion
+- **Any citation unresolved** → silently DOWNGRADE: omit recommendation; fall back to plain interactive walk
+- **Optional**: log silently-omitted recommendations to `<vault>/.memory/citation-failures.jsonl` for audit (helps detect LLM fabrication patterns over time)
+
+### Why silent downgrade (not halt)
+
+- Recommendation surface is opt-in UX enhancement; failing silently keeps the OQ resolution flow moving
+- Halt would block on cosmetic issue (citation typo); over-aggressive
+- Citation failure logged in vault memory for future review
+
 ## AskUserQuestion presentation
 
-When a recommendation is built, the `AskUserQuestion` for the OQ uses this format:
+When a recommendation is built (AND all citations probed successfully), the `AskUserQuestion` for the OQ uses this format:
 
 ```
 Question: <OQ text>

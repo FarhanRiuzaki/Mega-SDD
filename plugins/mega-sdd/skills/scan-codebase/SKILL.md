@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.0.0
+version: 2.1.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -30,11 +30,16 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 ## Procedure
 
-0. **Engine detection (v2.0+, Iter 6).**
-   - Probe for tree-sitter: `command -v tree-sitter`
-   - Found → `engine: tree-sitter` (AST-precise extraction per `references/tree-sitter-integration.md`)
+0. **Engine detection (v2.0+, Iter 6; v2.1+ Iter 9 Bug 8 fix — multi-binary probe).**
+   - Probe for tree-sitter via TWO binary names (different package managers ship under different names):
+     ```bash
+     command -v tree-sitter || command -v tree-sitter-cli
+     ```
+     - `tree-sitter` — typically when installed via `brew install tree-sitter` or `cargo install tree-sitter-cli` (binary name is just `tree-sitter`)
+     - `tree-sitter-cli` — typically when installed via `npm install -g tree-sitter-cli` (binary may keep the package name)
+   - Found (either) → `engine: tree-sitter` (AST-precise extraction per `references/tree-sitter-integration.md`); stash the actual binary name found for subsequent invocations
    - Not found AND `--engine=tree-sitter` flag set → halt `dep_missing` with install commands
-   - Not found AND no flag → fall back to `engine: regex` (v1 behavior); emit chat warning: "⚠️ tree-sitter not found; using regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli"
+   - Not found AND no flag → fall back to `engine: regex` (v1 behavior); emit chat warning: "⚠️ tree-sitter not found (probed: tree-sitter, tree-sitter-cli); using regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli"
    - Override via `--engine=tree-sitter|regex` flag
 
 1. **Detect repo root.** Walk up from CWD until `.git` directory found. If none, treat CWD as root and warn user.
