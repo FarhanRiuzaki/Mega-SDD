@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.1.0
+version: 2.2.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -28,6 +28,7 @@ The terminal phase of the SDD pipeline — turns units into code.
   - `--auto` — non-interactive
   - `--per-squad` — (v1.1+) fan out across all squads declared in `_meta/squads.yaml`. Spawns one Claude subagent per squad via `subagent-driven-development`; each subagent filters units by their `squad:` field and runs in parallel.
   - `--squad=<id>` — (v1.1+) filter units to a single squad. For human-team handoff: a dev team runs this on their own laptop to process only their squad's units. Halts on `cross_squad_interface_draft` if any consumed interface is still draft.
+  - `--module=<id>` — (v2.2+, Iter 11) filter units to a single module (semantic grouping per `generate-units/references/modules-schema.md`). Topologically sorts within module. Halts on `module_blocked_by` if dependencies in another module are incomplete.
 
 ## Pre-flight checks
 
@@ -214,6 +215,30 @@ For `--per-squad` (v1.1+):
 3. **For each squad, dispatch a Claude subagent** per `references/squad-subagent.md`. Subagents run in parallel via `Agent(run_in_background: true)`.
 4. **Wait for all subagents** to complete or halt. Each subagent reports back its bolt-report list + halt status.
 5. **Consolidate report.** Aggregate per-squad summaries into a single chat message: N squads, M units total, K commits, list of halts (with squad attribution).
+
+For `--module=<id>` (v2.2+, Iter 11):
+
+1. **Load `_meta/modules.yaml`.** If absent → halt: "`--module=` requires `_meta/modules.yaml`. Auto-derive via `/mega-sdd:generate-units --derive-modules` first."
+2. **Validate `<id>` exists** in declared modules.
+3. **Check blocked_by**: for each `blocked_by` entry, verify that module is `status: completed` (per memory). Incomplete → halt `module_blocked_by` listing pending prerequisites.
+4. **Filter units**: working set = units where `module: <id>` AND not yet completed.
+5. **Topologically sort** within module by `depends_on`.
+6. **Proceed with sequential or `--parallel` execution** on the filtered set.
+7. **After all units complete**: probe module's DoD checklist (modules.yaml.modules[<id>].dod). Surface incomplete DoD items in chat; user marks via `/mega-sdd:list-modules --mark-dod=<module>` or edits modules.yaml manually.
+
+**Halt YAML for module_blocked_by:**
+
+```yaml
+blocker:
+  type: module_blocked_by
+  emitted_at: <ISO8601>
+  emitted_by: execute-bolts
+  details:
+    requested_module: M-leave-mgmt
+    blocked_by_modules: [M-auth]
+    blocker_status: M-auth has 2/5 units complete
+  next_action: "Complete prerequisite module first via /mega-sdd:execute-bolts --module=M-auth"
+```
 
 For `--squad=<id>` (v1.1+):
 
