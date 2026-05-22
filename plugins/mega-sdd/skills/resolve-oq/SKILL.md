@@ -389,7 +389,7 @@ Per `references/recommendation-context.md`. Before presenting `AskUserQuestion` 
 ### Source priority order
 
 1. **KB `[VERIFIED]` markers** (strongest) — search KB domain files matching OQ tag/text
-2. **Memory project-scope decisions** — search `<project>/.mega-sdd-memory/decisions.md` for past resolutions of similar OQ patterns
+2. **Memory project-scope decisions** — search `<project>/.mega-sdd/memory/decisions.md` for past resolutions of similar OQ patterns
 3. **Memory user-scope patterns** — `~/.mega-sdd/memory/patterns.md` for cross-project patterns
 4. **Vault context** — related ADRs / flows / constraints in current vault
 5. **Codebase-map** (brownfield) — existing code patterns relevant to OQ
@@ -436,15 +436,15 @@ When memory enabled (default; opt-out via `--memory-off`), this skill participat
 
 | When | File | Content |
 |---|---|---|
-| After each OQ resolved (standard mode) | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## OQ resolutions` table: date, oq-id, category, resolution-text, source-run |
-| After each CONFLICT resolved (--binding mode) | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## CONFLICT resolutions` table: date, conflict-id, claim, KEEP_CODE/KEEP_VAULT/DEFER/SPLIT, user-rationale, source-run |
-| After each recommend-mode OQ ACCEPT/OVERRIDE/REJECT | `<project>/.mega-sdd-memory/decisions.md` | Append row to `## Recommendation outcomes` table |
+| After each OQ resolved (standard mode) | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## OQ resolutions` table: date, oq-id, category, resolution-text, source-run |
+| After each CONFLICT resolved (--binding mode) | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## CONFLICT resolutions` table: date, conflict-id, claim, KEEP_CODE/KEEP_VAULT/DEFER/SPLIT, user-rationale, source-run |
+| After each recommend-mode OQ ACCEPT/OVERRIDE/REJECT | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## Recommendation outcomes` table |
 
 ### Reads
 
 | What | Source | How used |
 |---|---|---|
-| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd-memory/decisions.md` (passed via handoff `metadata.memory_context.project_decisions_relevant` when under --auto) | SUGGEST pre-filled action in AskUserQuestion (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` (passed via handoff `metadata.memory_context.project_decisions_relevant` when under --auto) | SUGGEST pre-filled action in AskUserQuestion (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
 | Cross-project patterns (when project memory has no match) | `~/.mega-sdd/memory/patterns.md` | SUGGEST per-pattern action with confidence + source observation count |
 
 ### Anti-halu rails

@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.4.0
+version: 2.4.1
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -145,9 +145,11 @@ Follow `references/superpowers-bridge.md` per-unit flow. Standard sequence (Iter
 4. **Post-flight: re-validate Hard rules** (see §Post-flight Hard Rule validation below)
 5. Commit (via superpowers); write bolt-report.md
 
-### Post-flight Hard Rule validation (v1.2+, Iter 3) — runs BEFORE commit
+### Post-flight Hard Rule validation (v1.2+, Iter 3; v2.4.1+ Iter 25 framework pack provenance)
 
 After superpowers' executing-plans completes and acceptance tests pass, run the post-flight scan BEFORE committing. This is the safety net.
+
+**Framework pack rules** (v2.4.1+ Iter 25 — pulled into unit Hard Rules by `generate-units` Step 12.4.5 per Iter 23 contract): validated identically to other Hard Rules — ast-grep `rule:` block from pack runs against codebase post-bolt. Violation surface includes `framework_pack_source` field in halt YAML so user knows WHICH framework rule fired.
 
 For each rule in the unit's `## Hard rules`:
 
@@ -436,7 +438,7 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 | After each bolt commits (success) | `<vault>/.memory/bolt-outcomes.json` | Append entry: unit_id, run_at, task_type, status=completed, duration_ms, tests_passed=true, hard_rules_validated=[list of rule strings that passed] |
 | After each bolt halts (failure) | `<vault>/.memory/bolt-outcomes.json` | Append entry: unit_id, status=halted_*, halt_reason, violated_rules=[list with evidence], resolution=pending |
 | After user resolves a halt (next session) | `<vault>/.memory/bolt-outcomes.json` | Update prior entry: resolution=(user_reverted_code | user_edited_unit | user_force_committed | user_skipped), resolution_at, resolution_note |
-| After chain run completes | `<project>/.mega-sdd-memory/outcomes.md` | Append run summary: phases run, halts encountered, total duration, hard rule violation count |
+| After chain run completes | `<project>/.mega-sdd/memory/outcomes.md` | Append run summary: phases run, halts encountered, total duration, hard rule violation count |
 
 ### Reads
 

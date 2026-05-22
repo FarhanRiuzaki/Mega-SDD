@@ -29,7 +29,7 @@ handoff:
     items_blocked: <int>                # number that require human input
   checkpoints:                          # v3.0+ (Iter 6) — checkpoint protocol; optional
     latest_step_id: <string>            # e.g., "claim-45" for bind-codebase, "wave-3" for extract-intelligence
-    checkpoint_file: <absolute-path>    # <vault>/.mega-sdd/checkpoints/<timestamp>-<skill>-<step>.jsonl
+    checkpoint_file: <absolute-path>    # <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl (v3.4+ canonical per paths.md)
     resume_command: <string>            # e.g., "/mega-sdd:bind-codebase --resume-from=claim-46"
   constitution:                         # v3.13+ (Iter 17 — formally added Iter 20) — when constitution.md exists
     constitution_hash: <sha256>         # of <vault>/constitution.md at handoff emission time
@@ -37,6 +37,10 @@ handoff:
   pbt:                                  # v3.13+ (Iter 18 — formally added Iter 20) — when properties: present
     properties_validated: <N>           # count of property-based tests run this phase
     properties_failed: <N>              # count violated; details in postflight.json
+  mutability:                           # v3.17+ (Iter 25 — propagates Iter 22 mutability tiers)
+    tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }  # aggregate over claims/units processed
+    locked_claims_touched: []           # specific claim/unit IDs with mutability_source = kb_locked
+    artifact_discards_proposed: <N>     # count of [ARTIFACT] items flagged for discard (user confirmation pending)
   cycles:                               # v3.13+ (Iter 19 — formally added Iter 20) — when convergence loops active
     cycle_count: <N>                   # how many auto-recovery cycles ran
     halts_auto_resolved: []             # halt types resolved via memory recommendations
@@ -46,7 +50,7 @@ handoff:
     divergence_classification: clean | minor | high | n/a
   metadata:                             # v2.1+ (Iter 5) — memory layer integration; optional otherwise
     memory_context:                     # IN — orchestrator provides relevant memory slices to skill at invocation
-      project_decisions_relevant: []    # rows from <project>/.mega-sdd-memory/decisions.md matching the skill's domain
+      project_decisions_relevant: []    # rows from <project>/.mega-sdd/memory/decisions.md matching the skill's domain (v3.4+ canonical)
       project_conventions_relevant: []  # rows from conventions.md
       vault_outcomes_relevant: []       # rows from <vault>/.memory/*.json matching this skill
       user_patterns_relevant: []        # rows from ~/.mega-sdd/memory/patterns.md (when ≥1 matching pattern)
@@ -84,11 +88,11 @@ handoff:
   emitted_by: extract-intelligence
   status: completed
   artifacts:
-    - /path/to/docs/knowledge-base/
-    - /path/to/docs/knowledge-base/README.md
+    - /path/to/.mega-sdd/knowledge-base/
+    - /path/to/.mega-sdd/knowledge-base/README.md
   next_action:
     suggested_skill: mega-sdd:generate-intent
-    suggested_args: ["--kb=docs/knowledge-base/", "--auto"]
+    suggested_args: ["--kb=.mega-sdd/knowledge-base/", "--auto"]
     rationale: "Knowledge base extracted; generate vault using KB as Mode B brief."
   metrics:
     items_processed: 35    # MD files written
@@ -104,8 +108,8 @@ handoff:
   emitted_by: generate-intent
   status: completed | paused
   artifacts:
-    - /path/to/docs/mega-sdd/vaults/<slug>/
-    - /path/to/docs/mega-sdd/vaults/<slug>/vault.json
+    - /path/to/.mega-sdd/vaults/<slug>/
+    - /path/to/.mega-sdd/vaults/<slug>/vault.json
   next_action:
     suggested_skill: mega-sdd:scan-codebase  # if brownfield
     # OR
@@ -207,7 +211,7 @@ When `--auto` mode is active AND memory layer enabled (default; opt-out via `--m
 Before invoking the first skill in `--deep` mode:
 
 1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
-2. Read project-scope: `<cwd-project-root>/.mega-sdd-memory/decisions.md` + `conventions.md` + `outcomes.md`
+2. Read project-scope: `<cwd-project-root>/.mega-sdd/memory/decisions.md` + `conventions.md` + `outcomes.md`
 3. Read vault-scope (if vault path detected in CWD): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
 4. Build per-skill memory slices (only what's relevant to each skill's domain)
 5. Pass slices to each skill via handoff YAML `metadata.memory_context` field at invocation

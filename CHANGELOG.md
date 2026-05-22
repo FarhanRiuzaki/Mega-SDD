@@ -5,6 +5,141 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.17.0] — 2026-05-23
+
+### Fixed — Iter 25: Audit Closure (27 findings from v3.16.0 deep audit)
+
+Per `docs/superpowers/audits/2026-05-23-iter-24-deep-audit.md` — 27 findings (8 P0 / 9 P1 / 7 P2 / 3 Advisory). This iter closes all P0 + most P1 + selected P2 in a single combined release.
+
+### Phase A — Iter 21 hotfix completion ("no-excuse `.mega-sdd/`")
+
+Iter 21 patched SKILL.md procedures but missed commands, references, and the memory schema. Iter 25 finishes the job:
+
+**Commands updated** (write-side defaults flipped):
+- `commands/extract-intelligence.md` — default `--out=.mega-sdd/knowledge-base/`; description + Hard rails updated; mutability tier markers documented
+- `commands/generate-intent.md` — default vault output `.mega-sdd/vaults/<slug>/`; Mode B KB sub-mode tier-aware routing documented
+- `commands/emit-agents-md.md` — vault detection priority order updated
+- `commands/auto.md` — vault detection in legacy-codebase + existing-vault branches both flipped to probe `.mega-sdd/vaults/` first
+- `commands/memory.md` — PROJECT scope canonical path is `.mega-sdd/memory/` (legacy `.mega-sdd-memory/` read-only back-compat)
+
+**References updated**:
+- `orchestrate-flow/references/handoff-contract.md` — all example artifacts + suggested_args use `.mega-sdd/` paths; checkpoint_file points to `<vault>/.internal/checkpoints/`; `metadata.memory_context.project_decisions_relevant` cites `.mega-sdd/memory/`
+- `orchestrate-flow/references/checkpoint-protocol.md` — all checkpoint paths flipped to `<vault>/.internal/checkpoints/` per paths.md v3.4+ canonical
+- `orchestrate-flow/SKILL.md` — checkpoint path references flipped
+- `resolve-oq/references/recommendation-context.md` — all 10+ stale path references updated; KB probe order documented; tier-aware recommendation surfacing added (LOCKED → "must preserve" flag; ARTIFACT → "discard?" flag)
+
+**Memory layer** (the biggest miss in Iter 21):
+- `memory/SKILL.md` — architecture diagram fixed (now shows `.mega-sdd/memory/` as canonical, legacy as back-compat comment)
+- `memory/references/memory-schema.md` — ALL references to `.mega-sdd-memory/` updated to `.mega-sdd/memory/` (PROJECT scope section header, per-file schemas, archive path, opt-out path, learning log example)
+- Across 8 skills (scan-codebase, bind-codebase, resolve-oq, memory, generate-units, generate-intent, orchestrate-flow, emit-agents-md, execute-bolts) — every `<project>/.mega-sdd-memory/` reference in memory tables flipped to `<project>/.mega-sdd/memory/`
+
+**Checkpoint + symbol-graph paths** (Iter 10 spec violation closed):
+- `generate-units/SKILL.md:272` + `pagerank-targeting.md:82` — `<vault>/.internal/symbol-graph.json` (v3.4+ canonical)
+- `orchestrate-flow/SKILL.md` + `checkpoint-protocol.md` — all `<vault>/.internal/checkpoints/` references
+
+**Cross-references fixed** (broken `../grand-design-spec/` paths):
+- `detect-drift/SKILL.md:571` → `../generate-intent/references/vault-contract.md`
+- `diff-vault/SKILL.md:471` → `../generate-intent/references/vault-contract.md`
+
+### Phase B — Step sequence fixes (bind-codebase + generate-units)
+
+**bind-codebase** (v1.9.0 → v1.9.1):
+- Duplicate `2.5` resolved — deferred-OQ auto-resolution renumbered to `2.11` (logical position after Hard Rules emission)
+- `2.10` constitution self-reference cleaned (P2-3)
+- Backward-compat note `Step 2.9 SKIPPED` → `Step 2.10 SKIPPED` (was wrong step number after Iter 23 renumber)
+- Halt-conditions section completed: added `bind_conflict_constitution_violation` (Iter 20), `framework_pack_missing`/`cycle`/`unparseable` (Iter 23)
+
+**generate-units** (v2.5.0 → v2.5.1):
+- Step sequence reordered: `12.3` (anchor verification) → `12.4` (constitution inject) → `12.5` (polished render) → `12.6` (dedup) — was `12 → 12.4.5 → 12.3 → 12.4 → 12.5` jumble
+
+### Phase C — Iter 22 mutability propagation (consumer skills)
+
+Mutability tiers (`[LOCKED]/[INTENT]/[ARTIFACT]`) were producer-only in Iter 22. Now propagated to consumers:
+
+**bind-codebase** (v1.9.0 → v1.9.1):
+- KB consultation step (line 46) now applies dual-axis routing per Iter 22
+- Each KB-derived CONFIRMED emits `mutability_source` field (`kb_locked` / `kb_intent` / `kb_artifact`)
+- CONFLICT severity weighted by tier: LOCKED → HIGH (regulatory/contractual risk), INTENT → MEDIUM (design freedom), ARTIFACT → low (already discardable)
+- Pre-v1.4 KBs without tier markers → treated as INTENT (safe default)
+
+**detect-drift** (v1.2.0 → v1.2.1):
+- Step 3 Compute drift adds new Severity column: CRITICAL (LOCKED drift = compliance/contract risk) / HIGH (no source OR INTENT outcome change) / MEDIUM (INTENT impl change) / LOW (ARTIFACT cleanup)
+- Pre-v1.4 vaults → all drift = HIGH (conservative default)
+
+**resolve-oq** (`references/recommendation-context.md`):
+- KB-derived recommendations now surface mutability tier inline ("this is a LOCKED rule, rebuild MUST preserve 1:1")
+- `[VERIFIED][ARTIFACT]` recommendations include "discard?" option flag
+
+**generate-units** (`references/unit-schema.md`):
+- New `mutability:` block in unit frontmatter (`tier`, `source`, `rationale`, `rebuild_freedom` sub-fields)
+- Bolts inherit unit's mutability → execute-bolts can enforce field-level locks for LOCKED rules
+- Pre-v2.5.1 units → field omitted; downstream defaults to INTENT (safe)
+
+**emit-agents-md** (v1.2.1 → v1.2.2):
+- AGENTS.md header `agents-md-schema.md` now declares `framework`, `framework_pack_path`, `mutability_summary` as HTML comments
+- Tools consuming AGENTS.md can resolve which conventions + locks apply
+
+**orchestrate-flow** (`references/handoff-contract.md`):
+- Handoff YAML schema extended with `mutability:` block: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`
+
+### Phase D — Iter 23 framework pack propagation
+
+Framework pack was loaded only by bind-codebase (Iter 23). Now flows downstream:
+
+**scan-codebase** (v2.4.1 → v2.4.2):
+- Step 8.5 framework section example YAML now shows BOTH plain `laravel` AND `laravel-base-26` (starterkit) detection cases
+- `extends:` field documented; first-match-wins precedence explicit
+- `detection_source` field shows the manifest line that triggered detection (audit trail)
+
+**generate-units** (v2.5.1):
+- New Step 12.4.5 — Framework pack provenance citation. Every pack-derived Hard Rule emitted into unit body WITH `source: "framework-conventions/<pack>.md §..."` citation
+- New `## Framework pack source` aggregate section in unit body cites pack + version + chain
+- Pack rules whose `path_glob` doesn't match unit's `target_files` are SKIPPED
+
+**execute-bolts** (v2.4.0 → v2.4.1):
+- Post-flight Hard Rule validation explicitly notes framework pack rules validated identically; violation halt YAML includes `framework_pack_source` field
+
+### Phase E — Scenario coverage
+
+**tests/scenarios/scenario-4-legacy-rebuild.md**:
+- Phase 3-4 output now shows framework detection (`laravel-base-26` via Vuexy fingerprint), pack load, and mutability tier distribution (LOCKED/INTENT/ARTIFACT counts)
+- OQ-CN-005 recommendation example shows tier-aware surfacing (`[LOCKED]` + regulatory citation)
+
+### Skill version bumps
+
+| Skill | Version |
+|---|---|
+| bind-codebase | 1.9.0 → 1.9.1 |
+| detect-drift | 1.2.0 → 1.2.1 |
+| emit-agents-md | 1.2.1 → 1.2.2 |
+| execute-bolts | 2.4.0 → 2.4.1 |
+| generate-units | 2.5.0 → 2.5.1 |
+| memory | 1.2.0 → 1.2.1 |
+| orchestrate-flow | 2.3.1 → 2.3.2 |
+| scan-codebase | 2.4.1 → 2.4.2 |
+
+### Plugin
+
+3.16.0 → 3.17.0 (8 skills bumped, 27 audit findings closed, ~13 files touched in commands/references/scenarios)
+
+### Deferred (still pending — not blocking)
+
+- P1-9: AGENTS.md schema missing convergence/replay/PBT data export (Iter 17-19 state not exported) — deferred
+- ADV-1: constitution.md vault template scaffold — deferred
+- ADV-2: data-mutation-policy.md schema validator — deferred
+- ADV-3: vendored superpowers sync check — deferred (`scripts/sync-superpowers.sh` exists)
+- 2 `.DS_Store` files (P2-7) — leaving to user to .gitignore
+- Scenario coverage for Iter 22-23 in scenarios 1, 2, 3, 5, 6 — only scenario-4 updated this iter
+
+### Verified
+
+- All 8 bumped skills' frontmatter versions cross-checked
+- Plugin.json + CHANGELOG version aligned
+- `grep -r "\.mega-sdd-memory/" plugins/mega-sdd/` clean except deliberate back-compat notes
+- 27 findings audit doc remains at `docs/superpowers/audits/2026-05-23-iter-24-deep-audit.md` (untouched as reference)
+
+---
+
 ## [3.16.0] — 2026-05-22
 
 ### Added — Iter 24: RECON / base-laravel-26 Starterkit Pack

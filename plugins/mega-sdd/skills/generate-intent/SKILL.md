@@ -513,7 +513,7 @@ Per user feedback — vault generation produces fewer fabricated entities + tigh
 Probe for existing scan artifacts BEFORE Step 1 (vault structure read) BEFORE Step 2 (extraction):
 
 1. **Probe codebase-map.md**: check `<project>/.mega-sdd/codebase/codebase-map.md` (v3.4+) AND `<project>/codebase-map.md` (legacy)
-2. **Probe conventions.md memory**: `<project>/.mega-sdd/memory/conventions.md` (v3.4+) AND `<project>/.mega-sdd-memory/conventions.md` (legacy)
+2. **Probe conventions.md memory**: `<project>/.mega-sdd/memory/conventions.md` (v3.4+) AND `<project>/.mega-sdd/memory/conventions.md` (legacy)
 3. **Probe knowledge-base**: `<project>/.mega-sdd/knowledge-base/README.md` (v3.4+) AND `<project>/docs/knowledge-base/README.md` (legacy)
 
 **Detection outcomes**:
@@ -1061,7 +1061,7 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 | What | Source | How used |
 |---|---|---|
 | Past flag picks for this user | `~/.mega-sdd/memory/preferences.md` | At Step 0.5-0.7: SUGGEST default by pre-filling AskUserQuestion. Surface as "Past observed default: <value> (picked N/N times). Use? Y/N/Other" |
-| Project conventions (test framework, naming) | `<project>/.mega-sdd-memory/conventions.md` | At Step 2 extraction: when generating tech OQs about conventions, set `resolution_mode: scan` with `scan_query: codebase-map §<convention>` (instead of `recommend`) since the convention is already established |
+| Project conventions (test framework, naming) | `<project>/.mega-sdd/memory/conventions.md` | At Step 2 extraction: when generating tech OQs about conventions, set `resolution_mode: scan` with `scan_query: codebase-map §<convention>` (instead of `recommend`) since the convention is already established |
 | Past classifier overrides on same pattern | `<vault>/.memory/classifier-accuracy.json` | If past pattern shows consistent override `tech/recommend → business/blocking`, bias new classifier toward `business/blocking` (per learning-rules.md §2.1) — SUGGEST not impose |
 
 ### Anti-halu rails

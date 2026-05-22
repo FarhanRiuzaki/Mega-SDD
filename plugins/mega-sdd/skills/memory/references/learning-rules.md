@@ -47,7 +47,7 @@ suggestion:
 
 ### 2.2 CONFLICT resolution pattern
 
-**Source**: `<project>/.mega-sdd-memory/decisions.md` `## CONFLICT resolutions` table
+**Source**: `<project>/.mega-sdd/memory/decisions.md` `## CONFLICT resolutions` table
 **Pattern key**: regex over the conflict claim text + resolution choice
 **Aggregation**: per-project; promote to user-scope `patterns.md` when 3+ projects show same pattern
 **Suggested action**: Pre-fill that resolution in resolve-oq's AskUserQuestion (user still confirms each time)
@@ -86,7 +86,7 @@ suggestion:
 
 ### 2.4 Recommendation REJECT pattern
 
-**Source**: `<project>/.mega-sdd-memory/decisions.md` `## Recommendation outcomes` table
+**Source**: `<project>/.mega-sdd/memory/decisions.md` `## Recommendation outcomes` table
 **Pattern key**: recommendation category + REJECT action
 **Aggregation**: per-project
 **Suggested action**: Flip default `resolution_mode` from `recommend` to `blocking` for that category (user MUST decide)
@@ -105,7 +105,7 @@ suggestion:
 
 ### 2.5 Convention detection pattern
 
-**Source**: `<project>/.mega-sdd-memory/conventions.md` confirmation count
+**Source**: `<project>/.mega-sdd/memory/conventions.md` confirmation count
 **Pattern key**: convention name + detected value
 **Aggregation**: per-project across scan-codebase runs
 **Suggested action**: Promote convention from "detected" to "established"; auto-include in scan-codebase output without re-detection

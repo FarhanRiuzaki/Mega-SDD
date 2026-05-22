@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.2.1
+version: 1.2.2
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -17,7 +17,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 - Explicit: `/mega-sdd:emit-agents-md`
 - Auto: `orchestrate-flow --deep` runs this at chain end (config-controlled per ITER6-OQ-4)
 - Opt-out per chain: `--no-agents-md` flag
-- Opt-out per project: `<project>/.mega-sdd-memory/config.yaml` `defaults.emit_agents_md: false`
+- Opt-out per project: `<project>/.mega-sdd/memory/config.yaml` `defaults.emit_agents_md: false`
 
 ## When NOT to use
 
@@ -78,7 +78,7 @@ For tools that understand mega-sdd:
 - Full vault at: `docs/mega-sdd/vaults/<slug>/`
 - Binding manifest: `binding.md` (claims validated against codebase)
 - Unit specs: `<vault>/units/U-*.md` (atomic AI-coding prompts with Hard Rules)
-- Memory: `<project>/.mega-sdd-memory/` (operational context across sessions)
+- Memory: `<project>/.mega-sdd/memory/` (operational context across sessions)
 
 For AGENTS.md-only tools: the sections above contain everything you need.
 ```
@@ -101,7 +101,7 @@ Per `plugins/mega-sdd/references/paths.md`:
    - `vault.json` for structured metadata (project shape, mode, OQ counts)
    - `00-index.md`, `01-overview.md`, `02-architecture.md`, `04-flows.md`, `05-decisions.md`, `06-constraints.md` for prose
    - `binding.md` (if exists) for implementation state
-   - `<project>/.mega-sdd-memory/conventions.md` (if exists) for detected conventions
+   - `<project>/.mega-sdd/memory/conventions.md` (if exists) for detected conventions
 4. **Read user-authored AGENTS.md** (if `--mode=append`):
    - Preserve user-authored sections (anything before mega-sdd generation marker)
    - Append mega-sdd section after marker

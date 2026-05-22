@@ -7,12 +7,17 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.0.0 -->
-<!-- vault_source: docs/mega-sdd/vaults/<slug>/vault.json -->
+<!-- generated_by: mega-sdd:emit-agents-md v1.2.2 -->
+<!-- vault_source: .mega-sdd/vaults/<slug>/vault.json -->
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: <vault.json version field> -->
+<!-- framework: <detected from codebase-map.md §7 — e.g., laravel-base-26, laravel, django, _universal> -->
+<!-- framework_pack_path: <relative path to plugins/mega-sdd/references/framework-conventions/<framework>.md> -->
+<!-- mutability_summary: locked=<N> intent=<N> artifact=<N> (counts from data-mutation-policy.md when KB-derived vault) -->
 <!-- DO NOT EDIT BELOW THIS LINE — regenerate via /mega-sdd:emit-agents-md -->
 ```
+
+> **v1.2.2+ Iter 25**: Header now declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
 
 The generation marker (HTML comment) is MANDATORY. Re-emission detects existing mega-sdd output via this marker.
 
@@ -180,10 +185,10 @@ Cite source for every clause flattened. Section omitted when constitution.md abs
 
 This project uses mega-sdd (https://gitlab.com/airnd1/mega-sdd) for spec-driven AI development. Additional context beyond this AGENTS.md:
 
-- **Full vault**: `docs/mega-sdd/vaults/<slug>/` (7-file structured spec + vault.json manifest)
+- **Full vault**: `.mega-sdd/vaults/<slug>/` (v3.4+ canonical; 7-file structured spec + vault.json manifest)
 - **Binding manifest**: `<vault>/binding.md` (vault claims validated against codebase; CONFIRMED / CONFLICT / OQ verdicts; Implementation State Map)
 - **Unit specs**: `<vault>/units/U-*.md` (atomic AI-coding-prompt units with Hard Rules pre/post-flight validation)
-- **Memory** (operational context across sessions): `<project>/.mega-sdd-memory/`
+- **Memory** (operational context across sessions): `<project>/.mega-sdd/memory/` (v3.4+ canonical)
 
 For tools that understand mega-sdd: consume the vault + binding directly for higher precision than this flattened view.
 

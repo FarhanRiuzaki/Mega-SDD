@@ -39,9 +39,11 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 | `learning-log.md` | Audit log of accepted/rejected/rolled-back learnings | Markdown chronological log |
 | `config.yaml` | User configuration (thresholds, opt-outs) | YAML key/value |
 
-### PROJECT scope (`<project-root>/.mega-sdd-memory/`)
+### PROJECT scope (`<project-root>/.mega-sdd/memory/`)
 
 **Per-repo**. Git-trackable per-file (per MEMORY-OQ-2 resolved per-file decision). Survives vault lifecycle.
+
+> **Path resolution (v3.4+ Iter 10 canonical, enforced v1.2.1 Iter 25)**: write-side default is `<project-root>/.mega-sdd/memory/` per `plugins/mega-sdd/references/paths.md`. Legacy path `<project-root>/.mega-sdd-memory/` honored for read-side back-compat only — when both exist, NEW writes go to `.mega-sdd/memory/`. Use `/mega-sdd:migrate-paths` to consolidate.
 
 | File | Purpose | Format | Default gitignore |
 |---|---|---|---|
@@ -51,7 +53,7 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 
 ### VAULT scope (`<vault-path>/.memory/`)
 
-**Per-vault, ephemeral**. Lives with vault; deleted/archived with vault per MEMORY-OQ-5 (b) — moved to `<project>/.mega-sdd-memory/archived-vaults/<vault-id>/` when vault deleted.
+**Per-vault, ephemeral**. Lives with vault; deleted/archived with vault per MEMORY-OQ-5 (b) — moved to `<project>/.mega-sdd/memory/archived-vaults/<vault-id>/` (v3.4+ canonical) when vault deleted.
 
 | File | Purpose | Format |
 |---|---|---|
@@ -145,7 +147,7 @@ scope: user
 
 ## Learning #1 — 2026-05-15T10:00:00Z
 
-- **Source observations**: `<proj-a>/.mega-sdd-memory/decisions.md` rows 1-5
+- **Source observations**: `<proj-a>/.mega-sdd/memory/decisions.md` rows 1-5
 - **Suggested action**: Pre-fill `OUTPUT_MODE=compact` at Step 0.7
 - **User decision**: ACCEPT
 - **Applied to**: `~/.mega-sdd/memory/config.yaml` (key: `default_output_mode: compact`)
@@ -187,7 +189,7 @@ applied:
     value: compact
 ```
 
-### `<project>/.mega-sdd-memory/decisions.md`
+### `<project>/.mega-sdd/memory/decisions.md`
 
 ```markdown
 ---
@@ -218,7 +220,7 @@ scope: project
 | 2026-05-20 | OQ-AR-7 | RFC 7807 problem+json envelope | ACCEPT | matches industry standard | resolve-oq v1.1 |
 ```
 
-### `<project>/.mega-sdd-memory/conventions.md`
+### `<project>/.mega-sdd/memory/conventions.md`
 
 ```markdown
 ---
@@ -246,7 +248,7 @@ scope: project
 - Status: convention-in-transition (suggested hard rule pending — see Suggested Unit Hard Rules)
 ```
 
-### `<project>/.mega-sdd-memory/outcomes.md`
+### `<project>/.mega-sdd/memory/outcomes.md`
 
 ```markdown
 ---
@@ -451,6 +453,6 @@ This keeps autonomy mode fast AND memory-aware.
 
 - `--memory-off` flag on ANY skill disables both reads and writes
 - Global opt-out via `~/.mega-sdd/config.yaml` `defaults.memory_enabled: false`
-- Per-scope opt-out via `<project>/.mega-sdd-memory/.disabled` (empty file)
+- Per-scope opt-out via `<project>/.mega-sdd/memory/.disabled` (empty file; v3.4+ canonical)
 - Per-vault opt-out via `<vault>/.memory/.disabled` (empty file)
 - USER scope memory is plain markdown (per MEMORY-OQ-3 resolved) — do NOT run mega-sdd on shared infra without opt-out if patterns are sensitive

@@ -13,7 +13,7 @@ Checkpoint protocol adds per-step persistence inside each skill invocation.
 ## File location + format
 
 ```
-<vault>/.mega-sdd/checkpoints/
+<vault>/.internal/checkpoints/
 ├── 2026-05-21T10:00:00Z-extract-intelligence-wave-3.jsonl
 ├── 2026-05-21T10:30:00Z-generate-intent-step-3.jsonl
 ├── 2026-05-21T11:00:00Z-bind-codebase-claim-45.jsonl
@@ -65,8 +65,8 @@ For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/m
 
 ## Rotation policy (per ITER6-OQ-7 resolved)
 
-- Keep checkpoints for last 3 runs in `<vault>/.mega-sdd/checkpoints/`
-- Older checkpoints moved to `<vault>/.mega-sdd/checkpoints-archive/`
+- Keep checkpoints for last 3 runs in `<vault>/.internal/checkpoints/`
+- Older checkpoints moved to `<vault>/.internal/checkpoints-archive/`
 - `mega-sdd:memory prune` (Iter 5) cleans archive older than 180 days
 - "Run" boundaries detected by timestamp gaps >5 minutes between checkpoints
 
@@ -79,7 +79,7 @@ handoff:
   # ... existing fields ...
   checkpoints:                          # v2.0+ (Iter 6)
     latest_step_id: claim-45
-    checkpoint_file: <vault>/.mega-sdd/checkpoints/<timestamp>-<skill>-<step>.jsonl
+    checkpoint_file: <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl
     resume_command: "/mega-sdd:bind-codebase --resume-from=claim-46"
 ```
 
@@ -96,7 +96,7 @@ Resume command: /mega-sdd:auto --resume (re-enters chain at bind-codebase claim-
 
 - v2.1 skills (no checkpoint emission) → resume continues to work via CWD-driven cursor (Iter 4 behavior)
 - v3.0 skills emit checkpoints; orchestrator reads them when present
-- Old vaults without `.mega-sdd/checkpoints/` directory → created lazily on first checkpoint emission
+- Old vaults without `.internal/checkpoints/` directory → created lazily on first checkpoint emission
 
 ## Privacy + cleanup
 

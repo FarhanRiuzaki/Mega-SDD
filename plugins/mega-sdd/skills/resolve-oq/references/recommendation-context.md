@@ -22,23 +22,24 @@ When building a recommendation for an OQ, consult these sources in order. First 
 
 ### 1. KB `[VERIFIED]` markers (strongest)
 
-If a knowledge-base exists at `docs/knowledge-base/` (or `old-reference/knowledge-base/` etc.):
+If a knowledge-base exists at (priority order, first hit wins) `.mega-sdd/knowledge-base/` (v3.4+ canonical), `docs/knowledge-base/` (legacy), or `old-reference/knowledge-base/`:
 
 - Match OQ tag/text against KB domain files
 - E.g., `OQ-AR-7` (architecture, error envelope) → look in `10-domains/*` for error-related entries
 - `OQ-FL-3` (flows, payment) → look in `10-domains/20-import-lc-payment.md` or similar
 - Extract `[VERIFIED]` items that directly answer the OQ
-- Citation: `docs/knowledge-base/10-domains/<file>.md §<section>:<line>`
+- **v1.4+ Iter 22 mutability tier**: if KB claim carries mutability marker, surface it in recommendation (`[VERIFIED][LOCKED]` → flag user "this is a LOCKED rule, rebuild MUST preserve 1:1"; `[VERIFIED][ARTIFACT]` → flag "this is discardable, do you want to discard?")
+- Citation: `<kb-path>/10-domains/<file>.md §<section>:<line>` (use detected KB path)
 - Confidence: HIGH
 
 ### 2. Memory — project-scope decisions (strong)
 
-`<project>/.mega-sdd-memory/decisions.md`:
+`<project>/.mega-sdd/memory/decisions.md` (v3.4+ canonical per paths.md; legacy `<project>/.mega-sdd-memory/decisions.md` honored for read-side back-compat):
 
 - Search past CONFLICT resolutions / OQ resolutions / Recommendation outcomes for similar patterns
 - E.g., OQ about auth → check past auth-related decisions
 - Threshold: ≥3 consistent past observations OR confidence ≥0.80
-- Citation: `.mega-sdd-memory/decisions.md row <N>`
+- Citation: `.mega-sdd/memory/decisions.md row <N>`
 - Confidence: HIGH (≥5 obs) or MEDIUM (3-4 obs)
 
 ### 3. Memory — user-scope patterns (strong cross-project)
@@ -57,7 +58,7 @@ Current vault context:
 - ADRs in `05-decisions.md` that relate to the OQ's domain
 - Flows in `04-flows.md` that touch the same area
 - Constraints in `06-constraints.md` that may dictate the answer
-- Citation: `docs/mega-sdd/vaults/<slug>/05-decisions.md §D-XXX`
+- Citation: `.mega-sdd/vaults/<slug>/05-decisions.md §D-XXX` (v3.4+ canonical; legacy `docs/mega-sdd/vaults/<slug>/05-decisions.md` honored for back-compat)
 - Confidence: MEDIUM (vault is locked spec; recommendation extrapolates from related decisions)
 
 ### 5. Codebase-map (medium, brownfield only)
@@ -126,11 +127,11 @@ For each citation in the recommendation:
 
 | Citation source | Probe |
 |---|---|
-| KB section (`docs/knowledge-base/<file>.md §<section>:<line>`) | `Bash test -f <file>` + `Bash grep -n "<section>" <file>` to verify section exists |
-| Memory entry (`.mega-sdd-memory/<file>.md row N`) | `Read <file>` + count rows in target table; verify N within range |
+| KB section (`<kb-path>/<file>.md §<section>:<line>`) | `Bash test -f <file>` + `Bash grep -n "<section>" <file>` to verify section exists |
+| Memory entry (`.mega-sdd/memory/<file>.md row N` v3.4+ canonical; legacy `.mega-sdd-memory/` honored) | `Read <file>` + count rows in target table; verify N within range |
 | User patterns (`~/.mega-sdd/memory/patterns.md §<section>`) | `Read patterns.md` + grep for section header |
-| Vault ADR (`docs/mega-sdd/vaults/<slug>/05-decisions.md §D-XXX`) | `Read 05-decisions.md` + grep for D-XXX heading |
-| Codebase-map line (`codebase-map.md §N + <file>:<line>`) | `Read codebase-map.md` + verify referenced file path exists |
+| Vault ADR (`.mega-sdd/vaults/<slug>/05-decisions.md §D-XXX` v3.4+ canonical) | `Read 05-decisions.md` + grep for D-XXX heading |
+| Codebase-map line (`.mega-sdd/codebase/codebase-map.md §N + <file>:<line>` v3.4+) | `Read codebase-map.md` + verify referenced file path exists |
 
 ### Outcomes
 
@@ -214,7 +215,7 @@ OQ-AR-7 [P2] [tech / recommend]: What HTTP error envelope shape?
 Recommendation: Use RFC 7807 problem+json envelope (recommended)
   Rationale: KB domain file 10-domains/50-parameter-reference.md §3 marks
     error envelope as [VERIFIED] following RFC 7807 in 3 prior runs.
-  Source: docs/knowledge-base/10-domains/50-parameter-reference.md §3:12
+  Source: .mega-sdd/knowledge-base/10-domains/50-parameter-reference.md §3:12
   Fallback-if-wrong: If RFC 7807 doesn't fit client expectations, revisit
     and consider JSON:API error format.
   Confidence: HIGH
@@ -230,7 +231,7 @@ OQ-FL-3 [P1] [business / blocking]: Does cancellation flow refund prior payments
 Recommendation: Yes — refund prior payments via auto-reversal job (recommended)
   Rationale: Past pattern: 4/5 cancellation OQs resolved as auto-refund in
     this project + 2/2 cross-project (memory.patterns.md row 12).
-  Source: .mega-sdd-memory/decisions.md rows 23, 31, 38, 45 +
+  Source: .mega-sdd/memory/decisions.md rows 23, 31, 38, 45 +
     ~/.mega-sdd/memory/patterns.md §cancellation-refund-patterns
   Fallback-if-wrong: If finance/compliance team objects, revisit; alternative
     is manual reconciliation via /reconcile-payments endpoint.

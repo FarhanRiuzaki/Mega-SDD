@@ -149,7 +149,9 @@ OQ-CN-005 [P1] [business / blocking]:
   Recommendation: NO — fix the typo; correct field is "CFKDHL" (recommended)
   Rationale: KB marks the typo as [VERIFIED] critical finding. Legacy
     silently corrupted 3% of customer updates per audit log analysis.
-  Source: docs/knowledge-base/10-domains/10-cif-customer.md §Gotcha 9
+  Source: .mega-sdd/knowledge-base/10-domains/10-cif-customer.md §Gotcha 9 (v3.4+ canonical)
+  Mutability tier: [LOCKED] (regulatory citation: BI Reg 23/2/2021 §4 — field validation rule)
+  → Pack-aware Hard Rule emitted into all customer-update units
   Fallback-if-wrong: If downstream systems depend on bug, add adapter
     layer to translate; do not propagate corruption.
   Confidence: HIGH
@@ -172,11 +174,20 @@ Pick + memory captures. Resume:
 ▶ Phase 3 of 6: invoking scan-codebase ~/projects/rebuild-target/
 ✓ Phase 3 of 6: scan-codebase → engine: tree-sitter, precision: ast
   Empty Laravel scaffold detected; minimal symbols (User model + base controllers)
+  Framework detected: laravel-base-26 (composer.json — pixinvent/vuexy-laravel-bootstrap-jetstream)
+    → pack_path: plugins/mega-sdd/references/framework-conventions/laravel-base-26.md
+    → extends: laravel → _universal
 
 ▶ Phase 4 of 6: invoking bind-codebase
 ✓ Phase 4 of 6: bind-codebase → 87 claims, 0 conflicts
   Implementation State Map:
     NEW: 85 (greenfield-ish; building new on Laravel)
+  Mutability tier distribution (from KB):
+    [LOCKED]: 12 claims (regulatory + integration contracts)
+    [INTENT]: 68 claims (outcome-only; rebuild has design freedom)
+    [ARTIFACT]: 7 claims (discarded — legacy implementation accidents)
+  Framework pack loaded: laravel-base-26.md (11 Hard Rules emitted into Suggested Unit Hard Rules)
+    e.g., UUID PK enforcement, BaseController extension, DOMContentLoaded JS init, SweetAlert2 dialogs
     IMPLEMENTED: 2 (Laravel's built-in User model + Auth scaffold)
     PARTIAL_FIELDS_MISSING: 0
   KB consultation: 700+ items consulted (KB markers feed into recommendations)

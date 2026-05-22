@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.5.0
+version: 2.5.1
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -269,7 +269,7 @@ blocker:
 
    Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to v1.5 behavior (binding-only target_files).
 
-   Symbol graph cached at `<vault>/.mega-sdd/symbol-graph.json` per scan-codebase run; reused across all units.
+   Symbol graph cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical per paths.md) per scan-codebase run; reused across all units.
 
 8. **Fill `existing_interfaces`.**
    - Brownfield only: pull from binding manifest CONFIRMED entries for the targeted files
@@ -292,7 +292,7 @@ blocker:
 
 12. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`.
 
-12.4.5. **Per-anchor verification (v2.1+, Iter 8).**
+12.3. **Per-anchor verification (v2.1+, Iter 8 — renumbered v2.5.1 Iter 25; runs FIRST as precondition check before constitution inject + render).**
 
    Per `references/defensive-generation.md` §Step 12.4.5. For each Anchor entry in each unit's `## Anchors` section:
 
@@ -306,7 +306,7 @@ blocker:
 
    Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirational (especially for new files in `create` units). Warnings surface visually in chat output + unit body footer so user can review.
 
-12.3. **Inject constitution clauses (v2.4+, Iter 17).**
+12.4. **Inject constitution clauses (v2.4+, Iter 17 — renumbered v2.5.1 Iter 25).**
 
    Per `generate-intent/references/vault-contract.md` §constitution.
 
@@ -343,7 +343,42 @@ blocker:
    - Anti-pattern (§D) clauses always inject as Anti-patterns (informational), not Hard Rules (machine-validated), unless mechanically detectable per Iter 6 DESIGN-OQ-6
    - Constitution version + hash tracked: if constitution drifts between unit generation and bolt execution → halt `constitution_drift_detected`
 
-12.4. **Polished-prompt render pass (v1.3+, Iter 3).**
+12.4.5. **Framework pack provenance citation (v2.5.1+, Iter 25 — propagates Iter 23 framework pack into unit body).**
+
+   When `binding.md` §Suggested Unit Hard Rules contains rules sourced from framework pack (introduced by bind-codebase Step 2.8), emit each pack-derived Hard Rule into the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
+
+   Format inside unit's `## Hard rules` section:
+
+   ```yaml
+   - id: framework-pack-naming-001
+     source: "framework-conventions/laravel-base-26.md §Hard Rules — UUID PK enforcement"
+     framework: laravel-base-26
+     framework_pack_version: 1.0  # framework_version_range when last_verified_against passed
+     message: "Domain entity migrations MUST use UUID primary key per starterkit convention"
+     severity: error
+     rule:
+       pattern: |
+         $table->id()
+       inside:
+         pattern: |
+           Schema::create($_, function (Blueprint $table) { $$$ })
+   ```
+
+   Aggregate in unit body:
+
+   ```markdown
+   ## Framework pack source
+
+   Conventions enforced from: `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` (v1.0, extends `laravel.md` extends `_universal.md`)
+   Rules pulled into this unit's Hard Rules: N (see §Hard rules for line-level enforcement)
+   ```
+
+   **Anti-halu rails**:
+   - Framework pack rules NEVER silently apply — citation mandatory so user can audit + override
+   - Rules whose `path_glob` doesn't match this unit's `target_files` are SKIPPED (not all pack rules apply to every unit)
+   - When pack `extends:` chain → cite the SPECIFIC pack file the rule lives in (not the chain head), so override edits are traceable
+
+12.5. **Polished-prompt render pass (v1.3+, Iter 3 — renumbered v2.5.1 Iter 25).**
 
    After all units written but BEFORE the dedup check, sweep each unit and validate the prompt-shape contract per `references/unit-schema.md`:
 
@@ -382,7 +417,7 @@ blocker:
      next_action: "Re-run generate-units OR manually populate the missing sections."
    ```
 
-12.5. **Deduplication check (v1.2+, Iter 1).**
+12.6. **Deduplication check (v1.2+, Iter 1 — renumbered v2.5.1 Iter 25).**
 
    After all units written, sanity-check `task_type: create` units against the Implementation State Map:
 
@@ -487,7 +522,7 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 | What | Source | How used |
 |---|---|---|
 | Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
-| Project decision history | `<project>/.mega-sdd-memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
+| Project decision history | `<project>/.mega-sdd/memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
 | Classifier override patterns | `<vault>/.memory/classifier-accuracy.json` | When unit derives from a vault OQ that was overridden by user, surface in unit's `## Context` as note: "this OQ was reclassified manually; original heuristic may not match" |
 
 ### Writes

@@ -17,7 +17,14 @@ Mode resolution (v1.2+ — auto-detect per `skills/generate-intent/SKILL.md` §D
 
 The user typically does NOT need `--from-prompt`; just type the brief in quotes or the path. Flag is for explicit control.
 
-Follow `skills/generate-intent/SKILL.md` invocation modes exactly. Output goes to `docs/mega-sdd/vaults/<auto-named>/` unless user overrides via `--out=<path>`.
+Follow `skills/generate-intent/SKILL.md` invocation modes exactly. Output goes to `.mega-sdd/vaults/<auto-named>/` (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`) unless user overrides via `--out=<path>`. Legacy `docs/mega-sdd/vaults/<auto-named>/` only honored when legacy layout already exists on disk.
+
+Mode B (KB sub-mode, v1.10+ Iter 22):
+- `--kb=<path>` reads KB as ANALYSIS INPUT (not 1:1 mirror)
+- Tier-aware routing per claim's `[LOCKED]/[INTENT]/[ARTIFACT]` mutability marker (see `skills/generate-intent/SKILL.md` §Mode B routing table)
+- Reads `<kb>/99-rebuild-architecture/data-mutation-policy.md` for ERD freedom
+- Vault `02-architecture.md` uses rebuild-proposed shape; only `[LOCKED]` fields retain legacy shape verbatim
+- Pre-v1.4 KBs without tier markers → all claims treated as `[INTENT]` (safe middle-ground)
 
 Hard rails:
 - Anti-hallucination: every claim cites source; ambiguities → Open Questions.
