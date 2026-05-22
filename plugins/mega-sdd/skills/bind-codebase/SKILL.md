@@ -275,6 +275,41 @@ This state propagates to `generate-units`, which assigns `task_type: extend` wit
    - NEVER suggest a Hard rule whose anchor file doesn't exist in codebase-map (`hard_rule_unanchored` would fire at bolt time anyway — surface here).
    - Suggestions are RECOMMENDATIONS, not impositions. `generate-units` reviews + filters before inserting into units.
 
+2.10. **Constitution-aware CONFLICT surfacing.**
+
+   Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists:
+
+   a. **Read constitution.md** at the start of step 2 (binding); cache for cross-referencing
+   b. **For each CONFLICT detected**: scan constitution §A-F clauses for relevant rules
+   c. **Cite constitution clauses** in binding.md CONFLICT entries when applicable:
+      ```
+      | C-007 | Auth uses Bearer | Code uses session | Constitution §B-001 mandates Sanctum auth on /api/* (clause precedence) | KEEP_VAULT |
+      ```
+   d. **Constitution-violation as halt**: if existing code is in CONFLICT with constitution AND user opted for `--strict-constitution`, surface as `bind_conflict_constitution_violation` halt; user resolves before vault locks
+
+   e. **Constitution hash persistence**: write `constitution_hash` (sha256 of constitution.md content) to binding.md frontmatter for later drift detection by `detect-drift`
+
+### Halt YAML for bind_conflict_constitution_violation
+
+```yaml
+blocker:
+  type: bind_conflict_constitution_violation
+  emitted_at: <ISO8601>
+  emitted_by: bind-codebase
+  details:
+    conflict_id: C-007
+    vault_claim: "<verbatim from vault>"
+    codebase_reality: "<verbatim from codebase-map>"
+    constitution_clause: "§B-001 — All API endpoints MUST use Sanctum auth middleware"
+    violation_severity: high
+  next_action: "Constitution clause §B-001 takes precedence. Either: (1) update codebase to satisfy constitution (recommended; preserves invariant), (2) update constitution clause if no longer applicable (rare; requires user sign-off), (3) accept conflict via /mega-sdd:resolve-oq --binding."
+```
+
+### Backward compat
+
+- v3.12 vaults without constitution.md → Step 2.10 SKIPPED gracefully; no halt, no citation
+- `--no-constitution` flag opt-out preserves pre-v1.8 binding behavior
+
 2.11. **Deferred-OQ auto-resolution.** Logical position: after Hard Rules emission since it processes user-deferred OQs against the now-augmented codebase-map.
 
    For each OQ in the vault with `status: deferred` AND `defer_to: binding`:
@@ -311,41 +346,6 @@ This state propagates to `generate-units`, which assigns `task_type: extend` wit
    e. **Conservative threshold:** When in doubt, prefer falling back to manual resolution (d). Never silently auto-resolve a deferred OQ that could be wrong. The user trusts the citation in (c); never write an evidence string that doesn't exist in codebase-map.
 
    Update aggregate counts (claims_total / confirmed / conflict / oq) to include any newly auto-resolved deferred OQs in `confirmed`.
-
-2.10. **Constitution-aware CONFLICT surfacing.**
-
-   Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists:
-
-   a. **Read constitution.md** at the start of step 2 (binding); cache for cross-referencing
-   b. **For each CONFLICT detected**: scan constitution §A-F clauses for relevant rules
-   c. **Cite constitution clauses** in binding.md CONFLICT entries when applicable:
-      ```
-      | C-007 | Auth uses Bearer | Code uses session | Constitution §B-001 mandates Sanctum auth on /api/* (clause precedence) | KEEP_VAULT |
-      ```
-   d. **Constitution-violation as halt**: if existing code is in CONFLICT with constitution AND user opted for `--strict-constitution`, surface as `bind_conflict_constitution_violation` halt; user resolves before vault locks
-
-   e. **Constitution hash persistence**: write `constitution_hash` (sha256 of constitution.md content) to binding.md frontmatter for later drift detection by `detect-drift`
-
-### Halt YAML for bind_conflict_constitution_violation
-
-```yaml
-blocker:
-  type: bind_conflict_constitution_violation
-  emitted_at: <ISO8601>
-  emitted_by: bind-codebase
-  details:
-    conflict_id: C-007
-    vault_claim: "<verbatim from vault>"
-    codebase_reality: "<verbatim from codebase-map>"
-    constitution_clause: "§B-001 — All API endpoints MUST use Sanctum auth middleware"
-    violation_severity: high
-  next_action: "Constitution clause §B-001 takes precedence. Either: (1) update codebase to satisfy constitution (recommended; preserves invariant), (2) update constitution clause if no longer applicable (rare; requires user sign-off), (3) accept conflict via /mega-sdd:resolve-oq --binding."
-```
-
-### Backward compat
-
-- v3.12 vaults without constitution.md → Step 2.10 SKIPPED gracefully; no halt, no citation
-- `--no-constitution` flag opt-out preserves pre-v1.8 binding behavior
 
 3. **Aggregate counts.** Track `claims_total`, `confirmed`, `conflict`, `oq`.
 
