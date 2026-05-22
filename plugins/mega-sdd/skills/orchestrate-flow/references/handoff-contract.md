@@ -31,6 +31,19 @@ handoff:
     latest_step_id: <string>            # e.g., "claim-45" for bind-codebase, "wave-3" for extract-intelligence
     checkpoint_file: <absolute-path>    # <vault>/.mega-sdd/checkpoints/<timestamp>-<skill>-<step>.jsonl
     resume_command: <string>            # e.g., "/mega-sdd:bind-codebase --resume-from=claim-46"
+  constitution:                         # v3.13+ (Iter 17 — formally added Iter 20) — when constitution.md exists
+    constitution_hash: <sha256>         # of <vault>/constitution.md at handoff emission time
+    clauses_referenced: []              # clause IDs cited in this skill's output (e.g., ["A-001", "B-002"])
+  pbt:                                  # v3.13+ (Iter 18 — formally added Iter 20) — when properties: present
+    properties_validated: <N>           # count of property-based tests run this phase
+    properties_failed: <N>              # count violated; details in postflight.json
+  cycles:                               # v3.13+ (Iter 19 — formally added Iter 20) — when convergence loops active
+    cycle_count: <N>                   # how many auto-recovery cycles ran
+    halts_auto_resolved: []             # halt types resolved via memory recommendations
+    halts_escalated_to_user: []         # halt types deferred for manual review
+  replay:                               # v3.13+ (Iter 18 — formally added Iter 20) — when replay capture active
+    snapshot_path: <abs path to .internal/replays/*.jsonl>
+    divergence_classification: clean | minor | high | n/a
   metadata:                             # v2.1+ (Iter 5) — memory layer integration; optional otherwise
     memory_context:                     # IN — orchestrator provides relevant memory slices to skill at invocation
       project_decisions_relevant: []    # rows from <project>/.mega-sdd-memory/decisions.md matching the skill's domain

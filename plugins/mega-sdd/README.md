@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 3.8.0 · **License:** MIT
+**Version:** 3.13.0 · **License:** MIT
 
 > 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
@@ -82,7 +82,14 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
-## Anti-hallucination defense (10 layers)
+## What's new in v3.13.0 (Iters 17-20)
+
+- **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
+- **Iter 18 Replay + PBT** — `/mega-sdd:replay <unit>` for regression detection; `properties:` field for invariant testing
+- **Iter 19 Convergence loops** — `/mega-sdd:auto --converge` auto-recovers eligible halts using memory recommendations
+- **Iter 20 Audit fixes** — closed 5 claim-vs-implementation gaps from Iter 17-19 (per `docs/superpowers/audits/2026-05-21-deep-audit-v3.12.md`)
+
+## Anti-hallucination defense (13 layers)
 
 1. **Intent** — uncertain claims promote to Open Questions
 2. **OQ classification** — business vs tech; tech auto-resolves

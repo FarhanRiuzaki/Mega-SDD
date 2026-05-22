@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.8.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.13.0 · **License:** MIT
 
 </div>
 
@@ -87,7 +87,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-**10-layer anti-hallucination defense**:
+**13-layer anti-hallucination defense** (v3.13.0):
 
 1. Intent layer — uncertain claims promote to Open Questions; never guess
 2. OQ classification — business vs tech; tech auto-resolves via codebase scan
@@ -97,8 +97,11 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 6. Hard Rule pre/post-flight — ast-grep validates constraints at bolt time
 7. AST-precise extraction — tree-sitter (Aider pattern)
 8. Memory layer — suggestions only; mandatory audit log + rollback
-9. Drift detection — code vs vault reconciliation
+9. Drift detection — code vs vault + constitution reconciliation
 10. Interface lock — cross-squad consumed interfaces must be `status: locked`
+11. **Constitution layer** (v3.10+) — project-facing rules in 8th vault file; clauses inject into bolt Hard Rules
+12. **Property-Based Testing** (v3.11+) — invariants over input space; counterexamples preserved on violation
+13. **Convergence loops** (v3.12+) — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
 
 ---
 

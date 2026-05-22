@@ -120,6 +120,59 @@ These items are unresolved at vault generation time. AI tools should NOT make as
 For full OQ roll-up: `docs/mega-sdd/vaults/<slug>/00-index.md` §Open Questions roll-up
 ```
 
+## Section 7.5 — Constitution (NEW v1.2+, Iter 20 — closes Iter 17 Bug 4)
+
+When `<vault>/constitution.md` exists (Iter 17+), include flattened constitution section in AGENTS.md for tool-agnostic consumption:
+
+```markdown
+## Constitution (project-facing rules)
+
+Non-negotiable project invariants. AI tools MUST respect these when editing this codebase.
+
+### Coding standards (§A)
+- All API endpoints MUST use Sanctum auth middleware (constitution §A-001)
+- Naming: PascalCase for classes; kebab-case for routes (§A-002)
+- ... (full §A clauses)
+
+### Security baselines (§B)
+- All user input passes through Form Request validators (§B-001)
+- ... (full §B clauses)
+
+### Architecture invariants (§C)
+- Controllers MUST NOT call other Controllers; use Services (§C-001)
+- ... (full §C clauses)
+
+### Anti-patterns (§D) — DO NOT replicate
+- NEVER replicate cfkdhl→CFKDDL typo (§D-001; see knowledge-base §critical-findings)
+- ... (full §D clauses)
+
+### Performance constraints (§E)
+- API response time median < 200ms (§E-001)
+- ... (full §E clauses)
+
+### Compliance (§F)
+- All financial transactions logged to audit_log (§F-001)
+- ... (full §F clauses)
+
+For full constitution + citations: see `<vault>/constitution.md`.
+```
+
+Cite source for every clause flattened. Section omitted when constitution.md absent (backward compat).
+
+### Conditional rendering
+
+| Constitution status | AGENTS.md §Constitution behavior |
+|---|---|
+| `<vault>/constitution.md` exists + non-empty | Render full §A-F flattened |
+| `<vault>/constitution.md` exists but empty | Skip section (no fluff) |
+| `<vault>/constitution.md` absent (pre-Iter-17 vaults) | Skip section gracefully |
+
+### Anti-halu
+
+- Flattens VERBATIM from constitution.md; no paraphrasing
+- Cites clause IDs (§A-001, §B-001, etc.) for traceability
+- Constitution hash included in generation marker (HTML comment) for tool-detection of staleness
+
 ## Section 8 — Mega-sdd interop notes
 
 ```markdown
