@@ -5,6 +5,35 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.18.0] — 2026-05-23
+
+### Iter 26 — Verification audit closure
+
+Closes 5 highest-leverage gaps from v3.17.0 verification audit at `docs/superpowers/audits/2026-05-23-iter-25-verification-audit.md`.
+
+**Fixed**
+
+- **(P1-A)** `emit-agents-md` output template — hard-coded `docs/mega-sdd/vaults/<slug>/` paths replaced with `{{vault_path}}` substitution. Every v3.4+ project running emit-agents-md was getting a polluted AGENTS.md whose annotations pointed to a non-existent path. Skill bump: 1.2.2 → 1.2.3.
+- **(P0-1)** `bind-codebase` step 2.10 (Constitution-aware CONFLICT surfacing) placed in linear sequence between step 2.9 and step 2.11. Was physically positioned AFTER step 6 (audit log), breaking procedure flow. Also de-cluttered step 2.11's chatty renumbering self-reference. Skill bump: 1.9.1 → 1.9.2.
+- **(P0-4)** `generate-units` step ordering: 7.5 (PageRank) and 7.6 (collision check) swapped to monotonic order; step 12 (audit log) renumbered to step 13 and moved AFTER step 12.6 so the audit event reflects all post-write validation outcomes. Skill bump: 2.5.1 → 2.5.2.
+- **(P0-8)** `diff-vault:318` cross-reference to `references/vault-contract.md` (which doesn't exist in diff-vault/references/) repointed to `../generate-intent/references/vault-contract.md`. Skill bump: 1.2.0 → 1.2.1.
+- **(P1-B)** README + plugin README version metadata sweep — root README and plugin README both shipped v3.13.0 / v3.8.0 banners and a stale 11-skill inventory table with 12 of 13 stale per-skill versions. All bumped to v3.18.0 + current skill versions; anti-halu list completed from 10 to claimed 13 items. Caught additional stale "Currently 3.8.0", "11 skills + 1 anchor", "10-layer anti-hallucination defense", and structure-tree "11 skills" sites in root README via grep verification.
+- **(P1-C)** `commands/orchestrate-flow.md` refreshed — added `--deep` and `--resume` flags to argument-hint, removed obsolete "max 3 per chain" claim, sharpened hard-rails section to document `--auto` substance-prompt semantics.
+- **(P1-9)** `agents-md-schema.md` extended with PBT (`properties_validated`), replay (`replay_snapshot_count`), and convergence (`convergence_cycle_count`) header fields. Iter 17 `constitution_hash` formalized in the same conditional-rendering schema (was prose-only before). Output template + procedure step 5 updated; OMIT-hints moved out of the literal emission template into a guidance paragraph above the code fence.
+
+**Updated skills**
+
+- `emit-agents-md` 1.2.2 → 1.2.3
+- `bind-codebase` 1.9.1 → 1.9.2
+- `generate-units` 2.5.1 → 2.5.2
+- `diff-vault` 1.2.0 → 1.2.1
+
+**Plugin** 3.17.0 → 3.18.0.
+
+**Audit closure rate** (per verification methodology): 7 of 7 highest-leverage P0/P1 findings closed. Architectural items (halt-taxonomy consolidation, schema-coherence linter) intentionally deferred to a later iter per audit recommendation. Two follow-ups carried forward to future iters: (a) Iter 25 stale 12.x cross-refs in 3 companion docs (defensive-generation.md, lint-units.md, pagerank-targeting.md); (b) command files missing skill-accepted flags (`--memory-off`, `--converge`, `--no-converge`, `--max-cycles`, `--strict-quality`, diagnostic opt-outs).
+
+---
+
 ## [3.17.0] — 2026-05-23
 
 ### Fixed — Iter 25: Audit Closure (27 findings from v3.16.0 deep audit)
