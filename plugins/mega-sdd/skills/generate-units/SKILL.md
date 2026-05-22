@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.2.0
+version: 2.3.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -98,8 +98,34 @@ Turns intent into actionable atomic specs for AI dev execution.
    - If larger → split into N units with explicit `depends_on` chain
    - If a unit needs an OQ resolved → mark in body as "TBD: <OQ-ID>" + add to acceptance criteria
 
-4. **Resolve dependency graph.**
-   - Build DAG from semantic deps (entity before flow that uses it, schema migration before code that depends on column)
+4. **Resolve dependency graph (v2.3+ Iter 12 — stricter `depends_on` emission).**
+
+   **Principle**: emit `depends_on` ONLY when there is concrete evidence of unit coupling. Conservative defaults previously over-emitted deps, forcing sequential execution where units could parallelize. Tighter rules maximize parallelism by default; user can add deps manually when implicit ordering matters.
+
+   **Emit `depends_on: U-X` ONLY IF** at least one is true:
+
+   a. **File overlap**: target unit modifies a file the dependent unit creates OR reads from
+      - Source: `target_files` set comparison; if intersection non-empty AND ordering matters → emit dep
+      - Example: U-002 modifies `app/Models/User.php`; U-001 creates that file → U-002 depends_on U-001
+   b. **Symbol cross-reference**: dependent unit's body Anchors cite a symbol planned by target unit
+      - Source: parse `## Anchors` for symbol names; cross-reference target unit's `target_files` + planned outputs
+   c. **Migration Notes reference**: extend unit's Migration notes ADD/KEEP/REMOVE explicitly references a symbol another unit creates
+   d. **Vault dependency declaration**: vault section explicitly orders flows (e.g., `04-flows.md §F-U-002` says "after F-U-001 complete")
+   e. **Module-level blocked_by** (Iter 11): unit's module has explicit `blocked_by: [<other-module>]` AND other module has units that target same files
+
+   **DO NOT emit** `depends_on` for:
+   - Same vault section / same module — implicit ordering not guaranteed
+   - Conceptual sequencing without file overlap
+   - "Logical" precedence without target_files evidence
+
+   Effect: units default to parallel-eligible unless concrete coupling exists.
+
+   **Flag override**:
+   - `--strict-deps` (default ON in v2.3+) — apply above rules conservatively
+   - `--loose-deps` — pre-v2.3 conservative deps (over-emit; sequential bias) for legacy parity
+   - `--no-deps` — emit zero `depends_on`; assume all parallel (USE WITH CAUTION; for testing)
+
+   - Build DAG from semantic deps (per above)
    - **Reject cycles.** If detected, halt and instruct user to restructure vault sections.
    - **(v1.1+) Reject cross-squad direct deps in multi-squad mode.** After Step 5
      (squad assignment) completes, walk every `depends_on` edge and verify both
@@ -370,6 +396,8 @@ blocker:
 - (v2.2+, Iter 11) Module assignment is derived from `vault_source` matching against `_meta/modules.yaml`. Unmatched units → `M-unassigned` (warning); never silently grouped.
 - (v2.2+, Iter 11) Cross-module dependencies require explicit `blocked_by` declaration in modules.yaml; violation → halt `cross_module_dep_invalid`.
 - (v2.2+, Iter 11) Module DAG validated for cycles same as unit DAG. `module_cycle_detected` halt if cycle found.
+- (v2.3+, Iter 12) `depends_on` emission STRICT by default — only emitted with concrete evidence (file overlap, symbol cross-ref, Migration notes ref, vault declaration, module blocked_by). Maximizes parallelism eligibility; user explicitly adds deps when implicit ordering matters.
+- (v2.3+, Iter 12) `--strict-deps` (default) | `--loose-deps` (legacy bias) | `--no-deps` (assume all parallel; testing only) flags available.
 
 ## Halt conditions
 

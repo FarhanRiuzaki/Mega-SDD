@@ -5,6 +5,111 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] — 2026-05-21
+
+### Added — Iter 12: Unit Quality + Parallelism Tools
+
+Per user discussion — two concerns: (1) "units yang tergenerate apakah sudah solid dan berkualitas?" + (2) "units bakal di-share untuk squad — tiap squad units harus bisa parallel tidak sequence".
+
+Three additive tools/changes ship in this minor bump:
+
+**Tool 1 — `/mega-sdd:lint-units`** (NEW command)
+
+Static analysis of vault units for quality + grounding. Read-only diagnostic. Per-unit breakdown:
+- HARD frontmatter checks (id format, vault_source, task_type validity, target_files completeness, acceptance_test presence, depends_on resolution)
+- Iter 8 defensive checks (grounding_confidence label + grounding_evidence consistency)
+- Iter 11 module checks (M-XXX assignment validity; flag M-unassigned)
+- Iter 1.1 squad checks (when multi-squad)
+- SOFT body checks (Anchors per task_type, Implementation steps directive prose, Migration notes for extend, Hard Rules parseable)
+- Anchor verification (file probe + line range; SOFT warnings for aspirational anchors)
+- Hard Rule v1 OR v2 grammar validation
+- Binding consistency (task_type ↔ Implementation State Map per Iter 1+8)
+
+Output: per-unit table + summary metrics (quality histogram, anchors coverage %, hard rules coverage, module coverage) + prioritized recommendations. Filter via `--module=`, `--squad=`, `--strict` (CI mode promotes warnings to halts).
+
+**Tool 2 — `/mega-sdd:analyze-parallelism`** (NEW command)
+
+DAG analysis for parallelism opportunities + bottleneck identification. Read-only.
+
+Per-squad / per-module / whole-vault analysis:
+- Depth (longest chain)
+- Max parallel width (max units at same topological level)
+- Topological waves (suggested execution batches)
+- Bottleneck units (high fork-out or high join-in)
+- Suspected over-coupling (depends_on edges without file overlap or symbol cross-ref)
+- Critical chain (longest path)
+- Estimated wall-clock speedup vs sequential
+
+Output: table (default) | JSON (machine-parseable) | mermaid (visual graph for paste into mermaid.live). Filter via `--per=squad|module|all`, `--module=`, `--squad=`, `--depth-only`.
+
+Helps user verify "Squad1 > Unit 1-3" parallel intent BEFORE bolt execution. Hand-off suggestions: parallelism_speedup ≥2 → `/mega-sdd:execute-bolts --per-squad --parallel`; <1.5 → review over-coupling.
+
+**Tool 3 — generate-units v2.2 → v2.3 stricter `depends_on` emission**
+
+Pre-v2.3 was conservative: emitted `depends_on` liberally → forced sequential where units could parallelize. v2.3+ tightens emission per concrete coupling evidence:
+
+Emit `depends_on: U-X` ONLY IF at least one is true:
+- **File overlap**: target_files set intersection non-empty AND ordering matters
+- **Symbol cross-reference**: Anchors cite a symbol another unit creates
+- **Migration Notes reference**: extend's Migration notes explicitly reference unit's planned output
+- **Vault declaration**: vault section explicitly orders flows
+- **Module blocked_by**: cross-module units with file collision (per Iter 11)
+
+DO NOT emit for:
+- Same vault section / same module (implicit ordering not guaranteed)
+- Conceptual sequencing without file overlap
+- "Logical" precedence without target_files evidence
+
+Effect: units default to parallel-eligible unless concrete coupling exists.
+
+**Flags**:
+- `--strict-deps` (DEFAULT ON v2.3+) — apply tighter rules
+- `--loose-deps` — pre-v2.3 conservative emission (legacy parity)
+- `--no-deps` — emit zero depends_on (testing/debugging; USE WITH CAUTION)
+
+### Changed — Skill version
+
+- `generate-units`: 2.2.0 → 2.3.0 (Step 4 stricter depends_on emission)
+
+### Added — New commands
+
+- `commands/lint-units.md` — quality lint command
+- `commands/analyze-parallelism.md` — DAG analysis command
+
+### Anti-halu invariants preserved
+
+- Both new commands are READ-ONLY (never modify vault, units, binding, memory)
+- DAG analysis is DETERMINISTIC (graph algorithms on parsed frontmatter)
+- Over-coupling suggestions are heuristic — surfaced as SUGGESTIONS for user review, NEVER auto-removed
+- Anchor verification via Bash file probe or codebase-map lookup (not LLM judgment)
+- Hard Rule validation via ast-grep parse (when v2) or regex (v1)
+- All recommendations cite specific units + specific check that failed
+- Stricter depends_on tightens default; user can always add deps manually via frontmatter edit; OR opt back into legacy via `--loose-deps`
+
+### Backward compatibility
+
+- v3.5 vaults with existing `depends_on` edges → unchanged when read (lint just shows them)
+- Regenerating units with `--strict-deps` (default v2.3+) → likely produces FEWER depends_on; existing tests should still pass since fewer false coupling
+- Users wanting pre-v2.3 emission → `--loose-deps` flag for legacy parity
+- `--no-deps` is a testing escape hatch — produces maximally parallel units; only safe when user knows no coupling exists
+
+### Quality assessment (honest answer to user's "sudah solid?" question)
+
+Documented across the CHANGELOG entries Iter 0-11 and audit (`docs/superpowers/audits/2026-05-21-pipeline-audit-v3.2.md`):
+
+- **Strong structural grounding**: target_files whitelist, acceptance_test mandatory, vault_source citation, task_type derived from binding, Anchors mandatory for verify/extend, Hard Rules pre/post-flight, Migration notes auto-populated from field_diff, grounding_confidence label.
+- **Quality depends on upstream**: vault clarity, binding precision (tree-sitter > regex), KB presence.
+- **Best-effort algorithmic**: PageRank target_files suggestions (Bug 5 documented as approximation), stub-detection for PARTIAL.
+
+For typical brownfield-with-v3.0+-tech: HIGH quality expected. Validation via `/mega-sdd:lint-units` + `/mega-sdd:analyze-parallelism` BEFORE bolts gives user concrete signal.
+
+### Outstanding (Iter 13+)
+
+- Module-level test command auto-detection improvements
+- Cross-vault unit reuse patterns (template units shared across vaults)
+- AGENTS.md emit per-module "what's done / what's pending"
+- README + plugin README updates for v3.5-3.6 layout illustrations
+
 ## [3.5.0] — 2026-05-21
 
 ### Added — Iter 11: Module Layer (semantic grouping ABOVE atomic units)
