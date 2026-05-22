@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.5.1
+version: 2.5.2
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -232,6 +232,19 @@ blocker:
    - Brownfield: list bound-vault citations (specific file paths from binding)
    - If a unit can't determine target_files: halt — vault too vague
 
+7.5. **PageRank target_files suggestions (v2.0+, Iter 6).**
+
+   When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan, Iter 6 Swap #1):
+
+   - Build/load symbol-reference graph per `references/pagerank-targeting.md` §Algorithm
+   - For each unit, compute personalized PageRank with seed = current `target_files` + binding citations
+   - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
+   - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
+
+   Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to v1.5 behavior (binding-only target_files).
+
+   Symbol graph cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical per paths.md) per scan-codebase run; reused across all units.
+
 7.6. **Per-unit target_files collision check (v2.1+, Iter 8).**
 
    Per `references/defensive-generation.md` §Step 7.6. Before writing each unit:
@@ -258,19 +271,6 @@ blocker:
    - `--auto` flag suppresses interactive — picks safest default (`extend`)
    - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
 
-7.5. **PageRank target_files suggestions (v2.0+, Iter 6).**
-
-   When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan, Iter 6 Swap #1):
-
-   - Build/load symbol-reference graph per `references/pagerank-targeting.md` §Algorithm
-   - For each unit, compute personalized PageRank with seed = current `target_files` + binding citations
-   - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
-   - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
-
-   Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to v1.5 behavior (binding-only target_files).
-
-   Symbol graph cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical per paths.md) per scan-codebase run; reused across all units.
-
 8. **Fill `existing_interfaces`.**
    - Brownfield only: pull from binding manifest CONFIRMED entries for the targeted files
    - Greenfield: empty (no existing interfaces)
@@ -290,7 +290,7 @@ blocker:
     - Suggested execution order (topological within + across modules)
     - Backward compat: when only `M-default` exists → fall back to flat unit list (v3.4 behavior)
 
-12. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`.
+12. **Post-write validation + audit (the 12.x sub-procedures below run in declared order, then step 13 logs).**
 
 12.3. **Per-anchor verification (v2.1+, Iter 8 — renumbered v2.5.1 Iter 25; runs FIRST as precondition check before constitution inject + render).**
 
@@ -442,6 +442,8 @@ blocker:
          - "If existing files SHOULD be replaced (rebuild scenario), confirm intent and re-run with --force-overwrite (NOT YET IMPLEMENTED — pause and consult human)."
      next_action: "Resolve manually then re-run /mega-sdd:generate-units."
    ```
+
+13. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 
 ## Anti-hallucination rails
 
