@@ -1,5 +1,5 @@
 ---
-description: DAG analysis of vault units — per-squad + per-module parallelism width, sequential bottlenecks, suspected over-coupling, suggested execution wave plan. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
+description: [ADVANCED / AUTO-INVOKED] DAG analysis of vault units. Auto-invoked by `/mega-sdd:auto` before execute-bolts when --parallel set. Run standalone for inspection / debugging / mermaid visual export. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
 argument-hint: [vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--depth-only]
 ---
 

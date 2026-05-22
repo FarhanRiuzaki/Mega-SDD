@@ -1,5 +1,5 @@
 ---
-description: Static analysis of vault units for quality + grounding. Per-unit quality breakdown (HIGH/MEDIUM/LOW grounding_confidence), anchor verification status, Hard Rule coverage, acceptance_test presence, module + squad assignment status, Migration notes structure (extend units), task_type validity vs binding state. Returns prioritized recommendations for unit improvements before bolt execution. Read-only; never modifies vault.
+description: [ADVANCED / AUTO-INVOKED] Static analysis of vault units for quality + grounding. Auto-invoked by `/mega-sdd:auto` after generate-units phase — users rarely need to run this directly. Run standalone for debugging vault quality issues OR CI integration (--strict flag). Per-unit quality breakdown (HIGH/MEDIUM/LOW grounding_confidence), anchor verification status, Hard Rule coverage, acceptance_test presence, module + squad assignment status, Migration notes structure (extend units), task_type validity vs binding state. Returns prioritized recommendations for unit improvements before bolt execution. Read-only; never modifies vault.
 argument-hint: [vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]
 ---
 

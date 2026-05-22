@@ -116,19 +116,29 @@ flowchart LR
     style Legacy fill:#fafafa,stroke:#525252
 ```
 
-## Primary commands (start here)
+## The ONE command you need
 
-| Command | When to use |
-|---|---|
-| `/mega-sdd:auto` ⭐ | "Just run the whole thing" — input-detect + full pipeline + single confirm (recommended) |
-| `/mega-sdd:orchestrate-flow` | "What's next?" — phase-by-phase auto-router (cap-3 default; `--deep` for pipeline-end) |
-| `/mega-sdd:generate-intent` | "I'm starting from a PRD or just an idea" |
-| `/mega-sdd:extract-intelligence` | "I have a legacy codebase to rebuild on a different stack" |
-| `/mega-sdd:resolve-oq` | "I need to answer open questions before going further" |
-| `/mega-sdd:memory review` | "Mega-SDD has pending learning suggestions to review" |
-| `/mega-sdd:emit-agents-md` | "Generate AGENTS.md for tool-agnostic interop" |
+```bash
+/mega-sdd:auto ./prd.md                   # PRD → vault → units → working code
+/mega-sdd:auto ./legacy-php/ --out=./new/ # Legacy KB → vault → units → code
+/mega-sdd:auto "build a clinic system"    # Brief → vault → units → code (greenfield)
+/mega-sdd:auto                            # CWD-driven (detect state, propose chain)
+/mega-sdd:auto --resume                   # Continue paused/halted chain
+```
 
-Most users only need `/mega-sdd:auto`. Memory + AGENTS.md auto-fire at chain end when configured.
+`/mega-sdd:auto` runs the full pipeline end-to-end with single upfront confirmation. **Auto-integrates** quality lint + parallelism analysis + module status + AGENTS.md emit + memory review prompt at appropriate phases. **No additional commands needed for default flow.**
+
+## Other commands (when you need manual control)
+
+| Category | Commands | When |
+|---|---|---|
+| **Primary** ⭐ | `auto` | Always start here |
+| **Phase commands (advanced manual)** | `generate-intent`, `extract-intelligence`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `orchestrate-flow` | When you want phase-by-phase control instead of `auto` |
+| **Event-driven** | `resolve-oq`, `diff-vault`, `detect-drift` | Triggered by halts, PRD revisions, periodic checks |
+| **Maintenance** | `memory`, `migrate-rules`, `migrate-paths`, `update-plugin` | Rare/one-off configuration |
+| **Diagnostic (auto-invoked)** | `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md` | Run automatically by `auto`; available standalone for debugging |
+
+`/mega-sdd:auto` is the dominant path. Other commands exist for power users + edge cases — most users never type them.
 
 ## Anti-hallucination defense (10 layers)
 
