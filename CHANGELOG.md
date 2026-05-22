@@ -5,6 +5,108 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] — 2026-05-21
+
+### Changed — Iter 16: Scan-First for Brownfield (Pipeline Reorder)
+
+Per user feedback — "harusnya menurut lo scan codebase dlu. atau prd vault dlu?... ketika generate vault klo udah ada data scan codebase nya harusnya lebih robust hasil vaultnya". User intuition CORRECT. Pipeline order reordered for brownfield to give vault generation codebase awareness from the start.
+
+### What changed
+
+**Previous order (Iter 0-15)**:
+```
+brownfield: generate-intent → scan-codebase → bind-codebase → generate-units → execute-bolts
+```
+
+**New order (Iter 16, v3.9.0+)**:
+```
+brownfield: scan-codebase → generate-intent (scan-aware) → bind-codebase → generate-units → execute-bolts
+```
+
+Greenfield unchanged (no codebase to scan):
+```
+greenfield: generate-intent → generate-units → execute-bolts
+```
+
+### Why
+
+Previous order's compounding pain points:
+- Vault fabricated entities that already existed in codebase
+- OQs surfaced at gen-time couldn't reference codebase signals (cold-start classifier)
+- Iter 8 PARTIAL_FIELDS_MISSING discovered LATE (at binding, requiring re-work)
+- Conventions detected AFTER vault written; convention defaults retrofitted via memory
+- Iter 2 tech-OQ classifier produced lots of `tech/recommend` that could have been `tech/scan` if codebase signals were known
+
+User's intuition: scan codebase FIRST so vault has context. Confirmed by audit:
+- Fewer OQs per vault (~30-50 → ~10-20 in typical brownfield)
+- Existing-entity awareness in vault claims
+- Conventions baked in at gen-time
+- PARTIAL_FIELDS_MISSING anticipated, not discovered
+
+### How — minimal viable change
+
+**`generate-intent` v1.7 → v1.8** — new Step 0.8 scan-aware context loading:
+
+1. Probe for existing `codebase-map.md` (current + legacy paths)
+2. Probe for `conventions.md` memory (Iter 5)
+3. Probe for `knowledge-base/` (Iter 0)
+4. If codebase-map missing + brownfield detected → INTERACTIVE prompt to run scan-codebase first OR proceed without scan
+5. Loaded context used in Steps 2 (extraction), 3 (write 7 files), 3.5 (OQ classifier)
+
+**`orchestrate-flow/references/routing-rules.md`** — updated decision matrix:
+
+- Brownfield paths: scan-codebase FIRST then generate-intent (scan-aware)
+- Greenfield paths: generate-intent unchanged
+- Greenfield/brownfield detection: `.git + existing code files = brownfield`; `bare scaffolding = brownfield-light`; `no .git OR fresh create-project = greenfield`
+- `--brownfield` / `--greenfield` flag override
+
+### What's preserved
+
+Architect/dev separation philosophy (Iter 0):
+- generate-intent still doesn't write code; only reads scan output
+- `--no-pre-scan` flag opt-out preserves pre-v1.8 architect-only workflow
+- PRD precedence preserved: PRD claims OVERRIDE codebase reality; CONFLICTs surface in binding phase (not silenced)
+
+Anti-halu rails:
+- Scan-aware mode is OPT-IN via prompt (or auto-route under `--auto`); never silent
+- Existing-entity awareness ADDS annotation, NOT replaces vault claim
+- All halt-protocol behaviors unchanged
+- Backward compat: vaults gen'd before v1.8 (without scan-awareness) continue to work; `--refresh` flag for retro-scan-aware regen
+
+### Affected skills + versions
+
+- `generate-intent`: 1.7.0 → 1.8.0 (Step 0.8 scan-aware context loading)
+- `orchestrate-flow/references/routing-rules.md` updated for brownfield reorder
+
+(scan-codebase, bind-codebase, generate-units, execute-bolts unchanged.)
+
+### Backward compatibility
+
+- v3.8 brownfield pipelines using old order still work (orchestrate-flow detects existing scan artifacts; uses them)
+- v3.8 vaults regenerated under v3.9 with new order produce HIGHER quality output (more scan context)
+- `--no-pre-scan` flag on `generate-intent` preserves pre-v1.8 behavior exactly
+- Greenfield path unchanged
+
+### Plugin metadata
+
+- `plugin.json`: 3.8.2 → 3.9.0 (minor — observable chain reorder for brownfield)
+
+### Acceptance criteria
+
+✅ Brownfield chain runs scan-codebase before generate-intent
+✅ Greenfield chain unchanged (no scan)
+✅ generate-intent reads codebase-map + conventions.md + KB context when available
+✅ OQ classifier auto-resolves tech/scan OQs at gen-time (not retrofitted at bind)
+✅ PRD claims still override codebase reality (CONFLICT surfaces at binding)
+✅ Architect/dev separation preserved via `--no-pre-scan` opt-out
+✅ Audit doc Drift D-3 (cache invalidation) addressed: scan-codebase results cached + reused
+
+### Outstanding (Iter 17+)
+
+- `scan-codebase --quick` mode for faster brownfield-light scan (full AST not needed for convention detection)
+- Cache invalidation policy: re-run scan when X days old OR when codebase mtime changes significantly
+- Pre-Iter-16 vaults: migration helper to retro-fit scan-aware context
+
 ## [3.8.2] — 2026-05-21
 
 ### Fixed — Iter 15: next-action consistency (closes Iter 9 audit Drift D-2)
