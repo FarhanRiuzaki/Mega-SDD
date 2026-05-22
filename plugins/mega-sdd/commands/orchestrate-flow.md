@@ -1,6 +1,6 @@
 ---
-description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills (max 3 per chain) with single confirmation. Halt-pauses on blockers.
-argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run]
+description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills with single confirmation. Halt-pauses on blockers. `--deep` chains to pipeline-end; `--resume` continues a paused chain from CWD state.
+argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto]
 ---
 
 Invoke `mega-sdd:orchestrate-flow` via the Skill tool.
@@ -9,13 +9,18 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - First positional (if not a flag): vault path or PRD path; otherwise auto-detect from CWD.
-- Flags: --from, --to, --dry-run.
+- Flags:
+  - `--from`, `--to` — pin chain entry/exit (override CWD-driven detection)
+  - `--dry-run` — print proposed chain without executing
+  - `--deep` (v2.3+, Iter 4) — lift the 3-sub-skill chain cap; chain auto-continues to pipeline-end via handoff YAML
+  - `--resume` (v2.3+, Iter 4) — resume a paused/halted chain from CWD state (no persisted state file; CWD probes rebuild cursor)
+  - `--auto` — non-interactive substance-prompt suppression; single upfront confirmation only
 
-Follow `skills/orchestrate-flow/SKILL.md` procedure. Hard cap 3 sub-skills per chain.
+Follow `skills/orchestrate-flow/SKILL.md` procedure. Default behavior: 3-sub-skill chain with single upfront confirmation. `--deep` lifts the cap and chains to pipeline-end; `--resume` continues from current CWD state.
 
 Hard rails:
 - No content generation by orchestrator itself
-- No state file (re-invoke to resume)
+- No persisted state file (re-invoke OR `--resume` to continue; CWD probes rebuild cursor)
 - No parallel sub-skills
-- All substance prompts surface to human
-- Blocker artifacts pause chain
+- Substance prompts (real blockers) surface to human even under `--auto`; conventional prompts (CWD detection, defaults) suppressed
+- Blocker artifacts pause chain; handoff YAML records halt reason + `next_action`
