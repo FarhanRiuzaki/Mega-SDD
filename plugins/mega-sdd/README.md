@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 3.13.0 · **License:** MIT
+**Version:** 3.18.0 · **License:** MIT
 
 > 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
@@ -41,21 +41,21 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.8.0)
-├── skills/                       # 11 skills + _vendored/
-│   ├── using-mega-sdd/           # anchor skill (auto-injected)
-│   ├── memory/                   # memory + self-learning (v1.2)
-│   ├── emit-agents-md/           # AGENTS.md flatten (v1.1)
-│   ├── extract-intelligence/     # legacy → knowledge-base (v1.2)
-│   ├── generate-intent/          # PRD/brief/KB → vault (v1.7)
-│   ├── scan-codebase/            # tree-sitter AST scan (v2.3)
-│   ├── bind-codebase/            # validation gate + field diff (v1.7.1)
-│   ├── generate-units/           # atomic decomposition (v2.3)
-│   ├── execute-bolts/            # superpowers TDD bridge (v2.2)
-│   ├── orchestrate-flow/         # lifecycle router (v2.2)
-│   ├── resolve-oq/               # OQ resolver + recommendations (v0.7)
-│   ├── detect-drift/             # code vs vault (v1.0)
-│   ├── diff-vault/               # PRD revision + jd patches (v1.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.18.0)
+├── skills/                       # 13 skills + _vendored/
+│   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
+│   ├── memory/                   # memory + self-learning (v1.2.1)
+│   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.3)
+│   ├── extract-intelligence/     # legacy → knowledge-base (v1.4.0)
+│   ├── generate-intent/          # PRD/brief/KB → vault (v1.10.0)
+│   ├── scan-codebase/            # tree-sitter AST scan (v2.4.2)
+│   ├── bind-codebase/            # validation gate + field diff (v1.9.2)
+│   ├── generate-units/           # atomic decomposition (v2.5.2)
+│   ├── execute-bolts/            # superpowers TDD bridge (v2.4.1)
+│   ├── orchestrate-flow/         # lifecycle router (v2.3.2)
+│   ├── resolve-oq/               # OQ resolver + recommendations (v0.9.0)
+│   ├── detect-drift/             # code vs vault (v1.2.1)
+│   ├── diff-vault/               # PRD revision + jd patches (v1.2.1)
 │   └── _vendored/                # superpowers fallback
 ├── commands/                     # 20 slash commands (1 primary + 19 advanced)
 │   ├── auto.md                   # ⭐ THE command
@@ -82,7 +82,7 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
-## What's new in v3.17.0 (Iters 17-25)
+## What's new in v3.18.0 (Iters 17-26)
 
 - **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
 - **Iter 18 Replay + PBT** — `/mega-sdd:replay <unit>` for regression detection; `properties:` field for invariant testing
@@ -93,6 +93,7 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 - **Iter 23 Framework Convention Packs** — pluggable convention catalog at `references/framework-conventions/`. scan-codebase detects framework (Laravel/Django/Rails/Express/NestJS/FastAPI/etc.) → bind-codebase loads matching pack → framework-specific Hard Rules merged into Suggested Unit Hard Rules. Universal-good-practice fallback. v1.0 ships with `_universal.md` + `laravel.md` + `_template.md` for adding more
 - **Iter 24 RECON / base-laravel-26 starterkit pack** — extracted user's Laravel 12 starterkit conventions (Vuexy + Jetstream + Spatie + Reverb + custom helpers/traits + CRUD generator + notification rule engine) into `laravel-base-26.md` (~600 lines, extends `laravel.md`). 11 Hard Rules + 11 forbidden patterns + project-specific idioms encoded as enforceable conventions. scan-codebase detects via Vuexy fingerprint
 - **Iter 25 Audit closure** — closed 27 findings from v3.16.0 deep audit: completed Iter 21 hotfix across 6 commands + handoff-contract + memory schema + recommendation-context + checkpoint paths; fixed bind-codebase step sequence (duplicate 2.5 + dangling 2.10) + halt-conditions completion; fixed generate-units step jumble; propagated Iter 22 mutability to 6 consumer skills (bind, drift, resolve-oq, generate-units, agents-md, handoff); propagated Iter 23 framework pack to generate-units (provenance citation) + execute-bolts + AGENTS.md header; fixed 2 broken cross-references; updated scenario-4 to demo tier flow + starterkit detection
+- **Iter 26 Verification closure** — closed 5 highest-leverage gaps from v3.17.0 verification audit: emit-agents-md output template now uses `{{vault_path}}` substitution (no more legacy paths in every AGENTS.md emitted); bind-codebase step 2.10 placed in linear sequence; generate-units 7.5/7.6 swap + audit log → step 13; diff-vault:318 cross-ref fixed; commands/orchestrate-flow.md refreshed for `--deep` + `--resume`; AGENTS.md schema gains PBT/replay/convergence header fields (P1-9)
 
 ## Anti-hallucination defense (13 layers)
 
@@ -106,6 +107,9 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 8. **Memory** — suggestion-only with audit log
 9. **Drift detection** — code vs vault reconciliation
 10. **Interface lock** — cross-squad consumed interfaces must be locked
+11. **Mutability tier classification** — [LOCKED]/[INTENT]/[ARTIFACT] orthogonal to confidence (Iter 22)
+12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time (Iter 17)
+13. **Framework convention packs** — laravel/django/rails/etc. conventions inject into Suggested Unit Hard Rules (Iter 23)
 
 ## Memory layer (v2.1+)
 
