@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.2.0
+version: 1.2.1
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -27,7 +27,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 
 ## Inputs
 
-- Vault path (positional, default: detect `docs/mega-sdd/vaults/*/vault.json`)
+- Vault path (positional, default: detect in priority order `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
 - `--out=<path>` (default `<repo-root>/AGENTS.md`)
 - `--mode=overwrite|append|sibling` (default `sibling` if AGENTS.md exists; creates `AGENTS.mega-sdd.md`)
 - `--include-section=<list>` (default all: build, test, conventions, architecture, decisions)

@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 1.2.0
+version: 1.2.1
 description: Use at session start when SDD topics arise — establishes how to route SDD work through mega-sdd phases. (v1.2+, Iter 4) Sharper auto-trigger — when CWD signals are strong (PRD upload + no vault, legacy codebase + rebuild intent, vault present + no units) AND user prompt contains mega-sdd intent keywords OR is empty/continuation, auto-invoke `orchestrate-flow --deep` for pipeline-end execution. Triggers on SDD keywords (intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, knowledge-base, extract intelligence, reverse engineer, auto, rebuild) and Indonesian variants (pecah PRD, buat dev, spec ini, siapkan context buat AI dev, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next).
 ---
 
@@ -14,7 +14,7 @@ Invoke a mega-sdd skill BEFORE any response when ANY of these apply:
 - User explicitly types `/mega-sdd:<command>`
 - User prompt contains SDD keywords: `intent`, `unit`, `bolt`, `vault`, `PRD`, `BRD`, `spec out`, `dev handoff`, `binding`, `bound-vault`, `Open Question`, `knowledge-base`, `extract intelligence`, `reverse engineer`, `legacy intelligence`, `auto`, `rebuild`
 - User prompt contains Indonesian SDD variants: `pecah PRD`, `buat dev`, `spec ini`, `siapkan context buat AI dev`, `kontrak handoff`, `pecah legacy`, `rebuild di stack baru`, `source of truth dari legacy`, `jalankan otomatis`, `lanjut`, `next`
-- CWD has SDD signals: `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`, `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/`
+- CWD has SDD signals (priority order — new `.mega-sdd/` layout first per v3.4+ Iter 10): `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` — back-compat: `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`, `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/`
 
 ### Sharper auto-trigger (v1.2+, Iter 4)
 

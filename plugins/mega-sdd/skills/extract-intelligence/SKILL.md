@@ -1,7 +1,7 @@
 ---
 name: extract-intelligence
-version: 1.2.0
-description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `docs/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` markers. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
+version: 1.3.0
+description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` markers. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
 # Extract-Intelligence — Legacy Domain Knowledge Extractor
@@ -38,12 +38,12 @@ Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowl
 **Typical chain:**
 `extract-intelligence` → `generate-intent --kb=<kb>` → `generate-units` → `execute-bolts`
 
-Naming: this is the mega-sdd-flavored counterpart to `superpowers:reverse-engineering-legacy-codebase`. The mega-sdd version produces a structured `docs/knowledge-base/` that downstream mega-sdd skills explicitly consume. Use this version when the next step is mega-sdd unit/bolt generation.
+Naming: this is the mega-sdd-flavored counterpart to `superpowers:reverse-engineering-legacy-codebase`. The mega-sdd version produces a structured `.mega-sdd/knowledge-base/` that downstream mega-sdd skills explicitly consume. Use this version when the next step is mega-sdd unit/bolt generation.
 
 ## Inputs
 
 - Legacy codebase path (positional, required)
-- `--out=<path>` (output directory; default `docs/knowledge-base/`)
+- `--out=<path>` (output directory; default `.mega-sdd/knowledge-base/` per `plugins/mega-sdd/references/paths.md`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
 - `--max-parallel=N` (subagent cap per wave; default 5, hard cap 8)
 - `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)
@@ -149,15 +149,18 @@ If the rebuild lives in a different directory: copy `knowledge-base/` to the new
 - Same wave's quality gate fails twice for the same agent → halt; surface the gate output verbatim.
 - Wave 5 dispatched as a subagent → halt; config error, must be main thread.
 
-## Path resolution (v1.2+, Iter 10)
+## Path resolution (v1.3+, Iter 21 hotfix)
 
-Per `plugins/mega-sdd/references/paths.md`:
+Per `plugins/mega-sdd/references/paths.md`. **No-excuse rule: ALL output defaults to `.mega-sdd/`** — back-compat to legacy `docs/knowledge-base/` triggers ONLY when legacy paths already exist on disk.
 
-- **Default `--out` value** (v3.4+ layout): `<project-root>/.mega-sdd/knowledge-base/`
-- **Legacy `--out` value** (≤v3.3): `<project-root>/docs/knowledge-base/` OR explicit `--out=<path>` from user
-- **Detection**: if `<project-root>/.mega-sdd/` exists OR `<project-root>/.mega-sdd/config.yaml` has `layout: new` → use new default
-- **User explicit `--out=<path>`**: always respected; overrides defaults
-- **Read-side back-compat**: downstream `generate-intent --kb` probes both new + legacy paths
+Resolution algorithm:
+
+1. **User explicit `--out=<path>`** → always respected, overrides everything.
+2. **Project config**: `<project-root>/.mega-sdd/config.yaml` → if `output_root: <path>` set, resolve `<out>` = `<output_root>/knowledge-base/`.
+3. **Legacy back-compat detection**: ONLY if `<project-root>/docs/knowledge-base/` already exists with prior extraction (has `README.md` or any `00-overview/` content) → continue writing there to avoid split-brain.
+4. **Default (new + fresh projects)**: `<project-root>/.mega-sdd/knowledge-base/`. Create the parent `.mega-sdd/` directory if absent. This is the path for ALL fresh extractions — chicken-and-egg detection from v1.2 is REMOVED.
+
+**Read-side back-compat**: downstream `generate-intent --kb`, `bind-codebase --kb`, `orchestrate-flow` all probe in priority order — `.mega-sdd/knowledge-base/` first, then `docs/knowledge-base/`, then `docs/mega-sdd/knowledge-base/`, then `old-reference/knowledge-base/`. First hit wins.
 
 ## Hand-off
 
@@ -175,8 +178,8 @@ handoff:
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
   artifacts:
-    - <absolute path to docs/knowledge-base/>
-    - <absolute path to docs/knowledge-base/README.md>
+    - <absolute path to .mega-sdd/knowledge-base/>
+    - <absolute path to .mega-sdd/knowledge-base/README.md>
   next_action:
     suggested_skill: mega-sdd:generate-intent
     suggested_args: ["--kb=<absolute path to knowledge-base>", "--auto"]

@@ -5,13 +5,13 @@
 ## CWD inspection (deterministic, in order)
 
 1. **PRD/seed detection.** Does CWD contain `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates?
-2. **Vault detection.** Does CWD contain `docs/mega-sdd/vaults/*/vault.json` or `vaults/*/vault.json`?
+2. **Vault detection.** Probe in priority order — `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (pre-Iter-10). First hit wins.
 3. **Bound-vault detection.** Same dirs but with `-bound` suffix?
 4. **Units detection.** Any `units/U-*.md` files?
 5. **Bolts detection.** Any `bolts/U-*/bolt-report.md`?
 6. **Repo detection.** Is CWD inside a git repo? Any package manifests?
-7. **Codebase-map detection.** `codebase-map.md` exists?
-8. **Knowledge-base detection.** Probe in order — `docs/knowledge-base/README.md`, `docs/mega-sdd/knowledge-base/README.md`, `old-reference/knowledge-base/README.md`. First hit wins; report as `knowledge_base: present (path: <hit>)` or `absent`.
+7. **Codebase-map detection.** Probe in priority order — `.mega-sdd/codebase/codebase-map.md` (v3.4+ canonical) → `<repo-root>/codebase-map.md` (legacy). First hit wins.
+8. **Knowledge-base detection.** Probe in priority order — `.mega-sdd/knowledge-base/README.md` (v3.4+ default), `docs/knowledge-base/README.md` (legacy), `docs/mega-sdd/knowledge-base/README.md`, `old-reference/knowledge-base/README.md`. First hit wins; report as `knowledge_base: present (path: <hit>)` or `absent`.
 9. **Open Questions count.** Aggregate P0/P1 OQ count across vault files.
 10. **Drift signals.** Has detect-drift been run recently?
 

@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.9.0
+version: 1.9.1
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -24,7 +24,7 @@ Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 ques
 
 ### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario)
 
-Invocation: `/mega-sdd:generate-intent --kb=docs/knowledge-base/`
+Invocation: `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/`
 
 Behavior:
 - Read `<kb>/README.md` as the primary brief (replaces free-text or PRD as the seed).
@@ -34,7 +34,7 @@ Behavior:
   - KB `[INFERRED]` items → surface as a single confirmation question per domain; default is "keep as INFERRED" (vault note).
   - KB `[OPEN]` items → carry over directly to vault `Open Questions` with the original OQ tag preserved.
 - Q&A loop in Mode B is SHORTER when `--kb` is set (KB already covers most gaps). Aim ≤5 questions instead of ≤10.
-- Auto-detection: if CWD has `docs/knowledge-base/README.md` (or `docs/mega-sdd/knowledge-base/README.md` or `old-reference/knowledge-base/README.md`) AND no `--from-prompt` / positional PRD argument → set `--kb=<detected-path>` implicitly. Confirm with user before proceeding.
+- Auto-detection (priority order, first hit wins): `.mega-sdd/knowledge-base/README.md` (v3.4+ default) → `docs/knowledge-base/README.md` (legacy) → `docs/mega-sdd/knowledge-base/README.md` → `old-reference/knowledge-base/README.md`. If detected AND no `--from-prompt` / positional PRD argument → set `--kb=<detected-path>` implicitly. Confirm with user before proceeding.
 
 The three modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
 
@@ -50,7 +50,7 @@ When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules in order
 | 3 | Positional arg matches glob `*.md` / `*.pdf` / `*.docx` (regardless of whether file exists) | **A** — warn if file missing; offer to switch to B |
 | 4 | Positional arg contains whitespace OR is wrapped in quotes OR is longer than 80 chars | **B** (treat as brief) |
 | 5 | Positional arg has no path separators (`/`, `\`) AND no recognized extension | **B** |
-| 6 | No positional arg AND CWD has `docs/knowledge-base/README.md` (or `docs/mega-sdd/knowledge-base/README.md` or `old-reference/knowledge-base/README.md`) | **B (KB sub-mode)** — auto-detect, confirm with user |
+| 6 | No positional arg AND CWD has any of (priority order) `.mega-sdd/knowledge-base/README.md`, `docs/knowledge-base/README.md`, `docs/mega-sdd/knowledge-base/README.md`, `old-reference/knowledge-base/README.md` | **B (KB sub-mode)** — auto-detect, confirm with user |
 | 7 | No positional arg AND no KB | CWD scan: search for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
 
 The `--from-prompt` flag remains supported for explicit invocation; new users typically won't need it.
@@ -154,7 +154,7 @@ The `--auto` flag is set by upstream callers — typically `/mega-sdd:orchestrat
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
-| Step 0 (output path) | Ask user via `AskUserQuestion` | Default to `docs/mega-sdd/vaults/<slug>/` derived from PRD project name (slug-cased). If folder exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
+| Step 0 (output path) | Ask user via `AskUserQuestion` | Default to `.mega-sdd/vaults/<slug>/` (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`) derived from PRD project name (slug-cased). If folder exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). Legacy default `docs/mega-sdd/vaults/<slug>/` only honored when legacy layout already detected on disk. |
 | Step 0.5 (IMPLEMENTATION_MODE) | Ask | Infer from codebase signals: `composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / etc. detected in CWD or vault parent → `existing`; else `new`. |
 | Step 0.5 (`mode_migrate_after`, mode=new only) | Ask | Default to `"first commit on main"`. |
 | Step 0.6 (PRD_STATUS) | Ask | Default to `draft` (safe default — generates more OQs, less assertion). |

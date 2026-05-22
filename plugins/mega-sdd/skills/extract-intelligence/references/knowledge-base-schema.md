@@ -1,6 +1,6 @@
 # Knowledge-Base Output Schema
 
-`docs/knowledge-base/` is the structured output of `extract-intelligence`. It is consumed by `mega-sdd:generate-intent` (Mode B brief) and `mega-sdd:bind-codebase` (secondary ground truth).
+`.mega-sdd/knowledge-base/` (default, v3.4+ Iter 10) is the structured output of `extract-intelligence`. It is consumed by `mega-sdd:generate-intent` (Mode B brief) and `mega-sdd:bind-codebase` (secondary ground truth). Legacy default `docs/knowledge-base/` retained for read-side back-compat only.
 
 Regenerable — never edited manually. To revise: edit the source legacy code OR re-run extraction with updated `--seed`.
 
@@ -40,11 +40,12 @@ Regenerable — never edited manually. To revise: edit the source legacy code OR
         └── suggested-phasing.md
 ```
 
-**Default `--out`:** `docs/knowledge-base/`. Configurable. Pipeline-consumers probe in this order:
+**Default `--out`:** `.mega-sdd/knowledge-base/` (v3.4+ Iter 10 canonical, enforced as default since v1.3 Iter 21 hotfix). Configurable. Pipeline-consumers probe in this order:
 
-1. `docs/knowledge-base/`
-2. `docs/mega-sdd/knowledge-base/`
-3. `old-reference/knowledge-base/`
+1. `.mega-sdd/knowledge-base/` (v3.4+ default — checked FIRST)
+2. `docs/knowledge-base/` (legacy v1.x extraction)
+3. `docs/mega-sdd/knowledge-base/` (legacy v2.x layout)
+4. `old-reference/knowledge-base/` (cross-folder rebuild placement)
 
 First hit wins.
 
