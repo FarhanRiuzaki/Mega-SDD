@@ -262,7 +262,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.8.0.
+- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.18.0.
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
