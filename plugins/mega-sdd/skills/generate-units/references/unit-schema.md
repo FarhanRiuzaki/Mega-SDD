@@ -26,6 +26,16 @@ grounding_evidence:                # (v2.1+, Iter 8) — descriptive metadata; n
   anchors_verified: <N>/<M>        # how many of M anchors resolved (file exists + line valid)
   target_files_collision_check: passed | warning | resolved-via-prompt
   binding_state_summary: {}        # { IMPLEMENTED: N, PARTIAL_FIELDS_MISSING: N, ... }
+mutability:                        # (v2.5.1+, Iter 25 — propagates Iter 22 mutability tier from binding/KB)
+  tier: LOCKED | INTENT | ARTIFACT # tier of the vault claims this unit implements
+  source: kb_locked | kb_intent | kb_artifact | vault_locked | inferred
+  rationale: <string>              # 1-line reason (e.g., "BI Reg 23/2/2021 §4 — field name + type + validation MUST preserve")
+  rebuild_freedom:                 # what rebuild may change
+    field_names: yes | no          # for LOCKED + integration-contract → no
+    field_types: yes | no          # for LOCKED → no
+    storage_shape: yes | no        # for LOCKED + audit-required → no
+    flow_implementation: yes | no  # for INTENT → yes; LOCKED + algorithm-specified → no
+  # Pre-v2.5.1 units OR units without KB-derived claims → field omitted; downstream treats as INTENT (safe default).
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
 module: <module-id>                # (v2.2+, Iter 11) — semantic grouping per _meta/modules.yaml

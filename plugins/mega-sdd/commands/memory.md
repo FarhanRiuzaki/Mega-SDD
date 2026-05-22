@@ -25,7 +25,7 @@ Operations (per `skills/memory/SKILL.md` §Inputs):
 Memory scopes (per `skills/memory/references/memory-schema.md` §3):
 
 - `~/.mega-sdd/memory/` — USER scope (cross-project, opt-in promotion only)
-- `<project-root>/.mega-sdd-memory/` — PROJECT scope (per-repo, git-trackable per-file per MEMORY-OQ-2)
+- `<project-root>/.mega-sdd/memory/` — PROJECT scope (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`; per-repo, git-trackable per-file per MEMORY-OQ-2). Legacy path `<project-root>/.mega-sdd-memory/` honored for back-compat only when already present.
 - `<vault-path>/.memory/` — VAULT scope (per-vault, ephemeral; archived on vault delete per MEMORY-OQ-5)
 
 Hard rails (anti-halu, per Iter 5 spec §10):

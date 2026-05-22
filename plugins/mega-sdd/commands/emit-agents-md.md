@@ -8,7 +8,7 @@ Invoke the `mega-sdd:emit-agents-md` skill via the Skill tool.
 User arguments: $ARGUMENTS
 
 Argument parsing:
-- First positional: vault path (default: detect `docs/mega-sdd/vaults/*/vault.json` in CWD)
+- First positional: vault path (default: detect in priority order — `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
 - `--out=<path>`: output file (default `<repo-root>/AGENTS.md`)
 - `--mode=overwrite|append|sibling`: behavior when AGENTS.md already exists; default `sibling` (safest)
 - `--include-section=<list>`: filter sections; default all

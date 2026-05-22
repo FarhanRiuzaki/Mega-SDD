@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.4.1
+version: 2.4.2
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -143,15 +143,32 @@ Builds a structured map of an existing repository for use by the SDD binding gat
    | `Cargo.toml` | `axum` | axum |
    | `Cargo.toml` | `rocket` | rocket |
    
-   Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to codebase-map.md as:
+   Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to codebase-map.md.
+
+   **First-match-wins ordering**: more specific starterkit packs take precedence over generic framework packs. Examples:
+
+   YAML for plain Laravel detection:
    ```yaml
    framework:
      name: laravel
-     version: "11.x"  # or "unknown" if regex fails
-     confidence: high  # high (explicit dep), medium (transitive), low (heuristic)
+     version: "11.x"
+     confidence: high          # high (explicit dep), medium (transitive), low (heuristic)
      pack_path: plugins/mega-sdd/references/framework-conventions/laravel.md
+     detection_source: "composer.json — laravel/framework"
    ```
-   If no match → `framework: { name: "_universal", confidence: "fallback" }`.
+
+   YAML for base-laravel-26 starterkit detection (Vuexy fingerprint detected, takes precedence over plain laravel):
+   ```yaml
+   framework:
+     name: laravel-base-26
+     version: "12.x"
+     confidence: high
+     pack_path: plugins/mega-sdd/references/framework-conventions/laravel-base-26.md
+     detection_source: "composer.json — pixinvent/vuexy-laravel-bootstrap-jetstream + joelbutcher/socialstream"
+     extends: laravel           # pack inheritance (recursive load resolves base laravel.md + _universal.md)
+   ```
+
+   If no match → `framework: { name: "_universal", confidence: "fallback", pack_path: "plugins/mega-sdd/references/framework-conventions/_universal.md" }`.
 
 9. **Detect pattern signatures.** Heuristic grep for indicators:
    - Auth: search for `middleware`, `jwt`, `session`, `@Auth` decorators
@@ -219,13 +236,13 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 
 | When | File | Content |
 |---|---|---|
-| After scan completes | `<project>/.mega-sdd-memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (per MEMORY-OQ-4 threshold) |
+| After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (per MEMORY-OQ-4 threshold) |
 
 ### Reads
 
 | What | Source | How used |
 |---|---|---|
-| Past convention detections | `<project>/.mega-sdd-memory/conventions.md` | SKIP re-detection for conventions marked `status: established` (per learning-rules.md §2.5); just confirm signal still present |
+| Past convention detections | `<project>/.mega-sdd/memory/conventions.md` | SKIP re-detection for conventions marked `status: established` (per learning-rules.md §2.5); just confirm signal still present |
 
 ### Anti-halu rails
 

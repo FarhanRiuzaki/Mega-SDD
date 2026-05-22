@@ -468,6 +468,6 @@ Status `halted` on `diff_conflict` (Resolved-OQ vs new PRD contradiction). Stand
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure, Vault Lock Status, OQ tagging convention, and Changelog.
-- OQ tagging conventions, status marker semantics, and `vault.json` field rules + regeneration trigger points: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema).
+- OQ tagging conventions, status marker semantics, and `vault.json` field rules + regeneration trigger points: see `../generate-intent/references/vault-contract.md` (§OQ-conventions, §schema).
 - For OQ resolution mechanics (how `[x]` markers and resolution pointers are formatted), see `resolve-oq` SKILL.md.
 - jd integration (v1.1+, Iter 14): see `plugins/mega-sdd/references/tooling-install.md` §jd.

@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 1.2.0
+version: 1.2.1
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -203,7 +203,14 @@ For each axis, compare vault model vs code model. Output is a list of findings, 
 - Vault reference (doc + section + line/identifier)
 - Code reference (file path + line range, when applicable)
 - Confidence (high / medium / low)
+- **Severity (v1.2.1+ Iter 25 — mutability-tier-aware)**:
+  - **CRITICAL** — drift on a vault claim where `mutability_source: kb_locked` (regulatory / contractual lock per Iter 22). Rebuild MUST preserve 1:1; any drift here is a compliance / contract risk.
+  - **HIGH** — drift on a CONFIRMED claim with no mutability source OR `mutability_source: kb_intent` where outcome changed (not just implementation)
+  - **MEDIUM** — drift on `mutability_source: kb_intent` where implementation changed but outcome preserved (acceptable per design freedom)
+  - **LOW** — drift on `mutability_source: kb_artifact` (legacy artifact already flagged as discardable; drift may be a partial cleanup)
 - Suggested action (informational only — user decides)
+
+Pre-v1.4 vaults without `mutability_source` annotations → all drift treated as severity HIGH (safe conservative default).
 
 ### Step 4: Generate `DRIFT-REPORT.md` artifact
 
@@ -568,6 +575,6 @@ Status `halted` on `drift_framework_mismatch` (vault framework signal doesn't ma
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with `Implementation mode: existing` in Vault Lock Status. The 7-file structure, OQ tagging convention, and ADR `D-XXX` numbering are all assumed.
-- OQ tagging conventions and `vault.json` field rules: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema). Note: drift-detect reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
+- OQ tagging conventions and `vault.json` field rules: see `../generate-intent/references/vault-contract.md` (§OQ-conventions, §schema). Note: drift-detect reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
 - For vault evolution from a new PRD, see `vault-diff` SKILL.md — different concern (source revisions vs codebase reality).
 - For OQ resolution mechanics (when drift findings produce new OQs that need stakeholder input), see `resolve-oq` SKILL.md.

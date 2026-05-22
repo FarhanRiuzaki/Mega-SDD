@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.9.0
+version: 1.9.1
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -47,11 +47,14 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
    - Skip if `--no-kb` set or no KB detected
    - Locate the domain file in KB matching the claim's domain tag
    - Search for the claim text in the matching domain file (focus on `## 5. Process`, `## 6. Outputs`, `## 7. Business Rules`)
-   - Apply marker-aware verdict:
-     - KB `[VERIFIED]` match → **CONFIRMED** (note: `via KB §<file>` in binding.md)
-     - KB `[INFERRED]` match → **CONFIRMED with note** (binding.md flags `verified via KB inference; downstream may revisit`)
-     - KB `[OPEN]` match → **OQ** (propagate KB OQ tag if present)
+   - Apply marker-aware verdict (v1.9.1+ Iter 25: dual-axis routing per Iter 22 mutability tier):
+     - KB `[VERIFIED][LOCKED]` match → **CONFIRMED** + emit `mutability_source: kb_locked` in binding.md; CONFLICT severity = HIGH if code diverges (1:1 preservation required by regulatory/contractual lock)
+     - KB `[VERIFIED][INTENT]` match → **CONFIRMED** + emit `mutability_source: kb_intent`; CONFLICT severity = MEDIUM (rebuild has design freedom — divergence may be intentional)
+     - KB `[VERIFIED][ARTIFACT]` match → **CONFIRMED-with-discard-recommendation** + emit `mutability_source: kb_artifact`; vault claim that preserves this should be flagged with note `"KB marks as ARTIFACT — discard recommended unless explicit business reason"`
+     - KB `[INFERRED]` (any tier) match → **CONFIRMED with note** (binding.md flags `verified via KB inference; downstream may revisit`)
+     - KB `[OPEN]` match → **OQ** (propagate KB OQ tag if present; mutability also OPEN until resolved)
      - No KB match → **OQ** (fresh — no auto-resolve attempted)
+   - Pre-v1.4 KBs (no tier markers) → all claims treated as `[INTENT]` mutability for backward-compat (safe middle-ground default)
    - **Never override a codebase-map CONFLICT verdict via KB.** KB is consulted only when codebase-map is silent. This preserves the binding gate's primary contract.
 
 2.5. **Implementation-state classification (v1.2+, Iter 1).**
@@ -272,7 +275,7 @@ This state propagates to `generate-units`, which assigns `task_type: extend` wit
    - NEVER suggest a Hard rule whose anchor file doesn't exist in codebase-map (`hard_rule_unanchored` would fire at bolt time anyway — surface here).
    - Suggestions are RECOMMENDATIONS, not impositions. `generate-units` reviews + filters before inserting into units.
 
-2.5. **Deferred-OQ auto-resolution.**
+2.11. **Deferred-OQ auto-resolution** (renumbered v1.9.1 Iter 25 — was duplicate `2.5`; logical position is after Hard Rules emission since it processes user-deferred OQs against the now-augmented codebase-map).
 
    For each OQ in the vault with `status: deferred` AND `defer_to: binding`:
 
@@ -414,7 +417,7 @@ This YAML is the canonical halt artifact. Prose announcement remains for human r
 
 6. **Audit log.** Append entry to `<vault>/vault.json` changelog: `{ "event": "bind", "at": "...", "summary": "N confirmed, N conflict, N oq" }`.
 
-2.10. **Constitution-aware CONFLICT surfacing (v1.8+, Iter 20 — closes Iter 17 Bug 2; renumbered v1.9 Iter 23 to accommodate framework pack step 2.8).**
+2.10. **Constitution-aware CONFLICT surfacing.**
 
    Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists:
 
@@ -446,7 +449,7 @@ blocker:
 
 ### Backward compat
 
-- v3.12 vaults without constitution.md → Step 2.9 SKIPPED gracefully; no halt, no citation
+- v3.12 vaults without constitution.md → Step 2.10 SKIPPED gracefully; no halt, no citation
 - `--no-constitution` flag opt-out preserves pre-v1.8 binding behavior
 
 ## Anti-hallucination rails
@@ -471,6 +474,10 @@ blocker:
 - `claims_total == 0`: halt, vault has no code-referencing claims (likely greenfield — pipeline should skip binding)
 - (v1.3+, Iter 2) Tech-OQ with `resolution_mode: recommend` missing required fields → halt `oq_recommend_underspecified`
 - (v1.3+, Iter 2) Tech-OQ recommendation `scan_citations` doesn't resolve in codebase-map / KB → halt `oq_recommend_citation_invalid`
+- (v1.8+, Iter 20) When `--strict-constitution` set AND existing code violates constitution clause → halt `bind_conflict_constitution_violation`. User resolves before vault locks.
+- (v1.9+, Iter 23) Framework pack declared in codebase-map.md §7 but `pack_path` file not found → halt `framework_pack_missing` with halt YAML listing expected path + fallback option
+- (v1.9+, Iter 23) Framework pack `extends:` chain has cycle → halt `framework_pack_cycle`
+- (v1.9+, Iter 23) Framework pack file fails to parse (malformed frontmatter or unparseable Hard Rules block) → halt `framework_pack_unparseable`
 
 ## Hand-off
 
@@ -512,13 +519,13 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 | When | File | Content |
 |---|---|---|
 | After binding completes | `<vault>/.memory/bind-history.md` | Append run summary: claims_total, confirmed, conflict, oq counts + Implementation State Map summary (IMPLEMENTED / NEW / UNKNOWN distribution) + Tech-OQ resolution counts |
-| When new convention detected via codebase-map consultation | `<project>/.mega-sdd-memory/conventions.md` | Append (additive; no overwrite) |
+| When new convention detected via codebase-map consultation | `<project>/.mega-sdd/memory/conventions.md` | Append (additive; no overwrite) |
 
 ### Reads
 
 | What | Source | How used |
 |---|---|---|
-| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd-memory/decisions.md` | When CONFLICT detected, SUGGEST same resolution as past pattern (via blocker YAML `next_action.suggested_resolution` field). User still picks via resolve-oq. |
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` | When CONFLICT detected, SUGGEST same resolution as past pattern (via blocker YAML `next_action.suggested_resolution` field). User still picks via resolve-oq. |
 | Cross-project CONFLICT patterns | `~/.mega-sdd/memory/patterns.md` | When project memory has no match AND user-scope has ≥3 cross-project matches, SUGGEST that resolution |
 | Past Hard Rule violation patterns | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When emitting Suggested Unit Hard Rules (Iter 3 §2.8), DOWNGRADE rules that have been violated+reverted ≥3 times to Anti-patterns (per learning-rules.md §2.3) |
 

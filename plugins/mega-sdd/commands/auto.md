@@ -10,10 +10,10 @@ User arguments: $ARGUMENTS
 Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-design.md` §4 Pillar 4):
 
 1. **Is `<input>` a path to a directory?**
-   - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO `vault.json` / `vaults/` / `docs/mega-sdd/vaults/`?
-     - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous).
-   - Does it contain `vault.json` OR `docs/mega-sdd/vaults/*/vault.json`?
-     - YES → existing vault. Propose chain starting with `scan-codebase` (if no codebase-map) or `bind-codebase` (if codebase-map exists) or `generate-units` (if bound-vault exists).
+   - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO vault at any of these paths: `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical), `docs/mega-sdd/vaults/*/vault.json` (legacy), `vaults/*/vault.json` (pre-Iter-10)?
+     - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous; default `--out=.mega-sdd/knowledge-base/`).
+   - Does it contain a vault at any of these paths (priority order): `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy)?
+     - YES → existing vault. Propose chain starting with `scan-codebase` (if no codebase-map at `.mega-sdd/codebase/codebase-map.md` or legacy `codebase-map.md`) or `bind-codebase` (if codebase-map exists) or `generate-units` (if bound-vault exists).
    - Otherwise → halt; ask user to clarify directory purpose.
 
 2. **Is `<input>` a path to a file?**

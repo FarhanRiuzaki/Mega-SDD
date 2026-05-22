@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.2.0
+version: 1.2.1
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -61,10 +61,13 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 ├── patterns.md                            # learned cross-project patterns
 └── learning-log.md                        # audit log of accepted learnings
 
-<project-root>/.mega-sdd-memory/           # PROJECT scope (per-repo)
+<project-root>/.mega-sdd/memory/            # PROJECT scope (v3.4+ canonical per paths.md; per-repo)
 ├── decisions.md                           # OQ resolutions, CONFLICT actions, ACCEPTs
 ├── conventions.md                         # detected conventions (test framework, naming, error format)
 └── outcomes.md                            # halt patterns, retry counts, success rates per run
+
+# Legacy path: <project-root>/.mega-sdd-memory/ — read-side back-compat only;
+# write-side defaults to .mega-sdd/memory/ per Iter 21 no-excuse rule.
 
 <vault-path>/.memory/                      # VAULT scope (per-vault, ephemeral)
 ├── classifier-accuracy.json               # auto-classifier tag vs user-override metrics

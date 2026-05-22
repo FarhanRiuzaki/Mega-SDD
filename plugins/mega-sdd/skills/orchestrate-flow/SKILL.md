@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.3.1
+version: 2.3.2
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -149,7 +149,7 @@ blocker:
 - (v1.3+) `--deep`: lift 3-skill cap; chain to pipeline-end via handoff-YAML auto-continue
 - (v1.3+) `--resume`: re-enter a paused/halted chain; skip upfront confirmation; CWD inspection rebuilds cursor position; halts re-fire if blockers unresolved
 - (v1.4+) `--memory-off`: disable memory layer (no reads, no writes) for this chain
-- (v2.0+) Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.mega-sdd/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
+- (v2.0+) Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
 
 ## Convergence loops (v2.3+, Iter 19)
 
@@ -174,7 +174,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `oq_business_p1_unresolved` — stakeholder decision required
 - `test_fail` after 3 retries — manual investigation needed
 - `hard_rule_unparseable` / `hard_rule_unanchored` — config error; user fixes
-- `cross_module_dep_invalid` — explicit blocked_by needed; user configures
+- `cross_squad_dep_invalid` — explicit blocked_by needed; user configures (canonical name per `handoff-contract.md`; was `cross_module_dep_invalid` pre-v2.3.2 Iter 25)
 - `memory_schema_mismatch` — migration prompt; user opts in
 - `mode_migrate` — vault/code mode contradiction; user decides
 
@@ -274,7 +274,7 @@ blocker:
 
 Per `references/checkpoint-protocol.md`:
 
-- Each long-running skill emits per-step checkpoints (JSONL) at `<vault>/.mega-sdd/checkpoints/`
+- Each long-running skill emits per-step checkpoints (JSONL) at `<vault>/.internal/checkpoints/`
 - Resume via `--resume-from=<step-id>` (per-skill) OR `/mega-sdd:auto --resume` (chain-wide; orchestrator finds latest checkpoint automatically)
 - Granularity per skill — extract-intelligence per wave, bind-codebase per claim, etc.
 - Rotation: last 3 runs kept; older archived; prune >180d via `mega-sdd:memory prune`
@@ -284,7 +284,7 @@ Per `references/checkpoint-protocol.md`:
 
 When `/mega-sdd:auto --resume` invoked:
 
-1. Scan `<vault>/.mega-sdd/checkpoints/*.jsonl` for current vault context
+1. Scan `<vault>/.internal/checkpoints/*.jsonl` for current vault context
 2. Identify last incomplete skill invocation (most recent checkpoint without "completed" marker)
 3. Build chain starting from that skill with `--resume-from=<latest-step-id>` flag
 4. Skill resumes mid-execution
@@ -301,7 +301,7 @@ When memory enabled (default; opt-out via `--memory-off`), the orchestrator is t
 Before invoking first skill in `--deep` mode:
 
 1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
-2. Read project-scope: `<cwd-project>/.mega-sdd-memory/decisions.md` + `conventions.md` + `outcomes.md`
+2. Read project-scope: `<cwd-project>/.mega-sdd/memory/decisions.md` + `conventions.md` + `outcomes.md`
 3. Read vault-scope (if vault detected): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
 4. Verify all `memory_schema` versions match expected; halt with `memory_schema_mismatch` blocker if any differ (per MEMORY-OQ-1)
 5. Build per-skill memory slices (filter to only what each skill needs)
