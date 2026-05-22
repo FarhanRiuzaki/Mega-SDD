@@ -1,61 +1,75 @@
 # mega-sdd
 
-Spec-Driven Development plugin for [Claude Code](https://claude.com/claude-code). Intent → Unit → Bolt pipeline with anti-hallucination at every handoff, persistent memory across sessions, AST-precise codebase analysis (tree-sitter), and AST-validated Hard Rules (ast-grep). Plus the Autonomy Layer (`/mega-sdd:auto`) that runs end-to-end with single upfront confirmation.
+Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 3.0.0 · **License:** MIT
+**Version:** 3.8.0 · **License:** MIT
 
-> 📖 **Full documentation lives at the repo root.** See [`../../README.md`](../../README.md) for TL;DR, 5W1H, full command reference, 10-layer anti-hallucination defense, Autonomy Layer + Memory Layer + Tech Upgrades details, migration guide, halt protocol, and architecture deep dive.
+> 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
 ## Quick start
 
 ```bash
+# Install
 /plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
 /plugin install mega-sdd
-/plugin install superpowers   # recommended companion
+/plugin install superpowers   # recommended
 
-# Optional native binaries for v3.0 tech upgrades (graceful regex/v1 fallback if absent):
-brew install tree-sitter ast-grep
+# Optional native binaries (precision boost):
+brew install tree-sitter ast-grep ripgrep jd
 # OR
-cargo install tree-sitter-cli ast-grep
+cargo install tree-sitter-cli ast-grep ripgrep
+go install github.com/josephburnett/jd@latest
+
+# Then in any project:
+/mega-sdd:auto ./prd.md
 ```
 
-Then in any project:
+That's it. Full install matrix: [`references/tooling-install.md`](./references/tooling-install.md).
 
-```bash
-/mega-sdd:auto ./prd.md                   # one-shot end-to-end (recommended)
-# OR
-/mega-sdd:orchestrate-flow                # phase-by-phase router (cap-3 default)
-```
+## First-time user? Start with a scenario
+
+| Scenario | When | Time |
+|---|---|---|
+| [Greenfield from idea](../../tests/scenarios/scenario-1-greenfield-from-idea.md) | Brand new; minimum viable demo | 15 min |
+| [PRD-driven feature](../../tests/scenarios/scenario-2-prd-driven-feature.md) | Have PRD; existing project | 30 min |
+| [Field-level extension](../../tests/scenarios/scenario-3-field-extension.md) | Add field to existing model | 20 min |
+| [Legacy rebuild](../../tests/scenarios/scenario-4-legacy-rebuild.md) | Legacy → new framework | 4 hours |
+| [Multi-squad parallel](../../tests/scenarios/scenario-5-multi-squad-parallel.md) | Multi-team coordination | 45 min |
+| [Recovery from halt](../../tests/scenarios/scenario-6-recovery-from-halt.md) | Bolt halted; need to recover | 15 min |
 
 ## What's in this folder
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.0.0)
-├── skills/                       # 12 skills + _vendored/
-│   ├── using-mega-sdd/           # anchor skill (v1.2; sharper auto-trigger)
-│   ├── memory/                   # NEW v1.0 — memory + self-learning operations (Iter 5)
-│   ├── emit-agents-md/           # NEW v1.0 — AGENTS.md emitter (Iter 6)
-│   ├── extract-intelligence/     # legacy → knowledge-base (v1.1)
-│   ├── generate-intent/          # PRD/brief/KB → vault (v1.6; OQ auto-classifier + memory reader)
-│   ├── scan-codebase/            # brownfield repo mapper (v2.0; tree-sitter AST engine + queries/)
-│   ├── bind-codebase/            # vault ↔ code validation gate (v1.6; impl-state + tech-OQ + Suggested Hard Rules + memory)
-│   ├── generate-units/           # vault → atomic AI prompts (v2.0; task_type + PageRank symbol-graph suggestions)
-│   ├── execute-bolts/            # units → code commits via superpowers (v2.0; ast-grep v2 Hard Rules + checkpoints)
-│   │   └── scripts/              # migrate-v1-rules.sh
-│   ├── orchestrate-flow/         # lifecycle auto-router (v2.0; --deep mode + --resume + per-step checkpoints)
-│   ├── resolve-oq/               # Open Question walker (v0.5; memory writer)
-│   ├── detect-drift/             # code vs vault reconciliation (v1.0)
-│   ├── diff-vault/               # handle PRD revisions (v1.0)
-│   └── _vendored/                # vendored superpowers skills (fallback)
-├── commands/                     # 15 slash commands (13 skill + 2 helpers)
-│   ├── auto.md                   # NEW v2.0 — one-shot end-to-end
-│   ├── memory.md                 # NEW v2.1 — memory operations
-│   ├── emit-agents-md.md         # NEW v3.0 — AGENTS.md emitter
-│   ├── migrate-rules.md          # NEW v3.0 — Hard Rule v1 → v2 migration helper
-│   └── extract-intelligence.md   # NEW v1.4 — legacy KB extraction
-├── hooks/                        # SessionStart hook (anchor injection)
-├── scripts/sync-superpowers.sh   # vendor sync automation
+├── .claude-plugin/plugin.json    # plugin manifest (v3.8.0)
+├── skills/                       # 11 skills + _vendored/
+│   ├── using-mega-sdd/           # anchor skill (auto-injected)
+│   ├── memory/                   # memory + self-learning (v1.2)
+│   ├── emit-agents-md/           # AGENTS.md flatten (v1.1)
+│   ├── extract-intelligence/     # legacy → knowledge-base (v1.2)
+│   ├── generate-intent/          # PRD/brief/KB → vault (v1.7)
+│   ├── scan-codebase/            # tree-sitter AST scan (v2.3)
+│   ├── bind-codebase/            # validation gate + field diff (v1.7.1)
+│   ├── generate-units/           # atomic decomposition (v2.3)
+│   ├── execute-bolts/            # superpowers TDD bridge (v2.2)
+│   ├── orchestrate-flow/         # lifecycle router (v2.2)
+│   ├── resolve-oq/               # OQ resolver + recommendations (v0.7)
+│   ├── detect-drift/             # code vs vault (v1.0)
+│   ├── diff-vault/               # PRD revision + jd patches (v1.1)
+│   └── _vendored/                # superpowers fallback
+├── commands/                     # 20 slash commands (1 primary + 19 advanced)
+│   ├── auto.md                   # ⭐ THE command
+│   ├── generate-intent.md, scan-codebase.md, bind-codebase.md, generate-units.md, execute-bolts.md
+│   ├── extract-intelligence.md, orchestrate-flow.md, resolve-oq.md, diff-vault.md, detect-drift.md
+│   ├── memory.md, emit-agents-md.md
+│   ├── lint-units.md, analyze-parallelism.md, list-modules.md    # [auto-invoked by /mega-sdd:auto]
+│   ├── migrate-rules.md, migrate-paths.md                         # one-off maintenance
+│   └── update-plugin.md
+├── references/
+│   ├── paths.md                  # canonical folder layout (Iter 10)
+│   └── tooling-install.md        # optional native binaries install matrix (Iter 14)
+├── hooks/                        # SessionStart hook
+├── scripts/                      # sync-superpowers + memory-migrations/
 ├── CLAUDE.md                     # AI-agent contributor guidelines
 └── LICENSE
 ```
@@ -66,31 +80,47 @@ plugins/mega-sdd/
 [legacy → extract-intelligence] → brief/PRD → generate-intent → (scan + bind for brownfield) → generate-units → execute-bolts → emit-agents-md
 ```
 
-Wrapped by **`/mega-sdd:auto`** (v2.0) for autonomous end-to-end execution with single upfront confirmation. v3.0 adds tree-sitter AST scan + ast-grep Hard Rules + PageRank target_files suggestions + AGENTS.md interop + mid-skill JSONL checkpoints. Halt-protocol preserved across all iters.
+Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
+
+## Anti-hallucination defense (10 layers)
+
+1. **Intent** — uncertain claims promote to Open Questions
+2. **OQ classification** — business vs tech; tech auto-resolves
+3. **Binding gate** — CONFLICT blocks
+4. **Implementation state** — IMPLEMENTED / NEW / PARTIAL_FIELDS_MISSING / UNKNOWN
+5. **Unit grounding** — target_files whitelist + acceptance_test + Anchors
+6. **Hard Rules pre/post-flight** — ast-grep validates at bolt time
+7. **AST-precise extraction** — tree-sitter (Aider pattern)
+8. **Memory** — suggestion-only with audit log
+9. **Drift detection** — code vs vault reconciliation
+10. **Interface lock** — cross-squad consumed interfaces must be locked
 
 ## Memory layer (v2.1+)
 
-Three scopes of markdown + JSON memory files persist context across sessions:
+Three scopes of markdown + JSON memory persist context across sessions:
 
-- `~/.mega-sdd/memory/` — USER scope (opt-in, cross-project)
-- `<project>/.mega-sdd-memory/` — PROJECT scope (per-repo, git-trackable per-file)
-- `<vault>/.memory/` + `<vault>/.mega-sdd/checkpoints/` — VAULT scope (per-vault, ephemeral)
+- `~/.mega-sdd/memory/` — USER (opt-in, cross-project)
+- `<project>/.mega-sdd/memory/` — PROJECT (per-repo, git-trackable per-file)
+- `<vault>/.memory/` + `<vault>/.internal/checkpoints/` — VAULT (per-vault, ephemeral)
 
-Self-learning via threshold-based suggestions reviewed through `/mega-sdd:memory review`. Never auto-applied. Mandatory audit log + rollback path. Complementary to (NOT duplicative of) Claude Code's `auto memory`.
+Self-learning via threshold-based suggestions reviewed through `/mega-sdd:memory review`. Never auto-applied. Mandatory audit log + rollback path. Complementary to Claude Code's `auto memory`.
 
-## Tech upgrades (v3.0+)
+## Reuse-stable tooling (Iter 14)
 
-| Subsystem | Engine | Fallback |
+Mega-sdd ADOPTS stable native binaries instead of building from scratch (all OPTIONAL with graceful fallback):
+
+| Tool | Used by | Fallback |
 |---|---|---|
-| scan-codebase | tree-sitter (Aider pattern, 45k ⭐) | regex (v1.2 behavior) |
-| Hard Rules | ast-grep YAML v2 (5-10× expressivity) | bespoke v1 grammar (preserved) |
-| target_files | Personalized PageRank symbol-graph | binding citations only |
-| Tool interop | AGENTS.md (Linux Foundation AAIF, 60k+ repos) | mega-sdd-only (v2.1 behavior) |
-| Resume | Per-step JSONL checkpoints (LangGraph pattern) | CWD-driven (Iter 4 behavior) |
+| `tree-sitter` | scan-codebase (AST extraction) | regex |
+| `ast-grep` | execute-bolts (Hard Rules v2) | v1 5-type grammar |
+| `ripgrep` (`rg`) | scan-codebase / detect-drift / bind-codebase / lint-units | GNU grep |
+| `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
+| `markdownlint-cli2` | lint-units (vault prose) | skill-internal heuristics |
+| `gh` (GitHub CLI) | optional PR automation | manual PR by user |
 
-Both `tree-sitter` and `ast-grep` are single native binaries. Plugin works without them but falls back to v1 behavior with warnings.
+See [`references/tooling-install.md`](./references/tooling-install.md) for one-command install per platform.
 
-See the [root README](../../README.md) for diagrams, full command table, trigger phrases, 10-layer anti-hallucination defense, Autonomy + Memory + Tech Upgrades mechanics, and migration from `grand-design-spec`.
+See the [root README](../../README.md) for diagrams, full command table, halt protocol, autonomy mechanics, migration guide.
 
 ## Contributing
 
