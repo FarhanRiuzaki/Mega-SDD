@@ -5,6 +5,122 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] — 2026-05-21
+
+### Added — Iter 19: Convergence Loops in orchestrate-flow
+
+Per user feedback (Iter 18 redirect) + earlier discussion — formalize implicit cycles between skills. "Cycling agent" pattern user asked for; safer alternative to auto-generating dynamic agents.
+
+### What changed
+
+`orchestrate-flow` v2.2 → v2.3 gains `--converge` mode. In `--deep` chain (or `auto`), auto-loops eligible halt types up to `--max-cycles` instead of stopping on first halt.
+
+**Cycle-eligible halts** (auto-loop with memory-pre-filled recommendations):
+
+| Halt type | Auto-loop action | Safety condition |
+|---|---|---|
+| `bind_conflict` | Auto-invoke `resolve-oq --binding` → re-run `bind-codebase` | Memory recommendation confidence ≥ 0.80 |
+| `module_blocked_by` | Auto-run prerequisite module first → resume requested | Prereqs identifiable + non-circular |
+| `cross_squad_interface_draft` | Wait+backoff (30s/60s/120s) for producer to lock | Producer has lock-in-progress signal |
+| `oq_recommend_underspecified` | Auto-regenerate recommendation fields → re-run | Memory has fallback rationale template |
+
+**Halts that ALWAYS STOP** (no auto-loop; human required):
+- `hard_rule_violated` (code in working tree; user reviews)
+- `dedup_ambiguous` (multi-path resolution)
+- `quality_gate_failed` (extract-intelligence)
+- `oq_business_p1_unresolved` (stakeholder decision)
+- `test_fail` after 3 retries
+- `hard_rule_unparseable` / `hard_rule_unanchored` (config error)
+- `cross_module_dep_invalid` (explicit blocked_by needed)
+- `memory_schema_mismatch` (migration prompt)
+- `mode_migrate` (vault/code mode contradiction)
+
+### Flags
+
+- `--converge` (default ON in `--deep` mode; OFF in standalone `orchestrate-flow`)
+- `--no-converge` — reverts to pre-v2.3 behavior (stop on any halt)
+- `--max-cycles=N` — hard limit (default 5) to prevent runaway
+
+### Per-cycle UX
+
+Chat output per cycle:
+
+```
+⛔ Halt: bind_conflict (3 conflicts detected)
+🔁 Cycle 1/5: auto-resolving via resolve-oq...
+   ↳ C-007 (auth conflict) → recommendation: KEEP_CODE (memory pattern 8/10; conf: 0.95) → ACCEPTED
+   ↳ C-009 (sanctum vs passport) → recommendation: KEEP_VAULT (per constitution §B-001) → ACCEPTED
+   ↳ C-011 (audit table schema) → recommendation: SPLIT (per past pattern) → ACCEPTED
+✓ Cycle 1 complete. Re-running bind-codebase...
+
+▶ Phase 3 of 5: bind-codebase (re-run)
+✓ Phase 3 of 5: bind-codebase → status: completed
+   Convergence: 1 cycle (3 conflicts auto-resolved via memory; 0 manual)
+```
+
+### New halt type — convergence_max_reached
+
+When cycle limit hit without convergence:
+
+```yaml
+blocker:
+  type: convergence_max_reached
+  details:
+    cycles_attempted: 5
+    halt_history:
+      - cycle: 1, halt: bind_conflict, auto-resolved: yes
+      - cycle: 2, halt: bind_conflict (different conflicts), auto-resolved: yes
+      - cycle: 3, halt: bind_conflict (recurring), auto-resolved: no — confidence dropped to 0.65
+    last_halt: bind_conflict (C-019)
+  next_action: "Recurring conflict after 5 cycles. Run /mega-sdd:resolve-oq --binding manually OR re-configure vault claim."
+```
+
+### Anti-halu rails (mandatory)
+
+- Auto-loop ONLY for closed set of eligible halt types; never expanded silently
+- Resolver MUST have HIGH-confidence recovery path (≥0.80 per Iter 7 standard)
+- `--max-cycles` hard limit prevents runaway loops
+- Same halt recurring after auto-resolution → escalate (don't loop on identical failure)
+- Every cycle logged to chain summary + memory `outcomes.md` (full audit trail)
+- `--no-converge` preserves pre-v2.3 behavior (one-shot per phase)
+
+### Tradefinance impact
+
+For 47+ unit brownfield rebuild (per Scenario 4):
+- Each cycle saved ≈ 10 min wall-clock
+- High convergence rate expected: bind_conflict resolutions accumulate in memory; later cycles auto-resolve
+- Net: 1.5-2x faster pipeline completion vs manual `--resume`
+
+### Changed — Skill versions
+
+- `orchestrate-flow`: 2.2.0 → 2.3.0 (convergence loops + `--converge` + `--max-cycles`)
+
+### Updated artifacts
+
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — new §Convergence loops section
+- `plugins/mega-sdd/commands/auto.md` — opt-in/opt-out flags + UX example
+
+### Backward compatibility
+
+- v3.11 pipelines WITHOUT `--converge` flag → unchanged behavior (stop on any halt)
+- Manual `orchestrate-flow` → `--converge` defaults OFF (preserves per-phase control)
+- `--auto` chain mode → `--converge` defaults ON (autonomous behavior)
+- `--max-cycles` override available always
+
+### Skipped from research findings (deferred to Iter 20+)
+
+Per honest assessment:
+
+- **OpenAPI emission** from vault flows — niche; needs API-first project; defer
+- **Semgrep + LLM triage gate** — overlap with ast-grep; license risk; skip
+- **Pattern → template generation** — module layer (Iter 11) already handles grouping; defer for more design
+
+Field-test will reveal which (if any) of these actually matter.
+
+### Plugin metadata
+
+- `plugin.json`: 3.11.0 → 3.12.0 (minor — additive convergence behavior)
+
 ## [3.11.0] — 2026-05-21
 
 ### Added — Iter 18: Replay Harness + Property-Based Testing
