@@ -40,9 +40,14 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.0.0 -->
+<!-- generated_by: mega-sdd:emit-agents-md v1.2.3 -->
 <!-- vault_source: {{vault_path}}/vault.json -->
 <!-- generated_at: <ISO8601> -->
+<!-- vault_version: {{vault_version}} -->
+<!-- constitution_hash: {{constitution_hash}}   ← OMIT line if source absent -->
+<!-- properties_validated: {{properties_validated}}   ← OMIT line if source absent -->
+<!-- replay_snapshot_count: {{replay_snapshot_count}}   ← OMIT line if value is 0 -->
+<!-- convergence_cycle_count: {{convergence_cycle_count}}   ← OMIT line if value is 0 -->
 
 ## Project overview
 
@@ -105,7 +110,14 @@ Per `plugins/mega-sdd/references/paths.md`:
 4. **Read user-authored AGENTS.md** (if `--mode=append`):
    - Preserve user-authored sections (anything before mega-sdd generation marker)
    - Append mega-sdd section after marker
-5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source). **Variable substitution (v1.2.3+, Iter 26 — closes P1-A from v3.17.0 verification audit):** the `{{vault_path}}` template token in the output is replaced at render time with the actual detected vault directory (relative to repo root). On v3.4+ canonical layout → `.mega-sdd/vaults/<slug>`; on legacy layout → `docs/mega-sdd/vaults/<slug>`. NEVER hard-code either path — use the probe result from step 1.
+5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source). **Variable substitution (v1.2.3+, Iter 26 — closes P1-A + P1-9 from v3.17.0 verification audit):**
+   - `{{vault_path}}` → actual detected vault directory relative to repo root. v3.4+ canonical → `.mega-sdd/vaults/<slug>`; legacy → `docs/mega-sdd/vaults/<slug>`. NEVER hard-code either path.
+   - `{{vault_version}}` → `vault.json` `version` field
+   - `{{constitution_hash}}` → from `binding.md` frontmatter (only if `<vault>/constitution.md` exists AND binding has been written); OMIT entire header line otherwise
+   - `{{properties_validated}}` → from `vault.json` `properties_summary.total` (only if ≥1 unit has `properties:` block); OMIT line otherwise
+   - `{{replay_snapshot_count}}` → from `vault.json` `replay_state.snapshot_count` (only if value > 0); OMIT line otherwise
+   - `{{convergence_cycle_count}}` → from `vault.json` `convergence_state.cycles_completed` (only if value > 0); OMIT line otherwise
+   - Per `references/agents-md-schema.md` §Conditional header field presence — each field renders ONLY when its source data exists; absent → line omitted, NEVER rendered with placeholder values.
 6. **Write to output path**. Idempotent — same vault → same output.
 7. **Hand-off**: announce "AGENTS.md written to `<path>`. Tools that support AGENTS.md (Continue.dev, Cursor, Aider, etc.) can now consume mega-sdd context."
 
