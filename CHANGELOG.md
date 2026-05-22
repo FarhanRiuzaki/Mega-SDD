@@ -5,6 +5,95 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] — 2026-05-21
+
+### Added — Iter 18: Replay Harness + Property-Based Testing
+
+Per user pick from Iter 17 research findings (telemetry/otel deprioritized per user). Two adoptions:
+
+**1. `/mega-sdd:replay <unit-id>` (NEW command)**
+
+Per research finding — IBM DFAH 2026 + LangGraph time-travel validate replay as missing primitive for agentic-dev debugging. Critical for brownfield scenarios (tradefinance) where bolts may produce non-deterministic outcomes across runs.
+
+- Captures bolt-state snapshot (preflight + postflight + bolt-report + git refs + target_files checksums) as JSON Lines at `<vault>/.internal/replays/<unit-id>-<timestamp>.json`
+- Diffs current run vs latest prior using `jd` (per Iter 14 adoption); falls back to manual field-by-field comparison
+- Classifies divergence: 🔴 HIGH (test exit code change, sha256 mismatch, hard-rule status change, halt differs) → suggest halt-equivalent; 🟡 MEDIUM (perf shift >50%, scope drift >20%) → warning; 🟢 LOW (cosmetic timestamps) → ignore
+- Pure bash + jq; zero new runtime deps; opt-in capture (does NOT auto-run)
+- `--capture-only` (baseline before refactor), `--diff-against=<replay-id>` (compare to specific prior run)
+
+Use cases:
+- Regression detection after code refactor
+- Non-determinism debugging
+- CI/CD integration for PR validation
+- Audit trail of bolt evolution
+
+**2. Property-Based Testing in unit schema (v2.5+)**
+
+Per Anthropic NeurIPS 2025 paper "Property-Based Testing with Claude" — PBT catches 30-32% of partial-correctness gaps that example-tests miss. Direct fit.
+
+- Extends unit schema (`generate-units/references/unit-schema.md`) with optional `properties:` array alongside existing `acceptance_test:`
+- Each property = invariant statement with MANDATORY citation (vault section / entity / constitution clause)
+- generate-units v2.4 → v2.5 emits PBT test stubs when framework detected:
+  - Python (Hypothesis) ⭐⭐⭐⭐⭐
+  - TS/JS (fast-check) ⭐⭐⭐⭐⭐
+  - Go (gopter) ⭐⭐⭐⭐
+  - Rust (proptest) ⭐⭐⭐⭐
+  - PHP (Eris) ⭐⭐⭐
+  - Other: skip emission; document properties as advisory
+- execute-bolts v2.2 → v2.3 runs PBT tests as acceptance phase; failures with `severity: error` → halt `pbt_property_violated` with counterexample preserved
+- New reference: `plugins/mega-sdd/skills/generate-units/references/pbt-integration.md`
+
+Properties vs acceptance_test:
+- acceptance_test: specific scenarios (examples); REQUIRED always
+- properties: universal invariants (all valid inputs); OPTIONAL opt-in (v2.5+)
+- Use both — examples for happy paths; properties for invariants across input space
+
+### Anti-halu rails (mandatory)
+
+**Replay**:
+- READ-ONLY (never modifies code/vault/memory)
+- DETERMINISTIC diff classification (rule table; no LLM judgment)
+- JSON Lines for race-tolerant append
+- Cosmetic divergence (timestamps) excluded from halt classification
+
+**PBT**:
+- Citations ENFORCED: properties without `cites:` field REJECTED at generate-units render pass
+- NO framework auto-install: skill never modifies composer.json/package.json/etc.
+- Counterexamples preserved in halt YAML for user debugging
+- Severity binary: `error` halts; `warning` doesn't
+- `--no-pbt` flag opt-out preserves pre-v2.5 behavior
+
+### Changed — Skill versions
+
+- `generate-units`: 2.4.0 → 2.5.0 (PBT emission for properties)
+- `execute-bolts`: 2.2.0 → 2.3.0 (PBT validation in acceptance phase)
+
+### Added — New artifacts
+
+- `plugins/mega-sdd/commands/replay.md` — `/mega-sdd:replay` command
+- `plugins/mega-sdd/skills/generate-units/references/pbt-integration.md` — PBT schema + emission patterns per language
+
+### Backward compatibility
+
+- v3.10 units without `properties:` field → execute-bolts treats as v2.4 (acceptance_test only); no behavior change
+- Existing acceptance_test mechanism unchanged
+- PBT-emitted test files use `tests/Property/` convention; doesn't conflict with existing test dirs
+- `--no-pbt` flag preserves pre-v2.5 behavior
+- Replay is opt-in standalone command; no impact on existing pipelines
+
+### Deferred (Iter 19+)
+
+Per research Iter 17 deferred list (not picked this iter):
+
+- OpenAPI emission from vault flows
+- Semgrep + LLM triage post-bolt gate
+- Convergence/iteration loops in orchestrate-flow
+- Pattern → template generation
+
+### Plugin metadata
+
+- `plugin.json`: 3.10.0 → 3.11.0 (minor — additive opt-in extensions)
+
 ## [3.10.0] — 2026-05-21
 
 ### Added — Iter 17: Constitution Layer (8th vault file)
