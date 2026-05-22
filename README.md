@@ -104,23 +104,82 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 
 ## Pipeline overview
 
-```
-[legacy code] → extract-intelligence → knowledge-base/
-                                            ↓
-PRD / idea / brief → generate-intent → vault/
-                                          ↓
-existing code → scan-codebase → codebase-map (tree-sitter AST)
-                                  ↓
-                  bind-codebase → binding.md (Implementation State + field_diff)
-                                  ↓
-                  generate-units → units/U-*.md (atomic; with Hard Rules)
-                                     ↓
-                  execute-bolts → atomic commits + tests passing
-                                     ↓
-                  emit-agents-md → AGENTS.md (tool-agnostic export)
+```mermaid
+flowchart TD
+    %% Inputs
+    LEG([📦 Legacy codebase]):::input
+    PRD([📄 PRD / brief / Figma]):::input
+    CODE([💻 Existing code]):::input
+
+    %% Optional KB extraction branch
+    LEG -->|extract-intelligence| KB[(🧠 knowledge-base/<br/>tech-agnostic markers)]:::artifact
+
+    %% Intent generation
+    KB -.->|--kb| INT
+    PRD --> INT[generate-intent<br/>+ OQ auto-classifier]:::phase
+    INT --> VAULT[(📚 vault/<br/>7 .md + vault.json<br/>OQs: business / tech)]:::artifact
+
+    %% OQ gate
+    VAULT --> OQGATE{P1 business<br/>OQs pending?}:::decision
+    OQGATE -->|yes| RESOLVE[resolve-oq<br/>+ recommendations]:::phase
+    RESOLVE -.-> VAULT
+    OQGATE -->|no| MODE{brownfield<br/>or greenfield?}:::decision
+
+    %% Brownfield path
+    MODE -->|brownfield| SCAN
+    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST]:::phase
+    SCAN --> MAP[(🗺️ codebase-map.md<br/>precision: ast)]:::artifact
+    MAP --> BIND[bind-codebase<br/>+ impl-state + field-diff<br/>+ Suggested Hard Rules]:::phase
+    VAULT --> BIND
+    BIND --> BOUND[(🔒 bound-vault/<br/>+ binding.md)]:::artifact
+    BOUND --> GEN
+
+    %% Greenfield path
+    MODE -->|greenfield| GEN[generate-units<br/>+ PageRank symbol-graph<br/>+ defensive checks]:::phase
+
+    %% Units → bolts
+    GEN --> UNITS[(⚙️ units/U-*.md<br/>atomic + Anchors<br/>+ Hard Rules ast-grep)]:::artifact
+    UNITS --> BOLTS[execute-bolts<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules]:::phase
+    BOLTS --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
+
+    %% End-of-chain emissions
+    COMMITS --> AGENTS[emit-agents-md]:::phase
+    AGENTS --> AGENTSMD([📋 AGENTS.md<br/>tool-agnostic interop]):::output
+
+    %% Cross-cutting layers
+    MEMORY[(🧩 Memory layer<br/>user / project / vault)]:::cross
+    MEMORY -.suggests / records.-> INT
+    MEMORY -.-> BIND
+    MEMORY -.-> RESOLVE
+    MEMORY -.-> BOLTS
+
+    %% Orchestrator
+    AUTO([🚀 /mega-sdd:auto --deep<br/>single confirm + auto-continue<br/>+ checkpoints]):::primary
+    AUTO -.orchestrates.-> INT
+    AUTO -.orchestrates.-> SCAN
+    AUTO -.orchestrates.-> BIND
+    AUTO -.orchestrates.-> GEN
+    AUTO -.orchestrates.-> BOLTS
+    AUTO -.orchestrates.-> AGENTS
+
+    %% Periodic
+    COMMITS -.detect-drift.-> VAULT
+    PRD -.diff-vault.-> VAULT
+
+    classDef input fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
+    classDef phase fill:#d4f1f4,stroke:#0a7e8c,stroke-width:1.5px,color:#0c4a52
+    classDef artifact fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+    classDef output fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#064e3b
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px,color:#7c2d12
+    classDef cross fill:#fafafa,stroke:#525252,stroke-width:1px,color:#262626
+    classDef primary fill:#fef2f2,stroke:#dc2626,stroke-width:3px,color:#7f1d1d
 ```
 
-All phases auto-chained via `/mega-sdd:auto`. Each phase produces typed handoff YAML for the orchestrator to continue.
+**Legend**:
+- 🟦 inputs (PRD, code, legacy) · 🟨 artifacts produced · 🟩 outputs · 🟧 decisions · 🟫 cross-cutting (memory) · 🟥 orchestrator
+- **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting
+
+All phases auto-chained via `/mega-sdd:auto`. Each phase produces typed handoff YAML for the orchestrator to continue. Halts on real issues (CONFLICT, business OQ P1, Hard Rule violation, dedup ambiguity, etc.); auto-continues otherwise.
 
 ---
 
