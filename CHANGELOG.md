@@ -5,6 +5,81 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.14.0] — 2026-05-22
+
+### Added — Iter 22: KB-as-Analysis Vault Philosophy + 3-Tier Mutability
+
+Philosophy shift per user directive: **"code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1"**. KB is no longer a 1:1 mirror of legacy — it's an **analysis input** that drives REENGINEERING recommendations. Vault output emphasizes business intent + rebuild proposals; legacy detail surfaces only when explicitly LOCKED.
+
+### 3-tier mutability classification (orthogonal to confidence)
+
+Every non-trivial KB claim now carries TWO marker axes:
+
+**Axis 1 — Confidence** (existing): `[VERIFIED]` / `[INFERRED]` / `[OPEN]`
+
+**Axis 2 — Mutability** (NEW v1.4+, Iter 22): `[LOCKED]` / `[INTENT]` / `[ARTIFACT]`
+
+- `[LOCKED]` — MUST preserve 1:1 (regulatory, contractual integration, audit-required, external FK)
+- `[INTENT]` — outcome matters, implementation FREE (DEFAULT for most domain rules)
+- `[ARTIFACT]` — coincidental legacy detail, free to DISCARD (dead code, legacy stack workarounds, unused fields)
+
+Combined notation: `[VERIFIED][LOCKED]`, `[VERIFIED][INTENT]`, `[INFERRED][ARTIFACT]`, etc. Confidence first, mutability second.
+
+### Updated skills
+
+**extract-intelligence** (v1.3.0 → v1.4.0):
+- Added §Axis 2 — Mutability tiers section to SKILL.md with concrete classification triggers
+- Default tier when uncertain: `[INTENT]` (never auto-LOCKED — over-constrains; never auto-ARTIFACT — risks discarding business rule)
+- Updated `references/knowledge-base-schema.md`:
+  - Per-domain frontmatter: added `locked_count`, `intent_count`, `artifact_count` machine-read fields
+  - §7 Business Rules table: split single Marker column → Confidence + Mutability columns
+  - Added §ERD Quality Rails section (universal-good-practice defaults: snake_case columns, plural snake_case tables, FK convention `{singular_target}_id`, standard timestamps, soft-delete, audit columns; Normalization checklist: 3NF compliance, no repeating groups, junction tables for M:N; Departures section required)
+  - Added §data-mutation-policy.md template (entity-level summary table + per-locked-field policy + discardable artifacts)
+- Updated `references/wave-dispatch-templates.md`:
+  - Generic agent prompt skeleton DISCIPLINE section: added mutability tier requirement with classification triggers
+  - REPORT BACK format: added `locked: <int>`, `intent: <int>`, `artifact: <int>` counts
+  - Wave 5 Synthesis: added 5th output `data-mutation-policy.md` aggregating per-entity tier counts
+  - Wave 5 README structure: leads with Reengineering Opportunities + Mutability Tier Distribution table BEFORE Critical Findings
+  - Final gate: checks `data-mutation-policy.md` exists + README ordering (Reengineering before Critical Findings)
+
+**generate-intent** (v1.9.1 → v1.10.0):
+- Mode B (KB sub-mode) reworked with tier-aware routing
+- Read `99-rebuild-architecture/data-mutation-policy.md` first to determine ERD freedom
+- Per-tier vault routing table:
+  - `[VERIFIED][LOCKED]` → vault verbatim + Hard Rule emission for execute-bolts
+  - `[VERIFIED][INTENT]` → outcome goal in vault, reference rebuild proposal
+  - `[VERIFIED][ARTIFACT]` → OQ with default "discard unless preserve required"
+  - `[INFERRED][LOCKED]` → single high-stakes confirmation question; default keep
+  - `[INFERRED][INTENT]` → vault body with INFERRED annotation
+  - `[INFERRED][ARTIFACT]` → skip vault; log to `_diagnostics/kb-skipped-artifacts.md`
+  - `[OPEN][?]` → vault OQ
+- ERD freedom: vault `02-architecture.md` uses `99-rebuild-architecture/suggested-erd.md` as proposed shape (not legacy conceptual ERD); only `[LOCKED]` fields retain legacy shape verbatim
+- Backward-compat: pre-v1.4 KBs without tier markers → all claims treated as `[INTENT]` (safe middle-ground)
+
+### Why this matters
+
+Iter 1-21 treated KB as "preserve-legacy spec" — `[VERIFIED]` items went into vault body as-is. This implicitly mirrored legacy schema/flow into rebuild. User flagged this misaligned with reengineering goals: legacy = INPUT for analysis, rebuild = OPPORTUNITY to fix what was broken.
+
+Iter 22 makes the philosophy explicit:
+- KB extracts BOTH business intent (preserved) AND legacy implementation detail (discardable)
+- ERD is FREE to redesign unless field carries regulatory/contractual lock
+- Reengineering Opportunities lead README — rebuild team's primary job is DESIGN, not ARCHAEOLOGY
+- `data-mutation-policy.md` is the contract between extract-intelligence and generate-intent for ERD freedom
+
+### Backward-compatibility
+
+- Pre-v1.4 KBs (no mutability markers) consumed safely — every claim treated as `[INTENT]`
+- Existing vaults unaffected (Iter 22 only changes NEW vault generation behavior)
+- Old KB regeneration not required — but users may re-run extract-intelligence to gain tier classification benefits
+
+### Verified
+
+- Plugin: 3.13.1 → 3.14.0
+- Skills bumped: extract-intelligence v1.4.0, generate-intent v1.10.0
+- `references/knowledge-base-schema.md` expanded with §Mutability tiers, §ERD Quality Rails, §data-mutation-policy.md template
+
+---
+
 ## [3.13.1] — 2026-05-22
 
 ### Fixed — Iter 21: Path-Default Hotfix (No-Excuse `.mega-sdd/`)

@@ -31,16 +31,23 @@ USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-
 
 DISCIPLINE (non-negotiable):
 - Citation required: file:line for every non-trivial claim, listed in §11.
-- Markers: [VERIFIED] / [INFERRED] / [OPEN] on every non-trivial claim.
+- Confidence marker: [VERIFIED] / [INFERRED] / [OPEN] on every non-trivial claim.
+- Mutability tier (v1.4+ Iter 22): [LOCKED] / [INTENT] / [ARTIFACT] paired with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
+  - Default tier when uncertain: [INTENT] (NEVER auto-default to [LOCKED] or [ARTIFACT] — both need positive evidence)
+  - [LOCKED]: regulatory citation, contract spec, audit trail, external FK
+  - [ARTIFACT]: zero-caller code, legacy stack workaround, dead branch
 - Tech-agnostic vocabulary outside §11 and 50-integrations/.
 - Compare .bak / dated files vs live versions; document discrepancies in §9.
-- NO fabrication. Ambiguous → [OPEN].
+- NO fabrication. Ambiguous confidence → [OPEN]. Ambiguous mutability → [INTENT] default.
 
 REPORT BACK (last line of your response, exact format):
 - path: <absolute output path>
 - verified: <int>
 - inferred: <int>
 - open: <int>
+- locked: <int>
+- intent: <int>
+- artifact: <int>
 - sources_cited: <int>
 - gate_self_check: pass | fail (<reason if fail>)
 ```
@@ -204,26 +211,52 @@ NEVER dispatch as a subagent. Wave 5 needs the holistic view across all prior wa
 
 Produce in order:
 
-1. `99-rebuild-architecture/suggested-erd.md` — clean ERD documenting DEPARTURES from legacy.
+1. `99-rebuild-architecture/suggested-erd.md` — clean ERD documenting DEPARTURES from legacy. MUST satisfy `references/knowledge-base-schema.md` §ERD Quality Rails (universal defaults + Normalization checklist + Departures section).
 2. `99-rebuild-architecture/suggested-system-flow.md` — logical service boundaries.
 3. `99-rebuild-architecture/module-dependency-graph.md` — DAG + leaf-vs-trunk + critical path.
 4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 + per-module acceptance criteria.
-5. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
+5. **`99-rebuild-architecture/data-mutation-policy.md`** (v1.4+, Iter 22) — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
+6. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
 
-Critical findings section in README MUST surface first — before TOC, before stats. Format:
+README MUST surface REENGINEERING OPPORTUNITIES + Critical findings BEFORE TOC + before stats. Format:
 
 ```markdown
-## Critical Findings (Surface First)
+## Reengineering Opportunities (Surface First — v1.4+ Iter 22)
+
+KB analysis reveals these proposed improvements over legacy. See `99-rebuild-architecture/` for detailed proposals.
+
+### 1. <Schema improvement>
+- Legacy: <denormalization / type issue / naming problem>
+- Proposed: <rebuild approach>
+- Tier: [INTENT] (or [ARTIFACT] if discarded entirely)
+- See: `99-rebuild-architecture/suggested-erd.md` §<section>
+
+### 2. <Flow simplification>
+- Legacy: <coupled flow / synchronous boundary / framework workaround>
+- Proposed: <decoupled / async / clean boundary>
+- Tier: [INTENT]
+- See: `99-rebuild-architecture/suggested-system-flow.md` §<section>
+
+## Mutability Tier Distribution
+
+| Tier | Count | % of total |
+|---|---|---|
+| LOCKED | <int> | <%> |
+| INTENT | <int> | <%> |
+| ARTIFACT | <int> | <%> |
+
+> [LOCKED] items in `99-rebuild-architecture/data-mutation-policy.md` MUST be preserved 1:1. [ARTIFACT] items proposed for discard. [INTENT] items free to redesign per quality rails.
+
+## Critical Findings — Do-Not-Replicate Bugs
 
 Things rebuild team MUST know before starting:
 
-### 1. <Headline finding>
+### 1. <Headline bug>
 <2-3 sentence summary>. See [<link to detail>].
-
-### 2. Critical Bugs in Legacy (Do NOT Replicate)
-- **<bug name>**: <1-sentence description>. <link>
 …
 ```
+
+The order is now: Reengineering Opportunities (forward-looking) → Mutability Distribution → Critical Findings (backward-looking, avoid replicating bugs). Reengineering first because rebuild team's primary task is DESIGN, not ARCHAEOLOGY.
 
 ---
 
@@ -253,10 +286,17 @@ done
 grep -rn 'varchar\|int(11)\|MySQL\|MSSQL\|composer\|namespace ' 10-domains/ 20-workflows/ 30-data-model/ 2>/dev/null | grep -v 'Source References' | head -10
 # Expect: no output (or only matches inside §11)
 
-# 5. Rebuild architecture all 4 files present
-for f in suggested-erd suggested-system-flow module-dependency-graph suggested-phasing; do
+# 5. Rebuild architecture all 5 files present (v1.4+ Iter 22 adds data-mutation-policy.md)
+for f in suggested-erd suggested-system-flow module-dependency-graph suggested-phasing data-mutation-policy; do
   [[ -f "99-rebuild-architecture/${f}.md" ]] || echo "FINAL FAIL: missing ${f}.md"
 done
+
+# 6. README leads with Reengineering Opportunities BEFORE Critical Findings (v1.4+ Iter 22)
+reengineering_line=$(grep -n '^## Reengineering Opportunities' README.md | head -1 | cut -d: -f1)
+critical_line=$(grep -n '^## Critical Findings' README.md | head -1 | cut -d: -f1)
+if [[ -z "$reengineering_line" || -z "$critical_line" || "$reengineering_line" -gt "$critical_line" ]]; then
+  echo "FINAL FAIL: README must lead with Reengineering Opportunities before Critical Findings"
+fi
 ```
 
 If any FINAL FAIL → halt, surface output to user, ask whether to re-dispatch a specific agent or accept gaps as `[OPEN]`.

@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.9.1
+version: 1.10.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -22,18 +22,38 @@ Behavior: parse + decompose directly per `references/vault-contract.md`. No Q&A 
 Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected when no structured PRD path provided.
 Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 questions) to fill gaps, then produces seed-PRD + vault in one pass.
 
-### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario)
+### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario; v1.10+ tier-aware routing)
 
 Invocation: `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/`
 
+KB is treated as ANALYSIS INPUT, not a 1:1 spec. Vault output emphasizes REENGINEERING goals + business intent; legacy detail surfaces only when `[LOCKED]` tier requires preservation. Per user directive (Iter 22): "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1".
+
 Behavior:
-- Read `<kb>/README.md` as the primary brief (replaces free-text or PRD as the seed).
-- For each domain file under `<kb>/10-domains/`, treat `## 1. Purpose` + `## 5. Process` + `## 7. Business Rules` as PRD-equivalent source quotes when populating vault sections.
-- Marker propagation:
-  - KB `[VERIFIED]` items → vault body without re-asking the user in Q&A.
-  - KB `[INFERRED]` items → surface as a single confirmation question per domain; default is "keep as INFERRED" (vault note).
-  - KB `[OPEN]` items → carry over directly to vault `Open Questions` with the original OQ tag preserved.
-- Q&A loop in Mode B is SHORTER when `--kb` is set (KB already covers most gaps). Aim ≤5 questions instead of ≤10.
+
+1. **Read KB README first** — extract `Reengineering Opportunities` section (v1.4+ KBs) + `Mutability Tier Distribution` table. If pre-v1.4 KB (no tier markers), treat all claims as `[INTENT]` (safe middle-ground).
+
+2. **Read `99-rebuild-architecture/data-mutation-policy.md`** (v1.4+ KBs) — this drives ERD freedom. Without this file, fall back to "all `[INTENT]`" default.
+
+3. **Read 10-domains files** + extract claims with both confidence + mutability markers.
+
+4. **Tier-aware routing per claim** (v1.10+):
+
+   | KB marker pair | Vault treatment | Vault location |
+   |---|---|---|
+   | `[VERIFIED][LOCKED]` | Verbatim — exact legacy field name, type, constraint preserved | `02-architecture.md` + Hard Rule emission for execute-bolts ; tagged `mutability_source: kb_locked` |
+   | `[VERIFIED][INTENT]` | Outcome goal — state transition + business rule preserved; implementation references rebuild proposal | `02-architecture.md` (rebuild shape) + `04-functional-spec.md` (outcome) ; tagged `mutability_source: kb_intent` |
+   | `[VERIFIED][ARTIFACT]` | Vault `## Open Questions` — default "discard unless preserve required" | `00-index.md` OQ section ; tagged `mutability_source: kb_artifact`, default resolution: discard |
+   | `[INFERRED][LOCKED]` | Single confirmation question (high stakes); default "keep as LOCKED" pending user veto | OQ until confirmed, then promoted to vault per `[VERIFIED][LOCKED]` rule |
+   | `[INFERRED][INTENT]` | Vault body with note "INFERRED — confirm in dev"; outcome already captured | `04-functional-spec.md` with `[INFERRED]` annotation |
+   | `[INFERRED][ARTIFACT]` | Skip vault entry entirely; log to `_diagnostics/kb-skipped-artifacts.md` | Diagnostic only |
+   | `[OPEN][?]` | Vault `Open Question` — answering resolves both axes | `00-index.md` OQ section |
+
+5. **ERD freedom**: vault `02-architecture.md` uses `99-rebuild-architecture/suggested-erd.md` as the proposed new shape — NOT the legacy `30-data-model/conceptual-erd.md`. Exception: `[LOCKED]` entities/fields from `data-mutation-policy.md` retain legacy shape verbatim (name, type, constraints, validation rules).
+
+6. **Q&A loop**: shorter than free-text Mode B because KB covers most gaps. Aim ≤5 questions. Primary Q&A targets:
+   - `[INFERRED][LOCKED]` items (highest stakes — confirm preservation requirement)
+   - `[ARTIFACT]` items flagged for discard (confirm with user before discarding)
+   - Reengineering Opportunities (confirm rebuild team accepts the proposal)
 - Auto-detection (priority order, first hit wins): `.mega-sdd/knowledge-base/README.md` (v3.4+ default) → `docs/knowledge-base/README.md` (legacy) → `docs/mega-sdd/knowledge-base/README.md` → `old-reference/knowledge-base/README.md`. If detected AND no `--from-prompt` / positional PRD argument → set `--kb=<detected-path>` implicitly. Confirm with user before proceeding.
 
 The three modes share the SAME vault contract (`references/vault-contract.md`). The only difference is input parsing.
