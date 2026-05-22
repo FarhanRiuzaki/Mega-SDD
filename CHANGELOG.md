@@ -5,6 +5,105 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] — 2026-05-21
+
+### Added — Iter 14: Reuse-Stable Tooling Adoptions
+
+Per user feedback — "adalagi ga yg berguna. jadi better reuse yg stable dari pada build" — research agent dispatched to scan for stable third-party tools mega-sdd should ADOPT instead of building from scratch. Validates 5 picks; ships 3 high-leverage adoptions + centralized install docs.
+
+### Critical finding — bundling tools is wrong approach
+
+User asked "bisa ga sih udah include aja di dalam skills?" Research verdict: **NO**. Reasons:
+- 5 platforms × multiple binaries × ~5MB each = 50MB+ plugin bloat
+- License redistribution complexity (MIT/Apache attribution per binary)
+- Maintenance treadmill (binary updates per release)
+- Plugin distribution architecture (Claude Code plugins are markdown-driven; bundling binaries breaks pattern)
+- Standard package managers (brew/cargo/npm/scoop) already handle updates better
+
+**Adopted approach**: centralized install reference doc + skill detection messages point users to install once via their package manager.
+
+### Added — Centralized install reference
+
+`plugins/mega-sdd/references/tooling-install.md` (NEW) — comprehensive install commands per platform per optional tool. Replaces scattered install messages in 5 skill files. One source of truth.
+
+Documents install for: tree-sitter, ast-grep, ripgrep, jd, markdownlint-cli2, gh, superpowers. Plus one-command setup blocks for brew/cargo/npm/scoop/pipx users.
+
+### Added — 3 tooling adoptions
+
+**ripgrep `--json`** (Iter 14 Pick A)
+
+- `scan-codebase` v2.2 → v2.3 — regex fallback path now prefers `rg --json` when available; structured JSON output (begin/match/end/summary records) faster + more reliable than text grep
+- Same pattern available in detect-drift + bind-codebase (procedural mention)
+- Falls back to GNU grep when ripgrep absent
+- Why: already-ubiquitous native; drop-in upgrade; zero new runtime deps
+
+**jd (JSON/YAML diff with RFC-6902 patches)** (Iter 14 Pick E)
+
+- `diff-vault` v1.0 → v1.1 — canonical structural diff for vault.json via `jd` when available
+- Patches stored at `<vault>/.mega-sdd/vault-diffs/<ISO8601>.patch` for audit trail + replay capability
+- Falls back to skill-internal Read+compare when jd absent
+- Why: difftastic doesn't generate patches; jd's RFC compliance enables apply/revert
+
+**markdownlint-cli2** (Iter 14 Pick C)
+
+- `lint-units` command Step 6.5 (NEW) — optional vault prose quality check
+- mega-sdd-friendly config: MD013 (line-length) off, MD041 (first-line-h1) off, MD033 (inline-HTML) off
+- Output integrated into lint-units summary as additional warnings (not halts)
+- Skipped when markdownlint-cli2 absent
+- Why: stable single binary; broader ecosystem than custom prose rules
+
+### Skipped (with rationale)
+
+Per research agent + my critical review:
+
+- **Custom install helper script** — maintenance trap; 6-line README block more durable than shell script detecting 5 platforms
+- **Vale** — needs vocab/style packages; spec language too domain-specific; ROI low
+- **MkDocs/Docusaurus** — Python/Node runtime; Material-for-MkDocs entered maintenance mode Nov-2025 (ecosystem fracture)
+- **just / Taskfile / Make** — competes with handoff YAML; introduces duplicate orchestration source
+- **Lefthook / pre-commit / husky** — mega-sdd is plugin-shaped, not repo-template-shaped; recommend in user docs, not plugin internals
+- **Semgrep / Comby** — overlap with ast-grep; slower or weaker semantics
+- **difftastic** — beautiful human-readable diff but no patch output; jd is correct pick
+
+### Considered but deferred
+
+- **check-jsonschema** — would deterministically validate vault.json + unit frontmatter. Defer: needs schema files first (vault.schema.json + unit.schema.json), and current Iter 1+11+12 lint covers most issues procedurally. Adopt if validation precision becomes pain point.
+- **gh CLI per-bolt PR pattern** — would auto-create GitHub PR per atomic commit. Defer: most users want manual PR control over multi-commit batches; document as procedure pattern in Iter 15 if requested.
+- **Aider tags.scm vendoring** — Aider is Apache-2.0; ships .scm queries for 130+ languages. Defer pending per-grammar license check (some upstream tree-sitter-* grammars are BSD/MIT mix).
+
+### Changed — Skill versions
+
+- `scan-codebase`: 2.2.0 → 2.3.0 (ripgrep `--json` adoption)
+- `diff-vault`: 1.0.0 → 1.1.0 (jd canonical diff + patch storage)
+- `lint-units` command: + Step 6.5 markdownlint-cli2 optional pass
+
+### Added — New reference
+
+- `plugins/mega-sdd/references/tooling-install.md` — single source of truth for ALL optional native tooling install commands
+
+### Anti-halu invariants preserved
+
+- All tooling adoptions are OPTIONAL with graceful fallbacks
+- Ripgrep `--json` output is DETERMINISTIC (no LLM interpretation of structured records)
+- jd patches are RFC-6902 compliant (deterministic JSON Patch format)
+- markdownlint produces SARIF/JSON output (deterministic)
+- Tool DETECTION via `command -v` (deterministic)
+- Fallbacks preserve v3.7 behavior when tools absent (no silent quality degradation; just less precise output noted in chat)
+
+### Backward compatibility
+
+- v3.7 pipelines without tooling continue working identically (graceful fallbacks)
+- Existing diff-vault output (without jd) → unchanged when jd absent
+- Existing scan-codebase regex output → unchanged when ripgrep absent (same patterns + outputs)
+- Existing lint-units output → unchanged when markdownlint-cli2 absent (no Step 6.5 invocation)
+- No vault format changes, no memory schema changes
+
+### Outstanding (Iter 15+)
+
+- check-jsonschema integration (after vault + unit JSON schemas authored)
+- gh CLI per-module PR pattern (procedure docs)
+- Aider .scm vendoring (license-cleared subset)
+- Field-test validation in tradefinance-rebuild
+
 ## [3.7.0] — 2026-05-21
 
 ### Restored — Iter 13: Single-command Philosophy + Consolidation

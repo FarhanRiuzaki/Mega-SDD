@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.2.0
+version: 2.3.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -70,12 +70,34 @@ Builds a structured map of an existing repository for use by the SDD binding gat
    - Capture names map: `name.definition.<kind>` → §2 (public interfaces); `name.reference.<kind>` → symbol graph (used by generate-units PageRank per Iter 6 Swap #3)
    - Languages without `.scm` file → fall back to regex (graceful per-language degradation)
 
-   **If `engine: regex` (v1 fallback):**
-   - **TypeScript/JS:** grep `^export (default |async )?(function|class|const|interface|type)` in `--include` files
-   - **PHP:** grep `^(class|interface|trait|function) ` and `public function `
-   - **Python:** grep `^(class|def) ` (exclude `_private`)
-   - **Go:** grep `^func [A-Z]` (exported)
-   - **Rust:** grep `^pub (fn|struct|enum|trait)`
+   **If `engine: regex` (v1 fallback; v2.3+ uses ripgrep when available for structured JSON output, falls back to GNU grep):**
+
+   ```bash
+   # Prefer ripgrep --json when installed for structured matches (v2.3+, Iter 14)
+   if command -v rg >/dev/null; then
+     RG_OPTS="--json --type-add 'php:*.php' --type-add 'ts:*.ts'"
+     # Per-language patterns:
+     #   TS/JS: rg --type ts $RG_OPTS '^export (default |async )?(function|class|const|interface|type)' <paths>
+     #   PHP:   rg --type php $RG_OPTS '^(class|interface|trait|function) |public function ' <paths>
+     #   Python: rg --type py $RG_OPTS '^(class|def) ' <paths>
+     #   Go:    rg --type go $RG_OPTS '^func [A-Z]' <paths>
+     #   Rust:  rg --type rust $RG_OPTS '^pub (fn|struct|enum|trait)' <paths>
+   else
+     # Fallback to GNU grep when ripgrep absent
+     # ... per-language patterns above without --json structure
+   fi
+   ```
+
+   Per-language patterns (engine: regex):
+   - **TypeScript/JS:** `^export (default |async )?(function|class|const|interface|type)` in `--include` files
+   - **PHP:** `^(class|interface|trait|function) ` and `public function `
+   - **Python:** `^(class|def) ` (exclude `_private`)
+   - **Go:** `^func [A-Z]` (exported)
+   - **Rust:** `^pub (fn|struct|enum|trait)`
+
+   Ripgrep `--json` output structured: emit `begin`/`match`/`end`/`summary` records; skill parses these into interface table (faster + more reliable than text grep).
+
+   See `plugins/mega-sdd/references/tooling-install.md` for ripgrep install (`brew install ripgrep` etc.); install is OPTIONAL — GNU grep fallback always works.
 
 6. **Extract routes.** Per known framework signatures:
    - **Express:** `app.(get|post|put|delete|patch)\(`

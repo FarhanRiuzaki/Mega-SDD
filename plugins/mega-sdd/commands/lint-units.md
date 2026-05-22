@@ -144,6 +144,24 @@ For `--format=json`: structured JSON output for tooling integration.
 - `--squad=<id>` — lint only units in squad S-X
 - `--strict` — promote SOFT warnings to halt-equivalent failures (CI mode)
 
+### Step 6.5 — Optional markdownlint-cli2 prose pass (v1.1+, Iter 14)
+
+If `markdownlint-cli2` available (`command -v markdownlint-cli2`), run prose quality check on vault + units:
+
+```bash
+markdownlint-cli2 --config plugins/mega-sdd/references/markdownlint-config.jsonc \
+  '<vault>/*.md' '<vault>/units/*.md'
+```
+
+Suggested rule overrides for mega-sdd (in markdownlint-config.jsonc; mega-sdd-friendly defaults):
+- MD013 (line-length): off — citations + Anchors can be long
+- MD041 (first-line-h1): off — vault files lead with frontmatter
+- MD033 (inline-HTML): off — generation markers + binding annotations use HTML comments
+
+Output: SARIF or JSON; integrated into lint-units summary as additional warnings (not halts). Skipped when markdownlint-cli2 absent.
+
+Install: see `plugins/mega-sdd/references/tooling-install.md`.
+
 ### Step 7 — Hand-off
 
 After display:
