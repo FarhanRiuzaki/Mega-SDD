@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.8.0
+version: 1.9.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -526,6 +526,38 @@ When scan-aware mode active, extracted context is passed to:
 - PRD precedence preserved: PRD claims OVERRIDE codebase reality (CONFLICT surface in binding phase, not silenced)
 - Existing-entity awareness adds annotation, NOT replaces vault claim. Architect can override.
 - `--no-pre-scan` flag opt-out preserves pre-v1.8 architect-only workflow
+
+### Step 3.4: Write constitution.md (v1.9+, Iter 17)
+
+Per `references/vault-contract.md` §constitution. Write 8th vault file with project-facing rules.
+
+1. **Extract from PRD/KB**:
+   - Coding standards: from PRD tech-stack section + KB conventions
+   - Security baselines: from PRD non-functional + KB business rules
+   - Architecture invariants: from PRD architecture + KB design-decisions
+   - Anti-patterns: from KB critical findings + past project memory (`.mega-sdd/memory/patterns.md`)
+   - Performance constraints: from PRD non-functional + KB performance hints
+   - Compliance: from PRD constraints + regulatory KB sections
+
+2. **Write `<vault>/constitution.md`** with 6 sections (§A through §F):
+   - §A Coding standards
+   - §B Security baselines
+   - §C Architecture invariants
+   - §D Anti-patterns
+   - §E Performance constraints
+   - §F Compliance
+
+3. **Cite source for every clause** (per anti-halu rail): `(per PRD §<section>)` OR `(per KB §<file>:<line>)` OR `(per .mega-sdd/memory/decisions.md row <N>)`
+
+4. **Persist hash in vault.json**:
+   ```json
+   "constitution_version": "1.0.0",
+   "constitution_hash": "<sha256 of constitution.md>"
+   ```
+
+5. **Surface for user sign-off**: emit one-line summary in chat: "Constitution.md written with N clauses. Review before bolts begin: <path>"
+
+6. **`--no-constitution` flag** skips this step (preserves pre-v1.9 7-file vault behavior); for one-off greenfield demos.
 
 ### Step 3.5: OQ auto-classification (v1.4+, Iter 2)
 
