@@ -1,6 +1,6 @@
 ---
 framework: laravel
-framework_version_range: "10.x — 11.x"
+framework_version_range: "10.x — 12.x"
 last_verified_against: 2026-05-22
 maintainer: mega-sdd
 detection_signature:
@@ -10,11 +10,19 @@ detection_signature:
 extends: _universal
 ---
 
-# Laravel Convention Pack (10.x — 11.x)
+# Laravel Convention Pack (10.x — 12.x)
 
 Conventions for Laravel backend projects. Extends `_universal.md` — universal defaults apply, Laravel-specific rules override on conflict.
 
-> **Note:** This pack starts from default Laravel conventions. User's project-specific starterkit may override these — when user shares starterkit path, populate Iter 24 pack `laravel-<user>.md` with overrides.
+> **Project-specific overrides**: when a project ships its own starterkit conventions (custom traits, base classes, helper layout, etc.), see `laravel-<starterkit>.md` pack — extends this base pack with starterkit-specific overrides. Example: `laravel-base-26.md` (RECON starter — Jetstream + Spatie permission + Vuexy + custom helpers/traits stack).
+
+## Laravel version notes
+
+- **10.x**: standard `app/` layout with `app/Console/Kernel.php`, `app/Exceptions/Handler.php`, `app/Http/Kernel.php`, etc.
+- **11.x**: slimmer skeleton — Kernels removed, middleware/exceptions in `bootstrap/app.php`, `health` route default, `casts()` method on Models replaces `$casts` property (optional in 11.x, encouraged in 12.x)
+- **12.x**: continues 11.x slim skeleton, `casts()` method becomes the convention, factory configuration moved to model `newFactory()`, broader use of typed enums in casts
+
+Detection: `version_regex` extracts major version; framework pack body remains shared across 10.x — 12.x. Version-specific notes flagged inline below with `[v11+]` / `[v12+]` markers.
 
 ## File location standards
 

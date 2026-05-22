@@ -19,7 +19,8 @@ Fallback when no framework match → `_universal.md` (universal good practices t
 |---|---|
 | `_template.md` | Schema for authoring new packs |
 | `_universal.md` | Universal fallback — snake_case columns, FK convention, 3NF, etc. |
-| `laravel.md` | Laravel 10.x — 11.x pack |
+| `laravel.md` | Laravel 10.x — 12.x pack (default framework conventions) |
+| `laravel-base-26.md` | RECON / base-laravel-26 starterkit (Vuexy + Jetstream + Spatie permission + custom helpers/traits + Reverb + notification rule engine) — extends laravel.md; takes precedence when Vuexy fingerprint detected |
 | `<other>.md` | Add more packs incrementally — Django, Rails, Express, NestJS, FastAPI, Go (Gin/Echo), Rust (Actix/Axum), etc. |
 
 ## Opt-out

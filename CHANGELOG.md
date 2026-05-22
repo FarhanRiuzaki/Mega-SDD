@@ -5,6 +5,96 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.16.0] — 2026-05-22
+
+### Added — Iter 24: RECON / base-laravel-26 Starterkit Pack
+
+User shared their Laravel 12 starterkit at `/Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/base-laravel-26`. Audited via CLAUDE.md (26KB) + composer.json + structure inspection. Captured project-specific conventions into a dedicated pack — Iter 23's pluggable system pays off immediately.
+
+### What the starterkit reveals
+
+Stack: Laravel **12.x** + Jetstream (Livewire) + Socialstream + Sanctum + Spatie Permission + Spatie ActivityLog + Reverb (WebSockets) + Yajra DataTables + Vuexy (Bootstrap 5) theme + jQuery + Vite. **PHPUnit 11** (NOT Pest). **Yarn** (NOT npm). **UUID primary keys** + **foreignUuid FKs** by default.
+
+Custom architecture:
+- 9 force-loaded helper files (`app/Helpers/*_helpers.php`)
+- 9 reusable traits (`HasUuid`, `HasUserStamps`, `HasActivityLog`, `HasSlug`, `Cacheable`, `HandlesNumberInput`, `AutoSoftDelete`, `HandlesFilePermissions`, `HasCommonFields`)
+- `BaseController` with `successResponse()` / `errorResponse()` JSON helpers
+- `BaseDataTable` (Yajra) with action column + per-row permission checks
+- Notification Rules Engine (event-driven; jQuery QueryBuilder conditions)
+- CRUD Generator (`php artisan make:controller-acl`)
+- Code Obfuscator (deployment pipeline with strategy chain)
+- ErrorResponseService with `ErrorCode` enum (6 categories, 1xxx-6xxx)
+
+### New file
+
+**`plugins/mega-sdd/references/framework-conventions/laravel-base-26.md`** (~600 lines):
+- `extends: laravel` (inherits base Laravel 10-12 pack)
+- Detection: `pixinvent/vuexy-laravel-bootstrap-jetstream` in composer.json (unique starterkit fingerprint) + `joelbutcher/socialstream` fallback
+- 18+ file location overrides (Actions, DataTables, Enums, Helpers, Services, Traits, CRUD generator paths, test fixtures, obfuscator)
+- 14+ naming standard overrides (UUID PKs, foreignUuid FKs, controller filename shorthand, Form Request module grouping, etc.)
+- 9 mandatory traits per entity table
+- 2 required base classes (`BaseController`, `BaseDataTable`)
+- 16 project-specific idioms (CRUD generator first, thin controllers, permission middleware on routes, activity log via trait, DataTables for lists, notification rules over Observers, Reverb broadcast, casts() method in v11+, etc.)
+- 7 frontend conventions (Vuexy theme, jQuery + DataTables, Livewire 3, `DOMContentLoaded` (NOT `$(document).ready()`), SweetAlert2, Toastr, responsive 375px+, yarn-not-npm)
+- 11 Hard Rules emitted (UUID PK enforcement, BaseController extension, permission middleware, JS init pattern, dialog convention, PHPUnit not Pest, etc.)
+- 11 forbidden patterns
+- 8 project-specific artisan commands
+- 4 required daily processes (web + queue + reverb + vite)
+- Quality gate commands (pint --dirty, composer analyse, php artisan test)
+- ErrorCode enum convention
+- Notification rule pattern (7-step recipe)
+- ERD additions (UUID PKs, audit columns, soft delete default, activity_log schema, authentication_logs, notification engine schema, connected_accounts polymorphic)
+- 13-row docs reference table
+- 13 pack-specific notes (old-reference/ is legacy, PHPStan baseline exists, helpers force-loaded, code obfuscation skip rule, etc.)
+- Deviation policy (when to override this pack via ADR or constitution.md)
+
+### Updated existing files
+
+**`laravel.md`** (v1.0 → v1.1 conceptually; same file, expanded range):
+- `framework_version_range`: "10.x — 11.x" → "10.x — 12.x"
+- Added §Laravel version notes section with [v11+] / [v12+] markers
+- Documented v11 slimmer skeleton (Kernels removed, bootstrap/app.php config)
+- Documented v12 casts() method convention, factory configuration
+
+**scan-codebase** (v2.4.0 → v2.4.1):
+- Added detection row for `pixinvent/vuexy-laravel-bootstrap-jetstream` → `laravel-base-26` (takes precedence over plain laravel via first-match-wins; Vuexy starterkit fingerprint)
+
+**`framework-conventions/README.md`**:
+- Added `laravel-base-26.md` to files table with description
+
+### How this composes
+
+When user runs `/mega-sdd:auto` in a project derived from this starterkit:
+
+1. **scan-codebase** detects `pixinvent/vuexy-laravel-bootstrap-jetstream` in composer.json → emits `framework: { name: laravel-base-26, pack_path: ...laravel-base-26.md }`
+2. **bind-codebase** loads `laravel-base-26.md` → which loads parent `laravel.md` → which loads `_universal.md`
+3. Hard Rules merged: universal baseline (snake_case columns) → Laravel base (migration timestamp pattern) → starterkit overrides (UUID PKs override BIGINT default, BaseController extension required, etc.)
+4. Suggested Unit Hard Rules in `binding.md` reflect the LIVE starterkit conventions
+5. `generate-units` emits units with starterkit-specific instructions (use `make:controller-acl` for new modules, extend BaseDataTable, etc.)
+6. `execute-bolts` validates generated code against the merged rule set via ast-grep
+
+### Validation alignment with user's global CLAUDE.md
+
+User's global `~/.claude/CLAUDE.md` declares:
+- "memorize gunakan document.addEventListener('DOMContentLoaded', ...)" → MATCHES pack's HARD_RULE on JS init
+- "memorize untuk blade laravel selalu utamakan juga responsive" → MATCHES pack's responsive HARD_RULE
+- "memorize pake sweet alert untuk di project laravel" → MATCHES pack's SweetAlert2 HARD_RULE  
+- "memorize using yarn build" → MATCHES pack's yarn-not-npm HARD_RULE
+- "memorize selalu ikutin docs sebagai acuan code" → pack references starterkit `docs/INDEX.md`
+
+The starterkit IS the source of truth for the user's coding preferences. Pack now formally encodes those preferences as enforceable Hard Rules.
+
+### Plugin
+
+3.15.0 → 3.16.0
+
+### Future iters
+
+- More starterkit packs as user shares additional bases (frontend kits, alternative Laravel stacks, Django starters, etc.)
+- Pack linter (`_lint.md` schema validator) — deferred from Iter 23
+
+---
+
 ## [3.15.0] — 2026-05-22
 
 ### Added — Iter 23: Framework Convention Packs + Universal ERD Quality
