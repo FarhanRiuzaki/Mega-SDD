@@ -1,7 +1,7 @@
 ---
 name: extract-intelligence
-version: 1.3.0
-description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` markers. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
+version: 1.4.0
+description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
 # Extract-Intelligence — Legacy Domain Knowledge Extractor
@@ -91,11 +91,64 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 
 ## Extraction discipline (non-negotiable)
 
-Three markers on every non-trivial claim — same convention `bind-codebase` already uses:
+Every non-trivial claim carries TWO orthogonal axes — **confidence** (epistemic: how sure are we?) + **mutability** (decisional: how much freedom does rebuild have?). Both axes are mandatory.
+
+### Axis 1 — Confidence markers (existing convention, also used by `bind-codebase`)
 
 - `[VERIFIED]` — confirmed by multiple code paths OR an explicit doc.
 - `[INFERRED]` — single source code path; needs confirmation.
 - `[OPEN]` — unknown from code; needs domain expert. Propagates to vault as OQ when KB is consumed by `generate-intent`.
+
+### Axis 2 — Mutability tiers (v1.4+, Iter 22)
+
+Per user directive "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1" — every claim is tagged with the freedom rebuild has to change it:
+
+- `[LOCKED]` — **MUST be preserved 1:1 in rebuild**. Triggered by:
+  - Regulatory citation (BI/OJK/SOX/HIPAA/PCI/GDPR specific field, calculation, retention rule)
+  - Contractual integration spec (SWIFT MT format, partner API contract, audit-trail compliance)
+  - Migration cost prohibitive (live production data with sensitive constraints — column rename breaks downstream)
+  - Hard external dependency (FK referenced by external system out of scope)
+- `[INTENT]` — **Business OUTCOME matters, implementation is FREE**. Default tier for most domain rules. Rebuild may redesign schema, refactor flow, swap algorithms — as long as the outcome (state transition, calculated value, business rule effect) is preserved.
+- `[ARTIFACT]` — **Coincidental legacy implementation detail — free to DISCARD**. Triggered by:
+  - Implementation accidents (e.g., field exists because legacy framework required it; not used by any business rule)
+  - Workarounds for legacy stack limitations (denormalization for performance; flag columns for missing JOIN support; column-based polymorphism)
+  - Dead code paths (referenced by zero callers; defunct workflow branches)
+
+### Combined notation
+
+Markers stack: `[VERIFIED][LOCKED]`, `[VERIFIED][INTENT]`, `[INFERRED][LOCKED]`, etc. Confidence comes first (epistemic) then mutability (decisional). When `[OPEN]`, mutability is `[?]` until the question is answered: `[OPEN][?]`.
+
+Example claims:
+
+> Customer NIP field is 8 numeric digits, validated by checksum algorithm `<spec link>`. `[VERIFIED][LOCKED]` — `(see §11.3)` — required by BI Regulation 23/2/2021 §4.
+
+> Loan amount is denormalized into `application` and `disbursement` tables for read-performance. `[VERIFIED][ARTIFACT]` — `(see §11.7)` — rebuild may normalize via JOIN or projection.
+
+> Approver matrix uses 7 hierarchy levels keyed by `approval_code`. `[VERIFIED][INTENT]` — `(see §11.4)` — outcome (correct authority routing) matters; representation (matrix vs role-based) is rebuild's choice.
+
+### Default tier when uncertain
+
+If a wave-2/3/4 agent can't classify with high confidence, default to `[INTENT]` (middle-ground, safest). Wave 5 synthesis re-reviews tier distribution and surfaces likely mis-classifications. Never default to `[LOCKED]` (would over-constrain rebuild) or `[ARTIFACT]` (would risk discarding business rule).
+
+### Why this matters — KB role re-positioned
+
+KB is no longer a "preserve-legacy spec". KB is an **analysis input** that produces a vault containing:
+1. Business goals (immutable across rebuild)
+2. Hard constraints (`[LOCKED]` rules from KB)
+3. Recommended new shape (`99-rebuild-architecture/*` proposals — schema, flows, modules)
+4. Discarded legacy detail (`[ARTIFACT]` items — listed but flagged as discardable)
+
+The rebuild's job is to satisfy goals + locked constraints, not to mirror legacy verbatim.
+
+**Citation required:** every non-trivial claim has a `file:line` reference in the file's `## 11. Source References` section. Inline claims may use a short `(see §11)` pointer if the citation is shared.
+
+**Tech-agnostic vocabulary:** no language / framework / DB names in domain files except `## 11. Source References` and `50-integrations/`.
+- ✓ "Customer entity (persisted in legacy as table `cifmast`)"
+- ✗ "MySQL `cifmast` table"
+
+**`.bak` / dated-file handling:** compare with live version, document discrepancies in `## 9. Edge Cases & Gotchas`. Don't assume `.bak` is older — sometimes it contains logic removed due to a regression.
+
+**No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
 
 **Citation required:** every non-trivial claim has a `file:line` reference in the file's `## 11. Source References` section. Inline claims may use a short `(see §11)` pointer if the citation is shared.
 
@@ -125,11 +178,12 @@ If the same gate fails twice for the same agent → halt with the gate output. U
 
 Wave 5 MUST be main thread, not a subagent — it needs holistic context across every wave's output:
 
-1. **`suggested-erd.md`** — clean ERD (Mermaid). Document DEPARTURES from legacy (normalize denormalized tables, event-source mutable counters, fix typo bugs structurally).
+1. **`suggested-erd.md`** — clean ERD (Mermaid). Document DEPARTURES from legacy (normalize denormalized tables, event-source mutable counters, fix typo bugs structurally). Apply Normalization Checklist (see `references/knowledge-base-schema.md` §ERD Quality Rails).
 2. **`suggested-system-flow.md`** — service boundaries (logical, not framework-mandate). Anti-corruption layer pattern for integrations. Idempotency requirements. No framework prescription.
 3. **`module-dependency-graph.md`** — DAG (Mermaid). Leaf-vs-trunk analysis. Critical-path estimate.
 4. **`suggested-phasing.md`** — Phase 1/2/3 sprint plan with acceptance criteria per phase. Pre-milestone blocker list. Per-module acceptance template.
-5. **`README.md`** roll-up — navigation, **critical findings surfaced first**, OQ roll-up grouped by phase blocker, stats, next steps.
+5. **`data-mutation-policy.md`** (v1.4+, Iter 22) — entity-by-entity table listing which tables/fields are `[LOCKED]` vs `[INTENT]` vs `[ARTIFACT]`. Drives ERD freedom in `generate-intent --kb` — without this file the consumer doesn't know what it's allowed to redesign.
+6. **`README.md`** roll-up — navigation, **reengineering opportunities + critical findings surfaced first**, mutability tier distribution table, OQ roll-up grouped by phase blocker, stats, next steps.
 
 ## Bridge to rebuild + mega-sdd pipeline
 

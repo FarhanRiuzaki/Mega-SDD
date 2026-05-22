@@ -67,11 +67,15 @@ depends_on: [<other-domain-ids>]   # for dependency graph synthesis
 verified_count: <int>              # count of [VERIFIED] markers in the file
 inferred_count: <int>              # count of [INFERRED] markers
 open_count: <int>                  # count of [OPEN] markers / OQ entries
+# v1.4+ Iter 22 mutability distribution (machine-read by generate-intent --kb)
+locked_count: <int>                # count of [LOCKED] markers (1:1 preserve)
+intent_count: <int>                # count of [INTENT] markers (outcome-only)
+artifact_count: <int>              # count of [ARTIFACT] markers (discardable)
 source_files_cited: <int>          # unique source file count in §11
 ---
 ```
 
-These fields are machine-read by `bind-codebase` when consulting KB for secondary ground truth.
+These fields are machine-read by `bind-codebase` when consulting KB for secondary ground truth, and by `generate-intent --kb` to route claims to vault correctly per mutability tier.
 
 ---
 
@@ -120,9 +124,9 @@ flowchart LR
 
 ## 7. Business Rules
 
-| Rule | Why | Source | Marker |
-|---|---|---|---|
-| <rule statement> | <business reason> | <PRD §? domain SME? code-only?> | [VERIFIED] / [INFERRED] / [OPEN] |
+| Rule | Why | Source | Confidence | Mutability |
+|---|---|---|---|---|
+| <rule statement> | <business reason> | <PRD §? domain SME? code-only?> | [VERIFIED] / [INFERRED] / [OPEN] | [LOCKED] / [INTENT] / [ARTIFACT] / [?] |
 
 ## 8. State Machine
 
@@ -155,7 +159,9 @@ state-A --event--> state-B
 
 ---
 
-## Marker conventions
+## Marker conventions (two orthogonal axes)
+
+### Axis 1 — Confidence
 
 | Marker | Meaning | Behavior downstream |
 |---|---|---|
@@ -163,7 +169,119 @@ state-A --event--> state-B
 | `[INFERRED]` | Single source code path; needs confirmation | `bind-codebase` → CONFIRMED with note when claim matches |
 | `[OPEN]` | Unknown from code; needs domain expert | `bind-codebase` → escalate as OQ; `generate-intent --kb` → propagates to vault as OQ |
 
-Markers go inline next to claims (`Status code 14 written by act_import_ops.php:269 [INFERRED]`) AND in the Business Rules table column.
+### Axis 2 — Mutability tier (v1.4+, Iter 22)
+
+| Marker | Meaning | `generate-intent --kb` behavior |
+|---|---|---|
+| `[LOCKED]` | MUST preserve 1:1 — regulatory, contractual, integration-required, or external-FK-dependent | Vault body verbatim; emit as Hard Rule for execute-bolts; mutability_source: kb_locked |
+| `[INTENT]` | Outcome matters, implementation free | Vault as outcome goal; reference `99-rebuild-architecture/` recommendation as proposed new shape; mutability_source: kb_intent |
+| `[ARTIFACT]` | Coincidental legacy detail — discardable | Vault OQ with default "discard unless user requests preservation"; mutability_source: kb_artifact |
+| `[?]` | Mutability pending — only valid when paired with `[OPEN]` | Vault OQ — answering resolves both confidence + mutability |
+
+### Combined notation
+
+Markers stack: `[VERIFIED][LOCKED]`, `[VERIFIED][INTENT]`, `[INFERRED][LOCKED]`, etc. Confidence first, mutability second. Inline format:
+
+```
+Status code 14 written by act_import_ops.php:269 [INFERRED][INTENT] — outcome (mark application as approved) matters; field-level mechanism is rebuild's choice.
+```
+
+In Business Rules table, two separate columns (Confidence + Mutability). Markers go inline next to claims AND in the table.
+
+### Default tier when uncertain
+
+If a wave-2/3/4 agent can't classify with high confidence, default to `[INTENT]` (middle-ground). Wave 5 synthesis re-reviews and may upgrade to `[LOCKED]` (regulatory citation found) or downgrade to `[ARTIFACT]` (zero callers + workaround pattern).
+
+Never auto-default to `[LOCKED]` (over-constrains rebuild) or `[ARTIFACT]` (risks discarding business rule). Both require positive evidence.
+
+### Backward-compat for KBs without tier markers
+
+Pre-v1.4 KBs that only carry confidence markers: `generate-intent --kb` treats every claim as `[INTENT]` (safe middle-ground). User MAY re-run extraction to upgrade tier classification.
+
+---
+
+## ERD Quality Rails (v1.4+, Iter 22)
+
+`suggested-erd.md` MUST satisfy these checks before Wave 5 writes the file:
+
+### Universal-good-practice defaults
+
+- **Column naming**: snake_case (universal default; framework pack may override — see [`plugins/mega-sdd/references/framework-conventions/`](../../references/framework-conventions/))
+- **Table naming**: plural snake_case (`customers`, `loan_applications`)
+- **Primary key**: `id` (auto-increment BIGINT or UUID per framework convention)
+- **Foreign key**: `{singular_target_table}_id` (e.g., `customer_id` on `loans` table referencing `customers.id`)
+- **Standard timestamps**: `created_at TIMESTAMP NOT NULL`, `updated_at TIMESTAMP NOT NULL` on every mutable table
+- **Soft delete (when applicable)**: `deleted_at TIMESTAMP NULL` — application enforces filter
+- **Audit columns (when applicable)**: `created_by`, `updated_by` → FK to users.id
+
+### Normalization checklist
+
+- **3NF compliance**: every non-key field depends on the WHOLE key, ONLY the key, NOTHING but the key
+- **No repeating groups**: e.g., `phone1`, `phone2`, `phone3` → separate `customer_phones` table
+- **Junction tables for M:N**: e.g., `users` × `roles` → `user_roles` table with composite PK
+- **No denormalization shortcuts** unless paired with `[LOCKED]` tag + business justification (e.g., reporting performance)
+
+### Departures from legacy (mandatory section)
+
+`suggested-erd.md` MUST include a `## Departures from Legacy` section enumerating:
+
+1. **Denormalization fixes** — legacy field X was stored on table Y for read-perf; rebuild moves to JOIN / projection
+2. **Naming standardization** — legacy `cifmast` → rebuild `customers`; legacy `cifNm` → rebuild `name`
+3. **Type corrections** — legacy `varchar(255)` for currency → rebuild `decimal(15,2)`
+4. **Bug fixes structural** — legacy typo `commited_at` → rebuild `committed_at`
+5. **Discarded fields** — `[ARTIFACT]` columns listed with discard rationale
+
+Each departure cross-references the `[LOCKED]/[INTENT]/[ARTIFACT]` tier of the affected entity. `[LOCKED]` entities cannot have name/type departures — only additive changes allowed.
+
+---
+
+## `data-mutation-policy.md` template (v1.4+, Iter 22)
+
+```markdown
+---
+generated_by: mega-sdd:extract-intelligence
+wave: 5
+purpose: Entity-level mutability policy — drives ERD freedom in generate-intent --kb
+---
+
+# Data Mutation Policy
+
+This file declares which legacy entities/fields are LOCKED (must preserve 1:1) vs INTENT (outcome only) vs ARTIFACT (discardable). Generated from per-domain `[LOCKED]/[INTENT]/[ARTIFACT]` markers.
+
+## Entity-level summary
+
+| Entity | Locked count | Intent count | Artifact count | Overall tier | Departure-allowed? |
+|---|---|---|---|---|---|
+| customers | 3 | 12 | 4 | INTENT (mixed; 3 locked fields) | Yes — except for locked fields below |
+| transactions | 8 | 6 | 0 | LOCKED (audit trail compliance) | No structural departures; additive only |
+| audit_logs | 4 | 0 | 0 | LOCKED (regulatory) | No |
+
+## Per-locked-field policy
+
+For every `[LOCKED]` field, list explicitly:
+
+| Entity.field | Legacy name | Mandated by | Rebuild permission |
+|---|---|---|---|
+| customers.nip | cifmast.cifNip | BI Reg 23/2/2021 §4 | Field name MAY change to `national_id`; type + length + validation rule MUST preserve. |
+| transactions.swift_mt_type | trxmast.mt_type | SWIFT MT Standard | Field name + values MUST be exact (MT103, MT700, etc.) |
+| ... | ... | ... | ... |
+
+## Discardable artifacts
+
+| Entity.field | Legacy purpose | Why discardable | Rebuild action |
+|---|---|---|---|
+| customers.flag_legacy_v1 | Tag for legacy migration script | Migration completed 2018; field unused since | DROP |
+| transactions.amount_str | Denormalized string copy of amount for legacy report | Reports rebuilt; redundant with `amount DECIMAL` | DROP |
+
+## How rebuild teams use this file
+
+1. Read this file BEFORE designing rebuild ERD
+2. For `[LOCKED]` entities: clone legacy shape (name/type/constraints), no structural changes
+3. For `[INTENT]` entities: design clean rebuild ERD per universal-good-practice defaults + framework conventions
+4. For `[ARTIFACT]` columns: confirm with business stakeholder before discarding (default: discard); document discarded items in rebuild ADR
+```
+
+---
 
 ---
 
@@ -188,8 +306,10 @@ Markers go inline next to claims (`Status code 14 written by act_import_ops.php:
 
 ### `suggested-erd.md`
 - Mermaid ER diagram of the clean rebuild schema.
+- MUST satisfy §ERD Quality Rails above — universal-good-practice defaults + Normalization checklist + Departures section.
 - Documents DEPARTURES from legacy (normalize denormalized tables, event-source mutable counters, fix typo bugs structurally).
 - Tech-agnostic field types (e.g., `decimal`, `text`, not `varchar(255)`).
+- Cross-references `data-mutation-policy.md` — fields tagged `[LOCKED]` retain legacy shape; `[INTENT]` fields apply rebuild design freedoms; `[ARTIFACT]` fields omitted with discard rationale in §Discarded fields.
 
 ### `suggested-system-flow.md`
 - Logical service boundaries — NOT a microservice prescription.
