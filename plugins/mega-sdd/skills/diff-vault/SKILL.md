@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.0.0
+version: 1.1.0
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -410,8 +410,37 @@ Do NOT pad with "I have completed..." preamble.
 
 ---
 
+## Canonical diff via `jd` (v1.1+, Iter 14)
+
+Use `jd` (RFC-7386/6902 compliant JSON/YAML diff with patch generation) for canonical structural diff of vault.json between revisions. Replaces ad-hoc Read+compare approach.
+
+### When jd is available
+
+```bash
+if command -v jd >/dev/null; then
+  # Generate canonical patch (RFC-6902 JSON Patch by default)
+  jd <old-vault>/vault.json <new-vault>/vault.json > <vault>/.mega-sdd/vault-diffs/<timestamp>.patch
+  # Apply later if needed:
+  # jd -p <patch-file> <old-vault>/vault.json > <vault>/vault.json
+else
+  # Fallback: skill-internal Read + compare (preserves v1.0 behavior)
+fi
+```
+
+### Patch artifact storage
+
+- Location: `<vault>/.mega-sdd/vault-diffs/<ISO8601>.patch`
+- Format: RFC-6902 JSON Patch (default jd output)
+- Use case: audit trail of vault evolution; can replay or revert via `jd -p`
+- Backward compat: skip storage when jd absent; skill-internal Read+compare proceeds as v1.0
+
+### Install
+
+See `plugins/mega-sdd/references/tooling-install.md` for jd install commands per platform. Install is OPTIONAL — skill works without it.
+
 ## References
 
 - Source vault: must be a `grand-design-spec` vault with the standard 7-file structure, Vault Lock Status, OQ tagging convention, and Changelog.
 - OQ tagging conventions, status marker semantics, and `vault.json` field rules + regeneration trigger points: see `../grand-design-spec/references/vault-contract.md` (§OQ-conventions, §schema).
 - For OQ resolution mechanics (how `[x]` markers and resolution pointers are formatted), see `resolve-oq` SKILL.md.
+- jd integration (v1.1+, Iter 14): see `plugins/mega-sdd/references/tooling-install.md` §jd.
