@@ -83,9 +83,9 @@ For EACH `target_files` entry where `operation: create`:
 - `--auto` flag suppresses interactive — defaults to safest option (convert to extend; user reviews later)
 - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
 
-## Step 12.4.5 — Per-anchor verification (NEW, in render pass)
+## Step 12.3 — Per-anchor verification (precondition check)
 
-After Step 12.4 (polished-prompt render pass), verify each unit's `## Anchors`:
+Before Step 12.4 (constitution inject) and Step 12.5 (polished-prompt render pass), verify each unit's `## Anchors`:
 
 ```
 For each Anchor entry "<file>:<line-range> — <description>":
@@ -164,7 +164,7 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 
 - v3.1 vaults without upstream artifacts → trigger Step 0.5 prompts; user can decline to keep v3.1 behavior
 - v3.1 units without `grounding_confidence` → treated as v3.1 schema; new field optional in frontmatter
-- `--no-defensive` flag disables Steps 0.5 + 7.6 + 12.4.5 entirely (back to v3.1 behavior)
+- `--no-defensive` flag disables Steps 0.5 + 7.6 + 12.3 entirely (back to v3.1 behavior)
 - `--auto` flag in chain mode (orchestrate-flow --deep) → defaults safest (no death by prompts in autonomous chains)
 
 ## Examples

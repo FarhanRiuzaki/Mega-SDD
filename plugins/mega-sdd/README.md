@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 3.18.0 · **License:** MIT
+**Version:** 3.18.1 · **License:** MIT
 
 > 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.18.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.18.1)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -50,7 +50,7 @@ plugins/mega-sdd/
 │   ├── generate-intent/          # PRD/brief/KB → vault (v1.10.0)
 │   ├── scan-codebase/            # tree-sitter AST scan (v2.4.2)
 │   ├── bind-codebase/            # validation gate + field diff (v1.9.2)
-│   ├── generate-units/           # atomic decomposition (v2.5.2)
+│   ├── generate-units/           # atomic decomposition (v2.5.3)
 │   ├── execute-bolts/            # superpowers TDD bridge (v2.4.1)
 │   ├── orchestrate-flow/         # lifecycle router (v2.3.2)
 │   ├── resolve-oq/               # OQ resolver + recommendations (v0.9.0)
