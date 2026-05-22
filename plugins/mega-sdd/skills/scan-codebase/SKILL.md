@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.3.0
+version: 2.4.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -116,6 +116,41 @@ Builds a structured map of an existing repository for use by the SDD binding gat
    - File case: kebab vs camel vs snake (majority wins)
    - Symbol case: camel vs snake vs Pascal
    - Test file suffix: `.test.ts`, `.spec.ts`, `Test.php`
+
+8.5. **Detect framework (v2.4+, Iter 23).** Parse package manifest for framework dependency fingerprints; write to `codebase-map.md` §Framework section. Detection rules (first match wins per language):
+   | Manifest | Grep pattern | Framework |
+   |---|---|---|
+   | `composer.json` | `"laravel/framework"` | laravel |
+   | `composer.json` | `"symfony/framework-bundle"` | symfony |
+   | `composer.json` | `"slim/slim"` | slim |
+   | `package.json` | `"next"` (dependencies) | next |
+   | `package.json` | `"nuxt"` (dependencies) | nuxt |
+   | `package.json` | `"@nestjs/core"` | nestjs |
+   | `package.json` | `"express"` | express |
+   | `package.json` | `"fastify"` | fastify |
+   | `package.json` | `"@remix-run/"` | remix |
+   | `package.json` | `"@sveltejs/kit"` | sveltekit |
+   | `Gemfile` | `gem ['"]rails['"]` | rails |
+   | `Gemfile` | `gem ['"]sinatra['"]` | sinatra |
+   | `pyproject.toml`/`requirements.txt` | `django` | django |
+   | `pyproject.toml`/`requirements.txt` | `fastapi` | fastapi |
+   | `pyproject.toml`/`requirements.txt` | `flask` | flask |
+   | `go.mod` | `github.com/gin-gonic/gin` | gin |
+   | `go.mod` | `github.com/labstack/echo` | echo |
+   | `go.mod` | `github.com/gofiber/fiber` | fiber |
+   | `Cargo.toml` | `actix-web` | actix |
+   | `Cargo.toml` | `axum` | axum |
+   | `Cargo.toml` | `rocket` | rocket |
+   
+   Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to codebase-map.md as:
+   ```yaml
+   framework:
+     name: laravel
+     version: "11.x"  # or "unknown" if regex fails
+     confidence: high  # high (explicit dep), medium (transitive), low (heuristic)
+     pack_path: plugins/mega-sdd/references/framework-conventions/laravel.md
+   ```
+   If no match → `framework: { name: "_universal", confidence: "fallback" }`.
 
 9. **Detect pattern signatures.** Heuristic grep for indicators:
    - Auth: search for `middleware`, `jwt`, `session`, `@Auth` decorators

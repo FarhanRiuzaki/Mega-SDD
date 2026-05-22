@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.8.1
+version: 1.9.0
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -21,7 +21,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 - Vault path (positional, required) — directory containing the 7-file vault
 - Codebase map path (optional, default probe order: `.mega-sdd/codebase/codebase-map.md` (v3.4+ Iter 10 canonical) → `<repo-root>/codebase-map.md` (legacy) → `./codebase-map.md`)
 - Knowledge-base path (optional, v1.1+; auto-probed in this priority order — `.mega-sdd/knowledge-base/` (v3.4+ default), `docs/knowledge-base/` (legacy), `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/` — first hit wins; override with `--kb=<path>`)
-- Flags: `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>` (override KB auto-probe), `--no-kb` (skip KB consultation entirely)
+- Flags: `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>` (override KB auto-probe), `--no-kb` (skip KB consultation entirely), `--no-framework-pack` (v1.9+ Iter 23 — skip framework pack loading), `--framework-pack=<custom-path>` (v1.9+ — override built-in pack with project-specific file), `--strict-constitution` (v1.8+ — halt on constitution-violating CONFLICTs)
 
 ## Outputs
 
@@ -198,28 +198,52 @@ This state propagates to `generate-units`, which assigns `task_type: extend` wit
    - NEVER pass a recommendation with unverifiable citations downstream. Citation verification is mandatory.
    - `rationale` and `fallback_if_wrong` provide audit trail — if either is missing, the recommendation cannot be trusted; halt.
 
-2.8. **Emit Suggested Unit Hard Rules (v1.4+, Iter 3).**
+2.8. **Load framework convention pack (v1.9+, Iter 23).**
+
+   Read `codebase-map.md` §7 Framework section. Load matching pack from `plugins/mega-sdd/references/framework-conventions/<framework>.md`. If `framework.name = _universal` or no match found → load `_universal.md` only.
+
+   Pack loading protocol:
+   - Read pack file completely
+   - Extract `## Hard Rules emitted` section into structured records
+   - If pack has `extends: <parent>` frontmatter → load parent pack first, then overlay (child rules override parent on conflict per `path_glob` match)
+   - User opt-out: `bind-codebase --no-framework-pack` skips this step entirely
+   - User override: `bind-codebase --framework-pack=<custom-path>` uses a project-specific pack instead
+
+   Loaded pack rules become inputs to step 2.9 (Suggested Unit Hard Rules emission).
+
+   Halt conditions:
+   - Pack file missing (codebase-map declared `pack_path: X` but file not found) → halt `framework_pack_missing` with halt YAML listing expected path + fallback option
+   - Pack `extends:` chain has cycle → halt `framework_pack_cycle`
+   - Pack file fails to parse (malformed frontmatter or unparseable Hard Rules block) → halt `framework_pack_unparseable`
+
+   Graceful fallback (no halt):
+   - Pre-v2.4 codebase-map without §7 Framework section → treat as `_universal` fallback; log advisory in binding.md
+   - `last_verified_against:` >365 days stale → emit advisory note; do not halt
+
+2.9. **Emit Suggested Unit Hard Rules (v1.4+, Iter 3; v1.9+ framework pack overlay).**
 
    Bind-codebase suggests Hard Rules that `generate-units` will pull into per-unit `## Hard rules` sections. These are the bridge from binding intelligence → per-unit pre/post-flight enforcement.
 
    Per DESIGN-OQ-6 (locked): KB gotchas → Anti-patterns by default; promoted to Hard rules ONLY when KB marker is `[VERIFIED]` AND the gotcha is mechanically detectable.
 
-   Sources for suggestions:
+   Sources for suggestions (priority order):
 
-   **a. Binding state-derived suggestions** (per claim with `state: IMPLEMENTED` or `state: UNKNOWN`):
+   **a. Framework pack rules (v1.9+, Iter 23)** — Hard Rules from `## Hard Rules emitted` section of the loaded pack. Universal-pack rules baseline; framework-pack rules overlay (override on `path_glob` conflict). These rules apply project-wide regardless of unit-specific binding signals.
+
+   **b. Binding state-derived suggestions** (per claim with `state: IMPLEMENTED` or `state: UNKNOWN`):
    - Anchor file exists + claim is CONFIRMED → suggest `DO NOT modify <anchor-file>` rule for any unit whose vault_source overlaps this claim, UNLESS the claim is explicitly subject to extension (task_type=extend candidate). The rule is conservative — defaults to "don't touch what's working."
 
-   **b. CONFLICT-derived hard rules** (per CONFLICT after user resolution via resolve-oq):
+   **c. CONFLICT-derived hard rules** (per CONFLICT after user resolution via resolve-oq):
    - If user resolved CONFLICT with `KEEP_CODE` action → suggest `DO NOT modify <conflicting-file>` rule for any downstream unit that might touch this file.
    - If user resolved with `KEEP_VAULT` → no Hard rule (the conflict is being intentionally rewritten).
    - If user resolved with `DEFER` → no Hard rule (OQ propagates instead).
 
-   **c. KB-derived hard rules** (only when KB present AND marker = `[VERIFIED]`):
+   **d. KB-derived hard rules** (only when KB present AND marker = `[VERIFIED]`):
    - Domain file `## 9. Edge Cases & Gotchas` entry marked `[VERIFIED]` AND mechanically detectable (file path + signature stable) → suggest `DO NOT modify <gotcha-anchor-file>` rule
    - Domain file `## 8. State Machine` entry marked `[VERIFIED]` for a function with stable signature → suggest `function <name> MUST preserve signature: <sig>` rule
    - KB items marked `[INFERRED]` or `[OPEN]` → DO NOT promote to Hard rule (per DESIGN-OQ-6); they go to Anti-patterns suggestion instead
 
-   **d. KB-derived Anti-pattern suggestions** (informational, NOT machine-validated):
+   **e. KB-derived Anti-pattern suggestions** (informational, NOT machine-validated):
    - Every `## 9. Edge Cases & Gotchas` entry in KB → suggested Anti-pattern with brief description + KB anchor
    - Every "do-not-replicate" critical finding in KB README → suggested Anti-pattern
 
@@ -390,7 +414,7 @@ This YAML is the canonical halt artifact. Prose announcement remains for human r
 
 6. **Audit log.** Append entry to `<vault>/vault.json` changelog: `{ "event": "bind", "at": "...", "summary": "N confirmed, N conflict, N oq" }`.
 
-2.9. **Constitution-aware CONFLICT surfacing (v1.8+, Iter 20 — closes Iter 17 Bug 2).**
+2.10. **Constitution-aware CONFLICT surfacing (v1.8+, Iter 20 — closes Iter 17 Bug 2; renumbered v1.9 Iter 23 to accommodate framework pack step 2.8).**
 
    Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists:
 
