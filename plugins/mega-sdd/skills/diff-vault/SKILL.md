@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.2.0
+version: 1.2.1
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -315,7 +315,7 @@ For each approved change, use `Edit` (preferred) or `Write` (when restructuring 
 After applying approved changes, regenerate `vault.json` from the now-updated markdown so AI consumers don't see stale state.
 
 1. Read all 7 markdown files (post-apply state).
-2. Rebuild the manifest fields per `references/vault-contract.md` §schema:
+2. Rebuild the manifest fields per `../generate-intent/references/vault-contract.md` §schema:
    - `entities[]` from `03-data-model.md` DBML — add new entries from this round, preserve existing.
    - `flows[]` from `04-flows.md` — add new flow IDs, mark removed flows with their banner annotation in metadata if useful (optional). Existing flow IDs stay even when their content changed.
    - `adrs[]` from `05-decisions.md` — new D-XXX entries from this round get added with `status: accepted` (or `superseded` if this round flipped a prior decision).
