@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.2.2
+version: 1.2.3
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -41,7 +41,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 # AGENTS.md
 
 <!-- generated_by: mega-sdd:emit-agents-md v1.0.0 -->
-<!-- vault_source: docs/mega-sdd/vaults/<slug>/vault.json -->
+<!-- vault_source: {{vault_path}}/vault.json -->
 <!-- generated_at: <ISO8601> -->
 
 ## Project overview
@@ -75,7 +75,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 ## Mega-sdd interop notes
 
 For tools that understand mega-sdd:
-- Full vault at: `docs/mega-sdd/vaults/<slug>/`
+- Full vault at: `{{vault_path}}/`
 - Binding manifest: `binding.md` (claims validated against codebase)
 - Unit specs: `<vault>/units/U-*.md` (atomic AI-coding prompts with Hard Rules)
 - Memory: `<project>/.mega-sdd/memory/` (operational context across sessions)
@@ -105,7 +105,7 @@ Per `plugins/mega-sdd/references/paths.md`:
 4. **Read user-authored AGENTS.md** (if `--mode=append`):
    - Preserve user-authored sections (anything before mega-sdd generation marker)
    - Append mega-sdd section after marker
-5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source).
+5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source). **Variable substitution (v1.2.3+, Iter 26 — closes P1-A from v3.17.0 verification audit):** the `{{vault_path}}` template token in the output is replaced at render time with the actual detected vault directory (relative to repo root). On v3.4+ canonical layout → `.mega-sdd/vaults/<slug>`; on legacy layout → `docs/mega-sdd/vaults/<slug>`. NEVER hard-code either path — use the probe result from step 1.
 6. **Write to output path**. Idempotent — same vault → same output.
 7. **Hand-off**: announce "AGENTS.md written to `<path>`. Tools that support AGENTS.md (Continue.dev, Cursor, Aider, etc.) can now consume mega-sdd context."
 
