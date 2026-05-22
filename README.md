@@ -209,12 +209,12 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 11 skills + 1 anchor + 20 slash commands (1 primary + 19 advanced/auto-invoked). |
+| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 13 skills (incl. 1 anchor) + 20 slash commands (1 primary + 19 advanced/auto-invoked). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
-| **How** | 10-layer anti-hallucination defense, TDD discipline via vendored superpowers, halt-on-blocker protocol, deterministic tech (tree-sitter + ast-grep + ripgrep + jd), markdown-driven memory with mandatory audit log + rollback. |
+| **How** | 13-layer anti-hallucination defense, TDD discipline via vendored superpowers, halt-on-blocker protocol, deterministic tech (tree-sitter + ast-grep + ripgrep + jd), markdown-driven memory with mandatory audit log + rollback. |
 
 ### Folder layout (v3.4+)
 
@@ -321,7 +321,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 /mega-sdd:memory export ~/backup.tar.gz        # backup memory
 ```
 
-10 anti-halu invariants from Iter 5: suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
+10 memory-layer invariants from Iter 5 (complements the 13-layer pipeline defense above): suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
 
 </details>
 
@@ -333,7 +333,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself (v3.18.0)
 │   ├── README.md                           # plugin folder shortform
-│   ├── skills/                             # 11 skills + _vendored/
+│   ├── skills/                             # 13 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
 │   │   ├── memory/                         # memory + self-learning
 │   │   ├── emit-agents-md/                 # AGENTS.md flatten
