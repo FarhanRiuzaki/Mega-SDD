@@ -5,6 +5,88 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.15.0] — 2026-05-22
+
+### Added — Iter 23: Framework Convention Packs + Universal ERD Quality
+
+Quality-rails iteration. Adds pluggable framework convention packs that auto-detect during `scan-codebase` and emit framework-specific Hard Rules during `bind-codebase`. Output quality goes from "got it done" → "delivery-grade per framework conventions."
+
+### New: `plugins/mega-sdd/references/framework-conventions/`
+
+Pluggable convention catalog. Three files at v1.0:
+
+- **`README.md`** — folder overview, adding-new-packs guide, opt-out flags, maintenance policy
+- **`_template.md`** — schema for new packs (frontmatter + 7 required sections)
+- **`_universal.md`** — universal fallback pack (always applies). Contents:
+  - Snake_case columns + plural snake_case tables
+  - FK naming `{singular_target}_id` standard
+  - Boolean naming `is_<state>` / `has_<thing>`
+  - Datetime naming `<verb>ed_at`
+  - Standard timestamps (`created_at`, `updated_at`) + soft-delete + audit columns
+  - 3NF Normalization checklist
+  - Forbidden patterns (VARCHAR(255)-everything, comma-delimited columns, dates-as-strings)
+  - ID convention guidance (auto-increment BIGINT vs UUID v4 vs UUID v7)
+- **`laravel.md`** — Laravel 10.x — 11.x pack. Full content:
+  - File location standards (Models, Controllers, Migrations, Routes, Tests, etc. — 20 paths)
+  - Naming standards (Model PascalCase singular, table plural snake_case, migration timestamp pattern, FK convention, etc. — 20+ rules)
+  - Idioms (Eloquent over raw queries, Form Requests, API Resources, Policies, Services, Jobs, Eager loading, Transactions, Sanctum/Passport, Spatie packages)
+  - Hard Rules emitted (9 rules with path_glob + rule_type + pattern + rationale)
+  - Forbidden patterns (DB::table in Controllers, $_POST direct access, business logic in routes, etc.)
+  - Laravel-specific ERD additions (polymorphic relations, pivot tables, Auth users table)
+  - Testing conventions (PHPUnit/Pest, fakes, factories, HTTP test helpers)
+  - Migration/dependency management (composer + npm + artisan commands)
+  - Notes (mass assignment protection, casts for non-string columns, route/config caching, queue workers, Octane caveats)
+
+### Updated skills
+
+**scan-codebase** (v2.3.0 → v2.4.0):
+- New Step 8.5: Framework detection. Parses package manifest (`composer.json`, `package.json`, `Gemfile`, `pyproject.toml`, `requirements.txt`, `go.mod`, `Cargo.toml`) for framework dependency markers. 20+ frameworks supported: laravel, symfony, slim, next, nuxt, nestjs, express, fastify, remix, sveltekit, rails, sinatra, django, fastapi, flask, gin, echo, fiber, actix, axum, rocket
+- Output: `codebase-map.md` §7 Framework section with name, version, confidence (high/medium/low/fallback), pack_path, detection_source
+- Fallback when no framework match: `framework: { name: "_universal", confidence: "fallback" }`
+
+**bind-codebase** (v1.8.1 → v1.9.0):
+- New Step 2.8: Load framework convention pack. Reads `codebase-map.md` §7, loads matching pack from `plugins/mega-sdd/references/framework-conventions/<framework>.md`. Supports pack inheritance via `extends:` frontmatter
+- Existing 2.8 (Suggested Unit Hard Rules emission) renumbered to 2.9
+- Existing 2.9 (Constitution-aware CONFLICT) renumbered to 2.10
+- New Hard Rule source `a. Framework pack rules` added as first priority in Suggested Unit Hard Rules emission
+- New flags: `--no-framework-pack` (skip loading), `--framework-pack=<custom-path>` (project-specific override)
+- New halts: `framework_pack_missing` (pack path declared but file absent), `framework_pack_cycle` (extends: chain has cycle), `framework_pack_unparseable` (malformed pack file)
+- Graceful fallback: pre-v2.4 codebase-maps without §7 Framework → treat as `_universal` with advisory log
+
+**`references/codebase-map-schema.md`** (scan-codebase reference):
+- New §7 Framework section in required-sections template
+
+### How this composes with Iter 22
+
+Iter 22 declared **what** to preserve (`[LOCKED]`) vs **what** is free to redesign (`[INTENT]`/`[ARTIFACT]`). Iter 23 declares **how** to redesign — when rebuilding an `[INTENT]` entity, follow the loaded framework convention pack to ensure output matches delivery standards for the target framework.
+
+Together:
+- KB classifies legacy claims by mutability tier (Iter 22)
+- Framework pack defines target-framework conventions (Iter 23)
+- `generate-intent --kb` produces vault with rebuild proposals satisfying both
+- `bind-codebase` emits Hard Rules pulled from framework pack
+- `execute-bolts` validates per-bolt pre/post-flight against the pack rules
+- Output: code that's both business-correct (Iter 22) AND framework-idiomatic (Iter 23)
+
+### Why pluggable, not opinionated-by-default
+
+mega-sdd stays framework-agnostic. Packs load only when scan detects a match. User can opt out (`--no-framework-pack`) or override (`--framework-pack=<custom>`). Future iters can add more packs (Django, Rails, Express, NestJS, FastAPI, Gin, etc.) incrementally as users request — without changing core skill behavior.
+
+### Deferred (future iters)
+
+- Pack linter (`references/framework-conventions/_lint.md`) — validate new packs pass schema checks
+- More framework packs (added when users request specific frameworks)
+- Iter 24: Read user's Laravel starterkit (when path shared) → populate project-specific `laravel-<user>.md` override
+
+### Verified
+
+- Plugin: 3.14.0 → 3.15.0
+- New folder: `plugins/mega-sdd/references/framework-conventions/` (4 files)
+- Skills bumped: scan-codebase v2.4.0, bind-codebase v1.9.0
+- `references/codebase-map-schema.md` updated with §7 Framework section
+
+---
+
 ## [3.14.0] — 2026-05-22
 
 ### Added — Iter 22: KB-as-Analysis Vault Philosophy + 3-Tier Mutability

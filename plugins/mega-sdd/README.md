@@ -82,14 +82,15 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
-## What's new in v3.14.0 (Iters 17-22)
+## What's new in v3.15.0 (Iters 17-23)
 
 - **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
 - **Iter 18 Replay + PBT** — `/mega-sdd:replay <unit>` for regression detection; `properties:` field for invariant testing
 - **Iter 19 Convergence loops** — `/mega-sdd:auto --converge` auto-recovers eligible halts using memory recommendations
 - **Iter 20 Audit fixes** — closed 5 claim-vs-implementation gaps from Iter 17-19
 - **Iter 21 Path-default hotfix** — all writer-side defaults flip to `.mega-sdd/` (no excuse); read-side back-compat preserved
-- **Iter 22 KB-as-analysis philosophy** — 3-tier mutability classification (`[LOCKED]/[INTENT]/[ARTIFACT]`) orthogonal to existing confidence markers. KB drives reengineering recommendations, not 1:1 legacy mirror. New `data-mutation-policy.md` synthesis output. ERD Quality Rails (3NF + universal good-practice defaults). `generate-intent --kb` routes claims to vault per tier
+- **Iter 22 KB-as-analysis philosophy** — 3-tier mutability classification (`[LOCKED]/[INTENT]/[ARTIFACT]`) orthogonal to existing confidence markers. KB drives reengineering recommendations, not 1:1 legacy mirror. `data-mutation-policy.md` + ERD Quality Rails. `generate-intent --kb` routes claims to vault per tier
+- **Iter 23 Framework Convention Packs** — pluggable convention catalog at `references/framework-conventions/`. scan-codebase detects framework (Laravel/Django/Rails/Express/NestJS/FastAPI/etc.) → bind-codebase loads matching pack → framework-specific Hard Rules merged into Suggested Unit Hard Rules. Universal-good-practice fallback. v1.0 ships with `_universal.md` + `laravel.md` + `_template.md` for adding more
 
 ## Anti-hallucination defense (13 layers)
 

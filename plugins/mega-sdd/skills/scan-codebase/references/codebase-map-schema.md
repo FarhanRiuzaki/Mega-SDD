@@ -48,6 +48,14 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 - Auth pattern: middleware|session|jwt|none
 - Error handling: try-catch|result-monad|throw
 - State: redux|context|none|composer-event
+
+## 7. Framework (v2.4+, Iter 23)
+framework:
+  name: <framework-id from references/framework-conventions/>
+  version: <e.g., "11.x" or "unknown">
+  confidence: high | medium | low | fallback
+  pack_path: <relative path to matching pack, or _universal.md if no match>
+  detection_source: <manifest filename + dependency marker that triggered detection>
 ```
 
 ## How `bind-codebase` uses this
