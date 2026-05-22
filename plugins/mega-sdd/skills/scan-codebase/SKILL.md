@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.4.0
+version: 2.4.1
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -120,6 +120,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 8.5. **Detect framework (v2.4+, Iter 23).** Parse package manifest for framework dependency fingerprints; write to `codebase-map.md` §Framework section. Detection rules (first match wins per language):
    | Manifest | Grep pattern | Framework |
    |---|---|---|
+   | `composer.json` | `"pixinvent/vuexy-laravel-bootstrap-jetstream"` | laravel-base-26 (starterkit variant; takes precedence over plain laravel) |
    | `composer.json` | `"laravel/framework"` | laravel |
    | `composer.json` | `"symfony/framework-bundle"` | symfony |
    | `composer.json` | `"slim/slim"` | slim |
