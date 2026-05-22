@@ -5,6 +5,77 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.1] — 2026-05-21
+
+### Documentation — user-facing docs pass
+
+Per user request — "update readme dan test scenario secara compre dan user friendly untuk yg baru pertama kali pake". Pure docs patch; no behavior change.
+
+**Added — `tests/scenarios/`** — first-time user walkthroughs
+
+NEW directory with 6 step-by-step scenarios + sample PRD:
+
+- `README.md` — scenario chooser + install check + verification + halt recovery overview
+- `sample-prd-clinic.md` — copy-paste sample PRD for first-run demos
+- `scenario-1-greenfield-from-idea.md` — single sentence → working code (15 min)
+- `scenario-2-prd-driven-feature.md` — PRD-driven feature build (30 min)
+- `scenario-3-field-extension.md` — field-level Iter 8 demo (the "PRD has nip+nama+password, code has nip+password" walkthrough; 20 min)
+- `scenario-4-legacy-rebuild.md` — extract KB + rebuild on new framework (4 hours wall-clock)
+- `scenario-5-multi-squad-parallel.md` — multi-team coordination (45 min)
+- `scenario-6-recovery-from-halt.md` — halt types + universal recovery pattern (15 min)
+
+Each scenario includes:
+- Concrete copy-paste inputs
+- Expected outputs at each phase
+- Common pitfalls + recovery paths
+- Cross-links to relevant SKILL.md / references / specs
+
+### Changed — Root README rewritten user-journey-first
+
+`README.md` restructured:
+
+- **30-second pitch** at top (with `/mega-sdd:auto ./prd.md` callout)
+- **Quick start (5 minutes)** section with install + scenario chooser
+- **Common invocations** with copy-paste examples
+- Architecture deep dive + autonomy + memory + tech upgrades + folder structure + cheat-sheet ALL moved to collapsed details sections
+- Reflects v3.8.0 reality (20 commands, 11 skills, 14 iterations)
+
+### Changed — Plugin README synced
+
+`plugins/mega-sdd/README.md` updated:
+
+- v3.8.0 version + per-skill version comments
+- Scenario chooser pointing to `tests/scenarios/`
+- Reuse-stable tooling table (Iter 14 adoptions)
+- Memory layer overview
+- License + attributions section
+
+### Why this matters (philosophy alignment)
+
+Per Iter 13 audit — mega-sdd's design philosophy is "ONE command does everything; advanced users access phases manually". User-facing docs MUST reflect this:
+
+- Root README leads with `/mega-sdd:auto`, not 20-command grid
+- Scenarios show ONE command running full pipeline
+- Advanced commands clearly marked as power-user use cases
+- First-time user can run a working scenario in 15 min
+
+### Plugin metadata
+
+- `plugin.json`: 3.8.0 → 3.8.1 (patch — docs only; no behavior change)
+
+### Backward compatibility
+
+PURELY DOCS — no skill changes, no command changes, no schema changes, no behavior changes. Existing v3.8.0 users see same pipeline. Just better docs.
+
+### Acceptance criteria (all met)
+
+✅ Root README leads with `/mega-sdd:auto` and 30-second pitch
+✅ Quick start section with 5-min install path
+✅ 6 user-facing scenarios with copy-paste examples
+✅ Sample PRD included for reproducible first-run
+✅ Common halts + recovery covered in Scenario 6
+✅ Plugin README + paths reference both updated to v3.8
+
 ## [3.8.0] — 2026-05-21
 
 ### Added — Iter 14: Reuse-Stable Tooling Adoptions
