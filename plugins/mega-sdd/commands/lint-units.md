@@ -65,7 +65,7 @@ For each unit, run these checks:
 - [ ] `## Acceptance criteria` non-empty
 - [ ] `## Out of scope` populated
 
-#### Anchor verification (Iter 8 Step 12.4.5)
+#### Anchor verification (Iter 8, Step 12.3 post-v2.5.1 renumber)
 - [ ] For each Anchor `<file>:<line>` — probe file exists in codebase-map OR fs
 - [ ] If file missing AND task_type: verify or extend → WARNING (anchor likely aspirational; review)
 - [ ] If file missing AND task_type: create → OK (greenfield anchors acceptable)

@@ -1,6 +1,6 @@
 ---
 description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills with single confirmation. Halt-pauses on blockers. `--deep` chains to pipeline-end; `--resume` continues a paused chain from CWD state.
-argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto]
+argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto] [--memory-off] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md]
 ---
 
 Invoke `mega-sdd:orchestrate-flow` via the Skill tool.
@@ -15,6 +15,11 @@ Argument parsing:
   - `--deep` (v2.3+, Iter 4) — lift the 3-sub-skill chain cap; chain auto-continues to pipeline-end via handoff YAML
   - `--resume` (v2.3+, Iter 4) — resume a paused/halted chain from CWD state (no persisted state file; CWD probes rebuild cursor)
   - `--auto` — non-interactive substance-prompt suppression; single upfront confirmation only
+  - `--memory-off` (v1.4+) — disable memory layer entirely (no read, no write, no suggestion)
+  - `--converge` / `--no-converge` (v2.3+, Iter 19) — opt in/out of auto-recovery loop on cycle-eligible halts (default: `--converge` under `--deep --auto`)
+  - `--max-cycles=N` (v2.3+, Iter 19) — convergence loop iteration cap (default N=3)
+  - `--strict-quality` — promote lint-units / analyze-parallelism warnings to halts
+  - `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` (v2.2+) — opt out of individual auto-invoked diagnostics
 
 Follow `skills/orchestrate-flow/SKILL.md` procedure. Default behavior: 3-sub-skill chain with single upfront confirmation. `--deep` lifts the cap and chains to pipeline-end; `--resume` continues from current CWD state.
 

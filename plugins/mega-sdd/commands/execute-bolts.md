@@ -1,6 +1,6 @@
 ---
 description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist enforced.
-argument-hint: <unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force]
+argument-hint: <unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>]
 ---
 
 Invoke `mega-sdd:execute-bolts` via the Skill tool.
@@ -9,7 +9,16 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - First positional: unit ID (U-XXX), unit file path, or `--all`.
-- Flags per skill spec.
+- Flags:
+  - `--parallel` — execute eligible units concurrently (per dependency graph)
+  - `--worktree` — isolate execution in git worktree
+  - `--max-retries=N` — retry test-fail before halt (default N=3)
+  - `--dry-run` — print plan without committing
+  - `--force` — override pre-flight warnings (use sparingly)
+  - `--auto` — non-interactive; suppress confirmation prompts (halts still emit blocker YAML)
+  - `--per-squad` (v2.2+) — execute one squad/module at a time; useful for multi-team coordination
+  - `--squad=<id>` (v2.2+) — execute only units in the named squad
+  - `--module=<id>` (v2.2+) — execute only units in the named module
 
 Follow `skills/execute-bolts/SKILL.md` procedure. Pre-flight checks MUST pass before any execution.
 

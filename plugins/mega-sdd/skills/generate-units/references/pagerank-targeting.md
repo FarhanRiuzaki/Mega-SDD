@@ -48,7 +48,7 @@ Output: each file in the graph has a rank ∈ [0, 1]. Higher = more central to s
 - Skip files already in `target_files`
 - Skip files in `--exclude` patterns (default node_modules, vendor, dist, build)
 
-### Step 5 — Render-pass suggestion (per generate-units Step 12.4)
+### Step 5 — Render-pass suggestion (per generate-units Step 12.5)
 
 For each candidate file, surface in unit body as a `## PageRank suggestions` block (informational, NOT auto-added to target_files):
 

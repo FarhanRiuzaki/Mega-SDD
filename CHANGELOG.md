@@ -5,6 +5,32 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.18.1] — 2026-05-23
+
+### Iter 26.1 — Hygiene follow-ups (from Task 3 + Task 6 code reviews)
+
+Closes the two follow-ups carried forward from the v3.18.0 release.
+
+**Fixed**
+
+- **Stale Iter 25 12.x cross-references** in 3 companion docs to `generate-units` — the v2.5.1 Iter 25 step renumbering wasn't propagated to reference docs:
+  - `skills/generate-units/references/defensive-generation.md:86, 88, 167` — `Step 12.4.5` → `Step 12.3`; "After Step 12.4 (render pass)" reframed as "Before Step 12.4 (constitution inject) and Step 12.5 (render pass)" to match the current "runs FIRST as precondition" semantics; `--no-defensive` flag step list updated.
+  - `skills/generate-units/references/pagerank-targeting.md:51` — `Step 12.4` → `Step 12.5` (polished-prompt render pass is now 12.5 post-Iter-25 renumber).
+  - `commands/lint-units.md:68` — `Iter 8 Step 12.4.5` → `Iter 8, Step 12.3 post-v2.5.1 renumber`.
+
+  Skill bump: generate-units 2.5.2 → 2.5.3 (references/ content counts as skill content per `CLAUDE.md`).
+
+- **Command files missing skill-accepted flags** — surfaces previously-undocumented but supported flags:
+  - `commands/execute-bolts.md` — argument-hint extended with `--auto`, `--per-squad`, `--squad=<id>`, `--module=<id>`; flag table added.
+  - `commands/bind-codebase.md` — argument-hint extended with Iter 23 framework-pack flags (`--kb=<path>`, `--no-kb`, `--no-framework-pack`, `--framework-pack=<path>`) and Iter 20 `--strict-constitution`; flag table added.
+  - `commands/orchestrate-flow.md` — argument-hint extended with `--memory-off`, `--converge`/`--no-converge`, `--max-cycles=N`, `--strict-quality`, and the 4 diagnostic opt-outs (`--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`); flag table extended.
+
+**Plugin** 3.18.0 → 3.18.1.
+
+No behavioral changes — pure doc-coherence hygiene. All flags listed already worked at the skill layer; this PR makes them discoverable via slash-command help.
+
+---
+
 ## [3.18.0] — 2026-05-23
 
 ### Iter 26 — Verification audit closure
