@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.13.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.18.0 · **License:** MIT
 
 </div>
 
@@ -87,7 +87,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-**13-layer anti-hallucination defense** (v3.13.0):
+**13-layer anti-hallucination defense** (v3.18.0):
 
 1. Intent layer — uncertain claims promote to Open Questions; never guess
 2. OQ classification — business vs tech; tech auto-resolves via codebase scan
@@ -331,7 +331,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.8.0)
+├── plugins/mega-sdd/                       # the plugin itself (v3.18.0)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 11 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
