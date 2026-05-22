@@ -66,20 +66,34 @@ Hard cap: **3 sub-skills per chain** (default mode).
 
 **v1.3+ (Iter 4)**: `--deep` flag LIFTS the cap. Chain extends to pipeline-end with auto-continue via handoff YAML (per `references/handoff-contract.md`). Cap-lift is opt-in; default mode unchanged for backward compatibility.
 
-## Deep-chain decision matrix (v1.3+, Iter 4)
+## Deep-chain decision matrix (v1.3+, Iter 4; reordered for brownfield v1.4+ Iter 16)
 
-When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains:
+When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains.
 
-| State (from inspection) | `--deep` proposed chain |
+**Iter 16 reorder (v1.4+)**: for brownfield paths, `scan-codebase` now runs **BEFORE** `generate-intent` so vault generation has codebase context (conventions, existing entities, framework signals). Per user feedback — vault was previously gen'd without code awareness, leading to fabricated entities + late PARTIAL_FIELDS_MISSING discovery + cold-start OQ classifier.
+
+| State (from inspection) | `--deep` proposed chain (v1.4+ Iter 16) |
 |---|---|
-| Legacy + no PRD + no vault + rebuild intent | `extract-intelligence` → `generate-intent --kb` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (6 phases) |
-| PRD exists, no vault | `generate-intent <prd>` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
-| `knowledge_base: present` + no vault | `generate-intent --kb` → `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
-| Brief only (no vault, no PRD, no KB) | `generate-intent --from-prompt` → `generate-units` → `execute-bolts` (3 phases — greenfield, no codebase) |
-| Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (4 phases) |
-| Vault exists, codebase-map exists, no bound-vault | `bind-codebase` → `generate-units` → `execute-bolts` (3 phases — same as cap-3 mode) |
+| Legacy + no PRD + no vault + rebuild intent | `extract-intelligence` → `scan-codebase` (target codebase, if any scaffold exists) → `generate-intent --kb` (scan-aware) → `bind-codebase` → `generate-units` → `execute-bolts` (6 phases) |
+| PRD exists, no vault, brownfield (existing code present) | **`scan-codebase`** → `generate-intent <prd>` (scan-aware) → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) — **REORDERED** |
+| PRD exists, no vault, greenfield (empty repo) | `generate-intent <prd>` → `generate-units` → `execute-bolts` (3 phases — no scan needed) |
+| `knowledge_base: present` + no vault + brownfield | `scan-codebase` → `generate-intent --kb` (scan-aware) → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
+| Brief only (no vault, no PRD, no KB) + greenfield | `generate-intent --from-prompt` → `generate-units` → `execute-bolts` (3 phases) |
+| Brief only + brownfield | `scan-codebase` → `generate-intent --from-prompt` (scan-aware) → `bind-codebase` → `generate-units` → `execute-bolts` (5 phases) |
+| Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (4 phases — vault already written; can't retro-scan-aware it without `--refresh`) |
+| Vault exists, codebase-map exists, no bound-vault | `bind-codebase` → `generate-units` → `execute-bolts` (3 phases) |
 | Bound-vault exists, no units | `generate-units` → `execute-bolts` (2 phases) |
 | Units exist, some not in bolts | `execute-bolts --all` (1 phase) |
+
+### Greenfield vs brownfield detection
+
+When `--deep` chain plans, orchestrator probes:
+
+- `.git` present + existing code files (`.{php,js,ts,py,rs,go,rb}` etc.) → **brownfield** (run scan-codebase first)
+- `.git` present + only scaffolding files (e.g., bare Laravel boilerplate, no business logic) → **brownfield-light** (run scan-codebase --quick first)
+- No `.git` OR fresh `composer create-project`/`npx create-*` with no manual edits → **greenfield** (skip scan-codebase upfront)
+
+Override via `--brownfield` / `--greenfield` flag on `auto`/`orchestrate-flow`.
 
 **Halt behavior unchanged**: any blocker (CONFLICT, business OQ, hard_rule_violated, dedup_ambiguous, etc.) pauses the deep chain identically to current cap-3 behavior. User resolves, then runs `orchestrate-flow --deep --resume`.
 

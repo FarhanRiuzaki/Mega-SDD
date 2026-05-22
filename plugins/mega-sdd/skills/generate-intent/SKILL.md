@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.7.0
+version: 1.8.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -485,6 +485,47 @@ After emitting the 7 prose docs + `vault.json`, if `multi_squad_mode: true`:
 
 After emission, suggest next step per the existing hand-off message but
 include squad count: "Generated vault for N squads. Next: …".
+
+### Step 0.8: Scan-aware context loading (v1.8+, Iter 16)
+
+Per user feedback — vault generation produces fewer fabricated entities + tighter OQ classification when codebase context is available at gen-time. Iter 16 introduces scan-aware context loading.
+
+Probe for existing scan artifacts BEFORE Step 1 (vault structure read) BEFORE Step 2 (extraction):
+
+1. **Probe codebase-map.md**: check `<project>/.mega-sdd/codebase/codebase-map.md` (v3.4+) AND `<project>/codebase-map.md` (legacy)
+2. **Probe conventions.md memory**: `<project>/.mega-sdd/memory/conventions.md` (v3.4+) AND `<project>/.mega-sdd-memory/conventions.md` (legacy)
+3. **Probe knowledge-base**: `<project>/.mega-sdd/knowledge-base/README.md` (v3.4+) AND `<project>/docs/knowledge-base/README.md` (legacy)
+
+**Detection outcomes**:
+
+| Probe result | Action |
+|---|---|
+| All artifacts present | Load as context for Step 2 extraction; auto-resolve `tech/scan` OQs immediately |
+| Codebase-map missing, brownfield indicators present (e.g., `.git` + existing code files) | INTERACTIVE prompt: "Brownfield repo detected but no codebase-map. Run scan-codebase first? (recommended)" — if Y, auto-invoke; if N, proceed with reduced precision |
+| Codebase-map missing, greenfield (no code) | Proceed without scan (current behavior) |
+| Knowledge-base present + `--kb` flag | Already handled (existing Mode B sub-mode); KB feeds Step 2 |
+
+**Auto-route action**: when user accepts pre-scan, invoke `mega-sdd:scan-codebase` per orchestrate-flow's auto-route pattern; return to Step 1 after scan completes.
+
+`--no-pre-scan` flag skips this step entirely (preserves pre-v1.8 behavior).
+
+### Scan context usage in subsequent steps
+
+When scan-aware mode active, extracted context is passed to:
+
+| Step | Usage |
+|---|---|
+| Step 2 (PRD/brief extraction) | Cross-reference entities mentioned in PRD against codebase entity list; mark existing entities with `[CODEBASE: exists]` annotation in vault body |
+| Step 3 (write 7 files) | Conventions section in 06-constraints.md auto-populated from `conventions.md` memory; tech stack section pre-filled |
+| Step 3.5 (OQ auto-classifier) | OQs that match codebase signals (test framework, naming, file location, error format) auto-resolved as `tech/scan` with `status: resolved` + citation; NOT surfaced as pending OQs |
+| Step 4 (self-check) | Validate entity claims don't fabricate new entities for already-existing codebase entities |
+
+**Anti-halu rails**:
+
+- Scan-aware mode is OPT-IN via prompt OR auto-route; never silent (per architect/dev separation philosophy when truly intent-only)
+- PRD precedence preserved: PRD claims OVERRIDE codebase reality (CONFLICT surface in binding phase, not silenced)
+- Existing-entity awareness adds annotation, NOT replaces vault claim. Architect can override.
+- `--no-pre-scan` flag opt-out preserves pre-v1.8 architect-only workflow
 
 ### Step 3.5: OQ auto-classification (v1.4+, Iter 2)
 
