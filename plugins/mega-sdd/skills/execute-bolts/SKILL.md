@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.3.0
+version: 2.4.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -295,6 +295,76 @@ blocker:
     interface_status: draft
   next_action: "Producer squad must lock the interface before consumer bolts can execute. Edit interfaces/<id>.md frontmatter: status: locked, locked_at: YYYY-MM-DD. Re-run execute-bolts."
 ```
+
+## Property-Based Testing validation (v2.4+, Iter 20 — closes Iter 18 Bug 1)
+
+Per `generate-units/references/pbt-integration.md`. When unit has `properties:` field non-empty:
+
+### Pre-flight (during Step 4 alongside Hard Rule snapshots)
+
+For each `properties[].cites` reference, validate citation resolves (per Iter 7 anti-halu rail):
+- Probe vault section / entity / constitution clause exists
+- If unresolved → halt `pbt_citation_invalid` (mirrors `oq_recommend_citation_invalid` rail)
+
+### Acceptance phase (within Step 5 superpowers TDD)
+
+If PBT framework detected (per `pbt-integration.md` §Framework detection):
+
+1. Generate-units has already emitted PBT test stubs in unit's `target_files` (e.g., `tests/Property/<Name>Test.<ext>`)
+2. Run PBT tests as part of acceptance phase via the detected framework:
+   ```bash
+   # Examples per language:
+   ./vendor/bin/phpunit --group=property      # PHP/Eris
+   npm run test -- --testPathPattern=Property # TS/JS/fast-check
+   pytest tests/property/ -p hypothesis        # Python/Hypothesis
+   go test ./... -run TestProperty              # Go/gopter
+   cargo test property -- --include-ignored    # Rust/proptest
+   ```
+3. Parse exit code + counterexample output
+
+### Post-flight halt logic
+
+For each property tested:
+
+| Outcome | severity=error | severity=warning |
+|---|---|---|
+| Property holds | ✓ PASS | ✓ PASS |
+| Property violated (counterexample found) | HALT `pbt_property_violated` | Log to bolt-report.md as warning; bolt proceeds to commit |
+
+### Halt YAML for pbt_property_violated
+
+```yaml
+blocker:
+  type: pbt_property_violated
+  emitted_at: <ISO8601>
+  emitted_by: execute-bolts
+  details:
+    unit_id: U-XXX
+    violated_property: PROP-002
+    property_description: "nama is case-insensitive"
+    counterexample:
+      nip: 12345
+      nama: "Müller"
+      password: "secret"
+    expected: case-insensitive match
+    actual: response codes differ for 'müller' vs 'Müller'
+    cites: 04-flows.md#F-U-001-login
+  next_action: "Property violated. Either fix code to satisfy property OR adjust property statement OR add explicit edge-case handling. See <vault>/bolts/<unit>/bolt-report.md PBT section for full counterexample."
+```
+
+### Framework absent fallback
+
+If `properties:` non-empty but no PBT framework detected (e.g., bare PHP project without Eris):
+- Skip test emission + validation
+- Log advisory note in bolt-report.md: "PBT framework not detected; properties documented as advisory only"
+- Bolt proceeds normally per acceptance_test
+
+### --no-pbt opt-out
+
+`--no-pbt` flag on execute-bolts skips PBT validation entirely. Preserves pre-v2.4 behavior. Useful when:
+- CI environment lacks PBT framework
+- One-off bolt run for testing
+- User explicitly wants example-test-only validation
 
 ## Anti-hallucination rails
 

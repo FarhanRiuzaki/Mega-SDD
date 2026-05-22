@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 1.1.0
+version: 1.2.0
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -473,6 +473,72 @@ Do NOT pad with "I have completed the scan..." preamble.
 - **Vault has lots of unresolved OQs** (>20 P1 still open) → recommend running `resolve-oq` first. Drift detection against an unresolved vault produces noisier findings (vault doesn't yet say what code should do, so divergence is expected).
 
 ---
+
+## Constitution drift detection (v1.2+, Iter 20 — closes Iter 17 Bug 3)
+
+Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists, detect-drift extends scan to validate code against constitution clauses (in addition to existing vault-claim drift detection).
+
+### Procedure additions
+
+After existing drift scan (entities, flows, decisions):
+
+1. **Read constitution.md** + constitution_hash from vault.json
+2. **Validate constitution hasn't drifted from binding**:
+   - Compute current sha256 of constitution.md
+   - Compare to binding.md's `constitution_hash` (per Iter 20 bind-codebase v1.8+)
+   - If mismatch → halt `constitution_drift_detected` (constitution changed since last binding; re-bind needed)
+3. **Scan code for clause violations** (§A through §F):
+   - For each constitution clause with mechanically-detectable pattern → run ast-grep or regex probe
+   - Non-detectable clauses (prose-only) → flag as "manual review needed" in drift report
+4. **Categorize findings**:
+   - `constitution_violation_critical` — §B Security, §F Compliance violations → halt-equivalent
+   - `constitution_violation_standard` — §A Coding, §C Architecture, §E Performance violations → warning in drift report
+   - `constitution_violation_advisory` — §D Anti-patterns → flag for review (not halt)
+
+### Halt YAML for constitution_drift_detected
+
+```yaml
+blocker:
+  type: constitution_drift_detected
+  emitted_at: <ISO8601>
+  emitted_by: detect-drift
+  details:
+    constitution_hash_at_binding: <sha256>
+    constitution_hash_current: <sha256>
+    binding_dated: <ISO8601 from binding.md>
+    constitution_modified_at: <ISO8601 from fs mtime>
+  next_action: "Constitution.md modified since last binding. Re-run /mega-sdd:bind-codebase to refresh binding under new constitution OR revert constitution.md to match binding state."
+```
+
+### Drift report extension
+
+`<vault>/drift-report.md` gains new `## Constitution Findings` section:
+
+```markdown
+## Constitution Findings
+
+### Critical violations (§B Security, §F Compliance)
+- src/Http/Controllers/UserController.php:45 violates §B-001 (Sanctum auth middleware required); current uses session auth
+
+### Standard violations (§A Coding, §C Architecture, §E Performance)
+- src/Models/Order.php:78 violates §C-002 (Models MUST NOT have side effects); fires direct email
+
+### Advisory (§D Anti-patterns)
+- src/Services/SwiftDispatcher.php:120 may replicate legacy cfkdhl→CFKDDL pattern (per §D-001); manual review recommended
+```
+
+### Anti-halu rails
+
+- Constitution detection requires `precision_tier: ast` in codebase-map (else degraded to text-grep with caveat)
+- Drift findings cite specific file:line + specific clause ID
+- Mechanically detectable clauses use ast-grep YAML rule (deterministic)
+- Prose-only clauses flagged with `manual review needed`; NEVER fabricated violations
+- `--no-constitution-drift` flag opt-out preserves pre-v1.2 behavior
+
+### Backward compat
+
+- v3.12 vaults without constitution.md → constitution-drift section SKIPPED gracefully
+- Existing vault-claim drift detection unchanged (Iter 0 behavior preserved)
 
 ## Handoff emission (v1.1+, Iter 15 — closes Iter 9 audit Drift D-2)
 

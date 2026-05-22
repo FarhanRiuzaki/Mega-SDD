@@ -5,6 +5,122 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.13.0] — 2026-05-21
+
+### Fixed — Iter 20: Critical Bug Closure + Doc Sync
+
+Per audit doc `docs/superpowers/audits/2026-05-21-deep-audit-v3.12.md`. Closes 5 critical bugs from Iter 17-19 where features were CLAIMED in CHANGELOG but NOT implemented in skill procedures. Plus doc sync for Iter 17-19 features.
+
+**Critical findings audit summary**:
+- Iter 17 constitution layer: claimed integration with 5 skills; only 2 actually patched
+- Iter 18 PBT: claimed execute-bolts integration; version bumped without procedure
+- Iter 19 convergence: claimed resolve-oq auto-invocation; flag didn't exist
+
+### Critical bug fixes (P0)
+
+**Bug 1 — execute-bolts PBT integration** (v2.3 → v2.4)
+
+Iter 18 claim `pbt_property_violated` halt + counterexample preservation NOW IMPLEMENTED. Added:
+- Pre-flight: validate `properties[].cites` resolves per Iter 7 citation rail
+- Acceptance phase: detect PBT framework (Eris/fast-check/Hypothesis/gopter/proptest); run via Bash
+- Post-flight: halt `pbt_property_violated` on error-severity counterexample; preserve counterexample in halt YAML
+- Framework absent → graceful fallback (advisory note in bolt-report.md)
+- `--no-pbt` flag opt-out
+
+**Bug 2 — bind-codebase constitution awareness** (v1.7.1 → v1.8.0)
+
+Iter 17 claim "bind-codebase cites constitution clauses when surfacing CONFLICTs" NOW IMPLEMENTED. Added:
+- Step 2.9: read constitution.md + cite §A-F clauses in CONFLICT entries
+- `bind_conflict_constitution_violation` halt type when `--strict-constitution` set
+- `constitution_hash` persistence in binding.md for later drift detection
+- Graceful fallback when constitution.md absent
+
+**Bug 5 — resolve-oq non-interactive flag** (v0.8.0 → v0.9.0)
+
+Iter 19 convergence depends on auto-invocation; flag didn't exist. NOW IMPLEMENTED:
+- `--auto-accept-from-memory` flag — skip AskUserQuestion when recommendation confidence ≥ threshold
+- `--confidence-min=N` (default 0.80) — minimum confidence to auto-accept
+- `--non-interactive` alias for combined flags
+- High-stakes business OQs (P1 + category: business) NEVER auto-accept (anti-halu rail)
+- Audit trail: auto-accepted decisions logged with `source: ai_auto_accepted` marker
+
+### P1 fixes
+
+**Bug 3 — detect-drift constitution-drift detection** (v1.1.0 → v1.2.0)
+
+Iter 17 claim NOW IMPLEMENTED. Added:
+- Read constitution.md + compare hash to binding's recorded `constitution_hash`
+- Mismatch → halt `constitution_drift_detected`
+- Scan code for clause violations (mechanically detectable §A-F clauses via ast-grep)
+- Categorize: Critical (§B/§F) / Standard (§A/§C/§E) / Advisory (§D)
+- New `## Constitution Findings` section in drift-report.md
+
+**Bug 4 — emit-agents-md constitution section** (v1.1.0 → v1.2.0)
+
+Iter 17 interop incomplete. NOW IMPLEMENTED. Added:
+- New §Constitution section in AGENTS.md schema (between §7 Open Questions and §8 Mega-sdd interop)
+- Flatten §A-F clauses VERBATIM with clause ID citations
+- Conditional rendering (skip section if constitution.md absent)
+- Constitution hash in HTML comment generation marker for tool-detection staleness
+
+### P2 — Documentation sync
+
+- **handoff-contract.md** extended with Iter 17-19 schema fields: `constitution` (hash + clauses_referenced), `pbt` (properties_validated/failed), `cycles` (count + halts auto-resolved/escalated), `replay` (snapshot_path + divergence_classification)
+- **Root README** v3.8.0 → v3.13.0: anti-halu defense layers 10 → 13 (added Constitution layer, PBT, Convergence loops with explicit version tags)
+- **Plugin README** v3.8.0 → v3.13.0: new "What's new in v3.13.0 (Iters 17-20)" section + 13-layer defense
+
+### Changed — Skill versions
+
+- `execute-bolts`: 2.3.0 → 2.4.0 (PBT validation step actually implemented)
+- `bind-codebase`: 1.7.1 → 1.8.0 (Step 2.9 constitution-aware CONFLICT surfacing)
+- `resolve-oq`: 0.8.0 → 0.9.0 (--auto-accept-from-memory + --non-interactive flags)
+- `detect-drift`: 1.1.0 → 1.2.0 (constitution-drift detection step)
+- `emit-agents-md`: 1.1.0 → 1.2.0 (constitution section in AGENTS.md output)
+
+### Anti-halu invariants preserved
+
+- All fixes are DETERMINISTIC additions (no LLM judgment expansion)
+- PBT requires citation per property (per Iter 7 standard)
+- Constitution-aware CONFLICT surfacing CITES specific clauses (no fabrication)
+- Resolve-oq auto-accept requires HIGH confidence (≥0.80 default); low-conf escalates to manual
+- High-stakes business OQs NEVER auto-accept (preserves human-in-loop for stakeholder decisions)
+- Constitution-drift detection scopes to mechanically-detectable clauses; prose-only flagged as "manual review needed"
+
+### Backward compatibility
+
+- v3.12 invocations without new flags → unchanged behavior
+- Pipelines without constitution.md → all constitution-aware steps SKIP gracefully
+- Resolve-oq without --auto-accept-from-memory → fully interactive (pre-v0.9 behavior)
+- Execute-bolts without PBT framework → advisory only (no halt; pre-v2.4 behavior)
+- Detect-drift without constitution → existing vault-claim drift unchanged
+
+### Post-mortem honesty (Iter 17-19 retrospective)
+
+Per audit Part 7:
+
+1. Iter velocity exceeded validation discipline (19 iters in 1 session)
+2. CHANGELOG entries written aspirationally; reality only partial
+3. Multi-skill integration (Iter 17 touched 5 skills) over-claimed
+4. No automated test runner = no enforcement of claimed features
+5. User redirects mid-iter (PBT ↔ convergence) dropped quality
+
+### Process improvements going forward
+
+- Verify procedure step ACTUALLY added (`grep` check) BEFORE bumping skill version
+- CHANGELOG entries should cite specific Procedure step numbers (forces verification)
+- Multi-skill integrations need explicit "skill matrix" checklist in spec
+- Audit every 3 iters (not just 9, 13, 20)
+
+### Outstanding (defer)
+
+- **Gap C-1**: Test fixtures for Iter 17-19 — pending; field-test will inform actual test scenarios
+- **Gap C-2**: modules.yaml JSON Schema — needs check-jsonschema integration design
+- **Drift D-3**: Scenarios update for Iter 17-19 features — field-test will inform real walkthroughs
+
+### Plugin metadata
+
+- `plugin.json`: 3.12.0 → 3.13.0 (minor — additive procedure implementations + doc sync)
+
 ## [3.12.0] — 2026-05-21
 
 ### Added — Iter 19: Convergence Loops in orchestrate-flow

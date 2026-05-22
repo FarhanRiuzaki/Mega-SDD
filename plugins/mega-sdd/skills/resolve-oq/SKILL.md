@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.8.0
+version: 0.9.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -453,6 +453,56 @@ When memory enabled (default; opt-out via `--memory-off`), this skill participat
 - Every suggestion cites source memory entry
 - Current evidence (current conflict's full context) always wins over memory
 - `--memory-off` disables both reads and writes
+
+## Non-interactive auto-accept mode (v0.9+, Iter 20 — closes Iter 19 Bug 5)
+
+Per Iter 19 convergence loops requirement. New flag set enables `resolve-oq` to be invoked auto by `orchestrate-flow --converge` without prompting user, using memory-pre-filled recommendations:
+
+### Flags
+
+- `--auto-accept-from-memory` — skip AskUserQuestion; auto-pick recommendation when available
+- `--confidence-min=N` (default 0.80) — minimum recommendation confidence to auto-accept (≥0.80 per Iter 7 standard)
+- `--non-interactive` — combined alias for `--auto-accept-from-memory --confidence-min=0.80` + suppresses any informational prompts
+
+### Logic when `--auto-accept-from-memory` set
+
+For each OQ/CONFLICT during walk:
+
+1. Build recommendation via Iter 7 context-aware recommendation (KB / memory / vault / codebase / silent fallback)
+2. Check recommendation confidence:
+   - `confidence >= confidence-min` → auto-apply recommendation; log to memory `decisions.md` with `source: ai_auto_accepted`; skip AskUserQuestion
+   - `confidence < confidence-min` → escalate: surface OQ as still-pending; emit log "recommendation low-conf; deferred for manual resolve-oq"
+3. After walk: emit summary with auto-accepted count + deferred count
+4. Status `paused` (not `completed`) if any OQs deferred for manual; chain resumes after user manual walk
+
+### Use case — convergence loops
+
+When `orchestrate-flow --converge` hits `bind_conflict`:
+
+```
+🔁 Cycle 1/5: invoking resolve-oq --binding --auto-accept-from-memory --confidence-min=0.80
+
+resolve-oq walking 3 conflicts:
+  ✓ C-007 (auth) → KEEP_CODE (memory 8/10; conf 0.95) → AUTO-ACCEPTED
+  ✓ C-009 (Sanctum) → KEEP_VAULT (constitution §B-001; conf 1.00) → AUTO-ACCEPTED
+  ⏸ C-011 (audit schema) → recommendation conf 0.65 < 0.80 → DEFERRED for manual
+  
+2 conflicts resolved auto; 1 deferred. Convergence loop continues to re-bind.
+```
+
+### Anti-halu rails
+
+- `--auto-accept-from-memory` requires `confidence-min` (default 0.80; no silent low-conf acceptance)
+- Audit trail: every auto-accepted decision logged to memory with `source: ai_auto_accepted` marker
+- Recurring same-pattern auto-accepts captured in pattern memory (Iter 5) for review via `/mega-sdd:memory review`
+- User CAN override auto-accepted decisions later via standard `resolve-oq` walk (interactive)
+- High-stakes business OQs (P1 + category: business) NEVER auto-accept; always require interactive review even with `--auto-accept-from-memory`
+
+### Backward compat
+
+- v3.12 invocations of `resolve-oq` without new flags → unchanged interactive behavior
+- `--auto-accept-from-memory` is opt-in; no default behavior change
+- Memory consultation already exists in v0.5+; new flag just changes when to AUTO-APPLY recommendations
 
 ## Handoff emission (v0.8+, Iter 15 — closes Iter 9 audit Drift D-2)
 
