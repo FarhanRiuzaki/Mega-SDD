@@ -1,7 +1,7 @@
 ---
 name: bind-codebase
-version: 1.8.0
-description: Validate a vault against `codebase-map.md` (primary ground truth) + `docs/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
+version: 1.8.1
+description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
 # Bind-Codebase
@@ -19,8 +19,8 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 ## Inputs
 
 - Vault path (positional, required) — directory containing the 7-file vault
-- Codebase map path (optional, default: `<repo-root>/codebase-map.md` or `./codebase-map.md`)
-- Knowledge-base path (optional, v1.1+; auto-probed in `docs/knowledge-base/`, `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/` — first hit wins; override with `--kb=<path>`)
+- Codebase map path (optional, default probe order: `.mega-sdd/codebase/codebase-map.md` (v3.4+ Iter 10 canonical) → `<repo-root>/codebase-map.md` (legacy) → `./codebase-map.md`)
+- Knowledge-base path (optional, v1.1+; auto-probed in this priority order — `.mega-sdd/knowledge-base/` (v3.4+ default), `docs/knowledge-base/` (legacy), `docs/mega-sdd/knowledge-base/`, `old-reference/knowledge-base/` — first hit wins; override with `--kb=<path>`)
 - Flags: `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>` (override KB auto-probe), `--no-kb` (skip KB consultation entirely)
 
 ## Outputs

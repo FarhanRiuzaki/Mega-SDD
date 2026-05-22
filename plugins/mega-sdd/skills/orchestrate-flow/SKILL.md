@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.3.0
+version: 2.3.1
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -26,7 +26,7 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
    units: N
    bolts: N
    codebase_map: present | absent
-   knowledge_base: present | absent (path: ...)  # (v1.2+) probe docs/knowledge-base, docs/mega-sdd/knowledge-base, old-reference/knowledge-base
+   knowledge_base: present | absent (path: ...)  # (v2.3.1+ Iter 21) priority order: .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
    git_repo: yes | no
    oq_p0_p1_count: N
    mode_inferred: greenfield | brownfield | legacy-rebuild

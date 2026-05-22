@@ -5,6 +5,63 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.13.1] — 2026-05-22
+
+### Fixed — Iter 21: Path-Default Hotfix (No-Excuse `.mega-sdd/`)
+
+User-reported field bug: `extract-intelligence` wrote to `docs/knowledge-base/.scan-meta.json` in a fresh project despite Iter 10 canonical spec (`paths.md`) declaring `.mega-sdd/knowledge-base/` as the v3.4+ default. Root cause: chicken-and-egg detection logic in `extract-intelligence` v1.2 — required `.mega-sdd/` to already exist before triggering new layout. Since extract is often the FIRST skill in legacy-rebuild scenarios, the detection always fell back to legacy `docs/`.
+
+User directive: **"by default harus ke `.mega-sdd/` — no excuse"**. Hotfix flips all writer-side defaults + read-side probe orders.
+
+**Bug — extract-intelligence detection chicken-and-egg** (v1.2.0 → v1.3.0)
+- Removed broken detection that required `.mega-sdd/` to pre-exist
+- Default `--out` now `<project-root>/.mega-sdd/knowledge-base/` ALWAYS for fresh projects (parent created on demand)
+- Legacy `docs/knowledge-base/` triggered ONLY when prior extraction artifacts already exist there (avoids split-brain)
+- Fixed description, Inputs, output-tree examples, handoff template + YAML to reference new default
+- references/knowledge-base-schema.md probe order updated: new path FIRST, legacy as fallback
+
+**Bug — bind-codebase legacy probe order** (v1.8.0 → v1.8.1)
+- Codebase-map default probe priority flipped: `.mega-sdd/codebase/codebase-map.md` FIRST, `<repo-root>/codebase-map.md` fallback
+- KB probe order flipped: `.mega-sdd/knowledge-base/` FIRST, legacy paths fallback
+- Description updated to reference new KB default
+
+**Bug — generate-intent vault default + KB probe order** (v1.9.0 → v1.9.1)
+- Step 0 `--auto` vault output default flipped: `.mega-sdd/vaults/<slug>/` (was `docs/mega-sdd/vaults/<slug>/`)
+- KB auto-detection probe order flipped: new path FIRST, legacy fallback
+- Mode B example invocation updated to `--kb=.mega-sdd/knowledge-base/`
+- Rule 6 detection table updated with new probe priority
+
+**Bug — emit-agents-md vault detection** (v1.2.0 → v1.2.1)
+- Vault detection probe order flipped: `.mega-sdd/vaults/*/vault.json` FIRST, legacy fallback
+
+**Bug — orchestrate-flow CWD probe order** (v2.3.0 → v2.3.1)
+- routing-rules.md §CWD inspection: vault detection now `.mega-sdd/` first
+- KB probe order flipped to new layout first
+- Codebase-map probe order flipped to new layout first
+
+**Bug — using-mega-sdd anchor signals** (v1.2.0 → v1.2.1)
+- CWD signals list reordered: `.mega-sdd/` family FIRST as primary trigger, legacy signals retained for back-compat detection
+
+### Why this matters
+
+User CLAUDE.md directive: "memorize lo harus run berdasarkan dokumen yg ada, harus sejalur ketika lo membuat logic. agar clean dan konsisten". Iter 10 spec (`paths.md`) declared `.mega-sdd/` canonical but 5 skills had inconsistent writer defaults + 4 skills had read-side probe orders favoring legacy paths. This hotfix brings skill behavior in line with the canonical spec — **no more split-brain across iters**.
+
+### Read-side back-compat preserved
+
+Legacy projects (output at `docs/knowledge-base/`, `docs/mega-sdd/vaults/`, etc.) still detected + consumed correctly. New extractions land in `.mega-sdd/`. Mixed projects (new fresh + legacy already on disk) resolve per first-hit-wins.
+
+### Not migrated automatically
+
+Existing legacy projects keep their old paths. Users wanting to consolidate may run `/mega-sdd:migrate-paths` (Iter 10 maintenance command) manually.
+
+### Verified
+
+- Plugin: 3.13.0 → 3.13.1
+- Skills bumped: extract-intelligence v1.3.0, bind-codebase v1.8.1, generate-intent v1.9.1, emit-agents-md v1.2.1, orchestrate-flow v2.3.1, using-mega-sdd v1.2.1
+- `references/paths.md` (canonical) unchanged — was already correct; skills now match it
+
+---
+
 ## [3.13.0] — 2026-05-21
 
 ### Fixed — Iter 20: Critical Bug Closure + Doc Sync
