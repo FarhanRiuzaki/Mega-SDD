@@ -1,6 +1,6 @@
 ---
 description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts. Per Iter 13 audit: this is the ONE command users need; advanced/diagnostic commands available but auto-invoked transparently.
-argument-hint: [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md]
+argument-hint: [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N]
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` flags + the detected starting phase based on input shape.
@@ -50,6 +50,30 @@ This command transparently invokes diagnostic skills at appropriate phases — u
 | At chain end | Memory review prompt | Surface pending learning suggestions |
 
 **Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
+
+## Convergence loops (v3.12+, Iter 19)
+
+In `--deep` mode, `auto` auto-loops eligible halts up to `--max-cycles` (default 5) instead of stopping on first halt. Cycle-eligible halts:
+
+- `bind_conflict` → auto-invoke `resolve-oq --binding` with memory-pre-filled recommendations → re-run binding
+- `module_blocked_by` → auto-run prerequisite module first
+- `cross_squad_interface_draft` → wait+retry for producer to lock interface
+- `oq_recommend_underspecified` → auto-regenerate recommendation fields
+
+Halts that ALWAYS STOP (no auto-loop; require human review): `hard_rule_violated`, `dedup_ambiguous`, `quality_gate_failed`, `oq_business_p1_unresolved`, `test_fail` (post-retries), `hard_rule_unparseable`, `cross_module_dep_invalid`, `memory_schema_mismatch`, `mode_migrate`.
+
+Per-cycle chat output:
+
+```
+⛔ Halt: bind_conflict (3 conflicts)
+🔁 Cycle 1/5: auto-resolving via resolve-oq...
+   ↳ C-007 → KEEP_CODE (memory 8/10; conf: 0.95) → ACCEPTED
+✓ Cycle 1 complete. Re-running bind-codebase...
+```
+
+Opt-out: `--no-converge` reverts to pre-v3.12 (stop on any halt). Adjust limit: `--max-cycles=10`.
+
+See `orchestrate-flow/SKILL.md` §Convergence loops for full algorithm + safety rails.
 
 ## Hard rails:
 - **ONE upfront confirmation** showing the full proposed chain (per skill, per arguments). User picks Run / Edit / Cancel.
