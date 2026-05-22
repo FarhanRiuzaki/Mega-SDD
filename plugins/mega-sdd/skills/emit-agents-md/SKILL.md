@@ -35,7 +35,9 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 
 ## Output
 
-`AGENTS.md` at `<repo-root>/` (or specified path). Format per [agents.md spec](https://agents.md/):
+`AGENTS.md` at `<repo-root>/` (or specified path). Format per [agents.md spec](https://agents.md/).
+
+The output template is a LITERAL emission target — every line below is written verbatim to AGENTS.md EXCEPT (a) `{{var}}` template tokens replaced by procedure step 5, and (b) conditional lines omitted entirely when their source data is absent per `references/agents-md-schema.md` §Conditional header field presence (`constitution_hash`, `properties_validated`, `replay_snapshot_count`, `convergence_cycle_count`).
 
 ```markdown
 # AGENTS.md
@@ -44,10 +46,10 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 <!-- vault_source: {{vault_path}}/vault.json -->
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: {{vault_version}} -->
-<!-- constitution_hash: {{constitution_hash}}   ← OMIT line if source absent -->
-<!-- properties_validated: {{properties_validated}}   ← OMIT line if source absent -->
-<!-- replay_snapshot_count: {{replay_snapshot_count}}   ← OMIT line if value is 0 -->
-<!-- convergence_cycle_count: {{convergence_cycle_count}}   ← OMIT line if value is 0 -->
+<!-- constitution_hash: {{constitution_hash}} -->
+<!-- properties_validated: {{properties_validated}} -->
+<!-- replay_snapshot_count: {{replay_snapshot_count}} -->
+<!-- convergence_cycle_count: {{convergence_cycle_count}} -->
 
 ## Project overview
 
