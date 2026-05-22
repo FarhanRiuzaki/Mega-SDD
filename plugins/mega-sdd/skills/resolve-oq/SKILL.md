@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.7.0
+version: 0.8.0
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -453,6 +453,33 @@ When memory enabled (default; opt-out via `--memory-off`), this skill participat
 - Every suggestion cites source memory entry
 - Current evidence (current conflict's full context) always wins over memory
 - `--memory-off` disables both reads and writes
+
+## Handoff emission (v0.8+, Iter 15 — closes Iter 9 audit Drift D-2)
+
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: resolve-oq
+  emitted_at: <ISO8601 timestamp>
+  status: completed | paused
+  artifacts:
+    - <absolute path to vault.json (updated)>
+    - <absolute path to binding.md (when --binding mode)>
+  next_action:
+    suggested_skill: mega-sdd:bind-codebase    # if --binding mode (re-bind after conflict resolution)
+    # OR
+    suggested_skill: mega-sdd:orchestrate-flow  # if intent mode (resume chain)
+    suggested_args: ["--auto"]
+    rationale: "<1-sentence — e.g., 'CONFLICTs resolved; re-run binding gate' OR 'P1 OQs answered; chain resumable'>"
+  blockers: []
+  metrics:
+    items_processed: <N OQs/CONFLICTs walked>
+    items_resolved: <N actions taken>
+    items_deferred: <N kept as deferred>
+```
+
+Status `paused` if user opted to walk away mid-resolution (some OQs unresolved). Standalone invocation (without `--auto`) emits informational chat hint only.
 
 ## References
 

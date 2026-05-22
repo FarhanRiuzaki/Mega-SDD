@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.1.0
+version: 1.2.0
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -437,6 +437,33 @@ fi
 ### Install
 
 See `plugins/mega-sdd/references/tooling-install.md` for jd install commands per platform. Install is OPTIONAL — skill works without it.
+
+## Handoff emission (v1.2+, Iter 15 — closes Iter 9 audit Drift D-2)
+
+When invoked with `--auto` flag, emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: diff-vault
+  emitted_at: <ISO8601 timestamp>
+  status: completed | paused | halted
+  artifacts:
+    - <absolute path to vault.json (updated)>
+    - <absolute path to <vault>/.mega-sdd/vault-diffs/<timestamp>.patch>   # when jd installed (v1.1+)
+    - <absolute path to <vault>/CHANGELOG entry appended>
+  next_action:
+    suggested_skill: mega-sdd:resolve-oq        # if Resolved-OQ vs new PRD CONFLICTs surfaced
+    # OR
+    suggested_skill: mega-sdd:orchestrate-flow  # if diff clean; chain may resume to bind/units/bolts
+    suggested_args: ["--auto"]
+    rationale: "<1-sentence — e.g., 'N CONFLICTs surfaced from diff; resolve-oq walks them' OR 'Diff clean; vault updated; binding may need re-run'>"
+  blockers: []
+  metrics:
+    items_processed: <N changes detected: added + removed + modified>
+    items_blocked: <N CONFLICTs requiring resolution>
+```
+
+Status `halted` on `diff_conflict` (Resolved-OQ vs new PRD contradiction). Standalone invocation emits informational chat hint only.
 
 ## References
 
