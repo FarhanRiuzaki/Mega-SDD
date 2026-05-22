@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.1.0
+version: 2.2.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -76,7 +76,28 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
 
    **`--deep` mode auto-continue (v1.3+)**: after each skill completes with `status: completed`, parse the skill's handoff YAML (per `references/handoff-contract.md`) and auto-invoke `next_action.suggested_skill` with `next_action.suggested_args`. Continue until pipeline-end OR `status: paused`/`halted` halts the loop. If skill emits `status: paused` (e.g., business OQs need triage) → log paused items and STOP chain awaiting user. If `status: halted` → surface blocker YAML verbatim and STOP.
 
-7. **Emit final summary** with completed/paused/skipped per step + verbatim blocker YAMLs if any. In `--deep` mode, append: total phases proposed, total phases completed, total artifacts produced (flat path list).
+   **Auto-integrated diagnostics (v2.2+, Iter 13)**: per audit `docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md` consolidation restoring "single command" philosophy. Inside `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY invokes diagnostic commands at appropriate phases — user does NOT run these separately:
+
+   | Phase | Auto-runs | Output integration |
+   |---|---|---|
+   | After `generate-units` completes | `lint-units` (per `commands/lint-units.md` Procedure) | One-line chat summary: "lint: N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
+   | Before `execute-bolts` invocation | `analyze-parallelism` (per `commands/analyze-parallelism.md`) | Wave plan computed; passed to execute-bolts to drive `--parallel` batch dispatch |
+   | After `execute-bolts` completes | `list-modules` (per `commands/list-modules.md` table format) | Per-module status table in chain end summary |
+   | After all phases complete | `emit-agents-md` (per `commands/emit-agents-md.md`, respecting `config.yaml defaults.emit_agents_md: true|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
+   | After all phases complete | Memory review check (per `commands/memory.md review` if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
+
+   These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
+
+   **Manual override**: users invoking individual commands directly (`/mega-sdd:lint-units` etc.) still works for debugging/one-off use. Auto-invocations skip when user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on `auto`/`orchestrate-flow`.
+
+7. **Emit final summary** with completed/paused/skipped per step + verbatim blocker YAMLs if any. In `--deep` mode, append:
+   - Total phases proposed, total phases completed, total artifacts produced (flat path list)
+   - **(v2.2+, Iter 13) Auto-integrated diagnostics summary**:
+     - Quality metrics from auto lint-units (units HIGH/MEDIUM/LOW counts)
+     - Parallelism speedup from auto analyze-parallelism (X.Yx vs sequential)
+     - Per-module status from auto list-modules (X/Y modules completed)
+     - AGENTS.md emission confirmation (file path + section count)
+     - Memory review prompt if pending suggestions exist
 
 8. **Resume support (v1.3+, per AUTONOMY-OQ-2 — CWD-driven, no state file).**
 

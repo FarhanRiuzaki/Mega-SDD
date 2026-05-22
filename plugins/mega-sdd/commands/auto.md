@@ -1,6 +1,6 @@
 ---
-description: One-shot autonomous pipeline. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full mega-sdd chain end-to-end with single upfront confirmation. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts (bolts have their own safety via target_files whitelist + Hard rules).
-argument-hint: [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>]
+description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts. Per Iter 13 audit: this is the ONE command users need; advanced/diagnostic commands available but auto-invoked transparently.
+argument-hint: [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md]
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` flags + the detected starting phase based on input shape.
@@ -37,7 +37,21 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 After detection + flag parse, invoke `orchestrate-flow --deep --auto [--from=<detected-start>] [other-flags]`.
 
-Hard rails:
+## Auto-integrated diagnostics (v3.7+, Iter 13)
+
+This command transparently invokes diagnostic skills at appropriate phases — user does NOT need to run them separately:
+
+| Phase | Auto-invokes | Why |
+|---|---|---|
+| After `generate-units` | `lint-units` | Quality gate before bolt execution |
+| Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
+| After `execute-bolts` | `list-modules` | Per-module status in chain summary |
+| At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
+| At chain end | Memory review prompt | Surface pending learning suggestions |
+
+**Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
+
+## Hard rails:
 - **ONE upfront confirmation** showing the full proposed chain (per skill, per arguments). User picks Run / Edit / Cancel.
 - **All existing halt-protocol blockers fire identically** — CONFLICT, business OQ P1, dedup_ambiguous, hard_rule_violated, cross_squad_*, quality_gate_failed. Chain pauses; user resolves; runs `/mega-sdd:auto --resume`.
 - **Anti-halu invariants preserved**: binding gate non-negotiable, OQ-business stays human-decided, dedup_ambiguous halts on conflict, Hard rules pre/post-flight runs unchanged.

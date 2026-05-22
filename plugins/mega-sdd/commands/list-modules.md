@@ -1,5 +1,5 @@
 ---
-description: Show module progress for current vault. Reads _meta/modules.yaml + vault.json + bolt-outcomes.json; computes per-module unit completion + DoD checklist status. Supports --mark-dod for interactive DoD item toggling. Module = semantic grouping ABOVE atomic units (Iter 11; per references/modules-schema.md).
+description: [ADVANCED / AUTO-INVOKED] Show module progress. Auto-invoked by `/mega-sdd:auto` in chain end summary. Run standalone for mid-pipeline status check OR interactive DoD marking via --mark-dod flag. computes per-module unit completion + DoD checklist status. Supports --mark-dod for interactive DoD item toggling. Module = semantic grouping ABOVE atomic units (Iter 11; per references/modules-schema.md).
 argument-hint: [vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]
 ---
 

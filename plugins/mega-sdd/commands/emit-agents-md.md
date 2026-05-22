@@ -1,5 +1,5 @@
 ---
-description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format. Tool-agnostic interop — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence. Pure write-out; idempotent regeneration.
+description: [ADVANCED / AUTO-INVOKED] Flatten vault → AGENTS.md. Auto-invoked by `/mega-sdd:auto` at chain end (respects config flag default-on). Run standalone for one-off regeneration OR --mode=sibling when AGENTS.md already exists user-authored. Tool-agnostic interop — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence. Pure write-out; idempotent regeneration.
 argument-hint: [vault-path] [--out=<path>] [--mode=overwrite|append|sibling] [--auto]
 ---
 

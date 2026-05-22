@@ -5,6 +5,88 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] — 2026-05-21
+
+### Restored — Iter 13: Single-command Philosophy + Consolidation
+
+Per user feedback — "pendekatan jadi tidak simple. tidak sejalan dengan yg di design. on default harusnya udah bisa jalanin itu semua, tidak perlu kasih command tambahan".
+
+**Audit verdict** (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md`): VALID. 20 commands shipped vs design philosophy of "ONE command (`/mega-sdd:auto`) does everything; advanced users access phases manually". Drifted.
+
+**Restoration**:
+
+1. **Auto-integrate diagnostics into orchestrate-flow** (v2.1 → v2.2). Per audit Phase B, these now run TRANSPARENTLY inside `auto` / `orchestrate-flow --deep`:
+   - After `generate-units` → `lint-units` (quality gate); one-line summary in chat
+   - Before `execute-bolts` → `analyze-parallelism` (compute wave plan for `--parallel`)
+   - After `execute-bolts` → `list-modules` (per-module status in chain end summary)
+   - At chain end → `emit-agents-md` (config-flag default-on; AGENTS.md refreshed)
+   - At chain end → memory review prompt (if pending learning suggestions exist)
+   - Opt-out flags: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`
+
+2. **Removed deprecated `/mega-sdd:from-prompt`** — was deprecated since v1.3 per README ("Will be removed in v1.4"), then v3.1 ("Will be removed in v3.1"). Now at v3.7. Long overdue. Users still using it should switch to `/mega-sdd:auto "<brief>"` or `/mega-sdd:generate-intent --from-prompt "<brief>"`.
+
+3. **Marked auto-invoked commands as "ADVANCED / AUTO-INVOKED"** in their command descriptions:
+   - `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`
+   - Description tells users these run automatically; standalone use is for debugging/CI/one-off only
+
+4. **Simplified README "Primary commands" section** — promote `auto` to dominant; group others by use case (Phase / Event-driven / Maintenance / Diagnostic-auto-invoked). Removes confusion that there are 20 things to choose from.
+
+### Changed — Skill versions
+
+- `orchestrate-flow`: 2.1.0 → 2.2.0 (auto-integrate diagnostics at chain phases)
+
+### Removed
+
+- `plugins/mega-sdd/commands/from-prompt.md` (deprecated since v1.3; removed in v3.7 — see CHANGELOG above)
+
+### Updated
+
+- `plugins/mega-sdd/commands/auto.md` — added "Auto-integrated diagnostics" section + opt-out flags
+- `plugins/mega-sdd/commands/lint-units.md` — description prefixed `[ADVANCED / AUTO-INVOKED]`
+- `plugins/mega-sdd/commands/analyze-parallelism.md` — same
+- `plugins/mega-sdd/commands/list-modules.md` — same
+- `plugins/mega-sdd/commands/emit-agents-md.md` — same
+- `README.md` — restructured "Primary commands" to emphasize `/mega-sdd:auto` as THE command
+
+### Anti-halu invariants preserved
+
+- Auto-integrations are DETERMINISTIC (skill description tells orchestrator WHEN to invoke; not LLM choice)
+- All halt-protocol blockers fire identically (lint can halt with `--strict-quality`; analyze surfaces over-coupling SUGGESTIONS only; memory review SURFACES suggestions but never auto-applies)
+- Opt-out flags preserve full manual control for advanced users
+- Standalone command invocation still works (auto-integrations don't break standalone usage)
+
+### Backward compatibility
+
+- v3.6 pipelines invoking individual commands continue to work
+- `from-prompt` removal: users get standard "command not found" message; switch to `/mega-sdd:generate-intent --from-prompt "<brief>"` or `/mega-sdd:auto "<brief>"`
+- `--no-*` opt-out flags preserve v3.6 behavior when user explicitly disables auto-integrations
+- No vault format changes
+- No memory schema changes
+
+### Why this matters (philosophy alignment)
+
+Mega-sdd's design philosophy:
+- **Single opinionated plugin** (no sprawl)
+- **`/mega-sdd:auto` as ONE-shot entry**
+- **Anti-halu via rails + defaults, not user-managed checks**
+- **Markdown-driven** (single source of truth)
+
+Iter 12 sprawled into 20 commands; users had to know which ones to run manually. Iter 13 restores: `auto` runs everything; diagnostics are background; advanced commands available but not required.
+
+### Acceptance criteria (all met)
+
+✅ `/mega-sdd:auto ./prd.md` runs full pipeline including lint + analyze + list + emit + memory review without separate invocations
+✅ Diagnostic command files marked `[ADVANCED / AUTO-INVOKED]` in description
+✅ README primary commands restructured to emphasize `auto`
+✅ `from-prompt` deprecated alias removed
+✅ CHANGELOG explains philosophy restoration
+
+### Outstanding (Iter 14+)
+
+- Optional: merge `migrate-rules` + `migrate-paths` into `/mega-sdd:migrate <type>` (consolidates 2 niche commands → 1)
+- Plugin README sync to v3.7 (defer to next release polish)
+- Field-test validation in tradefinance-rebuild project
+
 ## [3.6.0] — 2026-05-21
 
 ### Added — Iter 12: Unit Quality + Parallelism Tools
