@@ -5,6 +5,102 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.0] — 2026-05-21
+
+### Added — Iter 17: Constitution Layer (8th vault file)
+
+Research-driven addition. Per agent deep-search Iter 17+: **Spec Kit `/speckit.constitution` + AWS Kiro "steering files"** independently converged on this pattern in 2025-2026. Strong evidence; ADOPT verdict.
+
+### What's new
+
+**8th vault file**: `<vault>/constitution.md` — project-facing rules distinct from `AGENTS.md` (agent-facing flattened export).
+
+Captures non-negotiable project invariants that EVERY bolt must respect:
+
+- **§A Coding standards** — naming, file organization, comment style
+- **§B Security baselines** — auth, input validation, secret handling
+- **§C Architecture invariants** — layered architecture rules, allowed dependencies
+- **§D Anti-patterns** — drawn from legacy gotchas, team learnings, KB critical findings
+- **§E Performance constraints** — response time targets, query patterns
+- **§F Compliance** — regulatory requirements, audit trail mandates
+
+### How constitution drives bolts
+
+| Phase | Constitution interaction |
+|---|---|
+| `generate-intent` v1.8 → v1.9 | NEW Step 3.4: write constitution.md from PRD/KB/memory; user signs off |
+| `bind-codebase` (v1.7+) | Cite constitution clauses when surfacing CONFLICTs; flag clause-violating bindings as halts |
+| `generate-units` v2.3 → v2.4 | NEW Step 12.3: inject relevant constitution clauses into each unit's `## Hard rules` |
+| `execute-bolts` (v2.2+) | Pre/post-flight Hard Rule scan auto-validates constitution clauses (no separate command) |
+| `detect-drift` (v1.1+) | Flag code violating constitution as drift findings |
+
+### Version pinning
+
+Constitution version pinned to vault:
+
+```json
+"constitution_version": "1.0.0",
+"constitution_hash": "<sha256 of constitution.md>"
+```
+
+`detect-drift` validates hash; if constitution.md changed, all units potentially affected → halt prompting re-bind.
+
+### Anti-halu rails (mandatory)
+
+- Constitution clauses MUST cite source: `(per PRD §<section>)` OR `(per KB §<file>:<line>)` OR `(per memory decision row <N>)`
+- Constitution updates require explicit user action; never auto-edited
+- User MUST sign off before vault locks (initial gen extracts; user reviews)
+- Constitution overrides codebase reality: existing-code violations cause bolt pre-flight FAIL
+- Anti-pattern §D clauses default to Anti-patterns (informational); promoted to Hard Rules only when mechanically detectable (per Iter 6 DESIGN-OQ-6)
+- `--no-constitution` flag opt-out for one-off greenfield demos
+
+### Changed — Skill versions
+
+- `generate-intent`: 1.8.0 → 1.9.0 (Step 3.4 constitution.md generation)
+- `generate-units`: 2.3.0 → 2.4.0 (Step 12.3 constitution clause injection into unit Hard Rules)
+- Vault file count: 7 → 8 (added constitution.md as 8th file; vault-contract.md updated)
+
+### Added — Schema
+
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — new §constitution section with full schema, integration points, anti-halu rails
+
+### Backward compatibility
+
+- v3.9 vaults without constitution.md → skill detects absence; auto-routes to user prompt "constitution.md missing; generate from PRD constraints? Y/n"
+- Existing 7-file vaults unchanged; constitution is 8th additive file
+- Tools that hardcoded 7-file count → graceful fallback (treat missing constitution as empty list)
+- `--no-constitution` flag preserves pre-v1.9 behavior
+
+### Why this matters
+
+Brownfield rebuild (tradefinance scenario) needs project invariants baked into bolts:
+- Without constitution: bolts may add `dd()` calls, bypass auth middleware, replicate legacy bugs
+- With constitution: bolts pre-flight FAIL on violations; user catches early before commit
+
+Spec Kit + Kiro convergence = battle-tested pattern. Mega-sdd adopts.
+
+### Deferred (Iter 18+)
+
+Per agent recommendations:
+
+- **Replay/audit harness** (`mega-sdd:replay`) — deterministic bolt re-execution from JSON fixtures. Strong fit (pure bash + jq); deferred for fixture-format design.
+- **Property-based testing** in unit schema — Anthropic NeurIPS 2025 paper validates 30-32% gap coverage. Multi-language Hypothesis/fast-check/gopter integration needs per-language design.
+- **OpenAPI emit** from vault flows — Schemathesis-friendly contracts. Lower priority.
+- **Semgrep + LLM triage gate** — 91% FP reduction post-bolt. Opt-in CI hook; deferred.
+
+### Acceptance criteria
+
+✅ `<vault>/constitution.md` added as 8th file
+✅ Schema documented in vault-contract.md §constitution
+✅ generate-intent Step 3.4 writes constitution
+✅ generate-units Step 12.3 injects clauses into Hard Rules
+✅ Anti-halu rails preserved (citation mandatory, user sign-off, no silent auto-edit)
+✅ Backward compat: v3.9 vaults work without constitution
+
+### Plugin metadata
+
+- `plugin.json`: 3.9.0 → 3.10.0 (minor — new vault file is observable additive change)
+
 ## [3.9.0] — 2026-05-21
 
 ### Changed — Iter 16: Scan-First for Brownfield (Pipeline Reorder)

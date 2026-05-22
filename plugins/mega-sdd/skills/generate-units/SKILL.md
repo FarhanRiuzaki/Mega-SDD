@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.3.0
+version: 2.4.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -305,6 +305,43 @@ blocker:
       - **File EXISTS, line valid** → ✓ verified
 
    Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirational (especially for new files in `create` units). Warnings surface visually in chat output + unit body footer so user can review.
+
+12.3. **Inject constitution clauses (v2.4+, Iter 17).**
+
+   Per `generate-intent/references/vault-contract.md` §constitution.
+
+   For each unit, read `<vault>/constitution.md` + identify clauses relevant to the unit's:
+   - target_files paths (matches §A clauses for files in those paths)
+   - task_type (different clauses apply for create vs extend vs verify)
+   - module (per `_meta/modules.yaml` if multi-module)
+   - vault_source (clauses referenced in that vault section)
+
+   Inject relevant clauses into the unit's `## Hard rules` section:
+
+   ```yaml
+   id: constitution-A-001
+   language: <unit's primary language>
+   message: "All API endpoints MUST use Sanctum auth middleware (constitution §A-001)"
+   rule:
+     pattern: |
+       Route::$$$('/api/$$$', $$$)
+     not:
+       inside:
+         pattern: |
+           ->middleware(['auth:sanctum', $$$])
+   ```
+
+   Format:
+   - Rule `id` prefix `constitution-` + clause ID
+   - `message` cites clause source
+   - Pattern detection: convert clause text to ast-grep YAML when feasible; fall back to text-match grep when not
+   - Severity: `error` (constitution clauses are non-negotiable; halts bolt commit if violated)
+
+   **Anti-halu rails**:
+   - Constitution clauses NEVER silently apply — surface in unit body for user review
+   - Clauses that can't translate to ast-grep grammar are flagged in unit body as `## Constitution warnings` informational section (not Hard Rule)
+   - Anti-pattern (§D) clauses always inject as Anti-patterns (informational), not Hard Rules (machine-validated), unless mechanically detectable per Iter 6 DESIGN-OQ-6
+   - Constitution version + hash tracked: if constitution drifts between unit generation and bolt execution → halt `constitution_drift_detected`
 
 12.4. **Polished-prompt render pass (v1.3+, Iter 3).**
 

@@ -237,6 +237,107 @@ For `resolution_mode: recommend`:
 
 **Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing v1.0–v1.5 vaults load unchanged.
 
+## §constitution — Project-Facing Rules (v1.8+, Iter 17)
+
+Per Spec Kit `/speckit.constitution` + AWS Kiro "steering files" pattern (independent convergence in spec-driven-dev tools 2025-2026). Mega-sdd adopts as **8th vault file**: `constitution.md`.
+
+Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing flattened export). It captures non-negotiable project invariants that EVERY bolt must respect:
+
+- Coding standards (naming case, file organization, comment style)
+- Security baselines (auth requirements, input validation, secret handling)
+- Architecture invariants (layered architecture rules, allowed dependencies)
+- Anti-patterns to NEVER replicate (drawn from legacy gotchas or team learnings)
+- Performance constraints (response time targets, query patterns to avoid)
+- Compliance rules (regulatory requirements, audit trail mandates)
+
+### Schema
+
+`<vault>/constitution.md`:
+
+```markdown
+# Project Constitution
+
+**Status**: Active
+**Version**: 1.0
+**Last reviewed**: 2026-05-21
+**Sign-off**: Tech Lead / Product / Security (when relevant)
+
+---
+
+## §A. Coding standards (Non-negotiable)
+
+- A-001: All API endpoints MUST use Sanctum auth middleware (see binding §scan_results)
+- A-002: Naming: PascalCase for classes; kebab-case for routes; camelCase for JS identifiers
+- A-003: Test files MUST be co-located in tests/ matching app/ structure
+- A-004: No `dd()` / `var_dump()` / `console.log()` in committed code
+
+## §B. Security baselines
+
+- B-001: All user input passes through Form Request validators (no inline validation in controllers)
+- B-002: Database queries via Eloquent ORM; raw SQL only in clearly-flagged repositories
+- B-003: No secrets in code; use config('app.key') / env() abstraction
+- B-004: PII fields encrypted at rest (per regulatory mandate; see 06-constraints.md §regulatory)
+
+## §C. Architecture invariants
+
+- C-001: Controllers MUST NOT call other Controllers; use Services
+- C-002: Models MUST NOT have side effects (events emit via Observer pattern only)
+- C-003: Mailables MUST be queued (not sync)
+- C-004: Background jobs MUST be idempotent
+
+## §D. Anti-patterns (from legacy / past projects)
+
+- D-001: NEVER replicate the cfkdhl→CFKDDL silent typo from legacy customer-edit flow (per knowledge-base §critical-findings)
+- D-002: NEVER add new package.json dependencies without team review
+- D-003: NEVER bypass middleware via direct request manipulation
+
+## §E. Performance constraints
+
+- E-001: API response time median < 200ms
+- E-002: Database queries within request handler < 5 (use eager loading)
+- E-003: Background job execution < 30s; longer = split into smaller jobs
+
+## §F. Compliance
+
+- F-001: All financial transactions logged to audit_log table with user_id, timestamp, action, before/after JSON
+- F-002: PII access logged separately to security_audit table
+- F-003: Data retention per regulatory: 7 years for transactions, 90 days for access logs
+```
+
+### How constitution drives bolts
+
+1. **At `generate-intent`** (v1.8+): write constitution.md from PRD + KB constraints sections + user Q&A; user reviews + signs off; updates trigger version bump
+2. **At `bind-codebase`** (v1.7+): cite constitution clauses when surfacing CONFLICTs; flag binding entries that violate constitution as halts
+3. **At `generate-units`** (v2.2+): for each unit, inject relevant constitution clauses into the unit's `## Hard rules` section as `id: constitution-<clause-id>` rules
+4. **At `execute-bolts`** (v2.2+): pre/post-flight Hard Rule scan automatically validates constitution clauses (no separate command)
+5. **At `detect-drift`** (v1.1+): flag code that violates constitution as drift findings
+
+### Constitution version pinning
+
+Constitution version pinned to vault:
+
+```yaml
+# In vault.json:
+"constitution_version": "1.0.0",
+"constitution_hash": "abc123def456..."   # sha256 of constitution.md
+```
+
+`detect-drift` validates constitution_hash hasn't drifted from current file. If constitution.md changes, ALL units potentially affected — `detect-drift` flags this with halt prompting user to re-bind.
+
+### Anti-halu rails
+
+- Constitution clauses MUST cite source (PRD §, KB section, past project decision, regulatory link)
+- Constitution updates require explicit user action; never auto-edited
+- `generate-intent` extracts INITIAL constitution from PRD/KB; user MUST review + sign before vault locks
+- Constitution overrides codebase reality: if existing code violates constitution, bolt FAILS pre-flight (intentional rail strengthening)
+- `--no-constitution` flag opt-out preserves pre-v1.8 behavior (rare; for one-off greenfield demos)
+
+### Backward compatibility
+
+- v3.9 vaults without `constitution.md` → skill detects absence; auto-routes to user prompt "constitution.md missing; create from PRD constraints? Y/n"
+- Existing 7-file vault structure unchanged; constitution is 8th additive file
+- Tools that hardcoded 7-file count → graceful fallback (treat missing constitution as empty list)
+
 ## §boilerplate — Skill instruction language
 
 Reusable shim. Each skill's SKILL.md should reference this section:
