@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 1.0.0
+version: 1.1.0
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -473,6 +473,31 @@ Do NOT pad with "I have completed the scan..." preamble.
 - **Vault has lots of unresolved OQs** (>20 P1 still open) → recommend running `resolve-oq` first. Drift detection against an unresolved vault produces noisier findings (vault doesn't yet say what code should do, so divergence is expected).
 
 ---
+
+## Handoff emission (v1.1+, Iter 15 — closes Iter 9 audit Drift D-2)
+
+When invoked with `--auto` flag, emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+
+```yaml
+handoff:
+  emitted_by: detect-drift
+  emitted_at: <ISO8601 timestamp>
+  status: completed | halted
+  artifacts:
+    - <absolute path to <vault>/drift-report.md>
+  next_action:
+    suggested_skill: mega-sdd:resolve-oq        # if drift findings need triage
+    # OR
+    suggested_skill: null                       # if zero drift; no follow-up
+    suggested_args: ["--auto"]
+    rationale: "<e.g., 'N drift findings; route via resolve-oq' OR 'Zero drift; vault + code aligned'>"
+  blockers: []                                  # populated on drift_framework_mismatch
+  metrics:
+    items_processed: <N claims compared>
+    items_blocked: <N drift findings>
+```
+
+Status `halted` on `drift_framework_mismatch` (vault framework signal doesn't match codebase reality). Standalone invocation emits informational chat hint only.
 
 ## References
 

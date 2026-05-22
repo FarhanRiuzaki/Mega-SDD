@@ -5,6 +5,45 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.2] — 2026-05-21
+
+### Fixed — Iter 15: next-action consistency (closes Iter 9 audit Drift D-2)
+
+Per user feedback — "lalu di setiap prosesnya mau auto atau manual, selalu di berikan next action recomendation kan?". Confirmed YES across modes, BUT honest disclosure of small inconsistency: 3 skills lacked formal `## Handoff emission` section in SKILL.md (chat hints existed, but no structured YAML for orchestrator auto-continue under `--auto`).
+
+Per Iter 9 audit Drift D-2, this iter closes the gap.
+
+### Added — Handoff YAML emission sections
+
+- `resolve-oq` v0.7.0 → v0.8.0 (emits handoff YAML with next_action: bind-codebase if --binding mode; orchestrate-flow if intent mode)
+- `diff-vault` v1.1.0 → v1.2.0 (emits handoff YAML with next_action: resolve-oq if CONFLICTs surfaced; orchestrate-flow if clean)
+- `detect-drift` v1.0.0 → v1.1.0 (emits handoff YAML with next_action: resolve-oq if drift findings; null if zero drift)
+
+(`memory` already had handoff emission from Iter 5; `emit-agents-md` already had from Iter 6.)
+
+### Result — three-mode next-action consistency
+
+Mega-sdd now guarantees next-action recommendation in ALL three modes for ALL skills:
+
+| Mode | Mechanism | Coverage |
+|---|---|---|
+| **Auto** (`/mega-sdd:auto --deep`) | Structured handoff YAML with `next_action.suggested_skill` + `suggested_args` + `rationale` | 11/11 skills (was 8/11; now complete) |
+| **Manual** (standalone skill invocation) | Chat hint at end of skill output (`## Hand-off` section) | 11/11 skills (always was complete) |
+| **Halt** (blocker) | YAML `blocker.next_action` field (mandatory across all halt types) | 100% of halt types (always was complete) |
+
+### Anti-halu invariants preserved
+
+- Handoff YAML emissions are DETERMINISTIC (skill writes structured YAML at end; no LLM judgment in the protocol)
+- Status field is honest (completed | paused | halted)
+- Next-action SUGGESTIONS — user can ignore + run other commands
+- Halt YAMLs unchanged (no rail relaxation)
+
+### Backward compatibility
+
+PURELY DOCS + structured-output addition. Skills that previously emitted only chat hints still do; they ALSO emit YAML under `--auto`. Standalone manual invocations see no change. Orchestrator (Iter 4) gracefully handles BOTH old (chat-hint-only) AND new (handoff YAML) skills — no breakage.
+
+Plugin 3.8.1 → 3.8.2 (patch).
+
 ## [3.8.1] — 2026-05-21
 
 ### Documentation — user-facing docs pass
