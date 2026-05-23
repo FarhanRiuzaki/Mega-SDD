@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.3.2
+version: 2.4.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -32,7 +32,47 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
    mode_inferred: greenfield | brownfield | legacy-rebuild
    squad_count: N  # (v1.1+) from <vault>/_meta/squads.yaml; 0 if file absent or single squad
    interfaces_count: N  # (v1.1+) count of files in <vault>/interfaces/ (excluding _index.md); 0 if folder absent
+   starterkit: detected | absent  # (v2.4+ Iter 27) framework manifest probe
+     framework: <name|null>       # e.g., laravel-base-26 (pack match), laravel (universal), null (no manifest)
+     pack_match: yes | no         # yes if framework-conventions/<framework>.md exists; no if universal fallback
+     manifest_path: <path|null>   # e.g., composer.json, package.json, Gemfile, pyproject.toml, go.mod, Cargo.toml
    ```
+
+2.5. **Starterkit detection + mode classification (v2.4+, Iter 27).**
+
+   Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield": starterkit is REQUIRED by default; greenfield only when user opts in explicitly.
+
+   Three modes determined by inspection:
+
+   | Mode | Trigger | Pipeline ordering |
+   |---|---|---|
+   | **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` | scan-codebase FIRST (loads pack into context) → generate-intent (pack-aware vault) → bind → units → bolts |
+   | **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | scan-codebase FIRST (universal conventions from `_universal.md`) → generate-intent → bind → units → bolts |
+   | **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent (stack-agnostic) → user scaffolds later → re-run with scan to bind |
+
+   **Default behavior** when starterkit absent AND `--greenfield` NOT set → halt with `no_starterkit_detected`:
+
+   ```yaml
+   halt:
+     type: no_starterkit_detected
+     reason: "Mega-sdd default workflow requires a framework starterkit (composer.json / package.json / Gemfile / etc.) for delivery-grade output. Vault generation produces stack-agnostic designs without it."
+     options:
+       a: "Scaffold a starterkit first (recommended). For Laravel: clone base-laravel-26. For Django: django-admin startproject. For Rails: rails new. Then re-run."
+       b: "Proceed as greenfield with --greenfield flag (vault stays stack-agnostic; you scaffold + re-run scan/bind later)"
+       c: "Cancel"
+   ```
+
+   **Legacy rebuild scenario** (extract-intelligence + scan-on-target):
+   ```
+   extract-intelligence <legacy> → KB
+     ↓
+   scan-codebase (TARGET — new framework scaffold) → codebase-map.md
+     ↓
+   generate-intent --kb=<kb> --scan=<codebase-map> → vault aware of BOTH legacy domain AND target scaffold conventions
+     ↓ bind → units → bolts
+   ```
+
+   **Memory hint**: user's last starterkit preference saved to `~/.mega-sdd/memory/preferences.md` `last_used_starterkit:` — next legacy-rebuild prompts "Last 3 projects used `laravel-base-26`. Use same starterkit?" Y/N/other.
 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).

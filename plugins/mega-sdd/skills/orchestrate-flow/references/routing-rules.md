@@ -17,12 +17,25 @@
 
 ## Decision matrix
 
+### v2.4+ (Iter 27) starterkit-first ordering
+
+Per user directive "scan code base harusnya di atur di depan ... starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit detection runs FIRST. When detected, scan-codebase precedes generate-intent so vault is pack-aware from the start.
+
+| State (from inspection) | Proposed chain |
+|---|---|
+| **Starterkit detected** + no vault + no codebase-map + PRD or brief present | `scan-codebase` (load pack into context) → `generate-intent --scan=<codebase-map> [<prd>\|--from-prompt]` (pack-aware vault) → `bind-codebase` → `generate-units` |
+| **Starterkit detected** + Legacy codebase + rebuild intent + no vault | `extract-intelligence <legacy>` (KB) → `scan-codebase` (TARGET scaffold) → `generate-intent --kb=<kb> --scan=<codebase-map>` (KB + pack aware) → `bind-codebase` → `generate-units` |
+| **Starterkit ABSENT** + `--greenfield` flag set | `generate-intent --greenfield [<prd>\|--from-prompt]` (stack-agnostic vault) → `generate-units` (no scan/bind until user scaffolds) |
+| **Starterkit ABSENT** + no `--greenfield` flag | HALT `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel) |
+
+### Pre-existing flows (legacy starterkit-absent path; preserved for back-compat)
+
 | State (from inspection) | Proposed chain |
 |---|---|
 | Legacy codebase + no PRD + no vault + rebuild intent (user mentioned "rebuild di stack baru" / "reverse engineer" / "extract intelligence") | `extract-intelligence <legacy>` → `generate-intent --kb=<kb>` |
 | `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` (skip extract-intelligence — already done) |
-| Brief only (no vault, no PRD, no KB) | `generate-intent --from-prompt` (Q&A first) |
-| PRD exists, no vault | `generate-intent <prd>` |
+| Brief only (no vault, no PRD, no KB) + starterkit absent + `--greenfield` | `generate-intent --from-prompt --greenfield` (Q&A first) |
+| PRD exists, no vault, starterkit absent + `--greenfield` | `generate-intent <prd> --greenfield` |
 | Vault exists, mode=greenfield, no units | `generate-units` |
 | Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` |
 | Vault exists, codebase-map exists, no bound-vault | `bind-codebase` (alone if blocking; chain if clean) |

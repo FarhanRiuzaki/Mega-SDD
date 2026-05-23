@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.10.0
+version: 1.11.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -12,11 +12,21 @@ Converts PRD/BRD + Figma into 7 markdown files inside a user-specified folder, o
 
 ## Invocation modes
 
-`generate-intent` has TWO input modes (with a v1.2+ KB sub-mode under Mode B):
+`generate-intent` has TWO input modes (with a v1.2+ KB sub-mode under Mode B), AND a starterkit-aware overlay (v1.11+ Iter 27) that applies to ALL modes when scan-codebase has been run first.
 
 ### Mode A — Structured input (PRD / BRD / Figma)
 Invocation: `/mega-sdd:generate-intent ./prd.md` (or any structured doc path)
 Behavior: parse + decompose directly per `references/vault-contract.md`. No Q&A unless source is critically incomplete.
+
+### Starterkit overlay (v1.11+ Iter 27) — `--scan=<codebase-map-path>` or `--greenfield`
+
+Per user directive "scan code base harusnya di atur di depan ... starterkit itu wajib ada". When invoked in starterkit-first mode (orchestrate-flow Mode A/B), the scan phase runs BEFORE this skill. Generated vault becomes pack-aware via the `--scan=<codebase-map-path>` flag:
+
+- **`--scan=<path>`** (v1.11+) — read `codebase-map.md` §7 Framework + §1-6 conventions BEFORE drafting vault. Resolves the framework convention pack via the `pack_path` field. Vault sections (`02-architecture.md`, `03-data-model.md`, `06-constraints.md`) use **dual-citation format** (Intent + Starterkit binding) per `references/vault-contract.md` §Starterkit binding.
+- **`--greenfield`** (v1.11+) — EXPLICIT opt-in for stack-agnostic generation. Skips scan reading. Vault stays generic. REQUIRED when starterkit absent (orchestrate-flow halt `no_starterkit_detected` enforces this).
+- **Auto-detection**: if `codebase-map.md` exists at canonical location AND no `--greenfield` set → `--scan` implicitly applied. Confirms with user before proceeding (unless `--auto`).
+
+When BOTH `--scan` AND `--kb` set (legacy-rebuild scenario): vault synthesizes legacy domain intent (from KB) + target scaffold conventions (from scan). `[LOCKED]` KB items preserved 1:1; `[INTENT]` KB items rendered using starterkit conventions; `[ARTIFACT]` items discarded.
 
 ### Mode B — Free-text brief (--from-prompt)
 Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected when no structured PRD path provided.
