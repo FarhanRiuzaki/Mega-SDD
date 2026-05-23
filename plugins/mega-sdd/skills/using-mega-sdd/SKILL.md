@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 1.2.1
+version: 1.3.0
 description: Use at session start when SDD topics arise — establishes how to route SDD work through mega-sdd phases. (v1.2+, Iter 4) Sharper auto-trigger — when CWD signals are strong (PRD upload + no vault, legacy codebase + rebuild intent, vault present + no units) AND user prompt contains mega-sdd intent keywords OR is empty/continuation, auto-invoke `orchestrate-flow --deep` for pipeline-end execution. Triggers on SDD keywords (intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, knowledge-base, extract intelligence, reverse engineer, auto, rebuild) and Indonesian variants (pecah PRD, buat dev, spec ini, siapkan context buat AI dev, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next).
 ---
 
@@ -47,6 +47,30 @@ When both hold → auto-invoke `/mega-sdd:auto` (which routes to `orchestrate-fl
 - Casual conversation without SDD vocab
 - Code debugging, refactoring, or review unrelated to a vault
 - General architecture discussion not anchored to a PRD/vault
+
+### Starterkit-first mode (v1.3+, Iter 27)
+
+`/mega-sdd:auto` defaults to **starterkit-first**: scan-codebase runs FIRST when a framework manifest exists; vault generation becomes pack-aware via dual-citation format (Intent + Starterkit binding) per `generate-intent/references/vault-contract.md` §Starterkit-binding.
+
+**Auto-trigger refinement**: when proposing the chain to the user, surface starterkit detection result upfront:
+
+```
+Detected starterkit: laravel-base-26 (composer.json — Vuexy fingerprint)
+  Pack: framework-conventions/laravel-base-26.md (extends laravel.md, _universal.md)
+
+Proposed pipeline (--deep, starterkit-first mode):
+  1. scan-codebase ./       → codebase-map.md (loads pack into context)
+  2. generate-intent --scan=<map> ./prd.md  → vault (pack-aware, dual-citation)
+  3. bind-codebase          → binding.md + bound-vault/
+  4. generate-units         → units/
+  5. execute-bolts --all    → bolts/
+
+[Run] [Edit] [Cancel]
+```
+
+When NO starterkit detected:
+- Default → halt with `no_starterkit_detected` (user picks: scaffold / opt-in greenfield / cancel)
+- User explicit `--greenfield` → skip halt; proceed with stack-agnostic vault generation (Mode C)
 
 ## Priority order
 

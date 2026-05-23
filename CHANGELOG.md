@@ -5,6 +5,108 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.0] — 2026-05-23
+
+### Added — Iter 27: Starterkit-First Pipeline (scan-codebase moves to front)
+
+Pipeline reorder per user directive: **"scan code base harusnya di atur di depan ... starterkit itu wajib ada. jika tidak ada baru greenfield"**.
+
+Previous flow (Iter 16): `generate-intent → scan-codebase → bind-codebase → ...`. Vault drafted without knowing target stack → generic architecture proposals → CONFLICTs in binding phase when starterkit has stronger opinions.
+
+New flow (Iter 27): `scan-codebase FIRST → generate-intent --scan=<map> → bind-codebase → ...`. Vault drafted with starterkit conventions in scope → dual-citation format (Intent + Starterkit binding) → fewer CONFLICTs because vault DESIGNED for the scaffold from the start.
+
+### Three modes
+
+| Mode | Trigger | Pipeline |
+|---|---|---|
+| **A — Starterkit-first** (DEFAULT) | Framework manifest detected + pack match | scan FIRST (load pack) → generate-intent --scan (pack-aware, dual-citation) → bind (fewer conflicts) → units → bolts |
+| **B — Framework-detected** (universal fallback) | Manifest detected, no pack match | scan FIRST → generate-intent --scan (universal defaults from `_universal.md`) → bind → units → bolts |
+| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only + user confirms via halt) | generate-intent --greenfield (stack-agnostic) → user scaffolds later → re-run scan to bind |
+
+When no manifest AND no `--greenfield` flag → halt `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel).
+
+### Legacy rebuild scenario (composes with Iter 22 KB)
+
+```
+extract-intelligence <legacy>     → KB
+  ↓
+scan-codebase (TARGET scaffold)   → codebase-map.md (framework pack identified)
+  ↓
+generate-intent --kb=<kb> --scan=<map>  → vault (KB intent × starterkit conventions)
+  ↓
+bind-codebase → generate-units → execute-bolts
+```
+
+KB provides "what" (business intent); scan provides "how" (target conventions). Vault synthesizes both via dual-citation.
+
+### Updated skills
+
+**orchestrate-flow** (v2.3.2 → v2.4.0):
+- New Step 2.5: Starterkit detection + mode classification (3 modes table)
+- Routing-rules.md decision matrix reorganized: starterkit-first ordering FIRST, pre-existing flows preserved as back-compat
+- New halt `no_starterkit_detected` with structured options
+- CWD inspection snapshot extended with `starterkit:` block (framework name, pack_match, manifest_path)
+
+**scan-codebase** (v2.4.2 → v2.5.0):
+- "scan-first usage" section documents new ordering — scaffold-only repos OK; framework detection comes from package manifests, not file content
+- Output consumed by `generate-intent --scan=<codebase-map>` downstream
+
+**generate-intent** (v1.10.0 → v1.11.0):
+- New `--scan=<codebase-map-path>` flag — read codebase-map.md §7 Framework + §1-6 conventions BEFORE drafting vault
+- New `--greenfield` flag — EXPLICIT opt-in for stack-agnostic generation
+- Auto-detection: codebase-map.md at canonical location → `--scan` implicit (confirm before proceeding)
+- Vault sections (`02-architecture.md`, `03-data-model.md`, `06-constraints.md`) use dual-citation format when `--scan` set
+- `--scan` + `--kb` together (legacy-rebuild) → vault synthesizes legacy domain (KB) + target scaffold (scan)
+
+**generate-intent/references/vault-contract.md** — new §Starterkit-binding section:
+- Dual-citation format spec (Intent + Starterkit binding sub-fields)
+- Sections affected: 02-architecture, 03-data-model, 06-constraints
+- Example for Laravel base-26 starterkit
+- Anti-halu rails (Intent derived from PRD/brief/KB; Starterkit binding cites pack file:section or codebase-map.md line)
+- Backward compat: pre-v1.11 vaults consumed unchanged; mixed vaults permitted
+
+**commands/auto.md**:
+- New `--greenfield` flag in argument-hint
+- New "Starterkit detection (v3.19+ Iter 27)" section documenting 3 modes
+- Directory probe updated to declare starterkit-first as DEFAULT mode
+
+**using-mega-sdd anchor** (v1.2.1 → v1.3.0):
+- New "Starterkit-first mode" section
+- Auto-trigger output now surfaces starterkit detection upfront in chain proposal
+- Halt path documented when no starterkit + no `--greenfield`
+
+### Memory hint
+
+User's last starterkit preference saved to `~/.mega-sdd/memory/preferences.md` `last_used_starterkit:` field — next legacy-rebuild prompts "Last 3 projects used `laravel-base-26`. Use same starterkit?" (Y/N/other).
+
+### Backward compatibility
+
+- Pre-v1.11 vaults (no dual-citation) → consumed unchanged by bind-codebase + generate-units
+- Mixed vaults (some sections dual-citation, others not) → permitted
+- Existing pipelines without `--scan` → continue to work; auto-detection of codebase-map.md triggers implicit scan-first ordering
+- Greenfield STILL FULLY SUPPORTED — explicit-only (`--greenfield` flag) rather than implicit default
+
+### Why this matters
+
+Iter 22 declared **what** to preserve (mutability tiers). Iter 23 declared **how** the target framework wants it (convention packs). Iter 24 captured **user's specific starterkit** (laravel-base-26). Iter 27 ties it all together — pipeline now ENFORCES the starterkit-first design philosophy.
+
+Output quality goes from "got the code generated" → "got code that LOOKS LIKE it belongs in this starterkit". CONFLICT count in binding phase drops because vault is born with starterkit conventions instead of inheriting them late.
+
+### Skill version bumps
+
+| Skill | Version |
+|---|---|
+| generate-intent | 1.10.0 → 1.11.0 |
+| orchestrate-flow | 2.3.2 → 2.4.0 |
+| scan-codebase | 2.4.2 → 2.5.0 |
+| using-mega-sdd | 1.2.1 → 1.3.0 |
+
+### Plugin
+
+3.18.1 → 3.19.0
+
+---
+
 ## [3.18.1] — 2026-05-23
 
 ### Iter 26.1 — Hygiene follow-ups (from Task 3 + Task 6 code reviews)

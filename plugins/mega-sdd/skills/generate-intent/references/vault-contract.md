@@ -338,6 +338,62 @@ Constitution version pinned to vault:
 - Existing 7-file vault structure unchanged; constitution is 8th additive file
 - Tools that hardcoded 7-file count → graceful fallback (treat missing constitution as empty list)
 
+## §Starterkit-binding — Dual-citation format (v1.11+, Iter 27)
+
+When `generate-intent` runs with `--scan=<codebase-map-path>` (orchestrate-flow Mode A/B starterkit-first), vault sections that touch implementation conventions use a DUAL-CITATION format: **Intent** (what the design intends) + **Starterkit binding** (how this scaffold realizes that intent). Greenfield mode skips Starterkit binding entirely.
+
+### Sections affected
+
+| Vault file | When dual-citation applies | What "Intent" describes | What "Starterkit binding" describes |
+|---|---|---|---|
+| `02-architecture.md` | Always when `--scan` set | Conceptual architecture (auth strategy, layering, integration points) | Concrete scaffold-mapped choices (base classes, framework helpers, package selection) |
+| `03-data-model.md` | When framework pack defines DB conventions | Conceptual ERD (entities, relationships, business rules) | Schema realization (PK type, FK convention, timestamps, soft-delete strategy) |
+| `06-constraints.md` | Always when `--scan` set | Tech-agnostic constraints (style, naming, idioms inferred from PRD/brief) | Pack-specific Hard Rules + forbidden patterns inherited from framework conventions |
+
+### Format
+
+Within each affected section, every architectural decision gets TWO sub-fields:
+
+```markdown
+### <Concern> (e.g., Authentication strategy)
+
+**Intent**: <tech-agnostic statement of what the design needs>
+**Starterkit binding** (`<pack-name>`):
+  - <concrete realization #1>
+  - <concrete realization #2>
+  - …
+  - Citations: `framework-conventions/<pack>.md §<section>`, `codebase-map.md §<n>`
+```
+
+### Example
+
+```markdown
+### Authentication strategy
+
+**Intent**: Token-based API auth. Refresh-token rotation. Session-based UI auth for admin pages.
+
+**Starterkit binding** (`laravel-base-26`):
+  - API auth via Laravel Sanctum (`composer.json` lists `laravel/sanctum: ^4.0`)
+  - Routes inside `auth:sanctum + whitelist.host + verified` group (per starterkit convention; see `routes/web.php` pattern)
+  - Tokens stored in `personal_access_tokens` table (Sanctum default schema)
+  - Session UI auth via Jetstream (already wired via `pixinvent/vuexy-laravel-bootstrap-jetstream`)
+  - Citations: `framework-conventions/laravel-base-26.md §Idioms`, `codebase-map.md §7 Framework`
+```
+
+### Anti-halu rails
+
+- **Intent** statements MUST be derivable from PRD / brief / KB. Not invented from framework defaults.
+- **Starterkit binding** statements MUST cite pack file:section OR codebase-map.md line. No silent invention.
+- If a pack doesn't speak to a concern → Starterkit binding sub-field shows `_None (universal defaults apply — see `_universal.md` §<section>)_` or is omitted entirely (per "omit when source content absent" rule).
+- When `--greenfield` set → ONLY Intent fields generated; Starterkit binding fields absent (vault stays stack-agnostic).
+- When `--scan` set BUT no pack matches (universal fallback) → Starterkit binding fields cite `_universal.md` defaults only.
+
+### Backward compatibility
+
+- Pre-v1.11 vaults (no Starterkit binding fields) → consumed unchanged by bind-codebase + generate-units; conventions resolved from binding step instead.
+- Mixed vaults (some sections have Starterkit binding, others don't) → permitted; downstream skills handle absence gracefully.
+- `bind-codebase` reading a v1.11+ vault: Starterkit binding fields supplement Hard Rule emission (clauses cited inline as `source: vault §02-architecture > Starterkit binding > Authentication strategy`).
+
 ## §boilerplate — Skill instruction language
 
 Reusable shim. Each skill's SKILL.md should reference this section:

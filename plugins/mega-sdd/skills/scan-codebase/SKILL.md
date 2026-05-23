@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.4.2
+version: 2.5.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -14,8 +14,16 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 - User runs `/mega-sdd:scan-codebase`
 - `orchestrate-flow` detects brownfield project + missing `codebase-map.md`
+- **`orchestrate-flow` Mode A/B (v2.4+ Iter 27) — starterkit detected: scan runs FIRST in the pipeline (before generate-intent) so vault generation is pack-aware from the start**
 - User asks "siapkan context buat AI dev di repo ini" or paraphrases
 - After significant code changes to refresh stale map
+
+## v2.5+ (Iter 27) — scan-first usage
+
+When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` decision matrix Mode A/B):
+- Scaffold-only repos are OK — codebase-map.md will have minimal symbols but POPULATED §7 Framework section (the critical output for downstream generate-intent)
+- Empty `app/` directory does NOT halt the scan; framework detection comes from package manifests, not file content
+- Output is consumed by `generate-intent --scan=<codebase-map>` to inform vault sections with starterkit conventions (dual-citation format per `generate-intent/references/vault-contract.md`)
 
 ## Inputs
 
