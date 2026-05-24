@@ -97,6 +97,41 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).
    - **`--deep` mode (v1.3+)**: cap LIFTED — chain extends to pipeline-end per `references/routing-rules.md` §Deep-chain decision matrix. Auto-continue between phases via handoff YAML protocol (see `references/handoff-contract.md`).
 
+3.5. **Predictive preflight (v3.0.0+, Iter 33, generalizes Step 4 first-run pre-flight).**
+
+Per `references/predictive-checks.md` catalog. Runs BEFORE invoking any skill in proposed chain.
+
+a. For each skill in proposed chain (in order):
+   - Read `references/predictive-checks.md` §<skill> preflight checks section
+   - For each check entry: run `command`; verify against `expected`
+   - On match → pass; continue
+   - On mismatch:
+     - If `fatal: no` → accumulate warning; will surface to user before chain start
+     - If `fatal: yes` → emit halt `predictive_check_failed` with check_id + skill in details; STOP chain (do NOT invoke any skill)
+
+b. After all skills checked:
+   - If ≥1 warning accumulated → display warnings to user via single message before chain start (e.g., "⚠️ tree-sitter not installed; chain will use regex engine")
+   - If chain halted with `predictive_check_failed` → output halt YAML envelope + exit (no Step 4 / Step 5 / Step 6)
+
+c. Wall-clock budget: ≤2 sec total (lightweight bash checks only); if budget exceeded → log warning + proceed (graceful degradation)
+
+d. **Step 4 special case (preserved for back-compat):** existing Step 4 "First-run pre-flight (only if chain includes execute-bolts)" continues to run AFTER Step 3.5 — it covers execute-bolts-specific behaviors that the generic catalog doesn't capture. Future iters MAY fold Step 4 entirely into predictive-checks.md catalog; not in scope for Iter 33.
+
+```yaml
+# Example predictive_check_failed envelope:
+type: predictive_check_failed
+source_skill: orchestrate-flow
+details:
+  failing_check_id: tree_sitter_present
+  failing_skill: scan-codebase
+  command_run: "command -v tree-sitter || command -v tree-sitter-cli"
+  expected: "exit 0"
+  actual: "exit 1 (binary not found)"
+next_action:
+  type: user_install_dep
+  hint: "Install tree-sitter (brew install tree-sitter OR cargo install tree-sitter-cli OR npm install -g tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex flag to bypass tree-sitter."
+```
+
 4. **First-run pre-flight (only if chain includes execute-bolts):**
    - Check superpowers OR `_vendored/` availability
    - If neither → propose install command, halt chain proposal
@@ -157,6 +192,13 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
      - Per-module status from auto list-modules (X/Y modules completed)
      - AGENTS.md emission confirmation (file path + section count)
      - Memory review prompt if pending suggestions exist
+   - **(v3.0.0+, Iter 33) Predictive preflight metrics:**
+
+   ```yaml
+   metrics:
+     predictive_warnings_count: <int>     # NEW v3.0.0+: count of non-fatal predictive warnings shown
+     predictive_halts_count: <int>        # NEW v3.0.0+: count of fatal predictive halts (always ≤1 since fatal halts STOP)
+   ```
 
 7.5. **End-of-chain routing-outcomes memory write (v3.0.0+, Iter 33).**
 
@@ -313,6 +355,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `self_assessment_missing` (v2.6+, Iter 30) — execute-bolts: bolt-report lacks self-assessment.
 - `dep_missing` (v2.0+, Iter 6) — scan-codebase: required binary missing.
 - `oq_recommend_citation_invalid` (v1.3+, Iter 2) — generate-intent: OQ recommendation cites missing KB section.
+- `predictive_check_failed` (v3.0.0+, Iter 33) — orchestrate-flow: fatal preflight check failed; chain blocked.
 
 ### Halt types that are SOFT (warn-only, chain continues)
 
