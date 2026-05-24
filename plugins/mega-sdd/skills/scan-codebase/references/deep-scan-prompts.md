@@ -24,6 +24,28 @@ Each prompt template uses placeholders the dispatcher substitutes:
 - `<FRAMEWORK>` → framework name from `codebase-map.md §7 Framework.name` (e.g., `laravel`)
 - `<PROJECT_ROOT>` → absolute path to project root being scanned
 - `<CATALOG_PATH>` → absolute path to `lib-patterns/<FRAMEWORK>/<domain>-libs.md`
+- `<MANIFEST_FACTS>` (v2.7.0+, Iter 42 — D1-002 closure) → pre-parsed manifest data injected by main thread per `scan-codebase/SKILL.md` Step 10.5.1.5. **Subagents MUST NOT re-read composer.json / package.json / lock files** — manifest_facts struct is authoritative. This saves ~2-6KB per subagent (~9-24KB per scan total).
+
+## `<MANIFEST_FACTS>` injection format
+
+Main thread parses manifest files ONCE before dispatch and injects this YAML block into each subagent prompt:
+
+```yaml
+manifest_facts:
+  composer:                    # present only if <PROJECT_ROOT>/composer.json exists
+    dependencies: { <name>: <version>, ... }       # require: block
+    dev_dependencies: { <name>: <version>, ... }   # require-dev: block
+    scripts: { <name>: <command>, ... }
+    autoload_psr4: { <namespace>: <path>, ... }
+  package:                     # present only if <PROJECT_ROOT>/package.json exists
+    dependencies: { <name>: <version>, ... }
+    dev_dependencies: { <name>: <version>, ... }
+    peer_dependencies: { <name>: <version>, ... }
+    scripts: { <name>: <command>, ... }
+    type: module | commonjs
+```
+
+Subagent prompts use `<MANIFEST_FACTS>` directly for manifest fingerprint lookup. The `INPUTS TO READ` section of each prompt is automatically pruned by the dispatcher to omit `composer.json` and `package.json` entries when `<MANIFEST_FACTS>` is present (legacy entries remain in the templates below for documentation; runtime dispatcher strips them).
 
 ---
 

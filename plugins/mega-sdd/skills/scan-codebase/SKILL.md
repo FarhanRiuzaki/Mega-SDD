@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.6.3
+version: 2.7.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -260,9 +260,11 @@ ELSE:
   → skip Step 10.5 entirely; proceed to Step 11
 ```
 
-### Step 10.5.1 — Cache check
+### Step 10.5.1 — Cache check (v2.7.0+, Iter 42 — per-slice signature)
 
 Mirrors Iter 30 shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shared-snapshot-schema.md`).
+
+**v2.7.0+ change:** cache invalidation moves from whole-file to per-slice. When only some inputs change (e.g., frontend dep added in package.json), unchanged slices (auth, rbac) reuse cached output; only invalidated slices (ui_ux, libs) re-dispatch. Closes Iter 38 audit D2-003.
 
 ```
 1. Compute composer_lock_sha256 = sha256(<project>/composer.lock) if file exists, else empty string
@@ -270,21 +272,66 @@ Mirrors Iter 30 shared-snapshot reuse pattern (see `plugins/mega-sdd/references/
    else sha256(<project>/yarn.lock) if exists,
    else sha256(<project>/pnpm-lock.yaml) if exists,
    else empty string
-3. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
-     a. Read its cache_key block
-     b. IF prior.composer_lock_sha256 == current AND prior.package_lock_sha256 == current
-        AND prior.framework_pack == current §7 Framework.pack_path basename:
-        → CACHE HIT: skip Steps 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml
-        → set handoff_reused_flag = true; proceed to Step 11
-     c. ELSE → CACHE MISS / INVALID: proceed to Step 10.5.2
-4. ELSE (file not present) → CACHE MISS: proceed to Step 10.5.2
+3. Compute per-slice signatures:
+   - auth_sig_input = composer_lock_sha256 + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md)
+   - rbac_sig_input = composer_lock_sha256 + framework_pack §rbac section content + sha256(lib-patterns/<fw>/rbac-libs.md)
+   - ui_ux_sig_input = package_lock_sha256 + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md)
+   - libs_sig_input = composer_lock_sha256 + package_lock_sha256 + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md)
+   - auth_signature = sha256(auth_sig_input); similarly for rbac/ui_ux/libs
+4. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
+     a. Read its `cache_signatures:` block (v2.0 schema) OR `cache_key:` block (v1.0 schema, backward-compat).
+     b. IF v1.0 schema detected → treat as "all slices stale" (full re-dispatch); migrate to v2.0 on next write.
+     c. IF v2.0 schema → per-slice diff:
+        - stale_slices = []
+        - For each slice in [auth, rbac, ui_ux, libs]:
+            IF prior.cache_signatures.per_slice[<slice>].signature_sha256 != current_<slice>_signature:
+              stale_slices.append(<slice>)
+        - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml; set handoff_reused_flag = true; proceed to Step 11.
+        - IF stale_slices is non-empty → PARTIAL CACHE HIT: proceed to Step 10.5.1.5; dispatch only stale_slices subagents in Step 10.5.2; consolidator merges fresh slices with cached slices in Step 10.5.3.
+5. ELSE (file not present) → FULL CACHE MISS: stale_slices = [auth, rbac, ui_ux, libs]; proceed to Step 10.5.1.5.
 ```
 
-Force re-scan: `--no-cache` (existing flag; extends to deep-scan cache too).
+Force full re-scan: `--no-cache` (existing flag; sets `stale_slices = [all]` regardless of signatures).
 
-### Step 10.5.2 — Dispatch 4 subagents in PARALLEL
+### Step 10.5.1.5 — Manifest pre-parse (v2.7.0+, Iter 42 — D1-002 closure)
 
-Dispatch all 4 subagents IN A SINGLE MESSAGE with 4 Agent tool calls (parallel-safe per `superpowers:subagent-driven-development` convention — reuses extract-intelligence wave-dispatch pattern).
+**Runs only when `stale_slices` non-empty (not on full cache hit).** Closes Iter 38 audit D1-002 — eliminates redundant manifest re-reads by 4 subagents.
+
+Main thread reads + parses manifest files ONCE, builds `manifest_facts` struct, passes to each subagent prompt as `<MANIFEST_FACTS>` placeholder:
+
+```
+1. IF <project>/composer.json exists:
+     - Parse JSON
+     - Extract: require (dependencies), require-dev (dev_dependencies), scripts, autoload (PSR-4 map)
+2. IF <project>/package.json exists:
+     - Parse JSON
+     - Extract: dependencies, devDependencies, peerDependencies, scripts, type (module|commonjs)
+3. Build manifest_facts YAML struct:
+
+     manifest_facts:
+       composer:
+         dependencies: {<name>: <version>, ...}        # require: block
+         dev_dependencies: {<name>: <version>, ...}    # require-dev: block
+         scripts: {<name>: <command>, ...}
+         autoload_psr4: {<namespace>: <path>, ...}
+       package:
+         dependencies: {<name>: <version>, ...}
+         dev_dependencies: {<name>: <version>, ...}
+         peer_dependencies: {<name>: <version>, ...}
+         scripts: {<name>: <command>, ...}
+         type: module | commonjs
+
+4. Embed manifest_facts struct into the <MANIFEST_FACTS> placeholder of each subagent prompt (see `references/deep-scan-prompts.md`).
+5. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read composer.json / package.json / lock files. Spend your context budget on framework-specific source files (config/auth.php, app/Models/, etc.) — see INPUTS TO READ for the per-domain list."
+```
+
+**Net savings:** ~9-24KB per scan (4 subagents × ~2-6KB saved per subagent).
+
+### Step 10.5.2 — Dispatch subagents in PARALLEL (selective dispatch v2.7.0+)
+
+**v2.7.0+ change (Iter 42):** dispatch only the subagents whose slice is in `stale_slices` (from Step 10.5.1). If all 4 slices stale → dispatch 4 in parallel (current behavior). If only 1-3 slices stale → dispatch only those (selective re-dispatch).
+
+Dispatch stale-slice subagents IN A SINGLE MESSAGE with N Agent tool calls (parallel-safe per `superpowers:subagent-driven-development` convention — reuses extract-intelligence wave-dispatch pattern). N = len(stale_slices).
 
 Use prompt templates from `references/deep-scan-prompts.md`, substituting:
 - `<FRAMEWORK>` → from §7 Framework.name (e.g., `laravel`)
@@ -314,36 +361,50 @@ Subagents:
 - DO NOT write starterkit-context.yaml (preserve any existing prior version untouched)
 - Chain halts; user re-runs scan-codebase later
 
-### Step 10.5.3 — Consolidate + write starterkit-context.yaml
+### Step 10.5.3 — Consolidate + write starterkit-context.yaml (v2.7.0+ per-slice cache)
 
 ```
-1. Collect 4 subagent responses (or fewer if any failed)
-2. For each successful response: validate YAML against starterkit-context-schema.md §<domain> slice
+1. Collect responses from dispatched subagents (= len(stale_slices))
+2. Read prior starterkit-context.yaml (if exists) to harvest cached slices for non-stale domains.
+3. For each successful subagent response: validate YAML against starterkit-context-schema.md §<domain> slice
    - If validation fails: drop slice; add domain to partial_slices: []
    - If validation passes: include slice in merged output
-3. Build merged YAML structure:
+4. Merge fresh slices (from dispatched subagents) with cached slices (from prior YAML).
+   - Conflict resolution: fresh always wins over cached for same domain (cached is the fallback for non-stale domains).
+5. Build merged YAML structure (cache_signatures v2.0 schema; Iter 42):
+
      starterkit_context:
-       schema_version: 1.0
-       generated_by: scan-codebase v2.6.0
-       generated_at: <ISO8601>
+       schema_version: 2.0                          # v2.7.0+ bump (was 1.0 Iter 32)
+       generated_by: scan-codebase v2.7.0
+       generated_at: <ISO8601 of MOST RECENT slice write>
        framework: <from §7 Framework.name>
        framework_version: <from §7 Framework.version>
        framework_pack: <from §7 Framework.pack_path basename>
-       partial: true   # ONLY include this field if ≥1 slice failed
-       partial_slices: [<list>]   # ONLY include if partial: true
-       auth: {...}   # include if auth-extractor succeeded
-       rbac: {...}   # include if rbac-extractor succeeded
-       ui_ux: {...}  # include if ui-ux-extractor succeeded
-       libs: [...]   # include if libs-extractor succeeded
-       cache_key:
+       partial: true                                # if ≥1 slice failed in this run
+       partial_slices: [<list>]                     # only when partial: true
+       reused_slices: [<list of cached domains>]    # v2.7.0+ — provenance of cache reuse
+       auth: {...}                                  # fresh OR cached
+       rbac: {...}                                  # fresh OR cached
+       ui_ux: {...}                                 # fresh OR cached
+       libs: [...]                                  # fresh OR cached
+       cache_signatures:                            # v2.0 schema (replaces v1.0 cache_key:)
          composer_lock_sha256: <from Step 10.5.1>
          package_lock_sha256: <from Step 10.5.1>
-4. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
+         framework_pack: <pack basename>
+         per_slice:
+           auth: { signature_sha256: <hex>, generated_at: <ISO8601> }
+           rbac: { signature_sha256: <hex>, generated_at: <ISO8601> }
+           ui_ux: { signature_sha256: <hex>, generated_at: <ISO8601> }
+           libs: { signature_sha256: <hex>, generated_at: <ISO8601> }
+       # NOTE: cached slices keep their original generated_at; fresh slices get current ISO8601.
+6. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
    (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, then mv)
-5. Validate the written file is parseable:
+7. Validate the written file is parseable:
    - If parse fails: emit halt deep_scan_cache_corrupt (soft); delete file; retry write once
    - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
 ```
+
+**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0, Iter 32), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 4 subagents; Step 10.5.3 writes new v2.0 `cache_signatures:` schema. One-time migration cost per project; no user action required.
 
 ### Step 10.5.4 — Concurrency guard
 

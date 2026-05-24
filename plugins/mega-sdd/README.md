@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.27.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.28.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,31 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.28.0 (Iter 42, minor) — Deep-Scan Manifest Pre-Parse + Per-Slice Cache
+
+Closes Iter 38 audit Queue #3 (D1-002 + D2-003) — eliminates redundant manifest reads + replaces whole-file cache invalidation with per-slice signatures. Every project pipeline benefits.
+
+**Change 1 (D1-002): Manifest pre-parse** — `scan-codebase` Step 10.5.1.5 (NEW). Main thread parses `composer.json` + `package.json` ONCE, injects `manifest_facts` struct into all 4 deep-scan subagent prompts via `<MANIFEST_FACTS>` placeholder. Subagents instructed: "do NOT re-read manifest files; manifest_facts is authoritative."
+
+- **Net savings:** ~9-24KB per scan (4 subagents × ~2-6KB saved per subagent context)
+- **External research:** subagent-token pattern (Sathish Raju Medium) — "pass analytical outputs, not raw data"
+
+**Change 2 (D2-003): Per-slice cache (schema v2.0)** — `scan-codebase` Step 10.5.1 + 10.5.3 reworked. Each of 4 slices (auth, rbac, ui_ux, libs) tracks its own `signature_sha256` (composed from slice-relevant inputs: lock file + framework_pack section + lib-pattern file). On scan:
+  - Full cache hit (no slices stale) → reuse entire prior YAML
+  - Partial cache hit (1-3 slices stale) → dispatch only stale subagents; consolidator merges fresh + cached
+  - Full cache miss (all slices stale or no prior YAML) → dispatch all 4 (current behavior)
+
+- **Net savings (incremental edits):** 1-3 subagent dispatches saved per minor edit (~25-75% wasted compute eliminated)
+- **External research:** real-time codebase indexing (cocoindex-io) — "per-file invalidation via hash"
+- **Backward compat:** v1.0 `cache_key:` schema treated as fully-stale (auto-migrates to v2.0 `cache_signatures:` on next write)
+
+**Skill bumps:**
+- `scan-codebase` 2.6.3 → 2.7.0 (MINOR — new Step 10.5.1.5 + cache schema bump)
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-42-deep-scan-manifest-preparse-and-per-slice-cache-design.md`
+
+**Plugin v3.27.1 → v3.28.0** (MINOR — new optimization step + cache schema bump).
 
 ### v3.27.1 (Iter 41, patch) — Halt Taxonomy Sync Sweep
 
