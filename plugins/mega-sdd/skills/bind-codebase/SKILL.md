@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.9.2
+version: 1.9.3
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -34,6 +34,11 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
    - Read vault files (00-index, 01-overview, ..., vault.json)
    - Read codebase-map.md
    - If codebase-map missing: halt with message — instruct user to run `scan-codebase` first
+
+   **v1.9.3+ Iter 29 scope propagation (P1-2 audit fix)**: When `vault.json` contains a `scope` field (v1.12+ multi-scope vault per Iter 28), persist `scope_metadata` to `binding.md` header and emit `scope:` block in handoff YAML per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract. Scope-aware binding behavior:
+   - If `scope_metadata.prd_sections_used` lists specific sections → constrain claim validation to those sections (skip claims from other scopes' sections)
+   - If vault has NO scope (legacy single-vault), proceed as before (back-compat)
+   - Binding.md header gains: `**Scope**: <scope_metadata.name> (<scope_metadata.id>)` line when applicable
 
 2. **Per claim type (per `references/binding-contract.md`), produce verdict.**
    For each vault claim referencing code:
