@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 1.2.2
+version: 1.4.0
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -589,3 +589,76 @@ Status `halted` on `drift_framework_mismatch` (vault framework signal doesn't ma
 - OQ tagging conventions and `vault.json` field rules: see `../generate-intent/references/vault-contract.md` (§OQ-conventions, §schema). Note: drift-detect reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
 - For vault evolution from a new PRD, see `vault-diff` SKILL.md — different concern (source revisions vs codebase reality).
 - For OQ resolution mechanics (when drift findings produce new OQs that need stakeholder input), see `resolve-oq` SKILL.md.
+
+## Auto-trigger handoff (v1.4.0+, Iter 30 §6.4)
+
+When invoked by orchestrate-flow as chain phase (auto-gate after execute-bolts batch — default-on per `orchestrate-flow/SKILL.md` §Hybrid drift gate):
+
+a. Detect chain context: `--auto-gate` flag + presence of `<vault>/bolts/` directory with recent postflight snapshots
+b. Switch to incremental mode (see §Snapshot reuse below)
+c. Apply severity → chain action per `orchestrate-flow/SKILL.md` mapping:
+   - CRITICAL drift on LOCKED entity → emit halt blocker; orchestrate-flow halts chain
+   - HIGH drift → emit pause signal; orchestrate-flow surfaces to user
+   - MEDIUM/LOW drift → log only; chain continues
+
+When invoked standalone (`/mega-sdd:detect-drift`, no chain context): behave as v1.2.x (fresh full scan; ignore bolt snapshots).
+
+## Snapshot reuse (v1.4.0+, Iter 30 §6.6)
+
+Per `plugins/mega-sdd/references/shared-snapshot-schema.md`.
+
+When invoked with `--reuse-bolt-snapshots` flag (auto-set by orchestrate-flow auto-gate):
+
+1. For each unit in vault.json: read `<vault>/bolts/U-XXX/postflight.json` if present (must be fresher than vault.json modification time)
+2. Aggregate file-level sha256 + ast_signatures across all valid postflight snapshots
+3. Compare aggregated state vs vault expectations (per existing detect-drift Steps 1-4)
+4. For files NOT in any bolt postflight: fall back to fresh scan (typically small remainder)
+5. Performance: skip Read + ast-extract for files already captured by bolts → ~5s on 20-bolt batch vs ~28s full re-scan
+
+Stale snapshot detection: if `postflight.json.vault_sha256` mismatches current vault.json sha256 → fresh scan for that unit's files (snapshot invalid).
+
+## Per-bolt incremental scan mode (v1.4.0+, Iter 30 §6.4)
+
+Used by execute-bolts per-bolt drift check (§6.4 lightweight mode). Single-bolt scope:
+
+a. Invoked from execute-bolts with `--per-bolt --unit=U-XXX` flags
+b. Compare only this bolt's target_files vs vault expectations
+c. Return synchronous result (no DRIFT-REPORT.md write):
+   ```
+   per_bolt_drift_result:
+     unit_id: U-XXX
+     drift_detected: true | false
+     critical_findings: [<list>]
+     non_critical_findings: [<list>]
+   ```
+d. Execute-bolts compact streaming format renders this inline
+
+## Suggested next actions block in DRIFT-REPORT.md (v1.4.0+, Iter 30 §6.5)
+
+DRIFT-REPORT.md gains `## Suggested next actions` section per finding. Each finding includes:
+
+- Finding ID + severity + entity/field affected
+- Source claim mutability tier (kb_locked / kb_intent / kb_artifact / vault_locked / inferred)
+- Suggested action (concrete command with pre-filled flags)
+- Auto-handoff command (for chain auto-continuation when safe)
+
+Example:
+
+```markdown
+## Suggested next actions
+
+### Finding D-001 (CRITICAL — drift on LOCKED entity)
+- Entity: `orders` table, field `amount`
+- Drift: vault says `decimal(15,2)`, code is `int` after U-018
+- Source claim mutability: kb_locked (BI Reg 23/2/2021 §4)
+- **Suggested action**: `/mega-sdd:resolve-oq --drift D-001` — choose:
+  - (a) Revert code to vault spec (preserve LOCKED contract)
+  - (b) Document deviation in 05-decisions.md with ADR (audit-significant)
+- **Auto-handoff command**: `/mega-sdd:resolve-oq --drift D-001 --auto`
+
+### Finding D-002 (LOW — style drift)
+- File: `app/Http/Requests/RefundRequest.php` line 12
+- Drift: unused import `use App\Models\User;`
+- **Suggested action**: No action needed; style fixers (Pint) catch in next cycle.
+- **Auto-handoff**: chain continues automatically (no halt for LOW)
+```
