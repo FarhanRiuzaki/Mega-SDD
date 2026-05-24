@@ -5,6 +5,55 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.27.0] - 2026-05-25
+
+### Iter 40 — Silent-Failure Path Closure (3 new halts)
+
+**Robustness iter** (~2hr; MINOR bump — new orchestrator halts = chain behavior change). Closes 3 priority-1 silent-failure paths from Iter 38 e2e optimization audit (D3 robustness dimension).
+
+**Problem (from audit):**
+- D3-001: producer skill crashes before handoff emission → orchestrator silently proceeded with empty state OR failed downstream with cryptic file-not-found
+- D3-002: handoff YAML lists artifact paths that don't exist on disk → next-stage consumer failed at the wrong boundary
+- D3-003: execute-bolts `--resume` reads corrupt partial-state.json → silent overwrite with fresh state, hidden recovery loss
+
+**Solution: 3 new ALWAYS-STOP halts**
+
+- `handoff_missing` (orchestrate-flow v3.2.0+) — pre-validation step `b.0` verifies handoff YAML file exists + is non-empty before parse. Envelope includes `expected_handoff_path` + `last_known_step` (best-effort from checkpoint trail).
+- `artifact_missing` (orchestrate-flow v3.2.0+) — post-validation step `b.vii` existence-checks every path in `artifacts: [paths]` array. Envelope includes `missing_paths: array` + `present_paths: array` for diagnostic clarity.
+- `partial_state_corrupt` (execute-bolts v2.7.3+) — resume-time JSON parse attempt before consumption. Envelope includes `corrupt_backup_path` suggestion (`.corrupt-<ISO8601>`) for forensics.
+
+**4-surface taxonomy sync** (per Iter 33+Iter 31 propagation directive):
+
+1. `vault-contract.md §halt-protocol` enum + 3 new descriptions
+2. `orchestrate-flow/SKILL.md` ALWAYS-STOP taxonomy + 2 new Procedure steps (`b.0` + `b.vii`)
+3. `orchestrate-flow/references/handoff-contract.md` documents orchestrator-side detection for `artifacts:` field + pre-validation handoff presence check
+4. `execute-bolts/SKILL.md §Partial-state contract` resume-time integrity check
+
+**Plugin file changes:**
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.26.3 → 3.27.0
+- `plugins/mega-sdd/README.md` — + v3.27.0 What's new entry
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — v3.1.2 → v3.2.0 (2 new procedure steps + 3 new ALWAYS-STOP taxonomy rows)
+- `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` — orchestrator-side detection doc
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — v2.7.2 → v2.7.3 (+ partial-state integrity check)
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — 3 new halts
+- `docs/superpowers/specs/2026-05-25-iter-40-silent-failure-path-closure-design.md` — new spec doc
+- `README.md` — version bump
+
+**Why MINOR (not PATCH):** chains that previously silently-passed corrupt/missing state now halt explicitly. Backward-compat note: any user workflow that depended on "silent recovery" behavior will see new halts surface — by design.
+
+**Standing directives applied:**
+- simplifikasi: 3 halts → 5 surgical edits across existing surfaces (no new SKILL.md files, no new references)
+- flawless: producer + consumer ship in-iter (orchestrate-flow emits + same orchestrate-flow consumes via halt-protocol). No deferred propagation. All 4 taxonomy surfaces updated.
+- reuse-first: extends existing halt envelope (vault-contract.md), existing ALWAYS-STOP taxonomy, existing per-step JSONL checkpoint protocol (no new persistence)
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-40-silent-failure-path-closure-design.md`
+
+**Next:** Iter 41 — halt taxonomy sync sweep (priority 2 from audit queue) — verify all 38+ halts are present across all 4 surfaces.
+
+**Plugin:** v3.26.3 → v3.27.0
+
 ## [3.26.3] - 2026-05-25
 
 ### Iter 39 — Quick Audit Closure Pass (5 immediate wins)

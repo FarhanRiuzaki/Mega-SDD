@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.7.2
+version: 2.7.3
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -258,6 +258,20 @@ f. **Partial-state contract**:
      - last AI action / current step
    - Resume reads partial-state, doesn't start from zero
    - After 3 partial-state attempts → halt `bolt_repeated_partial_failure`
+   - **Resume-time integrity check (v2.7.3+, Iter 40 — silent-failure path closure):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Previously: orchestrator silently overwrote corrupt state with fresh state, hiding the original recovery context. Closes Iter 38 audit finding D3-003. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
+
+   ```yaml
+   # Example partial_state_corrupt envelope:
+   type: partial_state_corrupt
+   source_skill: execute-bolts
+   details:
+     partial_state_path: "<vault>/bolts/U-007/partial-state.json"
+     parse_error: "json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 18 (char 87)"
+     corrupt_backup_path: "<vault>/bolts/U-007/partial-state.json.corrupt-2026-05-25T14:32:00Z"
+   next_action:
+     type: rename_and_retry
+     hint: "Rename partial-state.json to suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
+   ```
 
 g. **Dispatch via superpowers.executing-plans** with the enriched prompt as plan body.
 

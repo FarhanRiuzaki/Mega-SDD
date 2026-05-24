@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.26.3)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.27.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,32 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.27.0 (Iter 40, minor) — Silent-Failure Path Closure (3 new halts)
+
+Closes 3 silent-failure paths surfaced by Iter 38 audit (priority 1, robustness D3). All 3 fire as ALWAYS-STOP halts at the exact failing boundary instead of leaking into cryptic downstream errors.
+
+**New halts:**
+
+- `handoff_missing` (orchestrate-flow v3.2.0+) — sub-skill exited without emitting handoff YAML at the expected path. Previously orchestrator either proceeded with empty state OR failed downstream with file-not-found; now halts at the boundary with `last_known_step` hint.
+- `artifact_missing` (orchestrate-flow v3.2.0+) — handoff YAML lists `artifacts: [paths]` but one or more paths fail `test -f` / `test -d`. Previously next-stage consumer skill failed with cryptic file-not-found; now halts at producer boundary with explicit `missing_paths: [...]` list.
+- `partial_state_corrupt` (execute-bolts v2.7.3+) — `--resume` mode found partial-state.json fails JSON parse. Previously silent overwrite with fresh state (hidden recovery loss); now halts with `corrupt_backup_path` suggestion for forensics.
+
+**4-surface taxonomy sync (per Iter 33+Iter 31 propagation directive):**
+
+- `vault-contract.md` enum + descriptions: 3 new entries
+- `orchestrate-flow/SKILL.md` ALWAYS-STOP halt taxonomy: 3 new rows
+- `orchestrate-flow/SKILL.md` Procedure: 2 new validation steps (`b.0` handoff presence, `b.vii` artifact existence)
+- `handoff-contract.md`: documents orchestrator-side detection for both checks
+- `execute-bolts/SKILL.md` §Partial-state contract: resume-time integrity check added
+
+**Skill bumps:**
+- `orchestrate-flow` 3.1.2 → 3.2.0 (MINOR — new procedure steps + new halts emitted)
+- `execute-bolts` 2.7.2 → 2.7.3 (PATCH — new error path; same procedure)
+
+**Why MINOR (not PATCH):** Chains that previously silently-passed corrupt/missing state now halt explicitly. Existing user workflows that depend on "silent recovery" behavior will see new halts. Documented as expected-behavior change.
+
+**Plugin v3.26.3 → v3.27.0.** Spec: `docs/superpowers/specs/2026-05-25-iter-40-silent-failure-path-closure-design.md`.
 
 ### v3.26.3 (Iter 39, patch) — Quick Audit Closure Pass (5 immediate wins)
 

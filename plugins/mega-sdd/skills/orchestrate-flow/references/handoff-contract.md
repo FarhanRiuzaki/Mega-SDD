@@ -108,6 +108,12 @@ TYPE: enum — one of `completed | paused | halted`. Drives orchestrator control
 
 TYPE: array\<string\> — absolute file paths. Non-empty when `status==completed`; may be empty when `status==halted` (skill may not have written output). Every file/dir the skill wrote must be listed; orchestrator uses to verify output and locate downstream input.
 
+> **Existence-checked at orchestrator boundary (v3.2.0+, Iter 40).** Orchestrate-flow Step `b.vii` verifies every listed path with `test -f` (files) or `test -d` (dirs) after schema validation passes. Missing path → halt `artifact_missing`. Closes Iter 38 audit finding D3-002 (silent-failure path closure). Skill authors: any path you list here MUST exist on disk at handoff emission time, or orchestrator will block the chain. Do not list speculative/future paths.
+
+### Pre-validation: handoff file presence (orchestrator-side, v3.2.0+, Iter 40)
+
+Before any schema check, orchestrate-flow Step `b.0` verifies the handoff file itself exists and is non-empty at the per-skill expected path. If absent or zero bytes → halt `handoff_missing`. This catches sub-skill crashes that occur before `§Handoff emission` step runs. Closes Iter 38 audit finding D3-001 (silent-failure path closure). Skill authors: ensure your `§Handoff emission` step writes atomically (write to temp + rename) and runs even on error paths (best-effort emit with `status: halted` and populated `blockers:` array).
+
 ### `next_action:` (REQUIRED)
 
 TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rationale: string }`. Required even on `status==halted` — must point to the resolution path (e.g., `resolve-oq` for binding conflicts).
