@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.6.1
+version: 2.6.2
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -34,7 +34,7 @@ When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` dec
 
 ## Output
 
-`codebase-map.md` written to repo root (or CWD if outside repo). Idempotent — overwrites prior map.
+`codebase-map.md` written to `.mega-sdd/codebase/codebase-map.md` (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`). Override via `--out=<path>` flag. Idempotent — overwrites prior map.
 
 ## Procedure
 
