@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.2.1
+version: 1.3.0
 description: Evolves an existing grand-design-spec vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -127,6 +127,38 @@ Persist: `DIFF_SCOPE=<choice>`. Echo plan.
 1. Read the entire current vault (all 7 files).
 2. Read every new source file fully (route PDF → `pdf-reading` skill, DOCX → `docx` skill, etc.).
 3. Read the OLD source if available (the user may have it; ask once: *"Path to the old source the current vault was generated from? (optional — improves conflict detection)"*). If not provided, the diff uses only `vault state vs new source` rather than `old source vs new source vs vault`. Both modes work; old source improves precision on which OQs were *already* gaps vs newly-introduced.
+
+### Step 1.5: PRD change detection via prd_sha256 (v1.3.0+, Iter 29 P1-5 audit fix)
+
+**v1.3.0+ Iter 29 PRD change detection (P1-5 audit fix)**: When `vault.json` contains a `prd_sha256` field (v1.12+ multi-scope vault per Iter 28), compute the sha256 of the CURRENT PRD file at `vault.json.prd_path_at_generation`:
+
+```bash
+CURRENT_SHA=$(shasum -a 256 "<vault.prd_path_at_generation>" | awk '{print $1}')
+RECORDED_SHA="<vault.json.prd_sha256>"
+```
+
+Comparison logic:
+- `CURRENT_SHA == RECORDED_SHA` → PRD unchanged since vault generation; proceed with normal diff-vault flow (vault revision detection only)
+- `CURRENT_SHA != RECORDED_SHA` → PRD CHANGED since vault generation; emit informational note in diff report: "PRD content changed since vault generation (sha: ...) — revisions detected per current diff" + proceed with normal flow
+- `vault.json.prd_sha256` absent (pre-v1.12 vault) → SKIP this check gracefully; emit advisory note: "Vault generated before v1.12; PRD change detection unavailable. Consider regenerating vault."
+- `vault.json.prd_path_at_generation` points to non-existent file → halt `prd_path_missing` with message ("PRD at <path> no longer exists; cannot detect changes. Move PRD back or regenerate vault with current PRD path.")
+
+Emit `prd_sha256_changed: yes | no | n/a` field in DRIFT-REPORT.md header for downstream visibility.
+
+Also emit `scope:` block in handoff YAML per `orchestrate-flow/references/handoff-contract.md` v3.20+ when vault has scope:
+
+```yaml
+handoff:
+  emitted_by: diff-vault
+  # ... existing fields ...
+  scope:
+    id: <vault.scope_metadata.id>
+    name: <vault.scope_metadata.name>
+    sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
+    prd_sha256: <CURRENT_SHA>  # the new hash, not the recorded one
+```
+
+Omit scope: block when vault is legacy (no `scope_metadata` in vault.json).
 
 ### Step 2: Re-extract from new source
 
@@ -401,6 +433,7 @@ Do NOT pad with "I have completed..." preamble.
 - **Vault is currently LOCKED** (per Vault Lock Status `Status: 🔒 LOCKED`) → STOP. Tell the user: *"The vault is locked. Diffing it implies unlocking. Confirm: unlock and apply diff (which will require re-sign-off after), or cancel?"* `AskUserQuestion`.
 - **User says "auto-resolve all conflicts"** → refuse politely. Conflicts (Resolved-OQ vs new PRD) are exactly the cases that require human judgment. Offer batch-confirm for non-conflict categories (auto-resolved OQs, simple unchanged renames) but never for conflicts.
 - **Major scope shift detected** (e.g., new PRD project name differs significantly from vault project name; >50% of entities are Removed; >30% are Added) → flag as *"This looks like a different project, not a revision. Are you sure this is the right new source for this vault?"* before proceeding.
+- (v1.3.0+, Iter 29) **`vault.json.prd_path_at_generation` points to non-existent file** → halt `prd_path_missing` (user must restore PRD or regenerate vault with current PRD path). ALWAYS STOP.
 
 ### Conditional
 
