@@ -761,6 +761,11 @@ handoff:
     items_blocked: <N halts encountered>
     bolts_used_starterkit_slice: <int>                      # NEW v2.7.0+
     slice_avg_size_kb: <float>                              # NEW v2.7.0+
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id, e.g., "BE">
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
 ```
 
 Status `halted` on `test_fail` (acceptance test exhausted retries) / `hard_rule_violated` (post-flight scan) / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.

@@ -511,7 +511,21 @@ handoff:
   metrics:
     items_processed: <N claims>
     items_blocked: <N CONFLICTs>
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id, e.g., "BE">
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
+  mutability:                             # v3.17+ (Iter 25) — when claims have mutability tiers
+    tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
+    locked_claims_touched: []
+    artifact_discards_proposed: <N>
+  constitution:                           # v3.13+ (Iter 17) — when constitution.md exists
+    constitution_hash: <sha256>
+    clauses_referenced: []
 ```
+
+> The `scope:`, `mutability:`, and `constitution:` blocks are CONDITIONAL — emit only when applicable per handoff-contract.md schema (vault has scope_metadata; mutability-tier claims processed; constitution.md exists).
 
 Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` (Iter 2 halts). Status `paused` when tech-OQ recommendations need user review (informational; downstream still runs). Required ONLY under `--auto`.
 

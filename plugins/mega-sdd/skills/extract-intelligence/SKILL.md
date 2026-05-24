@@ -242,6 +242,15 @@ handoff:
   metrics:
     items_processed: <N MD files written>
     items_blocked: 0
+  scope:                                  # v3.20+ (Iter 28) — when target vault will have scope_metadata
+    id: <scope id>
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from PRD if available>
+  mutability:                             # v3.17+ (Iter 25) — extract-intelligence is PRIMARY tier producer
+    tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
+    locked_claims_touched: []
+    artifact_discards_proposed: <N>
 ```
 
 Status `halted` when quality gate fails twice (per `references/wave-dispatch-templates.md` §gate-checks). Required ONLY under `--auto`; standalone invocations may emit informationally.

@@ -263,6 +263,120 @@ handoff:
 
 Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft`.
 
+### `diff-vault`
+
+Canonical handoff YAML:
+
+```yaml
+emitted_by: diff-vault
+emitted_at: <ISO8601>
+status: completed | paused | halted
+artifacts:
+  - <abs path to <vault>/VAULT-DIFF.md>
+  - <abs path to <vault>/vault.json (updated)>
+  - <abs path to <vault>/00-index.md (updated)>
+  - <abs path to <vault>/.mega-sdd/vault-diffs/<ISO8601>.patch>
+scope:                                  # v3.20+ — when vault has scope_metadata
+  id: <scope id>
+  name: <scope name>
+  sibling_scopes: []
+  prd_sha256: <sha256>
+next_action:
+  type: invoke_skill | user_review
+  suggested_skill: mega-sdd:bind-codebase | mega-sdd:resolve-oq
+  suggested_args: ["--auto"]
+blockers: []
+metrics:
+  decisions_appended: <N>
+  conflicts_detected: <N>
+```
+
+Status `halted` on: `diff_conflict`
+
+### `emit-agents-md`
+
+Canonical handoff YAML:
+
+```yaml
+emitted_by: emit-agents-md
+emitted_at: <ISO8601>
+status: completed | halted
+artifacts:
+  - <abs path to <project>/AGENTS.md (created or updated)>
+scope:                                  # v3.20+ — when vault has scope_metadata
+  id: <scope id>
+  name: <scope name>
+  sibling_scopes: []
+  prd_sha256: <sha256>
+next_action:
+  type: chain_complete
+  hint: "AGENTS.md is the pipeline terminal output for AI agent consumers"
+blockers: []
+metrics:
+  agents_md_lines: <N>
+  rules_emitted: <N>
+```
+
+Status `halted` on: `user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context`
+
+### `resolve-oq`
+
+Canonical handoff YAML:
+
+```yaml
+emitted_by: resolve-oq
+emitted_at: <ISO8601>
+status: completed | paused | halted
+artifacts:
+  - <abs path to <vault>/01-overview.md (updated)>
+  # ... (any vault file that had OQs resolved)
+scope:                                  # v3.20+ — when vault has scope_metadata
+  id: <scope id>
+  name: <scope name>
+  sibling_scopes: []
+  prd_sha256: <sha256>
+next_action:
+  type: invoke_skill | user_review
+  suggested_skill: mega-sdd:generate-units | mega-sdd:execute-bolts
+  suggested_args: ["--auto"]
+blockers: []
+metrics:
+  items_resolved: <N>
+  items_deferred: <N>
+  items_blocked: <N>
+```
+
+Status `halted` on: malformed vault | cycle protection in --binding mode
+
+### `detect-drift`
+
+Canonical handoff YAML:
+
+```yaml
+emitted_by: detect-drift
+emitted_at: <ISO8601>
+status: completed | halted
+artifacts:
+  - <abs path to <vault>/DRIFT-REPORT.md>
+scope:                                  # v3.20+ — when vault has scope_metadata
+  id: <scope id>
+  name: <scope name>
+  sibling_scopes: []
+  prd_sha256: <sha256>
+next_action:
+  type: invoke_skill | user_review
+  suggested_skill: mega-sdd:resolve-oq | mega-sdd:emit-agents-md
+  suggested_args: ["--auto", "--scope=<id>"]  # propagate scope when detect-drift ran in scope-filtered mode
+blockers: []
+metrics:
+  findings_critical: <N>
+  findings_high: <N>
+  findings_medium: <N>
+  findings_low: <N>
+```
+
+Status `halted` on: `drift_framework_mismatch | constitution_drift_detected`
+
 ---
 
 ## Memory layer integration (v2.1+, Iter 5)
