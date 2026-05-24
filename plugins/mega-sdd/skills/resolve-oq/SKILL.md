@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.9.0
+version: 0.9.1
 description: Interactive resolver for Open Questions in an existing grand-design-spec vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -503,6 +503,20 @@ resolve-oq walking 3 conflicts:
 - v3.12 invocations of `resolve-oq` without new flags → unchanged interactive behavior
 - `--auto-accept-from-memory` is opt-in; no default behavior change
 - Memory consultation already exists in v0.5+; new flag just changes when to AUTO-APPLY recommendations
+
+**v0.9.1+ Iter 29 scope context in OQ resolution (P2-1)**: When `vault.json` has `scope` field, OQ resolution panel surfaces scope context for the user:
+
+```
+OQ-AR-7 [P1] [tech] (scope: BE — Backend API):
+  Question: Use RFC 7807 problem+json envelope?
+  ...
+```
+
+Lightweight: read vault.json scope at skill start; prepend scope context to each AskUserQuestion. Helps multi-architect scenarios where one OQ might involve cross-scope dependencies — user knows which scope they're answering for.
+
+Decisions written to memory `<project>/.mega-sdd/memory/decisions.md` `## OQ resolutions` table get new optional `scope` column when applicable.
+
+Handoff YAML includes scope: block per handoff-contract.md v3.20+ when vault has scope.
 
 ## Handoff emission (v0.8+, Iter 15 — closes Iter 9 audit Drift D-2)
 

@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 1.2.1
+version: 1.2.2
 description: Detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and offers interactive resolution. Triggers — "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", or paraphrases.
 ---
 
@@ -546,6 +546,17 @@ blocker:
 
 - v3.12 vaults without constitution.md → constitution-drift section SKIPPED gracefully
 - Existing vault-claim drift detection unchanged (Iter 0 behavior preserved)
+
+**v1.2.2+ Iter 29 scope-aware drift scanning (P2-1)**: When `vault.json` has `scope` field, drift scan defaults to scope-filtered files (only files referenced by current scope's units/binding). DRIFT-REPORT.md header includes:
+
+```markdown
+**Scope**: <vault.scope_metadata.name> (<vault.scope_metadata.id>)
+**Scope-filtered drift**: yes
+```
+
+If vault has no scope (legacy single-vault), scan full codebase as before. User override: `--full-scan` flag forces full scan even on scoped vault.
+
+Handoff YAML includes scope: block per handoff-contract.md v3.20+ when applicable.
 
 ## Handoff emission (v1.1+, Iter 15 — closes Iter 9 audit Drift D-2)
 

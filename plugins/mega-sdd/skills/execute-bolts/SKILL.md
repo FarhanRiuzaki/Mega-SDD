@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.4.1
+version: 2.4.2
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -395,6 +395,21 @@ Per unit:
 
 Global:
 - Update `<vault>/vault.json` changelog: `{ "event": "bolt_completed", "unit": "U-XXX", "commits": [...] }`
+
+**v2.4.2+ Iter 29 scope traceability (P2-1)**: When `vault.json` has `scope` field, `bolt-report.md` MUST include scope field in header for multi-squad traceability:
+
+```yaml
+---
+unit: U-001
+scope: <vault.scope_metadata.id>           # v2.4.2+ Iter 29; omit when vault has no scope
+scope_name: <vault.scope_metadata.name>    # v2.4.2+ Iter 29
+# ... existing fields
+---
+```
+
+Lightweight: read vault.json once at skill start; propagate scope into bolt-report header. NO behavior change to bolt execution logic.
+
+Handoff YAML may include scope: block per `orchestrate-flow/references/handoff-contract.md` v3.20+ when vault has scope.
 
 ## Hand-off
 
