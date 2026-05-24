@@ -157,7 +157,7 @@ handoff:
     items_blocked: 12      # OQs requiring stakeholder input (business / blocking)
 ```
 
-Status `paused` when P1 business OQs are produced (downstream still works, but user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`.
+Status `paused` when P1 business OQs are produced (downstream still works, but user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `memory_in_use`.
 
 ### `scan-codebase`
 
@@ -180,7 +180,7 @@ handoff:
     libs_count: 47
 ```
 
-Status `halted` on `deep_scan_subagent_all_failed`. Status soft-halt (warn-only, chain continues) on `deep_scan_subagent_failed` / `deep_scan_cache_corrupt`.
+Status `halted` on `deep_scan_subagent_all_failed` / `dep_missing` / `memory_in_use`. Status soft-halt (warn-only, chain continues) on `deep_scan_subagent_failed` / `deep_scan_cache_corrupt`.
 
 ### `bind-codebase`
 
@@ -202,7 +202,7 @@ handoff:
     items_blocked: 0       # CONFLICTs
 ```
 
-Status `halted` on `bind_conflict` (per existing halt-protocol). Status `paused` when tech-OQ recommendations need user review (informational pause; downstream still runs).
+Status `halted` on `bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use` (per existing halt-protocol). Status `paused` when tech-OQ recommendations need user review (informational pause; downstream still runs).
 
 ### `generate-units`
 
@@ -231,7 +231,7 @@ handoff:
     units_with_starterkit_rules: 8
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `memory_in_use`.
 
 ### `execute-bolts`
 
@@ -261,7 +261,7 @@ handoff:
     slice_avg_size_kb: 1.6
 ```
 
-Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft`.
+Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `dispatch_prompt_too_large` / `bolt_repeated_partial_failure` / `provenance_missing` / `bolt_introduces_locked_drift` / `self_assessment_missing` / `memory_in_use`.
 
 ### `diff-vault`
 
@@ -291,7 +291,7 @@ metrics:
   conflicts_detected: <N>
 ```
 
-Status `halted` on: `diff_conflict`
+Status `halted` on: `diff_conflict` / `memory_in_use`
 
 ### `emit-agents-md`
 
@@ -317,7 +317,7 @@ metrics:
   rules_emitted: <N>
 ```
 
-Status `halted` on: `user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context`
+Status `halted` on: `user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context | memory_in_use`
 
 ### `resolve-oq`
 
@@ -346,7 +346,7 @@ metrics:
   items_blocked: <N>
 ```
 
-Status `halted` on: malformed vault | cycle protection in --binding mode
+Status `halted` on: malformed vault | cycle protection in --binding mode | `memory_in_use`
 
 ### `detect-drift`
 
@@ -375,7 +375,7 @@ metrics:
   findings_low: <N>
 ```
 
-Status `halted` on: `drift_framework_mismatch | constitution_drift_detected`
+Status `halted` on: `drift_framework_mismatch | constitution_drift_detected | memory_in_use`
 
 ---
 

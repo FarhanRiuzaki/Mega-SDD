@@ -513,7 +513,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
@@ -541,6 +541,21 @@ blocker:
 - `deep_scan_cache_corrupt` — scan-codebase v2.6.0+: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache auto-invalidated; subagents re-dispatched. Transparent to user.
 - `deep_scan_subagent_all_failed` — scan-codebase v2.6.0+: ALL 4 deep-scan subagents failed (likely API outage). ALWAYS STOP: user re-runs scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched.
 - `starterkit_rule_citation_missing` — generate-units v2.6.0+: a starterkit-derived Hard Rule lacks `Citation: starterkit-context.yaml §<path>` field. ALWAYS STOP: user must edit unit to add citation, then re-run Step 12.5 polished-prompt render pass.
+- `bind_conflict_constitution_violation` — bind-codebase v1.8+, Iter 20: claim conflicts with constitution.md security clause. ALWAYS STOP. Resolution: review constitution clauses + reject/accept conflict.
+- `framework_pack_missing` — bind-codebase v1.9+, Iter 23: framework convention pack referenced but file absent. ALWAYS STOP. Resolution: create pack or remove reference.
+- `framework_pack_cycle` — bind-codebase v1.9+, Iter 23: pack inheritance has cycle (A extends B extends A). ALWAYS STOP.
+- `framework_pack_unparseable` — bind-codebase v1.9+, Iter 23: pack file fails YAML/markdown parse. ALWAYS STOP.
+- `constitution_drift_detected` — detect-drift v1.4+, Iter 30: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
+- `drift_framework_mismatch` — detect-drift v1.2+, Iter 12: scanned code framework differs from vault framework. ALWAYS STOP.
+- `diff_conflict` — diff-vault v0.3+, Iter 3: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk).
+- `memory_in_use` — memory v1.0+: file lock collision; concurrent writer holds lock. ALWAYS STOP (after retry exhausted).
+- `dispatch_prompt_too_large` — execute-bolts v2.6+, Iter 30: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
+- `bolt_repeated_partial_failure` — execute-bolts v2.6+, Iter 30: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
+- `provenance_missing` — execute-bolts v2.6+, Iter 30: bolt modified file lacks provenance trailer. ALWAYS STOP.
+- `bolt_introduces_locked_drift` — execute-bolts v2.6+, Iter 30: bolt drift hits a LOCKED entity. ALWAYS STOP (eligible for propose-and-confirm override).
+- `self_assessment_missing` — execute-bolts v2.6+, Iter 30: bolt-report.md lacks self-assessment section. ALWAYS STOP.
+- `dep_missing` — scan-codebase v2.0+, Iter 6: required binary (tree-sitter when --engine=tree-sitter forced) not found. ALWAYS STOP.
+- `oq_recommend_citation_invalid` — generate-intent v1.3+, Iter 2: OQ recommendation cites non-existent KB section. ALWAYS STOP.
 
 ### Multiple blockers in one run
 
