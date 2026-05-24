@@ -367,6 +367,9 @@ Recovery: user re-runs scan-codebase later. Chain halts.
 - `--auto`: skip confirmation prompts
 - `--force-large`: proceed on >100k file repos
 - `--engine=tree-sitter|regex` (v2.0+): force engine; default auto-detect via `command -v tree-sitter`
+- `--shallow-scan` (v2.6.0+, Iter 32): skip Step 10.5 deep-scan stage; emit only surface codebase-map.md (opt-out for deep-scan)
+- `--force-deep` (v2.6.0+, Iter 32): force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
+- `--no-cache` (v2.6.0+, Iter 32): invalidate deep-scan cache; re-run all 4 subagents even if lock files unchanged
 
 ## Hand-off
 
