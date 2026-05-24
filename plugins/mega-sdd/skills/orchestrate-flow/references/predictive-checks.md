@@ -90,6 +90,137 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: yes
   predicts_halt: (chain order error)
 
+## detect-drift preflight checks (v3.34.0+, Iter 50 — Queue #9 closure)
+
+- **check_id: `vault_present_for_drift`**
+  command: `test -f <vault-path>/vault.json`
+  expected: file exists
+  on_fail: "detect-drift requires a vault. Run generate-intent first."
+  fatal: yes
+  predicts_halt: (chain order error)
+
+- **check_id: `binding_present_for_drift`**
+  command: `test -f <vault-path>/binding.md && grep -q "^## Confirmed Claims" <vault-path>/binding.md`
+  expected: binding.md exists with at least one Confirmed Claims section
+  on_fail: "detect-drift compares against bound vault state. Run bind-codebase first to establish binding."
+  fatal: yes
+  predicts_halt: (chain order error — drift has no anchor points)
+
+- **check_id: `clean_working_tree_for_drift`**
+  command: `git status --porcelain | head -1`
+  expected: empty output (no uncommitted changes)
+  on_fail: "detect-drift may conflate uncommitted user edits with actual drift. Commit or stash local changes first for clean drift report."
+  fatal: no
+  predicts_halt: (no halt; degraded drift signal)
+
+## diff-vault preflight checks (v3.34.0+, Iter 50)
+
+- **check_id: `current_vault_present_for_diff`**
+  command: `test -f <vault-path>/vault.json`
+  expected: file exists
+  on_fail: "diff-vault requires current vault to compare new source against. Run generate-intent first."
+  fatal: yes
+  predicts_halt: (chain order error)
+
+- **check_id: `new_source_resolves_for_diff`**
+  command: `test -f <new-source-path>`
+  expected: file exists
+  on_fail: "diff-vault second argument must resolve to existing PRD/source file."
+  fatal: yes
+  predicts_halt: prd_path_missing
+
+- **check_id: `vault_version_parseable`**
+  command: `python3 -c "import json; print(json.load(open('<vault-path>/vault.json'))['vault_version'])" 2>&1`
+  expected: outputs valid version string (no exception)
+  on_fail: "current vault.json malformed OR missing vault_version field. diff-vault cannot determine version bump target."
+  fatal: yes
+  predicts_halt: invalid_handoff
+
+## resolve-oq preflight checks (v3.34.0+, Iter 50)
+
+- **check_id: `vault_present_for_oq`**
+  command: `test -f <vault-path>/vault.json && test -f <vault-path>/03-open-questions.md`
+  expected: both files exist
+  on_fail: "resolve-oq requires a vault with 03-open-questions.md. Run generate-intent first."
+  fatal: yes
+  predicts_halt: (chain order error)
+
+- **check_id: `oq_status_field_present`**
+  command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); exit(0 if any('status' in oq for oq in v.get('open_questions', [])) else 1)"`
+  expected: at least one OQ entry has status field (v1.1+ schema)
+  on_fail: "vault.json open_questions[] entries lack 'status' field (pre-v1.1 schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --refresh."
+  fatal: no
+  predicts_halt: (no halt; degraded interactive walk)
+
+- **check_id: `unresolved_oqs_exist`**
+  command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); print(sum(1 for oq in v.get('open_questions', []) if oq.get('status') != 'resolved'))"`
+  expected: non-zero count
+  on_fail: "All OQs in vault are already resolved. resolve-oq is a no-op."
+  fatal: no
+  predicts_halt: (no halt; no-op invocation)
+
+## extract-intelligence preflight checks (v3.34.0+, Iter 50)
+
+- **check_id: `legacy_codebase_path_present`**
+  command: `test -d <legacy-path> && [ "$(ls -A <legacy-path>)" ]`
+  expected: directory exists AND non-empty
+  on_fail: "extract-intelligence requires a non-empty legacy codebase path."
+  fatal: yes
+  predicts_halt: dep_missing
+
+- **check_id: `kb_target_writable`**
+  command: `mkdir -p <kb-output-dir>/.test-write && rmdir <kb-output-dir>/.test-write`
+  expected: exit 0 (directory creatable)
+  on_fail: "extract-intelligence cannot write to <kb-output-dir>. Check permissions OR change --output."
+  fatal: yes
+  predicts_halt: dep_missing
+
+- **check_id: `subagent_capacity_reasonable`**
+  command: `[ "<max-parallel-flag-value>" -le 5 ]`
+  expected: exit 0 (max-parallel ≤ 5)
+  on_fail: "extract-intelligence --max-parallel=<N> exceeds empirical optimum (3 per Zylos 2026; max 5 per Iter 38 audit D2-001). Higher values cause coordination overhead > gain."
+  fatal: no
+  predicts_halt: (no halt; degraded throughput)
+
+## emit-agents-md preflight checks (v3.34.0+, Iter 50)
+
+- **check_id: `vault_present_for_agents_md`**
+  command: `test -f <vault-path>/vault.json`
+  expected: file exists
+  on_fail: "emit-agents-md requires a vault. Run generate-intent first."
+  fatal: yes
+  predicts_halt: (chain order error)
+
+- **check_id: `units_present_for_agents_md`**
+  command: `test -d <vault-path>/units && ls <vault-path>/units/U-*.md | head -1`
+  expected: at least 1 unit file exists
+  on_fail: "emit-agents-md is unit-aware (lists units in AGENTS.md). Run generate-units first OR pass --no-units for vault-only AGENTS.md."
+  fatal: no
+  predicts_halt: (no halt; degraded AGENTS.md)
+
+## memory preflight checks (v3.34.0+, Iter 50)
+
+- **check_id: `memory_dir_writable`**
+  command: `mkdir -p ~/.mega-sdd/.test-write && rmdir ~/.mega-sdd/.test-write && mkdir -p <project>/.mega-sdd/.test-write && rmdir <project>/.mega-sdd/.test-write`
+  expected: exit 0 for BOTH user-scope + project-scope dirs
+  on_fail: "memory subsystem cannot write to ~/.mega-sdd/ OR <project>/.mega-sdd/. Check permissions."
+  fatal: yes
+  predicts_halt: memory_in_use (lock acquisition would fail)
+
+- **check_id: `schema_version_match`**
+  command: `python3 -c "import json,glob; [json.load(open(f)) for f in glob.glob('~/.mega-sdd/memory/*.json') + glob.glob('<project>/.mega-sdd/memory/*.json')]" 2>&1`
+  expected: all memory files parse cleanly
+  on_fail: "One or more memory files have schema_version drift OR JSON parse failure. Run `/mega-sdd:memory migrate` to repair."
+  fatal: no
+  predicts_halt: memory_schema_mismatch
+
+- **check_id: `concurrent_writer_check`**
+  command: `find ~/.mega-sdd <project>/.mega-sdd -name "*.lock" -mtime -1`
+  expected: empty output (no recent lock files)
+  on_fail: "Active or orphaned lock files detected. If no other mega-sdd skill is running, rm the stale .lock files manually."
+  fatal: no
+  predicts_halt: memory_in_use (lock collision)
+
 ---
 
 ## Read protocol (Step 3.5)

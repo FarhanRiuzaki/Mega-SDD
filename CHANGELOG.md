@@ -5,6 +5,63 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.34.0] - 2026-05-25
+
+### Iter 50 — Predictive Checks Coverage Expansion (Queue #9)
+
+**Robustness iter** (~1hr; MINOR bump — predictive-checks.md catalog extended from 4 skills to 10). Closes Iter 38 audit Queue #9 (pattern E coverage asymmetry).
+
+**Before:** predictive-checks.md covered 4 of 9 user-invocable skills. Other skills had zero proactive preflight coverage — failures surfaced only mid-execution as halts.
+
+**After:** all 10 user-invocable skills have ≥1 preflight check. Total: 8 → 26 checks.
+
+**New checks per skill (18 added):**
+
+| Skill | Check | Fatal? | Predicts |
+|---|---|---|---|
+| detect-drift | vault_present_for_drift | yes | chain order |
+| detect-drift | binding_present_for_drift | yes | chain order |
+| detect-drift | clean_working_tree_for_drift | no | degraded drift signal |
+| diff-vault | current_vault_present_for_diff | yes | chain order |
+| diff-vault | new_source_resolves_for_diff | yes | prd_path_missing |
+| diff-vault | vault_version_parseable | yes | invalid_handoff |
+| resolve-oq | vault_present_for_oq | yes | chain order |
+| resolve-oq | oq_status_field_present | no | degraded walk |
+| resolve-oq | unresolved_oqs_exist | no | no-op invocation |
+| extract-intelligence | legacy_codebase_path_present | yes | dep_missing |
+| extract-intelligence | kb_target_writable | yes | dep_missing |
+| extract-intelligence | subagent_capacity_reasonable | no | coordination overhead |
+| emit-agents-md | vault_present_for_agents_md | yes | chain order |
+| emit-agents-md | units_present_for_agents_md | no | degraded AGENTS.md |
+| memory | memory_dir_writable | yes | memory_in_use |
+| memory | schema_version_match | no | memory_schema_mismatch |
+| memory | concurrent_writer_check | no | memory_in_use |
+
+**External research applied:** Zylos 2026 parallel agent optimization — extract-intelligence `--max-parallel` empirical optimum is 3; cap warning at 5 per Iter 38 D2-001.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — 6 new per-skill sections (detect-drift, diff-vault, resolve-oq, extract-intelligence, emit-agents-md, memory) with 18 total new check entries
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — version bump (consumer now covers 10 skills)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.33.0 → 3.34.0
+- `plugins/mega-sdd/README.md` — + v3.34.0 What's new entry
+- `README.md` — version bump
+
+**Skill bumps:**
+- `orchestrate-flow` 3.2.1 → 3.3.0 (MINOR — predictive-checks consumer behavior change: now reads 10 skills instead of 4)
+
+**Why MINOR:** orchestrate-flow Step 3.5 now reads checks for 6 additional skills. Pre-Iter-50 chains that bypassed checks for those skills will now surface warnings or halts upfront. This is intended (audit closure) but a behavioral change.
+
+**Standing directives applied:**
+- simplifikasi: 1 audit Pattern E → 18 catalog entries in 1 file edit; no new files; no new halts
+- flawless: all 6 missing skills covered atomically; no partial coverage
+- reuse-first: REUSES existing `predictive_check_failed` halt envelope; REUSES existing check entry format; REUSES canonical halt names (per Iter 41)
+
+**Plugin:** v3.33.0 → v3.34.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Next:** Iter 51 — glossary anchoring + reference offset hints + extract-intelligence parallelism tuning (Queue #10; D1-004 + D1-007 + D2-001; ~3hr; editorial).
+
 ## [3.33.0] - 2026-05-25
 
 ### Iter 49 — vault.json Advisory Lock + Scenario-6 Halt Walkthroughs (Queue #8)
