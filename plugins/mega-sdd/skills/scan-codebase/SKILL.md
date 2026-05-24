@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.6.0
+version: 2.6.1
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -231,10 +231,12 @@ Use prompt templates from `references/deep-scan-prompts.md`, substituting:
 - `<CATALOG_PATH>` → for each subagent, the matching catalog under `plugins/mega-sdd/references/lib-patterns/<FRAMEWORK>/<domain>-libs.md`
 
 Subagents:
-1. **auth-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/auth-libs.md`
-2. **rbac-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/rbac-libs.md`
-3. **ui-ux-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/ui-libs.md`
-4. **libs-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/generic-libs.md`
+1. **auth-extractor** — model: per `references/model-tiers.md §auth-extractor` (default sonnet); catalog: `lib-patterns/<framework>/auth-libs.md`
+2. **rbac-extractor** — model: per `references/model-tiers.md §rbac-extractor` (default sonnet); catalog: `lib-patterns/<framework>/rbac-libs.md`
+3. **ui-ux-extractor** — model: per `references/model-tiers.md §ui-ux-extractor` (default sonnet); catalog: `lib-patterns/<framework>/ui-libs.md`
+4. **libs-extractor** — model: per `references/model-tiers.md §libs-extractor` (default sonnet); catalog: `lib-patterns/<framework>/generic-libs.md`
+
+> If invoked via orchestrate-flow chain, model tier may be overridden via handoff metadata.model_tiers per role (CLI flag / project config / user preference). Standalone invocation uses catalog default unconditionally.
 
 **Fallback:** if `lib-patterns/<FRAMEWORK>/` directory does not exist:
 - Log "no lib-pattern pack for <framework>; using generic extraction"

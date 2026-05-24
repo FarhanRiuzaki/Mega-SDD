@@ -4,6 +4,20 @@ Per-wave subagent prompt templates + grep commands for the quality gate that run
 
 ---
 
+## Model tier per wave (v3.25.0+, Iter 34)
+
+Each wave dispatch consults `plugins/mega-sdd/references/model-tiers.md` for its model tier:
+
+- **Wave 1** (artifact extraction): `extract-intelligence-wave-1` → default sonnet
+- **Wave 2** (domain extraction): `extract-intelligence-wave-2` → default sonnet
+- **Wave 3** (cross-reference): `extract-intelligence-wave-3` → default sonnet
+- **Wave 4** (mutability classification): `extract-intelligence-wave-4` → default sonnet
+- **Wave 5** (synthesis): `extract-intelligence-wave-5` → **default opus** (holistic synthesis)
+
+Override per role via CLI flag / project config / user preference (see `references/model-tiers.md §Override syntax`).
+
+---
+
 ## Generic agent prompt structure
 
 Every wave's subagent prompt MUST follow this skeleton:

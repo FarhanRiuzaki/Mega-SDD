@@ -113,6 +113,24 @@ scope: user
 - After 5/5 OUTPUT_MODE=compact: propose Step 0.7 default = compact. See `learning-log.md` candidate #3.
 ```
 
+#### `## Model tiers` section (v1.3.1+, Iter 34)
+
+Per-role model tier override (user-scope). Lower precedence than CLI flag + project config; higher than catalog default.
+
+Format (markdown list, appended to preferences.md):
+
+```markdown
+## Model tiers
+
+- `code-quality-reviewer`: sonnet  # personal preference (overrides catalog default opus)
+- `extract-intelligence-wave-5`: sonnet  # cost-sensitive default
+- `intelligence-audit-probe`: sonnet  # bump from haiku for higher signal
+```
+
+Format: one bullet per role override. `<role>: <tier>` where tier is `haiku | sonnet | opus`.
+
+Role names MUST match `plugins/mega-sdd/references/model-tiers.md §Catalog`. Unknown roles trigger `model_tier_unknown` soft halt + log + ignored.
+
 ### `~/.mega-sdd/memory/patterns.md`
 
 ```markdown
