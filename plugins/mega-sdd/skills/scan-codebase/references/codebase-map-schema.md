@@ -11,7 +11,7 @@ generated_at: 2026-05-13T10:00:00Z
 repo_root: ./
 scan_depth: 8
 scan_includes: ["src/**", "app/**", "lib/**"]
-scan_excludes: ["node_modules/**", "dist/**", "vendor/**"]
+scan_excludes: ["node_modules/**", "vendor/**", "dist/**", "build/**", "target/**", ".next/**", ".gradle/**", "storage/framework/**", "__pycache__/**", ".venv/**", "coverage/**", ".git/**", ".idea/**", ".mega-sdd/**", "..."]  # Full list per SKILL.md §Default exclusions
 languages_detected: ["typescript", "php", "javascript"]
 package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
