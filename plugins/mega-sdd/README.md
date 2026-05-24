@@ -84,6 +84,30 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new in v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
 
+### v3.24.0 (Iter 33) — Flawless Seamless Intelligence
+
+**Combined mega-iter:** orchestrator becomes intelligent + handoffs become flawless.
+
+**What changed:**
+
+Smart orchestrator:
+- **F1 Memory-driven routing** — orchestrator now learns from past runs. After ≥3 successful runs of the same project shape, orchestrator recommends the proven chain (overriding default routing-rules.md). Fall-through silently for fresh projects.
+- **F2 Predictive halt detection** — orchestrator runs lightweight preflight checks BEFORE invoking each skill in chain. Instead of "scan-codebase halted on dep_missing 8 min in", you see "before chain starts: tree-sitter not installed; install or use --engine=regex" — actionable upfront.
+
+Solid handoffs:
+- **F3 Schema validation gate** — every handoff YAML validated against handoff-contract.md at emission. Missing REQUIRED/CONDITIONAL field = `invalid_handoff` halt at producer side (immediate developer feedback, not silent consumer miss).
+- **F4 Type-checked field propagation** — handoff-contract.md now declares TYPE annotations. Field type mismatch = `handoff_type_mismatch` halt. Prevents silent shape drift (e.g., scope.id being string in one skill but object in another).
+
+**Phase A foundation:** closes 3 of Iter 31's audit areas (handoff YAML sweep + halt taxonomy sync + stale name sweep) to enable F3/F4 enforceability without breaking existing pipelines.
+
+**Phase B audit:** `docs/superpowers/audits/2026-05-24-iter-33-intelligence-audit.md` documents intelligence gaps across all 13 skills with prioritized Iter 34+ candidates.
+
+**orchestrate-flow major bump v2.5.1 → v3.0.0:** new procedure steps + 4 new halts may stop chains where prior versions wouldn't (all backward-compat by default — fall-through on missing memory/checks/schema).
+
+**Plugin v3.23.0 → v3.24.0.**
+
+See [docs/superpowers/specs/2026-05-24-iter-33-flawless-seamless-intelligence-design.md](../../docs/superpowers/specs/2026-05-24-iter-33-flawless-seamless-intelligence-design.md) for full design.
+
 ### v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
 
 mega-sdd now **automatically** captures your starterkit's actual auth/RBAC/UI-UX/library patterns and feeds them through the pipeline — no flags, no config.
