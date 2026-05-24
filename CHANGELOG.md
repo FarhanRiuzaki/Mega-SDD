@@ -5,6 +5,33 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.26.2] - 2026-05-24
+
+### Iter 37 — Scenarios Coverage + README Audit
+
+**Documentation iter** (~3-4hr; PATCH bump — no behavior change). Field-test feedback closure: missing scenarios for Iters 34/35 + README staleness.
+
+**New scenarios (2):**
+- `tests/scenarios/scenario-10-phased-rebuild-walkthrough.md` — Iter 35 tutorial (legacy → KB → Phase 1 vault → bolts → Phase 2 vault workflow)
+- `tests/scenarios/scenario-11-model-tier-override.md` — Iter 34 tutorial (curated catalog + 4 override mechanisms + tier escalation rubric)
+
+**Modified docs:**
+- `tests/scenarios/README.md` — chooser updated to include all 11 scenarios + upgrade-guide pointer
+- `README.md` (repo root) — "13-layer anti-hallucination defense (v3.18.0)" → "15-layer anti-hallucination defense (v3.24+, includes Iter 33 F3+F4)". Entries 14+15 (schema validation + type-check) were already in the list; header was stale.
+- `plugins/mega-sdd/README.md` — fixed stale v3.18.1 reference in "What's in this folder"; normalized "What's new" structure (### per version under ## What's new parent, newest first); added v3.26.2 entry
+
+**Plugin:** v3.26.1 → v3.26.2
+
+**No skill version bumps** — pure documentation iter.
+
+**Standing directives applied:**
+- simplifikasi: 2 new files (one per missing iter scenario); skipped separate Iter 36 scenario (upgrade-from-old-version.md IS the upgrade walkthrough)
+- flawless: 3 problems (missing scenarios + repo README stale + plugin README stale) all solved in 1 iter
+- reuse-first: scenarios cross-ref reading-map.md + model-tiers.md + upgrade-from-old-version.md; chooser cross-refs all existing docs
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-37-scenarios-coverage-and-readme-audit-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-24-iter-37-scenarios-coverage-and-readme-audit.md`
+
 ## [3.26.1] - 2026-05-24
 
 ### Iter 36 — Upgrade-from-old-version guide

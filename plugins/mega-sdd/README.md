@@ -84,6 +84,22 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new
 
+### v3.26.2 (Iter 37, patch) — Scenarios Coverage + README Audit
+
+mega-sdd now ships **scenarios for all user-facing features through Iter 35**, plus README audit for 1:1 accuracy with current state.
+
+**What changed:**
+
+- **NEW scenarios:** 
+  - `tests/scenarios/scenario-10-phased-rebuild-walkthrough.md` — phased legacy rebuild tutorial (Iter 35 phase discoverability)
+  - `tests/scenarios/scenario-11-model-tier-override.md` — model tier override tutorial (Iter 34)
+- **Scenarios chooser** (`tests/scenarios/README.md`) — now lists all 11 scenarios + upgrade-guide pointer
+- **README audit** — fixed stale "13-layer anti-hallucination" header (now 15-layer per Iter 33 F3+F4 additions); fixed stale v3.18.1 reference; normalized "What's new" structure
+
+**Why this matters:** field-test feedback — users coming to mega-sdd needed walkthroughs for the Iter 34/35 features. Now every iter has either a scenario OR a reference doc serving as tutorial.
+
+**Plugin v3.26.1 → v3.26.2** (PATCH — pure documentation; no skill behavior changes).
+
 ### v3.26.1 (Iter 36, patch) — Upgrade-from-old-version guide
 
 For users coming from older mega-sdd versions: see `plugins/mega-sdd/references/upgrade-from-old-version.md`. Consolidates compat matrix + migration commands + halt recovery + decision tree (Path A regenerate vs Path B preserve). Documentation-only patch; no behavior change.
