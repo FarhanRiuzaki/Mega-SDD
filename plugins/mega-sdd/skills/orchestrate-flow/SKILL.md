@@ -257,6 +257,21 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `prd_path_missing` — diff-vault (v1.3.0+ Iter 29): vault.json.prd_path_at_generation points to non-existent file. ALWAYS STOP (user must restore PRD or regenerate vault).
 - `deep_scan_subagent_all_failed` (v2.5.1+, Iter 32) — scan-codebase: all 4 deep-scan subagents failed. User re-runs later.
 - `starterkit_rule_citation_missing` (v2.5.1+, Iter 32) — generate-units: starterkit-derived Hard Rule lacks citation. User edits unit.
+- `bind_conflict_constitution_violation` (v1.8+, Iter 20) — bind-codebase: claim conflicts with constitution security clause.
+- `framework_pack_missing` (v1.9+, Iter 23) — bind-codebase: pack referenced but file absent.
+- `framework_pack_cycle` (v1.9+, Iter 23) — bind-codebase: pack inheritance has cycle.
+- `framework_pack_unparseable` (v1.9+, Iter 23) — bind-codebase: pack file YAML/markdown parse failed.
+- `constitution_drift_detected` (v1.4+, Iter 30) — detect-drift: security/compliance clause drift in code.
+- `drift_framework_mismatch` (v1.2+, Iter 12) — detect-drift: scanned framework differs from vault.
+- `diff_conflict` (v0.3+, Iter 3) — diff-vault: Resolved-OQ/Decision conflict needs stakeholder.
+- `memory_in_use` (v1.0+, Iter 5) — memory: concurrent writer holds lock.
+- `dispatch_prompt_too_large` (v2.6+, Iter 30) — execute-bolts: bolt prompt > 10KB cap.
+- `bolt_repeated_partial_failure` (v2.6+, Iter 30) — execute-bolts: 3 partial-state cycles failed.
+- `provenance_missing` (v2.6+, Iter 30) — execute-bolts: modified file lacks provenance trailer.
+- `bolt_introduces_locked_drift` (v2.6+, Iter 30) — execute-bolts: bolt drift on LOCKED entity.
+- `self_assessment_missing` (v2.6+, Iter 30) — execute-bolts: bolt-report lacks self-assessment.
+- `dep_missing` (v2.0+, Iter 6) — scan-codebase: required binary missing.
+- `oq_recommend_citation_invalid` (v1.3+, Iter 2) — generate-intent: OQ recommendation cites missing KB section.
 
 ### Halt types that are SOFT (warn-only, chain continues)
 
