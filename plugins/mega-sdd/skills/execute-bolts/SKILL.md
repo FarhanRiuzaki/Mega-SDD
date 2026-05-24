@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.7.0
+version: 2.7.1
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -728,6 +728,31 @@ Handoff YAML may include scope: block per `orchestrate-flow/references/handoff-c
 After last unit:
 - Suggest `/mega-sdd:detect-drift` to verify all bolts honored the vault
 - Show summary: N units done, M failed, P skipped
+
+### End-of-chain phase context (v2.7.1+, Iter 35)
+
+After final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total` fields:
+
+IF `vault.phase < vault.phase_total`:
+  Set handoff `next_action`:
+  ```yaml
+  next_action:
+    type: continue_to_next_phase
+    suggested_skill: mega-sdd:generate-intent
+    suggested_args: ["--kb=<KB-path-from-vault.json.kb_source>", "--phase=<phase+1>"]
+    hint: "Phase <N> complete. Next: Phase <N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>"
+  ```
+
+IF `vault.phase == vault.phase_total` (final phase) OR `phase_total == 1`:
+  Set handoff `next_action`:
+  ```yaml
+  next_action:
+    type: chain_complete
+    hint: "All phases complete (Phase <N> of <M>). Pipeline finished."
+  ```
+
+IF `phase` field absent in vault.json (pre-v3.26.0 vault):
+  Default treatment: act as if `phase: 1, phase_total: 1` → chain_complete hint.
 
 ## Handoff emission (v1.3+, Iter 4)
 

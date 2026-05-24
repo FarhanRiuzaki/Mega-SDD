@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 1.3.1
+version: 1.3.3
 description: Use at session start when SDD topics arise — establishes how to route SDD work through mega-sdd phases. (v1.2+, Iter 4) Sharper auto-trigger — when CWD signals are strong (PRD upload + no vault, legacy codebase + rebuild intent, vault present + no units) AND user prompt contains mega-sdd intent keywords OR is empty/continuation, auto-invoke `orchestrate-flow --deep` for pipeline-end execution. Triggers on SDD keywords (intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, knowledge-base, extract intelligence, reverse engineer, auto, rebuild) and Indonesian variants (pecah PRD, buat dev, spec ini, siapkan context buat AI dev, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next).
 ---
 
@@ -122,6 +122,10 @@ Side lanes (run as needed, not in main chain):
 - `diff-vault` — handle new PRD revision
 - `extract-intelligence` — reverse-engineer legacy codebase into tech-agnostic knowledge base (when rebuild is on a different stack)
 - `orchestrate-flow` — auto-route based on CWD state
+
+## Reading guide (v1.3.3+, Iter 35)
+
+For users wondering "at this pipeline stage, where do I look?" — see `plugins/mega-sdd/references/reading-map.md`. Indexed by 7 pipeline stages with ⭐ markers for primary entry-points. Companion to implementer-facing `paths.md`.
 
 ## Hard rule
 
