@@ -5,6 +5,81 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.25.0] - 2026-05-24
+
+### Iter 34 — Dynamic Model Selection per Subagent Dispatch
+
+**Feature iter** (~8hr): adds curated model-tiers catalog + override chain so every named subagent role uses the right model tier.
+
+**Skills bumped:**
+- `orchestrate-flow` 3.0.0 → 3.1.0 (Step 2.8 override-chain resolution)
+- `scan-codebase` 2.6.0 → 2.6.1 (catalog citation; no behavior change)
+- `extract-intelligence` 1.4.1 → 1.5.0 (catalog citation; wave-5 default → opus)
+- `memory` 1.3.0 → 1.3.1 (preferences.md `## Model tiers` schema)
+
+**New plugin files (1):**
+- `plugins/mega-sdd/references/model-tiers.md` — catalog (17 roles × tier + rationale) + tier selection rubric + override syntax + adding-new-roles protocol
+
+**Modified reference docs:**
+- `handoff-contract.md` — + `model_tiers:` top-level block schema (REQUIRED/CONDITIONAL/OPTIONAL + TYPE per Iter 33 F3+F4)
+- `vault-contract.md` — + `model_tier_unknown` halt type + description
+- `memory-schema.md` — + preferences.md `## Model tiers` section
+- `paths.md` — note .mega-sdd/config.yaml model_tiers override location
+- `scan-codebase/references/deep-scan-prompts.md` — model citation
+- `extract-intelligence/references/wave-dispatch-templates.md` — per-wave catalog citation
+
+**1 new halt type** (registered across 4 surfaces per audit-pattern-prevention):
+- `model_tier_unknown` (SOFT, orchestrate-flow Step 2.8) — override references role not in catalog. Log + ignore + chain proceeds. Forward-compat for future role additions.
+
+**Catalog coverage — 17 roles across 4 dispatch categories:**
+
+| Category | Roles | Tier mix |
+|---|---|---|
+| scan-codebase deep-scan (Iter 32) | auth-extractor, rbac-extractor, ui-ux-extractor, libs-extractor | 4× sonnet |
+| extract-intelligence waves | wave-1, wave-2, wave-3, wave-4 | 4× sonnet |
+| extract-intelligence synthesis | wave-5 | **1× opus** |
+| Audit patterns | pipeline-audit-per-skill, pipeline-audit-consolidator, intelligence-audit-deep, intelligence-audit-probe | 2× sonnet + 1× **opus** + 1× **haiku** |
+| Subagent-driven-development | implementer, spec-reviewer, code-quality-reviewer | 2× sonnet + 1× **opus** |
+| Other | domain-research | 1× **haiku** |
+
+Distribution: **3 opus + 12 sonnet + 2 haiku** (sonnet-dominant by design per tier rubric).
+
+**Override chain (highest precedence first):**
+1. CLI flag: `--model-tier=<role>:<tier>` (multiple allowed)
+2. Per-project: `<project>/.mega-sdd/config.yaml` `model_tiers:`
+3. User-scope: `~/.mega-sdd/memory/preferences.md` `## Model tiers`
+4. Catalog default: `plugins/mega-sdd/references/model-tiers.md §Catalog`
+
+**Tier selection rubric** (guides "find the best" decisions when adding new roles):
+- **haiku**: bounded scope, narrow decision space, speed/cost dominates
+- **sonnet**: pattern recognition, fuzzy classification (default)
+- **opus**: open-ended reasoning, holistic synthesis, deep code review
+
+**Trigger test coverage (+3 cases):**
+- OF-MT1: catalog defaults applied when no overrides
+- OF-MT2: CLI flag wins precedence chain
+- OF-MT3: unknown role → soft halt + chain proceeds
+
+**Standing user directive applied:**
+> "perlu yg complpex pake opus, klo yg ringaan web and research.. and find the best"
+
+Catalog rationale + rubric explicit per entry. Users override anywhere in chain. opus reserved for genuinely complex reasoning (synthesis, deep review); haiku for genuinely bounded tasks (probe scoring, research fetches).
+
+**Backward compatibility:**
+- Absent overrides → catalog default (no behavior change for previously-hardcoded sonnet dispatches)
+- Absent catalog citation in a skill → inherits caller model (current behavior)
+- Existing pipelines unaffected unless user explicitly overrides
+
+**Reuse-first patterns:**
+- NO new propagation mechanism — handoff metadata.model_tiers flows through Iter 33's existing handoff-contract.md schema validation gate (already validates handoff fields per type)
+- model_tier_unknown halt uses canonical halt-protocol envelope from vault-contract.md (source_skill + type + details + next_action)
+- File-format conventions match existing memory-schema.md preferences.md format (markdown list, kebab-case keys)
+
+**Plugin:** v3.24.0 → v3.25.0
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-34-dynamic-model-selection-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-24-iter-34-dynamic-model-selection.md`
+
 ## [3.24.0] - 2026-05-24
 
 ### Iter 33 — Flawless Seamless Intelligence (Orchestrator + Handoffs)
