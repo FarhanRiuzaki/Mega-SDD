@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.5.0
+version: 2.6.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -185,6 +185,112 @@ When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` dec
 
 10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark genuinely empty sections as "None detected" not omitted. Frontmatter stamps `engine: tree-sitter | regex` + `precision_tier: ast | regex` so downstream `bind-codebase` knows the confidence level.
 
+## Step 10.5 — Deep-scan stage (v2.6.0+, Iter 32, DEFAULT-ON when framework detected)
+
+After Step 10 writes `codebase-map.md` (so §7 Framework block is fully populated), run this stage automatically. No user flag required. Opt-out: `--shallow-scan`.
+
+### Step 10.5.0 — Trigger check
+
+```
+IF framework.confidence == HIGH or MEDIUM (≥ 0.5):
+  → proceed to Step 10.5.1 (cache check)
+ELSE:
+  → log "framework confidence LOW (X.XX); deep-scan skipped — install ambiguous, run /mega-sdd:scan-codebase --force-deep to override"
+  → skip Step 10.5 entirely; proceed to Step 11
+```
+
+### Step 10.5.1 — Cache check
+
+Mirrors Iter 30 shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shared-snapshot-schema.md`).
+
+```
+1. Compute composer_lock_sha256 = sha256(<project>/composer.lock) if file exists, else empty string
+2. Compute package_lock_sha256 = sha256(<project>/package-lock.json) if exists,
+   else sha256(<project>/yarn.lock) if exists,
+   else sha256(<project>/pnpm-lock.yaml) if exists,
+   else empty string
+3. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
+     a. Read its cache_key block
+     b. IF prior.composer_lock_sha256 == current AND prior.package_lock_sha256 == current
+        AND prior.framework_pack == current §7 Framework.pack_path basename:
+        → CACHE HIT: skip Steps 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml
+        → set handoff_reused_flag = true; proceed to Step 11
+     c. ELSE → CACHE MISS / INVALID: proceed to Step 10.5.2
+4. ELSE (file not present) → CACHE MISS: proceed to Step 10.5.2
+```
+
+Force re-scan: `--no-cache` (existing flag; extends to deep-scan cache too).
+
+### Step 10.5.2 — Dispatch 4 subagents in PARALLEL
+
+Dispatch all 4 subagents IN A SINGLE MESSAGE with 4 Agent tool calls (parallel-safe per `superpowers:subagent-driven-development` convention — reuses extract-intelligence wave-dispatch pattern).
+
+Use prompt templates from `references/deep-scan-prompts.md`, substituting:
+- `<FRAMEWORK>` → from §7 Framework.name (e.g., `laravel`)
+- `<PROJECT_ROOT>` → absolute path to project root
+- `<CATALOG_PATH>` → for each subagent, the matching catalog under `plugins/mega-sdd/references/lib-patterns/<FRAMEWORK>/<domain>-libs.md`
+
+Subagents:
+1. **auth-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/auth-libs.md`
+2. **rbac-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/rbac-libs.md`
+3. **ui-ux-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/ui-libs.md`
+4. **libs-extractor** — model: sonnet, catalog: `lib-patterns/<framework>/generic-libs.md`
+
+**Fallback:** if `lib-patterns/<FRAMEWORK>/` directory does not exist:
+- Log "no lib-pattern pack for <framework>; using generic extraction"
+- Subagents proceed using framework-conventions/_universal.md fallback patterns + manifest-only detection
+- No halt; graceful degradation
+
+**Timeout handling:** if a subagent exceeds 10 min wall-clock OR returns malformed YAML:
+- Emit halt `deep_scan_subagent_failed` (soft); auto-retry ONCE with same model
+- If second attempt also fails: mark that slice as failed; consolidator (Step 10.5.3) sets `partial: true` and adds the domain to `partial_slices: [...]`
+- Pipeline continues (warn-only, NOT chain-stopping)
+
+**All-fail handling:** if ALL 4 subagents fail (likely API outage):
+- Emit halt `deep_scan_subagent_all_failed` (ALWAYS STOP)
+- DO NOT write starterkit-context.yaml (preserve any existing prior version untouched)
+- Chain halts; user re-runs scan-codebase later
+
+### Step 10.5.3 — Consolidate + write starterkit-context.yaml
+
+```
+1. Collect 4 subagent responses (or fewer if any failed)
+2. For each successful response: validate YAML against starterkit-context-schema.md §<domain> slice
+   - If validation fails: drop slice; add domain to partial_slices: []
+   - If validation passes: include slice in merged output
+3. Build merged YAML structure:
+     starterkit_context:
+       schema_version: 1.0
+       generated_by: scan-codebase v2.6.0
+       generated_at: <ISO8601>
+       framework: <from §7 Framework.name>
+       framework_version: <from §7 Framework.version>
+       framework_pack: <from §7 Framework.pack_path basename>
+       partial: true   # ONLY include this field if ≥1 slice failed
+       partial_slices: [<list>]   # ONLY include if partial: true
+       auth: {...}   # include if auth-extractor succeeded
+       rbac: {...}   # include if rbac-extractor succeeded
+       ui_ux: {...}  # include if ui-ux-extractor succeeded
+       libs: [...]   # include if libs-extractor succeeded
+       cache_key:
+         composer_lock_sha256: <from Step 10.5.1>
+         package_lock_sha256: <from Step 10.5.1>
+4. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
+   (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, then mv)
+5. Validate the written file is parseable:
+   - If parse fails: emit halt deep_scan_cache_corrupt (soft); delete file; retry write once
+   - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
+```
+
+### Step 10.5.4 — Concurrency guard
+
+Use existing memory file-lock pattern (per `mega-sdd:memory` SKILL.md §file-lock: backoff + retry 3x; fail with `memory_in_use` blocker if all retries fail) on `.mega-sdd/codebase/starterkit-context.yaml`:
+- Acquire exclusive lock before write
+- If lock held by concurrent scan-codebase invocation → fail fast with `memory_in_use` halt (existing halt type)
+- Release lock after write
+
+---
+
 11. **Suggest next step:** `/mega-sdd:bind-codebase <vault-path>` to validate a vault against this map.
 
 ## Anti-hallucination rails
@@ -192,12 +298,62 @@ When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` dec
 - If a section has no detection: write "None detected" — do NOT invent.
 - Limit symbol extraction to **first 200 per category** in v1 (prevents giant maps). Note "truncated at 200, see file scan log for full list."
 - Cite line numbers for routes/models (`src/foo.ts:42`) so binding can verify.
+- (v2.6.0+, Iter 32) Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. Schema-validation drops slices that violate.
+- (v2.6.0+, Iter 32) Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field. Schema-validation drops slices without _source.
+- (v2.6.0+, Iter 32) Deep-scan read-only: subagents have NO Edit/Write/mutating-Bash tool access. Read-only enforced at dispatch.
 
 ## Halt conditions
 
 - Repo > 100k files: confirm with user (`--force-large` flag required to proceed).
 - Detection produces 0 public interfaces: warn user — likely scan misconfiguration; offer to re-run with different `--include`.
 - (v2.0+) `--engine=tree-sitter` set AND tree-sitter not on PATH → halt `dep_missing` with install commands (per `references/tree-sitter-integration.md` §Installation guidance).
+
+### `deep_scan_subagent_failed` (v2.6.0+, Iter 32) — SOFT
+
+```yaml
+type: deep_scan_subagent_failed
+source_skill: scan-codebase
+details:
+  domain: <auth | rbac | ui_ux | libs>
+  subagent_index: <1-4>
+  failure_reason: <"timeout" | "malformed_yaml" | "api_error: <msg>">
+  retry_count: <1 or 2>
+next_action:
+  type: continue_with_partial
+  hint: "Partial starterkit-context.yaml will be emitted with partial: true and partial_slices: [<domain>]. Pipeline continues; downstream consumers degrade gracefully for missing slices."
+```
+
+Recovery: auto-retry once. On second failure: emit partial output. Soft halt — chain continues.
+
+### `deep_scan_cache_corrupt` (v2.6.0+, Iter 32) — SOFT
+
+```yaml
+type: deep_scan_cache_corrupt
+source_skill: scan-codebase
+details:
+  file_path: "<project>/.mega-sdd/codebase/starterkit-context.yaml"
+  parse_error: "<error message from YAML parser>"
+next_action:
+  type: auto_invalidate_and_rescan
+  hint: "Cache file is corrupt; auto-invalidating and re-dispatching subagents. Transparent to user."
+```
+
+Recovery: auto-invalidate cache + re-run subagents. Soft halt — chain continues.
+
+### `deep_scan_subagent_all_failed` (v2.6.0+, Iter 32) — ALWAYS STOP
+
+```yaml
+type: deep_scan_subagent_all_failed
+source_skill: scan-codebase
+details:
+  failed_domains: [auth, rbac, ui_ux, libs]
+  common_failure_reason: <"api_outage" | "rate_limited" | "unknown">
+next_action:
+  type: user_retry
+  hint: "All 4 deep-scan subagents failed (likely API outage). Re-run /mega-sdd:scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched."
+```
+
+Recovery: user re-runs scan-codebase later. Chain halts.
 
 ## Flags
 
@@ -224,17 +380,33 @@ When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/meg
 handoff:
   emitted_by: scan-codebase
   emitted_at: <ISO8601 timestamp>
-  status: completed | halted
+  status: completed                                 # or paused | halted
   artifacts:
-    - <absolute path to codebase-map.md>
+    - <absolute path to .mega-sdd/codebase/codebase-map.md>
+    - <absolute path to .mega-sdd/codebase/starterkit-context.yaml>  # NEW v2.6.0+ (only when deep-scan ran)
+  starterkit_context:                                                  # NEW v2.6.0+ block (only when deep-scan ran)
+    reused: false                                                       # true if cache hit
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
   next_action:
-    suggested_skill: mega-sdd:bind-codebase
-    suggested_args: ["<absolute vault path>", "--auto"]
-    rationale: "Codebase mapped; validate vault claims against it."
-  blockers: []
+    type: invoke_skill
+    suggested_skill: mega-sdd:generate-intent          # Iter 27 starterkit-first ordering
+    suggested_args:
+      - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
+      - "--auto"
+  blockers: []                                          # populated when status: halted
+  metrics:
+    files_scanned: <int>
+    symbols_extracted: <int>
+    deep_scan_wall_clock_sec: <int>                     # NEW v2.6.0+: 0 on cache hit
 ```
 
-Status `halted` only when repo > 100k files without `--force-large` (per existing halt-condition). Required ONLY under `--auto`.
+> The `starterkit_context:` block + the `starterkit-context.yaml` artifact entry are CONDITIONAL — emitted only when deep-scan ran successfully (framework detected at MEDIUM+ confidence). Skip both when deep-scan was skipped or failed entirely.
+
+Status `halted` on: `dep_missing` | `deep_scan_subagent_all_failed` | `memory_in_use`. Required ONLY under `--auto`.
 
 ## Memory layer (v1.2+, Iter 5)
 
