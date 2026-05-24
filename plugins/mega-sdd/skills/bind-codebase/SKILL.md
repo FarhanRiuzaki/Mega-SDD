@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.10.1
+version: 1.10.2
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -466,6 +466,8 @@ blocker:
 This YAML is the canonical halt artifact. Prose announcement remains for human readability; the structured form is for orchestrate-flow consumption and automation parsing.
 
 6. **Audit log.** Append entry to `<vault>/vault.json` changelog: `{ "event": "bind", "at": "...", "summary": "N confirmed, N conflict, N oq" }`.
+
+   **v1.10.2+, Iter 49 (D3-012 closure) — vault.json advisory lock:** acquire exclusive file lock on `<vault>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE the append write. Backoff + retry 3x; fail with `memory_in_use` halt if all retries fail. Release lock after write completes. Lock acquisition is REQUIRED — concurrent-tab writes would corrupt the JSON.
 
 ## Anti-hallucination rails
 

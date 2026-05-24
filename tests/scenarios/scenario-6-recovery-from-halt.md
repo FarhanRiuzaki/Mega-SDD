@@ -338,6 +338,189 @@ Disables memory layer for this run. Chain proceeds. Migrate later via `mega-sdd:
 
 ⚠️ Bypasses safety rail. Use ONLY when you've manually verified the code change is intentional + acceptable. Logged to memory for audit.
 
+---
+
+# Additional halt walkthroughs (v3.33.0+, Iter 49 — closes audit D3-006)
+
+Iter 49 added 10 high-frequency halt walkthroughs to cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+
+## Scenario walkthrough — `handoff_missing` (Iter 40 + 43 fix-forward)
+
+**When you'll see it.** A sub-skill in an `--auto` chain exits without emitting a `handoff:` YAML block in its chat output. Orchestrator can't decide auto-continue / pause / stop without that block. Per Iter 43 fix-forward: the check looks at the sub-skill's chat output (last assistant message), NOT a file on disk.
+
+**Example halt envelope:**
+
+```yaml
+type: handoff_missing
+source_skill: orchestrate-flow
+details:
+  failing_skill: bind-codebase
+  last_known_step: "Step 7 (binding entries written)"
+  chat_tail_excerpt: "... write to file failed: ENOSPC: no space left on device\nProcess exited with code 1"
+next_action:
+  type: inspect_subskill_logs
+  hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML in chat. Inspect chat_tail_excerpt for crash logs / OS-level failures."
+```
+
+**Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`/mega-sdd:bind-codebase <vault-path>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
+
+Cross-refs: `vault-contract.md §halt-protocol §handoff_missing`; `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
+
+## Scenario walkthrough — `artifact_missing` (Iter 40)
+
+**When you'll see it.** A sub-skill emits a handoff YAML with `artifacts: [paths]` listing files that don't exist on disk (because the producer crashed mid-write OR fabricated paths). Orchestrator's step `b.vii` existence-checks every path BEFORE consuming.
+
+**Example halt envelope:**
+
+```yaml
+type: artifact_missing
+source_skill: orchestrate-flow
+details:
+  failing_skill: generate-units
+  missing_paths: ["<vault>/units/U-007.md", "<vault>/units/U-008.md"]
+  present_paths: ["<vault>/units/U-001.md", ..., "<vault>/units/U-006.md"]
+  handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"
+next_action:
+  type: re_run_producer
+  hint: "Producer declared 8 unit files but only wrote 6. Re-run /mega-sdd:generate-units standalone to reproduce. Likely cause: crash mid-loop."
+```
+
+**Recovery:** re-run the producer skill standalone; inspect chat for mid-write crash signals. If reproducible → file bug. If transient → re-run + retry chain.
+
+## Scenario walkthrough — `partial_state_corrupt` + saga rollback (Iter 40 + 45)
+
+**When you'll see it.** `execute-bolts --resume` reads `<vault>/bolts/U-XXX/partial-state.json` and JSON parse fails. Previously silent overwrite (Iter 30); now ALWAYS-STOP with forensics path suggestion.
+
+**Recovery option 1 (forensics + restart):**
+
+```bash
+mv <vault>/bolts/U-007/partial-state.json <vault>/bolts/U-007/partial-state.json.corrupt-$(date -u +%Y-%m-%dT%H:%M:%SZ)
+/mega-sdd:execute-bolts U-007 --resume   # starts fresh now that corrupt file is moved aside
+```
+
+**Recovery option 2 (saga rollback — Iter 45 v2.0 partial-state):** if the corrupt file is actually v2.0 with intact `rollback_hints[]` despite parse failure (rare — JSON header valid but `rollback_hints` array malformed), use `--rollback` to undo prior non-idempotent steps before re-attempting:
+
+```bash
+/mega-sdd:execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
+/mega-sdd:execute-bolts U-007              # fresh re-run from clean slate
+```
+
+Cross-refs: `vault-contract.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Saga compensating actions`.
+
+## Scenario walkthrough — `oq_blocker`
+
+**When you'll see it.** Generate-intent or any AI consumer reading the vault non-interactively encounters an unresolved P1 Open Question that blocks downstream work.
+
+**Recovery:**
+
+```bash
+/mega-sdd:resolve-oq <vault-path>       # interactive Q&A walk through unresolved OQs
+# OR
+# Edit 03-open-questions.md directly + add "status: resolved" + answer; then re-run upstream skill
+```
+
+If the OQ is `category: tech` and can be auto-resolved via codebase scan: re-run `bind-codebase` (it auto-resolves tech OQs with HIGH classification_confidence).
+
+## Scenario walkthrough — `diff_conflict` (Iter 3)
+
+**When you'll see it.** `diff-vault` detects that a new PRD revision conflicts with a vault Resolved-OQ or ADR Decision. Needs stakeholder input — never auto-overrides existing decisions.
+
+**Example envelope:**
+
+```yaml
+type: diff_conflict
+source_skill: diff-vault
+tag: OQ-AR-12
+priority: n/a
+conflict_old: "vault says: payment provider = Stripe"
+conflict_new: "new PRD says: payment provider = Adyen"
+options: ["supersede", "keep_vault", "capture_both"]
+```
+
+**Recovery:** review the conflict context, pick one of the 3 options, then re-run `diff-vault` with `--resolve=<option>` OR edit vault markdown directly + re-run.
+
+## Scenario walkthrough — `dispatch_prompt_too_large` (Iter 30 + 44)
+
+**When you'll see it.** Per Iter 44 v2.8.0+ semantics: fires ONLY when constitution_clauses alone exceeds 10KB after all disposable T2 sections truncated to drop floor. Real config issue, not bolt-fixable.
+
+**Recovery:** the halt envelope shows `warnings: [{section, rule_applied, bytes_saved}, ...]` — review which sections truncated. If constitution_clauses is the bulk, consider:
+1. Splitting the unit (smaller scope = fewer constitution clauses referenced)
+2. Reducing the unit's `vault_source` array to fewer sections
+3. (Last resort) editing the constitution to merge or shorten clauses
+
+Cross-refs: `execute-bolts/SKILL.md §Step 4.5.a.5 T2 Section Priority + Truncation`.
+
+## Scenario walkthrough — `provenance_missing` (Iter 30)
+
+**When you'll see it.** Bolt subagent committed code without the provenance trailer (`# mega-sdd: unit=U-XXX bolt=<sha>`). Post-flight scan catches this.
+
+**Recovery:** edit each modified file to add the trailer; amend the bolt commit:
+
+```bash
+# In your editor, add trailer to top of each modified file
+git add <modified-files>
+git commit --amend --no-edit
+/mega-sdd:execute-bolts U-007 --resume   # post-flight will pass now
+```
+
+Cross-refs: `bolt-dispatch-prompt.md §Provenance trailer`.
+
+## Scenario walkthrough — `bind_conflict_constitution_violation` (Iter 20)
+
+**When you'll see it.** A claim being bound conflicts with a security/compliance clause in `<vault>/constitution.md` §B or §F. Constitution is non-negotiable — overrides binding gate.
+
+**Example envelope:**
+
+```yaml
+type: bind_conflict_constitution_violation
+source_skill: bind-codebase
+details:
+  claim_id: C-042
+  claim_text: "POST /api/login endpoint uses session cookies"
+  conflict: "Constitution §B-002 requires JWT for all auth endpoints"
+  constitution_clause: "B-002"
+```
+
+**Recovery:**
+1. Review constitution §B-002. Is it still valid? If outdated, edit constitution.md + re-run binding.
+2. If constitution is correct, the claim is wrong — fix the PRD/vault and re-run binding.
+3. Never bypass — constitution violations are blocking by design.
+
+## Scenario walkthrough — `cross_squad_dep_invalid` (Iter 25)
+
+**When you'll see it.** A unit declares `consumes_interface: <ref>` from a different squad, but the producer squad hasn't locked that interface yet OR the ref points to a non-existent interface.
+
+**Recovery:**
+
+```bash
+# Option A: producer squad locks the interface
+/mega-sdd:execute-bolts U-<producer-unit> --squad=producer-squad
+
+# Option B: consumer waits (orchestrate-flow auto-handles via convergence loop with backoff)
+/mega-sdd:orchestrate-flow --converge --max-cycles=3
+
+# Option C: fix the ref if it points to wrong interface
+# Edit unit's consumes_interface field; re-run generate-units --refresh
+```
+
+Cross-refs: `generate-units/references/cross-squad-interfaces.md`.
+
+## Scenario walkthrough — `memory_schema_mismatch` (Iter 5)
+
+**When you'll see it.** A persisted memory file's `schema_version` doesn't match the current code's expected schema. Mega-sdd's memory subsystem detected the drift and refuses to read without explicit migration consent.
+
+**Recovery:**
+
+```bash
+/mega-sdd:memory migrate         # interactive migration walk; shows diff + asks confirm
+# OR
+/mega-sdd:memory --memory-off    # one-off: ignore memory for this run
+```
+
+For new projects: this halt should never fire on first run. If it fires after a plugin upgrade: that's expected — run `memory migrate`.
+
+---
+
 ## What you learned
 
 - Halts are SAFETY NET, not bugs — they fire on real issues mega-sdd's rails caught

@@ -70,7 +70,50 @@ phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed fr
 - `generate-intent` Step 3 — initial generation.
 - `resolve-oq` Step 2c step 9 — after every Resolve / Out-of-Scope / Defer outcome.
 - `diff-vault` Step 6.5 — after applying approved changes (added/changed/removed entities, flows, ADRs, auto-resolved or new OQs).
+- `bind-codebase` Step 6 — audit log append (small append, not full regen, but still subject to lock per §Concurrency below).
 - `detect-drift` — does NOT regenerate. detect-drift produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + generate-intent re-run (for entity/flow/ADR additions).
+
+### Concurrency contract (v0.15+, Iter 49 — closes audit D3-012)
+
+All `vault.json` writers MUST acquire an exclusive advisory file lock before writing. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the existing Iter 5 memory file-lock pattern — no new mechanism.
+
+**Writers subject to lock (4 total):**
+- `generate-intent` Step 11 (initial vault.json write)
+- `bind-codebase` Step 6 (audit log append)
+- `diff-vault` Step 8 (regen from markdown)
+- `resolve-oq` Step 2c step 9 (regen after OQ outcome — already file-lock-disciplined via memory subsystem, but explicit lock acquisition recommended)
+
+**Lock acquisition pattern (per `mega-sdd:memory` SKILL.md §file-lock):**
+
+```
+1. Compute lock_path = <vault>/vault.json.lock
+2. Attempt exclusive lock: create lock_path with O_EXCL | O_CREAT
+3. On collision (file exists): backoff (100ms / 500ms / 1500ms) + retry 3 attempts
+4. If all 3 retries fail → emit halt `memory_in_use` blocker with details {file: "vault.json", attempts: 3}
+5. On lock success: perform vault.json write atomically (temp file + rename)
+6. Release lock: rm lock_path
+```
+
+**Halt envelope (reuses `memory_in_use` — no new halt type):**
+
+```yaml
+type: memory_in_use
+source_skill: <bind-codebase | diff-vault | generate-intent | resolve-oq>
+details:
+  file: "<vault>/vault.json"
+  lock_path: "<vault>/vault.json.lock"
+  attempts: 3
+  lock_holder_pid: <int OR "unknown — orphaned lock; rm lock_path manually if no concurrent run">
+next_action:
+  type: wait_or_orphan_check
+  hint: "Another mega-sdd skill is writing vault.json concurrently. Wait 5s + retry. If no other run is active, check for orphaned lock file: `ls -la <lock_path>` — if its mtime > 30s old and no PID owner, rm + re-run."
+```
+
+**Reader behavior:** vault.json readers (any skill that reads it) DO NOT need the lock — POSIX rename is atomic, so readers always see a consistent view (pre-write OR post-write, never mid-write). Lock is exclusive for writers only.
+
+**detect-drift exception:** detect-drift NEVER writes vault.json (existing convention per detect-drift SKILL.md §writes). No lock acquisition required.
+
+**Backward compatibility:** pre-Iter-49 writers (any skill version that pre-dates this iter) MAY race; concurrent-write users should upgrade all skills atomically (single plugin version bump).
 
 ### OQ status tracking (v1.1+)
 
