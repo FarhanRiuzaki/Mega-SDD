@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.1.2
+version: 3.2.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -215,6 +215,24 @@ next_action:
 
    b. **Validation gate (v3.0.0+, Iter 33) — validate received handoff against `references/handoff-contract.md` schema annotations:**
 
+      0. **Handoff presence check (v3.2.0+, Iter 40 — silent-failure path closure):**
+         After sub-skill exits, orchestrator computes expected handoff path per per-skill emission convention in `handoff-contract.md` (typically `<vault>/.internal/checkpoints/<ISO8601-date>-<skill>.handoff.yaml` OR similar — consult per-skill section).
+         - If file does not exist (`test ! -f`) OR size is 0 bytes → emit halt `handoff_missing` with details `{failing_skill, expected_handoff_path, last_known_step: <best-effort from any checkpoint trail or "unknown">}`; STOP chain.
+         - Closes Iter 38 audit D3-001. Previously, missing handoff caused orchestrator to either proceed with empty state OR fail downstream with cryptic file-not-found errors; now halts at the exact failing boundary.
+
+         ```yaml
+         # Example handoff_missing envelope:
+         type: handoff_missing
+         source_skill: orchestrate-flow
+         details:
+           failing_skill: bind-codebase
+           expected_handoff_path: "<vault>/.internal/checkpoints/2026-05-25-bind-codebase.handoff.yaml"
+           last_known_step: "Step 7 (binding entries written)"
+         next_action:
+           type: inspect_subskill_logs
+           hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML. Inspect chat output for crash logs OR re-run `/mega-sdd:bind-codebase` standalone to reproduce. Likely cause: skill crashed before §Handoff emission step OR file write failed (disk full / permissions)."
+         ```
+
       i. **Type-check fields against handoff-contract.md TYPE annotations (v3.0.0+, Iter 33 F4):**
          For each field present in handoff YAML:
          - Lookup TYPE annotation in handoff-contract.md §<field-name> section
@@ -257,7 +275,31 @@ next_action:
       v. For each field declared `(OPTIONAL)`:
            - Field absence OK; log presence/absence for telemetry only.
 
-      vi. If all validation passes → continue to step c.
+      vi. If all schema validation passes → proceed to step vii.
+
+      vii. **Artifact existence check (v3.2.0+, Iter 40 — silent-failure path closure):**
+         Iterate the `artifacts: [paths]` array from the validated handoff. For each path:
+         - If absolute file path: verify `test -f <path>` returns 0.
+         - If absolute directory path: verify `test -d <path>` returns 0.
+         - If relative path: log warn-only ("artifact path is relative; cannot existence-check") + continue.
+         If ANY listed artifact fails the existence check → emit halt `artifact_missing` with details `{failing_skill, missing_paths: array, present_paths: array, handoff_file: <path>}`; STOP chain.
+         Closes Iter 38 audit D3-002. Previously, missing artifacts caused next-stage skill to fail with cryptic "file not found"; now halts at producer boundary with explicit list.
+
+         ```yaml
+         # Example artifact_missing envelope:
+         type: artifact_missing
+         source_skill: orchestrate-flow
+         details:
+           failing_skill: generate-units
+           missing_paths: ["<vault>/units/U-007.md", "<vault>/units/U-008.md"]
+           present_paths: ["<vault>/units/U-001.md", "<vault>/units/U-002.md", ..., "<vault>/units/U-006.md"]
+           handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"
+         next_action:
+           type: re_run_producer
+           hint: "Producer skill `generate-units` declared 8 unit files in handoff but only wrote 6. Re-run `/mega-sdd:generate-units` standalone to reproduce. Likely cause: skill crashed mid-loop after emitting handoff metadata for all units but only writing some. Inspect chat output."
+         ```
+
+      viii. If all checks pass → continue to step c.
 
    ```yaml
    # Example invalid_handoff envelope (REQUIRED field missing):
@@ -494,6 +536,9 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `predictive_check_failed` (v3.0.0+, Iter 33) — orchestrate-flow: fatal preflight check failed; chain blocked.
 - `invalid_handoff` (v3.0.0+, Iter 33) — orchestrate-flow: handoff schema validation failed; producer-side error.
 - `handoff_type_mismatch` (v3.0.0+, Iter 33) — orchestrate-flow: handoff field type mismatch with schema annotation.
+- `handoff_missing` (v3.2.0+, Iter 40) — orchestrate-flow: sub-skill exited but no handoff YAML at expected path (silent-failure path closure).
+- `artifact_missing` (v3.2.0+, Iter 40) — orchestrate-flow: handoff YAML lists artifact paths that don't exist on disk (silent-failure path closure).
+- `partial_state_corrupt` (v2.7.3+, Iter 40) — execute-bolts `--resume`: partial-state.json fails JSON parse (silent-failure path closure).
 
 ### Halt types that are SOFT (warn-only, chain continues)
 
