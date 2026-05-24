@@ -1123,6 +1123,62 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 - Classifier biases never bypass the heuristic table; they pre-rank options for review
 - `--memory-off` disables both reads and writes
 
+## Halt conditions (Iter 28 — Step 0.9 scope detection)
+
+Three halts fire during Step 0.9 (scope detection + filtering). All classified as ALWAYS STOP CHAIN by `orchestrate-flow` (require human input — see `orchestrate-flow/SKILL.md` halt taxonomy v2.4.1+).
+
+### `scope_not_declared_in_prd`
+
+Fires when: `--scope=<id>` flag set BUT id not in PRD's `scopes:` frontmatter declared list.
+
+```yaml
+blocker:
+  type: scope_not_declared_in_prd
+  context: "Step 0.9 scope picker"
+  requested_scope: "<id from flag>"
+  declared_scopes: ["<id1>", "<id2>", ...]  # from PRD frontmatter
+  options: ["re-pick-from-declared", "cancel"]
+  resolver_route: user
+```
+
+User options: re-pick valid scope from PRD declared list OR cancel.
+
+### `prd_no_scopes_block_user_rejected_retrofit`
+
+Fires when: PRD frontmatter lacks `scopes:` block AND user rejected AI retrofit bridge AND chose cancel option.
+
+```yaml
+blocker:
+  type: prd_no_scopes_block_user_rejected_retrofit
+  context: "Step 0.9 retrofit bridge"
+  prd_path: "<path>"
+  options: ["manual-retrofit", "single-scope-fallback", "cancel"]
+  resolver_route: user
+```
+
+User options: manually retrofit PRD with scopes frontmatter OR fall back to legacy single-vault flow OR cancel.
+
+### `prd_retrofit_low_confidence`
+
+Fires when: AI retrofit subagent returned `overall_confidence: LOW` per `references/legacy-retrofit-prompt.md` output schema.
+
+```yaml
+blocker:
+  type: prd_retrofit_low_confidence
+  context: "Step 0.9 retrofit AI subagent returned LOW confidence"
+  detected_scopes: ["<id1>", "<id2>"]  # subagent's best guess
+  overall_confidence: LOW
+  warnings: ["<from subagent>", ...]
+  options: ["accept-anyway", "single-scope-fallback", "cancel"]
+  resolver_route: user
+```
+
+User options: accept retrofit despite LOW confidence (review per-scope manually after vault generation) OR single-scope fallback OR cancel.
+
+### Back-compat note
+
+Pre-v1.12 vaults / pre-Iter-28 PRDs never trigger these halts (scope detection runs only when `scopes:` block present OR retrofit bridge engaged).
+
 ## References
 
 - `references/templates/` — scaffolds for each of the 7 files. Read these before drafting.
