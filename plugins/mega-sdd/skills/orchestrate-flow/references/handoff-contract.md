@@ -53,6 +53,13 @@ handoff:
   replay:                               # v3.13+ (Iter 18 — formally added Iter 20) — when replay capture active
     snapshot_path: <abs path to .internal/replays/*.jsonl>
     divergence_classification: clean | minor | high | n/a
+  starterkit_context:                   # v3.23+ (Iter 32) — optional; present when scan-codebase deep-scan stage ran
+    reused: <bool>                      # true if cache hit (no subagent dispatch); false if fresh scan
+    framework: <string>                 # e.g., laravel
+    auth_lib: <enum>                    # mirrors §auth.lib in starterkit-context.yaml
+    rbac_lib: <enum>                    # mirrors §rbac.lib
+    ui_stack: <string>                  # short-form summary, e.g., "alpine + tailwind + sweetalert2"
+    libs_count: <int>                   # total libs detected in §libs
   metadata:                             # v2.1+ (Iter 5) — memory layer integration; optional otherwise
     memory_context:                     # IN — orchestrator provides relevant memory slices to skill at invocation
       project_decisions_relevant: []    # rows from <project>/.mega-sdd/memory/decisions.md matching the skill's domain (v3.4+ canonical)
@@ -68,6 +75,30 @@ handoff:
           <markdown row or JSON entry to append>
         source_run: <skill-name>@<timestamp>
 ```
+
+### `starterkit_context:` (v3.23.0+, Iter 32)
+
+Optional block carrying starterkit detection results forward through the chain.
+
+**Producer:** scan-codebase v2.6.0+ Step 2 deep-scan stage emits this block when a framework is detected with confidence ≥ MEDIUM AND `starterkit-context.yaml` was written.
+
+**Propagation:** orchestrate-flow passes this block to all downstream skills (generate-intent, bind-codebase, generate-units, execute-bolts) without modification.
+
+**Schema:**
+
+```yaml
+starterkit_context:
+  reused: <bool>                  # true if cache hit (no subagent dispatch); false if fresh scan
+  framework: <string>             # e.g., laravel
+  auth_lib: <enum>                # mirrors §auth.lib in starterkit-context.yaml
+  rbac_lib: <enum>                # mirrors §rbac.lib
+  ui_stack: <string>              # short-form summary, e.g., "alpine + tailwind + sweetalert2"
+  libs_count: <int>               # total libs detected in §libs
+```
+
+**Consumer-side annotations:** generate-units and execute-bolts MAY append their own metrics under this block (see per-skill examples).
+
+**Canonical source of truth for full structure:** `plugins/mega-sdd/references/starterkit-context-schema.md`
 
 ### Status values
 
@@ -140,7 +171,16 @@ handoff:
     suggested_skill: mega-sdd:bind-codebase
     suggested_args: ["/path/to/vault/", "--auto"]
     rationale: "Codebase mapped; validate vault claims against it."
+  starterkit_context:
+    reused: false
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
 ```
+
+Status `halted` on `deep_scan_subagent_all_failed`. Status soft-halt (warn-only, chain continues) on `deep_scan_subagent_failed` / `deep_scan_cache_corrupt`.
 
 ### `bind-codebase`
 
@@ -180,9 +220,18 @@ handoff:
   metrics:
     items_processed: 12    # units
     items_blocked: 0
+  starterkit_context:
+    reused: false
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
+    units_with_starterkit_anchors: 12
+    units_with_starterkit_rules: 8
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`.
 
 ### `execute-bolts`
 
@@ -201,6 +250,15 @@ handoff:
   metrics:
     items_processed: 12    # units executed
     items_blocked: 0       # halts
+  starterkit_context:
+    reused: false
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
+    bolts_used_starterkit_slice: 11
+    slice_avg_size_kb: 1.6
 ```
 
 Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft`.

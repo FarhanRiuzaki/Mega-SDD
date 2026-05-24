@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.5.0
+version: 2.5.1
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -255,6 +255,13 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `prd_no_scopes_block_user_rejected_retrofit` — generate-intent: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chose cancel. ALWAYS STOP (user manually retrofits PRD or chooses single-scope fallback). v3.20+ Iter 28.
 - `prd_retrofit_low_confidence` — generate-intent: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP (user reviews/accepts anyway / single-scope fallback / cancel). v3.20+ Iter 28.
 - `prd_path_missing` — diff-vault (v1.3.0+ Iter 29): vault.json.prd_path_at_generation points to non-existent file. ALWAYS STOP (user must restore PRD or regenerate vault).
+- `deep_scan_subagent_all_failed` (v2.5.1+, Iter 32) — scan-codebase: all 4 deep-scan subagents failed. User re-runs later.
+- `starterkit_rule_citation_missing` (v2.5.1+, Iter 32) — generate-units: starterkit-derived Hard Rule lacks citation. User edits unit.
+
+### Halt types that are SOFT (warn-only, chain continues)
+
+- `deep_scan_subagent_failed` (v2.5.1+, Iter 32) — scan-codebase: single deep-scan subagent failed. Auto-retried; partial output on second failure.
+- `deep_scan_cache_corrupt` (v2.5.1+, Iter 32) — scan-codebase: starterkit-context.yaml YAML parse failed. Cache auto-invalidated; subagents re-dispatched. Transparent.
 
 ### `--converge` flag (v2.3+)
 
