@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.4.0
+version: 2.4.1
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -217,6 +217,10 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `cross_squad_dep_invalid` — explicit blocked_by needed; user configures (canonical name per `handoff-contract.md`; was `cross_module_dep_invalid` pre-v2.3.2 Iter 25)
 - `memory_schema_mismatch` — migration prompt; user opts in
 - `mode_migrate` — vault/code mode contradiction; user decides
+- `scope_not_declared_in_prd` — generate-intent: `--scope=<id>` flag mismatches PRD scopes block. ALWAYS STOP (user must pick valid scope from PRD declared list or cancel). v3.20+ Iter 28.
+- `prd_no_scopes_block_user_rejected_retrofit` — generate-intent: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chose cancel. ALWAYS STOP (user manually retrofits PRD or chooses single-scope fallback). v3.20+ Iter 28.
+- `prd_retrofit_low_confidence` — generate-intent: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP (user reviews/accepts anyway / single-scope fallback / cancel). v3.20+ Iter 28.
+- `prd_path_missing` — diff-vault (v1.3.0+ Iter 29): vault.json.prd_path_at_generation points to non-existent file. ALWAYS STOP (user must restore PRD or regenerate vault).
 
 ### `--converge` flag (v2.3+)
 
