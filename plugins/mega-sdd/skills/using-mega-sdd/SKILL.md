@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 1.3.0
+version: 1.3.1
 description: Use at session start when SDD topics arise — establishes how to route SDD work through mega-sdd phases. (v1.2+, Iter 4) Sharper auto-trigger — when CWD signals are strong (PRD upload + no vault, legacy codebase + rebuild intent, vault present + no units) AND user prompt contains mega-sdd intent keywords OR is empty/continuation, auto-invoke `orchestrate-flow --deep` for pipeline-end execution. Triggers on SDD keywords (intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, knowledge-base, extract intelligence, reverse engineer, auto, rebuild) and Indonesian variants (pecah PRD, buat dev, spec ini, siapkan context buat AI dev, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next).
 ---
 
@@ -71,6 +71,30 @@ Proposed pipeline (--deep, starterkit-first mode):
 When NO starterkit detected:
 - Default → halt with `no_starterkit_detected` (user picks: scaffold / opt-in greenfield / cancel)
 - User explicit `--greenfield` → skip halt; proceed with stack-agnostic vault generation (Mode C)
+
+### Multi-scope PRD picker (v1.3.1+, Iter 28)
+
+When `/mega-sdd:auto` invoked on a PRD with canonical multi-scope format (`scopes:` frontmatter), the chain proposal surfaces scope picker upfront:
+
+```
+Detected scopes in PRD: BE, MW, FE
+Smart default: BE (cwd basename matches)
+
+❓ This vault is for which scope?
+   [1] BE — Backend API (recommended)
+   [2] MW — Integration Middleware
+   [3] FE — Frontend Web
+   [4] All scopes (legacy single-vault)
+   [5] Cancel
+```
+
+When PRD lacks scopes block → retrofit bridge fires (per `generate-intent/references/legacy-retrofit-prompt.md`).
+
+When memory has prior scope for this PRD + same cwd → silent default with confirm-once UX (5s timeout).
+
+`--scope=<id>` flag bypasses picker entirely. `--scope=all` falls back to legacy single-vault behavior.
+
+See `tests/scenarios/scenario-7-multi-architect.md` for end-to-end walkthrough.
 
 ## Priority order
 
