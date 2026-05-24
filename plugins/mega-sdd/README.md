@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.18.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.26.2)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -82,13 +82,11 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
-## What's new in v3.26.1 (Iter 36, patch) — Upgrade-from-old-version guide
+## What's new
 
 ### v3.26.1 (Iter 36, patch) — Upgrade-from-old-version guide
 
 For users coming from older mega-sdd versions: see `plugins/mega-sdd/references/upgrade-from-old-version.md`. Consolidates compat matrix + migration commands + halt recovery + decision tree (Path A regenerate vs Path B preserve). Documentation-only patch; no behavior change.
-
-## What's new in v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
 
 ### v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
 
@@ -110,8 +108,6 @@ Before: vault only contained Phase 1; user had to know `suggested-phasing.md` ex
 **Plugin v3.25.0 → v3.26.0.**
 
 See [docs/superpowers/specs/2026-05-24-iter-35-reading-map-and-phase-discoverability-design.md](../../docs/superpowers/specs/2026-05-24-iter-35-reading-map-and-phase-discoverability-design.md) for full design.
-
-## What's new in v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
 
 ### v3.25.0 (Iter 34) — Dynamic Model Selection
 
@@ -188,7 +184,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 
 ---
 
-## What's new in v3.22.0 (Iters 17-30)
+### v3.22.0 (Iters 17-30)
 
 - **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
 - **Iter 18 Replay + PBT** — `/mega-sdd:replay <unit>` for regression detection; `properties:` field for invariant testing
