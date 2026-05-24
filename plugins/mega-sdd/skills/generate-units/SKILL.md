@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.7.0
+version: 2.7.1
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -792,6 +792,11 @@ handoff:
     libs_count: 47
     units_with_starterkit_anchors: 12          # NEW metric (mirrors metrics block above)
     units_with_starterkit_rules: 8             # NEW metric (mirrors metrics block above)
+    # Consumer (v2.7.1+, Iter 53 wiring closure): orchestrate-flow Step 6.b.ix cross-checks
+    # units_with_starterkit_rules > 0 against starterkit-context.yaml `starterkit_context.partial:` flag.
+    # If rules > 0 AND partial == true → halt `quality_gate_failed` subtype `starterkit_metrics_inconsistent`
+    # (rules pulled from incomplete framework slice — may cite missing conventions). Pre-Iter-53 these
+    # metrics were producer-only emission with no downstream consumer.
 ```
 
 Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`. Required ONLY under `--auto`.

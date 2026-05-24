@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.3.0
+version: 3.4.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -146,6 +146,12 @@ h. **No file writes** — Step 2.8 is purely resolution; resolved tiers live in 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).
    - **`--deep` mode (v1.3+)**: cap LIFTED — chain extends to pipeline-end per `references/routing-rules.md` §Deep-chain decision matrix. Auto-continue between phases via handoff YAML protocol (see `references/handoff-contract.md`).
+
+   **v3.4.0+ Iter 53 — chain optimization via binding provenance (consumer wiring closure):**
+   After chain is built, if the chain includes `scan-codebase` AND `<vault-path>/binding.md` already exists from a recent bind-codebase run, read the binding header for `binding_metadata.codebase_map_provenance` field (written by bind-codebase Step 1 per `plugins/mega-sdd/skills/bind-codebase/SKILL.md` v1.10+, Iter 46):
+   - IF `snapshot-verified` AND `<project>/.mega-sdd/codebase/codebase-map.md` mtime is newer than every tracked source file mtime → REMOVE scan-codebase from the chain; log skip line: `"⊘ scan-codebase skipped: binding.md attests snapshot-verified + source files unchanged (Iter 53 chain optimization)"`. Closes Iter 53 PARTIAL→USED wiring: previously bind-codebase wrote the provenance field but no consumer read it (audit finding — producer-only emission).
+   - IF `snapshot-stale` → keep scan-codebase in chain; prepend log line: `"⚠ scan-codebase retained: binding.md flagged snapshot-stale; codebase changed since last binding"`.
+   - IF `no-snapshot` OR binding.md absent OR field unparseable → keep scan-codebase in chain (pre-Iter-46 baseline behavior; no optimization).
 
 3.5. **Predictive preflight (v3.0.0+, Iter 33, generalizes Step 4 first-run pre-flight).**
 
@@ -300,7 +306,18 @@ next_action:
            hint: "Producer skill `generate-units` declared 8 unit files in handoff but only wrote 6. Re-run `/mega-sdd:generate-units` standalone to reproduce. Likely cause: skill crashed mid-loop after emitting handoff metadata for all units but only writing some. Inspect chat output."
          ```
 
-      viii. If all checks pass → continue to step c.
+      viii. If all checks pass → continue to step ix.
+
+      ix. **Cross-metric consistency check (v3.4.0+, Iter 53 — consumer wiring closure for `units_with_starterkit_*` metrics):**
+          For specific producers, validate that their emitted metrics are consistent with upstream cached state:
+          - **IF sub-skill == `generate-units`** AND handoff `metrics.units_with_starterkit_rules > 0`:
+            - Read `<project>/.mega-sdd/codebase/starterkit-context.yaml` → `starterkit_context.partial` flag (written by scan-codebase per `plugins/mega-sdd/references/starterkit-context-schema.md`).
+            - IF `starterkit_context.partial == true` AND `units_with_starterkit_rules > 0` → emit halt `quality_gate_failed` with details `{subtype: starterkit_metrics_inconsistent, failing_skill: generate-units, units_with_starterkit_rules: <N>, starterkit_partial: true, evidence: "generate-units pulled Hard Rules from a partial starterkit slice — rules may reference incomplete framework conventions"}`; STOP chain.
+            - IF consistent (partial=false OR rules=0) → log telemetry line `"✓ starterkit metrics consistent: rules=<N>, partial=false"` + continue.
+          - Closes Iter 53 PARTIAL→USED wiring: previously generate-units emitted `units_with_starterkit_rules` in handoff but no consumer cross-checked against starterkit-context.yaml `partial:` flag. Pure producer-only emission.
+          - Extensible: future producers MAY add their own consistency rules here following the same `IF sub-skill == <name>` gating pattern.
+
+      x. If all checks pass → continue to step c.
 
    ```yaml
    # Example invalid_handoff envelope (REQUIRED field missing):
@@ -354,6 +371,7 @@ next_action:
      - Per-module status from auto list-modules (X/Y modules completed)
      - AGENTS.md emission confirmation (file path + section count)
      - Memory review prompt if pending suggestions exist
+     - **(v3.4.0+, Iter 53)** Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated per Iter 47 D4-006 surface), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run /mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>)."` Closes Iter 53 PARTIAL→USED wiring: previously bolt subagent flagged the field per Iter 47 contract but no consumer surfaced it in chain summary.
    - **(v3.0.0+, Iter 33) Predictive preflight metrics:**
 
    ```yaml
