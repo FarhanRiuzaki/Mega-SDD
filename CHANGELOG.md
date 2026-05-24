@@ -5,6 +5,75 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.23.0] - 2026-05-24
+
+### Iter 32 — Starterkit-Aware Deep Scan (autonomous, default-on)
+
+**Feature iter:** producer + consumer ship in-iter per propagation directive. No follow-up audit closure needed.
+
+**Skills bumped:**
+- `scan-codebase` 2.5.0 → 2.6.0 (Step 10.5 deep-scan stage + 4 parallel subagents + cache + 3 new halts)
+- `generate-units` 2.5.4 → 2.6.0 (Step 7.7 starterkit Anchors + Hard Rules + Step 12.5 citation check + 1 new halt)
+- `execute-bolts` 2.6.0 → 2.7.0 (Step 4.5.b-starterkit T2 slice injection)
+- `orchestrate-flow` 2.5.0 → 2.5.1 (halt taxonomy: 4 new halts registered + SOFT halts subsection added)
+
+**New plugin files (7):**
+- `references/starterkit-context-schema.md` — canonical YAML schema for starterkit-context.yaml (~150 LOC)
+- `references/lib-patterns/README.md` — lib-pattern catalog index + framework extension protocol
+- `references/lib-patterns/laravel/auth-libs.md` — Sanctum / Breeze / Jetstream / Fortify / Passport detection
+- `references/lib-patterns/laravel/rbac-libs.md` — Spatie/permission / laravel-permission / custom detection
+- `references/lib-patterns/laravel/ui-libs.md` — JS/CSS/notification/icon/datatable libs detection
+- `references/lib-patterns/laravel/generic-libs.md` — queue/cache/log/test/http/misc catalog
+- `skills/scan-codebase/references/deep-scan-prompts.md` — 4 subagent prompt templates
+
+**New test files (1):**
+- `tests/scenarios/scenario-8-starterkit-aware-generation.md`
+
+**Modified reference docs:**
+- `skills/generate-intent/references/vault-contract.md` — halt type enum extended (+4 types)
+- `skills/orchestrate-flow/references/handoff-contract.md` — `starterkit_context:` schema field defined; per-skill examples updated for scan-codebase, generate-units, execute-bolts
+- `skills/execute-bolts/references/bolt-dispatch-prompt.md` — T2.3 "Starterkit context (relevant slice)" section added
+- `references/paths.md` — row for `.mega-sdd/codebase/starterkit-context.yaml`
+
+**4 new halt types** (registered across 4 surfaces: SKILL.md + vault-contract enum + orchestrate-flow taxonomy + handoff-contract per-skill examples — synchronized in one commit per iter-31 audit lessons):
+- `deep_scan_subagent_failed` (soft, scan-codebase) — single subagent failed; auto-retry; partial output on second failure
+- `deep_scan_cache_corrupt` (soft, scan-codebase) — starterkit-context.yaml YAML parse failed; cache auto-invalidated
+- `deep_scan_subagent_all_failed` (ALWAYS STOP, scan-codebase) — all 4 subagents failed; user re-runs later
+- `starterkit_rule_citation_missing` (ALWAYS STOP, generate-units) — starterkit-derived Hard Rule lacks Citation; user edits unit
+
+**Trigger test coverage (+12 cases):**
+- scan-codebase: SC-DS1..SC-DS6 (fresh deep-scan, cache reuse, cache invalidation, no-framework skip, subagent timeout + partial, all-fail hard halt)
+- generate-units: GU-SK1..GU-SK3 (starterkit Anchors/Rules with citations, greenfield graceful degradation, missing citation halt)
+- execute-bolts: EB-SK1..EB-SK2 (T2.3 slice injection only for relevant domains, slice >2KB truncation)
+- orchestrate-flow: OF-SK1 (end-to-end starterkit_context propagation through 5 pipeline phases)
+
+**Architecture summary:**
+- `scan-codebase` Step 10.5 deep-scan stage runs automatically when framework confidence ≥ MEDIUM. Dispatches 4 parallel `sonnet` subagents (auth/rbac/ui-ux/libs). Consolidator writes `.mega-sdd/codebase/starterkit-context.yaml`.
+- Cache via lock-file sha256 (composer.lock + package-lock.json | yarn.lock | pnpm-lock.yaml). Re-scan with unchanged deps: 0sec.
+- `generate-units` Step 7.7 derives per-unit starterkit Anchors + Hard Rules with mandatory citations.
+- `execute-bolts` Step 4.5.b-starterkit injects relevant slice (per `unit.starterkit_relevance`) into bolt-dispatch-prompt T2.3 section. Slice budget ≤2KB. Truncation order: libs[] → idioms[] → halt.
+- User's standing prefs (SweetAlert2, `document.addEventListener` over jQuery ready, responsive mobile-first) flow into Hard Rules automatically when detected by ui-ux-extractor.
+
+**Anti-halu rails (new):**
+- No-fabrication: `lib: not_detected` is valid; subagents never guess
+- Citation: every output field tied to `_source: [<file>, ...]`
+- Read-only: subagents have no mutating tool access
+- Citation-mandatory: every starterkit-derived Hard Rule MUST cite `starterkit-context.yaml §<path>`
+- Slice-budget: T2 starterkit slice ≤2KB; truncation order enforced
+
+**Iter-31 audit findings preemptively addressed:**
+- Producer-only ship pattern: consumer skills (generate-units, execute-bolts) ship IN this iter
+- Halt taxonomy gap: 4 new halts registered across all 4 surfaces in Task 4 (single synchronized commit)
+- Test coverage gap: 12 new trigger test cases + 1 scenario test ship in-iter
+- Stale skill name fossils: zero `grand-design-spec` / `vault-diff` / `drift-detect` in new files (canonical names only)
+
+**Plugin:** v3.22.0 → v3.23.0
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-24-iter-32-starterkit-aware-deep-scan.md`
+
+---
+
 ## [3.22.0] — 2026-05-24
 
 ### Added — Iter 30: execute-bolts Refinement (Tiered Context + Seamless Pipeline)
