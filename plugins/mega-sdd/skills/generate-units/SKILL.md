@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.5.4
+version: 2.6.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -271,6 +271,161 @@ blocker:
    - `--auto` flag suppresses interactive — picks safest default (`extend`)
    - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
 
+7.7. **Load starterkit-context.yaml + derive starterkit-specific Anchors and Hard Rules per unit (v2.6.0+, Iter 32).**
+
+   Runs AFTER Step 7.6 (target_files finalized) and BEFORE Step 8 (existing_interfaces). Starterkit relevance computation depends on `unit.target_files` being fully populated.
+
+   ### Step 7.7.a — Resolve starterkit-context.yaml
+
+   ```
+   Path: <project>/.mega-sdd/codebase/starterkit-context.yaml
+
+   IF file absent:
+     → log "starterkit-context unavailable; emit framework-pack-only Anchors"
+     → set every unit's frontmatter `starterkit_context_consumed: false`
+     → SKIP Steps 7.7.b - 7.7.e
+   IF file present:
+     → parse YAML
+     → IF parse fails: log warning; treat as absent; proceed as above
+     → IF starterkit_context.partial == true: note which slices are missing (partial_slices: [...])
+     → proceed to Step 7.7.b
+   ```
+
+   ### Step 7.7.b — Compute starterkit relevance per unit
+
+   For each unit being generated, inspect `unit.target_files` (finalized by Steps 7, 7.5, 7.6) and unit body content. Determine which starterkit slices apply:
+
+   ```
+   starterkit_relevance = []
+
+   IF any target_file matches:
+     resources/views/**, resources/js/**, resources/css/**, public/css/**, public/js/**
+   THEN starterkit_relevance += ["ui_ux"]
+      (skip if starterkit_context.ui_ux missing OR ui_ux in partial_slices)
+
+   IF any target_file matches app/Http/Controllers/**
+   AND unit body mentions any of: "auth", "login", "register", "logout", "password", "session"
+   THEN starterkit_relevance += ["auth"]
+      (skip if auth missing)
+
+   IF any target_file matches app/Http/Middleware/** OR app/Policies/**
+   OR unit body mentions any of: "role", "permission", "gate", "policy", "Spatie\\Permission"
+   THEN starterkit_relevance += ["rbac"]
+      (skip if rbac missing)
+
+   IF any target_file path appears in any libs[].usage_hint[]
+   THEN starterkit_relevance += ["libs"]
+      (skip if libs missing)
+   ```
+
+   Empty `starterkit_relevance: []` is a valid result for units that don't intersect any starterkit slice. In that case, skip Steps 7.7.c + 7.7.d for that unit.
+
+   ### Step 7.7.c — Derive starterkit Anchors per unit
+
+   For each unit with `starterkit_relevance` non-empty, append starterkit-specific anchors to `unit.anchors[]` (same structure as KB/binding anchors from Step 12.3 per-anchor verification):
+
+   ```
+   IF "ui_ux" in starterkit_relevance:
+     add anchor: <starterkit_context.ui_ux.layout_file>   (e.g., resources/views/layouts/app.blade.php)
+     IF starterkit_context.ui_ux.component_dir exists:
+       add anchor: <starterkit_context.ui_ux.component_dir>   (e.g., resources/views/components/)
+
+   IF "auth" in starterkit_relevance:
+     add anchor: <file path of starterkit_context.auth.user_model class>   (e.g., app/Models/User.php)
+     IF starterkit_context.auth.routes.login != "":
+       add anchor: routes/auth.php (or routes/web.php if auth.php absent)
+
+   IF "rbac" in starterkit_relevance:
+     IF starterkit_context.rbac.middleware contains entries:
+       add anchor: app/Http/Middleware/<middleware-class>.php for each middleware alias
+     add anchor: app/Providers/AuthServiceProvider.php
+
+   IF "libs" in starterkit_relevance:
+     for each lib in starterkit_context.libs whose usage_hint overlaps unit.target_files:
+       add the lib's usage_hint[0] file as an anchor (first hint file)
+   ```
+
+   Anchors append to `unit.anchors[]` alongside KB/binding anchors from prior steps. Deduplicate paths if a file is anchored multiple times.
+
+   ### Step 7.7.d — Derive starterkit Hard Rules per unit (with mandatory citation)
+
+   For each unit with `starterkit_relevance` non-empty, append starterkit-specific Hard Rules to `unit.hard_rules[]`. Follows the same shape as framework pack rules from Step 12.4.5 — EVERY rule MUST include an explicit `citation:` field referencing `starterkit-context.yaml §<path>`.
+
+   **Template format for each rule:**
+
+   ```
+   - text: "<rule text>"
+     citation: "starterkit-context.yaml §<path>"
+     source: starterkit-context.yaml
+   ```
+
+   **UI/UX-relevant unit examples (when "ui_ux" in starterkit_relevance):**
+
+   ```
+   - text: "MUST extend `<starterkit_context.ui_ux.layout_extends>` (e.g., layouts.app) in all Blade views generated by this unit"
+     citation: "starterkit-context.yaml §ui_ux.layout_extends"
+
+   - IF starterkit_context.ui_ux.notification_lib == "sweetalert2":
+       - text: "MUST use SweetAlert2 for confirmations and notifications (NEVER native alert() or window.confirm())"
+         citation: "starterkit-context.yaml §ui_ux.notification_lib"
+
+   - FOR EACH idiom in starterkit_context.ui_ux.idioms:
+       - text: "MUST follow starterkit idiom: <idiom>"
+         citation: "starterkit-context.yaml §ui_ux.idioms"
+
+     (Examples — emitted only if idiom is empirically present per ui-ux-extractor):
+     - "use document.addEventListener('DOMContentLoaded', ...) over $(document).ready"
+     - "responsive mobile-first (sm/md/lg breakpoints)"
+   ```
+
+   **Auth-relevant unit examples (when "auth" in starterkit_relevance):**
+
+   ```
+   - text: "MUST use auth guard '<starterkit_context.auth.guard>' (e.g., sanctum or web)"
+     citation: "starterkit-context.yaml §auth.guard"
+
+   - text: "MUST reference User model `<starterkit_context.auth.user_model>` not generic Auth::user()::class"
+     citation: "starterkit-context.yaml §auth.user_model"
+
+   - IF "2fa" in starterkit_context.auth.features:
+       - text: "Two-factor authentication is enabled in this starterkit; auth flows MUST respect 2fa challenge state"
+         citation: "starterkit-context.yaml §auth.features"
+   ```
+
+   **RBAC-relevant unit examples (when "rbac" in starterkit_relevance):**
+
+   ```
+   - IF starterkit_context.rbac.lib == "spatie/permission":
+       - text: "MUST use Spatie/permission middleware: route()->middleware('role:<role>') OR middleware('permission:<perm>')"
+         citation: "starterkit-context.yaml §rbac.middleware"
+
+       - text: "MUST reference Spatie\\Permission\\Models\\Role for role queries (NOT custom Role models)"
+         citation: "starterkit-context.yaml §rbac.role_model"
+   ```
+
+   **Libs-relevant unit examples (when "libs" in starterkit_relevance):**
+
+   ```
+   FOR EACH lib in starterkit_context.libs whose usage_hint overlaps unit.target_files:
+     - text: "MUST use existing starterkit library `<lib.name>` v<lib.version> for <lib.category> functionality, NOT a competing alternative"
+       citation: "starterkit-context.yaml §libs (name: <lib.name>)"
+   ```
+
+   ### Step 7.7.e — Update unit frontmatter
+
+   For each unit (even those with empty starterkit_relevance):
+
+   ```yaml
+   ---
+   unit_id: U-001
+   # ... existing frontmatter ...
+   starterkit_context_consumed: <true | false>     # NEW v2.6.0+, Iter 32
+   starterkit_relevance: [<list of applicable slices>]   # NEW v2.6.0+, Iter 32; may be empty list
+   ---
+   ```
+
+   Also append `starterkit-context.yaml` as a citation source in the unit's §Citations footer section (only if starterkit_context_consumed: true).
+
 8. **Fill `existing_interfaces`.**
    - Brownfield only: pull from binding manifest CONFIRMED entries for the targeted files
    - Greenfield: empty (no existing interfaces)
@@ -412,6 +567,30 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
       - Auto-populate from `binding.md` "## Suggested Unit Hard Rules" (Iter 3 addition in bind-codebase) and KB `## 9. Edge Cases & Gotchas` sections when applicable
       - Anti-patterns are guidance only — no halt if absent
 
+   f. **Starterkit citation check (v2.6.0+, Iter 32)**:
+
+      ```
+      IF unit.frontmatter.starterkit_context_consumed == true:
+        FOR EACH hard_rule in unit.hard_rules:
+          IF hard_rule.source == "starterkit-context.yaml" AND hard_rule.citation field is missing or empty:
+            → HALT `starterkit_rule_citation_missing`
+            → emit blocker YAML:
+                type: starterkit_rule_citation_missing
+                source_skill: generate-units
+                details:
+                  unit_id: <U-XXX>
+                  rule_text: "<text of offending rule>"
+                  missing_citation: "starterkit-context.yaml §<expected path>"
+                  rule_index: <index of rule in hard_rules[]>
+                next_action:
+                  type: edit_unit
+                  suggested_args: ["<U-XXX>"]
+                  hint: "Append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>"
+            → do NOT write the unit; halt is ALWAYS STOP
+      ```
+
+      This rail enforces that every starterkit-derived Hard Rule includes its citation — mirrors existing "every Hard Rule needs a Citation" rail (Step 12.4.5) extended to starterkit-derived rules.
+
    **Halt YAML format:**
 
    ```yaml
@@ -481,6 +660,10 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
 - (v2.2+, Iter 11) Module DAG validated for cycles same as unit DAG. `module_cycle_detected` halt if cycle found.
 - (v2.3+, Iter 12) `depends_on` emission STRICT by default — only emitted with concrete evidence (file overlap, symbol cross-ref, Migration notes ref, vault declaration, module blocked_by). Maximizes parallelism eligibility; user explicitly adds deps when implicit ordering matters.
 - (v2.3+, Iter 12) `--strict-deps` (default) | `--loose-deps` (legacy bias) | `--no-deps` (assume all parallel; testing only) flags available.
+- (v2.6.0+, Iter 32) `starterkit_context:` YAML file consumed read-only in Step 7.7; NEVER modified by generate-units. starterkit_context_consumed frontmatter flag set based on file presence only — never inferred.
+- (v2.6.0+, Iter 32) Starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` explicitly. Citation is machine-checked in Step 12.5.f. Missing citation → halt `starterkit_rule_citation_missing` (ALWAYS STOP — not a soft warning).
+- (v2.6.0+, Iter 32) Starterkit relevance computed from `unit.target_files` paths + unit body text only. NEVER fabricate relevance for domains not matched by the rules in Step 7.7.b.
+- (v2.6.0+, Iter 32) When `starterkit_context.partial == true`, skip Anchors + Hard Rules for slices listed in `partial_slices:`. Degrade to framework-pack-only for missing slices; do NOT guess absent slice content.
 
 ## Halt conditions
 
@@ -495,6 +678,27 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
 - (v1.2+, Iter 1) Dedup check finds a `create` unit whose target_files all exist → halt with `dedup_ambiguous`
 - (v1.3+, Iter 3) Unit missing required `## Anchors` (verify/extend), `## Migration notes` (extend), or required structure → halt `unit_underspecified`
 - (v1.3+, Iter 3) Hard rule line cannot be parsed against 5-grammar set → halt `hard_rule_unparseable`
+- (v2.6.0+, Iter 32) Starterkit-derived Hard Rule missing mandatory Citation field → halt `starterkit_rule_citation_missing` — ALWAYS STOP
+
+### `starterkit_rule_citation_missing` (v2.6.0+, Iter 32) — ALWAYS STOP
+
+Emitted by Step 12.5.f polished-prompt render pass when a unit's starterkit-derived Hard Rule lacks the mandatory `Citation: starterkit-context.yaml §<path>` field.
+
+```yaml
+type: starterkit_rule_citation_missing
+source_skill: generate-units
+details:
+  unit_id: <U-XXX>
+  rule_text: "<text of offending rule>"
+  missing_citation: "starterkit-context.yaml §<expected path>"
+  rule_index: <int>
+next_action:
+  type: edit_unit
+  suggested_args: ["<U-XXX>"]
+  hint: "Append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>"
+```
+
+Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass.
 
 ## Hand-off
 
@@ -516,18 +720,29 @@ handoff:
     suggested_skill: mega-sdd:execute-bolts
     suggested_args: ["--all", "--auto"]
     rationale: "Units generated; execute via bolts."
-  blockers: []   # populated on cycle/cross-squad/dedup/unit_underspecified/hard_rule_unparseable
+  blockers: []   # populated on cycle/cross-squad/dedup/unit_underspecified/hard_rule_unparseable/starterkit_rule_citation_missing
   metrics:
     items_processed: <N units>
     items_blocked: 0
+    units_with_starterkit_anchors: <int>       # NEW v2.6.0+, Iter 32 (count of units that gained starterkit Anchors)
+    units_with_starterkit_rules: <int>         # NEW v2.6.0+, Iter 32 (count of units that gained starterkit Hard Rules)
   scope:                                       # v2.5.4+ Iter 29 (P1-3) — omit block when vault has no scope field
     id: <vault.scope_metadata.id>
     name: <vault.scope_metadata.name>
     sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
     prd_sha256: <vault.prd_sha256>
+  starterkit_context:                          # NEW v2.6.0+, Iter 32 — passthrough from scan-codebase + generate-units metrics; omit block when starterkit-context.yaml absent
+    reused: false
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
+    units_with_starterkit_anchors: 12          # NEW metric (mirrors metrics block above)
+    units_with_starterkit_rules: 8             # NEW metric (mirrors metrics block above)
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable`. Required ONLY under `--auto`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`. Required ONLY under `--auto`.
 
 **v2.5.4+ Iter 29 (P1-3)**: `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract (line 44). Omit the entire `scope:` block when vault is legacy single-scope.
 
