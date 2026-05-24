@@ -513,7 +513,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
@@ -536,6 +536,11 @@ blocker:
 **`diff_conflict`** — emitted by `vault-diff` Step 5 when a Resolved-OQ conflict or Decision conflict requires stakeholder input. `tag` is the OQ or ADR ID. `priority` is `n/a` (conflicts aren't priority-tagged). `conflict_old`, `conflict_new`, `options` are required.
 
 **`drift_framework_mismatch`** — emitted by `drift-detect` Step 1.5 when the vault implies one framework but the codebase is another. `tag` is `n/a`. `priority` is `n/a`. `detected_framework` and `expected_framework` are required.
+
+- `deep_scan_subagent_failed` — scan-codebase v2.6.0+: a deep-scan subagent (auth/rbac/ui-ux/libs) failed once. Soft halt: auto-retried; on second failure emits partial starterkit-context.yaml with `partial: true`. Pipeline continues (warn-only).
+- `deep_scan_cache_corrupt` — scan-codebase v2.6.0+: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache auto-invalidated; subagents re-dispatched. Transparent to user.
+- `deep_scan_subagent_all_failed` — scan-codebase v2.6.0+: ALL 4 deep-scan subagents failed (likely API outage). ALWAYS STOP: user re-runs scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched.
+- `starterkit_rule_citation_missing` — generate-units v2.6.0+: a starterkit-derived Hard Rule lacks `Citation: starterkit-context.yaml §<path>` field. ALWAYS STOP: user must edit unit to add citation, then re-run Step 12.5 polished-prompt render pass.
 
 ### Multiple blockers in one run
 
