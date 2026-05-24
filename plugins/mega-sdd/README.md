@@ -82,6 +82,12 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
+## What's new in v3.26.1 (Iter 36, patch) — Upgrade-from-old-version guide
+
+### v3.26.1 (Iter 36, patch) — Upgrade-from-old-version guide
+
+For users coming from older mega-sdd versions: see `plugins/mega-sdd/references/upgrade-from-old-version.md`. Consolidates compat matrix + migration commands + halt recovery + decision tree (Path A regenerate vs Path B preserve). Documentation-only patch; no behavior change.
+
 ## What's new in v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
 
 ### v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
