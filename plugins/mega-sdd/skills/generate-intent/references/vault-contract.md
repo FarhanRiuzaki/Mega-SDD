@@ -12,6 +12,8 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
 {
   "vault_version": "1.0",
   "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "phase": 1,
+  "phase_total": 1,
   "project_shape": "web-app",
   "implementation_mode": "new",
   "prd_status": "draft",
@@ -46,8 +48,16 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
 }
 ```
 
+### Phase fields (v1.14+, Iter 35)
+
+```yaml
+phase: <int>          # NEW v1.14.0+ Iter 35 — which phase this vault represents (1, 2, 3, ...). Default 1 if not legacy-rebuild.
+phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed from suggested-phasing.md `## Phase` heading count). Default 1 if not legacy-rebuild.
+```
+
 ### Field rules
 
+- `phase` + `phase_total`: REQUIRED v1.14.0+. Defaults `phase: 1, phase_total: 1` for back-compat (greenfield + Mode A PRD-driven + single-phase Mode B). Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase count. Missing field on old vault.json (pre-v3.26.0) → treat as `phase: 1, phase_total: 1`.
 - Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`).
 - `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
 - `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.

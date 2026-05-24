@@ -1,7 +1,7 @@
 ---
 name: generate-intent
-version: 1.13.0
-description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
+version: 1.14.0
+description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. (v1.14+, Iter 35) `--phase=N` flag for Mode B KB sub-mode; vault.json gets `phase` + `phase_total` fields; 00-index.md emits §Phase context block. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
 # Grand Design Spec Generator
@@ -44,6 +44,22 @@ Behavior:
 1. **Read KB README first** — extract `Reengineering Opportunities` section (v1.4+ KBs) + `Mutability Tier Distribution` table. If pre-v1.4 KB (no tier markers), treat all claims as `[INTENT]` (safe middle-ground).
 
 2. **Read `99-rebuild-architecture/data-mutation-policy.md`** (v1.4+ KBs) — this drives ERD freedom. Without this file, fall back to "all `[INTENT]`" default.
+
+2.5. **Parse `--phase=N` flag (v1.14.0+, Iter 35).**
+
+Default: `--phase=1` (when flag absent).
+
+When `--kb` AND `--phase=N`:
+a. Read `<KB>/99-rebuild-architecture/suggested-phasing.md`. Count `## Phase` heading occurrences → `phase_total`.
+b. Validate `N` ≤ `phase_total`. If out of range → error message: "Phase <N> requested but suggested-phasing.md has only <phase_total> phases. Available: 1..<phase_total>." Halt invocation (no halt-protocol envelope needed — invocation-time validation).
+c. Read `## Phase <N>` section content (scope + deliverables + acceptance criteria).
+d. Scope vault generation to this phase's deliverables — extract claims from KB filtered by Phase N's scope. Out-of-phase domains may still be cited but not woven into Phase N's vault.
+e. Persist: write `phase: N`, `phase_total: <phase_total>` to `vault.json` (Step 11 below — vault.json write).
+
+Defensive fallback: if `suggested-phasing.md` absent OR has zero `## Phase` headers → log "no phasing detected in KB; treating as single-phase (phase: 1, phase_total: 1)" + proceed.
+
+When `--phase` flag absent AND `--kb` set → assume `--phase=1` AND set `phase_total` from suggested-phasing.md (or 1 if absent).
+When `--kb` not set (Mode A / Mode B free-text) → always `phase: 1, phase_total: 1`.
 
 3. **Read 10-domains files** + extract claims with both confidence + mutability markers.
 
@@ -849,6 +865,47 @@ These rules ensure docs are reviewable by humans across roles, not just AI dev a
 Required sections, **in this order**:
 
 1. **Project header** — project name + 1-sentence product description.
+
+1.5. **Phase context (v3.26+, Iter 35)** — emit immediately after Project header.
+
+generate-intent MUST write this block to `00-index.md` after the existing header:
+
+```markdown
+## Phase context (v3.26+)
+
+**Phase:** <N> of <M>
+
+**This vault covers:** <1-line summary from suggested-phasing.md §Phase N "scope" or "deliverables" — first sentence wins>
+```
+
+When `phase_total > 1` AND `N < phase_total`, additionally emit:
+
+```markdown
+**Upcoming phases:**
+- Phase <N+1>: <1-line from suggested-phasing.md §Phase N+1>
+- Phase <N+2>: <1-line from suggested-phasing.md §Phase N+2>
+- ...
+
+**To start the next phase** (after this phase's bolts complete):
+
+\`\`\`bash
+/mega-sdd:generate-intent --kb=<KB-path> --phase=<N+1>
+\`\`\`
+
+**Full phased plan:** `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`
+```
+
+When `phase_total == 1` (greenfield / single-phase project), omit upcoming phases + next-phase command; emit only:
+
+```markdown
+## Phase context (v3.26+)
+
+**Phase:** 1 of 1
+**Project type:** single-phase (greenfield OR Mode A PRD-driven OR Mode B without legacy-rebuild phasing)
+```
+
+Source for "This vault covers" line: first sentence of `## Phase N` section in `suggested-phasing.md`. When `suggested-phasing.md` absent or phase_total=1 (no phasing detected) → use "Single-phase project" as the summary.
+
 2. **Executive Summary** — 3–4 sentences: what + why + current state of project.
 3. **Project Readiness Status** — quick checklist:
    - PRD: complete / draft / pending
@@ -1102,6 +1159,9 @@ handoff:
     tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
     locked_claims_touched: []
     artifact_discards_proposed: <N>
+  phase:                                  # v1.14+ (Iter 35) — phase fields for KB sub-mode phased rebuild
+    phase: 1                              # which phase this vault represents (default 1)
+    phase_total: 1                        # total phases planned per suggested-phasing.md (default 1)
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works; user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.
