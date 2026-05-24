@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.6.0
+version: 1.7.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -45,7 +45,7 @@ Naming: this is the mega-sdd-flavored counterpart to `superpowers:reverse-engine
 - Legacy codebase path (positional, required)
 - `--out=<path>` (output directory; default `.mega-sdd/knowledge-base/` per `plugins/mega-sdd/references/paths.md`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
-- `--max-parallel=N` (subagent cap per wave; default 5, hard cap 8)
+- `--max-parallel=N` (subagent cap per wave; **default 3** as of v1.7.0+ Iter 51 per Zylos 2026 empirical optimum; soft warn at >5; hard cap 8 — see audit D2-001 + predictive-checks.md `subagent_capacity_reasonable`)
 - `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)
 
 ## Output
@@ -95,6 +95,22 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 - Wave 5 on main thread avoids subagent context loss — synthesis needs the whole map.
 
 **Common timeout pitfall:** subagents reading >40 KB single files hit stream timeout. Mitigation: tighten Read scope with line ranges, prefer `Grep` for targeted patterns, fall back to synthesis-from-siblings (read other KB files instead of legacy source) for late waves.
+
+**Glossary pre-parse (v1.7.0+, Iter 51 — closes audit D1-004):**
+
+Wave 1 writes `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction). Pre-Iter-51, every wave 2/3/4 subagent independently re-read the full glossary file when cross-referencing terms — ~96 KB redundant I/O per wave subagent (15% of 535K wave token budget).
+
+Iter 51 mitigation: between Wave 1 completion and Wave 2 dispatch, the main thread parses glossary.md ONCE and builds a compact `glossary_index` (term → 1-line definition + line number in glossary.md). Inject `glossary_index` into each wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder (per `references/wave-dispatch-templates.md` v1.1+ contract).
+
+Subagent prompts updated to instruct: "Reference glossary terms via `<GLOSSARY_INDEX>` — it's the authoritative compact index. ONLY read `glossary.md` directly when you need full prose context for a specific term (with `offset/limit` line range from the index). Do NOT re-read the entire glossary file."
+
+**Net savings:** ~96KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
+
+**Reference offset hints (v1.7.0+, Iter 51 — closes audit D1-007):**
+
+Section citations in wave outputs (e.g., `glossary.md §customer-onboarding`) now include line range hints when known. Format: `glossary.md §customer-onboarding:42-58` instead of bare `glossary.md §customer-onboarding`. Downstream consumers (other waves, generate-intent --kb) can use the line range with Read tool's `offset/limit` parameters for targeted reads (30-60% I/O reduction per reference read).
+
+Subagents instructed: "When citing a glossary/reference section, include the line range from `<GLOSSARY_INDEX>` so downstream readers can spot-read instead of full-document read."
 
 ## Extraction discipline (non-negotiable)
 

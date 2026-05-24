@@ -178,7 +178,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `subagent_capacity_reasonable`**
   command: `[ "<max-parallel-flag-value>" -le 5 ]`
   expected: exit 0 (max-parallel ≤ 5)
-  on_fail: "extract-intelligence --max-parallel=<N> exceeds empirical optimum (3 per Zylos 2026; max 5 per Iter 38 audit D2-001). Higher values cause coordination overhead > gain."
+  on_fail: "extract-intelligence --max-parallel=<N> exceeds Iter 38 audit D2-001 advisory threshold (5). Zylos 2026 empirical optimum is 3 — default lowered to 3 in v1.7.0+ (Iter 51) per audit. Higher values cause coordination overhead > gain. Soft warn at >5; hard cap at 8 still enforced by extract-intelligence."
   fatal: no
   predicts_halt: (no halt; degraded throughput)
 

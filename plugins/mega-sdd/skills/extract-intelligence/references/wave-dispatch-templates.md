@@ -18,6 +18,39 @@ Override per role via CLI flag / project config / user preference (see `referenc
 
 ---
 
+## `<GLOSSARY_INDEX>` placeholder (v1.7.0+, Iter 51 — closes audit D1-004)
+
+Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
+
+**Index format:**
+
+```yaml
+glossary_index:
+  - term: "customer-onboarding"
+    short_def: "End-to-end signup flow including KYC, tier assignment, and document upload"
+    location: "glossary.md:42-58"
+  - term: "trade-finance-letter-of-credit"
+    short_def: "Bank-issued commitment to pay seller upon shipment evidence per UCP 600"
+    location: "glossary.md:128-148"
+  # ... per glossary entry
+```
+
+**Subagent instruction (appended to Wave 2/3/4 prompts):**
+
+> When you need to reference a glossary term, FIRST consult `<GLOSSARY_INDEX>` above — it's the authoritative compact index for ALL terms in this KB. The `short_def` is usually sufficient for cross-reference citations. ONLY read `glossary.md` directly when you need full prose context for a specific term, AND when doing so use the line range from `location:` field (e.g., `Read glossary.md offset:42 limit:17`) — do NOT load the entire glossary file.
+>
+> When citing a glossary entry in your output, include the line range: write `glossary.md §customer-onboarding:42-58` (NOT bare `glossary.md §customer-onboarding`). Downstream readers can then spot-read instead of full-document read.
+
+**Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
+
+## Reference offset hints (v1.7.0+, Iter 51 — closes audit D1-007)
+
+Beyond glossary citations, all reference citations in wave outputs (e.g., `data-mutation-policy.md §Customer-tier`, `workflows/onboarding.md §step-3`) SHOULD include line range hints when known. Format: `<file>.md §<section>:line-X-Y`. Downstream consumers use the line range with Read tool's `offset`/`limit` parameters for targeted reads (30-60% I/O reduction per reference read).
+
+When the producer subagent doesn't know exact line ranges (citation written into prose without explicit tracking), the bare `<file>.md §<section>` form remains acceptable — consumers fall back to full-document read. Per simplifikasi: this is a best-effort optimization, not a hard requirement.
+
+---
+
 ## Generic agent prompt structure
 
 Every wave's subagent prompt MUST follow this skeleton:
