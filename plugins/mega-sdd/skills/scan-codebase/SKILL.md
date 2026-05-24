@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.7.0
+version: 2.7.1
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -412,6 +412,56 @@ Use existing memory file-lock pattern (per `mega-sdd:memory` SKILL.md §file-loc
 - Acquire exclusive lock before write
 - If lock held by concurrent scan-codebase invocation → fail fast with `memory_in_use` halt (existing halt type)
 - Release lock after write
+
+### Step 10.6 — Emit codebase-map shared snapshot (v2.7.1+, Iter 46 — D1-006 closure)
+
+After Step 10 codebase-map.md write completes, additionally write a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §scan-codebase (codebase-map snapshot)`. Enables downstream `bind-codebase` to skip per-source-file re-tokenization when codebase-map.md is fresh.
+
+```
+1. Compute codebase_map_sha256 = sha256(<just-written codebase-map.md>)
+2. Build source_files_sha256_map from the files enumerated during Step 10 symbol extraction:
+   {
+     "<repo-relative-path>": "<sha256-hex>",
+     ...
+   }
+3. Write atomically to <project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json:
+   {
+     "snapshot_schema_version": "1.1",
+     "snapshot_type": "codebase-map",
+     "generated_by": "scan-codebase@2.7.1",
+     "generated_at": "<ISO8601>",
+     "scope": null,
+     "files": [],
+     "codebase_map_sha256": "<from step 1>",
+     "source_files_sha256_map": { ... }
+   }
+4. Use temp-file + rename for atomicity (same pattern as Step 10.5.3 starterkit-context write).
+```
+
+If write fails (disk full / permissions): log warning + continue (snapshot is optimization, not correctness — bind-codebase falls back gracefully per shared-snapshot-schema.md §bind-codebase consumer).
+
+### Step 9.5 — Per-file symbol invalidation on `--shallow-scan` (v2.7.1+, Iter 46 — D2-007 closure)
+
+When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, scan-codebase performs per-file symbol cache invalidation instead of full re-extraction. Eliminates 5-10s rebuild on iterative runs.
+
+```
+1. IF --shallow-scan flag NOT set → skip this step; proceed with full Step 10 symbol extraction (current behavior)
+2. IF prior codebase-map.md does NOT exist → skip; proceed with full Step 10
+3. Parse prior codebase-map.md §2 "Public interfaces" table; build prior_sha256_map:
+   {
+     "<file_path>": "<Last_Scanned_Sha256 from §2 column>",
+     ...
+   }
+4. For each source file in repo (per Step 1-8 file enumeration):
+   - Compute current_sha256 = sha256(file contents)
+   - IF current_sha256 == prior_sha256_map[<file_path>] → REUSE prior §2 entries for this file (no tree-sitter re-extract)
+   - IF mismatch OR file not in prior map → re-extract symbols via tree-sitter; update Last_Scanned_Sha256 column to current_sha256
+5. Files in prior_sha256_map but NOT in current repo file enumeration → drop from §2 (file removed)
+6. Files NEW in current repo but NOT in prior_sha256_map → extract symbols + add to §2 with Last_Scanned_Sha256
+7. Write updated codebase-map.md atomically.
+```
+
+For default `--deep-scan` (no flag) OR `--no-cache` → behave as before (full re-extract; no per-file invalidation). Per-file invalidation is OPT-IN via `--shallow-scan` to preserve correctness guarantees for full scans.
 
 ---
 

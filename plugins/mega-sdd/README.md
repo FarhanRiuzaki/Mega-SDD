@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.30.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.31.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,38 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.31.0 (Iter 46, minor) — Shared-Snapshot Reuse Extension + Per-File Symbol Invalidation
+
+Closes Iter 38 audit Queue #6 (D1-006 + D2-007 — pattern C cache invalidation). Extends Iter 30 shared-snapshot reuse pattern from 1 hop (execute-bolts ↔ detect-drift) to 3 hops + adds per-file symbol cache for shallow-scans.
+
+**Change 1 (D1-006): shared-snapshot scope extension to 2 new hops**
+
+- **scan → bind hop:** `scan-codebase` Step 10.6 (NEW) emits `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` with `codebase_map_sha256` + `source_files_sha256_map`. `bind-codebase` Step 1 (extended) reuses parsed §2 symbols when snapshot fresh → 30-50% I/O saving on iterative dev cycles.
+- **extract → intent hop:** `extract-intelligence` Step 5.5 (NEW) emits `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json`. `generate-intent --kb` (Mode B preflight, v1.15+) verifies source files unchanged since extraction; warns advisory if drift (does NOT halt — user retains agency).
+
+**Change 2 (D2-007): per-file symbol invalidation for `--shallow-scan`**
+
+- `codebase-map.md §2 Public interfaces` gains `Last_Scanned_Sha256` column
+- `scan-codebase --shallow-scan` (v2.7.1+) does per-file invalidation in Step 9.5 (NEW): files with unchanged sha256 → reuse prior §2 entries; only changed files re-tokenized via tree-sitter
+- **Savings:** shallow re-scan goes from 5-10s → <1s on iterative dev (most files unchanged)
+
+**Shared-snapshot-schema.md bumped v1.0 → v1.1:**
+- `snapshot_type` enum + 2 values: `codebase-map`, `extracted-kb`
+- `codebase_map_sha256` + `source_files_sha256_map` OPTIONAL fields
+- New producer responsibilities + consumer responsibilities sections per skill
+
+**Skill bumps:**
+- `scan-codebase` 2.7.0 → 2.7.1 (PATCH — additive)
+- `bind-codebase` 1.9.4 → 1.10.0 (MINOR — new reuse path)
+- `extract-intelligence` 1.5.0 → 1.6.0 (MINOR — new snapshot emission step)
+- `generate-intent` 1.14.0 → 1.15.0 (MINOR — new freshness check preflight)
+
+**Backward compat:** all snapshot fields OPTIONAL; v1.0 readers gracefully degrade (no snapshot → behave as today). Zero breaking changes.
+
+**Plugin v3.30.0 → v3.31.0** (MINOR).
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-46-snapshot-reuse-extension-design.md`
 
 ### v3.30.0 (Iter 45, minor) — Saga Compensating Actions (`--rollback` flag + partial-state v2.0)
 

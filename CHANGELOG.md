@@ -5,6 +5,87 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.31.0] - 2026-05-25
+
+### Iter 46 — Shared-Snapshot Reuse Extension + Per-File Symbol Invalidation
+
+**Performance iter** (~2hr; MINOR bump — schema extension v1.0 → v1.1 + new producer/consumer paths). Closes Iter 38 audit Queue #6 (D1-006 + D2-007; pattern C cache invalidation). Extends Iter 30 shared-snapshot pattern from 1 hop to 3.
+
+**Problems closed:**
+
+- **D1-006**: shared-snapshot reuse (Iter 30) was scoped to `execute-bolts ↔ detect-drift` only. The same pattern wasn't extended to `scan → bind` or `extract → intent` hops. Audit estimate: 30-50% re-run I/O saving on incremental dev cycles.
+- **D2-007**: `scan-codebase --shallow-scan` re-extracted symbols for EVERY file on EVERY run, even files unchanged since last codebase-map.md. Audit estimate: 5-10s rebuild eliminated.
+
+**Solution:**
+
+**Change 1 (D1-006) — shared-snapshot extension to 2 new hops:**
+
+scan → bind hop:
+- `scan-codebase` Step 10.6 (NEW) emits `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` after Step 10 codebase-map.md write. Snapshot contains `codebase_map_sha256` + `source_files_sha256_map: {<repo-relative-path>: <sha256>}` for every scanned source file.
+- `bind-codebase` Step 1 (extended) reads snapshot before Step 2 claim matching. If `codebase_map_sha256` matches the just-read codebase-map.md → reuse parsed §2 symbol data directly (skip per-source-file re-tokenization). Mismatch or absent → fall back to current behavior (no regression).
+- Savings: ~30-50% I/O reduction on iterative dev when source files unchanged between scan and bind.
+
+extract → intent hop:
+- `extract-intelligence` Step 5.5 (NEW) emits `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-5 synthesis completes. Snapshot captures `source_files_sha256_map` for every legacy source file consumed by waves 1-4.
+- `generate-intent --kb` (Mode B preflight, v1.15+) checks snapshot before consuming KB. ALL files unchanged → log "KB freshness: confirmed". SOME drifted → log advisory warning + suggest `extract-intelligence --force`. DO NOT halt (preserves user agency on legacy-rebuild work).
+- Use case: detect when KB has gone stale because source code evolved since extraction.
+
+**Change 2 (D2-007) — per-file symbol invalidation:**
+
+- `codebase-map.md §2 Public interfaces` gains OPTIONAL `Last_Scanned_Sha256` column (per `references/codebase-map-schema.md` update).
+- `scan-codebase --shallow-scan` Step 9.5 (NEW) does per-file invalidation: only files whose current sha256 differs from `Last_Scanned_Sha256` get re-tokenized; unchanged files reuse prior §2 entries.
+- Files removed from repo → drop their §2 entries. Files NEW → extract + add. Files unchanged → reuse.
+- Default `--deep-scan` behavior preserved (full re-extract; no per-file invalidation) — opt-in to per-file cache via `--shallow-scan`.
+- Savings: 5-10s rebuild → <1s on iterative shallow re-scans.
+
+**Schema bump — `references/shared-snapshot-schema.md` v1.0 → v1.1:**
+
+- `snapshot_type` enum extended: + `codebase-map`, + `extracted-kb`
+- New OPTIONAL fields: `codebase_map_sha256`, `source_files_sha256_map`
+- New producer responsibilities sections: scan-codebase (codebase-map snapshot) + extract-intelligence (extracted-kb snapshot)
+- New consumer responsibilities sections: bind-codebase (codebase-map consumer) + generate-intent --kb (extracted-kb consumer)
+- File locations summary extended with 2 new snapshot paths
+
+**Backward compatibility (ALL changes):**
+- All new fields are OPTIONAL — v1.0 readers ignore unknown keys
+- Snapshot files are pure optimization — pre-Iter-46 codebase/KB without snapshots behave as today
+- `Last_Scanned_Sha256` column missing → triggers full re-extraction on first `--shallow-scan` (same as cold start)
+- Zero breaking changes; one-time migration cost on first post-upgrade scan
+
+**Plugin file changes:**
+- `plugins/mega-sdd/references/shared-snapshot-schema.md` — v1.0 → v1.1 with new types + fields + producer/consumer sections
+- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` — + Step 10.6 (snapshot emission); + Step 9.5 (per-file invalidation for --shallow-scan)
+- `plugins/mega-sdd/skills/scan-codebase/references/codebase-map-schema.md` — + `Last_Scanned_Sha256` column
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — Step 1 extended with snapshot reuse path
+- `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` — + Step 5.5 (extracted-kb snapshot emission)
+- `plugins/mega-sdd/skills/generate-intent/SKILL.md` — Mode B preflight extended with KB freshness check
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.30.0 → 3.31.0
+- `plugins/mega-sdd/README.md` — + v3.31.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-46-snapshot-reuse-extension-design.md` — new spec
+
+**Skill version bumps:**
+- `scan-codebase` 2.7.0 → 2.7.1 (PATCH — additive snapshot emission + opt-in invalidation path)
+- `bind-codebase` 1.9.4 → 1.10.0 (MINOR — new reuse path)
+- `extract-intelligence` 1.5.0 → 1.6.0 (MINOR — new snapshot emission step)
+- `generate-intent` 1.14.0 → 1.15.0 (MINOR — new freshness check preflight)
+
+**External research applied (per Iter 38 audit citations):**
+- Real-time codebase indexing (cocoindex-io) — per-file hash invalidation pattern
+- Aider repo-map architecture — symbol-graph caching pattern
+
+**Standing directives applied:**
+- simplifikasi: 2 audit findings → 1 iter; schema extension + 1 new step per producer + 1 reuse path per consumer
+- flawless: producer + consumer ship in-iter for both new hops; v1.0 readers gracefully degrade
+- reuse-first: extends Iter 30 shared-snapshot pattern + extends existing codebase-map.md §2 table schema; no new cache files outside existing `.shared-snapshots/` convention
+
+**Plugin:** v3.30.0 → v3.31.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-46-snapshot-reuse-extension-design.md`
+
+**Next:** Iter 47 — independent acceptance-test authoring (Queue #7; D4-006; HIGH structural risk closure).
+
 ## [3.30.0] - 2026-05-25
 
 ### Iter 45 — Saga Compensating Actions (`--rollback` flag + partial-state v2.0)
