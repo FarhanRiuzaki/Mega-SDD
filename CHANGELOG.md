@@ -5,6 +5,96 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.24.0] - 2026-05-24
+
+### Iter 33 — Flawless Seamless Intelligence (Orchestrator + Handoffs)
+
+**Combined mega-iter**: 3-phase delivery (~28-33hr) closes Iter 31 audit debt + audits intelligence + ships 4 intelligence features. orchestrate-flow major bump v2.5.1 → v3.0.0.
+
+**Skills bumped:**
+- `orchestrate-flow` 2.5.1 → **3.0.0** (major: 4 new procedure steps + 4 new halts may STOP chains)
+- `memory` 1.2.1 → 1.3.0 (new schema: routing-outcomes.md)
+- `generate-intent` 1.12.0 → 1.13.0 (Phase A handoff YAML closure + halt enum extension)
+- `bind-codebase` 1.9.3 → 1.9.4 (Phase A handoff sweep)
+- `detect-drift` 1.4.0 → 1.4.1 (Phase A handoff sweep)
+- `diff-vault` 1.3.0 → 1.3.1 (Phase A handoff sweep + artifact list fix)
+- `extract-intelligence` 1.4.0 → 1.4.1 (Phase A handoff sweep)
+- `resolve-oq` 0.9.1 → 0.9.2 (Phase A handoff sweep + broken cross-ref fix)
+- `emit-agents-md` 1.2.4 → 1.2.5 (Phase A config path fix)
+
+**New plugin files (2):**
+- `references/lib-patterns/...` (no new lib-patterns this iter)
+- `skills/memory/references/routing-outcomes.md` — schema doc for orchestrator routing learning (F1)
+- `skills/orchestrate-flow/references/predictive-checks.md` — catalog of preflight checks per skill (F2)
+
+**New test files (1):**
+- `tests/scenarios/scenario-9-flawless-seamless-intelligence.md` — full-pipeline F1+F2+F3+F4 integration
+
+**New audit doc (1):**
+- `docs/superpowers/audits/2026-05-24-iter-33-intelligence-audit.md` — Phase B output (6 dimensions + 13-skill scorecard)
+
+**Modified reference docs:**
+- `handoff-contract.md` — + 4 missing per-skill sections (diff-vault/emit-agents-md/resolve-oq/detect-drift) + REQUIRED/CONDITIONAL/OPTIONAL annotations (F3) + TYPE annotations (F4)
+- `vault-contract.md` — + 19 halt types (15 Iter 31 + 4 Iter 33) + descriptions + stale source_skill enum fix
+- `memory-schema.md` — + routing-outcomes.md entry in PROJECT scope
+- `paths.md` — + routing-outcomes.md path
+- `from-prompt-mode.md` — fixed broken cross-refs (stale paths)
+- `commands/scan-codebase.md` + `commands/emit-agents-md.md` — fixed legacy paths
+
+**Phase A — Mechanical closure (~7-8hr):**
+
+Closes 3 of Iter 31's top 5 closure areas focused on orchestrator + handoff foundation. Enables Phase C F3's stricter validation gate.
+
+- A1: Handoff YAML schema sweep — 8 skill SKILL.md templates + handoff-contract.md gain missing top-level blocks (scope/mutability/constitution); 4 missing per-skill sections added
+- A2: Halt taxonomy + vault-contract enum sync — 15 previously-unregistered halts synchronized across orchestrate-flow + vault-contract + handoff-contract
+- A3: Stale name sweep — 102 stale references (grand-design-spec/vault-diff/drift-detect/.mega-sdd-memory/) replaced with canonical names across vault-contract enum, broken cross-refs, test fixtures, command files
+
+**Phase B — Intelligence audit (~5-6hr):**
+
+Hybrid method: 2 parallel sonnet subagents (deep audit + per-skill probe). Produces AUDIT-INTELLIGENCE.md covering 6 intelligence dimensions on orchestrate-flow + handoff-contract + 13-skill 0-3 context-utilization scorecard. Findings inform Phase C feature specifics.
+
+**Phase C — 4 intelligence features (~12-15hr):**
+
+Smart orchestrator:
+- **F1 Memory-driven routing** (C1) — orchestrator reads routing-outcomes.md at Step 2.7; recommends past-successful chains; writes outcome row at Step 7.5
+- **F2 Predictive halt detection** (C2) — orchestrate-flow Step 3.5 runs predictive-checks.md catalog; non-fatal failures = warning; fatal failures = predictive_check_failed halt
+
+Solid handoffs:
+- **F3 Schema validation gate** (C3) — orchestrate-flow Step 6.b validates every received handoff against handoff-contract.md REQUIRED/CONDITIONAL annotations; missing field = invalid_handoff halt
+- **F4 Type-checked field propagation** (C4) — Step 6.b.i validates types against TYPE annotations; mismatch = handoff_type_mismatch halt
+
+**4 new halt types** (synchronized across all 4 surfaces per audit-pattern-prevention checklist):
+- `routing_outcome_corrupt` (F1, SOFT) — routing-outcomes.md parse failure; auto-invalidate; chain proceeds
+- `predictive_check_failed` (F2, ALWAYS STOP) — fatal preflight check failed; user fixes precondition
+- `invalid_handoff` (F3, ALWAYS STOP) — handoff schema validation failed; producer-side error
+- `handoff_type_mismatch` (F4, ALWAYS STOP) — handoff field type mismatch; producer-side error
+
+**Trigger test coverage (+12 cases):**
+- orchestrate-flow: OF-MR1/2 + OF-PH1/2 + OF-VG1/2 + OF-TC1/2
+- memory: M-RO1/2
+- scan-codebase: SC-PH1
+- bind-codebase: BC-PH1
+
+**Iter 31 audit findings preemptively addressed:**
+- Phase A1 closes 12 P1 from Dim 3
+- Phase A2 closes 13 P1 from Dim 4
+- Phase A3 closes Patterns 2 + 4 (stale names/paths)
+- F3 PREVENTS recurrence of "field claimed in prose but missing in template" (root cause pattern)
+
+**Iter 31 deferred to Iter 34:**
+- Closure Area 3: execute-bolts Step 4.5 reorder + snapshot schema alignment (~3hr)
+- Closure Area 5: Test fixture backfill remaining gaps
+
+**Standing user directives applied:**
+- "Seamless + super intelligent + flawless" → orchestrator now intelligent (F1+F2); handoffs now flawless (F3+F4)
+- "Producer + consumer in-iter" → F1/F2/F3/F4 each ship producer+consumer in same iter
+- "Reuse over reinvent" → Iter 30 shared-snapshot cache pattern (F1 fingerprint cache); canonical halt envelope (all 4 new halts); memory file-lock pattern (F1 routing-outcomes write); extract-intelligence wave dispatch pattern (Phase B audit subagents)
+
+**Plugin:** v3.23.0 → v3.24.0
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-33-flawless-seamless-intelligence-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-24-iter-33-flawless-seamless-intelligence.md`
+
 ## [3.23.0] - 2026-05-24
 
 ### Iter 32 — Starterkit-Aware Deep Scan (autonomous, default-on)

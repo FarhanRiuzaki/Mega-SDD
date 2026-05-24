@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.9.3
+version: 1.9.4
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
