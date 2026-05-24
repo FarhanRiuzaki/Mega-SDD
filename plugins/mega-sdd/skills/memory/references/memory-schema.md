@@ -220,6 +220,28 @@ scope: project
 | 2026-05-20 | OQ-AR-7 | RFC 7807 problem+json envelope | ACCEPT | matches industry standard | resolve-oq v1.1 |
 ```
 
+### PRD Scope Decisions (v1.12+, Iter 28)
+
+Records each invocation's PRD → scope mapping. Drives "silent default" on re-invocation when PRD sha256 + cwd basename match.
+
+```markdown
+## PRD Scope Decisions
+
+| PRD sha256 | PRD title | Date | Scope picked | Architect cwd | Override count |
+|---|---|---|---|---|---|
+| abc123... | Order Mgmt System v1.0 | 2026-05-23 | BE | order-management-be | 0 |
+| def456... | Payment Gateway v1.0 | 2026-05-24 | MW | payment-mw | 0 |
+```
+
+Write rules:
+- First-time scope pick on a PRD → INSERT new row
+- Re-invocation on same PRD + same scope → NO write (no change)
+- Re-invocation on same PRD + DIFFERENT scope → increment `override_count` on existing row for PRD+old scope; INSERT new row for PRD+new scope
+
+Read rules:
+- On generate-intent Step 0.9: lookup PRD sha256 → if found AND cwd basename matches → propose last-used scope as silent default with confirm-once UX
+- Lookup is local to project memory; cross-project PRD scope decisions tracked separately (each project has own decisions.md)
+
 ### `<project>/.mega-sdd/memory/conventions.md`
 
 ```markdown
