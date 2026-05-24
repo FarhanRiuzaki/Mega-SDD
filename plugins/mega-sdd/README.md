@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.29.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.30.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,35 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.30.0 (Iter 45, minor) — Saga Compensating Actions (`--rollback` flag + partial-state v2.0)
+
+Closes Iter 38 audit Pattern D (D3-009 + D3-003) — replaces forward-only resume with saga-pattern compensating actions. Crashed bolts can now be cleanly rolled back instead of compounding partial writes.
+
+**Problem:** mega-sdd used forward-only resume. On `--resume`, execute-bolts retried the failing step but couldn't undo non-idempotent prior steps (composer dep adds, migrations, external API calls). Partial writes compounded on subsequent runs.
+
+**Solution:**
+
+1. **partial-state.json schema bump v1.0 → v2.0** — adds `rollback_hints[]` array. Each entry: `{step_id, step_type, evidence, compensating_action, idempotent, applied_at}`.
+
+2. **Canonical step_type taxonomy (14 types)** — `file_created` / `file_modified` / `file_partially_written` / `composer_dep_added` / `migration_executed` / `external_api_call` / etc. Each maps to a default compensating action template + idempotency flag.
+
+3. **`--rollback <unit-id>` flag (NEW)** — reads partial-state.json v2.0 + applies `rollback_hints[]` in reverse order with per-action confirmation. Non-idempotent actions get safe-default confirmation. Applied actions stamp `applied_at:` so partial rollback can be resumed.
+
+4. **Bolt subagent contract** — bolt-dispatch-prompt.md gets new `## Rollback hints` self-assessment section. Bolt subagent appends hint per significant step during execution. On crash: execute-bolts harvests hints into partial-state.json.
+
+5. **Backward compat** — v1.0 partial-state.json (Iter 30 baseline) → `--rollback` errors gracefully ("no rollback hints; manual review via `git status` + `git diff HEAD`"). `--resume` still works.
+
+**Reused halt:** malformed `rollback_hints[]` entries trigger existing `partial_state_corrupt` halt (Iter 40) with `malformed_hints:` detail. No new halt type.
+
+**External research cited:** Saga Pattern (microservices.io) + Compensating Transactions (Microsoft Azure).
+
+**Skill bumps:**
+- `execute-bolts` 2.8.0 → 2.9.0 (MINOR — schema bump + new flag + new self-assessment section)
+
+**Plugin v3.29.0 → v3.30.0** (MINOR — schema bump + new flag).
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-45-saga-compensating-actions-design.md`
 
 ### v3.29.0 (Iter 44, minor) — T2 Running Budget Tracker + Progressive Truncation
 

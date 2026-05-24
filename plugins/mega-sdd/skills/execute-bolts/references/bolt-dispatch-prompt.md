@@ -59,6 +59,45 @@ bolt_self_report:
       fix: "<what you changed>"
 ```
 
+## Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section — v2.9.0+, Iter 45)
+
+For EACH significant step you perform (file write, dep add, migration, etc.), append a rollback hint to bolt-report.md `## Rollback hints` section. On crash, execute-bolts harvests these into partial-state.json v2.0 `rollback_hints[]` array. On `--rollback`, they're applied in reverse order.
+
+```yaml
+- step_id: step-1-add-dep                   # short identifier, unique within this bolt
+  step_type: composer_dep_added             # see canonical taxonomy below
+  evidence: "added 'laravel/cashier': '^15.0' to composer.json:42; composer.lock regenerated"
+  compensating_action: "composer remove laravel/cashier --no-update && git checkout composer.json composer.lock"
+  idempotent: false
+```
+
+**Canonical step_type taxonomy (use these EXACT values — execute-bolts §Partial-state contract table):**
+
+| step_type | When to use | Idempotent? |
+|---|---|---|
+| `file_created` | created a new file | ✓ |
+| `file_modified` | edited an existing file | ✓ |
+| `file_partially_written` | started writing but did not finish (crash mid-write) | ✓ |
+| `file_deleted` | rm'd a file | ✓ |
+| `composer_dep_added` | added a require/require-dev to composer.json + ran composer | ✗ |
+| `composer_dep_removed` | removed a composer dep | ✗ |
+| `npm_dep_added` | added a dep to package.json | ✗ |
+| `npm_dep_removed` | removed an npm dep | ✗ |
+| `migration_created` | wrote a new migration file | ✓ |
+| `migration_executed` | ran `php artisan migrate` or equivalent | ✗ (DB state) |
+| `external_api_call` | hit an external API with side effect | ✗ |
+| `test_command_run` | ran a test command (read-only side-effects only) | ✓ |
+| `git_commit` | created a git commit | ✗ |
+| `git_branch_created` | created a git branch | ✓ |
+
+If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger `partial_state_corrupt` halt per Iter 45.
+
+**Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times. FALSE if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
+
+**Compensating_action:** literal shell command (NOT a description). Empty string `""` only when no rollback is possible (e.g., `external_api_call` to a non-idempotent endpoint); use `"(none — manual review required)"` for that case.
+
+**If the bolt completes successfully:** the `## Rollback hints` section is INFORMATIONAL only — no rollback needed; the commit landed cleanly. Hints persist in bolt-report.md for audit trail.
+
 ## Atomic discipline (scaffolded, not assumed)
 
 - THIS BOLT = ONE COMMIT
