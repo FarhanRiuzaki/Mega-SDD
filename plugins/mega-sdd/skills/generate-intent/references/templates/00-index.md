@@ -153,7 +153,7 @@ This document is the **single source of truth for requirements**. When working f
 
 In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows, the `flow` orchestrator), silent halt loses the signal. Instead, emit a structured `blocker` artifact so the runner can route it.
 
-The unified envelope (per `references/vault-contract.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (vault-diff conflict), and `drift_framework_mismatch` (drift-detect framework mismatch).
+The unified envelope (per `references/vault-contract.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (diff-vault conflict), and `drift_framework_mismatch` (detect-drift framework mismatch).
 
 When you hit an unresolved P1 OQ that blocks your current task, emit (in addition to any chat response):
 
@@ -166,7 +166,7 @@ blocker:
   resolver_owner: "Mike Patel (Eng Lead)"
   resolver_route: "ask in PM Slack channel #timeoff-team or via PRD §L review"
   vault_version: "1.0"
-  source_skill: grand-design-spec
+  source_skill: generate-intent
 ```
 
 For multiple blockers in one task, emit an array:
@@ -180,7 +180,7 @@ blockers:
     resolver_owner: "Mike Patel"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: grand-design-spec
+    source_skill: generate-intent
   - type: oq_blocker
     tag: OQ-DM-1
     priority: P1
@@ -188,7 +188,7 @@ blockers:
     resolver_owner: "Mike Patel + security"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: grand-design-spec
+    source_skill: generate-intent
 ```
 
 The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See `references/vault-contract.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).

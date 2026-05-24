@@ -80,7 +80,7 @@ Manual-run fixture for the `resolve-oq` skill.
 - **Expect:** AskUserQuestion option 1 labeled `<answer> (recommended)`; description shows rationale + KB citation + fallback_if_wrong + confidence: HIGH
 
 ### REC2: Memory-derived recommendation surfaced
-- **Setup:** No KB. `<project>/.mega-sdd-memory/decisions.md` has 5 consistent rows resolving auth-pattern OQs as KEEP_CODE
+- **Setup:** No KB. `<project>/.mega-sdd/memory/decisions.md` has 5 consistent rows resolving auth-pattern OQs as KEEP_CODE
 - **Expect:** AskUserQuestion option 1 labeled `KEEP_CODE (recommended)`; cites memory rows; confidence: HIGH
 
 ### REC3: Vault/codebase MEDIUM-confidence recommendation
@@ -103,7 +103,7 @@ Manual-run fixture for the `resolve-oq` skill.
 ### REC7: Audit trail on ACCEPT
 - **Setup:** User picks option 1 (recommended)
 - **Expect:** vault.json OQ entry has `resolution_source: recommendation` + `recommendation_citation: <full-citation>`
-- **Memory write:** `.mega-sdd-memory/decisions.md` row marked `source: ai_recommended`
+- **Memory write:** `.mega-sdd/memory/decisions.md` row marked `source: ai_recommended`
 
 ### REC8: Audit trail on OVERRIDE
 - **Setup:** User picks alternative option (not recommended)

@@ -11,7 +11,7 @@ Argument parsing:
 - First positional (if not a flag): repo path. Default `./`.
 - Flags: `--depth`, `--include`, `--exclude`, `--out`, `--auto`, `--force-large`.
 
-Follow `skills/scan-codebase/SKILL.md` procedure exactly. Output to `<repo-root>/codebase-map.md` by default.
+Follow `skills/scan-codebase/SKILL.md` procedure exactly. Output to `.mega-sdd/codebase/codebase-map.md` by default (v2.2+).
 
 Hard rails:
 - No invention — sections without detections are marked "None detected".

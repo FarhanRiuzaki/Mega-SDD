@@ -17,7 +17,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 - Explicit: `/mega-sdd:emit-agents-md`
 - Auto: `orchestrate-flow --deep` runs this at chain end (config-controlled per ITER6-OQ-4)
 - Opt-out per chain: `--no-agents-md` flag
-- Opt-out per project: `<project>/.mega-sdd/memory/config.yaml` `defaults.emit_agents_md: false`
+- Opt-out per project: `<project>/.mega-sdd/config.yaml` `defaults.emit_agents_md: false`
 
 ## When NOT to use
 

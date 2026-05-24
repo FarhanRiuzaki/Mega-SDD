@@ -230,7 +230,7 @@ When `generate-units` emits a unit with `consumes_interfaces: [api-leave-request
 ## ID stability
 
 Unit IDs are stable across regenerations:
-- `vault-diff` preserves IDs by content hash
+- `diff-vault` preserves IDs by content hash
 - `generate-units` with `--refresh` flag re-numbers; default does not
 
 ## Greenfield vs brownfield

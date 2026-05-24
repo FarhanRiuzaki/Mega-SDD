@@ -25,9 +25,9 @@ End-to-end test for memory accumulation across multiple pipeline runs + threshol
 **Run:** `/mega-sdd:auto --resume` → completes through bolts
 
 **Validate memory writes after Run 1:**
-- `<project>/.mega-sdd-memory/decisions.md` exists with 1 row in `## CONFLICT resolutions` (KEEP_CODE on auth pattern)
-- `<project>/.mega-sdd-memory/conventions.md` exists with 2 detected conventions
-- `<project>/.mega-sdd-memory/outcomes.md` exists with 1 run entry
+- `<project>/.mega-sdd/memory/decisions.md` exists with 1 row in `## CONFLICT resolutions` (KEEP_CODE on auth pattern)
+- `<project>/.mega-sdd/memory/conventions.md` exists with 2 detected conventions
+- `<project>/.mega-sdd/memory/outcomes.md` exists with 1 run entry
 - `<vault>/.memory/bind-history.md` has 2 entries (initial halt + post-resolve)
 - `<vault>/.memory/classifier-accuracy.json` has 1 run entry
 - `<vault>/.memory/bolt-outcomes.json` has bolt entries per unit
@@ -114,7 +114,7 @@ After each run, user picks KEEP_CODE on the auth conflict.
 **Run 11:** `/mega-sdd:auto ./fixtures/.../prd-different-feature.md --deep` (new vault)
 
 **Expect:**
-- generate-intent reads `<project>/.mega-sdd-memory/conventions.md`
+- generate-intent reads `<project>/.mega-sdd/memory/conventions.md`
 - Detects established conventions (phpunit, PascalCase)
 - Auto-classifier downgrades OQs about those conventions from `tech/recommend` to `tech/scan` (since the convention is established)
 - scan-codebase skips verbose re-detection (still verifies signal, but doesn't re-emit detection log)
@@ -125,7 +125,7 @@ After each run, user picks KEEP_CODE on the auth conflict.
 **User action:** Delete vault-1 directory
 
 **Expect (per MEMORY-OQ-5 resolved (b) archive):**
-- Vault-scope `.memory/` files moved to `<project>/.mega-sdd-memory/archived-vaults/<vault-id>/`
+- Vault-scope `.memory/` files moved to `<project>/.mega-sdd/memory/archived-vaults/<vault-id>/`
 - Audit trail preserved
 - Future patterns referenced via archived bind-history continue to work
 

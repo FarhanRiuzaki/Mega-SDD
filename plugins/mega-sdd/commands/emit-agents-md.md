@@ -14,7 +14,7 @@ Argument parsing:
 - `--include-section=<list>`: filter sections; default all
 - `--auto`: skip confirmation prompts (e.g., when invoked by orchestrate-flow at chain end)
 
-Follow `skills/emit-agents-md/SKILL.md` Procedure exactly. Per ITER6-OQ-4 resolved: config-flag default-on; users can disable per-project via `~/.mega-sdd/memory/config.yaml` `defaults.emit_agents_md: false`.
+Follow `skills/emit-agents-md/SKILL.md` Procedure exactly. Per ITER6-OQ-4 resolved: config-flag default-on; users can disable per-project via `<project>/.mega-sdd/config.yaml` `defaults.emit_agents_md: false`.
 
 Hard rails (anti-halu):
 - AGENTS.md is a FLATTENED VIEW of vault. NEVER adds info not in vault.
