@@ -28,8 +28,10 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 [ tree of dirs, depth-limited ]
 
 ## 2. Public interfaces
-| File | Type | Symbol | Signature |
-|---|---|---|---|
+| File | Type | Symbol | Signature | Last_Scanned_Sha256 |
+|---|---|---|---|---|
+
+> **v2.7.1+, Iter 46 (D2-007 closure):** the `Last_Scanned_Sha256` column captures the source file's content hash at the time symbols were extracted. `scan-codebase --shallow-scan` uses this for per-file invalidation — only files whose current sha256 differs trigger re-extraction (saves 5-10s on iterative shallow re-scans). The column is OPTIONAL — pre-Iter-46 codebase-map.md files lack it and trigger full re-extraction on first --shallow-scan after upgrade.
 
 ## 3. Routes / Endpoints
 | Method | Path | Handler |

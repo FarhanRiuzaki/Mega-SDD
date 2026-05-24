@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.5.0
+version: 1.6.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -191,6 +191,30 @@ Wave 5 MUST be main thread, not a subagent — it needs holistic context across 
 4. **`suggested-phasing.md`** — Phase 1/2/3 sprint plan with acceptance criteria per phase. Pre-milestone blocker list. Per-module acceptance template.
 5. **`data-mutation-policy.md`** (v1.4+, Iter 22) — entity-by-entity table listing which tables/fields are `[LOCKED]` vs `[INTENT]` vs `[ARTIFACT]`. Drives ERD freedom in `generate-intent --kb` — without this file the consumer doesn't know what it's allowed to redesign.
 6. **`README.md`** roll-up — navigation, **reengineering opportunities + critical findings surfaced first**, mutability tier distribution table, OQ roll-up grouped by phase blocker, stats, next steps.
+
+## Step 5.5 — Emit extracted-kb shared snapshot (v1.6+, Iter 46 — D1-006 closure)
+
+After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, emit a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §extract-intelligence (extracted-kb snapshot)`. Enables downstream `generate-intent --kb` to verify KB freshness against source codebase without re-extracting.
+
+```
+1. Collect every source file enumerated during waves 1-4 extraction (from each subagent's _source: citations + main thread's file enumeration in wave 1).
+2. Compute current sha256 for each source file.
+3. Build source_files_sha256_map:
+   { "<repo-relative-path>": "<sha256-hex>", ... }
+4. Write atomically to <kb-dir>/.shared-snapshots/extracted-kb.snapshot.json:
+   {
+     "snapshot_schema_version": "1.1",
+     "snapshot_type": "extracted-kb",
+     "generated_by": "extract-intelligence@1.6.0",
+     "generated_at": "<ISO8601 at extraction completion>",
+     "scope": null,
+     "files": [],
+     "source_files_sha256_map": { ... }
+   }
+5. Use temp-file + rename for atomicity.
+```
+
+If write fails: log warning + continue (snapshot is freshness check optimization; KB itself remains the consumable output).
 
 ## Bridge to rebuild + mega-sdd pipeline
 

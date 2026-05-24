@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.14.0
+version: 1.15.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. (v1.14+, Iter 35) `--phase=N` flag for Mode B KB sub-mode; vault.json gets `phase` + `phase_total` fields; 00-index.md emits §Phase context block. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -33,11 +33,23 @@ When BOTH `--scan` AND `--kb` set (legacy-rebuild scenario): vault synthesizes l
 Invocation: `/mega-sdd:generate-intent --from-prompt "<brief text>"` OR detected when no structured PRD path provided.
 Behavior: per `references/from-prompt-mode.md` — runs adaptive Q&A (≤10 questions) to fill gaps, then produces seed-PRD + vault in one pass.
 
-### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario; v1.10+ tier-aware routing)
+### Mode B (KB sub-mode) — `--kb=<path>` (v1.2+, legacy-rebuild scenario; v1.10+ tier-aware routing; freshness check v1.15+)
 
 Invocation: `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/`
 
 KB is treated as ANALYSIS INPUT, not a 1:1 spec. Vault output emphasizes REENGINEERING goals + business intent; legacy detail surfaces only when `[LOCKED]` tier requires preservation. Per user directive (Iter 22): "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1".
+
+**Preflight — KB freshness check (v1.15+, Iter 46 — D1-006 closure):**
+
+Before reading KB content, check if `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` exists per `plugins/mega-sdd/references/shared-snapshot-schema.md §extract-intelligence (extracted-kb snapshot)`:
+
+1. If snapshot exists, read `source_files_sha256_map`
+2. For each `<repo-relative-path>` in the map: compute current sha256 of that file in the legacy source codebase
+3. If ALL files match prior hashes → log `"KB freshness: confirmed (<N> source files unchanged since extraction at <generated_at>)"`. Proceed with KB consumption.
+4. If SOME files drifted → log warning: `"KB may be stale: <drifted-count> of <total> source files changed since extraction (<generated_at>). Consider \`/mega-sdd:extract-intelligence --force\` to refresh KB before generating vault."`. DO NOT halt — user retains agency to proceed (legacy stale-KB warnings should not block reengineering work).
+5. If snapshot absent (pre-Iter-46 KBs OR snapshot write failed) → log advisory `"KB has no freshness snapshot (pre-Iter-46 OR snapshot emission failed); treating as fresh."`. Proceed.
+
+Freshness check is OPT-IN advisory; KB consumption correctness is unchanged whether check confirms / warns / skips.
 
 Behavior:
 

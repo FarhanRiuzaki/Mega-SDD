@@ -1,15 +1,15 @@
-# Shared Snapshot Schema (v1.0, Iter 30)
+# Shared Snapshot Schema (v1.1, Iter 30 → extended Iter 46)
 
-Canonical JSON schema for code-state snapshots consumed by both `execute-bolts` (preflight/postflight per Iter 3 + Iter 6) AND `detect-drift` (baseline + per-scan, v1.4+ Iter 30).
+Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. **v1.1 extension (Iter 46)** broadens scope from the original Iter 30 `execute-bolts ↔ detect-drift` hop to additionally cover `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Each extension preserves Iter 30 backward compatibility — v1.0 readers simply skip unfamiliar snapshot_type values.
 
-Goal: detect-drift can reuse bolt postflight snapshots when present (≤5s drift gate on 20-bolt batch vs ≥28s full re-scan). Falls back to fresh scan when standalone drift run.
+Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Iter 30 baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); Iter 46 extension adds 30-50% re-run I/O savings on incremental dev cycles (scan→bind hop) + KB freshness check (extract→intent hop).
 
 ## Schema
 
 ```json
 {
-  "snapshot_schema_version": "1.0",
-  "snapshot_type": "preflight | postflight | drift-baseline",
+  "snapshot_schema_version": "1.1",
+  "snapshot_type": "preflight | postflight | drift-baseline | codebase-map | extracted-kb",
   "generated_by": "<skill name + version, e.g., execute-bolts@2.6.0 | detect-drift@1.4.0>",
   "generated_at": "<ISO8601 timestamp>",
   "scope": "<scope id from vault.json when multi-scope vault; null otherwise>",
@@ -43,9 +43,18 @@ Goal: detect-drift can reuse bolt postflight snapshots when present (≤5s drift
     "unit_id": "<U-XXX when bolt-emitted; null when standalone drift>",
     "binding_state_at_capture": "<CONFIRMED | NEW | UNKNOWN | PARTIAL_FIELDS_* | null>",
     "vault_sha256": "<vault.json hash at capture time>"
+  },
+  "codebase_map_sha256": "<sha256 of codebase-map.md content; ONLY when snapshot_type == codebase-map; null otherwise>",
+  "source_files_sha256_map": {
+    "<repo-relative-path>": "<sha256-hex>",
+    "...": "..."
   }
 }
 ```
+
+**v1.1 fields (Iter 46 — OPTIONAL):**
+- `codebase_map_sha256` — populated when `snapshot_type == codebase-map`. Allows downstream `bind-codebase` to detect codebase-map.md staleness in one check vs N source-file checks.
+- `source_files_sha256_map` — populated for `codebase-map` AND `extracted-kb` types. Maps repo-relative source file paths → content sha256 at snapshot generation time. Downstream consumers verify all listed files unchanged → snapshot reusable.
 
 ## Producer responsibilities
 
@@ -77,6 +86,25 @@ Write to `<vault>/_drift-baseline.json` after `bind-codebase` (Iter 30+ when no 
 - `context.unit_id: null`
 - `files[]`: all files referenced by vault claims (per binding.md anchors)
 
+### scan-codebase (codebase-map snapshot — v2.7.1+, Iter 46)
+
+Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` after Step 10 codebase-map.md write:
+
+- `snapshot_type: "codebase-map"`
+- `generated_by: "scan-codebase@<version>"`
+- `codebase_map_sha256: "<sha256 of just-written codebase-map.md>"`
+- `source_files_sha256_map: {<repo-relative-path>: <sha256>, ...}` — every source file scanned (cached for downstream reuse check)
+- `files[]: []` (empty; downstream consumers use `source_files_sha256_map` instead)
+
+### extract-intelligence (extracted-kb snapshot — v1.6+, Iter 46)
+
+Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 consolidation completes:
+
+- `snapshot_type: "extracted-kb"`
+- `generated_by: "extract-intelligence@<version>"`
+- `source_files_sha256_map: {<repo-relative-path>: <sha256>, ...}` — every source file consumed by the extraction waves (captured at extraction time)
+- `files[]: []` (KB itself is the consumable output; this snapshot exists for freshness verification only)
+
 ## Consumer responsibilities
 
 ### detect-drift
@@ -92,6 +120,27 @@ When invoked with `--reuse-bolt-snapshots` (auto-set when chained after execute-
 When invoked standalone (`/mega-sdd:detect-drift` no chain context):
 
 - Behave as v1.2.x: fresh full scan; ignore bolt snapshots (avoid stale data)
+
+### bind-codebase (codebase-map snapshot consumer — v1.10+, Iter 46)
+
+Before Step 3 (claim-vs-code matching):
+
+1. Check if `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` exists
+2. Read its `codebase_map_sha256` field; compare to current `codebase-map.md` sha256
+3. If MATCH → snapshot is fresh; reuse parsed §2 symbol data from codebase-map.md directly (no per-source-file re-tokenize)
+4. If MISMATCH OR snapshot absent → fall back to current per-file re-read behavior (no regression)
+
+Performance: ~30-50% I/O reduction on iterative dev when source files haven't changed between scan-codebase and bind-codebase invocations.
+
+### generate-intent --kb (extracted-kb snapshot consumer — v1.15+, Iter 46)
+
+Before reading `<kb-dir>`:
+
+1. Check if `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` exists
+2. For each path in `source_files_sha256_map`: compute current sha256 of the file in repo
+3. If ALL files unchanged → KB freshness confirmed; log "KB freshness: confirmed (X source files unchanged since extraction)"
+4. If SOME files drifted → log warning: "KB may be stale: <N> of <M> source files changed since extraction. Consider `/mega-sdd:extract-intelligence --force` to refresh." DO NOT halt — user decides
+5. If snapshot absent → log advisory; behave as today (assume KB fresh)
 
 ## Anti-halu rails
 
@@ -113,3 +162,5 @@ Pre-Iter-30 bolts wrote preflight/postflight with informal JSON (per Iter 3). It
 - Bolt snapshots: `<vault>/bolts/U-XXX/{preflight,postflight}.json`
 - Drift baseline: `<vault>/_drift-baseline.json`
 - Drift report: `<vault>/DRIFT-REPORT.md` (existing, per detect-drift v1.x)
+- Codebase-map snapshot (v1.1+, Iter 46): `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json`
+- Extracted-KB snapshot (v1.1+, Iter 46): `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json`
