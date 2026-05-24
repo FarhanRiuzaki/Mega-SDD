@@ -7,8 +7,10 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.2.3 -->
+<!-- generated_by: mega-sdd:emit-agents-md v1.2.4 -->
 <!-- vault_source: {{vault_path}}/vault.json -->
+<!-- scope_id: <scope_metadata.id> -->                 (v1.2.4+ Iter 29; omit line when vault has no scope)
+<!-- scope_name: <scope_metadata.name> -->             (v1.2.4+ Iter 29; omit line when vault has no scope)
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: <vault.json version field> -->
 <!-- framework: <detected from codebase-map.md §7 — e.g., laravel-base-26, laravel, django, _universal> -->
@@ -23,6 +25,7 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 
 > **v1.2.2+ Iter 25**: Header declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
 > **v1.2.3+ Iter 26 (closes P1-9)**: Header also declares `constitution_hash` (Iter 17 sha256 for staleness detection), `properties_validated` (Iter 18 PBT invariant count), `replay_snapshot_count` (Iter 18 regression baseline count), and `convergence_cycle_count` (Iter 19 auto-recovery cycle count). Tools consuming AGENTS.md can now surface these as caution badges (e.g., "this AGENTS.md was generated after N convergence cycles — vault has undergone semi-automated repair; review for divergence from human intent").
+> **v1.2.4+ Iter 29 (closes P1-4)**: Header also declares `scope_id` and `scope_name` when vault is scope-tagged (multi-scope vault Iter 28+). A BE-scoped vault and FE-scoped vault now produce distinguishable AGENTS.md exports. Both lines omitted entirely for legacy single-scope vaults (back-compat).
 
 The generation marker (HTML comment) is MANDATORY. Re-emission detects existing mega-sdd output via this marker.
 
@@ -98,7 +101,7 @@ Cite source per row: `<!-- from conventions.md §<section> -->`
 - <integration 1>: <how it's consumed>
 - ...
 
-For detailed architecture, see: `docs/mega-sdd/vaults/<slug>/02-architecture.md`
+For detailed architecture, see: `.mega-sdd/vaults/<slug>/02-architecture.md`
 ```
 
 ## Section 6 — Key decisions
@@ -111,7 +114,7 @@ For detailed architecture, see: `docs/mega-sdd/vaults/<slug>/02-architecture.md`
 - **D-001 \<title\>**: <Decision in 1 sentence>. Source: <PRD § or context>
 - **D-002 ...**: ...
 
-For full ADR details, see: `docs/mega-sdd/vaults/<slug>/05-decisions.md`
+For full ADR details, see: `.mega-sdd/vaults/<slug>/05-decisions.md`
 ```
 
 ## Section 7 — Open questions
@@ -127,7 +130,7 @@ P2 (Feature blockers):
 
 These items are unresolved at vault generation time. AI tools should NOT make assumptions about them.
 
-For full OQ roll-up: `docs/mega-sdd/vaults/<slug>/00-index.md` §Open Questions roll-up
+For full OQ roll-up: `.mega-sdd/vaults/<slug>/00-index.md` §Open Questions roll-up
 ```
 
 ## Section 7.5 — Constitution (NEW v1.2+, Iter 20 — closes Iter 17 Bug 4)
@@ -221,6 +224,8 @@ Header HTML comments declare vault-state fields. Each field renders ONLY when it
 
 | Header field | Source | Render when |
 |---|---|---|
+| `scope_id` | `vault.json` `scope_metadata.id` | vault has `scope` field (multi-scope vault Iter 28+); OMIT line otherwise (v1.2.4+ Iter 29 P1-4) |
+| `scope_name` | `vault.json` `scope_metadata.name` | vault has `scope` field (multi-scope vault Iter 28+); OMIT line otherwise (v1.2.4+ Iter 29 P1-4) |
 | `constitution_hash` | `binding.md` frontmatter `constitution_hash` | `<vault>/constitution.md` exists AND binding.md has been written (Iter 17+) |
 | `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block (Iter 18+) |
 | `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `/mega-sdd:replay` (Iter 18+) |

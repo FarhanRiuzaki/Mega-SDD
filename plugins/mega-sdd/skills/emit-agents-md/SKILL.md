@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.2.3
+version: 1.2.4
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -42,8 +42,10 @@ The output template is a LITERAL emission target — every line below is written
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.2.3 -->
+<!-- generated_by: mega-sdd:emit-agents-md v1.2.4 -->
 <!-- vault_source: {{vault_path}}/vault.json -->
+<!-- scope_id: {{scope_id}} -->
+<!-- scope_name: {{scope_name}} -->
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: {{vault_version}} -->
 <!-- constitution_hash: {{constitution_hash}} -->
@@ -114,6 +116,8 @@ Per `plugins/mega-sdd/references/paths.md`:
    - Append mega-sdd section after marker
 5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source). **Variable substitution (v1.2.3+, Iter 26 — closes P1-A + P1-9 from v3.17.0 verification audit):**
    - `{{vault_path}}` → actual detected vault directory relative to repo root. v3.4+ canonical → `.mega-sdd/vaults/<slug>`; legacy → `docs/mega-sdd/vaults/<slug>`. NEVER hard-code either path.
+   - `{{scope_id}}` → vault.json `scope_metadata.id` (only when vault has scope field; OMIT entire header line otherwise); v1.2.4+ Iter 29 P1-4
+   - `{{scope_name}}` → vault.json `scope_metadata.name`; OMIT line otherwise; v1.2.4+ Iter 29 P1-4
    - `{{vault_version}}` → `vault.json` `version` field
    - `{{constitution_hash}}` → from `binding.md` frontmatter (only if `<vault>/constitution.md` exists AND binding has been written); OMIT entire header line otherwise
    - `{{properties_validated}}` → from `vault.json` `properties_summary.total` (only if ≥1 unit has `properties:` block); OMIT line otherwise
@@ -150,7 +154,14 @@ handoff:
     suggested_skill: null    # terminal skill; no pipeline continuation
     rationale: "AGENTS.md emitted; pipeline already complete."
   blockers: []
+  scope:                                       # v1.2.4+ Iter 29 (P1-4) — omit block when vault has no scope field
+    id: <vault.scope_metadata.id>
+    name: <vault.scope_metadata.name>
+    sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
+    prd_sha256: <vault.prd_sha256>
 ```
+
+**v1.2.4+ Iter 29 (P1-4)**: When vault has `scope` field, handoff YAML MUST include scope: block per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract (line 44). Omit when vault is legacy single-scope.
 
 ## References
 
