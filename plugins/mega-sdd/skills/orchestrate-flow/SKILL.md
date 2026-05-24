@@ -163,8 +163,6 @@ next_action:
 
    a. **Dispatch sub-skill** with assembled flags + memory slice via `metadata.memory_context`. Pass canonical top-level propagation fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) from previous handoff if present.
 
-   **`--deep` mode auto-continue (v1.3+)**: after each skill completes with `status: completed`, parse the skill's handoff YAML (per `references/handoff-contract.md`) and auto-invoke `next_action.suggested_skill` with `next_action.suggested_args`. Continue until pipeline-end OR `status: paused`/`halted` halts the loop. If skill emits `status: paused` (e.g., business OQs need triage) → log paused items and STOP chain awaiting user. If `status: halted` → surface blocker YAML verbatim and STOP.
-
    b. **Validation gate (v3.0.0+, Iter 33) — validate received handoff against `references/handoff-contract.md` schema annotations:**
 
       i. (Reserved for F4 type-check; documented in C4 task)
