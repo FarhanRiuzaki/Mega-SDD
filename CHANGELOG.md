@@ -5,6 +5,94 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.21.0] — 2026-05-24
+
+### Fixed — Iter 29: v3.20.0 Audit Closure
+
+Per audit `docs/superpowers/audits/2026-05-24-iter-28-v3.20.0-deep-audit.md`. 13 findings closed — pattern was **Iter 28 producer-only**: `generate-intent` wrote scope to vault.json + handoff YAML, but ZERO downstream skills consumed it. Same shape as Iter 25 closed for Iter 22 propagation gaps.
+
+### Skill version bumps
+
+| Skill | Version |
+|---|---|
+| bind-codebase | 1.9.2 → 1.9.3 |
+| generate-units | 2.5.3 → 2.5.4 |
+| emit-agents-md | 1.2.3 → 1.2.4 |
+| diff-vault | 1.2.1 → 1.3.0 |
+| orchestrate-flow | 2.4.0 → 2.4.1 |
+| execute-bolts | 2.4.1 → 2.4.2 |
+| detect-drift | 1.2.1 → 1.2.2 |
+| resolve-oq | 0.9.0 → 0.9.1 |
+
+### P1 fixes (6/6 closed)
+
+**P1-1: Step 0.9 execution-order guard** (generate-intent SKILL.md, no version bump — doc clarification):
+- Step 0.9 (scope picker) sat at line 379 BEFORE scan-aware section (line 557), contradicting own claim to run AFTER scan
+- Added EXECUTION ORDER GUARD blockquote in Step 0.9 + cross-reference note in scan-aware section
+- File order driven by 0.x slot numbering; runtime order requires scan-codebase first
+
+**P1-2: bind-codebase v1.9.3 — scope propagation**:
+- Reads vault.json `scope`/`scope_metadata`/`prd_sha256` fields
+- Persists scope to binding.md header (`**Scope**: <name> (<id>)`)
+- Constrains claim validation to scope's declared PRD sections
+- Emits `scope:` block in handoff YAML per handoff-contract.md v3.20+
+
+**P1-3: generate-units v2.5.4 — unit frontmatter scope**:
+- Unit frontmatter gains `scope` + `scope_name` fields when vault has scope
+- Multi-squad routing now has signal to verify scope context
+- unit-schema.md updated with scope/scope_name optional fields
+- Handoff YAML scope: block emission
+
+**P1-4: emit-agents-md v1.2.4 — AGENTS.md scope header**:
+- New template tokens `{{scope_id}}`, `{{scope_name}}`
+- Header HTML comments emit scope when vault has scope field
+- BE-scoped vs FE-scoped vaults now produce distinguishable AGENTS.md
+- agents-md-schema.md updated
+
+**P1-5: diff-vault v1.3.0 — prd_sha256 change detection** (minor version bump — new capability):
+- Closed unimplemented spec claim from vault-contract.md line 487
+- Reads vault.json prd_sha256 + prd_path_at_generation
+- Computes current PRD sha256; compares to recorded
+- Emits prd_sha256_changed field in DRIFT-REPORT.md
+- New halt `prd_path_missing` when PRD file gone
+
+**P1-6: orchestrate-flow v2.4.1 — halt taxonomy completion**:
+- 4 halts added to "always stop chain" category:
+  - `scope_not_declared_in_prd` (Iter 28)
+  - `prd_no_scopes_block_user_rejected_retrofit` (Iter 28)
+  - `prd_retrofit_low_confidence` (Iter 28)
+  - `prd_path_missing` (Iter 29, from P1-5)
+
+### P2 fixes (5/5 closed)
+
+**P2-1: lightweight scope propagation** (3 skills):
+- `execute-bolts v2.4.2` — bolt-report.md header gains scope fields
+- `detect-drift v1.2.2` — scope-filtered drift scanning default; --full-scan override
+- `resolve-oq v0.9.1` — AskUserQuestion prepends scope context; memory decisions.md gains scope column
+
+**P2-2/3**: Squad partition ordering (covered by P1-1 guard)
+
+**P2-4 + ADV-2**: Formal `## Halt conditions (Iter 28 — Step 0.9 scope detection)` section in generate-intent. All 3 Iter 28 halts with full YAML envelope examples. Cross-referenced from scope-picker.md.
+
+**P2-5: agents-md-schema.md stale legacy vault paths fixed**. Replaced `docs/mega-sdd/vaults/<slug>/` with `.mega-sdd/vaults/<slug>/` canonical paths. Back-compat notes retained where intentional.
+
+### Deferred (intentional)
+
+- ADV-1: YAML comment in sample-prd-single-scope.md frontmatter (cosmetic; YAML 1.2 valid)
+- P2-2 detailed composition text (Iter 22 × Iter 28): covered implicitly by Step 0.9 procedure flow
+
+### Pattern note (lessons for future iters)
+
+Iter 28 = producer-only ship → Iter 29 = consumer propagation closure. Same shape as:
+- Iter 22 (producer-only) → Iter 25 closure
+- Iter 23 (producer-only) → Iter 25 closure
+
+Going forward, propagation should be implemented WITHIN the feature iter, not deferred to audit closure. Producer-only ships hide integration debt.
+
+### Plugin
+
+3.20.0 → 3.21.0
+
 ## [3.20.0] — 2026-05-24
 
 ### Added — Iter 28: Multi-Scope PRD Picker + Canonical Format
