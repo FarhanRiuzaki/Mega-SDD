@@ -82,7 +82,7 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
-## What's new in v3.20.0 (Iters 17-28)
+## What's new in v3.21.0 (Iters 17-29)
 
 - **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
 - **Iter 18 Replay + PBT** — `/mega-sdd:replay <unit>` for regression detection; `properties:` field for invariant testing
@@ -96,6 +96,7 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 - **Iter 26 Verification closure** — closed 5 highest-leverage gaps from v3.17.0 verification audit: emit-agents-md output template now uses `{{vault_path}}` substitution (no more legacy paths in every AGENTS.md emitted); bind-codebase step 2.10 placed in linear sequence; generate-units 7.5/7.6 swap + audit log → step 13; diff-vault:318 cross-ref fixed; commands/orchestrate-flow.md refreshed for `--deep` + `--resume`; AGENTS.md schema gains PBT/replay/convergence header fields (P1-9)
 - **Iter 27 Starterkit-first pipeline** — scan-codebase moves to FIRST phase when starterkit detected; vault generation becomes pack-aware via dual-citation format (Intent + Starterkit binding). Three modes: A (starterkit-first DEFAULT), B (framework universal fallback), C (explicit `--greenfield`). New halt `no_starterkit_detected` enforces opinion. Per user directive "starterkit itu wajib ada, jika tidak ada baru greenfield"
 - **Iter 28 Multi-scope PRD picker** — canonical PRD/BRD format with `scopes:` frontmatter block enables deterministic scope detection. Each architect (BE/MW/FE) generates a vault scoped to ONLY their content. Interactive picker (cwd smart default + memory-driven recall + confirm-once). Legacy PRDs without frontmatter trigger AI-assisted retrofit bridge. No cross-scope orchestration — coordination remains human-driven (rapat antar arsitek). New `--scope=<id>` flag in `/mega-sdd:auto` + `/mega-sdd:generate-intent`. Governance artifact: `docs/templates/prd-template.md` for sharing with PMs as new SOP
+- **Iter 29 v3.20.0 audit closure** — 13 findings closed from post-Iter-28 deep audit (`docs/superpowers/audits/2026-05-24-iter-28-v3.20.0-deep-audit.md`). Pattern was Iter 28 producer-only: generate-intent wrote scope to vault.json + handoff YAML, but ZERO downstream skills consumed it. Fix: scope propagation to 6 consumer skills (bind-codebase v1.9.3, generate-units v2.5.4, emit-agents-md v1.2.4, execute-bolts v2.4.2, detect-drift v1.2.2, resolve-oq v0.9.1). Also: diff-vault v1.3.0 implements prd_sha256 change detection (closed unimplemented spec claim). Orchestrate-flow v2.4.1 halt taxonomy gains 4 new entries (3 Iter 28 + 1 Iter 29). Generate-intent gains formal §Halt conditions section with full YAML envelope examples. Step 0.9 execution-order guard added (file order ≠ runtime order). agents-md-schema.md stale legacy vault paths fixed
 
 ## Anti-hallucination defense (13 layers)
 
