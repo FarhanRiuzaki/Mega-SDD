@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.0.0
+version: 3.1.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -92,6 +92,56 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
    e. If file parse fails: emit SOFT halt `routing_outcome_corrupt` + auto-invalidate (rename to `.corrupt-<ISO8601>`); fall through to default; LOG to user: "routing-outcomes.md corrupt; auto-invalidated; chain proceeds with default routing"
 
    f. Update chain proposal with recommendation OR fall-through default. Continue to Step 3.
+
+2.8. **Model-tier override resolution (v3.1.0+, Iter 34).**
+
+Per `references/model-tiers.md` override syntax. Resolves model tier per named subagent role from override chain. Default-on; no flag needed to invoke.
+
+a. **Read CLI flags from invocation**: collect all `--model-tier=<role>:<tier>` flags into a dict `cli_overrides`.
+
+b. **Read `<project>/.mega-sdd/config.yaml`**: parse `model_tiers:` section if present; build `project_overrides` dict.
+
+c. **Read `~/.mega-sdd/memory/preferences.md` `## Model tiers` section**: build `user_overrides` dict.
+
+d. **Compute final resolved tier per role** (override chain precedence: CLI > project > user > catalog):
+   - For each role mentioned in any override source:
+     - If role in cli_overrides → use cli value
+     - Else if role in project_overrides → use project value
+     - Else if role in user_overrides → use user value
+     - Else → use catalog default (read from `plugins/mega-sdd/references/model-tiers.md` §Catalog)
+
+e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream skills:
+   ```yaml
+   metadata:
+     model_tiers:
+       auth-extractor: sonnet
+       rbac-extractor: sonnet
+       code-quality-reviewer: sonnet  # override applied — was opus in catalog
+       # ... (all 17 roles or subset that's in overrides)
+     model_tier_sources:  # provenance trail for debugging (OPTIONAL)
+       auth-extractor: catalog
+       code-quality-reviewer: project-config
+   ```
+
+f. **Forward-compat tolerance**: if any role mentioned in override sources doesn't exist in catalog → emit SOFT halt `model_tier_unknown` (warn-only); log warning; ignore that override; chain proceeds with catalog default for unknown roles.
+
+   ```yaml
+   # Example model_tier_unknown envelope:
+   type: model_tier_unknown
+   source_skill: orchestrate-flow
+   details:
+     unknown_role: "some-future-role"
+     override_source: "project-config"
+     override_file: "<project>/.mega-sdd/config.yaml:line-N"
+   next_action:
+     type: log_and_continue
+     hint: "Role 'some-future-role' not found in references/model-tiers.md catalog. Override ignored. Either remove from override OR add the role to the catalog if it's a real subagent role."
+   ```
+
+g. **Logging**: log resolved tier summary to chain output for user audit, e.g.:
+   `Model tier overrides applied: code-quality-reviewer=sonnet (project-config); audit-probe=sonnet (cli-flag)`
+
+h. **No file writes** — Step 2.8 is purely resolution; resolved tiers live in handoff metadata only.
 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).
@@ -433,6 +483,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `deep_scan_subagent_failed` (v2.5.1+, Iter 32) — scan-codebase: single deep-scan subagent failed. Auto-retried; partial output on second failure.
 - `deep_scan_cache_corrupt` (v2.5.1+, Iter 32) — scan-codebase: starterkit-context.yaml YAML parse failed. Cache auto-invalidated; subagents re-dispatched. Transparent.
 - `routing_outcome_corrupt` (v3.0.0+, Iter 33) — orchestrate-flow: routing-outcomes.md parse failure. Auto-invalidate + log; chain proceeds.
+- `model_tier_unknown` (v3.1.0+, Iter 34) — orchestrate-flow: override source references a role not in model-tiers.md catalog. Auto-ignore + log; chain proceeds with catalog default. Forward-compat.
 
 ### `--converge` flag (v2.3+)
 

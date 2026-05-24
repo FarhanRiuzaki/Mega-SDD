@@ -513,7 +513,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
@@ -560,6 +560,7 @@ blocker:
 - `predictive_check_failed` — orchestrate-flow v3.0.0+, Iter 33: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. Resolution: user fixes precondition (install dep / add framework pack / etc.) per `next_action.hint`; re-run chain.
 - `invalid_handoff` — orchestrate-flow v3.0.0+, Iter 33: handoff YAML from sub-skill fails schema validation (missing REQUIRED field, or CONDITIONAL field missing when condition met, or YAML parse error). ALWAYS STOP. Resolution: producer skill author fixes handoff template per handoff-contract.md schema; re-run chain.
 - `handoff_type_mismatch` — orchestrate-flow v3.0.0+, Iter 33 F4: handoff YAML field type doesn't match TYPE annotation in handoff-contract.md schema. ALWAYS STOP. Resolution: producer skill author fixes type emission per handoff-contract.md TYPE annotation; re-run chain.
+- `model_tier_unknown` — orchestrate-flow v3.1.0+, Iter 34: model-tier override references a role not in references/model-tiers.md catalog. SOFT halt: log + ignore override; chain proceeds with catalog default for unknown roles. Forward-compat for future role additions.
 
 ### Multiple blockers in one run
 

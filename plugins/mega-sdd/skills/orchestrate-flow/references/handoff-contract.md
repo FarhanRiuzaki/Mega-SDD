@@ -74,6 +74,13 @@ handoff:
         content: |
           <markdown row or JSON entry to append>
         source_run: <skill-name>@<timestamp>
+    model_tiers:                        # NEW v3.1.0+ (Iter 34) — resolved model tier per named subagent role
+      auth-extractor: sonnet            # example; actual entries depend on chain roles
+      code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
+      # ... (all roles relevant to chain)
+    model_tier_sources:                 # NEW v3.1.0+ (OPTIONAL — debug provenance trail)
+      auth-extractor: catalog           # catalog | user | project | cli
+      code-quality-reviewer: catalog
 ```
 
 ---
@@ -144,6 +151,22 @@ TYPE: object — `{ snapshot_path: string (absolute path), divergence_classifica
 ### `metadata:` (OPTIONAL — memory layer integration; v2.1+ when active)
 
 TYPE: object — `{ memory_context: object, memory_writes: array<object> }`. Optional — memory layer off (`--memory-off`) omits this block entirely.
+
+### `model_tiers:` (CONDITIONAL — if v3.1.0+ orchestrate-flow resolved overrides; v3.25.0+, Iter 34)
+
+TYPE: object {
+  `<role-name>`: enum (haiku | sonnet | opus)
+}
+
+Nested under `metadata:`. Resolved model tier per named subagent role. Sub-skills consult this block before each subagent dispatch; absent role-name → use catalog default per `references/model-tiers.md` §Catalog.
+
+Condition: present when orchestrate-flow v3.1.0+ Step 2.8 ran (i.e., v3.25.0+ plugin).
+
+Companion field: `metadata.model_tier_sources:` (OPTIONAL) — same keys; values are the override source for each tier (`catalog` | `user` | `project` | `cli`) for debugging.
+
+TYPE (companion): object {
+  `<role-name>`: enum (catalog | user | project | cli)
+}
 
 ### `starterkit_context:` (CONDITIONAL — if scan-codebase deep-scan ran successfully; v3.23.0+, Iter 32)
 
