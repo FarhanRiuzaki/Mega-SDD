@@ -172,6 +172,28 @@ Also run static analysis (if framework pack specifies):
 Must pass at <pack-specified level>.
 
 ═══════════════════════════════════════════
+T2 BUDGET TRACKER (v2.8.0+, Iter 44 — informational)
+═══════════════════════════════════════════
+
+```
+### T2 budget tracker
+consumed_t1: <X> bytes (cap 2048)
+consumed_t2: <Y> bytes (cap 5120, hard 10240)
+total: <X+Y> bytes
+truncations_applied:
+  <if any T2 section was truncated below default contents:>
+  - <section_name>: <rule_applied> (saved <Z> bytes)
+  ...
+  <else:>
+  - (none)
+instruction_to_subagent:
+  If your self-assessment references information that came from a truncated
+  section (listed above), mark its confidence as MEDIUM (not HIGH) and note
+  the truncation explicitly in your bolt-report.md self-assessment section.
+  Truncation is NOT a failure — it's transparency.
+```
+
+═══════════════════════════════════════════
 TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 ═══════════════════════════════════════════
 
