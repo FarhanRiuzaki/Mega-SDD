@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.1.0
+version: 3.1.1
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -318,6 +318,23 @@ next_action:
      predictive_warnings_count: <int>     # NEW v3.0.0+: count of non-fatal predictive warnings shown
      predictive_halts_count: <int>        # NEW v3.0.0+: count of fatal predictive halts (always ≤1 since fatal halts STOP)
    ```
+
+   - **(v3.1.1+, Iter 35) Phase context (appended to final summary when vault.json has `phase` field):**
+
+     **Phase context (v3.1.1+, Iter 35):**
+
+     If `vault.json` has `phase` field, append to summary:
+
+     IF `vault.phase < vault.phase_total`:
+       "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md` §Phase <N+1> OR run `/mega-sdd:generate-intent --kb=<KB> --phase=<N+1>`."
+
+     IF `vault.phase == vault.phase_total`:
+       "Phase <N> of <M> complete. All phases finished."
+
+     IF `phase` field absent (single-phase project OR pre-v3.26.0 vault):
+       Omit phase context section.
+
+     This complements the execute-bolts handoff `next_action.hint` from Iter 35 — orchestrate-flow surfaces the same info at chain summary level for user visibility.
 
 7.5. **End-of-chain routing-outcomes memory write (v3.0.0+, Iter 33).**
 
