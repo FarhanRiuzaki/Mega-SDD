@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.8.0
+version: 2.9.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -32,6 +32,8 @@ The terminal phase of the SDD pipeline — turns units into code.
   - `--force-skip-postflight` — (v2.6.4+, Iter 39) **DISCOURAGED** escape hatch that skips ast-grep Hard Rule postflight validation for THIS run only. Use only when ast-grep binary is broken or a known false-positive pattern blocks otherwise-valid work; document the reason in the bolt-report.md self-assessment section. Does NOT downgrade the rail (BLOCKING remains BLOCKING per CLAUDE.md "no bypassing anti-hallucination"); a follow-up bolt re-run WITHOUT the flag is required before drift-detect / merge.
 
     > ⚠️ **WARNING — anti-bypass policy.** This flag exists for operational continuity (broken tool / known false-positive), NOT to ship code that fails Hard Rules. Any use is logged in the handoff YAML `notes.postflight_skipped: true` field and surfaces in `<vault>/bolts/_summary.md`. Repeated unauthorized use is treated as a constitution violation per `bind-codebase/references/constitution.md §B`.
+  - `--resume` — resume a partially-completed bolt from `<vault>/bolts/U-XXX/partial-state.json`. Forward-only re-execution from `current_step`. See §Partial-state contract for resume integrity checks.
+  - `--rollback <unit-id-or-vault-path>` — (v2.9.0+, Iter 45 — saga compensating actions) read partial-state.json v2.0; apply `rollback_hints[]` in reverse order to undo a crashed bolt's side effects. Per-action confirmation (default safe for non-idempotent ops). Records `applied_at:` timestamp per action so partial rollback can be resumed. Errors out on v1.0 partial-state.json files (no rollback hints) with manual-review guidance. See §Saga compensating actions below + spec doc `docs/superpowers/specs/2026-05-25-iter-45-saga-compensating-actions-design.md`.
 
 ## Pre-flight checks
 
@@ -317,13 +319,94 @@ d. **Size check (v2.8.0+, Iter 44 — budget-tracker informed)**:
 e. **Log final prompt**:
    - Write assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability
 
-f. **Partial-state contract**:
+f. **Partial-state contract (v2.0 schema as of Iter 45 — saga compensating actions)**:
    - If bolt subagent crashes mid-execution, write `<vault>/bolts/U-XXX/partial-state.json` per `references/shared-snapshot-schema.md`-like format:
-     - files modified (with current sha256)
-     - last test result (if any)
-     - last AI action / current step
+     - `schema_version: "2.0"` (Iter 45 bump from 1.0 Iter 30 baseline)
+     - `bolt_id`, `started_at`, `current_step`, `current_step_status` (enum: `crashed | partial | succeeded`)
+     - `files_modified[]`: each `{path, sha256_before, sha256_after}`
+     - `last_test_result`, `last_action`
+     - **`rollback_hints[]`** (NEW v2.0, Iter 45): harvested from bolt-report.md `## Rollback hints` section. Each entry: `{step_id, step_type (canonical taxonomy below), evidence (1-line what happened), compensating_action (literal shell command OR "(none — manual review required)"), idempotent (bool), applied_at (null until --rollback runs the action)}`.
    - Resume reads partial-state, doesn't start from zero
    - After 3 partial-state attempts → halt `bolt_repeated_partial_failure`
+   - **Resume-time integrity check (v2.7.3+, Iter 40 — silent-failure path closure):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Previously: orchestrator silently overwrote corrupt state with fresh state, hiding the original recovery context. Closes Iter 38 audit finding D3-003. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
+   - **Malformed rollback_hints check (v2.9.0+, Iter 45):** if partial-state.json v2.0 parses but `rollback_hints[]` entries are missing required fields OR reference unknown `step_type` → emit halt `partial_state_corrupt` with details `{..., malformed_hints: [<entry indices + reason>]}`. Reuses Iter 40 halt envelope; no new halt type. Resolution: user inspects bolt-report.md to reconstruct hints OR proceeds with `--resume` (forward-only, no rollback) accepting risk.
+
+   **Step type canonical taxonomy (Iter 45)** — bolt subagent classifies each significant step into one of these when emitting rollback hint to bolt-report.md:
+
+   | step_type | Compensating action template | Idempotent? |
+   |---|---|---|
+   | `file_created` | `rm <path>` | ✓ |
+   | `file_modified` | `git checkout HEAD -- <path>` | ✓ |
+   | `file_partially_written` | `git checkout HEAD -- <path>` | ✓ |
+   | `file_deleted` | `git checkout HEAD -- <path>` | ✓ |
+   | `composer_dep_added` | `composer remove <pkg> --no-update && git checkout composer.json composer.lock` | ✗ (composer cache may persist) |
+   | `composer_dep_removed` | `git checkout composer.json composer.lock && composer install` | ✗ |
+   | `npm_dep_added` | `npm uninstall <pkg> && git checkout package.json package-lock.json` | ✗ |
+   | `npm_dep_removed` | similar | ✗ |
+   | `migration_created` | `rm <migration-file>` | ✓ |
+   | `migration_executed` | `php artisan migrate:rollback --step=1` (Laravel) OR equivalent | ✗ (DB state) |
+   | `external_api_call` | `(none — manual review required)` | ✗ |
+   | `test_command_run` | `(none — read-only)` | ✓ |
+   | `git_commit` | `git reset --hard HEAD~1` (DANGEROUS — only if commit was THIS bolt's) | ✗ |
+   | `git_branch_created` | `git branch -D <branch>` | ✓ |
+
+   ```yaml
+   # Example partial_state_corrupt envelope:
+   type: partial_state_corrupt
+   source_skill: execute-bolts
+   details:
+     partial_state_path: "<vault>/bolts/U-007/partial-state.json"
+     parse_error: "json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 18 (char 87)"
+     corrupt_backup_path: "<vault>/bolts/U-007/partial-state.json.corrupt-2026-05-25T14:32:00Z"
+   next_action:
+     type: rename_and_retry
+     hint: "Rename partial-state.json to suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
+   ```
+
+### Saga compensating actions (v2.9.0+, Iter 45 — `--rollback` flag)
+
+Closes Iter 38 audit Pattern D (D3-009: rollback undefined). Previously the plugin used forward-only resume — `--resume` retries the failing step but cannot undo non-idempotent prior steps (composer dep adds, migrations, external API calls). v2.9.0+ partial-state.json v2.0 captures `rollback_hints[]` per step; `--rollback` applies them in reverse order.
+
+**Bolt subagent contract (per `references/bolt-dispatch-prompt.md` §Rollback hints):**
+
+For each significant step (file write / dep add / migration / etc.), bolt subagent appends to bolt-report.md `## Rollback hints` section:
+
+```yaml
+- step_id: step-1-add-dep
+  step_type: composer_dep_added
+  evidence: "added 'laravel/cashier': '^15.0' to composer.json:42; composer.lock regenerated"
+  compensating_action: "composer remove laravel/cashier --no-update && git checkout composer.json composer.lock"
+  idempotent: false
+```
+
+On crash: execute-bolts harvests this section + writes `rollback_hints[]` array into partial-state.json v2.0. On `--rollback`: applies actions in reverse order with per-action confirmation (default safe for non-idempotent).
+
+**`--rollback` flow:**
+
+1. Read `<vault>/bolts/U-XXX/partial-state.json`
+2. If `schema_version: "1.0"` → error: "No rollback hints in v1.0 partial-state.json. Manual review required (`git status` + `git diff HEAD`)."
+3. If `schema_version: "2.0"` AND `rollback_hints[]` present → display reverse-order list with idempotency markers:
+
+   ```
+   Rolling back partial bolt U-007 (3 compensating actions):
+
+     3. file_partially_written: git checkout HEAD -- app/Http/Controllers/SubscriptionController.php  [idempotent ✓]
+     2. file_created: rm database/migrations/2026_05_25_100000_create_subscriptions_table.php  [idempotent ✓]
+     1. composer_dep_added: composer remove laravel/cashier --no-update && git checkout composer.json composer.lock  [idempotent ✗ — composer cache may persist]
+
+   Apply in reverse order (3 → 2 → 1)?
+     [Y] proceed (records applied_at per action)
+     [N] cancel; review partial-state.json manually
+     [I] interactive (prompt before each action)
+   ```
+
+4. After each action runs: write `applied_at: <ISO8601>` back to partial-state.json (so partial rollback can be resumed).
+5. If all actions complete: rename partial-state.json to `.rolled-back-<ISO8601>` for forensics; bolt slot is now clean.
+
+**Out of scope:**
+- Auto-rollback on crash (user-initiated only; auto-rollback compounds non-idempotent errors)
+- Cross-bolt saga (rollback scope = single bolt U-XXX; batch-level too risky)
+- DB introspection for `migration_executed` rollback (hint says rollback last migration; user accepts risk via per-action confirmation)
    - **Resume-time integrity check (v2.7.3+, Iter 40 — silent-failure path closure):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Previously: orchestrator silently overwrote corrupt state with fresh state, hiding the original recovery context. Closes Iter 38 audit finding D3-003. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
 
    ```yaml

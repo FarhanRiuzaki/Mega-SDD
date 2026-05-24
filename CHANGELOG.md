@@ -5,6 +5,113 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.30.0] - 2026-05-25
+
+### Iter 45 — Saga Compensating Actions (`--rollback` flag + partial-state v2.0)
+
+**Robustness iter** (~2hr; MINOR bump — schema bump + new flag + new self-assessment section). Closes Iter 38 audit Pattern D (D3-009 rollback undefined + extends D3-003 partial-state coverage). Closes Queue #5.
+
+**Problem (Pattern D, audit-cited external research: Saga Pattern + Compensating Transactions):** mega-sdd uses forward-only resume. On `--resume`, execute-bolts retries the failing step but cannot undo non-idempotent prior steps (composer dep adds, migration executions, external API calls). Partial writes compound on subsequent runs.
+
+**Solution:**
+
+**1. partial-state.json schema v1.0 → v2.0**
+
+Bumps `schema_version` field. Adds `rollback_hints[]` array per partial bolt:
+
+```json
+{
+  "schema_version": "2.0",
+  "bolt_id": "U-007",
+  "current_step": "step-3-write-controller",
+  "current_step_status": "crashed",
+  "files_modified": [...],
+  "rollback_hints": [
+    {
+      "step_id": "step-1-add-dep",
+      "step_type": "composer_dep_added",
+      "evidence": "added 'laravel/cashier': '^15.0' to composer.json:42",
+      "compensating_action": "composer remove laravel/cashier --no-update && git checkout composer.json composer.lock",
+      "idempotent": false,
+      "applied_at": null
+    },
+    {
+      "step_id": "step-2-write-migration",
+      "step_type": "file_created",
+      "evidence": "created database/migrations/2026_05_25_100000_create_subscriptions_table.php (47KB)",
+      "compensating_action": "rm database/migrations/2026_05_25_100000_create_subscriptions_table.php",
+      "idempotent": true,
+      "applied_at": null
+    }
+  ]
+}
+```
+
+**2. Canonical step_type taxonomy (14 types)**
+
+Each maps to default compensating action template + idempotency flag. Bolt subagent classifies each significant step using these EXACT names (`file_created` / `file_modified` / `file_partially_written` / `file_deleted` / `composer_dep_added` / `composer_dep_removed` / `npm_dep_added` / `npm_dep_removed` / `migration_created` / `migration_executed` / `external_api_call` / `test_command_run` / `git_commit` / `git_branch_created`). Unknown values → `partial_state_corrupt` halt.
+
+**3. `--rollback <unit-id>` flag (NEW)**
+
+Reads partial-state.json v2.0. If `rollback_hints[]` present, displays reverse-order list with idempotency markers:
+
+```
+Rolling back partial bolt U-007 (3 compensating actions):
+
+  3. file_partially_written: git checkout HEAD -- app/Http/Controllers/SubscriptionController.php  [idempotent ✓]
+  2. file_created: rm database/migrations/2026_05_25_100000_create_subscriptions_table.php  [idempotent ✓]
+  1. composer_dep_added: composer remove laravel/cashier --no-update && git checkout composer.json composer.lock  [idempotent ✗ — composer cache may persist]
+
+Apply in reverse order (3 → 2 → 1)?
+  [Y] proceed   [N] cancel   [I] interactive (per-action confirm)
+```
+
+Per-action confirmation default safe for non-idempotent. Applied actions stamp `applied_at:` so partial rollback can be resumed. On full rollback completion: partial-state.json renamed to `.rolled-back-<ISO8601>` for forensics.
+
+**4. Bolt subagent contract (bolt-dispatch-prompt.md `## Rollback hints` section)**
+
+For EACH significant step bolt subagent performs, append rollback hint to bolt-report.md `## Rollback hints` section. On crash: execute-bolts harvests into partial-state.json. On success: section is INFORMATIONAL (audit trail).
+
+**5. Backward compat**
+
+- v1.0 partial-state.json (Iter 30 baseline) → `--rollback` errors with manual-review guidance (`git status` + `git diff HEAD`)
+- `--resume` still works on v1.0 (forward-only behavior preserved)
+- New bolt writes always emit v2.0 schema
+
+**Halt semantics:** malformed `rollback_hints[]` entries (missing required fields OR unknown `step_type`) → reuses existing `partial_state_corrupt` halt (Iter 40) with `malformed_hints: [<entry indices + reason>]` detail. No new halt type.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--rollback` + `--resume` flags documented in Inputs; §Partial-state contract extended with v2.0 schema + canonical step_type taxonomy table + new §Saga compensating actions section
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — `## Rollback hints` self-assessment section added with canonical taxonomy table + emission contract
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.29.0 → 3.30.0
+- `plugins/mega-sdd/README.md` — + v3.30.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-45-saga-compensating-actions-design.md` — new spec
+
+**Out of scope:**
+- Auto-rollback on crash (user-initiated only; auto-rollback compounds non-idempotent errors)
+- Cross-bolt saga (rollback scope = single bolt U-XXX)
+- DB schema introspection for `migration_executed` rollback (relies on framework's standard rollback command; user accepts risk via per-action confirmation)
+
+**Skill bumps:**
+- `execute-bolts` 2.8.0 → 2.9.0 (MINOR)
+
+**External research applied:**
+- Saga Pattern (microservices.io) — compensating action design
+- Compensating Transactions (Microsoft Azure) — idempotency flag pattern
+
+**Standing directives applied:**
+- simplifikasi: 1 audit Pattern (D + extension to D3-003) → schema bump + 1 new flag + 1 new self-assessment section in 2 files
+- flawless: producer (bolt subagent emits hints) + consumer (execute-bolts harvests on crash + applies on `--rollback`) ship in-iter; v1.0 readers gracefully degrade
+- reuse-first: extends Iter 30 partial-state contract + reuses Iter 40 `partial_state_corrupt` halt for malformed hints + extends existing bolt-dispatch-prompt.md self-assessment pattern
+
+**Plugin:** v3.29.0 → v3.30.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-45-saga-compensating-actions-design.md`
+
+**Next:** Iter 46 — section-snapshot reuse (Queue #6; D1-006 + D2-007; ~3hr; MEDIUM impact iterative-run ROI).
+
 ## [3.29.0] - 2026-05-25
 
 ### Iter 44 — T2 Running Budget Tracker + Progressive Truncation
