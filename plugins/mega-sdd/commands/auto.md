@@ -1,6 +1,6 @@
 ---
 description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts. Per Iter 13 audit: this is the ONE command users need; advanced/diagnostic commands available but auto-invoked transparently.
-argument-hint: [input] [--deep|--shallow] [--greenfield] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N]
+argument-hint: [input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N]
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` flags + the detected starting phase based on input shape.
@@ -49,6 +49,32 @@ Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" �
 When neither manifest nor `--greenfield` set → halt `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel).
 
 After detection + flag parse, invoke `orchestrate-flow --deep --auto [--from=<detected-start>] [--greenfield] [other-flags]`.
+
+## Multi-scope picker (v3.20+, Iter 28)
+
+When PRD input has canonical `scopes:` frontmatter block, auto invokes scope picker BEFORE pipeline starts:
+
+```
+▶ Phase 0a: PRD scope detection
+  Reading <prd-path> frontmatter...
+  ✓ Canonical format detected (scopes: BE, MW, FE)
+  Smart default: BE (cwd basename matches scope id)
+
+❓ This vault is for which scope?
+   [1] BE — Backend API (recommended)
+   [2] MW — Integration Middleware
+   [3] FE — Frontend Web
+   [4] All scopes (single combined vault — legacy behavior)
+   [5] Cancel
+```
+
+`--scope=<id>` flag bypasses picker. `--scope=all` invokes legacy single-vault behavior (with warning).
+
+When PRD lacks scopes block → retrofit bridge fires per `skills/generate-intent/references/legacy-retrofit-prompt.md`.
+
+When memory has prior scope decision for this PRD + cwd matches → silent default with confirm-once UX.
+
+See `tests/scenarios/scenario-7-multi-architect.md` for walkthrough.
 
 ## Auto-integrated diagnostics (v3.7+, Iter 13)
 
