@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.7.3
+version: 2.8.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -147,9 +147,9 @@ Follow `references/superpowers-bridge.md` per-unit flow. Standard sequence (Iter
 3. Run acceptance tests (per superpowers `test-driven-development`)
 4. **Post-flight: re-validate Hard rules** (see §Post-flight Hard Rule validation below)
 
-## Step 4.5: Tiered context enrichment per bolt (v2.6.0+, Iter 30)
+## Step 4.5: Tiered context enrichment per bolt (v2.6.0+, Iter 30; budget tracker v2.8.0+, Iter 44)
 
-Per `references/bolt-dispatch-prompt.md` template. Implements the 10 AI-executor principles from spec §4. Total dispatch prompt budget ≤7KB (hard cap 10KB → halt `dispatch_prompt_too_large`).
+Per `references/bolt-dispatch-prompt.md` template. Implements the 10 AI-executor principles from spec §4. Total dispatch prompt budget ≤7KB target (hard cap 10KB → halt `dispatch_prompt_too_large`).
 
 a. **Load TIER 1 (always included, target ≤2KB)**:
    - Unit body (frontmatter + body sections)
@@ -159,7 +159,61 @@ a. **Load TIER 1 (always included, target ≤2KB)**:
    - Anti-context block (DO NOT MODIFY / DO NOT REPLICATE / DO NOT WRITE / DO NOT COMMIT IF)
    - Provenance trailer template
 
-b. **Load TIER 2 (conditional, target ≤5KB total)**:
+**a.5 Initialize T2 budget tracker (v2.8.0+, Iter 44 — closes audit D1-003)**
+
+Replaces the prior "single-halt at 10KB" enforcement. Tracks running T2 consumption + applies progressive section-level truncation per priority order.
+
+```
+running_budget = {
+  cap_hard:      10240         # 10KB hard cap (unchanged from Iter 30)
+  cap_target:    7168          # 7KB total target
+  cap_t1:        2048          # 2KB T1 budget
+  cap_t2:        5120          # 5KB T2 budget (newly enforced — was aspirational pre-Iter-44)
+  consumed_t1:   <bytes of TIER 1 from Step a>
+  consumed_t2:   0             # accumulates during Step b
+  remaining_t2:  cap_t2
+  warnings:      []            # truncation events (logged to provenance)
+}
+```
+
+After EACH T2 section loads in Step b, update tracker:
+- `consumed_t2 += section_bytes`
+- `remaining_t2 = cap_t2 - consumed_t2`
+- IF `remaining_t2 < next_section_min_viable_bytes` → apply progressive truncation per "T2 Section Priority + Truncation" below BEFORE loading next section.
+
+### T2 Section Priority + Truncation (v2.8.0+, Iter 44)
+
+Ordered from MOST disposable (priority 1) to MOST critical (priority 8). When budget tight, truncate top-of-list first. Truncation log appended to `running_budget.warnings` with `{section, rule_applied, bytes_saved}`.
+
+| Priority | T2 Section | Truncation cascade | Drop floor |
+|---|---|---|---|
+| 1 | `validation_hints` | drop expected-output patterns; keep test commands only | drop section entirely |
+| 2 | `historical_memory` | last 5 → last 3 → last 1 → drop | drop section |
+| 3 | `kb_anti_patterns` | top 3 → top 1 → drop | drop section |
+| 4 | `confidence_labels` | per-claim → aggregate ("HIGH×N / MEDIUM×N / LOW×N") | drop section |
+| 5 | `depends_on_summaries` | N most-recently-touched files only | keep at least 1 upstream |
+| 6 | `framework_pack_rules` | top 5 → top 3 → top 1 | keep top 1 always |
+| 7 | `starterkit_slice` | (existing Iter 32 cascade) libs→top 10, ui_ux.idioms→top 3 | per Iter 32 (halt if still over) |
+| 8 (NEVER drop) | `constitution_clauses` | NEVER truncate — LOCKED security/compliance content | n/a — if exceeds here → halt `dispatch_prompt_too_large` |
+
+### Halt path (preserved, v2.8.0+ semantics)
+
+`dispatch_prompt_too_large` fires ONLY when:
+- All disposable T2 sections (priorities 1-7) already truncated to drop floor
+- AND total prompt still exceeds `cap_hard` (10KB)
+- AND `constitution_clauses` alone is non-truncatable
+
+In practice: this halt now indicates a true config issue (unit references too many constitution clauses for a single bolt) requiring spec-level adjustment, not bolt-fixable. Iter 30 halt semantics preserved.
+
+### Soft-budget warnings (v2.8.0+ — NEW)
+
+When `consumed_t2 > cap_t2` (5KB) but `total < cap_hard` (10KB):
+- Log warning (NOT halt): `"T2 exceeded soft cap: target=5KB, actual=<N>KB — truncation applied"`
+- Truncation still applied per priority to bring T2 back under target
+- Bolt proceeds with truncated context + provenance trail (visible to subagent in bolt-dispatch-prompt.md `### T2 budget tracker` section)
+- Bolt self-assessment instructed: if `T2 budget tracker` shows truncated sections, set `confidence: MEDIUM` for any claim that depended on truncated context
+
+b. **Load TIER 2 (conditional, target ≤5KB total — enforced v2.8.0+)**:
    - depends_on chain: 1-line summary per upstream bolt (read each bolt-report.md self-assessment)
    - Framework pack rules: filter pack file by `path_glob` match against this unit's `target_files`
    - Constitution clauses: ONLY clauses referenced in this unit's `vault_source` sections
@@ -245,8 +299,20 @@ c. **TIER 3 (NOT embedded; reference-on-demand via Read tool)**:
    - Full memory tables
    - Full framework pack
 
-d. **Size check**:
-   - If assembled prompt > 10KB → halt `dispatch_prompt_too_large` with re-tier guidance
+d. **Size check (v2.8.0+, Iter 44 — budget-tracker informed)**:
+   - Compute final `total = consumed_t1 + consumed_t2`
+   - IF `total > cap_hard` (10KB) → halt `dispatch_prompt_too_large` with details `{cap_hard, total, t1_bytes, t2_bytes, warnings: running_budget.warnings, truncation_exhausted: true}` — this should only fire when constitution_clauses alone exceeds budget (Iter 44 inversion: progressive truncation absorbs most cases before reaching this halt)
+   - IF `consumed_t2 > cap_t2` (5KB soft cap exceeded but under hard cap) → emit warn-only log line (per Iter 44 §Soft-budget warnings); continue dispatch with truncated prompt
+   - Inject `### T2 budget tracker` section into bolt-dispatch-prompt.md per `references/bolt-dispatch-prompt.md` §T2-budget-tracker. Contents:
+     ```
+     ### T2 budget tracker
+     consumed_t1: <X bytes> (cap 2048)
+     consumed_t2: <Y bytes> (cap 5120, hard 10240)
+     truncations_applied:
+       - <section>: <rule_applied> (saved <Z bytes>)
+       ...
+     instruction_to_subagent: "If your self-assessment references information that was truncated above, mark its confidence: MEDIUM and note the truncation in your bolt-report.md self-assessment section."
+     ```
 
 e. **Log final prompt**:
    - Write assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability

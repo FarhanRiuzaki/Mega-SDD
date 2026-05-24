@@ -5,6 +5,85 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.29.0] - 2026-05-25
+
+### Iter 44 — T2 Running Budget Tracker + Progressive Truncation
+
+**Performance iter** (~2hr; MINOR bump — new step + new dispatch-prompt section). Closes Iter 38 audit Queue #4 (D1-003, HIGH impact per-bolt).
+
+**Problem (D1-003):** T2 5KB soft cap was aspirational — no running budget enforced. Single 10KB hard halt only. Complex units silently exceeded T2 target until tripping the hard cap (halt-or-pass binary). Audit estimate: 15-30% T2 size reduction for complex units.
+
+**Solution: 3 new mechanisms in execute-bolts §Step 4.5**
+
+**1. Running budget tracker (Step 4.5.a.5, NEW)**
+
+Initialized after TIER 1 load, before TIER 2 load:
+```
+running_budget = {
+  cap_hard:      10240     # 10KB hard cap (unchanged)
+  cap_target:    7168      # 7KB total target
+  cap_t1:        2048      # 2KB T1 budget
+  cap_t2:        5120      # 5KB T2 budget (now ENFORCED)
+  consumed_t1:   <bytes>
+  consumed_t2:   0
+  remaining_t2:  cap_t2
+  warnings:      []
+}
+```
+
+After EACH T2 section loads: update `consumed_t2`; if `remaining_t2 < next_section_min_viable_bytes` → apply progressive truncation per priority table BEFORE loading next section. Truncation events logged to `warnings` array for provenance.
+
+**2. 8-tier section priority + per-section truncation cascade**
+
+| Priority | Section | Cascade | Drop floor |
+|---|---|---|---|
+| 1 | validation_hints | drop expected-output; keep commands | drop |
+| 2 | historical_memory | 5→3→1→drop | drop |
+| 3 | kb_anti_patterns | top 3→top 1→drop | drop |
+| 4 | confidence_labels | per-claim → aggregate | drop |
+| 5 | depends_on_summaries | N most-recent → 1 minimum | keep 1 |
+| 6 | framework_pack_rules | top 5→top 3→top 1 | keep top 1 |
+| 7 | starterkit_slice | (existing Iter 32 cascade) | per Iter 32 |
+| 8 (NEVER drop) | constitution_clauses | n/a — LOCKED | halt if exceeds |
+
+**3. Soft-budget warnings (NEW)**
+
+When `consumed_t2 > cap_t2` but `total < cap_hard`:
+- Log warning (NOT halt): `"T2 exceeded soft cap: target=5KB, actual=<N>KB — truncation applied"`
+- Truncation still applied; bolt proceeds with truncated context
+- Provenance trail visible to subagent via NEW `### T2 budget tracker` section in bolt-dispatch-prompt.md
+
+**Self-assessment integration** — subagent instructed: "if your self-assessment references truncated information, mark confidence as MEDIUM (not HIGH) and note the truncation in bolt-report.md self-assessment section. Truncation is NOT a failure — it's transparency."
+
+**Halt semantics (preserved)** — `dispatch_prompt_too_large` now fires ONLY when constitution_clauses alone exceeds budget after all disposable T2 sections truncated to drop floor. True config issue requiring spec-level adjustment. Iter 30 halt semantics preserved.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — Step 4.5.a.5 (NEW); §T2 Section Priority + Truncation table (NEW); §Halt path (rewritten); §Soft-budget warnings (NEW); Step 4.5.d (rewritten to surface tracker)
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — `### T2 budget tracker` section added between Validation hints and TIER 3 marker
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.28.1 → 3.29.0
+- `plugins/mega-sdd/README.md` — + v3.29.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-44-t2-running-budget-tracker-design.md` — new spec
+
+**Skill bumps:**
+- `execute-bolts` 2.7.3 → 2.8.0 (MINOR)
+
+**External research applied (Iter 38 audit citations):**
+- Anthropic Prompt Caching — context window budget discipline
+- Subagent Token Patterns (Sathish Raju Medium) — graceful degradation > halt
+
+**Standing directives applied:**
+- simplifikasi: 1 audit finding → 1 new step + 1 new reference section + 1 rewritten step in 2 files
+- flawless: halt semantics preserved (cap_hard still fires); soft-budget enforcement added incrementally; self-assessment field gives subagent visibility into truncation
+- reuse-first: extends Iter 30 tiered-context architecture + Iter 32 starterkit cascade pattern + existing halt envelope
+
+**Plugin:** v3.28.1 → v3.29.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-44-t2-running-budget-tracker-design.md`
+
+**Next:** Iter 45 — saga compensating actions (Queue #5; D3-009 + D3-003; ~5hr; MEDIUM impact).
+
 ## [3.28.1] - 2026-05-25
 
 ### Iter 43 — FIX-FORWARD: handoff_missing semantics + schema doc + savings accuracy

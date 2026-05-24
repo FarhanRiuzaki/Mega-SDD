@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.28.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.29.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,29 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.29.0 (Iter 44, minor) — T2 Running Budget Tracker + Progressive Truncation
+
+Closes Iter 38 audit Queue #4 (D1-003) — replaces aspirational 5KB T2 soft cap + single 10KB halt with running byte tracker + progressive section-level truncation cascade. Every bolt dispatch benefits.
+
+**Problem (audit D1-003):** T2 5KB soft cap was documented but never enforced. The only enforcement was the 10KB hard cap (halt-or-pass binary). Complex units silently exceeded T2 budget, ballooning context until they tripped the hard cap. Audit estimate: 15-30% T2 size reduction for complex units once progressive truncation enforced.
+
+**Solution:**
+
+1. **Running budget tracker** (NEW — Step 4.5.a.5) tracks `consumed_t2 / cap_t2 / remaining_t2` as each T2 section loads. Truncation triggered BEFORE next section overflows budget, not after.
+
+2. **8-tier section priority for truncation** — sections ordered from MOST disposable (validation_hints / historical_memory / kb_anti_patterns) to MOST critical (constitution_clauses NEVER truncates). Each section has explicit truncation cascade with drop floor.
+
+3. **Soft-budget warnings (NEW)** — exceeding 5KB target now logs a warning + applies truncation; only `dispatch_prompt_too_large` halt fires when constitution_clauses alone exceeds budget (true config issue).
+
+4. **Truncation provenance to subagent** — bolt-dispatch-prompt.md gets new `### T2 budget tracker` section listing `truncations_applied`. Subagent instructed: "if your self-assessment references truncated information, mark confidence: MEDIUM and note the truncation."
+
+**Skill bumps:**
+- `execute-bolts` 2.7.3 → 2.8.0 (MINOR — new Step 4.5.a.5 + new bolt-dispatch-prompt section)
+
+**Plugin v3.28.1 → v3.29.0** (MINOR — new optimization step + new self-assessment field).
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-44-t2-running-budget-tracker-design.md`
 
 ### v3.28.1 (Iter 43, patch) — Fix-Forward: handoff_missing semantics, schema doc, savings accuracy
 
