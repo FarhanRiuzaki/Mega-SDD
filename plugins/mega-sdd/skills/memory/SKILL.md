@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.3.0
+version: 1.3.1
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -86,6 +86,10 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 **Append mechanism:** Bash `>>` heredoc (per §6 POSIX append)
 **Lock:** standard memory file-lock pattern (backoff + retry 3x; fail with `memory_in_use`)
 **Soft halt:** `routing_outcome_corrupt` on parse failure (auto-invalidate; chain proceeds)
+
+### preferences.md `## Model tiers` section (v1.3.1+, Iter 34)
+
+User-scope per-role model tier override. Format: markdown list with `- <role>: <tier>` per line. Schema: see `references/memory-schema.md §Model tiers`. Consumed by orchestrate-flow v3.1.0+ Step 2.8 override-chain resolution.
 
 ## Self-learning mechanism (suggestion-only)
 

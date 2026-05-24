@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.4.1
+version: 1.5.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -80,6 +80,13 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 | **3 — Workflows** | Transactional workflows, ops rules, hidden gotchas | 5 parallel | Heaviest extraction wave |
 | **4 — Integrations** | External system contracts, reporting/monitoring | 3 parallel | Wraps domain coverage |
 | **5 — Synthesis** | ERD, system-flow, dependency-graph, phasing, README | Main thread | Needs holistic view across all wave outputs |
+
+**Model tier per wave (v1.5.0+, Iter 34):** Model resolved from `references/model-tiers.md` per role (override via handoff metadata.model_tiers if invoked through orchestrate-flow):
+- Wave 1: `(model: per references/model-tiers.md §extract-intelligence-wave-1, default sonnet)`
+- Wave 2: `(model: per references/model-tiers.md §extract-intelligence-wave-2, default sonnet)`
+- Wave 3: `(model: per references/model-tiers.md §extract-intelligence-wave-3, default sonnet)`
+- Wave 4: `(model: per references/model-tiers.md §extract-intelligence-wave-4, default sonnet)`
+- Wave 5: `(model: per references/model-tiers.md §extract-intelligence-wave-5, default opus — synthesis needs holistic context)`
 
 **Why wave-based:**
 - Token budget control — never more than `--max-parallel` subagents in flight.

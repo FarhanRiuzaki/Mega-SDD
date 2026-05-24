@@ -274,7 +274,7 @@ CONSTRAINTS:
 
 ## Subagent dispatch pattern (for reference)
 
-`scan-codebase` Step 2.2 dispatches all 4 subagents IN PARALLEL via a single message with 4 Agent tool calls (per `superpowers:subagent-driven-development` convention for parallel-safe work). Each Agent call uses the appropriate prompt template above with placeholder substitutions, model: sonnet.
+`scan-codebase` Step 2.2 dispatches all 4 subagents IN PARALLEL via a single message with 4 Agent tool calls (per `superpowers:subagent-driven-development` convention for parallel-safe work). Each Agent call uses the appropriate prompt template above with placeholder substitutions; model resolved from `plugins/mega-sdd/references/model-tiers.md` §<role-name> (default sonnet for all 4 extractors) OR from handoff metadata.model_tiers if override applied.
 
 Consolidator (Step 2.3) collects 4 YAML responses, validates each against `starterkit-context-schema.md`, drops malformed slices (with `partial_slices:` updated), merges into single `starterkit-context.yaml`, computes `cache_key.composer_lock_sha256` + `package_lock_sha256`, and writes the file atomically.
 
