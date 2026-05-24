@@ -41,6 +41,11 @@ handoff:
     tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }  # aggregate over claims/units processed
     locked_claims_touched: []           # specific claim/unit IDs with mutability_source = kb_locked
     artifact_discards_proposed: <N>     # count of [ARTIFACT] items flagged for discard (user confirmation pending)
+  scope:                                # v3.20+ (Iter 28 — propagates multi-scope PRD picker)
+    id: <scope id, e.g., "BE">          # from vault.json scope_metadata.id (omit if legacy single-scope vault)
+    name: <scope name>                  # from vault.json scope_metadata.name
+    sibling_scopes: []                  # list of OTHER scopes from PRD (informational)
+    prd_sha256: <sha256>                # from vault.json (used by downstream skills to detect PRD changes)
   cycles:                               # v3.13+ (Iter 19 — formally added Iter 20) — when convergence loops active
     cycle_count: <N>                   # how many auto-recovery cycles ran
     halts_auto_resolved: []             # halt types resolved via memory recommendations
