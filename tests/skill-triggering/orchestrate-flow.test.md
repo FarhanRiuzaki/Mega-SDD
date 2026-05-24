@@ -294,3 +294,59 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - Halt `handoff_type_mismatch` emitted; STOPS chain
 - halt envelope: details.failing_skill="bind-codebase"; field_name="scope.id"; expected_type="string (enum)"; actual_type="object"; actual_value="{id: 'BE'}"
 - next_action.hint includes "Field scope.id should be a string (enum value), not an object"
+
+---
+
+## Iter 34 — Model tier resolution (v3.1.0+)
+
+### OF-MT1 — Catalog defaults applied (no overrides)
+
+**Setup:**
+- No CLI `--model-tier` flag
+- No `<project>/.mega-sdd/config.yaml` `model_tiers:` section
+- No `~/.mega-sdd/memory/preferences.md` `## Model tiers` section
+
+**Trigger:** `/mega-sdd:auto ./prd.md`
+
+**Expected:**
+- Step 2.8 reads all 3 override sources (cli_overrides, project_overrides, user_overrides) — all empty
+- For each role mentioned in chain → use catalog default per `references/model-tiers.md §Catalog`
+- handoff metadata.model_tiers emitted with catalog defaults
+- metadata.model_tier_sources = {role: "catalog"} for every entry
+- No `model_tier_unknown` halt fired
+- Subagent dispatches (e.g., scan-codebase deep-scan) use catalog defaults (sonnet for auth/rbac/ui-ux/libs-extractors)
+
+### OF-MT2 — CLI flag overrides project config + user preference
+
+**Setup:**
+- CLI flag: `--model-tier=code-quality-reviewer:sonnet`
+- `<project>/.mega-sdd/config.yaml` has `model_tiers: { code-quality-reviewer: haiku }`
+- `~/.mega-sdd/memory/preferences.md` `## Model tiers` has `- code-quality-reviewer: sonnet`
+
+**Trigger:** `/mega-sdd:auto --model-tier=code-quality-reviewer:sonnet ./prd.md`
+
+**Expected:**
+- Step 2.8 override chain resolves code-quality-reviewer to `sonnet` (CLI wins; project=haiku ignored; user=sonnet ignored — same result but CLI takes precedence)
+- metadata.model_tier_sources.code-quality-reviewer = "cli"
+- Log output mentions: "Model tier overrides applied: code-quality-reviewer=sonnet (cli-flag)"
+- All other roles use catalog defaults
+- Subagent dispatch uses sonnet for code-quality-reviewer (NOT catalog opus default)
+
+### OF-MT3 — Unknown role in override triggers soft halt + chain continues
+
+**Setup:**
+- `<project>/.mega-sdd/config.yaml` has `model_tiers: { future-unreleased-role: opus, audit-probe: sonnet }`
+- `future-unreleased-role` is NOT in `references/model-tiers.md §Catalog`
+- `audit-probe` IS in catalog (intelligence-audit-probe)
+
+**Trigger:** `/mega-sdd:auto ./prd.md`
+
+**Expected:**
+- Step 2.8 processes project_overrides
+- `future-unreleased-role` unknown → emit soft halt `model_tier_unknown` (warn-only)
+- halt envelope: details.unknown_role="future-unreleased-role"; override_source="project-config"
+- Log message: "Role 'future-unreleased-role' not found in catalog; override ignored"
+- `audit-probe` (valid catalog entry: intelligence-audit-probe) override applied — sonnet (was haiku default)
+- Chain PROCEEDS (soft halt; not chain-stopping)
+- metadata.model_tiers does NOT include future-unreleased-role; DOES include audit-probe with sonnet
+- Forward-compat: future iter adding `future-unreleased-role` to catalog would auto-pick up the project's existing override on next run

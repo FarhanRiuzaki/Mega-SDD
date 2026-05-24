@@ -84,6 +84,35 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new in v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
 
+### v3.25.0 (Iter 34) — Dynamic Model Selection
+
+mega-sdd now picks the **best model per subagent dispatch** instead of inheriting the caller's model. Curated catalog maps 17 named subagent roles to tier (haiku / sonnet / opus) with explicit rationale per entry.
+
+**What changed:**
+- **Catalog at `plugins/mega-sdd/references/model-tiers.md`** — 17 roles + tier + rationale + selection rubric
+- **orchestrate-flow Step 2.8** — resolves override chain (CLI flag > project config > user preference > catalog default); emits `metadata.model_tiers:` in handoff
+- **3 opus + 12 sonnet + 2 haiku** distribution by design (sonnet-dominant)
+
+**Why this matters:**
+Before: every subagent dispatch silently inherited the main thread's model. Opus for everything (expensive) OR inconsistent (depending on caller). No way to express "this synthesis needs opus" vs "this probe scoring is fine on haiku".
+
+After: catalog explicit. extract-intelligence wave-5 (holistic synthesis) → opus. intelligence-audit-probe (0-3 scoring) → haiku. Most fuzzy-classification work → sonnet. User can override any role at any level (CLI / project / user).
+
+**Override examples:**
+```bash
+# CLI: cheap reviews this run
+/mega-sdd:auto --model-tier=code-quality-reviewer:sonnet ./prd.md
+
+# Project: team prefers cheaper synthesis
+# <project>/.mega-sdd/config.yaml:
+model_tiers:
+  extract-intelligence-wave-5: sonnet
+```
+
+**Plugin v3.24.0 → v3.25.0.**
+
+See [docs/superpowers/specs/2026-05-24-iter-34-dynamic-model-selection-design.md](../../docs/superpowers/specs/2026-05-24-iter-34-dynamic-model-selection-design.md) for full design.
+
 ### v3.24.0 (Iter 33) — Flawless Seamless Intelligence
 
 **Combined mega-iter:** orchestrator becomes intelligent + handoffs become flawless.
