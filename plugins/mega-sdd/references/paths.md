@@ -81,6 +81,7 @@ Every writer skill resolves output paths via this protocol:
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `execute-bolts` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
+| `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat — introduced v3.24.0+) |
 | memory (user) | patterns.md, etc. | `~/.mega-sdd/memory/` (UNCHANGED) | same |
 | memory (vault) | classifier-accuracy.json | `<vault>/.memory/` (UNCHANGED) | same |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
