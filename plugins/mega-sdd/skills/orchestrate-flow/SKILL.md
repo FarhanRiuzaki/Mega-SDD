@@ -165,7 +165,34 @@ next_action:
 
    b. **Validation gate (v3.0.0+, Iter 33) — validate received handoff against `references/handoff-contract.md` schema annotations:**
 
-      i. (Reserved for F4 type-check; documented in C4 task)
+      i. **Type-check fields against handoff-contract.md TYPE annotations (v3.0.0+, Iter 33 F4):**
+         For each field present in handoff YAML:
+         - Lookup TYPE annotation in handoff-contract.md §<field-name> section
+         - If TYPE annotation absent → log warn-only ("field <name> has no TYPE in schema; skipping type check"); continue
+         - If TYPE annotation present → validate value matches TYPE:
+           - `string` → value is string (not int/array/object)
+           - `int` → value is integer; respect `(≥N)` constraint if present
+           - `enum (a | b | c)` → value is in allowed list
+           - `array<T>` → value is array AND each element matches T
+           - `object {...}` → value is object AND each declared sub-field matches its TYPE
+           - `string (sha256 hex)` → value is 64-char hex string
+           - `string (ISO8601)` → value matches ISO8601 pattern
+         - On type mismatch → emit halt `handoff_type_mismatch` with details {failing_skill, field_name, expected_type, actual_type, actual_value (truncated to 100 chars)}; STOP chain.
+
+      ```yaml
+      # Example handoff_type_mismatch envelope:
+      type: handoff_type_mismatch
+      source_skill: orchestrate-flow
+      details:
+        failing_skill: bind-codebase
+        field_name: "scope.id"
+        expected_type: "string (enum from vault.json scope_metadata.allowed_scopes)"
+        actual_type: "object"
+        actual_value: "{ id: 'BE', name: 'Backend' }"
+      next_action:
+        type: edit_skill_template
+        hint: "Field scope.id should be a string (enum value), not an object. Edit bind-codebase handoff template to emit scope.id as 'BE' string directly. Likely cause: handoff template emitted the entire scope object as scope.id by mistake. (Possible upstream: vault.json shape changed; verify scope_metadata schema.)"
+      ```
 
       ii. Parse handoff YAML; if YAML parse fails → emit halt `invalid_handoff` with details `{failing_skill, parse_error}`; STOP chain.
 
@@ -399,6 +426,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `oq_recommend_citation_invalid` (v1.3+, Iter 2) — generate-intent: OQ recommendation cites missing KB section.
 - `predictive_check_failed` (v3.0.0+, Iter 33) — orchestrate-flow: fatal preflight check failed; chain blocked.
 - `invalid_handoff` (v3.0.0+, Iter 33) — orchestrate-flow: handoff schema validation failed; producer-side error.
+- `handoff_type_mismatch` (v3.0.0+, Iter 33) — orchestrate-flow: handoff field type mismatch with schema annotation.
 
 ### Halt types that are SOFT (warn-only, chain continues)
 

@@ -147,6 +147,8 @@ TYPE: object — `{ memory_context: object, memory_writes: array<object> }`. Opt
 
 ### `starterkit_context:` (CONDITIONAL — if scan-codebase deep-scan ran successfully; v3.23.0+, Iter 32)
 
+TYPE: object (see `plugins/mega-sdd/references/starterkit-context-schema.md` for full structure). Required when scan-codebase deep-scan stage ran successfully and a framework was detected with confidence ≥ MEDIUM.
+
 Optional block carrying starterkit detection results forward through the chain.
 
 **Producer:** scan-codebase v2.6.0+ Step 2 deep-scan stage emits this block when a framework is detected with confidence ≥ MEDIUM AND `starterkit-context.yaml` was written.
@@ -168,6 +170,8 @@ starterkit_context:
 **Consumer-side annotations:** generate-units and execute-bolts MAY append their own metrics under this block (see per-skill examples).
 
 **Canonical source of truth for full structure:** `plugins/mega-sdd/references/starterkit-context-schema.md`
+
+**Type-check enforceability (v3.0.0+, Iter 33 F4):** fields with explicit `TYPE:` annotations above are validated at Step 6.b.i. Fields without a `TYPE:` annotation bypass type check (warn-only log). Iter 33 covers all top-level fields + 1 level of nesting (e.g., `mutability.tier_distribution.LOCKED`). Deeper nesting deferred to Iter 34+.
 
 ### Status values
 
