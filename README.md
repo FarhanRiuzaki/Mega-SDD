@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.18.1 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.24.0 · **License:** MIT
 
 </div>
 
@@ -102,6 +102,68 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 11. **Constitution layer** (v3.10+) — project-facing rules in 8th vault file; clauses inject into bolt Hard Rules
 12. **Property-Based Testing** (v3.11+) — invariants over input space; counterexamples preserved on violation
 13. **Convergence loops** (v3.12+) — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
+14. **Schema validation gate** (v3.24+, Iter 33) — every handoff YAML validated against typed schema at emission; missing REQUIRED/CONDITIONAL fields halt at PRODUCER side (immediate developer feedback, not silent consumer miss)
+15. **Type-checked field propagation** (v3.24+, Iter 33) — handoff schema declares TYPE annotations; orchestrator validates types at each chain step; prevents silent shape drift (e.g., `scope.id` being string in one skill but object in another)
+
+---
+
+## What makes mega-sdd special
+
+Most AI-dev tools take a PRD → spit code in one shot. **mega-sdd inserts structured intermediate artifacts** (vault → binding → units → bolts) so every layer is auditable, every handoff is contracted, and the AI agent has explicit constraints to respect at each step.
+
+Six differentiators:
+
+### 1. One command, full pipeline
+
+```bash
+/mega-sdd:auto ./prd.md
+```
+
+PRD → cited-claim vault → bound to live codebase → atomic units → tested commits → AGENTS.md. **Single upfront confirmation**; auto-continues clean phases. Halts surface YAML blockers with concrete `next_action` (exact command to recover). No "what do I run next?" friction.
+
+### 2. Smart orchestrator (v3.24+, Iter 33)
+
+The orchestrator learns and predicts:
+- **Memory-driven routing** — reads `.mega-sdd/memory/routing-outcomes.md`. After 3+ successful runs of your project shape, it recommends the proven chain (overriding default routing). Fingerprint-cached via lock-file sha256 — re-scan with unchanged deps is 0sec.
+- **Predictive halt detection** — runs lightweight preflight checks BEFORE invoking each skill. Instead of "scan-codebase halted on `dep_missing` 8 min in", you see *"before chain starts: tree-sitter not installed; install or use --engine=regex"* — actionable upfront.
+
+### 3. Flawless handoffs (v3.24+, Iter 33)
+
+Every cross-skill handoff is **validated at the producer side**:
+- **Schema validation gate** — handoff-contract.md declares fields as REQUIRED/CONDITIONAL/OPTIONAL. Missing required field = `invalid_handoff` halt; producer skill author gets immediate feedback. No more "field claimed in skill body prose but missing in handoff template" debt.
+- **Type-checked propagation** — every field has a TYPE annotation. `scope.id` is `string (enum)`, not object. `mutability.tier_distribution` is `object {LOCKED: int, INTENT: int, ARTIFACT: int}`. Shape mismatch = `handoff_type_mismatch` halt at the moment of drift.
+
+### 4. Starterkit-aware (v3.23+, Iter 32)
+
+mega-sdd auto-detects your stack's actual feature patterns when a framework is present (no flag needed). For Laravel: which auth lib (Sanctum/Breeze/Jetstream/Fortify/Passport), which RBAC (Spatie/permission), which UI stack (Alpine/Livewire/Inertia + Tailwind + SweetAlert2/Toastr), which DataTable, your custom layout extends, your library inventory with usage hints.
+
+Generated units cite YOUR conventions: *"MUST extend layouts.app (Citation: starterkit-context.yaml §ui_ux.layout_extends)"*, *"MUST use SweetAlert2 for confirmations"*. Bolts produce code that matches your starterkit by default — no per-session reminders. Framework-agnostic; extend `references/lib-patterns/<framework>/` for any stack.
+
+### 5. Memory that learns across sessions
+
+Three scopes of markdown + JSON memory:
+- **User** (`~/.mega-sdd/memory/`) — preferences, patterns, learning log (cross-project)
+- **Project** (`<project>/.mega-sdd/memory/`) — decisions, conventions, outcomes, **routing-outcomes** (Iter 33)
+- **Vault** (`<vault>/.memory/`) — classifier-accuracy, bind-history, bolt-outcomes
+
+**Suggestion-only**: every learning surfaces via `/mega-sdd:memory review` (ACCEPT/REJECT/DEFER). Mandatory audit log + rollback path. Memory NEVER affects halt protocol — your halts stay deterministic. Disable entirely via `--memory-off`.
+
+### 6. Audit-driven evolution (honest debt accounting)
+
+Major versions close prior audit findings. Four forensic audits documented in `docs/superpowers/audits/`:
+
+| Audit iter | Method | Findings | Closure iter |
+|---|---|---|---|
+| Iter 24 (v3.16.0) | manual + targeted | 27 findings | Iter 25 (v3.17.0) |
+| Iter 28 (v3.20.0) | manual + targeted | 13 findings | Iter 29 (v3.21.0) |
+| Iter 31 (v3.22.0) | 13 parallel subagents × 10 dimensions | 179 findings | Iter 33 (v3.24.0) closes 3 of top 5 areas |
+| Iter 33 (v3.24.0) | hybrid: deep audit + per-skill probe | 13-skill scorecard | Iter 34 candidates documented |
+
+Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
+
+### TL;DR — why pick mega-sdd
+
+If you've ever had an AI agent invent a function that doesn't exist, hallucinate a database column, or "implement" a feature that doesn't actually compile — mega-sdd's pipeline structure prevents those failure modes upstream. The vault forces citation of claims. The binding gate forces validation against the live codebase. Hard Rules force AST-validated constraints. Schema validation forces typed contracts. Memory accumulates context without auto-applying it. **You get an AI development workflow that's been hardened against the actual ways AI agents drift.**
 
 ---
 
@@ -262,7 +324,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.18.1.
+- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.24.0.
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
