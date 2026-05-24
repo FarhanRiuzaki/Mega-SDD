@@ -5,6 +5,79 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.36.0] - 2026-05-25
+
+### Iter 53 — Consumer wiring closure: producer-only fields → end-to-end USED
+
+**Post-audit closure pass — self-initiated meta-audit.** After Iter 38 audit closure officially completed in Iter 52, ran a proactive meta-audit asking: "is every artifact produced by each pipeline phase actually consumed downstream, or do we emit producer-only fields that no consumer reads?" — addressing the user's question "apakah semua output itu di gunakan? jangan sampe useles dari setiap pipeline".
+
+**Audit method:** dispatched Explore subagent with explicit producer→consumer matrix mandate covering all 11 pipeline skills. Result: zero full orphans; **3 PARTIAL findings** (producer-only emissions whose documented consumer never read the field). All 3 are the same regression class as Iters 43/48/52 fix-forwards: documentation declares behavior that isn't wired into the consumer body.
+
+**Wired (3 consumers, atomic):**
+
+**C1 — `binding_metadata.codebase_map_provenance` (Iter 46 producer-only)**
+
+- **Producer**: bind-codebase Step 1 writes `snapshot-verified | snapshot-stale | no-snapshot` to binding.md header.
+- **Pre-Iter-53 state**: field documented in bind-codebase SKILL.md line 41 as "downstream consumers (generate-units, execute-bolts) can trust the codebase-map is current" and as "observable savings: orchestrate-flow chains skip a scan-codebase invocation" — but grep across generate-units, execute-bolts, orchestrate-flow found ZERO reads of the field.
+- **Consumer wired (Iter 53)**: orchestrate-flow Step 3 chain optimization (v3.4.0+) reads the field after building the chain. When `snapshot-verified` AND source files unchanged → REMOVES scan-codebase from the proposed chain (delivers the 30-50% chain-level savings the Iter 46 wording promised). When `snapshot-stale` → retains scan-codebase with rationale log. When `no-snapshot` → no-op (pre-Iter-46 baseline).
+- **Side-effect**: bind-codebase SKILL.md line 41 wording corrected to cite the now-wired consumer; version 1.10.2 → 1.10.3.
+
+**C2 — `units_with_starterkit_*` metrics (Iter 32 producer-only)**
+
+- **Producer**: generate-units handoff emits `units_with_starterkit_anchors` + `units_with_starterkit_rules` counts.
+- **Pre-Iter-53 state**: metrics defined in generate-units SKILL.md lines 779-794, mirrored to handoff-contract.md lines 356-357, but no consumer cross-checked the values against upstream `starterkit-context.yaml` `partial:` flag. Pure observational telemetry — orchestrate-flow received the numbers but never validated them.
+- **Consumer wired (Iter 53)**: orchestrate-flow Step 6.b.ix new cross-metric consistency check (v3.4.0+). After validating generate-units handoff schema, also cross-checks: IF `units_with_starterkit_rules > 0` AND `starterkit_context.partial == true` → halt `quality_gate_failed` with subtype `starterkit_metrics_inconsistent` and evidence "generate-units pulled Hard Rules from a partial starterkit slice — rules may reference incomplete framework conventions". Reuses existing `quality_gate_failed` halt envelope — NO new halt type added.
+- **Extensibility**: Step 6.b.ix designed as conditional gating pattern (`IF sub-skill == <name>`) — future producers may add their own consistency rules following the same skeleton.
+- **Side-effect**: generate-units SKILL.md handoff metrics block gains 5-line YAML comment citing the now-wired consumer; version 2.7.0 → 2.7.1.
+
+**C3 — `acceptance_test_concern:` self-assessment field (Iter 47 producer-only)**
+
+- **Producer**: bolt subagent writes `acceptance_test_concern: <details>` in bolt-report.md `bolt_self_report` block per Iter 47 D4-006 contract when implementation passes acceptance test but feels under-validated (weak blind-spot coverage signal).
+- **Pre-Iter-53 state**: bolt-dispatch-prompt.md line 73 instructed bolt to emit the field; execute-bolts SKILL.md line 163 documented the NOTE injection logic — but no execute-bolts post-flight step scanned the field, and no orchestrate-flow surface displayed it. The bolt subagent's signal had no consumer; the field rotted in bolt-reports unread.
+- **Consumer wired (Iter 53)**: 
+  1. execute-bolts new §Post-flight acceptance-test concern harvest section (v2.10.0+) — scans every bolt-report.md after write, aggregates non-empty values into in-memory list, logs warning per affected bolt, surfaces aggregate via existing `_summary.md` rollup mechanism (new "## Acceptance-test concerns" sub-section).
+  2. execute-bolts handoff `metrics.acceptance_test_concerns: [{unit, concern}]` array (NEW field) carries the aggregate to orchestrate-flow.
+  3. orchestrate-flow Step 7 final summary diagnostics surface (v3.4.0+) — when array non-empty, displays: "⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run /mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>)."
+- **Severity**: warning (NOT halt) — concerns invite re-validation, don't fail the chain. Re-validation path reuses Iter 47 mechanism (`--regenerate --adversarial-subagent`).
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 3 chain optimization sub-bullet (+9 lines); Step 6.b.ix new validation sub-step (+10 lines); Step 7 diagnostics summary surface line (+1 line); version 3.3.0 → 3.4.0
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — new §Post-flight acceptance-test concern harvest section (+15 lines); handoff metrics block gains `acceptance_test_concerns: []` (+6 lines); version 2.9.1 → 2.10.0
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — line 41 wording cites orchestrate-flow Step 3 as consumer; version 1.10.2 → 1.10.3
+- `plugins/mega-sdd/skills/generate-units/SKILL.md` — handoff metrics block gains consumer-wiring comment; version 2.7.0 → 2.7.1
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.35.1 → 3.36.0
+- `plugins/mega-sdd/README.md` — + v3.36.0 What's new entry
+- `README.md` — version bump
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.3.0 → 3.4.0 (MINOR — new chain optimization path + new validation sub-step + new summary surface)
+- `execute-bolts` 2.9.1 → 2.10.0 (MINOR — new post-flight scan section + new handoff field)
+- `bind-codebase` 1.10.2 → 1.10.3 (PATCH — wording correction citing now-wired consumer)
+- `generate-units` 2.7.0 → 2.7.1 (PATCH — comment annotation citing now-wired consumer)
+
+**Audit findings verified (zero false positives):**
+
+| Field | Producer | Pre-Iter-53 consumers found via grep | Status |
+|---|---|---|---|
+| `binding_metadata.codebase_map_provenance` | bind-codebase §Step 1 | 0 (only README docs reference it) | PARTIAL → USED |
+| `units_with_starterkit_anchors`/`_rules` | generate-units handoff | 0 (only handoff-contract.md mirrors it) | PARTIAL → USED |
+| `acceptance_test_concern` | bolt subagent (bolt-report.md) | 0 (only bolt-dispatch-prompt.md + execute-bolts NOTE write site) | PARTIAL → USED |
+
+**Standing directives applied:**
+
+- **simplifikasi**: 3 PARTIAL findings → 1 atomic iter (no per-finding iters); minimum new files (ZERO — all edits to existing skills); reuses existing halt envelopes (`quality_gate_failed`) — no new halt type added; no new schema files
+- **flawless**: producer + consumer ship in-iter (no "defer to next iter" excuse); all 3 wirings atomic in one commit; pre-flight verification via grep before writing each edit
+- **reuse-first**: extends Iter 33 predictive-checks/validation-gate patterns; reuses Iter 32 starterkit-context.yaml `partial:` field as consistency anchor; reuses Iter 47 bolt subagent self-assessment field; reuses Iter 46 binding_metadata write site; reuses existing `_summary.md` rollup for aggregate surfacing
+
+**Plugin v3.35.1 → v3.36.0** (MINOR — backward-compatible: new optimization path skips work when conditions met but doesn't change behavior when conditions don't hold; new halt subtype reuses existing envelope; new handoff field is optional, absence is valid)
+
+**Pattern reinforced for future cumulative-iter sessions:** post-audit closure (Iter 38 audit) → proactive meta-audit (Iter 53 producer→consumer mapping) is now part of release discipline alongside validation-gate code review. Validation gates caught 4 release-blockers REACTIVELY across 3 fix-forwards; this meta-audit caught 3 PARTIAL findings PROACTIVELY before they became release-blockers. Tactic worth repeating after every minor release.
+
+**Audit source:** self-initiated post-Iter-52 meta-audit. Triggered by user question "apakah semua output itu di gunakan? jangan sampe apa yg sudah di generate as ouput itu tidak digunakan dengan optimize. maksudnya jangan sampe useles dari setiap pipeline".
+
+---
+
 ## [3.35.1] - 2026-05-25
 
 ### Iter 52 — FIX-FORWARD #3: wire GLOSSARY_INDEX into wave dispatches + resolve-oq inline lock note + vault-contract wording correction

@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.9.1
+version: 2.10.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -583,6 +583,21 @@ If bolt-report.md lacks this block → halt `self_assessment_missing` (post-flig
 
 Aggregate `_summary.md` rolls up uncertain_decisions across batch for human review post-execution.
 
+### Post-flight acceptance-test concern harvest (v2.10.0+, Iter 53 — consumer wiring closure for Iter 47 surface)
+
+After bolt-report.md is written, scan the `bolt_self_report` YAML block (and adjacent self-assessment text) for `acceptance_test_concern: <non-empty string>` field (written by bolt subagent per `references/bolt-dispatch-prompt.md` line 73 contract when implementation passes acceptance test but feels under-validated per Iter 47 D4-006 surface):
+
+1. Parse bolt-report.md bottom-of-file YAML blocks.
+2. IF `acceptance_test_concern:` key present AND value is non-empty string:
+   - Append entry to in-memory aggregate: `{unit_id: U-XXX, concern: <text>, source: <bolt-report.md path>}`.
+   - Log one-line warning to chat: `"⚠ U-XXX flagged acceptance_test_concern: <truncated 100 chars>"`.
+3. After all bolts complete (in `--all` mode), assemble aggregate into handoff `metrics.acceptance_test_concerns: [{unit, concern}]` array (per §Handoff emission below).
+4. Aggregate also surfaced via `_summary.md` (existing rollup mechanism — adds new sub-section "## Acceptance-test concerns" listing affected units).
+
+**Closes Iter 53 PARTIAL→USED wiring:** Iter 47 instrumented the bolt subagent to emit `acceptance_test_concern` self-assessment field, but no execute-bolts post-flight scanned the field and no downstream consumer surfaced it. Pure producer-only emission until Iter 53. The orchestrate-flow Step 7 final summary now surfaces the count + unit list when non-empty (per `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` Step 7 diagnostics summary).
+
+**No new halt type** — concerns are warnings, not blockers. Re-validation path is `/mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>` (Iter 47 mechanism) to author stronger acceptance tests, then re-run affected bolts.
+
 ### Provenance trailer enforcement (v2.6.0+, Iter 30 §10 principle 9)
 
 Post-flight scan also verifies every modified file has provenance trailer comment:
@@ -953,6 +968,11 @@ handoff:
     items_blocked: <N halts encountered>
     bolts_used_starterkit_slice: <int>                      # NEW v2.7.0+
     slice_avg_size_kb: <float>                              # NEW v2.7.0+
+    acceptance_test_concerns:                               # NEW v2.10.0+, Iter 53 — harvested from bolt-report.md self-assessment per §Post-flight acceptance-test concern harvest
+      - unit: U-007
+        concern: "Test asserts user.id present but doesn't validate id is unique across concurrent requests; implementation may regress under load."
+      # ... one entry per bolt that flagged a concern; empty array if none
+    # Consumer (Iter 53): orchestrate-flow Step 7 diagnostics summary surfaces count + unit list when non-empty.
   scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
     id: <scope id, e.g., "BE">
     name: <scope name>

@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.35.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.36.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,53 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.36.0 (Iter 53, minor) — Consumer wiring closure: producer-only fields → end-to-end USED
+
+Self-initiated post-audit closure pass. After Iter 38 audit (37 findings) closed in Iter 52, ran a fresh meta-audit asking: "is every artifact produced by each pipeline phase actually consumed downstream, or do we emit producer-only fields that no consumer reads?" Audit found 3 PARTIAL items (no full orphans, but documented behavior not wired into consumer body — same regression class as Iter 43 + Iter 48 + Iter 52 fix-forwards). Iter 53 wires all 3 consumers atomically.
+
+**Wired (3 consumers):**
+
+- **C1 — `binding_metadata.codebase_map_provenance`** (Iter 46 producer-only):
+  - Producer: bind-codebase Step 1 writes `snapshot-verified | snapshot-stale | no-snapshot` to binding.md header.
+  - Pre-Iter-53: no consumer read the field; documented as "downstream consumers can trust the codebase-map is current" but grep across generate-units/execute-bolts/orchestrate-flow found ZERO reads.
+  - Consumer wired (Iter 53): orchestrate-flow Step 3 chain optimization reads the field. When `snapshot-verified` AND source files unchanged → REMOVES scan-codebase from the chain (the 30-50% savings number the Iter 46 wording promised). Logs skip with rationale.
+
+- **C2 — `units_with_starterkit_*` metrics** (Iter 32 producer-only):
+  - Producer: generate-units handoff emits `units_with_starterkit_anchors` + `units_with_starterkit_rules` counts.
+  - Pre-Iter-53: no consumer cross-checked these metrics against upstream `starterkit-context.yaml` `partial:` flag. Pure observational telemetry.
+  - Consumer wired (Iter 53): orchestrate-flow Step 6.b.ix new cross-metric consistency check. IF `units_with_starterkit_rules > 0` AND `starterkit_context.partial == true` → halt `quality_gate_failed` subtype `starterkit_metrics_inconsistent` (rules pulled from incomplete framework slice may cite missing conventions). Reuses existing `quality_gate_failed` halt — no new halt type.
+
+- **C3 — `acceptance_test_concern:` self-assessment field** (Iter 47 producer-only):
+  - Producer: bolt subagent writes the field in bolt-report.md self-assessment per Iter 47 D4-006 contract when implementation passes acceptance test but feels under-validated.
+  - Pre-Iter-53: no execute-bolts post-flight scanned the field; no orchestrate-flow surface displayed it. The bolt subagent's signal had nowhere to go.
+  - Consumer wired (Iter 53): execute-bolts new §Post-flight acceptance-test concern harvest scans every bolt-report.md, aggregates into handoff `metrics.acceptance_test_concerns: []`. orchestrate-flow Step 7 final summary surfaces count + unit list + actionable next-step (`/mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>`). Surfaced as warning (not blocker — concerns don't fail the chain, they invite re-validation).
+
+**Audit method:** dispatched Explore subagent with explicit producer→consumer matrix mandate; manually verified all 3 PARTIAL findings via grep (zero false positives). Same validation discipline as the 3 fix-forward iters but applied PROACTIVELY (audit-then-wire) rather than REACTIVELY (ship-then-fix). Tactic worth repeating after every minor release.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 3 chain optimization (+9 lines), Step 6.b.ix consistency check (+10 lines), Step 7 diagnostics summary surface line (+1 line); version 3.3.0 → 3.4.0
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — new §Post-flight acceptance-test concern harvest section (+15 lines); handoff metrics block gains `acceptance_test_concerns: []` field (+6 lines); version 2.9.1 → 2.10.0
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — line 41 wording cites orchestrate-flow Step 3 as consumer; version 1.10.2 → 1.10.3
+- `plugins/mega-sdd/skills/generate-units/SKILL.md` — handoff metrics block gains consumer-wiring comment; version 2.7.0 → 2.7.1
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.35.1 → 3.36.0
+- `CHANGELOG.md` — + v3.36.0 Iter 53 entry
+- `README.md` (root) — version bump
+
+**Skill bumps:**
+- `orchestrate-flow` 3.3.0 → 3.4.0 (MINOR — new Step 3 sub-bullet + new validation sub-step + new summary surface line)
+- `execute-bolts` 2.9.1 → 2.10.0 (MINOR — new post-flight scan section + handoff field)
+- `bind-codebase` 1.10.2 → 1.10.3 (PATCH — wording correction citing now-wired consumer)
+- `generate-units` 2.7.0 → 2.7.1 (PATCH — comment annotation citing now-wired consumer)
+
+**Standing directives applied:**
+- simplifikasi: 3 PARTIAL findings → 1 atomic iter (no per-finding iters); minimum new files (zero — all edits to existing skills); reuses existing halts (`quality_gate_failed`)
+- flawless: producer + consumer ship same iter (no "defer to next" excuse); atomic commit
+- reuse-first: extends Iter 33 predictive-checks/validation-gate patterns; reuses Iter 32 starterkit-context.yaml `partial:` field as consistency anchor; reuses Iter 47 bolt subagent self-assessment field; reuses Iter 46 binding_metadata write site
+
+**Plugin v3.35.1 → v3.36.0** (MINOR — backward-compatible: new optimization paths skip work when conditions met but don't change behavior when conditions don't; new halt subtype reuses existing halt envelope).
+
+**Pattern reinforced:** post-audit closure (Iter 38 audit) → meta-audit (Iter 53 producer→consumer) is now part of the cumulative-iter release discipline. Validation gate caught 4 release-blockers across 3 fix-forwards; proactive audit caught 3 PARTIAL findings BEFORE they became release-blockers.
 
 ### v3.35.1 (Iter 52, patch) — Fix-Forward #3: wire GLOSSARY_INDEX + resolve-oq lock note + vault-contract wording
 
