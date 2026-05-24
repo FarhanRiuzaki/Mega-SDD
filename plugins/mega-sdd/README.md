@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.33.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.34.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,32 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.34.0 (Iter 50, minor) — Predictive Checks Coverage Expansion (Queue #9)
+
+Closes Iter 38 audit Queue #9 (pattern E — predictive-checks.md coverage asymmetric). Extended preflight check catalog from 4 skills to 10. Closes 6 coverage gaps.
+
+**Before:** predictive-checks.md covered scan-codebase / bind-codebase / execute-bolts / generate-intent (4 of 9 user-invocable skills). Missing: detect-drift, diff-vault, resolve-oq, extract-intelligence, emit-agents-md, memory.
+
+**After:** all 10 user-invocable skills have ≥1 preflight check. Total checks: 8 (pre-Iter-50) → 26 (Iter 50).
+
+**New per-skill checks (18 added):**
+
+- **detect-drift (3):** `vault_present_for_drift` (chain order), `binding_present_for_drift` (chain order — no binding = no anchor points), `clean_working_tree_for_drift` (warn — uncommitted conflates with drift)
+- **diff-vault (3):** `current_vault_present_for_diff` (chain order), `new_source_resolves_for_diff` (predicts `prd_path_missing`), `vault_version_parseable` (predicts `invalid_handoff`)
+- **resolve-oq (3):** `vault_present_for_oq` (chain order), `oq_status_field_present` (warn — pre-v1.1 schema lacks status tracking), `unresolved_oqs_exist` (no-op warning)
+- **extract-intelligence (3):** `legacy_codebase_path_present` (predicts `dep_missing`), `kb_target_writable` (predicts `dep_missing`), `subagent_capacity_reasonable` (warn — Iter 38 D2-001 max-parallel ≤ 5 per Zylos 2026 empirical optimum)
+- **emit-agents-md (2):** `vault_present_for_agents_md` (chain order), `units_present_for_agents_md` (warn — degraded AGENTS.md without units)
+- **memory (3):** `memory_dir_writable` (predicts `memory_in_use`), `schema_version_match` (predicts `memory_schema_mismatch`), `concurrent_writer_check` (warn — stale lock detection)
+
+Per Iter 49 pattern: checks use Iter 5 memory file-lock detection + Iter 41 canonical halt names + reuse `predictive_check_failed` halt envelope (no new halt type).
+
+**Skill bumps:**
+- `orchestrate-flow` 3.2.1 → 3.3.0 (MINOR — predictive-checks consumer now covers 10 skills instead of 4)
+
+**Plugin v3.33.0 → v3.34.0** (MINOR — coverage expansion is behavioral change for orchestrate-flow Step 3.5).
+
+**Spec:** inline in CHANGELOG (per simplifikasi — pure docs/catalog iter; no new file needed).
 
 ### v3.33.0 (Iter 49, minor) — vault.json Advisory Lock + Scenario-6 Halt Walkthroughs
 
