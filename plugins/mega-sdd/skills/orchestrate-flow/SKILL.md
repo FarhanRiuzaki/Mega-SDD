@@ -159,7 +159,49 @@ next_action:
 
    User confirmation is ONE-TIME for chain proposal; halts are NOT additional confirmations — they're interventions on real issues.
 
-   **Progress indication (v1.3+, per AUTONOMY-OQ-4)**: before each skill invocation, emit one chat line:
+   Per sub-skill in chain (loop):
+
+   a. **Dispatch sub-skill** with assembled flags + memory slice via `metadata.memory_context`. Pass canonical top-level propagation fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) from previous handoff if present.
+
+   **`--deep` mode auto-continue (v1.3+)**: after each skill completes with `status: completed`, parse the skill's handoff YAML (per `references/handoff-contract.md`) and auto-invoke `next_action.suggested_skill` with `next_action.suggested_args`. Continue until pipeline-end OR `status: paused`/`halted` halts the loop. If skill emits `status: paused` (e.g., business OQs need triage) → log paused items and STOP chain awaiting user. If `status: halted` → surface blocker YAML verbatim and STOP.
+
+   b. **Validation gate (v3.0.0+, Iter 33) — validate received handoff against `references/handoff-contract.md` schema annotations:**
+
+      i. (Reserved for F4 type-check; documented in C4 task)
+
+      ii. Parse handoff YAML; if YAML parse fails → emit halt `invalid_handoff` with details `{failing_skill, parse_error}`; STOP chain.
+
+      iii. For each field declared `(REQUIRED)` in handoff-contract.md schema:
+           - If field absent in handoff YAML → emit halt `invalid_handoff` with details `{failing_skill, missing_field, severity: REQUIRED}`; STOP chain.
+
+      iv. For each field declared `(CONDITIONAL — <condition>)`:
+           - Evaluate condition against orchestrator's known runtime state at chain-start (e.g., "if vault has scope_metadata" → check vault.json `scope_metadata` key read during chain-start CWD inspection).
+           - If condition met AND field absent → emit halt `invalid_handoff` with details `{failing_skill, missing_field, severity: CONDITIONAL, condition_evaluated: <result>}`; STOP chain.
+           - If condition NOT met → field absence OK; continue.
+
+      v. For each field declared `(OPTIONAL)`:
+           - Field absence OK; log presence/absence for telemetry only.
+
+      vi. If all validation passes → continue to step c.
+
+   ```yaml
+   # Example invalid_handoff envelope (REQUIRED field missing):
+   type: invalid_handoff
+   source_skill: orchestrate-flow
+   details:
+     failing_skill: bind-codebase
+     missing_field: "scope.id"
+     field_severity: CONDITIONAL
+     condition_evaluated: "vault has scope_metadata = TRUE"
+     handoff_file: "<vault>/.internal/checkpoints/2026-05-24-bind-codebase.handoff.yaml"
+   next_action:
+     type: edit_skill_template
+     hint: "Edit plugins/mega-sdd/skills/bind-codebase/SKILL.md §Handoff emission YAML template to include scope: block per handoff-contract.md schema. After fix, re-run chain. (Phase A1 audit closure should have prevented this — verify your skill body is up to date.)"
+   ```
+
+   c. **Propagate handoff metadata** to next skill in chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification per orchestrator consumption logic. Memory slice for next skill built from updated state.
+
+   d. **Update progress indicator** (v1.3+, per AUTONOMY-OQ-4): before each skill invocation, emit one chat line:
    ```
    ▶ Phase {current} of {total}: invoking {skill} ({args})
    ```
@@ -168,7 +210,9 @@ next_action:
    {✓|⏸|⛔} Phase {current} of {total}: {skill} → status: {status}, items: {items_processed}, blocked: {items_blocked}
    ```
 
-   **`--deep` mode auto-continue (v1.3+)**: after each skill completes with `status: completed`, parse the skill's handoff YAML (per `references/handoff-contract.md`) and auto-invoke `next_action.suggested_skill` with `next_action.suggested_args`. Continue until pipeline-end OR `status: paused`/`halted` halts the loop. If skill emits `status: paused` (e.g., business OQs need triage) → log paused items and STOP chain awaiting user. If `status: halted` → surface blocker YAML verbatim and STOP.
+   e. **Halt-check**: if `status==halted` → exit loop; proceed to Step 7 (emit final summary with verbatim blocker YAMLs).
+
+   f. **Continue-loop**: if `status==completed` → continue to next sub-skill in chain.
 
    **Auto-integrated diagnostics (v2.2+, Iter 13)**: per audit `docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md` consolidation restoring "single command" philosophy. Inside `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY invokes diagnostic commands at appropriate phases — user does NOT run these separately:
 
@@ -356,6 +400,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `dep_missing` (v2.0+, Iter 6) — scan-codebase: required binary missing.
 - `oq_recommend_citation_invalid` (v1.3+, Iter 2) — generate-intent: OQ recommendation cites missing KB section.
 - `predictive_check_failed` (v3.0.0+, Iter 33) — orchestrate-flow: fatal preflight check failed; chain blocked.
+- `invalid_handoff` (v3.0.0+, Iter 33) — orchestrate-flow: handoff schema validation failed; producer-side error.
 
 ### Halt types that are SOFT (warn-only, chain continues)
 

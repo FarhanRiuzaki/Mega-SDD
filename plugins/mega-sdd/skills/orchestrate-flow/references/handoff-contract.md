@@ -76,7 +76,76 @@ handoff:
         source_run: <skill-name>@<timestamp>
 ```
 
-### `starterkit_context:` (v3.23.0+, Iter 32)
+---
+
+## Field-level schema annotations (v3.0.0+, Iter 33 — F3 machine-readable constraints)
+
+Each annotation is machine-readable for the Step 6.b validation gate.
+`(REQUIRED)` — must be present in every handoff regardless of context.
+`(CONDITIONAL)` — must be present when stated runtime condition is met.
+`(OPTIONAL)` — encouraged but absence is never a halt.
+
+### `emitted_by:` (REQUIRED)
+
+TYPE: string — must match one of the values in `vault-contract.md §halt-protocol source_skill` enum (e.g., `generate-intent`, `bind-codebase`). Identifies the producing skill.
+
+### `emitted_at:` (REQUIRED)
+
+TYPE: string — ISO8601 timestamp. Identifies when the handoff was emitted. Required even if orchestrator never uses it for routing; presence confirms skill ran to handoff-emit step.
+
+### `status:` (REQUIRED)
+
+TYPE: enum — one of `completed | paused | halted`. Drives orchestrator control-flow decision (auto-continue / surface-items / surface-blocker).
+
+### `artifacts:` (REQUIRED)
+
+TYPE: array\<string\> — absolute file paths. Non-empty when `status==completed`; may be empty when `status==halted` (skill may not have written output). Every file/dir the skill wrote must be listed; orchestrator uses to verify output and locate downstream input.
+
+### `next_action:` (REQUIRED)
+
+TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rationale: string }`. Required even on `status==halted` — must point to the resolution path (e.g., `resolve-oq` for binding conflicts).
+
+### `blockers:` (REQUIRED)
+
+TYPE: array\<object\> — empty array when `status==completed`; non-empty per halt-protocol `§blocker envelope` when `status==paused|halted`.
+
+### `metrics:` (OPTIONAL but encouraged)
+
+TYPE: object — skill-specific metric fields (e.g., `duration_ms`, `items_processed`, `items_blocked`). Consult per-skill section for declared metric field names.
+
+### `checkpoints:` (CONDITIONAL — if skill emits resume-capable checkpoints)
+
+TYPE: object — `{ latest_step_id: string, checkpoint_file: string (absolute path), resume_command: string }`. Required when skill ran to a checkpoint boundary and supports `--resume-from`.
+
+### `constitution:` (CONDITIONAL — if vault has constitution.md)
+
+TYPE: object — `{ constitution_hash: string (sha256), clauses_referenced: array<string> }`. Required when `<vault>/constitution.md` exists.
+
+### `pbt:` (CONDITIONAL — if unit has properties: array)
+
+TYPE: object — `{ properties_validated: int, properties_failed: int }`. Required when property-based tests ran during this phase.
+
+### `mutability:` (CONDITIONAL — if skill processes mutability-tier claims)
+
+TYPE: object — `{ tier_distribution: { LOCKED: int, INTENT: int, ARTIFACT: int }, locked_claims_touched: array<string>, artifact_discards_proposed: int }`. Required when skill processed claims with mutability tier metadata.
+
+### `scope:` (CONDITIONAL — if vault has scope_metadata)
+
+TYPE: object — `{ id: string, name: string, sibling_scopes: array<string>, prd_sha256: string }`. Required when `vault.json` has `scope_metadata` key.
+
+### `cycles:` (CONDITIONAL — if convergence loop ran)
+
+TYPE: object — `{ cycle_count: int, halts_auto_resolved: array<string>, halts_escalated_to_user: array<string> }`. Required when orchestrator ran ≥1 convergence cycle.
+
+### `replay:` (CONDITIONAL — if replay capture active)
+
+TYPE: object — `{ snapshot_path: string (absolute path), divergence_classification: enum (clean | minor | high | n/a) }`. Required when replay capture was active for this run.
+
+### `metadata:` (OPTIONAL — memory layer integration; v2.1+ when active)
+
+TYPE: object — `{ memory_context: object, memory_writes: array<object> }`. Optional — memory layer off (`--memory-off`) omits this block entirely.
+
+### `starterkit_context:` (CONDITIONAL — if scan-codebase deep-scan ran successfully; v3.23.0+, Iter 32)
 
 Optional block carrying starterkit detection results forward through the chain.
 
