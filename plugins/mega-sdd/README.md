@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.34.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.35.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,37 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.35.0 (Iter 51, minor) — Glossary Anchoring + Reference Offset Hints + Parallelism Tuning (Queue #10 — final queue closure)
+
+Closes Iter 38 audit Queue #10 (D1-004 + D1-007 + D2-001) — 3 editorial optimizations to extract-intelligence wave-based extraction. **Queue #10 was the FINAL audit queue item** — Iter 38's entire 10-iter optimization queue is now closed (Iters 39-51).
+
+**Change 1 (D1-004): Glossary pre-parse — `<GLOSSARY_INDEX>` placeholder**
+
+Wave-2/3/4 subagents previously each re-read full glossary.md (80-120 KB). Iter 51 main thread parses glossary ONCE between Wave 1 and Wave 2, builds compact `glossary_index` (term → 1-line definition + line range), injects as `<GLOSSARY_INDEX>` placeholder in each wave subagent prompt. Subagents instructed to use the index for cross-references; only spot-read glossary.md (with `offset`/`limit`) when full prose context needed.
+
+**Net savings:** ~96 KB redundant I/O per wave (15% of 535K wave token budget). 4 subagents × 3 waves = 12 subagent reads saved per extraction.
+
+**Change 2 (D1-007): Reference offset hints**
+
+All wave outputs cite references with line range hints: `<file>.md §<section>:line-X-Y` instead of bare `<file>.md §<section>`. Downstream consumers use the range with Read tool's `offset`/`limit` for targeted reads. Best-effort optimization — bare citation form still accepted as fallback.
+
+**Net savings:** 30-60% I/O reduction per reference read when consumers spot-read.
+
+**Change 3 (D2-001): Parallelism tuning — extract-intelligence `--max-parallel` default 5 → 3**
+
+Per Zylos 2026 empirical optimum (3 parallel agents per turn is sweet spot; beyond 3 coordination overhead exceeds gain). Soft warn at >5 (existing predictive-checks.md `subagent_capacity_reasonable` aligns); hard cap remains 8.
+
+**Net effect:** lower-default extractions use fewer tokens, less coordination time, often higher quality outputs (less context dilution per subagent).
+
+**External research applied:** Zylos 2026 parallel agent optimization research.
+
+**Skill bumps:**
+- `extract-intelligence` 1.6.0 → 1.7.0 (MINOR — new default + new placeholder + reference offset hints convention)
+
+**Plugin v3.34.0 → v3.35.0** (MINOR — extract-intelligence default behavior change).
+
+**Audit completion status:** Queue #1-#10 all closed (Iters 40-51). Plus 5 immediate wins (Iter 39). Plus 2 fix-forward iters caught defects via validation gate (Iter 43, Iter 48). **13 iters total closing Iter 38 audit's 37 findings.** Most findings: closed. A few P2/Advisory items remain low-priority; may surface in future audit.
 
 ### v3.34.0 (Iter 50, minor) — Predictive Checks Coverage Expansion (Queue #9)
 

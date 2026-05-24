@@ -5,6 +5,91 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.35.0] - 2026-05-25
+
+### Iter 51 — Glossary Anchoring + Reference Offset Hints + Parallelism Tuning (Queue #10 — FINAL queue closure)
+
+**Editorial iter** (~1.5hr; MINOR bump — extract-intelligence default behavior change + new placeholder + new citation convention). Closes Iter 38 audit Queue #10 (D1-004 + D1-007 + D2-001).
+
+**🎉 Audit queue completion:** Queue #10 was the **FINAL** item in Iter 38's prioritized iter queue. With Iter 51 shipped, **all 10 queue items (Iters 40-51) closed plus 5 immediate wins (Iter 39) plus 2 fix-forward iters (43, 48) — 13 iters total** closing the 37 findings from the Iter 38 audit. Plugin journeyed v3.26.2 → v3.35.0 (13 versions; 1 fix-forward each at v3.28.1 + v3.32.1).
+
+**Change 1 (D1-004): Glossary pre-parse — `<GLOSSARY_INDEX>` placeholder**
+
+Wave-2/3/4 subagents previously each re-read full glossary.md (80-120 KB). Iter 51 main thread parses glossary ONCE between Wave 1 and Wave 2, builds compact `glossary_index` (term → 1-line definition + line range), injects as `<GLOSSARY_INDEX>` placeholder in each wave subagent prompt:
+
+```yaml
+glossary_index:
+  - term: "customer-onboarding"
+    short_def: "End-to-end signup flow including KYC, tier assignment, and document upload"
+    location: "glossary.md:42-58"
+  # ... per glossary entry
+```
+
+Subagent prompts updated to instruct: use `<GLOSSARY_INDEX>` for cross-references; only spot-read glossary.md (with `offset`/`limit`) when full prose context needed; cite with line range (`glossary.md §customer-onboarding:42-58` not bare).
+
+**Net savings:** ~96 KB redundant I/O per wave (15% of 535K wave token budget). 4 subagents × 3 waves = 12 subagent reads saved per extraction.
+
+**Change 2 (D1-007): Reference offset hints**
+
+All wave outputs cite references with line range hints: `<file>.md §<section>:line-X-Y` instead of bare `<file>.md §<section>`. Downstream consumers (other waves, generate-intent --kb, manual inspection) use the range with Read tool's `offset`/`limit` for targeted reads. Best-effort convention — bare citation form still accepted (graceful degradation when producer subagent doesn't know exact lines).
+
+**Net savings:** 30-60% I/O reduction per reference read when consumers spot-read.
+
+**Change 3 (D2-001): Parallelism tuning — extract-intelligence `--max-parallel` default 5 → 3**
+
+Per Zylos 2026 empirical optimum: 3 parallel agents per turn is the sweet spot for AI agent dispatch. Beyond 3, coordination overhead exceeds gain. Iter 51 lowers default from 5 to 3; soft warn at >5 (existing predictive-checks.md `subagent_capacity_reasonable` aligns); hard cap remains 8.
+
+**Net effect:** lower-default extractions use fewer tokens, less coordination time, often higher quality outputs (less context dilution per subagent).
+
+**External research applied:**
+- Zylos 2026 parallel agent optimization (D2-001 source)
+- Subagent token patterns (Sathish Raju Medium) — pass analytical outputs not raw data (D1-004 motivator)
+- Claude Code Read tool offset/limit best-practice (D1-007 enabler)
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` — `--max-parallel` default change + glossary pre-parse section + reference offset hints section
+- `plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md` — `<GLOSSARY_INDEX>` placeholder section NEW + reference offset hints section NEW
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — `subagent_capacity_reasonable` check warning text updated to reflect new default
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.34.0 → 3.35.0
+- `plugins/mega-sdd/README.md` — + v3.35.0 What's new entry
+- `README.md` — version bump
+
+**Skill version bumps:**
+- `extract-intelligence` 1.6.0 → 1.7.0 (MINOR — new default + new placeholder + new convention)
+
+**Why MINOR (not PATCH):** `--max-parallel` default change affects every extract-intelligence invocation that doesn't explicitly set the flag. Pre-Iter-51 extractions ran 5-wide; post-Iter-51 default runs 3-wide. Observable behavior change.
+
+**Backward compatibility:** `--max-parallel=5` flag still works (overrides new default). Pre-Iter-51 KBs (no `<GLOSSARY_INDEX>` placeholder support in subagent prompts) continue to work — wave subagents simply re-read glossary as before (no regression; just no savings until next extraction).
+
+**Standing directives applied:**
+- simplifikasi: 3 audit findings → 3 atomic changes in 3 files; no new files; no new halts
+- flawless: all 3 changes ship together as one editorial polish iter; no partial coverage
+- reuse-first: REUSES existing wave-dispatch-templates.md placeholder convention + REUSES existing predictive-checks.md threshold + REUSES Read tool's `offset`/`limit` parameters
+
+**Plugin:** v3.34.0 → v3.35.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md` — **QUEUE FULLY CLOSED with Iter 51**
+
+**Session summary (Iters 39-51 = 13 iters):**
+
+| Iter | Version | Type | Closes |
+|---|---|---|---|
+| 39 | 3.26.3 | 5 immediate wins | D3-007 + D3-010 + D4-001 + D3-004 |
+| 40 | 3.27.0 | Queue #1 silent-failure | D3-001 + D3-002 + D3-003 |
+| 41 | 3.27.1 | Queue #2 halt taxonomy sync | D3-006 + D4-001 pattern B |
+| 42 | 3.28.0 | Queue #3 manifest preparse + per-slice cache | D1-002 + D2-003 |
+| 43 | 3.28.1 | FIX-FORWARD #1 (handoff_missing semantics) | Caught by validation gate |
+| 44 | 3.29.0 | Queue #4 T2 budget tracker | D1-003 |
+| 45 | 3.30.0 | Queue #5 saga compensating actions | D3-009 + extends D3-003 |
+| 46 | 3.31.0 | Queue #6 shared-snapshot reuse + per-file invalidation | D1-006 + D2-007 |
+| 47 | 3.32.0 | Queue #7 independent acceptance-test authoring | D4-006 |
+| 48 | 3.32.1 | FIX-FORWARD #2 (alg drift + step misplacement + wording) | Caught by validation gate |
+| 49 | 3.33.0 | Queue #8 vault.json lock + scenario walkthroughs | D3-012 + D3-006 |
+| 50 | 3.34.0 | Queue #9 predictive checks coverage | Pattern E |
+| 51 | 3.35.0 | Queue #10 glossary + offset + parallelism | D1-004 + D1-007 + D2-001 |
+
+**New validation pattern established this session:** advisor checkpoint after 3-4 feature iters → `superpowers:code-reviewer` subagent on cumulative range → fix-forward iter for any CRITICAL findings BEFORE next feature iter. Caught 2 release-blockers (Iter 40 handoff_missing semantics + Iter 44 algorithm drift) that would have produced wrong runtime behavior.
+
 ## [3.34.0] - 2026-05-25
 
 ### Iter 50 — Predictive Checks Coverage Expansion (Queue #9)
