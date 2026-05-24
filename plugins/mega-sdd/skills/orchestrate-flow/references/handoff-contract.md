@@ -110,9 +110,33 @@ TYPE: array\<string\> — absolute file paths. Non-empty when `status==completed
 
 > **Existence-checked at orchestrator boundary (v3.2.0+, Iter 40).** Orchestrate-flow Step `b.vii` verifies every listed path with `test -f` (files) or `test -d` (dirs) after schema validation passes. Missing path → halt `artifact_missing`. Closes Iter 38 audit finding D3-002 (silent-failure path closure). Skill authors: any path you list here MUST exist on disk at handoff emission time, or orchestrator will block the chain. Do not list speculative/future paths.
 
-### Pre-validation: handoff file presence (orchestrator-side, v3.2.0+, Iter 40)
+### Pre-validation: handoff block presence in chat output (orchestrator-side, v3.2.1+, Iter 40 → Iter 43 semantics correction)
 
-Before any schema check, orchestrate-flow Step `b.0` verifies the handoff file itself exists and is non-empty at the per-skill expected path. If absent or zero bytes → halt `handoff_missing`. This catches sub-skill crashes that occur before `§Handoff emission` step runs. Closes Iter 38 audit finding D3-001 (silent-failure path closure). Skill authors: ensure your `§Handoff emission` step writes atomically (write to temp + rename) and runs even on error paths (best-effort emit with `status: halted` and populated `blockers:` array).
+Before any schema check, orchestrate-flow Step `b.0` scans the sub-skill's chat output (last assistant message) for a YAML code fence containing a top-level `handoff:` key. Skills emit handoff YAML **inline in chat output** (see "Emission contract" below) — NOT to a file on disk. If no block can be located, OR if multiple conflicting `handoff:` blocks are present → halt `handoff_missing` with `chat_tail_excerpt` field (last 500 chars of sub-skill chat) for diagnosis. Closes Iter 38 audit finding D3-001 (silent-failure path closure).
+
+**Iter 43 fix-forward note:** the original Iter 40 design used `test -f <path>` against a path convention that no skill implemented. Skills always emit handoff in chat; the file-check would have produced spurious `handoff_missing` halts on every run. Corrected to chat-block detection in v3.2.1+.
+
+### Emission contract (skill-author rule, v2.0+, Iter 4)
+
+Every skill's `## Handoff emission` section MUST cause the skill to print a YAML code fence as the LAST assistant message it emits before exiting. Example minimal emission:
+
+```
+... (skill's regular chat output) ...
+
+\`\`\`yaml
+handoff:
+  emitted_by: bind-codebase
+  emitted_at: 2026-05-25T14:32:00Z
+  status: completed
+  artifacts: ["<vault>/binding.md"]
+  next_action: { suggested_skill: "mega-sdd:generate-units", suggested_args: [], rationale: "..." }
+  blockers: []
+\`\`\`
+```
+
+Skills MAY also write the same YAML to `<vault>/.internal/checkpoints/<ISO8601>-<skill>.handoff.yaml` for replay/audit, but the chat-output emission is the **authoritative source** orchestrator reads.
+
+Skill authors: ensure your `§Handoff emission` step runs even on error paths (best-effort emit with `status: halted` and populated `blockers:` array; do NOT crash before reaching it).
 
 ### `next_action:` (REQUIRED)
 

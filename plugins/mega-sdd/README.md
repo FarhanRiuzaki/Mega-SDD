@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.28.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.28.1)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,24 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.28.1 (Iter 43, patch) — Fix-Forward: handoff_missing semantics, schema doc, savings accuracy
+
+**Release-blocker fix.** A code-quality review of Iters 39-42 surfaced a critical regression in Iter 40's `handoff_missing` halt (would fire on every auto run because the file-existence check pointed at a path no skill actually writes). Plus: starterkit-context-schema.md was left at v1.0 docs while scan-codebase v2.7.0 writes v2.0; Iter 42 CHANGELOG savings estimates were inverted/optimistic.
+
+**Fixed (critical):**
+- `handoff_missing` (orchestrate-flow v3.2.1+) semantics corrected: now scans sub-skill's **chat output** for an inline `handoff:` YAML block (per actual skill emission convention) instead of `test -f` on a hardcoded path. Halt envelope gains `chat_tail_excerpt: <last 500 chars>` field for diagnosis. Iter 40 production-correct again.
+- `handoff-contract.md` Emission contract section added: documents that skills emit handoff YAML inline in chat (last assistant message). File-write to `<vault>/.internal/checkpoints/` is OPTIONAL (replay/audit); chat-block is the authoritative source.
+- `starterkit-context-schema.md` bumped to v2.0 to match scan-codebase v2.7.0 producer. Adds `cache_signatures:` block + per-slice invalidation matrix table + legacy v1.0 backward-compat note.
+
+**Fixed (medium):**
+- `partial_state_corrupt` canonical path in vault-contract.md corrected: `<vault>/bolts/U-XXX/partial-state.json` (matches execute-bolts §Partial-state contract emit example).
+- Iter 42 cache savings claims corrected: actual savings are 25% (PHP dep edit — composer.lock invalidates auth+rbac+libs), 50% (JS dep edit — package.lock invalidates ui_ux+libs), 75% (single lib-pattern file edit). Earlier CHANGELOG bullets were inverted/imprecise.
+
+**Skill bumps:**
+- `orchestrate-flow` 3.2.0 → 3.2.1 (semantics correction)
+
+**Plugin v3.28.0 → v3.28.1** (PATCH — fix-forward audit closure stack).
 
 ### v3.28.0 (Iter 42, minor) — Deep-Scan Manifest Pre-Parse + Per-Slice Cache
 

@@ -2,10 +2,11 @@
 
 > Canonical schema for `.mega-sdd/codebase/starterkit-context.yaml` — single source of truth for all mega-sdd consumers.
 
-**Version:** 1.0
-**Introduced:** v3.23.0 (Iter 32)
-**Produced by:** `mega-sdd:scan-codebase` v2.6.0+ Step 2 deep-scan stage
+**Version:** 2.0 (Iter 42, v3.28.0+) — supersedes 1.0 (Iter 32)
+**Introduced:** v3.23.0 (Iter 32); cache schema bumped v3.28.0 (Iter 42)
+**Produced by:** `mega-sdd:scan-codebase` v2.7.0+ Step 10.5 deep-scan stage
 **Consumed by:** `mega-sdd:generate-units` v2.6.0+ (Step 4.7), `mega-sdd:execute-bolts` v2.7.0+ (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation)
+**Backward compat:** v1.0 readers (Iter 32 era) skip the `cache_signatures:` block and read the legacy `cache_key:` block if present. v2.0 writers (Iter 42+) emit ONLY `cache_signatures:`. Consumers MAY read either; producers MUST emit v2.0.
 
 ---
 
@@ -13,21 +14,31 @@
 
 ```yaml
 starterkit_context:
-  schema_version: 1.0
-  generated_by: scan-codebase v2.6.0
-  generated_at: <ISO8601 timestamp>
-  framework: laravel               # from codebase-map.md §7 Framework.name
-  framework_version: "12.x"        # from codebase-map.md §7 Framework.version
-  framework_pack: laravel-base-26  # from codebase-map.md §7 Framework.pack_path basename
+  schema_version: 2.0                    # v2.7.0+ bump (Iter 42); v1.0 was Iter 32 baseline
+  generated_by: scan-codebase v2.7.0
+  generated_at: <ISO8601 timestamp>      # MOST RECENT slice write time
+  framework: laravel                     # from codebase-map.md §7 Framework.name
+  framework_version: "12.x"              # from codebase-map.md §7 Framework.version
+  framework_pack: laravel-base-26        # from codebase-map.md §7 Framework.pack_path basename
 
-  auth: { ... }
-  rbac: { ... }
-  ui_ux: { ... }
-  libs: [ ... ]
+  partial: true                          # OPTIONAL — only when ≥1 slice failed
+  partial_slices: [rbac]                 # OPTIONAL — present when partial: true
+  reused_slices: [auth, ui_ux]           # v2.0+ — per-slice cache provenance (which slices reused vs freshly-dispatched)
 
-  cache_key:
-    composer_lock_sha256: <hex>    # sha256 of composer.lock, or "" if absent
-    package_lock_sha256: <hex>     # sha256 of package-lock.json | yarn.lock | pnpm-lock.yaml, or "" if absent
+  auth: { ... }                          # fresh OR cached slice content
+  rbac: { ... }                          # fresh OR cached
+  ui_ux: { ... }                         # fresh OR cached
+  libs: [ ... ]                          # fresh OR cached
+
+  cache_signatures:                      # v2.0 schema (replaces v1.0 cache_key:)
+    composer_lock_sha256: <hex>          # retained for reproducibility
+    package_lock_sha256: <hex>           # retained for reproducibility
+    framework_pack: <pack-name>          # retained
+    per_slice:
+      auth:   { signature_sha256: <hex>, generated_at: <ISO8601> }
+      rbac:   { signature_sha256: <hex>, generated_at: <ISO8601> }
+      ui_ux:  { signature_sha256: <hex>, generated_at: <ISO8601> }
+      libs:   { signature_sha256: <hex>, generated_at: <ISO8601> }
 ```
 
 ## §auth block
@@ -94,17 +105,50 @@ libs:
   # ... (repeat per lib in manifests)
 ```
 
-## §cache_key block
+## §cache_signatures block (v2.0+, Iter 42)
 
 ```yaml
-cache_key:
-  composer_lock_sha256: "abc123..."   # sha256 of composer.lock at scan time
-  package_lock_sha256: "def456..."    # sha256 of package-lock.json (or yarn.lock or pnpm-lock.yaml)
+cache_signatures:
+  composer_lock_sha256: "abc123..."     # retained for reproducibility
+  package_lock_sha256: "def456..."      # retained for reproducibility
+  framework_pack: "laravel-base-26"     # retained
+  per_slice:
+    auth:
+      signature_sha256: <hex>           # sha256(composer.lock + framework_pack §auth + auth-libs.md)
+      generated_at: "2026-05-25T10:00:00Z"
+    rbac:
+      signature_sha256: <hex>           # sha256(composer.lock + framework_pack §rbac + rbac-libs.md)
+      generated_at: "2026-05-25T10:00:00Z"
+    ui_ux:
+      signature_sha256: <hex>           # sha256(package.lock + framework_pack §ui + ui-libs.md)
+      generated_at: "2026-05-25T10:00:00Z"
+    libs:
+      signature_sha256: <hex>           # sha256(composer.lock + package.lock + framework_pack §libs + generic-libs.md)
+      generated_at: "2026-05-25T10:00:00Z"
 ```
 
-**Cache reuse rule:** on re-scan, if both `composer_lock_sha256` AND `package_lock_sha256` match current file hashes → reuse existing starterkit-context.yaml; skip subagent dispatch.
+**Cache reuse rule (v2.0+, per-slice):** on re-scan, scan-codebase computes the current signature for each of 4 slices independently. For each slice:
+- IF prior.per_slice[<slice>].signature_sha256 == current_<slice>_signature → slice reused (no subagent dispatch for that slice)
+- ELSE → that slice's subagent re-dispatched; consolidator merges fresh slice with other cached slices
 
-**Cache invalidation:** any mismatch → full re-scan (all 4 subagents re-dispatched). Also invalidated when `framework_pack` changes (different starterkit detected).
+**Cache invalidation matrix (v2.0+):**
+
+| Input changed | Slices invalidated | Subagent dispatches needed |
+|---|---|---|
+| composer.lock only | auth, rbac, libs (3/4) | 3 |
+| package.lock only | ui_ux, libs (2/4) | 2 |
+| Both lockfiles | auth, rbac, ui_ux, libs (4/4) | 4 (worst case) |
+| framework_pack §auth section | auth (1/4) | 1 |
+| framework_pack §rbac section | rbac (1/4) | 1 |
+| framework_pack §ui section | ui_ux (1/4) | 1 |
+| framework_pack §libs section | libs (1/4) | 1 |
+| lib-patterns/<fw>/auth-libs.md | auth (1/4) | 1 (best case — 75% saving) |
+
+**Typical savings:** PHP dep edit ≈ 25% (3 of 4 dispatched). JS dep edit ≈ 50% (2 of 4). Single lib-pattern edit ≈ 75% (1 of 4). Framework pack rewrite or initial scan ≈ 0% (all 4 dispatched).
+
+### Legacy v1.0 `cache_key:` block (deprecated — backward-compat read)
+
+v1.0 starterkit-context.yaml files (Iter 32 baseline) have a `cache_key:` block in place of `cache_signatures:`. Producers (v2.7.0+ scan-codebase) treat any prior v1.0 file as fully-stale on read (forces all 4 subagent re-dispatches) and write the new v2.0 `cache_signatures:` block. One-time migration cost per project; zero breaking change.
 
 ---
 
@@ -114,8 +158,8 @@ When a subagent fails twice (after auto-retry), the consolidator MAY emit a part
 
 ```yaml
 starterkit_context:
-  schema_version: 1.0
-  partial: true                    # NEW field — present only when partial
+  schema_version: 2.0              # v2.7.0+ writers always emit 2.0
+  partial: true                    # NEW field (Iter 32) — present only when partial
   partial_slices: [rbac]           # which slices are missing
   # auth, ui_ux, libs blocks present as normal
   # rbac block ABSENT
