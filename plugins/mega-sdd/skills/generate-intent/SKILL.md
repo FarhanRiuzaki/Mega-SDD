@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.11.0
+version: 1.12.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -24,6 +24,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 
 - **`--scan=<path>`** (v1.11+) — read `codebase-map.md` §7 Framework + §1-6 conventions BEFORE drafting vault. Resolves the framework convention pack via the `pack_path` field. Vault sections (`02-architecture.md`, `03-data-model.md`, `06-constraints.md`) use **dual-citation format** (Intent + Starterkit binding) per `references/vault-contract.md` §Starterkit binding.
 - **`--greenfield`** (v1.11+) — EXPLICIT opt-in for stack-agnostic generation. Skips scan reading. Vault stays generic. REQUIRED when starterkit absent (orchestrate-flow halt `no_starterkit_detected` enforces this).
+- **`--scope=<id>`** (v1.12+ Iter 28): explicit scope selection (BE, MW, FE, custom id, or `all` for legacy single-vault). When PRD has `scopes:` block AND flag not set → interactive picker fires (Step 0.9). Halt `scope_not_declared_in_prd` if id not in PRD scopes.
 - **Auto-detection**: if `codebase-map.md` exists at canonical location AND no `--greenfield` set → `--scan` implicitly applied. Confirms with user before proceeding (unless `--auto`).
 
 When BOTH `--scan` AND `--kb` set (legacy-rebuild scenario): vault synthesizes legacy domain intent (from KB) + target scaffold conventions (from scan). `[LOCKED]` KB items preserved 1:1; `[INTENT]` KB items rendered using starterkit conventions; `[ARTIFACT]` items discarded.
@@ -374,6 +375,43 @@ Validate per `references/squad-partition.md`. If validation fails (duplicate
 ownership, malformed id), re-ask the failed field only.
 
 After all squads declared, emit `_meta/squads.yaml` from `references/templates/squads.yaml.template`, replacing `{{PROJECT_SHAPE}}`, `{{PARTITION_MODEL}}`, and `{{SQUAD_*}}` placeholders with collected answers. Set `multi_squad_mode: true` in `vault.json`.
+
+### Step 0.9: Scope detection + PRD filtering (v1.12+, Iter 28)
+
+Per `references/scope-picker.md`. Runs AFTER all Step 0.x metadata config (PRD_STATUS, OUTPUT_MODE, squad partition, scan-aware) and BEFORE Step 1 Load PRD — because scope choice filters which PRD content gets loaded.
+
+a. **Read PRD frontmatter.**
+   - If `scopes:` block present (canonical multi-scope PRD) → step b
+   - If absent → step c (legacy retrofit bridge)
+
+b. **Canonical scope handling**:
+   - If only one scope declared → silent route to legacy single-vault flow (no picker)
+   - If multiple scopes declared:
+     - If `--scope=<id>` flag set → validate against declared scopes; **halt `scope_not_declared_in_prd`** if invalid (surface PRD-declared scope list + cancel option)
+     - Else if `<project>/.mega-sdd/memory/decisions.md` has prior choice for this PRD sha256 + same cwd basename → silent default with confirm-once UX (5s timeout)
+     - Else → invoke `AskUserQuestion` with options:
+       - One option per declared scope (smart-default flagged per cwd heuristic)
+       - "All scopes (single combined vault — legacy behavior)" option (legacy fallback)
+       - "Cancel" option
+     - If user chose `--scope=all` (legacy) → emit warning, proceed with all content (current behavior pre-Iter-28)
+   - After scope chosen: filter PRD content per `references/scope-picker.md` §Filter logic
+   - Persist scope choice to memory per `references/scope-picker.md` §Memory write rules
+   - Tag vault.json with `scope`, `scope_metadata`, `prd_sha256` per `references/vault-contract.md` §Multi-scope vault
+   - Render sibling scopes informational notes in `00-index.md` per same reference
+
+c. **Legacy PRD retrofit bridge**:
+   - Invoke `AskUserQuestion` with options:
+     - "Yes, propose retrofit (recommended)" — dispatches AI subagent per `references/legacy-retrofit-prompt.md`
+     - "Treat as single-scope PRD" — routes to legacy single-vault flow
+     - "Cancel — manual fix first" — **halt `prd_no_scopes_block_user_rejected_retrofit`**
+   - On retrofit chosen:
+     - Dispatch subagent with prompt template; receive structured analysis
+     - Render diff to user (detected scopes + evidence + proposed frontmatter + section restructure)
+     - `AskUserQuestion`: accept / review per scope / skip / cancel
+     - On accept: write retrofit to `<prd-name>.retrofit.md` (preserves original); restart Step 0.9 from step a using retrofit file
+     - On `overall_confidence: LOW` → **halt `prd_retrofit_low_confidence`** with options (accept anyway / single-scope fallback / cancel)
+
+`--scope=<id>` and `--greenfield` flags interact as documented in `commands/generate-intent.md` §Flag combinations.
 
 ### Step 1: Inventory and read
 
