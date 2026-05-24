@@ -5,6 +5,77 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.28.0] - 2026-05-25
+
+### Iter 42 — Deep-Scan Manifest Pre-Parse + Per-Slice Cache
+
+**Performance iter** (~3hr; MINOR bump — new optimization step + cache schema bump). Closes Iter 38 audit Queue #3 (priority 3, HIGH impact — every project pipeline benefits).
+
+**Problems closed:**
+
+- **D1-002** (token waste): 4 deep-scan subagents each re-read composer.json + package.json (~9-24KB redundant I/O per scan; ~10-20% per-subagent context budget waste).
+- **D2-003** (compute waste): single composite cache_key invalidates ALL 4 slices on any input change. Frontend dep edit forces re-dispatch of auth+rbac (PHP-side; unchanged).
+
+**Change 1 (D1-002): Manifest pre-parse — `scan-codebase` Step 10.5.1.5 (NEW)**
+
+Main thread parses `composer.json` + `package.json` ONCE before subagent dispatch:
+- Extracts: dependencies, dev_dependencies, scripts, autoload_psr4 (composer) / dependencies, devDependencies, peerDependencies, scripts, type (package)
+- Builds canonical `manifest_facts` YAML struct
+- Injects into 4 subagent prompts via new `<MANIFEST_FACTS>` placeholder (per `references/deep-scan-prompts.md` v2.7+ contract)
+
+Subagent prompts updated: "manifest_facts is authoritative; do NOT re-read manifest/lock files. Spend context on framework-specific source files."
+
+**Net savings:** ~9-24KB per scan (4 subagents × ~2-6KB saved per subagent context).
+
+**Change 2 (D2-003): Per-slice cache — schema v2.0 (`cache_signatures:` replaces `cache_key:`)**
+
+Each of 4 slices tracks its own signature:
+- `auth_signature` = sha256(composer.lock + framework_pack §auth + lib-patterns/<fw>/auth-libs.md)
+- `rbac_signature` = sha256(composer.lock + framework_pack §rbac + lib-patterns/<fw>/rbac-libs.md)
+- `ui_ux_signature` = sha256(package.lock + framework_pack §ui + lib-patterns/<fw>/ui-libs.md)
+- `libs_signature` = sha256(composer.lock + package.lock + framework_pack §libs + lib-patterns/<fw>/generic-libs.md)
+
+**Routing logic (Step 10.5.1):**
+- All 4 slices match prior signatures → FULL CACHE HIT (no dispatch needed)
+- 1-3 slices stale → PARTIAL CACHE HIT (selective dispatch; consolidator merges fresh + cached)
+- All 4 slices stale or no prior YAML → FULL CACHE MISS (dispatch all 4)
+
+**Net savings (incremental edits):**
+- composer.json frontend dep added → ui_ux + libs invalidate; auth + rbac cached → 50% subagent saving
+- Lib-pattern file (e.g., auth-libs.md) edited → only auth slice invalidates → 75% saving
+- Framework pack changed → all 4 invalidate (equivalent to current; no regression)
+
+**Schema migration (backward compat):** existing starterkit-context.yaml with v1.0 `cache_key:` block treated as fully-stale on read; auto-migrates to v2.0 `cache_signatures:` on next write. One-time migration cost; zero breaking change for users.
+
+**`reused_slices:` provenance field added** to starterkit-context.yaml — lists which slices were cached vs freshly-dispatched in the latest run. Aids debugging.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` — Steps 10.5.1, 10.5.1.5 (NEW), 10.5.2, 10.5.3 reworked
+- `plugins/mega-sdd/skills/scan-codebase/references/deep-scan-prompts.md` — added `<MANIFEST_FACTS>` placeholder spec
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.27.1 → 3.28.0
+- `plugins/mega-sdd/README.md` — + v3.28.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-42-deep-scan-manifest-preparse-and-per-slice-cache-design.md` — new spec doc
+
+**Skill bumps:**
+- `scan-codebase` 2.6.3 → 2.7.0 (MINOR — new step + cache schema bump)
+
+**External research cited inline in spec:**
+- Anthropic prompt caching docs (90% discount; subagent-token pattern)
+- Real-time codebase indexing (cocoindex-io) — per-file hash invalidation
+- Multi-agent caching arXiv 2601.06007 — separate static instructions from dynamic outputs
+
+**Standing directives applied:**
+- simplifikasi: 2 audit findings → 1 iter, 2 atomic changes in 2 files (1 SKILL + 1 reference doc)
+- flawless: backward-compat schema migration; v1.0 readers treated as fully-stale (no rejection)
+- reuse-first: extends Iter 30 shared-snapshot cache pattern + Iter 32 deep-scan subagent dispatch pattern + existing variable-substitution template format
+
+**Plugin:** v3.27.1 → v3.28.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Next:** Iter 43 — T2 running budget tracker (Queue #4 — D1-003, HIGH impact per-bolt).
+
 ## [3.27.1] - 2026-05-25
 
 ### Iter 41 — Halt Taxonomy Sync Sweep
