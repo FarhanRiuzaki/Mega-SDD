@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.2.1
+version: 1.3.0
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -64,7 +64,8 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 <project-root>/.mega-sdd/memory/            # PROJECT scope (v3.4+ canonical per paths.md; per-repo)
 ├── decisions.md                           # OQ resolutions, CONFLICT actions, ACCEPTs
 ├── conventions.md                         # detected conventions (test framework, naming, error format)
-└── outcomes.md                            # halt patterns, retry counts, success rates per run
+├── outcomes.md                            # halt patterns, retry counts, success rates per run
+└── routing-outcomes.md                    # orchestrator routing decisions log (v1.3.0+, Iter 33)
 
 # Legacy path: <project-root>/.mega-sdd-memory/ — read-side back-compat only;
 # write-side defaults to .mega-sdd/memory/ per Iter 21 no-excuse rule.
@@ -74,6 +75,17 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 ├── bind-history.md                        # per-binding-run verdicts + state map summaries
 └── bolt-outcomes.json                     # per-bolt success/failure + Hard Rule violations
 ```
+
+### routing-outcomes.md (v1.3.0+, Iter 33)
+
+**Scope:** PROJECT (`<project>/.mega-sdd/memory/routing-outcomes.md`)
+**Producer:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 7.5
+**Consumer:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 2.7
+**Format:** Markdown with append-only Entries section
+**Schema:** see `references/routing-outcomes.md`
+**Append mechanism:** Bash `>>` heredoc (per §6 POSIX append)
+**Lock:** standard memory file-lock pattern (backoff + retry 3x; fail with `memory_in_use`)
+**Soft halt:** `routing_outcome_corrupt` on parse failure (auto-invalidate; chain proceeds)
 
 ## Self-learning mechanism (suggestion-only)
 

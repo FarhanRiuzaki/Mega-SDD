@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.5.1
+version: 3.0.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -74,6 +74,25 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
 
    **Memory hint**: user's last starterkit preference saved to `~/.mega-sdd/memory/preferences.md` `last_used_starterkit:` — next legacy-rebuild prompts "Last 3 projects used `laravel-base-26`. Use same starterkit?" Y/N/other.
 
+2.7. **Memory-informed routing preflight (v3.0.0+, Iter 33).**
+
+   Per `references/memory/routing-outcomes.md` schema. Optional — falls through silently if memory file absent or insufficient history.
+
+   a. Compute project fingerprint: `sha256(composer.json + package.json + framework_pack_path)[:16]`
+
+   b. Read `<project>/.mega-sdd/memory/routing-outcomes.md` (if exists; else skip to step 3).
+
+   c. Filter rows matching current fingerprint.
+
+   d. Apply decision rules:
+      - **≥3 prior rows, converged=yes, same chain-used:** recommend that chain as default; LOG to user: "Routing recommendation from past N runs (all converged in avg X min)"
+      - **≥2 prior rows, converged=no, same chain-used:** WARN user: "Past N runs of this chain failed (halts: <list>); consider alternate chain"; fall through to routing-rules.md default (user decides)
+      - **Mixed results OR <3 prior rows:** fall through to routing-rules.md default (no override)
+
+   e. If file parse fails: emit SOFT halt `routing_outcome_corrupt` + auto-invalidate (rename to `.corrupt-<ISO8601>`); fall through to default; LOG to user: "routing-outcomes.md corrupt; auto-invalidated; chain proceeds with default routing"
+
+   f. Update chain proposal with recommendation OR fall-through default. Continue to Step 3.
+
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).
    - **`--deep` mode (v1.3+)**: cap LIFTED — chain extends to pipeline-end per `references/routing-rules.md` §Deep-chain decision matrix. Auto-continue between phases via handoff YAML protocol (see `references/handoff-contract.md`).
@@ -138,6 +157,28 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
      - Per-module status from auto list-modules (X/Y modules completed)
      - AGENTS.md emission confirmation (file path + section count)
      - Memory review prompt if pending suggestions exist
+
+7.5. **End-of-chain routing-outcomes memory write (v3.0.0+, Iter 33).**
+
+   Per `references/memory/routing-outcomes.md` write protocol.
+
+   a. Compute:
+      - `chain-used`: short label, e.g., "starterkit-first (scan→intent→bind→units→bolts)"
+      - `duration-min`: integer wall-clock from Step 1 → now
+      - `converged`: yes if final status==completed AND blockers==[]; no otherwise
+      - `halts-fired`: count of unique halt types fired during chain
+
+   b. Acquire file lock on `<project>/.mega-sdd/memory/routing-outcomes.md` (reuse existing memory file-lock pattern: backoff + retry 3x; fail with `memory_in_use` if all retries fail).
+
+   c. If file does not exist: create with header per schema doc.
+
+   d. Append row to `## Entries` section via Bash `>>` heredoc (per memory-schema.md §6 POSIX append requirement).
+
+   e. Release lock.
+
+   f. LOG to user: "routing-outcomes.md updated (entry: <chain-used> | <duration-min>min | converged=<yes/no>)"
+
+   NOTE: Skip Step 7.5 entirely if `--memory-off` flag set (existing flag respects opt-out).
 
 8. **Resume support (v1.3+, per AUTONOMY-OQ-2 — CWD-driven, no state file).**
 
@@ -277,6 +318,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 
 - `deep_scan_subagent_failed` (v2.5.1+, Iter 32) — scan-codebase: single deep-scan subagent failed. Auto-retried; partial output on second failure.
 - `deep_scan_cache_corrupt` (v2.5.1+, Iter 32) — scan-codebase: starterkit-context.yaml YAML parse failed. Cache auto-invalidated; subagents re-dispatched. Transparent.
+- `routing_outcome_corrupt` (v3.0.0+, Iter 33) — orchestrate-flow: routing-outcomes.md parse failure. Auto-invalidate + log; chain proceeds.
 
 ### `--converge` flag (v2.3+)
 

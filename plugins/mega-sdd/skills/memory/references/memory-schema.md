@@ -50,6 +50,23 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 | `decisions.md` | OQ resolutions, CONFLICT actions, ACCEPTs | Markdown tables | Tracked (team-shared knowledge) |
 | `conventions.md` | Detected conventions (test framework, naming, error format) | Markdown sections | Tracked (team-shared) |
 | `outcomes.md` | Halt patterns, retry counts, success rates per run | Markdown chronological log | Gitignored (per-dev noise) |
+| `routing-outcomes.md` | Orchestrator routing decisions + outcomes log (v1.3.0+, Iter 33) | Markdown append-only rows | Gitignored (per-dev noise) |
+
+### `<project>/.mega-sdd/memory/routing-outcomes.md` (v1.3.0+, Iter 33)
+
+```markdown
+# Routing Outcomes
+
+## Schema
+
+Per row: `<date> | <project-fingerprint> | <chain-used> | <duration-min> | <converged> | <halts-fired>`
+
+## Entries
+
+<append-only rows>
+```
+
+Schema fully defined at `plugins/mega-sdd/skills/memory/references/routing-outcomes.md`.
 
 ### VAULT scope (`<vault-path>/.memory/`)
 
