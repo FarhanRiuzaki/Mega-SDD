@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.7.1
+version: 2.7.2
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -29,6 +29,9 @@ The terminal phase of the SDD pipeline — turns units into code.
   - `--per-squad` — (v1.1+) fan out across all squads declared in `_meta/squads.yaml`. Spawns one Claude subagent per squad via `subagent-driven-development`; each subagent filters units by their `squad:` field and runs in parallel.
   - `--squad=<id>` — (v1.1+) filter units to a single squad. For human-team handoff: a dev team runs this on their own laptop to process only their squad's units. Halts on `cross_squad_interface_draft` if any consumed interface is still draft.
   - `--module=<id>` — (v2.2+, Iter 11) filter units to a single module (semantic grouping per `generate-units/references/modules-schema.md`). Topologically sorts within module. Halts on `module_blocked_by` if dependencies in another module are incomplete.
+  - `--force-skip-postflight` — (v2.6.4+, Iter 39) **DISCOURAGED** escape hatch that skips ast-grep Hard Rule postflight validation for THIS run only. Use only when ast-grep binary is broken or a known false-positive pattern blocks otherwise-valid work; document the reason in the bolt-report.md self-assessment section. Does NOT downgrade the rail (BLOCKING remains BLOCKING per CLAUDE.md "no bypassing anti-hallucination"); a follow-up bolt re-run WITHOUT the flag is required before drift-detect / merge.
+
+    > ⚠️ **WARNING — anti-bypass policy.** This flag exists for operational continuity (broken tool / known false-positive), NOT to ship code that fails Hard Rules. Any use is logged in the handoff YAML `notes.postflight_skipped: true` field and surfaces in `<vault>/bolts/_summary.md`. Repeated unauthorized use is treated as a constitution violation per `bind-codebase/references/constitution.md §B`.
 
 ## Pre-flight checks
 

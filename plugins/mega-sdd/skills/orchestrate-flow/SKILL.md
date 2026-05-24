@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.1.1
+version: 3.1.2
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -508,7 +508,7 @@ Default behavior in `--deep` mode:
 
 - `--converge` (default ON in `--deep`) — auto-loop eligible halts up to `--max-cycles`
 - `--no-converge` — STOP on any halt (pre-v2.3 behavior; explicit user resume needed)
-- `--max-cycles=N` — max convergence iterations before forcing human review (default 5)
+- `--max-cycles=N` — max convergence iterations before forcing human review (default 3; canonical with `/mega-sdd:orchestrate-flow` command)
 
 ### Convergence loop algorithm
 
@@ -606,7 +606,7 @@ Iter 30 adds **propose-and-confirm bridge** for bolt halts:
 | `hard_rule_violated` | Propose-and-confirm fix → user approve → re-execute → continue |
 | `pbt_property_violated` | Propose-and-confirm fix → user approve → re-execute → continue |
 
-Cycle counter respects `--max-cycles` (default 5). One cycle = 1 propose + 1 user decision + 1 re-execute attempt.
+Cycle counter respects `--max-cycles` (default 3). One cycle = 1 propose + 1 user decision + 1 re-execute attempt.
 
 **Cycle escalation**: if same halt fires twice on same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop). Prevents propose-and-confirm from looping on structurally-broken unit.
 
