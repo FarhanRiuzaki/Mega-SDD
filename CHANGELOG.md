@@ -5,6 +5,82 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.32.1] - 2026-05-25
+
+### Iter 48 — FIX-FORWARD: Iter 44 algorithm rewrite, Iter 46 step relocation, Iter 46 wording correction
+
+**Release-blocker fix iter** (PATCH bump — pure correctness; no new behavior). Cumulative code-quality review of Iters 44-47 (commits 3d11c09..HEAD covering v3.29.0 → v3.32.0) by `superpowers:code-reviewer` subagent surfaced 2 CRITICAL + 1 MEDIUM. All fixed in Iter 48 before Iter 49 feature work.
+
+This is the SECOND fix-forward iter triggered by validation gate this session (precedent: Iter 43 fixed Iter 40's `handoff_missing` release-blocker). Pattern: ship 3-4 feature iters → advisor + code-reviewer subagent → fix-forward critical findings → next feature iter. Pattern is now standard for cumulative-iter sessions.
+
+**CRITICAL fixes:**
+
+**C1 — Iter 44 algorithm drift (`bolt-dispatch-prompt.md` §Tier-loading algorithm):**
+
+Pre-Iter-44 the canonical algorithm in `bolt-dispatch-prompt.md` encoded single-halt-at-10KB pseudocode. Iter 44 added new running-budget tracker + per-section truncation cascade to SKILL.md Step 4.5.a.5, BUT the canonical algorithm in the reference doc was left unchanged. LLM following the reference doc would execute the OLD behavior contradicting SKILL.md's design — the 15-30% T2 reduction claim wouldn't materialize.
+
+Fix: rewrote `bolt-dispatch-prompt.md §Tier-loading algorithm` with v2.0 (Iter 44) running-budget pseudocode:
+- Step a.5 initialize budget tracker with cap_hard/cap_target/cap_t1/cap_t2/consumed_t1/consumed_t2/remaining_t2/warnings
+- Step b T2 sections load in PRIORITY DESCENDING order (priority 8 first, priority 1 last) so HIGH-priority items always survive
+- For each section: check remaining_t2; if section fits append; if not apply truncation cascade per SKILL.md table; log {section, rule_applied, bytes_saved} to warnings
+- Step d hard halt only when constitution_clauses alone overflows after all disposable sections truncated to drop floor
+- Soft-budget warning (NOT halt) when consumed_t2 > cap_t2 but total < cap_hard
+- Always inject `### T2 budget tracker` provenance section
+- Header bumped to v2.0 (Iter 44 semantics); v1.0 (Iter 30) algorithm preserved at bottom as historical reference
+
+**C2 — Iter 46 scan-codebase Step 9.5 misplacement (`scan-codebase/SKILL.md`):**
+
+Iter 46 added per-file invalidation logic at Step 9.5 (between Step 9 pattern detection and Step 10 codebase-map.md write). BUT symbol extraction happens at Step 5. By the time Step 9.5 ran, tree-sitter/regex extraction was already complete — too late to short-circuit. The promised 5-10s shallow-scan savings didn't materialize. Plus the original Step 9.5 said "Write updated codebase-map.md atomically" which would have been overwritten by Step 10's own write (double-write race).
+
+Fix: relocated per-file invalidation gate to BEFORE Step 5 tree-sitter/regex extraction. The gate now:
+1. Skips for `--deep-scan` (default) or `--no-cache` (correctness preserved)
+2. For `--shallow-scan` with prior codebase-map.md: per-file compare current sha256 vs `Last_Scanned_Sha256` column
+3. REUSE prior §2 entries for unchanged files (true short-circuit — tree-sitter never invoked for those files)
+4. Re-extract for changed/new files; update Last_Scanned_Sha256
+5. Files removed from repo → drop from §2
+
+Step 9.5's old location now holds a brief breadcrumb pointing to the relocated gate. Single canonical codebase-map.md write at Step 10.
+
+**MEDIUM fix:**
+
+**M1 — Iter 46 bind-codebase reuse hook wording (`bind-codebase/SKILL.md` Step 1):**
+
+Iter 46 description claimed "skip per-source-file re-tokenization (~30-50% I/O saving)" — but bind-codebase Step 2 has never re-tokenized. Step 2 consumes pre-extracted §2 entries from codebase-map.md. The "savings" had no observable target within bind-codebase.
+
+Fix: corrected wording. The snapshot reuse is a **freshness attestation** that bind-codebase records in `binding_metadata.codebase_map_provenance` field (`snapshot-verified` / `snapshot-stale` / `no-snapshot`). The 30-50% savings applies at the orchestrate-flow chain level — downstream skills can trust the codebase-map is fresh and skip a redundant scan-codebase invocation. Iter 48 fix-forward note added inline explaining the correction.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — §Tier-loading algorithm rewritten with v2.0 running-budget pseudocode; v1.0 historical reference preserved
+- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` — per-file invalidation gate moved from Step 9.5 → Step 5 (BEFORE extraction); old Step 9.5 location holds breadcrumb
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — Step 1 reuse hook wording corrected; provenance attestation pattern documented
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.32.0 → 3.32.1
+- `plugins/mega-sdd/README.md` — + v3.32.1 What's new entry
+- `README.md` — version bump
+
+**Skill version bumps:**
+- `scan-codebase` 2.7.1 → 2.7.2 (PATCH — Step 5 gate relocation)
+- `bind-codebase` 1.10.0 → 1.10.1 (PATCH — wording correction)
+
+**Validation pattern reinforced (second fix-forward triggered by subagent review):**
+
+This session has now triggered the validation pattern twice:
+1. Iter 43 fix-forward caught Iter 40's `handoff_missing` semantics defect (file-check vs chat-block)
+2. Iter 48 fix-forward caught Iter 44 algorithm drift + Iter 46 step misplacement + Iter 46 wording
+
+Both rounds caught defects that would have produced wrong runtime behavior in production. The pattern is now load-bearing: ship 3-4 feature iters → advisor + code-reviewer subagent → fix-forward → next feature iter.
+
+**Standing directives applied:**
+- simplifikasi: 3 review findings → 3 surgical fixes in 3 files; no new files; no new halts
+- flawless: caught semantic defects in canonical algorithm + step placement + wording BEFORE production; both prior iter intentions preserved with corrected implementations
+- reuse-first: extends existing validation gate pattern (advisor + code-reviewer subagent) established in Iter 43
+
+**Plugin:** v3.32.0 → v3.32.1
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Code-reviewer dispatch:** agentId a882063dd0e439071
+
+**Next:** Iter 49 — vault.json advisory lock + scenario-6 expansion (Queue #8 from audit; D3-012 + D3-006; ~3hr; MEDIUM impact).
+
 ## [3.32.0] - 2026-05-25
 
 ### Iter 47 — Independent Acceptance-Test Authoring (Adversarial Review Pass)

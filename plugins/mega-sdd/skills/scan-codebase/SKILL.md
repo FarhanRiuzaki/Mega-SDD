@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.7.1
+version: 2.7.2
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -132,8 +132,21 @@ The scan walks every path NOT matching these globs. List grouped by ecosystem fo
 
 5. **Extract public interfaces.**
 
+   **Per-file invalidation gate (v2.7.1+, Iter 46 → relocated Iter 48 fix-forward — closes audit D2-007):**
+
+   This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, gate compares each source file's current sha256 to the `Last_Scanned_Sha256` column in prior codebase-map.md §2:
+   - File current sha256 == prior Last_Scanned_Sha256 → REUSE prior §2 entries for this file; SKIP tree-sitter/regex re-extraction for it
+   - File current sha256 != prior → re-extract symbols via tree-sitter/regex (logic below); update Last_Scanned_Sha256 to current sha256
+   - File not in prior map → re-extract symbols + add to §2 with current sha256
+   - File in prior map but not in current repo enumeration → drop from §2 (file removed)
+
+   For default `--deep-scan` (no flag) OR `--no-cache` → SKIP gate; full re-extract for every file (current behavior; correctness guarantee preserved for deep scans).
+
+   The relocated gate ensures per-file invalidation actually short-circuits the expensive tree-sitter / regex per-file invocations below, instead of running them and then post-processing. Iter 46 had this logic at the wrong step (after extraction); Iter 48 fix-forward relocates it to gate extraction. Closes Iter 47 code-quality review finding C2.
+
    **If `engine: tree-sitter` (v2.0+, default when available):**
    - For each detected language, locate `queries/tags-<lang>.scm` in plugin dir
+   - For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue
    - Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file
    - Parse capture output (line + col + capture name + symbol text) into interface table
    - Capture names map: `name.definition.<kind>` → §2 (public interfaces); `name.reference.<kind>` → symbol graph (used by generate-units PageRank per Iter 6 Swap #3)
@@ -440,28 +453,7 @@ After Step 10 codebase-map.md write completes, additionally write a shared-snaps
 
 If write fails (disk full / permissions): log warning + continue (snapshot is optimization, not correctness — bind-codebase falls back gracefully per shared-snapshot-schema.md §bind-codebase consumer).
 
-### Step 9.5 — Per-file symbol invalidation on `--shallow-scan` (v2.7.1+, Iter 46 — D2-007 closure)
-
-When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, scan-codebase performs per-file symbol cache invalidation instead of full re-extraction. Eliminates 5-10s rebuild on iterative runs.
-
-```
-1. IF --shallow-scan flag NOT set → skip this step; proceed with full Step 10 symbol extraction (current behavior)
-2. IF prior codebase-map.md does NOT exist → skip; proceed with full Step 10
-3. Parse prior codebase-map.md §2 "Public interfaces" table; build prior_sha256_map:
-   {
-     "<file_path>": "<Last_Scanned_Sha256 from §2 column>",
-     ...
-   }
-4. For each source file in repo (per Step 1-8 file enumeration):
-   - Compute current_sha256 = sha256(file contents)
-   - IF current_sha256 == prior_sha256_map[<file_path>] → REUSE prior §2 entries for this file (no tree-sitter re-extract)
-   - IF mismatch OR file not in prior map → re-extract symbols via tree-sitter; update Last_Scanned_Sha256 column to current_sha256
-5. Files in prior_sha256_map but NOT in current repo file enumeration → drop from §2 (file removed)
-6. Files NEW in current repo but NOT in prior_sha256_map → extract symbols + add to §2 with Last_Scanned_Sha256
-7. Write updated codebase-map.md atomically.
-```
-
-For default `--deep-scan` (no flag) OR `--no-cache` → behave as before (full re-extract; no per-file invalidation). Per-file invalidation is OPT-IN via `--shallow-scan` to preserve correctness guarantees for full scans.
+> **Per-file symbol invalidation note (Iter 48 fix-forward):** the per-file invalidation logic originally documented as Step 9.5 in Iter 46 was relocated to gate Step 5 symbol extraction (above) in Iter 48 fix-forward. The relocated gate runs BEFORE tree-sitter / regex extraction so it actually short-circuits the expensive per-file invocations. The duplicate codebase-map.md write that was implicit in the original Step 9.5 (it wrote codebase-map.md, then Step 10 wrote it again) is removed — Step 10 is now the single canonical write step that consumes the gate's REUSE/RE-EXTRACT decisions.
 
 ---
 

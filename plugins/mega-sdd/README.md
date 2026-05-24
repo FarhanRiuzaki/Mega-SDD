@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.32.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.32.1)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,28 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.32.1 (Iter 48, patch) — Fix-Forward: Iter 44 algorithm rewrite, Iter 46 step relocation, Iter 46 wording correction
+
+Code-quality review (`superpowers:code-reviewer` subagent on commits 3d11c09..HEAD covering Iters 44-47) surfaced 2 CRITICAL defects + 1 MEDIUM. Iter 48 fixes them all before next feature iter.
+
+**Fixed (critical):**
+
+- **C1 — Iter 44 algorithm drift:** `bolt-dispatch-prompt.md §Tier-loading algorithm` still encoded the pre-Iter-44 single-halt pseudocode (`if size(prompt) > 10_000: halt`). LLM following the canonical algorithm would execute the OLD behavior, contradicting SKILL.md's running-budget tracker design. Rewritten with running-budget pseudocode + per-section priority loop + truncation cascade. v1.0 (Iter 30) algorithm preserved at bottom as historical reference. Header bumped to v2.0 (Iter 44 semantics).
+
+- **C2 — Iter 46 step misplacement:** scan-codebase Step 9.5 (per-file invalidation) was placed AFTER Step 5 symbol extraction had already run — too late to short-circuit. Also caused a double-write (Step 9.5 wrote codebase-map.md, then Step 10 overwrote it). Iter 48 relocates the gate to BEFORE Step 5 tree-sitter/regex extraction so it actually short-circuits expensive per-file invocations. Step 9.5 location now holds a brief breadcrumb pointing to the relocated gate.
+
+**Fixed (medium):**
+
+- **M1 — Iter 46 bind-codebase reuse hook wording:** the Iter 46 description claimed "skip per-source-file re-tokenization (~30-50% I/O saving)" but bind-codebase Step 2 has never re-tokenized — it consumes pre-extracted §2 entries. The actual benefit is a **freshness attestation** that orchestrate-flow + downstream skills can trust without re-running scan-codebase. Reworded: bind-codebase now records `binding_metadata.codebase_map_provenance` (`snapshot-verified` / `snapshot-stale` / `no-snapshot`) in binding.md header. The 30-50% savings applies at chain level (avoid scan re-run), not within bind-codebase.
+
+**Skill bumps:**
+- `scan-codebase` 2.7.1 → 2.7.2 (PATCH — Step 5 gate relocation)
+- `bind-codebase` 1.10.0 → 1.10.1 (PATCH — wording correction)
+
+**Validation pattern reinforced:** for the second time in this audit-closure cycle, `superpowers:code-reviewer` validation gate caught release-blockers BEFORE they affected production. The pattern (advisor checkpoint + code-reviewer dispatch + fix-forward iter before next feature) is now standard for cumulative-iter sessions.
+
+**Plugin v3.32.0 → v3.32.1** (PATCH — fix-forward).
 
 ### v3.32.0 (Iter 47, minor) — Independent Acceptance-Test Authoring (Adversarial Review Pass)
 
