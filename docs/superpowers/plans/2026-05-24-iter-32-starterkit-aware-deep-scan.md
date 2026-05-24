@@ -12,6 +12,22 @@
 
 ---
 
+## ⚠️ Step-number corrections (post-write deep-search audit)
+
+After initial plan write, a deep-search audit of actual file structures surfaced 3 step-number errors. Subagents executing Tasks 5, 6, 7 MUST use these corrected step numbers, NOT the numbers in the task bodies below:
+
+| Skill | Plan says (WRONG) | Actual file structure (CORRECT) | Rationale |
+|---|---|---|---|
+| `scan-codebase` SKILL.md | "Step 2 — Deep-scan stage" | **Step 10.5 — Deep-scan stage** | Existing steps go 0 → 1 → 2 (detect package mgr) → ... → 8.5 (detect framework) → 9 (pattern sigs) → 10 (write codebase-map.md) → 11 (suggest next). Deep-scan needs §7 Framework from codebase-map.md, so insert AFTER step 10. Use sub-steps 10.5.0 / 10.5.1 / 10.5.2 / 10.5.3 / 10.5.4. |
+| `generate-units` SKILL.md | "Step 4.7" | **Step 7.7** | Existing steps go ... → 4 (deps) → 4.5 (modules) → 5 (squads) → 6 (IDs) → 7 (target_files) → 7.5 (PageRank) → 7.6 (collision) → 8 (existing_interfaces). starterkit_relevance computation depends on `target_files` populated in Step 7, so insert as 7.7 (between 7.6 and 8). Sub-steps 7.7.a / 7.7.b / 7.7.c / 7.7.d / 7.7.e per plan. |
+| `execute-bolts` SKILL.md | "Step 1.5.f-h" | **Step 4.5.b (add starterkit bullet to TIER 2 list) + Step 4.5.b-starterkit (new sub-block after step 4.5.b)** | Iter 30 tiered enrichment is at **Step 4.5** (NOT Step 1.5). Sub-letters a-g already in use: a=T1, b=T2, c=T3, d=size check, e=log prompt, f=partial-state, g=dispatch. Cleanest insertion: (1) add new bullet to Step 4.5.b T2 list mentioning "Starterkit context slice (see step 4.5.b-starterkit)"; (2) add new sub-block "Step 4.5.b-starterkit: Starterkit context slice (v2.7.0+, Iter 32)" RIGHT AFTER step 4.5.b's bullet list, covering Read + Build slice + Inject — all 3 logical actions in one block. Subagent dispatch (step g) reads the assembled prompt with T2.3 section already populated. |
+
+**Why the plan had these errors:** initial plan was written from the spec without verifying actual file structures. The user's "deep search reuse over reinvent" directive prompted post-write audit which caught these. Memory entry: `feedback_reuse_over_reinvent.md`.
+
+**Tasks unaffected:** Tasks 1, 2, 3, 4, 8, 9, 10 — no step insertions; corrections do not apply.
+
+---
+
 ## File Structure
 
 ### New plugin files (7)
