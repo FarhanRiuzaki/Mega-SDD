@@ -5,6 +5,79 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.28.1] - 2026-05-25
+
+### Iter 43 — FIX-FORWARD: handoff_missing semantics + schema doc + savings accuracy
+
+**Release-blocker fix iter** (PATCH bump). Cumulative code-quality review of Iters 39-42 (commits ea574da..3d11c09) by `superpowers:code-reviewer` subagent surfaced 1 CRITICAL + 1 CRITICAL + 2 MEDIUM + 2 ADVISORY findings. Iter 43 closes all CRITICAL + MEDIUM; ADVISORY items now fully addressed.
+
+**CRITICAL fixes:**
+
+**C1 — `handoff_missing` would fire on every auto run (Iter 40 regression)**
+
+Original Iter 40 design: orchestrate-flow Step b.0 computed an expected handoff file path (`<vault>/.internal/checkpoints/<ISO8601>-<skill>.handoff.yaml`) and ran `test ! -f` on it. **Problem:** no skill actually writes that file — every skill's `## Handoff emission` section emits the handoff YAML inline in chat output (as text in the last assistant message). The file-existence check would have produced spurious `handoff_missing` halts on the very first run, blocking every `--auto` chain.
+
+Fix (orchestrate-flow v3.2.1+):
+- Step b.0 rewritten to scan sub-skill's **chat output** (last assistant message) for a YAML code fence containing top-level `handoff:` key. Detects the canonical emission per `handoff-contract.md`.
+- Halt envelope gains `chat_tail_excerpt: <last 500 chars>` field for diagnostic clarity (replaces hardcoded `expected_handoff_path:`).
+- `vault-contract.md §halt-protocol` description updated to match chat-block semantics.
+- `handoff-contract.md` Emission contract section added documenting skill-author rule + showing minimal emission example.
+
+**C2 — starterkit-context-schema.md left at v1.0 while producer writes v2.0 (Iter 42 propagation gap)**
+
+Iter 42 bumped `scan-codebase` to v2.7.0 emitting `schema_version: 2.0` with `cache_signatures:` block, but `plugins/mega-sdd/references/starterkit-context-schema.md` (the canonical reference doc consumed by bind-codebase, generate-units, execute-bolts) was still documented as v1.0 with `cache_key:` block. Violates 4-surface taxonomy directive (Iter 33+31).
+
+Fix:
+- Schema doc bumped to v2.0 with full `cache_signatures:` block spec
+- Added per-slice invalidation matrix table (PHP dep edit → 25% savings; JS dep edit → 50%; single lib-pattern → 75%; framework pack rewrite → 0% / all 4 dispatched)
+- Backward-compat note for v1.0 readers
+
+**MEDIUM fixes:**
+
+**M1 — Iter 42 CHANGELOG savings claims were inverted/imprecise**
+
+Original claim ("composer.json frontend dep added → 50% saving") was technically incoherent (composer manages PHP, not frontend) and the math was wrong. composer.lock change invalidates auth+rbac+libs (3/4) — actual savings ≈ 25%. package.lock change invalidates ui_ux+libs (2/4) — actual savings ≈ 50%. Single lib-pattern edit invalidates 1 slice — actual savings ≈ 75%.
+
+Fix: corrected invalidation matrix now documented in starterkit-context-schema.md (canonical) and in v3.28.1 README "What's new" entry. Historical Iter 42 CHANGELOG entry preserved as-shipped (no retroactive edit); reader-facing fix lives in this entry + canonical schema doc.
+
+**M2 — Iter 41 framing accurate but grep-defined**
+
+Iter 41 "halt taxonomy in sync" claim is bullet-vs-enum reconciliation specifically (false positives exist for halts with `### Type-specific guidance` sections instead of bullets). No regression; cosmetic concern. No fix needed in v3.28.1 — flagged for future contributor docs.
+
+**ADVISORY fixes (rolled in):**
+
+**A1 — partial_state_corrupt canonical path**: vault-contract.md description had `<vault>/.internal/checkpoints/partial-state.json` while execute-bolts §Partial-state contract emit example used `<vault>/bolts/U-XXX/partial-state.json`. Canonicalized to the per-bolt path (matches execute-bolts emit; matches the user-facing rename instruction).
+
+**A2 — Handoff filename pattern drift**: superseded by C1 fix. Skills no longer required to write a file; chat-block is authoritative. Optional file-write convention (`<vault>/.internal/checkpoints/<ISO8601>-<skill>.handoff.yaml` for replay/audit) preserved in handoff-contract.md.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step b.0 rewrite (chat-block detection); skill version 3.2.0 → 3.2.1
+- `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` — Pre-validation section rewritten; Emission contract section added
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — `handoff_missing` + `partial_state_corrupt` descriptions corrected
+- `plugins/mega-sdd/references/starterkit-context-schema.md` — v1.0 → v2.0 doc bump (full)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.28.0 → 3.28.1
+- `plugins/mega-sdd/README.md` — + v3.28.1 What's new entry; version refs
+- `README.md` — version refs
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.2.0 → 3.2.1 (semantics correction; PATCH)
+
+**Validation method:** dispatched `superpowers:code-reviewer` subagent to diff `ea574da..3d11c09` (Iter 38 audit → Iter 42 release) against audit findings + advisor concerns. Subagent verified all skill SKILL.md `## Handoff emission` sections to confirm no skill writes handoff to a file — chat-block is universal emission convention. C1 confirmed as release-blocker.
+
+**Per simplifikasi+flawless:** caught + fixed Iter 40 regression BEFORE Iter 43's intended T2 budget tracker work, instead of stacking new features atop broken foundation. Validation gate (advisor + code-reviewer subagent) prevented production deployment of broken `handoff_missing` halt. T2 budget tracker deferred to Iter 44 with cleaner foundation.
+
+**Plugin:** v3.28.0 → v3.28.1
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Validation method (NEW pattern for cumulative-iter sessions):**
+1. Advisor checkpoint after 4 iters
+2. `superpowers:code-reviewer` subagent diffs full cumulative range against audit
+3. Findings classified CRITICAL/MEDIUM/ADVISORY
+4. Fix-forward iter shipped BEFORE next feature iter
+
+**Next:** Iter 44 — T2 running budget tracker (Queue #4 from audit; D1-003; ~3hr; HIGH impact).
+
 ## [3.28.0] - 2026-05-25
 
 ### Iter 42 — Deep-Scan Manifest Pre-Parse + Per-Slice Cache
