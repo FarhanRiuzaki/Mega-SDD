@@ -5,6 +5,103 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.32.0] - 2026-05-25
+
+### Iter 47 — Independent Acceptance-Test Authoring (Adversarial Review Pass)
+
+**Output-quality iter** (~2hr; MINOR bump — new generate-units Step + new acceptance_test provenance field + new prompt template reference). Closes Iter 38 audit Queue #7 (D4-006, HIGH structural risk; pattern F). Per ACM FSE 2025: "Never trust AI to both generate and validate."
+
+**Problem (D4-006 HIGH severity):** every unit's `acceptance_test` was authored by the SAME LLM pass that wrote the unit body. Both inherited the same blind spots. Bolt subagent runs the test → passes → user trusts the green checkmark → ships broken code. Hard Rules + provenance trailer catch structural bugs; they cannot catch behavioral bugs the test was authored to NOT detect.
+
+**Solution: adversarial second-pass review + provenance field**
+
+**1. New Step 9.5 — Adversarial test review pass (generate-units)**
+
+Runs AFTER Step 9 fills acceptance_test inline with unit body. Two modes:
+
+**Default (main-thread self-re-prompt):** main thread re-prompts itself with adversarial framing — "you're a QA engineer reviewing this acceptance_test; find AT LEAST 2 cases the test FAILS to catch a real bug." Same LLM, different role context. No subagent dispatch overhead.
+
+**Opt-in subagent (`--adversarial-subagent` flag OR unit `risk: high`):** dispatch a SEPARATE subagent for the adversarial review. Independent LLM context = stronger blind-spot coverage. One extra dispatch per unit. Auto-set for high-risk units.
+
+**Skip (`--no-adversarial-review` flag):** preserves pre-Iter-47 behavior (D4-006 blind-spot risk). **DISCOURAGED** — debug / regression only.
+
+**2. Adversarial review output (strict YAML)**
+
+```yaml
+adversarial_review:
+  reviewer_pass: 2                          # always 2 (Step 9 = pass 1)
+  gaps_identified:
+    - scenario: "<bug case description>"
+      missed_by_assertion: "<which existing assertion fails to catch it>"
+      proposed_additional_assertion: "<test code or natural language>"
+  coverage_verdict: weak | adequate | strong
+```
+
+**3. Gap merge logic (main thread, post-review)**
+
+- `coverage_verdict: strong` AND no gaps → keep original; mark `_authored_by: adversarial-reviewed (no gaps)`
+- Non-empty gaps → append `proposed_additional_assertion` per gap to acceptance_test; mark `_authored_by: adversarial-reviewed (+N gaps merged)`
+- `coverage_verdict: weak` AND no gaps (incoherent reviewer output) → keep original; mark `_authored_by: adversarial-review-failed`. Log warning to chat.
+
+**4. `_authored_by:` provenance field (NEW canonical values)**
+
+| Value | Origin | Trust signal |
+|---|---|---|
+| `same-pass` | pre-Iter-47 OR `--no-adversarial-review` | weakest (D4-006 risk) |
+| `adversarial-reviewed (no gaps)` | Iter 47 default, no gaps found | strong |
+| `adversarial-reviewed (+N gaps merged)` | Iter 47 default, N gaps merged | strong |
+| `adversarial-review-failed` | Iter 47, reviewer incoherent | weak + warning |
+| `independent-llm` | Iter 47 opt-in subagent mode | strongest LLM-derived |
+| `human` | user manually edited | strongest overall |
+
+**5. execute-bolts dispatch-prompt NOTE for weak provenance**
+
+When unit's `acceptance_test._authored_by` is `same-pass` OR `adversarial-review-failed`, execute-bolts injects a NOTE into the bolt dispatch prompt warning the bolt subagent: "this test may have blind spots; if your implementation passes the test but feels under-validated, flag `acceptance_test_concern: <details>` in your bolt-report.md self-assessment, propose 1-2 additional assertions, and mark confidence no higher than MEDIUM."
+
+Strong provenance values → NO NOTE injected (trust the test).
+
+**6. `--regenerate` preserves user-edited tests**
+
+`generate-units --regenerate` re-encountering a unit with `_authored_by: human` PRESERVES the acceptance_test untouched. Other provenance values get rewritten per Steps 9 + 9.5.
+
+**New file:** `plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md` — canonical prompt template (default mode + subagent mode) + merge logic + provenance values table + anti-halu rails.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/generate-units/SKILL.md` — Step 9 extended (first-pass marker); Step 9.5 NEW (adversarial review); Inputs flags `--adversarial-subagent` / `--no-adversarial-review` / `--regenerate`
+- `plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md` — NEW reference file
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — Step 4.5.a extended with acceptance-test provenance NOTE detection
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — Acceptance-test provenance NOTE template (above Rollback hints section)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.31.0 → 3.32.0
+- `plugins/mega-sdd/README.md` — + v3.32.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-47-independent-acceptance-test-authoring-design.md` — new spec
+
+**Skill version bumps:**
+- `generate-units` 2.6.0 → 2.7.0 (MINOR — new Step + new flags + new frontmatter field)
+- `execute-bolts` 2.9.0 → 2.9.1 (PATCH — provenance detection + NOTE injection)
+
+**Backward compatibility:**
+- Pre-Iter-47 units (no `_authored_by:` field) treated as `same-pass` — execute-bolts injects NOTE; `--regenerate` rewrites with adversarial review
+- `--no-adversarial-review` flag preserves pre-Iter-47 generation behavior for debug / regression
+- Zero breaking changes; opt-out path preserved for users who want the old behavior
+
+**External research applied (Iter 38 audit citations):**
+- PBT for LLM-Generated Code (ACM FSE 2025) — "Never trust AI to both generate and validate"
+- Multicalibration for LLM-based Code Generation (ResearchGate)
+- Stanford AI Index 2026 — Hallucination Engineering report
+
+**Standing directives applied:**
+- simplifikasi: 1 audit finding (HIGH structural) → 1 new Step + 1 new reference file + 1 new frontmatter field + 1 NOTE injection
+- flawless: producer (generate-units emits `_authored_by:`) + consumer (execute-bolts reads + surfaces) ship in-iter; backward compat for pre-Iter-47 units; opt-out path preserved
+- reuse-first: extends existing generate-units 12.x post-write validation pattern + existing bolt-dispatch-prompt.md NOTE injection convention; no new halt type (provenance signal, not halt)
+
+**Plugin:** v3.31.0 → v3.32.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-47-independent-acceptance-test-authoring-design.md`
+
+**Next:** Validation gate (advisor + code-reviewer subagent on commits 3d11c09..HEAD covering Iters 44-47) BEFORE Iter 48 (Queue #8 vault.json advisory lock + scenario-6 expansion).
+
 ## [3.31.0] - 2026-05-25
 
 ### Iter 46 — Shared-Snapshot Reuse Extension + Per-File Symbol Invalidation

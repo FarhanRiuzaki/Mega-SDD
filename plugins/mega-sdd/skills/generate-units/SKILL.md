@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.6.0
+version: 2.7.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -19,7 +19,13 @@ Turns intent into actionable atomic specs for AI dev execution.
 ## Inputs
 
 - Bound-vault OR vault path (positional, required)
-- Flags: `--refresh` (re-number IDs from scratch), `--max-complexity=small|medium` (split anything bigger), `--auto`
+- Flags:
+  - `--refresh` (re-number IDs from scratch)
+  - `--max-complexity=small|medium` (split anything bigger)
+  - `--auto`
+  - `--adversarial-subagent` (v2.7.0+, Iter 47) — for Step 9.5 adversarial test review, dispatch a SEPARATE subagent per unit instead of main-thread self-re-prompt. Stronger blind-spot coverage at cost of one extra dispatch per unit. Auto-set for any unit with frontmatter `risk: high`.
+  - `--no-adversarial-review` (v2.7.0+, Iter 47) — SKIP Step 9.5 adversarial test review entirely. Sets every generated unit's `acceptance_test._authored_by: same-pass`. **DISCOURAGED** — preserves pre-Iter-47 D4-006 blind-spot risk. Use for debug / regression testing only.
+  - `--regenerate` (v2.7.0+, Iter 47) — rewrite existing unit files. PRESERVES units with `acceptance_test._authored_by: human` (user-edited; do not overwrite). Other units rewritten per Step 9 + 9.5.
 
 ## Output
 
@@ -434,6 +440,52 @@ blocker:
    - At least one `type: test` entry (mandatory)
    - Generate test command stub matching detected test framework from codebase-map (greenfield: pick sensible default)
    - Add `type: manual` for user-visible flows
+   - Per Iter 47 (v2.7.0+): this is the FIRST PASS — adversarial review runs in Step 9.5 below
+
+9.5. **Adversarial test review pass (v2.7.0+, Iter 47 — closes audit D4-006)**
+
+Closes Iter 38 audit Pattern F structural risk: acceptance_test authored by the SAME LLM pass as the unit body inherits the same blind spots. Per ACM FSE 2025: "Never trust AI to both generate and validate."
+
+For each unit just authored in Step 9, run the adversarial review per `references/adversarial-test-prompt.md`:
+
+**Default mode (main-thread self-re-prompt):**
+
+1. Re-prompt with adversarial framing (see `references/adversarial-test-prompt.md` §Default mode). Same LLM, different role context = QA engineer reviewing the unit's test for blind spots.
+2. Adversarial pass returns YAML `adversarial_review:` block with `gaps_identified[]` + `coverage_verdict`.
+3. Merge per `references/adversarial-test-prompt.md §Gap merge logic`:
+   - `coverage_verdict: strong` AND no gaps → mark `_authored_by: adversarial-reviewed (no gaps)`
+   - Non-empty gaps → append `proposed_additional_assertion` to acceptance_test; mark `_authored_by: adversarial-reviewed (+N gaps merged)`
+   - `coverage_verdict: weak` AND no gaps (incoherent) → keep original; mark `_authored_by: adversarial-review-failed (kept original; manual review recommended)`. Log warning.
+
+**Opt-in subagent mode (`--adversarial-subagent` flag OR unit `risk: high`):**
+
+Dispatch a separate subagent for the adversarial review per `references/adversarial-test-prompt.md §Opt-in subagent mode`. Separate LLM context = stronger blind-spot coverage at cost of one extra dispatch per unit. Marked `_authored_by: independent-llm`.
+
+**Skip mode (`--no-adversarial-review` flag):**
+
+Preserves pre-Iter-47 behavior. Sets `_authored_by: same-pass`. Use for debug / regression testing only — NOT recommended for production unit generation.
+
+**Regenerate behavior:**
+
+When `generate-units --regenerate` re-encounters a unit:
+- If existing unit has `_authored_by: human` → PRESERVE acceptance_test untouched (user-edited; do not overwrite)
+- Otherwise → rewrite per Step 9 + run Step 9.5 adversarial review
+
+**Provenance written to unit frontmatter:**
+
+```yaml
+acceptance_test:
+  _authored_by: adversarial-reviewed (+2 gaps merged)   # provenance per Iter 47
+  - type: test
+    description: "..."
+    command: "..."
+  - type: test
+    description: "<gap 1 merged from adversarial pass>"
+    command: "..."
+  - type: test
+    description: "<gap 2 merged from adversarial pass>"
+    command: "..."
+```
 
 10. **Write each unit file** using `references/templates/unit.md` as the body template.
 

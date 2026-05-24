@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.31.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.32.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,38 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.32.0 (Iter 47, minor) — Independent Acceptance-Test Authoring (Adversarial Review Pass)
+
+Closes Iter 38 audit Queue #7 (D4-006 — HIGH structural risk; pattern F). Per ACM FSE 2025: "Never trust AI to both generate and validate." Adds adversarial second-pass review to acceptance_test authoring so blind spots in the unit body don't silently propagate to the test that validates it.
+
+**Problem:** every unit's `acceptance_test` was authored by the SAME LLM pass that wrote the unit body. If the LLM misunderstood the requirement, both unit + test were wrong in the same direction. Bolt runs test → green checkmark → user trusts it → broken code ships.
+
+**Solution:**
+
+1. **Adversarial review pass — generate-units Step 9.5 (NEW)** runs AFTER Step 9 acceptance_test authoring. Default: main thread self-re-prompts in adversarial mode ("you're a QA engineer; find at least 2 cases this test fails to catch"). Opt-in: dispatch separate subagent via `--adversarial-subagent` flag for stronger blind-spot coverage.
+
+2. **`_authored_by:` provenance field (NEW)** on `acceptance_test`. Values: `same-pass` (weakest, pre-Iter-47) / `adversarial-reviewed (no gaps)` / `adversarial-reviewed (+N gaps merged)` / `adversarial-review-failed` (weak + warning) / `independent-llm` / `human` (strongest).
+
+3. **Gap merge logic** — adversarial reviewer returns YAML `adversarial_review:` block with `gaps_identified[]` + `coverage_verdict`. Main thread merges proposed assertions into the acceptance_test; provenance updated to reflect outcome.
+
+4. **execute-bolts surface (NEW NOTE)** — when bolt dispatches a unit with `_authored_by: same-pass` OR `adversarial-review-failed`, dispatch prompt gets a NOTE warning the bolt subagent that the test may have blind spots. Bolt instructed to flag `acceptance_test_concern: <details>` in self-assessment if implementation passes test but feels under-validated.
+
+5. **`--regenerate` preserves `_authored_by: human`** — user-edited tests are NEVER overwritten by regeneration.
+
+**New file:** `plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md` (canonical prompt template + merge logic + provenance values table).
+
+**Skill bumps:**
+- `generate-units` 2.6.0 → 2.7.0 (MINOR — new Step + new flags + new frontmatter field)
+- `execute-bolts` 2.9.0 → 2.9.1 (PATCH — detection + NOTE injection)
+
+**Backward compat:** pre-Iter-47 units (no `_authored_by:` field) treated as `same-pass` — execute-bolts NOTE fires + `generate-units --regenerate` rewrites them with adversarial review. Zero breaking changes.
+
+**External research applied:** PBT for LLM-Generated Code (ACM FSE 2025) + Multicalibration for LLM Code Generation + Stanford AI Index 2026 — Hallucination Engineering.
+
+**Plugin v3.31.0 → v3.32.0** (MINOR).
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-47-independent-acceptance-test-authoring-design.md`
 
 ### v3.31.0 (Iter 46, minor) — Shared-Snapshot Reuse Extension + Per-File Symbol Invalidation
 

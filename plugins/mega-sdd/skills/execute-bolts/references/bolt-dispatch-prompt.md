@@ -59,6 +59,28 @@ bolt_self_report:
       fix: "<what you changed>"
 ```
 
+## Acceptance-test provenance NOTE (v2.9.1+, Iter 47 — D4-006 surface)
+
+execute-bolts injects this NOTE into the dispatch prompt when the unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `generate-units/references/adversarial-test-prompt.md` §provenance values).
+
+```
+> NOTE: This unit's `acceptance_test` has weak blind-spot coverage
+> (_authored_by: <value>). The test was authored by the same LLM pass that
+> wrote the unit body — the test may inherit the same blind spots as the spec
+> and fail to catch behavioral bugs your implementation introduces.
+>
+> If your implementation passes this test but feels under-validated:
+>   - In bolt-report.md self-assessment, set `acceptance_test_concern: <details>`
+>     explaining what you suspect the test might miss
+>   - Propose 1-2 additional assertions you'd add to strengthen coverage
+>   - Mark `confidence` no higher than MEDIUM for behaviors not directly tested
+>
+> Strong provenance values (`adversarial-reviewed (+N gaps merged)` /
+> `independent-llm` / `human`) → no NOTE injected; trust the test.
+```
+
+The NOTE is OMITTED for units with strong provenance (default Iter 47+ behavior). Pre-Iter-47 units (no `_authored_by:` field) are treated as `same-pass` and trigger the NOTE.
+
 ## Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section — v2.9.0+, Iter 45)
 
 For EACH significant step you perform (file write, dep add, migration, etc.), append a rollback hint to bolt-report.md `## Rollback hints` section. On crash, execute-bolts harvests these into partial-state.json v2.0 `rollback_hints[]` array. On `--rollback`, they're applied in reverse order.
