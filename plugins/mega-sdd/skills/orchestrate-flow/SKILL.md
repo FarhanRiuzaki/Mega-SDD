@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.4.1
+version: 2.5.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -191,6 +191,40 @@ blocker:
 - (v1.4+) `--memory-off`: disable memory layer (no reads, no writes) for this chain
 - (v2.0+) Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
 
+## Hybrid drift gate phase (v2.5.0+, Iter 30 §6.4 — DEFAULT-ON)
+
+After `execute-bolts --all` batch completes (or with retried halts), orchestrate-flow AUTO-invokes `detect-drift` as gate phase. Per spec §6.4 default-on policy.
+
+### Gate behavior
+
+```
+✓ execute-bolts: 20/20 done (or 18/20 + 2 halts resolved via propose-and-confirm)
+▶ Phase 5.5/6: detect-drift (auto-gate, hybrid mode — DEFAULT-ON)
+  Scope: <scope_id> — scope-filtered scan
+  Comparing: bolt postflight snapshots vs vault (shared snapshot machinery per references/shared-snapshot-schema.md)
+  Speed: 4s (vs 28s full re-scan; snapshot reuse saves 6x)
+  
+⚠️ Drift findings: N (X CRITICAL, Y HIGH, Z MEDIUM, W LOW)
+```
+
+### Severity → chain action mapping (per Iter 25 + Iter 30)
+
+| Severity | Trigger | Chain action |
+|---|---|---|
+| CRITICAL | Drift on LOCKED entity (data-mutation-policy.md tier) | HALT chain; user MUST resolve before proceeding |
+| HIGH | Drift on CONFIRMED claim with no mutability source OR INTENT outcome change | PAUSE; user can override with audit-significant decision |
+| MEDIUM | Drift on INTENT claim implementation change | LOG + continue; surface in batch summary |
+| LOW | Drift on ARTIFACT cleanup OR style only | LOG only; no chain interruption |
+
+### Opt-out
+
+- `--no-drift-check` flag in `/mega-sdd:auto` or `execute-bolts` → skip auto-drift gate entirely
+- Escape hatch, not default
+
+### On-demand drift (separate from auto-gate)
+
+`/mega-sdd:detect-drift` standalone (no chain context) → behaves as v1.2.x: fresh full scan; ignores bolt snapshots. Auto-gate path uses snapshot reuse per `references/shared-snapshot-schema.md`.
+
 ## Convergence loops (v2.3+, Iter 19)
 
 Per user request — formalize iteration cycles antara skills yang sebelumnya manual (`--resume` driven). "Cycling agent" pattern.
@@ -313,6 +347,32 @@ blocker:
 - `--auto` chain mode → `--converge` defaults ON (autonomous behavior)
 - Manual `orchestrate-flow` mode → `--converge` defaults OFF (per-phase control)
 - `--max-cycles` flag override available always
+
+### Bolt halt convergence bridge (v2.5.0+, Iter 30 §6.7)
+
+Iter 19 convergence loops handled: `bind_conflict`, `module_blocked_by`, `cross_squad_interface_draft`, `oq_recommend_underspecified`.
+
+Iter 30 adds **propose-and-confirm bridge** for bolt halts:
+
+| Bolt halt type | Convergence behavior |
+|---|---|
+| `test_fail` (after retries) | Propose-and-confirm fix → user approve → re-execute single bolt → continue batch |
+| `hard_rule_violated` | Propose-and-confirm fix → user approve → re-execute → continue |
+| `pbt_property_violated` | Propose-and-confirm fix → user approve → re-execute → continue |
+
+Cycle counter respects `--max-cycles` (default 5). One cycle = 1 propose + 1 user decision + 1 re-execute attempt.
+
+**Cycle escalation**: if same halt fires twice on same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop). Prevents propose-and-confirm from looping on structurally-broken unit.
+
+**Configuration** (`~/.mega-sdd/memory/config.yaml`):
+```yaml
+halt_auto_propose:
+  test_fail: propose
+  hard_rule_violated: propose
+  pbt_property_violated: propose
+```
+
+Per-halt-type override allowed (set to `pause` to disable propose for that type).
 
 ## Checkpoint protocol (v2.0+, Iter 6)
 
