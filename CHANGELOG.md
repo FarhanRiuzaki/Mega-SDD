@@ -5,6 +5,33 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.26.1] - 2026-05-24
+
+### Iter 36 — Upgrade-from-old-version guide
+
+**Documentation iter** (~2hr; PATCH bump — no behavior change). Field-test feedback: users coming from older mega-sdd versions had no consolidated upgrade guide.
+
+**New plugin files (1):**
+- `plugins/mega-sdd/references/upgrade-from-old-version.md` — consolidates compatibility matrix + migration command order + halt-by-halt recovery + decision tree + pre-flight checklist
+
+**Skill bumps:**
+- `using-mega-sdd` 1.3.3 → 1.3.4 (Upgrade guide cross-ref)
+
+**Coverage:**
+- 11-row compatibility matrix (legacy paths, pre-v1.4 KBs, pre-v2.4 codebase-maps, vault scope/phase/binding evolution)
+- 5 common halts mapped to recovery (invalid_handoff, memory_schema_mismatch, handoff_type_mismatch, provenance_missing, bind_conflict)
+- 3 migration commands in canonical order (migrate-paths → memory migrate → migrate-rules)
+- Decision tree: Path A (regenerate) vs Path B (preserve)
+
+**Standing directives applied:**
+- simplifikasi: 1 new file solves 1 problem
+- flawless: covers all known compat halt sources from Iters 8/9/10/22/27/30/33/35
+- reuse-first: cross-refs scenario-6 + CHANGELOG + paths.md + reading-map.md (no duplication)
+
+**Plugin:** v3.26.0 → v3.26.1
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-36-upgrade-from-old-version-design.md`
+
 ## [3.26.0] - 2026-05-24
 
 ### Iter 35 — Reading Map + Phase Discoverability (with audit closure)
