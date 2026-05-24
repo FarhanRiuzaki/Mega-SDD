@@ -5,6 +5,107 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.20.0] — 2026-05-24
+
+### Added — Iter 28: Multi-Scope PRD Picker + Canonical Format
+
+User's actual organizational workflow: PRD/BRD shared to multiple IT architects (BE, MW, FE) — each generates THEIR OWN vault for their scope only. Iter 28 makes this first-class.
+
+### Two deliverables
+
+1. **Governance artifact**: canonical PRD/BRD template at `docs/templates/prd-template.md` + `brd-template.md` + filled example `multi-scope-example.md`. Shared with PMs as new SOP.
+
+2. **Mega-sdd skill behavior**: scope detection + interactive picker + AI-assisted retrofit for legacy PRDs.
+
+### Frontmatter schema (canonical multi-scope PRD)
+
+```yaml
+---
+title: "Order Management System"
+type: PRD
+scopes:
+  BE: { name: "Backend API", pics: [...], priority: 1, sections: ["§Backend"] }
+  MW: { name: "Integration Middleware", pics: [...], priority: 2, sections: ["§Middleware"] }
+  FE: { name: "Frontend Web", pics: [...], priority: 3, sections: ["§Frontend"] }
+universal_sections: ["§1", "§2", ...]
+cross_scope_dependencies: [...]
+---
+```
+
+### Three modes (per design §5.6.1)
+
+| Mode | Trigger | Behavior |
+|---|---|---|
+| Canonical multi-scope | `scopes:` block + ≥2 scopes | Interactive picker (cwd smart default + memory hit) |
+| `--scope=<id>` explicit | Flag set | Silent; halt if id invalid |
+| Legacy (no scopes block) | Frontmatter missing | AI retrofit bridge; user accepts/rejects |
+| Single-scope | scopes block with 1 entry | Silent route to single-vault |
+| `--scope=all` (legacy) | Flag set | Single combined vault + warning |
+
+### Updated skills
+
+**generate-intent** (v1.11.0 → v1.12.0):
+- New Step 0.9: scope detection + PRD filtering (positioned after Step 0.8 scan-aware, before Step 1 Load PRD)
+- New flag `--scope=<id>`
+- New halt types: `scope_not_declared_in_prd`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence`
+- References: scope-picker.md (algorithm) + legacy-retrofit-prompt.md (AI subagent template)
+
+**using-mega-sdd** (v1.3.0 → v1.3.1):
+- Anchor auto-trigger documents multi-scope picker UX
+
+### Updated references
+
+- `vault-contract.md`: new §Multi-scope vault section (vault.json scope tagging schema, 00-index.md header structure, validation rules)
+- `memory/memory-schema.md`: new §PRD Scope Decisions table (per-PRD scope decisions with override count)
+- `orchestrate-flow/handoff-contract.md`: new `scope:` block in handoff YAML (informational)
+
+### Commands
+
+- `auto.md`: new `--scope=<id>` flag in argument-hint + Multi-scope picker section
+- `generate-intent.md`: new `--scope=<id>` flag + Flag combinations matrix (10 combos)
+
+### Tests
+
+- `tests/scenarios/sample-prd-multi-scope.md` (canonical fixture)
+- `tests/scenarios/sample-prd-legacy-no-frontmatter.md` (retrofit trigger fixture)
+- `tests/scenarios/sample-prd-single-scope.md` (boundary fixture)
+- `tests/scenarios/scenario-7-multi-architect.md` (end-to-end walkthrough — 3 architects, 3 sessions, 1 PRD)
+- `tests/skill-triggering/scope-picker.test.md` (8 skill-trigger fixtures)
+
+### Composition with prior iters
+
+Iter 28 composes correctly with:
+- Iter 22 (KB mutability tiers): scope filter applies BEFORE KB tier routing
+- Iter 23 (framework packs): scope-filtered vault still pack-aware
+- Iter 27 (starterkit-first): scope picker fires AFTER scan-codebase (so smart default can use composer.json hints)
+- Iter 11/12 (squads/modules): squads/modules live WITHIN a scope's vault (scope > squad > module > unit hierarchy)
+
+### Out of scope (per design §3)
+
+Deferred (NOT implemented in Iter 28):
+- Cross-scope contract auto-locking (architect-rapat domain)
+- Multi-vault parallel orchestration from single CLI invocation
+- Cross-vault drift detection
+- PRD format conversion from PDF/DOCX/Notion
+
+### Governance
+
+Architect rolls out new SOP gradually:
+1. PMs adopt canonical format for NEW PRDs (zero friction)
+2. Legacy PRDs use retrofit bridge as encountered (gradual cleanup)
+3. Memory layer accumulates per-PRD scope decisions organically
+
+### Plugin
+
+3.19.0 → 3.20.0
+
+### Skill version bumps
+
+| Skill | Version |
+|---|---|
+| generate-intent | 1.11.0 → 1.12.0 |
+| using-mega-sdd | 1.3.0 → 1.3.1 |
+
 ## [3.19.0] — 2026-05-23
 
 ### Added — Iter 27: Starterkit-First Pipeline (scan-codebase moves to front)
