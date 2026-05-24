@@ -87,7 +87,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-**13-layer anti-hallucination defense** (v3.18.0):
+**15-layer anti-hallucination defense** (v3.24+, includes Iter 33 F3+F4):
 
 1. Intent layer — uncertain claims promote to Open Questions; never guess
 2. OQ classification — business vs tech; tech auto-resolves via codebase scan
@@ -296,7 +296,7 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
-| **How** | 13-layer anti-hallucination defense, TDD discipline via vendored superpowers, halt-on-blocker protocol, deterministic tech (tree-sitter + ast-grep + ripgrep + jd), markdown-driven memory with mandatory audit log + rollback. |
+| **How** | 15-layer anti-hallucination defense, TDD discipline via vendored superpowers, halt-on-blocker protocol, deterministic tech (tree-sitter + ast-grep + ripgrep + jd), markdown-driven memory with mandatory audit log + rollback. |
 
 ### Folder layout (v3.4+)
 
