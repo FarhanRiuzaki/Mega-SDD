@@ -1,12 +1,12 @@
 # Vault Contract
 
-Shared definitions referenced by all `grand-design-spec` skills. **Single source of truth** — when this file changes, every skill that references it inherits the change.
+Shared definitions referenced by all `mega-sdd` skills. **Single source of truth** — when this file changes, every skill that references it inherits the change.
 
 > **Maintenance rule**: edits to this file are breaking changes for sibling skills. Bump the affected skill versions + CHANGELOG entry whenever you touch this file.
 
 ## §schema — `vault.json` manifest
 
-Every `grand-design-spec` vault has a `vault.json` alongside the 7 markdown files. The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
+Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
 
 ```json
 {
@@ -53,14 +53,14 @@ Every `grand-design-spec` vault has a `vault.json` alongside the 7 markdown file
 - `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.
 - `open_questions[].resolver_owner` is best-effort — extract from the OQ entry's "Resolve: ..." or "owner" hint when present; otherwise `null`.
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
-- Keep this file in sync with the markdown on every regeneration / `vault-diff` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
+- Keep this file in sync with the markdown on every regeneration / `diff-vault` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
 
 ### When skills must regenerate `vault.json`
 
-- `grand-design-spec` Step 3 — initial generation.
+- `generate-intent` Step 3 — initial generation.
 - `resolve-oq` Step 2c step 9 — after every Resolve / Out-of-Scope / Defer outcome.
-- `vault-diff` Step 6.5 — after applying approved changes (added/changed/removed entities, flows, ADRs, auto-resolved or new OQs).
-- `drift-detect` — does NOT regenerate. Drift-detect produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + grand-design-spec re-run (for entity/flow/ADR additions).
+- `diff-vault` Step 6.5 — after applying approved changes (added/changed/removed entities, flows, ADRs, auto-resolved or new OQs).
+- `detect-drift` — does NOT regenerate. detect-drift produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + generate-intent re-run (for entity/flow/ADR additions).
 
 ### OQ status tracking (v1.1+)
 
@@ -505,7 +505,7 @@ When a sibling skill creates new entries, use **next-available** number, never r
 
 ## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
 
-When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, vault-diff conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
+When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, diff-vault conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
 
 The envelope is uniform across types so a single consumer can handle all of them.
 
@@ -516,11 +516,11 @@ blocker:
   type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
-  context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying vault-diff Step 6'>"
+  context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
   resolver_owner: "<name or role, e.g. 'Mike Patel (Eng Lead)'>"
   resolver_route: "<where to find them, e.g. 'ask in #timeoff-team'>"
   vault_version: "<current vault version, e.g. '1.1'>"
-  source_skill: grand-design-spec | vault-diff | drift-detect
+  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | orchestrate-flow | emit-agents-md | memory
   # type-specific fields below
   conflict_old: "<vault state>"            # diff_conflict only
   conflict_new: "<new PRD state>"          # diff_conflict only
@@ -531,11 +531,11 @@ blocker:
 
 ### Type-specific guidance
 
-**`oq_blocker`** — emitted by `grand-design-spec` (when generation surfaces a P1 that would block downstream tasks) or by AI consumers reading the vault non-interactively. The `tag` is the OQ identifier. `priority` is always `P1` (lower priorities don't halt).
+**`oq_blocker`** — emitted by `generate-intent` (when generation surfaces a P1 that would block downstream tasks) or by AI consumers reading the vault non-interactively. The `tag` is the OQ identifier. `priority` is always `P1` (lower priorities don't halt).
 
-**`diff_conflict`** — emitted by `vault-diff` Step 5 when a Resolved-OQ conflict or Decision conflict requires stakeholder input. `tag` is the OQ or ADR ID. `priority` is `n/a` (conflicts aren't priority-tagged). `conflict_old`, `conflict_new`, `options` are required.
+**`diff_conflict`** — emitted by `diff-vault` Step 5 when a Resolved-OQ conflict or Decision conflict requires stakeholder input. `tag` is the OQ or ADR ID. `priority` is `n/a` (conflicts aren't priority-tagged). `conflict_old`, `conflict_new`, `options` are required.
 
-**`drift_framework_mismatch`** — emitted by `drift-detect` Step 1.5 when the vault implies one framework but the codebase is another. `tag` is `n/a`. `priority` is `n/a`. `detected_framework` and `expected_framework` are required.
+**`drift_framework_mismatch`** — emitted by `detect-drift` Step 1.5 when the vault implies one framework but the codebase is another. `tag` is `n/a`. `priority` is `n/a`. `detected_framework` and `expected_framework` are required.
 
 - `deep_scan_subagent_failed` — scan-codebase v2.6.0+: a deep-scan subagent (auth/rbac/ui-ux/libs) failed once. Soft halt: auto-retried; on second failure emits partial starterkit-context.yaml with `partial: true`. Pipeline continues (warn-only).
 - `deep_scan_cache_corrupt` — scan-codebase v2.6.0+: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache auto-invalidated; subagents re-dispatched. Transparent to user.
@@ -547,7 +547,7 @@ blocker:
 - `framework_pack_unparseable` — bind-codebase v1.9+, Iter 23: pack file fails YAML/markdown parse. ALWAYS STOP.
 - `constitution_drift_detected` — detect-drift v1.4+, Iter 30: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
 - `drift_framework_mismatch` — detect-drift v1.2+, Iter 12: scanned code framework differs from vault framework. ALWAYS STOP.
-- `diff_conflict` — diff-vault v0.3+, Iter 3: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk).
+- `diff_conflict` — diff-vault v0.3+, Iter 3: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk). Emitted by `diff-vault`.
 - `memory_in_use` — memory v1.0+: file lock collision; concurrent writer holds lock. ALWAYS STOP (after retry exhausted).
 - `dispatch_prompt_too_large` — execute-bolts v2.6+, Iter 30: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
 - `bolt_repeated_partial_failure` — execute-bolts v2.6+, Iter 30: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
@@ -570,15 +570,15 @@ blockers:
     resolver_owner: "Mike Patel"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: grand-design-spec
+    source_skill: generate-intent
   - type: diff_conflict
     tag: OQ-DC-2
     priority: n/a
-    context: "Applying vault-diff to PRD-v2.pdf"
+    context: "Applying diff-vault to PRD-v2.pdf"
     resolver_owner: "Mike Patel"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.1"
-    source_skill: vault-diff
+    source_skill: diff-vault
     conflict_old: "Idempotency 24h TTL (D-010)"
     conflict_new: "Idempotency 7d TTL (PRD §X.Y)"
     options: ["supersede", "keep_vault", "capture_both"]

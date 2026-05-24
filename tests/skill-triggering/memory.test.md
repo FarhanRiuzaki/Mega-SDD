@@ -10,7 +10,7 @@ The Iter 5 memory + self-learning skill. Tests operations + scope handling + ant
 
 ### M2: Show specific topic
 - **Prompt:** `/mega-sdd:memory show decisions`
-- **Expect:** Cat `<project>/.mega-sdd-memory/decisions.md` with markdown rendering + summary stats footer (entry count, date range, source-run distribution)
+- **Expect:** Cat `<project>/.mega-sdd/memory/decisions.md` with markdown rendering + summary stats footer (entry count, date range, source-run distribution)
 
 ### M3: Search across files
 - **Prompt:** `/mega-sdd:memory search "auth"`
@@ -34,7 +34,7 @@ The Iter 5 memory + self-learning skill. Tests operations + scope handling + ant
 - **`--dry-run`:** Show what would be pruned without writing
 
 ### M6: Promote project → user scope
-- **Setup:** `<project>/.mega-sdd-memory/decisions.md` has consistent pattern with ≥2 source observations
+- **Setup:** `<project>/.mega-sdd/memory/decisions.md` has consistent pattern with ≥2 source observations
 - **Prompt:** `/mega-sdd:memory promote conflict-pattern-auth --to=user`
 - **Expect:**
   - Verify source entry exists + has enough observations
@@ -69,7 +69,7 @@ The Iter 5 memory + self-learning skill. Tests operations + scope handling + ant
 
 ### AH2: Source citation on every suggestion
 - **Setup:** `mega-sdd:memory review` walks suggestion
-- **Expect:** Each suggestion in chat cites source: "per `.mega-sdd-memory/decisions.md` rows 7-11"
+- **Expect:** Each suggestion in chat cites source: "per `.mega-sdd/memory/decisions.md` rows 7-11"
 
 ### AH3: Rollback path works
 - **Setup:** Accepted learning #4 in `learning-log.md`

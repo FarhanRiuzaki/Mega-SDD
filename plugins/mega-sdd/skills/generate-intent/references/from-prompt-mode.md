@@ -8,7 +8,7 @@ This was previously a standalone skill `from-prompt`; it is now absorbed as a mo
 
 Converts a free-text user brief into a structured `seed-PRD.md` ready for `/mega-sdd:generate-intent` to consume. Runs an adaptive Q&A elaboration loop (≤10 questions) to fill gaps the brief leaves open. Captures everything verbatim — no paraphrasing, no auto-fills.
 
-> **Skill instruction language**: this skill is written in English for reasoning quality. Chat prompts (Q&A questions, summary) adapt to the user's language at runtime. Per `../grand-design-spec/references/vault-contract.md` §boilerplate.
+> **Skill instruction language**: this skill is written in English for reasoning quality. Chat prompts (Q&A questions, summary) adapt to the user's language at runtime. Per `./vault-contract.md` §boilerplate.
 
 ## When to use this skill
 
@@ -16,13 +16,13 @@ Trigger this skill for:
 
 - "spec out this idea" / "from this prompt" / "baku dari ide" / "I have a brief not a PRD"
 - The user types a short description of a project and wants to skip writing a full PRD.
-- The user is currently round-tripping to ChatGPT to get a structured prompt for grand-design-spec; this skill replaces that round-trip.
+- The user is currently round-tripping to ChatGPT to get a structured prompt for generate-intent; this skill replaces that round-trip.
 - Inside `/mega-sdd:orchestrate-flow` Rule 0 chain (auto-dispatched when prompt arg detected and no vault/PRD in CWD).
 
 Do NOT use this skill when:
 
-- A real PRD/BRD doc exists — use `grand-design-spec` directly with the doc.
-- The user wants to evolve an existing vault from a new prompt — that's a future capability (use `vault-diff` against a manually-written new doc for now).
+- A real PRD/BRD doc exists — use `generate-intent` directly with the doc.
+- The user wants to evolve an existing vault from a new prompt — that's a future capability (use `diff-vault` against a manually-written new doc for now).
 
 ## Core principle
 
@@ -198,7 +198,7 @@ Suggested next step:
 - OR /mega-sdd:orchestrate-flow <OUTPUT_DIR> (auto-chains generation + resolve-oq)
 ```
 
-If invoked from `flow` Rule 0, control returns to flow which dispatches `grand-design-spec` next.
+If invoked from `orchestrate-flow` Rule 0, control returns to orchestrate-flow which dispatches `generate-intent` next.
 
 ## Question taxonomy
 
@@ -208,7 +208,7 @@ If invoked from `flow` Rule 0, control returns to flow which dispatches `grand-d
 | 2 | Primary users / personas | 01-overview personas | "Who's the primary user?" | free-text |
 | 3 | Core problem | 01-overview Problem | "What problem does this solve?" | free-text |
 | 4 | Top 2–3 user flows | 04-flows skeleton | "Top 2–3 things a user does?" | free-text |
-| 5 | Implementation mode | Mode flag + drift-detect applicability | "Greenfield or extending existing codebase?" | multi-choice (`new` / `existing`) |
+| 5 | Implementation mode | Mode flag + detect-drift applicability | "Greenfield or extending existing codebase?" | multi-choice (`new` / `existing`) |
 | 6 | Tech stack constraints | 02-arch tech stack | "Any tech stack constraints?" | free-text or "no constraints" |
 | 7 | Regulatory / compliance | 06-constraints | "Any regulatory requirements?" | multi-choice (GDPR / HIPAA / OJK / PDP-Indonesia / none / other) |
 | 8 | Success metrics | 01-overview success criteria | "How will you know it's working?" | free-text or "TBD" |
@@ -254,7 +254,7 @@ blocker:
   source_skill: from-prompt
 ```
 
-Per `../grand-design-spec/references/vault-contract.md` §halt-protocol. Caller (orchestrator) catches and surfaces to user.
+Per `./vault-contract.md` §halt-protocol. Caller (orchestrator) catches and surfaces to user.
 
 ## Quality bar
 
@@ -267,7 +267,7 @@ Per `../grand-design-spec/references/vault-contract.md` §halt-protocol. Caller 
 ## What from-prompt does NOT do
 
 - ❌ Generate vault content. Only seed-PRD.
-- ❌ Invoke grand-design-spec or any other sub-skill (flow does that).
+- ❌ Invoke generate-intent or any other sub-skill (orchestrate-flow does that).
 - ❌ Modify any vault docs (`00-index.md` through `06-constraints.md`).
 - ❌ Push to remote.
 - ❌ Persist state beyond the seed-PRD.md file (no `.gds-state.json`).
@@ -288,7 +288,7 @@ Per `../grand-design-spec/references/vault-contract.md` §halt-protocol. Caller 
 
 ## References
 
-- Schema, OQ conventions, halt protocol, citation conventions: `../grand-design-spec/references/vault-contract.md` (§schema, §OQ-conventions, §halt-protocol, §boilerplate).
-- Downstream consumer: `../grand-design-spec/SKILL.md` consumes the seed-PRD as a normal source. PRD_STATUS auto-set to `draft` based on the seed-PRD's `Status: DRAFT` metadata.
-- Orchestrator: `../flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
+- Schema, OQ conventions, halt protocol, citation conventions: `./vault-contract.md` (§schema, §OQ-conventions, §halt-protocol, §boilerplate).
+- Downstream consumer: `../SKILL.md` (generate-intent) consumes the seed-PRD as a normal source. PRD_STATUS auto-set to `draft` based on the seed-PRD's `Status: DRAFT` metadata.
+- Orchestrator: `../../orchestrate-flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
 - For `vault.json.source_documents[].type = "seed-PRD"` is the recommended value when this skill's output is consumed; vault-contract.md §schema treats `type` as a free-form string.

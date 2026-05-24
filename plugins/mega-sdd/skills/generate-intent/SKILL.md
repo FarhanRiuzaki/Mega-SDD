@@ -522,7 +522,7 @@ Use templates in `references/templates/` as scaffolds. **Resolve the path relati
 - **Claude Code (plugin install — primary distribution)**: `${CLAUDE_PLUGIN_ROOT}/skills/generate-intent/references/templates/<name>.md`
 - **Claude Code (manual install at `~/.claude/skills/`)**: `~/.claude/skills/generate-intent/references/templates/<name>.md`
 - **Claude Code (project-scoped manual install)**: `<project-root>/.claude/skills/generate-intent/references/templates/<name>.md`
-- **Claude.ai upload**: `/mnt/skills/user/grand-design-spec/references/templates/<name>.md`
+- **Claude.ai upload**: `/mnt/skills/user/generate-intent/references/templates/<name>.md`
 
 Read the relevant template:
 - **Claude Code**: use the `Read` tool.
@@ -734,7 +734,7 @@ Verify every doc has:
 **Halt protocol & implementation notes (v0.13):**
 - [ ] `00-index.md` contains "Halt protocol for autonomous runs" sub-section under Implementation Notes for AI Consumers (per template).
 - [ ] `00-index.md` contains "Parallel-work guidance while P1s are unresolved" sub-section.
-- [ ] `00-index.md` contains "Companion skills for vault evolution" sub-section pointing to `resolve-oq` / `vault-diff` / `drift-detect`.
+- [ ] `00-index.md` contains "Companion skills for vault evolution" sub-section pointing to `resolve-oq` / `diff-vault` / `detect-drift`.
 
 **Design-system grounding (v0.6, only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.

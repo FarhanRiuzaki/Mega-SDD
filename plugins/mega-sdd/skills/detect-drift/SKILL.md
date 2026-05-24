@@ -24,8 +24,8 @@ Trigger this skill when:
 
 Do NOT use this skill when:
 
-- Vault is `mode=new` — there's no live codebase to drift against. The skill bails with a hint to use `vault-diff` if comparing two PRDs.
-- The user wants vault evolution from a new PRD — that's `vault-diff`.
+- Vault is `mode=new` — there's no live codebase to drift against. The skill bails with a hint to use `diff-vault` if comparing two PRDs.
+- The user wants vault evolution from a new PRD — that's `diff-vault`.
 - The codebase isn't accessible (different repo, no permissions) — skill needs `Read` access to scan.
 
 ## Core principle
@@ -33,7 +33,7 @@ Do NOT use this skill when:
 > **The vault is one ground truth. The code is another. When they disagree, surface it — don't pick a side.**
 
 Drift can mean two things:
-1. **Code is right, vault is stale** → update vault (typically via `vault-diff` if PRD also changed, or directly via `Edit`).
+1. **Code is right, vault is stale** → update vault (typically via `diff-vault` if PRD also changed, or directly via `Edit`).
 2. **Vault is right, code regressed** → fix code in a PR.
 
 The skill never assumes which side is correct. Findings come with **direction-neutral framing**: *"vault says X, code does Y, here's where each lives"* — and the user (with their team) decides the action.
@@ -71,7 +71,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrat
 What stays interactive even with `--auto`:
 
 - **Major framework mismatch warning** — when vault implies one stack but codebase is another (e.g., vault says Java/Spring, code is PHP). Emits `blocker` per Step 0/1.5. Never assume vault is wrong.
-- **mode=new bail-out** — drift-detect refuses cleanly when vault is `mode=new`; this is a hard rule that `--auto` doesn't change.
+- **mode=new bail-out** — detect-drift refuses cleanly when vault is `mode=new`; this is a hard rule that `--auto` doesn't change.
 
 ### `drift_framework_mismatch` blocker emission
 
@@ -82,11 +82,11 @@ blocker:
   type: drift_framework_mismatch
   tag: n/a
   priority: n/a
-  context: "<e.g. 'drift-detect Step 1.5: vault implies Java/Spring per 02-architecture; codebase is PHP/Laravel per composer.json'>"
+  context: "<e.g. 'detect-drift Step 1.5: vault implies Java/Spring per 02-architecture; codebase is PHP/Laravel per composer.json'>"
   resolver_owner: null
   resolver_route: null
   vault_version: "<current>"
-  source_skill: drift-detect
+  source_skill: detect-drift
   detected_framework: "<e.g. 'PHP/Laravel'>"
   expected_framework: "<e.g. 'Java/Spring'>"
 ```
@@ -96,7 +96,7 @@ After emit, the skill stops. No `DRIFT-REPORT.md` is generated for the mismatche
 What `--auto` does NOT do:
 
 - ❌ Generate `DRIFT-ACTIONS.md` (deliberate human decision; `--auto` only writes reports).
-- ❌ Modify vault content (drift-detect is read-only by design).
+- ❌ Modify vault content (detect-drift is read-only by design).
 - ❌ Open PRs or run code changes.
 
 When this skill is invoked without `--auto`, behavior is unchanged from v0.2.
@@ -108,7 +108,7 @@ When this skill is invoked without `--auto`, behavior is unchanged from v0.2.
 ### Step 0: Inputs (MANDATORY)
 
 1. **Vault path** — auto-detect from CWD (looks for the 7 standard files). Verify `00-index.md` Vault Lock Status has `Implementation mode: existing`.
-   - If `Implementation mode: new` → STOP. Surface the `mode_migrate_after` field (v0.11) from Vault Lock Status if present: *"This vault is `mode=new`. Migration trigger declared: `<event>`. If that trigger has fired (first commit landed on main, first deploy, etc.), flip mode to `existing` first — edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version, OR run `/mega-sdd:diff-vault`. Then re-run drift-detect."*
+   - If `Implementation mode: new` → STOP. Surface the `mode_migrate_after` field (v0.11) from Vault Lock Status if present: *"This vault is `mode=new`. Migration trigger declared: `<event>`. If that trigger has fired (first commit landed on main, first deploy, etc.), flip mode to `existing` first — edit `00-index.md` Vault Lock Status + add Changelog entry + bump vault version, OR run `/mega-sdd:diff-vault`. Then re-run detect-drift."*
    - If `mode_migrate_after` is missing or null and mode=new → suggest the user define a trigger before re-running.
 2. **Codebase path** — root of the live codebase repo (typically the project root or a subdirectory).
    - **Claude Code**: use `AskUserQuestion` with options like `["Use CWD as codebase root", "Specify subdirectory", "Different path"]`.
@@ -264,7 +264,7 @@ return $accounts->where('status', '!=', 'dormant')
 
 **Suggested action**:
 - (A) **Fix code**: extend filter to match vault. Open PR.
-- (B) **Update vault**: if filter scope was intentionally narrowed (per stakeholder), update D-007 with new constraints + Changelog entry. Use `vault-diff` if it traces to a PRD revision.
+- (B) **Update vault**: if filter scope was intentionally narrowed (per stakeholder), update D-007 with new constraints + Changelog entry. Use `diff-vault` if it traces to a PRD revision.
 - (C) **Defer**: capture as new OQ for stakeholder review.
 
 ### Decision unwritten #1 (confidence: high)
@@ -290,7 +290,7 @@ return $accounts->where('status', '!=', 'dormant')
 
 **Suggested action**:
 - (A) **Implement**: create migration + model.
-- (B) **Update vault**: if entity is no longer needed, mark as Removed in vault per `vault-diff` removal convention.
+- (B) **Update vault**: if entity is no longer needed, mark as Removed in vault per `diff-vault` removal convention.
 - (C) **Defer**: schedule into roadmap.
 
 ### Type drift: `failed_debit_count` (confidence: high)
@@ -412,16 +412,16 @@ Drift detection performed against codebase at <commit SHA / "current working tre
 
 ### `vault.json` reconciliation boundary (v0.13)
 
-`drift-detect` deliberately does NOT regenerate `vault.json`. The skill's core principle is *"no code execution, write reports only"* — auto-reconciling the manifest would contradict that.
+`detect-drift` deliberately does NOT regenerate `vault.json`. The skill's core principle is *"no code execution, write reports only"* — auto-reconciling the manifest would contradict that.
 
 **What this means in practice:**
 
-- When the user accepts a vault-side action that *would* alter vault content (e.g., "promote unwritten decision to ADR"), the actual vault edit happens later, via `resolve-oq` (for OQ-tagged items) or direct manual edit followed by re-running `grand-design-spec` to regenerate the full vault.
+- When the user accepts a vault-side action that *would* alter vault content (e.g., "promote unwritten decision to ADR"), the actual vault edit happens later, via `resolve-oq` (for OQ-tagged items) or direct manual edit followed by re-running `generate-intent` to regenerate the full vault.
 - Until the edit lands and a regen runs, `vault.json` stays at the pre-drift-session state. AI consumers loading the manifest will not see the proposed-but-unlanded changes.
 - The Changelog entry written in step 1 above flags this — it records the drift session, not vault content changes. Vault version stays unchanged.
 - If a later manual edit lands the proposed change, the user is responsible for triggering `vault.json` regeneration: easiest path is to edit the markdown then re-run `/mega-sdd:generate-intent` against the same PRD with the same flags, OR use `resolve-oq` if the change is OQ-driven (resolve-oq writes back vault.json automatically).
 
-**Why this is acceptable**: drift-detect findings are always advisory. The action list in `DRIFT-ACTIONS.md` makes the boundary explicit so the user knows what's tentative vs landed.
+**Why this is acceptable**: detect-drift findings are always advisory. The action list in `DRIFT-ACTIONS.md` makes the boundary explicit so the user knows what's tentative vs landed.
 
 ### Step 7: Self-check before delivery
 
@@ -468,7 +468,7 @@ Do NOT pad with "I have completed the scan..." preamble.
 
 ### Always
 
-- **Vault is `mode=new`** → STOP. Tell the user: *"This vault is `mode=new` — there's no live codebase to drift against. Use `vault-diff` if comparing two PRD versions, or generate a `mode=existing` vault first."*
+- **Vault is `mode=new`** → STOP. Tell the user: *"This vault is `mode=new` — there's no live codebase to drift against. Use `diff-vault` if comparing two PRD versions, or generate a `mode=existing` vault first."*
 - **Codebase path doesn't exist or has no recognizable code** → STOP. Ask user to verify path.
 - **User asks the skill to apply fixes** → refuse politely. The skill captures decisions; engineering / vault edits are deliberate human actions. Offer: "I can write up the action list as `DRIFT-ACTIONS.md` so your team can pick up the work — that's the boundary."
 - **Major framework mismatch** (e.g., vault implies a backend in Java but `composer.json` says PHP) → flag inconsistency. The vault may have been generated against a different repo or the codebase may have been rewritten. Confirm before scanning.
@@ -590,9 +590,9 @@ Status `halted` on `drift_framework_mismatch` (vault framework signal doesn't ma
 
 ## References
 
-- Source vault: must be a `grand-design-spec` vault with `Implementation mode: existing` in Vault Lock Status. The 7-file structure, OQ tagging convention, and ADR `D-XXX` numbering are all assumed.
-- OQ tagging conventions and `vault.json` field rules: see `../generate-intent/references/vault-contract.md` (§OQ-conventions, §schema). Note: drift-detect reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
-- For vault evolution from a new PRD, see `vault-diff` SKILL.md — different concern (source revisions vs codebase reality).
+- Source vault: must be a `mega-sdd` vault with `Implementation mode: existing` in Vault Lock Status. The 7-file structure, OQ tagging convention, and ADR `D-XXX` numbering are all assumed.
+- OQ tagging conventions and `vault.json` field rules: see `../generate-intent/references/vault-contract.md` (§OQ-conventions, §schema). Note: detect-drift reads vault.json but never writes to it — see "vault.json reconciliation boundary" in Step 6.
+- For vault evolution from a new PRD, see `diff-vault` SKILL.md — different concern (source revisions vs codebase reality).
 - For OQ resolution mechanics (when drift findings produce new OQs that need stakeholder input), see `resolve-oq` SKILL.md.
 
 ## Auto-trigger handoff (v1.4.0+, Iter 30 §6.4)
