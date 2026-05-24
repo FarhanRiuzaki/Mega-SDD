@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.5.3
+version: 2.5.4
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -282,6 +282,15 @@ blocker:
 
 10. **Write each unit file** using `references/templates/unit.md` as the body template.
 
+**v2.5.4+ Iter 29 scope propagation (P1-3 audit fix)**: When vault.json contains a `scope` field (v1.12+ multi-scope vault per Iter 28), every unit's frontmatter MUST include:
+
+```yaml
+scope: <vault.scope_metadata.id>           # e.g., "BE", "MW", "FE"
+scope_name: <vault.scope_metadata.name>    # e.g., "Backend API"
+```
+
+This enables downstream skills (execute-bolts, multi-squad routing) to verify they're operating in the correct scope context. Omit both fields when vault has no scope (legacy single-vault back-compat).
+
 11. **Write `_index.md`** with:
     - Total unit count + **module count (v2.2+)**
     - **Grouped by module** (v2.2+) — per module section: name, status (X/Y complete), priority, DoD checklist, units table (ID, title, task_type, depends_on, status); `M-unassigned` group rendered if non-empty with warning
@@ -511,9 +520,16 @@ handoff:
   metrics:
     items_processed: <N units>
     items_blocked: 0
+  scope:                                       # v2.5.4+ Iter 29 (P1-3) — omit block when vault has no scope field
+    id: <vault.scope_metadata.id>
+    name: <vault.scope_metadata.name>
+    sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
+    prd_sha256: <vault.prd_sha256>
 ```
 
 Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable`. Required ONLY under `--auto`.
+
+**v2.5.4+ Iter 29 (P1-3)**: `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract (line 44). Omit the entire `scope:` block when vault is legacy single-scope.
 
 ## Memory layer (v1.5+, Iter 5)
 

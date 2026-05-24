@@ -38,6 +38,12 @@ mutability:                        # (v2.5.1+, Iter 25 — propagates Iter 22 mu
   # Pre-v2.5.1 units OR units without KB-derived claims → field omitted; downstream treats as INTENT (safe default).
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
+scope: <scope-id>                  # (v2.5.4+, Iter 29 — P1-3) OPTIONAL — written when source vault.json has `scope` field
+                                   # e.g., "BE", "MW", "FE". Matches vault.json `scope_metadata.id`.
+                                   # Omitted entirely for legacy single-scope vaults.
+scope_name: "<scope-name>"         # (v2.5.4+, Iter 29 — P1-3) OPTIONAL — written alongside `scope:`
+                                   # e.g., "Backend API". Matches vault.json `scope_metadata.name`.
+                                   # Omitted entirely for legacy single-scope vaults.
 module: <module-id>                # (v2.2+, Iter 11) — semantic grouping per _meta/modules.yaml
                                    # Format: M-<kebab-case>. Auto-derived from vault_source matching modules.yaml.
                                    # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source not matching any module.
@@ -232,6 +238,15 @@ Unit IDs are stable across regenerations:
 - **Greenfield:** units derived directly from vault (no binding). `binding_refs` is empty.
 - **Brownfield:** units derived from bound-vault. `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
 
+### Scope fields (v2.5.4+, Iter 29)
+
+Optional fields written ONLY when source vault.json has `scope` field (multi-scope vault per Iter 28):
+
+- `scope: <id>` — e.g., `BE`, `MW`, `FE`. Matches vault.json `scope_metadata.id`.
+- `scope_name: "<name>"` — e.g., `"Backend API"`. Matches vault.json `scope_metadata.name`.
+
+Omitted entirely for legacy single-scope vaults (no `scope` field in source vault.json).
+
 ## Anti-hallucination rails
 
 - Unit MAY ONLY reference vault sections + binding entries (cited explicitly).
@@ -240,3 +255,4 @@ Unit IDs are stable across regenerations:
 - If unit body cannot meet a contract, halt — do not generate a partial unit.
 - (v1.1+) In multi-squad mode, `depends_on` MUST be intra-squad only. Cross-squad direct deps halt with `cross_squad_dep_invalid`.
 - (v1.1+) `consumes_interfaces` entries MUST resolve to existing interface files; status field is read at bolt time to gate execution.
+- (v2.5.4+, Iter 29) `scope:` / `scope_name:` MUST be sourced verbatim from vault.json `scope_metadata`. NEVER inferred or invented. Omit both fields when vault has no `scope` field.
