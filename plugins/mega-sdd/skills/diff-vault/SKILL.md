@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.3.1
+version: 1.3.2
 description: Evolves an existing mega-sdd vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -357,6 +357,8 @@ After applying approved changes, regenerate `vault.json` from the now-updated ma
    - `generated_at` — update to current timestamp.
    - `source_documents[]` — replace prior PRD entry with the new source per Step 7 step 4.
 3. Write to `<VAULT_DIR>/vault.json`. Overwrites prior manifest.
+
+   **v1.3.1+, Iter 49 (D3-012 closure) — vault.json advisory lock:** acquire exclusive file lock on `<VAULT_DIR>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE overwriting vault.json. Backoff + retry 3x; fail with `memory_in_use` halt if all retries fail. Release lock after atomic write (temp file + rename) completes. Lock acquisition is REQUIRED — concurrent diff-vault + bind-codebase + generate-intent writes would corrupt the manifest.
 
 > **Idempotency**: re-running diff-vault against an unchanged source produces an unchanged `vault.json` (same field values, only `generated_at` updates). The Step 8 self-check verifies markdown ↔ JSON consistency.
 

@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.32.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.33.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,41 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.33.0 (Iter 49, minor) — vault.json Advisory Lock + Scenario-6 Halt Walkthroughs
+
+Closes Iter 38 audit Queue #8 (D3-012 vault.json concurrent-write safety + D3-006 scenario-6 recovery coverage). All vault.json writers now use Iter 5 file-lock pattern; scenario-6 expanded from 3 walkthroughs to 13.
+
+**Change 1 (D3-012): vault.json advisory lock**
+
+All 4 vault.json writers (`generate-intent` Step 11, `bind-codebase` Step 6, `diff-vault` Step 8, `resolve-oq` regen) acquire exclusive lock on `<vault>/vault.json.lock` per the Iter 5 memory file-lock pattern. Backoff + retry 3x; fail with `memory_in_use` halt (reused — no new halt type per reuse-first). detect-drift NEVER writes (preserved).
+
+Canonical contract documented in `vault-contract.md §Concurrency contract` (new section). Halt envelope reuses `memory_in_use` with vault-specific details (`file`, `lock_path`, `attempts`, `lock_holder_pid`).
+
+**Change 2 (D3-006): scenario-6 expansion (3 → 13 walkthroughs)**
+
+Added 10 high-frequency halt walkthroughs to `tests/scenarios/scenario-6-recovery-from-halt.md`:
+- `handoff_missing` (Iter 40 + 43 fix-forward) — with chat_tail_excerpt diagnosis
+- `artifact_missing` (Iter 40) — re-run producer guidance
+- `partial_state_corrupt` + saga rollback (Iter 40 + 45) — both forensics restart + --rollback recovery paths
+- `oq_blocker` — resolve-oq interactive walk + tech-OQ auto-resolve path
+- `diff_conflict` (Iter 3) — 3-option resolution
+- `dispatch_prompt_too_large` (Iter 30 + 44) — constitution-clause splitting guidance
+- `provenance_missing` (Iter 30) — trailer + amend recovery
+- `bind_conflict_constitution_violation` (Iter 20) — review-or-fix protocol
+- `cross_squad_dep_invalid` (Iter 25) — 3-path resolution (producer lock / wait + converge / fix ref)
+- `memory_schema_mismatch` (Iter 5) — migrate vs --memory-off paths
+
+Each walkthrough includes trigger, example envelope, recovery options, cross-refs. Brings scenario-6 from 365 LOC to ~800 LOC.
+
+**Skill bumps:**
+- `generate-intent` 1.15.0 → 1.15.1 (PATCH — lock acquisition)
+- `bind-codebase` 1.10.1 → 1.10.2 (PATCH — lock acquisition)
+- `diff-vault` 1.3.1 → 1.3.2 (PATCH — lock acquisition)
+
+**Plugin v3.32.1 → v3.33.0** (MINOR — concurrent-write contract is new behavior; pre-Iter-49 chains that depended on silent racing now halt explicitly).
+
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-49-vault-lock-and-scenario-expansion-design.md`
 
 ### v3.32.1 (Iter 48, patch) — Fix-Forward: Iter 44 algorithm rewrite, Iter 46 step relocation, Iter 46 wording correction
 

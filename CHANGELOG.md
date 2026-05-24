@@ -5,6 +5,75 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.33.0] - 2026-05-25
+
+### Iter 49 — vault.json Advisory Lock + Scenario-6 Halt Walkthroughs (Queue #8)
+
+**Concurrency safety + docs iter** (~2hr; MINOR bump — new vault.json lock contract). Closes Iter 38 audit Queue #8 (D3-012 concurrent-write safety + D3-006 scenario-6 coverage).
+
+**Change 1 (D3-012): vault.json advisory lock**
+
+All 4 vault.json writers MUST acquire exclusive file lock per the Iter 5 memory file-lock pattern:
+- `generate-intent` Step 11 (initial write)
+- `bind-codebase` Step 6 (audit log append)
+- `diff-vault` Step 8 (regen from markdown)
+- `resolve-oq` Step 2c step 9 (regen after OQ outcome)
+
+Lock acquisition: backoff (100ms / 500ms / 1500ms) + retry 3x; fail with `memory_in_use` halt if all retries fail. Reuses existing halt envelope per reuse-first directive — no new halt type. Halt details include `file`, `lock_path`, `attempts`, `lock_holder_pid` for diagnostic clarity.
+
+Readers DO NOT need the lock — POSIX rename is atomic; readers always see consistent pre-write OR post-write view, never mid-write.
+
+`detect-drift` NEVER writes vault.json (existing convention preserved). No lock acquisition required.
+
+Canonical contract: new `vault-contract.md §Concurrency contract` section documents the full pattern + halt envelope + reader exception + backward-compat note.
+
+**Change 2 (D3-006): scenario-6 expansion (3 → 13 walkthroughs)**
+
+`tests/scenarios/scenario-6-recovery-from-halt.md` previously covered 3 halt types. Plugin now has 46+ halts. Added 10 high-frequency walkthroughs:
+
+1. `handoff_missing` (Iter 40 + 43 fix-forward) — chat_tail_excerpt diagnostic
+2. `artifact_missing` (Iter 40) — re-run producer
+3. `partial_state_corrupt` + saga rollback (Iter 40 + 45) — both forensics restart + --rollback paths
+4. `oq_blocker` (universal) — resolve-oq + tech-OQ auto-resolve
+5. `diff_conflict` (Iter 3) — 3-option resolution
+6. `dispatch_prompt_too_large` (Iter 30 + 44) — constitution-clause splitting
+7. `provenance_missing` (Iter 30) — trailer + amend
+8. `bind_conflict_constitution_violation` (Iter 20) — review-or-fix protocol
+9. `cross_squad_dep_invalid` (Iter 25) — 3-path resolution
+10. `memory_schema_mismatch` (Iter 5) — migrate vs --memory-off
+
+Each walkthrough: trigger description, canonical envelope example, 1-3 recovery options, cross-refs. ~30-40 LOC per walkthrough; total addition ~400 LOC; scenario-6 grows from 365 LOC → ~800 LOC.
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — new §Concurrency contract section + "writers must regenerate" list updated to include bind-codebase
+- `plugins/mega-sdd/skills/generate-intent/SKILL.md` — Step 11 + lock acquisition note
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — Step 6 + lock acquisition note
+- `plugins/mega-sdd/skills/diff-vault/SKILL.md` — Step 8 + lock acquisition note
+- `tests/scenarios/scenario-6-recovery-from-halt.md` — + 10 walkthrough sections
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.32.1 → 3.33.0
+- `plugins/mega-sdd/README.md` — + v3.33.0 What's new entry
+- `README.md` — version bump
+- `docs/superpowers/specs/2026-05-25-iter-49-vault-lock-and-scenario-expansion-design.md` — new spec
+
+**Skill version bumps:**
+- `generate-intent` 1.15.0 → 1.15.1 (PATCH — lock acquisition)
+- `bind-codebase` 1.10.1 → 1.10.2 (PATCH — lock acquisition)
+- `diff-vault` 1.3.1 → 1.3.2 (PATCH — lock acquisition)
+
+**Why MINOR (not PATCH):** concurrent-write contract is new orchestrator-observable behavior. Pre-Iter-49 chains that silently raced on vault.json writes now halt explicitly with `memory_in_use`. Existing user workflows relying on silent racing will see new halts — by design.
+
+**Standing directives applied:**
+- simplifikasi: 2 audit findings → 1 contract section + 4 lock acquisition notes + 10 walkthrough sections
+- flawless: all 4 vault.json writers locked in-iter; scenario coverage extended to all high-frequency halts in one pass
+- reuse-first: REUSES Iter 5 memory file-lock pattern + REUSES existing `memory_in_use` halt envelope (no new halt type); REUSES existing scenario-6 structure (extends rather than replacing)
+
+**Plugin:** v3.32.1 → v3.33.0
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+**Spec:** `docs/superpowers/specs/2026-05-25-iter-49-vault-lock-and-scenario-expansion-design.md`
+
+**Next:** Iter 50 — predictive checks coverage expansion (Queue #9; ~3hr; MEDIUM impact proactive failure detection).
+
 ## [3.32.1] - 2026-05-25
 
 ### Iter 48 — FIX-FORWARD: Iter 44 algorithm rewrite, Iter 46 step relocation, Iter 46 wording correction

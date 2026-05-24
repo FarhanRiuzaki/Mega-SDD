@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.15.0
+version: 1.15.1
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. (v1.14+, Iter 35) `--phase=N` flag for Mode B KB sub-mode; vault.json gets `phase` + `phase_total` fields; 00-index.md emits §Phase context block. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -540,6 +540,8 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 Alongside the 7 markdown files, generate `vault.json` — a structured manifest that AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index.
 
 **Schema, field rules, and regeneration trigger points** — see `references/vault-contract.md` §schema. Read this file before generating `vault.json`.
+
+**v1.15.1+, Iter 49 (D3-012 closure) — vault.json advisory lock:** acquire exclusive file lock on `<vault>/vault.json.lock` per `references/vault-contract.md §Concurrency contract` BEFORE writing vault.json. Backoff + retry 3x; fail with `memory_in_use` halt if all retries fail. Release lock after atomic write (temp file + rename) completes. Lock acquisition is REQUIRED for initial vault.json write — concurrent generate-intent invocations on the same vault path would race.
 
 **Why both formats**:
 - Humans review markdown — narrative, citations, nuance.
