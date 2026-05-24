@@ -224,3 +224,87 @@
 ## Pass criteria
 
 All triggers fire. Behavior checks pass. No unit generated without valid frontmatter per unit-schema.md. Task-type assignment (TT1-TT8) follows generate-units §2.5 + §12.5 per Iter 1. Polished-prompt render pass (PP1-PP9) follows §12.4 per Iter 3 spec. Defensive generation (DG1-DG10) follows `references/defensive-generation.md` per Iter 8 — auto-detect upstream, per-unit collision interactive prompts, anchor warnings (soft), PARTIAL_FIELDS_* auto-extends with Migration notes populated from field_diff, grounding_confidence label visible in frontmatter + chat. Anchors mandatory + Hard rules parseable + Migration notes structural rules + directive prose guidance — all enforced.
+
+---
+
+## Iter 32 — Starterkit-aware unit generation cases (v2.6.0+)
+
+### GU-SK1 — Unit gains starterkit Anchors + Hard Rules with Citations
+
+**Setup:**
+- Vault at `.mega-sdd/vaults/my-app/` with bound binding.md
+- `.mega-sdd/codebase/starterkit-context.yaml` exists with:
+  - `auth.lib: sanctum`, `auth.user_model: "App\\Models\\User"`
+  - `ui_ux.layout_extends: "layouts.app"`, `ui_ux.notification_lib: sweetalert2`
+  - `ui_ux.idioms: ["use document.addEventListener('DOMContentLoaded', ...) over $(document).ready", "responsive mobile-first (sm/md/lg breakpoints)"]`
+- Vault includes a feature "Add user CRUD page" targeting `resources/views/users/index.blade.php`, `app/Http/Controllers/UserController.php`, `routes/web.php`
+
+**Trigger:** `/mega-sdd:generate-units .mega-sdd/vaults/my-app`
+
+**Expected:**
+- Step 4 framework pack loaded (laravel-base-26.md)
+- Step 7.7.a: starterkit-context.yaml loaded successfully
+- Step 7.7.b: For the user-CRUD unit, `starterkit_relevance = [ui_ux, auth, libs]`:
+  - ui_ux: target_files include `resources/views/**`
+  - auth: target_files include `app/Http/Controllers/**` AND body mentions "user"
+  - libs: target_files overlap with usage_hint of sanctum + sweetalert2
+- Step 7.7.c: unit.anchors[] gains:
+  - `resources/views/layouts/app.blade.php`
+  - `app/Models/User.php`
+  - `resources/views/components/`
+- Step 7.7.d: unit.hard_rules[] gains (at minimum):
+  - `{text: "MUST extend layouts.app ...", citation: "starterkit-context.yaml §ui_ux.layout_extends"}`
+  - `{text: "MUST use SweetAlert2 for confirmations and notifications ...", citation: "starterkit-context.yaml §ui_ux.notification_lib"}`
+  - `{text: "MUST follow starterkit idiom: use document.addEventListener('DOMContentLoaded', ...) over $(document).ready", citation: "starterkit-context.yaml §ui_ux.idioms"}`
+  - `{text: "MUST follow starterkit idiom: responsive mobile-first (sm/md/lg breakpoints)", citation: "starterkit-context.yaml §ui_ux.idioms"}`
+  - `{text: "MUST use auth guard 'sanctum' ...", citation: "starterkit-context.yaml §auth.guard"}`
+- Step 7.7.e: unit.frontmatter gains:
+  - `starterkit_context_consumed: true`
+  - `starterkit_relevance: [ui_ux, auth, libs]`
+- Unit footer §Citations section appends: `starterkit-context.yaml`
+- Step 12.5 citation check PASSES (all starterkit-derived rules have citations)
+
+### GU-SK2 — Greenfield vault (no starterkit-context.yaml) degrades gracefully
+
+**Setup:**
+- Vault at `.mega-sdd/vaults/greenfield-app/`
+- `.mega-sdd/codebase/starterkit-context.yaml` does NOT exist (greenfield project)
+- Vault has same feature spec as GU-SK1
+
+**Trigger:** `/mega-sdd:generate-units .mega-sdd/vaults/greenfield-app`
+
+**Expected:**
+- Step 7.7.a: file absent → log "starterkit-context unavailable; emit framework-pack-only Anchors"
+- Steps 7.7.b - 7.7.d SKIPPED
+- Step 7.7.e: every unit's frontmatter gets `starterkit_context_consumed: false`, `starterkit_relevance: []`
+- Unit.anchors[] populated from framework pack + binding (NO starterkit-specific anchors)
+- Unit.hard_rules[] populated from framework pack only (NO starterkit-derived rules)
+- NO halt emitted
+- Step 12.5 citation check passes (no starterkit rules to validate)
+
+### GU-SK3 — Missing citation triggers halt
+
+**Setup:**
+- Vault as GU-SK1 (starterkit-context.yaml present)
+- Generated unit body (after Step 7.7) somehow contains a Hard Rule with `source: starterkit-context.yaml` but no `citation:` field (simulated: inject test fixture that bypasses Step 7.7.d's citation enforcement)
+
+**Trigger:** generate-units Step 12.5 runs polished-prompt render pass
+
+**Expected:**
+- Step 12.5 citation check identifies the offending rule
+- Halt `starterkit_rule_citation_missing` emitted with full envelope:
+  ```yaml
+  type: starterkit_rule_citation_missing
+  source_skill: generate-units
+  details:
+    unit_id: U-003
+    rule_text: "<text>"
+    missing_citation: "starterkit-context.yaml §<path>"
+    rule_index: 4
+  next_action:
+    type: edit_unit
+    suggested_args: ["U-003"]
+    hint: "Append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #4"
+  ```
+- Unit U-003 is NOT written; pipeline STOPS (always-stop)
+- Other units already-validated may have been written (partial completion is acceptable per existing generate-units halt semantics)

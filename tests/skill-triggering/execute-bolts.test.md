@@ -141,3 +141,50 @@
 ## Pass criteria
 
 All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — always halt before commit with code changes preserved in working tree for user review.
+
+---
+
+## Iter 32 — Starterkit slice injection cases (v2.7.0+)
+
+### EB-SK1 — T2.3 slice injection: UI-touching unit gets ui_ux + libs slices
+
+**Setup:**
+- Unit U-007 has `target_files: ["resources/views/users/index.blade.php", "app/Http/Controllers/UserController.php"]`
+- Unit frontmatter: `starterkit_relevance: [ui_ux, libs]`
+- `.mega-sdd/codebase/starterkit-context.yaml` exists (per GU-SK1 setup)
+
+**Trigger:** `/mega-sdd:execute-bolts U-007`
+
+**Expected:**
+- Step 4.5.b-starterkit (Read): starterkit-context.yaml loaded; `unit.starterkit_relevance` read as `[ui_ux, libs]`
+- Step 4.5.b-starterkit (Build slice): slice built with:
+  - `slice.ui_ux` populated (layout_extends, notification_lib, idioms)
+  - `slice.libs` filtered to libs whose usage_hint overlaps target_files
+  - `slice.auth` ABSENT (not in starterkit_relevance)
+  - `slice.rbac` ABSENT
+- Step 4.5.b-starterkit (Inject): bolt-dispatch-prompt T2.3 section populated with:
+  - "UI/UX: extends=layouts.app, notification=sweetalert2, idioms=[use document.addEventListener...; responsive mobile-first...]"
+  - "Libs in scope: sweetalert2@11.x (used in: resources/js/app.js, ...)"
+  - NO "Auth:" line
+  - NO "RBAC:" line
+- T2.3 slice size ≤2KB (verify via byte count of injected section)
+- Bolt subagent dispatched with prompt containing T2.3 section
+- Bolt's generated code (verified via post-flight) uses `@extends('layouts.app')` and `Swal.fire(...)` patterns (matches starterkit)
+
+### EB-SK2 — Slice exceeds 2KB budget → truncation order applies → halt if still over
+
+**Setup:**
+- Unit U-008 with `starterkit_relevance: [ui_ux, libs]`
+- `.mega-sdd/codebase/starterkit-context.yaml` has:
+  - ui_ux.idioms: 20 entries (large)
+  - libs[]: 100 entries, 60 of which overlap U-008's target_files
+
+**Trigger:** `/mega-sdd:execute-bolts U-008`
+
+**Expected:**
+- Step 4.5.b-starterkit (Build slice): initial slice exceeds 2KB
+- Truncation step 1: libs[] truncated to top 10 by relevance score (overlap count)
+- If still >2KB: idioms[] truncated to top 3
+- IF still >2KB: halt `dispatch_prompt_too_large` (existing Iter 30 halt) emitted; bolt NOT dispatched; chain stops
+- IF ≤2KB after truncation: bolt dispatched with truncated slice; T2.3 section ≤2KB
+- Truncation event logged in execute-bolts metrics: `slice_truncated_count: 1`, `slice_truncation_levels: [libs, idioms]`
