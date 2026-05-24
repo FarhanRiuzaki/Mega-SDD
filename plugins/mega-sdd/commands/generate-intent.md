@@ -1,6 +1,6 @@
 ---
 description: Generate a 7-file SDD intent vault from PRD/BRD/Figma OR free-text brief. Anti-hallucination guarantees.
-argument-hint: [path-to-prd.md OR "free-text brief" OR --from-prompt "<brief>" for explicit]
+argument-hint: [<prd-path> | --from-prompt "<brief>" | --kb=<path>] [--scan=<path>|--greenfield] [--scope=<id>] [--out=<path>] [--auto]
 ---
 
 Invoke the `mega-sdd:generate-intent` skill via the Skill tool.
@@ -30,3 +30,18 @@ Hard rails:
 - Anti-hallucination: every claim cites source; ambiguities → Open Questions.
 - Language: vault language matches input PRD language.
 - Halt on critical gaps; do not invent.
+
+## Flag combinations (v1.12+, Iter 28)
+
+| Flag combo | Behavior |
+|---|---|
+| (no flags, PRD has scopes block, 1 scope) | Silent → single-vault behavior |
+| (no flags, PRD has scopes block, ≥2 scopes) | Interactive picker fires |
+| (no flags, PRD lacks scopes block) | Retrofit bridge fires |
+| `--scope=<id>` (valid id in PRD) | Silent → scoped vault |
+| `--scope=<id>` (invalid id) | Halt `scope_not_declared_in_prd` |
+| `--scope=all` | Legacy single-vault behavior + warning |
+| `--greenfield` + scopes block | Warning (scopes ignored); stack-agnostic single vault |
+| `--scope=<id>` + `--kb=<path>` | Multi-scope legacy rebuild: KB intent × target scaffold × scope filter |
+| `--scope=<id>` + `--scan=<map>` + `--kb=<path>` | Iter 22+23+27+28 full composition: pack-aware, mutability-tier-routed, scope-filtered vault |
+| `--auto` + memory hit | Silent default scope from memory; no picker prompt |
