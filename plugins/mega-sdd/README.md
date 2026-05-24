@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.35.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.35.1)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,23 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.35.1 (Iter 52, patch) — Fix-Forward #3: wire GLOSSARY_INDEX + resolve-oq lock note + vault-contract wording
+
+Third validation gate caught 2 release-blockers — both same pattern as prior fix-forwards (Iter 43 + Iter 48): docs declaring behavior that wasn't actually wired into the consumer body.
+
+**Fixed (critical):**
+
+- **C1 (Iter 51 wiring gap):** `<GLOSSARY_INDEX>` placeholder was defined in a standalone section of `wave-dispatch-templates.md` but NOT injected into the actual Wave 2/3/4 dispatch prompts. Subagents at runtime wouldn't see the placeholder — same algorithm-doc-vs-prompt drift caught in Iter 48 fix-forward. Iter 52 wires the placeholder into the **Generic agent prompt structure** skeleton (which auto-applies to every wave dispatch). Wave 1 skipped (no glossary exists yet); Wave 5 skipped (main-thread, no subagent).
+
+- **C2 (Iter 49 propagation gap):** `vault-contract.md §Concurrency contract` listed `resolve-oq` as the 4th vault.json writer but no inline lock acquisition note in `resolve-oq/SKILL.md` Step 2c step 9 (the 3 vault.json regen sites: Resolve / Out-of-Scope / Defer outcomes). Plus `vault-contract.md` parenthetical claimed resolve-oq was "already file-lock-disciplined via memory subsystem" — incorrect; Iter 5's pattern was MEMORY only. Iter 52 adds explicit lock note + corrects parenthetical.
+
+**Skill bumps:**
+- `resolve-oq` 0.9.2 → 0.9.3 (PATCH — explicit lock acquisition note in Step 2c step 9)
+
+**Plugin v3.35.0 → v3.35.1** (PATCH — fix-forward; pure correctness).
+
+**Audit closure status:** with Iter 52, all 13 closure iters (39-51) plus 3 fix-forwards (43, 48, 52) are clean. Iter 38 audit's 37 findings are CLOSED. Validation pattern (advisor + code-reviewer + fix-forward) caught 4 release-blockers across the session — pattern is now load-bearing for cumulative-iter work.
 
 ### v3.35.0 (Iter 51, minor) — Glossary Anchoring + Reference Offset Hints + Parallelism Tuning (Queue #10 — final queue closure)
 

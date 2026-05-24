@@ -81,7 +81,7 @@ All `vault.json` writers MUST acquire an exclusive advisory file lock before wri
 - `generate-intent` Step 11 (initial vault.json write)
 - `bind-codebase` Step 6 (audit log append)
 - `diff-vault` Step 8 (regen from markdown)
-- `resolve-oq` Step 2c step 9 (regen after OQ outcome — already file-lock-disciplined via memory subsystem, but explicit lock acquisition recommended)
+- `resolve-oq` Step 2c step 9 (regen after Resolve / Out-of-Scope / Defer outcome — v0.9.3+ Iter 52 fix-forward added explicit inline lock acquisition note; pre-v0.9.3 versions had no explicit lock note despite being listed here)
 
 **Lock acquisition pattern (per `mega-sdd:memory` SKILL.md §file-lock):**
 
