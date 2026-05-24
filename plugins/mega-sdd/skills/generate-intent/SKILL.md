@@ -378,6 +378,8 @@ After all squads declared, emit `_meta/squads.yaml` from `references/templates/s
 
 ### Step 0.9: Scope detection + PRD filtering (v1.12+, Iter 28)
 
+> **EXECUTION ORDER GUARD (post-Iter-29 audit P1-1 fix):** This step appears in the file BEFORE the "Scan-aware context loading" section (~line 557) due to numbering hierarchy (0.x slots are reserved for pre-Step-1 metadata). At RUNTIME, this step MUST execute AFTER scan-aware context loading completes — the picker's smart default heuristic needs the scan-codebase result (codebase-map.md framework detection) to recommend the correct scope. Sequence: Step 0 → 0.5 → 0.6 → 0.7 → squad partition → Step 0.8 Scan-aware context loading (defined at §"Step 0.8: Scan-aware context loading" later in this file) → **Step 0.9 (THIS STEP)** → Step 1 Load PRD.
+
 Per `references/scope-picker.md`. Runs AFTER all Step 0.x metadata config (PRD_STATUS, OUTPUT_MODE, squad partition, scan-aware) and BEFORE Step 1 Load PRD — because scope choice filters which PRD content gets loaded.
 
 a. **Read PRD frontmatter.**
@@ -555,6 +557,8 @@ After emission, suggest next step per the existing hand-off message but
 include squad count: "Generated vault for N squads. Next: …".
 
 ### Step 0.8: Scan-aware context loading (v1.8+, Iter 16)
+
+> **Note (post-Iter-29 audit P1-1)**: At runtime, this section executes BEFORE Step 0.9 (Scope detection) even though Step 0.9 appears physically earlier in this file. The 0.x numbering reserves slots for pre-Step-1 metadata, but scope detection's smart default needs scan-codebase results — so the scan-aware loading runs first in the orchestrate-flow chain, then Step 0.9 picker fires with scan context in hand.
 
 Per user feedback — vault generation produces fewer fabricated entities + tighter OQ classification when codebase context is available at gen-time. Iter 16 introduces scan-aware context loading.
 
