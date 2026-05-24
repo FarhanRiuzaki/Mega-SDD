@@ -393,7 +393,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.18.1)
+├── plugins/mega-sdd/                       # the plugin itself (v3.24.0)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 13 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
