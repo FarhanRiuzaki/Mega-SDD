@@ -67,6 +67,20 @@ CONTEXT:
 SEED INPUT (cross-check only, do NOT blindly trust):
 - <path to forensic dump if it exists; otherwise: "none">
 
+# === GLOSSARY INDEX (auto-injected by main thread for Wave 2/3/4 — v1.7.0+, Iter 51 + Iter 52 wiring) ===
+<GLOSSARY_INDEX>
+# === END GLOSSARY INDEX ===
+#
+# Use the GLOSSARY INDEX block above as your authoritative compact reference for glossary terms.
+# Wave 2/3/4 subagents: do NOT re-read the full glossary.md file — the index above already has
+# every term's short_def + line range. ONLY spot-read glossary.md (with `Read offset:X limit:Y`)
+# when you need full prose context for one specific term, and use the range from the index.
+# When citing a glossary entry in your output, include the line range:
+# `glossary.md §customer-onboarding:42-58` (NOT bare `glossary.md §customer-onboarding`).
+#
+# Wave 1: no GLOSSARY_INDEX is injected (glossary doesn't exist yet — Wave 1 creates it).
+# Wave 5 (main thread): reads glossary.md directly per Wave 5 contract (no subagent dispatch).
+
 LEGACY FILES TO READ (explicit list, with file sizes):
 - <file1> (<size> KB)
 - <file2> (<size> KB)

@@ -5,6 +5,79 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.35.1] - 2026-05-25
+
+### Iter 52 — FIX-FORWARD #3: wire GLOSSARY_INDEX into wave dispatches + resolve-oq inline lock note + vault-contract wording correction
+
+**Release-blocker fix iter** (PATCH bump — pure correctness; no new behavior). THIRD fix-forward iter triggered by validation gate this session. Cumulative code-quality review of Iters 49-51 (`superpowers:code-reviewer` on commits 6513086..HEAD) surfaced 2 CRITICAL + 1 MEDIUM.
+
+**Pattern repeat:** both critical findings match the same regression pattern as Iters 43 and 48 — documentation declared a behavior that wasn't actually wired into the consumer body. Validation gate caught it before production impact in all 3 cases. Pattern is now load-bearing for cumulative-iter work.
+
+**CRITICAL fixes:**
+
+**C1 — Iter 51 `<GLOSSARY_INDEX>` placeholder unwired**
+
+Iter 51 defined the `<GLOSSARY_INDEX>` placeholder in a standalone section at the top of `wave-dispatch-templates.md` BUT did NOT inject the placeholder into the actual Wave 2/3/4 subagent dispatch prompts. Subagents at runtime would have followed the existing skeleton (which doesn't reference the placeholder) — the optimization would have produced zero savings until the placeholder reached the prompts.
+
+Same regression class as Iter 48's C1 fix (bolt-dispatch-prompt.md algorithm encoded old Iter 30 single-halt behavior while SKILL.md described new Iter 44 running-budget tracker). Caught by validation gate.
+
+Fix: wired `<GLOSSARY_INDEX>` block into the **Generic agent prompt structure** skeleton in `wave-dispatch-templates.md` (which auto-applies to every wave dispatch). Added inline subagent instructions: use INDEX for cross-refs, spot-read glossary.md only with offset/limit, cite with line ranges. Wave 1 skipped (glossary doesn't exist yet — Wave 1 creates it); Wave 5 skipped (main-thread, no subagent).
+
+**C2 — Iter 49 resolve-oq vault.json lock note missing inline**
+
+Iter 49 added §Concurrency contract section to `vault-contract.md` listing 4 vault.json writers (generate-intent, bind-codebase, diff-vault, resolve-oq). The first 3 received explicit inline lock acquisition notes in their SKILL.md. resolve-oq did NOT — its SKILL.md Step 2c step 9 (writing vault.json after Resolve / Out-of-Scope / Defer outcomes) had zero lock acquisition note.
+
+Plus `vault-contract.md` line 84 parenthetical claimed resolve-oq was "already file-lock-disciplined via memory subsystem" — incorrect. Iter 5's file-lock pattern is for the MEMORY subsystem (`~/.mega-sdd/memory/` + `<project>/.mega-sdd/memory/` files), not resolve-oq's vault.json regen.
+
+Fix:
+- Added inline lock acquisition note to `resolve-oq/SKILL.md` Step 2c step 9 (covers all 3 outcome paths — Resolve / Out-of-Scope / Defer)
+- Bumped resolve-oq 0.9.2 → 0.9.3
+- Corrected `vault-contract.md` §Concurrency contract resolve-oq line: now reads "v0.9.3+ Iter 52 fix-forward added explicit inline lock acquisition note; pre-v0.9.3 versions had no explicit lock note despite being listed here"
+
+**MEDIUM fix (spec hygiene):**
+
+Iter 49 spec (`docs/superpowers/specs/2026-05-25-iter-49-vault-lock-and-scenario-expansion-design.md`) §1 + §3 + §4 listed only 3 writers (generate-intent, bind-codebase, diff-vault). Execution added resolve-oq as 4th writer without spec amendment. Not fixed in spec doc (would require post-hoc edit); flagged here in CHANGELOG as documentation drift. Future iters: amend spec OR add resolve-oq to spec writer list at execution time, not retrofit.
+
+**ADVISORY (no action — verified clean):**
+
+- Halt taxonomy preserved correctly across Iters 49-51 — no accidental `vault_in_use` introduced; `memory_in_use` reused as documented
+- Predictive checks (Iter 50): all 6 new sections present, 10 skills covered, math checks out (8 → 26 checks)
+- extract-intelligence wave counts (3/4/5/3 parallel per wave) are NOT collapsed to new default-3; this is intentional (wave-design dispatches fixed agent counts per wave; `--max-parallel` is a separate cap). No drift
+- Version bumps consistent: plugin.json + CHANGELOG + READMEs + skill frontmatter all aligned
+
+**Surface changes:**
+- `plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md` — `<GLOSSARY_INDEX>` block wired into Generic agent prompt structure skeleton with inline subagent instructions
+- `plugins/mega-sdd/skills/resolve-oq/SKILL.md` — Step 2c step 9 lock acquisition note added; version 0.9.2 → 0.9.3
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — §Concurrency contract resolve-oq line corrected (misleading parenthetical removed)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.35.0 → 3.35.1
+- `plugins/mega-sdd/README.md` — + v3.35.1 What's new entry
+- `README.md` — version bump
+
+**Skill version bumps:**
+- `resolve-oq` 0.9.2 → 0.9.3 (PATCH — explicit lock note)
+
+**Validation pattern this session — final summary:**
+
+| Validation | Caught | Severity |
+|---|---|---|
+| Round 1 (after Iter 42) | Iter 40 handoff_missing semantics (file-check vs chat-block) | release-blocker |
+| Round 2 (after Iter 47) | Iter 44 algorithm-doc drift + Iter 46 step misplacement + Iter 46 wording | 2 release-blockers + 1 medium |
+| Round 3 (after Iter 51) | Iter 51 GLOSSARY_INDEX unwired + Iter 49 resolve-oq lock note missing | 2 release-blockers |
+
+**Lessons captured:** every cumulative-iter session that ships ≥3 feature iters should run advisor + code-reviewer subagent before continuing. Common defect pattern: documentation declares behavior in reference docs / contract files that isn't actually wired into the consumer body. Pure feature velocity misses this; validation gate catches it.
+
+**Standing directives applied:**
+- simplifikasi: 2 critical findings → 2 surgical fixes in 3 files (1 reference + 1 SKILL + 1 contract correction)
+- flawless: caught + fixed declared-vs-implemented gaps BEFORE production; validation pattern reinforced for future sessions
+- reuse-first: extends established Iter 43 + Iter 48 fix-forward pattern; no new mechanisms; reuses existing halt envelope (memory_in_use); reuses existing skeleton template structure
+
+**Plugin:** v3.35.0 → v3.35.1
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md` — closure work officially complete with Iter 52
+**Code-reviewer dispatch:** agentId aeb607f12acfdac77
+
+**Audit closure final status:** Iter 38 audit identified 37 findings (12 P1/HIGH + 17 P2/MEDIUM + 8 Advisory/LOW). Session closed: all 12 P1/HIGH + bulk of P2/MEDIUM. ~14 iters total (39-52). Plugin v3.26.2 → v3.35.1.
+
 ## [3.35.0] - 2026-05-25
 
 ### Iter 51 — Glossary Anchoring + Reference Offset Hints + Parallelism Tuning (Queue #10 — FINAL queue closure)

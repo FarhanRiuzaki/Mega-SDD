@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 0.9.2
+version: 0.9.3
 description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks through the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, bumps version + Changelog. Triggers — "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", or paraphrases.
 ---
 
@@ -212,7 +212,9 @@ After action selection, write the field updates to `vault.json` immediately and 
    - Other docs: append to the appropriate sub-section, with a `> Resolves OQ-{tag}` annotation.
 7. Write the changes to the file(s) using `Edit`.
 8. Update the OQ roll-up entry in `00-index.md` to also show `[x]` resolved with the same pointer.
-9. **Update `vault.json` (v0.2)**: change the OQ's `status` from `open` to `resolved` in the manifest, recompute `open_questions_summary` counts. If a new ADR was created, add it to `adrs[]`. If a new entity field was added, update that entity in `entities[]`.
+9. **Update `vault.json` (v0.2 + v0.9.3 lock contract)**: change the OQ's `status` from `open` to `resolved` in the manifest, recompute `open_questions_summary` counts. If a new ADR was created, add it to `adrs[]`. If a new entity field was added, update that entity in `entities[]`.
+
+   **v0.9.3+, Iter 49 → wired Iter 52 fix-forward (D3-012 closure):** acquire exclusive file lock on `<vault>/vault.json.lock` per `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md §Concurrency contract` BEFORE writing vault.json. Backoff + retry 3x; fail with `memory_in_use` halt if all retries fail. Release lock after atomic write completes. Lock acquisition is REQUIRED for every vault.json regen path in resolve-oq (Resolve / Out-of-Scope / Defer outcomes ALL write vault.json).
 10. Show the user a confirmation summary of the diff.
 
 **If `Out of Scope`**:
