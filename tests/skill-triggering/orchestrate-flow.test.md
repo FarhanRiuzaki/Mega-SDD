@@ -176,3 +176,121 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - starterkit_context.auth_lib field is `sanctum` in ALL 5 handoffs
 - Final execute-bolts handoff metrics show non-zero bolts_used_starterkit_slice
 - Final bolt-report.md files (per unit) cite `starterkit-context.yaml` in their context section
+
+---
+
+## Iter 33 — Intelligence features (v3.0.0+)
+
+### OF-MR1 — Memory-driven routing recommends past-successful chain
+
+**Setup:**
+- `.mega-sdd/memory/routing-outcomes.md` exists with ≥3 rows matching current project fingerprint, all converged=yes, all chain-used="starterkit-first"
+- Default routing-rules.md would propose "direct" chain
+
+**Trigger:** `/mega-sdd:auto`
+
+**Expected:**
+- Step 2.7 reads routing-outcomes.md
+- Fingerprint matches ≥3 prior converged runs with consistent chain
+- Recommendation displayed: "Routing recommendation from past 3 runs (all converged in avg 10 min): starterkit-first"
+- Step 3 builds starterkit-first chain (overriding routing-rules.md default)
+- Chain executes; Step 7.5 appends new outcome row
+
+### OF-MR2 — No prior runs: fall through to default routing
+
+**Setup:**
+- `.mega-sdd/memory/routing-outcomes.md` does not exist (fresh project)
+
+**Trigger:** `/mega-sdd:auto`
+
+**Expected:**
+- Step 2.7 reads routing-outcomes.md → file absent → skips routing recommendation
+- Step 3 builds chain per routing-rules.md default
+- No "routing recommendation" message displayed
+- Chain executes; Step 7.5 creates routing-outcomes.md + appends first row
+
+### OF-PH1 — Predictive check (non-fatal): tree-sitter warning
+
+**Setup:**
+- tree-sitter binary NOT installed
+- Project has Laravel composer.json (framework detected)
+- Chain proposes scan-codebase
+
+**Trigger:** `/mega-sdd:auto`
+
+**Expected:**
+- Step 3.5 runs predictive checks for scan-codebase
+- `tree_sitter_present` check fails (non-fatal)
+- Warning displayed to user BEFORE chain starts: "⚠️ tree-sitter not installed; scan-codebase will fall back to regex engine. Install: brew install tree-sitter..."
+- Chain proceeds normally (scan-codebase uses regex)
+- handoff metrics.predictive_warnings_count = 1; metrics.predictive_halts_count = 0
+
+### OF-PH2 — Predictive check (fatal): execute-bolts requires units
+
+**Setup:**
+- vault exists but units/ directory empty (no U-*.md files)
+- Chain proposes execute-bolts (user passed `--from=execute-bolts`)
+
+**Trigger:** `/mega-sdd:execute-bolts --auto`
+
+**Expected:**
+- Step 3.5 runs `units_directory_present` predictive check for execute-bolts
+- Check fails (fatal=yes)
+- Halt `predictive_check_failed` emitted; chain STOPS before execute-bolts dispatched
+- halt envelope: details.failing_check_id="units_directory_present"; next_action.hint="Run generate-units first"
+- Chain output: predictive halt YAML; no execute-bolts invocation
+
+### OF-VG1 — Schema validation gate passes for compliant handoff
+
+**Setup:**
+- bind-codebase emits handoff with all REQUIRED + CONDITIONAL (vault has scope_metadata + scope: block present) fields
+
+**Trigger:** chain that includes bind-codebase
+
+**Expected:**
+- Step 6.b parses bind-codebase handoff YAML successfully
+- All REQUIRED fields present; condition met for scope: + scope present
+- No halt; Step 6.c propagates metadata to next skill (generate-units)
+
+### OF-VG2 — Schema validation gate halts on missing CONDITIONAL field
+
+**Setup:**
+- bind-codebase emits handoff WITHOUT scope: block, but vault.json has scope_metadata
+- (Simulated: inject test fixture that bypasses Phase A1 sweep for this test)
+
+**Trigger:** chain includes bind-codebase
+
+**Expected:**
+- Step 6.b validates handoff against schema
+- Condition "vault has scope_metadata" evaluates TRUE
+- scope: field missing (CONDITIONAL+condition_met)
+- Halt `invalid_handoff` emitted; STOPS chain before generate-units dispatched
+- halt envelope: details.failing_skill="bind-codebase"; missing_field="scope"; field_severity="CONDITIONAL"; condition_evaluated="vault has scope_metadata = TRUE"
+- next_action.hint includes "Edit bind-codebase SKILL.md handoff template"
+
+### OF-TC1 — Type check passes for compliant field types
+
+**Setup:**
+- bind-codebase emits handoff with scope.id as string "BE" (matches TYPE: enum)
+
+**Trigger:** chain includes bind-codebase
+
+**Expected:**
+- Step 6.b.i type-checks scope.id field
+- Value "BE" matches TYPE: enum from scope_metadata.allowed_scopes
+- No halt; propagation continues
+
+### OF-TC2 — Type check halts on type mismatch
+
+**Setup:**
+- bind-codebase emits handoff with scope.id as object `{id: "BE"}` instead of string "BE"
+- (Simulated: inject test fixture)
+
+**Trigger:** chain includes bind-codebase
+
+**Expected:**
+- Step 6.b.i type-checks scope.id field
+- Expected: string; Actual: object → MISMATCH
+- Halt `handoff_type_mismatch` emitted; STOPS chain
+- halt envelope: details.failing_skill="bind-codebase"; field_name="scope.id"; expected_type="string (enum)"; actual_type="object"; actual_value="{id: 'BE'}"
+- next_action.hint includes "Field scope.id should be a string (enum value), not an object"

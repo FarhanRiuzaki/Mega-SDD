@@ -135,3 +135,17 @@ All triggers fire. Output exists, schema-compliant, no hallucinations.
 - Status: halted; chain STOPS (orchestrator does not auto-route to generate-intent)
 - Handoff YAML: `status: halted`, `blockers: [{ type: deep_scan_subagent_all_failed, ... }]`
 - User-facing message: "All 4 deep-scan subagents failed (likely API outage). Re-run /mega-sdd:scan-codebase later."
+
+---
+
+## Iter 33 — Predictive checks (consumed by orchestrate-flow Step 3.5)
+
+### SC-PH1 — tree_sitter_present predictive check entry
+
+**Setup:** N/A — this is a documentation test verifying scan-codebase catalog entry exists in `predictive-checks.md`
+
+**Verify:**
+- Grep `references/predictive-checks.md` for `## scan-codebase preflight checks` section
+- Confirm `check_id: tree_sitter_present` entry present
+- Confirm command, expected, on_fail, fatal=no, predicts_halt=dep_missing
+- Confirm catalog entry matches behavior in scan-codebase SKILL.md Step 0 engine detection (consistent message + install hint)
