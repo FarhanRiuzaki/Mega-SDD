@@ -123,3 +123,42 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 ## Pass criteria (Auto-classifier)
 
 All 7 cases above (CL1-CL7) classify correctly per `references/vault-contract.md` §Auto-classifier heuristics. No fabricated recommendation citations. Halt fires cleanly on validation failure. Conservative default (business/blocking/low) when no pattern matches.
+
+## Iter 35 — Phase discoverability (v1.14+, v3.26+)
+
+### GI-PH1 — Default phase=1 (Mode B with --kb, no explicit --phase)
+
+**Setup:**
+- `.mega-sdd/knowledge-base/` exists with valid extraction
+- `<KB>/99-rebuild-architecture/suggested-phasing.md` has 3 `## Phase` headers (Phase 1, 2, 3)
+- No `--phase` flag in invocation
+
+**Trigger:** `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/`
+
+**Expected:**
+- Step 2.5 parses suggested-phasing.md → phase_total = 3
+- Default --phase=1 applies
+- vault.json gets `phase: 1, phase_total: 3`
+- 00-index.md `## Phase context` block emitted:
+  - "Phase 1 of 3"
+  - This vault covers: <1-line Phase 1 summary from suggested-phasing.md>
+  - Upcoming phases: Phase 2 + Phase 3 (1-liners each)
+  - Next-phase command: `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/ --phase=2`
+  - Full phased plan ref to suggested-phasing.md
+- Vault content scoped to Phase 1's deliverables (not all phases mixed)
+
+### GI-PH2 — Explicit --phase=2
+
+**Setup:** Same KB as GI-PH1 (3 phases)
+
+**Trigger:** `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/ --phase=2`
+
+**Expected:**
+- Step 2.5 reads `## Phase 2` section from suggested-phasing.md
+- vault.json gets `phase: 2, phase_total: 3`
+- 00-index.md `## Phase context` block:
+  - "Phase 2 of 3"
+  - Vault scope reflects Phase 2 deliverables
+  - Upcoming: Phase 3 only (Phase 1 already done; not listed as upcoming)
+  - Next-phase command: `--phase=3`
+- Vault content filtered to Phase 2 scope; not mixed with Phase 1 or 3

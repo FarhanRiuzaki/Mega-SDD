@@ -82,6 +82,29 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
+## What's new in v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
+
+### v3.26.0 (Iter 35) — Reading Map + Phase Discoverability
+
+mega-sdd now tells you **where to look at each pipeline stage** + **what phase your vault represents**.
+
+**What changed:**
+
+- **NEW: `plugins/mega-sdd/references/reading-map.md`** — user-facing guide indexed by pipeline stage. "After stage X, look at file Y at location Z." ⭐ marks primary entry-point per stage.
+- **Phase fields in `vault.json`** — `phase` + `phase_total`. Surfaces at top of `00-index.md §Phase context`: "Phase 1 of 3" + upcoming phases + next-phase command.
+- **`generate-intent --phase=N` flag** — bootstrap Phase 2/3+ vaults from the same KB. Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for the plan.
+- **End-of-chain hint** — execute-bolts + orchestrate-flow surface "Phase 1 complete. Phase 2 next: run `/mega-sdd:generate-intent --kb=<KB> --phase=2`" when applicable.
+
+**Why this matters:**
+
+Before: vault only contained Phase 1; user had to know `suggested-phasing.md` existed deep in the KB. Now: vault tells you the phase + how to get to next phase. No more "where's Phase 2?" friction.
+
+**Audit closure:** all mega-sdd-generated files live under `.mega-sdd/` or `~/.mega-sdd/` (verified). AGENTS.md at repo root is INTENTIONAL (tool-interop standard). One stale doc line fixed in scan-codebase.
+
+**Plugin v3.25.0 → v3.26.0.**
+
+See [docs/superpowers/specs/2026-05-24-iter-35-reading-map-and-phase-discoverability-design.md](../../docs/superpowers/specs/2026-05-24-iter-35-reading-map-and-phase-discoverability-design.md) for full design.
+
 ## What's new in v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
 
 ### v3.25.0 (Iter 34) — Dynamic Model Selection

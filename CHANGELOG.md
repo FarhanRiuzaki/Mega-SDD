@@ -5,6 +5,64 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.26.0] - 2026-05-24
+
+### Iter 35 — Reading Map + Phase Discoverability (with audit closure)
+
+**Feature iter** (~5-7hr). Per simplification + flawless directive: 3 problems solved in 1 iter; 1 new file; atomic commits per surface sync; no deferrals to Iter 36.
+
+**Skills bumped:**
+- `scan-codebase` 2.6.1 → 2.6.2 (line 37 stale prose fix — audit closure)
+- `generate-intent` 1.13.0 → 1.14.0 (`--phase=N` flag + vault.json schema extension + 00-index.md §Phase context block)
+- `execute-bolts` 2.7.0 → 2.7.1 (end-of-chain next_action references Phase N+1)
+- `orchestrate-flow` 3.1.0 → 3.1.1 (chain summary surfaces phase context)
+- `using-mega-sdd` 1.3.2 → 1.3.3 (reading-map.md cross-ref)
+
+**New plugin files (1):**
+- `plugins/mega-sdd/references/reading-map.md` — user-facing pipeline-stage-to-location guide (companion to implementer-facing paths.md)
+
+**vault.json schema extension:**
+- `phase: int` — which phase this vault represents (default 1)
+- `phase_total: int` — total phases planned (default 1 if not legacy-rebuild)
+- Back-compat: missing fields → treated as `phase: 1, phase_total: 1`
+
+**generate-intent --phase=N flag (Mode B with --kb):**
+- Parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase plan
+- Scopes vault to Phase N's deliverables
+- Validates N ≤ phase_total at invocation time
+- Defensive fallback when suggested-phasing.md absent or empty
+
+**00-index.md §Phase context block:**
+- Surfaces "Phase N of M" at top of vault entrypoint
+- Lists upcoming phases with 1-line summaries
+- Provides next-phase command verbatim
+- Omits upcoming/command sections for single-phase projects (cleaner display)
+
+**Audit closure:**
+- `scan-codebase/SKILL.md` line 37 stale prose fixed (claimed "repo root" — actual: `.mega-sdd/codebase/codebase-map.md` per paths.md v3.4+)
+- Verified: AGENTS.md at repo root is INTENTIONAL per tool-interop standard (Continue.dev/Cursor/Aider discoverability)
+- Verified: all mega-sdd-generated artifacts (vault, binding, units, bolts, memory, KB, codebase, configs) live under `.mega-sdd/` or `~/.mega-sdd/` per paths.md canonical v3.4+
+
+**Trigger test coverage (+2 cases):**
+- GI-PH1 — default phase=1 with --kb (auto phase_total from suggested-phasing.md)
+- GI-PH2 — explicit --phase=2 (vault scoped to Phase 2 deliverables)
+
+**Standing user directives applied:**
+- "simplifikasi + flawless" — 1 new file, 3 problems in 1 iter, atomic commits
+- "propagation within iter" — schema + producer + consumer ship together
+- "reuse over reinvent" — reading-map.md cross-refs paths.md instead of duplicating layout
+- "deep search" — verified insertion points (generate-intent Mode B Step 2.5 insertion) before writing
+
+**Back-compat preserved:**
+- Old vaults without `phase` field → default `phase: 1, phase_total: 1`
+- Mode A (PRD-driven) + Mode B free-text → always `phase: 1, phase_total: 1` (no legacy-rebuild phasing)
+- Single-phase projects → cleaner display (no upcoming-phases noise)
+
+**Plugin:** v3.25.0 → v3.26.0
+
+**Spec:** `docs/superpowers/specs/2026-05-24-iter-35-reading-map-and-phase-discoverability-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-24-iter-35-reading-map-and-phase-discoverability.md`
+
 ## [3.25.0] - 2026-05-24
 
 ### Iter 34 — Dynamic Model Selection per Subagent Dispatch
