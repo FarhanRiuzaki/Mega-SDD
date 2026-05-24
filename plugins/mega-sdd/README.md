@@ -82,6 +82,30 @@ plugins/mega-sdd/
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
+## What's new in v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
+
+### v3.23.0 (Iter 32) — Starterkit-Aware Deep Scan
+
+mega-sdd now **automatically** captures your starterkit's actual auth/RBAC/UI-UX/library patterns and feeds them through the pipeline — no flags, no config.
+
+**What changed:**
+- `scan-codebase` v2.6.0+ runs a deep-scan stage automatically when a framework is detected. 4 parallel subagents read your manifests + actual code to extract: which auth lib (Sanctum/Breeze/Jetstream/Fortify/Passport), which RBAC lib (Spatie/permission/custom), which UI stack (Alpine/Livewire/Inertia + Tailwind/Bootstrap + SweetAlert/Toastr), and your full library inventory with usage hints.
+- Output: `.mega-sdd/codebase/starterkit-context.yaml` — canonical structured context, cached via lock-file hashing (re-scan with unchanged deps is 0sec).
+- `generate-units` v2.6.0+ reads the context and adds starterkit-specific Anchors and Hard Rules to each unit with mandatory citations. Your unit specs now know about `layouts.app`, `User` model FQCN, your Spatie middleware names, your SweetAlert2 component path.
+- `execute-bolts` v2.7.0+ injects a relevant slice (≤2KB, per-unit) into the bolt-dispatch-prompt T2 tier. Bolts generate code that matches your starterkit by default — uses your layout, your notification lib, your auth guard.
+
+**Why this matters:**
+- Before: generated units used framework defaults; bolts produced code that didn't always match your starterkit's libs.
+- After: your starterkit's choices propagate automatically. Standing prefs like SweetAlert2 + `document.addEventListener` over `$(document).ready` + responsive mobile-first flow into Hard Rules with citations — no per-session reminder needed.
+
+**Autonomous by design:**
+- Zero user flags. Zero config. Triggers automatically when `scan-codebase` detects a framework at MEDIUM+ confidence.
+- Graceful degradation: subagent timeouts → partial output; all-fail → preserve prior cache + halt for retry; no framework detected → skip silently.
+
+See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md](../../docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md) for the full design.
+
+---
+
 ## What's new in v3.22.0 (Iters 17-30)
 
 - **Iter 17 Constitution layer** — 8th vault file (`constitution.md`) with project-facing rules; clauses inject into bolt Hard Rules
