@@ -30,15 +30,17 @@ scopes:
     pics: ["<MW Architect>"]
     priority: 2
     sections: ["§Middleware"]
-    depends_on_locked_contracts: ["BE-MW-event-bus"]
+    depends_on_locked_contracts: ["be-mw-event-bus"]
   FE:
     name: "Frontend Web"
     pics: ["<FE Architect>"]
     priority: 3
     sections: ["§Frontend"]
-    depends_on_locked_contracts: ["BE-FE-orders-api", "MW-FE-realtime-channels"]
+    depends_on_locked_contracts: ["be-fe-orders-api", "mw-fe-realtime-channels"]
 
 # Universal sections — included in EVERY scope's vault
+# Note: §8 (Optional Global Open Questions) is excluded — it's scope-specific by nature;
+# each scope's vault gets its own OQ section via §<Scope>.6 (Open Questions).
 universal_sections: ["§1", "§2", "§3", "§4", "§5", "§6", "§7", "§9"]
 
 # Cross-scope dependencies — informational (mega-sdd does NOT auto-orchestrate)
