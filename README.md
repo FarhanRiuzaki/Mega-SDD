@@ -192,8 +192,9 @@ flowchart TD
 
     %% Brownfield path
     MODE -->|brownfield| SCAN
-    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST]:::phase
+    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST<br/>+ deep-scan stage v2.6.0+]:::phase
     SCAN --> MAP[(🗺️ codebase-map.md<br/>precision: ast)]:::artifact
+    SCAN --> STARTERKIT[(📐 starterkit-context.yaml<br/>auth · rbac · ui_ux · libs<br/>4 parallel subagents · v3.23+)]:::artifact
     MAP --> BIND[bind-codebase<br/>+ impl-state + field-diff<br/>+ Suggested Hard Rules]:::phase
     VAULT --> BIND
     BIND --> BOUND[(🔒 bound-vault/<br/>+ binding.md)]:::artifact
@@ -202,9 +203,13 @@ flowchart TD
     %% Greenfield path
     MODE -->|greenfield| GEN[generate-units<br/>+ PageRank symbol-graph<br/>+ defensive checks]:::phase
 
+    %% Iter 32 — starterkit context flows into consumers
+    STARTERKIT -.Anchors + Hard Rules with citations.-> GEN
+    STARTERKIT -.T2 slice ≤2KB per unit.-> BOLTS
+
     %% Units → bolts
-    GEN --> UNITS[(⚙️ units/U-*.md<br/>atomic + Anchors<br/>+ Hard Rules ast-grep)]:::artifact
-    UNITS --> BOLTS[execute-bolts<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules]:::phase
+    GEN --> UNITS[(⚙️ units/U-*.md<br/>atomic + Anchors<br/>+ Hard Rules ast-grep<br/>+ starterkit citations)]:::artifact
+    UNITS --> BOLTS[execute-bolts<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules<br/>+ T2 starterkit slice]:::phase
     BOLTS --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
 
     %% End-of-chain emissions
@@ -218,8 +223,17 @@ flowchart TD
     MEMORY -.-> RESOLVE
     MEMORY -.-> BOLTS
 
-    %% Orchestrator
-    AUTO([🚀 /mega-sdd:auto --deep<br/>single confirm + auto-continue<br/>+ checkpoints]):::primary
+    %% Iter 33 — Intelligence layer (orchestrator becomes smart router)
+    ROUTING[(🧭 routing-outcomes.md<br/>chain learning · v3.24+)]:::intel
+    PREDICT[\\📋 predictive-checks.md<br/>preflight catalog · v3.24+\\]:::intel
+    GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks<br/>v3.24+ Iter 33 F3+F4}}:::gate
+
+    %% Orchestrator with intelligence layer
+    AUTO([🚀 /mega-sdd:auto --deep<br/>single confirm + auto-continue<br/>+ checkpoints + smart routing]):::primary
+    AUTO <-.reads + writes.-> ROUTING
+    AUTO -.consults pre-invoke.-> PREDICT
+    AUTO -.validates every handoff.-> GATE
+    GATE -.invalid_handoff halt.-> AUTO
     AUTO -.orchestrates.-> INT
     AUTO -.orchestrates.-> SCAN
     AUTO -.orchestrates.-> BIND
@@ -238,13 +252,19 @@ flowchart TD
     classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px,color:#7c2d12
     classDef cross fill:#fafafa,stroke:#525252,stroke-width:1px,color:#262626
     classDef primary fill:#fef2f2,stroke:#dc2626,stroke-width:3px,color:#7f1d1d
+    classDef intel fill:#f3e8ff,stroke:#7c3aed,stroke-width:1.5px,color:#4c1d95
+    classDef gate fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63
 ```
 
 **Legend**:
 - 🟦 inputs (PRD, code, legacy) · 🟨 artifacts produced · 🟩 outputs · 🟧 decisions · 🟫 cross-cutting (memory) · 🟥 orchestrator
-- **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting
+- 🟪 **intelligence layer** (v3.24+, Iter 33): routing-outcomes, predictive-checks · 🟦 **validation gate** (schema + type-check)
+- 📐 **starterkit-context** (v3.23+, Iter 32): auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
+- **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting + intelligence-layer consults
 
-All phases auto-chained via `/mega-sdd:auto`. Each phase produces typed handoff YAML for the orchestrator to continue. Halts on real issues (CONFLICT, business OQ P1, Hard Rule violation, dedup ambiguity, etc.); auto-continues otherwise.
+All phases auto-chained via `/mega-sdd:auto`. Each phase produces typed handoff YAML for the orchestrator to validate (schema + types) + continue. Halts on real issues (CONFLICT, business OQ P1, Hard Rule violation, `invalid_handoff`, `handoff_type_mismatch`, `predictive_check_failed`, dedup ambiguity, etc.); auto-continues otherwise.
+
+**Intelligence layer reading order (Iter 33):** at chain start, orchestrator (1) reads `routing-outcomes.md` to recommend past-successful chain for this project shape, (2) runs `predictive-checks.md` catalog for each skill BEFORE invoking (catches `dep_missing` upfront instead of mid-chain), (3) validates every received handoff against schema (REQUIRED/CONDITIONAL/OPTIONAL + TYPE annotations) before propagating to next skill. At chain end, writes outcome row to routing-outcomes.md so future runs benefit.
 
 ---
 
