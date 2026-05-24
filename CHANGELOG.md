@@ -5,6 +5,103 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.22.0] — 2026-05-24
+
+### Added — Iter 30: execute-bolts Refinement (Tiered Context + Seamless Pipeline)
+
+User flagged execute-bolts as MOST CRUCIAL skill (it's where AI actually writes code). Mid-brainstorm user reframe surfaced the deepest issue: bolt subagents dispatched with insufficient context — they re-discover what binding/units/KB already know, hallucinate where grounding exists.
+
+Iter 30 makes bolts SHARP via tiered context enrichment + 10 AI-executor principles, AND makes the pipeline seamless via propose-and-confirm halt UX + auto-drift gate.
+
+### The 10 AI-executor principles (foundation)
+
+1. **Context budget discipline** — tiered T1/T2/T3 (≤7KB total vs 50KB scatter)
+2. **Anti-context** — DO NOT MODIFY / REPLICATE / WRITE / COMMIT IF blocks
+3. **Confidence-aware per claim** — HIGH/MEDIUM/LOW labels with source citation
+4. **Past-failure intelligence** — memory.outcomes.md filtered for patterns matching this unit
+5. **Self-assessment vocabulary** — structured certain_decisions + uncertain_decisions + fallback_if_wrong
+6. **Halt vocabulary in prompt** — 5 halt types + YAML templates pre-loaded
+7. **Validation hints, not "run tests"** — specific commands + expected output + failure interpretation
+8. **Atomic discipline reinforced** — target_files whitelist + scope-creep halt + commit format
+9. **Provenance chain** — every artifact cites unit ID, vault claim, anchors, active Hard Rules
+10. **Graceful partial-state preservation** — crash mid-bolt recoverable via partial-state.json
+
+### Updated skills
+
+**execute-bolts v2.4.2 → v2.6.0** (major minor bump — new dispatch model):
+- Step 4.5 tiered context enrichment per `references/bolt-dispatch-prompt.md`
+- Compact streaming progress format
+- Aggregate `<vault>/bolts/_summary.md` auto-generated
+- Propose-and-confirm halt UX (AI fix-proposer for eligible halts)
+- Per-bolt lightweight drift check (LOCKED entity drift → halt)
+- Self-assessment YAML required in bolt-report.md
+- Provenance trailer required in every modified file (post-flight verified)
+- Partial-state preservation contract
+- 5 new halt types: dispatch_prompt_too_large, bolt_repeated_partial_failure, provenance_missing, bolt_introduces_locked_drift, self_assessment_missing
+
+**orchestrate-flow v2.4.1 → v2.5.0**:
+- Hybrid drift gate phase (DEFAULT-ON after execute-bolts batch)
+- Severity → chain action mapping (CRITICAL halts, HIGH pauses, MEDIUM/LOW logs)
+- Bolt halt convergence bridge (extends Iter 19 with propose-and-confirm for test_fail / hard_rule_violated / pbt_property_violated)
+
+**detect-drift v1.2.2 → v1.4.0** (minor bump — new auto-trigger mode):
+- Auto-trigger handoff from execute-bolts batch
+- Snapshot reuse from bolt postflights (~6x speedup)
+- Per-bolt incremental scan mode (used by execute-bolts per-bolt drift)
+- `## Suggested next actions` block in DRIFT-REPORT.md with auto-handoff commands
+
+### New reference files (3)
+
+- `plugins/mega-sdd/references/shared-snapshot-schema.md` — canonical JSON schema for bolt + drift snapshots
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — T1/T2/T3 tiered enrichment template
+- `plugins/mega-sdd/skills/execute-bolts/references/propose-and-confirm-prompt.md` — AI fix proposer subagent prompt
+
+### Composition with prior iters
+
+- Iter 19 (convergence loops): extended with bolt halt propose-and-confirm bridge
+- Iter 22 (mutability tiers): drift severity = CRITICAL when LOCKED entity changed
+- Iter 23 (framework packs): Tier 2 context loads filtered pack rules per unit target_files
+- Iter 27 (starterkit-first): scan-codebase pre-loads pack → execute-bolts dispatch
+- Iter 28 (multi-scope): bolt dispatch includes scope context; scope filtering applies to drift
+- Iter 29 (audit closure): scope: handoff block carries through execute-bolts → detect-drift
+
+### End-to-end seamless flow (illustrative)
+
+```
+$ /mega-sdd:auto ./prd.md
+▶ Phase 0: PRD scope picker → BE
+▶ Phase 1: scan-codebase → pack loaded
+▶ Phase 2: generate-intent → vault
+▶ Phase 3: bind-codebase → 87 claims
+▶ Phase 4: generate-units → 20 units
+▶ Phase 5: execute-bolts --all (Iter 30 enrichment)
+  Per-bolt: T1+T2 context (~5KB), compact streaming, per-bolt drift
+  1 halt (test_fail) → propose-and-confirm → user one-click apply → continue
+  All 20 done; _summary.md generated
+▶ Phase 5.5: detect-drift (auto-gate DEFAULT-ON, snapshot reuse)
+  1 LOW drift; chain continues
+▶ Phase 6: emit-agents-md
+✓ Pipeline complete: PRD → 20 bolts in 32m44s, 1 click intervention
+```
+
+### Plugin
+
+3.21.0 → 3.22.0
+
+### Skill version bumps
+
+| Skill | Version |
+|---|---|
+| execute-bolts | 2.4.2 → 2.6.0 |
+| orchestrate-flow | 2.4.1 → 2.5.0 |
+| detect-drift | 1.2.2 → 1.4.0 |
+
+### Field-test target
+
+User-deferred field-test on tradefinance project becomes Iter 30 validation. First-run friction expected; tuning iterations follow.
+
+---
+
 ## [3.21.0] — 2026-05-24
 
 ### Fixed — Iter 29: v3.20.0 Audit Closure
