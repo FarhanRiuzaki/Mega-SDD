@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.9.0
+version: 2.9.1
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -160,6 +160,7 @@ a. **Load TIER 1 (always included, target ≤2KB)**:
    - Atomic commit discipline reminder
    - Anti-context block (DO NOT MODIFY / DO NOT REPLICATE / DO NOT WRITE / DO NOT COMMIT IF)
    - Provenance trailer template
+   - **Acceptance-test provenance NOTE (v2.9.1+, Iter 47 — D4-006 surface):** if unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `generate-units/references/adversarial-test-prompt.md` §provenance values), append a NOTE to the dispatch prompt warning the bolt subagent that the acceptance_test may have missed bugs the implementation introduces. Bolt subagent self-assessment instructed to flag `acceptance_test_concern: <details>` if implementation passes the test but feels under-validated. NOTE template lives in `references/bolt-dispatch-prompt.md` §Acceptance-test provenance NOTE.
 
 **a.5 Initialize T2 budget tracker (v2.8.0+, Iter 44 — closes audit D1-003)**
 
