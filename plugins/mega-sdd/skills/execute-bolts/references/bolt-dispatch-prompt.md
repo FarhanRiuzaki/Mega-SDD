@@ -123,6 +123,31 @@ TIER 2 — Conditional context (target ≤5KB total)
 
 Pattern: <pattern-description> → <past resolution>
 
+## T2.3 — Starterkit context (relevant slice) (v2.7.0+, Iter 32)
+
+This section is populated by execute-bolts Step 4.5.b-starterkit when:
+1. `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists (deep-scan was run)
+2. `unit.starterkit_relevance` is non-empty (unit intersects ≥1 starterkit domain)
+
+If both conditions met, the dispatcher injects the relevant slice (≤2KB) here. Sections for non-relevant domains are OMITTED entirely.
+
+**Slice template (sections appear only when relevant):**
+
+```
+### Starterkit context (relevant to this unit)
+
+Auth: lib=<auth.lib>, guard=<auth.guard>, user_model=<auth.user_model>
+RBAC: lib=<rbac.lib>, role_model=<rbac.role_model>, middleware=<rbac.middleware joined by ", ">
+UI/UX: extends=<ui_ux.layout_extends>, notification=<ui_ux.notification_lib>, idioms=[<idioms joined by "; ">]
+Libs in scope: <lib.name>@<lib.version> (used in: <usage_hint joined by ", ">), ...
+```
+
+**Budget:** total slice content ≤2KB. Truncation order: libs[] (keep top 10 by relevance) → idioms[] (keep top 3) → halt `dispatch_prompt_too_large` if still over.
+
+**Anti-halu rail:** when this section is present, the bolt subagent MUST honor the constraints listed. Do NOT invent libs not listed; do NOT use a different layout than `extends:` value; do NOT use a different notification lib.
+
+**Absence is valid:** if this section is absent, no starterkit context is available — the bolt should produce code following framework defaults (per the framework pack T1 section).
+
 ## Confidence labels per claim
 
 <for each claim this unit implements (from binding.md):>

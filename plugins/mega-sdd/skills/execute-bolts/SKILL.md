@@ -1,7 +1,7 @@
 ---
 name: execute-bolts
-version: 2.6.0
-description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
+version: 2.7.0
+description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
 # Execute-Bolts
@@ -162,8 +162,78 @@ b. **Load TIER 2 (conditional, target ≤5KB total)**:
    - Constitution clauses: ONLY clauses referenced in this unit's `vault_source` sections
    - KB anti-patterns: filter KB by this unit's domain tags
    - Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for "bolts touching similar files OR similar pattern" — last 5 only
+   - **Starterkit context slice (v2.7.0+, Iter 32)**: see Step 4.5.b-starterkit sub-block below for read + filter + inject logic
    - Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale)
    - Validation hints (specific test commands + expected output patterns)
+
+**Step 4.5.b-starterkit: Starterkit context slice details (v2.7.0+, Iter 32)**
+
+### Step 4.5.b-starterkit.read — Read starterkit-context.yaml
+
+```
+Path: <project>/.mega-sdd/codebase/starterkit-context.yaml
+
+IF file absent → skip Steps b-starterkit.build + b-starterkit.inject; do not inject starterkit slice into T2
+IF file present → parse YAML
+  IF parse fails → log warning; emit `deep_scan_cache_corrupt` soft halt; skip
+  IF starterkit_context.partial == true → note partial_slices for slice availability
+Read unit.frontmatter.starterkit_relevance array (from generate-units Step 7.7.e)
+IF unit.starterkit_relevance is missing OR empty → skip Steps b-starterkit.build + b-starterkit.inject
+```
+
+### Step 4.5.b-starterkit.build — Build T2 slice based on unit.starterkit_relevance
+
+For each relevance flag in `unit.starterkit_relevance`, include ONLY that slice from `starterkit-context.yaml`:
+
+```
+slice = {}
+
+IF "auth" in unit.starterkit_relevance AND starterkit_context.auth exists:
+  slice.auth = starterkit_context.auth (lib, guard, user_model only — exclude routes, _source)
+
+IF "rbac" in unit.starterkit_relevance AND starterkit_context.rbac exists:
+  slice.rbac = starterkit_context.rbac (lib, role_model, permission_model, middleware only — exclude policies, _source)
+
+IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
+  slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms only — exclude design_tokens, _source)
+
+IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
+  slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
+  (NOT the full inventory — only libs whose usage_hint contains any of unit.target_files paths or path prefixes)
+```
+
+Truncation order if slice exceeds 2KB budget:
+1. Truncate `slice.libs[]` first — keep top 10 by relevance score (overlap count with target_files)
+2. If still >2KB → truncate `slice.ui_ux.idioms[]` to top 3
+3. If still >2KB → emit halt `dispatch_prompt_too_large` (existing Iter 30 halt; chain stops)
+
+### Step 4.5.b-starterkit.inject — Inject into bolt-dispatch-prompt T2.3 section
+
+Populate the T2.3 "Starterkit context (relevant slice)" section in bolt-dispatch-prompt.md template (see `references/bolt-dispatch-prompt.md`) with the slice from b-starterkit.build:
+
+```
+### Starterkit context (relevant to this unit)
+
+<IF slice.auth present:>
+Auth: lib=<slice.auth.lib>, guard=<slice.auth.guard>, user_model=<slice.auth.user_model>
+</IF>
+
+<IF slice.rbac present:>
+RBAC: lib=<slice.rbac.lib>, role_model=<slice.rbac.role_model>, middleware=<slice.rbac.middleware joined by ", ">
+</IF>
+
+<IF slice.ui_ux present:>
+UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notification_lib>, idioms=[<slice.ui_ux.idioms joined by "; ">]
+</IF>
+
+<IF slice.libs present AND non-empty:>
+Libs in scope: <for each lib in slice.libs: <lib.name>@<lib.version> (used in: <lib.usage_hint joined by ", ">)>
+</IF>
+```
+
+Sections for absent relevance flags are OMITTED entirely (not emitted as empty headers).
+
+Wall-clock cost: 0sec when starterkit-context.yaml is absent (b-starterkit.read exits early). When present: ≤500ms (YAML parse + filter + format).
 
 c. **TIER 3 (NOT embedded; reference-on-demand via Read tool)**:
    - Full upstream bolt-reports
@@ -555,6 +625,8 @@ If `properties:` non-empty but no PBT framework detected (e.g., bare PHP project
 - (v2.0+, Iter 6) `--hard-rule-grammar=v1|v2` selects grammar version; default `auto` (detect from YAML presence in `## Hard rules`).
 - (v2.0+, Iter 6) Mixed v1/v2 grammar in same unit → halt `hard_rule_mixed_grammar`. User migrates via `/mega-sdd:migrate-rules`.
 - (v2.0+, Iter 6) ast-grep not on PATH AND unit has v2 rules → halt `dep_missing` with install commands.
+- (v2.7.0+, Iter 32) Starterkit slice budget: T2 starterkit slice MUST be capped at 2KB. Truncation order: libs[] (top 10 by relevance) → idioms[] (top 3) → halt dispatch_prompt_too_large if still over. Prevents bolt context bloat regression.
+- (v2.7.0+, Iter 32) Starterkit slice constraint honoring: when T2.3 starterkit section is present in dispatch prompt, bolt subagent MUST honor: extend the named layout, use the named notification lib, use only the listed libs (no inventing alternatives). Code that violates is rejected at post-flight check (existing rule extension).
 
 ## Compact streaming progress (v2.6.0+, Iter 30 §6.1)
 
@@ -670,6 +742,15 @@ handoff:
     - <absolute path to vault/bolts/U-001/>
     - <absolute path to vault/bolts/U-002/>
     # ... one per unit executed
+  starterkit_context:                                       # v2.7.0+, Iter 32 (passthrough + metrics)
+    reused: false
+    framework: laravel
+    auth_lib: sanctum
+    rbac_lib: spatie/permission
+    ui_stack: "alpine + tailwind + sweetalert2"
+    libs_count: 47
+    bolts_used_starterkit_slice: 11                         # NEW metric
+    slice_avg_size_kb: 1.6                                  # NEW metric (average T2 slice size injected)
   next_action:
     suggested_skill: mega-sdd:detect-drift
     suggested_args: []
@@ -678,6 +759,8 @@ handoff:
   metrics:
     items_processed: <N units executed>
     items_blocked: <N halts encountered>
+    bolts_used_starterkit_slice: <int>                      # NEW v2.7.0+
+    slice_avg_size_kb: <float>                              # NEW v2.7.0+
 ```
 
 Status `halted` on `test_fail` (acceptance test exhausted retries) / `hard_rule_violated` (post-flight scan) / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.
