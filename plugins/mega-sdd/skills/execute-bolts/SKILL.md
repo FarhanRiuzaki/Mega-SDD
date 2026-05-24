@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.4.2
+version: 2.6.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -143,6 +143,57 @@ Follow `references/superpowers-bridge.md` per-unit flow. Standard sequence (Iter
 2. Read unit body; pass to superpowers `executing-plans` for code implementation
 3. Run acceptance tests (per superpowers `test-driven-development`)
 4. **Post-flight: re-validate Hard rules** (see §Post-flight Hard Rule validation below)
+
+## Step 4.5: Tiered context enrichment per bolt (v2.6.0+, Iter 30)
+
+Per `references/bolt-dispatch-prompt.md` template. Implements the 10 AI-executor principles from spec §4. Total dispatch prompt budget ≤7KB (hard cap 10KB → halt `dispatch_prompt_too_large`).
+
+a. **Load TIER 1 (always included, target ≤2KB)**:
+   - Unit body (frontmatter + body sections)
+   - Halt vocabulary block (5 halt types + YAML templates)
+   - Self-assessment vocabulary template
+   - Atomic commit discipline reminder
+   - Anti-context block (DO NOT MODIFY / DO NOT REPLICATE / DO NOT WRITE / DO NOT COMMIT IF)
+   - Provenance trailer template
+
+b. **Load TIER 2 (conditional, target ≤5KB total)**:
+   - depends_on chain: 1-line summary per upstream bolt (read each bolt-report.md self-assessment)
+   - Framework pack rules: filter pack file by `path_glob` match against this unit's `target_files`
+   - Constitution clauses: ONLY clauses referenced in this unit's `vault_source` sections
+   - KB anti-patterns: filter KB by this unit's domain tags
+   - Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for "bolts touching similar files OR similar pattern" — last 5 only
+   - Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale)
+   - Validation hints (specific test commands + expected output patterns)
+
+c. **TIER 3 (NOT embedded; reference-on-demand via Read tool)**:
+   - Full upstream bolt-reports
+   - Full constitution
+   - Full KB domain files
+   - Full memory tables
+   - Full framework pack
+
+d. **Size check**:
+   - If assembled prompt > 10KB → halt `dispatch_prompt_too_large` with re-tier guidance
+
+e. **Log final prompt**:
+   - Write assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability
+
+f. **Partial-state contract**:
+   - If bolt subagent crashes mid-execution, write `<vault>/bolts/U-XXX/partial-state.json` per `references/shared-snapshot-schema.md`-like format:
+     - files modified (with current sha256)
+     - last test result (if any)
+     - last AI action / current step
+   - Resume reads partial-state, doesn't start from zero
+   - After 3 partial-state attempts → halt `bolt_repeated_partial_failure`
+
+g. **Dispatch via superpowers.executing-plans** with the enriched prompt as plan body.
+
+Anti-halu rails:
+- T2 filtering MUST cite source for inclusion (e.g., "framework pack rule X loaded because target_files matched glob Y")
+- Anti-context block populated from actual data sources (data-mutation-policy.md, KB, framework pack) — NEVER invented
+- Self-assessment confidence MUST be 0.0-1.0 numeric (not strings); halt if omitted
+- Provenance trailer MANDATORY in every modified file — post-flight scan verifies presence; missing → halt `provenance_missing`
+
 5. Commit (via superpowers); write bolt-report.md
 
 ### Post-flight Hard Rule validation (v1.2+, Iter 3; v2.4.1+ Iter 25 framework pack provenance)
@@ -250,6 +301,67 @@ For `--squad=<id>` (v1.1+):
 4. **Verify consumed interfaces lockable.** For each unit in the working set, read `consumes_interfaces`. For each listed interface, read its frontmatter `status`. If ANY status is `draft` → halt with `cross_squad_interface_draft`.
 5. **Proceed with normal sequential or `--parallel` execution** on the filtered working set.
 
+### Per-bolt lightweight drift check (v2.6.0+, Iter 30 §6.4)
+
+After post-flight Hard Rule validation passes (or proposed-and-confirmed fix applied), AND BEFORE commit, run a quick scope-filtered drift scan vs vault:
+
+a. Read vault.json scope (if multi-scope vault per Iter 28) OR skip scope filter
+b. For each file in unit's target_files modified this bolt:
+   - Compare current state vs vault's expected state (from binding.md anchors when present)
+   - Detect: name drift, type drift, behavior drift (per detect-drift v1.4+ categories)
+c. If drift detected on LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (eligible for propose-and-confirm OR override)
+d. If drift detected on INTENT/ARTIFACT entity → log to bolt-report.md `## Drift introduced` section + continue (will surface in batch-end detect-drift gate)
+e. If no drift → log "✓ Drift check: clean" to bolt-report.md
+
+Compact streaming format reflects this:
+```
+└─ Post-flight: Hard Rules ✓ | PBT ✓ | Drift check: clean ✓
+```
+
+OR (drift detected case):
+```
+└─ Post-flight: Hard Rules ✓ | PBT ✓ | ⚠️ Drift: order.amount type changed (LOCKED — will halt at gate)
+```
+
+### Self-assessment requirement in bolt-report.md (v2.6.0+, Iter 30 §10)
+
+Every bolt-report.md MUST include `bolt_self_report` YAML block at end:
+
+```yaml
+bolt_self_report:
+  confidence: <0.0-1.0>   # bolt subagent's own confidence in this bolt's correctness
+  certain_decisions:
+    - "<decision with HIGH confidence + evidence>"
+  uncertain_decisions:
+    - decision: "<what bolt did>"
+      rationale: "<why this path was taken>"
+      fallback_if_wrong: "<safer alternative if this turns out wrong>"
+  retry_history:
+    - attempt: 1
+      failure: "<verbatim failure if any>"
+      fix: "<what was changed>"
+```
+
+If bolt-report.md lacks this block → halt `self_assessment_missing` (post-flight verification fails).
+
+Aggregate `_summary.md` rolls up uncertain_decisions across batch for human review post-execution.
+
+### Provenance trailer enforcement (v2.6.0+, Iter 30 §10 principle 9)
+
+Post-flight scan also verifies every modified file has provenance trailer comment:
+
+```
+Generated by mega-sdd execute-bolts <version>
+Unit: U-XXX (vault sha256: <hash>)
+Implements claim: C-NNN "<claim text>"
+Anchors consulted: <list>
+Hard Rules active: <list of rule IDs>
+```
+
+Language-appropriate comment style (e.g., `//` for JS/PHP/Java, `#` for Python/Ruby, `--` for SQL).
+
+Missing trailer → halt `provenance_missing` (always-pause per §6.3).
+
 ## Halt protocol
 
 Per `references/bolt-contract.md` failure modes. Always emit blocker YAML on halt:
@@ -297,6 +409,65 @@ blocker:
     interface_status: draft
   next_action: "Producer squad must lock the interface before consumer bolts can execute. Edit interfaces/<id>.md frontmatter: status: locked, locked_at: YYYY-MM-DD. Re-run execute-bolts."
 ```
+
+### Propose-and-confirm halt UX (v2.6.0+, Iter 30 §6.3)
+
+Per `references/propose-and-confirm-prompt.md`. When bolt halts with eligible halt type, dispatch AI fix-proposer subagent → render proposal via AskUserQuestion → on user-accept apply fix + re-execute → on user-reject continue chain pause.
+
+**Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/memory/config.yaml` `halt_auto_propose`):
+- `test_fail` (after default 3 retries via `--max-retries`)
+- `hard_rule_violated` (with framework pack provenance evidence)
+- `pbt_property_violated` (counterexample preserved in postflight)
+
+**NOT eligible** (always pure pause):
+- `oq_business_p1_unresolved` — human business decision required
+- `dedup_ambiguous` — human judgment required
+- `quality_gate_failed` — broader investigation needed
+- `constitution_drift_detected` — audit-significant
+- `bolt_repeated_partial_failure` — structural problem; fix won't help
+- `provenance_missing` — user must add trailer
+- `dispatch_prompt_too_large` — config issue, not bolt-fixable
+- `dep_missing` — environment setup needed
+- `hard_rule_unparseable` — config issue
+- `hard_rule_unanchored` — config issue
+- `verify_unit_writable` — config issue
+
+**Dispatch contract**:
+1. Bolt halt → check halt type eligibility + user config override
+2. If eligible: dispatch fix-proposer subagent with `references/propose-and-confirm-prompt.md` template
+3. Subagent returns proposed_fix YAML (root_cause + evidence_chain + fix diff + confidence + optional alternatives)
+4. Render to user via AskUserQuestion (5 options: Apply / Alt / Reject / Cancel / Override)
+5. On Apply: write proposed_fix to `<vault>/bolts/U-XXX/proposed-fix.md` → apply diff → re-execute single bolt → continue batch
+6. On Reject: write proposed_fix to `<vault>/bolts/U-XXX/proposed-fix.md` (preserved for next session) → chain pauses
+7. On Override: record to memory `decisions.md` as forced_pass → continue batch (audit-significant)
+
+**Halt cycle safety**: if same halt fires twice on same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop).
+
+**Configuration override** (`~/.mega-sdd/memory/config.yaml`):
+
+```yaml
+halt_auto_propose:
+  test_fail: propose          # default
+  hard_rule_violated: propose
+  pbt_property_violated: propose
+  oq_business_p1_unresolved: pause   # always
+  dedup_ambiguous: pause             # always
+  # ... rest pause by default
+```
+
+### New halt types (v2.6.0+, Iter 30)
+
+Beyond existing halts, Iter 30 adds:
+
+| Halt type | Fires when | Eligible for propose? |
+|---|---|---|
+| `dispatch_prompt_too_large` | Step 4.5 tiered prompt > 10KB hard cap | NO (config/spec issue) |
+| `bolt_repeated_partial_failure` | 3+ partial-state attempts on same bolt OR propose-and-confirm cycled with different fixes | NO (structural) |
+| `provenance_missing` | Post-flight detects missing provenance trailer in modified file | NO (user adds trailer) |
+| `bolt_introduces_locked_drift` | Per-bolt drift check detects drift on LOCKED entity | YES (eligible for propose-and-confirm OR override) |
+| `self_assessment_missing` | bolt-report.md lacks `bolt_self_report` YAML block | NO (bolt must self-report) |
+
+Halt YAML envelopes for each are documented in spec §Appendix B and `references/propose-and-confirm-prompt.md`.
 
 ## Property-Based Testing validation (v2.4+, Iter 20 — closes Iter 18 Bug 1)
 
@@ -384,6 +555,75 @@ If `properties:` non-empty but no PBT framework detected (e.g., bare PHP project
 - (v2.0+, Iter 6) `--hard-rule-grammar=v1|v2` selects grammar version; default `auto` (detect from YAML presence in `## Hard rules`).
 - (v2.0+, Iter 6) Mixed v1/v2 grammar in same unit → halt `hard_rule_mixed_grammar`. User migrates via `/mega-sdd:migrate-rules`.
 - (v2.0+, Iter 6) ast-grep not on PATH AND unit has v2 rules → halt `dep_missing` with install commands.
+
+## Compact streaming progress (v2.6.0+, Iter 30 §6.1)
+
+Per-bolt status emitted as compact streaming format (chat-friendly, updated in-place):
+
+```
+▶ Bolt 7/20: U-007 "Create User model" (scope: BE)
+  └─ Context: 6 upstream loaded, 3 anti-patterns flagged, confidence HIGH
+  └─ Pre-flight: Hard Rules ✓ | PBT ready ✓ | Anchors verified 3/3 ✓
+  └─ Execution: TDD red ✓ → green ✓ (45s)
+  └─ Post-flight: Hard Rules ✓ | PBT ✓ | Drift check: clean ✓
+  └─ Commit: 8a3f2e1 "feat(U-007): create User model"
+✓ Bolt 7/20: U-007 → done in 1m23s, 0 retries, confidence 0.92
+```
+
+Halt cases get fuller treatment inline (see §Propose-and-confirm halt UX below).
+
+After batch (printed at end of execute-bolts --all run):
+
+```
+══════════════════════════════════════════════════════════
+✓ execute-bolts batch complete: 18/20 done, 2 halted, 1 auto-resolved
+══════════════════════════════════════════════════════════
+  Scope: BE | Duration: 24m11s | Retries: 3 total | Avg confidence: 0.87
+  Halts open: U-012 (test_fail awaiting user), U-015 (hard_rule_violated)
+  See <vault>/bolts/_summary.md for full table
+  Next: detect-drift (auto-gate, hybrid mode — DEFAULT-ON per Iter 30 §6.4)
+```
+
+## Aggregate summary `<vault>/bolts/_summary.md` (v2.6.0+, Iter 30 §6.2)
+
+Auto-generated AFTER every batch (overwrite-safe; idempotent regen).
+
+Structure:
+
+```markdown
+# Bolts Summary — <Project Name>
+**Generated**: <ISO8601> (mega-sdd execute-bolts v2.6.0+)
+**Scope**: <scope_id> (<scope_name>)
+**Batch**: <--all | --squad=X | --module=Y>
+**Duration**: <duration>
+**Avg AI confidence**: <0.0-1.0>
+
+## Status table
+| Unit | Title | Status | Duration | Retries | Confidence | Halt type | Commit |
+|---|---|---|---|---|---|---|---|
+| U-001 | <title> | ✓ done | 45s | 0 | 0.95 | — | <sha> |
+| ... | ... | ... | ... | ... | ... | ... | ... |
+
+## Halts open (N)
+- U-XXX: <halt_type> after <retries> retries. <fix proposal status>. Resume: `/mega-sdd:auto --resume`.
+
+## Hard rule violations across batch (by rule)
+| Rule | Source | Violations | Resolution |
+|---|---|---|---|
+
+## Mutability tier coverage (when scope-tagged vault)
+| Tier | Units touched | Status |
+|---|---|---|
+
+## Self-assessment summary (uncertain decisions across batch)
+- U-XXX: "<decision>" — fallback: <safer alternative>
+
+## Next steps
+- Resolve <N> halts: `/mega-sdd:auto --resume`
+- After all green: detect-drift will auto-run (hybrid gate; --no-drift-check opt-out)
+```
+
+Generation timing: written immediately after batch loop completes (whether all bolts succeeded, some halted, or chain cancelled). Overwrites any prior _summary.md (no append; full regen each batch).
 
 ## Outputs
 
