@@ -99,3 +99,36 @@ The Iter 5 memory + self-learning skill. Tests operations + scope handling + ant
 ## Pass criteria
 
 All M1-M9 operations succeed per `skills/memory/SKILL.md` Procedure section. AH1-AH7 negative invariants hold — no silent learning, citations mandatory, rollback works, current evidence wins, --memory-off respected, schema check enforced, concurrent-write tolerant.
+
+---
+
+## Iter 33 — Routing outcomes (v1.3.0+)
+
+### M-RO1 — Routing outcomes append on chain end
+
+**Setup:**
+- Fresh project; no `.mega-sdd/memory/routing-outcomes.md`
+- Chain executes successfully (status=completed, blockers=[])
+- Duration: 8 min; 0 halts
+
+**Trigger:** chain completes; Step 7.5 fires
+
+**Expected:**
+- `.mega-sdd/memory/routing-outcomes.md` created with header + first row
+- Row format: `<today's date> | <fingerprint> | <chain-used> | 8 | yes | 0`
+- File lock acquired + released cleanly (no `memory_in_use` halt)
+
+### M-RO2 — Routing outcomes corrupt: auto-invalidate + chain proceeds
+
+**Setup:**
+- `.mega-sdd/memory/routing-outcomes.md` exists but is malformed (e.g., invalid markdown table)
+
+**Trigger:** chain start; Step 2.7 fires
+
+**Expected:**
+- Step 2.7 parse fails
+- Soft halt `routing_outcome_corrupt` emitted
+- File renamed to `routing-outcomes.md.corrupt-<ISO8601>`
+- Log message: "routing-outcomes.md corrupt; auto-invalidated; chain proceeds with default routing"
+- Chain CONTINUES with routing-rules.md default (soft halt warns; doesn't STOP)
+- Step 7.5 creates fresh routing-outcomes.md on chain end

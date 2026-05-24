@@ -208,3 +208,18 @@
 ## Pass criteria
 
 All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7 per Iter 2 spec. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 per Iter 3 spec — DESIGN-OQ-6 gates: `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
+
+---
+
+## Iter 33 — Predictive checks
+
+### BC-PH1 — binding_input_complete predictive check entry
+
+**Setup:** N/A — documentation test
+
+**Verify:**
+- Grep `references/predictive-checks.md` for `## bind-codebase preflight checks` section
+- Confirm `check_id: binding_input_complete` entry present
+- Confirm command checks for vault.json AND codebase-map.md
+- Confirm fatal=yes; predicts_halt=bind_conflict or dep_missing
+- Confirm on_fail hint instructs "Run scan-codebase first if codebase-map.md absent; run generate-intent first if vault.json absent"
