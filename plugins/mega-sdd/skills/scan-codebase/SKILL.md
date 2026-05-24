@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.6.2
+version: 2.6.3
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -30,7 +30,68 @@ When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` dec
 - Repo path (positional, default `./`)
 - `--depth=N` (default 8)
 - `--include=<glob>` (repeatable; default infers from package manager)
-- `--exclude=<glob>` (repeatable; default excludes `node_modules`, `vendor`, `dist`, `build`, `.git`)
+- `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems — see §Default exclusions below). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
+
+## Default exclusions (v2.6.3+)
+
+The scan walks every path NOT matching these globs. List grouped by ecosystem for maintainability — implementation treats them as a flat allowlist applied to `find` / `tree-sitter` walk.
+
+**Dependency managers (all ecosystems):**
+- `node_modules/**` (npm/yarn/pnpm)
+- `vendor/**` (composer, go modules, ruby bundler — when vendored)
+- `.pnpm-store/**`, `.yarn/**` (yarn berry / pnpm caches)
+- `bower_components/**` (legacy)
+
+**Build / dist output:**
+- `dist/**`, `build/**`, `out/**` (generic + Next.js export + IntelliJ)
+- `target/**` (Rust + Maven/Java)
+- `bin/**`, `obj/**` (.NET / Eclipse)
+- `*.class`, `*.jar`, `*.war` (Java compiled — file glob)
+- `*.pyc`, `*.pyo` (Python compiled)
+
+**Framework caches:**
+- `.next/**`, `.nuxt/**`, `.svelte-kit/**`, `.astro/**` (JS meta-frameworks)
+- `.turbo/**`, `.parcel-cache/**`, `.cache/**` (build tool caches)
+- `.gradle/**`, `.mvn/**` (JVM build tool caches)
+- `storage/framework/**`, `bootstrap/cache/**` (Laravel runtime caches)
+- `public/build/**`, `public/hot/**` (Laravel Vite/Mix output)
+
+**Virtualenvs / language sandboxes:**
+- `.venv/**`, `venv/**`, `env/**` (Python)
+- `__pycache__/**` (Python bytecode)
+- `.bundle/**`, `vendor/bundle/**` (Ruby)
+
+**Test / coverage / lint artifacts:**
+- `coverage/**`, `.nyc_output/**`, `htmlcov/**` (JS + Python coverage)
+- `.pytest_cache/**`, `.mypy_cache/**`, `.ruff_cache/**`, `.tox/**` (Python tooling)
+- `*.egg-info/**` (Python packaging artifacts)
+
+**Version control / IDE / OS:**
+- `.git/**`, `.svn/**`, `.hg/**` (VCS internals)
+- `.idea/**`, `.vs/**` (IntelliJ + Visual Studio)
+- `.vscode/**` (VS Code workspace settings — exclude by default; user can `--include=.vscode/**` if project ships shared config worth scanning)
+- `.DS_Store`, `Thumbs.db` (OS noise)
+
+**Logs / temp:**
+- `*.log`, `logs/**`, `tmp/**`, `temp/**`
+
+**Mega-SDD self-reference (avoid scanning own outputs):**
+- `.mega-sdd/**` (v3.4+ canonical layout)
+- `bound-vault/**`, `units/**`, `bolts/**`, `codebase-map.md` (legacy paths — back-compat exclusion so re-scan doesn't re-ingest prior outputs)
+- `docs/mega-sdd/**`, `docs/knowledge-base/**`
+
+> **Why exclude SDD outputs from bulk scan:** `.mega-sdd/` contains INTENT (vaults, KB, units) — not code. Scan's job is mapping REALITY; reading vault during scan creates confirmation bias (the map silently "agrees" with vault claims that never got verified against source). Reconciliation between intent and reality is `bind-codebase`'s job, not scan's. This exclusion is an **anti-hallucination rail**, not just noise-reduction.
+>
+> **Targeted reads still happen by explicit path** (orthogonal to the bulk-walk exclude list):
+> - `.mega-sdd/memory/conventions.md` — past convention detections (Step §Memory layer; skip re-detect for `status: established`)
+> - `.mega-sdd/codebase/starterkit-context.yaml` — deep-scan cache (Step 10.5.2; cache-hit short-circuit when lock files unchanged)
+>
+> These are read by name, not discovered via glob walk, so the exclusion does not block them. Do NOT add other `.mega-sdd/` files as targeted reads without explicit spec amendment — the bias risk is real.
+
+**Override flags:**
+- `--exclude=<glob>` appends to this list (most common usage — add project-specific noise like `public/storage/**`).
+- `--no-default-excludes` disables the entire default list (rare; use when scanning a dependency tree intentionally).
+- `--include=<glob>` is evaluated AFTER excludes — to scan a normally-excluded path, combine `--no-default-excludes` with explicit `--include`.
 
 ## Output
 
@@ -361,7 +422,8 @@ Recovery: user re-runs scan-codebase later. Chain halts.
 
 - `--depth=N`: tree depth (default 8)
 - `--include=<glob>`: scan only matching files (repeatable)
-- `--exclude=<glob>`: skip matching files (repeatable)
+- `--exclude=<glob>`: skip matching files (repeatable; **appended** to defaults — see §Default exclusions)
+- `--no-default-excludes` (v2.6.3+): disable the default exclusion list entirely (rare; opt-in scan of dep trees)
 - `--out=<path>`: override output location
   - **v2.2+ default (Iter 10)**: `<project-root>/.mega-sdd/codebase/codebase-map.md` per `plugins/mega-sdd/references/paths.md`
   - **Legacy default (≤v2.1)**: `<project-root>/codebase-map.md` (preserved when `.mega-sdd/` dir absent OR `layout: legacy` in config)
