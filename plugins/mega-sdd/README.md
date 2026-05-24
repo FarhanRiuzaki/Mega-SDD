@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.27.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.27.1)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,31 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.27.1 (Iter 41, patch) — Halt Taxonomy Sync Sweep
+
+Reconciles the canonical halt registry (`vault-contract.md §halt-protocol`) with all halts actively emitted by skills and tracked by orchestrate-flow. Closes Iter 38 audit priority 2 (registry drift).
+
+**Pre-sweep state:**
+- Enum had 37 halt types
+- Orchestrate-flow taxonomy referenced 39 halt types
+- **9 halts emitted by skills + listed in orchestrate-flow were missing from canonical enum** (any consumer validating envelopes would reject them)
+- 5 halts in enum were missing from orchestrate-flow taxonomy (orchestrator couldn't decide auto-loop vs ALWAYS-STOP behavior)
+
+**Post-sweep state:**
+- Enum: 46 halts (+9 reconciled)
+- Description list: 37 bulleted entries (+9 with provenance: producer skill + iter + resolution)
+- Orchestrate-flow taxonomy: 44 entries (+5 reconciled)
+
+**Halts added to enum + description (9):**
+`dedup_ambiguous` (generate-units), `hard_rule_unparseable` (generate-units), `hard_rule_violated` (execute-bolts), `memory_schema_mismatch` (memory), `prd_no_scopes_block_user_rejected_retrofit` (generate-intent, Iter 28), `prd_path_missing` (diff-vault, Iter 29), `prd_retrofit_low_confidence` (generate-intent, Iter 28), `quality_gate_failed` (extract-intelligence), `scope_not_declared_in_prd` (generate-intent, Iter 28).
+
+**Halts added to orchestrate-flow ALWAYS-STOP taxonomy (5):**
+`oq_blocker` (canonical envelope; coexists with orch-level alias `oq_business_p1_unresolved`), `cross_squad_ambiguous`, `cycle_detected`, `interface_ref_missing`, `pbt_citation_invalid` (Iter 39 oversight closure).
+
+**No new skills, no new halts.** All halts already existed in code; sweep makes the registry match reality. Closes Iter 38 audit D3-006 (taxonomy sync).
+
+**Plugin v3.27.0 → v3.27.1.**
 
 ### v3.27.0 (Iter 40, minor) — Silent-Failure Path Closure (3 new halts)
 

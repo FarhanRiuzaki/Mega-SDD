@@ -539,6 +539,11 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 - `handoff_missing` (v3.2.0+, Iter 40) — orchestrate-flow: sub-skill exited but no handoff YAML at expected path (silent-failure path closure).
 - `artifact_missing` (v3.2.0+, Iter 40) — orchestrate-flow: handoff YAML lists artifact paths that don't exist on disk (silent-failure path closure).
 - `partial_state_corrupt` (v2.7.3+, Iter 40) — execute-bolts `--resume`: partial-state.json fails JSON parse (silent-failure path closure).
+- `oq_blocker` — generate-intent / AI consumers reading vault non-interactively: P1 OQ blocks downstream work. Canonical envelope per `vault-contract.md §oq_blocker`. (Iter 41 sweep — was registered in enum but missing from orch taxonomy; coexists with `oq_business_p1_unresolved` which is the orch-level alias for business-classified P1s.)
+- `cross_squad_ambiguous` — generate-units: multi-squad code where the producer squad cannot be determined unambiguously. ALWAYS STOP; user picks the canonical squad. (Iter 41 sweep closure.)
+- `cycle_detected` — generate-units / orchestrator: dependency cycle detected in unit graph (module_depends_on / blocked_by chain). ALWAYS STOP; user resolves cycle by re-tiering. (Iter 41 sweep closure.)
+- `interface_ref_missing` — generate-units / bind-codebase: a unit declares `consumes_interface: <ref>` but the referenced interface is not declared by any other unit. ALWAYS STOP; user fixes ref OR creates producer unit. (Iter 41 sweep closure.)
+- `pbt_citation_invalid` (v2.4+, Iter 20) — execute-bolts: PBT property block `Cites: §Decision-D-NNN` points to a non-existent ADR. ALWAYS STOP. (Iter 41 sweep — Iter 39 added halt to vault-contract enum but missed orch taxonomy.)
 
 ### Halt types that are SOFT (warn-only, chain continues)
 

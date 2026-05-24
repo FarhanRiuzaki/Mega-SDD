@@ -5,6 +5,75 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.27.1] - 2026-05-25
+
+### Iter 41 — Halt Taxonomy Sync Sweep
+
+**Registry hygiene iter** (~1hr; PATCH bump — pure docs/contract additive; no code/behavior change). Reconciles canonical halt registry with reality.
+
+**Problem (from Iter 38 audit D3-006):**
+
+Pre-sweep gap analysis (`/tmp/halts_*.txt` diff):
+- Halts emitted by skills + listed in orchestrate-flow but MISSING from `vault-contract.md §halt-protocol` enum: **9** (any strict envelope validator would reject these)
+- Halts in vault-contract enum but missing from orchestrate-flow taxonomy: **5** (orchestrator couldn't decide auto-loop vs ALWAYS-STOP routing)
+- Halts in enum but with no bulleted description: 9 (have richer §Type-specific guidance sections instead — false positives, no action)
+
+**Resolution: surgical sync across 2 surfaces**
+
+Surface 1 — `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md`:
+- Enum extended: +9 halt types
+- Description list extended: +9 bulleted entries with provenance (`producer-skill v<X.Y>+, Iter <N>` + canonical resolution path)
+
+Surface 2 — `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md`:
+- ALWAYS-STOP taxonomy: +5 entries (`oq_blocker`, `cross_squad_ambiguous`, `cycle_detected`, `interface_ref_missing`, `pbt_citation_invalid`)
+- `pbt_citation_invalid` specifically closes an Iter 39 oversight (added to enum but missed orch taxonomy)
+
+**Halts added to enum + description (9):**
+1. `dedup_ambiguous` — generate-units v2.5+: multi-unit dedupe ambiguity
+2. `hard_rule_unparseable` — generate-units v2.0+: ast-grep YAML parse failure
+3. `hard_rule_violated` — execute-bolts v1.2+, Iter 3: post-flight scan violation
+4. `memory_schema_mismatch` — memory v1.0+, Iter 5: schema_version drift
+5. `prd_no_scopes_block_user_rejected_retrofit` — generate-intent v1.6+, Iter 28
+6. `prd_path_missing` — diff-vault v1.3+, Iter 29
+7. `prd_retrofit_low_confidence` — generate-intent v1.6+, Iter 28
+8. `quality_gate_failed` — extract-intelligence v1.0+, Iter 9
+9. `scope_not_declared_in_prd` — generate-intent v1.6+, Iter 28
+
+**Halts added to orch ALWAYS-STOP taxonomy (5):**
+1. `oq_blocker` (canonical; coexists with `oq_business_p1_unresolved` orch-level alias)
+2. `cross_squad_ambiguous`
+3. `cycle_detected`
+4. `interface_ref_missing`
+5. `pbt_citation_invalid` (Iter 39 oversight)
+
+**Counts:**
+- Enum: 37 → **46** halts (+9)
+- Description list: 28 → **37** bullets (+9 provenance entries)
+- Orch taxonomy: 39 → **44** entries (+5)
+
+**No new files. No new halts in code. No skill version bumps** — pure registry reconciliation.
+
+**Audit gap-finder commands** (reproducible):
+```bash
+# Enum extraction
+grep -A0 "type: oq_blocker" plugins/mega-sdd/skills/generate-intent/references/vault-contract.md | head -1 | sed 's/.*type: //' | tr '|' '\n' | sort -u
+# Description extraction
+awk '/^## §halt-protocol/{flag=1} /^### Multiple blockers/{flag=0} flag' vault-contract.md | grep -oP '^- `[a-z_]+`'
+# Orch extraction
+grep -oP '^- `[a-z_]+`' plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+```
+
+**Standing directives applied:**
+- simplifikasi: 14 reconciliations → 2 atomic edits (1 enum extend + 1 description append)
+- flawless: closes Iter 39 pbt_citation_invalid oversight + all Iter 28/29 propagation gaps + all Iter 3/5/6/9/20 historical gaps
+- reuse-first: extends existing enum + existing description list; no schema changes
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Next:** Iter 42 — token optimization (priority 3 from audit queue): tier-2/tier-3 context references on-demand loading.
+
+**Plugin:** v3.27.0 → v3.27.1
+
 ## [3.27.0] - 2026-05-25
 
 ### Iter 40 — Silent-Failure Path Closure (3 new halts)
