@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.26.2)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.26.3)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
@@ -83,6 +83,25 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.26.3 (Iter 39, patch) — Quick Audit Closure Pass (5 immediate wins)
+
+Closes 5 P1/HIGH findings from `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`. All atomic doc/contract fixes; no behavior changes.
+
+**What changed:**
+
+- **D4-001 layer count**: plugin README header `(13 layers)` → `(15 layers)` + added layer 14 (predictive preflight from Iter 33 F2) + layer 15 (handoff schema validation from Iter 33 F3+F4). Root README line 406 stale `13-layer pipeline defense above` → `15-layer pipeline defense above`.
+- **D3-010 --max-cycles default**: SKILL.md was documenting `default 5` in 2 spots while `commands/orchestrate-flow.md` said `default 3`. Canonicalized to **3** (one canonical default) — matches user-facing slash command help.
+- **D3-007 --force-skip-postflight**: undocumented escape hatch now formally surfaced in `execute-bolts/SKILL.md ## Inputs` with WARNING block citing anti-bypass policy (CLAUDE.md). Logged in handoff YAML via `notes.postflight_skipped: true`.
+- **D3-004 pbt_citation_invalid halt**: added to `vault-contract.md §halt-protocol` enum + canonical description. Emitted by execute-bolts v2.4+ (Iter 20) when a PBT property `Cites: §Decision-D-NNN` references a non-existent ADR.
+
+**Skill bumps:**
+- `execute-bolts` 2.7.1 → 2.7.2 (+ `--force-skip-postflight` flag)
+- `orchestrate-flow` 3.1.1 → 3.1.2 (canonical max-cycles=3)
+
+**Why this matters:** Iter 38 audit surfaced 37 optimization findings across 4 dimensions (token / performance / robustness / output quality). These 5 are the immediate wins with <40min total time-to-ship. Higher-effort closures (priority 1: silent-failure path) land in Iter 40.
+
+**Plugin v3.26.2 → v3.26.3** (PATCH — pure doc/contract fixes; no skill behavior changes).
 
 ### v3.26.2 (Iter 37, patch) — Scenarios Coverage + README Audit
 
@@ -217,7 +236,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 - **Iter 29 v3.20.0 audit closure** — 13 findings closed from post-Iter-28 deep audit (`docs/superpowers/audits/2026-05-24-iter-28-v3.20.0-deep-audit.md`). Pattern was Iter 28 producer-only: generate-intent wrote scope to vault.json + handoff YAML, but ZERO downstream skills consumed it. Fix: scope propagation to 6 consumer skills (bind-codebase v1.9.3, generate-units v2.5.4, emit-agents-md v1.2.4, execute-bolts v2.4.2, detect-drift v1.2.2, resolve-oq v0.9.1). Also: diff-vault v1.3.0 implements prd_sha256 change detection (closed unimplemented spec claim). Orchestrate-flow v2.4.1 halt taxonomy gains 4 new entries (3 Iter 28 + 1 Iter 29). Generate-intent gains formal §Halt conditions section with full YAML envelope examples. Step 0.9 execution-order guard added (file order ≠ runtime order). agents-md-schema.md stale legacy vault paths fixed
 - **Iter 30 execute-bolts seamless pipeline** — bolt subagent dispatched via tiered context enrichment (T1 always ≤2KB / T2 conditional ≤5KB / T3 reference-on-demand) per `references/bolt-dispatch-prompt.md`. Implements 10 AI-executor principles from spec (anti-context, confidence labels, past-failure intelligence, self-assessment vocabulary, halt vocabulary, validation hints, atomic discipline, provenance trailers, graceful partial-state). Plus seamless pipeline: compact streaming progress + aggregate `<vault>/bolts/_summary.md` + propose-and-confirm halt UX (AI fix proposer for test_fail / hard_rule_violated / pbt_property_violated; user single-click approve) + auto-drift gate DEFAULT-ON after batch (~6x faster via shared snapshot reuse) + DRIFT-REPORT.md `## Suggested next actions` with auto-handoff commands + convergence loops bridge bolt halts. New halts: dispatch_prompt_too_large, bolt_repeated_partial_failure, provenance_missing, self_assessment_missing, bolt_introduces_locked_drift
 
-## Anti-hallucination defense (13 layers)
+## Anti-hallucination defense (15 layers)
 
 1. **Intent** — uncertain claims promote to Open Questions
 2. **OQ classification** — business vs tech; tech auto-resolves
@@ -232,6 +251,8 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 11. **Mutability tier classification** — [LOCKED]/[INTENT]/[ARTIFACT] orthogonal to confidence (Iter 22)
 12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time (Iter 17)
 13. **Framework convention packs** — laravel/django/rails/etc. conventions inject into Suggested Unit Hard Rules (Iter 23)
+14. **Predictive preflight** — orchestrate-flow surfaces upcoming halts before they fire (Iter 33 F2)
+15. **Handoff schema validation** — handoff YAML type-checked against handoff-contract.md per skill (Iter 33 F3+F4)
 
 ## Memory layer (v2.1+)
 

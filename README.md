@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.26.2 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.26.3 · **License:** MIT
 
 </div>
 
@@ -403,7 +403,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 /mega-sdd:memory export ~/backup.tar.gz        # backup memory
 ```
 
-10 memory-layer invariants from Iter 5 (complements the 13-layer pipeline defense above): suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
+10 memory-layer invariants from Iter 5 (complements the 15-layer pipeline defense above): suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
 
 </details>
 
@@ -413,7 +413,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.26.2)
+├── plugins/mega-sdd/                       # the plugin itself (v3.26.3)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 13 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)

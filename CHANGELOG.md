@@ -5,6 +5,42 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.26.3] - 2026-05-25
+
+### Iter 39 — Quick Audit Closure Pass (5 immediate wins)
+
+**Documentation iter** (~40min; PATCH bump — no behavior change). Closes 5 P1/HIGH findings from Iter 38 e2e optimization audit.
+
+**Findings closed (5 of 37):**
+- **D4-001** layer count drift: plugin README `(13 layers)` → `(15 layers)` + added layer 14 (predictive preflight from Iter 33 F2) + layer 15 (handoff schema validation from Iter 33 F3+F4). Root README stale "13-layer pipeline defense above" → "15-layer pipeline defense above". (Note: Iter 37 partial fix only updated the top-of-README header; this iter closes the trailing references and brings plugin README into alignment.)
+- **D3-010** `--max-cycles` default mismatch: `orchestrate-flow/SKILL.md` documented `default 5` in 2 places while `commands/orchestrate-flow.md` said `default 3`. Canonicalized to **3** — single source of truth.
+- **D3-007** `--force-skip-postflight` undocumented: escape hatch now formally documented in `execute-bolts/SKILL.md ## Inputs` with WARNING block citing anti-bypass policy. Use logged via handoff YAML `notes.postflight_skipped: true`.
+- **D3-004** `pbt_citation_invalid` missing from halt enum: added to `vault-contract.md §halt-protocol` type list + canonical description.
+
+**Findings re-verified (not in patch):**
+- **D3-005** `diff_conflict` ALWAYS-STOP: verified already present at `orchestrate-flow/SKILL.md:485`. Original audit finding was based on stale state. Skipped from this patch.
+
+**Plugin file changes:**
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.26.2 → 3.26.3
+- `plugins/mega-sdd/README.md` — anti-hallu defense layer count + v3.26.3 What's new entry
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — v2.7.1 → v2.7.2 (+ `--force-skip-postflight` flag)
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — v3.1.1 → v3.1.2 (max-cycles=3 canonical)
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — +pbt_citation_invalid halt
+- `README.md` — version bump + 13-layer → 15-layer trailing reference
+
+**Audit source:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
+**Standing directives applied:**
+- simplifikasi: 5 atomic findings → 5 surgical edits in 1 atomic commit
+- flawless: NO finding deferred ("skip if hard" is a deferral pattern); D3-005 re-verified before skipping
+- reuse-first: extended existing halt enum + existing Inputs section (no new files)
+
+**Next:** Iter 40 — silent-failure path closure (handoff_missing / artifact_missing / partial_state_corrupt halts) — audit priority 1.
+
+**Plugin:** v3.26.2 → v3.26.3
+
+**Audit reference:** `docs/superpowers/audits/2026-05-25-iter-38-e2e-optimization-audit.md`
+
 ## [3.26.2] - 2026-05-24
 
 ### Iter 37 — Scenarios Coverage + README Audit
