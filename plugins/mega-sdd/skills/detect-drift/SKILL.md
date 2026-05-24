@@ -579,6 +579,11 @@ handoff:
   metrics:
     items_processed: <N claims compared>
     items_blocked: <N drift findings>
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id, e.g., "BE">
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
 ```
 
 Status `halted` on `drift_framework_mismatch` (vault framework signal doesn't match codebase reality). Standalone invocation emits informational chat hint only.

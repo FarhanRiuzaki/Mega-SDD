@@ -541,6 +541,12 @@ handoff:
     items_processed: <N OQs/CONFLICTs walked>
     items_resolved: <N actions taken>
     items_deferred: <N kept as deferred>
+    items_blocked: <N>                    # NEW v0.9.2+ — canonical handoff metric per handoff-contract.md
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id>
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
 ```
 
 Status `paused` if user opted to walk away mid-resolution (some OQs unresolved). Standalone invocation (without `--auto`) emits informational chat hint only.

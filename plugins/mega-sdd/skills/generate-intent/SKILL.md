@@ -1093,6 +1093,15 @@ handoff:
   metrics:
     items_processed: <N OQs generated>
     items_blocked: <N business-blocking OQs requiring stakeholder input>
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id>
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from PRD>
+  mutability:                             # v3.17+ (Iter 25) — when --kb mode produces mutability-tagged claims
+    tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
+    locked_claims_touched: []
+    artifact_discards_proposed: <N>
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works; user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.

@@ -481,9 +481,15 @@ handoff:
   emitted_at: <ISO8601 timestamp>
   status: completed | paused | halted
   artifacts:
-    - <absolute path to vault.json (updated)>
-    - <absolute path to <vault>/.mega-sdd/vault-diffs/<timestamp>.patch>   # when jd installed (v1.1+)
-    - <absolute path to <vault>/CHANGELOG entry appended>
+    - <absolute path to <vault>/VAULT-DIFF.md>            # NEW (was missing — primary output artifact)
+    - <absolute path to <vault>/vault.json (updated)>
+    - <absolute path to <vault>/00-index.md (updated)>
+    - <absolute path to <vault>/.mega-sdd/vault-diffs/<ISO8601>.patch>
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id>
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
   next_action:
     suggested_skill: mega-sdd:resolve-oq        # if Resolved-OQ vs new PRD CONFLICTs surfaced
     # OR

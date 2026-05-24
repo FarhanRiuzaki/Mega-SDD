@@ -405,6 +405,11 @@ handoff:
     files_scanned: <int>
     symbols_extracted: <int>
     deep_scan_wall_clock_sec: <int>                     # NEW v2.6.0+: 0 on cache hit
+  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
+    id: <scope id, e.g., "BE">
+    name: <scope name>
+    sibling_scopes: []
+    prd_sha256: <sha256 from vault.json>
 ```
 
 > The `starterkit_context:` block + the `starterkit-context.yaml` artifact entry are CONDITIONAL — emitted only when deep-scan ran successfully (framework detected at MEDIUM+ confidence). Skip both when deep-scan was skipped or failed entirely.
