@@ -42,27 +42,27 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 ```
 plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest (v3.37.0)
-├── skills/                       # 13 skills + _vendored/
-│   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
-│   ├── memory/                   # memory + self-learning (v1.2.1)
-│   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.3)
+├── skills/                       # 14 skills + _vendored/
+│   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.3.4)
+│   ├── memory/                   # memory + self-learning (v1.3.1)
+│   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.5)
 │   ├── emit-fsd/                 # Confluence FSD generator (v1.0.0) — NEW Iter 54
-│   ├── extract-intelligence/     # legacy → knowledge-base (v1.4.0)
-│   ├── generate-intent/          # PRD/brief/KB → vault (v1.10.0)
-│   ├── scan-codebase/            # tree-sitter AST scan (v2.4.2)
-│   ├── bind-codebase/            # validation gate + field diff (v1.9.2)
-│   ├── generate-units/           # atomic decomposition (v2.5.3)
-│   ├── execute-bolts/            # superpowers TDD bridge (v2.4.1)
-│   ├── orchestrate-flow/         # lifecycle router (v2.3.2)
-│   ├── resolve-oq/               # OQ resolver + recommendations (v0.9.0)
-│   ├── detect-drift/             # code vs vault (v1.2.1)
-│   ├── diff-vault/               # PRD revision + jd patches (v1.2.1)
+│   ├── extract-intelligence/     # legacy → knowledge-base (v1.7.0)
+│   ├── generate-intent/          # PRD/brief/KB → vault (v1.15.1)
+│   ├── scan-codebase/            # tree-sitter AST scan (v2.7.2)
+│   ├── bind-codebase/            # validation gate + field diff (v1.10.3)
+│   ├── generate-units/           # atomic decomposition (v2.7.1)
+│   ├── execute-bolts/            # superpowers TDD bridge (v2.10.0)
+│   ├── orchestrate-flow/         # lifecycle router (v3.5.0)
+│   ├── resolve-oq/               # OQ resolver + recommendations (v0.9.3)
+│   ├── detect-drift/             # code vs vault (v1.4.1)
+│   ├── diff-vault/               # PRD revision + jd patches (v1.3.2)
 │   └── _vendored/                # superpowers fallback
-├── commands/                     # 20 slash commands (1 primary + 19 advanced)
+├── commands/                     # 21 slash commands (1 primary + 20 advanced)
 │   ├── auto.md                   # ⭐ THE command
 │   ├── generate-intent.md, scan-codebase.md, bind-codebase.md, generate-units.md, execute-bolts.md
 │   ├── extract-intelligence.md, orchestrate-flow.md, resolve-oq.md, diff-vault.md, detect-drift.md
-│   ├── memory.md, emit-agents-md.md
+│   ├── memory.md, emit-agents-md.md, emit-fsd.md, replay.md
 │   ├── lint-units.md, analyze-parallelism.md, list-modules.md    # [auto-invoked by /mega-sdd:auto]
 │   ├── migrate-rules.md, migrate-paths.md                         # one-off maintenance
 │   └── update-plugin.md
@@ -78,7 +78,7 @@ plugins/mega-sdd/
 ## Pipeline (one-line)
 
 ```
-[legacy → extract-intelligence] → brief/PRD → generate-intent → (scan + bind for brownfield) → generate-units → execute-bolts → emit-agents-md
+[legacy → extract-intelligence] → brief/PRD → generate-intent → (scan + bind for brownfield) → generate-units → execute-bolts → emit-agents-md → emit-fsd
 ```
 
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
