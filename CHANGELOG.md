@@ -5,6 +5,126 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.38.0] - 2026-05-25
+
+### Iter 55 — OS-Aware Auto-Install Deps (new skill `install-deps`)
+
+**User-driven feature post-Iter-54.** Dependency install friction surfaced after Iter 54 shipped `emit-fsd` (FSD generator needs pandoc + tectonic for PDF rendering). User asked for OS-aware auto-install + cross-platform detection. Research-driven: cross-platform shell OS detection canonical patterns ([GitHub gist](https://gist.github.com/gmolveau/d0e3efc219c5bcc6ecc13a1405ac6c73)), auto-install security consensus ([npm best practices](https://github.com/lirantal/npm-security-best-practices), [Snyk](https://snyk.io/blog/ten-npm-security-best-practices/), [Pluralsight](https://www.pluralsight.com/resources/blog/cybersecurity/tools-for-safeguarding-app-dependencies)), Claude Code Bash-via-skill model ([Claude Code docs](https://code.claude.com/docs/en/overview)).
+
+**Pipeline addition (parallel to existing chain — install-deps is user-explicit, NOT auto-invoked):**
+
+```
+User invokes /mega-sdd:install-deps directly when:
+  - Fresh mega-sdd install (bootstrap optional native binaries)
+  - Predictive-checks warn (e.g., pandoc_installed: warn from emit-fsd)
+  - Cross-machine re-sync (memory layer skips already-installed)
+```
+
+**New skill: `mega-sdd:install-deps` (v1.0.0)**
+
+- **Trigger:** standalone (`/mega-sdd:install-deps [flags]`) — NOT auto-invoked per safety consensus (install is user-explicit; orchestrate-flow predictive-checks just HINT to run the skill, don't run it themselves)
+- **Output:** `<project>/.mega-sdd/memory/install-outcomes.md` (memory log of install runs) + chat-only progress + verify output
+- **OS detection:** canonical Bash algorithm in `references/os-detection.md`:
+  - `darwin*` → macos
+  - `linux-gnu*` + `microsoft` in uname → wsl
+  - `linux-gnu*` (no microsoft) → linux + distro detection via `/etc/os-release` `ID=`
+  - `msys*` / `cygwin*` → windows-bash (git-bash / MSYS2)
+- **Package manager detection** (primary per OS):
+  - macOS → brew
+  - Ubuntu/Debian/Linuxmint/Pop/elementary → apt
+  - Fedora/RHEL/CentOS/Rocky/Alma/Amazon Linux → dnf (or yum legacy)
+  - Arch/Manjaro/EndeavourOS/Garuda → pacman
+  - Alpine → apk
+  - Windows-bash → winget (Win10/11) / scoop (dev-focused) / choco (legacy)
+- **Cross-platform fallbacks:** cargo (Rust tools: tree-sitter-cli, ast-grep, ripgrep, tectonic), npm (Node tools: markdownlint-cli2, tree-sitter-cli, @ast-grep/cli), go install (Go tools: jd)
+
+**Tool matrix (8 tools in `references/tool-matrix.yaml`):**
+
+| Tool | Used by | Fallback when missing |
+|---|---|---|
+| `tree-sitter` (or `tree-sitter-cli`) | scan-codebase v2.0+ AST extraction | Regex engine (lower precision) |
+| `ast-grep` | execute-bolts v2.0+ Hard Rule v2 grammar | v1 grammar (5 closed types) |
+| `ripgrep` (`rg`) | scan + bind + detect-drift + lint-units | GNU grep (slower; no JSON) |
+| `jd` | diff-vault (canonical JSON/YAML diff) | Manual Read+compare via skill body |
+| `pandoc` (Iter 54) | emit-fsd PDF rendering | Markdown-only output |
+| `tectonic` (Iter 54) | emit-fsd LaTeX engine | HTML output (browser print-to-PDF) |
+| `markdownlint-cli2` | lint-units vault prose | Skill-internal heuristic checks |
+| `gh` | execute-bolts PR automation (optional) | Manual PR creation |
+
+**6-step procedure** (per `skills/install-deps/SKILL.md`):
+
+1. **Detect env** — OS + pkg manager + cross-platform fallbacks
+2. **Audit inventory** — memory cache check + `verify_cmd` per tool
+3. **Build install plan** — matrix lookup + fallback chain + sudo separation
+4. **Propose + confirm** — AskUserQuestion with [Install all] / [Pick subset] / [Cancel]; `--dry-run` and `--manual` paths skip execution
+5. **Execute** — Bash invocation per tool, per-tool progress, continue on failure (don't abort batch)
+6. **Verify** — `verify_cmd` after each install; mark unverified for halt
+7. **Memory write** — Iter 5 file-lock pattern; outcomes appended to install-outcomes.md
+8. **Summary + handoff** — chat summary + handoff YAML under `--auto`
+
+**Safety rails (non-negotiable):**
+
+1. **NEVER auto-`sudo`** — for tools requiring elevation (apt/dnf installs), skill PRINTS the command + instructs user to run manually. Memory records as "sudo-pending" status.
+2. **NEVER use curl|bash patterns** — only signed package manager commands per `tool-matrix.yaml`.
+3. **ALWAYS show exact `install_cmd` + source pkg manager + size estimate BEFORE running** — single batch confirmation via AskUserQuestion.
+4. **ALWAYS verify post-install** with `verify_cmd` from matrix — claim "installed" only after verify passes.
+5. **NEVER install Claude Code itself** — out of scope; this skill installs OPTIONAL mega-sdd deps only.
+6. **Memory write happens AFTER verify pass** — never record "installed" on partial state.
+7. **Skip tools with no matching matrix entry AND no working fallback** — emit warning, don't halt entire batch.
+
+**2 new halt types** (added to `vault-contract.md §halt-protocol type enum`):
+- `install_failed` — install command exited non-zero OR `verify_cmd` failed post-install. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail, subtype}`.
+- `pkg_mgr_not_found` — no compatible package manager detected for OS. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`.
+
+**Predictive-checks hint update** (no behavior change — discoverability):
+
+3 existing tool-presence checks in `orchestrate-flow/references/predictive-checks.md` get suffix `"...OR run /mega-sdd:install-deps for auto-install (Iter 55+)."`:
+- `tree_sitter_present`
+- `pandoc_installed`
+- `pandoc_latex_engine_present`
+
+**Iter 54 drift closure (incidental):** `emit-fsd` was added as a skill in Iter 54 but never added to the `source_skill` enum in vault-contract.md. Iter 55 added both `emit-fsd` and `install-deps` to the enum in the same commit (T7).
+
+**Files created (4):**
+- `plugins/mega-sdd/skills/install-deps/SKILL.md` (~190 lines, 10.5KB)
+- `plugins/mega-sdd/skills/install-deps/references/os-detection.md` (canonical Bash detection algorithm, 4.7KB)
+- `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml` (8-tool × OS × pkg_mgr matrix, 7.1KB)
+- `plugins/mega-sdd/commands/install-deps.md` (slash command wrapper, 2.2KB)
+
+**Files modified (5):**
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — 3 hint suffixes appended
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — 2 new halt types in enum + descriptions; source_skill enum updated (emit-fsd Iter 54 drift + install-deps Iter 55)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.37.0 → 3.38.0
+- `CHANGELOG.md` — this entry
+- `plugins/mega-sdd/README.md` — version refs + folder layout + What's new
+- `README.md` (root) — version refs + skill count 14→15 + command count 21→22 + cheat-sheet
+
+**Skill version bumps:**
+- New skill `install-deps` 1.0.0 (initial release)
+- No existing skill versions changed (predictive-checks.md and vault-contract.md are reference files; their parent skills retain prior versions per plugin convention)
+
+**Out of scope (deferred):**
+
+- **Iter 56+**: Windows native PowerShell variant (winget/scoop without WSL)
+- **Iter 57+**: Auto-update detection (`brew outdated` / `apt list --upgradable` → suggest updates)
+- **Iter 58+**: Signed Anthropic apt/dnf repo bootstrap for Claude Code itself
+- **Iter 59+**: Air-gapped install mode (bundle binaries offline)
+- **Iter 60+**: Integration with project lockfile (e.g., `mega-sdd.deps.lock` for reproducible env)
+
+**Standing directives applied:**
+
+- **simplifikasi**: 1 new skill (with 2 reference files + 1 command) + 3 surface touches in existing files; no new schema (tool-matrix.yaml is internal config, not vault contract); minimum new files
+- **flawless**: producer (install-deps) + consumer (orchestrate-flow predictive-checks hints + vault-contract halt enum) ship same iter — atomic; structural smoke test passed (8 tools, 4 OS branches, 7 pkg managers, 3 predictive-check hints, 3 halt mentions)
+- **reuse-first**: emit-fsd skill anatomy (analog template); Iter 33 predictive-checks pattern (hint extension); Iter 5 memory layer (install-outcomes.md analog to bolt-outcomes.json); existing `tooling-install.md` matrix promoted to YAML + extended with Iter 54 deps (pandoc/tectonic); AskUserQuestion for batch confirmation (standard Claude Code pattern); no new halt envelope (reuses existing schema with new type enum entries)
+
+**Plugin v3.37.0 → v3.38.0** (MINOR — new skill, backward-compatible: install is user-explicit so no impact on existing auto-pipeline runs; predictive-check hint update is doc-only suffix).
+
+**Process trace:** user request → research dispatch (3 parallel WebSearch queries + WebFetch for OS detection patterns) → recommendation with tradeoffs → user approval ("ok approved") → spec doc → implementation plan (9 atomic tasks) → inline execution per simplifikasi standing directive (literal-paste markdown content; subagent dispatch overhead unwarranted for prescriptive content). All 9 tasks committed atomically.
+
+**Audit source:** user feedback after real-project field test of Iter 54 emit-fsd ("tambahan dll, gue pengen lo sendiri yg invoke buat install. dan bisa detecs misal mac gimana, windows gimana, ubuntu gimana"). Brainstorming session 2026-05-25 with single research → recommendation → user approval cycle.
+
+---
+
 ## [3.37.0] - 2026-05-25
 
 ### Iter 54 — FSD Auto-Generation (new skill `emit-fsd`)

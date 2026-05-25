@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.37.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.38.0 · **License:** MIT
 
 </div>
 
@@ -293,7 +293,7 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 14 skills (incl. 1 anchor) + 21 slash commands (1 primary + 20 advanced/auto-invoked). |
+| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 15 skills (incl. 1 anchor) + 22 slash commands (1 primary + 21 advanced/auto-invoked). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -346,7 +346,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.37.0.
+- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.38.0.
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -416,13 +416,14 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.37.0)
+├── plugins/mega-sdd/                       # the plugin itself (v3.38.0)
 │   ├── README.md                           # plugin folder shortform
-│   ├── skills/                             # 14 skills + _vendored/
+│   ├── skills/                             # 15 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
 │   │   ├── memory/                         # memory + self-learning
 │   │   ├── emit-agents-md/                 # AGENTS.md flatten
 │   │   ├── emit-fsd/                       # Confluence FSD generator (Iter 54)
+│   │   ├── install-deps/                   # OS-aware dep installer (Iter 55)
 │   │   ├── extract-intelligence/           # legacy → KB
 │   │   ├── generate-intent/                # PRD/brief/KB → vault
 │   │   ├── scan-codebase/                  # tree-sitter AST scan
@@ -434,7 +435,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   │   ├── detect-drift/                   # code vs vault
 │   │   ├── diff-vault/                     # PRD revision handler
 │   │   └── _vendored/                      # superpowers fallback
-│   ├── commands/                           # 21 slash commands
+│   ├── commands/                           # 22 slash commands
 │   ├── references/                         # plugin-level conventions
 │   │   ├── paths.md                        # canonical layout
 │   │   └── tooling-install.md              # install matrix
@@ -480,6 +481,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 | Review pending learning suggestions | `/mega-sdd:memory review` |
 | Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
 | Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end; Iter 54) |
+| Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr; Iter 55) |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
 | Privacy-sensitive run | `/mega-sdd:auto ./prd.md --memory-off` |
