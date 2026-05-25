@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.4.0
+version: 3.5.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -357,6 +357,7 @@ next_action:
    | Before `execute-bolts` invocation | `analyze-parallelism` (per `commands/analyze-parallelism.md`) | Wave plan computed; passed to execute-bolts to drive `--parallel` batch dispatch |
    | After `execute-bolts` completes | `list-modules` (per `commands/list-modules.md` table format) | Per-module status table in chain end summary |
    | After all phases complete | `emit-agents-md` (per `commands/emit-agents-md.md`, respecting `config.yaml defaults.emit_agents_md: true|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
+   | After all phases complete | `emit-fsd` (per `commands/emit-fsd.md`, respecting `--no-fsd` flag on `auto`/`orchestrate-flow`) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
    | After all phases complete | Memory review check (per `commands/memory.md review` if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
 
    These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
