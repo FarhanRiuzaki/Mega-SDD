@@ -5,6 +5,121 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.37.0] - 2026-05-25
+
+### Iter 54 — FSD Auto-Generation (new skill `emit-fsd`)
+
+**New feature — corporate FSD deliverable.** User feedback after real-project field test: "di kantor gue wajib FSD sebagai confluence, bisa ga skill ini generate FSD secara otomatis. dan fsd nya akurat". Iter 54 adds dedicated FSD emitter skill grounded on actual vault/units/bolts/binding state — no fabrication, all citations sha256-stamped, drift detection on re-emit.
+
+**Pipeline addition:**
+
+```
+[legacy → extract-intelligence] → brief/PRD → generate-intent → (scan + bind for brownfield)
+  → generate-units → execute-bolts → emit-agents-md → emit-fsd (NEW Iter 54)
+```
+
+**New skill: `mega-sdd:emit-fsd` (v1.0.0)**
+
+- **Trigger:** standalone (`/mega-sdd:emit-fsd [vault]`) + auto-invoked at end of `/mega-sdd:auto` pipeline (skip via `--no-fsd`)
+- **Output:** `<vault>/fsd/FSD.md` + `<vault>/fsd/FSD.pdf` + `<vault>/fsd/FSD.styling.yaml` + `<vault>/fsd/.citation-map.json`
+- **PDF rendering:** pandoc + xelatex (or tectonic) for PDF; HTML fallback when LaTeX absent; markdown-only fallback when pandoc absent (predictive checks warn user)
+- **Template:** Hybrid Confluence Atlassian template — 10 sections: Overview, Goals & Non-Goals, Stakeholders & Owners, User Stories, Functional Requirements, Non-Functional Requirements, Design & Architecture, API & Data Contracts, Test Plan & UAT, Risks & Open Issues
+
+**Mode auto-detection:**
+
+| CWD state | Mode | Section behavior |
+|---|---|---|
+| Vault only (no units, no bolts) | `pre-dev` | Sections 1-8 + 10 populated; section 9 = "TBD pending execution" |
+| Vault + units (no bolts) | `pre-dev` (with breakdown) | Section 4 from units; section 9 = "Specified pending execution" |
+| Vault + units + bolts | `post-dev` | All 10 sections; section 9 = actual UAT results + as-built per-FR status |
+
+User override via `--mode={pre-dev|post-dev|auto}` flag.
+
+**Anti-hallucination guarantee (the "akurat" claim):**
+
+- Every FSD section text traces to source artifact via `.citation-map.json`
+- Source artifacts cited with file path + line range + sha256 stamp (computed at emit-time)
+- Missing source → emit `[Pending — <source> not yet generated]` placeholder; NEVER fabricate
+- Slot markers `{{slot_name}}` all filled OR explicitly placeholdered (empty slot = halt `quality_gate_failed:template_slot_unfilled`)
+- Re-emit detects sha256 changes; inserts ⚠ "Updated since last emit" callout in PDF before regenerated sections (auditability for reviewers)
+
+**Source-of-truth mapping per section:**
+
+| FSD Section | Source artifact |
+|---|---|
+| 1. Overview | `vault/01-overview.md` §Purpose + §Scope |
+| 2. Goals & Non-Goals | `vault/01-overview.md` §Goals + §Non-Goals |
+| 3. Stakeholders & Owners | `vault/_meta/squads.yaml` + `vault.json` author |
+| 4. User Stories | `units/U-NNN.md` frontmatter |
+| 5. Functional Requirements | `vault/02-functional.md` FR-NNN entries |
+| 6. Non-Functional Requirements | `vault/02-functional.md §NFR` + `vault/_meta/constitution.md` |
+| 7. Design & Architecture | `binding.md` §Confirmed Claims + `codebase-map.md` §Entities/Modules |
+| 8. API & Data Contracts | `codebase-map.md` §Public interfaces (with `Last_Scanned_Sha256` per Iter 46) |
+| 9. Test Plan & UAT | `bolts/U-NNN/bolt-report.md` acceptance_test result + self-assessment |
+| 10. Risks & Open Issues | `vault/03-open-questions.md` unresolved OQs + bolt `acceptance_test_concerns` (Iter 53) |
+
+**Styling customization** (per-project override at `<vault>/fsd/FSD.styling.yaml`):
+
+- `company_name`, `logo_path`, `classification` (Internal/Confidential/Public)
+- `font_family`, `font_size_pt`, `accent_color`, `page_size` (A4/Letter)
+- `include_sections` (subset for stakeholder-specific FSDs)
+- `include_citation_footnotes`, `include_drift_callouts`, `include_provenance_trailer`
+- ID corporate convenience presets: `banking_indonesia`, `telco_indonesia`
+
+**Predictive checks added (3, all in `orchestrate-flow/references/predictive-checks.md`):**
+
+- `vault_present_for_fsd` — fatal (predicts `dep_missing`)
+- `pandoc_installed` — warn (degrades to markdown-only)
+- `pandoc_latex_engine_present` — warn (degrades to HTML fallback)
+
+**orchestrate-flow extension (v3.4.0 → v3.5.0):**
+
+- Step 6 auto-integrated diagnostics table +1 row for emit-fsd
+- Skip via `--no-fsd` flag on `/mega-sdd:auto` or `/mega-sdd:orchestrate-flow`
+
+**Files created (6):**
+- `plugins/mega-sdd/skills/emit-fsd/SKILL.md` (~200 lines, 9.7KB)
+- `plugins/mega-sdd/skills/emit-fsd/references/fsd-template.md` (10-section canonical template, 5.2KB)
+- `plugins/mega-sdd/skills/emit-fsd/references/section-mapping.md` (extraction rules per section, 10.1KB)
+- `plugins/mega-sdd/skills/emit-fsd/references/styling-config.yaml` (default styling + override schema, 2.8KB)
+- `plugins/mega-sdd/skills/emit-fsd/references/pandoc-template.tex` (LaTeX template, 2.8KB)
+- `plugins/mega-sdd/commands/emit-fsd.md` (slash command wrapper, 2.6KB)
+
+**Files modified (7):**
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 6 diagnostics table + version bump
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — 3 new checks
+- `plugins/mega-sdd/commands/auto.md` — `--no-fsd` flag doc
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.36.0 → 3.37.0
+- `CHANGELOG.md` — this entry
+- `plugins/mega-sdd/README.md` — version refs + What's new
+- `README.md` (root) — version bump
+
+**Out of scope (deferred):**
+
+- **Iter 55+**: Cross-scope FSD consolidation (`/mega-sdd:emit-fsd --consolidate=BE,MW,FE`)
+- **Iter 56+**: Confluence REST API direct push (with auth handling)
+- **Iter 57+**: FSD-to-FSD diff tool (`/mega-sdd:diff-fsd v1.pdf v2.pdf`)
+- **Iter 58+**: Indonesian translation pass
+- **Iter 59+**: Strict-citation mode (`--strict-citation` halts on any drift)
+
+**Standing directives applied:**
+
+- **simplifikasi**: 1 new skill (with 4 reference files + 1 command) + 3 surface touches in existing files; no new halt types (reuses `quality_gate_failed` + `dep_missing`); no runtime code (markdown-driven per plugin design principle)
+- **flawless**: producer (emit-fsd) + consumer (orchestrate-flow Step 6 + predictive-checks + auto.md flag) ship same iter — atomic; structural verification passed (slot coverage + citation-map.json schema + cross-reference integrity)
+- **reuse-first**: extends emit-agents-md skill anatomy (analog pattern), Iter 33 predictive-checks pattern (3 new entries), Iter 13 auto-integrated diagnostics pattern (extension), citation discipline from binding.md (sha256 + line ranges), Iter 53 acceptance_test_concerns consumer (section 10 Risks)
+
+**Skill version bumps:**
+- New skill `emit-fsd` 1.0.0 (initial release)
+- `orchestrate-flow` 3.4.0 → 3.5.0 (MINOR — new diagnostic surface)
+
+**Plugin v3.36.0 → v3.37.0** (MINOR — new skill, backward-compatible: existing pipelines unchanged; skip flag works for users who don't want FSD).
+
+**Process trace:** brainstorming session (user-approved each design section) → spec doc (`docs/superpowers/specs/2026-05-25-iter-54-fsd-auto-generation-design.md`) → implementation plan (`docs/superpowers/plans/2026-05-25-iter-54-fsd-auto-generation.md`, 12 atomic tasks) → inline execution per simplifikasi standing directive (literal-paste markdown plan; subagent dispatch overhead unwarranted for prescriptive content). All 12 tasks committed atomically.
+
+**Audit source:** user feedback during real-project test ("di kantor gue wajib FSD sebagai confluence"). Brainstorming session 2026-05-25 with single-user-approval per design section.
+
+---
+
 ## [3.36.0] - 2026-05-25
 
 ### Iter 53 — Consumer wiring closure: producer-only fields → end-to-end USED
