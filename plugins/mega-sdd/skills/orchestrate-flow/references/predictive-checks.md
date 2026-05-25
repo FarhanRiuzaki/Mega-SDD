@@ -198,6 +198,29 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
+## emit-fsd preflight checks (v3.5.0+, Iter 54)
+
+- **check_id: `vault_present_for_fsd`**
+  command: `test -f <vault-path>/vault.json`
+  expected: file exists
+  on_fail: "emit-fsd requires a vault. Run /mega-sdd:generate-intent first."
+  fatal: yes
+  predicts_halt: dep_missing (chain order error)
+
+- **check_id: `pandoc_installed`**
+  command: `command -v pandoc`
+  expected: exit 0
+  on_fail: "pandoc not installed; emit-fsd will produce FSD.md only (no PDF render). Install: brew install pandoc (macOS) / apt install pandoc (Debian/Ubuntu) / dnf install pandoc (Fedora)"
+  fatal: no
+  predicts_halt: (no halt; degraded output — markdown-only)
+
+- **check_id: `pandoc_latex_engine_present`**
+  command: `command -v xelatex || command -v tectonic`
+  expected: exit 0
+  on_fail: "no LaTeX engine found; pandoc PDF render needs xelatex (brew install --cask basictex / apt install texlive-xetex) OR tectonic (brew install tectonic — recommended, lighter, ~50MB vs ~2GB BasicTeX). Falls back to FSD.html for browser print-to-PDF."
+  fatal: no
+  predicts_halt: (no halt; degraded — HTML fallback)
+
 ## memory preflight checks (v3.34.0+, Iter 50)
 
 - **check_id: `memory_dir_writable`**
