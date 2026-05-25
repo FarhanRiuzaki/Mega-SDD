@@ -41,11 +41,12 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.36.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v3.37.0)
 ├── skills/                       # 13 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.2.1)
 │   ├── memory/                   # memory + self-learning (v1.2.1)
 │   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.3)
+│   ├── emit-fsd/                 # Confluence FSD generator (v1.0.0) — NEW Iter 54
 │   ├── extract-intelligence/     # legacy → knowledge-base (v1.4.0)
 │   ├── generate-intent/          # PRD/brief/KB → vault (v1.10.0)
 │   ├── scan-codebase/            # tree-sitter AST scan (v2.4.2)
@@ -83,6 +84,30 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.37.0 (Iter 54, minor) — FSD Auto-Generation (new skill `emit-fsd`)
+
+User-driven feature after real-project field test. Corporate Confluence FSD is mandatory deliverable; previously generated manually outside mega-sdd. Iter 54 adds dedicated FSD emitter skill grounded on actual vault/units/bolts/binding state with anti-hallucination citation discipline.
+
+**New skill `mega-sdd:emit-fsd` (v1.0.0):**
+
+- Generates Hybrid Confluence-format FSD (Markdown + PDF via pandoc + xelatex/tectonic)
+- 10 canonical sections (Overview, Goals, Stakeholders, User Stories, FRs, NFRs, Design, API/Data, UAT, Risks)
+- Mode auto-detect: pre-development (vault only) vs post-development (vault + bolts) from CWD state
+- Anti-hallucination: every section text traces to source artifact via `.citation-map.json` (sha256-stamped); missing sources emit `[Pending — X not yet generated]` placeholder, NEVER fabricate
+- Drift detection: re-emit on changed sources inserts ⚠ "Updated since last emit" callout
+- ID corporate styling defaults (A4, Arial 11pt, navy accent, classification stamp, draft watermark in pre-dev mode); per-project override via `<vault>/fsd/FSD.styling.yaml` (banking_indonesia / telco_indonesia presets included as commented examples)
+- Predictive preflight checks added (3 in orchestrate-flow predictive-checks.md): `vault_present_for_fsd` (fatal), `pandoc_installed` (warn → markdown-only fallback), `pandoc_latex_engine_present` (warn → HTML fallback for browser print-to-PDF)
+
+**Trigger:** standalone (`/mega-sdd:emit-fsd [vault]`) + auto-invoked at end of `/mega-sdd:auto` (skip via `--no-fsd`).
+
+**Output:** `<vault>/fsd/FSD.pdf` (+ FSD.md, FSD.styling.yaml, .citation-map.json). User uploads PDF manually to Confluence per corporate workflow.
+
+**orchestrate-flow extension (v3.4.0 → v3.5.0):** Step 6 auto-integrated diagnostics table +1 row for emit-fsd.
+
+**Reuse-first:** emit-agents-md skill anatomy (analog pattern); Iter 33 predictive-checks pattern (3 new entries); Iter 13 auto-integrated diagnostics extension; citation discipline from binding.md (sha256 + line ranges); Iter 53 acceptance_test_concerns consumer (section 10 Risks aggregates bolt concerns).
+
+**Plugin v3.36.0 → v3.37.0** (MINOR — new skill; backward-compatible: existing pipelines unchanged; skip flag works for users who don't want FSD).
 
 ### v3.36.0 (Iter 53, minor) — Consumer wiring closure: producer-only fields → end-to-end USED
 
