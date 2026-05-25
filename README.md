@@ -158,6 +158,8 @@ Major versions close prior audit findings. Four forensic audits documented in `d
 | Iter 28 (v3.20.0) | manual + targeted | 13 findings | Iter 29 (v3.21.0) |
 | Iter 31 (v3.22.0) | 13 parallel subagents × 10 dimensions | 179 findings | Iter 33 (v3.24.0) closes 3 of top 5 areas |
 | Iter 33 (v3.24.0) | hybrid: deep audit + per-skill probe | 13-skill scorecard | Iter 34 candidates documented |
+| Iter 38 (v3.26.2) | E2E pipeline optimization audit | 37 findings (12 P1/HIGH + 17 P2/MEDIUM + 8 LOW) | Iters 39-52 (v3.26.3 → v3.35.1) — all P1/HIGH + bulk P2 closed; 3 fix-forwards (Iter 43/48/52) caught release-blockers |
+| Iter 53 (v3.36.0) | proactive producer→consumer meta-audit | 3 PARTIAL findings (no orphans) | Iter 53 wired all 3 consumers atomically (same-iter closure) |
 
 Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
 
@@ -278,7 +280,7 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 | **Phase commands** (manual control) | `generate-intent`, `extract-intelligence`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `orchestrate-flow` | When you want phase-by-phase control |
 | **Event-driven** | `resolve-oq`, `diff-vault`, `detect-drift` | Triggered by halts, PRD revisions, periodic checks |
 | **Maintenance** | `memory`, `migrate-rules`, `migrate-paths`, `update-plugin` | Rare/one-off configuration |
-| **Diagnostic (auto-invoked)** | `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md` | Run automatically by `auto`; available standalone for debugging |
+| **Diagnostic (auto-invoked)** | `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd` | Run automatically by `auto`; available standalone for debugging |
 
 `/mega-sdd:auto` is the dominant path. Other commands exist for advanced use + most users never type them.
 
@@ -291,7 +293,7 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 13 skills (incl. 1 anchor) + 20 slash commands (1 primary + 19 advanced/auto-invoked). |
+| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 14 skills (incl. 1 anchor) + 21 slash commands (1 primary + 20 advanced/auto-invoked). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -344,7 +346,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.26.2.
+- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.37.0.
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -384,6 +386,7 @@ Single-confirm pipeline-end execution with auto-continue, progress indication, C
 /mega-sdd:auto --no-lint                   # skip auto lint-units pass
 /mega-sdd:auto --no-analyze                # skip auto analyze-parallelism
 /mega-sdd:auto --no-agents-md              # skip auto AGENTS.md emit
+/mega-sdd:auto --no-fsd                    # skip auto FSD emit (Iter 54)
 ```
 
 ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, conflict resolutions, hard-rule violations). Otherwise silent + auto-progresses.
@@ -415,10 +418,11 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself (v3.37.0)
 │   ├── README.md                           # plugin folder shortform
-│   ├── skills/                             # 13 skills + _vendored/
+│   ├── skills/                             # 14 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
 │   │   ├── memory/                         # memory + self-learning
 │   │   ├── emit-agents-md/                 # AGENTS.md flatten
+│   │   ├── emit-fsd/                       # Confluence FSD generator (Iter 54)
 │   │   ├── extract-intelligence/           # legacy → KB
 │   │   ├── generate-intent/                # PRD/brief/KB → vault
 │   │   ├── scan-codebase/                  # tree-sitter AST scan
@@ -430,7 +434,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   │   ├── detect-drift/                   # code vs vault
 │   │   ├── diff-vault/                     # PRD revision handler
 │   │   └── _vendored/                      # superpowers fallback
-│   ├── commands/                           # 20 slash commands
+│   ├── commands/                           # 21 slash commands
 │   ├── references/                         # plugin-level conventions
 │   │   ├── paths.md                        # canonical layout
 │   │   └── tooling-install.md              # install matrix
@@ -438,7 +442,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   ├── scripts/                            # sync-superpowers + migrations
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
 ├── docs/
-│   ├── superpowers/specs/                  # design specs (14 iters)
+│   ├── superpowers/specs/                  # design specs (30 iters)
 │   ├── superpowers/audits/                 # honest audits (sprawl + quality)
 │   ├── knowledge-base/                     # legacy default output
 │   └── mega-sdd/                           # legacy vault output
@@ -450,7 +454,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   ├── skill-triggering/                   # 14 manual trigger fixtures
 │   ├── integration/                        # 7 E2E pipeline tests
 │   └── vendoring/
-├── CHANGELOG.md                            # 14 iterations documented
+├── CHANGELOG.md                            # 75+ versions documented (Iter 1 → Iter 54)
 ├── CONTRIBUTING.md
 └── LICENSE
 ```
@@ -475,10 +479,11 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 | Inspect memory | `/mega-sdd:memory show <topic>` |
 | Review pending learning suggestions | `/mega-sdd:memory review` |
 | Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
+| Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end; Iter 54) |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
 | Privacy-sensitive run | `/mega-sdd:auto ./prd.md --memory-off` |
-| Disable auto-diagnostic flags | `/mega-sdd:auto ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md` |
+| Disable auto-diagnostic flags | `/mega-sdd:auto ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md --no-fsd` |
 | PRD revision arrived | `/mega-sdd:diff-vault ./new-prd.md` |
 | Code drift periodic check | `/mega-sdd:detect-drift` |
 
