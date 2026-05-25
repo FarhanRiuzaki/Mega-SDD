@@ -1,0 +1,222 @@
+# Per-tool: install command + verify command per (os, pkg_mgr) combo.
+# Consumed by install-deps SKILL.md Step 3 (build install plan) + Step 5 (execute) + Step 6 (verify).
+
+schema_version: "1.0"
+
+tools:
+  - id: tree-sitter
+    used_by: [scan-codebase]
+    purpose: "AST-precise symbol extraction (v2.0+ scan-codebase)"
+    fallback_behavior: "Regex engine (lower precision)"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install tree-sitter"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        size_mb: 5
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "sudo apt install -y tree-sitter-cli"
+        requires_sudo: true
+        verify_cmd: "command -v tree-sitter-cli"
+        size_mb: 5
+      - os: [linux, wsl]
+        pkg_mgr: dnf
+        install_cmd: "sudo dnf install -y tree-sitter-cli"
+        requires_sudo: true
+        verify_cmd: "command -v tree-sitter-cli"
+        size_mb: 5
+      - os: any
+        pkg_mgr: cargo
+        install_cmd: "cargo install tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter-cli"
+        size_mb: 8
+        notes: "Cross-platform fallback when no native pkg available"
+      - os: any
+        pkg_mgr: npm
+        install_cmd: "npm install -g tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter-cli"
+        size_mb: 6
+
+  - id: ast-grep
+    used_by: [execute-bolts, generate-units]
+    purpose: "Hard Rule v2 grammar (5-10x expressivity vs v1)"
+    fallback_behavior: "v1 grammar (5 closed types)"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install ast-grep"
+        verify_cmd: "command -v ast-grep"
+        size_mb: 8
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "cargo install ast-grep"
+        requires_sudo: false
+        verify_cmd: "command -v ast-grep"
+        size_mb: 12
+        notes: "No native apt pkg; cargo is the canonical install for ast-grep on Debian/Ubuntu"
+      - os: any
+        pkg_mgr: cargo
+        install_cmd: "cargo install ast-grep"
+        verify_cmd: "command -v ast-grep"
+        size_mb: 12
+      - os: any
+        pkg_mgr: npm
+        install_cmd: "npm install -g @ast-grep/cli"
+        verify_cmd: "command -v ast-grep"
+        size_mb: 10
+
+  - id: ripgrep
+    used_by: [scan-codebase, bind-codebase, detect-drift, lint-units]
+    purpose: "Fast structured grep (JSON output)"
+    fallback_behavior: "GNU grep (slower; no JSON)"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install ripgrep"
+        verify_cmd: "command -v rg"
+        size_mb: 3
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "sudo apt install -y ripgrep"
+        requires_sudo: true
+        verify_cmd: "command -v rg"
+        size_mb: 3
+      - os: [linux, wsl]
+        pkg_mgr: dnf
+        install_cmd: "sudo dnf install -y ripgrep"
+        requires_sudo: true
+        verify_cmd: "command -v rg"
+        size_mb: 3
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install BurntSushi.ripgrep.MSVC"
+        verify_cmd: "command -v rg"
+        size_mb: 4
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install ripgrep"
+        verify_cmd: "command -v rg"
+        size_mb: 4
+      - os: any
+        pkg_mgr: cargo
+        install_cmd: "cargo install ripgrep"
+        verify_cmd: "command -v rg"
+        size_mb: 5
+
+  - id: jd
+    used_by: [diff-vault]
+    purpose: "Canonical JSON/YAML diff with RFC-6902 patches"
+    fallback_behavior: "Manual Read+compare via skill body"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install jd"
+        verify_cmd: "command -v jd"
+        size_mb: 4
+      - os: any
+        pkg_mgr: go
+        install_cmd: "go install github.com/josephburnett/jd@latest"
+        verify_cmd: "command -v jd"
+        size_mb: 8
+
+  - id: pandoc
+    used_by: [emit-fsd]
+    purpose: "FSD PDF rendering (Iter 54)"
+    fallback_behavior: "Markdown-only output (no PDF)"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install pandoc"
+        verify_cmd: "command -v pandoc"
+        size_mb: 20
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "sudo apt install -y pandoc"
+        requires_sudo: true
+        verify_cmd: "command -v pandoc"
+        size_mb: 25
+      - os: [linux, wsl]
+        pkg_mgr: dnf
+        install_cmd: "sudo dnf install -y pandoc"
+        requires_sudo: true
+        verify_cmd: "command -v pandoc"
+        size_mb: 25
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install JohnMacFarlane.Pandoc"
+        verify_cmd: "command -v pandoc"
+        size_mb: 30
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install pandoc"
+        verify_cmd: "command -v pandoc"
+        size_mb: 30
+
+  - id: tectonic
+    used_by: [emit-fsd]
+    purpose: "LaTeX engine for FSD PDF (lighter alternative to BasicTeX, Iter 54)"
+    fallback_behavior: "HTML output (browser print-to-PDF) when neither tectonic nor xelatex available"
+    notes: "Recommended over BasicTeX (~2GB) — tectonic is ~50MB self-contained"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install tectonic"
+        verify_cmd: "command -v tectonic"
+        size_mb: 50
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "cargo install tectonic"
+        verify_cmd: "command -v tectonic"
+        size_mb: 60
+        notes: "No native apt pkg in older Ubuntu; cargo fallback"
+      - os: any
+        pkg_mgr: cargo
+        install_cmd: "cargo install tectonic"
+        verify_cmd: "command -v tectonic"
+        size_mb: 60
+
+  - id: markdownlint-cli2
+    used_by: [lint-units]
+    purpose: "Vault prose lint (optional, Iter 14)"
+    fallback_behavior: "Skill-internal heuristic checks"
+    matrix:
+      - os: any
+        pkg_mgr: npm
+        install_cmd: "npm install -g markdownlint-cli2"
+        verify_cmd: "command -v markdownlint-cli2"
+        size_mb: 2
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install markdownlint-cli2"
+        verify_cmd: "command -v markdownlint-cli2"
+        size_mb: 2
+
+  - id: gh
+    used_by: [execute-bolts]
+    purpose: "GitHub CLI for PR automation (optional)"
+    fallback_behavior: "Manual PR creation"
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install gh"
+        verify_cmd: "command -v gh"
+        size_mb: 30
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "sudo apt install -y gh"
+        requires_sudo: true
+        verify_cmd: "command -v gh"
+        size_mb: 30
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install GitHub.cli"
+        verify_cmd: "command -v gh"
+        size_mb: 35
+
+# Defaults
+defaults:
+  required_tools: []                                          # ALL tools optional; mega-sdd has graceful fallback for each
+  recommended_minimum: [tree-sitter, ast-grep, ripgrep]        # baseline for brownfield projects
+  fsd_extension: [pandoc, tectonic]                            # Iter 54 FSD generation
+  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh]
