@@ -38,7 +38,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `tree_sitter_present`**
   command: `command -v tree-sitter || command -v tree-sitter-cli`
   expected: exit 0
-  on_fail: "tree-sitter not installed; scan-codebase will fall back to regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli"
+  on_fail: "tree-sitter not installed; scan-codebase will fall back to regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
   fatal: no
   predicts_halt: dep_missing (avoided if user OK with regex fallback OR installs binary)
 
@@ -210,14 +210,14 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `pandoc_installed`**
   command: `command -v pandoc`
   expected: exit 0
-  on_fail: "pandoc not installed; emit-fsd will produce FSD.md only (no PDF render). Install: brew install pandoc (macOS) / apt install pandoc (Debian/Ubuntu) / dnf install pandoc (Fedora)"
+  on_fail: "pandoc not installed; emit-fsd will produce FSD.md only (no PDF render). Install: brew install pandoc (macOS) / apt install pandoc (Debian/Ubuntu) / dnf install pandoc (Fedora) — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
   fatal: no
   predicts_halt: (no halt; degraded output — markdown-only)
 
 - **check_id: `pandoc_latex_engine_present`**
   command: `command -v xelatex || command -v tectonic`
   expected: exit 0
-  on_fail: "no LaTeX engine found; pandoc PDF render needs xelatex (brew install --cask basictex / apt install texlive-xetex) OR tectonic (brew install tectonic — recommended, lighter, ~50MB vs ~2GB BasicTeX). Falls back to FSD.html for browser print-to-PDF."
+  on_fail: "no LaTeX engine found; pandoc PDF render needs xelatex (brew install --cask basictex / apt install texlive-xetex) OR tectonic (brew install tectonic — recommended, lighter, ~50MB vs ~2GB BasicTeX). Falls back to FSD.html for browser print-to-PDF — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
   fatal: no
   predicts_halt: (no halt; degraded — HTML fallback)
 
