@@ -41,12 +41,13 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.37.0)
-├── skills/                       # 14 skills + _vendored/
+├── .claude-plugin/plugin.json    # plugin manifest (v3.38.0)
+├── skills/                       # 15 skills + _vendored/
 │   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.3.4)
 │   ├── memory/                   # memory + self-learning (v1.3.1)
 │   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.5)
-│   ├── emit-fsd/                 # Confluence FSD generator (v1.0.0) — NEW Iter 54
+│   ├── emit-fsd/                 # Confluence FSD generator (v1.0.0) — Iter 54
+│   ├── install-deps/             # OS-aware dep installer (v1.0.0) — NEW Iter 55
 │   ├── extract-intelligence/     # legacy → knowledge-base (v1.7.0)
 │   ├── generate-intent/          # PRD/brief/KB → vault (v1.15.1)
 │   ├── scan-codebase/            # tree-sitter AST scan (v2.7.2)
@@ -58,11 +59,11 @@ plugins/mega-sdd/
 │   ├── detect-drift/             # code vs vault (v1.4.1)
 │   ├── diff-vault/               # PRD revision + jd patches (v1.3.2)
 │   └── _vendored/                # superpowers fallback
-├── commands/                     # 21 slash commands (1 primary + 20 advanced)
+├── commands/                     # 22 slash commands (1 primary + 21 advanced)
 │   ├── auto.md                   # ⭐ THE command
 │   ├── generate-intent.md, scan-codebase.md, bind-codebase.md, generate-units.md, execute-bolts.md
 │   ├── extract-intelligence.md, orchestrate-flow.md, resolve-oq.md, diff-vault.md, detect-drift.md
-│   ├── memory.md, emit-agents-md.md, emit-fsd.md, replay.md
+│   ├── memory.md, emit-agents-md.md, emit-fsd.md, install-deps.md, replay.md
 │   ├── lint-units.md, analyze-parallelism.md, list-modules.md    # [auto-invoked by /mega-sdd:auto]
 │   ├── migrate-rules.md, migrate-paths.md                         # one-off maintenance
 │   └── update-plugin.md
@@ -84,6 +85,50 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v3.38.0 (Iter 55, minor) — OS-Aware Auto-Install Deps (new skill `install-deps`)
+
+User-driven feature after Iter 54: dependency install friction. Iter 54 shipped emit-fsd which needs pandoc + tectonic for PDF rendering — but installing these (plus tree-sitter, ast-grep, ripgrep, jd) was manual per-OS work. Iter 55 adds dedicated installer skill that detects OS + package manager + auto-installs with safety rails.
+
+**New skill `mega-sdd:install-deps` (v1.0.0):**
+
+- Detects OS: macOS / Ubuntu / Debian / Fedora / RHEL / Arch / Alpine / WSL / Windows-bash
+- Detects package manager: brew / apt / dnf / pacman / apk / winget / scoop / choco + cross-platform fallbacks (cargo / npm / go)
+- Audits 8 tools per `tool-matrix.yaml`: tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh
+- 6-step procedure: detect env → audit inventory → build install plan → propose+confirm (AskUserQuestion) → execute via Bash → verify post-install → memory write
+- Safety rails (non-negotiable):
+  - **NEVER auto-`sudo`** — sudo-required tools (apt/dnf) get printed with instruction "run manually"; memory records as "sudo-pending"
+  - **NEVER curl|bash patterns** — only signed package manager commands per matrix
+  - **ALWAYS show exact `install_cmd` + source + size BEFORE running** — single batch confirmation
+  - **ALWAYS verify post-install** with `verify_cmd` — claim "installed" only after verify passes
+- Memory-cached outcomes at `<project>/.mega-sdd/memory/install-outcomes.md` — skip re-audit of already-installed tools on next session (Iter 5 memory layer pattern); `--force-recheck` ignores cache
+
+**Trigger:** standalone `/mega-sdd:install-deps [flags]` (no auto-invocation per safety consensus — install is user-explicit). Flags: `--dry-run`, `--tools=<csv>`, `--force-recheck`, `--pkg-mgr=<name>`, `--manual`, `--auto`.
+
+**2 new halt types** (added to `vault-contract.md §halt-protocol type enum`):
+- `install_failed` — install ran but verify_cmd failed OR install_cmd exited non-zero
+- `pkg_mgr_not_found` — no compatible pkg manager detected for OS
+
+**Predictive-checks hint update:** 3 existing tool-presence checks (`tree_sitter_present`, `pandoc_installed`, `pandoc_latex_engine_present`) get suffix `"...OR run /mega-sdd:install-deps for auto-install (Iter 55+)."` — no behavior change, just better discoverability.
+
+**Reuse-first:** emit-fsd skill anatomy (analog template); Iter 33 predictive-checks pattern (hint extension); Iter 5 memory layer (install-outcomes.md); existing `tooling-install.md` matrix promoted to YAML + extended with pandoc/tectonic (Iter 54 deps).
+
+**Also closed Iter 54 drift:** `emit-fsd` was added as a skill in Iter 54 but never added to the `source_skill` enum in vault-contract.md. Iter 55 commit added both `emit-fsd` and `install-deps` to the enum.
+
+**Files created (3):**
+- `plugins/mega-sdd/skills/install-deps/SKILL.md` (~190 lines)
+- `plugins/mega-sdd/skills/install-deps/references/os-detection.md` (canonical Bash detection algorithm)
+- `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml` (8-tool × OS × pkg_mgr matrix)
+- `plugins/mega-sdd/commands/install-deps.md` (slash command wrapper)
+
+**Files modified (5):**
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — 3 hint suffixes appended
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — 2 new halt types in §halt-protocol enum + descriptions; emit-fsd + install-deps added to source_skill enum (Iter 54 drift closure)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.37.0 → 3.38.0
+- `CHANGELOG.md` — this entry
+- `plugins/mega-sdd/README.md` + `README.md` — version refs + skill listing + cheat-sheet
+
+**Plugin v3.37.0 → v3.38.0** (MINOR — new skill; backward-compatible; install is user-explicit so no impact on existing auto-pipeline runs).
 
 ### v3.37.0 (Iter 54, minor) — FSD Auto-Generation (new skill `emit-fsd`)
 
