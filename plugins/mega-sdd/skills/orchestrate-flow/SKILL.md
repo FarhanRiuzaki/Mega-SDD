@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.8.0
+version: 3.8.1
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -224,8 +224,7 @@ next_action:
       0. **Handoff presence check (v3.2.0+, Iter 40; semantics corrected v3.2.1+, Iter 43):**
          After sub-skill exits, orchestrator scans the **sub-skill's chat output** (the last assistant message) for a YAML code fence containing a top-level `handoff:` key per `references/handoff-contract.md §Handoff YAML schema`. Skills emit the handoff inline in chat (NOT to a file on disk — corrected from initial Iter 40 design).
          - If no `handoff:` block can be located in the sub-skill's chat output, OR if multiple `handoff:` blocks exist with conflicting `emitted_by:` values → emit halt `handoff_missing` with details `{failing_skill, last_known_step: <best-effort from any checkpoint trail or "unknown">, chat_tail_excerpt: <last 500 chars of sub-skill chat for diagnostics>}`; STOP chain.
-         - Closes Iter 38 audit D3-001. Previously, missing handoff caused orchestrator to either proceed with empty state OR fail downstream with cryptic parse errors; now halts at the exact failing boundary with chat-tail excerpt for diagnosis.
-         - **Iter 43 fix-forward note:** original Iter 40 design checked `test -f <path>` against a hardcoded path convention that no skill actually used (skills emit YAML inline in chat). That design would have fired `handoff_missing` on every run. Corrected to chat-block detection.
+         - Halts at the failing boundary with chat-tail excerpt for diagnosis.
 
          ```yaml
          # Example handoff_missing envelope:
@@ -295,7 +294,7 @@ next_action:
          - If absolute directory path: verify `test -d <path>` returns 0.
          - If relative path: log warn-only ("artifact path is relative; cannot existence-check") + continue.
          If ANY listed artifact fails the existence check → emit halt `artifact_missing` with details `{failing_skill, missing_paths: array, present_paths: array, handoff_file: <path>}`; STOP chain.
-         Closes Iter 38 audit D3-002. Previously, missing artifacts caused next-stage skill to fail with cryptic "file not found"; now halts at producer boundary with explicit list.
+         Halts at the producer boundary with explicit list of missing paths.
 
          ```yaml
          # Example artifact_missing envelope:
