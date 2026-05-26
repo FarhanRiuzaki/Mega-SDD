@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.42.0] - 2026-05-26
+
+### Iter 63 — Performance + Sharpness SP1 (Quick Wins) — 5 of 6 deliverables shipped; 1 deferred
+
+**Direction shift: feature work → performance + sharpness.** User shift from "more features" to "lean context, faster iteration, deterministic output, senior engineer collaborator." Research-driven (LangChain Deep Agents 3-tier, Claude Code 95% lazy-load pattern, Cline complexity-gated Plan/Act, Morph context rot 30%+ empirical).
+
+Iter 63 = Sub-Project 1 (Quick Wins) of 3-part roadmap. SP2 + SP3 roadmap embedded in spec.
+
+**Scope honesty:** plan specified 6 deliverables (5 of which shipped this iter; skill body trim T5-T9 deferred to dedicated follow-up iter — rationale at bottom).
+
+**5 deliverables shipped this iter:**
+
+1. **FSD auto-invoke opt-out** (T1) — `emit-fsd` flips from default-on auto-invoke to opt-in via `--with-fsd` flag. Reason: pandoc/LaTeX expensive + low user feedback signal per Iter 63 perf audit. `--no-fsd` legacy flag still accepted as no-op (back-compat). Standalone `/mega-sdd:emit-fsd` unchanged.
+
+2. **CHANGELOG archive rotation** (T2) — main CHANGELOG trimmed from 5,663 → 1,806 lines (68% reduction). Pre-v3.27.0 history (60 entries, v3.26.3 → v3.0) rotated to `CHANGELOG-ARCHIVE.md` at repo root. Future rotation rule: 2,000-line / 30-version threshold.
+
+3. **Deterministic iter classifier rules** (T3) — PATCH/MINOR/MAJOR enum from git/fs inputs (NO LLM judgment). Dual evaluation point (EP1 pre-work for ceremony gating; EP2 post-work for version-bump labeling). Precedence: explicit flag > classifier > default. Drift handling between EP1 and EP2. Added to `plugins/mega-sdd/CLAUDE.md`. **DOC ONLY in Iter 63; runtime impl ships Iter 65 (SP2).**
+
+4. **Anti-recursive guard rule preview** (T3) — closed-enum re-plan triggers (`execution_failed | ambiguity_increased | contract_mismatch`), binding CONFLICT EXPLICITLY EXCLUDED (RULE 1.5; human-halt stays — TYPE-drift-only scope), configurable hard caps (`max_replan=2`, `max_revalidate=3` defaults — tune post-Iter 68 telemetry), no-validating-validation rule (validators are LEAF NODES). Halt naming for cap-exceeded DEFERRED to Iter 65 (reuse-first evaluation: `bolt_repeated_partial_failure` generalize / `quality_gate_failed` subtype / new enum LAST RESORT).
+
+5. **Command differentiation cross-refs** (T4) — `/mega-sdd:auto` vs `/mega-sdd:orchestrate-flow` cross-ref blocks in both command files. No merge, no deprecation. Eliminates Iter 56 audit C-001 ambiguity. Auto = user-facing entry (input-shape detection); orchestrate-flow = power-user lower-level.
+
+**1 deliverable DEFERRED (T5-T9 skill body trim):**
+
+Plan specified ~1,500 line hot-tier relocation across 9 heavy/medium skills (generate-intent 1,267→700, execute-bolts 1,012→600, generate-units 826→500, orchestrate-flow 764→500, + 5 medium-trim 20-30% each). Reality on inline execution:
+
+- Per-skill deep restructure (move halt-protocol descriptions + procedural blocks to new ref files) requires careful file-spelunking to avoid correctness drift
+- Audit-measured baseline (8,174 line skill bodies) heavier than session budget for safe inline execution
+- Risk of breaking skill body semantics during cut-paste relocation outweighs hot-tier reduction benefit when done under time pressure
+
+**Decision (honest scope per simplifikasi standing directive):** DEFER T5-T9 to **Iter 63.5** — dedicated PATCH iter under new classifier rules (likely classified PATCH since skill bodies are isolated modifications). Iter 63.5 will do per-skill trim with proper scope (one-skill-per-commit, verified line counts, cross-ref integrity check). Spec relocation pattern (phase-context.md, t2-budget-tracker.md, saga-rollback.md, validation-gate.md ref files) preserved as Iter 63.5 deliverables.
+
+**Effect on hot context this iter:**
+- Skill bodies: 8,174 lines (UNCHANGED — deferral)
+- CHANGELOG.md: 5,663 → 1,806 lines (-68% via rotation)
+- `plugins/mega-sdd/CLAUDE.md`: +83 lines (classifier + guard rules)
+- Plugin total: ~18,306 → ~14,500 lines (CHANGELOG rotation drives most of the reduction)
+
+**Win shipped this iter:** CHANGELOG archive rotation (largest single context win) + FSD opt-out (recurring per-chain savings) + classifier doc (process win for future iters under new ceremony).
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 6 FSD opt-out + version 3.7.0 → 3.8.0
+- `plugins/mega-sdd/commands/auto.md` + `commands/orchestrate-flow.md` — `--with-fsd` flag + cross-ref blocks
+- `plugins/mega-sdd/CLAUDE.md` — + classifier section + anti-recursive guard section (~+83 lines)
+- `CHANGELOG.md` — rotated to 1,806 lines + this entry
+- `CHANGELOG-ARCHIVE.md` — NEW (pre-v3.27.0 entries, 3,868 lines)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.41.0 → 3.42.0
+- `plugins/mega-sdd/README.md` + `README.md` (root) — version refs + What's new + audit table row
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.7.0 → 3.8.0 (MINOR — FSD default flip is behavior change)
+
+**Plugin v3.41.0 → v3.42.0** (MINOR — auto-invoke behavior change with backward-compat flag).
+
+**Roadmap (committed in spec; not in this CHANGELOG):**
+
+- **SP2 (Iter 64-70, ~1 week edit + 3-4 week telemetry soak):** 3-tier context architecture + telemetry collection start (Iter 64) + classifier/guard runtime (Iter 65) + lazy reference loading (Iter 66) + complexity-gated Plan/Act (Iter 67) + telemetry analyze + SP3 gate (Iter 68) + budget enforcement (Iter 69) + skill consolidation (Iter 70)
+- **SP3 (v4.0.0 candidate):** R&D UNCOMMITTED. Explicit Fork A (correctness layer on top of host runtime) vs Fork B (own runtime — Cline-pattern) decision REQUIRED before SP3 work starts. Decision inputs: SP2 telemetry, user base composition, host runtime availability.
+- **Iter 63.5 (interim):** dedicated skill body trim sprint to land deferred T5-T9 work (~1,500 line hot-tier relocation). PATCH bump under new classifier rules.
+
+**Last iter under OLD ceremony rules.** Iter 64+ subject to new deterministic classifier (estimated ~70% of future iters skip spec+plan ceremony per audit's recent-iter distribution).
+
+**Audit source:** `docs/superpowers/audits/2026-05-26-iter-63-performance-audit.md`
+**Spec source:** `docs/superpowers/specs/2026-05-26-iter-63-performance-sharpness-design.md`
+**Plan source:** `docs/superpowers/plans/2026-05-26-iter-63-quick-wins.md` (T5-T9 deferred; T1-T4 + T10 executed)
+
+---
+
 ## [3.41.0] - 2026-05-26
 
 ### Iter 62 — FINAL Iter 56 audit closure (scenario sweep + cold-halt predictive checks + doc bulk)

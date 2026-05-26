@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.41.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 3.42.0 · **License:** MIT
 
 </div>
 
@@ -161,6 +161,7 @@ Major versions close prior audit findings. Four forensic audits documented in `d
 | Iter 38 (v3.26.2) | E2E pipeline optimization audit | 37 findings (12 P1/HIGH + 17 P2/MEDIUM + 8 LOW) | Iters 39-52 (v3.26.3 → v3.35.1) — all P1/HIGH + bulk P2 closed; 3 fix-forwards (Iter 43/48/52) caught release-blockers |
 | Iter 53 (v3.36.0) | proactive producer→consumer meta-audit | 3 PARTIAL findings (no orphans) | Iter 53 wired all 3 consumers atomically (same-iter closure) |
 | Iter 56 (v3.38.0) | post-Iter-55 fresh deep audit | 38 findings (8 P1 / 22 P2 / 8 P3) — same scale as Iter 38 | Iter 57-62 closed 34 of 38 (all P1 + 17 P2 + 5 P3 + 4 design-accepts); v3.38.1 → v3.41.0 range; 4 deferred items documented |
+| Iter 63 (v3.42.0) | Performance + sharpness SP1 (Quick Wins) — perf audit | 7 audit findings (sizing + duplication + bloat) | 5 of 6 deliverables ship (FSD opt-out + CHANGELOG rotation + classifier rules + guard preview + command differentiation); 1 deferred (skill body trim → Iter 63.5 dedicated). SP2 (Iter 64-70) + SP3 (v4.0.0 candidate) roadmap committed in spec |
 
 Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
 
@@ -347,7 +348,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.41.0.
+- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.42.0.
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -417,7 +418,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.41.0)
+├── plugins/mega-sdd/                       # the plugin itself (v3.42.0)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 15 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
