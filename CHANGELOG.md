@@ -5,6 +5,88 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.39.0] - 2026-05-26
+
+### Iter 58 — Iter 56 audit halt taxonomy sweep (A1-001/002/003 + A2-001/002 closures)
+
+**Halt taxonomy completeness pass** (MINOR bump — extends halt enum with 9 previously-orphan halt types, formally documents `quality_gate_failed` subtype discriminator, adds install-deps preflight catalog section, extends scenario-6 with install-deps + quality_gate_failed-subtype recovery walkthroughs). Closes the 3 P1 HIGHs + 2 P2 MEDIUMs from Dim A of Iter 56 audit.
+
+**Closed findings:**
+
+**A1-001 (P1) — 9 orphan halt types added to canonical enum**
+
+Iter 56 audit caught 9 halt types emitted by producers as `→ halt <name>` / `type: <name>` but missing from `vault-contract.md:569` enum. Per Iter 33 schema validation, orchestrate-flow would have rejected these as `invalid_handoff` (silent-failure-class drift).
+
+Added to enum + full description blocks per §halt-protocol Type-specific guidance:
+- `oq_tech_missing_mode` (generate-intent, Iter 28)
+- `oq_recommend_underspecified` (generate-intent + bind-codebase, Iter 3)
+- `oq_scan_missing_query` (generate-intent, Iter 28)
+- `oq_business_p1_unresolved` (orchestrate-flow, Iter 4 — now canonical of legacy `oq_blocker`)
+- `no_starterkit_detected` (orchestrate-flow, Iter 27)
+- `module_blocked_by` (execute-bolts, Iter 11)
+- `hard_rule_unanchored` (execute-bolts, Iter 6)
+- `unit_underspecified` (generate-units, Iter 1)
+- `verify_unit_writable` (execute-bolts, Iter 1)
+
+Each gets: source skill, ALWAYS-STOP semantics, Details schema, Resolution path.
+
+**A1-002 (P1) — `oq_blocker` deprecated as legacy alias of `oq_business_p1_unresolved`**
+
+Iter 56 audit found `oq_blocker` in enum + description but never explicitly emitted (only soft prose claim at generate-intent SKILL.md:238). Orchestrate-flow taxonomy at line 562 indicates `oq_business_p1_unresolved` is the orch-level canonical. Iter 58 documents the alias relationship explicitly in §halt-protocol: both names accepted during transition; new code should use `oq_business_p1_unresolved` as canonical.
+
+**A1-003 (P1) — `quality_gate_failed` subtype discriminator documented**
+
+Iter 56 audit found 3 subtypes (`starterkit_metrics_inconsistent` Iter 53, `pdf_render_failed` + `template_slot_unfilled` Iter 54) referenced in producer SKILL.md bodies but not in vault-contract canonical description block. Consumer dispatch on `details.subtype` was broken.
+
+Iter 58 adds `#### Iter 58 — quality_gate_failed subtypes` block to vault-contract.md with full subtype enum + per-subtype semantics + producer + resolution. Consumer dispatch logic now MUST branch on `details.subtype` field; if subtype absent/empty, treats as original `wave_quality_threshold_unmet` semantic (extract-intelligence Iter 9).
+
+**A2-001 (P2) — install-deps halts have scenario-6 walkthroughs**
+
+Iter 56 audit: install-deps halts (`install_failed`, `pkg_mgr_not_found`) shipped with Iter 55 but no scenario-6 recovery walkthrough. New users hitting `pkg_mgr_not_found` on fresh Linux VM got only inline `next_action.hint` from halt envelope.
+
+Iter 58 adds `## Scenario walkthrough — install_failed + pkg_mgr_not_found` to scenario-6 covering: pkg_mgr_not_found recovery (macOS/brew install via https://brew.sh, Linux apt PATH verify, Windows WSL install), install_failed recovery (retry single tool, switch pkg manager via override, skip + use fallback, manual install + verify), verify_after_install_failed subtype (PATH refresh via `hash -r`).
+
+**A2-002 (P2) — install-deps preflight checks section added**
+
+Iter 56 audit: every other skill had `### <skill> preflight checks` in `orchestrate-flow/references/predictive-checks.md`; install-deps was the lone exception. orchestrate-flow Step 3.5 dispatched install-deps with zero predictive validation — running blind into halts. Iter 33 UX guarantee ("see precondition errors BEFORE chain starts, not 8 minutes in") regressed for new skill.
+
+Iter 58 adds `## install-deps preflight checks (v3.6.0+, Iter 58)` section with 3 checks:
+- `pkg_mgr_detected` (fatal — predicts pkg_mgr_not_found)
+- `network_reachable` (warn — predicts install_failed network subtype)
+- `memory_writable_for_install_outcomes` (warn — predicts memory_in_use)
+
+**Bonus closure — quality_gate_failed subtype walkthroughs in scenario-6**
+
+Iter 58 also adds `## Scenario walkthrough — quality_gate_failed subtypes (Iter 53/54)` to scenario-6 with 4 sub-recovery paths:
+- `pdf_render_failed` → install tectonic via install-deps + retry emit-fsd
+- `template_slot_unfilled` → file plugin bug; skip section via `--sections=` override
+- `starterkit_metrics_inconsistent` → `scan-codebase --force-deep` then `generate-units --regenerate`
+- `wave_quality_threshold_unmet` → existing extract-intelligence walkthrough
+
+Partially closes A2-004 (scenario coverage for subtypes) — remaining A2-004 scope (extract-intelligence base walkthrough enhancement) deferred to Iter 61 catch-all.
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — enum + descriptions: 9 new halt types + quality_gate_failed subtypes block + oq_blocker deprecation note; version 1.15.1 → 1.16.0
+- `plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md` — new §install-deps preflight checks section (3 checks); version 3.5.0 → 3.6.0
+- `tests/scenarios/scenario-6-recovery-from-halt.md` — 2 new walkthroughs (install-deps halts + quality_gate_failed subtypes)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.38.1 → 3.39.0
+- `plugins/mega-sdd/README.md` — version refs
+- `README.md` (root) — version refs
+- `CHANGELOG.md` — this entry
+
+**Skill version bumps:**
+- `generate-intent` 1.15.1 → 1.16.0 (MINOR — references/vault-contract.md extended with 9 new halts + subtype discriminator + alias deprecation; halt taxonomy is part of generate-intent's surface contract)
+- `orchestrate-flow` 3.5.0 → 3.6.0 (MINOR — references/predictive-checks.md gains new §install-deps preflight section)
+
+**Plugin v3.38.1 → v3.39.0** (MINOR — halt enum extension + new predictive-check section; backward-compatible since adding enum members doesn't break existing handoff validation; only enables previously-rejected halt names).
+
+**Closure progress:** Iter 56 audit (38 findings: 8 P1 / 22 P2 / 8 P3) → Iter 57 closed 3 P1s (B-P1, D1, F-E-2) → Iter 58 closes 3 P1s (A1-001/002/003) + 2 P2s (A2-001/002) + partial A2-004. Remaining: 2 P1s (C-001, C-002 → Iter 59) + 1 P1 architectural (C-005 → Iter 60) + 19 P2s + 8 P3s (→ Iter 61 catch-all).
+
+**Audit:** docs/superpowers/audits/2026-05-26-iter-56-v3.38.0-deep-audit.md §A1-001/002/003 + §A2-001/002.
+
+---
+
 ## [3.38.1] - 2026-05-26
 
 ### Iter 57 — Iter 56 audit CRITICAL fix-forward (3 P1 safety/regression closures)

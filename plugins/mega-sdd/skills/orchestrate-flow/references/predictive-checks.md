@@ -198,6 +198,29 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
+## install-deps preflight checks (v3.6.0+, Iter 58 — A2-002 closure)
+
+- **check_id: `pkg_mgr_detected`**
+  command: `command -v brew || command -v apt || command -v dnf || command -v pacman || command -v apk || command -v winget || command -v scoop || command -v cargo || command -v npm || command -v go`
+  expected: exit 0
+  on_fail: "install-deps requires a compatible package manager (brew/apt/dnf/pacman/apk/winget/scoop) or cross-platform fallback (cargo/npm/go). None detected on PATH. macOS: install brew via https://brew.sh. Linux: verify apt/dnf is on PATH. Windows native: install WSL Ubuntu + re-run."
+  fatal: yes
+  predicts_halt: pkg_mgr_not_found
+
+- **check_id: `network_reachable`**
+  command: `curl -fsS --max-time 5 https://github.com >/dev/null 2>&1 || ping -c 1 -W 2 github.com >/dev/null 2>&1`
+  expected: exit 0
+  on_fail: "Network unreachable; package manager install will fail. Check connectivity OR set --manual to skip install (print commands only)."
+  fatal: no
+  predicts_halt: install_failed (network failure subtype)
+
+- **check_id: `memory_writable_for_install_outcomes`**
+  command: `mkdir -p <project>/.mega-sdd/memory/.test-write && rmdir <project>/.mega-sdd/memory/.test-write`
+  expected: exit 0
+  on_fail: "install-deps writes install-outcomes.md to <project>/.mega-sdd/memory/. Directory not writable. Check permissions."
+  fatal: no
+  predicts_halt: memory_in_use (memory write would fail)
+
 ## emit-fsd preflight checks (v3.5.0+, Iter 54)
 
 - **check_id: `vault_present_for_fsd`**
