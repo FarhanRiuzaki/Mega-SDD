@@ -57,7 +57,7 @@ Skills shape agent behavior. Don't reword for stylistic preference. Behavior cha
 
 ---
 
-## Iter Ceremony Classifier (v3.42.0+, Iter 63 — runtime impl in Iter 65)
+## Iter Ceremony Classifier (v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)
 
 Per Iter 63 SP1 spec §3.4: each iter has type PATCH/MINOR/MAJOR determined by deterministic git/filesystem inputs — NO LLM self-judgment. Same enum evaluated at TWO points (dual EP per spec meta-tune #1):
 
@@ -99,11 +99,20 @@ explicit user flag (--iter-type=major) > classifier output > default (PATCH)
 
 If EP1 classified PATCH but EP2 reveals MAJOR criteria met (scope grew during work): emit drift warning + retroactively generate missing artifacts (spec/plan) under accelerated rules (compressed prose; not full ceremony). Log to telemetry as `ceremony_classifier_drift` event for Iter 68 analysis.
 
-**Runtime impl shipped in Iter 65** (SP2) — `plugins/mega-sdd/scripts/classify-iter.sh` script + orchestrate-flow integration. Iter 63 ships RULE DOC only.
+**Runtime impl SHIPPED in Iter 65 v3.45.0+:** `plugins/mega-sdd/scripts/classify-iter.sh` (deterministic bash wrapping git/grep). Invoked from orchestrate-flow Step 2.9 (EP1) + Step 6.9 (EP2). Emits `iter_classifier_output` + `iter_classifier_drift` telemetry events.
+
+**Usage example:**
+```bash
+plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 \
+  --explicit-flag=minor \
+  --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl
+# Output: JSON {iter_type, evaluation_point, criteria_matched, explicit_flag, inputs}
+# Exit 0 = clean; 1 = invalid args; 2 = not in git repo
+```
 
 ---
 
-## Anti-Recursive Guard (v3.42.0+, Iter 63 PREVIEW — runtime impl in Iter 65)
+## Anti-Recursive Guard (v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)
 
 Per Iter 63 SP1 spec §7. Prevents validating-the-validation recursion + caps re-plan loops.
 
@@ -134,7 +143,30 @@ Exceeded → halt (NAMING DEFERRED to Iter 65 implementation per spec meta-tune 
 
 Validators are LEAF NODES in execution graph, not internal nodes. If validation step itself fails, halt directly — DO NOT spawn meta-validation. "Plan to validate the validation plan" is recursion → prohibited.
 
-**Runtime impl shipped in Iter 65** (SP2) — `plugins/mega-sdd/scripts/check-recursion-budget.sh` script + ephemeral state file `<project>/.mega-sdd/.replan-budget`. Iter 63 ships RULE DOC only.
+**Runtime impl SHIPPED in Iter 65 v3.45.0+:** `plugins/mega-sdd/scripts/check-recursion-budget.sh` + ephemeral state file `<project>/.mega-sdd/.replan-budget`. Halt naming decision (per meta-tune #5 reuse-first): `quality_gate_failed` with subtype `replan_budget_exceeded | revalidate_budget_exceeded` (Iter 58 pattern reused — NOT new halt enum entry).
+
+**Day-0 telemetry instrumentation (per user mandate for tune #2 feasibility):**
+
+Guard emits 4 new event_types from day-0 of soak window:
+- `replan_triggered` — every re-plan increment (with trigger, before/after count)
+- `revalidate_triggered` — every re-validate increment
+- `replan_budget_exceeded` — when cap hit (with full trigger_history + halt details)
+- `revalidate_budget_exceeded` — when cap hit
+
+Without these events, tune #2 (revisit max_replan=2 / max_revalidate=3 defaults post-Iter-68) is impossible — Iter 68 cannot analyze distribution of re-plans without per-trigger logs.
+
+**Usage example:**
+```bash
+plugins/mega-sdd/scripts/check-recursion-budget.sh \
+  --action=increment-replan \
+  --task-id=<task-uuid> \
+  --trigger=execution_failed \
+  --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl
+# Output: JSON {status, replan_count, remaining_budget} OR {status: REPLAN_BUDGET_EXCEEDED, halt_to_emit}
+# Exit 0 = within budget; 3 = REPLAN_BUDGET_EXCEEDED; 4 = REVALIDATE_BUDGET_EXCEEDED; 1 = invalid args
+```
+
+**RULE 1.5 enforcement verified:** script REJECTS `--trigger=bind_conflict` (or any non-closed-enum trigger) with exit 1 + helpful error citing RULE 1.5 binding CONFLICT exclusion. Tested at Iter 65 ship.
 
 ---
 

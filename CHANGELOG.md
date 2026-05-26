@@ -7,6 +7,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.45.0] - 2026-05-26
+
+### Iter 65 — Classifier + Anti-Recursive Guard RUNTIME (ships day-0 of soak; pure deterministic; final-form measurement)
+
+**SP2 Iter 2 of 7.** User decision: ship Iter 65 day-0, NOT mid-soak. Reasoning: guard changes runtime; mid-soak ship = baseline split (pre/post-guard). Day-0 ship = entire soak window homogeneous, measures final-form system that Iter 66 will tune against.
+
+**Pure deterministic, no soak dependency.** Iter 65 = bash scripts + integration; no statistical machinery; no LLM judgment. Safe to ship at soak day-0.
+
+**Critical mandate from user (day-0 instrumentation):** guard MUST emit telemetry events from day-0. Without distribution data on re-plans, tune #2 (revisit max_replan=2 / max_revalidate=3 defaults post-Iter-68) is impossible. 4 new event_types added to LOCKED schema (allowed per schema's "Add NEW event_type values" mid-soak rule).
+
+**Classifier dogfood (Path A, MINOR):**
+- files_changed: ~9 (2 new scripts + telemetry-schema + vault-contract + orchestrate-flow SKILL + CLAUDE.md + plugin.json + READMEs + CHANGELOG) → in 5-15 range → MINOR
+- existing skill body modified (orchestrate-flow Step 2.9 + 6.9) → MINOR trigger ✓
+- new halt-enum entry? Subtype added (not top-level); ambiguous → conservatively MINOR
+- new skill dir? No
+- BREAKING CHANGE marker? No
+- → **MINOR** ✓
+
+**2 NEW bash scripts (executable):**
+
+1. **`plugins/mega-sdd/scripts/classify-iter.sh`** — deterministic iter classifier wrapping git/grep commands per CLAUDE.md §Classifier criteria.
+
+   - Args: `--ep=EP1|EP2` (required) + `--explicit-flag=<patch|minor|major>` (optional) + `--emit-telemetry=<path>` (optional)
+   - EP1 reads working-tree diff; EP2 reads `git diff HEAD~1 HEAD`
+   - Output: JSON `{iter_type, evaluation_point, criteria_matched, explicit_flag, inputs}` to stdout
+   - Exit codes: 0 = clean / 1 = invalid args / 2 = not in git repo
+   - Tested at Iter 65 ship — EP1 on Iter 65 working tree returns PATCH (default since classifier deltas are small until pre-commit)
+
+2. **`plugins/mega-sdd/scripts/check-recursion-budget.sh`** — anti-recursive guard runtime per RULE 1-3 + RULE 1.5 exclusion.
+
+   - Args: `--action=increment-replan|increment-revalidate|status|reset` + `--task-id=<id>` (required) + `--trigger=<closed-enum>` (required for increment-replan) + `--max-replan=<int>` (default 2) + `--max-revalidate=<int>` (default 3) + `--emit-telemetry=<path>` (optional)
+   - State file: `<project>/.mega-sdd/.replan-budget` (JSON; ephemeral; per-task tracking)
+   - **RULE 1.5 ENFORCED**: `--trigger=bind_conflict` (or any non-closed-enum trigger) REJECTED with exit 1 + helpful error citing binding CONFLICT exclusion. Verified at ship.
+   - Output: JSON `{status, replan_count, remaining_budget}` OR `{status: REPLAN_BUDGET_EXCEEDED, halt_to_emit, trigger_history}`
+   - Exit codes: 0 = within budget / 3 = REPLAN_BUDGET_EXCEEDED / 4 = REVALIDATE_BUDGET_EXCEEDED / 1 = invalid args
+   - End-to-end tested at Iter 65 ship — increments 0→1→2→EXCEED at cap=2 with full trigger_history capture; invalid trigger rejected with clear RULE 1.5 message.
+
+**Schema extension (4 new event_types added to LOCKED schema — allowed per mid-soak rules):**
+
+Added to `plugins/mega-sdd/references/telemetry-schema.md` event_type enum:
+
+- `replan_triggered` — every re-plan increment with trigger + before/after count. **Day-0 instrumented per user mandate.**
+- `revalidate_triggered` — every re-validate increment.
+- `replan_budget_exceeded` — when max_replan_count cap hit. Includes full trigger_history (the data tune #2 needs).
+- `revalidate_budget_exceeded` — when max_revalidate_count cap hit.
+
+These events are FORBIDDEN to remove/rename per schema lock policy (preserves Iter 68 analysis integrity).
+
+**Halt naming decision (per meta-tune #5 reuse-first evaluation):**
+
+Decision: **reuse `quality_gate_failed` with subtype discriminator** (option b from spec §4.2). NOT new halt enum entry.
+
+Subtypes added to `quality_gate_failed` per vault-contract.md §halt-protocol §Iter 58 subtypes:
+- `replan_budget_exceeded` (Iter 65)
+- `revalidate_budget_exceeded` (Iter 65)
+
+Pattern matches Iter 53/54/58 precedent (starterkit_metrics_inconsistent / pdf_render_failed / template_slot_unfilled subtypes). Avoids halt enum bloat (Fork-A debt concern per spec §5.2).
+
+**orchestrate-flow integration:**
+
+`plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` v3.8.1 → v3.9.0 (MINOR — new runtime integration):
+
+- **Step 2.9 (NEW)**: BEFORE Step 3 chain build, invoke `classify-iter.sh --ep=EP1`. Output parsed for downstream skills' complexity-gated decisions.
+- **Step 6.9 (NEW)**: AFTER chain completes, BEFORE Step 7 final summary, invoke `classify-iter.sh --ep=EP2`. Emit `iter_classifier_drift` event if EP1 != EP2.
+
+`check-recursion-budget.sh` integration TBD per skill — skills that perform re-plan/re-validate (e.g., generate-units re-generate flow, execute-bolts retry loop) invoke at increment points. Iter 65 ships the script + schema + halt subtype; per-skill invocation patterns are conservative additions Iter 66+ as need surfaces (don't retrofit speculative integration without data).
+
+**CLAUDE.md updates:**
+
+- Iter Ceremony Classifier section: "(v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)" — includes usage example + exit codes
+- Anti-Recursive Guard section: "(v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)" — includes day-0 telemetry mandate + RULE 1.5 enforcement verification + usage example
+
+**Surface changes:**
+
+- `plugins/mega-sdd/scripts/classify-iter.sh` — NEW executable bash script
+- `plugins/mega-sdd/scripts/check-recursion-budget.sh` — NEW executable bash script
+- `plugins/mega-sdd/references/telemetry-schema.md` — 4 new event_types added (LOCKED rule honored: additive only)
+- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — 2 new `quality_gate_failed` subtypes (replan_budget_exceeded / revalidate_budget_exceeded)
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 2.9 (EP1) + Step 6.9 (EP2) integration; version 3.8.1 → 3.9.0
+- `plugins/mega-sdd/CLAUDE.md` — RUNTIME ACTIVE updates (both sections; usage examples)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.44.0 → 3.45.0
+- `plugins/mega-sdd/README.md` + `README.md` (root) — version refs
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.8.1 → 3.9.0 (MINOR — runtime integration is new functionality)
+
+**Plugin v3.44.0 → v3.45.0** (MINOR per classifier dogfood; new runtime functionality with full backward compat — scripts opt-in via orchestrate-flow Step 2.9/6.9 invocations).
+
+**Soak window status: ACTIVE (day 0).** Iter 65 ships day-0 of soak per user decision — entire window measures final-form system. Iter 66 waits for soak data (≥14 days AND ≥10 real chain runs).
+
+**Next:** Iter 66 (lazy reference loading per spec §4.3 MAIN LEVER) — BLOCKED until soak completes. Iter 67 (Plan/Act complexity-gated per spec §4.4) — can proceed in parallel; doesn't need soak data; can use classifier output from Iter 65 directly.
+
+**Critical instrumentation verified:**
+- `iter_classifier_output` events captured at EP1 + EP2 from Iter 65 day-0
+- `iter_classifier_drift` events emitted on EP1/EP2 mismatch
+- `replan_triggered` + `revalidate_triggered` + `replan_budget_exceeded` + `revalidate_budget_exceeded` event payloads include trigger_history (tune #2 prerequisite)
+- RULE 1.5 binding CONFLICT exclusion enforced at runtime (script rejects invalid trigger with helpful error)
+
+---
+
 ## [3.44.0] - 2026-05-26
 
 ### Iter 64 — 3-Tier Context Model + Telemetry Collection Start (LOCKED schema; SOAK WINDOW BEGINS)
