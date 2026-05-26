@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.44.0] - 2026-05-26
+
+### Iter 64 — 3-Tier Context Model + Telemetry Collection Start (LOCKED schema; SOAK WINDOW BEGINS)
+
+**SP2 Iter 1 of 7.** Foundation for hot-context reduction. Iter 64 ships **declarations + collection mechanism only** — no enforcement, no claims of context win. Iter 66 (post-soak) enforces lazy-loading using telemetry-validated tiers.
+
+**Classifier dogfood (Path A, MINOR):**
+- files_changed: ~8 (3 new + 4 modified + CHANGELOG) → in 5-15 range → MINOR
+- existing skill body modified? No, only CLAUDE.md + commands
+- new field in handoff-contract? No
+- new halt-enum entry? No
+- new skill dir? No
+- BREAKING CHANGE? No
+- → **MINOR** ✓
+
+**Per Iter 63 spec §4.1 + post-Iter-63.5 reframe corrections.**
+
+**3 new ref files:**
+
+1. **`plugins/mega-sdd/references/3-tier-context-model.md`** — HOT/SPECIALIST/COLD definitions + decision tree + conservative defaults. Iter 64 directive: when uncertain → SPECIALIST. Iter 68 telemetry validates; Iter 66 enforces.
+
+2. **`plugins/mega-sdd/references/telemetry-schema.md`** — LOCKED event schema (CANNOT evolve mid-soak; CANNOT be backfilled). Day-1 capture required.
+
+   Schema covers:
+   - Base: `ts`, `skill`, `event_type`, `turn_id`, `session_id`
+   - `iter_classifier` (for EP1/EP2 outputs from Iter 65 runtime)
+   - `token_count` (input/output/reference_loads)
+   - **`loaded_per_turn`** (the §9.4 NEW METRIC) — turn_id, lines_loaded, tokens_loaded, breakdown_by_tier (HOT/SPECIALIST/COLD with refs_loaded arrays)
+   - `activation_outcome` (success/halted/aborted/downstream_failure + false_positive_signal)
+   - `tier_classification_decision` (declared_tier + loaded_this_session + load_step)
+   - 8 event types: skill_invoked, ref_loaded, halt_fired, tier_classification_decision, iter_classifier_output, iter_classifier_drift, activation_outcome, **turn_loaded_summary** (the metric event)
+
+3. **`plugins/mega-sdd/references/skill-tier-manifest.yaml`** — initial conservative classifications per skill ref. Examples:
+   - HOT: vault-contract.md, handoff-contract.md, codebase-map-schema.md
+   - SPECIALIST: t2-budget-tracker.md, saga-rollback.md, phase-context.md, deep-scan-prompts.md
+   - COLD: conflict-resolution.md, scenario-6, CHANGELOG-ARCHIVE.md, framework-conventions/
+
+   **Locked for soak window.** Iter 68 validates against telemetry; Iter 66 updates based on empirical load frequency.
+
+**Modified:**
+- `plugins/mega-sdd/CLAUDE.md` — adds 3-Tier Context Model + Telemetry Collection sections with event_type table + skill responsibility convention + soak gates
+- `plugins/mega-sdd/commands/auto.md` — adds `--no-telemetry` flag doc
+- `plugins/mega-sdd/commands/orchestrate-flow.md` — adds `--no-telemetry` flag doc
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.43.0 → 3.44.0
+- `plugins/mega-sdd/README.md` + `README.md` (root) — version refs
+
+**What Iter 64 does NOT do:**
+
+- ❌ No enforcement — skill bodies continue loading all refs unconditionally as before
+- ❌ No hot-context win claims — this iter is foundation only
+- ❌ No retroactive instrumentation — pre-Iter-64 skills are NOT updated with telemetry-emit steps (would require touching 15 skill bodies; deferred to Iter 66 as part of lazy-loading enforcement)
+- ❌ No metric production — `lines_loaded_per_turn` cannot be computed until skills emit `turn_loaded_summary` events (Iter 66 instrumentation)
+
+**What Iter 64 DOES do:**
+
+- ✅ LOCKED schema preserved day 1 (cannot backfill — schema decisions made before any data collected)
+- ✅ Conservative tier baseline established (manifest published; locked for soak)
+- ✅ Opt-out plumbed (--no-telemetry flag on auto/orchestrate-flow; persistent config option documented)
+- ✅ Process integration (CLAUDE.md documents when each event_type should be emitted; pattern established for Iter 66 to enforce)
+
+**SOAK WINDOW BEGINS NOW.** Iter 68 analysis fires when:
+- ≥ 14 calendar days elapsed AND
+- ≥ 10 real chain runs logged (non-test)
+
+Insufficient data → "DATA INSUFFICIENT" report; SP3 gate stays closed; Iter 66 manifest tuning blocked.
+
+**Real pipeline usage during soak required.** Recommended: TF Import Phase 2 OR equivalent real-project chain runs.
+
+**Skill version bumps:** None (no skill bodies modified; only references/ + CLAUDE.md + commands edits).
+
+**Plugin v3.43.0 → v3.44.0** (MINOR per classifier; new functionality = telemetry collection foundation).
+
+**Next:** Iter 65 (classifier + anti-recursive guard runtime impl) per spec §4.2. After Iter 65, Iter 66 waits for soak window completion.
+
+---
+
 ## [3.43.0] - 2026-05-26
 
 ### Iter 63.5 — OBVIOUS skill body trim (MINOR per classifier dogfood Path A)

@@ -29,6 +29,7 @@ Argument parsing:
   - `--strict-quality` — promote lint-units / analyze-parallelism warnings to halts
   - `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` (v2.2+) — opt out of individual auto-invoked diagnostics
   - `--with-fsd` (v3.42.0+, Iter 63) — OPT-IN auto FSD generation at chain end (default: off since Iter 63; expensive pandoc/LaTeX). Legacy `--no-fsd` still accepted as no-op back-compat.
+  - `--no-telemetry` (v3.44.0+, Iter 64) — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`.
 
 Follow `skills/orchestrate-flow/SKILL.md` procedure. Default behavior: 3-sub-skill chain with single upfront confirmation. `--deep` lifts the cap and chains to pipeline-end; `--resume` continues from current CWD state.
 
