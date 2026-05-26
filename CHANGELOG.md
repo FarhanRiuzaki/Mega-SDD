@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.49.1] - 2026-05-27
+
+### Iter 67.6.1 — Validator glob fix (phase-1 unit layout)
+
+**Found during real-run cycle test on TF Import.** Iter 67.6 validator's glob pattern was `*-bound/units/U-*.md` — only catches the phase-2 file layout (`U-001.md`, `U-005.md`). Phase-1 uses a different convention: each unit is a DIRECTORY containing `unit.md` (`U-005-audit-event-additive-migration/unit.md`). Phase-1 unit files were entirely invisible to the validator.
+
+Consequence: validator's initial inventory ("27 OQ drops in TF Import") was inflated — phase-1 OQs WERE already cited in phase-1 unit.md frontmatter (the `binding_evidence:` field), but the validator never read those files. After this fix, the inventory drops to ZERO when phase-2 units get OQ-IDs added.
+
+**Fix:**
+```python
+# Old (Iter 67.6 v3.49.0):
+units_paths = sorted(glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*.md")))
+
+# New (Iter 67.6.1 v3.49.1):
+units_paths = sorted(
+    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*.md")) +
+    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*", "unit.md"))
+)
+```
+
+**Real-run verification (TF Import 2026-05-27 post-edits):**
+- Before fix: units_checked=27 (only phase-2), drops=27
+- After fix + 17 phase-2 unit edits: units_checked=83 (phase-1 + phase-2), drops=0, status=PASS
+- PreToolUse simulation on `mega-sdd:execute-bolts` with PASS state → no block, tool proceeds
+
+**Walking-skeleton lesson:** the slice didn't *fail*; it *over-detected* due to the glob bug. Discovering this during the cycle-clearing test (real-edit work) rather than the smoke-test confirms the discipline holds — real-run testing surfaces gaps that isolated tests miss. The bug only manifests when the unit corpus uses mixed conventions, which TF Import does (phase-1 = older directory layout; phase-2 = newer file layout).
+
+**Classifier:** 1 file changed (`plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`), no skill body modified, no new functionality, no halt enum change. → **PATCH** ✓.
+
+**Plugin v3.49.0 → v3.49.1** (PATCH — single-file bug fix to walking-skeleton slice 1 validator).
+
 ## [3.49.0] - 2026-05-27
 
 ### Iter 67.6 — Walking-skeleton slice 1: [HOOK-VALIDATE] binding→units handoff integrity (Fork A recovery)

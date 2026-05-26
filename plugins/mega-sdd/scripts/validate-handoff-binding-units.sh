@@ -83,8 +83,13 @@ binding_paths = sorted(
     glob.glob(os.path.join(vault_dir, "binding-*.md"))
 )
 
-# Units: <vault>/*-bound/units/U-*.md (multi-phase: each bound vault has its own units)
-units_paths = sorted(glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*.md")))
+# Units: TWO layouts supported (audit response Iter 67.6 — phase-1 vs phase-2 conventions):
+#   Layout A (phase-2 style):  <vault>/*-bound/units/U-*.md
+#   Layout B (phase-1 style):  <vault>/*-bound/units/U-*/unit.md
+units_paths = sorted(
+    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*.md")) +
+    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*", "unit.md"))
+)
 
 # OQ-ID regex: starts with OQ-, alphanumerics+hyphens, ends with -digit
 OQ_RE = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
