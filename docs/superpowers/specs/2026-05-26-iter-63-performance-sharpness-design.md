@@ -179,16 +179,162 @@ explicit user flag (--iter-type=major) > classifier output > default (PATCH)
 
 Each iter brainstormed separately when reached. This is the COMMITTED sequencing — not detailed design.
 
-### 4.1 Iter 64 — 3-tier context architecture + START telemetry collection
+### 4.0 Iter 63.5 — Deferred skill body trim sprint (RECLASSIFIED + HOT/COLD TRIAGE INSIDE per post-ship review)
+
+Iter 63 deferred T5-T9 skill body trim (~1,500 line hot-tier relocation across 9 skills) to a dedicated follow-up iter. Post-ship review (2026-05-26) caught 3 issues with the original framing — corrections below.
+
+**Reclassification per Iter 63 classifier rules (dogfooding):**
+
+Original framing called Iter 63.5 a PATCH iter. Per the classifier rules shipped in Iter 63 to `plugins/mega-sdd/CLAUDE.md`:
+- MINOR trigger: "existing skill body modified" — YES, all 9 skill bodies modified
+- MAJOR trigger: `files_changed > 15` — likely yes (9 skill bodies + multiple new ref files = ~15-20 files)
+
+**Two valid paths (pick one before Iter 63.5 starts):**
+
+| Path | Classification | Implication |
+|---|---|---|
+| **A. Honest classification** | MINOR (or MAJOR if file count tips over) | Iter 63.5 gets full ceremony: spec doc (this entry stands as inline spec) + plan doc per writing-plans (atomic per-skill task sequence) + CHANGELOG entry. Dogfoods classifier. |
+| **B. Explicit carve-out in rules** | PATCH with carve-out | Amend classifier in `plugins/mega-sdd/CLAUDE.md` to add carve-out: "pure documentation relocation (file split with semantic verification + zero behavior change) = PATCH regardless of file count". Carve-out criteria must be deterministic (no LLM judgment). Risk: weakens classifier. |
+
+**Recommendation:** Path A. Iter 63.5 gets ceremony — it's a meaningful refactor across 9 skills, not a trivial fix. Dogfoods the new classifier in practice.
+
+**Hot/cold triage pulled INTO Iter 63.5 scope (per post-ship review):**
+
+Original framing: "move to references" + Iter 66 (SP2) lazy loading completes the picture. Post-ship correction: **move-to-references only reduces hot context if moved content is SPECIALIST/COLD** (not loaded every session). If moved content is HOT (still loaded every session via cross-ref), the trim adds indirection without hot-context win — repeating the CHANGELOG framing error structurally.
+
+Pull lightweight tier triage INTO Iter 63.5 — do NOT wait for Iter 66:
+
+For each block targeted for relocation, BEFORE the cut-paste:
+1. **Audit "is this HOT?"** — does every skill invocation read this block? Manual inspection of skill procedure (does the procedure step that loads this block fire every session, or conditionally?).
+2. If HOT → KEEP IN BODY (trim other things instead OR re-evaluate whether the block can be condensed without relocating).
+3. If SPECIALIST (loaded per-task subset) → relocate to ref file; body keeps step header + cross-ref + load-pointer at correct procedure step.
+4. If COLD (rarely loaded; on-demand) → relocate to ref file; body keeps single-line summary; cross-ref optional.
+
+Without this triage, "successful trim" by line count could deliver 0 hot-context reduction.
+
+**Semantic verification criteria (NOT line counts) per post-ship review:**
+
+Line count is a vanity metric. Real verification for each trim commit:
+
+1. **Load-pointer integrity** — every block moved to a ref file has a load-pointer in the body at the procedure step where it should be read. No "moved to refs but never referenced from body."
+2. **No ref orphan** — created ref files are actually cross-referenced from body. No "ref file created but never linked."
+3. **End-to-end coherence** — skill body reads coherent without the cut content. Test: another engineer (or fresh subagent) can execute the skill body following only the body — references load on-demand when body says "see references/X.md for Y." No silent dependencies on cut content.
+
+Verification command pattern per commit:
+```bash
+# 1. Load-pointer integrity
+for ref in <ref-files-created-this-commit>; do
+  grep -q "references/$(basename $ref)" <skill>/SKILL.md || echo "ORPHAN ref: $ref"
+done
+
+# 2. No ref orphan
+grep -rn "references/$(basename $ref)" <skill>/ || echo "Created ref $ref unused"
+
+# 3. End-to-end coherence
+# Manual: read skill body top-to-bottom. Every cross-ref `references/X.md` must
+# tie to a step where the procedure says "load X.md to do Y." Cross-refs should
+# READ as "see <ref> for detail" with body still semantically complete.
+```
+
+**Iter 63.5 scope (revised):**
+
+- Hot/cold triage of T5-T9 trim targets (BEFORE relocation)
+- Per-skill trim commits with semantic verification (NOT line-count verification)
+- Reclassify Iter 63.5 as MINOR per classifier (Path A; dogfood) OR add explicit carve-out (Path B; risk-bearing) before commits start
+- Atomic per-skill commits with semantic verification gate per commit
+- Document achieved hot-context reduction (real reduction, not "line count went down")
+
+**Estimated effort:** 3-5 hours dedicated session per skill (4 heavy + 5 medium = ~10-15 hours total), reflecting honest scope.
+
+### 4.1 Iter 64 — 3-tier context architecture + START telemetry collection (SCHEMA LOCKED PRE-SOAK per post-ship review)
 
 **Tune #1 applied:** telemetry SPLIT into collect-vs-analyze. **Collection starts Iter 64** (cheap append-only `<project>/.mega-sdd/memory/telemetry.jsonl`). Iter 68 = analyze/enforce phase. Rationale: tier assignment (Iter 64), Plan/Act (Iter 67), budget (Iter 69) all need historical data; if instrumentation starts at Iter 68, downstream iters have only days of history. Decouple instrument from analyze.
+
+**Post-ship review correction (2026-05-26):** soak data CANNOT be backfilled. Whatever Iter 64 does NOT log, Iter 68 cannot analyze. Schema MUST nail down ALL Iter 68/69/70 needs BEFORE Iter 64 ships. Lock list below.
+
+### Telemetry schema (LOCKED Iter 64 ship; cannot evolve mid-soak)
+
+Line schema in `telemetry.jsonl` (one JSON object per line, append-only):
+
+```json
+{
+  "ts": "<ISO8601 timestamp>",
+  "skill": "<skill name, e.g., generate-intent>",
+  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome",
+  "iter_classifier": {
+    "ep": "EP1 | EP2",
+    "output": "PATCH | MINOR | MAJOR",
+    "criteria_matched": ["..."],
+    "explicit_flag": null | "patch|minor|major"
+  },
+  "token_count": {
+    "estimated_input": <int>,
+    "estimated_output": <int>,
+    "reference_loads": [{"path": "...", "estimated_tokens": <int>}]
+  },
+  "activation_outcome": {
+    "skill": "<which skill was invoked>",
+    "outcome": "success | halted | user_aborted | downstream_failure",
+    "false_positive_signal": "user_explicit_skip | wrong_skill_invoked | overlap_with_other_skill | null",
+    "downstream_skill_invoked_within_chain": "<other skill name or null>"
+  },
+  "tier_classification_decision": {
+    "ref_path": "...",
+    "declared_tier": "HOT | SPECIALIST | COLD",
+    "loaded_this_session": true | false,
+    "load_step": "<procedure step where loaded, or 'never'>"
+  },
+  "payload": { "<event-specific fields>": "..." }
+}
+```
+
+**Schema rationale (each field traces to a downstream consumer):**
+
+| Field | Consumed by | Why needed |
+|---|---|---|
+| `ts` | Iter 68 time-series analysis | Trend over soak window |
+| `skill` + `event_type` | Iter 68 skill hit frequency | Which skills invoked most |
+| `iter_classifier.output` | Iter 68 classifier accuracy + Iter 69 budget tuning | Distribution of iter types over time |
+| `iter_classifier.criteria_matched` | Iter 68 classifier audit | Are inputs catching the right cases? |
+| `iter_classifier.explicit_flag` | Iter 68 override frequency | Do users override classifier often? Signal of misclassification |
+| `token_count.estimated_input` | Iter 68 token-per-skill aggregate | Which skills heaviest in practice |
+| `token_count.reference_loads` | Iter 68 hot/cold reality check | Are SPECIALIST refs actually loaded per-task, or always? Validates tier discipline |
+| `activation_outcome.outcome` | Iter 68 activation accuracy | Did invoked skill achieve its goal? |
+| `activation_outcome.false_positive_signal` | Iter 68 false-positive rate | Hardest metric to capture — see ACTIVATION OUTCOME LABELING below |
+| `tier_classification_decision.loaded_this_session` | Iter 68 tier discipline audit | Was HOT actually loaded? Was COLD never loaded? Validates Iter 66 lazy loading payoff |
+
+### Activation outcome labeling — the hard metric
+
+**Problem:** activation accuracy (false-positive rate) is the trickiest metric — cannot be measured automatically without outcome label per invocation. User-explicit-skip is automatic (user pressed Cancel → log `user_explicit_skip`). But "wrong skill invoked" requires human label OR heuristic.
+
+**Iter 64 strategy:**
+- Automatic signals (no user effort):
+  - `outcome: user_aborted` when AskUserQuestion Cancel hit
+  - `outcome: halted` when halt fires
+  - `outcome: downstream_failure` when next-step skill in chain fails AND failure trace points back to current skill's handoff
+  - `outcome: success` when handoff status = completed AND chain proceeds
+- Semi-automatic signal:
+  - `false_positive_signal: overlap_with_other_skill` when 2+ skills invoked within 60s of each other AND latter's input was previous's output (overlap heuristic)
+- Manual signal (user opt-in):
+  - User can run `/mega-sdd:telemetry label <invocation-id> false-positive` to retroactively mark a skill invocation as wrong-skill. Stored as separate label event.
+
+**If activation accuracy can't be captured reliably:** Iter 68 documents this as a known limitation. Other metrics (skill hit freq, token-per-skill, tier discipline) still actionable.
+
+### Soak window requirements
+
+Iter 68 analysis can fire ONLY if BOTH conditions met:
+- ≥ 14 calendar days elapsed since Iter 64 ship
+- ≥ 10 real chain runs logged (not test runs)
+
+**Real pipeline usage during soak is REQUIRED** — user-side discipline. Recommended: run mega-sdd on at least one real project (e.g., TF Import Phase 2 — mentioned in audit as upcoming pipeline usage). If soak window passes with <10 runs OR <14 days: Iter 68 emits "DATA INSUFFICIENT" report instead of conclusions; SP3 gate stays closed.
 
 **Scope:**
 - Codify 3-tier model per skill in plugin docs (hot/specialist/cold)
 - Mark which references are HOT (always-loaded) vs SPECIALIST (per-task) vs COLD (RAG-on-demand)
-- **Start telemetry.jsonl append** with line schema: `{ts, skill, event_type, payload}` — events include: skill_invoked, ref_loaded, halt_fired, tier_classification_decision
+- **Start telemetry.jsonl append** with schema LOCKED above
+- Activation outcome labeling automatic + semi-automatic + manual paths wired
 - Telemetry opt-out via `--no-telemetry` flag (privacy)
-- No analysis logic yet — just collection
+- No analysis logic yet — just collection. Schema MUST be complete pre-ship; cannot backfill.
 
 ### 4.2 Iter 65 — Complexity classifier + anti-recursive guard (2 separate modules, same iter)
 
