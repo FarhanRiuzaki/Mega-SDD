@@ -39,13 +39,16 @@ Plan specified ~1,500 line hot-tier relocation across 9 heavy/medium skills (gen
 
 **Decision (honest scope per simplifikasi standing directive):** DEFER T5-T9 to **Iter 63.5** — dedicated PATCH iter under new classifier rules (likely classified PATCH since skill bodies are isolated modifications). Iter 63.5 will do per-skill trim with proper scope (one-skill-per-commit, verified line counts, cross-ref integrity check). Spec relocation pattern (phase-context.md, t2-budget-tracker.md, saga-rollback.md, validation-gate.md ref files) preserved as Iter 63.5 deliverables.
 
-**Effect on hot context this iter:**
-- Skill bodies: 8,174 lines (UNCHANGED — deferral)
-- CHANGELOG.md: 5,663 → 1,806 lines (-68% via rotation)
-- `plugins/mega-sdd/CLAUDE.md`: +83 lines (classifier + guard rules)
-- Plugin total: ~18,306 → ~14,500 lines (CHANGELOG rotation drives most of the reduction)
+**Effect on context tiers this iter (CORRECTED 2026-05-26 post-ship review):**
 
-**Win shipped this iter:** CHANGELOG archive rotation (largest single context win) + FSD opt-out (recurring per-chain savings) + classifier doc (process win for future iters under new ceremony).
+| Tier | Change | Notes |
+|---|---|---|
+| **HOT** (loaded every session via anchor/skill bodies) | **≈0 reduction** | Skill bodies unchanged (8,174 lines — T5-T9 deferred). CLAUDE.md +83 lines for classifier + guard rules (small net increase). |
+| **COLD / repo hygiene** | CHANGELOG.md: 5,663 → 1,806 lines (-68%) | CHANGELOG is NOT auto-loaded by any SKILL.md or CLAUDE.md — verified in repo. The -68% is **repo hygiene** (cleaner git checkout, faster file ops, easier to scan), NOT hot-context-window impact. Don't conflate the two. |
+| **RUNTIME** | FSD opt-out = recurring per-chain savings | When `/mega-sdd:auto` runs without `--with-fsd`, skips pandoc invocation + LaTeX compile + ~50MB tectonic deps. Cumulative win per chain run, not per session. |
+| **PROCESS** | Classifier + guard rules established | Foundation for Iter 64+ — first iter under new ceremony rules will dogfood the classifier. |
+
+**Win shipped this iter** (honest framing): cold-tier/repo hygiene (CHANGELOG rotation) + recurring runtime saving (FSD opt-out) + process foundation (classifier doc). **Hot-tier skill body trim → deferred to Iter 63.5** with strict semantic verification criteria + hot/cold triage requirement (see Iter 63.5 entry when shipped).
 
 **Surface changes:**
 
