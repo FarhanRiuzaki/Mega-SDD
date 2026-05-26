@@ -1,6 +1,6 @@
 # Iter 63 Performance + Sharpness Design — v4.0.0-Candidate Refactor (Sub-Project 1)
 
-**Status:** Design approved 2026-05-26 (user-confirmed Section 1-6 + revised roadmap + 4 tunes)
+**Status:** Design approved 2026-05-26 (user-confirmed Section 1-6 + revised roadmap + 5 tunes)
 **Iter target:** Plugin v3.41.0 → v3.42.0 (MINOR — auto-invoke behavior change with backward-compat)
 **Driver:** user shift from feature work to performance/sharpness. "Senior engineer collaborator, not verbose assistant."
 **Spec author:** brainstorming session (research-driven; superpowers:brainstorming flow)
@@ -15,7 +15,7 @@ This spec covers **Sub-Project 1 (Quick Wins, Iter 63) in detail** + Sub-Project
 | Sub-project | Iters | Plugin range | Status |
 |---|---|---|---|
 | **SP1 — Quick Wins (this spec)** | Iter 63 | v3.41.0 → v3.42.0 | DETAILED + approved; ship now |
-| **SP2 — Architecture Refactor** | Iter 64-70 | v3.42.0 → v3.50.0 | ROADMAP only; each iter brainstormed separately when reached |
+| **SP2 — Architecture Refactor** | Iter 64-70 | v3.42.0 → v3.50.0 | ROADMAP only; each iter brainstormed separately when reached. **~1 week edit work; wall-clock several weeks due to telemetry soak gap (see §4.5).** |
 | **SP3 — Foundation Replacement** | Multi-week R&D | v4.0.0 candidate | UNCOMMITTED; explicit fork decision required first |
 
 ---
@@ -83,13 +83,15 @@ Plus 7 actionable audit-flagged top wins (TRIM/CONSOLIDATE/DEFER/OVERLAP/HEAVY/A
 | `orchestrate-flow` | 764 | ~500 | Move predictive-checks consumer detail to refs (already partial); move handoff validation gate detail to new `references/validation-gate.md` |
 | Other heavy skills (>300 lines) | varies | shave 20-30% each | Strip version-stamp prose ("v1.10+, Iter 46:" etc. — git log has this); move worked examples to refs |
 
-**Net effect:**
-- Skill bodies: 8,174 → ~6,500 lines (-20% hot-tier reduction)
-- References: ~10,132 → ~11,000 lines (+1,000 due to relocation; +500 from new ref files)
-- Net plugin content: -1,500 lines deletion (version-stamp prose, redundant historical context, mirrored content)
-- **Hot context impact** (what loads upfront): meaningful reduction — skill bodies load every session per anchor; refs load on-demand
+**Net effect (tune meta-#3 — math reconciled):**
+- Skill bodies (HOT tier, loads every session): 8,174 → ~6,500 lines (**-1,674 line / -20% hot-tier reduction**)
+- References (SPECIALIST/COLD tier, loads on-demand): ~10,132 → ~11,132 lines (**+1,000 due to relocation** of content from bodies)
+- Pure deletion (version-stamp prose, redundant historical context, mirrored halt descriptions): **~-674 lines net deletion** (small)
+- **Plugin total content: ~18,306 → ~17,632 lines (~-3.7% — nearly flat)**
 
-**Backward compat:** all existing skills work; refs are loaded by skill body when referenced. Trim is documentation-style; no behavioral change.
+**The win is hot→cold tier RELOCATION, not deletion.** Skill bodies that load every session via anchor drop -20%. Refs grow but load on-demand. Plugin total content nearly flat — claim is NOT line-deletion, it's CONTEXT-WINDOW IMPACT at session start.
+
+**Backward compat:** all existing skills work; refs are loaded by skill body when referenced. Trim is documentation-style; no behavioral change. Iter 66 (SP2) lazy-loading completes the win by making specialist refs truly on-demand.
 
 ### 3.3 Section 3 — Command differentiation (keep both, explicit)
 
@@ -106,26 +108,43 @@ Plus 7 actionable audit-flagged top wins (TRIM/CONSOLIDATE/DEFER/OVERLAP/HEAVY/A
 
 **No deprecation; no breaking changes; no merge.**
 
-### 3.4 Section 4 — Per-iter ceremony aggressive opt-in (DETERMINISTIC classifier)
+### 3.4 Section 4 — Per-iter ceremony aggressive opt-in (DETERMINISTIC classifier — DUAL EVALUATION POINT)
 
-**User concern:** "If model must think about how much to think, that's recursion (prohibited by guard)."
+**User concern (tune meta-#1):** Classifier temporal kebalik in original spec. Ceremony decision is PRE-work (before commit exists); version-bump labeling is POST-work. Same enum, two evaluation points — state explicitly.
 
-**Classifier is pure deterministic — no LLM self-judgment:**
+**Two evaluation points, same enum output (PATCH | MINOR | MAJOR):**
 
-| Iter type | Classifier criteria (machine-checkable) | Required artifacts | Optional |
+| Evaluation point | When | Inputs | Use-case |
 |---|---|---|---|
-| **PATCH** | `files_changed ≤ 5` AND no halt-enum diff AND no new skill dir AND no `BREAKING CHANGE:` commit marker | CHANGELOG entry only | (nothing) |
-| **MINOR** | `files_changed 5-15` OR new halt-enum entry OR new field in handoff-contract OR existing skill body modified | CHANGELOG entry | Spec (only if brainstorming skill invoked) |
-| **MAJOR** | new skill dir OR `BREAKING CHANGE:` commit marker OR `files_changed > 15` | CHANGELOG + spec + plan | Audit (only if explicitly requested) |
+| **EP1: Ceremony gating** | BEFORE work starts (pre-commit) | working-tree state + upfront scope estimate | Decides whether to emit spec/plan/audit docs |
+| **EP2: Version-bump labeling** | AFTER work done (post-commit) | `git diff HEAD~1 HEAD` of completed commits | Decides PATCH/MINOR/MAJOR version bump in plugin.json + CHANGELOG label |
 
-**Classifier inputs (all from git/filesystem, deterministic):**
-- `files_changed` = output of `git diff --name-only HEAD~1 HEAD | wc -l`
+**EP1 (pre-work) inputs — deterministic estimates:**
+- `est_files_changed` = `git diff --stat HEAD | wc -l` (working tree vs HEAD) + plan-doc-declared targets if exists
+- `est_halt_enum_diff` = scan in-flight changes to vault-contract.md halt enum (grep working tree diff)
+- `est_new_skill_dir` = check working tree for new `plugins/mega-sdd/skills/<new>/` directories
+- `breaking_marker` = user's explicit flag `--iter-type=<>` OR scope-statement in brainstorming session
+- Fallback when no working-tree changes yet (start-of-work): use user's stated iter-type from brainstorming session intent → default PATCH if absent
+
+**EP2 (post-work) inputs — deterministic completed-diff:**
+- `files_changed` = `git diff --name-only HEAD~1 HEAD | wc -l`
 - halt-enum diff = `git diff HEAD~1 HEAD -- plugins/mega-sdd/skills/generate-intent/references/vault-contract.md | grep -c "^[+-].*type:.*|"`
 - new skill dir = `git diff HEAD~1 HEAD --name-status | grep "^A.*plugins/mega-sdd/skills/.*/SKILL.md"`
 - handoff-contract field diff = same pattern on handoff-contract.md
 - breaking change marker = `git log -1 --pretty=%B | grep -c "BREAKING CHANGE:"`
 
-**Precedence rule (uniform across plugin):**
+**Classifier criteria (same enum, applied at both EPs):**
+
+| Iter type | Criteria (machine-checkable at both EPs) | Required artifacts | Optional |
+|---|---|---|---|
+| **PATCH** | `files_changed ≤ 5` AND no halt-enum diff AND no new skill dir AND no `BREAKING CHANGE:` marker | CHANGELOG entry only | (nothing) |
+| **MINOR** | `files_changed 5-15` OR new halt-enum entry OR new field in handoff-contract OR existing skill body modified | CHANGELOG entry | Spec (only if brainstorming skill invoked) |
+| **MAJOR** | new skill dir OR `BREAKING CHANGE:` commit marker OR `files_changed > 15` | CHANGELOG + spec + plan | Audit (only if explicitly requested) |
+
+**Drift handling (EP1 vs EP2 mismatch):**
+If EP1 classified PATCH but EP2 reveals MAJOR criteria met (e.g., scope grew during work): emit drift warning + retroactively generate missing artifacts (spec/plan) under accelerated rules (compressed prose; not full ceremony). Log to telemetry as `ceremony_classifier_drift` event for Iter 68 analysis.
+
+**Precedence rule (uniform across plugin, both EPs):**
 ```
 explicit user flag (--iter-type=major) > classifier output > default (PATCH)
 ```
@@ -152,7 +171,11 @@ explicit user flag (--iter-type=major) > classifier output > default (PATCH)
 
 ---
 
-## 4. Sub-Project 2 Roadmap (Iter 64-70, ~1 week)
+## 4. Sub-Project 2 Roadmap (Iter 64-70, ~1 week EDIT WORK + soak gap)
+
+**Timeline clarification (tune meta-#2):** ~1 week refers to ACTIVE edit work across Iter 64-70. BUT Iter 68 (telemetry analyze) requires accumulated real-usage data from Iter 64+ — soak gap = wall-clock several weeks of real-world usage between Iter 64 ship and Iter 68 analysis. Iter 64-67 + 69-70 can ship at edit-pace; Iter 68 PAUSES the sequence until soak window completes.
+
+**Realistic wall-clock:** ~1 week edit work + 3-4 weeks soak gap = ~4-5 weeks total elapsed for SP2 completion. SP3 gate at Iter 68 cannot fire faster than soak window allows. If telemetry analysis runs with insufficient data (< 14 days OR < 10 chain runs), it produces "data insufficient" report instead of conclusions — SP3 gate stays closed until enough data accumulated.
 
 Each iter brainstormed separately when reached. This is the COMMITTED sequencing — not detailed design.
 
@@ -170,6 +193,17 @@ Each iter brainstormed separately when reached. This is the COMMITTED sequencing
 ### 4.2 Iter 65 — Complexity classifier + anti-recursive guard (2 separate modules, same iter)
 
 **Tune #5 applied:** classifier + guard = different concerns, separate modules, can ship same iter for sequencing convenience.
+
+**Iter 65 CONCRETE DELIVERABLES (tune meta-#4 — what Iter 65 actually builds):**
+
+Iter 63 only documents the classifier criteria + guard rules as CONVENTION in CLAUDE.md (no runtime artifact). Iter 65 builds the executable mechanism:
+
+1. **`plugins/mega-sdd/scripts/classify-iter.sh`** — executable bash script wrapping the git/grep commands; output is JSON `{iter_type: "PATCH|MINOR|MAJOR", criteria_matched: [...], evaluation_point: "EP1|EP2"}` for both pre-work and post-work invocation
+2. **`plugins/mega-sdd/scripts/check-recursion-budget.sh`** — bash script that reads `<project>/.mega-sdd/.replan-budget` ephemeral state file; tracks active task's re-plan count + re-validate count; exits non-zero if cap exceeded (orchestrator translates to halt)
+3. **Orchestrate-flow integration** — orchestrate-flow Step 3 invokes `classify-iter.sh` at chain start (EP1); Step 7 (final summary) invokes again at chain end (EP2); telemetry event logged on drift
+4. **Skill body invocation pattern** — skills that gate behavior on complexity (Iter 67 Plan/Act gating, Iter 69 budget enforcement) invoke `classify-iter.sh` at procedure start (caching result in handoff metadata for single-classifier-per-chain discipline)
+
+**Without these concrete artifacts, Iter 65 would be a no-op** (the convention from Iter 63 would just sit in CLAUDE.md without runtime enforcement). Iter 65 ships the enforcement layer.
 
 **Module A: Deterministic complexity classifier**
 
@@ -197,7 +231,15 @@ RULE 2 — Hard caps per task (CONFIGURABLE DEFAULTS, tune post-Iter 68):
   - max_replan_count: 2 (DEFAULT — only magic number without empirical evidence;
     Tune #2 explicitly flagged for revisit post-Iter 68 telemetry analysis)
   - max_revalidate_count: 3 (DEFAULT — same caveat)
-  - Exceeded → halt `replan_budget_exceeded` (NEW halt type Iter 65; user intervention required)
+  - Exceeded → halt (NAMING DEFERRED to Iter 65 implementation, per tune meta-#5):
+    Iter 65 evaluates reuse-first options BEFORE creating new halt enum entry:
+    (a) Reuse `bolt_repeated_partial_failure` semantic (existing N-retry-exhausted halt;
+        generalize from execute-bolts-only to "any task hitting hard retry cap")
+    (b) Add subtype to `quality_gate_failed` (subtype: `replan_budget_exceeded` |
+        `revalidate_budget_exceeded` — pattern from Iter 53/54 subtype discriminator)
+    (c) LAST RESORT only: new halt enum entry `replan_budget_exceeded`
+    Iter 65 ships the decision + impl. Iter 63 spec defers naming to avoid
+    pre-committing to halt enum growth (Fork-A debt concern §5.2).
 
 RULE 3 — No validating-the-validation:
   - If validation step itself fails, halt directly — DO NOT spawn meta-validation
@@ -349,7 +391,9 @@ RULE 1.5 — Explicit exclusion (tune #4):
 RULE 2 — Hard caps per task (configurable defaults — tune #2):
   max_replan_count: 2 (DEFAULT — revisit post-Iter 68 telemetry analysis)
   max_revalidate_count: 3 (DEFAULT — same caveat)
-  Exceeded → halt `replan_budget_exceeded` (NEW halt type Iter 65)
+  Exceeded → halt (NAMING DEFERRED to Iter 65 — reuse-first evaluation:
+    bolt_repeated_partial_failure generalization OR quality_gate_failed
+    subtype OR new enum entry as LAST RESORT. Per tune meta-#5.)
 
 RULE 3 — No validating-the-validation:
   Validators are LEAF NODES; do not spawn meta-validators.
@@ -430,6 +474,14 @@ Iter 63 itself = MINOR (classifier: existing skill body modified + new content i
 
 ---
 
-**Approval:** user approved Section 1-6 unchanged + revised roadmap + all 4 tunes (telemetry split, configurable defaults, fork inputs explicit + Fork A debt, binding CONFLICT exclusion, classifier/guard separation) on 2026-05-26.
+**Approval:** user approved Section 1-6 unchanged + revised roadmap + 5 tunes (telemetry split, configurable defaults, fork inputs explicit + Fork A debt, binding CONFLICT exclusion, classifier/guard separation) on 2026-05-26.
+
+**Post-spec meta-tunes (applied in 2nd-pass user review of written spec):**
+- meta-#1: Classifier temporal split (EP1 pre-work vs EP2 post-work) — §3.4
+- meta-#2: SP2 timeline clarified (edit work + soak gap = ~4-5 weeks wall-clock) — §0 + §4
+- meta-#3: Trim math reconciled (hot-tier relocation -1,674 lines vs net deletion only ~-674 small) — §3.2
+- meta-#4: Iter 65 concrete deliverables specified (4 artifacts: classify-iter.sh, check-recursion-budget.sh, orchestrate-flow integration, skill invocation pattern) — §4.2
+- meta-#5: `replan_budget_exceeded` halt naming deferred — Iter 65 reuse-first evaluation (bolt_repeated_partial_failure generalize / quality_gate_failed subtype / new enum LAST RESORT) — §4.2 + §7
+- cosmetic: "4 tunes" → "5 tunes" consistent throughout
 
 **Next:** writing-plans skill to produce atomic implementation plan for Iter 63 (SP1) scope.
