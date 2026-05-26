@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.7.2
+version: 2.7.3
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -132,7 +132,7 @@ The scan walks every path NOT matching these globs. List grouped by ecosystem fo
 
 5. **Extract public interfaces.**
 
-   **Per-file invalidation gate (v2.7.1+, Iter 46 → relocated Iter 48 fix-forward — closes audit D2-007):**
+   **Per-file invalidation gate (v2.7.1+):**
 
    This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, gate compares each source file's current sha256 to the `Last_Scanned_Sha256` column in prior codebase-map.md §2:
    - File current sha256 == prior Last_Scanned_Sha256 → REUSE prior §2 entries for this file; SKIP tree-sitter/regex re-extraction for it
@@ -142,7 +142,7 @@ The scan walks every path NOT matching these globs. List grouped by ecosystem fo
 
    For default `--deep-scan` (no flag) OR `--no-cache` → SKIP gate; full re-extract for every file (current behavior; correctness guarantee preserved for deep scans).
 
-   The relocated gate ensures per-file invalidation actually short-circuits the expensive tree-sitter / regex per-file invocations below, instead of running them and then post-processing. Iter 46 had this logic at the wrong step (after extraction); Iter 48 fix-forward relocates it to gate extraction. Closes Iter 47 code-quality review finding C2.
+   The gate runs BEFORE tree-sitter / regex per-file extraction so it actually short-circuits the expensive per-file invocations.
 
    **If `engine: tree-sitter` (v2.0+, default when available):**
    - For each detected language, locate `queries/tags-<lang>.scm` in plugin dir
@@ -452,8 +452,6 @@ After Step 10 codebase-map.md write completes, additionally write a shared-snaps
 ```
 
 If write fails (disk full / permissions): log warning + continue (snapshot is optimization, not correctness — bind-codebase falls back gracefully per shared-snapshot-schema.md §bind-codebase consumer).
-
-> **Per-file symbol invalidation note (Iter 48 fix-forward):** the per-file invalidation logic originally documented as Step 9.5 in Iter 46 was relocated to gate Step 5 symbol extraction (above) in Iter 48 fix-forward. The relocated gate runs BEFORE tree-sitter / regex extraction so it actually short-circuits the expensive per-file invocations. The duplicate codebase-map.md write that was implicit in the original Step 9.5 (it wrote codebase-map.md, then Step 10 wrote it again) is removed — Step 10 is now the single canonical write step that consumes the gate's REUSE/RE-EXTRACT decisions.
 
 ---
 
