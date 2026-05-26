@@ -5,7 +5,7 @@
 
 ## Prerequisites
 
-- Mega-sdd v3.8.0+
+- Mega-sdd v3.40.0+
 - Existing PHP/Laravel project with at least one model + endpoint
 - `tree-sitter` + `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
 

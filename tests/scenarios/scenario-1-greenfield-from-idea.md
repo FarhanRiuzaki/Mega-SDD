@@ -7,7 +7,7 @@ You'll start with just a sentence ("build a clinic appointment system") and end 
 
 ## Prerequisites
 
-- Mega-sdd v3.8.0+ installed
+- Mega-sdd v3.40.0+ installed
 - Empty (or new) Laravel 11 project (or just an empty directory — `composer create-project` not strictly required for this scenario; mega-sdd can scaffold structure)
 - Recommended: `tree-sitter` + `ast-grep` installed (optional; precision boost)
 

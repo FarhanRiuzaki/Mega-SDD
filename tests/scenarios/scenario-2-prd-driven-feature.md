@@ -7,7 +7,7 @@ You'll use the [sample clinic PRD](sample-prd-clinic.md) on an existing Laravel 
 
 ## Prerequisites
 
-- Mega-sdd v3.8.0+ installed
+- Mega-sdd v3.40.0+ installed
 - Existing Laravel 11 project (or similar — mega-sdd works with PHP, TypeScript, Python, Go, Rust)
 - Recommended: `tree-sitter` + `ast-grep` installed for AST precision
 

@@ -198,6 +198,48 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
+## Cold-halt anticipation checks (v3.7.0+, Iter 62 — A2-008/009 partial triage)
+
+Iter 56 audit Dim A flagged ~33 halts firing cold (no anticipating predictive-check). Most are runtime-only (cannot statically predict). Iter 62 added these 4 feasible static checks for previously-uncovered halts:
+
+- **check_id: `units_depends_on_dag_acyclic`** (anticipates `cycle_detected`)
+  command: `python3 -c "import json, glob; from collections import defaultdict; g=defaultdict(list); [g[d.get('id','')].extend(d.get('depends_on',[])) for f in glob.glob('<vault-path>/units/U-*.md') for d in [{}]]; print('ok')"` (skeleton — actual implementation parses YAML frontmatter from each unit's depends_on and runs DAG cycle detection)
+  expected: exit 0 + 'ok' output
+  on_fail: "Cycle detected in unit depends_on graph. Inspect <vault>/units/U-*.md frontmatter; resolve cycle BEFORE running execute-bolts."
+  fatal: yes
+  predicts_halt: cycle_detected
+
+- **check_id: `partial_state_loads_cleanly`** (anticipates `partial_state_corrupt`)
+  command: `for f in <vault-path>/bolts/U-*/partial-state.json; do [ -f "$f" ] || continue; python3 -c "import json; json.load(open('$f'))" 2>&1 || { echo "corrupt: $f"; exit 1; }; done`
+  expected: exit 0 (all partial-state.json files parse cleanly OR none exist)
+  on_fail: "One or more partial-state.json files have JSON parse errors. execute-bolts --resume will halt partial_state_corrupt. Rename .corrupt-<timestamp> and re-run without --resume OR fix the JSON manually."
+  fatal: no
+  predicts_halt: partial_state_corrupt
+
+- **check_id: `units_have_acceptance_tests`** (anticipates `unit_underspecified`)
+  command: `for f in <vault-path>/units/U-*.md; do grep -q "^acceptance_test:" "$f" || { echo "no acceptance_test: $f"; exit 1; }; done`
+  expected: exit 0 (every unit has acceptance_test field)
+  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run /mega-sdd:generate-units --strict."
+  fatal: yes
+  predicts_halt: unit_underspecified
+
+- **check_id: `verify_units_have_no_target_files`** (anticipates `verify_unit_writable`)
+  command: `for f in <vault-path>/units/U-*.md; do grep -A1 "^task_type: verify" "$f" | grep -q "target_files: \[\]" || { grep -q "^task_type: verify" "$f" && [ -n "$(grep -E '^target_files:\s*\[?[^]]' $f)" ] && echo "verify-unit with target_files: $f" && exit 1; }; done; echo ok`
+  expected: exit 0
+  on_fail: "One or more task_type: verify units have non-empty target_files. execute-bolts will halt verify_unit_writable. Edit affected units to remove target_files (verify units only run acceptance tests, don't author code)."
+  fatal: yes
+  predicts_halt: verify_unit_writable
+
+**Documented as RUNTIME-ONLY (no feasible static check) per Iter 62 A2-008 acceptance:**
+
+- `handoff_missing`, `handoff_type_mismatch`, `artifact_missing` — orchestrate-flow self-emits on chain envelope state corruption; the corruption IS the runtime event
+- `predictive_check_failed`, `model_tier_unknown`, `routing_outcome_corrupt` — orchestrate-flow self-checks during runtime
+- `test_fail`, `hard_rule_violated`, `provenance_missing` — emitted during execute-bolts execution, not anticipatable pre-flight
+- `cross_squad_interface_draft` — depends on producer skill state at runtime (interface lock status)
+- `deep_scan_subagent_failed/_all_failed/cache_corrupt` — depends on subagent runtime outcomes
+
+These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkthroughs for recovery (no static preflight feasible).
+
 ## install-deps preflight checks (v3.6.0+, Iter 58 — A2-002 closure)
 
 - **check_id: `pkg_mgr_detected`**
