@@ -95,6 +95,9 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 | Project conventions | `.mega-sdd/memory/conventions.md` | Detected naming/structure conventions |
 | Drift report (after detect-drift) | `<vault>/DRIFT-REPORT.md` | Code-vs-vault divergence |
 | Vault diff (after diff-vault) | `<vault>/VAULT-DIFF.md` | Cross-revision vault changes |
+| ⭐ Corporate FSD (after emit-fsd, Iter 54) | `<vault>/fsd/FSD.pdf` + `FSD.md` | Confluence-format FSD for stakeholder sign-off; upload PDF manually to Confluence |
+| FSD citation trace (after emit-fsd) | `<vault>/fsd/.citation-map.json` | Audit which vault/units/bolts source each FSD section was grounded on |
+| Install outcomes (after install-deps, Iter 55) | `<project>/.mega-sdd/memory/install-outcomes.md` | Per-tool install audit log; skip re-audit next session unless --force-recheck |
 
 ## Phase 2+ workflow (after Phase 1 completes)
 

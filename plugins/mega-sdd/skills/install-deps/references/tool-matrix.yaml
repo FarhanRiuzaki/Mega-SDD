@@ -1,5 +1,8 @@
 # Per-tool: install command + verify command per (os, pkg_mgr) combo.
 # Consumed by install-deps SKILL.md Step 3 (build install plan) + Step 5 (execute) + Step 6 (verify).
+#
+# See also: plugins/mega-sdd/references/tooling-install.md — human-readable install guide
+# (manual reference; tool-matrix.yaml is the machine-readable canonical for auto-install).
 
 schema_version: "1.0"
 

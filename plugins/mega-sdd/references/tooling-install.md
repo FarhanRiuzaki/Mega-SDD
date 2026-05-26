@@ -1,5 +1,7 @@
 # Mega-SDD Optional Native Tooling — Install Guide
 
+> **v1.0.0+ Iter 55 update (documented Iter 61 per B-P3-1):** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify + memory-cache outcomes), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
+
 Centralized install commands for all native binaries mega-sdd can leverage. **All are OPTIONAL** — mega-sdd has graceful fallbacks for every tool. Install for higher precision + better UX; skip for minimal-footprint setup.
 
 Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md` + research): bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat, license redistribution, maintenance overhead). Install once via your package manager.

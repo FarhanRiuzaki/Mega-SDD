@@ -170,6 +170,41 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Citation:** per source `[¹] vault/03-open-questions.md` AND `[²] bolts/<unit_id>/bolt-report.md` AND `[³] vault/01-overview.md §Non-Goals`
 **Missing source:** empty arrays emit `(none)`; do NOT halt.
 
+## Citation slot extraction (v1.1.0+, Iter 61 — closes D2)
+
+Each FSD section in `fsd-template.md` has a `{{section-N-citations}}` slot (10 total — one per section). The citation slot aggregates ALL source paths + line ranges + sha256 stamps used by that section into a formatted footer block.
+
+**Extraction rule (per section N):**
+
+1. Read `citation_map.sections` entries (built during Step 3.f-g) for `fsd_section: "N.*"` (all entries whose section field starts with N, e.g., `5.FR-007`, `5.FR-008`).
+2. De-duplicate by `source_path` (multiple FR entries in section 5 may cite the same vault/02-functional.md).
+3. Emit footer block:
+
+   ```markdown
+   **Sources for this section:**
+   - [¹] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
+   - [²] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
+   ```
+
+   Where `<sha-short>` is first 12 chars of `source_sha256`.
+
+4. If section has zero citations (e.g., section 9 in pre-dev mode with no bolts, section 6 NFR when nothing specified): emit:
+
+   ```markdown
+   **Sources for this section:** _(no source artifacts cited — see [Pending] markers above for missing sources)_
+   ```
+
+5. If `styling.include_citation_footnotes: false` → emit empty string (slot suppressed per styling override).
+
+**Halt path:** if extraction logic encounters an entry with `source_path` AND `source_sha256` missing (impossible if Step 3.b-c executed correctly; defensive check) → halt `quality_gate_failed:template_slot_unfilled` with details `{section: N, missing_field: "source_path|source_sha256"}`.
+
+**Pre-Iter-61 state:** `fsd-template.md` declared 10 `{{section-N-citations}}` slot markers but `section-mapping.md` had NO extraction rule for them. Result before fix:
+- Best case: skill body halt `template_slot_unfilled` on every FSD emit (defensive)
+- Worst case: literal `{{section-1-citations}}` placeholder ships to PDF
+- Worst-worst case: bolt subagent invents content to fill the slot (anti-halu rail break)
+
+Iter 61 closes by providing the extraction rule above.
+
 ## Citation map schema
 
 `<vault>/fsd/.citation-map.json`:

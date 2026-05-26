@@ -51,6 +51,7 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 | `conventions.md` | Detected conventions (test framework, naming, error format) | Markdown sections | Tracked (team-shared) |
 | `outcomes.md` | Halt patterns, retry counts, success rates per run | Markdown chronological log | Gitignored (per-dev noise) |
 | `routing-outcomes.md` | Orchestrator routing decisions + outcomes log (v1.3.0+, Iter 33) | Markdown append-only rows | Gitignored (per-dev noise) |
+| `install-outcomes.md` | install-deps audit log: per-tool installed/skipped/failed/sudo-pending with OS detection (v1.0.0+, Iter 55; declared in memory-schema Iter 61 per B-P2-3) | Markdown append-only rows + per-run header | Gitignored (machine-specific) |
 
 ### `<project>/.mega-sdd/memory/routing-outcomes.md` (v1.3.0+, Iter 33)
 

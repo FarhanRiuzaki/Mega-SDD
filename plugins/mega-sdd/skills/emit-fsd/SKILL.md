@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.0.0
+version: 1.1.0
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -92,6 +92,33 @@ h. Substitute slot in `references/fsd-template.md §Section N` template.
 2. For each `{{slot_name}}` marker: replace with computed slot content from Step 3.
 3. Add YAML frontmatter at top (per fsd-template.md §Document control header) with resolved styling + vault metadata.
 4. Write to `<vault>/fsd/FSD.md`.
+
+### Step 4.5: Post-emission unfilled-slot scan (v1.1.0+, Iter 61 — closes D3)
+
+After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...}}` slot markers (defensive check — should be impossible if Step 3 extracted all slots correctly).
+
+```bash
+# Defensive scan:
+grep -oE '\{\{[a-z0-9_-]+\}\}' <vault>/fsd/FSD.md
+```
+
+If ANY match found → emit halt `quality_gate_failed` with `subtype: template_slot_unfilled` per vault-contract.md §quality_gate_failed subtypes (Iter 58 closure):
+
+```yaml
+type: quality_gate_failed
+source_skill: emit-fsd
+details:
+  subtype: template_slot_unfilled
+  unfilled_slots: ["{{section-3-stakeholders-table}}", "{{section-7-binding-confirmed-content}}"]
+  fsd_path: <vault>/fsd/FSD.md
+next_action:
+  type: file_plugin_bug
+  hint: "Internal bug: fsd-template.md has slot marker(s) that section-mapping.md has no extraction rule for. File plugin bug at gitlab.com/airnd1/grand-design-spec. Meanwhile, skip affected section via --sections=<csv> excluding the failing section."
+```
+
+STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` literals to PDF OR allowing pandoc to interpret them as template variables would be an anti-hallucination rail break.
+
+**Pre-Iter-61 state:** SKILL.md §Anti-hallucination rails line ~195 promised "{{slot_name}} MUST be filled or placeholdered — empty slot = halt `quality_gate_failed:template_slot_unfilled`" but NO procedure step actually performed the scan. The defensive halt code was unfireable. Iter 61 closes by adding Step 4.5 above.
 
 ### Step 5: Render PDF via pandoc
 
