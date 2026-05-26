@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+# PreToolUse hook for mega-sdd plugin — Iter 67.6 v3.49.0+.
+#
+# [HOOK-VALIDATE] enforcement layer for walking-skeleton slice 1 (audit §F).
+# Blocks two classes of agent actions:
+#   1. Bolt-generation while binding→units handoff has unresolved drops
+#      (skill_name matching mega-sdd:execute-bolts → checks .validation-blockers.json)
+#   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite state files
+#      managed by the guard layer (.validation-blockers.json, .plan-pending,
+#      .replan-budget, .iter-classifier.json).
+#
+# Honest design constraint: the human user (Farhan) is not the adversary — they
+# are on the same side as the guard. The agent (Claude) is what we constrain.
+# Manual override via filesystem ops outside agent context (user types `rm` in
+# their shell) is a FEATURE, not a leak. Hooks only see tool calls from the
+# agent; user-shell ops bypass hooks naturally.
+#
+# Output protocol (Claude Code PreToolUse):
+#   - JSON to stdout with {"continue": false, "stopReason": "...", "suppressOutput": false}
+#     → tool is blocked; reason shown to agent
+#   - Or exit non-zero with stderr message → tool is blocked
+#   - Else exit 0 → tool proceeds normally
+#
+# Input (stdin): JSON {session_id, cwd, tool_name, tool_input, ...}
+
+set -uo pipefail
+
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+
+# Parse via python3 — assign to local vars first (no backslash in f-string)
+PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
+import json
+import sys
+import base64
+
+try:
+    data = json.loads(sys.stdin.read())
+except Exception:
+    sys.exit(0)
+
+cwd = data.get("cwd", "")
+tool_name = data.get("tool_name", "")
+tool_input = data.get("tool_input", {})
+
+print(f"CWD={cwd}")
+print(f"TOOL_NAME={tool_name}")
+
+if tool_name == "Skill":
+    skill_name = tool_input.get("skill", "")
+    print(f"SKILL_NAME={skill_name}")
+elif tool_name == "Bash":
+    cmd = tool_input.get("command", "")
+    cmd_b64 = base64.b64encode(cmd.encode()).decode()
+    print(f"BASH_CMD_B64={cmd_b64}")
+' 2>/dev/null)
+
+if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
+eval "$PARSE_OUTPUT" 2>/dev/null || true
+
+if [ -z "${CWD:-}" ]; then exit 0; fi
+
+# Opt-out: telemetry: false in config.yaml also disables this hook
+# (a project that opts out of telemetry generally wants to opt out of guards too)
+CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
+if [ -f "$CONFIG_FILE" ]; then
+  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+# Only act on mega-sdd projects (skip if .mega-sdd/ doesn't exist)
+if [ ! -d "${CWD}/.mega-sdd" ]; then exit 0; fi
+
+# Helper: emit block JSON to stdout and exit
+emit_block() {
+  local reason="$1"
+  # Escape for JSON string (basic)
+  local reason_json
+  reason_json=$(printf '%s' "$reason" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
+  if [ -z "$reason_json" ]; then reason_json="\"$reason\""; fi
+  cat <<EOF
+{"continue": false, "stopReason": $reason_json, "suppressOutput": false}
+EOF
+  exit 0  # PreToolUse uses stdout JSON for block, not exit code
+}
+
+# ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
+# Block mega-sdd:execute-bolts when handoff blockers are present.
+case "${TOOL_NAME:-}" in
+  Skill)
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        BLOCKER_FILE="${CWD}/.mega-sdd/.validation-blockers.json"
+        if [ -f "$BLOCKER_FILE" ]; then
+          # Read status field
+          STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$BLOCKER_FILE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$STATUS" = "FAIL" ]; then
+            # Count drops for the reason message
+            DROPS_COUNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$BLOCKER_FILE'))
+    print(len(d.get('drops', [])))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — handoff validator detected ${DROPS_COUNT} unresolved drops at binding→units boundary. Run /mega-sdd:validate-handoff to see drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: ${CWD}/.mega-sdd/.validation-blockers.json"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
+    ;;
+
+  Bash)
+    # ─── BRANCH 2: Anti-self-bypass on state files ──────────────────────────
+    # Detect agent attempts to delete/truncate/overwrite guard state files.
+    BASH_CMD_B64="${BASH_CMD_B64:-}"
+    [ -z "$BASH_CMD_B64" ] && exit 0
+
+    # Decode command
+    BASH_CMD=$(printf '%s' "$BASH_CMD_B64" | python3 -c '
+import base64, sys
+print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end="")
+' 2>/dev/null)
+    [ -z "$BASH_CMD" ] && exit 0
+
+    # Protected state files (scope: walking-skeleton slice 1 + Plan/Act + budget + classifier future)
+    # Pattern: file basenames matching guard state files
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json'
+
+    # Patterns that constitute self-bypass:
+    #   rm <path>         → deletion
+    #   unlink <path>     → deletion
+    #   > <path>          → truncate via redirect (with or without echo/printf preceding)
+    #   sed -i ... <path> → in-place modify
+    #   mv ... <path>     → replace
+    #   cp ... <path>     → replace
+    #   tee <path>        → overwrite
+    BYPASS_DETECTED=""
+    if echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="rm/unlink of protected state file"
+    elif echo "$BASH_CMD" | grep -qE ">[[:space:]]*[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="shell redirect (>) overwriting protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\bsed\s+(-[^[:space:]]*i[^[:space:]]*)\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="sed -i modifying protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\b(mv|cp)\s+[^|;&]*\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="mv/cp replacing protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\btee\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="tee overwriting protected state file"
+    fi
+
+    if [ -n "$BYPASS_DETECTED" ]; then
+      REASON="Blocked: $BYPASS_DETECTED. Guard state files (.validation-blockers.json, .plan-pending, .replan-budget, .iter-classifier.json) are managed by hooks/skill chain — direct agent modification bypasses the guard. To clear a blocker, fix the underlying issue (e.g., add missing OQ-IDs to unit frontmatter) and let PostToolUse re-validate, OR use the appropriate slash command (/mega-sdd:validate-handoff, /mega-sdd:act, etc.). Human user can still modify these files via shell outside the agent."
+      emit_block "$REASON"
+    fi
+    ;;
+esac
+
+# Default: allow the tool call
+exit 0

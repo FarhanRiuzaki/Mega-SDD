@@ -65,18 +65,31 @@ Added Iter 67.5 (v3.48.0) after audit `docs/superpowers/audits/2026-05-27-iter-6
 
 **Fork A (CURRENT — what is actually shipped):**
 - Skill bodies + references as design vocabulary and AI-coding-prompt scaffolding
-- Claude Code **hooks** (SessionStart anchor injection, PostToolUse ref/skill telemetry, Stop turn-end-marker with real harness usage) — the only model-proof surface available
+- Claude Code **hooks** — observe AND block:
+  - SessionStart: anchor injection (Iter 67.5 fix)
+  - PostToolUse: ref_loaded / skill_invoked telemetry (Iter 66a/67.5); Write/Edit auto-revalidate trigger (Iter 67.6)
+  - PreToolUse: tool blocking via `{"continue": false, "stopReason": "..."}` — both for content gating (`mega-sdd:execute-bolts` blocked if validator FAIL) AND anti-self-bypass (agent attempts to `rm` state files blocked) (Iter 67.6)
+  - Stop: turn_end_marker with real harness usage (Iter 66a/67.5)
+- **[HOOK-VALIDATE] artifact integrity validators** — deterministic scripts + state files (OVERWRITE-NOT-APPEND, current truth). Iter 67.6 ships slice 1 (binding→units OQ-IDs). See `plugins/mega-sdd/references/fork-a-recovery-map.md` for the full classification + slice roadmap.
 - Advisory bash scripts in `plugins/mega-sdd/scripts/` that humans can run by hand
-- Markdown-driven anti-hallucination rails inside skill bodies — model compliance is best-effort, not enforced
+- Markdown-driven anti-hallucination rails inside skill bodies — model compliance is best-effort and NOT enforced; superseded by [HOOK-VALIDATE] where applicable (e.g., generate-units Step 12.5.g is now defense-in-depth alongside the validator)
 
-**Fork B (FUTURE — explicitly parked):**
-- Classifier-driven ceremony gating (Iter 65 claim — retracted)
-- Anti-recursive guard runtime enforcement (Iter 65 claim — retracted)
-- Plan/Act mode gating per complexity (Iter 67 claim — retracted)
-- Lazy-loading tier enforcement (Iter 66 plan — parked)
-- Any other "the model invokes X automatically at step Y" claim
+**Fork B (FUTURE — explicitly parked, 4 items only after Iter 67.6 reclassification):**
+- Implicit re-plan detection (model loops without explicit gesture or observable failure signal)
+- Lazy-loading tier enforcement (mid-reasoning skip of refs)
+- Tamper-proof state against the human user (intentionally NOT in Fork B scope — user is not the adversary)
+- Mid-turn intervention (force Y before X mid-reasoning)
 
-**Why parked:** these all rely on the model executing Bash invocations described in skill-body markdown prose. That mechanism is unreliable — the model may read the instruction and not execute the Bash. Audit confirmed 4 consecutive iters (64/65/67/66a) failed in real orchestration despite passing doc-layer review for the same reason. Real enforcement needs a control plane the model can't bypass — that's Fork B (Agent SDK / custom runtime), not Fork A.
+**What WAS parked at Iter 67.5 and got reclassified at 67.6:**
+- Classifier output emission / drift / ceremony gating → [HOOK] (Stop + PreToolUse)
+- Anti-recursive guard budget cap → [HOOK] (explicit-trigger + failure-driven via PostToolUse halt detection — per Call #2 ACK)
+- Plan/Act explicit toggle + auto-gating per classifier → [HOOK] (SessionStart + state file + PreToolUse)
+- Tier classification observation event → [HOOK] (PostToolUse enrichment)
+- Handoff integrity (binding↔units↔bolts) → [HOOK-VALIDATE] (one slice shipped 67.6; others are pattern-clones)
+
+These are slice candidates, not committed work. Slice discipline: prove each in real-run before expanding.
+
+**Why the original retraction was correct, AND why reclassification works:** the failure mode was "prose tells the model to invoke a script; model may or may not." The fix is moving the trigger out of prose: hooks fire deterministically; validators run deterministically; the model can't no-op them. That's not "Fork B" — that's correct Fork A engineering. The audit was right that prose-enforcement fails; Iter 67.6 just sharpens the response from "park it all" to "park only what truly needs runtime control."
 
 **Operational consequence for AI agents reading this doc:**
 - Treat any "Runtime ACTIVE" or "Runtime SHIPPED" claim from Iter 64-67 as RETRACTED unless explicitly re-validated by Iter 68+

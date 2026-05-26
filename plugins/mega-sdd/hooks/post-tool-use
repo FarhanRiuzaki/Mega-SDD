@@ -57,6 +57,10 @@ elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     cmd_b64 = base64.b64encode(cmd.encode()).decode()
     print(f"BASH_CMD_B64={cmd_b64}")
+elif tool_name in ("Write", "Edit"):
+    # Iter 67.6: [HOOK-VALIDATE] trigger for binding→units handoff validator.
+    file_path = tool_input.get("file_path", "")
+    print(f"FILE_PATH={file_path}")
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
@@ -171,6 +175,26 @@ for h in sorted(hits):
         emit_ref_loaded "$abs_path" "Bash"
       done <<< "$PATHS_FOUND"
     fi
+    ;;
+
+  Write|Edit)
+    # Iter 67.6 [HOOK-VALIDATE]: when a unit file is written/edited, re-validate
+    # the binding→units handoff. State file is OVERWRITE-NOT-APPEND (current truth),
+    # so any spam during WIP self-clears on subsequent saves.
+    FILE_PATH="${FILE_PATH:-}"
+    [ -z "$FILE_PATH" ] && exit 0
+    case "$FILE_PATH" in
+      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md)
+        # Locate validator script (resolve relative to this hook's dir)
+        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+        VALIDATOR="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
+        if [ -x "$VALIDATOR" ]; then
+          # Run validator silently — it writes .validation-blockers.json itself.
+          # Exit code is informational; we don't propagate it (PostToolUse shouldn't fail).
+          bash "$VALIDATOR" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
     ;;
 
   *)

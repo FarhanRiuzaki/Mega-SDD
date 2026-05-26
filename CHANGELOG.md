@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.49.0] - 2026-05-27
+
+### Iter 67.6 — Walking-skeleton slice 1: [HOOK-VALIDATE] binding→units handoff integrity (Fork A recovery)
+
+**Context:** Iter 67.5 retracted Iter 64-67 "Runtime SHIPPED" claims and parked control-layer items as Fork-B-future. Subsequent research (Spec Kit, Cline runtime, Claude Code hooks/subagents) + user ACK refined the boundary: most "parked Fork-B" items are recoverable in Fork A via four mechanism classes ([HOOK], [HOOK-VALIDATE], [VERIFY-STEP], [FORK-B-ONLY]). Iter 67.6 ships the FIRST walking-skeleton slice to prove [HOOK-VALIDATE] end-to-end on real artifacts. Slice = ONE mechanism + ONE boundary + ONE field-class (binding→units OQ-IDs only). Expansion to other slices follows only after this one proves in production.
+
+**Audit-§F bug scope re-measured (real-run data):** audit traced 1 OQ-ID drop (OQ-DM-P2-1 in TF Import). First validator run revealed **27 of 27 OQs dropped** in TF Import phase-1 + phase-2 (every single OQ in both binding docs has zero unit-frontmatter citations). The skill-body prose rule added in Iter 67.5 Step 12.5.g cannot enforce this; the model may write a unit without citing the OQ regardless of skill body content. Iter 67.6 closes the loop deterministically.
+
+### What ships
+
+1. **NEW: `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`** — deterministic validator (bash + python3). Walks all `binding*.md` for OQ-IDs, walks all `*-bound/units/U-*.md` frontmatter, reports drops in structured JSON. Writes `<cwd>/.mega-sdd/.validation-blockers.json` as OVERWRITE-NOT-APPEND (current truth, never history). Exit 0 = PASS, 1 = FAIL, 2 = error.
+
+2. **NEW: `plugins/mega-sdd/hooks/pre-tool-use`** — first PreToolUse hook for the plugin. Two enforcement branches:
+   - **Bolt-gen gate:** when agent invokes Skill tool with `mega-sdd:execute-bolts`, reads `.validation-blockers.json`; if status=FAIL, returns `{"continue": false, "stopReason": "..."}` with drop count + remediation hint. Bolt-generation blocked until drops resolved.
+   - **Anti-self-bypass:** when agent invokes Bash with patterns `rm`/`unlink`/`>`/`sed -i`/`mv`/`cp`/`tee` targeting protected state files (`.validation-blockers.json`, `.plan-pending`, `.replan-budget`, `.iter-classifier.json`), blocks with explanation. Per ACK Call #1: user (human Farhan) is NOT the adversary; agent (Claude) is what we constrain. Human can still override via shell outside the agent.
+
+3. **UPDATED: `plugins/mega-sdd/hooks/post-tool-use`** — added Write/Edit branch. When agent writes/edits a file matching `*-bound/units/U-*.md` or `_index.md` or `.mega-sdd/vaults/*-bound/units/*.md`, the validator runs silently and refreshes `.validation-blockers.json`. State-file = overwrite, so WIP saves don't spam the blocker list (it always reflects the current state).
+
+4. **UPDATED: `plugins/mega-sdd/hooks/hooks.json`** — registers PreToolUse (matcher `Skill|Bash`, sync) + extends PostToolUse matcher to `Read|Skill|Bash|Write|Edit`.
+
+5. **NEW: `/mega-sdd:validate-handoff` slash command** — manual invocation of the validator for diagnostic / explicit user trigger. Same script as PostToolUse, different entry point.
+
+6. **NEW: `plugins/mega-sdd/references/fork-a-recovery-map.md`** — canonical classification of every previously-parked item. Four mechanism classes ([HOOK] / [HOOK-VALIDATE] / [VERIFY-STEP] / [FORK-B-ONLY]) with current implementation status. Tracks the slice roadmap: slice 1 (this release) → slice 2 (CONFLICT-IDs) → slice 3 (Hard Rules) → slice 4 (vault→binding) → slice 5 (units→bolts) → slice 6 (`/analyze` Spec Kit pattern). Each slice is a separate iter contingent on prior slice's real-run proof.
+
+7. **UPDATED: `plugins/mega-sdd/CLAUDE.md` §Fork A scope** — reflects reclassification. Iter 67.5's overcautious parking is corrected: most items moved out of Fork-B-future when a hook-layer wire-up was identified. Residual genuine [FORK-B-ONLY]: 4 items (implicit re-plan detection, lazy-load mid-reasoning skip, tamper-proof against human user, mid-turn intervention).
+
+### Real-run proof (TF Import — 10/10 steps PASS)
+
+Tested against `/Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/tradefinance-import/`:
+
+1. Baseline validator run → exit 1, status=FAIL, **27 drops detected** (real audit bug + 26 more) ✓
+2. Simulate PreToolUse on `mega-sdd:execute-bolts` Skill call → `continue: false` with drop count cited ✓
+3. Real-modify U-019 frontmatter to add `binding_refs: [OQ-DM-P2-4]` → file changed on disk ✓
+4. Simulate PostToolUse Edit on U-019 → validator auto-re-ran → drops 27 → **26** (state file = current truth) ✓
+5. Simulate Bash `rm .mega-sdd/.validation-blockers.json` → blocked with anti-self-bypass reason ✓
+6. Simulate Bash `sed -i 's/FAIL/PASS/'` on state file → blocked ✓
+7. Restore U-019 → PostToolUse Edit → drops 26 → 27 (overwrite-not-append, no stale spam) ✓
+8. Bash `ls -la .mega-sdd/` → no block, tool proceeds (no false positive) ✓
+9. Simulate state-file PASS (manually edited for test) → PreToolUse allows bolt-gen ✓
+10. Restore real state (`bash validator`) → drops back to 27 (baseline confirmed) ✓
+
+**What's verified empirically:** validator parses real binding docs + real unit frontmatter, detects real drops, state file dynamics work as designed (current-truth not append), PreToolUse hook script emits correct JSON block protocol, anti-self-bypass patterns catch the realistic bypass attempts (rm/sed/mv/etc.).
+
+**What remains user-side verification:** does Claude Code's harness actually invoke PreToolUse hooks for `Skill` tool calls in production? The hook script + JSON protocol are validated; the harness wiring is not yet observed in a real Claude Code session. Same caveat applies to Iter 66a's Stop hook (`turn_end_marker` not yet seen in production telemetry). Both require the user's next real session in TF Import to confirm.
+
+### What 67.6 does NOT do
+
+- Does not enforce against the human user (intentional — Call #1 ACK)
+- Does not detect implicit re-plans (Fork B residual)
+- Does not validate vault→binding, units→bolts, CONFLICT-IDs, or Hard Rules (slices 2-5 are pattern-clones; each needs its own real-run proof before shipping)
+- Does not add a Spec Kit-style `/analyze` umbrella command (slice 6, only after individual validators exist)
+- Does not modify any existing skill body (`generate-units` Step 12.5.g from Iter 67.5 remains as defense-in-depth advisory; superseded for enforcement by the validator)
+
+### Mechanism class table (Iter 67.6 classification)
+
+| Class | Definition | Iter 67.6 status |
+|---|---|---|
+| **[HOOK]** | Enforced via Claude Code hook lifecycle. Hook can BLOCK tool calls. | Pattern proven (PreToolUse block); specific instances (classifier emit, Plan/Act, budget) deferred to next slices |
+| **[HOOK-VALIDATE]** | Hook reads artifact + halts on schema drift. Can't generate, can validate. | ✅ Slice 1 shipped (binding→units OQ-IDs). Real-run-verified. |
+| **[VERIFY-STEP]** | Spec Kit `/analyze` pattern — slash command + deterministic script. | Slice 6 candidate (after individual validators exist) |
+| **[FORK-B-ONLY]** | Needs runtime introspection of reasoning loop. Genuinely parked. | 4 items remain (implicit re-plan, lazy-load mid-skip, tamper-proof vs user, mid-turn intervention) |
+
+### Classifier dogfood (advisory only per Iter 67.5 retraction)
+
+- files_changed: 10 (validator + pre-tool-use + post-tool-use + hooks.json + slash command + recovery-map ref + plugin.json + 2 READMEs + CHANGELOG) → 5-15 = MINOR ✓
+- New behavior (validator + PreToolUse hook + slash command) → MINOR ✓
+- No new skill dir, no new halt enum top-level entry (`oq_id_dropped` is a payload type inside the structured blocker JSON, not a vault halt enum)
+- Existing skill body NOT modified
+- No BREAKING marker
+- → **MINOR**
+
+**Plugin v3.48.0 → v3.49.0** (MINOR — first walking-skeleton slice of Fork A recovery work; adds first PreToolUse hook + first artifact validator + new slash command + first reference doc for the recovery map; backward-compatible).
+
+### Verification path (user-side)
+
+After installing v3.49.0:
+
+1. Open a real Claude Code session in TF Import (or any project with `.mega-sdd/vaults/binding*.md` and `*-bound/units/`)
+2. The validator auto-runs when you save a unit file via Claude Code's Edit/Write tools
+3. Check `<project>/.mega-sdd/.validation-blockers.json` after a save — should reflect the current drop state
+4. Attempt to invoke `mega-sdd:execute-bolts` while drops exist — Claude Code should refuse with the validator's reason message
+5. Manual diagnostic: type `/mega-sdd:validate-handoff` to see the full report
+
+If any of these steps fail in production, that's the production-vs-simulated-trigger gap (same as Iter 66a Stop hook). The validator + hook scripts are independently verified; the harness wiring is the only remaining unknown.
+
 ## [3.48.0] - 2026-05-27
 
 ### Iter 67.5 — Honesty/Cleanup + Fork A scope lock (audit response)
