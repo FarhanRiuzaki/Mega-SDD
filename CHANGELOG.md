@@ -5,6 +5,60 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.38.1] - 2026-05-26
+
+### Iter 57 — Iter 56 audit CRITICAL fix-forward (3 P1 safety/regression closures)
+
+**Release-blocker fix iter** (PATCH bump — pure correctness; no new behavior). First closure iter of Iter 56 deep audit which identified 38 findings (8 P1 / 22 P2 / 8 P3). Iter 57 closes the 3 P1s that represent real safety/regression issues; remaining P1s + P2s + P3s scheduled across Iter 58-61.
+
+**CRITICAL fixes:**
+
+**B-P1 — Iter 53 chain optimization was DEAD CODE (regression class repeat — fourth instance)**
+
+Iter 53 (consumer wiring closure) added orchestrate-flow Step 3 chain optimization that reads `binding_metadata.codebase_map_provenance` from binding.md header. Iter 56 audit found that **bind-codebase Step 4 binding.md template never emits the field** — only declared in procedure prose (Step 1, Iter 46). Same regression class as Iter 43 (handoff_missing file-check vs chat-block), Iter 48 (algorithm-doc-vs-prompt drift), and Iter 52 (GLOSSARY_INDEX placeholder unwired). Worst irony: the regression was introduced BY the Iter 53 proactive audit that was supposed to catch this class — Iter 53 wired the consumer but never verified producer template emits the field.
+
+Fix: added `binding_metadata` block to binding.md frontmatter template per bind-codebase/SKILL.md Step 4 (line 374 onwards). Now Iter 53 chain optimization actually fires per Iter 46's promised 30-50% chain-level savings.
+
+**Process implication captured in audit Insight 1:** "Wire consumer when wiring producer" rule needs companion rule "verify producer template emits the field that consumer reads". Cannot be done by reference-doc grep alone — must verify against actual emission template. Tracked as v4.0.0 candidate (CI enforcement mechanism).
+
+**D1 — Iter 45 `--rollback` rail REVERSED (default safe → default DANGEROUS)**
+
+execute-bolts `--rollback` menu (Iter 45 saga compensating actions) documented as "default safe for non-idempotent" but actual menu offered `[Y] proceed` as BATCH-APPLY of ALL compensating actions including non-idempotent ones (composer dep removes, migration rollbacks). Only `[I] interactive` matched the documented safe default. Real-world data loss risk: user picks `[Y]` (the default key) and accidentally triggers non-idempotent compensating actions on dep manifests / migrations.
+
+Fix: flipped menu order so `[I] interactive` is listed FIRST as DEFAULT with explicit "safe for non-idempotent steps" label. `[Y]` relabeled to "batch-apply all actions including non-idempotent (DANGEROUS — composer/migration removes happen without per-step confirmation)" to make consequences explicit. Anti-halu rail enforcement now matches documented behavior.
+
+**F-E-2 — Plugin README header stuck at v3.18.1 (20 versions stale)**
+
+`plugins/mega-sdd/README.md:5` declared `**Version:** 3.18.1 · **License:** MIT` while plugin.json reported 3.38.0. The Iter 54 + Iter 55 README audit passes updated the folder layout block ("plugin manifest (v3.X.X)") and the What's-new section, but never touched the page header — the header lives in a separate region not covered by earlier audit grep patterns.
+
+Fix: one-line edit `3.18.1 → 3.38.1` (this iter's bump). Added to next iter's README audit checklist.
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — Step 4 binding.md template gains `binding_metadata:` block in frontmatter (closes B-P1); version 1.10.3 → 1.10.4
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--rollback` menu reordered + relabeled (closes D1); version 2.10.0 → 2.10.1
+- `plugins/mega-sdd/README.md` — header version 3.18.1 → 3.38.1 (closes F-E-2); folder layout 3.38.0 → 3.38.1
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.38.0 → 3.38.1
+- `README.md` (root) — header version + tree layout + Versioning section all 3.38.0 → 3.38.1
+- `CHANGELOG.md` — this entry
+
+**Skill version bumps:**
+- `bind-codebase` 1.10.3 → 1.10.4 (PATCH — template emission fix-forward, no new behavior)
+- `execute-bolts` 2.10.1 → 2.10.1 (PATCH — menu reorder for safety, no new behavior)
+
+**Plugin v3.38.0 → v3.38.1** (PATCH — fix-forward; pure correctness; no new functionality).
+
+**Standing directives applied:**
+- simplifikasi: 3 P1 fixes in single atomic commit; minimum file touches (3 files modified for fixes + 4 for version refs)
+- flawless: all 3 P1s closed BEFORE next feature work; Iter 57 ships first per audit closure plan
+- reuse-first: no new patterns introduced; B-P1 fix uses existing frontmatter template; D1 fix uses existing AskUserQuestion option ordering; F-E-2 fix is wording-only
+
+**Closure trace:** Iter 56 audit (P1s) → Iter 57 fix-forward (this entry) → Iter 58-61 P1/P2/P3 closure queue continues.
+
+**Audit source:** `docs/superpowers/audits/2026-05-26-iter-56-v3.38.0-deep-audit.md` §P1 HIGH findings (8 total; this iter closes B-P1 + D1 + F-E-2). Remaining 5 P1s (A1-001/002/003, C-001/002) targeted in Iter 58 + 59.
+
+---
+
 ## [3.38.0] - 2026-05-25
 
 ### Iter 55 — OS-Aware Auto-Install Deps (new skill `install-deps`)

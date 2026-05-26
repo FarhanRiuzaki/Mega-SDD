@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.10.0
+version: 2.10.1
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -396,10 +396,12 @@ On crash: execute-bolts harvests this section + writes `rollback_hints[]` array 
      1. composer_dep_added: composer remove laravel/cashier --no-update && git checkout composer.json composer.lock  [idempotent ✗ — composer cache may persist]
 
    Apply in reverse order (3 → 2 → 1)?
-     [Y] proceed (records applied_at per action)
+     [I] interactive — prompt before each action (DEFAULT — safe for non-idempotent steps)
+     [Y] batch-apply all actions including non-idempotent (DANGEROUS — composer/migration removes happen without per-step confirmation)
      [N] cancel; review partial-state.json manually
-     [I] interactive (prompt before each action)
    ```
+
+   **Default = `[I] interactive` (Iter 56 fix-forward, B-P1/D1):** Iter 45 docs claimed "default safe for non-idempotent" but actual menu had `[Y]` first which batch-applied including non-idempotent actions. Iter 56 audit (Dim D, finding D1) flagged this as anti-halu rail break; fix flips menu order so `[I]` is default + relabels `[Y]` to make batch-apply behavior explicit. Non-idempotent compensating actions (composer dep removes, migration rollbacks) NEVER auto-run without per-step user approval.
 
 4. After each action runs: write `applied_at: <ISO8601>` back to partial-state.json (so partial rollback can be resumed).
 5. If all actions complete: rename partial-state.json to `.rolled-back-<ISO8601>` for forensics; bolt slot is now clean.
