@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# PostToolUse hook for mega-sdd plugin — Iter 66a (v3.47.0+).
+#
+# CRITICAL: this is the ONLY mechanism that actually emits ref_loaded +
+# skill_invoked events to telemetry.jsonl. Iter 64 schema declared events
+# but skill bodies never emitted (verified: grep skills/ returns 0 hits for
+# emit_telemetry / >> telemetry). Iter 66a wires real emission via hooks.
+#
+# Per CLAUDE.md §Telemetry Collection: hooks fire in harness with access to
+# tool_input + tool_response, providing more accurate measurement than
+# markdown-instructed skill-body emission (model cannot count own context
+# tokens precisely; harness can).
+#
+# Input (stdin): JSON {session_id, cwd, hook_event_name, tool_name, tool_input, ...}
+# Output: appends one JSON line per relevant event to <cwd>/.mega-sdd/memory/telemetry.jsonl
+# Honors: --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml defaults.telemetry: false
+#
+# Exit 0 always (hook should never block tool execution).
+
+set -uo pipefail
+
+# Read stdin (PostToolUse JSON input from Claude Code harness)
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+
+# Parse via python3 (more reliable than grep for nested JSON).
+# Pipe STDIN_JSON into python's stdin; python's source is passed via -c.
+PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
+import json
+import sys
+
+try:
+    data = json.loads(sys.stdin.read())
+except Exception:
+    sys.exit(0)
+
+session_id = data.get("session_id", "unknown-session")
+cwd = data.get("cwd", "")
+tool_name = data.get("tool_name", "")
+tool_input = data.get("tool_input", {})
+
+print(f"SESSION_ID={session_id}")
+print(f"CWD={cwd}")
+print(f"TOOL_NAME={tool_name}")
+
+if tool_name == "Read":
+    file_path = tool_input.get("file_path", "")
+    print(f"FILE_PATH={file_path}")
+elif tool_name == "Skill":
+    skill_name = tool_input.get("skill", "")
+    print(f"SKILL_NAME={skill_name}")
+' 2>/dev/null)
+
+# If python parse failed or no relevant tool, exit cleanly
+if [ -z "$PARSE_OUTPUT" ]; then
+  exit 0
+fi
+
+# Source the KEY=VALUE pairs
+eval "$PARSE_OUTPUT"
+
+# If no CWD, can't determine project root → skip
+if [ -z "${CWD:-}" ]; then
+  exit 0
+fi
+
+# Check opt-out: <cwd>/.mega-sdd/config.yaml defaults.telemetry: false
+CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
+if [ -f "$CONFIG_FILE" ]; then
+  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+# Determine event type based on tool
+EVENT_TYPE=""
+PAYLOAD=""
+
+case "${TOOL_NAME:-}" in
+  Read)
+    # ref_loaded event — only emit for mega-sdd reference files / SKILL bodies / contracts
+    FILE_PATH="${FILE_PATH:-}"
+    if [ -z "$FILE_PATH" ]; then exit 0; fi
+
+    # Filter: only emit for files matching mega-sdd-relevant patterns
+    case "$FILE_PATH" in
+      *plugins/mega-sdd/skills/*/SKILL.md|*plugins/mega-sdd/skills/*/references/*|*plugins/mega-sdd/references/*|*plugins/mega-sdd/CLAUDE.md|*.mega-sdd/vaults/*|*.mega-sdd/codebase/*|*.mega-sdd/knowledge-base/*)
+        EVENT_TYPE="ref_loaded"
+        # Compute metrics if file exists
+        if [ -f "$FILE_PATH" ]; then
+          LINES=$(wc -l < "$FILE_PATH" 2>/dev/null | tr -d ' ' || echo 0)
+          BYTES=$(wc -c < "$FILE_PATH" 2>/dev/null | tr -d ' ' || echo 0)
+          # Estimated tokens ≈ bytes / 4 (industry standard for English text)
+          EST_TOKENS=$((BYTES / 4))
+        else
+          LINES=0
+          BYTES=0
+          EST_TOKENS=0
+        fi
+        # Escape file path for JSON
+        FILE_PATH_JSON=$(printf '%s' "$FILE_PATH" | sed 's|\\|\\\\|g; s|"|\\"|g')
+        PAYLOAD="{\"file_path\":\"$FILE_PATH_JSON\",\"lines\":$LINES,\"bytes\":$BYTES,\"estimated_tokens\":$EST_TOKENS}"
+        ;;
+      *)
+        # Not a mega-sdd-relevant Read; skip
+        exit 0
+        ;;
+    esac
+    ;;
+  Skill)
+    # skill_invoked event
+    SKILL_NAME="${SKILL_NAME:-}"
+    if [ -z "$SKILL_NAME" ]; then exit 0; fi
+    # Filter: only emit for mega-sdd skills
+    case "$SKILL_NAME" in
+      mega-sdd:*|using-mega-sdd)
+        EVENT_TYPE="skill_invoked"
+        SKILL_NAME_JSON=$(printf '%s' "$SKILL_NAME" | sed 's|\\|\\\\|g; s|"|\\"|g')
+        PAYLOAD="{\"skill_full_name\":\"$SKILL_NAME_JSON\"}"
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+    ;;
+  *)
+    # Not a tracked tool; skip
+    exit 0
+    ;;
+esac
+
+# Build telemetry event JSON
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
+SKILL_FIELD="orchestrate-flow"  # PostToolUse fires from any tool; attribute to orchestrate-flow by default
+
+# Ensure telemetry.jsonl directory exists
+TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || exit 0
+
+# Append event line
+EVENT="{\"ts\":\"$TS\",\"skill\":\"$SKILL_FIELD\",\"event_type\":\"$EVENT_TYPE\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":$PAYLOAD}"
+
+echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
+
+# Hook always exits 0 — never block tool execution
+exit 0

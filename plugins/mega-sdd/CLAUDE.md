@@ -183,32 +183,33 @@ Per spec §4.0 (Iter 63 SP1) + §4.3 (Iter 66 reframe). Iter 64 ships:
 
 **No hot-context win claims pre-Iter-66.** Iter 64 = foundation only.
 
-## Telemetry Collection (v3.44.0+, Iter 64 — LOCKED schema)
+## Telemetry Collection (v3.44.0+ schema-lock; v3.47.0+ Iter 66a emission rewire)
 
-Per spec §4.1. Iter 64 ships:
+Per spec §4.1. Schema locked at Iter 64; emission rewired at Iter 66a after empirical gap discovery.
 
-- **`plugins/mega-sdd/references/telemetry-schema.md`** — LOCKED event schema (cannot evolve mid-soak; cannot backfill)
-- Append-only `<project>/.mega-sdd/memory/telemetry.jsonl` writes by skills that emit telemetry events
-- Opt-out via `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` OR `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`
+**The Iter 64 → 66a story:** Iter 64 shipped a locked schema + opt-out flag + script-side emitters (classify-iter.sh + check-recursion-budget.sh) but assumed skills would emit via markdown-instructed convention. Verification at Iter 66a (`grep -rE "token_count|loaded_per_turn|>> .*telemetry" plugins/mega-sdd/skills/`) returned ZERO hits — convention was a fiction. Iter 66a fix-forward: emit via **Claude Code hooks** (PostToolUse + Stop), not markdown.
 
-**When to log (per event_type):**
+**Why hooks:** model cannot precisely count its own context tokens (the schema literally says `estimated_tokens`); hooks fire in the Claude Code harness with deterministic access to `tool_input` and file contents → exact byte/line counts.
 
-| event_type | Emitted by | Trigger |
+**Active emitters (v3.47.0+):**
+
+| Source | Events | When |
 |---|---|---|
-| `skill_invoked` | Each skill | Start of skill body execution |
-| `ref_loaded` | Each skill | When skill body loads a reference file |
-| `halt_fired` | Each skill | When skill emits a halt |
-| `tier_classification_decision` | Memory skill | When a ref is loaded; logs declared_tier from manifest + loaded_this_session |
-| `iter_classifier_output` | Orchestrate-flow (Iter 65 runtime) | EP1 (chain start) + EP2 (chain end) |
-| `iter_classifier_drift` | Orchestrate-flow (Iter 65 runtime) | When EP1 output != EP2 output |
-| `activation_outcome` | Each skill | End of skill body execution (success / halted / aborted / downstream_failure) |
-| `turn_loaded_summary` | Memory skill | Once per agent turn — aggregate of all ref_loaded events |
+| `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse hook) | `ref_loaded`, `skill_invoked` | Every Read of a mega-sdd path; every Skill invocation of `mega-sdd:*` or `using-mega-sdd` |
+| `plugins/mega-sdd/hooks/stop` (Stop hook) | `turn_end_marker` | End of every agent turn (only if telemetry.jsonl exists for that project) |
+| `plugins/mega-sdd/scripts/classify-iter.sh` | `iter_classifier_output`, `iter_classifier_drift` | EP1 + EP2 in orchestrate-flow chain |
+| `plugins/mega-sdd/scripts/check-recursion-budget.sh` | `replan_triggered`, `revalidate_triggered`, `*_budget_exceeded` | Anti-recursive guard increments + cap hits |
 
-**Skill responsibility (markdown-driven convention):** every skill body MUST include telemetry-emit step at appropriate procedure points. Skills shipped pre-Iter-64 are exempt from retroactive update — Iter 66 will revisit instrumentation gaps as part of lazy-loading enforcement.
+Other event types in the schema (`halt_fired`, `activation_outcome`, `plan_mode_entered`, `tier_classification_decision`) are best-effort per-skill emission via markdown convention. They depend on the model executing emit-step instructions; reliability is lower than hook-emitted events. Iter 68 analysis treats hook-emitted events as ground truth and skill-emitted events as supplementary.
 
-**Soak gates** (Iter 68 analysis prerequisite):
-- ≥ 14 calendar days elapsed since Iter 64 ship
-- ≥ 10 real chain runs logged
+**Aggregation:** `turn_loaded_summary` (the §9.4 metric event) is NOT emitted live — Iter 68 derives it offline by rolling up `ref_loaded` events between adjacent `turn_end_marker` events. This was the correct decision: per-turn aggregation requires knowing the turn boundary, which only the Stop hook reliably knows.
+
+**Opt-out:** `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` (per-invocation) OR `telemetry: false` in `<project>/.mega-sdd/config.yaml` (persistent). Hooks honor both — the persistent setting suppresses ALL emission including hook-side.
+
+**Soak gates** (Iter 68 analysis prerequisite — REFRAMED at Iter 66a):
+- ≥ 14 calendar days elapsed since **Iter 66a ship** (not Iter 64 — pre-66a data is empty)
+- ≥ 10 real chain runs logged with non-empty `ref_loaded` + `turn_end_marker` events
+- **PRE-CONDITION for soak activation:** Iter 66a hooks verified writing telemetry.jsonl in at least ONE real chain run on a real project. Until then, soak window is NOT counting.
 - Insufficient data → Iter 68 emits "DATA INSUFFICIENT" report; SP3 gate stays closed
 
 ---

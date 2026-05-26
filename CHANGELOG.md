@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.47.0] - 2026-05-27
+
+### Iter 66a — Telemetry Emission Rewire (Claude Code hooks) + Soak Gate Reframe
+
+**FIX-FORWARD — soak invalidated empirically pre-66a.** User-discovered architectural gap: Iter 64 LOCKED telemetry schema + shipped script-side emitters (classify-iter.sh + check-recursion-budget.sh) but assumed skill bodies would emit `ref_loaded` / `skill_invoked` / `turn_loaded_summary` via markdown-instructed convention. Verification grep `grep -rE "token_count|loaded_per_turn|>> .*telemetry" plugins/mega-sdd/skills/` returned **0 hits**. The convention was a fiction; pre-66a soak window was collecting nothing meaningful.
+
+**Root-cause re-frame:** the model cannot precisely count its own context tokens (Iter 64 schema even uses `estimated_tokens`). Markdown-instructed emission was structurally wrong; only the Claude Code harness has deterministic byte/line counts.
+
+**Iter 66 split:**
+- **Iter 66a (this release):** instrument/emit via Claude Code hooks. Pre-soak; soak NOT counting until 66a verified-write observed.
+- **Iter 66b (deferred to post-soak):** lazy-load tuning. Consumes 66a-collected data.
+
+**What ships in Iter 66a:**
+
+- NEW `plugins/mega-sdd/hooks/post-tool-use` — PostToolUse hook, matcher `Read|Skill`:
+  - Read of mega-sdd path (`plugins/mega-sdd/skills/*/SKILL.md`, `references/*`, `CLAUDE.md`, `.mega-sdd/vaults/`, `.mega-sdd/codebase/`, `.mega-sdd/knowledge-base/`) → emits `ref_loaded` with `lines`, `bytes`, `estimated_tokens` (= bytes/4)
+  - Skill invocation matching `mega-sdd:*` or `using-mega-sdd` → emits `skill_invoked`
+  - Non-mega-sdd Read / unrelated Skill / other tools → silent skip
+- NEW `plugins/mega-sdd/hooks/stop` — Stop hook:
+  - Emits `turn_end_marker` at agent-turn end
+  - ONLY if `<cwd>/.mega-sdd/memory/telemetry.jsonl` already exists (no pollution in non-mega-sdd projects)
+- UPDATED `plugins/mega-sdd/hooks/hooks.json` — registers PostToolUse + Stop alongside existing SessionStart (all hooks dispatch via `run-hook.cmd`; both new hooks `async: true` — telemetry never blocks tool execution or turn completion)
+- UPDATED `plugins/mega-sdd/references/telemetry-schema.md`:
+  - Added `turn_end_marker` to event_type enum (additive change — allowed per schema lock policy §"Frozen-schema policy")
+  - New "Emission mechanism" table — hooks emit `ref_loaded`/`skill_invoked`/`turn_end_marker`; scripts emit classifier + guard events; markdown skill-body emission downgraded to "best-effort"
+  - Aggregation pivot: `turn_loaded_summary` derived offline by Iter 68 (bracket `ref_loaded` events with adjacent `turn_end_marker`), NOT emitted live
+- UPDATED `plugins/mega-sdd/CLAUDE.md` §Telemetry Collection — replaced "skill responsibility (markdown-driven convention)" paragraph with hook-based emitter table + soak gate reframe
+- UPDATED `docs/superpowers/specs/2026-05-26-iter-63-performance-sharpness-design.md` §4.1 — new "Iter 66a fix-forward correction" subsection documenting gap + fix + soak gate reframe
+
+**Soak gate REFRAMED:**
+- Clock starts at **Iter 66a verified-write date**, NOT Iter 64 ship date
+- ≥14 calendar days + ≥10 real chain runs with non-empty `ref_loaded` + `turn_end_marker` events
+- **PRE-CONDITION:** Iter 66a hooks observed writing telemetry.jsonl in ≥1 real chain run on a real project (e.g., TF Import Phase 2). Until then, soak NOT counting.
+- Soak invalidation of pre-66a data is FORMAL: any prior runs (if any telemetry.jsonl existed) excluded from Iter 68 analysis
+
+**Schema lock honored:**
+- Added event_type value `turn_end_marker` — explicitly allowed per §"Frozen-schema policy" ("Add NEW event_type values (existing fields unchanged)")
+- No existing field removed, renamed, or retyped
+- No required-vs-optional change for existing fields
+
+**Smoke-test results (7/7 PASS) before ship:**
+1. PostToolUse Read of `plugins/mega-sdd/CLAUDE.md` → emits `ref_loaded` (lines=327, bytes=18353, est_tokens=4588) ✓
+2. PostToolUse Read of `/etc/hosts` → skipped (non-mega-sdd) ✓
+3. PostToolUse Skill `mega-sdd:orchestrate-flow` → emits `skill_invoked` ✓
+4. PostToolUse Bash → skipped (untracked tool) ✓
+5. Stop with telemetry.jsonl present → emits `turn_end_marker` ✓
+6. Opt-out via `config.yaml` `telemetry: false` → suppressed ✓
+7. Stop in non-mega-sdd project → no telemetry.jsonl created (no empty-dir pollution) ✓
+
+**Classifier dogfood (Path A, MINOR):**
+- files_changed: ~9 (hooks/post-tool-use + hooks/stop + hooks/hooks.json + telemetry-schema.md + CLAUDE.md + spec + plugin.json + 2 READMEs + CHANGELOG) → 5-15 range → MINOR ✓
+- existing skill body NOT modified (hooks live under `plugins/mega-sdd/hooks/`, not `skills/`)
+- no new halt enum entry / no new skill dir / no BREAKING marker
+- Adds new emitter mechanism (hooks) → MINOR (new functionality, backward-compat)
+- → **MINOR** ✓ (fix-forward of broken collection mechanism)
+
+**Verification path (user-side):**
+1. User reruns mega-sdd chain on real project (TF Import or equivalent)
+2. After first Read of any mega-sdd path → `<project>/.mega-sdd/memory/telemetry.jsonl` populated with `ref_loaded` events
+3. After turn ends → `turn_end_marker` event appended
+4. Run `cat <project>/.mega-sdd/memory/telemetry.jsonl | wc -l` — should be > 0
+5. ONLY THEN does the soak clock start
+
+**Files touched:**
+- `plugins/mega-sdd/hooks/post-tool-use` — NEW
+- `plugins/mega-sdd/hooks/stop` — NEW
+- `plugins/mega-sdd/hooks/hooks.json` — registers PostToolUse + Stop
+- `plugins/mega-sdd/references/telemetry-schema.md` — turn_end_marker + emission section
+- `plugins/mega-sdd/CLAUDE.md` — Telemetry Collection section rewrite
+- `docs/superpowers/specs/2026-05-26-iter-63-performance-sharpness-design.md` — §4.1 fix-forward correction
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.46.0 → 3.47.0
+- `plugins/mega-sdd/README.md`, `README.md` — version refs
+- `CHANGELOG.md` — this entry
+
+**What 66a unlocks:**
+- Iter 68 analysis becomes possible (data is being collected for the first time)
+- 150k/unit token mystery becomes diagnosable — once execute-bolts runs, telemetry shows whether tokens go to body / refs / tool results / Plan-Act overhead
+- Iter 66b (lazy-load tuning) can finally consume real data
+
+**What 66a does NOT do:**
+- Does not change ANY skill body (skill-body markdown emission left in place as best-effort fallback for `halt_fired` / `activation_outcome` / `plan_*` events)
+- Does not change schema fields, only adds one enum value
+- Does not enforce lazy-loading (that's 66b)
+
+**Plugin v3.46.0 → v3.47.0** (MINOR — fix-forward of broken collection mechanism; new emitter type; backward-compat; existing opt-out flags honored by hooks).
+
 ## [3.46.0] - 2026-05-26
 
 ### Iter 67 — Plan/Act Mode COMPLEXITY-GATED + Soak Shakedown Protocol + Runtime Freeze Begins

@@ -252,6 +252,27 @@ grep -rn "references/$(basename $ref)" <skill>/ || echo "Created ref $ref unused
 
 **Post-ship review correction (2026-05-26):** soak data CANNOT be backfilled. Whatever Iter 64 does NOT log, Iter 68 cannot analyze. Schema MUST nail down ALL Iter 68/69/70 needs BEFORE Iter 64 ships. Lock list below.
 
+### Iter 66a fix-forward correction (2026-05-27 — POST-IMPLEMENTATION)
+
+**Empirical gap discovered post-Iter-67 ship:** Iter 64 locked the schema + shipped script-side emitters (classify-iter.sh + check-recursion-budget.sh) but assumed skill bodies would emit `ref_loaded` / `skill_invoked` / `turn_loaded_summary` via markdown-instructed convention. Verification grep returned ZERO hits in `plugins/mega-sdd/skills/`. The convention was a fiction; soak window was collecting nothing.
+
+**Root cause (re-frame):** the model cannot precisely count its own context tokens. Iter 64 schema even acknowledges this with `estimated_tokens` fields. Markdown-instructed emission was structurally wrong — only the harness has deterministic byte/line counts.
+
+**Iter 66a fix (v3.47.0, MINOR):**
+
+- New: `plugins/mega-sdd/hooks/post-tool-use` — PostToolUse hook, matcher `Read|Skill`, emits `ref_loaded` (filtered to mega-sdd paths only) + `skill_invoked` (filtered to `mega-sdd:*` / `using-mega-sdd`).
+- New: `plugins/mega-sdd/hooks/stop` — Stop hook, emits `turn_end_marker` per agent turn. Only fires if telemetry.jsonl already exists (no pollution in non-mega-sdd projects).
+- Updated: `plugins/mega-sdd/hooks/hooks.json` registers PostToolUse + Stop alongside existing SessionStart.
+- Updated: `telemetry-schema.md` adds `turn_end_marker` event_type + new "Emission mechanism" section (hooks-based, with markdown skill-body emission downgraded to "best-effort").
+- Aggregation pivot: `turn_loaded_summary` is no longer expected live — Iter 68 derives it offline from `ref_loaded` events bracketed by adjacent `turn_end_marker` events. This is the correct design (per-turn aggregation needs a turn-boundary signal only the harness owns).
+- Soak gate REFRAMED: clock starts at **Iter 66a ship**, not Iter 64. Pre-66a telemetry.jsonl files (if any) are empty. ≥14 days + ≥10 runs counted from 66a verified-write date.
+
+**Pre-condition for soak activation:** Iter 66a hooks MUST be observed writing telemetry.jsonl in at least ONE real chain run on a real project (e.g., TF Import). Until verified, soak window is NOT counting toward Iter 68 prerequisites.
+
+**Schema lock policy honored:** the lock forbids removing/renaming fields and changing types/required-status. Adding `turn_end_marker` to the `event_type` enum is an additive change (explicitly allowed per schema doc §"Frozen-schema policy"). No existing field touched.
+
+**Iter 66b (deferred):** lazy-load tuning still depends on post-soak telemetry. 66a unblocks data collection; 66b consumes the data.
+
 ### Telemetry schema (LOCKED Iter 64 ship; cannot evolve mid-soak)
 
 Line schema in `telemetry.jsonl` (one JSON object per line, append-only):
