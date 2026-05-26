@@ -566,7 +566,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | memory_schema_mismatch | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | memory_schema_mismatch | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | hard_rule_unanchored | unit_underspecified | verify_unit_writable
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
@@ -629,6 +629,40 @@ blocker:
 - `scope_not_declared_in_prd` — generate-intent v1.6+, Iter 28: `--scope=<id>` flag references a scope ID that's not in the PRD's `scopes:` frontmatter block. ALWAYS STOP. Resolution: user picks a valid scope from PRD's declared list OR cancels. Iter 41 sweep closure.
 - `install_failed` — install-deps v1.0.0+, Iter 55: install command exited non-zero OR `verify_cmd` failed post-install. ALWAYS STOP. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail (last 500 chars), subtype: install_command_failed | verify_after_install_failed}`. Resolution: inspect stderr_tail, fix root cause (PATH refresh / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool. Source skill: `install-deps`.
 - `pkg_mgr_not_found` — install-deps v1.0.0+, Iter 55: no compatible package manager detected for OS (PKG_MGR=`none` AND no cross-platform fallbacks like cargo/npm/go on PATH). ALWAYS STOP. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt is on PATH (Linux) / install WSL Ubuntu (Windows native) → re-run `/mega-sdd:install-deps`. Source skill: `install-deps`.
+
+#### Iter 58 enum closure — 9 halts previously orphan-in-the-wild (Iter 56 audit A1-001)
+
+These 9 halt types were emitted by producers as `→ halt <name>` or `type: <name>` in skill bodies but were missing from the canonical enum. Per Iter 33 schema validation, orchestrate-flow would have rejected them as `invalid_handoff`. Iter 58 added all 9 to the enum + canonical description blocks below.
+
+- `oq_tech_missing_mode` — generate-intent v1.6+, Iter 28: PRD declares technical OQ but `mode` field missing on the OQ entry (can't classify as `tech / scan` vs `tech / recommend`). ALWAYS STOP. Resolution: user adds `mode: scan` or `mode: recommend` to the OQ frontmatter; re-run generate-intent. Source skill: `generate-intent`.
+
+- `oq_recommend_underspecified` — generate-intent v1.6+ / bind-codebase v1.4+, Iter 3: an OQ marked `mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `citations`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
+
+- `oq_scan_missing_query` — generate-intent v1.6+, Iter 28: an OQ marked `mode: scan` lacks the `scan_target` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_target: codebase-map §<section>` or `scan_target: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
+
+- `oq_business_p1_unresolved` — orchestrate-flow v1.3+, Iter 4 (canonical of `oq_blocker`): a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `/mega-sdd:resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
+
+- `no_starterkit_detected` — orchestrate-flow v2.4+, Iter 27: starterkit-first mode default but no framework manifest detected (no composer.json / package.json / Gemfile / etc.) AND user did NOT pass `--greenfield` flag. ALWAYS STOP. Details `{cwd, detected_manifests, suggestions}`. Resolution: user picks (a) scaffold starterkit, (b) re-run with `--greenfield`, or (c) cancel. Source skill: `orchestrate-flow`.
+
+- `module_blocked_by` — execute-bolts v2.0+, Iter 11: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
+
+- `hard_rule_unanchored` — execute-bolts v2.0+, Iter 6: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
+
+- `unit_underspecified` — generate-units v2.0+, Iter 1: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
+
+- `verify_unit_writable` — execute-bolts v2.0+, Iter 1: a `task_type: verify` unit has non-empty `target_files` (verify units should not write code). ALWAYS STOP. Details `{unit_id, target_files}`. Resolution: user removes target_files (or sets `operation: none` per file) — verify units only run acceptance tests, don't author code. Source skill: `execute-bolts`.
+
+#### Iter 58 — `quality_gate_failed` subtypes (Iter 53/54 closure per A1-003)
+
+Iter 53 (`starterkit_metrics_inconsistent`) and Iter 54 (`pdf_render_failed`, `template_slot_unfilled`) extended the existing `quality_gate_failed` halt with a `subtype:` discriminator. Iter 58 documents the canonical subtype enum here:
+
+`quality_gate_failed` subtypes:
+- *(omitted OR `wave_quality_threshold_unmet`)* — extract-intelligence v1.0+, Iter 9 (original): wave-based KB extraction quality threshold (citation density / hallucination floor / canonicalization completeness) not met. Resolution: user reviews wave output + accepts (with QA notes) OR re-runs wave with adjusted prompt.
+- `starterkit_metrics_inconsistent` — orchestrate-flow v3.4.0+, Iter 53: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase --force-deep` then regenerate units.
+- `pdf_render_failed` — emit-fsd v1.0.0+, Iter 54: pandoc exited non-zero during PDF render in §Step 5.3. Details include `pandoc_stderr_tail` (last 500 chars). Resolution: inspect stderr, fix LaTeX engine config (typically install tectonic via `/mega-sdd:install-deps`), re-run emit-fsd.
+- `template_slot_unfilled` — emit-fsd v1.0.0+, Iter 54: an FSD-template slot marker `{{slot_name}}` remained unfilled in `FSD.md` output (internal bug — section-mapping.md missing extraction rule for the slot). Resolution: file plugin bug; meanwhile run emit-fsd with `--sections=<subset>` to skip the affected section.
+
+Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the original `wave_quality_threshold_unmet` semantic (extract-intelligence).
 
 ### Multiple blockers in one run
 

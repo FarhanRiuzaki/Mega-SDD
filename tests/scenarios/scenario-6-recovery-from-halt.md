@@ -521,6 +521,138 @@ For new projects: this halt should never fire on first run. If it fires after a 
 
 ---
 
+## Scenario walkthrough — `install_failed` + `pkg_mgr_not_found` (Iter 55, scenario added Iter 58)
+
+**When you'll see it.** `/mega-sdd:install-deps` ran but either (a) detected no compatible package manager (`pkg_mgr_not_found`) or (b) install command exited non-zero / post-install `verify_cmd` failed (`install_failed`).
+
+### Recovery — `pkg_mgr_not_found`
+
+```yaml
+blocker:
+  type: pkg_mgr_not_found
+  source_skill: install-deps
+  details:
+    os: linux
+    distro: ubuntu
+    attempted_pkg_mgrs: [apt]
+    fallbacks_attempted: [cargo, npm, go]
+  next_action:
+    hint: "No compatible package manager. Install brew (macOS) / verify apt is on PATH (Linux) / install WSL Ubuntu (Windows native), then re-run."
+```
+
+Recovery paths:
+
+```bash
+# macOS without brew:
+# Open https://brew.sh + run their official installer (one-line curl|bash — done manually by user; install-deps does NOT auto-execute curl|bash per safety rail).
+# After brew installed: re-run /mega-sdd:install-deps
+
+# Ubuntu/Debian missing apt on PATH (rare; chroot/container envs):
+which apt   # if empty, your environment has no apt — install via your distro tools
+
+# Windows native without WSL:
+# Install WSL Ubuntu via: wsl --install -d Ubuntu
+# Re-run /mega-sdd:install-deps inside WSL terminal
+```
+
+### Recovery — `install_failed`
+
+```yaml
+blocker:
+  type: install_failed
+  source_skill: install-deps
+  details:
+    tool: tectonic
+    install_cmd: "brew install tectonic"
+    verify_cmd: "command -v tectonic"
+    exit_code: 1
+    stderr_tail: "Error: Failed to download from formula cask: connection timed out"
+    subtype: install_command_failed
+  next_action:
+    hint: "Inspect stderr_tail; fix root cause (network / repo signing / PATH); retry single tool via /mega-sdd:install-deps --tools=tectonic"
+```
+
+Recovery options:
+
+```bash
+# Option 1: Retry single failed tool (most common; transient network issue):
+/mega-sdd:install-deps --tools=tectonic --force-recheck
+
+# Option 2: Switch package manager via override (if e.g., brew formula broken; cargo build still works):
+/mega-sdd:install-deps --tools=tectonic --pkg-mgr=cargo
+
+# Option 3: Skip + use fallback (if tool optional for current workflow):
+# e.g., tectonic missing → emit-fsd falls back to HTML output for browser print-to-PDF
+# Just continue without tectonic; install later.
+
+# Option 4: Manual install + verify:
+/mega-sdd:install-deps --manual                          # prints install commands but doesn't execute
+# Run the printed command yourself, then:
+/mega-sdd:install-deps --tools=tectonic --force-recheck  # verify install + write to memory
+```
+
+If `subtype: verify_after_install_failed`: install ran but tool not on PATH. Common fix:
+
+```bash
+hash -r                       # clear shell command cache
+which <tool>                  # verify path
+# Or restart shell session and re-run /mega-sdd:install-deps --tools=<tool> --force-recheck
+```
+
+---
+
+## Scenario walkthrough — `quality_gate_failed` subtypes (Iter 53/54, scenario added Iter 58)
+
+Iter 53 + 54 extended the existing `quality_gate_failed` halt with a `subtype:` discriminator. Recovery forks on subtype.
+
+### `subtype: pdf_render_failed` (emit-fsd, Iter 54)
+
+```yaml
+blocker:
+  type: quality_gate_failed
+  source_skill: emit-fsd
+  details:
+    subtype: pdf_render_failed
+    pandoc_stderr_tail: "! LaTeX Error: File `fontspec.sty' not found."
+```
+
+Recovery: install LaTeX engine via install-deps:
+
+```bash
+/mega-sdd:install-deps --tools=tectonic
+# After tectonic installed:
+/mega-sdd:emit-fsd <vault-path>   # retry FSD render
+```
+
+### `subtype: template_slot_unfilled` (emit-fsd, Iter 54)
+
+Internal bug — fsd-template.md has a slot marker that section-mapping.md has no extraction rule for. File plugin bug. Meanwhile:
+
+```bash
+# Skip affected section per styling override:
+/mega-sdd:emit-fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
+```
+
+### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units, Iter 53)
+
+generate-units emitted `units_with_starterkit_rules > 0` BUT scan-codebase's starterkit-context.yaml flags `partial: true`. Rules may cite incomplete framework conventions.
+
+Recovery:
+
+```bash
+# Force-deep re-scan to complete starterkit slices:
+/mega-sdd:scan-codebase --force-deep
+
+# Regenerate units against complete starterkit:
+/mega-sdd:generate-units --regenerate
+```
+
+### `subtype: wave_quality_threshold_unmet` or omitted (extract-intelligence, Iter 9 original)
+
+Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) covers this case.
+
+---
+
 ## What you learned
 
 - Halts are SAFETY NET, not bugs — they fire on real issues mega-sdd's rails caught
