@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.10.3
+version: 1.10.4
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -372,6 +372,8 @@ vault: <vault path>
 codebase_map: <map path>
 bound_at: <ISO timestamp>
 strict: <true/false>
+binding_metadata:
+  codebase_map_provenance: <"snapshot-verified" | "snapshot-stale" | "no-snapshot">    # NEW v1.10+, Iter 46 — populated per Step 1 shared-snapshot check; consumed by orchestrate-flow Step 3 chain optimization (v3.4.0+, Iter 53). Iter 56 fix-forward (B-P1): emission now wired into template (previously declared in procedure prose but missing from template emission — Iter 53 chain optimization was dead code until this fix).
 ---
 
 # Binding Manifest
