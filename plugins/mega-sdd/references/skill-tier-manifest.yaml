@@ -1,0 +1,105 @@
+# Skill Tier Manifest — Iter 64 baseline (LOCKED for soak window)
+#
+# Per-skill reference file tier classification. Consumed by Iter 66 lazy-loading
+# enforcement (deferred to post-soak); Iter 64 ships DECLARATIONS only.
+#
+# Conservative bias: SPECIALIST when uncertain. See 3-tier-context-model.md
+# §Decision tree.
+#
+# Schema:
+#   <skill-name>:
+#     <ref-path-relative-to-skill-references>: HOT | SPECIALIST | COLD
+#
+# Iter 68 will validate these against soak telemetry; Iter 66 will update
+# based on empirical load frequency. Do NOT edit this manifest mid-soak.
+
+schema_version: "1.0"
+locked_at_iter: 64
+locked_at_plugin_version: "3.44.0"
+
+skills:
+  bind-codebase:
+    references/binding-contract.md: HOT
+    references/conflict-resolution.md: COLD
+
+  detect-drift:
+    # No references/ dir as of Iter 63.5
+    {}
+
+  diff-vault:
+    # No references/ dir as of Iter 63.5
+    {}
+
+  emit-agents-md:
+    references/agents-md-template.md: SPECIALIST
+
+  emit-fsd:
+    references/fsd-template.md: HOT
+    references/section-mapping.md: SPECIALIST
+    references/styling-config.yaml: SPECIALIST
+    references/pandoc-template.tex: SPECIALIST
+
+  execute-bolts:
+    references/bolt-contract.md: HOT
+    references/bolt-dispatch-prompt.md: SPECIALIST
+    references/hard-rule-grammar-v2.md: SPECIALIST
+    references/shared-snapshot-schema.md: COLD
+    references/t2-budget-tracker.md: SPECIALIST
+    references/saga-rollback.md: SPECIALIST
+
+  extract-intelligence:
+    references/wave-dispatch-templates.md: SPECIALIST
+    references/legacy-retrofit-prompt.md: COLD
+
+  generate-intent:
+    references/vault-contract.md: HOT
+    references/phase-context.md: SPECIALIST
+    # 11 other reference files in generate-intent — DEFAULT SPECIALIST
+    # (Iter 64 conservative: when uncertain → SPECIALIST)
+    # Iter 68 soak data will reclassify based on actual load frequency
+
+  generate-units:
+    references/unit-schema.md: HOT
+    references/adversarial-test-prompt.md: SPECIALIST
+    references/binding-contract.md: SPECIALIST
+
+  install-deps:
+    references/os-detection.md: SPECIALIST
+    references/tool-matrix.yaml: SPECIALIST
+
+  memory:
+    references/memory-schema.md: HOT
+    references/routing-outcomes.md: SPECIALIST
+
+  orchestrate-flow:
+    references/handoff-contract.md: HOT
+    references/predictive-checks.md: SPECIALIST
+    references/validation-gate.md: SPECIALIST
+    references/routing-rules.md: SPECIALIST
+    references/model-tiers.md: COLD
+
+  resolve-oq:
+    # No references/ dir as of Iter 63.5
+    {}
+
+  scan-codebase:
+    references/tree-sitter-integration.md: SPECIALIST
+    references/codebase-map-schema.md: HOT
+    references/deep-scan-prompts.md: SPECIALIST
+
+  using-mega-sdd:
+    references/reading-map.md: COLD
+    references/upgrade-from-old-version.md: COLD
+
+# Plugin-level references (not under any skill)
+plugin_level:
+  plugins/mega-sdd/references/paths.md: HOT
+  plugins/mega-sdd/references/tooling-install.md: COLD
+  plugins/mega-sdd/references/reading-map.md: COLD
+  plugins/mega-sdd/references/upgrade-from-old-version.md: COLD
+  plugins/mega-sdd/references/starterkit-context-schema.md: SPECIALIST
+  plugins/mega-sdd/references/shared-snapshot-schema.md: SPECIALIST
+  plugins/mega-sdd/references/framework-conventions/: SPECIALIST
+  plugins/mega-sdd/references/3-tier-context-model.md: HOT
+  plugins/mega-sdd/references/telemetry-schema.md: SPECIALIST
+  plugins/mega-sdd/references/skill-tier-manifest.yaml: HOT

@@ -138,6 +138,47 @@ Validators are LEAF NODES in execution graph, not internal nodes. If validation 
 
 ---
 
+---
+
+## 3-Tier Context Model (v3.44.0+, Iter 64 — declarations only; enforcement Iter 66)
+
+Per spec §4.0 (Iter 63 SP1) + §4.3 (Iter 66 reframe). Iter 64 ships:
+
+- **`plugins/mega-sdd/references/3-tier-context-model.md`** — HOT/SPECIALIST/COLD definitions + decision tree
+- **`plugins/mega-sdd/references/skill-tier-manifest.yaml`** — per-skill ref classifications (LOCKED for soak window)
+
+**Iter 64 does NOT enforce lazy-loading.** Skill bodies continue to load all refs unconditionally as before. The manifest is DATA COLLECTION only — telemetry validates tiers; Iter 66 enforces lazy-loading based on empirical data.
+
+**No hot-context win claims pre-Iter-66.** Iter 64 = foundation only.
+
+## Telemetry Collection (v3.44.0+, Iter 64 — LOCKED schema)
+
+Per spec §4.1. Iter 64 ships:
+
+- **`plugins/mega-sdd/references/telemetry-schema.md`** — LOCKED event schema (cannot evolve mid-soak; cannot backfill)
+- Append-only `<project>/.mega-sdd/memory/telemetry.jsonl` writes by skills that emit telemetry events
+- Opt-out via `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` OR `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`
+
+**When to log (per event_type):**
+
+| event_type | Emitted by | Trigger |
+|---|---|---|
+| `skill_invoked` | Each skill | Start of skill body execution |
+| `ref_loaded` | Each skill | When skill body loads a reference file |
+| `halt_fired` | Each skill | When skill emits a halt |
+| `tier_classification_decision` | Memory skill | When a ref is loaded; logs declared_tier from manifest + loaded_this_session |
+| `iter_classifier_output` | Orchestrate-flow (Iter 65 runtime) | EP1 (chain start) + EP2 (chain end) |
+| `iter_classifier_drift` | Orchestrate-flow (Iter 65 runtime) | When EP1 output != EP2 output |
+| `activation_outcome` | Each skill | End of skill body execution (success / halted / aborted / downstream_failure) |
+| `turn_loaded_summary` | Memory skill | Once per agent turn — aggregate of all ref_loaded events |
+
+**Skill responsibility (markdown-driven convention):** every skill body MUST include telemetry-emit step at appropriate procedure points. Skills shipped pre-Iter-64 are exempt from retroactive update — Iter 66 will revisit instrumentation gaps as part of lazy-loading enforcement.
+
+**Soak gates** (Iter 68 analysis prerequisite):
+- ≥ 14 calendar days elapsed since Iter 64 ship
+- ≥ 10 real chain runs logged
+- Insufficient data → Iter 68 emits "DATA INSUFFICIENT" report; SP3 gate stays closed
+
 ## Co-author attribution
 
 Mega-SDD acknowledges the [superpowers](https://github.com/obra/superpowers) project by Jesse Vincent as the design inspiration for plugin patterns (anchor skill, hook injection, skill content structure). See `skills/_vendored/ATTRIBUTION.md`.
