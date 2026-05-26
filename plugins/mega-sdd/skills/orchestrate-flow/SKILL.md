@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.8.1
+version: 3.9.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -142,6 +142,8 @@ g. **Logging**: log resolved tier summary to chain output for user audit, e.g.:
    `Model tier overrides applied: code-quality-reviewer=sonnet (project-config); audit-probe=sonnet (cli-flag)`
 
 h. **No file writes** — Step 2.8 is purely resolution; resolved tiers live in handoff metadata only.
+
+2.9. **Iter classifier EP1 invocation (v3.9.0+, Iter 65 — runtime per spec §4.2)** — BEFORE Step 3 chain build, invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 [--explicit-flag=<patch|minor|major> if user passed --iter-type=<>] --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Output JSON parsed for `iter_type` (PATCH | MINOR | MAJOR). Used by downstream skills as input to complexity-gated decisions (Iter 67 Plan/Act gating; Iter 69 budget enforcement). Telemetry event `iter_classifier_output` emitted with EP=EP1.
 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).
@@ -367,6 +369,8 @@ next_action:
    These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
    **Manual override**: users invoking individual commands directly (`/mega-sdd:lint-units` etc.) still works for debugging/one-off use. Auto-invocations skip when user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on `auto`/`orchestrate-flow`.
+
+6.9. **Iter classifier EP2 invocation (v3.9.0+, Iter 65 — runtime per spec §4.2)** — AFTER chain completes, BEFORE Step 7 final summary, invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP2 --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Compare EP2 output vs EP1 output from Step 2.9 — if mismatch, emit telemetry event `iter_classifier_drift` with both outputs + drift reason. Per spec §3.4 drift handling: if EP1=PATCH but EP2=MAJOR (scope grew), surface drift to user in final summary so future iter-ceremony decisions can adjust.
 
 7. **Emit final summary** with completed/paused/skipped per step + verbatim blocker YAMLs if any. In `--deep` mode, append:
    - Total phases proposed, total phases completed, total artifacts produced (flat path list)

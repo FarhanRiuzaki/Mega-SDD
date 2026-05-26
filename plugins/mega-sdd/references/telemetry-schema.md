@@ -16,7 +16,7 @@ Opt-out: `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-fl
 {
   "ts": "<ISO8601 timestamp>",
   "skill": "<skill name, e.g., generate-intent>",
-  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary",
+  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary | replan_triggered | revalidate_triggered | replan_budget_exceeded | revalidate_budget_exceeded",
   "turn_id": "<UUID per agent turn — same across events in same turn>",
   "session_id": "<UUID per Claude Code session — same across turns in same session>",
 
@@ -108,6 +108,38 @@ Emitted at end of skill body execution. Required: `ts`, `skill`, `turn_id`, `ses
 
 ### `turn_loaded_summary` (THE metric event)
 Emitted once per agent turn — aggregate of all `ref_loaded` events in the turn. Required: `ts`, `turn_id`, `loaded_per_turn` block fully populated.
+
+### `replan_triggered` (Iter 65 — anti-recursive guard instrumentation)
+Emitted by `check-recursion-budget.sh --action=increment-replan` when a re-plan starts. Required: `ts`, `turn_id`, `session_id`, `payload`:
+```json
+{
+  "task_id": "<UUID per task>",
+  "trigger": "execution_failed | ambiguity_increased | contract_mismatch",
+  "replan_count_before": 0,
+  "replan_count_after": 1,
+  "details": {"<trigger-specific>": "..."}
+}
+```
+**Why instrumented day-0:** without this event, tune #2 (revisit max_replan_count default of 2 post-Iter-68) is impossible — Iter 68 cannot analyze distribution of re-plans without per-trigger logs.
+
+### `revalidate_triggered` (Iter 65)
+Emitted by `check-recursion-budget.sh --action=increment-revalidate` when a re-validate starts. Required: same as `replan_triggered` but `revalidate_count_before`/`after` instead of `replan_count_*`.
+
+### `replan_budget_exceeded` (Iter 65)
+Emitted when `max_replan_count` exceeded → halt `quality_gate_failed:replan_budget_exceeded` fires. Required: `ts`, `turn_id`, `session_id`, `payload`:
+```json
+{
+  "task_id": "<UUID>",
+  "max_replan_count": 2,
+  "actual_replan_count": 3,
+  "trigger_history": ["execution_failed", "execution_failed", "contract_mismatch"],
+  "halt_emitted": "quality_gate_failed:replan_budget_exceeded"
+}
+```
+**Why instrumented:** captures every cap-exceeded event for tune #2 analysis (was default 2 the right cap? Tune to telemetry-validated value post-Iter-68).
+
+### `revalidate_budget_exceeded` (Iter 65)
+Emitted when `max_revalidate_count` exceeded → halt `quality_gate_failed:revalidate_budget_exceeded` fires. Required: same structure as `replan_budget_exceeded`.
 
 ## Activation outcome labeling (the hard metric)
 
