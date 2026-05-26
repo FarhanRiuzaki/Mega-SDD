@@ -28,6 +28,11 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── bolts/U-*/bolt-report.md               # Bolt outcomes
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
 │   │   ├── interfaces/                            # Multi-squad interface notes
+│   │   ├── fsd/                                   # Confluence FSD output (Iter 54; documented Iter 61)
+│   │   │   ├── FSD.md                             # Markdown source
+│   │   │   ├── FSD.pdf                            # Rendered PDF (pandoc + LaTeX)
+│   │   │   ├── FSD.styling.yaml                   # User-editable styling overrides
+│   │   │   └── .citation-map.json                 # Audit trace per section
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
 │   │   ├── .memory/                               # Vault-scope memory (Iter 5)
 │   │   │   ├── classifier-accuracy.json
@@ -47,6 +52,8 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── decisions.md                           # OQ resolutions, CONFLICT actions
 │   │   ├── conventions.md                         # Detected conventions
 │   │   ├── outcomes.md                            # Pipeline run summaries
+│   │   ├── routing-outcomes.md                    # Orchestrator chain learning (Iter 33)
+│   │   ├── install-outcomes.md                    # install-deps audit log (Iter 55; documented Iter 61)
 │   │   └── archived-vaults/<slug>/                # Vault archive on delete (MEMORY-OQ-5)
 │   └── exports/                                   # Tool-agnostic exports
 │       └── (additional exports as iters add them)
