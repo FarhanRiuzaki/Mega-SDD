@@ -1,5 +1,11 @@
 ---
 description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts. Per Iter 13 audit: this is the ONE command users need; advanced/diagnostic commands available but auto-invoked transparently.
+
+> **`/mega-sdd:auto` vs `/mega-sdd:orchestrate-flow`** (Iter 63 clarification): both invoke the orchestrate-flow skill. The difference is which front-door makes sense:
+> - **`/mega-sdd:auto`** (this command) — user-facing entry-point with input-shape detection (PRD / legacy code / brief / vault state) + chain proposal + single confirm. **Use this for typical workflows.**
+> - **`/mega-sdd:orchestrate-flow`** — power-user lower-level chain executor. Skips input-shape detection (assumes you already know what to chain). Use for advanced cases (custom chain composition, partial re-run, debugging).
+>
+> Both accept same flags. Both invoke the same skill.
 argument-hint: [input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N]
 ---
 
