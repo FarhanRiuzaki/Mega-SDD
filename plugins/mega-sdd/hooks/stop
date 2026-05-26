@@ -1,24 +1,31 @@
 #!/usr/bin/env bash
-# Stop hook for mega-sdd plugin — Iter 66a (v3.47.0+).
+# Stop hook for mega-sdd plugin — Iter 67.5 v3.48.0+.
 #
-# Emits turn_end_marker event when an agent turn completes. Enables Iter 68
-# aggregation to roll up per-turn token loads (ref_loaded events between two
-# adjacent turn_end_markers = one turn's hot-tier consumption).
+# AUDIT RESPONSE (audit 2026-05-27 §A3): Iter 66a shipped Stop hook, smoke test
+# passed, but ZERO turn_end_marker events appeared in real-run telemetry.jsonl
+# despite the gate condition (telemetry.jsonl exists) being met.
 #
-# Input (stdin): JSON {session_id, cwd, hook_event_name, ...}
-# Output: appends one JSON line to <cwd>/.mega-sdd/memory/telemetry.jsonl
-#         ONLY IF telemetry.jsonl already exists (avoids creating empty dirs
-#         in projects that never invoked mega-sdd).
-# Honors: --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml
+# This version (67.5):
+# 1. ALWAYS writes a one-line entry to <cwd>/.mega-sdd/memory/hook-debug.log
+#    on every invocation, regardless of gates. This is the diagnostic layer —
+#    proves the harness is invoking us for this CWD.
+# 2. THEN applies opt-out + telemetry-exists gate and emits turn_end_marker
+#    with REAL transcript-usage data (input_tokens / cache_read_input_tokens /
+#    output_tokens / cache_creation_input_tokens) when available.
 #
-# Exit 0 always (hook should never block turn completion).
+# Per Claude Code Stop-hook spec, stdin includes transcript_path. We read the
+# LAST message from the transcript and pull its `message.usage` block — that's
+# the ground-truth turn cost from the harness (not estimated).
+#
+# Exit 0 always (hook must never block turn completion).
 
 set -uo pipefail
 
-# Read stdin
+# Always read stdin first
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
-# Parse via python3 (pipe stdin; script via -c)
+# Parse stdin via python3 (pipe in; script via -c).
+# NOTE: f-string expression parts cannot contain backslashes — assign to locals first.
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json
 import sys
@@ -30,22 +37,33 @@ except Exception:
 
 session_id = data.get("session_id", "unknown-session")
 cwd = data.get("cwd", "")
+transcript_path = data.get("transcript_path", "")
+hook_event = data.get("hook_event_name", "")
+stop_hook_active = data.get("stop_hook_active", False)
 
 print(f"SESSION_ID={session_id}")
 print(f"CWD={cwd}")
+print(f"TRANSCRIPT_PATH={transcript_path}")
+print(f"HOOK_EVENT={hook_event}")
+print(f"STOP_HOOK_ACTIVE={stop_hook_active}")
 ' 2>/dev/null)
 
-if [ -z "$PARSE_OUTPUT" ]; then
-  exit 0
+# eval needs key=value with no shell metacharacters; gate it
+if [ -n "$PARSE_OUTPUT" ]; then
+  eval "$PARSE_OUTPUT" 2>/dev/null || true
 fi
 
-eval "$PARSE_OUTPUT"
+CWD="${CWD:-}"
+SESSION_ID="${SESSION_ID:-unknown}"
+TRANSCRIPT_PATH="${TRANSCRIPT_PATH:-}"
+HOOK_EVENT="${HOOK_EVENT:-}"
+STOP_HOOK_ACTIVE="${STOP_HOOK_ACTIVE:-False}"
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 
-if [ -z "${CWD:-}" ]; then
+# ─── OPT-OUT (suppresses BOTH diagnostic + telemetry) ────────────────────────
+if [ -z "$CWD" ]; then
   exit 0
 fi
-
-# Check opt-out
 CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
@@ -53,17 +71,75 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-# Only emit if telemetry.jsonl already exists (created by PostToolUse hook
-# upon first mega-sdd-relevant Read). This avoids polluting non-mega-sdd
-# projects with empty .mega-sdd/memory/ directories on every Stop event.
+# ─── DIAGNOSTIC LAYER (Iter 67.5 — verify harness invocation) ────────────────
+# Per audit response: prove the harness is invoking us for the project CWD.
+# If hook-debug.log doesn't grow on every Stop event, the hook is not being called.
+# Only writes for mega-sdd projects (avoids polluting unrelated CWDs).
+if [ -d "${CWD}/.mega-sdd" ]; then
+  DEBUG_DIR="${CWD}/.mega-sdd/memory"
+  mkdir -p "$DEBUG_DIR" 2>/dev/null || true
+  DEBUG_LOG="${DEBUG_DIR}/hook-debug.log"
+  DEBUG_LINE="$(printf '{"ts":"%s","hook":"stop","session_id":"%s","cwd":"%s","transcript_path":"%s","stop_hook_active":"%s","stdin_bytes":%s}' \
+    "$TS" "$SESSION_ID" "$CWD" "$TRANSCRIPT_PATH" "$STOP_HOOK_ACTIVE" "${#STDIN_JSON}")"
+  echo "$DEBUG_LINE" >> "$DEBUG_LOG" 2>/dev/null || true
+fi
+
+# ─── TELEMETRY GATE ──────────────────────────────────────────────────────────
 TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
 if [ ! -f "$TELEMETRY_FILE" ]; then
   exit 0
 fi
 
-# Build turn_end_marker event
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-EVENT="{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"turn_end_marker\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"Stop\",\"payload\":{}}"
+# ─── TRANSCRIPT USAGE EXTRACTION (Iter 67.5 — real numbers, not estimates) ───
+# Stop hook stdin includes `transcript_path` (per Claude Code spec).
+# The transcript is a JSONL file; the LAST assistant message contains usage.
+# We extract input_tokens, cache_read_input_tokens, cache_creation_input_tokens,
+# and output_tokens — the four numbers that explain "where the 150k went."
+# Pass path via env var (not shell interpolation) to avoid quoting bugs.
+USAGE_JSON='{}'
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  USAGE_JSON=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
+import json, os, sys
+path = os.environ.get("TRANSCRIPT_PATH", "")
+last_usage = None
+try:
+    with open(path) as f:
+        for line in f:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+            if msg and isinstance(msg.get("usage"), dict):
+                last_usage = msg["usage"]
+    if last_usage:
+        keys = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
+        out = {k: last_usage[k] for k in keys if k in last_usage}
+        print(json.dumps(out))
+    else:
+        print("{}")
+except Exception:
+    print("{}")
+' 2>/dev/null)
+fi
+
+# Default fallback
+if [ -z "$USAGE_JSON" ]; then USAGE_JSON='{}'; fi
+
+# ─── EMIT turn_end_marker ────────────────────────────────────────────────────
+# Schema (Iter 67.5): payload carries real usage from transcript.
+# Build the event via plain shell — USAGE_JSON is already valid JSON, embed inline.
+STOP_HOOK_ACTIVE_LOWER=$(printf '%s' "$STOP_HOOK_ACTIVE" | tr '[:upper:]' '[:lower:]')
+# Normalize Python's "True/False" → JSON "true/false"
+case "$STOP_HOOK_ACTIVE_LOWER" in
+  true|false) ;;
+  *) STOP_HOOK_ACTIVE_LOWER="false" ;;
+esac
+
+# Escape SESSION_ID for JSON (rare edge case)
+SESSION_ID_JSON=$(printf '%s' "$SESSION_ID" | sed 's|\\|\\\\|g; s|"|\\"|g')
+
+EVENT="{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"turn_end_marker\",\"session_id\":\"$SESSION_ID_JSON\",\"hook_source\":\"Stop\",\"payload\":{\"usage\":$USAGE_JSON,\"stop_hook_active\":$STOP_HOOK_ACTIVE_LOWER}}"
 
 echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
 

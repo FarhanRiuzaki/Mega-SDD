@@ -1,29 +1,32 @@
 #!/usr/bin/env bash
-# PostToolUse hook for mega-sdd plugin — Iter 66a (v3.47.0+).
+# PostToolUse hook for mega-sdd plugin — Iter 67.5 v3.48.0+.
 #
-# CRITICAL: this is the ONLY mechanism that actually emits ref_loaded +
-# skill_invoked events to telemetry.jsonl. Iter 64 schema declared events
-# but skill bodies never emitted (verified: grep skills/ returns 0 hits for
-# emit_telemetry / >> telemetry). Iter 66a wires real emission via hooks.
+# AUDIT RESPONSE (audit 2026-05-27 §A2): Iter 66a shipped this hook with
+# matcher `Read|Skill`, producing ONE ref_loaded event across a full real
+# chain run that read dozens of files. Most reference loading happens via
+# Bash (cat / head / tail / grep) inside skill bodies, invisible to a
+# Read-only matcher.
 #
-# Per CLAUDE.md §Telemetry Collection: hooks fire in harness with access to
-# tool_input + tool_response, providing more accurate measurement than
-# markdown-instructed skill-body emission (model cannot count own context
-# tokens precisely; harness can).
+# Iter 67.5 changes:
+# 1. Matcher broadened to Read|Skill|Bash in hooks.json
+# 2. Bash branch added below — detects `cat|head|tail|grep|less|more|rg <mega-sdd-path>`
+#    and emits one ref_loaded per detected path
+# 3. HONEST blind-spot acknowledgment: subagent-internal tool calls
+#    (Read/Bash inside a dispatched Agent thread) are NOT visible to the
+#    parent's PostToolUse hook. ref_loaded therefore UNDER-COUNTS true loads
+#    in any chain that uses subagents. This is a Fork-A limitation documented
+#    in plugins/mega-sdd/references/telemetry-schema.md §Emission mechanism.
 #
-# Input (stdin): JSON {session_id, cwd, hook_event_name, tool_name, tool_input, ...}
-# Output: appends one JSON line per relevant event to <cwd>/.mega-sdd/memory/telemetry.jsonl
-# Honors: --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml defaults.telemetry: false
-#
-# Exit 0 always (hook should never block tool execution).
+# Emission:
+# - Honors --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml
+# - Appends to <cwd>/.mega-sdd/memory/telemetry.jsonl
+# - Exit 0 always (hook must never block tool execution)
 
 set -uo pipefail
 
-# Read stdin (PostToolUse JSON input from Claude Code harness)
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
-# Parse via python3 (more reliable than grep for nested JSON).
-# Pipe STDIN_JSON into python's stdin; python's source is passed via -c.
+# Parse stdin via python3 — assign to local vars first; f-strings can't contain backslashes
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json
 import sys
@@ -48,22 +51,21 @@ if tool_name == "Read":
 elif tool_name == "Skill":
     skill_name = tool_input.get("skill", "")
     print(f"SKILL_NAME={skill_name}")
+elif tool_name == "Bash":
+    # Pass command via base64 to avoid shell-quoting nightmares with multi-line commands.
+    import base64
+    cmd = tool_input.get("command", "")
+    cmd_b64 = base64.b64encode(cmd.encode()).decode()
+    print(f"BASH_CMD_B64={cmd_b64}")
 ' 2>/dev/null)
 
-# If python parse failed or no relevant tool, exit cleanly
-if [ -z "$PARSE_OUTPUT" ]; then
-  exit 0
-fi
+if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
 
-# Source the KEY=VALUE pairs
-eval "$PARSE_OUTPUT"
+eval "$PARSE_OUTPUT" 2>/dev/null || true
 
-# If no CWD, can't determine project root → skip
-if [ -z "${CWD:-}" ]; then
-  exit 0
-fi
+if [ -z "${CWD:-}" ]; then exit 0; fi
 
-# Check opt-out: <cwd>/.mega-sdd/config.yaml defaults.telemetry: false
+# Opt-out: <cwd>/.mega-sdd/config.yaml `telemetry: false`
 CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
@@ -71,75 +73,109 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-# Determine event type based on tool
-EVENT_TYPE=""
-PAYLOAD=""
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
+TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+
+# Helper: emit one ref_loaded event for a path (computes lines/bytes/est_tokens).
+emit_ref_loaded() {
+  local file_path="$1"
+  local source_tool="$2"  # "Read" or "Bash"
+  local lines bytes est_tokens file_path_json
+  if [ -f "$file_path" ]; then
+    lines=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
+    bytes=$(wc -c < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
+    est_tokens=$((bytes / 4))
+  else
+    lines=0; bytes=0; est_tokens=0
+  fi
+  file_path_json=$(printf '%s' "$file_path" | sed 's|\\|\\\\|g; s|"|\\"|g')
+  mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || return 0
+  echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"ref_loaded\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"file_path\":\"$file_path_json\",\"lines\":$lines,\"bytes\":$bytes,\"estimated_tokens\":$est_tokens,\"source_tool\":\"$source_tool\"}}" \
+    >> "$TELEMETRY_FILE" 2>/dev/null || true
+}
+
+# Helper: is the path mega-sdd-relevant?
+is_megasdd_path() {
+  case "$1" in
+    *plugins/mega-sdd/skills/*/SKILL.md|*plugins/mega-sdd/skills/*/references/*|*plugins/mega-sdd/references/*|*plugins/mega-sdd/CLAUDE.md|*.mega-sdd/vaults/*|*.mega-sdd/codebase/*|*.mega-sdd/knowledge-base/*)
+      return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 case "${TOOL_NAME:-}" in
   Read)
-    # ref_loaded event — only emit for mega-sdd reference files / SKILL bodies / contracts
     FILE_PATH="${FILE_PATH:-}"
-    if [ -z "$FILE_PATH" ]; then exit 0; fi
-
-    # Filter: only emit for files matching mega-sdd-relevant patterns
-    case "$FILE_PATH" in
-      *plugins/mega-sdd/skills/*/SKILL.md|*plugins/mega-sdd/skills/*/references/*|*plugins/mega-sdd/references/*|*plugins/mega-sdd/CLAUDE.md|*.mega-sdd/vaults/*|*.mega-sdd/codebase/*|*.mega-sdd/knowledge-base/*)
-        EVENT_TYPE="ref_loaded"
-        # Compute metrics if file exists
-        if [ -f "$FILE_PATH" ]; then
-          LINES=$(wc -l < "$FILE_PATH" 2>/dev/null | tr -d ' ' || echo 0)
-          BYTES=$(wc -c < "$FILE_PATH" 2>/dev/null | tr -d ' ' || echo 0)
-          # Estimated tokens ≈ bytes / 4 (industry standard for English text)
-          EST_TOKENS=$((BYTES / 4))
-        else
-          LINES=0
-          BYTES=0
-          EST_TOKENS=0
-        fi
-        # Escape file path for JSON
-        FILE_PATH_JSON=$(printf '%s' "$FILE_PATH" | sed 's|\\|\\\\|g; s|"|\\"|g')
-        PAYLOAD="{\"file_path\":\"$FILE_PATH_JSON\",\"lines\":$LINES,\"bytes\":$BYTES,\"estimated_tokens\":$EST_TOKENS}"
-        ;;
-      *)
-        # Not a mega-sdd-relevant Read; skip
-        exit 0
-        ;;
-    esac
+    [ -z "$FILE_PATH" ] && exit 0
+    if is_megasdd_path "$FILE_PATH"; then
+      emit_ref_loaded "$FILE_PATH" "Read"
+    fi
     ;;
+
   Skill)
-    # skill_invoked event
     SKILL_NAME="${SKILL_NAME:-}"
-    if [ -z "$SKILL_NAME" ]; then exit 0; fi
-    # Filter: only emit for mega-sdd skills
+    [ -z "$SKILL_NAME" ] && exit 0
     case "$SKILL_NAME" in
       mega-sdd:*|using-mega-sdd)
-        EVENT_TYPE="skill_invoked"
-        SKILL_NAME_JSON=$(printf '%s' "$SKILL_NAME" | sed 's|\\|\\\\|g; s|"|\\"|g')
-        PAYLOAD="{\"skill_full_name\":\"$SKILL_NAME_JSON\"}"
-        ;;
-      *)
-        exit 0
+        skill_name_json=$(printf '%s' "$SKILL_NAME" | sed 's|\\|\\\\|g; s|"|\\"|g')
+        mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || exit 0
+        echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"skill_invoked\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"skill_full_name\":\"$skill_name_json\"}}" \
+          >> "$TELEMETRY_FILE" 2>/dev/null || true
         ;;
     esac
     ;;
+
+  Bash)
+    # Iter 67.5: scan Bash command for obvious file-read patterns targeting mega-sdd paths.
+    # HONEST LIMITATIONS:
+    # - Only catches cat/head/tail/grep/less/more/rg as command verb
+    # - Misses: shell redirection (`< file`), command substitution, awk/sed reading via stdin,
+    #   complex pipelines, find-exec, xargs, anything in shell functions/aliases
+    # - Subagent-internal Bash calls are NOT visible (different process, no hook propagation)
+    # - This is a best-effort approximation; ref_loaded UNDER-COUNTS true reads.
+    BASH_CMD_B64="${BASH_CMD_B64:-}"
+    [ -z "$BASH_CMD_B64" ] && exit 0
+
+    # Extract mega-sdd-relevant file paths from the command. Scan all tokens.
+    PATHS_FOUND=$(BASH_CMD_B64="$BASH_CMD_B64" python3 -c '
+import os, re, base64, shlex
+cmd = base64.b64decode(os.environ["BASH_CMD_B64"]).decode("utf-8", errors="replace")
+# Quick verb filter — skip entirely if no read-like verb present
+read_verbs = ("cat", "head", "tail", "grep", "less", "more", "rg", "bat", "view", "awk", "sed")
+lowered = cmd.lower()
+if not any(re.search(rf"\b{v}\b", lowered) for v in read_verbs):
+    raise SystemExit(0)
+# Path patterns we care about
+patterns = (
+    r"plugins/mega-sdd/skills/[^\s]+/SKILL\.md",
+    r"plugins/mega-sdd/skills/[^\s]+/references/[^\s]+",
+    r"plugins/mega-sdd/references/[^\s]+",
+    r"plugins/mega-sdd/CLAUDE\.md",
+    r"\.mega-sdd/vaults/[^\s]+",
+    r"\.mega-sdd/codebase/[^\s]+",
+    r"\.mega-sdd/knowledge-base/[^\s]+",
+)
+hits = set()
+for pat in patterns:
+    for m in re.finditer(pat, cmd):
+        hits.add(m.group(0).rstrip(",;|>)"))
+for h in sorted(hits):
+    print(h)
+' 2>/dev/null)
+
+    if [ -n "$PATHS_FOUND" ]; then
+      while IFS= read -r p; do
+        [ -z "$p" ] && continue
+        # Resolve to absolute path if relative — relative to CWD
+        if [ "${p#/}" = "$p" ]; then abs_path="${CWD}/${p}"; else abs_path="$p"; fi
+        emit_ref_loaded "$abs_path" "Bash"
+      done <<< "$PATHS_FOUND"
+    fi
+    ;;
+
   *)
-    # Not a tracked tool; skip
     exit 0
     ;;
 esac
 
-# Build telemetry event JSON
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-SKILL_FIELD="orchestrate-flow"  # PostToolUse fires from any tool; attribute to orchestrate-flow by default
-
-# Ensure telemetry.jsonl directory exists
-TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
-mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || exit 0
-
-# Append event line
-EVENT="{\"ts\":\"$TS\",\"skill\":\"$SKILL_FIELD\",\"event_type\":\"$EVENT_TYPE\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":$PAYLOAD}"
-
-echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
-
-# Hook always exits 0 — never block tool execution
 exit 0

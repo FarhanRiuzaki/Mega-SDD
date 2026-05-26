@@ -57,7 +57,41 @@ Skills shape agent behavior. Don't reword for stylistic preference. Behavior cha
 
 ---
 
-## Iter Ceremony Classifier (v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)
+---
+
+## Fork A scope (CURRENT) vs Fork B (FUTURE)
+
+Added Iter 67.5 (v3.48.0) after audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` revealed Iter 64-67 shipped multiple "runtime active" claims that were never artifact-verified. The honest reset:
+
+**Fork A (CURRENT — what is actually shipped):**
+- Skill bodies + references as design vocabulary and AI-coding-prompt scaffolding
+- Claude Code **hooks** (SessionStart anchor injection, PostToolUse ref/skill telemetry, Stop turn-end-marker with real harness usage) — the only model-proof surface available
+- Advisory bash scripts in `plugins/mega-sdd/scripts/` that humans can run by hand
+- Markdown-driven anti-hallucination rails inside skill bodies — model compliance is best-effort, not enforced
+
+**Fork B (FUTURE — explicitly parked):**
+- Classifier-driven ceremony gating (Iter 65 claim — retracted)
+- Anti-recursive guard runtime enforcement (Iter 65 claim — retracted)
+- Plan/Act mode gating per complexity (Iter 67 claim — retracted)
+- Lazy-loading tier enforcement (Iter 66 plan — parked)
+- Any other "the model invokes X automatically at step Y" claim
+
+**Why parked:** these all rely on the model executing Bash invocations described in skill-body markdown prose. That mechanism is unreliable — the model may read the instruction and not execute the Bash. Audit confirmed 4 consecutive iters (64/65/67/66a) failed in real orchestration despite passing doc-layer review for the same reason. Real enforcement needs a control plane the model can't bypass — that's Fork B (Agent SDK / custom runtime), not Fork A.
+
+**Operational consequence for AI agents reading this doc:**
+- Treat any "Runtime ACTIVE" or "Runtime SHIPPED" claim from Iter 64-67 as RETRACTED unless explicitly re-validated by Iter 68+
+- Treat the criteria tables, halt enums, and rule documents below as DESIGN VOCABULARY — they describe how the system *should* work; they do not enforce it in Fork A
+- Hook-emitted telemetry events ARE reliable (PostToolUse + Stop) — those are the only artifacts you can trust to mean what they say
+
+---
+
+## Iter Ceremony Classifier (v3.42.0+ rule doc; Iter 65 runtime RETRACTED at Iter 67.5)
+
+> **Status (Iter 67.5 honesty/cleanup, v3.48.0):** The Iter 65 claim that `classify-iter.sh` is invoked at orchestrate-flow Step 2.9 (EP1) + Step 6.9 (EP2) is RETRACTED. Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` §C verified: zero skill bodies Bash-invoke the script in any real chain run, and no `iter_classifier_output` event has ever appeared in telemetry. The wire-up was prose only.
+>
+> **Status going forward:** the script remains in `plugins/mega-sdd/scripts/classify-iter.sh` as an ADVISORY tool — a developer can run it by hand (`bash classify-iter.sh --ep=EP1`) to see what an iter would be classified as. It is NOT enforced. Classifier-driven ceremony gating is parked as Fork-B-future (requires a control plane the model can't no-op).
+>
+> The criteria table below is kept as the *intent* of how iters should be classified; treat it as guidance for the human-in-the-loop deciding what artifacts to write, NOT as runtime-enforced behavior.
 
 Per Iter 63 SP1 spec §3.4: each iter has type PATCH/MINOR/MAJOR determined by deterministic git/filesystem inputs — NO LLM self-judgment. Same enum evaluated at TWO points (dual EP per spec meta-tune #1):
 
@@ -99,9 +133,9 @@ explicit user flag (--iter-type=major) > classifier output > default (PATCH)
 
 If EP1 classified PATCH but EP2 reveals MAJOR criteria met (scope grew during work): emit drift warning + retroactively generate missing artifacts (spec/plan) under accelerated rules (compressed prose; not full ceremony). Log to telemetry as `ceremony_classifier_drift` event for Iter 68 analysis.
 
-**Runtime impl SHIPPED in Iter 65 v3.45.0+:** `plugins/mega-sdd/scripts/classify-iter.sh` (deterministic bash wrapping git/grep). Invoked from orchestrate-flow Step 2.9 (EP1) + Step 6.9 (EP2). Emits `iter_classifier_output` + `iter_classifier_drift` telemetry events.
+**Runtime status (RETRACTED at Iter 67.5):** the script `plugins/mega-sdd/scripts/classify-iter.sh` exists and works correctly when invoked directly. Iter 65 claimed it was wired into orchestrate-flow Step 2.9 / 6.9 and emits telemetry events automatically — that claim was prose-only and is now retracted. Use as an advisory tool only.
 
-**Usage example:**
+**Advisory usage example (for humans / explicit invocation):**
 ```bash
 plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 \
   --explicit-flag=minor \
@@ -109,10 +143,15 @@ plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 \
 # Output: JSON {iter_type, evaluation_point, criteria_matched, explicit_flag, inputs}
 # Exit 0 = clean; 1 = invalid args; 2 = not in git repo
 ```
+The `--emit-telemetry` flag works when the script is invoked, but nothing invokes it automatically in Fork A.
 
 ---
 
-## Anti-Recursive Guard (v3.42.0+ rule doc; v3.45.0+ Iter 65 RUNTIME ACTIVE)
+## Anti-Recursive Guard (v3.42.0+ rule doc; Iter 65 runtime RETRACTED at Iter 67.5)
+
+> **Status (Iter 67.5):** the Iter 65 claim that `check-recursion-budget.sh` is invoked automatically on re-plan / re-validate is RETRACTED. Audit §D verified: the script is referenced by ZERO skill bodies (not even `orchestrate-flow/SKILL.md`). No `.replan-budget` state file has ever been created in any real run. The rules below remain as design intent for the eventual Fork-B control plane; they are NOT enforced in Fork A.
+
+
 
 Per Iter 63 SP1 spec §7. Prevents validating-the-validation recursion + caps re-plan loops.
 
@@ -143,19 +182,9 @@ Exceeded → halt (NAMING DEFERRED to Iter 65 implementation per spec meta-tune 
 
 Validators are LEAF NODES in execution graph, not internal nodes. If validation step itself fails, halt directly — DO NOT spawn meta-validation. "Plan to validate the validation plan" is recursion → prohibited.
 
-**Runtime impl SHIPPED in Iter 65 v3.45.0+:** `plugins/mega-sdd/scripts/check-recursion-budget.sh` + ephemeral state file `<project>/.mega-sdd/.replan-budget`. Halt naming decision (per meta-tune #5 reuse-first): `quality_gate_failed` with subtype `replan_budget_exceeded | revalidate_budget_exceeded` (Iter 58 pattern reused — NOT new halt enum entry).
+**Runtime status (RETRACTED at Iter 67.5):** the script `plugins/mega-sdd/scripts/check-recursion-budget.sh` exists and works correctly when invoked directly. Iter 65 claimed it was wired automatically into re-plan / re-validate trigger points — that claim was prose-only (no skill body references the script) and is now retracted. The four event types (`replan_triggered`, `revalidate_triggered`, `replan_budget_exceeded`, `revalidate_budget_exceeded`) are PARKED in the telemetry schema as Fork-B-future per `plugins/mega-sdd/references/telemetry-schema.md`. No `.replan-budget` state file is created in Fork A.
 
-**Day-0 telemetry instrumentation (per user mandate for tune #2 feasibility):**
-
-Guard emits 4 new event_types from day-0 of soak window:
-- `replan_triggered` — every re-plan increment (with trigger, before/after count)
-- `revalidate_triggered` — every re-validate increment
-- `replan_budget_exceeded` — when cap hit (with full trigger_history + halt details)
-- `revalidate_budget_exceeded` — when cap hit
-
-Without these events, tune #2 (revisit max_replan=2 / max_revalidate=3 defaults post-Iter-68) is impossible — Iter 68 cannot analyze distribution of re-plans without per-trigger logs.
-
-**Usage example:**
+**Advisory usage example (for humans / explicit invocation only):**
 ```bash
 plugins/mega-sdd/scripts/check-recursion-budget.sh \
   --action=increment-replan \
@@ -166,55 +195,60 @@ plugins/mega-sdd/scripts/check-recursion-budget.sh \
 # Exit 0 = within budget; 3 = REPLAN_BUDGET_EXCEEDED; 4 = REVALIDATE_BUDGET_EXCEEDED; 1 = invalid args
 ```
 
-**RULE 1.5 enforcement verified:** script REJECTS `--trigger=bind_conflict` (or any non-closed-enum trigger) with exit 1 + helpful error citing RULE 1.5 binding CONFLICT exclusion. Tested at Iter 65 ship.
+**RULE 1.5 enforcement verified at Iter 65 ship:** script REJECTS `--trigger=bind_conflict` (or any non-closed-enum trigger) with exit 1 + helpful error citing RULE 1.5 binding CONFLICT exclusion. This is a script-side property — it still holds, but the script being correct in isolation doesn't enforce anything in Fork A since no chain invokes it.
 
 ---
 
 ---
 
-## 3-Tier Context Model (v3.44.0+, Iter 64 — declarations only; enforcement Iter 66)
+## 3-Tier Context Model (v3.44.0+ docs; enforcement parked Fork-B-future at Iter 67.5)
 
-Per spec §4.0 (Iter 63 SP1) + §4.3 (Iter 66 reframe). Iter 64 ships:
+Per spec §4.0 (Iter 63 SP1). Iter 64 shipped:
 
 - **`plugins/mega-sdd/references/3-tier-context-model.md`** — HOT/SPECIALIST/COLD definitions + decision tree
-- **`plugins/mega-sdd/references/skill-tier-manifest.yaml`** — per-skill ref classifications (LOCKED for soak window)
+- **`plugins/mega-sdd/references/skill-tier-manifest.yaml`** — per-skill ref classifications
 
-**Iter 64 does NOT enforce lazy-loading.** Skill bodies continue to load all refs unconditionally as before. The manifest is DATA COLLECTION only — telemetry validates tiers; Iter 66 enforces lazy-loading based on empirical data.
+**Status (Iter 67.5):** these documents remain as a design vocabulary for talking about which refs should be loaded when. Iter 64 explicitly did NOT enforce lazy-loading; that was always Iter 66's job. Iter 66 lazy-load enforcement is now PARKED as Fork-B-future — model-driven lazy-load decisions are exactly the kind of thing the model can no-op on. Reliable lazy-loading requires the Fork-B control plane.
 
-**No hot-context win claims pre-Iter-66.** Iter 64 = foundation only.
+## Telemetry Collection (v3.48.0+, Iter 67.5 — Fork A scope lock)
 
-## Telemetry Collection (v3.44.0+ schema-lock; v3.47.0+ Iter 66a emission rewire)
+Per spec §4.1. Iter 64 → 66a → 67.5 evolution (audit-corrected):
 
-Per spec §4.1. Schema locked at Iter 64; emission rewired at Iter 66a after empirical gap discovery.
+- **Iter 64:** locked an aspirational 16-event schema; assumed skill bodies would emit per markdown convention.
+- **Iter 66a:** discovered (via grep) that ZERO skill bodies emit; rewired emission via Claude Code hooks.
+- **Iter 67.5 (this version):** Iter 66a real-run audit confirmed 1 of 16 event types was emitting; 11 control-layer events have NO working emitter and depend on Iter 65/67 runtime claims which are themselves retracted. Schema shrunk to live events only. Control-layer events parked Fork-B-future. See `plugins/mega-sdd/references/telemetry-schema.md` for the live schema.
 
-**The Iter 64 → 66a story:** Iter 64 shipped a locked schema + opt-out flag + script-side emitters (classify-iter.sh + check-recursion-budget.sh) but assumed skills would emit via markdown-instructed convention. Verification at Iter 66a (`grep -rE "token_count|loaded_per_turn|>> .*telemetry" plugins/mega-sdd/skills/`) returned ZERO hits — convention was a fiction. Iter 66a fix-forward: emit via **Claude Code hooks** (PostToolUse + Stop), not markdown.
+**Live emitters (Fork A — what is actually collected):**
 
-**Why hooks:** model cannot precisely count its own context tokens (the schema literally says `estimated_tokens`); hooks fire in the Claude Code harness with deterministic access to `tool_input` and file contents → exact byte/line counts.
-
-**Active emitters (v3.47.0+):**
-
-| Source | Events | When |
+| Source | Events | Reliability |
 |---|---|---|
-| `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse hook) | `ref_loaded`, `skill_invoked` | Every Read of a mega-sdd path; every Skill invocation of `mega-sdd:*` or `using-mega-sdd` |
-| `plugins/mega-sdd/hooks/stop` (Stop hook) | `turn_end_marker` | End of every agent turn (only if telemetry.jsonl exists for that project) |
-| `plugins/mega-sdd/scripts/classify-iter.sh` | `iter_classifier_output`, `iter_classifier_drift` | EP1 + EP2 in orchestrate-flow chain |
-| `plugins/mega-sdd/scripts/check-recursion-budget.sh` | `replan_triggered`, `revalidate_triggered`, `*_budget_exceeded` | Anti-recursive guard increments + cap hits |
+| `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse, matcher `Read\|Skill\|Bash`) | `ref_loaded` (Read OR Bash-derived), `skill_invoked` (rare — most activations bypass Skill tool) | HIGH for parent-thread Read+Bash; subagent-internal reads INVISIBLE (Fork A limitation) |
+| `plugins/mega-sdd/hooks/stop` (Stop) | `turn_end_marker` with real harness-reported `usage` (input_tokens, cache_read_input_tokens, etc.) from transcript_path | HIGH if harness invokes Stop for project CWD — verify via `hook-debug.log` |
 
-Other event types in the schema (`halt_fired`, `activation_outcome`, `plan_mode_entered`, `tier_classification_decision`) are best-effort per-skill emission via markdown convention. They depend on the model executing emit-step instructions; reliability is lower than hook-emitted events. Iter 68 analysis treats hook-emitted events as ground truth and skill-emitted events as supplementary.
+**Diagnostic side-channel (Iter 67.5):** the Stop hook also writes one JSON line per fire to `<project>/.mega-sdd/memory/hook-debug.log`, regardless of telemetry-exists gate (but still honoring opt-out). If this file doesn't grow during a real turn, the Stop hook is NOT being invoked — that's a Claude Code harness / installation problem, not a hook bug.
 
-**Aggregation:** `turn_loaded_summary` (the §9.4 metric event) is NOT emitted live — Iter 68 derives it offline by rolling up `ref_loaded` events between adjacent `turn_end_marker` events. This was the correct decision: per-turn aggregation requires knowing the turn boundary, which only the Stop hook reliably knows.
+**Parked events (PARKED — Fork-B-future, NOT emitted in Fork A):** `iter_classifier_output`, `iter_classifier_drift`, `replan_triggered`, `revalidate_triggered`, `replan_budget_exceeded`, `revalidate_budget_exceeded`, `plan_mode_entered`, `act_mode_entered`, `plan_act_transition`, `tier_classification_decision`, `turn_loaded_summary` (derived offline). See telemetry-schema.md §Fork-B-future for rationale per event.
 
-**Opt-out:** `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` (per-invocation) OR `telemetry: false` in `<project>/.mega-sdd/config.yaml` (persistent). Hooks honor both — the persistent setting suppresses ALL emission including hook-side.
+**Best-effort events (skill-body markdown emission — UNRELIABLE):** `halt_fired`, `activation_outcome`. Schema documents these as supplementary; Iter 68 analysis cannot rely on them being present.
 
-**Soak gates** (Iter 68 analysis prerequisite — REFRAMED at Iter 66a):
-- ≥ 14 calendar days elapsed since **Iter 66a ship** (not Iter 64 — pre-66a data is empty)
-- ≥ 10 real chain runs logged with non-empty `ref_loaded` + `turn_end_marker` events
-- **PRE-CONDITION for soak activation:** Iter 66a hooks verified writing telemetry.jsonl in at least ONE real chain run on a real project. Until then, soak window is NOT counting.
-- Insufficient data → Iter 68 emits "DATA INSUFFICIENT" report; SP3 gate stays closed
+**Opt-out:** `telemetry: false` in `<project>/.mega-sdd/config.yaml` suppresses ALL hook writes (including diagnostic log). `--no-telemetry` flag on slash commands is advisory only (hooks don't see slash-command flags).
+
+**Soak gates (REVISED Iter 67.5):**
+- ≥ 14 calendar days elapsed since **Iter 67.5 verified-write date** (clock starts on first real run that produces ≥1 `ref_loaded` AND ≥1 `turn_end_marker` in the same session)
+- ≥ 10 real chain runs with non-empty `turn_end_marker` events
+- `hook-debug.log` confirms Stop hook fires for the project CWD (a sanity check before counting any session toward the 10-run threshold)
+
+Iter 68 cannot analyze classifier accuracy / recursion budget distribution / Plan/Act behavior — those are Fork-B-future. Iter 68 in Fork A is limited to: ref-load distribution per skill, per-turn token cost from harness numbers, Bash-vs-Read coverage estimate.
 
 ---
 
-## Plan/Act Mode (v3.46.0+, Iter 67 — COMPLEXITY-GATED via Iter 65 classifier)
+## Plan/Act Mode (v3.46.0+ docs; Iter 67 runtime RETRACTED at Iter 67.5)
+
+> **Status (Iter 67.5):** the Iter 67 claim that orchestrate-flow Step 2.95 gates Plan vs Act mode per classifier output is RETRACTED. Audit §E verified: no `.plan-pending` state file has ever been written, zero `plan_mode_entered` / `act_mode_entered` / `plan_act_transition` events in real-run telemetry, no skill body actually reads the classifier output (which itself isn't produced — see §Iter Ceremony Classifier retraction). The entire dependency chain (classifier → output → branch → state file → telemetry) was prose.
+>
+> Plan/Act gating is PARKED as Fork-B-future. The Cline-pattern semantic below is preserved as design intent for the eventual control plane; it is NOT enforced in Fork A. Users can still explicitly request "plan first" or "act directly" in their prompts — that's a manual instruction, not a runtime gate.
+
+
 
 Per spec §4.4. Cline-pattern dual-mode adopted but **NOT universal default** — gated by complexity classifier output. Economics: cheap iters skip plan ceremony; expensive iters require explicit two-phase.
 
@@ -284,44 +318,44 @@ Plan mode is NOT a validator. Validators are leaf nodes per Anti-Recursive Guard
 
 Default behavior (no flags): follow classifier output → PATCH=direct-act / MINOR=act / MAJOR=plan-first.
 
-**Runtime status (v3.46.0+, Iter 67):** orchestrate-flow Step 2.95 (NEW) gates the mode decision; reads Iter 65 EP1 classifier output → branches to Plan or Act. Implementation: markdown-driven procedural logic; no new bash scripts (the `.plan-pending` state file is JSON managed by skill bodies).
+**Runtime status (RETRACTED Iter 67.5):** Iter 67 claimed orchestrate-flow Step 2.95 gates mode based on classifier output. Audit verified zero gating ever executed (cascade from broken classifier wire-up). Step 2.95 in SKILL.md is markdown prose with no enforcement layer; treat as advisory intent for the human reader, not runtime behavior. Real Plan-vs-Act decisions are human-driven via explicit user direction.
 
-## Soak Shakedown Protocol (v3.46.0+, Iter 67 — last runtime change before soak freeze)
+## Soak Shakedown Protocol (v3.48.0+, Iter 67.5 — Fork A scope)
 
-Per user mandate at Iter 67 ship: **first 1-2 real chain runs after Iter 67 don't count toward soak threshold until verified.**
+> **Iter 67.5 revision:** the original shakedown protocol assumed Iter 65 + 67 runtime were active. Both are now retracted. Shakedown discipline still applies — but only to the Fork A telemetry surfaces (hooks). Re-stated below.
 
-**Why:** Iter 65 (classifier + guard runtime) + Iter 67 (Plan/Act gating) both active same-day, zero wild-history. Verify interaction doesn't bug-fail real chain runs BEFORE accumulating ≥10 runs on potentially-broken stack.
+**First 1-2 real chain runs after Iter 67.5 ship don't count toward soak threshold until verified.**
 
-### Shakedown rules
+**Why:** Iter 67.5 changes hook semantics (added Bash matcher, instrumented Stop hook, transcript-usage extraction). Want one or two real runs to confirm the hooks emit cleanly + `hook-debug.log` shows the harness invokes Stop.
 
-1. **First 1-2 real chain runs after Iter 67 ship = SHAKEDOWN.**
-2. Telemetry events from shakedown runs MARKED with `payload.shakedown: true` (skill bodies emit this flag when run is among first 2 post-Iter-67).
-3. Iter 68 analysis EXCLUDES shakedown-marked runs from soak count.
-4. If shakedown runs reveal interaction bugs between Iter 65 + Iter 67 + 64 telemetry: **fix-forward day-0/1 while window still homogeneous**. Schema additions allowed per LOCKED schema rules.
-5. After 2 shakedown runs complete cleanly → freeze runtime changes; soak window starts counting toward ≥10 real runs.
+### Shakedown rules (Fork A — Iter 67.5)
 
-### What "real chain run" means for soak counting
+1. **First 1-2 real chain runs after Iter 67.5 ship = SHAKEDOWN.** Operationally identified by the user (no `payload.shakedown` marker — skill-body convention is unreliable; the user just remembers).
+2. Iter 68 analysis EXCLUDES the first 1-2 sessions from the ≥10 threshold.
+3. If shakedown reveals hook bugs (e.g., Stop hook still not firing, `hook-debug.log` empty, transcript usage extraction broken): fix-forward immediately; shakedown clock resets.
+4. After 2 shakedown runs complete cleanly + `hook-debug.log` has lines + `turn_end_marker` events appear with non-empty `usage` payload → freeze hooks; soak window starts counting toward ≥10 real runs.
 
-- User invokes `/mega-sdd:auto` (or `/mega-sdd:orchestrate-flow`) on a real project
-- Chain produces at least one skill invocation event with handoff completed
-- NOT a test run (`payload.is_test_run: true` excluded)
-- NOT a shakedown run (`payload.shakedown: true` excluded for first 2)
-- Skill chain involves writes (vault generation, binding, units, bolts, etc.) — read-only diagnostic runs don't count
+### What "real chain run" means for soak counting (Fork A)
 
-### Freeze period
+- User invokes a mega-sdd skill (auto, orchestrate-flow, generate-intent, etc.) on a real project (`.mega-sdd/` exists in CWD)
+- Chain produces ≥1 `ref_loaded` AND ≥1 `turn_end_marker` event in the same `session_id`
+- Skill chain involves writes (vault generation, binding, units, bolts) — read-only diagnostic runs don't count
+- First 1-2 such sessions = shakedown; remaining count toward the ≥10 threshold
 
-After Iter 67 ships + 1-2 shakedown runs verified: **NO runtime changes until Iter 66 (post-soak)**. This includes:
-- No new skills
-- No new halt enum entries
-- No new event_types in telemetry schema (additions ALLOWED per mid-soak rules but discouraged unless necessary)
-- Doc-only / cosmetic edits are OK (PATCH-classified per Iter 65 classifier)
+### Freeze period (Fork A)
 
-Iter 66 ships ONLY when:
-- ≥ 14 calendar days elapsed since Iter 64 ship
+After Iter 67.5 ships + 1-2 shakedown sessions verified: **NO hook changes until Iter 68 analyze ships**. This includes:
+- No new hooks
+- No matcher changes
+- No new event_types (hooks-emitted)
+- Doc-only / cosmetic edits are OK
+
+Iter 68 ships ONLY when:
+- ≥ 14 calendar days elapsed since Iter 67.5 verified-write date
 - ≥ 10 non-shakedown real chain runs logged
-- Iter 68 analysis completed → manifest tuning recommendations available
+- `hook-debug.log` confirms Stop hook fires reliably
 
-If freeze period reveals critical bug requiring runtime change: emergency fix-forward allowed, but RESTARTS the shakedown clock (next 2 runs after fix-forward = shakedown again).
+If freeze period reveals critical hook bug: emergency fix-forward allowed, but RESTARTS the shakedown clock (next 2 sessions after fix-forward = shakedown again).
 
 ## Co-author attribution
 
