@@ -86,10 +86,14 @@ This command transparently invokes diagnostic skills at appropriate phases — u
 | Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
 | After `execute-bolts` | `list-modules` | Per-module status in chain summary |
 | At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
-| At chain end | `emit-fsd` (Iter 54) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations |
+| At chain end | `emit-fsd` (Iter 54; **OPT-IN since Iter 63 v3.42.0+** — requires `--with-fsd` flag; expensive pandoc/LaTeX deps) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
 | At chain end | Memory review prompt | Surface pending learning suggestions |
 
-**Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`, `--no-fsd` flags available for debugging or non-standard workflows.
+**Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
+
+**Opt-in only (Iter 63 v3.42.0+):**
+- `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; expensive pandoc/LaTeX deps; user can invoke `/mega-sdd:emit-fsd` manually for one-off)
+- `--no-fsd` — legacy alias / no-op since Iter 63 v3.42.0+ (was opt-out pre-v3.42.0; now FSD is opt-in)
 
 ## Convergence loops (v3.12+, Iter 19)
 

@@ -1,6 +1,6 @@
 ---
 description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills with single confirmation. Halt-pauses on blockers. `--deep` chains to pipeline-end; `--resume` continues a paused chain from CWD state.
-argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto] [--memory-off] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md]
+argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto] [--memory-off] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--with-fsd]
 ---
 
 Invoke `mega-sdd:orchestrate-flow` via the Skill tool.
@@ -20,6 +20,7 @@ Argument parsing:
   - `--max-cycles=N` (v2.3+, Iter 19) — convergence loop iteration cap (default N=3)
   - `--strict-quality` — promote lint-units / analyze-parallelism warnings to halts
   - `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` (v2.2+) — opt out of individual auto-invoked diagnostics
+  - `--with-fsd` (v3.42.0+, Iter 63) — OPT-IN auto FSD generation at chain end (default: off since Iter 63; expensive pandoc/LaTeX). Legacy `--no-fsd` still accepted as no-op back-compat.
 
 Follow `skills/orchestrate-flow/SKILL.md` procedure. Default behavior: 3-sub-skill chain with single upfront confirmation. `--deep` lifts the cap and chains to pipeline-end; `--resume` continues from current CWD state.
 
