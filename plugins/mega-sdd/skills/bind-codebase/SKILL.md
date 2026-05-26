@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.10.4
+version: 1.10.5
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -38,12 +38,10 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
    **v1.10+, Iter 46 (D1-006 closure) — codebase-map shared-snapshot reuse (semantics corrected Iter 48 fix-forward):**
    - Check if `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` exists per `plugins/mega-sdd/references/shared-snapshot-schema.md §scan-codebase`
    - If exists, parse and compare `codebase_map_sha256` field to the just-read codebase-map.md's actual sha256:
-     - MATCH → snapshot is fresh; record `binding_metadata.codebase_map_provenance = "snapshot-verified"` in binding.md header. Bind-codebase still reads codebase-map.md §2 entries (as before — there's no per-source-file re-tokenization to skip), but downstream consumers (generate-units, execute-bolts) can trust the codebase-map is current without re-running scan-codebase. **Observable savings:** orchestrate-flow Step 3 chain optimization (v3.4.0+, Iter 53 consumer wiring closure) reads this field and removes scan-codebase from the chain when `snapshot-verified` AND source files unchanged. Pre-Iter-53, the field was producer-only emission — no consumer read it.
+     - MATCH → snapshot is fresh; record `binding_metadata.codebase_map_provenance = "snapshot-verified"` in binding.md header. Downstream consumers (generate-units, execute-bolts) can trust the codebase-map is current without re-running scan-codebase. **Observable savings:** orchestrate-flow Step 3 chain optimization reads this field and removes scan-codebase from the chain when `snapshot-verified` AND source files unchanged.
      - MISMATCH → snapshot is stale; record `binding_metadata.codebase_map_provenance = "snapshot-stale"` in binding.md header. Suggest re-running scan-codebase before next bind.
-     - Snapshot absent → record `binding_metadata.codebase_map_provenance = "no-snapshot"` (pre-Iter-46 baseline behavior).
+     - Snapshot absent → record `binding_metadata.codebase_map_provenance = "no-snapshot"`.
    - Snapshot reuse is a freshness attestation, NOT a parsing shortcut. It enables orchestrate-flow + downstream skills to skip redundant scan-codebase invocations across short-window chained runs. Binding correctness is unchanged whether reuse confirms or rejects.
-
-   > **Iter 48 fix-forward note:** the Iter 46 version of this section claimed "skip per-source-file re-tokenization (~30-50% I/O saving)" but bind-codebase Step 2 has never re-tokenized — it consumes the pre-extracted §2 entries from codebase-map.md. The corrected wording above clarifies the actual benefit: a freshness attestation that downstream skills can trust without re-running scan-codebase. The 30-50% savings number applies at the orchestrate-flow chain level (avoid scan re-run), not within bind-codebase itself.
 
    **v1.9.3+ Iter 29 scope propagation (P1-2 audit fix)**: When `vault.json` contains a `scope` field (v1.12+ multi-scope vault per Iter 28), persist `scope_metadata` to `binding.md` header and emit `scope:` block in handoff YAML per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract. Scope-aware binding behavior:
    - If `scope_metadata.prd_sections_used` lists specific sections → constrain claim validation to those sections (skip claims from other scopes' sections)
