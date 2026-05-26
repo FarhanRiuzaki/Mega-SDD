@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.43.0] - 2026-05-26
+
+### Iter 63.5 — OBVIOUS skill body trim (MINOR per classifier dogfood Path A)
+
+**Conservative scope per user-mandated guardrail.** Iter 63.5 was originally framed as a chase-the-line-count refactor (1267→700, 1012→600 etc.). Post-ship review of Iter 63 caught the framing structurally repeats the CHANGELOG-is-hot-context error: blind move-to-references only reduces hot context if moved content is SPECIALIST/COLD; if HOT (loaded every session), trim adds indirection without win.
+
+**User decision (verbatim, Indonesian):** "line target (700/600/500) BUKAN gate. Jangan kejar angka dengan mindahin konten borderline. Kalau ragu → biarin di body. Konten ambigu ditahan ke Iter 66, diputusin pakai data soak."
+
+**Iter 63.5 scope (locked):** relokasi OBVIOUS / zero-judgment ONLY —
+- Version-stamp prose (`**v1.10+, Iter 46:**` + multi-paragraph rationale)
+- "Iter N fix-forward note" historical blocks
+- "Pre-Iter-N" historical state explanations
+- "Closes Iter N audit ..." prefix prose
+- "Previously, X did Y" historical narratives
+
+NOT TOUCHED — refs where hot vs cold uncertain. Ambiguous content stays in body → Iter 66 decides with soak data.
+
+**Classifier dogfood (Path A):**
+
+Per Iter 63 classifier rules in `plugins/mega-sdd/CLAUDE.md`:
+- files_changed: 9 (5 skill bodies + plugin.json + 2 READMEs + this CHANGELOG entry) → in 5-15 range → MINOR
+- existing skill body modified → MINOR trigger ✓
+- new halt-enum entry? no
+- new field in handoff-contract? no
+- new skill dir? no
+- BREAKING CHANGE marker? no
+- → Classifier output: **MINOR** ✓ matches release decision
+
+**5 atomic per-skill trim commits + 3-criterion semantic verification each:**
+
+| Skill | Before | After | Removed |
+|---|---|---|---|
+| `bind-codebase` | 572 | 570 | Iter 48 fix-forward note + 1 Pre-Iter-53 sentence + 1 (pre-Iter-46) parenthetical |
+| `scan-codebase` | 607 | 605 | 1 Iter 47/48 fix-forward block (~3 sentences of historical relocation context) + 1 audit-closure prefix |
+| `orchestrate-flow` | 764 | 763 | 1 Iter 43 fix-forward note + 2 audit-closure rationale sentences (D3-001, D3-002) |
+| `execute-bolts` | 1012 | 1012 | 3 prose blocks removed but offset by replacement summaries (Iter 38/40 audit closures, Iter 56 fix-forward note, Iter 45 "Previously" historical) — net stable line count BUT pure narrative purged |
+| `emit-fsd` | 246 | 244 | 1 Pre-Iter-61 historical block |
+
+**Aggregate skill body delta:** 8,174 → 8,167 lines (≈-7 net). Honest conservative scope per user mandate; line count NOT a gate.
+
+**3-criterion semantic verification (PASSED per commit):**
+
+For each per-skill commit:
+- (a) **Load-pointer integrity**: N/A — no new ref files created this iter (no moves to refs; pure deletion of historical narrative)
+- (b) **No ref orphan**: N/A — no refs created
+- (c) **End-to-end coherence**: behavioral spec preserved in every commit; only "WHY we changed" (historical rationale) removed, never "WHAT to do" (procedure). Git log preserves the removed history; CHANGELOG-ARCHIVE.md has the closure context.
+
+**4 skills SKIPPED per "if ragu → biarin di body" rule:**
+
+- `generate-intent` (1,267 lines) — 0 obvious version-stamp markers caught by narrow grep pattern; deeper prose harder to safely classify obvious-vs-borderline; defer to Iter 66 with soak data
+- `extract-intelligence` (335 lines) — already trim; 0 obvious markers
+- `generate-units` (826 lines) — 1 "Closes Iter 38 audit Pattern F structural risk" prefix but the structural-risk explanation is load-bearing for understanding adversarial review rationale (borderline = keep)
+- `diff-vault` (514 lines) — 0 obvious markers
+
+These 4 stay UNTOUCHED. Iter 66 (SP2 lazy ref loading) will decide their fate with soak telemetry data from Iter 64-68 collection window.
+
+**What this iter does NOT claim:**
+
+- **NOT a hot-context-window win** at runtime — skill bodies are still 99.9% intact; cumulative deletion is ≈7 lines across 5 skills. The session-load impact at runtime is negligible. This iter's value is **process integrity** (dogfooding the classifier; demonstrating semantic verification > line counts; setting precedent for OBVIOUS-only scope).
+- NOT a precursor to "deeper trim later" via the same pattern — Iter 66 will use soak data to make hot/cold decisions, not pattern-match prose. The OBVIOUS pattern is exhausted here.
+
+**Win shipped this iter:**
+
+1. **Classifier dogfood** — first iter operating under Iter 63 classifier rules; MINOR classification correctly applied per deterministic criteria, full ceremony (CHANGELOG entry + this spec section + per-skill atomic commits with semantic verification gate).
+2. **Pattern precedent** — semantic verification (3-criterion) used over line counts; "OBVIOUS only" + "if ragu → biarin" rules dogfooded.
+3. **Cold narrative cleanup** — historical rationale that git log + CHANGELOG already preserved is removed from hot skill bodies. Each removal small (≈1-3 lines), aggregate small but principled.
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/bind-codebase/SKILL.md` — historical narrative trim; version 1.10.4 → 1.10.5
+- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` — fix-forward note + audit-closure prose trim; version 2.7.2 → 2.7.3
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — historical narrative trim; version 3.8.0 → 3.8.1
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — historical narrative trim; version 2.10.1 → 2.10.2
+- `plugins/mega-sdd/skills/emit-fsd/SKILL.md` — Pre-Iter-61 historical block removed; version 1.1.1 → 1.1.2
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.42.0 → 3.43.0
+- `plugins/mega-sdd/README.md` + `README.md` (root) — version refs
+- `CHANGELOG.md` — this entry
+
+**Skill version bumps:**
+- 5 PATCH bumps per per-skill commit (all skills trimmed)
+
+**Plugin v3.42.0 → v3.43.0** (MINOR per classifier dogfood; deterministic — multiple skill bodies modified triggers MINOR even though aggregate change is small. Honest classification > convenient classification.)
+
+**Next:** Iter 64 — 3-tier context architecture + telemetry collection start (with LOCKED schema per Iter 63 post-ship review). Iter 66 (lazy ref loading) inherits soak data to make hot/cold decisions on the 4 skipped skills + ambiguous content in the 5 trimmed skills.
+
+**Process honesty note:** spec §4.0 Iter 63.5 entry described per-skill targets (1267→700 etc.) as aspirational. Reality: those targets required deep restructuring + relocation that can't be done OBVIOUS-only without judgment. User correctly identified this risk pre-ship; Iter 63.5 ships scoped narrowly to honor the constraint. The aspirational targets are now Iter 66's problem (with data).
+
+---
+
 ## [3.42.0] - 2026-05-26
 
 ### Iter 63 — Performance + Sharpness SP1 (Quick Wins) — 5 of 6 deliverables shipped; 1 deferred
