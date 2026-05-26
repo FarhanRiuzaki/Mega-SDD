@@ -5,6 +5,73 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.39.1] - 2026-05-26
+
+### Iter 59 — Iter 56 audit contract sweep (C-001/002/003/004 closures)
+
+**Handoff contract completeness pass** (PATCH bump — reference doc additions only; no behavior change in skills). Closes 2 P1 HIGHs + 1 P2 MEDIUM + 1 P2 architectural prep from Iter 56 audit Dim C.
+
+**Closed findings:**
+
+**C-001 (P1) — emit-fsd handoff added to handoff-contract.md Per-skill emissions**
+
+Iter 54 shipped emit-fsd with 7 metrics fields but never added a `### emit-fsd` block to handoff-contract.md `## Per-skill expected emissions`. All emit-fsd handoffs bypassed Iter 33 F4 type-check gate.
+
+Iter 59 adds `### emit-fsd (Iter 54, contract block added Iter 59 per C-001)` block with full TYPE annotations per field:
+- `sections_emitted: int (≥0, ≤10)`
+- `sections_excluded: int (≥0, ≤10)`
+- `citations_count: int (≥0)`
+- `drift_callouts_count: int (≥0)`
+- `mode: enum (pre-dev | post-dev)`
+- `pdf_emitted: bool`
+- `fallback_format: enum (null | html | markdown)`
+
+Plus REQUIRED/CONDITIONAL severity per artifact path.
+
+**C-002 (P1) — install-deps handoff added to handoff-contract.md Per-skill emissions**
+
+Same gap as C-001 but for Iter 55. install-deps handoff fields untyped → bypass schema gate.
+
+Iter 59 adds `### install-deps (Iter 55, contract block added Iter 59 per C-002)` block:
+- `tools_audited: int (≥0)`
+- `tools_already_present: int (≥0)`
+- `tools_installed: int (≥0)`
+- `tools_failed: int (≥0)`
+- `tools_sudo_pending: int (≥0)`
+- `detected_os: enum (macos | linux | wsl | windows-bash | unknown)`
+- `detected_pkg_mgr: enum (brew | apt | dnf | pacman | apk | winget | scoop | choco | cargo-fallback | none)`
+
+**C-003 (P2) — `acceptance_test_concerns` declared in execute-bolts contract**
+
+Iter 53 added `acceptance_test_concerns: []` to execute-bolts handoff metrics block (the field designed specifically to close producer-only debt) but never declared in handoff-contract.md. Iter 59 closure adds the TYPE annotation `array<object {unit: string, concern: string}>` to execute-bolts Per-skill block via extension subsection.
+
+Iter 59 also extends execute-bolts `status: halted` enumeration in handoff-contract to include the 2 new halts from Iter 58 (`module_blocked_by`, `verify_unit_writable`) + `partial_state_corrupt` (Iter 40) that were previously missing from the halt list.
+
+**C-004 (P2 partial) — `quality_gate_failed` subtype enum**
+
+Iter 58 added `quality_gate_failed` subtype enum to vault-contract.md description block. Iter 59 cross-references it from handoff-contract emit-fsd halted-status: documents that emit-fsd halts on `quality_gate_failed` with `subtype: pdf_render_failed | template_slot_unfilled` per vault-contract Iter 58 closure. Closes the schema half of C-004; behavioral consumer dispatch (orchestrate-flow Step 6.b validation) already correct.
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` — 2 new Per-skill blocks (emit-fsd + install-deps with full TYPE annotations) + 1 execute-bolts extension subsection (acceptance_test_concerns TYPE + halted-status extension) + cross-ref to quality_gate_failed subtypes
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.39.0 → 3.39.1
+- `plugins/mega-sdd/README.md` — version refs
+- `README.md` (root) — version refs
+- `CHANGELOG.md` — this entry
+
+**Skill version bumps:**
+- None (reference doc additions only; no skill body behavior change)
+
+**Plugin v3.39.0 → v3.39.1** (PATCH — contract doc additions; no breaking change).
+
+**Closure progress:** Iter 56 audit (38 findings) → Iter 57 (3 P1) → Iter 58 (3 P1 + 2 P2) → Iter 59 (2 P1 + 2 P2). Total closed: 8 P1 + 4 P2 = 12 of 38. Remaining for Iter 60-61: 1 P1 architectural (C-005 F4 bypass tightening) + 18 P2 + 8 P3.
+
+**Note on C-005 (next iter):** Iter 59 closures DEPEND on Iter 60's F4 bypass tightening to make the TYPE annotations enforceable. Currently Iter 33 F4 bypass rule says "fields without TYPE annotation bypass type check" — so the annotations added in Iter 59 are ADVISORY until Iter 60 flips the bypass default. Iter 60 will (a) flip F4 bypass to halt-against-author + (b) sweep remaining per-skill metric fields without TYPE annotations + (c) bump plugin to v3.40.0 MINOR (anti-halu rail behavior change).
+
+**Audit:** docs/superpowers/audits/2026-05-26-iter-56-v3.38.0-deep-audit.md §C-001/002/003/004.
+
+---
+
 ## [3.39.0] - 2026-05-26
 
 ### Iter 58 — Iter 56 audit halt taxonomy sweep (A1-001/002/003 + A2-001/002 closures)
