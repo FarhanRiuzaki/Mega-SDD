@@ -1,14 +1,31 @@
-# Telemetry Schema — LOCKED Iter 64 ship (v3.44.0+)
+# Telemetry Schema — LOCKED Iter 64 ship (v3.44.0+, Iter 66a v3.47.0+ emission rewire)
 
 > **DAY-1 CAPTURE REQUIRED — cannot be backfilled.** Whatever Iter 64 does not log, Iter 68 analysis cannot recover. Schema fields are FROZEN at Iter 64 ship; cannot evolve mid-soak.
 >
 > Source of truth for telemetry event format. Consumed by: skills that emit telemetry events (`memory` + indirectly all skills via convention), Iter 68 analysis (deferred), Iter 69 budget tuning (deferred), Iter 70 consolidation decisions (deferred).
+>
+> **Iter 66a correction (v3.47.0+):** Iter 64 schema-lock was correct, but emission was broken — skill bodies were INSTRUCTED to emit (markdown convention), zero skill bodies actually emitted (verified: `grep -rE "token_count|loaded_per_turn|>> .*telemetry" plugins/mega-sdd/skills/` returned 0 hits). Iter 66a fixes this by emitting via **Claude Code hooks** (PostToolUse + Stop), NOT markdown instructions. Hooks fire in harness with access to tool_input/tool_response — more accurate than model self-counting (model cannot precisely count its own context tokens; harness can). Schema unchanged; only emission mechanism replaced.
 
 ## Storage location
 
 `<project>/.mega-sdd/memory/telemetry.jsonl` — append-only, line-delimited JSON, one event per line.
 
-Opt-out: `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` suppresses all writes. Existing telemetry.jsonl preserved (not deleted).
+Opt-out: `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` suppresses all writes. Existing telemetry.jsonl preserved (not deleted). Persistent opt-out via `<project>/.mega-sdd/config.yaml`: `telemetry: false`.
+
+## Emission mechanism (Iter 66a — v3.47.0+)
+
+| Event type | Emitted by | When |
+|---|---|---|
+| `ref_loaded` | `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse hook, matcher=`Read`) | Every Claude Code `Read` of a mega-sdd-relevant path (skills/, references/, CLAUDE.md, `.mega-sdd/vaults/`, `.mega-sdd/codebase/`, `.mega-sdd/knowledge-base/`) |
+| `skill_invoked` | `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse hook, matcher=`Skill`) | Every `Skill` invocation with name `mega-sdd:*` OR `using-mega-sdd` |
+| `turn_end_marker` | `plugins/mega-sdd/hooks/stop` (Stop hook) | End of every agent turn (only if telemetry.jsonl already exists) |
+| `iter_classifier_output` / `iter_classifier_drift` | `plugins/mega-sdd/scripts/classify-iter.sh` | EP1 + EP2 in orchestrate-flow chain |
+| `replan_triggered` / `revalidate_triggered` / `*_budget_exceeded` | `plugins/mega-sdd/scripts/check-recursion-budget.sh` | Anti-recursive guard increments + cap hits |
+| `halt_fired` / `activation_outcome` / `plan_mode_entered` / etc. | Skill body markdown convention (best-effort) | Per-skill emission points; less reliable than hook-emitted events |
+
+**Why hooks over markdown:** the model cannot count its own context tokens precisely (schema even writes `estimated_tokens`). Hooks run in the Claude Code harness with deterministic access to `tool_input` + `tool_response` → exact byte/line counts. Markdown-instructed emission was Iter 64's design choice; Iter 66a (post-empirical-gap-discovery) replaced it.
+
+**Hook registration:** see `plugins/mega-sdd/hooks/hooks.json` — registers PostToolUse (matcher `Read|Skill`) + Stop (matcher `""`) handlers. Both async (telemetry never blocks tool execution or turn completion).
 
 ## Event schema (LOCKED)
 
@@ -16,7 +33,7 @@ Opt-out: `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-fl
 {
   "ts": "<ISO8601 timestamp>",
   "skill": "<skill name, e.g., generate-intent>",
-  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary | replan_triggered | revalidate_triggered | replan_budget_exceeded | revalidate_budget_exceeded | plan_mode_entered | act_mode_entered | plan_act_transition",
+  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary | turn_end_marker | replan_triggered | revalidate_triggered | replan_budget_exceeded | revalidate_budget_exceeded | plan_mode_entered | act_mode_entered | plan_act_transition",
   "turn_id": "<UUID per agent turn — same across events in same turn>",
   "session_id": "<UUID per Claude Code session — same across turns in same session>",
 
@@ -107,7 +124,10 @@ Emitted when EP1 output != EP2 output (scope grew during work). Required: `iter_
 Emitted at end of skill body execution. Required: `ts`, `skill`, `turn_id`, `session_id`, `activation_outcome` block populated.
 
 ### `turn_loaded_summary` (THE metric event)
-Emitted once per agent turn — aggregate of all `ref_loaded` events in the turn. Required: `ts`, `turn_id`, `loaded_per_turn` block fully populated.
+Emitted once per agent turn — aggregate of all `ref_loaded` events in the turn. Required: `ts`, `turn_id`, `loaded_per_turn` block fully populated. **Iter 66a:** populated by Iter 68 aggregation pass (rolls up `ref_loaded` events between two adjacent `turn_end_marker` events). Hooks emit `ref_loaded` per-event + `turn_end_marker` per-turn; the aggregate `turn_loaded_summary` is derived offline, not emitted live (model cannot count its own context tokens accurately enough mid-turn).
+
+### `turn_end_marker` (Iter 66a — v3.47.0+)
+Emitted by the Stop hook (`plugins/mega-sdd/hooks/stop`) when an agent turn completes. Enables Iter 68 to delimit per-turn `ref_loaded` windows. Required: `ts`, `session_id`, `hook_source: "Stop"`, `payload: {}`. Only fires if `<cwd>/.mega-sdd/memory/telemetry.jsonl` already exists (avoids polluting non-mega-sdd projects with empty `.mega-sdd/` directories on every Stop event).
 
 ### `replan_triggered` (Iter 65 — anti-recursive guard instrumentation)
 Emitted by `check-recursion-budget.sh --action=increment-replan` when a re-plan starts. Required: `ts`, `turn_id`, `session_id`, `payload`:
