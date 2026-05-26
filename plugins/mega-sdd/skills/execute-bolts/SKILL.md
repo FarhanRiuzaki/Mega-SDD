@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.10.1
+version: 2.10.2
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -329,7 +329,7 @@ f. **Partial-state contract (v2.0 schema as of Iter 45 — saga compensating act
      - **`rollback_hints[]`** (NEW v2.0, Iter 45): harvested from bolt-report.md `## Rollback hints` section. Each entry: `{step_id, step_type (canonical taxonomy below), evidence (1-line what happened), compensating_action (literal shell command OR "(none — manual review required)"), idempotent (bool), applied_at (null until --rollback runs the action)}`.
    - Resume reads partial-state, doesn't start from zero
    - After 3 partial-state attempts → halt `bolt_repeated_partial_failure`
-   - **Resume-time integrity check (v2.7.3+, Iter 40 — silent-failure path closure):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Previously: orchestrator silently overwrote corrupt state with fresh state, hiding the original recovery context. Closes Iter 38 audit finding D3-003. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
+   - **Resume-time integrity check (v2.7.3+):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
    - **Malformed rollback_hints check (v2.9.0+, Iter 45):** if partial-state.json v2.0 parses but `rollback_hints[]` entries are missing required fields OR reference unknown `step_type` → emit halt `partial_state_corrupt` with details `{..., malformed_hints: [<entry indices + reason>]}`. Reuses Iter 40 halt envelope; no new halt type. Resolution: user inspects bolt-report.md to reconstruct hints OR proceeds with `--resume` (forward-only, no rollback) accepting risk.
 
    **Step type canonical taxonomy (Iter 45)** — bolt subagent classifies each significant step into one of these when emitting rollback hint to bolt-report.md:
@@ -366,7 +366,7 @@ f. **Partial-state contract (v2.0 schema as of Iter 45 — saga compensating act
 
 ### Saga compensating actions (v2.9.0+, Iter 45 — `--rollback` flag)
 
-Closes Iter 38 audit Pattern D (D3-009: rollback undefined). Previously the plugin used forward-only resume — `--resume` retries the failing step but cannot undo non-idempotent prior steps (composer dep adds, migrations, external API calls). v2.9.0+ partial-state.json v2.0 captures `rollback_hints[]` per step; `--rollback` applies them in reverse order.
+Forward-only `--resume` retries failing steps but cannot undo non-idempotent prior steps (composer dep adds, migrations, external API calls). `--rollback` applies `rollback_hints[]` captured in partial-state.json v2.0 in reverse order with per-step confirmation.
 
 **Bolt subagent contract (per `references/bolt-dispatch-prompt.md` §Rollback hints):**
 
@@ -401,7 +401,7 @@ On crash: execute-bolts harvests this section + writes `rollback_hints[]` array 
      [N] cancel; review partial-state.json manually
    ```
 
-   **Default = `[I] interactive` (Iter 56 fix-forward, B-P1/D1):** Iter 45 docs claimed "default safe for non-idempotent" but actual menu had `[Y]` first which batch-applied including non-idempotent actions. Iter 56 audit (Dim D, finding D1) flagged this as anti-halu rail break; fix flips menu order so `[I]` is default + relabels `[Y]` to make batch-apply behavior explicit. Non-idempotent compensating actions (composer dep removes, migration rollbacks) NEVER auto-run without per-step user approval.
+   **Default = `[I] interactive`** — non-idempotent compensating actions (composer dep removes, migration rollbacks) NEVER auto-run without per-step user approval.
 
 4. After each action runs: write `applied_at: <ISO8601>` back to partial-state.json (so partial rollback can be resumed).
 5. If all actions complete: rename partial-state.json to `.rolled-back-<ISO8601>` for forensics; bolt slot is now clean.
@@ -410,7 +410,7 @@ On crash: execute-bolts harvests this section + writes `rollback_hints[]` array 
 - Auto-rollback on crash (user-initiated only; auto-rollback compounds non-idempotent errors)
 - Cross-bolt saga (rollback scope = single bolt U-XXX; batch-level too risky)
 - DB introspection for `migration_executed` rollback (hint says rollback last migration; user accepts risk via per-action confirmation)
-   - **Resume-time integrity check (v2.7.3+, Iter 40 — silent-failure path closure):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Previously: orchestrator silently overwrote corrupt state with fresh state, hiding the original recovery context. Closes Iter 38 audit finding D3-003. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
+   - **Resume-time integrity check (v2.7.3+):** before consuming partial-state, attempt JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Resolution: rename corrupt file to suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that corrupt file is moved) OR run without `--resume` to restart bolt batch from scratch.
 
    ```yaml
    # Example partial_state_corrupt envelope:
