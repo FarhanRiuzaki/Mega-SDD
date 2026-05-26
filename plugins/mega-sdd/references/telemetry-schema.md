@@ -16,7 +16,7 @@ Opt-out: `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-fl
 {
   "ts": "<ISO8601 timestamp>",
   "skill": "<skill name, e.g., generate-intent>",
-  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary | replan_triggered | revalidate_triggered | replan_budget_exceeded | revalidate_budget_exceeded",
+  "event_type": "skill_invoked | ref_loaded | halt_fired | tier_classification_decision | iter_classifier_output | iter_classifier_drift | activation_outcome | turn_loaded_summary | replan_triggered | revalidate_triggered | replan_budget_exceeded | revalidate_budget_exceeded | plan_mode_entered | act_mode_entered | plan_act_transition",
   "turn_id": "<UUID per agent turn — same across events in same turn>",
   "session_id": "<UUID per Claude Code session — same across turns in same session>",
 
@@ -140,6 +140,59 @@ Emitted when `max_replan_count` exceeded → halt `quality_gate_failed:replan_bu
 
 ### `revalidate_budget_exceeded` (Iter 65)
 Emitted when `max_revalidate_count` exceeded → halt `quality_gate_failed:revalidate_budget_exceeded` fires. Required: same structure as `replan_budget_exceeded`.
+
+### `plan_mode_entered` (Iter 67)
+Emitted when orchestrate-flow Step 2.95 branches to Plan mode (MAJOR iter or `--plan` flag). Required: `ts`, `turn_id`, `session_id`, `payload`:
+```json
+{
+  "iter_type": "PATCH | MINOR | MAJOR",
+  "trigger": "classifier_major | explicit_plan_flag | plan_then_act_flag",
+  "task_id": "<UUID>"
+}
+```
+
+### `act_mode_entered` (Iter 67)
+Emitted when orchestrate-flow Step 2.95 enters Act mode (any path). Required: `ts`, `turn_id`, `session_id`, `payload`:
+```json
+{
+  "iter_type": "PATCH | MINOR | MAJOR",
+  "trigger": "classifier_patch_direct | classifier_minor_direct | classifier_minor_act | plan_complete_transition | explicit_act_flag",
+  "task_id": "<UUID>",
+  "plan_consumed": false
+}
+```
+
+### `plan_act_transition` (Iter 67)
+Emitted when Act mode reads + consumes `.plan-pending` (transitions from Plan to Act). Required: `ts`, `turn_id`, `session_id`, `payload`:
+```json
+{
+  "task_id": "<UUID>",
+  "plan_emitted_at": "<ISO8601>",
+  "transition_at": "<ISO8601>",
+  "transition_via": "act_flag | mega_sdd_act_command | text_acknowledgment",
+  "elapsed_seconds": 0,
+  "plan_actions_count": 0,
+  "stale_plan_warning_fired": false
+}
+```
+
+## Shakedown protocol (Iter 67 — soak governance)
+
+Per CLAUDE.md §Soak Shakedown Protocol: first 1-2 real chain runs after Iter 67 ship MARKED `payload.shakedown: true` to exclude from soak ≥10 threshold until interaction verified. Marker is `payload.*` field — does not violate schema lock policy.
+
+Telemetry events from shakedown runs include `payload.shakedown: true`. Iter 68 analysis filters these out of soak count.
+
+```json
+{
+  "ts": "...",
+  "event_type": "skill_invoked",
+  "payload": {
+    "shakedown": true
+  }
+}
+```
+
+After 2 shakedown runs complete cleanly: skills stop emitting the marker (manual flip via `<project>/.mega-sdd/config.yaml` `defaults.shakedown_complete: true` OR `2 runs since Iter 67 ship date` automatic). Future runs count toward soak.
 
 ## Activation outcome labeling (the hard metric)
 

@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.46.0] - 2026-05-26
+
+### Iter 67 — Plan/Act Mode COMPLEXITY-GATED + Soak Shakedown Protocol + Runtime Freeze Begins
+
+**SP2 Iter 3 of 7.** User decision: ship day-0/early-soak alongside Iter 65, NOT mid-soak. Reasoning: Plan/Act changes loading profile in MAJOR-class runs (which dominate during TF Import Phase 2 soak); shipping mid-soak = baseline split for Iter 66 tier tuning. Day-0 ship = entire soak window measures final-form system.
+
+**Pure deterministic; no soak dependency.** Iter 67 = markdown convention + orchestrate-flow Step 2.95 (new) + commands flag docs + 3 new event_types. No new bash scripts (gating uses Iter 65 classifier output + .plan-pending JSON state file managed by skill bodies).
+
+**Classifier dogfood (Path A, MINOR):**
+- files_changed: ~7-8 (CLAUDE.md + orchestrate-flow SKILL + auto.md + orchestrate-flow.md + telemetry-schema + plugin.json + READMEs + CHANGELOG) → 5-15 range → MINOR
+- existing skill body modified (orchestrate-flow Step 2.95) → MINOR trigger ✓
+- no new halt enum entry / no new skill dir / no BREAKING marker
+- → **MINOR** ✓ (consistent with planned classification at Iter 65 ship)
+
+**Plan/Act semantic (Cline-pattern, COMPLEXITY-GATED — NOT universal default):**
+
+| Mode | Behavior |
+|---|---|
+| **Plan mode (cheap)** | Skill body LOADS but does NOT execute writes. Outputs proposed actions + acceptance criteria. Read-only. |
+| **Act mode (expensive)** | Skill body executes per procedure. File writes, commits, git ops, side-effects. |
+
+**Gating (per Iter 65 classifier):**
+
+| Iter type | Plan/Act behavior |
+|---|---|
+| **PATCH** | Direct Act. No Plan phase. Economics: PATCH iters small + non-breaking; planning overhead exceeds value. |
+| **MINOR** | Act default. `--plan` opt-in for unfamiliar territory. |
+| **MAJOR** | **Plan mode FIRST mandatory.** User reviews + transitions via `--act` flag / `/mega-sdd:act` command / explicit text. No direct-Act path without confirmation prompt. |
+
+**Plan→Act transition protocol:**
+- Plan emits to chat + writes `<project>/.mega-sdd/.plan-pending` JSON (session_id, task_id, proposed_actions, acceptance_criteria)
+- User reviews → transitions via `--act` / `/mega-sdd:act` / explicit acknowledgment
+- Act mode reads `.plan-pending`, executes, deletes on success
+- Stale-plan check (>24h OR task_id mismatch) → warning
+
+**Anti-recursion interaction (RULE 1.5 reaffirmed):** Plan mode is a PHASE, not a validator. User re-plan rejection counts as ONE `replan_triggered` event with `trigger: ambiguity_increased` — subject to max_replan cap from Iter 65. Plan does NOT trigger validate-the-validation recursion.
+
+**3 new event_types added to LOCKED schema (additive; allowed):**
+- `plan_mode_entered` (when Step 2.95 branches to Plan)
+- `act_mode_entered` (when Step 2.95 enters Act — any path)
+- `plan_act_transition` (when Act mode consumes .plan-pending)
+
+**Soak Shakedown Protocol (per user mandate at Iter 67 ship — runtime freeze begins after):**
+
+- First 1-2 real chain runs after Iter 67 ship = SHAKEDOWN. Marked `payload.shakedown: true` in telemetry.
+- Iter 68 analysis EXCLUDES shakedown-marked runs from ≥10 soak count.
+- If shakedown reveals Iter 65+67 interaction bugs → fix-forward day-0/1 while window still homogeneous.
+- After 2 clean shakedown runs → freeze runtime changes. Soak window starts counting.
+
+**Runtime FREEZE declaration (effective post-Iter-67):**
+
+After 2 clean shakedown runs (governed by `defaults.shakedown_complete: true` config OR automatic after 2 non-shakedown runs since Iter 67 ship): **NO runtime changes until Iter 66 (post-soak).** This includes:
+- No new skills
+- No new halt enum entries
+- No new event_types (additions still allowed per LOCKED schema rules but DISCOURAGED unless necessary)
+- Doc-only / cosmetic edits remain OK (PATCH-classified per Iter 65 classifier)
+
+If freeze period reveals critical bug requiring runtime change: emergency fix-forward allowed, but RESTARTS the shakedown clock (next 2 runs after fix-forward = shakedown again).
+
+**Iter 66 ships ONLY when:**
+- ≥ 14 calendar days elapsed since Iter 64 ship
+- ≥ 10 non-shakedown real chain runs logged
+- Iter 68 analysis completed → manifest tuning recommendations available
+
+**Surface changes:**
+
+- `plugins/mega-sdd/CLAUDE.md` — adds Plan/Act Mode section (complexity-gated semantics + transition protocol + anti-recursion interaction) + Soak Shakedown Protocol section (governance for next 2 runs + runtime freeze declaration)
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step 2.95 (NEW) Plan/Act gating per classifier output; version 3.9.0 → 3.10.0
+- `plugins/mega-sdd/commands/auto.md` — adds `--plan` / `--act` / `--plan-then-act` flag docs
+- `plugins/mega-sdd/commands/orchestrate-flow.md` — same flags
+- `plugins/mega-sdd/references/telemetry-schema.md` — 3 new event_types (plan_mode_entered / act_mode_entered / plan_act_transition) + shakedown payload marker convention
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.45.0 → 3.46.0
+- `plugins/mega-sdd/README.md` + `README.md` (root) — version refs
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.9.0 → 3.10.0 (MINOR — Step 2.95 new procedural branch)
+
+**Plugin v3.45.0 → v3.46.0** (MINOR per classifier dogfood; complexity-gated Plan/Act is new functionality; backward-compat — default behavior follows classifier output, opt-out via explicit flags).
+
+**Parallel work dispatched (zero runtime impact):**
+
+Path-3 background subagent gathering Fork A vs Fork B (SP3 prerequisite) non-telemetry decision inputs:
+- Host runtime capability gap matrix (Claude Code / Cline / Cursor / VSCode Agent / Antigravity 2.0)
+- User base composition signals
+- Distribution + ecosystem moat analysis
+
+Output: `docs/superpowers/research/2026-05-26-sp3-fork-decision-inputs-non-telemetry.md`. Telemetry-dependent inputs wait for Iter 68 analysis.
+
+**Soak window status: ACTIVE day 0 (post-Iter-65 + post-Iter-67); shakedown gate ACTIVE for next 1-2 real chain runs; runtime FREEZE effective after shakedown completes.**
+
+**Next:** Iter 66 (lazy reference loading per spec §4.3 MAIN LEVER) — BLOCKED until soak completes. Iter 68 analysis fires when soak gates met. SP3 fork decision waits for telemetry-driven inputs + Path-3 non-telemetry inputs.
+
+---
+
 ## [3.45.0] - 2026-05-26
 
 ### Iter 65 — Classifier + Anti-Recursive Guard RUNTIME (ships day-0 of soak; pure deterministic; final-form measurement)

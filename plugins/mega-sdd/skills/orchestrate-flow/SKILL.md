@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.9.0
+version: 3.10.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -144,6 +144,19 @@ g. **Logging**: log resolved tier summary to chain output for user audit, e.g.:
 h. **No file writes** — Step 2.8 is purely resolution; resolved tiers live in handoff metadata only.
 
 2.9. **Iter classifier EP1 invocation (v3.9.0+, Iter 65 — runtime per spec §4.2)** — BEFORE Step 3 chain build, invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 [--explicit-flag=<patch|minor|major> if user passed --iter-type=<>] --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Output JSON parsed for `iter_type` (PATCH | MINOR | MAJOR). Used by downstream skills as input to complexity-gated decisions (Iter 67 Plan/Act gating; Iter 69 budget enforcement). Telemetry event `iter_classifier_output` emitted with EP=EP1.
+
+2.95. **Plan/Act gating (v3.10.0+, Iter 67 — complexity-gated per CLAUDE.md §Plan/Act Mode)** — Read Step 2.9 EP1 classifier output. Branch:
+
+   - **iter_type=PATCH** → Direct Act mode. Continue to Step 3. (Default; can be overridden by `--plan` flag → Plan mode first.)
+   - **iter_type=MINOR** → Act mode default. If `--plan` flag → Plan mode first; else continue to Step 3 in Act.
+   - **iter_type=MAJOR** → **Plan mode FIRST mandatory.**
+     - Check for `<project>/.mega-sdd/.plan-pending` (JSON from prior Plan-mode invocation matching current task_id + session_id).
+     - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd:act` (or `--act` flag) to transition.
+     - If `.plan-pending` present + fresh + matches current task: read it; continue to Step 3 in Act mode. Delete `.plan-pending` on Act completion.
+   - **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion ("MAJOR iter without Plan phase — proceed?") before continuing.
+   - **Explicit Plan force:** `--plan-then-act` flag forces two-phase regardless of classifier.
+
+   Stale-plan check (added Iter 67): if `.plan-pending` exists from prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd:plan` or delete `.plan-pending`".
 
 3. **Build proposed chain** per `references/routing-rules.md` §Decision matrix.
    - Default mode (no `--deep`): hard cap 3 sub-skills (legacy behavior, backward-compatible).

@@ -101,6 +101,9 @@ This command transparently invokes diagnostic skills at appropriate phases — u
 - `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; expensive pandoc/LaTeX deps; user can invoke `/mega-sdd:emit-fsd` manually for one-off)
 - `--no-fsd` — legacy alias / no-op since Iter 63 v3.42.0+ (was opt-out pre-v3.42.0; now FSD is opt-in)
 - `--no-telemetry` (v3.44.0+, Iter 64) — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
+- `--plan` (v3.46.0+, Iter 67) — force Plan mode regardless of classifier output. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via `--act` flag or `/mega-sdd:act` continuation.
+- `--act` (v3.46.0+, Iter 67) — force direct Act mode regardless of classifier. For MAJOR iter, requires confirmation prompt (safety gate). Used in Plan-then-Act transition.
+- `--plan-then-act` (v3.46.0+, Iter 67) — explicit two-phase: Plan first, halt, then Act on continuation. Overrides classifier default for any iter type.
 
 ## Convergence loops (v3.12+, Iter 19)
 
