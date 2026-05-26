@@ -5,6 +5,85 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.40.0] - 2026-05-26
+
+### Iter 60 — Iter 33 F4 type-check gate bypass tightening (C-005 architectural closure)
+
+**Anti-halu rail behavior change** (MINOR bump — flips F4 default from permissive to strict). Closes the architectural P2 from Iter 56 audit Dim C: F4 bypass rule structurally weakens the schema validation gate; previously ~50 per-skill metric fields added since Iter 32 effectively bypassed type checking.
+
+**The architectural problem (Iter 56 audit C-005):**
+
+Iter 33 F4 introduced typed handoff validation:
+- handoff-contract.md declares fields with TYPE annotations (`string`, `int`, `enum`, `array<T>`, `object {...}`, etc.)
+- orchestrate-flow Step b.i validates each handoff field against its TYPE
+- On mismatch → halt `handoff_type_mismatch` (anti-halu rail #15 — prevents silent shape drift)
+
+**BUT** F4 included a bypass rule: `If TYPE annotation absent → log warn-only ("field <name> has no TYPE in schema; skipping type check"); continue`. This bypass effectively turned the gate OFF for every per-skill metric field added since Iter 32 because `handoff-contract.md §Per-skill expected emissions` documented field NAMES but not TYPES at field-level.
+
+Iter 56 audit (Dim C) caught:
+- emit-fsd (Iter 54) 7 fields ungated → C-001
+- install-deps (Iter 55) 7 fields ungated → C-002
+- acceptance_test_concerns (Iter 53) ungated → C-003
+- ~50 other per-skill metric fields (estimate) ungated since Iter 32
+
+Iter 59 closed C-001/002/003 by ADDING TYPE annotations to handoff-contract.md. But annotations are advisory until Iter 60 flips the bypass default.
+
+**The fix (Iter 60):**
+
+`orchestrate-flow/SKILL.md` Step b.i flipped from permissive to strict:
+
+**Before (Iter 33-59):**
+```
+If TYPE annotation absent → log warn-only + continue
+```
+
+**After (Iter 60):**
+```
+Default (strict): emit halt `handoff_type_mismatch` with details
+  `{failing_skill, field_name, missing_annotation: true, recommended_fix: "Add TYPE annotation to handoff-contract.md §<skill> §<field>"}`;
+  STOP chain.
+Legacy bypass: available via `--legacy-type-bypass` flag (for migration scenarios only)
+```
+
+The flip turns F4 from "permissive when annotations missing" to "halt-against-author until annotations declared". Skill authors who emit fields without declaring TYPE get immediate halt feedback at the producer boundary — rather than the field silently propagating with drift risk.
+
+**Migration period:**
+
+Users running on pre-Iter-60 plugin AND pre-Iter-59 handoff-contract may hit the new strict check on legacy chain runs. Mitigation:
+
+1. **One-time migration:** run with `--legacy-type-bypass` flag for one chain run; fix author-side TYPE annotations in handoff-contract.md; remove flag.
+2. **Production runs:** Iter 59 added TYPE annotations for emit-fsd + install-deps + acceptance_test_concerns. Other per-skill blocks (extract-intelligence, generate-intent, scan-codebase, bind-codebase, generate-units, execute-bolts, diff-vault, emit-agents-md, resolve-oq, detect-drift) STILL HAVE UNTYPED FIELDS in their handoff metric blocks — these will halt on Iter 60+ unless `--legacy-type-bypass` is used.
+
+**Deferred to Iter 61 (catch-all):** sweep the remaining ~50 per-skill metric fields to add TYPE annotations across all per-skill emission blocks. Iter 60 ships the flip + migration flag; Iter 61 sweeps annotations to eliminate the migration need.
+
+**Also added in Iter 60 (TYPE language enhancements):**
+
+- `bool` — explicit boolean primitive (vs implicit `string` for `true`/`false` strings)
+- `<T> | null` — nullable variant (e.g., `string | null` for fallback_format field)
+
+These were needed for the Iter 59 emit-fsd/install-deps annotations to fully validate.
+
+**Surface changes:**
+
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — Step b.i type-check procedure flipped + 2 new TYPE language entries (bool, T | null); version 3.6.0 → 3.7.0 (MINOR — anti-halu rail behavior change)
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.39.1 → 3.40.0
+- `plugins/mega-sdd/README.md` — version refs
+- `README.md` (root) — version refs
+- `CHANGELOG.md` — this entry
+
+**Skill version bumps:**
+- `orchestrate-flow` 3.6.0 → 3.7.0 (MINOR — F4 bypass behavior change is anti-halu rail strengthening; backward-incompatible for skills with untyped fields BUT `--legacy-type-bypass` migration flag preserves existing chains during transition)
+
+**Plugin v3.39.1 → v3.40.0** (MINOR — anti-halu rail strengthening; `--legacy-type-bypass` flag covers migration).
+
+**Closure progress:** Iter 56 audit (38 findings) → Iter 57-60 closed 8 P1 + 1 P1 architectural + 4 P2 = 13 of 38. Remaining for Iter 61 catch-all: 18 P2 + 8 P3.
+
+**Rationale per anti-halu posture:** Iter 33 F4's bypass was a pragmatic deferred-strictness during initial v3.24.0 introduction. After 12 minor versions, the bypass became load-bearing for too many ungated fields — turning the gate OFF rather than ON. Flipping the default + providing migration flag is the canonical "make permissive defaults explicit opt-in" pattern from anti-halu literature.
+
+**Audit:** docs/superpowers/audits/2026-05-26-iter-56-v3.38.0-deep-audit.md §C-005 architectural insight.
+
+---
+
 ## [3.39.1] - 2026-05-26
 
 ### Iter 59 — Iter 56 audit contract sweep (C-001/002/003/004 closures)

@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.6.0
+version: 3.7.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. (v1.3+, Iter 4) `--deep` flag lifts 3-skill cap and chains to pipeline-end with auto-continue via handoff YAML protocol; `--resume` resumes a paused chain from CWD state (no persisted state file). Triggers — "orchestrate", "run flow", "auto mega-sdd", "do the next thing", "what's next", or paraphrases.
 ---
 
@@ -240,10 +240,13 @@ next_action:
            hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML in its chat output. chat_tail_excerpt above shows the last 500 chars of the sub-skill's output — look for crash logs / parse errors / OS-level failures (disk full, permissions, OOM). Re-run `/mega-sdd:bind-codebase` standalone to reproduce."
          ```
 
-      i. **Type-check fields against handoff-contract.md TYPE annotations (v3.0.0+, Iter 33 F4):**
+      i. **Type-check fields against handoff-contract.md TYPE annotations (v3.0.0+, Iter 33 F4; bypass tightened v3.7.0+, Iter 60 per Iter 56 audit C-005):**
          For each field present in handoff YAML:
          - Lookup TYPE annotation in handoff-contract.md §<field-name> section
-         - If TYPE annotation absent → log warn-only ("field <name> has no TYPE in schema; skipping type check"); continue
+         - **TYPE annotation absent behavior (v3.7.0+, Iter 60 flip — anti-halu rail strengthening):**
+           - **Default (strict, v3.7.0+):** emit halt `handoff_type_mismatch` with details `{failing_skill, field_name, missing_annotation: true, recommended_fix: "Add TYPE annotation to handoff-contract.md §<skill> §<field> per existing peer fields"}`; STOP chain. Halt-against-author forces skill authors to declare TYPE before the field can be emitted in production handoff.
+           - **Pre-v3.7.0 (Iter 33-59 legacy bypass):** log warn-only ("field <name> has no TYPE in schema; skipping type check") + continue. This permissive default was caught as architectural weakness by Iter 56 audit C-005 (ungated ~50 per-skill metric fields added since Iter 32). Iter 60 flipped default to strict; legacy bypass available via `--legacy-type-bypass` flag for migration scenarios only.
+           - **Migration period:** users with pre-Iter-59 plugins should set `--legacy-type-bypass` for one chain run, fix author-side TYPE annotations, then remove the flag.
          - If TYPE annotation present → validate value matches TYPE:
            - `string` → value is string (not int/array/object)
            - `int` → value is integer; respect `(≥N)` constraint if present
@@ -252,7 +255,9 @@ next_action:
            - `object {...}` → value is object AND each declared sub-field matches its TYPE
            - `string (sha256 hex)` → value is 64-char hex string
            - `string (ISO8601)` → value matches ISO8601 pattern
-         - On type mismatch → emit halt `handoff_type_mismatch` with details {failing_skill, field_name, expected_type, actual_type, actual_value (truncated to 100 chars)}; STOP chain.
+           - `bool` → value is true | false
+           - `<T> | null` → value is T OR null (nullable variant)
+         - On type mismatch → emit halt `handoff_type_mismatch` with details `{failing_skill, field_name, expected_type, actual_type, actual_value (truncated to 100 chars)}`; STOP chain.
 
       ```yaml
       # Example handoff_type_mismatch envelope:
