@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.1.1
+version: 1.1.2
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -117,8 +117,6 @@ next_action:
 ```
 
 STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` literals to PDF OR allowing pandoc to interpret them as template variables would be an anti-hallucination rail break.
-
-**Pre-Iter-61 state:** SKILL.md §Anti-hallucination rails line ~195 promised "{{slot_name}} MUST be filled or placeholdered — empty slot = halt `quality_gate_failed:template_slot_unfilled`" but NO procedure step actually performed the scan. The defensive halt code was unfireable. Iter 61 closes by adding Step 4.5 above.
 
 ### Step 5: Render PDF via pandoc
 
