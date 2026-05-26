@@ -503,6 +503,83 @@ metrics:
 
 Status `halted` on: `drift_framework_mismatch | constitution_drift_detected | memory_in_use`
 
+### `emit-fsd` (Iter 54, contract block added Iter 59 per C-001)
+
+Canonical handoff YAML with TYPE annotations:
+
+```yaml
+emitted_by: emit-fsd                              # TYPE: string (literal: "emit-fsd")
+emitted_at: <ISO8601>                             # TYPE: string (ISO8601)
+status: completed | halted                        # TYPE: enum (completed | halted)
+artifacts:                                        # TYPE: array<string> (absolute paths)
+  - <abs path to <vault>/fsd/FSD.md>              # REQUIRED
+  - <abs path to <vault>/fsd/FSD.pdf>             # CONDITIONAL — present when pandoc + LaTeX available; OR FSD.html if LaTeX absent; OR absent if pandoc absent
+  - <abs path to <vault>/fsd/.citation-map.json>  # REQUIRED
+  - <abs path to <vault>/fsd/FSD.styling.yaml>    # REQUIRED
+next_action:
+  suggested_skill: null                           # TYPE: string | null (always null — FSD is terminal)
+  suggested_args: []                              # TYPE: array<string>
+  rationale: "FSD emitted; upload <vault>/fsd/FSD.pdf to Confluence per corporate workflow."   # TYPE: string
+blockers: []                                      # TYPE: array<object> — populated on quality_gate_failed
+scope:                                            # CONDITIONAL — when vault has scope_metadata
+  id: <scope id>                                  # TYPE: string (enum from vault.json scope_metadata.allowed_scopes)
+  name: <scope name>                              # TYPE: string
+  sibling_scopes: []                              # TYPE: array<string>
+  prd_sha256: <sha256>                            # TYPE: string (sha256 hex)
+metrics:
+  sections_emitted: <int>                         # TYPE: int (≥0, ≤10) — count of FSD sections rendered
+  sections_excluded: <int>                        # TYPE: int (≥0, ≤10) — count of FSD sections filtered out via --sections OR include_sections styling
+  citations_count: <int>                          # TYPE: int (≥0) — total citations in .citation-map.json
+  drift_callouts_count: <int>                     # TYPE: int (≥0) — sections changed since last emit; 0 on first emit
+  mode: "pre-dev" | "post-dev"                    # TYPE: enum (pre-dev | post-dev)
+  pdf_emitted: <true | false>                     # TYPE: bool
+  fallback_format: null | "html" | "markdown"     # TYPE: enum (null | html | markdown) — set when pandoc/LaTeX absent
+```
+
+Status `halted` on: `quality_gate_failed` with `subtype: pdf_render_failed` OR `subtype: template_slot_unfilled` (per `vault-contract.md §quality_gate_failed subtypes` Iter 58 closure).
+
+### `install-deps` (Iter 55, contract block added Iter 59 per C-002)
+
+Canonical handoff YAML with TYPE annotations:
+
+```yaml
+emitted_by: install-deps                          # TYPE: string (literal: "install-deps")
+emitted_at: <ISO8601>                             # TYPE: string (ISO8601)
+status: completed | halted                        # TYPE: enum (completed | halted)
+artifacts:                                        # TYPE: array<string>
+  - <abs path to <project>/.mega-sdd/memory/install-outcomes.md>   # REQUIRED
+next_action:
+  suggested_skill: null                           # TYPE: string | null (install is user-explicit; no auto-next)
+  suggested_args: []                              # TYPE: array<string>
+  rationale: "Deps installed; mega-sdd full-precision mode enabled. Re-run /mega-sdd:install-deps --force-recheck if needed."
+blockers: []                                      # TYPE: array<object> — populated on install_failed / pkg_mgr_not_found
+metrics:
+  tools_audited: <int>                            # TYPE: int (≥0) — count of tools checked in audit pass
+  tools_already_present: <int>                    # TYPE: int (≥0) — already installed pre-skill
+  tools_installed: <int>                          # TYPE: int (≥0) — successfully installed this run
+  tools_failed: <int>                             # TYPE: int (≥0) — install or verify failed
+  tools_sudo_pending: <int>                       # TYPE: int (≥0) — requires_sudo (printed but not auto-run)
+  detected_os: "macos" | "linux" | "wsl" | "windows-bash" | "unknown"                                # TYPE: enum
+  detected_pkg_mgr: "brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "cargo-fallback" | "none"   # TYPE: enum
+```
+
+Status `halted` on: `install_failed` (install command failed OR verify_cmd failed post-install) OR `pkg_mgr_not_found` (no compatible package manager + no fallbacks).
+
+### `execute-bolts` — Iter 59 extension (per C-003)
+
+The Iter 53 `acceptance_test_concerns: []` field added to execute-bolts handoff `metrics:` block but never declared in handoff-contract.md schema. Iter 59 closure adds TYPE annotation:
+
+```yaml
+# Append to execute-bolts handoff metrics block (existing block at line ~362):
+metrics:
+  # ... existing fields (items_processed, items_blocked, bolts_used_starterkit_slice, slice_avg_size_kb) ...
+  acceptance_test_concerns:                       # NEW v2.10.0+, Iter 53 (declared Iter 59 per C-003)
+    - unit: U-007                                 # TYPE: array<object {unit: string, concern: string}>
+      concern: "..."                              # Empty array when no bolts flagged concerns. Consumed by orchestrate-flow Step 7 final summary diagnostics surface.
+```
+
+Status `halted` enumeration extended (Iter 58 + 59): full list now `test_fail | hard_rule_violated | hard_rule_unparseable | hard_rule_unanchored | cross_squad_interface_draft | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | module_blocked_by | verify_unit_writable | partial_state_corrupt | memory_in_use`.
+
 ---
 
 ## Memory layer integration (v2.1+, Iter 5)
