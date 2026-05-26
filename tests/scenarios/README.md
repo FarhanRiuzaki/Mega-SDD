@@ -94,7 +94,7 @@ For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ## Feedback + questions
 
-Scenarios assume mega-sdd v3.8.0+. If steps don't match your behavior:
+Scenarios assume mega-sdd v3.40.0+. If steps don't match your behavior:
 1. Check version: `cat plugins/mega-sdd/.claude-plugin/plugin.json | grep version`
 2. Update plugin: `/mega-sdd:update-plugin`
 3. Report mismatches with concrete steps reproduced

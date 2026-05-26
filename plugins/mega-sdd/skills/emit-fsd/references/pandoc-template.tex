@@ -47,6 +47,26 @@ $endif$
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.4pt}
 
+% --- Drift callout styling (Iter 62 per D5) ---
+% Distinguishes ⚠ "Updated since last emit" callouts from incidental blockquotes in source artifacts.
+% emit-fsd inserts drift callouts as blockquotes prefixed with ⚠; LaTeX styling makes them visually distinct.
+\usepackage{tcolorbox}
+\tcbset{
+  driftcallout/.style={
+    colback=yellow!10,
+    colframe=orange!70!black,
+    boxrule=1pt,
+    arc=2pt,
+    left=8pt, right=8pt, top=4pt, bottom=4pt,
+    fonttitle=\bfseries,
+    title=⚠ Drift detected on re-emit
+  }
+}
+% Note: pandoc converts markdown blockquotes to \begin{quote}...\end{quote}; to apply driftcallout
+% styling, FSD.md must emit drift callouts in a way that triggers a custom raw LaTeX block.
+% Iter 62 documents this; full implementation requires emit-fsd Step 3.f to emit raw LaTeX wrapper
+% around drift callouts (deferred refinement — Iter 62 ships the LaTeX styling primitive).
+
 % --- Watermark (pre-dev draft) ---
 $if(emit_watermark)$
 \usepackage{draftwatermark}

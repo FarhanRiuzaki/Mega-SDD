@@ -582,6 +582,47 @@ blocker:
   expected_framework: "<e.g. 'PHP/Laravel'>"  # drift_framework_mismatch only
 ```
 
+### Canonical `next_action` field shape (v0.15+, Iter 62 per A3-004)
+
+The `next_action` field in halt envelope is documented per-producer with varying shapes (object `{type, hint}`, plain string, or omitted). Consumer dispatch must branch on shape. Iter 62 pins canonical shape:
+
+```yaml
+# CANONICAL (preferred for new halts, v0.15+):
+next_action:
+  type: <action_id>                            # enum (see below)
+  hint: "<one-line user-facing instruction>"   # required
+  commands: ["<bash command>", ...]            # optional; ordered list of recovery commands
+
+# LEGACY (accepted for backward compat, pre-v0.15):
+next_action: "<one-line prose string>"         # plain string form
+
+# OMITTED (NOT accepted v0.15+):
+# next_action: <missing>                        → halt invalid_handoff during validation
+```
+
+`type` enum (extensible per skill):
+
+- `inspect_subskill_logs` — read chat_tail_excerpt + investigate sub-skill output
+- `rename_and_retry` — rename corrupt file to .corrupt-<timestamp> + re-run
+- `re_run_producer` — re-run the producer skill standalone to reproduce
+- `edit_skill_template` — fix skill body template emission (producer bug)
+- `user_install_dep` — user installs missing native binary
+- `user_resolve_oq` — user runs `/mega-sdd:resolve-oq` interactively
+- `user_review` — user inspects artifact + decides
+- `invoke_skill` — orchestrator auto-invokes recovery skill
+- `chain_complete` — terminal; no further action
+- `file_plugin_bug` — internal bug; user files at gitlab/issue tracker
+- `log_and_continue` — soft halt; orchestrator logs + proceeds
+- `manual_review` — user reviews state manually (no auto-action)
+
+Consumer dispatch (orchestrate-flow halt displayer):
+
+1. Read `next_action.type` if present → format hint per type semantics (e.g., wrap commands in code fence)
+2. Else read `next_action.hint` if it's a string → display as plain text
+3. Else (no next_action) → emit `invalid_handoff` halt at validation gate (Iter 60 strict mode)
+
+**Backward compatibility:** all pre-v0.15 halt emit sites work unchanged. The canonical shape is RECOMMENDED for new halts but not enforced — consumers fall back to legacy string-only form.
+
 ### Type-specific guidance
 
 **`oq_blocker`** — emitted by `generate-intent` (when generation surfaces a P1 that would block downstream tasks) or by AI consumers reading the vault non-interactively. The `tag` is the OQ identifier. `priority` is always `P1` (lower priorities don't halt).

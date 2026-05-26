@@ -653,6 +653,253 @@ Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) cov
 
 ---
 
+## Scenario walkthrough — PRD-scope halts (Iter 28, walkthroughs added Iter 62 per A2-005)
+
+Iter 28 added 3 halts for PRD multi-scope handling. Per Iter 62 audit closure, all 3 get explicit recovery walkthroughs.
+
+### `scope_not_declared_in_prd`
+
+```yaml
+blocker:
+  type: scope_not_declared_in_prd
+  source_skill: generate-intent
+  details:
+    requested_scope: "BE"
+    declared_scopes: ["FE", "MW"]
+    prd_path: "<project>/prd.md"
+  next_action:
+    hint: "Requested --scope=BE not in PRD's declared scopes [FE, MW]. Pick valid scope OR retrofit PRD to add BE."
+```
+
+Recovery:
+
+```bash
+# Option 1: pick valid scope from declared list
+/mega-sdd:generate-intent ./prd.md --scope=FE
+
+# Option 2: edit PRD frontmatter to add missing scope
+# Add to PRD frontmatter:
+#   scopes:
+#     - id: BE
+#       name: Backend
+# Then re-run
+/mega-sdd:generate-intent ./prd.md --scope=BE
+```
+
+### `prd_no_scopes_block_user_rejected_retrofit`
+
+```yaml
+blocker:
+  type: prd_no_scopes_block_user_rejected_retrofit
+  source_skill: generate-intent
+  details:
+    prd_path: "<project>/prd.md"
+    retrofit_attempted: true
+    user_action: rejected
+```
+
+Recovery: user explicitly rejected the AI retrofit (auto-add scopes block). 3 paths:
+
+```bash
+# Option 1: manually edit PRD frontmatter to add scopes block
+# Then re-run
+/mega-sdd:generate-intent ./prd.md
+
+# Option 2: opt-out of multi-scope; run as single-scope (legacy)
+/mega-sdd:generate-intent ./prd.md --single-scope
+
+# Option 3: accept retrofit (changed mind)
+/mega-sdd:generate-intent ./prd.md --retrofit-scopes
+```
+
+### `prd_retrofit_low_confidence`
+
+```yaml
+blocker:
+  type: prd_retrofit_low_confidence
+  source_skill: generate-intent
+  details:
+    overall_confidence: LOW
+    retrofit_preview_path: "<project>/.mega-sdd/retrofit-preview.md"
+```
+
+Recovery: AI retrofit subagent unsure about scope inference. User reviews:
+
+```bash
+# Inspect what retrofit proposes
+cat <project>/.mega-sdd/retrofit-preview.md
+
+# Then choose:
+# (a) Accept anyway despite LOW confidence:
+/mega-sdd:generate-intent ./prd.md --accept-low-confidence-retrofit
+# (b) Fall back to single-scope:
+/mega-sdd:generate-intent ./prd.md --single-scope
+# (c) Cancel + manually retrofit PRD frontmatter:
+# Edit PRD; re-run
+```
+
+---
+
+## Scenario walkthrough — `drift_framework_mismatch` + `constitution_drift_detected` (Iter 12 + Iter 30, added Iter 62 per A2-006)
+
+Both halts fire from `detect-drift` on real production drift scenarios.
+
+### `drift_framework_mismatch`
+
+Vault says one framework; codebase is now another (e.g., vault PRD says Laravel; code is now Spring after a rebuild).
+
+```yaml
+blocker:
+  type: drift_framework_mismatch
+  source_skill: detect-drift
+  details:
+    detected_framework: "Java/Spring"
+    expected_framework: "PHP/Laravel"
+```
+
+Recovery options:
+
+```bash
+# Option 1: code-supersede (codebase reality is correct; update vault)
+/mega-sdd:diff-vault ./new-prd-spring.md   # if new PRD reflects Spring
+# OR re-extract intelligence + regenerate vault:
+/mega-sdd:extract-intelligence ./
+/mega-sdd:generate-intent --kb=<kb>
+
+# Option 2: vault-supersede (codebase regressed; revert to Laravel)
+git revert <commit-range>   # roll back framework migration
+# OR
+git checkout <pre-migration-tag>
+
+# Option 3: split — keep both as separate vault scopes
+# Manually retrofit PRD scopes block: scopes: [legacy-laravel, new-spring]
+/mega-sdd:generate-intent ./prd.md --scope=new-spring
+```
+
+### `constitution_drift_detected`
+
+§B (security) or §F (compliance) constitution clause drift detected in code.
+
+```yaml
+blocker:
+  type: constitution_drift_detected
+  source_skill: detect-drift
+  details:
+    clause_id: "§B-007"
+    clause_text: "All session tokens MUST be encrypted at rest"
+    code_evidence: "src/auth/SessionStore.kt:45 — stores raw token without encryption"
+```
+
+Recovery (mandatory — security/compliance is non-negotiable):
+
+```bash
+# Step 1: inspect drift evidence
+cat <vault>/DRIFT-REPORT.md
+
+# Step 2: fix the code (preferred — code violates constitution)
+# Edit src/auth/SessionStore.kt:45 to encrypt token before persist
+# Commit fix
+
+# Step 3: re-run drift detection
+/mega-sdd:detect-drift
+
+# OPTION: if constitution clause itself is wrong (rare), update it:
+# Edit <vault>/_meta/constitution.md §B-007
+# Re-run: /mega-sdd:detect-drift
+# (Constitution edits require sign-off per CLAUDE.md governance)
+```
+
+---
+
+## Scenario walkthrough — execute-bolts halts (Iter 30 closure, added Iter 62 per A2-007)
+
+Three execute-bolts halts from Iter 30 lacked walkthroughs:
+
+### `bolt_repeated_partial_failure`
+
+A bolt failed 3 partial-state recovery cycles.
+
+```yaml
+blocker:
+  type: bolt_repeated_partial_failure
+  source_skill: execute-bolts
+  details:
+    unit_id: U-012
+    cycle_count: 3
+    last_failure: "test: assertion 'user.id present' failed; retry budget exhausted"
+```
+
+Recovery (unit spec is likely wrong):
+
+```bash
+# Step 1: inspect bolt-report + partial-state across cycles
+cat <vault>/bolts/U-012/bolt-report.md
+cat <vault>/bolts/U-012/partial-state.json
+
+# Step 2: review unit spec — is acceptance_test under-specified? target_files wrong scope?
+cat <vault>/units/U-012.md
+
+# Step 3: edit unit OR escalate
+# If acceptance_test wrong: edit acceptance_test field; re-run
+# If target_files too broad: tighten scope; re-run
+# If genuinely blocked: emit OQ-blocker for human review:
+/mega-sdd:resolve-oq --emit-blocker "U-012 cannot pass acceptance test as specified"
+```
+
+### `bolt_introduces_locked_drift`
+
+Bolt drift hit a LOCKED entity (constitution/security-protected).
+
+```yaml
+blocker:
+  type: bolt_introduces_locked_drift
+  source_skill: execute-bolts
+  details:
+    unit_id: U-007
+    locked_entity: "src/auth/User.php"
+    drift_evidence: "added field `last_login_ip` without locking constitution amendment"
+```
+
+Recovery (propose-and-confirm override path):
+
+```bash
+# Option 1: revert bolt changes (locked entity protected by design)
+git diff HEAD <vault>/bolts/U-007/preflight.json   # see what bolt wrote
+git checkout <pre-bolt-state>
+
+# Option 2: amend constitution to allow drift (requires explicit user approval)
+# Edit <vault>/_meta/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
+# Re-run bolt:
+/mega-sdd:execute-bolts U-007 --confirm-locked-drift
+```
+
+### `self_assessment_missing`
+
+bolt-report.md lacks self-assessment YAML block (Iter 30 §10 mandatory).
+
+```yaml
+blocker:
+  type: self_assessment_missing
+  source_skill: execute-bolts
+  details:
+    unit_id: U-009
+    expected_block: "bolt_self_report"
+```
+
+Recovery (bolt subagent skipped mandatory output):
+
+```bash
+# Inspect what bolt-report.md actually contains
+cat <vault>/bolts/U-009/bolt-report.md
+
+# Re-run bolt with explicit self-assessment instruction:
+/mega-sdd:execute-bolts U-009 --strict-self-assessment
+
+# If repeat failure: likely bolt subagent prompt drift; file plugin bug
+```
+
+---
+
 ## What you learned
 
 - Halts are SAFETY NET, not bugs — they fire on real issues mega-sdd's rails caught

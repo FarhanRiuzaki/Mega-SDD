@@ -7,7 +7,7 @@ This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-financ
 
 ## Prerequisites
 
-- Mega-sdd v3.8.0+
+- Mega-sdd v3.40.0+
 - Legacy codebase available (at least 50-100 files; ideally 500+ for meaningful extraction)
 - New target project directory ready
 - `tree-sitter` + `ast-grep` recommended for both legacy scan + new build

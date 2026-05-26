@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.1.0
+version: 1.1.1
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -141,6 +141,28 @@ STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` l
    ```
 4. On pandoc non-zero exit: emit halt `quality_gate_failed` with subtype `pdf_render_failed`, details `{pandoc_stderr_tail: <last 500 chars>}`; STOP.
 5. On success: log `"✓ FSD.pdf rendered (<N> pages, <size_kb>KB)"`.
+
+### Step 5.5: Populate `missing_sources[]` (v1.1.1+, Iter 62 — closes D4)
+
+Iter 54 citation-map schema declared a `missing_sources[]` array but no procedure step populated it. Iter 62 adds population logic:
+
+During Step 3.d (per-section emission), when a source artifact is missing AND the section emits a `[Pending — X not yet generated]` placeholder, ALSO append an entry to in-memory `citation_map.missing_sources[]`:
+
+```yaml
+- section: "9"                                    # FSD section number
+  expected_source: "bolts/U-*/bolt-report.md"     # source artifact path/pattern that was missing
+  reason: "pre-dev mode (no bolts yet)"           # short rationale
+```
+
+Common reasons:
+- `"pre-dev mode (no bolts yet)"` — section 9 in pre-dev mode
+- `"vault file not generated yet"` — generic missing vault artifact
+- `"binding.md absent — bind-codebase not run"` — section 7 design without binding
+- `"codebase-map.md absent — scan-codebase not run"` — section 8 API/data without codebase scan
+
+Step 6 writes `missing_sources[]` to `.citation-map.json` alongside `sections[]`.
+
+**Consumer:** orchestrate-flow Step 7 final summary (when emit-fsd handoff received) can surface `len(missing_sources) > 0` as informational: "FSD emitted with N pending sections — full coverage available after running [scan-codebase / bind-codebase / execute-bolts]". Closes D4 (field was declared but unpopulated → consumer couldn't surface coverage gaps).
 
 ### Step 6: Write citation map
 

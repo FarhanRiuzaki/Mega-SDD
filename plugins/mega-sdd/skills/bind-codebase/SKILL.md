@@ -445,6 +445,7 @@ binding_metadata:
      - **DO NOT** write the <vault>-bound/ sibling directory
      - **Announce blocker:** "Binding BLOCKED. <N> conflicts must be resolved. Run `/mega-sdd:resolve-oq --binding <binding.md>` or edit vault manually, then re-run bind-codebase."
      - Emit blocker YAML per `vault-contract.md` §halt-protocol
+     - **Conflict resolution flow + decision tree:** see `references/conflict-resolution.md` for per-conflict-type recovery actions (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind-codebase ↔ resolve-oq interaction sequence. (Cross-ref added Iter 62 per B-P3-2 orphan resolution — file was unreferenced from skill body.)
 
 **Emit structured halt per `vault-contract.md §halt-protocol`:**
 

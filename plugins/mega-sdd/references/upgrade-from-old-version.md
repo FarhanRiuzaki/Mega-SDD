@@ -12,9 +12,37 @@ Keep your original PRD or KB; regenerate vault + binding + units fresh on the ne
 **Path B (preserve existing vault + binding + bolts):**
 Run migrations → expect 1-2 schema halts → recover via halt envelope hints. ~15-30 min.
 
+> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
+
+## Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
+
+| Iter | Plugin version | What changed | Migration impact |
+|---|---|---|---|
+| 36 | v3.26.1 | Upgrade guide consolidation (this doc origin) | none (doc-only) |
+| 37 | v3.26.2 | Scenarios coverage + README audit | none |
+| 38 | (audit) | E2E pipeline audit (37 findings) | none |
+| 39-52 | v3.26.3 → v3.35.1 | Iter 38 audit closure | mostly compatible; some skill schemas refined |
+| 43, 48, 52 | (fix-forward) | Caught 4 release-blocker regressions | run `--resume` after patches |
+| 53 | v3.36.0 | Consumer wiring closure (3 PARTIAL → USED) | new `quality_gate_failed:starterkit_metrics_inconsistent` subtype |
+| 54 | v3.37.0 | **NEW skill `emit-fsd`** (Confluence FSD generator) | optional opt-out via `--no-fsd` |
+| 55 | v3.38.0 | **NEW skill `install-deps`** (OS-aware auto-installer) | user-explicit invocation; not auto-triggered |
+| 56 | (audit) | Deep audit of v3.38.0 (38 findings) | none |
+| 57 | v3.38.1 | CRITICAL fix-forward (B-P1 + D1 + F-E-2) | binding.md gains `binding_metadata:` block (additive); `--rollback` menu default flipped to `[I] interactive` (safer) |
+| 58 | v3.39.0 | Halt taxonomy: +9 enum entries + `quality_gate_failed` subtypes | downstream consumers branch on `details.subtype` for `quality_gate_failed` |
+| 59 | v3.39.1 | Contract sweep: emit-fsd + install-deps Per-skill blocks | adds TYPE annotations (advisory until Iter 60) |
+| 60 | v3.40.0 | **F4 bypass tightening — anti-halu rail behavior change** | fields without TYPE annotation halt-against-author; migration via `--legacy-type-bypass` for one chain run |
+| 61 | v3.40.1 | Catch-all P2/P3 closure | emit-fsd citation slot extraction wired (Iter 54 dead-code fixed); test fixtures added |
+| 62 | v3.41.0 | Remaining Iter 56 audit closure (scenario sweep + doc bulk) | scenario-6 +8 walkthroughs; predictive-check coverage extended; `next_action` canonical shape documented |
+
+## Recommended upgrade paths
+
+- **v3.0-v3.25 → v3.41.0:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
+- **v3.26-v3.37 → v3.41.0:** use Path B with `--legacy-type-bypass` flag for first chain run; remove flag after handoff TYPE annotations are in place.
+- **v3.38-v3.40 → v3.41.0:** seamless upgrade; existing chains compatible.
+
 ## Compatibility matrix
 
-| Old artifact | Works on v3.26.1? | What to do |
+| Old artifact | Works on v3.41.0? | What to do |
 |---|---|---|
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |
@@ -24,9 +52,12 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | Vault without `scope_metadata` (legacy single-scope) | Yes — treated as legacy single-vault; `scope:` blocks omitted | None |
 | Vault without `phase`/`phase_total` fields (pre-Iter-35) | Yes — defaults to `phase: 1, phase_total: 1` | None |
 | Pre-Iter-8 binding without `PARTIAL_FIELDS_*` states | Yes — unknown states default to `create` (conservative) | Consider re-binding for finer task_type granularity |
+| Pre-Iter-46 binding without `binding_metadata.codebase_map_provenance` field (Iter 57 fix-forward) | Yes — orchestrate-flow Step 3 falls through to "no-snapshot" branch (keeps scan-codebase in chain) | Optional: re-run bind-codebase to populate field for chain-optimization benefit |
 | Old `memory_schema:` version stamp | May halt `memory_schema_mismatch` | `/mega-sdd:memory migrate` |
 | Pre-Iter-30 bolt-reports without provenance trailer | New bolts OK; re-running old bolts halts | Skip re-runs OR add trailer manually |
 | Pre-Iter-33 handoff YAML missing `scope:`/`mutability:` blocks | Halt `invalid_handoff` on re-run via orchestrate-flow Step 6.b validation gate | Edit handoff template OR regenerate vault (Path A) |
+| Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | Run with `--legacy-type-bypass` flag for one chain run; fix handoff-contract.md TYPE annotations; remove flag |
+| Pre-Iter-58 chain emitting halt names from the 9 newly-enumerated orphans | Now accepted (Iter 58 closed enum gap) | None — no action needed |
 
 ## Migration commands — run in this order
 
