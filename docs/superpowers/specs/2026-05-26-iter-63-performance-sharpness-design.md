@@ -272,6 +272,17 @@ Line schema in `telemetry.jsonl` (one JSON object per line, append-only):
     "estimated_output": <int>,
     "reference_loads": [{"path": "...", "estimated_tokens": <int>}]
   },
+  "loaded_per_turn": {
+    "turn_id": "<UUID per agent turn>",
+    "skill": "<skill that loaded this content this turn>",
+    "lines_loaded": <int>,
+    "tokens_loaded": <int>,
+    "breakdown_by_tier": {
+      "hot": {"lines": <int>, "tokens": <int>},
+      "specialist": {"lines": <int>, "tokens": <int>, "refs_loaded": ["..."]},
+      "cold": {"lines": <int>, "tokens": <int>, "refs_loaded": ["..."]}
+    }
+  },
   "activation_outcome": {
     "skill": "<which skill was invoked>",
     "outcome": "success | halted | user_aborted | downstream_failure",
@@ -302,6 +313,8 @@ Line schema in `telemetry.jsonl` (one JSON object per line, append-only):
 | `activation_outcome.outcome` | Iter 68 activation accuracy | Did invoked skill achieve its goal? |
 | `activation_outcome.false_positive_signal` | Iter 68 false-positive rate | Hardest metric to capture — see ACTIVATION OUTCOME LABELING below |
 | `tier_classification_decision.loaded_this_session` | Iter 68 tier discipline audit | Was HOT actually loaded? Was COLD never loaded? Validates Iter 66 lazy loading payoff |
+| `loaded_per_turn.lines_loaded` + `tokens_loaded` | **§9.4 NEW METRIC (post-Iter-63.5 reframe)** | The actual metric that matters — turn-level context cost. Replaces dead "skill body line count" metric per Iter 63.5 finding (bodies mostly load-bearing). Iter 68 produces baseline; Iter 66 target = ≥30% reduction in median. Cannot be backfilled — schema captures from day 1. |
+| `loaded_per_turn.breakdown_by_tier` | Iter 66 lazy-loading manifest tuning | Empirical evidence of which refs load WHEN. SPECIALIST/COLD refs that never load → confirm tier; SPECIALIST refs that load every turn → reclassify HOT; HOT refs that rarely load → reclassify SPECIALIST. Data-driven manifest, not human guess. |
 
 ### Activation outcome labeling — the hard metric
 
@@ -393,12 +406,48 @@ RULE 3 — No validating-the-validation:
   - "Plan to validate the validation plan" is recursion → prohibited
 ```
 
-### 4.3 Iter 66 — Lazy reference loading (Claude Code 95% pattern)
+### 4.3 Iter 66 — Lazy reference loading — **MAIN LEVER for hot-context reduction** (post-Iter-63.5 reframe)
 
-Skills declare per-reference loading discipline:
-- `HOT` — always loaded when skill body loads (e.g., `vault-contract.md` halt enum is always needed)
-- `SPECIALIST` — loaded only when specific procedure step requires it (e.g., `t2-budget-tracker.md` loaded only when execute-bolts hits Step 4.5.a.5)
-- `COLD` — loaded only via explicit grep/RAG when user request matches (e.g., individual scenario walkthroughs)
+**Post-Iter-63.5 reframe (per user direction):** Iter 63.5 confirmed skill bodies are mostly load-bearing — only ≈7 lines OBVIOUS-removable across 9 skills. "Trim 1,500 lines" was largely illusory. This shifts Iter 66 from "refinement that completes Iter 63.5's picture" → **THE main lever for hot-context reduction in SP2**.
+
+**Premise change:** the content in skill bodies doesn't shrink (it's load-bearing). What changes is WHEN it loads — conditional/on-demand vs always-loaded. Iter 66 doesn't move content; it changes the load discipline.
+
+**Architecture:**
+
+Skills declare per-reference loading discipline at frontmatter or in a manifest:
+- `HOT` — always loaded when skill body loads (e.g., `vault-contract.md` halt enum is always needed for any halt emission)
+- `SPECIALIST` — loaded ONLY when the specific procedure step requires it (e.g., `t2-budget-tracker.md` loaded only when execute-bolts hits Step 4.5.a.5; `phase-context.md` loaded only when generate-intent --phase flag set)
+- `COLD` — loaded ONLY via explicit grep/RAG when user request matches (e.g., individual scenario walkthroughs; archived halt descriptions)
+
+**Lazy-load implementation** (markdown-driven; no runtime code):
+- Skill body uses conditional cross-ref pattern: `*If condition X: load `references/Y.md` per Step Z*` instead of always emitting the content inline
+- Anchor skill (using-mega-sdd) reads only HOT tier of each skill on session start; SPECIALIST/COLD tiers stay on disk until conditional triggers
+- New skill body convention: every cross-ref to a reference file declares its tier (HOT/SPECIALIST/COLD) at the cross-ref site
+
+**Tier classification source (per-skill, manifest-style):**
+
+Each skill ships a `references/_manifest.yaml` (or in SKILL.md frontmatter):
+```yaml
+references:
+  vault-contract.md: HOT       # halt enum always needed
+  phase-context.md: SPECIALIST  # only when --phase flag set
+  saga-rollback.md: SPECIALIST  # only when --rollback flag set
+  conflict-resolution.md: COLD  # only when bind_conflict halt fires
+```
+
+**Data dependency on telemetry (Iter 64 → Iter 68 → Iter 66):**
+
+Iter 64 starts logging `tier_classification_decision` + `loaded_this_session` per ref load (LOCKED schema per §4.1). Iter 68 analyzes 14+ days of soak data to validate which refs are TRULY hot vs cold in practice. Iter 66 uses that empirical data to set per-skill manifests — NOT human guess.
+
+**Without telemetry data:** Iter 66 would guess HOT/COLD wrong (same risk as Iter 63.5 blind relocation). Data-driven is non-negotiable per post-ship review.
+
+**Success criterion (Iter 66):**
+
+After Iter 66 ships + 14-day re-soak window: `lines_loaded_per_turn` median drops by ≥30% vs Iter 64 baseline. If <30%: lazy-loading discipline insufficient OR baseline already lean. Result audit feeds back into manifest tuning.
+
+**Iter 66 timing:** post-Iter-68 analysis (when soak data exists). Cannot ship before Iter 68 — would be guessing.
+
+### 4.3.1 (was 4.3) — original Iter 66 sketch (superseded by reframe above)
 
 Telemetry from Iter 64 used to validate which refs are actually hot vs cold (post-Iter 68 analysis tunes the discipline).
 
@@ -573,13 +622,54 @@ RULE 3 — No validating-the-validation:
 
 ## 9. Success criteria
 
-- [ ] `/mega-sdd:auto` runs WITHOUT FSD emission by default; `--with-fsd` opts in
-- [ ] Skill body line count: 8,174 → ~6,500 (-20% hot context)
-- [ ] CHANGELOG.md line count: 5,663 → ~1,500 (73% reduction; archive readable)
-- [ ] `plugins/mega-sdd/CLAUDE.md` has deterministic classifier criteria + precedence rule + anti-recursive guard preview (Iter 65 full impl)
-- [ ] `/mega-sdd:auto` + `/mega-sdd:orchestrate-flow` docs both have cross-reference blocks + scope clarification
-- [ ] No new halts; no new skills; no new schemas
-- [ ] Plugin v3.41.0 → v3.42.0 ships clean
+### 9.1 Iter 63 SP1 (shipped v3.42.0)
+
+- [x] `/mega-sdd:auto` runs WITHOUT FSD emission by default; `--with-fsd` opts in
+- [x] CHANGELOG.md line count: 5,663 → 1,806 (cold-tier/repo hygiene; NOT hot context)
+- [x] `plugins/mega-sdd/CLAUDE.md` has deterministic classifier criteria + precedence rule + anti-recursive guard preview (Iter 65 full impl)
+- [x] `/mega-sdd:auto` + `/mega-sdd:orchestrate-flow` docs both have cross-reference blocks + scope clarification
+- [x] No new halts; no new skills; no new schemas
+- [x] Plugin v3.41.0 → v3.42.0 ships clean
+
+### 9.2 Iter 63.5 OBVIOUS trim (shipped v3.43.0)
+
+- [x] OBVIOUS-only trim with semantic verification per commit (load-pointer / no ref orphan / end-to-end coherence)
+- [x] Classifier dogfood Path A — MINOR classification correctly applied per deterministic criteria
+- [x] "If ragu → biarin di body" rule honored — 4 skills skipped where pattern was borderline
+
+### 9.3 Iter 63.5 finding — Iter 66 reframing
+
+**Result of Iter 63.5:** ≈7 net lines removable as OBVIOUS-only across 9 heavy/medium skills. Confirms premise: **Mega-SDD skill bodies are mostly load-bearing, not bloat.** "Trim ~1,500 lines" framing was largely illusory.
+
+**Dead metric (removed from success criteria):** ~~"Skill body line count: 8,174 → ~6,500"~~ — invalid; body size is a proxy that doesn't measure what we actually care about (turn-level context window cost). Replace with §9.4 metric.
+
+### 9.4 NEW SP2 metric — `lines_loaded_per_turn` / `tokens_loaded_per_turn`
+
+**What we actually care about:** how much context loads per agent turn, not how big the skill body files are. Body of 1,267 lines that loads conditionally is cheaper than body of 300 lines that loads every turn.
+
+**Measured via Iter 64 telemetry** (LOCKED schema per §4.1) — captured day-1 since cannot be backfilled. Per-turn aggregate:
+
+```
+loaded_per_turn = sum_over_skill(
+  hot_tier_lines_loaded +
+  specialist_tier_lines_loaded_this_turn +
+  cold_tier_lines_loaded_this_turn
+) per turn
+```
+
+**Target setting deferred** to Iter 68 analysis (need soak baseline first). Iter 66 success criteria will be data-driven against the Iter 64-68 baseline measurement.
+
+### 9.5 Hot-tier win positioning (HONEST)
+
+**Currently delivered hot-tier reduction: ≈0.** Iter 63 SP1 + Iter 63.5 delivered:
+
+- ✅ Process integrity: classifier dogfood + semantic verification pattern
+- ✅ Runtime recurring saving: FSD opt-out (per-chain pandoc/LaTeX skip)
+- ✅ Cold-tier / repo hygiene: CHANGELOG -68% (NOT auto-loaded; archive readable)
+
+**Hot-tier win locked behind:** Iter 66 lazy reference loading (the MAIN LEVER — see §4.3) + Iter 64-68 telemetry soak data validating which refs are truly SPECIALIST/COLD vs HOT.
+
+**No hot-context win claims pre-Iter-66.** Any future iter claiming "context reduction" must point to `lines_loaded_per_turn` metric from telemetry — not file-size proxies.
 
 ---
 
