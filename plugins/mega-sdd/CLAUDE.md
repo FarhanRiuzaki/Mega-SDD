@@ -211,6 +211,117 @@ Per spec §4.1. Iter 64 ships:
 - ≥ 10 real chain runs logged
 - Insufficient data → Iter 68 emits "DATA INSUFFICIENT" report; SP3 gate stays closed
 
+---
+
+## Plan/Act Mode (v3.46.0+, Iter 67 — COMPLEXITY-GATED via Iter 65 classifier)
+
+Per spec §4.4. Cline-pattern dual-mode adopted but **NOT universal default** — gated by complexity classifier output. Economics: cheap iters skip plan ceremony; expensive iters require explicit two-phase.
+
+### Mode definitions
+
+**Plan mode (cheap, read-only):**
+- Skill body LOADS but does NOT execute writes
+- Outputs proposed actions list + acceptance criteria + estimated scope
+- NO file writes, NO commits, NO git ops, NO Bash with side effects
+- User reviews proposed actions before transition to Act
+- Equivalent to Cline's Plan mode: "non-destructive reasoning phase where you refine the approach before any code is written"
+
+**Act mode (expensive, write-enabled):**
+- Skill body executes per its procedure
+- File writes, commits, git ops, Bash with side effects allowed
+- Equivalent to Cline's Act mode: "execute that plan asking for approval before tool use considered irreversible"
+
+### Complexity gating (per `classify-iter.sh` output)
+
+| Iter type (classifier output) | Plan/Act behavior |
+|---|---|
+| **PATCH** | Direct Act mode. NO Plan phase. (Economics: PATCH iters are by definition small + non-breaking; planning overhead exceeds value.) |
+| **MINOR** | Act mode default. User can opt-in to Plan-first via `--plan` flag. (Most MINOR iters have known scope; Plan-first is helpful for unfamiliar territory.) |
+| **MAJOR** | **Plan mode FIRST, mandatory.** User reviews proposed actions. Transition to Act requires explicit user gesture: `--act` flag OR `/mega-sdd:act` continuation command OR explicit text acknowledgment. NO direct-Act path for MAJOR. |
+
+**Precedence (uniform across plugin, same as classifier):**
+```
+explicit user flag (--plan / --act) > classifier-determined default > PATCH default
+```
+
+User can force Plan mode on PATCH with `--plan`. User can force direct Act on MAJOR with `--act` BUT requires confirmation prompt (single AskUserQuestion warning: "MAJOR iter without Plan phase — proceed? [Y/N]") — this is an explicit safety gate, not a free pass.
+
+### Plan-to-Act transition protocol
+
+When Plan mode completes:
+
+1. Plan output emits to chat: structured list of proposed actions + acceptance criteria + classifier inputs.
+2. Plan output APPENDED to ephemeral `<project>/.mega-sdd/.plan-pending` file (JSON):
+   ```json
+   {
+     "session_id": "<UUID>",
+     "task_id": "<UUID>",
+     "plan_emitted_at": "<ISO8601>",
+     "iter_type": "MAJOR",
+     "proposed_actions": ["..."],
+     "acceptance_criteria": ["..."]
+   }
+   ```
+3. User reviews; transitions via:
+   - `--act` flag on next invocation, OR
+   - `/mega-sdd:act` continuation command (reads `.plan-pending` and proceeds), OR
+   - Explicit text in next message: "act on the plan" / "execute" / "approved"
+4. Act mode reads `.plan-pending`, executes proposed actions, deletes `.plan-pending` on success.
+
+If `.plan-pending` exists from prior session AND user invokes new skill: orchestrate-flow Step 2.95 checks for stale plan → warns "stale plan from <ts>; rerun /mega-sdd:plan or delete `.plan-pending`".
+
+### Anti-recursion interaction (RULE 1.5 reaffirmed)
+
+Plan mode is NOT a validator. Validators are leaf nodes per Anti-Recursive Guard RULE 3. Plan mode is a PHASE (reasoning before execution), not a validation step. Plan output does NOT trigger `validate-the-validation` recursion; if user rejects Plan output and asks for re-plan, that counts as ONE `replan_triggered` event (via check-recursion-budget.sh) with trigger `ambiguity_increased` — subject to max_replan_count cap.
+
+### Process integration
+
+`/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` flags:
+- `--plan` — force Plan mode regardless of classifier output (opt-in)
+- `--act` — force direct Act mode regardless of classifier output (requires confirmation prompt for MAJOR)
+- `--plan-then-act` — explicit two-phase for any iter type (overrides both PATCH-direct-act and MAJOR-mandatory-plan)
+
+Default behavior (no flags): follow classifier output → PATCH=direct-act / MINOR=act / MAJOR=plan-first.
+
+**Runtime status (v3.46.0+, Iter 67):** orchestrate-flow Step 2.95 (NEW) gates the mode decision; reads Iter 65 EP1 classifier output → branches to Plan or Act. Implementation: markdown-driven procedural logic; no new bash scripts (the `.plan-pending` state file is JSON managed by skill bodies).
+
+## Soak Shakedown Protocol (v3.46.0+, Iter 67 — last runtime change before soak freeze)
+
+Per user mandate at Iter 67 ship: **first 1-2 real chain runs after Iter 67 don't count toward soak threshold until verified.**
+
+**Why:** Iter 65 (classifier + guard runtime) + Iter 67 (Plan/Act gating) both active same-day, zero wild-history. Verify interaction doesn't bug-fail real chain runs BEFORE accumulating ≥10 runs on potentially-broken stack.
+
+### Shakedown rules
+
+1. **First 1-2 real chain runs after Iter 67 ship = SHAKEDOWN.**
+2. Telemetry events from shakedown runs MARKED with `payload.shakedown: true` (skill bodies emit this flag when run is among first 2 post-Iter-67).
+3. Iter 68 analysis EXCLUDES shakedown-marked runs from soak count.
+4. If shakedown runs reveal interaction bugs between Iter 65 + Iter 67 + 64 telemetry: **fix-forward day-0/1 while window still homogeneous**. Schema additions allowed per LOCKED schema rules.
+5. After 2 shakedown runs complete cleanly → freeze runtime changes; soak window starts counting toward ≥10 real runs.
+
+### What "real chain run" means for soak counting
+
+- User invokes `/mega-sdd:auto` (or `/mega-sdd:orchestrate-flow`) on a real project
+- Chain produces at least one skill invocation event with handoff completed
+- NOT a test run (`payload.is_test_run: true` excluded)
+- NOT a shakedown run (`payload.shakedown: true` excluded for first 2)
+- Skill chain involves writes (vault generation, binding, units, bolts, etc.) — read-only diagnostic runs don't count
+
+### Freeze period
+
+After Iter 67 ships + 1-2 shakedown runs verified: **NO runtime changes until Iter 66 (post-soak)**. This includes:
+- No new skills
+- No new halt enum entries
+- No new event_types in telemetry schema (additions ALLOWED per mid-soak rules but discouraged unless necessary)
+- Doc-only / cosmetic edits are OK (PATCH-classified per Iter 65 classifier)
+
+Iter 66 ships ONLY when:
+- ≥ 14 calendar days elapsed since Iter 64 ship
+- ≥ 10 non-shakedown real chain runs logged
+- Iter 68 analysis completed → manifest tuning recommendations available
+
+If freeze period reveals critical bug requiring runtime change: emergency fix-forward allowed, but RESTARTS the shakedown clock (next 2 runs after fix-forward = shakedown again).
+
 ## Co-author attribution
 
 Mega-SDD acknowledges the [superpowers](https://github.com/obra/superpowers) project by Jesse Vincent as the design inspiration for plugin patterns (anchor skill, hook injection, skill content structure). See `skills/_vendored/ATTRIBUTION.md`.
