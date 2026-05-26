@@ -8,10 +8,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
 
-# Detect SDD signals in CWD (purely heuristic, no false positives in casual sessions)
+# Detect SDD signals in CWD (purely heuristic, no false positives in casual sessions).
+# Iter 67.5 (v3.48.0+): added `.mega-sdd` to the head of the list — canonical v3.4+ layout puts
+# vaults/binding/codebase under `.mega-sdd/` not at cwd root. Without this entry, the anchor
+# never injected for any v3.4+ project (audit 2026-05-27 §A1, silent regression since v3.4 ship).
 cwd="$(pwd)"
 has_sdd_signal=0
-for signal in "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
+for signal in ".mega-sdd" "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
   if [ -e "${cwd}/${signal}" ]; then
     has_sdd_signal=1
     break

@@ -1,10 +1,14 @@
 # Iter 63 Performance + Sharpness Design — v4.0.0-Candidate Refactor (Sub-Project 1)
 
-**Status:** Design approved 2026-05-26 (user-confirmed Section 1-6 + revised roadmap + 5 tunes)
+**Status:** Design approved 2026-05-26. **AUDIT-CORRECTED 2026-05-27 → Iter 67.5 Fork A scope lock.**
 **Iter target:** Plugin v3.41.0 → v3.42.0 (MINOR — auto-invoke behavior change with backward-compat)
 **Driver:** user shift from feature work to performance/sharpness. "Senior engineer collaborator, not verbose assistant."
 **Spec author:** brainstorming session (research-driven; superpowers:brainstorming flow)
 **Audit source:** `docs/superpowers/audits/2026-05-26-iter-63-performance-audit.md`
+
+> **POST-SHIP CORRECTION (Iter 67.5, 2026-05-27):** Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` revealed that the runtime claims in §4.2 (Iter 65 classifier + guard), §4.3 (Iter 66 lazy-loading), and §4.4 (Iter 67 Plan/Act) were never artifact-verified and never actually executed in real chain runs. The scripts exist as advisory tools; the gating was prose only. Iter 67.5 retracts the "Runtime SHIPPED" claims, scopes Iter 67.5+ to Fork A (telemetry via hooks + skill-body design vocabulary), and parks all control-plane enforcement as Fork-B-future (Agent SDK / custom runtime). See `plugins/mega-sdd/CLAUDE.md` §"Fork A scope (CURRENT) vs Fork B (FUTURE)" for the canonical statement.
+>
+> The sections below remain as the *original design intent*; they describe what the system *would* do if a control plane existed. They do NOT describe what runs in Fork A. Treat as forward-looking documentation pending Fork B.
 
 ---
 

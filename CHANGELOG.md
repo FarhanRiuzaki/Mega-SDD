@@ -7,6 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.48.0] - 2026-05-27
+
+### Iter 67.5 — Honesty/Cleanup + Fork A scope lock (audit response)
+
+**Audit-driven retraction.** Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` (filed under adversarial / artifact-only-evidence methodology) revealed that 4 consecutive iters (64 telemetry, 65 classifier + guard, 67 Plan/Act, 66a turn_end_marker) shipped "runtime active" or "verified working" claims based on smoke tests and doc review, then failed in real orchestration. The repeated failure mode: each iter assumed the model would execute Bash invocations described in skill-body markdown prose. The model does not reliably do this. Audit verdict at the artifact layer:
+
+| Iter claim | Real-run evidence | Verdict |
+|---|---|---|
+| Iter 64 telemetry skill-body emission | 0 of 11 skill-body event types ever emitted | BROKEN |
+| Iter 65 classifier "Runtime SHIPPED" | `classify-iter.sh` referenced ONLY by orchestrate-flow SKILL.md prose; never Bash-invoked anywhere | BROKEN |
+| Iter 65 anti-recursive guard "Runtime SHIPPED" | `check-recursion-budget.sh` referenced by ZERO skill bodies; no `.replan-budget` exists | BROKEN |
+| Iter 67 Plan/Act "COMPLEXITY-GATED runtime" | No `.plan-pending` written; 0 plan/act telemetry events | BROKEN (cascade from broken classifier) |
+| Iter 66a turn_end_marker | 1 partial run produced no turn_end_marker; smoke test passed in isolation | UNVERIFIED |
+| SessionStart anchor | Signal list probed pre-v3.4 paths only; never injected anchor for any v3.4+ project | BROKEN since v3.4 (silent regression) |
+| PostToolUse | 1 ref_loaded across multi-run history; Read-only matcher missed Bash-driven loads | WORKING-BUT-NARROW |
+| Phase-2 OQ-ID propagation | OQ-DM-P2-1 present in binding-phase-2.md but DROPPED at unit boundary | DATA-INTEGRITY BUG |
+
+**Architectural decision: Fork A scope lock.** Per user direction (relay 2026-05-27): the only model-proof layer available in Claude Code is hooks. Hooks can cover telemetry + anchor injection. Behavior control (classifier-gating, anti-recursive guard, Plan/Act mode, lazy-load enforcement) CANNOT be reliably enforced through skill-body prose and is PARKED as Fork-B-future (requires Agent SDK / custom runtime). No more "wire the scripts" attempts in Fork A.
+
+**Item-by-item disposition (per user relay):**
+
+#### 1. FIX — SessionStart signal list (audit §A1)
+- `plugins/mega-sdd/hooks/session-start` — added `.mega-sdd` to the head of the SDD-signal probe list. The v3.4 layout migration moved vaults/binding/codebase under `.mega-sdd/` but the hook signal list was never updated. The anchor has been silently failing to inject for every v3.4+ project since v3.4 ship.
+- Smoke-verified: running the hook with TF Import CWD now correctly identifies the SDD signal and injects the `using-mega-sdd` anchor.
+
+#### 2. FIX — Stop hook instrument + transcript usage capture (audit §A3)
+- `plugins/mega-sdd/hooks/stop` — rewritten:
+  - **Diagnostic layer:** every Stop invocation writes one JSON line to `<cwd>/.mega-sdd/memory/hook-debug.log` regardless of telemetry gates (still honors opt-out). Purpose: prove whether the Claude Code harness is even invoking Stop for the project CWD. If `hook-debug.log` doesn't grow during a real turn, the hook is not being called — investigate the harness layer, not the script.
+  - **Transcript usage extraction:** stdin from Claude Code includes `transcript_path`. The hook now opens the transcript, walks to the last `assistant` message, and pulls `message.usage` (input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens). The `turn_end_marker` event payload carries these REAL numbers from the harness, not bytes/4 estimates. This directly answers the 150k/unit token mystery once a real run executes.
+  - Smoke-test 5/5 PASS: real usage extraction, graceful fallback when transcript missing, no pollution in non-mega-sdd projects, opt-out honored, empty stdin doesn't crash.
+
+#### 3. RETRACT — Iter 65 + Iter 67 "Runtime SHIPPED" claims (audit §C, §D, §E)
+- `plugins/mega-sdd/CLAUDE.md`:
+  - Iter Ceremony Classifier section — "Runtime impl SHIPPED in Iter 65 v3.45.0+" replaced with explicit retraction. Script remains as advisory tool (humans can `bash classify-iter.sh --ep=EP1` manually). Classifier-driven ceremony gating PARKED as Fork-B-future.
+  - Anti-Recursive Guard section — same retraction. `check-recursion-budget.sh` remains as advisory tool. Runtime enforcement parked.
+  - Plan/Act Mode section — Iter 67 "COMPLEXITY-GATED runtime" claim retracted. Step 2.95 in orchestrate-flow remains as design intent prose, not runtime behavior. Plan-vs-Act decisions are now human-driven via explicit instruction.
+  - 3-Tier Context Model section — Iter 66 lazy-load enforcement parked Fork-B-future.
+  - New top-level section **"Fork A scope (CURRENT) vs Fork B (FUTURE)"** added before all retracted-claim sections. Sets context for any AI agent or human reading downstream content.
+- `docs/superpowers/specs/2026-05-26-iter-63-performance-sharpness-design.md` — added prominent header note at top of doc explaining §4.2 / §4.3 / §4.4 are forward-looking design, not Fork A behavior.
+
+#### 4. BROADEN + DOCUMENT — PostToolUse coverage (audit §A2)
+- `plugins/mega-sdd/hooks/hooks.json` — matcher broadened from `Read|Skill` to `Read|Skill|Bash`.
+- `plugins/mega-sdd/hooks/post-tool-use` — Bash branch added. Scans Bash commands for read verbs (`cat`, `head`, `tail`, `grep`, `less`, `more`, `rg`, `bat`, `view`, `awk`, `sed`) targeting mega-sdd paths; emits one `ref_loaded` per detected path. Events tagged `payload.source_tool: "Bash"` (vs `"Read"`) so analysis can distinguish.
+- **HONEST blind spot documented** in `plugins/mega-sdd/references/telemetry-schema.md` §Emission mechanism: subagent-internal tool calls (Read/Bash inside a dispatched Agent thread) are NOT visible to the parent's hook. Multi-line / complex Bash (shell redirection `< file`, awk/sed reading via stdin, find-exec, xargs) is missed. `ref_loaded` UNDER-COUNTS true loads. For accurate per-turn totals, use `turn_end_marker.payload.usage.input_tokens` (harness-reported, ground truth), NOT sum-of-ref_loaded.
+- Smoke-test 7/7 PASS: Bash cat captures, Bash grep multi-path captures both, no-read-verb skipped, non-mega-sdd path skipped, Read still works, Skill still works, empty stdin doesn't crash.
+
+#### 5. FIX — Phase-2 OQ-ID propagation in generate-units (audit §F)
+- `plugins/mega-sdd/skills/generate-units/SKILL.md` — added Step 12.5.g "OQ-ID propagation check" + new anti-hallucination rail (v2.7.0+, Iter 67.5). Every OQ from the binding resolution table whose resolution is implemented in a unit MUST appear in the unit's `binding_refs:` frontmatter; missing → halt `unit_oq_trace_missing`. CONFLICTs already propagated correctly (phase-1 verified); OQs were silently dropped (phase-2 OQ-DM-P2-1 traced from binding-phase-2.md to U-005/U-014 — resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was lost).
+- Skill version bumped: generate-units `2.7.1` → `2.8.0`.
+
+#### 6. SHRINK — Telemetry schema reality reset (audit §G)
+- `plugins/mega-sdd/references/telemetry-schema.md` — rewritten. The Iter 64 16-event "LOCKED schema" was aspirational; only 1 event emitted in practice. New schema has 5 live event types (3 hook-emitted reliable: `ref_loaded`, `skill_invoked`, `turn_end_marker`; 2 skill-body best-effort: `halt_fired`, `activation_outcome`). 11 control-layer events PARKED in a "Fork-B-future" section (retained as design vocabulary; explicitly NOT emitted in Fork A): `iter_classifier_output`, `iter_classifier_drift`, `replan_triggered`, `revalidate_triggered`, `replan_budget_exceeded`, `revalidate_budget_exceeded`, `plan_mode_entered`, `act_mode_entered`, `plan_act_transition`, `tier_classification_decision`, `turn_loaded_summary` (the last is derived offline, not emitted live).
+- Schema "frozen mid-soak" policy RELAXED to "additive changes to live events allowed; new event_types require artifact-verified emitter before declaring shipped."
+
+**Soak gate REVISED:**
+- Clock starts at **Iter 67.5 verified-write date** (first real run that produces ≥1 `ref_loaded` AND ≥1 `turn_end_marker` in the same session, with `hook-debug.log` showing the Stop hook fires for that CWD).
+- ≥ 14 calendar days from that date
+- ≥ 10 non-shakedown real chain runs
+- First 1-2 real runs after this release = SHAKEDOWN (excluded from count); user identifies operationally.
+- All prior soak counts are INVALIDATED — Fork A scope is a fresh start.
+
+**Memory update:** new feedback memory `feedback_artifact_verified_ships.md` saved to user's auto-memory. Codifies the pattern: ship claims must be artifact-verified, not doc-verified; skill-body prose wire-ups have failed 4× in a row; for deterministic enforcement, use the hook layer (Fork A) or wait for Fork B.
+
+**Files touched (~18):**
+- Hooks: `plugins/mega-sdd/hooks/{session-start,stop,post-tool-use,hooks.json}`
+- Skills: `plugins/mega-sdd/skills/generate-units/SKILL.md`
+- References: `plugins/mega-sdd/references/telemetry-schema.md`
+- Plugin core: `plugins/mega-sdd/CLAUDE.md`, `plugins/mega-sdd/.claude-plugin/plugin.json`, `plugins/mega-sdd/README.md`
+- Spec: `docs/superpowers/specs/2026-05-26-iter-63-performance-sharpness-design.md`
+- Repo root: `README.md`, `CHANGELOG.md`
+- Audit doc (already filed): `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md`
+
+**Classifier dogfood (advisory only, since classifier runtime is retracted):** files_changed ~15-18 (right at MINOR/MAJOR boundary). Iter type called MINOR by author judgment because:
+- No new skill directories
+- No new halt enum entries (the new `unit_oq_trace_missing` blocker is a subtype consumed by existing halt protocol, not a top-level enum addition)
+- Retracted claims are not API-breaking — scripts still exist, schema still readable, no consumer code in user projects depends on the retracted runtime
+- Existing skill bodies modified (generate-units gets new Step 12.5.g) → MINOR criterion ✓
+
+**Plugin v3.47.0 → v3.48.0** (MINOR — audit-driven cleanup + Fork A scope lock; no new functionality, primary deliverable is honesty + retraction + 2 working hook fixes + 1 data-integrity fix).
+
+**What 67.5 does NOT do:**
+- Does not delete the advisory scripts (`classify-iter.sh`, `check-recursion-budget.sh`) — they're useful as human-invoked tools, kept in repo
+- Does not re-wire the retracted runtime claims (that's Fork B, not Fork A)
+- Does not start the soak clock (clock starts on user's next real chain run that produces clean telemetry)
+- Does not add new schema events for Fork A — schema is now reality-locked, not aspirational
+
+**Verification path (user-side, mandatory before soak counts):**
+1. User runs any mega-sdd skill on TF Import (or any real project with `.mega-sdd/`)
+2. After turn ends, check `<project>/.mega-sdd/memory/hook-debug.log` — should have ≥1 line (proves Stop hook fires)
+3. Check `<project>/.mega-sdd/memory/telemetry.jsonl` — should have multiple `ref_loaded` events (including some with `payload.source_tool: "Bash"`) + ≥1 `turn_end_marker` with non-empty `payload.usage` (real harness numbers)
+4. If those 3 conditions hold for 2 consecutive sessions → shakedown complete; soak begins counting
+5. If any fail → fix-forward immediately, restart shakedown clock
+
 ## [3.47.0] - 2026-05-27
 
 ### Iter 66a — Telemetry Emission Rewire (Claude Code hooks) + Soak Gate Reframe

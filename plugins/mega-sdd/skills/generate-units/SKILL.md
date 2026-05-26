@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.7.1
+version: 2.8.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -643,6 +643,46 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
 
       This rail enforces that every starterkit-derived Hard Rule includes its citation — mirrors existing "every Hard Rule needs a Citation" rail (Step 12.4.5) extended to starterkit-derived rules.
 
+   g. **OQ-ID propagation check (v2.7+, Iter 67.5 — audit response 2026-05-27 §F):**
+
+      Every Open Question that influenced this unit's content MUST appear in `binding_refs:` frontmatter. An OQ "influenced" the unit when its resolution (per `binding.md` or `binding-<phase>.md` Resolution Table) corresponds to design choices reflected in the unit body, target_files, hard rules, or migration notes.
+
+      ```
+      FOR EACH unit being written:
+        binding_resolution_table = parse binding.md (or binding-<phase>.md) Resolution Table
+        oq_ids_in_table = collect all OQ-* IDs from resolution table
+        oq_ids_in_binding_refs = unit.frontmatter.binding_refs intersect (OQ-* prefix)
+
+        # An OQ is "implementation-relevant" to this unit when:
+        # - the OQ's resolution touches files in unit.target_files, OR
+        # - the OQ's resolution text appears semantically in unit.body (anchors, hard rules, migration notes), OR
+        # - the OQ's `priority: P1` (P1 OQs are always implementation-critical per vault-contract)
+
+        relevant_oqs = filter oq_ids_in_table by above criteria
+        missing = relevant_oqs - oq_ids_in_binding_refs
+
+        IF missing is non-empty:
+          → HALT `unit_oq_trace_missing`
+          → blocker.details: { unit_id, missing_oqs: [...], reason: "OQ resolutions implemented in this unit but ID not propagated to binding_refs" }
+          → next_action: "Append the listed OQ-IDs to the unit's binding_refs frontmatter; re-run generate-units."
+      ```
+
+      **Why this rail exists:** audit 2026-05-27 §F traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). Future readers reviewing U-005 cannot trace the design decision back to its source OQ. CONFLICTs already propagate via this same mechanism (per phase-1 verification); this rail extends the discipline to OQs.
+
+      **Halt YAML:**
+
+      ```yaml
+      blocker:
+        type: unit_oq_trace_missing
+        emitted_at: <ISO8601 timestamp>
+        emitted_by: generate-units
+        details:
+          unit_id: U-XXX
+          missing_oqs: [OQ-DM-P2-1, OQ-FE-P2-3]
+          binding_source: binding-phase-2.md
+        next_action: "Append the listed OQ-IDs to unit's binding_refs frontmatter so the traceability link is preserved."
+      ```
+
    **Halt YAML format:**
 
    ```yaml
@@ -716,6 +756,7 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
 - (v2.6.0+, Iter 32) Starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` explicitly. Citation is machine-checked in Step 12.5.f. Missing citation → halt `starterkit_rule_citation_missing` (ALWAYS STOP — not a soft warning).
 - (v2.6.0+, Iter 32) Starterkit relevance computed from `unit.target_files` paths + unit body text only. NEVER fabricate relevance for domains not matched by the rules in Step 7.7.b.
 - (v2.6.0+, Iter 32) When `starterkit_context.partial == true`, skip Anchors + Hard Rules for slices listed in `partial_slices:`. Degrade to framework-pack-only for missing slices; do NOT guess absent slice content.
+- (v2.7.0+, Iter 67.5) OQ-IDs propagate from binding Resolution Table → unit `binding_refs:` frontmatter when the OQ resolution is implemented in the unit. Step 12.5.g halts `unit_oq_trace_missing` if any implementation-relevant OQ is missing. CONFLICTs already did this; OQs were silently dropped pre-67.5 (audit 2026-05-27 §F).
 
 ## Halt conditions
 
