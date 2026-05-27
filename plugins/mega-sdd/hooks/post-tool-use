@@ -445,6 +445,17 @@ except Exception:
       "${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh" \
       "${CWD}/.mega-sdd/.vault-binding-coverage-state.json" \
       "PostToolUse-Write-validate-vault-binding-coverage"
+
+    # ── Validator 7 (R2): KB output validation ────────────────────────────
+    # Fires when KB domain/workflow/business-rules files are saved.
+    case "$FILE_PATH" in
+      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md)
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
+          "${CWD}/.mega-sdd/.kb-output-state.json" \
+          "PostToolUse-Write-validate-kb-output"
+        ;;
+    esac
     ;;
 
   *)
