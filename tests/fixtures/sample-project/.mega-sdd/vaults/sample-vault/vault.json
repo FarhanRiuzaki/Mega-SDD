@@ -1,0 +1,33 @@
+{
+  "vault_version": "1.0",
+  "generated_at": "2026-05-27T00:00:00Z",
+  "phase": 1,
+  "phase_total": 1,
+  "project_shape": "web-app",
+  "implementation_mode": "new",
+  "mode": "existing",
+  "prd_status": "approved",
+  "output_mode": "compact",
+  "source_documents": [
+    {"type": "PRD", "path": "tests/fixtures/sample-project/PRD.md", "version": "1.0", "date": "2026-05-27"}
+  ],
+  "entities": [
+    {"name": "user", "purpose": "System user account", "doc": "03-data-model.md", "fields_count": 5},
+    {"name": "leave_request", "purpose": "Leave request lifecycle", "doc": "03-data-model.md", "fields_count": 8}
+  ],
+  "flows": [
+    {"id": "F-U-001", "title": "Submit leave request", "type": "user", "doc": "04-flows.md", "dod_count": 3}
+  ],
+  "adrs": [
+    {"id": "D-001", "title": "Use PostgreSQL", "doc": "05-decisions.md", "status": "accepted"}
+  ],
+  "open_questions": [
+    {"tag": "OQ-AR-1", "priority": "P2", "doc": "02-architecture.md", "status": "open", "category": "tech"},
+    {"tag": "OQ-DM-1", "priority": "P1", "doc": "03-data-model.md", "status": "resolved", "category": "business"}
+  ],
+  "open_questions_summary": {
+    "total": 2,
+    "by_priority": {"P1": 1, "P2": 1},
+    "by_status": {"open": 1, "resolved": 1}
+  }
+}
