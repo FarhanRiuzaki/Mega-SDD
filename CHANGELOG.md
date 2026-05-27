@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.51.0] - 2026-05-27
+
+### Iter 67.7.1 — Hook-layer C1 enforcement for `mode_migrate` (Gates A + B closed via real-run proof)
+
+**Context.** Iter 67.7 (v3.50.0) shipped the C1 escalation protocol as PROSE in vault-contract.md. Reviewer 2026-05-27 audit identified two gates before Phase B (the 22 remaining C1 candidates) could collapse:
+
+- **Gate A:** anti-hiding net (telemetry + chat one-liner) was unproven — depended on telemetry emission that was itself unverified in production. If telemetry doesn't emit, self-resolve happens silently = exactly the failure mode the attestation claims to prevent.
+- **Gate B:** C1 protocol shipped as prose = 4× audit-failure pattern. Classification ≠ working behavior. Phase B should not ship until proven self-resolve actually happens in production, likely needing hook-layer enforcement (not prose).
+
+Also 3 reclassifications applied to the C1 list per reviewer:
+- **#13 `hard_rule_unparseable`** — re-emit attempt OK as C1; DROP path escalates to C2 (Hard Rule is grounding; silent drop = anti-halu moat erosion)
+- **#12 `unit_underspecified`** — target_files re-derive OK as C1; acceptance_test substitution gets HARD-FLAGGED stub (not silent template); non-trivial units (task_type ∈ {create, extend}, complexity ≠ small) escalate to C2
+- **#9 `framework_pack_missing`** — accepted C1 with WATCH; degraded packs now surface in binding.md top-of-doc `## ⚠️ DEGRADED — Framework Packs Dropped` section (not inline log only)
+
+### What ships in 67.7.1
+
+**Walking-skeleton slice: hook-layer enforcement for ONE Phase A halt (`mode_migrate`).** Pattern proven; expansion to remaining 5 Phase A halts (each its own slice) unblocked.
+
+**Modified `plugins/mega-sdd/hooks/session-start`:**
+
+After SDD signal detection, scan `<cwd>/.mega-sdd/vaults/*/vault.json` (excluding `.archived/`). For each, compare `mode` field against CWD signals (deterministic mapping: `.git` / `composer.json` / `package.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `build.gradle` / `pom.xml` / `requirements.txt` / `pyproject.toml` present → `existing`; absent → `greenfield`).
+
+On mismatch:
+1. **Auto-fix:** write corrected `mode` to vault.json (preserve other fields via JSON load+dump)
+2. **Emit telemetry:** `halt_self_resolved` event to `<cwd>/.mega-sdd/memory/telemetry.jsonl` with full forensics — `halt_type`, `fix_applied`, `scope`, `detected_signals`, `vault_json_path`, `ts`
+3. **Append chat one-liner** to anchor injection in a `<self-resolve-log>` block: `[self-resolved] mode_migrate: <scope> mode <old> → <new>`
+4. **Continue.** No halt envelope. No user prompt.
+
+Honors opt-out: `<cwd>/.mega-sdd/config.yaml` `telemetry: false` disables the guard (auto-fix included — user opting out of telemetry also opts out of stealth mutations).
+
+Idempotent: re-running with already-correct mode is a no-op (no re-emit, no spam).
+
+### Real-run proof (TF Import 2026-05-27 — ALL 8 STEPS PASS)
+
+Test sequence:
+1. Set `vault.json.mode = "greenfield"` deliberately wrong (TF Import has .git + composer.json → signals say `existing`) ✓
+2. telemetry.jsonl baseline = 7 lines
+3. Simulate SessionStart with `cwd = TF Import` → hook fires
+4. vault.json.mode auto-fixed to `existing` ✓
+5. telemetry.jsonl grew 7 → 11 (4 events — one per active vault.json) with full payload ✓
+6. `<self-resolve-log>` block injected in anchor with 4 lines ✓
+7. Re-run idempotency: no re-fire, no new events, no notice in injection ✓
+8. Restore vault.json to original state
+
+**This is the FIRST C1 self-resolve PROVEN to work in production hook code on real artifacts.** Not smoke test, not isolated unit test — real TF Import data, real hook execution, real telemetry events with full payload.
+
+### Gates closed
+
+**Gate A — Anti-hiding net PROVEN FUNCTIONAL:**
+- `halt_self_resolved` events written to telemetry.jsonl with full forensics
+- Chat one-liner present in anchor injection (`<self-resolve-log>` block; visible at session start; human cannot miss)
+- Iter 68 audit can filter by `event_type: halt_self_resolved` to inspect C1 frequency + class distribution
+
+**Gate B — Hook-layer enforcement viable:**
+- C1 self-resolve works via deterministic hook code (zero prose dependency)
+- Pattern reusable for other Phase A halts: detect condition deterministically → apply fix → emit telemetry → append notice → continue
+- Future slices (Phase A halts 2-6, then Phase B 22 halts) follow the same skeleton
+
+### Disclosure (per honesty discipline)
+
+Real-run test side-effects on TF Import:
+- 4 vault.json files had `mode` field auto-set to `existing` (correct value — auto-fix is intended behavior). Phase-2-workflows-bound vault.json was restored to its pre-test state (which had `mode: (missing)`); on user's next session, hook will re-auto-fix it to `existing`.
+- 4 telemetry events tagged `session_id: session-start-hook` are in TF Import telemetry.jsonl as test residue (marker `session-start-hook` instead of real Claude Code session UUID; Iter 68 filters).
+
+### What 67.7.1 does NOT do
+
+- Does NOT extend hook enforcement to the other 5 Phase A halts (each is its own walking-skeleton slice — pattern proven, expansion deferred)
+- Does NOT touch Phase B's 22 C1 candidates (still awaiting reviewer attestation sign-off; now ALSO awaiting per-halt hook implementation since prose is proven unreliable)
+- Does NOT modify any skill body (vault-contract.md updates are shared reference; hook enforcement bypasses skill body entirely)
+
+### Next slice candidates (each separate iter with real-run proof)
+
+1. **`partial_state_corrupt`** — PostToolUse on Read of partial-state.json: if JSON parse fails, rename `.corrupt-<ts>` + emit telemetry. Trigger: `echo '{not-json}' > <vault>/bolts/U-XXX/partial-state.json` + run execute-bolts.
+2. **`routing_outcome_corrupt`** — same pattern, PostToolUse on Read of routing-outcomes.md
+3. **`model_tier_unknown`** — orchestrate-flow body emit path; pure log+telemetry; lower hook surface area
+4. **`memory_in_use`** — memory subsystem retry budget; not a hook-layer concern (memory writes happen in skill body)
+5. **`verify_unit_writable`** — PostToolUse on Read of unit.md: if task_type=verify and target_files non-empty, emit telemetry + chat warning (don't modify on-disk; warn instead)
+
+### Classifier dogfood (advisory)
+
+- files_changed: 6 (session-start + 2 audit docs + plugin.json + 2 READMEs + CHANGELOG)
+- New behavior: hook-layer C1 self-resolve enforcement (concrete + tested)
+- No new skill dir, no new halt enum, no skill body modified
+- 5-15 range + new functionality → **MINOR** ✓
+
+**Plugin v3.50.0 → v3.51.0** (MINOR — first hook-layer C1 enforcement, real-run-proven on TF Import).
+
 ## [3.50.0] - 2026-05-27
 
 ### Iter 67.7 — Halt escalation discipline (Phase A: 6 already-soft halts → C1)
