@@ -120,8 +120,11 @@ V9_RC=$(run_validator "audit-domain-rules.sh" --cwd="$CWD" --quiet)
 # 1i. Constitution enforcement validator (R5)
 V10_RC=$(run_validator "validate-constitution.sh" --cwd="$CWD" --quiet)
 
-# 1j. Codebase-map schema validation (R6)
-V11_RC=$(run_validator "validate-codebase-map.sh" --cwd="$CWD" --quiet)
+# 1j. Constitution clause propagation (C — finding-driven enforcement)
+V11_RC=$(run_validator "validate-constitution-propagation.sh" --cwd="$CWD" --quiet)
+
+# 1k. Codebase-map schema validation (R6)
+V12_RC=$(run_validator "validate-codebase-map.sh" --cwd="$CWD" --quiet)
 
 # --- Phase 2: Vault internal consistency checks (NEW — R7 folded into R1) ---
 VAULT_CONSISTENCY=$(CWD="$CWD" python3 <<'PYEOF'
@@ -225,7 +228,7 @@ PYEOF
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
-  V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" \
+  V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   python3 <<'PYEOF'
 import json
 import os
@@ -250,7 +253,8 @@ validator_results = {
     "conflict_classification": {"rc": os.environ["V8_RC"], "state_file": ".conflict-classification-state.json"},
     "domain_rules": {"rc": os.environ["V9_RC"], "state_file": ".domain-rules-state.json"},
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
-    "codebase_map": {"rc": os.environ["V11_RC"], "state_file": ".codebase-map-state.json"},
+    "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},
+    "codebase_map": {"rc": os.environ["V12_RC"], "state_file": ".codebase-map-state.json"},
 }
 
 # Read state files for detail

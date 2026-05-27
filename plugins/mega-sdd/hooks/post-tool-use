@@ -361,6 +361,11 @@ except Exception:
         if [ -x "$VALIDATOR_BU" ]; then
           bash "$VALIDATOR_BU" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
         fi
+        # Constitution clause propagation (same boundary, same trigger)
+        VALIDATOR_CP="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
+        if [ -x "$VALIDATOR_CP" ]; then
+          bash "$VALIDATOR_CP" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 

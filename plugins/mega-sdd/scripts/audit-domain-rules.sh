@@ -106,23 +106,28 @@ for r in kb_rules:
         seen_reg_ids.add(rid)
         unique_rules.append(r)
 
-# Read vault constraints
-vault_constraints = ""
-for cf in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "06-constraints.md"))):
-    if "/.archived/" in cf:
-        continue
-    try:
-        vault_constraints += open(cf).read() + "\n"
-    except Exception:
-        continue
-
-if not vault_constraints.strip():
-    # Also check non-vault-dir level
-    for cf in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "06-constraints.md"))):
-        if "/.archived/" in cf:
+# Read ALL vault content (not just 06-constraints — R4 hardening)
+# Regulatory terms may be addressed in decisions (05), architecture (02),
+# flows (04), constitution, or overview (01). Limiting to 06 causes false gaps.
+vault_content = ""
+vault_file_patterns = [
+    os.path.join(cwd, ".mega-sdd", "vaults", "*", "0[0-6]-*.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "0[0-6]-*.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "constitution.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "binding.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "binding*.md"),
+]
+vault_files_read = set()
+for pattern in vault_file_patterns:
+    for vf in sorted(glob.glob(pattern)):
+        if "/.archived/" in vf:
             continue
+        if vf in vault_files_read:
+            continue
+        vault_files_read.add(vf)
         try:
-            vault_constraints += open(cf).read() + "\n"
+            vault_content += open(vf).read() + "\n"
         except Exception:
             continue
 
@@ -134,7 +139,7 @@ for rule in unique_rules:
     if not terms:
         continue
     # Count how many key terms appear in vault constraints
-    matches = sum(1 for t in terms if re.search(r"\b" + re.escape(t) + r"\b", vault_constraints, re.IGNORECASE))
+    matches = sum(1 for t in terms if re.search(r"\b" + re.escape(t) + r"\b", vault_content, re.IGNORECASE))
     coverage = matches / len(terms) if terms else 0
 
     if coverage < 0.3:  # Less than 30% key term overlap → gap
@@ -161,7 +166,7 @@ result = {
     "rules_covered": len(covered),
     "rules_gap": len(gaps),
     "gaps": gaps[:20],  # cap at 20 for readability
-    "summary": f"{len(covered)}/{len(unique_rules)} regulatory rules covered in vault constraints; {len(gaps)} gaps",
+    "summary": f"{len(covered)}/{len(unique_rules)} regulatory rules addressed in vault; {len(gaps)} candidate gaps for review (may be covered in sections the keyword scan missed)",
 }
 
 # Write RULE-GAP-REPORT.md if gaps exist
@@ -170,11 +175,14 @@ if gaps:
     lines = [
         f"# Domain Rule Gap Report — {ts}",
         "",
-        f"**Status: {len(gaps)} gaps found** ({len(covered)} of {len(unique_rules)} regulatory rules covered)",
+        f"**Status: {len(gaps)} candidate gaps for review** ({len(covered)} of {len(unique_rules)} regulatory rules addressed in vault)",
+        "",
+        "> **Note:** gaps are candidates, not confirmed missing rules. The keyword scan may miss",
+        "> coverage expressed in different terminology. Review each gap against the full vault.",
         "",
         "---",
         "",
-        "## Gaps (KB rules NOT referenced in vault constraints)",
+        "## Candidate Gaps (KB rules with <30% keyword overlap in vault)",
         "",
         "| # | Regulatory ID | Source | Key Terms | Coverage | Context |",
         "|---|---|---|---|---|---|",
