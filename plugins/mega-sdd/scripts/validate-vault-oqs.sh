@@ -91,34 +91,103 @@ citation_pattern = re.compile(
 )
 oq_pattern = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
 
-# Walk the body finding OQ context blocks (look 30 lines around each OQ mention)
+# Walk the body. Build per-OQ blocks: text from OQ mention up to (but excluding)
+# the next OQ mention. This avoids the bug where OQ-A's metadata window catches
+# OQ-B's `mode:` line (15-line proximity false-positives).
 lines = body.split("\n")
+
+# First pass: find all OQ-line indices
+oq_anchors = []  # list of (line_idx, [oq_ids_in_line])
 for i, line in enumerate(lines):
-    oqs_in_line = oq_pattern.findall(line)
-    if not oqs_in_line:
-        continue
-    # Look at 30-line window for citations
-    window = "\n".join(lines[i:min(i + 30, len(lines))])
-    citations = citation_pattern.findall(window)
-    if not citations:
-        continue
-    for oq in oqs_in_line:
+    found = oq_pattern.findall(line)
+    if found:
+        oq_anchors.append((i, found))
+
+# Build per-OQ blocks
+oq_blocks = []  # list of (oq_id, block_text)
+for idx, (line_i, oqs) in enumerate(oq_anchors):
+    # Block ends at next OQ anchor OR 30 lines later (whichever first)
+    if idx + 1 < len(oq_anchors):
+        block_end = min(oq_anchors[idx + 1][0], line_i + 30)
+    else:
+        block_end = min(line_i + 30, len(lines))
+    block = "\n".join(lines[line_i:block_end])
+    for oq in oqs:
+        oq_blocks.append((oq, block))
+
+processed_oqs = set()
+for oq, window in oq_blocks:
+        # ─── Check oq_recommend_citation_invalid (original) ─────────────────
+        citations = citation_pattern.findall(window)
         for cit in citations:
             cit_clean = cit.strip().rstrip(",;)")
-            # Resolve to absolute path
             if not kb_present:
-                # KB absent — log as advisory, NOT a failure (per risk-flag #2)
-                continue
-            # Check if citation resolves to a KB file or section
+                continue  # graceful skip (risk-flag #2)
             full_cit = os.path.join(cwd, ".mega-sdd", cit_clean.split("§")[0].split("#")[0])
             if not os.path.exists(full_cit):
-                # Citation points to a file that doesn't exist
                 issues.append({
                     "halt_type": "oq_recommend_citation_invalid",
                     "detail": f"OQ {oq} cites KB path that does not exist: {cit_clean}",
                     "oq_id": oq,
                     "citation": cit_clean,
                     "resolved_to": full_cit,
+                })
+
+        # Skip schema checks if we already processed this OQ
+        if oq in processed_oqs:
+            continue
+        processed_oqs.add(oq)
+
+        # ─── B.4-followup: detect OQ category + mode for schema checks ───────
+        # Category indicator: `[tech]` or `[business]` in OQ line, OR `category: tech` field
+        has_tech_category = bool(re.search(r"\[tech\]|category:\s*tech", window, re.IGNORECASE))
+        has_business_category = bool(re.search(r"\[business\]|category:\s*business", window, re.IGNORECASE))
+
+        # mode: line in window
+        mode_match = re.search(r"^\s*[-*]?\s*mode:\s*(\w+)", window, re.MULTILINE)
+        mode_value = mode_match.group(1).lower() if mode_match else None
+
+        # ─── Check oq_tech_missing_mode ──────────────────────────────────────
+        # Tech-categorized OQ without mode: field
+        if has_tech_category and not mode_value:
+            issues.append({
+                "halt_type": "oq_tech_missing_mode",
+                "detail": f"OQ {oq} categorized [tech] but missing `mode:` field (expected `mode: scan` or `mode: recommend`)",
+                "oq_id": oq,
+                "category": "tech",
+            })
+
+        # ─── Check oq_scan_missing_query ─────────────────────────────────────
+        # mode=scan OQ requires `scan_target:` field within window
+        if mode_value == "scan":
+            scan_target_match = re.search(r"^\s*[-*]?\s*scan_target:\s*\S+", window, re.MULTILINE)
+            if not scan_target_match:
+                issues.append({
+                    "halt_type": "oq_scan_missing_query",
+                    "detail": f"OQ {oq} has `mode: scan` but missing `scan_target:` field",
+                    "oq_id": oq,
+                    "mode": "scan",
+                })
+
+        # ─── Check oq_recommend_underspecified ───────────────────────────────
+        # mode=recommend OQ requires recommendation, rationale, citations fields
+        if mode_value == "recommend":
+            required_fields = ["recommendation", "rationale"]
+            # Citations are loose — accept either Citation: or citations: or cites:
+            has_citation = bool(re.search(r"^\s*[-*]?\s*(?:Citation|citation|cite|cites|citations):", window, re.MULTILINE))
+            missing_fields = []
+            for f in required_fields:
+                if not re.search(rf"^\s*[-*]?\s*{f}:", window, re.MULTILINE | re.IGNORECASE):
+                    missing_fields.append(f)
+            if not has_citation:
+                missing_fields.append("citation|citations")
+            if missing_fields:
+                issues.append({
+                    "halt_type": "oq_recommend_underspecified",
+                    "detail": f"OQ {oq} has `mode: recommend` but missing required field(s): {missing_fields}",
+                    "oq_id": oq,
+                    "mode": "recommend",
+                    "missing_fields": missing_fields,
                 })
 
 status = "PASS" if not issues else "FAIL"

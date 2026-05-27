@@ -303,6 +303,151 @@ for up in unit_paths_vw:
     )
     notices.append(f"[self-resolved] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (review needed; dispatch will auto-clear)")
 
+# ─── Guard 5: framework_pack_unparseable (B.7) + framework_pack_cycle (B.8) ─
+# + framework_pack_missing (B.10) — combined pack-integrity scan.
+# Pack files live under <cwd>/.mega-sdd/codebase/framework-conventions/*.md
+# OR referenced from binding docs / starterkit-context.yaml.
+# Walking-skeleton scope:
+#   - Find all *.md files under framework-conventions/
+#   - For each: try to read; check for `extends:` field that points to other pack
+#   - Build inheritance graph; detect cycles
+#   - Detect references in binding/starterkit-context.yaml pointing to missing packs
+pack_dir_candidates = [
+    os.path.join(cwd, ".mega-sdd", "codebase", "framework-conventions"),
+    os.path.join(cwd, ".mega-sdd", "codebase", "packs"),
+]
+pack_dir = next((d for d in pack_dir_candidates if os.path.isdir(d)), None)
+pack_files = {}  # basename → path
+pack_extends = {}  # basename → list of extended basenames
+
+if pack_dir:
+    for pf in sorted(glob.glob(os.path.join(pack_dir, "*.md"))):
+        base = os.path.basename(pf).replace(".md", "")
+        pack_files[base] = pf
+        # Try to parse — detect unparseable + extends references
+        try:
+            content = open(pf, encoding="utf-8").read()
+        except Exception:
+            emit_event(
+                "framework_pack_unparseable",
+                f"pack {base} could not be read as UTF-8 text",
+                pack_name=base,
+                pack_path=os.path.relpath(pf, cwd),
+                reason="non-utf8 or read error",
+            )
+            notices.append(f"[self-resolved] framework_pack_unparseable: {base} unreadable; skipping pack")
+            continue
+        # Look for extends: field in YAML frontmatter
+        fm_match = _re.match(r"^---\n(.*?)\n---", content, _re.DOTALL) if "_re" in dir() else None
+        if not fm_match:
+            import re as _re2
+            fm_match = _re2.match(r"^---\n(.*?)\n---", content, _re2.DOTALL)
+        if fm_match:
+            fm = fm_match.group(1)
+            import re as _re3
+            ext_match = _re3.search(r"^extends:\s*\[?([^\]\n]+)\]?", fm, _re3.MULTILINE)
+            if ext_match:
+                ext_value = ext_match.group(1).strip().strip("'\"")
+                # Could be list "[A, B]" or single "A"
+                ext_list = [e.strip().strip("'\"") for e in ext_value.split(",") if e.strip()]
+                pack_extends[base] = ext_list
+
+    # Detect cycles via DFS
+    import re as _re4
+    visited = set()
+    rec_stack = set()
+
+    def find_cycle(node, path):
+        if node in rec_stack:
+            return path + [node]
+        if node in visited:
+            return None
+        visited.add(node)
+        rec_stack.add(node)
+        for nxt in pack_extends.get(node, []):
+            cyc = find_cycle(nxt, path + [node])
+            if cyc:
+                return cyc
+        rec_stack.remove(node)
+        return None
+
+    cycles_reported = set()
+    for base in pack_files:
+        cyc = find_cycle(base, [])
+        if cyc:
+            cyc_key = tuple(sorted(set(cyc)))
+            if cyc_key in cycles_reported:
+                continue
+            cycles_reported.add(cyc_key)
+            emit_event(
+                "framework_pack_cycle",
+                f"pack inheritance cycle detected: {' → '.join(cyc)}",
+                cycle_path=cyc,
+                break_at=cyc[-2] if len(cyc) >= 2 else cyc[0],
+            )
+            notices.append(f"[self-resolved] framework_pack_cycle: cycle {' → '.join(cyc[:3])}... breaking at most-derived edge")
+
+    # Detect missing pack references (referenced in extends but file not found)
+    for base, ext_list in pack_extends.items():
+        for ext in ext_list:
+            if ext not in pack_files:
+                emit_event(
+                    "framework_pack_missing",
+                    f"pack {base} extends nonexistent pack {ext}",
+                    referencing_pack=base,
+                    missing_pack=ext,
+                )
+                notices.append(f"[self-resolved] framework_pack_missing: {base} extends missing {ext}; dropping reference")
+
+# ─── Guard 6: dep_missing (B.11 — non-interactive only) ────────────────────
+# Check required binaries on PATH. Per reviewer 2026-05-27 refinement R2:
+# DETECTION only at SessionStart. Auto-install is NOT performed here (would
+# risk hanging on sudo/network). Emit warning telemetry + chat notice.
+# install-deps subsystem invocation is left to explicit user action.
+import shutil as _shutil
+required_bins = ["tree-sitter", "ast-grep"]  # optional but useful
+missing_bins = [b for b in required_bins if _shutil.which(b) is None]
+if missing_bins:
+    emit_event(
+        "dep_missing",
+        f"required binaries missing on PATH (advisory): {missing_bins}",
+        missing_binaries=missing_bins,
+        suggested_action="run /mega-sdd:install-deps (non-interactive only; manual install if needed)",
+        will_degrade_to="regex tier (scan-codebase) / v1 grammar (execute-bolts)",
+    )
+    notices.append(f"[self-resolved] dep_missing: {missing_bins} not on PATH; will degrade gracefully")
+
+# ─── Guard 7: deep_scan_cache_corrupt (B.9) ────────────────────────────────
+# Check <cwd>/.mega-sdd/codebase/starterkit-context.yaml — if exists, validate
+# it as parseable YAML (or at least structured key:value pairs). If corrupt,
+# rename and let scan-codebase re-build on next invocation.
+import re as _re5
+starterkit_path = os.path.join(cwd, ".mega-sdd", "codebase", "starterkit-context.yaml")
+if os.path.isfile(starterkit_path):
+    try:
+        with open(starterkit_path, "rb") as f:
+            raw = f.read()
+        try:
+            content = raw.decode("utf-8")
+            # Heuristic: must have at least one top-level key: value or comment
+            if not raw or not _re5.search(r"^[a-zA-Z_][\w-]*:", content, _re5.MULTILINE):
+                raise ValueError("no top-level YAML keys found")
+        except (UnicodeDecodeError, ValueError) as e:
+            corrupt_path = f"{starterkit_path}.corrupt-{ts_fname}"
+            os.rename(starterkit_path, corrupt_path)
+            rel_orig = os.path.relpath(starterkit_path, cwd)
+            rel_corrupt = os.path.relpath(corrupt_path, cwd)
+            emit_event(
+                "deep_scan_cache_corrupt",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; next scan-codebase rebuilds",
+                original_path=rel_orig,
+                corrupt_path=rel_corrupt,
+                reason=str(e),
+            )
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; scan-codebase will rebuild")
+    except Exception:
+        pass
+
 if notices:
     print("\n".join(notices))
 PYEOF

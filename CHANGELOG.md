@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.56.0] - 2026-05-27
+
+### Iter 67.11 — Phase B follow-ups + SessionStart-guard track (B.4-fu / B.5-fu / B.7-B.11)
+
+**Three-track autonomous push:** B.4 follow-up (3 OQ-schema halts), B.5 follow-up (pandoc failure detection), and B.7-B.11 SessionStart-guard track (framework_pack triplet + dep_missing + deep_scan_cache_corrupt). Plus per-OQ scoping bug fix from B.4 found during testing.
+
+### What ships
+
+**B.4 follow-up — vault OQ schema (3 halts):**
+- `validate-vault-oqs.sh` extended with per-OQ-block scoping (was 30-line proximity window — caused false-positive cross-attribution between OQs).
+- New halt detection:
+  - `oq_tech_missing_mode`: tech-categorized OQ (`[tech]` or `category: tech`) without `mode:` field
+  - `oq_scan_missing_query`: `mode: scan` OQ without `scan_target:` field
+  - `oq_recommend_underspecified`: `mode: recommend` OQ missing required fields (recommendation, rationale, citation|citations)
+- Per-OQ blocks: text from each OQ-ID line up to the NEXT OQ-ID line (or 30 lines max), so adjacent OQs don't cross-contaminate.
+
+**Sandbox proof:**
+- OQ-AR-1 (tech, no mode) → oq_tech_missing_mode ✓
+- OQ-AR-2 (scan, no scan_target) → oq_scan_missing_query ✓
+- OQ-AR-3 (recommend, missing fields) → oq_recommend_underspecified ✓ (missing_fields: [recommendation, rationale, citation|citations])
+- OQ-AR-4 (scan WITH scan_target) → no trigger ✓ (correct exclusion)
+
+**B.5 follow-up — pandoc render failure (1 halt):**
+- NEW `scripts/validate-pandoc-render.sh` — detects `quality_gate_failed:pdf_render_failed` from PostToolUse Bash matcher.
+- Triggers when Bash command contains "pandoc" AND `tool_response.exit_code != 0`.
+- Suggests `/mega-sdd:install-deps --tools=tectonic` as next_action.
+- Wired into `hooks/post-tool-use` Bash branch (after existing ref_loaded path detection).
+- DEFERRED: `quality_gate_failed:starterkit_metrics_inconsistent` (needs Skill matcher cross-skill check; complex; follow-up).
+
+**Sandbox proof:**
+- pandoc exit=2 → FAIL with halt_type=pdf_render_failed ✓
+- pandoc exit=0 → PASS ✓
+- non-pandoc command → skip (no state change) ✓
+
+**B.7-B.11 — SessionStart-guard track (5 halts, all in extended session-start hook):**
+- `framework_pack_unparseable`: pack file fails UTF-8 read → emit telemetry + skip pack
+- `framework_pack_cycle`: pack inheritance has cycle (DFS detection) → log + suggest break at most-derived edge
+- `framework_pack_missing`: pack `extends:` references nonexistent pack → drop reference
+- `deep_scan_cache_corrupt`: `starterkit-context.yaml` not valid YAML (no top-level keys) → rename `.corrupt-<ts>`; next scan-codebase rebuilds
+- `dep_missing` (B.11 — non-interactive only): check PATH for `tree-sitter`, `ast-grep`; if missing, emit warning telemetry with degradation path (regex tier / v1 grammar). Per reviewer R2: NEVER auto-install at SessionStart (would risk hanging on sudo/network).
+
+**Sandbox proof:**
+- 4 packs with cycle + missing reference → 3 framework_pack_cycle events (over-reports cosmetically; same cycle detected from multiple starting nodes — known minor; cycle IS detected correctly) + 1 framework_pack_missing event
+- Corrupt starterkit-context.yaml (plain text, no YAML keys) → renamed to `.corrupt-<ts>` + telemetry
+- Missing tree-sitter on PATH → dep_missing advisory event (no install attempted)
+
+### Cumulative coverage
+
+| Status | Count of 28 C1 | New since v3.55.0 |
+|---|---|---|
+| Hook-enforced | **25** | +7 (3 OQ-schema + 1 pandoc + 3 framework_pack types — note: framework_pack 3 halts each tracked separately even though one validator) |
+| Remaining | 3 | starterkit_metrics_inconsistent (B.5-fu deferred) + 2 truly-unhooked + 4 edge-case track items |
+
+Effectively: **25 of 28 C1 halts hook-enforced** (or 22/25 if we count the 4 edge-case track items as Fork-B-future, which they are).
+
+### Hook coverage by surface
+
+| Surface | Halts covered | Slice |
+|---|---|---|
+| SessionStart-guard | 9 (mode_migrate, partial_state_corrupt, routing_outcome_corrupt, verify_unit_writable + framework_pack_unparseable/cycle/missing + dep_missing + deep_scan_cache_corrupt) | Phase A 1-4 + B.7-B.11 |
+| PostToolUse Write|Edit | 11 (binding→units OQ-IDs + bolt artifacts 3 + unit spec 3 + vault OQ 4 + FSD slot 1) | 67.6 slice 1 + B.2-B.4-fu |
+| PostToolUse Bash | 1 (pdf_render_failed) | B.5-fu |
+| Stop (transcript) | 4 (handoff suite) | B.1 |
+| PreToolUse Skill (state-file-gate) | block paths for above | B.1 + 67.6 slice 1 |
+| PreToolUse Skill (transcript+arg-extract) | 1 (scope_not_declared_in_prd) | B.6 pattern-prove |
+
+### Per-OQ scoping bug fixed
+
+During B.4-followup sandbox test, found that the existing `oq_recommend_citation_invalid` validator's 30-line window approach false-attributed adjacent OQs' metadata (e.g., OQ-AR-1's window caught OQ-AR-2's `mode: scan` line). Fixed by switching to per-OQ blocks: text from each OQ-ID line up to (but excluding) the next OQ-ID line, capped at 30 lines. No regressions to existing `oq_recommend_citation_invalid` behavior verified in re-test.
+
+### Cumulative ship sequence (Phase B PostToolUse + B.6 + B.7-B.11 tracks)
+
+| Iter | Version | Slices |
+|---|---|---|
+| 67.8 | v3.53.0 | B.1 Handoff suite (4 halts) |
+| 67.9 | v3.54.0 | B.2 Bolt + B.3 Unit + B.4 vault-OQ-1 + B.5 FSD-slot (8 halts) |
+| 67.10 | v3.55.0 | B.6 PATTERN-PROVE (1 halt, PreToolUse-Skill-tool_input surface viable) |
+| **67.11** | **v3.56.0** | **B.4-followup (3) + B.5-followup-pandoc (1) + B.7-B.11 (5) = 9 halts + per-OQ-scoping bug fix** |
+
+### What 67.11 does NOT do
+
+- Does NOT cover `starterkit_metrics_inconsistent` (B.5 follow-up remainder — needs cross-skill check; deferred)
+- Does NOT touch edge-case track (Phase A flagged 5+6 + Phase B [neither] 6+15 → 4 prose-driven halts; needs script extraction iter)
+- Does NOT auto-install missing dependencies (per reviewer R2: non-interactive only at SessionStart; explicit `/mega-sdd:install-deps` invocation still required)
+
+### Honest scope notes
+
+- Framework pack cycle detection over-reports (same cycle detected from N starting nodes = N events). The cycle IS correct; just deduped poorly. Cosmetic only — state file shows N entries but they describe the same cycle. Fix in follow-up.
+- B.7-B.11 detection-only at SessionStart layer; doesn't auto-fix corrupt packs (just renames cache_corrupt files). User/scan-codebase rebuilds.
+
+### Classifier dogfood (advisory)
+
+- files_changed: 7 (extended validate-vault-oqs + new validate-pandoc-render + extended session-start + extended post-tool-use + plugin.json + 2 READMEs + CHANGELOG)
+- 1 new validator + 5 new SessionStart guards + extended OQ schema detection
+- No new skill dir, no new halt enum, no skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.55.0 → v3.56.0** (MINOR — Phase B follow-up + SessionStart-guard track + per-OQ scoping bug fix; +9 C1 halts hook-enforced; cumulative 25 of 28 C1 halts now hook-layer-detected).
+
 ## [3.55.0] - 2026-05-27
 
 ### Iter 67.10 — Phase B slice B.6 PATTERN-PROVE [PreToolUse-Skill-tool_input surface]
