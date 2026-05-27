@@ -121,6 +121,24 @@ for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not 
 done
 V7M_RC=$( [ "$V7M_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7M_WORST" )
 
+# 1f3. Per-KB-domain-file citation resolution validator (Track 1 expansion)
+V7C_WORST=0
+V7C_HAS_FILES=0
+# Auto-detect legacy root
+LEGACY_ROOT=""
+for candidate in "${CWD}" "$(dirname "$CWD")/$(basename "$CWD" | sed 's/-import$//' | sed 's/-rebuild$//')"; do
+  if [ -d "$candidate" ] && { [ -f "$candidate/index.php" ] || [ -f "$candidate/composer.json" ] || [ -f "$candidate/package.json" ]; }; then
+    LEGACY_ROOT="$candidate"
+    break
+  fi
+done
+for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null); do
+  V7C_HAS_FILES=1
+  rc=$(run_validator "validate-kb-citations.sh" --cwd="$CWD" --file-path="$kf" --legacy-root="${LEGACY_ROOT:-$CWD}" --quiet)
+  [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V7C_WORST" ] && V7C_WORST=$rc
+done
+V7C_RC=$( [ "$V7C_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7C_WORST" )
+
 # 1g. Conflict classification validator (R3)
 V8_RC=$(run_validator "validate-conflict-classification.sh" --cwd="$CWD" --quiet)
 
@@ -238,7 +256,7 @@ PYEOF
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
-  V7M_RC="$V7M_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
+  V7M_RC="$V7M_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   python3 <<'PYEOF'
 import json
 import os
@@ -261,6 +279,7 @@ validator_results = {
     "vault_binding_coverage": {"rc": os.environ["V6_RC"], "state_file": ".vault-binding-coverage-state.json"},
     "kb_output": {"rc": os.environ["V7_RC"], "state_file": ".kb-output-state.json"},
     "kb_markers": {"rc": os.environ["V7M_RC"], "state_file": ".kb-markers-state.json"},
+    "kb_citations": {"rc": os.environ["V7C_RC"], "state_file": ".kb-citations-state.json"},
     "conflict_classification": {"rc": os.environ["V8_RC"], "state_file": ".conflict-classification-state.json"},
     "domain_rules": {"rc": os.environ["V9_RC"], "state_file": ".domain-rules-state.json"},
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
