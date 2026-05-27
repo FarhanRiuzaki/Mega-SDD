@@ -46,10 +46,131 @@ if [ "$sp_present" -eq 0 ]; then
   WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Bolts phase will use vendored fallback. For full features run: `/plugin install superpowers`</important-reminder>'
 fi
 
+# ─── C1 self-resolve: mode_migrate (Iter 67.7.1 hook-layer enforcement) ─────
+# Gate B response (reviewer 2026-05-27): C1 protocol shipped as prose has
+# audit-failed 4×. Hook-layer enforcement deterministically detects + fixes
+# the mode_migrate precondition before any chain starts.
+#
+# Detects: any active <cwd>/.mega-sdd/vaults/*/vault.json (excluding .archived/)
+# where `mode` field is missing OR mismatches CWD signals.
+# CWD signals → mode mapping (deterministic; no fabrication):
+#   any of {.git, composer.json, package.json, Gemfile, Cargo.toml, go.mod,
+#           build.gradle, pom.xml, requirements.txt, pyproject.toml} present
+#     → expected_mode = "existing"
+#   none present → expected_mode = "greenfield"
+# Honors opt-out: <cwd>/.mega-sdd/config.yaml `telemetry: false` (treats this
+# guard as part of telemetry surface; user opting out of telemetry also opts
+# out of auto-fix to avoid stealth mutations).
+
+SELF_RESOLVE_NOTICES=""
+CONFIG_FILE="${cwd}/.mega-sdd/config.yaml"
+GUARD_ENABLED=1
+if [ -f "$CONFIG_FILE" ]; then
+  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
+    GUARD_ENABLED=0
+  fi
+fi
+
+if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${cwd}/.mega-sdd/vaults" ]; then
+  TELEMETRY_FILE="${cwd}/.mega-sdd/memory/telemetry.jsonl"
+  mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || true
+
+  # Run mode_migrate self-resolve via python (deterministic JSON read/write)
+  SELF_RESOLVE_NOTICES=$(CWD="$cwd" TELEMETRY_FILE="$TELEMETRY_FILE" python3 <<'PYEOF' 2>/dev/null
+import json
+import os
+import sys
+import glob
+from datetime import datetime, timezone
+
+cwd = os.environ["CWD"]
+telemetry_file = os.environ["TELEMETRY_FILE"]
+
+# CWD signals
+signals = [
+    ".git", "composer.json", "package.json", "Gemfile", "Cargo.toml",
+    "go.mod", "build.gradle", "pom.xml", "requirements.txt", "pyproject.toml",
+]
+detected_signals = [s for s in signals if os.path.exists(os.path.join(cwd, s))]
+expected_mode = "existing" if detected_signals else "greenfield"
+
+# Find active vault.json files (exclude .archived/)
+vault_jsons = []
+for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "vault.json"))):
+    if "/.archived/" in f or "/.archived\\" in f:
+        continue
+    vault_jsons.append(f)
+
+notices = []
+ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+session_id = os.environ.get("CLAUDE_SESSION_ID", "session-start-hook")
+
+for vj in vault_jsons:
+    try:
+        with open(vj) as f:
+            data = json.load(f)
+    except Exception:
+        continue  # Skip corrupted vault.json — separate halt class
+
+    current_mode = data.get("mode")
+    if current_mode == expected_mode:
+        continue  # No mismatch; skip
+
+    # Mismatch detected — apply C1 self-resolve
+    old_mode_repr = current_mode if current_mode is not None else "(missing)"
+    data["mode"] = expected_mode
+    try:
+        with open(vj, "w") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    except Exception:
+        continue  # Write fail; skip (don't claim resolve)
+
+    # Build relative path for notice
+    rel_vj = os.path.relpath(vj, cwd)
+    scope_name = os.path.basename(os.path.dirname(vj))
+
+    # Emit telemetry event (the anti-hiding net per attestation Gate A)
+    event = {
+        "ts": ts,
+        "skill": "session-start",
+        "event_type": "halt_self_resolved",
+        "session_id": session_id,
+        "hook_source": "SessionStart",
+        "payload": {
+            "halt_type": "mode_migrate",
+            "fix_applied": f"vault.json mode {old_mode_repr} → {expected_mode}",
+            "original_emit_site": "SessionStart-hook-c1-guard",
+            "logged_at_chat": True,
+            "scope": scope_name,
+            "detected_signals": detected_signals,
+            "vault_json_path": rel_vj,
+        },
+    }
+    try:
+        with open(telemetry_file, "a") as f:
+            f.write(json.dumps(event, separators=(",", ":")) + "\n")
+    except Exception:
+        pass  # Telemetry write fail; still emit the chat notice
+
+    notices.append(f"[self-resolved] mode_migrate: {scope_name} mode {old_mode_repr} → {expected_mode}")
+
+if notices:
+    print("\n".join(notices))
+PYEOF
+)
+fi
+
+# Build the optional self-resolve injection block (only if anything resolved)
+SELF_RESOLVE_BLOCK=""
+if [ -n "$SELF_RESOLVE_NOTICES" ]; then
+  SELF_RESOLVE_BLOCK=$'\n\n<self-resolve-log>\n'"${SELF_RESOLVE_NOTICES}"$'\n</self-resolve-log>'
+fi
+
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}
+${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}
 <</EXTREMELY_IMPORTANT>>
 EOF

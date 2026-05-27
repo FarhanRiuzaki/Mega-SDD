@@ -38,7 +38,7 @@ If either constraint is in doubt for a specific halt → it stays C2, not C1.
 
 | # | Halt | One-line justification | Constraints |
 |---|---|---|---|
-| 9 | `framework_pack_missing` | Pack file referenced but absent. Skill knows the reference site; deterministic option = remove reference (degrades to framework-only). User can post-facto restore. | ✅ no fabrication (drops reference, doesn't invent pack content); ✅ logged (removal noted; binding.md flags the degradation explicitly so human sees it on review) |
+| 9 | `framework_pack_missing` | **REVIEWER 2026-05-27 ACCEPTED AS C1 WITH WATCH NOTE:** Pack file referenced but absent. Skill knows reference site; deterministic option = remove reference (degrades to framework-only). User can post-facto restore. **DROP IS REVIEW-VISIBLE: binding.md gets a top-of-document `## ⚠️ DEGRADED — Framework Packs Dropped` section listing every dropped pack with reason, NOT just inline log. Human reading binding.md sees the degradation on first scroll.** | ✅ no fabrication (drops reference, doesn't invent pack content); ✅ logged + REVIEW-VISIBLE (degraded section at binding.md top; cannot miss on review) |
 | 10 | `framework_pack_cycle` | Inheritance cycle (A extends B extends A). Skill can compute cycle path; deterministic break at most-derived edge. | ✅ no fabrication (graph algorithm); ✅ logged (cycle path + break-point logged in binding.md) |
 | 11 | `framework_pack_unparseable` | Pack YAML parse fail. Skip pack + fall back to parent in inheritance chain (existing pattern). | ✅ no fabrication (uses parent, doesn't invent); ✅ logged (skip + fallback noted; parent identity in binding.md) |
 
@@ -46,8 +46,8 @@ If either constraint is in doubt for a specific halt → it stays C2, not C1.
 
 | # | Halt | One-line justification | Constraints |
 |---|---|---|---|
-| 12 | `unit_underspecified` | Unit missing required fields skill itself emitted. Re-emit with deterministic template defaults (target_files from vault_source paths, acceptance_test from "verify exists" template). | ✅ no fabrication (template + vault_source both in context); ✅ logged (auto-fill noted in unit body footer) |
-| 13 | `hard_rule_unparseable` | ast-grep YAML skill emitted has grammar error. Re-emit; on 2nd fail, drop the rule with log. | ✅ no fabrication (re-emit uses same intent; drop preserves no info); ✅ logged (re-emit attempt + drop both visible in unit body) |
+| 12 | `unit_underspecified` | **REVIEWER 2026-05-27 RECLASSIFIED:** target_files re-derive from vault_source = C1; acceptance_test substitution = C2. Auto-templating "verify exists" risks TDD rigor (unit passes bolt without real validation). C1 path now: re-emit target_files only. acceptance_test path: emit visible HARD-FLAGGED stub `acceptance_test: [{type: stub, status: NEEDS_HUMAN_AUTHORING, _flag: "HARD STUB — DO NOT EXECUTE"}]` AND escalate to C2 for non-trivial units (task_type ∈ {create, extend} with complexity ≠ small). Verify units → C1 with hard flag. | ✅ no fabrication (target_files traced; acceptance_test marked stub not substituted); ✅ logged (hard flag is in-body, not footer-buried; escalation surfaces non-trivial cases) |
+| 13 | `hard_rule_unparseable` | **REVIEWER 2026-05-27 RECLASSIFIED:** re-emit attempt = C1; DROP path = C2. Hard Rule is grounding core; silent drop = anti-halu moat erosion. C1: try re-emit ast-grep YAML once. If 2nd attempt still unparseable → ESCALATE to C2 with proposal `"cannot parse Hard Rule X (attempts: 2). Drop with rationale? [Y/n]"`. No silent drop. | ✅ no fabrication (re-emit uses original intent); ✅ no silent-drop hiding (escalation explicit for the failure case) |
 | 14 | `starterkit_rule_citation_missing` | Skill emitted starterkit-derived rule without citation. Re-emit using starterkit-context.yaml `§<path>` trace (skill has trace in its working context). | ✅ no fabrication (trace is deterministic); ✅ logged (citation source noted on the rule line) |
 
 ### execute-bolts (5)
@@ -150,6 +150,31 @@ The following halts were explicitly NOT classified C1 — confirm none of them s
 - Phase B.8: 3 quality_gate subtypes
 
 Each sub-phase real-run-verified before the next ships. **Walking-skeleton discipline holds across all 8 sub-phases.**
+
+## Reviewer audit outcome (2026-05-27)
+
+**Classification ACCEPTED with 3 reclassifications** applied above (#12 unit_underspecified, #13 hard_rule_unparseable, #9 framework_pack_missing). All three preserved C1 paths but tightened C2 escalation discipline for grounding-adjacent failure modes.
+
+**TWO GATES established before Phase B (the 22 remaining C1 candidates) collapse:**
+
+### Gate A — Anti-hiding net unproven
+
+The attestation's "no silent failure" guarantee depends on `halt_self_resolved` telemetry event + chat one-liner. **Telemetry collection is NOT YET production-proven** (Stop hook unverified in real-run; `turn_end_marker` not yet observed in TF Import telemetry.jsonl from a real Claude Code session). If telemetry fails to emit, every "self-resolve" happens WITHOUT log = exactly the silent-hiding the attestation claims to prevent. **The anti-hiding net is vacuous until telemetry is empirically observed in production.**
+
+Gate A clears only when: `cat <project>/.mega-sdd/memory/telemetry.jsonl | grep halt_self_resolved` returns ≥1 entry from a real Claude Code chain run (not simulated).
+
+### Gate B — Prose-only C1 protocol = 4× audit failure pattern
+
+Iter 67.7 ships the C1 protocol as **prose in `vault-contract.md`**. Classification ≠ working behavior. The same prose-vs-execution gap that caused Iter 64-67 ship retractions could repeat: skill bodies may read the protocol but not execute it. **Phase B should NOT ship reliable until C1 self-resolve is proven to actually happen in production** — which most likely requires hook-layer enforcement (e.g., SessionStart hook detects `mode_migrate` precondition + auto-fixes + emits telemetry, deterministic; PostToolUse intercepts the partial-state.json Read failure + renames + restarts).
+
+Gate B clears only when: at least ONE Phase A halt is observed self-resolving via hook-layer (not prose) execution in a real run.
+
+### Mitigation strategy (per reviewer 2026-05-27)
+
+- Don't waste a cycle testing prose-only C1 (audit-confirmed unreliable).
+- Build hook-layer enforcement for Phase A NOW. Pattern = SessionStart / PostToolUse / PreToolUse / Stop hooks deterministically detect + fix C1 conditions + emit telemetry.
+- Walking-skeleton: pick ONE Phase A halt → wire hook enforcement → real-run prove → expand.
+- Recommended first slice: `mode_migrate` via SessionStart hook extension (CWD signal re-detection is purely deterministic + existing hook surface).
 
 ## Final attestation statement
 
