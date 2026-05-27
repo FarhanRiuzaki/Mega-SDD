@@ -7,6 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.58.0] - 2026-05-27
+
+### Iter 67.13 — C3 grounding-gate slice expansion (slices 2-5) + C2 propose-and-confirm audit
+
+**User directive "continue all":** ship A + B + C autonomously. A (production-verify) is user-action-only (skipped, honest). B and C executed.
+
+### Phase C: grounding-gate slice expansion (slices 2-5)
+
+Iter 67.6 slice 1 covered binding→units OQ-IDs. Slices 2-5 (CONFLICT-IDs, Hard Rules, vault→binding, units→bolts) ship in this iter.
+
+**Slice 2: CONFLICT-IDs (extension of slice 1 validator)**
+- `validate-handoff-binding-units.sh` extended: new `CONFLICT_RE` regex (canonical `CONFLICT-NNN` form only; `C-NNN` short-form rejected for ambiguity)
+- Detects: CONFLICT-IDs declared in binding doc but not cited in any unit's frontmatter `binding_refs:`
+- Same drop-detection pattern as OQ-IDs; same state file (`.validation-blockers.json`)
+- Summary now includes both `oq_ids_*` and `conflict_ids_*` counts
+- Sandbox: binding with CONFLICT-1 + CONFLICT-2 + units citing only CONFLICT-1 → drop detected for CONFLICT-2
+
+**Slice 3: Hard Rule citation trace (extension of B.3 validator)**
+- `validate-unit-spec.sh` extended with `hard_rule_trace_missing` advisory check
+- For each Hard Rule line in `## Hard rules` section, look within 5 lines for ANY trace annotation: `Citation:`, `Source:`, `Ref:` OR inline reference to `binding.md` / `knowledge-base` / `starterkit-context` / `constitution.md` / `D-NNN` / `C-NNN` / `CONFLICT-`
+- Severity: advisory (NOT a hard halt — rules without trace get flagged for review, not blocked)
+- Complements existing `starterkit_rule_citation_missing` (stricter check for starterkit-derived rules)
+
+**Slices 4+5 combined: NEW `validate-vault-binding-coverage.sh`**
+- Slice 4 — `vault_binding_coverage_gap`: walks each vault's docs (`0[1-6]-*.md`), extracts section IDs (`## §<id>` headers + `F-<prefix>-NN` flow IDs), checks each appears in corresponding binding doc. Orphaned sections (declared in vault but not tracked in binding) flagged as advisory.
+- Slice 5 — `units_bolts_partial_execution`: for each bound vault, if `bolts/` directory exists, checks every unit has `bolts/U-XXX/bolt-report.md`. Pre-execution state (no `bolts/` dir at all) → graceful skip (correct state, not an error).
+- Both detection-only (no auto-fix); advisory severity
+- Wired to PostToolUse Write|Edit cascade as Validator 6
+- Sandbox 3/3 PASS: orphan section detected, partial bolt execution detected, pre-execution state correctly skipped
+
+### Phase B: C2 propose-and-confirm audit doc
+
+**NEW: `docs/superpowers/audits/2026-05-27-c2-propose-and-confirm-audit.md`** — catalogs all 27 C2 halts with proposed `recommendation:` field shape per halt:
+
+- Domain/stakeholder intent (8 halts): oq_business_p1_unresolved, diff_conflict, drift_framework_mismatch, bind_conflict_constitution_violation, constitution_drift_detected, bolt_introduces_locked_drift, memory_schema_mismatch, prd_no_scopes_block_user_rejected_retrofit
+- Spec/data integrity (6 halts): prd_path_missing, prd_retrofit_low_confidence, wave_quality_threshold_unmet, dedup_ambiguous, hard_rule_violated, unit_underspecified (C2 path per attestation #12)
+- Execution flow (5 halts): bolt_repeated_partial_failure, module_blocked_by, hard_rule_unparseable (DROP path), cycle_detected, predictive_check_failed
+- Cross-squad/coordination (4 halts): cross_squad_dep_invalid, cross_squad_ambiguous, cross_squad_interface_draft, cross_module_dep_invalid, interface_ref_missing
+- Environment/install (3 halts): install_failed, pkg_mgr_not_found, no_starterkit_detected
+
+**This is DOC ONLY** — no code changes. Per-skill body implementation deferred to follow-up iters; the doc is the canonical convention reference for when each C2 halt's emit-site is touched.
+
+### Cumulative coverage
+
+**26 of 28 C1 halts now hook-enforced** (was 26 in v3.57.0; no change — C3 slices are different track).
+
+**C3 grounding-gate slices: 5/5 IMPLEMENTED** (slice 1 v3.49.0, slices 2-5 v3.58.0).
+
+**C2 halts: 27/27 cataloged with proposed `recommendation:` shape** (implementation deferred).
+
+### Hook coverage (final landscape)
+
+| Surface | Halts | New in v3.58.0 |
+|---|---|---|
+| SessionStart-guard | 11 | — |
+| PostToolUse Write\|Edit | **13** | +2 (CONFLICT-ID, hard_rule_trace_missing advisory) |
+| PostToolUse Bash | 1 | — |
+| PostToolUse Skill | 1 | — |
+| PostToolUse Agent | 1 | — |
+| Stop (transcript) | 4 | — |
+| PreToolUse Skill (gate) | gating | — |
+| PreToolUse Skill (arg-extract) | 1 | — |
+
+### Production-verification gate (A) — UNCHANGED
+
+User needs `/plugin marketplace update grand-design-spec` + Claude Code restart to activate v3.55.0-v3.58.0 hooks. Marketplace clone is at v3.58.0 (pulled earlier).
+
+### Classifier dogfood (advisory)
+
+- files_changed: 6 (extended 2 existing validators + 1 new validator + extended post-tool-use + NEW C2 audit doc + plugin.json + 2 READMEs + CHANGELOG = ~9)
+- 3 new check types (CONFLICT-ID drop, hard_rule_trace_missing, vault-binding-coverage + units-bolts traceability)
+- 1 new validator script
+- NEW audit doc (doc-only, no code)
+- No skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.57.0 → v3.58.0** (MINOR — C3 slices 2-5 complete; C2 audit doc catalogs 27 halt recommendation shapes; +1 new validator + 2 extensions to existing validators).
+
+### What 67.13 does NOT do
+
+- Does NOT implement C2 `recommendation:` field in per-skill body emits (audit doc only; per-skill follow-up)
+- Does NOT add NEW hook surface (existing PostToolUse Write|Edit + extensions)
+- Does NOT touch the 2 truly Fork-B halts (dispatch_prompt_too_large + implicit re-plan detection)
+
+### Honest landscape note
+
+After v3.58.0:
+- 26 of 28 originally-classified C1 halts: hook-enforced
+- 5 of 5 C3 grounding-gate slices: implemented (binding→units OQ, CONFLICT-IDs, Hard Rule trace, vault→binding coverage, units→bolts traceability)
+- 27 of 27 C2 halts: cataloged with proposed recommendation shapes (implementation = per-skill body work, ongoing)
+- 2 remaining genuinely Fork-B: dispatch_prompt_too_large + implicit re-plan detection
+- 4 originally-flagged edge-case items: all have hook-layer reframes (Phase A 5+6 + Phase B [neither] 6+15)
+
+The hook-enforcement campaign for the original audit pattern is substantially complete. Remaining work is: (a) production-verification of cumulative ships, (b) per-skill body C2 implementation, (c) optional starterkit_metrics + handoff_missing chain-state edge cases.
+
 ## [3.57.0] - 2026-05-27
 
 ### Iter 67.12 — Edge-case track + B.5-fu remainder (4 reframes + 1 honest defer)

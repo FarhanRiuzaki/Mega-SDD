@@ -93,9 +93,14 @@ units_paths = sorted(
 
 # OQ-ID regex: starts with OQ-, alphanumerics+hyphens, ends with -digit
 OQ_RE = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
+# CONFLICT-ID regex (slice 2 v3.58.0+): only canonical `CONFLICT-NNN` form.
+# C-NNN short-form is ambiguous (version refs, code IDs, etc.) — false-positive risk too high.
+# Per canonical TF Import binding format: `CONFLICT-1: vault says X ↔ code says Y`
+CONFLICT_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b")
 
-# --- Pass 1: collect all OQ-IDs declared in any binding doc ---
+# --- Pass 1: collect all OQ-IDs AND CONFLICT-IDs declared in any binding doc ---
 binding_oqs = {}  # oq_id → binding_file_path
+binding_conflicts = {}  # conflict_id → binding_file_path
 for bp in binding_paths:
     try:
         with open(bp) as f:
@@ -105,11 +110,14 @@ for bp in binding_paths:
             print(f"WARN: cannot read {bp}: {e}", file=sys.stderr)
         continue
     for o in OQ_RE.findall(content):
-        # First binding doc declaring this OQ wins (defensive — they should be unique)
         binding_oqs.setdefault(o, bp)
+    # Canonical CONFLICT-NNN form is unambiguous — no scoping needed
+    for c in CONFLICT_RE.findall(content):
+        binding_conflicts.setdefault(c, bp)
 
-# --- Pass 2: for each unit, parse FRONTMATTER ONLY and collect binding_refs ---
-unit_citations = {}  # oq_id → [unit_file_paths]
+# --- Pass 2: for each unit, parse FRONTMATTER ONLY and collect citations ---
+unit_oq_citations = {}      # oq_id → [unit_file_paths]
+unit_conflict_citations = {}  # conflict_id → [unit_file_paths]
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
 for up in units_paths:
     try:
@@ -121,18 +129,18 @@ for up in units_paths:
         continue
     m = FRONTMATTER_RE.match(body)
     if not m:
-        continue  # no frontmatter — can't validate
+        continue
     fm = m.group(1)
-    # binding_refs may be inline list `binding_refs: [...]` or YAML list under `binding_refs:`
-    # Both → grep all OQ-IDs in the frontmatter block. Frontmatter is small + structured;
-    # any OQ-ID here is a deliberate trace citation.
     for o in OQ_RE.findall(fm):
-        unit_citations.setdefault(o, []).append(up)
+        unit_oq_citations.setdefault(o, []).append(up)
+    # CONFLICT-IDs in frontmatter
+    for c in CONFLICT_RE.findall(fm):
+        unit_conflict_citations.setdefault(c, []).append(up)
 
-# --- Pass 3: compute drops (in binding but no unit cites them in frontmatter) ---
+# --- Pass 3: compute drops (OQs + CONFLICTs in binding but no unit cites them) ---
 drops = []
 for oq_id in sorted(binding_oqs.keys()):
-    cites = unit_citations.get(oq_id, [])
+    cites = unit_oq_citations.get(oq_id, [])
     if not cites:
         drops.append({
             "type": "oq_id_dropped",
@@ -141,16 +149,35 @@ for oq_id in sorted(binding_oqs.keys()):
             "expected_in": "any unit's frontmatter binding_refs (or any field within `---...---`)",
             "found_in_units": [],
         })
+# Slice 2: CONFLICT-ID drops
+for conflict_id in sorted(binding_conflicts.keys()):
+    cites = unit_conflict_citations.get(conflict_id, [])
+    if not cites:
+        drops.append({
+            "type": "conflict_id_dropped",
+            "conflict_id": conflict_id,
+            "source_binding": os.path.relpath(binding_conflicts[conflict_id], cwd),
+            "expected_in": "any unit's frontmatter binding_refs (or decisions: frontmatter when CONFLICT was resolved with option A/B)",
+            "found_in_units": [],
+        })
 
-# --- Pass 4: extras (OQ-IDs cited by units but not in any binding — usually a typo / stale ref) ---
+# --- Pass 4: extras (cited by units but not in binding) ---
 extras = []
-for oq_id, cites in sorted(unit_citations.items()):
+for oq_id, cites in sorted(unit_oq_citations.items()):
     if oq_id not in binding_oqs:
         extras.append({
             "type": "oq_id_extra",
             "oq_id": oq_id,
             "cited_in": [os.path.relpath(p, cwd) for p in cites],
             "warning": "OQ-ID cited in unit frontmatter but not declared in any binding doc",
+        })
+for conflict_id, cites in sorted(unit_conflict_citations.items()):
+    if conflict_id not in binding_conflicts:
+        extras.append({
+            "type": "conflict_id_extra",
+            "conflict_id": conflict_id,
+            "cited_in": [os.path.relpath(p, cwd) for p in cites],
+            "warning": "CONFLICT-ID cited in unit frontmatter but not declared in any binding doc",
         })
 
 # --- Report ---
@@ -159,12 +186,14 @@ report = {
     "status": status,
     "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     "validator": "validate-handoff-binding-units.sh",
-    "slice": "binding-to-units / OQ-IDs / frontmatter",
+    "slice": "binding-to-units / OQ-IDs + CONFLICT-IDs / frontmatter",
     "summary": {
         "binding_docs_checked": len(binding_paths),
         "units_checked": len(units_paths),
         "oq_ids_in_binding": len(binding_oqs),
-        "oq_ids_cited_by_some_unit": len(unit_citations),
+        "conflict_ids_in_binding": len(binding_conflicts),
+        "oq_ids_cited_by_some_unit": len(unit_oq_citations),
+        "conflict_ids_cited_by_some_unit": len(unit_conflict_citations),
         "drops": len(drops),
         "extras": len(extras),
     },
