@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.51.1] - 2026-05-27
+
+### Iter 67.7.2 — Phase A slice 2: `partial_state_corrupt` hook-layer enforcement (sandbox-proven)
+
+**Pattern proven viable in Iter 67.7.1 (mode_migrate); this slice replicates the pattern for the next Phase A halt.** SessionStart hook extended with a second C1 guard for `partial_state_corrupt`. Two guards now run in sequence at session start; both emit independent `halt_self_resolved` telemetry events; combined `<self-resolve-log>` notice in anchor injection.
+
+**Safety discipline (per reviewer 2026-05-27):** corruption-test triggers must NEVER run against live TF Import production data. This slice was sandbox-tested in `/tmp/mega-sdd-sandbox-XXXXXX/` with synthetic vault structure. mode_migrate (Iter 67.7.1) was tested directly against TF Import because mode field is benign metadata; partial_state_corrupt is destructive (file rename) and required isolation.
+
+### Mechanism (extends `plugins/mega-sdd/hooks/session-start`)
+
+After mode_migrate guard, scan `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json` (excluding `.archived/`). For each file:
+1. Attempt `json.load(...)`.
+2. If `json.JSONDecodeError` raised → rename to `partial-state.json.corrupt-<ISO8601>` (filename-safe timestamp).
+3. Emit `halt_self_resolved` event with payload `{halt_type: "partial_state_corrupt", unit_id, original_path, corrupt_path, fix_applied: "renamed → ...; --resume will restart fresh"}`.
+4. Append chat one-liner to `<self-resolve-log>` block in anchor injection.
+5. Continue. No halt. Next `--resume` invocation will see no partial-state.json and restart fresh per `execute-bolts §Partial-state contract`.
+
+Non-JSONDecodeError exceptions (FS errors, encoding issues) → skip silently (don't claim a self-resolve we didn't actually perform).
+
+### Sandbox proof — ALL VERIFICATIONS PASS
+
+Setup:
+- 3 partial-state.json files: 2 deliberately corrupt (malformed JSON), 1 valid JSON
+- Project signals: `.git/` + `package.json` (triggers mode_migrate guard too)
+- 2 vault.json files: one with mode=greenfield (wrong; gets fixed), one with no mode field
+
+After SessionStart hook fires:
+- ✓ Both corrupt partial-state.json files renamed with `.corrupt-<ts>` suffix
+- ✓ Valid partial-state.json (U-002) NOT renamed — correct discrimination
+- ✓ Both vault.json mode fields auto-fixed to `existing`
+- ✓ 4 `halt_self_resolved` telemetry events written (2 mode_migrate + 2 partial_state_corrupt)
+- ✓ `<self-resolve-log>` block in anchor injection contains 4 lines (one per resolve)
+- ✓ Re-run idempotency: no re-emit; telemetry line count unchanged (no spam)
+- ✓ Sandbox cleanup: temp dir removed; TF Import production data UNTOUCHED
+
+### Forensics preservation
+
+Corrupt files are renamed, not deleted. The `.corrupt-<ISO8601>` suffix lets a developer:
+- Inspect the original bad state for debugging
+- Restore via `mv partial-state.json.corrupt-<ts> partial-state.json` if needed
+- Grep for `.corrupt-` files to audit historical corruption events
+
+Combined with `halt_self_resolved` telemetry events (timestamped, full path payload), this gives Iter 68 audit complete visibility into corruption frequency + class distribution per soak window.
+
+### Phase A slice scorecard
+
+| Slice | Mechanism | Real-run proof | Status |
+|---|---|---|---|
+| 1. `mode_migrate` | SessionStart guard | TF Import (benign metadata fix) | ✅ v3.51.0 |
+| 2. `partial_state_corrupt` | SessionStart guard | Sandbox (corruption test) | ✅ v3.51.1 (this release) |
+| 3. `routing_outcome_corrupt` | SessionStart guard (same pattern) | Sandbox | Next slice |
+| 4. `model_tier_unknown` | orchestrate-flow body emit | Sandbox | Lower priority (already SOFT) |
+| 5. `memory_in_use` | memory subsystem retry budget | Sandbox concurrent-writer simulation | Different mechanism (not SessionStart hook) |
+| 6. `verify_unit_writable` | PostToolUse on Read of unit.md | Sandbox | Read-only (no corruption) |
+
+### Honest scope note
+
+The SessionStart pattern handles corruption-style halts cleanly because the check is file-state-deterministic and can run before any chain logic. It does NOT handle:
+- Halts emitted mid-skill-execution (e.g., `unit_underspecified` during generation)
+- Halts requiring multi-step context (e.g., `dispatch_prompt_too_large` requires bolt prompt assembly)
+- Halts requiring concurrent state (e.g., `memory_in_use`)
+
+Those need different hook surfaces (PostToolUse, PreToolUse, or script-internal retry logic). Each is its own slice; current victory is establishing the pattern works for the file-state class.
+
+### Classifier dogfood (advisory)
+
+- files_changed: 5 (session-start + vault-contract + plugin.json + 2 READMEs + CHANGELOG)
+- Existing hook extended with one additional guard
+- No new file, no new halt enum, no skill body modified
+- Tightly-scoped slice expansion of established pattern → **PATCH**
+
+**Plugin v3.51.0 → v3.51.1** (PATCH — Phase A slice 2; partial_state_corrupt hook-layer enforcement; sandbox-proven; one new SessionStart guard added to existing hook).
+
 ## [3.51.0] - 2026-05-27
 
 ### Iter 67.7.1 — Hook-layer C1 enforcement for `mode_migrate` (Gates A + B closed via real-run proof)
