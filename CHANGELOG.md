@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.50.0] - 2026-05-27
+
+### Iter 67.7 — Halt escalation discipline (Phase A: 6 already-soft halts → C1)
+
+**Context:** reviewer 2026-05-27 (after Iter 67.6 slice 1 production-verified the [HOOK-VALIDATE] pattern) set the next design requirement: bake escalation discipline INTO skills, not session instructions. Three operational categories established:
+
+- **C1 — Self-resolve:** skill fixes own output, logs, never halts. (Where the skill can re-derive from in-context info; no fabrication risk; no silent failure hiding.)
+- **C2 — Business gate:** halt + PROPOSE recommendation + sign-off. (Needs domain/stakeholder intent.)
+- **C3 — Grounding gate:** halt — enforced via [HOOK-VALIDATE] slice (validator + state file), not prose.
+
+Of 59 halt types in the canonical enum, classification produced: **28 C1** (self-resolve), **27 C2** (business gate), **2 C3** (grounding gate — Iter 67.6 slice 1 covers one), **2 FB** (Fork-B parked).
+
+### What ships in Phase A (this release)
+
+Phase A scope = the 6 most clearly-already-soft halts. Lowest risk, formalizes existing soft semantics + adds the new C1 self-resolve protocol. The remaining 22 C1 candidates wait for audit sign-off on the attestation gate before collapse (Phase B).
+
+**Phase A halts reclassified ALWAYS STOP → C1 SELF-RESOLVE:**
+
+1. `mode_migrate` — re-detect vault.json.mode from deterministic CWD signals; update; log.
+2. `routing_outcome_corrupt` — auto-invalidate (rename `.corrupt-<ts>`) + default routing. (Formalizes pre-existing SOFT semantics.)
+3. `partial_state_corrupt` — rename to `.corrupt-<ts>`, restart `--resume` flow fresh.
+4. `model_tier_unknown` — log + ignore; use catalog default. (Formalizes pre-existing SOFT semantics.)
+5. `memory_in_use` — retry budget extended to 10 attempts (~40s total via exponential backoff); on exhaustion, log + skip memory write (advisory).
+6. `verify_unit_writable` — auto-clear `target_files: []` in dispatch state (on-disk unit preserved for human review of bad spec).
+
+### What also ships
+
+- **NEW: `docs/superpowers/audits/2026-05-27-halt-escalation-classification.md`** — full taxonomy of 59 halts with category + per-halt rationale + risk-flag resolutions.
+- **NEW: `docs/superpowers/audits/2026-05-27-c1-collapse-attestation.md`** — audit gate doc with one-line justification per C1 candidate + explicit "no fabrication / no silent failure" attestation. Reviewer-audit gate before Phase B.
+- **`plugins/mega-sdd/skills/generate-intent/references/vault-contract.md`**:
+  - NEW `§halt-escalation-discipline` section (C1/C2/C3 protocol + escalation paths)
+  - Each of 6 Phase A halts updated with C1 SELF-RESOLVE block describing the fix + telemetry emit
+- **`plugins/mega-sdd/references/telemetry-schema.md`**: adds `halt_self_resolved` event_type (additive change, allowed per Iter 67.5 schema policy). Schema for `payload: {halt_type, fix_applied, original_emit_site, logged_at_chat}`.
+- **Risk-flag resolutions applied** (tech-judgment via technical review, not Farhan-escalation):
+  - `bolt_repeated_partial_failure` → stays C2 (3-cycle failure = exactly when human should know)
+  - `hard_rule_unanchored` → stays C2 main halt; two-tier resolution INSIDE C2 (high-similarity ≥0.95 auto-anchor with hard-log; low-similarity escalates to user)
+  - `bind_conflict` → C3 target, honestly labeled "prose-enforced today; hook-enforced after slice 2/4" (same honesty discipline as Iter 67.5 Runtime SHIPPED retraction)
+  - `predictive_check_failed` → stays C2 conservative (per-check split is premature optimization)
+
+### Operational effect (after wider Phase B collapse — projected)
+
+- Halt taxonomy operational surface: 59 declared → ~29 user-interrupting (cat2 + cat3 + FB). C1 batch self-resolves silently with structured logging.
+- **No grounding moat erosion:** attestation gate confirms no C3/C2 halt slipped into C1. Cross-cutting safeguards (telemetry, chat one-liners, retry escalation paths) prevent silent failure hiding.
+- **`halt_self_resolved` telemetry** enables Iter 68 audit of C1 frequency — if a class fires too often, it's a skill emission bug worth root-cause review (not a sign C1 collapse went wrong).
+
+### Real-run proof plan (Phase A — user-side verification in TF Import)
+
+The 6 Phase A halts mostly trigger from skill body prose execution in real chains. Real-run proof requires the user's Claude Code session in TF Import. Suggested test sequences:
+
+1. **`mode_migrate`:** manually edit `<tf-import>/.mega-sdd/vaults/<scope>/vault.json` to set `"mode": "greenfield"` (TF Import has .git + composer.json so signals say `existing`). Next mega-sdd chain run should auto-redetect + update mode + emit chat one-liner + emit `halt_self_resolved` telemetry. No halt envelope.
+2. **`partial_state_corrupt`:** write malformed JSON to `<tf-import>/.mega-sdd/vaults/<scope>-bound/bolts/U-001/partial-state.json` (e.g., `{not valid json}`). Run `/mega-sdd:execute-bolts --resume`. Skill should rename file to `.corrupt-<ts>` + restart fresh + chat one-liner + telemetry event. No halt.
+3. **`memory_in_use`:** harder to trigger artificially (needs concurrent writer). Defer real-run proof to opportunistic occurrence.
+
+Proof gate: at least ONE of #1 or #2 successfully self-resolves in a real TF Import chain run with corresponding `halt_self_resolved` event in `.mega-sdd/memory/telemetry.jsonl`. After that, Phase B (the 22 remaining C1 candidates) unlocks subject to attestation audit sign-off.
+
+### Classifier dogfood (advisory only per Iter 67.5 retraction)
+
+- files_changed: 5 (vault-contract + telemetry-schema + plugin.json + 2 READMEs + CHANGELOG + 2 audit docs = 8) → 5-15 = MINOR ✓
+- New event_type `halt_self_resolved` (additive to live events) → MINOR ✓
+- Skill bodies NOT modified (vault-contract is shared reference, not a skill body)
+- No new halt enum, no new skill dir, no BREAKING marker
+- → **MINOR**
+
+**Plugin v3.49.1 → v3.50.0** (MINOR — Phase A halt escalation discipline + new telemetry event + attestation gate documentation; no skill body changes; conservative subset of full C1 collapse pending audit sign-off).
+
+### What 67.7 does NOT do
+
+- Does NOT collapse the wider 22 C1 candidates (Phase B; gated by attestation audit + Phase A real-run proof)
+- Does NOT modify any skill body (vault-contract is a shared reference; this is a doc + protocol change)
+- Does NOT add new validators (Phase E [HOOK-VALIDATE] slice 2-6 expansion separate)
+- Does NOT auto-trigger `halt_self_resolved` in production (skill bodies still need to emit it per their existing halt-emit sites; emission becomes self-resolve + telemetry pattern instead of halt-envelope-emission)
+
+### Honesty note (per Iter 67.5 discipline)
+
+The skill bodies have NOT been edited yet for any of the 6 Phase A halts. This release ships:
+- The C1 SELF-RESOLVE protocol document
+- The `halt_self_resolved` telemetry event_type
+- The per-halt C1 protocol descriptions in vault-contract.md
+- The attestation gate audit doc for Phase B
+
+What gets enforced in real Claude Code chains depends on skill bodies actually executing the C1 protocol when they hit one of these conditions. Per the audit pattern: prose telling skills what to do has weak enforcement. The TRUE Phase A proof is real-run observation — does a skill actually self-resolve `mode_migrate` instead of halting? If yes → discipline holds for Phase A. If no → same prose-vs-execution gap; Phase A needs hook-layer enforcement before B.
+
 ## [3.49.1] - 2026-05-27
 
 ### Iter 67.6.1 — Validator glob fix (phase-1 unit layout)
