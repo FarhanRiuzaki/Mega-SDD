@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.55.0] - 2026-05-27
+
+### Iter 67.10 — Phase B slice B.6 PATTERN-PROVE [PreToolUse-Skill-tool_input surface]
+
+**Pattern-prove success.** Per reviewer 2026-05-27 refinement R1: slice B.6 isolated `scope_not_declared_in_prd` as a pattern-prove for the NEW PreToolUse-Skill-tool_input surface (don't assume covers other halts; verify in real run first). This release proves the surface IS viable for the class of halts that need to extract user-args from tool_input.
+
+### Key architectural finding
+
+PreToolUse `tool_input` for Skill tool is JUST `{skill: "..."}` — args/flags (e.g., `--scope=X`) are NOT included. **But:** PreToolUse stdin also includes `transcript_path` (verified, same as Stop hook). So pattern-prove pivots: hook reads transcript, finds most recent user message, extracts flag via regex. Validator checks against PRD frontmatter scopes.
+
+This unblocks similar future slices that need user-context-aware blocking (e.g., flag validation for other mega-sdd commands).
+
+### What ships
+
+**NEW: `plugins/mega-sdd/scripts/validate-scope-flag.sh`** — deterministic validator:
+- Inputs: --cwd + user message via stdin (or --user-message-file)
+- Extracts `--scope=X` flag from user message (supports `--scope=X` and `--scope X`)
+- Discovers PRD in CWD: `prd.md`, `seed-PRD.md`, `*PRD*.md`, `.mega-sdd/{seed-,}prd.md`
+- Parses PRD YAML frontmatter `scopes:` block (3 shapes: inline list, block scalar list, block dict list with `id:`)
+- Validates flag against declared scopes
+- Special cases: `--scope=all` always valid (legacy fallback); no flag = no-op; no PRD = graceful skip; PRD without scopes block = legacy single-scope (pass)
+- Writes `.mega-sdd/.scope-flag-state.json`; exit 0=PASS, 1=FAIL
+
+**UPDATED: `plugins/mega-sdd/hooks/pre-tool-use`** — adds Branch 1c (scope flag gate):
+- Matcher additions: `mega-sdd:auto`, `mega-sdd:generate-intent`, `mega-sdd:orchestrate-flow`
+- Stdin parse: adds `TRANSCRIPT_PATH` extraction
+- For matched skills, reads transcript_path, finds last user message, pipes to validator
+- On FAIL: emits `{continue: false, stopReason: "..."}` with detailed message including declared scope list
+- Branch 1a (handoff validation gate) and Branch 1b (binding→units execute-bolts gate) unchanged; runs after
+
+### Sandbox proof — 8/8 PASS
+
+Validator-direct (5/5):
+1. `--scope=BE` (valid) → PASS
+2. `--scope=ZZZ` (invalid) → FAIL with declared scope list
+3. No flag → no-op PASS
+4. `--scope=all` legacy → PASS
+5. No PRD in CWD → graceful PASS (skip, don't block)
+
+End-to-end via PreToolUse hook (3/3):
+6. PreToolUse Skill `mega-sdd:auto` with invalid scope in transcript → BLOCK with `continue: false` + detailed reason listing valid scopes
+7. PreToolUse Skill `mega-sdd:auto` with valid scope → allowed (no block output)
+8. PreToolUse Skill `mega-sdd:scan-codebase` (non-scope-flag skill) → allowed (matcher correctly scopes)
+
+### Scope assessment for this surface
+
+PreToolUse-Skill-tool_input pattern is now PROVEN VIABLE for the class of halts that need user-args context. Future slices candidates that could leverage this:
+- Other flag-validation halts (e.g., `--out=<path>` validation, `--manual` vs `--auto` consistency)
+- Mid-chain skill arg conflicts (e.g., `--greenfield` with `--scan` together)
+- Memory-context-aware gating (if memory state changes flag interpretation)
+
+**Pattern-prove gate cleared** — B.6 surface unlocks future use; not just for this one halt.
+
+### Cumulative coverage
+
+**18 of 28 C1 halts** now hook-layer-enforced (was 17 after v3.54.0; +1 via B.6).
+
+| Remaining | Halts | Track |
+|---|---|---|
+| B.4 follow-up | 3 OQ-schema halts | follow-up slice |
+| B.5 follow-up | 2 mixed-surface halts (pandoc Bash + Skill metrics) | follow-up |
+| B.7-B.11 | 5 SessionStart-guard track (framework_pack + dep_missing) | low-value replication |
+| Edge-case track | 4 prose-driven halts | separate iter (script extraction) |
+
+### Classifier dogfood (advisory)
+
+- files_changed: 5 (1 new script + pre-tool-use extension + plugin.json + 2 READMEs + CHANGELOG)
+- New hook surface PROVEN (new functionality)
+- No new skill dir, no new halt enum, no skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.54.0 → v3.55.0** (MINOR — Phase B slice B.6 pattern-prove success; PreToolUse-Skill-tool_input surface viable; +1 halt hook-enforced; pattern unlocked for future user-args-aware slices).
+
 ## [3.54.0] - 2026-05-27
 
 ### Iter 67.9 — Phase B slices B.2 + B.3 + B.4 + B.5 (PostToolUse-validate batch checkpoint)

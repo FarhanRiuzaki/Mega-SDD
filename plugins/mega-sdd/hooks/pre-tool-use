@@ -41,9 +41,11 @@ except Exception:
 cwd = data.get("cwd", "")
 tool_name = data.get("tool_name", "")
 tool_input = data.get("tool_input", {})
+transcript_path = data.get("transcript_path", "")
 
 print(f"CWD={cwd}")
 print(f"TOOL_NAME={tool_name}")
+print(f"TRANSCRIPT_PATH={transcript_path}")
 
 if tool_name == "Skill":
     skill_name = tool_input.get("skill", "")
@@ -90,6 +92,64 @@ EOF
 # state shows upstream failure (Phase B slice B.1 v3.53.0+).
 case "${TOOL_NAME:-}" in
   Skill)
+    # Branch 1c (Phase B slice B.6 PATTERN-PROVE): scope flag validation for
+    # mega-sdd:auto / mega-sdd:generate-intent / mega-sdd:orchestrate-flow.
+    # Reads transcript_path to find user's most recent message + extract
+    # --scope=X flag (args not in tool_input). Validates against PRD scopes.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:auto|mega-sdd:generate-intent|mega-sdd:orchestrate-flow)
+        if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+          # Extract most recent USER message text from transcript
+          USER_MSG=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
+import json, os
+last_user_text = None
+with open(os.environ["TRANSCRIPT_PATH"]) as f:
+    for line in f:
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+        if not msg or msg.get("role") != "user":
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            last_user_text = content
+        elif isinstance(content, list):
+            parts = [b.get("text","") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+            if parts:
+                last_user_text = "\n".join(parts)
+if last_user_text:
+    print(last_user_text)
+' 2>/dev/null)
+
+          if [ -n "$USER_MSG" ]; then
+            SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
+            VALIDATOR_SCOPE="${SCRIPT_DIR_HV}/../scripts/validate-scope-flag.sh"
+            if [ -x "$VALIDATOR_SCOPE" ]; then
+              SCOPE_RESULT=$(printf '%s' "$USER_MSG" | bash "$VALIDATOR_SCOPE" --cwd="$CWD" --quiet 2>/dev/null)
+              SCOPE_EXIT=$?
+              if [ "$SCOPE_EXIT" = "1" ]; then
+                # FAIL — extract stopReason from state file and emit block
+                STATE_SCOPE="${CWD}/.mega-sdd/.scope-flag-state.json"
+                if [ -f "$STATE_SCOPE" ]; then
+                  STOP_REASON=$(python3 -c "
+import json
+try:
+    d = json.load(open('$STATE_SCOPE'))
+    print(d.get('stopReason', 'scope_not_declared_in_prd'))
+except Exception:
+    print('scope_not_declared_in_prd')
+" 2>/dev/null)
+                  emit_block "$STOP_REASON"
+                fi
+              fi
+            fi
+          fi
+        fi
+        ;;
+    esac
+
     # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
     # except using-mega-sdd (auto-loaded anchor, not a chain step).
     case "${SKILL_NAME:-}" in
