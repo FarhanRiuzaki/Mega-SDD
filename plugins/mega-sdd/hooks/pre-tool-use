@@ -85,9 +85,50 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
-# Block mega-sdd:execute-bolts when handoff blockers are present.
+# Block mega-sdd:execute-bolts when handoff binding→units blockers present
+# (Iter 67.6 slice 1). Block ANY mega-sdd:* skill when handoff-validation
+# state shows upstream failure (Phase B slice B.1 v3.53.0+).
 case "${TOOL_NAME:-}" in
   Skill)
+    # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
+    # except using-mega-sdd (auto-loaded anchor, not a chain step).
+    case "${SKILL_NAME:-}" in
+      mega-sdd:*)
+        if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
+          HANDOFF_STATE="${CWD}/.mega-sdd/.handoff-validation-state.json"
+          if [ -f "$HANDOFF_STATE" ]; then
+            HSTATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$HANDOFF_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+            if [ "$HSTATUS" = "FAIL" ]; then
+              HDETAIL=$(python3 -c "
+import json
+try:
+    d = json.load(open('$HANDOFF_STATE'))
+    ht = d.get('halt_type', 'unknown')
+    sk = d.get('skill_name', 'unknown')
+    rc = d.get('retry_count', 0)
+    esc = d.get('escalate_to_c2', False)
+    hint = d.get('next_action', {}).get('hint', '(no hint)')
+    reason = d.get('details', {}).get('reason', '(no reason)')
+    print(f'upstream {sk} emitted bad handoff ({ht}, retry={rc}, escalate_c2={esc}). Reason: {reason}. Suggestion: {hint}')
+except Exception as e:
+    print(f'(state file parse error: {e})')
+" 2>/dev/null)
+              REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by re-invoking the upstream producer with --strict-handoff, OR clear state via /mega-sdd:validate-handoff after fix. State file: ${CWD}/.mega-sdd/.handoff-validation-state.json"
+              emit_block "$REASON"
+            fi
+          fi
+        fi
+        ;;
+    esac
+
+    # Branch 1b: existing binding→units handoff gate for execute-bolts (Iter 67.6 slice 1)
     case "${SKILL_NAME:-}" in
       mega-sdd:execute-bolts)
         BLOCKER_FILE="${CWD}/.mega-sdd/.validation-blockers.json"

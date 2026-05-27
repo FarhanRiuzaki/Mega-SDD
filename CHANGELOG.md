@@ -7,6 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.53.0] - 2026-05-27
+
+### Iter 67.8 — Phase B slice B.1: Handoff validation suite [PostToolUse-validate, port prose→script]
+
+**Context.** Phase B classification gate accepted with 2 refinements + reorder + 5 risk-flag resolutions. Priority lead = B.1 Handoff suite (4 halts: `invalid_handoff`, `handoff_type_mismatch`, `handoff_missing`, `artifact_missing`). Why first: highest value (integrity carry-over started the whole thread via 27 OQ drop), natural batch, [PostToolUse-validate] pattern already proven in Iter 67.6.
+
+**Architectural pivot during implementation:** initial design assumed `PostToolUse` Skill matcher could read the handoff in `tool_response`. Reality check: PostToolUse Skill fires when the Skill TOOL loads, not after the agent emits handoff in chat. The handoff appears in the agent's regular chat response AFTER skill loads. **Correct surface = Stop hook** (reads transcript at turn end via `transcript_path` stdin field — same pattern as Iter 66a transcript-usage extraction).
+
+### What ships
+
+**NEW: `plugins/mega-sdd/scripts/validate-handoff-yaml.sh`** — deterministic handoff schema validator.
+- No-deps YAML-subset parser (PyYAML unavailable; built custom indented-block parser)
+- Detects 4 halt classes:
+  - `handoff_missing`: no `handoff:` block found in input
+  - `invalid_handoff`: required field missing OR parse error (emitted_by, emitted_at, status, next_action)
+  - `handoff_type_mismatch`: field types violate schema (status not in enum, artifacts not list, etc.)
+  - `artifact_missing`: declared artifacts don't exist on disk
+- State file: `<cwd>/.mega-sdd/.handoff-validation-state.json` (overwrite-not-append, current truth)
+- Retry counter: increments on same skill+halt repeat within session; escalates to `escalate_to_c2: true` after 2nd attempt
+- Per attestation reclassification: 1st failure = C1 self-resolve with `re_run_producer` next_action; 2nd = C2 `user_review`
+- Exit: 0=PASS, 1=FAIL, 2=error
+
+**UPDATED: `plugins/mega-sdd/hooks/stop`** — added handoff-validation block (runs BEFORE telemetry gate; state file is independent of telemetry):
+- After diagnostic log + opt-out, extracts last assistant message from `transcript_path` (handles content as string OR list of text blocks)
+- Greps for `handoff:` marker; skips validator if no marker (avoids false-positive `handoff_missing` for non-mega-sdd turns)
+- Inferred producer skill from handoff's `emitted_by` field
+- Invokes validator script with extracted text via stdin
+- Emits `halt_self_resolved` telemetry event (event_type varies: PASS or 1st-fail = `halt_self_resolved`; 2nd-fail escalation = `halt_fired`)
+
+**UPDATED: `plugins/mega-sdd/hooks/pre-tool-use`** — added Branch 1a (handoff gate):
+- Matcher `mega-sdd:*` (excluding `mega-sdd:using-mega-sdd` anchor)
+- Reads `.handoff-validation-state.json`
+- If `status: FAIL` → blocks with `{continue: false, stopReason: ...}` including: producer skill, halt type, retry count, escalation status, reason, suggested fix
+- Falls through to existing Branch 1b (binding→units gate for execute-bolts) when handoff state is PASS or absent
+
+**UPDATED: `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md`** — 4 handoff halt descriptions updated with "C1 SELF-RESOLVE (v3.53.0+, Iter 67.8 — HOOK-LAYER ENFORCED via Stop+PreToolUse)" block.
+
+### Sandbox proof — ALL 10 STEPS PASS
+
+End-to-end test in isolated `/tmp/b6-final-XXXXXX/` sandbox:
+
+1. ✓ Stop hook with bad handoff (`status: in-progress` invalid enum + missing required fields) → state file created with `status: FAIL`, `halt_type: invalid_handoff`, `retry: 1`, `skill_name: mega-sdd:generate-intent`
+2. ✓ Telemetry: `halt_self_resolved` + `turn_end_marker` both emitted with correct payloads
+3. ✓ PreToolUse Skill `mega-sdd:scan-codebase` → blocked with detailed reason citing upstream producer + halt type + retry count
+4. ✓ Replace transcript with good handoff (all required fields, valid status enum, nested next_action) → state cleared to `status: PASS, retry: 0`
+5. ✓ PreToolUse now allows `mega-sdd:scan-codebase` (empty output = no block)
+6. ✓ Anchor `mega-sdd:using-mega-sdd` exempt from gate (correctly excluded)
+7. ✓ Non-mega-sdd skill (`superpowers:using-superpowers`) NOT gated (matcher scopes correctly)
+8. ✓ Bash tool unaffected by handoff state
+9. ✓ Retry escalation: 3x bad handoff → retry counter increments (1, 2, 3); `escalate_to_c2` flips True on retry=2; `next_action.type` transitions `re_run_producer` → `user_review`
+10. ✓ Turn without `handoff:` marker → validator skipped (no false-positive)
+
+**Sandbox isolated — no TF Import data touched.**
+
+### Bugs found + fixed during dev
+
+1. **PyYAML unavailable** in test env → built no-deps YAML-subset parser (handles inline lists, block lists, nested dicts, scalars). Single-pass indent-aware walker. Sufficient for handoff schema validation.
+2. **Python `try:` without `except:`** in Stop hook embedded script → syntax error, silent failure (stderr suppressed). Removed outer try wrapper; inner per-line try-except handles per-record errors.
+3. **F-string with backslash in expression** (4th time this bug hit — same pattern from Iter 66a) → assigned to local var first. Logged for memory: f-string expression parts CANNOT contain `\"` escapes; assign to local first.
+
+### Schema semantics
+
+- `halt_self_resolved` event for handoff validation: `payload.halt_type` is the detected halt class (or `handoff_validated_pass` when PASS); `payload.retry_count` + `payload.escalate_to_c2` carry retry state for Iter 68 audit.
+- `halt_fired` event emitted on retry escalation (retry_count >= 2 with status=FAIL).
+
+### What 67.8 does NOT do
+
+- Does NOT detect `handoff_missing` for skills that should-but-didn't emit (requires knowing which skill ran + whether it was a chain step expected to emit; deferred to deeper slice — would need either chain-state tracking or per-skill metadata declaring "emits handoff?")
+- Does NOT modify any skill body (handoff schema enforced from outside via hook + script)
+- Does NOT add a `/mega-sdd:validate-handoff-yaml` slash command (validator is invoked from Stop hook only; manual invocation possible via direct script run; future slice could add command)
+- Does NOT cover non-`mega-sdd:` upstream producers (only validates handoffs emitted by mega-sdd skills per `emitted_by` field)
+
+### Classifier dogfood (advisory)
+
+- files_changed: 7 (new script + 2 hook extensions + 2 audit docs + plugin.json + 3 doc refs + CHANGELOG = ~9) → 5-15 = MINOR
+- New script + new hook behavior across 2 hooks
+- No new skill dir, no new halt enum, no skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.52.0 → v3.53.0** (MINOR — Phase B slice B.1; first slice to port handoff validation from prose to deterministic script; closes silent-failure paths for the 4 highest-value mid-chain handoff halts).
+
+### Phase B progress
+
+| Slice | Halts | Pattern | Status |
+|---|---|---|---|
+| **B.1 Handoff suite** | invalid_handoff, handoff_type_mismatch, handoff_missing*, artifact_missing | [PostToolUse-validate] via Stop+PreToolUse | **✅ shipped v3.53.0** |
+| B.2 Bolt artifacts | provenance_missing, self_assessment_missing, pbt_citation_invalid | [PostToolUse-validate] | next slice |
+| B.3 Unit validation | unit_underspecified, hard_rule_unparseable, starterkit_rule_citation_missing | [PostToolUse-validate] | follows |
+| B.4 Vault OQ validation | oq_tech_missing_mode, oq_recommend_underspecified, oq_scan_missing_query, oq_recommend_citation_invalid | [PostToolUse-validate] | follows |
+| B.5 quality_gate subtypes | starterkit_metrics_inconsistent, pdf_render_failed, template_slot_unfilled | [PostToolUse-validate], mixed surfaces | follows |
+| B.6 PreToolUse pattern-prove | scope_not_declared_in_prd | NEW SURFACE (PreToolUse Skill tool_input) | pattern-prove slice |
+| B.7-B.11 SessionStart-guard | 5 framework_pack + dep_missing | [SessionStart-guard] | low-value replication |
+
+\* `handoff_missing` partially covered — only when handoff text contains `handoff:` marker but missing required fields. True "no handoff at all from skill that should emit" needs chain-state tracking; deferred.
+
 ## [3.52.0] - 2026-05-27
 
 ### Iter 67.7.3 + 67.7.4 — Phase A slices 3 + 4 + PHASE A CHECKPOINT
