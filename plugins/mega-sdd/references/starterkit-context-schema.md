@@ -30,6 +30,44 @@ starterkit_context:
   ui_ux: { ... }                         # fresh OR cached
   libs: [ ... ]                          # fresh OR cached
 
+  patterns:                               # v3.0+ (deep-read from actual codebase)
+    controller:
+      base_class: "App\\Http\\Controllers\\Controller"
+      location: "app/Http/Controllers/"
+      naming: "{Model}Controller.php"          # PascalCase model name + Controller suffix
+      methods: [index, create, store, show, edit, update, destroy]  # CRUD convention
+      _source: ["app/Http/Controllers/UserController.php:1-5"]
+    request:
+      location: "app/Http/Requests/"
+      naming: "{Action}{Model}Request.php"     # e.g., StoreUserRequest
+      validation_style: "array-rules"          # array-rules | rule-objects | inline
+      _source: ["app/Http/Requests/StoreUserRequest.php:1-3"]
+    model:
+      location: "app/Models/"
+      naming: "{Model}.php"
+      traits: [HasFactory, HasUuid, SoftDeletes]  # commonly used traits
+      cast_style: "method"                     # method (Laravel 11+) | property ($casts)
+      _source: ["app/Models/User.php:1-10"]
+    service:
+      location: "app/Services/"                # or null if no service layer detected
+      naming: "{Model}Service.php"
+      _source: []
+    migration:
+      location: "database/migrations/"
+      naming: "YYYY_MM_DD_HHMMSS_create_{table}_table.php"
+      _source: ["database/migrations/"]
+    test:
+      location: "tests/Feature/"
+      naming: "{Model}Test.php"
+      framework: "phpunit"                     # phpunit | pest
+      _source: ["tests/Feature/"]
+    route:
+      api_prefix: "api"
+      web_file: "routes/web.php"
+      api_file: "routes/api.php"
+      resource_style: "Route::resource"        # resource | apiResource | explicit
+      _source: ["routes/api.php:1-5"]
+
   cache_signatures:                      # v2.0 schema (replaces v1.0 cache_key:)
     composer_lock_sha256: <hex>          # retained for reproducibility
     package_lock_sha256: <hex>           # retained for reproducibility

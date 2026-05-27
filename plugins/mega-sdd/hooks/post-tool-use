@@ -464,6 +464,11 @@ except Exception:
           "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \
           "${CWD}/.mega-sdd/.kb-markers-state.json" \
           "PostToolUse-Write-validate-kb-markers"
+        # Mermaid-consistency for flow sections
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-flows.sh" \
+          "${CWD}/.mega-sdd/.kb-flows-state.json" \
+          "PostToolUse-Write-validate-kb-flows"
         ;;
     esac
 
