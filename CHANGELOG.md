@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.57.0] - 2026-05-27
+
+### Iter 67.12 — Edge-case track + B.5-fu remainder (4 reframes + 1 honest defer)
+
+**User directive 2026-05-27:** focus only on GDS project, no TF Import touches. Sandbox tests via `/tmp` OK. Continue autonomous edge-case track.
+
+**Reframe approach:** edge-case track was originally classified [neither] / Fork-B because halts fire mid-skill-body. Per reviewer earlier discipline, find adjacent surfaces that catch the same conditions deterministically — even if not the original emit-site. 4 of 5 items get reframed reframes that work; 1 stays Fork-B-future honestly.
+
+### What ships
+
+**Edge-case 1: `starterkit_metrics_inconsistent` (B.5-fu remainder):**
+- NEW `scripts/validate-starterkit-metrics.sh` — PostToolUse Skill cross-check after `mega-sdd:generate-units` completes
+- Reads transcript_path for handoff containing `units_with_starterkit_rules` field
+- Cross-checks against `<cwd>/.mega-sdd/codebase/starterkit-context.yaml` `partial:` flag
+- Detects: `units_with_starterkit_rules > 0 AND partial: true` → emit warning with suggested `/mega-sdd:scan-codebase --force-deep`
+- Wired to post-tool-use Skill branch (mega-sdd:generate-units matcher)
+- Sandbox 2/2 PASS (FAIL when inconsistent, PASS when consistent)
+
+**Edge-case 2: `model_tier_unknown` reframe (Phase A flagged slice 5):**
+- Original emit-site: orchestrate-flow Step 2.8.f (mid-chain, no hook surface) — kept as Fork-B-future for the precise emit
+- Reframe: SessionStart config pre-validation
+- session-start hook scans `<cwd>/.mega-sdd/config.yaml` + `~/.mega-sdd/memory/preferences.md` for `model_tiers:` overrides
+- Cross-checks role names against canonical catalog at `<plugin>/references/model-tiers.md`
+- Emits warning + chat notice for unknown roles; downstream chain still uses catalog default (graceful)
+- Sandbox 1/1 PASS (unknown role detected, valid role unaffected)
+
+**Edge-case 3: `memory_in_use` reframe (Phase A flagged slice 6):**
+- Original emit-site: memory subsystem file-lock retry (prose-driven) — kept as Fork-B-future for runtime retry
+- Reframe: SessionStart pre-emptive stale-lock cleanup
+- session-start hook scans `<cwd>/.mega-sdd/memory/*.lock` (also `.lck`, `.lock-*`) for files older than 60 seconds
+- Removes stale locks + emits telemetry. Reduces frequency of runtime lock collisions.
+- Doesn't replace runtime retry (skill body retains best-effort retry); supplements it.
+- Sandbox 1/1 PASS (stale 90-sec-old lock removed, fresh lock untouched)
+
+**Edge-case 4: `deep_scan_subagent_failed` (Phase B [neither] 6):**
+- Original emit-site: scan-codebase subagent retry inside skill body — kept as Fork-B-future for auto-retry
+- Reframe: PostToolUse Agent matcher telemetry (detection-only)
+- hooks.json adds `Agent` to PostToolUse matcher set: `Read|Skill|Bash|Write|Edit|Agent`
+- post-tool-use Agent branch: when subagent_type contains `scan|starterkit|deep` AND tool_response has failure markers (is_error, error field, or multiple failure keywords), emit warning telemetry
+- Hook can't auto-retry (no tool access from hooks); skill body retains retry responsibility
+- Sandbox 3/3 PASS (failure detected, success not flagged, non-mega-sdd subagent excluded)
+
+### Edge-case 5: `dispatch_prompt_too_large` — HONEST FORK-B DEFER
+
+**No hook surface exists.** Bolt prompt assembly happens entirely inside execute-bolts skill body in working memory before ANY tool dispatch. The 10KB cap check operates on the assembled prompt string — no file is written, no tool is invoked at the check point. No PostToolUse / PreToolUse / Stop / SessionStart surface fires before the prompt is built.
+
+Possible Fork-B paths (not in this release):
+- Extract bolt prompt builder to a script that execute-bolts invokes via Bash → PostToolUse Bash could observe + validate. Still prose-dependent for the invocation.
+- Custom runtime that intercepts mid-reasoning at prompt-build moment.
+
+Stays Fork-B-future. Documented in `plugins/mega-sdd/references/fork-a-recovery-map.md` (already classified [FORK-B-ONLY] under "Mid-turn intervention").
+
+### Coverage scorecard
+
+**26 of 28 C1 halts now hook-enforced** (was 25, +1 via edge-case 1).
+**4 of 4 originally-flagged edge-case items** now have hook-layer reframes (model_tier_unknown, memory_in_use, deep_scan_subagent_failed, starterkit_metrics_inconsistent).
+**2 remaining genuine Fork-B-only:** dispatch_prompt_too_large + implicit re-plan detection (per Iter 67.5 audit). The 4 truly-parked items reduce to **2**.
+
+### Bug found + fixed during testing
+
+SessionStart hook's main guard block was gated on `<cwd>/.mega-sdd/vaults/` existence (original gate for Phase A guards). The new edge-case guards check `<cwd>/.mega-sdd/memory/` or `<cwd>/.mega-sdd/config.yaml` (don't need vaults). Relaxed gate to `<cwd>/.mega-sdd/` existence so all guards run consistently.
+
+Also fixed: `exit` without parens in Agent matcher python block (was a no-op reference; both FAIL and OK printed, breaking bash status check). Switched to single-final-print pattern.
+
+### Hook coverage (final landscape)
+
+| Surface | Halts | New in 3.57.0 |
+|---|---|---|
+| SessionStart-guard | **11** | +2 (model_tier_unknown, memory_in_use) |
+| PostToolUse Write\|Edit | 11 | — |
+| PostToolUse Bash | 1 | — |
+| PostToolUse Skill (cross-skill) | **1** | +1 (starterkit_metrics_inconsistent) |
+| PostToolUse Agent | **1** | +1 (deep_scan_subagent_failed) |
+| Stop (transcript) | 4 | — |
+| PreToolUse Skill (state-gate) | gating layer | — |
+| PreToolUse Skill (transcript+arg-extract) | 1 | — |
+
+### Classifier dogfood (advisory)
+
+- files_changed: 8 (1 new validator + extended session-start + extended post-tool-use + extended hooks.json + plugin.json + 2 READMEs + CHANGELOG)
+- Multiple new hook branches (PostToolUse Agent matcher, PostToolUse Skill cross-check, 2 new SessionStart guards)
+- Bug fixes: SessionStart gate + Agent matcher python
+- No new skill dir, no new halt enum, no skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.56.0 → v3.57.0** (MINOR — edge-case track 4/5 reframes + B.5-fu remainder; cumulative 26 of 28 C1 halts now hook-enforced; only 2 truly Fork-B-future remaining: dispatch_prompt_too_large + implicit re-plan detection).
+
 ## [3.56.0] - 2026-05-27
 
 ### Iter 67.11 — Phase B follow-ups + SessionStart-guard track (B.4-fu / B.5-fu / B.7-B.11)

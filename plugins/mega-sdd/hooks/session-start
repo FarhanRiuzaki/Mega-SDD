@@ -71,7 +71,7 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${cwd}/.mega-sdd/vaults" ]; then
+if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${cwd}/.mega-sdd" ]; then
   TELEMETRY_FILE="${cwd}/.mega-sdd/memory/telemetry.jsonl"
   mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || true
 
@@ -447,6 +447,102 @@ if os.path.isfile(starterkit_path):
             notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; scan-codebase will rebuild")
     except Exception:
         pass
+
+# ─── Guard 8: model_tier_unknown (edge-case track — SessionStart config pre-validation) ─
+# Reframe of Phase A flagged slice 5. Original was mid-chain orchestrate-flow Step 2.8.f
+# (no SessionStart surface). Reframe: pre-validate user/project model-tier config files
+# against canonical catalog AT SESSION START. Catches misconfigs before they fire mid-chain.
+import re as _re_mt
+
+mt_catalog_path = None
+# Catalog ships in plugin source; find via PLUGIN_ROOT env if available
+plugin_root_env = os.environ.get("PLUGIN_ROOT_HINT", "")
+catalog_candidates = [
+    os.path.join(plugin_root_env, "references", "model-tiers.md") if plugin_root_env else None,
+    "/Users/farhanriuzaki/.claude/plugins/cache/grand-design-spec/mega-sdd/3.56.0/references/model-tiers.md",
+]
+for c in catalog_candidates:
+    if c and os.path.isfile(c):
+        mt_catalog_path = c
+        break
+
+if mt_catalog_path:
+    try:
+        catalog_content = open(mt_catalog_path).read()
+        catalog_roles = set(_re_mt.findall(r"^\|\s*([\w-]+)\s*\|", catalog_content, _re_mt.MULTILINE))
+    except Exception:
+        catalog_roles = set()
+
+    config_paths = [
+        os.path.join(cwd, ".mega-sdd", "config.yaml"),
+    ]
+    user_pref = os.path.expanduser("~/.mega-sdd/memory/preferences.md")
+    if os.path.isfile(user_pref):
+        config_paths.append(user_pref)
+
+    for cp in config_paths:
+        if not os.path.isfile(cp):
+            continue
+        try:
+            cfg_text = open(cp).read()
+        except Exception:
+            continue
+        # Look for model_tiers: block or preferences.md ## Model tiers section
+        # Extract `- role: tier` or `role: tier` lines
+        in_block = False
+        for ln in cfg_text.split("\n"):
+            if _re_mt.match(r"^\s*model_tiers:\s*$", ln) or _re_mt.match(r"^##\s+Model\s+tiers", ln, _re_mt.IGNORECASE):
+                in_block = True
+                continue
+            if in_block:
+                # End block on next top-level key or heading
+                if _re_mt.match(r"^\w", ln) or _re_mt.match(r"^##\s", ln):
+                    in_block = False
+                    continue
+                # Try to match role: tier (with or without leading - )
+                m = _re_mt.match(r"^\s*-?\s*([\w-]+):\s*(\w+)", ln)
+                if m:
+                    role = m.group(1)
+                    tier = m.group(2)
+                    if role in ("model_tiers", "preferences"):
+                        continue
+                    if catalog_roles and role not in catalog_roles:
+                        emit_event(
+                            "model_tier_unknown",
+                            f"override role '{role}' not in catalog ({len(catalog_roles)} known roles); chain will use catalog default",
+                            unknown_role=role,
+                            override_tier=tier,
+                            override_source=os.path.relpath(cp, cwd) if cp.startswith(cwd) else cp,
+                        )
+                        notices.append(f"[self-resolved] model_tier_unknown: role '{role}' unknown; chain uses catalog default")
+
+# ─── Guard 9: memory_in_use (edge-case track — SessionStart stale-lock cleanup) ──
+# Reframe of Phase A flagged slice 6. Original was memory-write file-lock retry inside
+# skill body (no SessionStart surface). Reframe: pre-emptive scan for stale lock files
+# AT SESSION START. Removes locks older than 60 seconds (likely from crashed/orphaned
+# writers). Reduces frequency of lock collisions at runtime.
+import time as _time_mil
+memory_dir = os.path.join(cwd, ".mega-sdd", "memory")
+if os.path.isdir(memory_dir):
+    stale_threshold_sec = 60
+    now = _time_mil.time()
+    for lock_pattern in ["*.lock", "*.lck", ".lock-*"]:
+        for lock_file in glob.glob(os.path.join(memory_dir, lock_pattern)):
+            try:
+                age = now - os.path.getmtime(lock_file)
+                if age > stale_threshold_sec:
+                    os.remove(lock_file)
+                    rel_lock = os.path.relpath(lock_file, cwd)
+                    emit_event(
+                        "memory_in_use",
+                        f"stale lock file {rel_lock} (age={age:.0f}s) removed at session start",
+                        lock_file=rel_lock,
+                        age_seconds=int(age),
+                        action="removed_stale_lock",
+                    )
+                    notices.append(f"[self-resolved] memory_in_use: stale lock {os.path.basename(lock_file)} removed (age {age:.0f}s)")
+            except Exception:
+                pass
 
 if notices:
     print("\n".join(notices))
