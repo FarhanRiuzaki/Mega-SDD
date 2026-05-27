@@ -455,12 +455,21 @@ if os.path.isfile(starterkit_path):
 import re as _re_mt
 
 mt_catalog_path = None
-# Catalog ships in plugin source; find via PLUGIN_ROOT env if available
-plugin_root_env = os.environ.get("PLUGIN_ROOT_HINT", "")
+# Catalog ships in plugin source; find via SCRIPT_DIR → plugin root
+# PLUGIN_ROOT_HINT is unreliable; derive from known hook location instead.
+import pathlib as _pathlib_mt
+_hook_dir = _pathlib_mt.Path(__file__).resolve().parent if "__file__" in dir() else None
+_plugin_root_derived = str(_hook_dir.parent) if _hook_dir else ""
+plugin_root_env = os.environ.get("PLUGIN_ROOT_HINT", "") or _plugin_root_derived
 catalog_candidates = [
     os.path.join(plugin_root_env, "references", "model-tiers.md") if plugin_root_env else None,
-    "/Users/farhanriuzaki/.claude/plugins/cache/grand-design-spec/mega-sdd/3.56.0/references/model-tiers.md",
 ]
+# Fallback: walk cache directory for any version
+import glob as _glob_mt
+for cached in sorted(_glob_mt.glob(os.path.expanduser(
+        "~/.claude/plugins/cache/grand-design-spec/mega-sdd/*/references/model-tiers.md")), reverse=True):
+    catalog_candidates.append(cached)
+    break  # newest version first
 for c in catalog_candidates:
     if c and os.path.isfile(c):
         mt_catalog_path = c
