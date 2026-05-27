@@ -556,6 +556,73 @@ Across all skills, these identifiers are **stable across rounds**:
 
 When a sibling skill creates new entries, use **next-available** number, never reuse.
 
+## §halt-escalation-discipline (v3.50.0+, Iter 67.7 — anti-erosion gate)
+
+Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). See `docs/superpowers/audits/2026-05-27-halt-escalation-classification.md` and `docs/superpowers/audits/2026-05-27-c1-collapse-attestation.md` for full classification + per-halt reasoning + reviewer attestation.
+
+### Three categories
+
+| Cat | Behavior | When applicable |
+|---|---|---|
+| **C1 — Self-resolve** | Skill fixes own output, emits `halt_self_resolved` telemetry + chat one-liner, NEVER halts. | Skill emitted bad output (missing field, parse error, citation typo) AND can re-derive from in-context info. NO ground-truth fabrication. NO silent failure hiding (every fix logged). |
+| **C2 — Business gate** | Halt + PROPOSE recommendation + sign-off. No raw "what should I do?" questions. | Resolution needs domain/stakeholder intent (scope choice, conflict resolution, business rule). Skill emits halt envelope with `recommendation:` field populated. |
+| **C3 — Grounding gate** | Halt — enforce via [HOOK-VALIDATE] slice (deterministic validator), not prose. | Continuing would require hallucinating ground truth (vault↔code conflict, traceability ID drop). Enforced by hook + state file, not skill body text. |
+
+### C1 self-resolve protocol (v3.50.0+, Iter 67.7 Phase A)
+
+When a skill detects a C1 condition during execution:
+
+1. **Apply the documented fix** (per the halt's `C1 SELF-RESOLVE` description in this file).
+2. **Emit chat one-liner:** `[self-resolved] <halt_type>: <fix_applied>` (single line, not a halt envelope).
+3. **Emit telemetry event:**
+   ```json
+   {
+     "event_type": "halt_self_resolved",
+     "payload": {
+       "halt_type": "<halt name>",
+       "fix_applied": "<short description>",
+       "original_emit_site": "<skill_name>:<step_id>",
+       "logged_at_chat": true
+     }
+   }
+   ```
+4. **Continue execution.** Do NOT emit a `blocker:` envelope. Do NOT pause the chain. Do NOT prompt the human.
+
+### Escalation paths from C1 → C2
+
+A C1 halt MUST escalate to C2 (with proposal) when:
+- Resolution would require ground truth the model lacks (e.g., re-picking from empty inventory)
+- Documented retry budget exhausted (e.g., `invalid_handoff` after 2 producer re-invokes)
+- The fix would silently hide a class of failure the human should know about (catch-all safety)
+
+When escalating, emit standard C2 halt envelope WITH the C1 attempt history in `details.retry_attempts: [...]` for forensics.
+
+### C2 propose-and-confirm discipline (v3.50.0+, Iter 67.7 Phase D candidate — future iter)
+
+Every C2 halt envelope MUST include a `recommendation:` field with the skill's best-effort guess + rationale. The halt should not pose a raw question. Format:
+
+```yaml
+blocker:
+  type: <C2 halt>
+  ...
+  recommendation:
+    proposed_action: "<one-line>"
+    rationale: "<why this is the best guess given context>"
+    confidence: "high | medium | low"
+    alternatives: ["<option A>", "<option B>"]
+  user_response_required: true
+```
+
+Implementation deferred to Phase D after Phase A real-run proof. Current C2 halts emit options but rarely propose; Phase D doc-only pass formalizes this.
+
+### C3 enforcement via [HOOK-VALIDATE]
+
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `plugins/mega-sdd/references/fork-a-recovery-map.md`. Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. Slice 1 shipped Iter 67.6 (binding→units OQ-IDs); slices 2-5 follow the same pattern for CONFLICT-IDs / Hard Rules / vault→binding / units→bolts.
+
+### Backward compatibility
+
+Halts not yet classified (or in older skill bodies) default to legacy behavior (ALWAYS STOP). Phase A formalizes 6 already-soft halts as C1. Phase B (separate iter, contingent on Phase A real-run proof + attestation audit sign-off) expands to remaining 22 C1 candidates.
+
 ## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
 
 When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, diff-vault conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
@@ -642,7 +709,7 @@ Consumer dispatch (orchestrate-flow halt displayer):
 - `constitution_drift_detected` — detect-drift v1.4+, Iter 30: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
 - `drift_framework_mismatch` — detect-drift v1.2+, Iter 12: scanned code framework differs from vault framework. ALWAYS STOP.
 - `diff_conflict` — diff-vault v0.3+, Iter 3: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk). Emitted by `diff-vault`.
-- `memory_in_use` — memory v1.0+: file lock collision; concurrent writer holds lock. ALWAYS STOP (after retry exhausted).
+- `memory_in_use` — memory v1.0+: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A):** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). Emits `halt_self_resolved` telemetry event with `fix_applied: "retry_exhausted_memory_skipped"`. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
 - `dispatch_prompt_too_large` — execute-bolts v2.6+, Iter 30: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
 - `bolt_repeated_partial_failure` — execute-bolts v2.6+, Iter 30: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
 - `provenance_missing` — execute-bolts v2.6+, Iter 30: bolt modified file lacks provenance trailer. ALWAYS STOP.
@@ -650,16 +717,16 @@ Consumer dispatch (orchestrate-flow halt displayer):
 - `self_assessment_missing` — execute-bolts v2.6+, Iter 30: bolt-report.md lacks self-assessment section. ALWAYS STOP.
 - `dep_missing` — scan-codebase v2.0+, Iter 6: required binary (tree-sitter when --engine=tree-sitter forced) not found. ALWAYS STOP.
 - `oq_recommend_citation_invalid` — generate-intent v1.3+, Iter 2: OQ recommendation cites non-existent KB section. ALWAYS STOP.
-- `mode_migrate` — orchestrate-flow v1.0+: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). ALWAYS STOP. Details `{vault_mode, cwd_signals, resolution: "update vault mode" | "re-detect"}`. Resolution: user updates `vault.json.mode` OR re-runs with `--detect-mode` flag. (Description added Iter 61 per A3-002 — previously had schema block at line 756 but no description.)
-- `routing_outcome_corrupt` — orchestrate-flow v3.0.0+, Iter 33: routing-outcomes.md fails parse. SOFT halt: auto-invalidate (rename to .corrupt-<ISO8601>); chain proceeds with default routing.
+- `mode_migrate` — orchestrate-flow v1.0+: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A):** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. Emits `halt_self_resolved` telemetry with `fix_applied: "mode_redetected: <old> → <new>"`. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
+- `routing_outcome_corrupt` — orchestrate-flow v3.0.0+, Iter 33: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A — formalizing pre-existing SOFT semantics):** auto-invalidate (rename to `.corrupt-<ISO8601>`); chain proceeds with default routing. Emits `halt_self_resolved` telemetry with `fix_applied: "corrupt_file_renamed_default_routing_used"`. Forensics file preserved for plugin-author debugging. NEVER halts.
 - `predictive_check_failed` — orchestrate-flow v3.0.0+, Iter 33: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. Resolution: user fixes precondition (install dep / add framework pack / etc.) per `next_action.hint`; re-run chain.
 - `invalid_handoff` — orchestrate-flow v3.0.0+, Iter 33: handoff YAML from sub-skill fails schema validation (missing REQUIRED field, or CONDITIONAL field missing when condition met, or YAML parse error). ALWAYS STOP. Resolution: producer skill author fixes handoff template per handoff-contract.md schema; re-run chain.
 - `handoff_type_mismatch` — orchestrate-flow v3.0.0+, Iter 33 F4: handoff YAML field type doesn't match TYPE annotation in handoff-contract.md schema. ALWAYS STOP. Resolution: producer skill author fixes type emission per handoff-contract.md TYPE annotation; re-run chain.
-- `model_tier_unknown` — orchestrate-flow v3.1.0+, Iter 34: model-tier override references a role not in references/model-tiers.md catalog. SOFT halt: log + ignore override; chain proceeds with catalog default for unknown roles. Forward-compat for future role additions.
+- `model_tier_unknown` — orchestrate-flow v3.1.0+, Iter 34: model-tier override references a role not in references/model-tiers.md catalog. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A — formalizing pre-existing SOFT semantics):** log + ignore override; chain proceeds with catalog default for unknown roles. Emits `halt_self_resolved` telemetry with `fix_applied: "unknown_role_catalog_default_used"`. Forward-compat for future role additions. NEVER halts.
 - `pbt_citation_invalid` — execute-bolts v2.4+, Iter 20: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault `decisions/` directory. ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt. Closes Iter 38 audit finding D3-004.
 - `handoff_missing` — orchestrate-flow v3.2.1+, Iter 40 (semantics corrected Iter 43): sub-skill chat output contains no parseable `handoff:` YAML block (skills emit handoff inline in chat, not to a file). ALWAYS STOP. Resolution: inspect sub-skill chat output (`chat_tail_excerpt` in halt envelope shows last 500 chars) for crash logs / parse errors / OS-level failures; re-run sub-skill standalone to reproduce; report as skill-author bug if reproducible. Closes Iter 38 audit finding D3-001 (silent-failure path closure).
 - `artifact_missing` — orchestrate-flow v3.2.0+, Iter 40: handoff YAML lists `artifacts: [paths]` and one or more paths fail existence check (`test -f` for files, `test -d` for directories). ALWAYS STOP. Resolution: re-run producer skill standalone to confirm artifacts actually written; inspect producer chat for mid-write crash logs. Closes Iter 38 audit finding D3-002 (silent-failure path closure).
-- `partial_state_corrupt` — execute-bolts v2.7.3+, Iter 40: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract — corrected from initial Iter 40 vault-contract description) and JSON parse failed. ALWAYS STOP. Resolution: rename corrupt file to `.corrupt-<ISO8601>` for forensics; re-run `--resume` (starts fresh) OR run without `--resume`. Closes Iter 38 audit finding D3-003 (silent-failure path closure; previously silent state overwrite).
+- `partial_state_corrupt` — execute-bolts v2.7.3+, Iter 40: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract — corrected from initial Iter 40 vault-contract description) and JSON parse failed. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A — promoted from ALWAYS STOP):** rename corrupt file to `.corrupt-<ISO8601>` for forensics; restart `--resume` flow fresh (no partial state, full re-run from unit spec). Emits `halt_self_resolved` telemetry with `fix_applied: "partial_state_renamed_fresh_restart"`. Forensics preserved. Chain proceeds without prompting user. NEVER halts. Closes Iter 38 audit finding D3-003.
 - `dedup_ambiguous` — generate-units v2.5+, Iter 41 registry closure: dedupe step finds multiple existing units that could match a new claim (target_files overlap >threshold). ALWAYS STOP. Resolution: user picks the canonical unit OR confirms creating a new one. Previously emitted but missing from canonical halt registry — Iter 41 sweep closure.
 - `hard_rule_unparseable` — generate-units v2.0+, Iter 6: a unit's `## Hard Rules` block contains ast-grep YAML that fails parse OR an ANCHOR reference that cannot be resolved. ALWAYS STOP. Resolution: user fixes the unit's Hard Rules block syntax. Iter 41 sweep closure (was emitted but missing from canonical registry).
 - `hard_rule_violated` — execute-bolts v1.2+, Iter 3: post-flight ast-grep scan found code in working tree violates a unit's Hard Rule. ALWAYS STOP (no auto-retry; user reviews + decides revert vs edit). Resolution: amend the bolt OR override the rule with explicit user approval. Iter 41 sweep closure (was emitted but missing from canonical registry).
@@ -692,7 +759,7 @@ These 9 halt types were emitted by producers as `→ halt <name>` or `type: <nam
 
 - `unit_underspecified` — generate-units v2.0+, Iter 1: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
 
-- `verify_unit_writable` — execute-bolts v2.0+, Iter 1: a `task_type: verify` unit has non-empty `target_files` (verify units should not write code). ALWAYS STOP. Details `{unit_id, target_files}`. Resolution: user removes target_files (or sets `operation: none` per file) — verify units only run acceptance tests, don't author code. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts v2.0+, Iter 1: a `task_type: verify` unit has non-empty `target_files` (verify units should not write code). **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A — promoted from ALWAYS STOP):** auto-clear `target_files: []` on the unit in memory before bolt dispatch; emit `halt_self_resolved` telemetry with `fix_applied: "verify_unit_target_files_cleared"`. Original target_files preserved in the unit file on disk (only in-memory dispatch state is corrected) so human can see the bad spec on review. Chain proceeds with corrected dispatch. NEVER halts. Source skill: `execute-bolts`.
 
 #### Iter 58 — `quality_gate_failed` subtypes (Iter 53/54 closure per A1-003)
 

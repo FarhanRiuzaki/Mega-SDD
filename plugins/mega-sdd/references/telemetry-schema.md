@@ -32,6 +32,7 @@
 | `turn_end_marker` | `plugins/mega-sdd/hooks/stop` (Stop) | HIGH (if harness invokes Stop for project CWD — verified via `hook-debug.log`). Payload includes real harness-reported `usage: {input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens}` extracted from the last `assistant` message in `transcript_path`. |
 | `halt_fired` | Skill body (markdown convention) | **BEST-EFFORT, UNRELIABLE.** Audit-confirmed: 0 emissions in real runs pre-67.5. Skill bodies may include emit-step instructions; model may or may not execute them. Treat as supplementary, not ground truth. |
 | `activation_outcome` | Skill body (markdown convention) | Same as `halt_fired`. |
+| `halt_self_resolved` (v3.50.0+, Iter 67.7 Phase A) | Skill body (markdown convention — same caveat as halt_fired) | Emitted when a C1-classified halt auto-resolves per `vault-contract.md §halt-escalation-discipline §C1 self-resolve protocol`. Anti-erosion mechanism: every self-resolve is logged to enable Iter 68 audit of C1 frequency + class distribution. If a C1 class fires too often → indicates skill emission bug worth root-cause review. |
 
 Aggregation (`turn_loaded_summary`-style metrics): derived offline by Iter 68 by rolling up `ref_loaded` events bracketed by adjacent `turn_end_marker` events. Per-turn token totals use the `usage.input_tokens` field on the trailing `turn_end_marker` (real number from harness), NOT the sum of `ref_loaded.estimated_tokens` (which under-counts due to the blind spots above).
 
@@ -43,7 +44,7 @@ Top-level shape per JSONL line:
 {
   "ts": "<ISO8601 UTC>",
   "skill": "<emitter skill name; defaults to 'orchestrate-flow' for hook-emitted events>",
-  "event_type": "ref_loaded | skill_invoked | turn_end_marker | halt_fired | activation_outcome",
+  "event_type": "ref_loaded | skill_invoked | turn_end_marker | halt_fired | activation_outcome | halt_self_resolved",
   "session_id": "<Claude Code session UUID from hook stdin>",
   "hook_source": "PostToolUse | Stop | null",
   "payload": { /* event-specific; see below */ }
