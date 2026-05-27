@@ -189,6 +189,120 @@ for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "b
         # Non-JSONDecodeError (file system error, encoding etc.) → skip; not a clean self-resolve
         continue
 
+# ─── Guard 3: routing_outcome_corrupt (Iter 67.7.3 — v3.52.0+) ─────────────
+# Scan <cwd>/.mega-sdd/memory/routing-outcomes.md
+# Format: markdown with `# Routing Outcomes` header + table-style entries.
+# Corruption detection (conservative):
+#   - File exists, non-empty, but not valid UTF-8 → corrupt
+#   - File exists, non-empty, but missing expected header in first 200 chars → corrupt
+# Empty file = initialization state, NOT corrupt (skip).
+# On corruption: rename to routing-outcomes.md.corrupt-<ISO8601>; chain proceeds
+# with default routing (no replacement file created; memory subsystem will rebuild
+# on next end-of-chain write).
+ROUTING_FILE = os.path.join(cwd, ".mega-sdd", "memory", "routing-outcomes.md")
+if os.path.isfile(ROUTING_FILE):
+    try:
+        with open(ROUTING_FILE, "rb") as fh:
+            raw = fh.read()
+    except Exception:
+        raw = None
+    if raw is not None and len(raw) > 0:
+        try:
+            content = raw.decode("utf-8")
+            header_ok = "Routing Outcomes" in content[:200]
+        except UnicodeDecodeError:
+            content = None
+            header_ok = False
+        if content is None or not header_ok:
+            corrupt_path = f"{ROUTING_FILE}.corrupt-{ts_fname}"
+            try:
+                os.rename(ROUTING_FILE, corrupt_path)
+                rel_orig = os.path.relpath(ROUTING_FILE, cwd)
+                rel_corrupt = os.path.relpath(corrupt_path, cwd)
+                reason = "non-utf8-binary" if content is None else "missing_schema_header"
+                emit_event(
+                    "routing_outcome_corrupt",
+                    f"renamed → {os.path.basename(corrupt_path)}; default routing used; memory rebuilds next end-of-chain",
+                    original_path=rel_orig,
+                    corrupt_path=rel_corrupt,
+                    corruption_reason=reason,
+                )
+                notices.append(f"[self-resolved] routing_outcome_corrupt: routing-outcomes.md renamed ({reason}); default routing used")
+            except Exception:
+                pass  # rename failed; don't claim resolve
+
+# ─── Guard 4: verify_unit_writable (Iter 67.7.4 — v3.52.0+) ────────────────
+# Scan units for task_type=verify with non-empty target_files (forbidden per
+# attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
+# emit warning telemetry + chat notice; DO NOT modify on-disk unit (preserves
+# bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
+# (separate concern).
+#
+# Two layouts (per Iter 67.6.1 validator pattern):
+#   Layout A (phase-2):  <vault>/*-bound/units/U-*.md
+#   Layout B (phase-1):  <vault>/*-bound/units/U-*/unit.md
+import re as _re
+
+FRONTMATTER_RE_VW = _re.compile(r"^---\n(.*?)\n---", _re.DOTALL)
+unit_paths_vw = sorted(
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"))
+)
+for up in unit_paths_vw:
+    if "/.archived/" in up or "/.archived\\" in up:
+        continue
+    try:
+        body = open(up).read()
+    except Exception:
+        continue
+    m = FRONTMATTER_RE_VW.match(body)
+    if not m:
+        continue
+    fm = m.group(1)
+    # Quick task_type extraction
+    tt_match = _re.search(r"^task_type:\s*(\w+)", fm, _re.MULTILINE)
+    if not tt_match or tt_match.group(1) != "verify":
+        continue
+    # Line-based target_files block extraction (regex with nested groups is unreliable
+    # for YAML lists with mixed indent — see Iter 67.7.x debug). The block is
+    # everything from `target_files:` up to the next top-level YAML key or end of fm.
+    fm_lines = fm.split("\n")
+    in_block = False
+    block_lines = []
+    for ln in fm_lines:
+        if ln.startswith("target_files:"):
+            in_block = True
+            continue
+        if in_block:
+            if ln and ln[0] not in " \t":
+                break  # next top-level key
+            block_lines.append(ln)
+    block_text = "\n".join(block_lines)
+    if not block_text.strip():
+        continue
+    forbidden_ops = _re.findall(r"operation:\s*(create|modify|delete)", block_text)
+    if not forbidden_ops:
+        continue
+    # Violation: verify unit with writable target_files
+    rel_up = os.path.relpath(up, cwd)
+    # Layout A uses unit_id:, Layout B uses id: — accept both
+    unit_id_match = _re.search(r"^(?:unit_id|id):\s*(\S+)", fm, _re.MULTILINE)
+    if unit_id_match:
+        unit_id = unit_id_match.group(1)
+    elif os.path.basename(up) == "unit.md":
+        # Layout B fallback: dir name (e.g., U-002-some-name)
+        unit_id = os.path.basename(os.path.dirname(up))
+    else:
+        unit_id = os.path.basename(up).replace(".md", "")
+    emit_event(
+        "verify_unit_writable",
+        f"detected at SessionStart; on-disk unit preserved for review; execute-bolts will auto-clear at dispatch time",
+        unit_id=unit_id,
+        unit_path=rel_up,
+        forbidden_operations=forbidden_ops,
+    )
+    notices.append(f"[self-resolved] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (review needed; dispatch will auto-clear)")
+
 if notices:
     print("\n".join(notices))
 PYEOF

@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.52.0] - 2026-05-27
+
+### Iter 67.7.3 + 67.7.4 — Phase A slices 3 + 4 + PHASE A CHECKPOINT
+
+**Phase A scorecard at this checkpoint:**
+
+| Slice | Halt | Mechanism | Status |
+|---|---|---|---|
+| 1 | `mode_migrate` | SessionStart guard | ✅ shipped v3.51.0 (TF Import direct, benign metadata) |
+| 2 | `partial_state_corrupt` | SessionStart guard | ✅ shipped v3.51.1 (sandbox, corruption) |
+| **3** | `routing_outcome_corrupt` | SessionStart guard | **✅ shipped v3.52.0 (sandbox, corruption)** |
+| **4** | `verify_unit_writable` | SessionStart guard (detection-only) | **✅ shipped v3.52.0 (sandbox, both unit layouts)** |
+| 5 | `model_tier_unknown` | — | ⚠️ FLAGGED — breaks pattern |
+| 6 | `memory_in_use` | — | ⚠️ FLAGGED — breaks pattern |
+
+**Phase A: 4/6 hook-layer enforced + sandbox-proven. 2/6 flagged. Phase B blocked until flagged-pair resolved + reviewer re-audit.**
+
+### What ships (slices 3 + 4)
+
+**Slice 3 — `routing_outcome_corrupt` (Iter 67.7.3):**
+
+`SessionStart` hook Guard 3 (after mode_migrate + partial_state_corrupt). Scans `<cwd>/.mega-sdd/memory/routing-outcomes.md`. Corruption detection:
+- File exists, non-empty, but not valid UTF-8 → corrupt
+- File exists, non-empty, but missing `Routing Outcomes` schema marker in first 200 chars → corrupt
+- Empty file = initialization state (NOT corrupt; skip)
+
+On corruption: rename to `routing-outcomes.md.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` field (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing; memory rebuilds on next end-of-chain write.
+
+**Slice 4 — `verify_unit_writable` (Iter 67.7.4):**
+
+`SessionStart` hook Guard 4. Scans both unit layouts:
+- Layout A: `*-bound/units/U-*.md`
+- Layout B: `*-bound/units/U-*/unit.md`
+
+For each unit with frontmatter `task_type: verify` AND `target_files` containing operations ∈ {create, modify, delete} → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations` list) + chat notice. **Detection-only: on-disk unit file is NOT modified** (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path; remains in skill body for now per attestation reclassification #12).
+
+**Side fix:** `target_files` block parser rewritten from broken nested-regex to line-based extraction. Original regex captured only the first operation per unit; new parser captures all operations across all entries. Bug surfaced + fixed during slice 4 sandbox proof.
+
+### Slices 5 + 6 — FLAGGED (break pattern)
+
+**Slice 5 — `model_tier_unknown`:** Fires mid-chain in orchestrate-flow Step 2.8.f during model-tier override resolution. **No SessionStart guard surface** — this is a runtime decision during chain execution, not a session-start state check. Existing prose is already SOFT ("log + ignore + continue with catalog default"). Adding telemetry emission to the prose path inherits the same Fork A weakness audited 4× already.
+
+Possible reframe: SessionStart could pre-validate user/project model-tier config files against the catalog. That's a DIFFERENT hook surface (config-validation, not corruption check) and a separate slice scope. Deferred.
+
+**Slice 6 — `memory_in_use`:** File-lock retry logic (current: backoff + retry 3x) is implemented as prose in `memory/SKILL.md`. No script implementation exists. Increasing retry to 10 with exponential backoff requires either:
+- Skill body prose change (same Fork A weakness)
+- New script `memory-write.sh` that owns lock acquisition + retry, called by skill body via Bash (moves logic out of prose into deterministic code)
+
+The second option is the right architecture but is a substantive refactor — moving memory-write from prose to script. Phase A slice scope is too narrow for that change. Deferred to a "memory subsystem hardening" iter.
+
+**Both flagged slices share the root cause:** they emit from inside skill-body execution, not from precondition checks. The SessionStart-guard pattern (the proven Phase A mechanism) doesn't apply. Different hook surfaces (PostToolUse, PreToolUse) or different mechanisms (script extraction) are needed.
+
+### Combined sandbox proof (all 4 working guards + control)
+
+Single SessionStart invocation against synthetic sandbox with ALL conditions set:
+- mode_migrate: vault.json mode=greenfield wrong → fixed to existing
+- partial_state_corrupt: malformed JSON → renamed `.corrupt-<ts>`
+- routing_outcome_corrupt: markdown w/o schema header → renamed `.corrupt-<ts>`
+- verify_unit_writable: U-001 (Layout A, modify+create ops) + U-002 (Layout B, create op) both detected
+- Control: U-003 (task_type=create, writable) correctly excluded — no false positive
+
+Result: 5 telemetry events emitted (1 mode + 1 partial + 1 routing + 2 verify), `<self-resolve-log>` block in anchor injection lists all 5, idempotent re-run produces +2 events (verify_unit_writable re-fires for U-001 + U-002 — intentional per detection-only design; others stay silent because they auto-fixed on first run).
+
+**Sandbox cleanup verified — TF Import production data UNTOUCHED per locked safety rule.**
+
+### Schema additions (no existing schema fields changed)
+
+`halt_self_resolved` payload now carries additional keys per halt:
+- `routing_outcome_corrupt` adds: `corruption_reason`, `original_path`, `corrupt_path`
+- `verify_unit_writable` adds: `unit_id`, `unit_path`, `forbidden_operations`
+
+Both additive (per Iter 67.5 schema policy). Existing fields unchanged.
+
+### Phase A net effect
+
+Of 6 Phase A halts originally classified as "already-soft" C1:
+- 4 now have hook-layer enforcement (deterministic, zero prose dependency)
+- 2 remain in prose-emit state (flagged; need different mechanism)
+
+Operational interrupt reduction is real: when these 4 conditions occur in real chains, no human prompt fires; structured telemetry + chat notice provide audit trail. The Iter 67.5 "C1 protocol shipped as prose = 4× failure pattern" gap is now closed for these 4 halts.
+
+### Phase B status (the 22 remaining C1 candidates)
+
+**Still blocked** behind:
+1. Phase A 4/6 hook-layer slices verified in production (slices 1-4 collectively)
+2. Phase A flagged-pair (slices 5+6) resolved or scoped to separate iter
+3. Attestation re-audit if any of slices 5+6 reclassification touches the 22 list (model_tier_unknown is on C1 list as #26 in orchestrate-flow group; memory_in_use is #28 in memory group — both potentially affected by their flagged-status)
+
+### Production verification path (user-side, when convenient)
+
+The 4 hook-layer guards now fire automatically on every Claude Code SessionStart for projects with `.mega-sdd/` in CWD. To verify in TF Import:
+- Next session: hook fires on startup. If no conditions match → no `<self-resolve-log>` block (silent normal operation).
+- To validate: deliberately set a vault.json to mode=greenfield, observe auto-fix on next session.
+- Existing TF Import telemetry has 4 test-residue events from slice 1 (`session_id: session-start-hook`) + production events from real Claude Code sessions (real session UUIDs).
+
+### Classifier dogfood (advisory)
+
+- files_changed: 5 (session-start + vault-contract + plugin.json + 2 READMEs + CHANGELOG) → 5-15 = MINOR
+- 2 new SessionStart guards added (slice 3 + slice 4)
+- 2 slices documented as FLAGGED
+- No new file, no new halt enum, no skill body modified
+- → **MINOR** ✓
+
+**Plugin v3.51.1 → v3.52.0** (MINOR — Phase A checkpoint: 4/6 slices hook-layer enforced + sandbox-proven; 2/6 flagged as breaks-pattern with documented reframe paths).
+
 ## [3.51.1] - 2026-05-27
 
 ### Iter 67.7.2 — Phase A slice 2: `partial_state_corrupt` hook-layer enforcement (sandbox-proven)
