@@ -459,6 +459,11 @@ except Exception:
           "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
           "${CWD}/.mega-sdd/.kb-output-state.json" \
           "PostToolUse-Write-validate-kb-output"
+        # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \
+          "${CWD}/.mega-sdd/.kb-markers-state.json" \
+          "PostToolUse-Write-validate-kb-markers"
         ;;
     esac
     ;;
