@@ -165,3 +165,71 @@ Reviewer to confirm:
 4. Risk flags (5 items) are acknowledged
 
 Phase B coding STARTS when reviewer signs off.
+
+---
+
+## Reviewer audit outcome 2026-05-27
+
+**Classification ACKED with 2 refinements + reordered slices + 5 risk-flag resolutions.**
+
+### Refinement R1: `scope_not_declared_in_prd` (#5) — reclassify
+
+**NOT batched with proven [PostToolUse-validate] track.** It uses PreToolUse-Skill-tool_input surface which is UNPROVEN in this codebase (= risk flag 1). Per reviewer discipline: "jangan asumsi kecover; prove-first."
+
+**New classification:** `scope_not_declared_in_prd` becomes its own **PATTERN-PROVE slice** — must verify the PreToolUse-Skill-tool_input surface works in a real Claude Code run before assuming it covers anything else. If proof fails → moves to [neither] / edge-case track. NOT to be assumed-functional based on docs.
+
+### Refinement R2: `dep_missing` (#8) — non-interactive only
+
+**Detection at SessionStart OK. Auto-install fix CONSTRAINED.** SessionStart hook running interactive `apt`/`composer`/`brew install` could hang on sudo prompt or network timeout — blocking EVERY session start. Critical safety issue.
+
+**Constraint:** auto-install path runs ONLY non-interactive commands. If install requires sudo/interactive input/network reach → escalate to C2 `install_failed` halt (existing) with proposal `"non-interactive install not possible; run manually: <command>"`. Hook NEVER hangs the session.
+
+### [neither] track: ACCEPTED
+
+Defer to edge-case design iter joining Phase A flagged 5+6. 4 items total. No prose-fake.
+
+### Slice reorder (priority-by-value, not by-simplest)
+
+Both patterns are proven (Phase A slices 1-4 prove SessionStart-guard; Iter 67.6 slice 1 proves PostToolUse-validate). Slice order should be **value-driven**, not difficulty-driven:
+
+```
+Phase B PRIORITY ORDER (post-reorder):
+
+  B.1  Handoff validation suite (#20-23)          ← LEAD with this
+       Why first: (a) PostToolUse-validate proven,
+       (b) HIGHEST value — integrity carry-over
+       (the class that started this whole thread
+       via the 27 OQ drop), (c) natural batch
+  B.2  Bolt artifacts (#16-18)                    ← PostToolUse-validate, mid-value
+  B.3  Unit validation (#12-14)                   ← PostToolUse-validate, reclassified items
+  B.4  Vault OQ validation (#1-4)                 ← PostToolUse-validate, heaviest batch
+  B.5  quality_gate subtypes (S1/S2/S3)           ← PostToolUse-validate, mixed
+  B.6  PreToolUse-Skill PATTERN-PROVE (#5 only)   ← NEW SURFACE, pattern-prove
+  B.7  framework_pack_unparseable                 ← SessionStart-guard, low-value replication
+  B.8  framework_pack_cycle                       ← SessionStart-guard
+  B.9  deep_scan_cache_corrupt                    ← SessionStart-guard
+  B.10 framework_pack_missing                     ← SessionStart-guard, complex parser
+  B.11 dep_missing                                ← SessionStart-guard, non-interactive only
+
+Edge-case track (parallel, separate design iter):
+  - Phase A slice 5: model_tier_unknown
+  - Phase A slice 6: memory_in_use
+  - Phase B [neither] 6: deep_scan_subagent_failed
+  - Phase B [neither] 15: dispatch_prompt_too_large
+```
+
+### Risk-flag resolutions
+
+| # | Original flag | Resolution |
+|---|---|---|
+| 1 | PreToolUse Skill tool_input surface unproven | **Pull out as B.6 pattern-prove slice.** Don't assume covers #5; verify surface first. If fails → #5 → edge-case track. |
+| 2 | KB cross-check assumes KB exists | **Graceful skip + advisory log when KB absent. NEVER halt on missing KB.** |
+| 3 | framework_pack parser complexity | **Fine — budget accordingly.** Not a "trivial clone"; do the work without shortcuts because it looks complex. |
+| 4 | dep_missing install integration | **CRITICAL: non-interactive only.** Interactive sudo/network = escalate C2 install_failed. Hook must NEVER hang session. |
+| 5 | Handoff YAML parser port (prose→script) | **Yes — port to deterministic script.** Non-trivial but IS the high-value work (eliminating prose dependency). |
+
+### Phase B coding starts: B.1 Handoff suite
+
+Walking-skeleton per slice; real-run proof per slice; corruption tests in sandbox per locked safety rule. Checkpoint report after B.1 or earlier if pattern breaks.
+
+Reviewer escalation: business decisions only. Tech-judgment closed at this audit gate.

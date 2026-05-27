@@ -84,7 +84,96 @@ if [ -d "${CWD}/.mega-sdd" ]; then
   echo "$DEBUG_LINE" >> "$DEBUG_LOG" 2>/dev/null || true
 fi
 
-# ─── TELEMETRY GATE ──────────────────────────────────────────────────────────
+# ─── HANDOFF VALIDATION (Phase B slice B.1, v3.53.0+) ───────────────────────
+# Runs BEFORE telemetry gate — state file is the primary artifact (independent
+# of telemetry). Telemetry emission is conditional on telemetry.jsonl existing.
+# Only runs if .mega-sdd/ exists (already implicitly true at this point since
+# we wrote hook-debug.log above which has the same guard).
+if [ -d "${CWD}/.mega-sdd" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  # Extract last assistant message content from transcript
+  LAST_ASSISTANT_TEXT=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
+import json, os
+last_text = None
+with open(os.environ["TRANSCRIPT_PATH"]) as f:
+    for line in f:
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+        if not msg:
+            continue
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            last_text = content
+        elif isinstance(content, list):
+            parts = []
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    parts.append(block.get("text", ""))
+            if parts:
+                last_text = "\n".join(parts)
+if last_text:
+    print(last_text)
+' 2>/dev/null)
+
+  # Only invoke validator if response contains "handoff:" marker (skip otherwise — skill may not be expected to emit)
+  if [ -n "$LAST_ASSISTANT_TEXT" ] && echo "$LAST_ASSISTANT_TEXT" | grep -q "handoff:"; then
+    SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
+    VALIDATOR_HV="${SCRIPT_DIR_HV}/../scripts/validate-handoff-yaml.sh"
+    if [ -x "$VALIDATOR_HV" ]; then
+      INFERRED_SKILL=$(echo "$LAST_ASSISTANT_TEXT" | python3 -c '
+import sys, re
+text = sys.stdin.read()
+m = re.search(r"^\s*emitted_by:\s*([\w-]+)", text, re.MULTILINE)
+print(m.group(1) if m else "unknown")
+' 2>/dev/null)
+      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR_HV" --cwd="$CWD" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
+      # Emit telemetry event ONLY if telemetry.jsonl already exists (consistent with turn_end_marker gate)
+      STATE_FILE_HV="${CWD}/.mega-sdd/.handoff-validation-state.json"
+      TELEMETRY_FILE_PRECHECK="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+      if [ -f "$STATE_FILE_HV" ] && [ -f "$TELEMETRY_FILE_PRECHECK" ]; then
+        HANDOFF_EVENT=$(STATE_FILE_HV="$STATE_FILE_HV" TS_ENV="$TS" SESSION_ID_ENV="$SESSION_ID" python3 -c '
+import json, os
+try:
+    d = json.load(open(os.environ["STATE_FILE_HV"]))
+    status = d["status"]
+    ht = d.get("halt_type") or "handoff_validated_pass"
+    rc = d.get("retry_count", 0)
+    esc = d.get("escalate_to_c2", False)
+    et = "halt_self_resolved" if status == "PASS" else ("halt_fired" if esc else "halt_self_resolved")
+    fix_applied = "handoff validator ran" if status == "PASS" else f"detected {ht}; retry={rc}"
+    payload = {
+        "halt_type": ht,
+        "fix_applied": fix_applied,
+        "original_emit_site": "Stop-hook-handoff-validator",
+        "logged_at_chat": False,
+        "retry_count": rc,
+        "escalate_to_c2": esc,
+        "skill_name": d.get("skill_name"),
+    }
+    print(json.dumps({
+        "ts": os.environ["TS_ENV"],
+        "skill": "orchestrate-flow",
+        "event_type": et,
+        "session_id": os.environ["SESSION_ID_ENV"],
+        "hook_source": "Stop",
+        "payload": payload,
+    }, separators=(",", ":")))
+except Exception:
+    pass
+' 2>/dev/null)
+        if [ -n "$HANDOFF_EVENT" ]; then
+          echo "$HANDOFF_EVENT" >> "$TELEMETRY_FILE_PRECHECK" 2>/dev/null || true
+        fi
+      fi
+    fi
+  fi
+fi
+
+# ─── TELEMETRY GATE (turn_end_marker only) ──────────────────────────────────
 TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
 if [ ! -f "$TELEMETRY_FILE" ]; then
   exit 0
@@ -142,5 +231,109 @@ SESSION_ID_JSON=$(printf '%s' "$SESSION_ID" | sed 's|\\|\\\\|g; s|"|\\"|g')
 EVENT="{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"turn_end_marker\",\"session_id\":\"$SESSION_ID_JSON\",\"hook_source\":\"Stop\",\"payload\":{\"usage\":$USAGE_JSON,\"stop_hook_active\":$STOP_HOOK_ACTIVE_LOWER}}"
 
 echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
+
+# ─── Phase B slice B.1: handoff validation (Iter 67.8+ v3.53.0) ─────────────
+# Per docs/superpowers/audits/2026-05-27-phase-b-enforcement-classification.md
+# [PostToolUse-validate] track. Stop hook is the right surface (PostToolUse Skill
+# only fires on skill LOADING, not after agent emits handoff in chat).
+#
+# Action: at turn end, scan transcript for last assistant message; if it contains
+# "handoff:" text, run validate-handoff-yaml.sh against that message text.
+# Validator writes .mega-sdd/.handoff-validation-state.json (overwrite-not-append,
+# per Iter 67.6 slice 1 state-file discipline). PreToolUse Skill matcher
+# (separate hook) reads this state to block subsequent mega-sdd:* skills when
+# upstream handoff is invalid.
+#
+# When NO handoff text in last assistant message → skip validation entirely
+# (skill may not have been expected to emit; conservative — avoids false
+# handoff_missing). Detection of "handoff_missing for skill that SHOULD emit"
+# is a deeper slice (needs to know which skill emitted last + whether it's a
+# mid-chain skill expected to emit handoff). Walking-skeleton scope first.
+
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  # Extract last assistant message content
+  LAST_ASSISTANT_TEXT=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
+import json, os, sys
+try:
+    last_text = None
+    with open(os.environ["TRANSCRIPT_PATH"]) as f:
+        for line in f:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+            if not msg:
+                continue
+            if msg.get("role") != "assistant":
+                continue
+            content = msg.get("content")
+            # content can be string OR list of content blocks
+            if isinstance(content, str):
+                last_text = content
+            elif isinstance(content, list):
+                # Concatenate text blocks
+                parts = []
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        parts.append(block.get("text", ""))
+                if parts:
+                    last_text = "\n".join(parts)
+    if last_text:
+        print(last_text)
+' 2>/dev/null)
+
+  # Only invoke validator if response contains "handoff:" marker
+  if [ -n "$LAST_ASSISTANT_TEXT" ] && echo "$LAST_ASSISTANT_TEXT" | grep -q "^[[:space:]]*handoff:"; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    VALIDATOR="${SCRIPT_DIR}/../scripts/validate-handoff-yaml.sh"
+    if [ -x "$VALIDATOR" ]; then
+      # Determine skill_name from handoff's emitted_by field (best effort)
+      INFERRED_SKILL=$(echo "$LAST_ASSISTANT_TEXT" | python3 -c '
+import sys, re
+text = sys.stdin.read()
+m = re.search(r"^\s*emitted_by:\s*([\w-]+)", text, re.MULTILINE)
+print(m.group(1) if m else "unknown")
+' 2>/dev/null)
+      # Pass response text via stdin to validator
+      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR" --cwd="$CWD" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
+      # Validator exit code 0=PASS, 1=FAIL — state file written either way.
+      # Emit a halt_self_resolved (when PASS) OR halt_fired (when FAIL with retry<2)
+      # OR escalation event. The validator already writes detailed state; this is
+      # a lightweight telemetry breadcrumb for Iter 68 audit.
+      STATE_FILE="${CWD}/.mega-sdd/.handoff-validation-state.json"
+      if [ -f "$STATE_FILE" ]; then
+        HANDOFF_EVENT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$STATE_FILE'))
+    et = 'halt_self_resolved' if d['status'] == 'PASS' else ('halt_fired' if d.get('escalate_to_c2') else 'halt_self_resolved')
+    payload = {
+        'halt_type': d.get('halt_type') or 'handoff_validated_pass',
+        'fix_applied': 'handoff validator ran' if d['status'] == 'PASS' else f\"detected {d['halt_type']}; retry={d['retry_count']}\",
+        'original_emit_site': 'Stop-hook-handoff-validator',
+        'logged_at_chat': False,
+        'retry_count': d.get('retry_count', 0),
+        'escalate_to_c2': d.get('escalate_to_c2', False),
+        'skill_name': d.get('skill_name'),
+    }
+    print(json.dumps({
+        'ts': '$TS',
+        'skill': 'orchestrate-flow',
+        'event_type': et,
+        'session_id': '$SESSION_ID',
+        'hook_source': 'Stop',
+        'payload': payload,
+    }, separators=(',', ':')))
+except Exception:
+    pass
+" 2>/dev/null)
+        if [ -n "$HANDOFF_EVENT" ]; then
+          echo "$HANDOFF_EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
+        fi
+      fi
+    fi
+  fi
+fi
 
 exit 0
