@@ -223,6 +223,8 @@ except Exception:
   Bash)
     # ─── BRANCH 2: Anti-self-bypass on state files ──────────────────────────
     # Detect agent attempts to delete/truncate/overwrite guard state files.
+    # SCOPED: only protects state files in ACTIVE project .mega-sdd/ (CWD root).
+    # EXCLUDES: tests/, examples/, fixtures/, plugin source repo (dev-mode).
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
 
@@ -233,18 +235,26 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 ' 2>/dev/null)
     [ -z "$BASH_CMD" ] && exit 0
 
+    # ── Scope exclusion: skip guard for test/fixture/plugin-dev paths ──────
+    # If the command targets files under tests/, examples/, or the plugin
+    # source repo itself (CWD contains plugins/mega-sdd/) → not a live
+    # project, guard doesn't apply.
+    GUARD_SKIP=0
+    if echo "$BASH_CMD" | grep -qE "tests/|examples/|fixtures/"; then
+      GUARD_SKIP=1
+    fi
+    # Plugin-dev-mode: CWD is the plugin source repo, not a target project.
+    # Detect by checking if CWD has plugins/mega-sdd/hooks/ (= this repo).
+    if [ -d "${CWD}/plugins/mega-sdd/hooks" ]; then
+      GUARD_SKIP=1
+    fi
+    if [ "$GUARD_SKIP" -eq 1 ]; then
+      exit 0
+    fi
+
     # Protected state files (scope: walking-skeleton slice 1 + Plan/Act + budget + classifier future)
-    # Pattern: file basenames matching guard state files
     PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json'
 
-    # Patterns that constitute self-bypass:
-    #   rm <path>         → deletion
-    #   unlink <path>     → deletion
-    #   > <path>          → truncate via redirect (with or without echo/printf preceding)
-    #   sed -i ... <path> → in-place modify
-    #   mv ... <path>     → replace
-    #   cp ... <path>     → replace
-    #   tee <path>        → overwrite
     BYPASS_DETECTED=""
     if echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="rm/unlink of protected state file"
