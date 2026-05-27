@@ -234,6 +234,43 @@ if sk_consumed_match and sk_consumed_match.group(1).lower() == "true" and hr_mat
             "missing_citations_excerpts": missing_citations[:5],
         })
 
+# ─── Check 4 (slice 3 v3.58.0+): Hard Rule citation trace ────────────────────
+# Every Hard Rule SHOULD have a traceable source: starterkit-context.yaml (already
+# checked above), OR binding.md "## Suggested Unit Hard Rules" section, OR KB
+# anti-pattern reference. This check is advisory — Hard Rules without citation
+# get a "trace_missing" flag for review.
+if hr_match:
+    hr_block = hr_match.group(1)
+    untraced_rules = []
+    lines = hr_block.split("\n")
+    i = 0
+    while i < len(lines):
+        ln = lines[i].strip()
+        if ln.startswith("- ") and not ln.startswith("- #"):
+            # Check next 5 lines for ANY Citation: or Source: or Ref: annotation
+            found_trace = False
+            for j in range(i, min(i + 6, len(lines))):
+                ck = lines[j]
+                if _re.search(r"(?:Citation|Source|Ref(?:erence)?|From):", ck, _re.IGNORECASE):
+                    found_trace = True
+                    break
+                # Inline mention of binding/KB/starterkit/constitution = also count as trace
+                if _re.search(r"\b(?:binding\.md|knowledge-base|starterkit-context|constitution\.md|D-\d+|C-\d+|CONFLICT-)", ck, _re.IGNORECASE):
+                    found_trace = True
+                    break
+            if not found_trace:
+                untraced_rules.append(ln[:120])
+        i += 1
+    if untraced_rules:
+        # Advisory-level — NOT a hard halt. Flag with low severity.
+        issues.append({
+            "halt_type": "hard_rule_trace_missing",
+            "detail": f"unit {unit_id} has {len(untraced_rules)} Hard Rule(s) without traceable source (advisory; rules should cite binding/KB/starterkit/constitution)",
+            "unit_id": unit_id,
+            "untraced_rules": untraced_rules[:5],
+            "severity": "advisory",
+        })
+
 # ─── Build state file ───────────────────────────────────────────────────────
 status = "PASS" if not issues else "FAIL"
 state = {

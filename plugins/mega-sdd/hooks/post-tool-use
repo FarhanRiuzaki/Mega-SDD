@@ -438,6 +438,13 @@ except Exception:
       "${SCRIPT_DIR}/../scripts/validate-fsd-slots.sh" \
       "${CWD}/.mega-sdd/.fsd-slots-state.json" \
       "PostToolUse-Write-validate-fsd-slots"
+
+    # ── Validator 6 (Phase C slices 4+5): vault→binding + units→bolts ──────
+    # Project-wide scan; runs on any Write|Edit (script self-skips when no vaults).
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh" \
+      "${CWD}/.mega-sdd/.vault-binding-coverage-state.json" \
+      "PostToolUse-Write-validate-vault-binding-coverage"
     ;;
 
   *)
