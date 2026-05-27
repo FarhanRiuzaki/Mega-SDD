@@ -178,23 +178,99 @@ for h in sorted(hits):
     ;;
 
   Write|Edit)
-    # Iter 67.6 [HOOK-VALIDATE]: when a unit file is written/edited, re-validate
-    # the binding→units handoff. State file is OVERWRITE-NOT-APPEND (current truth),
-    # so any spam during WIP self-clears on subsequent saves.
+    # Iter 67.6 [HOOK-VALIDATE] + Phase B B.2: on Write|Edit of mega-sdd-relevant
+    # paths, run validators. Multiple validators may fire per path.
+    # State files are OVERWRITE-NOT-APPEND (current truth); WIP spam self-clears.
     FILE_PATH="${FILE_PATH:-}"
     [ -z "$FILE_PATH" ] && exit 0
+
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
+    # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).
     case "$FILE_PATH" in
       *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md)
-        # Locate validator script (resolve relative to this hook's dir)
-        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-        VALIDATOR="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
-        if [ -x "$VALIDATOR" ]; then
-          # Run validator silently — it writes .validation-blockers.json itself.
-          # Exit code is informational; we don't propagate it (PostToolUse shouldn't fail).
-          bash "$VALIDATOR" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
+        if [ -x "$VALIDATOR_BU" ]; then
+          bash "$VALIDATOR_BU" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
+
+    # Helper: run a validator script + emit telemetry breadcrumb on FAIL.
+    run_validator_and_emit() {
+      local validator="$1"        # absolute path to script
+      local state_file="$2"        # absolute path to state file the script writes
+      local script_label="$3"      # human label for original_emit_site
+      [ -x "$validator" ] || return 0
+      bash "$validator" --cwd="$CWD" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+      [ -f "$state_file" ] || return 0
+      local v_status
+      v_status=$(python3 -c "
+import json
+try:
+    d = json.load(open('$state_file'))
+    print(d.get('status', 'UNKNOWN'))
+except: print('?')
+" 2>/dev/null)
+      [ "$v_status" = "FAIL" ] || return 0
+      local events
+      events=$(STATE_FILE_V="$state_file" TS_ENV="$TS" SESSION_ID_ENV="${SESSION_ID:-unknown}" LABEL_ENV="$script_label" python3 -c '
+import json, os
+try:
+    d = json.load(open(os.environ["STATE_FILE_V"]))
+    for issue in d.get("issues", []):
+        payload = {
+            "halt_type": issue["halt_type"],
+            "fix_applied": "detection-only at hook layer; manual review or skill-body fix required",
+            "original_emit_site": os.environ["LABEL_ENV"],
+            "logged_at_chat": False,
+            "detail": issue.get("detail", ""),
+            "checked_file": d.get("checked_file"),
+        }
+        for k in ("unit_id", "task_type", "missing_fields", "missing_sections",
+                  "missing_decisions", "expected_marker", "expected_key",
+                  "bolt_report_path", "unit_path", "unparseable_lines",
+                  "missing_citations_excerpts"):
+            if k in issue:
+                payload[k] = issue[k]
+        print(json.dumps({
+            "ts": os.environ["TS_ENV"],
+            "skill": "orchestrate-flow",
+            "event_type": "halt_self_resolved",
+            "session_id": os.environ["SESSION_ID_ENV"],
+            "hook_source": "PostToolUse",
+            "payload": payload,
+        }, separators=(",", ":")))
+except Exception:
+    pass
+' 2>/dev/null)
+      [ -n "$events" ] && echo "$events" >> "$TELEMETRY_FILE" 2>/dev/null || true
+    }
+
+    # ── Validator 2 (Phase B slice B.2): bolt artifacts ─────────────────────
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-bolt-artifacts.sh" \
+      "${CWD}/.mega-sdd/.bolt-artifacts-state.json" \
+      "PostToolUse-Write-validate-bolt-artifacts"
+
+    # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-unit-spec.sh" \
+      "${CWD}/.mega-sdd/.unit-spec-state.json" \
+      "PostToolUse-Write-validate-unit-spec"
+
+    # ── Validator 4 (Phase B slice B.4): vault OQ citations ─────────────────
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-vault-oqs.sh" \
+      "${CWD}/.mega-sdd/.vault-oqs-state.json" \
+      "PostToolUse-Write-validate-vault-oqs"
+
+    # ── Validator 5 (Phase B slice B.5): FSD template slots ─────────────────
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-fsd-slots.sh" \
+      "${CWD}/.mega-sdd/.fsd-slots-state.json" \
+      "PostToolUse-Write-validate-fsd-slots"
     ;;
 
   *)
