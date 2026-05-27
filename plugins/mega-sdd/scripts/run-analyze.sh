@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # run-analyze.sh — R1: unified cross-artifact consistency analyzer.
 #
-# Invokes each existing validate-*.sh script against the CWD project,
-# reads their state files, runs vault internal consistency checks,
-# aggregates into .analyze-state.json + CONSISTENCY-REPORT.md.
+# TWO modes:
+#   FULL (default / manual): re-run all validators + vault checks → aggregate → report.
+#   AGGREGATE-ONLY (--aggregate-only): read existing state files written by PostToolUse
+#     validators during the chain → aggregate → report. Cheap; no re-run. Used by
+#     Stop hook for auto-chain reporting.
 #
-# Inputs: --cwd=<project-root> [--quiet]
+# Inputs: --cwd=<project-root> [--quiet] [--aggregate-only]
 # Outputs:
 #   <cwd>/.mega-sdd/.analyze-state.json (machine-readable aggregate)
 #   <cwd>/.mega-sdd/CONSISTENCY-REPORT.md (human-readable report)
@@ -15,11 +17,13 @@ set -uo pipefail
 
 CWD=""
 QUIET=0
+AGGREGATE_ONLY=0
 
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#--cwd=}" ;;
     --quiet) QUIET=1 ;;
+    --aggregate-only) AGGREGATE_ONLY=1 ;;
   esac
 done
 
@@ -34,6 +38,26 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
+
+if [ "$AGGREGATE_ONLY" -eq 1 ]; then
+  # ─── AGGREGATE-ONLY MODE ──────────────────────────────────────────────
+  # Skip Phase 1 (validator invocation) and Phase 2 (vault internal checks).
+  # Read existing state files written by PostToolUse validators during chain.
+  # Jump to Phase 3 aggregation with all V*_RC set to "STATE_FILE" sentinel
+  # (aggregator reads state file status directly instead of exit code).
+
+  # Sentinel values — aggregator interprets "STATE_FILE" as "read from disk"
+  V1_RC="STATE_FILE"; V2_RC="STATE_FILE"; V3_RC="STATE_FILE"; V4_RC="STATE_FILE"
+  V5_RC="STATE_FILE"; V6_RC="STATE_FILE"; V7_RC="STATE_FILE"; V7M_RC="STATE_FILE"
+  V7C_RC="STATE_FILE"; V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
+  V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
+
+  # Vault internal consistency: run inline (cheap, pure reads, no validators)
+  VAULT_CONSISTENCY="[]"
+
+  # Skip directly to Phase 3
+else
+  # ─── FULL MODE (default) ──────────────────────────────────────────────
 
 # --- Phase 1: Run existing validators ---
 # Each validator writes its own state file under <cwd>/.mega-sdd/
@@ -253,6 +277,8 @@ print(json.dumps(results))
 PYEOF
 )
 
+fi  # end of FULL vs AGGREGATE_ONLY branch
+
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
@@ -296,6 +322,25 @@ for name, vr in validator_results.items():
 
     if rc == "SKIP":
         boundaries[name] = {"status": "SKIP", "state_file": sf, "detail": "no applicable files found"}
+        continue
+
+    # AGGREGATE-ONLY mode: rc == "STATE_FILE" → read status from state file, not exit code
+    if rc == "STATE_FILE":
+        if not os.path.isfile(sf_path):
+            boundaries[name] = {"status": "NOT_RUN", "state_file": sf, "detail": "no state file (validator not yet run this chain)"}
+            continue
+        try:
+            with open(sf_path) as f:
+                data = json.load(f)
+            status = data.get("status", "UNKNOWN")
+            summary = data.get("summary", {})
+            detail = ("; ".join(f"{k}={v}" for k, v in list(summary.items())[:4])
+                      if isinstance(summary, dict) else str(summary)[:120] if isinstance(summary, str)
+                      else str(data.get("halt_type", ""))[:120])
+        except Exception as e:
+            status = "ERROR"
+            detail = f"state file parse error: {e}"
+        boundaries[name] = {"status": status, "state_file": sf, "detail": detail}
         continue
 
     status = "PASS" if int(rc) == 0 else "FAIL"

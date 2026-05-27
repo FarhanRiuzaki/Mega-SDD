@@ -336,4 +336,20 @@ except Exception:
   fi
 fi
 
+# ─── AUTO-ANALYZE: aggregate state files → CONSISTENCY-REPORT.md ────────────
+# Hook-driven auto-chain reporting. Reads existing .*-state.json files written
+# by PostToolUse validators during this session. Cheap (no re-run — aggregate
+# only), reliable (Stop hook fires deterministically at turn end, not prose).
+# Only runs when ≥1 validator state file exists (some validator fired this chain).
+if [ -d "${CWD}/.mega-sdd" ]; then
+  STATE_COUNT=$(find "${CWD}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$STATE_COUNT" -gt 0 ]; then
+    SCRIPT_DIR_AZ="$(cd "$(dirname "$0")" && pwd)"
+    ANALYZE_SCRIPT="${SCRIPT_DIR_AZ}/../scripts/run-analyze.sh"
+    if [ -x "$ANALYZE_SCRIPT" ]; then
+      bash "$ANALYZE_SCRIPT" --cwd="$CWD" --aggregate-only --quiet >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
 exit 0
