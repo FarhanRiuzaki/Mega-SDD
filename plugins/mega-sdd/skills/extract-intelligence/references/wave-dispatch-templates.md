@@ -91,7 +91,7 @@ OUTPUT TO: <absolute path to MD file>
 USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-template.
 
 DISCIPLINE (non-negotiable):
-- Citation required: file:line for every non-trivial claim, listed in §11.
+- Citation required: file:line for every non-trivial claim ON THE SAME LINE as the marker, AND listed in §11. A claim without inline citation is UNCITED — downstream validators flag it for downgrade.
 - Confidence marker: [VERIFIED] / [INFERRED] / [OPEN] on every non-trivial claim.
 - Mutability tier (v1.4+ Iter 22): [LOCKED] / [INTENT] / [ARTIFACT] paired with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
   - Default tier when uncertain: [INTENT] (NEVER auto-default to [LOCKED] or [ARTIFACT] — both need positive evidence)
@@ -100,6 +100,13 @@ DISCIPLINE (non-negotiable):
 - Tech-agnostic vocabulary outside §11 and 50-integrations/.
 - Compare .bak / dated files vs live versions; document discrepancies in §9.
 - NO fabrication. Ambiguous confidence → [OPEN]. Ambiguous mutability → [INTENT] default.
+
+EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
+- **Business logic extraction**: don't just describe WHAT the code does — infer the business RULE behind it. E.g., if code checks `amount > 100000`, don't write "checks if amount exceeds threshold" — write "transaction amounts above 100,000 require additional approval [INFERRED] (`src/workflow/approval.ts:45`)" with the business rule made explicit.
+- **Error path coverage**: for every happy-path flow, look for catch blocks, error handlers, fallback branches, timeout handlers, retry logic. Document each as a separate claim with its own marker. Silent error swallowing (empty catch, `|| true`) → flag in §9 Edge Cases.
+- **Conditional branching**: when code has if/switch that drives different business outcomes (not just UI branching), document EACH branch as a separate business rule claim with its own citation.
+- **Integration contract depth**: for every external system call (API, DB query, file I/O, message queue), document: protocol, authentication method, payload shape, error handling, retry policy, timeout. Each as a separate cited claim.
+- **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
 
 REPORT BACK (last line of your response, exact format):
 - path: <absolute output path>
@@ -244,7 +251,13 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 
 **Operational rules file** (`40-business-rules/operational-rules.md`) — synthesize from the 5 agent outputs on main thread. Same for hidden-gotchas.md.
 
-**Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥1 entry per file.
+**Depth requirements for Wave 3 (v3.60.0+):**
+- §3 Flow: reconstruct the FULL lifecycle state machine, not just the happy path. Include: error states, timeout states, cancellation/reversal paths, partial-completion states. Cite each transition.
+- §6 Business Rules: extract IMPLICIT rules (coded as conditionals) as explicitly named rules. Format: "**BR-{domain}-{N}**: {rule in business language}. [marker] (`file:line`)".
+- §8 Edge Cases: minimum 3 entries per workflow domain. Look for: empty-collection edge cases, boundary values (0, max, null), race conditions between concurrent users, timezone/date-boundary issues.
+- §9 Rebuild Recommendations: for each edge case, explicitly state: replicate (it's a real business rule) / do-not-replicate (it's a bug) / open question (unclear).
+
+**Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥3 entries per workflow file (≥1 was too lenient — shallow extraction passed the gate with trivial entries).
 
 ---
 

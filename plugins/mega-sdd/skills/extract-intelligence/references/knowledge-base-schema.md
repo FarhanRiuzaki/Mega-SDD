@@ -124,16 +124,27 @@ flowchart LR
 
 ## 7. Business Rules
 
-| Rule | Why | Source | Confidence | Mutability |
-|---|---|---|---|---|
-| <rule statement> | <business reason> | <PRD §? domain SME? code-only?> | [VERIFIED] / [INFERRED] / [OPEN] | [LOCKED] / [INTENT] / [ARTIFACT] / [?] |
+| ID | Rule | Why | Source | Confidence | Mutability |
+|---|---|---|---|---|---|
+| BR-{domain}-1 | <rule in business language — explicit, not code-level> | <business reason> | <file:line> | [VERIFIED] / [INFERRED] / [OPEN] | [LOCKED] / [INTENT] / [ARTIFACT] / [?] |
+
+Depth expectations (v3.60.0+):
+- Extract IMPLICIT rules coded as conditionals — make the business rule EXPLICIT. E.g., `if amount > threshold` → "BR-PAYMENT-3: Transactions exceeding threshold require dual approval".
+- Minimum: every conditional branch that drives a different business outcome = one rule row.
+- Error-handling rules count: "BR-PAYMENT-7: Failed payment retries 3 times then flags for manual review" is a business rule, not just an implementation detail.
 
 ## 8. State Machine
 
 <Only if classification = workflow. Otherwise: "_N/A — not a workflow domain._">
 
+Depth expectations (v3.60.0+):
+- Include ALL states (not just happy-path): error states, timeout states, cancellation, reversal, partial-completion.
+- Each transition: event name + guard condition + citation.
+- If no explicit state machine exists in code but status/state fields drive branching → reconstruct the implicit state machine.
+
 ```
-state-A --event--> state-B
+state-A --event [guard]--> state-B (file:line)
+state-B --timeout--> error-state (file:line)
 …
 ```
 
@@ -142,6 +153,16 @@ state-A --event--> state-B
 <Silent bugs, race conditions, .bak-vs-live discrepancies, edge cases. Each labelled.>
 
 - **Edge Case 1** [VERIFIED]: <description>. **Source**: <file:line>. **Rebuild guidance**: <do-not-replicate / replicate / open question>.
+
+Depth expectations (v3.60.0+):
+- Minimum 3 entries per workflow domain (gate enforced). Look for:
+  - Empty-collection edge cases (what happens when list is empty, no records match?)
+  - Boundary values (0, max, null, empty string)
+  - Race conditions (concurrent users updating same record)
+  - Timezone / date-boundary issues (midnight, DST, fiscal year boundary)
+  - Silent error swallowing (empty catch blocks, `|| true`, error suppression)
+  - .bak vs live file discrepancies
+- Each entry MUST have: description + source file:line + rebuild guidance (replicate/don't/open).
 
 ## 10. Open Questions
 
