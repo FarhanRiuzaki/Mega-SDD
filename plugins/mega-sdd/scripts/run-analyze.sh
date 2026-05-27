@@ -49,7 +49,8 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   # Sentinel values — aggregator interprets "STATE_FILE" as "read from disk"
   V1_RC="STATE_FILE"; V2_RC="STATE_FILE"; V3_RC="STATE_FILE"; V4_RC="STATE_FILE"
   V5_RC="STATE_FILE"; V6_RC="STATE_FILE"; V7_RC="STATE_FILE"; V7M_RC="STATE_FILE"
-  V7C_RC="STATE_FILE"; V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
+  V7F_RC="STATE_FILE"; V7S_RC="STATE_FILE"; V7C_RC="STATE_FILE"
+  V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
   V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
 
   # Vault internal consistency: run inline (cheap, pure reads, no validators)
@@ -145,7 +146,21 @@ for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not 
 done
 V7M_RC=$( [ "$V7M_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7M_WORST" )
 
-# 1f3. Per-KB-domain-file citation resolution validator (Track 1 expansion)
+# 1f3. Per-KB-domain-file flow format validator (Mermaid consistency)
+V7F_WORST=0
+V7F_HAS_FILES=0
+for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
+            find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null); do
+  V7F_HAS_FILES=1
+  rc=$(run_validator "validate-kb-flows.sh" --cwd="$CWD" --file-path="$kf" --quiet)
+  [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V7F_WORST" ] && V7F_WORST=$rc
+done
+V7F_RC=$( [ "$V7F_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7F_WORST" )
+
+# 1f4. Starterkit pattern conformance validator
+V7S_RC=$(run_validator "validate-starterkit-conformance.sh" --cwd="$CWD" --quiet)
+
+# 1f5. Per-KB-domain-file citation resolution validator (Track 1 expansion)
 V7C_WORST=0
 V7C_HAS_FILES=0
 # Auto-detect legacy root
@@ -282,7 +297,7 @@ fi  # end of FULL vs AGGREGATE_ONLY branch
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
-  V7M_RC="$V7M_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
+  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   python3 <<'PYEOF'
 import json
 import os
@@ -305,6 +320,8 @@ validator_results = {
     "vault_binding_coverage": {"rc": os.environ["V6_RC"], "state_file": ".vault-binding-coverage-state.json"},
     "kb_output": {"rc": os.environ["V7_RC"], "state_file": ".kb-output-state.json"},
     "kb_markers": {"rc": os.environ["V7M_RC"], "state_file": ".kb-markers-state.json"},
+    "kb_flows": {"rc": os.environ["V7F_RC"], "state_file": ".kb-flows-state.json"},
+    "starterkit_conformance": {"rc": os.environ["V7S_RC"], "state_file": ".starterkit-conformance-state.json"},
     "kb_citations": {"rc": os.environ["V7C_RC"], "state_file": ".kb-citations-state.json"},
     "conflict_classification": {"rc": os.environ["V8_RC"], "state_file": ".conflict-classification-state.json"},
     "domain_rules": {"rc": os.environ["V9_RC"], "state_file": ".domain-rules-state.json"},

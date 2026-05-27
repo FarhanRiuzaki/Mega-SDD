@@ -1,0 +1,45 @@
+starterkit_context:
+  schema_version: 3.0
+  generated_by: scan-codebase v3.60.0
+  generated_at: "2026-05-27T00:00:00Z"
+  framework: express
+  framework_version: "4.x"
+  framework_pack: _universal
+
+  auth:
+    lib: custom
+    guard: middleware
+    _source: ["src/middleware/auth.ts:8"]
+
+  patterns:
+    controller:
+      base_class: null
+      location: "src/controllers/"
+      naming: "{Model}Controller.ts"
+      methods: [index, create, show, update, delete]
+      _source: ["src/controllers/leave.ts:1-5"]
+    request:
+      location: "src/validators/"
+      naming: "{Model}Validator.ts"
+      validation_style: "zod-schema"
+      _source: ["src/validators/leave.ts:1-3"]
+    model:
+      location: "src/models/"
+      naming: "{Model}.ts"
+      traits: []
+      cast_style: null
+      _source: ["src/models/user.ts:1-10"]
+    service:
+      location: "src/services/"
+      naming: "{Model}Service.ts"
+      _source: []
+    test:
+      location: "tests/"
+      naming: "{model}.test.ts"
+      framework: "jest"
+      _source: ["tests/"]
+    route:
+      api_prefix: "api"
+      api_file: "src/routes/api.ts"
+      resource_style: "explicit"
+      _source: ["src/app.ts:1-5"]
