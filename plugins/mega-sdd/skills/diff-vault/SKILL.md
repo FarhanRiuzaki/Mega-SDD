@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 1.3.2
+version: 1.3.3
 description: Evolves an existing mega-sdd vault when the PRD/BRD/Figma source changes. Computes structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes. Triggers — "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", or paraphrases.
 ---
 
@@ -90,6 +90,14 @@ blocker:
   conflict_old: "<vault state, verbatim from VAULT-DIFF.md>"
   conflict_new: "<new PRD state, verbatim from VAULT-DIFF.md>"
   options: ["supersede", "keep_vault", "capture_both"]
+  # C2 propose-and-confirm discipline (v3.59.0+, per audit
+  # docs/superpowers/audits/2026-05-27-c2-propose-and-confirm-audit.md):
+  recommendation:
+    proposed_action: "supersede"
+    rationale: "PRD revision is the newer source-of-truth; vault should follow unless the change is destructive (e.g., dropping a field the vault references elsewhere). Capture-both used only when both old and new are valid interpretations."
+    confidence: "medium"
+    alternatives: ["supersede", "keep_vault", "capture_both"]
+  user_response_required: true
 ```
 
 After emit, halt the apply phase. The diff report (`VAULT-DIFF.md`) is still written with the conflict surfaced. The caller (orchestrator or human) handles resolution and re-invokes `diff-vault` (without `--auto`) to walk it interactively.
