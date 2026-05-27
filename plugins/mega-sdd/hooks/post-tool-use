@@ -466,6 +466,20 @@ except Exception:
           "PostToolUse-Write-validate-kb-markers"
         ;;
     esac
+
+    # ── Auto-analyze at phase boundary (aggregate-only) ────────────────────
+    # When a major phase artifact is written, produce an updated consistency
+    # report from existing state files. Cheap (no re-run), gives inter-phase
+    # visibility. Fires on binding.md, vault.json, _index.md (unit index),
+    # FSD.md, DRIFT-REPORT.md writes.
+    case "$FILE_PATH" in
+      */binding*.md|*/vault.json|*-bound/units/_index.md|*/fsd/FSD.md|*/DRIFT-REPORT*.md)
+        ANALYZE_SCRIPT="${SCRIPT_DIR}/../scripts/run-analyze.sh"
+        if [ -x "$ANALYZE_SCRIPT" ]; then
+          bash "$ANALYZE_SCRIPT" --cwd="$CWD" --aggregate-only --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
     ;;
 
   *)

@@ -1,59 +1,62 @@
 ---
-description: Run unified cross-artifact consistency analysis — orchestrates all validators + vault internal checks, produces CONSISTENCY-REPORT.md. [VERIFY-STEP] surface per R1 roadmap.
+description: Unified cross-artifact consistency analysis — runs in two modes. AUTO (hook-driven, aggregate-only, fires at chain-end + phase boundary) and MANUAL (user-invoked, re-runs all validators). Produces CONSISTENCY-REPORT.md.
 ---
 
 # /mega-sdd:analyze
 
-Run the unified consistency analyzer across all mega-sdd artifacts in the current project. This is the [VERIFY-STEP] surface — user-invoked, deterministic, read-only (writes report only, never modifies source artifacts).
+Unified consistency analyzer across all mega-sdd artifacts. Two modes:
 
-## What it does
+## Auto mode (hook-driven — no user action needed)
 
-1. Invokes 6 existing validator scripts against `<cwd>/.mega-sdd/`:
-   - `validate-handoff-binding-units.sh` — binding→units OQ-ID propagation
-   - `validate-unit-spec.sh` — unit frontmatter + Hard Rules grammar
-   - `validate-bolt-artifacts.sh` — bolt report structure
-   - `validate-vault-oqs.sh` — vault OQ structural integrity
-   - `validate-fsd-slots.sh` — FSD template slot fill
-   - `validate-vault-binding-coverage.sh` — vault→binding coverage
+Fires automatically via:
+- **Stop hook** (end of every agent turn): aggregates existing `.*-state.json` files written by PostToolUse validators during the session → produces `CONSISTENCY-REPORT.md`. Cheap (no validator re-run — reads state files only).
+- **PostToolUse Write** on phase-boundary artifacts (`binding.md`, `vault.json`, `_index.md`, `FSD.md`, `DRIFT-REPORT.md`): same aggregate-only mode, gives inter-phase visibility.
 
-2. Runs vault internal consistency checks (NEW):
-   - vault.json entities count ↔ 03-data-model.md entity blocks
-   - vault.json OQ count ↔ 00-index.md OQ tags
-   - vault.json flows count ↔ 04-flows.md flow IDs
-   - 7+1 required vault files presence
-   - source_documents paths exist on disk
+The report updates silently; user sees it in `.mega-sdd/CONSISTENCY-REPORT.md`.
 
-3. Writes:
-   - `<cwd>/.mega-sdd/.analyze-state.json` — machine-readable aggregate (PASS/FAIL/SKIP per boundary + vault consistency)
-   - `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` — human-readable report
-
-## Usage
+## Manual mode (user-invoked — full re-run)
 
 ```
 /mega-sdd:analyze
 ```
 
-No arguments. CWD auto-detected.
+Re-runs ALL 14 validators fresh + vault internal consistency checks. Use when:
+- Starting a new session (state files may be stale from prior session)
+- After resolving CONFLICTs or OQs — verify resolution propagated correctly
+- Before execute-bolts — comprehensive pre-flight
+- Periodic health check
 
-## When to use
+## Validators orchestrated (14)
 
-- **Before proceeding from one phase to the next** — verify all boundaries are clean
-- **After resolving CONFLICTs or OQs** — verify resolution propagated correctly
-- **Periodic health check** — verify no silent drift accumulated
-- **Before execute-bolts** — comprehensive pre-flight beyond just the binding→units gate
+| # | Validator | Boundary |
+|---|---|---|
+| 1 | `validate-handoff-binding-units.sh` | binding→units OQ-ID propagation |
+| 2 | `validate-unit-spec.sh` | unit frontmatter + Hard Rules grammar |
+| 3 | `validate-bolt-artifacts.sh` | bolt report structure |
+| 4 | `validate-vault-oqs.sh` | vault OQ structural integrity |
+| 5 | `validate-fsd-slots.sh` | FSD template slot fill |
+| 6 | `validate-vault-binding-coverage.sh` | vault→binding coverage |
+| 7 | `validate-kb-output.sh` | KB output completeness + frontmatter |
+| 8 | `validate-kb-markers.sh` | KB [VERIFIED] citation evidence |
+| 9 | `validate-kb-citations.sh` | KB §11 source file resolution |
+| 10 | `validate-conflict-classification.sh` | CONFLICT classification enrichment |
+| 11 | `audit-domain-rules.sh` | domain-rule gap detection (Mode B) |
+| 12 | `validate-constitution.sh` | constitution clause coverage |
+| 13 | `validate-constitution-propagation.sh` | constitution clause carry-over |
+| 14 | `validate-codebase-map.sh` | codebase-map schema |
 
-## What this is NOT
+Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
 
-- NOT auto-triggered by hooks (manual [VERIFY-STEP] only — per R1 design discipline)
-- NOT a replacement for per-boundary validators (those still fire on PostToolUse; this aggregates their results)
-- NOT a fixer — reports only, never modifies artifacts
+## Outputs
+
+- `<cwd>/.mega-sdd/.analyze-state.json` — machine-readable aggregate
+- `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` — human-readable report
 
 ## Implementation
 
 When user invokes `/mega-sdd:analyze`:
 
 1. Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/run-analyze.sh" --cwd="$(pwd)"`
-2. Read the output JSON: `{"state_path": "...", "report_path": "...", "overall": "PASS|WARN|FAIL"}`
-3. Read and display `CONSISTENCY-REPORT.md` in chat
-4. If `overall == FAIL`: surface failing boundaries + vault consistency issues clearly, suggest resolution path per failing validator
-5. If `overall == PASS`: confirm clean state, suggest next pipeline step based on CWD signals
+2. Read and display `CONSISTENCY-REPORT.md` in chat
+3. If `overall == FAIL`: surface failing boundaries, suggest resolution path
+4. If `overall == PASS`: confirm clean state, suggest next pipeline step
