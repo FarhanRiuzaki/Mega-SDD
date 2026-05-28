@@ -152,36 +152,56 @@ except Exception:
 
     # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
     # except using-mega-sdd (auto-loaded anchor, not a chain step).
+    #
+    # Iter 70 fix (audit 2026-05-28 §post-3.61.0 deadlock): producer self-fix attempts
+    # MUST be allowed. The state file records WHICH skill emitted the bad handoff
+    # (state.skill_name); when the same skill is being re-invoked, that IS the producer
+    # attempting to re-run with a fixed template — block it and the deadlock is sealed
+    # (state stays FAIL forever; user cannot clear except by manual rm).
     case "${SKILL_NAME:-}" in
       mega-sdd:*)
         if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
           HANDOFF_STATE="${CWD}/.mega-sdd/.handoff-validation-state.json"
           if [ -f "$HANDOFF_STATE" ]; then
-            HSTATUS=$(python3 -c "
-import json
+            HSTATUS_AND_PRODUCER=$(STATE_PATH="$HANDOFF_STATE" python3 -c "
+import json, os
 try:
-    d = json.load(open('$HANDOFF_STATE'))
+    d = json.load(open(os.environ['STATE_PATH']))
     print(d.get('status', 'UNKNOWN'))
+    print(d.get('skill_name', ''))
 except Exception:
     print('PARSE_ERROR')
+    print('')
 " 2>/dev/null)
+            HSTATUS=$(echo "$HSTATUS_AND_PRODUCER" | sed -n '1p')
+            STATE_PRODUCER=$(echo "$HSTATUS_AND_PRODUCER" | sed -n '2p')
             if [ "$HSTATUS" = "FAIL" ]; then
-              HDETAIL=$(python3 -c "
-import json
+              # Producer self-fix allow: if the skill being invoked IS the same producer
+              # that emitted the bad handoff, this is a retry attempt — let it run. The
+              # producer will re-emit handoff, validate-handoff-yaml.sh will overwrite the
+              # state file with the new verdict (PASS clears the block for everyone;
+              # repeated FAIL bumps retry_count + escalate_to_c2 per C1 protocol).
+              if [ -n "$STATE_PRODUCER" ] && [ "$SKILL_NAME" = "$STATE_PRODUCER" ]; then
+                : # fall through to allow
+              else
+                HDETAIL=$(STATE_PATH="$HANDOFF_STATE" python3 -c "
+import json, os
 try:
-    d = json.load(open('$HANDOFF_STATE'))
+    d = json.load(open(os.environ['STATE_PATH']))
     ht = d.get('halt_type', 'unknown')
     sk = d.get('skill_name', 'unknown')
     rc = d.get('retry_count', 0)
     esc = d.get('escalate_to_c2', False)
-    hint = d.get('next_action', {}).get('hint', '(no hint)')
+    na = d.get('next_action', {})
+    hint = na.get('hint', '(no hint)') if isinstance(na, dict) else str(na)
     reason = d.get('details', {}).get('reason', '(no reason)')
     print(f'upstream {sk} emitted bad handoff ({ht}, retry={rc}, escalate_c2={esc}). Reason: {reason}. Suggestion: {hint}')
 except Exception as e:
     print(f'(state file parse error: {e})')
 " 2>/dev/null)
-              REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by re-invoking the upstream producer with --strict-handoff, OR clear state via /mega-sdd:validate-handoff after fix. State file: ${CWD}/.mega-sdd/.handoff-validation-state.json"
-              emit_block "$REASON"
+                REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by EITHER (a) re-invoke the upstream producer (${STATE_PRODUCER:-unknown}) — this is auto-allowed and overwrites the FAIL state when it emits a valid handoff; OR (b) delete the stale state file manually: rm ${CWD}/.mega-sdd/.handoff-validation-state.json (the file is NOT in the anti-self-bypass protected list)."
+                emit_block "$REASON"
+              fi
             fi
           fi
         fi

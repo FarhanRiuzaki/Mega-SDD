@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.62.0] - 2026-05-28
+
+### Iter 70 — PreToolUse producer self-fix allow (handoff deadlock fix)
+
+**Trigger:** TF Import re-run after v3.61.0 ship. User invoked `mega-sdd:scan-codebase` after pulling the fix — got blocked by PreToolUse:
+
+```
+PreToolUse:Skill hook stopped continuation: mega-sdd:scan-codebase blocked by
+handoff validation — upstream mega-sdd:scan-codebase emitted bad handoff
+(handoff_type_mismatch, retry=1, escalate_c2=False)...
+```
+
+**Root cause:** PreToolUse handoff-validation gate (`hooks/pre-tool-use:158`) read `.handoff-validation-state.json` (status=FAIL from the v3.60.0 run that exposed the bug) and blocked ALL `mega-sdd:*` skill invocations — INCLUDING the producer's own retry. The state file is OVERWRITE-NOT-APPEND: it gets cleared the moment the producer runs once and emits a valid handoff. But the hook prevented the producer from ever running again. Classic deadlock.
+
+The escape-hatch suggestion in the block message (`Re-invoke ... with --strict-handoff` and `clear state via /mega-sdd:validate-handoff after fix`) was misleading on both counts:
+- Skill-tool invocations don't take `--strict-handoff` (no flag plumbing exists)
+- `/mega-sdd:validate-handoff` writes to `.validation-blockers.json`, NOT `.handoff-validation-state.json`
+
+So the user was deadlocked with no working escape hatch in the message.
+
+**Fix:** Compare `SKILL_NAME` being invoked against `state.skill_name` (the producer that emitted the bad handoff). When they match → ALLOW (producer self-fix attempt; state will be overwritten on next emit, clearing the block for downstream too). When they differ → BLOCK as before (downstream consumer trying to use bad output).
+
+The block message is also corrected: directs user to either (a) re-invoke the producer (now auto-allowed) OR (b) `rm` the state file manually (it's not in the anti-self-bypass protected list).
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `plugins/mega-sdd/hooks/pre-tool-use` | Branch 1a: extract `state.skill_name`, allow when matches `SKILL_NAME`; corrected block message |
+
+### Logic-proven via direct-invoke
+
+Constructed 3 stdin scenarios against `/tmp/iter70-pretool/`:
+
+| Scenario | Producer in state | Invoking | Verdict |
+|---|---|---|---|
+| Producer self-fix | `mega-sdd:scan-codebase` (FAIL) | `mega-sdd:scan-codebase` | **ALLOW** (exit=0) ✓ |
+| Downstream consumer | `mega-sdd:scan-codebase` (FAIL) | `mega-sdd:generate-intent` | **BLOCK** with corrected message ✓ |
+| Clean state | `mega-sdd:scan-codebase` (PASS) | `mega-sdd:generate-intent` | **ALLOW** (exit=0) ✓ |
+
+Plugin version 3.61.0 → 3.62.0 (MINOR per classifier: hook-layer behavior change).
+
+---
+
 ## [3.61.0] - 2026-05-28
 
 ### Iter 69 — next_action shape normalization (handoff_type_mismatch fix)
