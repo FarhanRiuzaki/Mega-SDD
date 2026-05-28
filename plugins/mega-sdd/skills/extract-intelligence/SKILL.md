@@ -192,6 +192,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - `^## 11\. Source References` exists in every new domain file
 - Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections
 - Frontmatter present with required keys
+- **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
