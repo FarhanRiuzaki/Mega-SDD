@@ -133,9 +133,7 @@ f. **Forward-compat tolerance**: if any role mentioned in override sources doesn
      unknown_role: "some-future-role"
      override_source: "project-config"
      override_file: "<project>/.mega-sdd/config.yaml:line-N"
-   next_action:
-     type: log_and_continue
-     hint: "Role 'some-future-role' not found in references/model-tiers.md catalog. Override ignored. Either remove from override OR add the role to the catalog if it's a real subagent role."
+   next_action: "Role 'some-future-role' not found in references/model-tiers.md catalog. Log warning and continue with default tier. Either remove from override OR add the role to the catalog if it's a real subagent role."
    ```
 
 g. **Logging**: log resolved tier summary to chain output for user audit, e.g.:
@@ -198,9 +196,7 @@ details:
   command_run: "command -v tree-sitter || command -v tree-sitter-cli"
   expected: "exit 0"
   actual: "exit 1 (binary not found)"
-next_action:
-  type: user_install_dep
-  hint: "Install tree-sitter (brew install tree-sitter OR cargo install tree-sitter-cli OR npm install -g tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex flag to bypass tree-sitter."
+next_action: "Install tree-sitter (brew install tree-sitter OR cargo install tree-sitter-cli OR npm install -g tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex flag to bypass tree-sitter."
 ```
 
 4. **First-run pre-flight (only if chain includes execute-bolts):**
@@ -249,9 +245,7 @@ next_action:
            failing_skill: bind-codebase
            last_known_step: "Step 7 (binding entries written)"
            chat_tail_excerpt: "...write to file failed: ENOSPC: no space left on device\nProcess exited with code 1"
-         next_action:
-           type: inspect_subskill_logs
-           hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML in its chat output. chat_tail_excerpt above shows the last 500 chars of the sub-skill's output — look for crash logs / parse errors / OS-level failures (disk full, permissions, OOM). Re-run `/mega-sdd:bind-codebase` standalone to reproduce."
+         next_action: "Sub-skill `bind-codebase` exited without emitting handoff YAML in its chat output. chat_tail_excerpt above shows the last 500 chars of the sub-skill's output — look for crash logs / parse errors / OS-level failures (disk full, permissions, OOM). Re-run `/mega-sdd:bind-codebase` standalone to reproduce."
          ```
 
       i. **Type-check fields against handoff-contract.md TYPE annotations (v3.0.0+, Iter 33 F4; bypass tightened v3.7.0+, Iter 60 per Iter 56 audit C-005):**
@@ -283,9 +277,7 @@ next_action:
         expected_type: "string (enum from vault.json scope_metadata.allowed_scopes)"
         actual_type: "object"
         actual_value: "{ id: 'BE', name: 'Backend' }"
-      next_action:
-        type: edit_skill_template
-        hint: "Field scope.id should be a string (enum value), not an object. Edit bind-codebase handoff template to emit scope.id as 'BE' string directly. Likely cause: handoff template emitted the entire scope object as scope.id by mistake. (Possible upstream: vault.json shape changed; verify scope_metadata schema.)"
+      next_action: "Field scope.id should be a string (enum value), not an object. Edit bind-codebase handoff template to emit scope.id as 'BE' string directly. Likely cause: handoff template emitted the entire scope object as scope.id by mistake. (Possible upstream: vault.json shape changed; verify scope_metadata schema.)"
       ```
 
       ii. Parse handoff YAML; if YAML parse fails → emit halt `invalid_handoff` with details `{failing_skill, parse_error}`; STOP chain.
@@ -320,9 +312,7 @@ next_action:
            missing_paths: ["<vault>/units/U-007.md", "<vault>/units/U-008.md"]
            present_paths: ["<vault>/units/U-001.md", "<vault>/units/U-002.md", ..., "<vault>/units/U-006.md"]
            handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"
-         next_action:
-           type: re_run_producer
-           hint: "Producer skill `generate-units` declared 8 unit files in handoff but only wrote 6. Re-run `/mega-sdd:generate-units` standalone to reproduce. Likely cause: skill crashed mid-loop after emitting handoff metadata for all units but only writing some. Inspect chat output."
+         next_action: "Producer skill `generate-units` declared 8 unit files in handoff but only wrote 6. Re-run `/mega-sdd:generate-units` standalone to reproduce. Likely cause: skill crashed mid-loop after emitting handoff metadata for all units but only writing some. Inspect chat output."
          ```
 
       viii. If all checks pass → continue to step ix.
@@ -348,9 +338,7 @@ next_action:
      field_severity: CONDITIONAL
      condition_evaluated: "vault has scope_metadata = TRUE"
      handoff_file: "<vault>/.internal/checkpoints/2026-05-24-bind-codebase.handoff.yaml"
-   next_action:
-     type: edit_skill_template
-     hint: "Edit plugins/mega-sdd/skills/bind-codebase/SKILL.md §Handoff emission YAML template to include scope: block per handoff-contract.md schema. After fix, re-run chain. (Phase A1 audit closure should have prevented this — verify your skill body is up to date.)"
+   next_action: "Edit plugins/mega-sdd/skills/bind-codebase/SKILL.md §Handoff emission YAML template to include scope: block per handoff-contract.md schema. After fix, re-run chain. (Phase A1 audit closure should have prevented this — verify your skill body is up to date.)"
    ```
 
    c. **Propagate handoff metadata** to next skill in chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification per orchestrator consumption logic. Memory slice for next skill built from updated state.

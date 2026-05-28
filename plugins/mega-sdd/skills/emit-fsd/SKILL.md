@@ -111,9 +111,7 @@ details:
   subtype: template_slot_unfilled
   unfilled_slots: ["{{section-3-stakeholders-table}}", "{{section-7-binding-confirmed-content}}"]
   fsd_path: <vault>/fsd/FSD.md
-next_action:
-  type: file_plugin_bug
-  hint: "Internal bug: fsd-template.md has slot marker(s) that section-mapping.md has no extraction rule for. File plugin bug at gitlab.com/airnd1/grand-design-spec. Meanwhile, skip affected section via --sections=<csv> excluding the failing section."
+next_action: "Internal bug: fsd-template.md has slot marker(s) that section-mapping.md has no extraction rule for. File plugin bug at gitlab.com/airnd1/grand-design-spec. Meanwhile, skip affected section via --sections=<csv> excluding the failing section."
 ```
 
 STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` literals to PDF OR allowing pandoc to interpret them as template variables would be an anti-hallucination rail break.

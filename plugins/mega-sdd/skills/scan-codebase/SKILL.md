@@ -581,9 +581,7 @@ details:
   subagent_index: <1-4>
   failure_reason: <"timeout" | "malformed_yaml" | "api_error: <msg>">
   retry_count: <1 or 2>
-next_action:
-  type: continue_with_partial
-  hint: "Partial starterkit-context.yaml will be emitted with partial: true and partial_slices: [<domain>]. Pipeline continues; downstream consumers degrade gracefully for missing slices."
+next_action: "Continue with partial output — starterkit-context.yaml will be emitted with partial: true and partial_slices: [<domain>]. Pipeline continues; downstream consumers degrade gracefully for missing slices."
 ```
 
 Recovery: auto-retry once. On second failure: emit partial output. Soft halt — chain continues.
@@ -596,9 +594,7 @@ source_skill: scan-codebase
 details:
   file_path: "<project>/.mega-sdd/codebase/starterkit-context.yaml"
   parse_error: "<error message from YAML parser>"
-next_action:
-  type: auto_invalidate_and_rescan
-  hint: "Cache file is corrupt; auto-invalidating and re-dispatching subagents. Transparent to user."
+next_action: "Auto-invalidate corrupt cache and re-dispatch subagents. Transparent to user; no manual action required."
 ```
 
 Recovery: auto-invalidate cache + re-run subagents. Soft halt — chain continues.
@@ -611,9 +607,7 @@ source_skill: scan-codebase
 details:
   failed_domains: [auth, rbac, ui_ux, libs]
   common_failure_reason: <"api_outage" | "rate_limited" | "unknown">
-next_action:
-  type: user_retry
-  hint: "All 4 deep-scan subagents failed (likely API outage). Re-run /mega-sdd:scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched."
+next_action: "Re-run /mega-sdd:scan-codebase later (likely API outage; user retry required). Existing starterkit-context.yaml (if any) preserved untouched."
 ```
 
 Recovery: user re-runs scan-codebase later. Chain halts.
@@ -659,11 +653,11 @@ handoff:
     ui_stack: "alpine + tailwind + sweetalert2"
     libs_count: 47
   next_action:
-    type: invoke_skill
-    suggested_skill: mega-sdd:generate-intent          # Iter 27 starterkit-first ordering
+    suggested_skill: mega-sdd:generate-intent
     suggested_args:
       - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
       - "--auto"
+    rationale: "Scan complete; starterkit-first ordering (Iter 27) — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation."
   blockers: []                                          # populated when status: halted
   metrics:
     files_scanned: <int>

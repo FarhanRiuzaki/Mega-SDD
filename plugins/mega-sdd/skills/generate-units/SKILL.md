@@ -634,10 +634,7 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
                   rule_text: "<text of offending rule>"
                   missing_citation: "starterkit-context.yaml §<expected path>"
                   rule_index: <index of rule in hard_rules[]>
-                next_action:
-                  type: edit_unit
-                  suggested_args: ["<U-XXX>"]
-                  hint: "Append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>"
+                next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run /mega-sdd:generate-units."
             → do NOT write the unit; halt is ALWAYS STOP
       ```
 
@@ -785,10 +782,7 @@ details:
   rule_text: "<text of offending rule>"
   missing_citation: "starterkit-context.yaml §<expected path>"
   rule_index: <int>
-next_action:
-  type: edit_unit
-  suggested_args: ["<U-XXX>"]
-  hint: "Append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>"
+next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run /mega-sdd:generate-units."
 ```
 
 Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass.
