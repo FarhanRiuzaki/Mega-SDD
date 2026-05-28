@@ -146,10 +146,12 @@ for uf in unit_files:
         # Skip test files for non-test pattern checks (test files have their own pattern)
         if not is_test:
             # Controller: file is in a controller-like dir AND name suggests controller
+            # (semantic role universal across frameworks; pack provides the location value)
             if "controller" in patterns:
                 ctrl = patterns["controller"]
                 ctrl_loc = ctrl.get("location", "")
-                if ctrl_loc:
+                # null location → category absent in this framework → skip checks
+                if ctrl_loc and ctrl_loc != "null":
                     is_ctrl = ("controller" in tp_dir.lower() or "handler" in tp_dir.lower()
                                or "Controller" in tp_base or "controller" in tp_base.lower())
                     if is_ctrl and not tp.startswith(ctrl_loc) and ctrl_loc not in tp:
@@ -159,32 +161,39 @@ for uf in unit_files:
                             "detail": f"Controller/handler file not in starterkit location {ctrl_loc}",
                         })
 
-            # Model: file is directly in model dir (not a test or request that happens to contain "model")
-            if "model" in patterns:
-                mdl = patterns["model"]
+            # Data model: file is directly in model/entity dir
+            # (generic name "data_model"; legacy alias "model" supported for v2.x consumers)
+            mdl_key = "data_model" if "data_model" in patterns else ("model" if "model" in patterns else None)
+            if mdl_key:
+                mdl = patterns[mdl_key]
                 mdl_loc = mdl.get("location", "")
-                if mdl_loc:
-                    is_model = tp.startswith(mdl_loc) or tp_dir.rstrip("/").endswith("/models")
-                    # Only flag if the file IS in a models dir but the WRONG models dir
-                    if tp_dir.rstrip("/").endswith("/models") and not tp.startswith(mdl_loc):
+                if mdl_loc and mdl_loc != "null":
+                    # Only flag if the file IS in a models/entities dir but the WRONG one
+                    in_models_dir = (tp_dir.rstrip("/").endswith("/models")
+                                     or tp_dir.rstrip("/").endswith("/entities"))
+                    if in_models_dir and not tp.startswith(mdl_loc):
                         violations.append({
                             "unit": unit_id, "file": tp,
-                            "pattern": "model.location", "expected": mdl_loc,
-                            "detail": f"Model file not in starterkit location {mdl_loc}",
+                            "pattern": f"{mdl_key}.location", "expected": mdl_loc,
+                            "detail": f"Data-model file not in starterkit location {mdl_loc}",
                         })
 
-            # Request/Validator: file is in request/validator dir AND name suggests validation
-            if "request" in patterns:
-                req = patterns["request"]
+            # Request validator: file is in validator/request dir
+            # (generic name "request_validator"; legacy alias "request" supported for v2.x consumers)
+            req_key = "request_validator" if "request_validator" in patterns else ("request" if "request" in patterns else None)
+            if req_key:
+                req = patterns[req_key]
                 req_loc = req.get("location", "")
-                if req_loc:
+                if req_loc and req_loc != "null":
                     is_req = ("request" in tp_dir.lower() or "validator" in tp_dir.lower()
-                              or "Request" in tp_base or "Validator" in tp_base)
+                              or "schema" in tp_dir.lower()
+                              or "Request" in tp_base or "Validator" in tp_base
+                              or ".schema." in tp_base)
                     if is_req and not tp.startswith(req_loc) and req_loc not in tp:
                         violations.append({
                             "unit": unit_id, "file": tp,
-                            "pattern": "request.location", "expected": req_loc,
-                            "detail": f"Request/validator file not in starterkit location {req_loc}",
+                            "pattern": f"{req_key}.location", "expected": req_loc,
+                            "detail": f"Request-validator file not in starterkit location {req_loc}",
                         })
 
         # Test files: check test pattern

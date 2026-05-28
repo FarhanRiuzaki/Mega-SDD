@@ -1,0 +1,62 @@
+starterkit_context:
+  schema_version: 3.0
+  generated_by: scan-codebase v3.0.0
+  generated_at: "2026-05-28T00:00:00Z"
+  framework: django
+  framework_version: "5.x"
+  framework_pack: django.md
+
+  patterns:
+    controller:
+      location: "users/views.py"
+      naming: "{Model}View.py"
+      extension: ".py"
+      _source: ["users/views.py:1-10"]
+      extras:
+        class_based: true
+        as_view: [ListView, DetailView, CreateView, UpdateView, DeleteView]
+        mixins: [LoginRequiredMixin]
+    data_model:
+      location: "users/models.py"
+      naming: "{Model}.py"
+      extension: ".py"
+      _source: ["users/models.py:5-30"]
+      extras:
+        meta_class: true
+        managers: [objects, active]
+    request_validator:
+      location: "users/serializers.py"
+      naming: "{Model}Serializer.py"
+      extension: ".py"
+      _source: ["users/serializers.py:1-5"]
+      extras:
+        form_or_serializer: "drf-serializer"
+    business_logic:
+      location: null
+      naming: null
+      extension: null
+      _source: []
+      extras: {}
+    test:
+      location: "users/tests/"
+      naming: "test_{module}.py"
+      extension: ".py"
+      framework: "pytest"
+      _source: ["users/tests/test_users.py:1-10"]
+      extras: {}
+    schema_migration:
+      location: "users/migrations/"
+      naming: "{NNNN}_{description}.py"
+      extension: ".py"
+      _source: ["users/migrations/0001_initial.py"]
+      extras:
+        numbered_seq: true
+    route:
+      location: "myproject/urls.py"
+      style: "centralized-routes"
+      api_prefix: "api/v1"
+      web_file: "myproject/urls.py"
+      api_file: null
+      _source: ["myproject/urls.py:1-10"]
+      extras:
+        include_pattern: true
