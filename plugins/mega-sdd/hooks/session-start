@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+# Drain stdin opportunistically — SessionStart spec provides JSON with session_id,
+# source, transcript_path, hook_event_name. We capture session_id for the diagnostic.
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
@@ -14,6 +18,38 @@ ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
 # never injected for any v3.4+ project (audit 2026-05-27 §A1, silent regression since v3.4 ship).
 cwd="$(pwd)"
 has_sdd_signal=0
+
+# ─── DIAGNOSTIC LAYER (Iter 68 — verify harness invocation) ──────────────────
+# Mirror of Stop-hook 67.5 diagnostic. Proves the harness is invoking SessionStart
+# for this project CWD. Only writes when .mega-sdd/ exists (avoids polluting
+# unrelated CWDs). If hook-debug.log lacks `"hook":"session-start"` lines after
+# a fresh session in a mega-sdd project, the hook is NOT being invoked — that's
+# an install/registration issue, not a hook bug.
+#
+# Honors --no-telemetry opt-out via <cwd>/.mega-sdd/config.yaml (same as Stop).
+if [ -d "${cwd}/.mega-sdd" ]; then
+  CONFIG_FILE="${cwd}/.mega-sdd/config.yaml"
+  TELEMETRY_OFF=0
+  if [ -f "$CONFIG_FILE" ]; then
+    if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
+      TELEMETRY_OFF=1
+    fi
+  fi
+  if [ "$TELEMETRY_OFF" -eq 0 ]; then
+    TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
+    SESSION_ID_DBG=$(printf '%s' "$STDIN_JSON" | python3 -c '
+import json, sys
+try:
+    print(json.loads(sys.stdin.read()).get("session_id", "unknown-session"))
+except Exception:
+    print("unknown-session")
+' 2>/dev/null || echo "unknown-session")
+    DEBUG_DIR="${cwd}/.mega-sdd/memory"
+    mkdir -p "$DEBUG_DIR" 2>/dev/null || true
+    echo "{\"ts\":\"$TS\",\"hook\":\"session-start\",\"session_id\":\"$SESSION_ID_DBG\",\"cwd\":\"$cwd\",\"stdin_bytes\":${#STDIN_JSON}}" \
+      >> "$DEBUG_DIR/hook-debug.log" 2>/dev/null || true
+  fi
+fi
 for signal in ".mega-sdd" "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
   if [ -e "${cwd}/${signal}" ]; then
     has_sdd_signal=1
