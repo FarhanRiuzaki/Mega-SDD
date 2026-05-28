@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.61.0] - 2026-05-28
+
+### Iter 69 — next_action shape normalization (handoff_type_mismatch fix)
+
+**Trigger:** TF Import production-confirm re-run (after v3.60.0 ship). Handoff validator detected `handoff_type_mismatch` on scan-codebase output:
+
+```
+next_action must be string OR dict, got list
+```
+
+**Root cause:** 4 `next_action:` templates in `scan-codebase/SKILL.md` (lines 584, 599, 614, 661) emitted a non-canonical dict shape (`type: + hint:` for halts, `type: + suggested_skill: + suggested_args:` for the main handoff). The model serialized the inconsistent shape as a YAML list — confused by the `suggested_args:` sub-list inside a dict that already had a list-like `type:`/`hint:` pair. Latent bug exposed only after v3.59.0 wired `validate-handoff-yaml.sh` into the Stop hook.
+
+**Fix:** Normalize ALL `next_action:` to either:
+- **String form** (halt blocks; matches `bind-codebase:464` + `execute-bolts:61` convention):
+  ```yaml
+  next_action: "Run /mega-sdd:<skill> <args> — <reason>"
+  ```
+- **Canonical dict form** (main handoff emission; matches `handoff-contract.md` schema):
+  ```yaml
+  next_action:
+    suggested_skill: mega-sdd:<next-skill>
+    suggested_args: ["--flag=value", "..."]
+    rationale: "<1-sentence why this is the right next step>"
+  ```
+
+Drops the non-contract `type:` field everywhere it appeared. The `type:` field was never read by the orchestrator or any validator — pure noise that confused YAML serialization.
+
+### Files changed
+
+| Skill | Lines | Edits | New shape |
+|---|---|---|---|
+| `scan-codebase/SKILL.md` | 584, 599, 614 | 3 halt YAML blocks | string-form |
+| `scan-codebase/SKILL.md` | 661 | main handoff emission | canonical dict-form |
+| `execute-bolts/SKILL.md` | 362, 423 | `partial_state_corrupt` halt (duplicated) | string-form |
+| `execute-bolts/SKILL.md` | 923, 933 | end-of-phase handoff (continue / chain_complete) | dict-form / string-form |
+| `generate-units/SKILL.md` | 637, 788 | `starterkit_rule_citation_missing` halt (duplicated) | string-form |
+| `orchestrate-flow/SKILL.md` | 136, 201, 252, 286, 323, 351 | 6 halt-envelope examples (model_tier_unknown, dep_missing, handoff_missing, handoff_type_mismatch, missing_artifacts, cond_field_missing) | string-form |
+| `emit-fsd/SKILL.md` | 114 | `template_slot_unfilled` halt | string-form |
+
+Total: 16 `next_action` shapes normalized across 5 skill bodies.
+
+### Logic-proven via direct-invoke
+
+Constructed 3 simulated handoff transcripts at `/tmp/hyaml-test/`:
+
+| Shape | Sample | Validator verdict |
+|---|---|---|
+| String-form (matches new halt blocks) | `next_action: "Run /mega-sdd:generate-intent ..."` | **PASS** ✓ |
+| Canonical dict-form (matches new line 661) | `next_action: { suggested_skill, suggested_args, rationale }` | **PASS** ✓ |
+| List-form (the original bug shape) | `next_action: [item1, item2, item3]` | **FAIL** — `halt_type: handoff_type_mismatch`, `type_errors: ["next_action must be string OR dict, got list"]` |
+
+Both new shapes lint clean against `validate-handoff-yaml.sh`; the original bug shape lints exactly as the production-confirm run reported.
+
+### Bonus
+
+`orchestrate-flow/SKILL.md` had 6 halt-envelope EXAMPLES that taught the same bad pattern downstream skills had been copying. Normalized as part of the same fix — preempts the next 6 latent bugs.
+
+---
+
 ## [3.60.0] - 2026-05-28
 
 ### Iter 68 — Production-confirm gap closure (3 fixes)

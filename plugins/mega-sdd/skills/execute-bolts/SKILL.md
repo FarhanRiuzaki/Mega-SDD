@@ -359,9 +359,7 @@ f. **Partial-state contract (v2.0 schema as of Iter 45 — saga compensating act
      partial_state_path: "<vault>/bolts/U-007/partial-state.json"
      parse_error: "json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 18 (char 87)"
      corrupt_backup_path: "<vault>/bolts/U-007/partial-state.json.corrupt-2026-05-25T14:32:00Z"
-   next_action:
-     type: rename_and_retry
-     hint: "Rename partial-state.json to suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
+   next_action: "Rename partial-state.json to the suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
    ```
 
 ### Saga compensating actions (v2.9.0+, Iter 45 — `--rollback` flag)
@@ -420,9 +418,7 @@ On crash: execute-bolts harvests this section + writes `rollback_hints[]` array 
      partial_state_path: "<vault>/bolts/U-007/partial-state.json"
      parse_error: "json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 18 (char 87)"
      corrupt_backup_path: "<vault>/bolts/U-007/partial-state.json.corrupt-2026-05-25T14:32:00Z"
-   next_action:
-     type: rename_and_retry
-     hint: "Rename partial-state.json to suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
+   next_action: "Rename partial-state.json to the suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for skill-author bug."
    ```
 
 g. **Dispatch via superpowers.executing-plans** with the enriched prompt as plan body.
@@ -921,18 +917,15 @@ IF `vault.phase < vault.phase_total`:
   Set handoff `next_action`:
   ```yaml
   next_action:
-    type: continue_to_next_phase
     suggested_skill: mega-sdd:generate-intent
     suggested_args: ["--kb=<KB-path-from-vault.json.kb_source>", "--phase=<phase+1>"]
-    hint: "Phase <N> complete. Next: Phase <N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>"
+    rationale: "Phase <N> complete; continue to Phase <N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
   ```
 
 IF `vault.phase == vault.phase_total` (final phase) OR `phase_total == 1`:
   Set handoff `next_action`:
   ```yaml
-  next_action:
-    type: chain_complete
-    hint: "All phases complete (Phase <N> of <M>). Pipeline finished."
+  next_action: "All phases complete (Phase <N> of <M>). Pipeline finished — no further skill to invoke."
   ```
 
 IF `phase` field absent in vault.json (pre-v3.26.0 vault):
