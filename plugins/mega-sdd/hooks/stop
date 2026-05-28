@@ -64,7 +64,22 @@ TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 if [ -z "$CWD" ]; then
   exit 0
 fi
-CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
+
+# ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
+# CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
+# during a chain step). Walk UP to outermost .mega-sdd/ parent so state files,
+# debug log, and telemetry land in the canonical location instead of nested.
+SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
+if [ -f "$RPR_HELPER" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR_HELPER"
+  PROJECT_ROOT=$(resolve_project_root "$CWD")
+else
+  PROJECT_ROOT="$CWD"
+fi
+
+CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
     exit 0
@@ -75,8 +90,8 @@ fi
 # Per audit response: prove the harness is invoking us for the project CWD.
 # If hook-debug.log doesn't grow on every Stop event, the hook is not being called.
 # Only writes for mega-sdd projects (avoids polluting unrelated CWDs).
-if [ -d "${CWD}/.mega-sdd" ]; then
-  DEBUG_DIR="${CWD}/.mega-sdd/memory"
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
+  DEBUG_DIR="${PROJECT_ROOT}/.mega-sdd/memory"
   mkdir -p "$DEBUG_DIR" 2>/dev/null || true
   DEBUG_LOG="${DEBUG_DIR}/hook-debug.log"
   DEBUG_LINE="$(printf '{"ts":"%s","hook":"stop","session_id":"%s","cwd":"%s","transcript_path":"%s","stop_hook_active":"%s","stdin_bytes":%s}' \
@@ -89,7 +104,7 @@ fi
 # of telemetry). Telemetry emission is conditional on telemetry.jsonl existing.
 # Only runs if .mega-sdd/ exists (already implicitly true at this point since
 # we wrote hook-debug.log above which has the same guard).
-if [ -d "${CWD}/.mega-sdd" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   # Extract last assistant message content from transcript
   LAST_ASSISTANT_TEXT=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
 import json, os
@@ -130,10 +145,10 @@ text = sys.stdin.read()
 m = re.search(r"^\s*emitted_by:\s*([\w-]+)", text, re.MULTILINE)
 print(m.group(1) if m else "unknown")
 ' 2>/dev/null)
-      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR_HV" --cwd="$CWD" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
+      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR_HV" --cwd="$PROJECT_ROOT" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
       # Emit telemetry event ONLY if telemetry.jsonl already exists (consistent with turn_end_marker gate)
-      STATE_FILE_HV="${CWD}/.mega-sdd/.handoff-validation-state.json"
-      TELEMETRY_FILE_PRECHECK="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+      STATE_FILE_HV="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
+      TELEMETRY_FILE_PRECHECK="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
       if [ -f "$STATE_FILE_HV" ] && [ -f "$TELEMETRY_FILE_PRECHECK" ]; then
         HANDOFF_EVENT=$(STATE_FILE_HV="$STATE_FILE_HV" TS_ENV="$TS" SESSION_ID_ENV="$SESSION_ID" python3 -c '
 import json, os
@@ -174,7 +189,7 @@ except Exception:
 fi
 
 # ─── TELEMETRY GATE (turn_end_marker only) ──────────────────────────────────
-TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
 if [ ! -f "$TELEMETRY_FILE" ]; then
   exit 0
 fi
@@ -296,12 +311,12 @@ m = re.search(r"^\s*emitted_by:\s*([\w-]+)", text, re.MULTILINE)
 print(m.group(1) if m else "unknown")
 ' 2>/dev/null)
       # Pass response text via stdin to validator
-      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR" --cwd="$CWD" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
+      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR" --cwd="$PROJECT_ROOT" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
       # Validator exit code 0=PASS, 1=FAIL — state file written either way.
       # Emit a halt_self_resolved (when PASS) OR halt_fired (when FAIL with retry<2)
       # OR escalation event. The validator already writes detailed state; this is
       # a lightweight telemetry breadcrumb for Iter 68 audit.
-      STATE_FILE="${CWD}/.mega-sdd/.handoff-validation-state.json"
+      STATE_FILE="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
       if [ -f "$STATE_FILE" ]; then
         HANDOFF_EVENT=$(python3 -c "
 import json
@@ -341,13 +356,13 @@ fi
 # by PostToolUse validators during this session. Cheap (no re-run — aggregate
 # only), reliable (Stop hook fires deterministically at turn end, not prose).
 # Only runs when ≥1 validator state file exists (some validator fired this chain).
-if [ -d "${CWD}/.mega-sdd" ]; then
-  STATE_COUNT=$(find "${CWD}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
+  STATE_COUNT=$(find "${PROJECT_ROOT}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$STATE_COUNT" -gt 0 ]; then
     SCRIPT_DIR_AZ="$(cd "$(dirname "$0")" && pwd)"
     ANALYZE_SCRIPT="${SCRIPT_DIR_AZ}/../scripts/run-analyze.sh"
     if [ -x "$ANALYZE_SCRIPT" ]; then
-      bash "$ANALYZE_SCRIPT" --cwd="$CWD" --aggregate-only --quiet >/dev/null 2>&1 || true
+      bash "$ANALYZE_SCRIPT" --cwd="$PROJECT_ROOT" --aggregate-only --quiet >/dev/null 2>&1 || true
     fi
   fi
 fi

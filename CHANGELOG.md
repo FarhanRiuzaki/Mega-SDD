@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.63.0] - 2026-05-29
+
+### Iter 71 — CWD class-bug: walk up to project root before writing state
+
+**Trigger:** TF Import production-confirm run revealed 8 state files + `memory/hook-debug.log` + `telemetry.jsonl` + `CONSISTENCY-REPORT.md` written to `<project>/.mega-sdd/knowledge-base/.mega-sdd/` (nested) instead of `<project>/.mega-sdd/`. Root cause: hooks and scripts treated stdin-provided `${CWD}` (or `--cwd` flag value) as the project root, but when the model's CWD shifts to a sub-folder during a chain step (extract-intelligence often operates inside `.mega-sdd/knowledge-base/`), `${CWD}/.mega-sdd/...` becomes `.mega-sdd/<sub>/.mega-sdd/...`. Once one hook writes nested state, every subsequent hook/script reads from the wrong location and the project splits into two parallel state trees.
+
+**Class scope:** 4 hooks + 22 scripts. Same bug pattern: `${CWD}/.mega-sdd/...` without walking up.
+
+### The fix — shared walk-up resolver
+
+New file `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh`:
+
+```bash
+resolve_project_root() {
+  local d="${1:-$PWD}"
+  while [ "$d" != "/" ] && [ -n "$d" ]; do
+    if [ -d "$d/.mega-sdd" ] && [ "$(basename "$d")" != ".mega-sdd" ]; then
+      echo "$d"
+      return 0
+    fi
+    d=$(dirname "$d")
+  done
+  echo "${1:-$PWD}"  # greenfield fallback
+}
+```
+
+The `basename != ".mega-sdd"` guard defensively skips the pathological inner `.mega-sdd/.mega-sdd/` layout that prior buggy runs could have created.
+
+**Hooks** (4): inline source the helper, compute `PROJECT_ROOT=$(resolve_project_root "$CWD")` after parsing stdin, replace every `${CWD}/.mega-sdd/...` with `${PROJECT_ROOT}/.mega-sdd/...`, pass `--cwd="$PROJECT_ROOT"` to all spawned validator scripts.
+
+**Scripts** (22): inline source the helper after the `for arg ... done` arg-parse loop, defensively reassign `CWD=$(resolve_project_root "$CWD")` — covers standalone invocations from a sub-folder even if the caller forgot to resolve.
+
+### Files changed
+
+| Path | Change |
+|---|---|
+| `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh` | NEW — shared walk-up helper |
+| `plugins/mega-sdd/hooks/session-start` | Source helper; resolve `project_root`; replace `${cwd}/.mega-sdd/...` → `${project_root}/.mega-sdd/...`; debug-log captures both `cwd` AND resolved `project_root` |
+| `plugins/mega-sdd/hooks/pre-tool-use` | Source helper; resolve `PROJECT_ROOT`; replace 7 `${CWD}/.mega-sdd/...` refs; block-message `rm` suggestion now points to resolved path |
+| `plugins/mega-sdd/hooks/post-tool-use` | Source helper; resolve `PROJECT_ROOT`; replace 14 `${CWD}/.mega-sdd/...` refs; pass `--cwd="$PROJECT_ROOT"` to all 11 validator dispatches |
+| `plugins/mega-sdd/hooks/stop` | Source helper; resolve `PROJECT_ROOT`; replace 8 `${CWD}/.mega-sdd/...` refs |
+| `plugins/mega-sdd/scripts/*.sh` (22 files) | All scripts touching `.mega-sdd/` (validators, run-analyze, memory-write, audit-domain-rules) defensively re-resolve CWD after arg-parse |
+
+### Logic-proven via direct-invoke (CWD = nested sub-folder)
+
+Test fixture `/tmp/iter71-nested-cwd/` with `CWD=/tmp/iter71-nested-cwd/.mega-sdd/knowledge-base/10-domains` (3 levels deep inside `.mega-sdd/`):
+
+| Hook | Result | Where state landed |
+|---|---|---|
+| session-start | `hook-debug.log` written at `<root>/.mega-sdd/memory/` ✓ | NESTED `.mega-sdd/` NOT created ✓ |
+| post-tool-use (Write codebase-map.md) | `.codebase-map-state.json` written at `<root>/.mega-sdd/` ✓ | NESTED `.mega-sdd/` NOT created ✓ |
+| pre-tool-use (downstream consumer block) | block-message `rm` path points to `<root>/.mega-sdd/.handoff-validation-state.json` ✓ | (no state writes) |
+| stop | `hook-debug.log` appended at `<root>/.mega-sdd/memory/` ✓ | NESTED `.mega-sdd/` NOT created ✓ |
+
+All 4 hooks write to the project root even when CWD is 3 levels deep inside `.mega-sdd/`. Class-bug closed.
+
+### Bonus diagnostic
+
+Audited skill bodies for prose that instructs `cd` / `chdir` / CWD shift: ZERO hits in `extract-intelligence/SKILL.md`, `wave-dispatch-templates.md`, or any other skill body. The CWD shift observed at TF Import was NOT skill-prose-driven — most likely harness-layer behavior (Claude Code may set CWD based on the file being edited) or user-shell-driven. The hook-level walk-up is the right defense regardless of where the shift originates.
+
+Plugin version 3.62.0 → 3.63.0 (MINOR per classifier: 26 files changed, new shared helper file, hook + script behavior change).
+
+---
+
 ## [3.62.0] - 2026-05-28
 
 ### Iter 70 — PreToolUse producer self-fix allow (handoff deadlock fix)

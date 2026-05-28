@@ -28,6 +28,16 @@ for arg in "$@"; do
     --quiet) QUIET=1 ;;
   esac
 done
+# Resolve project root (Iter 71 — class-bug fix: if invoked from a sub-folder
+# like .mega-sdd/knowledge-base/, walk UP to the outermost .mega-sdd/ parent
+# so state files land in the canonical location, not nested .mega-sdd/.mega-sdd/).
+_RPR_HELPER="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib/resolve-project-root.sh"
+if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then
+  # shellcheck disable=SC1090
+  . "$_RPR_HELPER"
+  CWD=$(resolve_project_root "$CWD")
+fi
+
 
 if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
 if [ -z "$FILE_PATH" ]; then echo '{"status":"ERROR","detail":"--file-path required"}' >&2; exit 2; fi
