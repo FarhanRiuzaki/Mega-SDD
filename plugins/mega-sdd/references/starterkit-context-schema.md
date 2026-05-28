@@ -2,11 +2,11 @@
 
 > Canonical schema for `.mega-sdd/codebase/starterkit-context.yaml` — single source of truth for all mega-sdd consumers.
 
-**Version:** 2.0 (Iter 42, v3.28.0+) — supersedes 1.0 (Iter 32)
-**Introduced:** v3.23.0 (Iter 32); cache schema bumped v3.28.0 (Iter 42)
-**Produced by:** `mega-sdd:scan-codebase` v2.7.0+ Step 10.5 deep-scan stage
-**Consumed by:** `mega-sdd:generate-units` v2.6.0+ (Step 4.7), `mega-sdd:execute-bolts` v2.7.0+ (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation)
-**Backward compat:** v1.0 readers (Iter 32 era) skip the `cache_signatures:` block and read the legacy `cache_key:` block if present. v2.0 writers (Iter 42+) emit ONLY `cache_signatures:`. Consumers MAY read either; producers MUST emit v2.0.
+**Version:** 3.0 (Iter 68) — supersedes 2.0 (Iter 42), 1.0 (Iter 32)
+**Introduced:** v3.23.0 (Iter 32); cache schema bumped v3.28.0 (Iter 42); patterns: block added v3.59.0+ (Iter 68)
+**Produced by:** `mega-sdd:scan-codebase` v3.0.0+ Step 10.5 deep-scan stage + Step 10.5.2.5 pattern extraction
+**Consumed by:** `mega-sdd:generate-units` v2.6.0+ (Step 4.7), `mega-sdd:execute-bolts` v2.7.0+ (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation), `validate-starterkit-conformance.sh` (v3.0 patterns: block consumer)
+**Backward compat:** v1.0 readers (Iter 32 era) skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block (Iter 42 era — pre-v3.0). v3.0+ writers MUST emit `patterns:`. Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.0.
 
 ---
 
@@ -14,8 +14,8 @@
 
 ```yaml
 starterkit_context:
-  schema_version: 2.0                    # v2.7.0+ bump (Iter 42); v1.0 was Iter 32 baseline
-  generated_by: scan-codebase v2.7.0
+  schema_version: 3.0                    # v3.0 bump (Iter 68 — adds patterns:); v2.0 was Iter 42; v1.0 was Iter 32
+  generated_by: scan-codebase v3.0.0
   generated_at: <ISO8601 timestamp>      # MOST RECENT slice write time
   framework: laravel                     # from codebase-map.md §7 Framework.name
   framework_version: "12.x"              # from codebase-map.md §7 Framework.version
@@ -30,43 +30,52 @@ starterkit_context:
   ui_ux: { ... }                         # fresh OR cached
   libs: [ ... ]                          # fresh OR cached
 
-  patterns:                               # v3.0+ (deep-read from actual codebase)
-    controller:
-      base_class: "App\\Http\\Controllers\\Controller"
-      location: "app/Http/Controllers/"
-      naming: "{Model}Controller.php"          # PascalCase model name + Controller suffix
-      methods: [index, create, store, show, edit, update, destroy]  # CRUD convention
-      _source: ["app/Http/Controllers/UserController.php:1-5"]
-    request:
-      location: "app/Http/Requests/"
-      naming: "{Action}{Model}Request.php"     # e.g., StoreUserRequest
-      validation_style: "array-rules"          # array-rules | rule-objects | inline
-      _source: ["app/Http/Requests/StoreUserRequest.php:1-3"]
-    model:
-      location: "app/Models/"
-      naming: "{Model}.php"
-      traits: [HasFactory, HasUuid, SoftDeletes]  # commonly used traits
-      cast_style: "method"                     # method (Laravel 11+) | property ($casts)
-      _source: ["app/Models/User.php:1-10"]
-    service:
-      location: "app/Services/"                # or null if no service layer detected
-      naming: "{Model}Service.php"
-      _source: []
-    migration:
-      location: "database/migrations/"
-      naming: "YYYY_MM_DD_HHMMSS_create_{table}_table.php"
-      _source: ["database/migrations/"]
+  patterns:                                    # v3.0+ — generic schema, pack-driven values
+    controller:                                # endpoint/request handler (universal semantic role)
+      location: <dir-path>                     # where handlers live
+      naming: <pattern>                        # template, e.g. "{Model}Controller<ext>" / "{model}_views.py" / "{Model}.handler.ts"
+      extension: <file-ext>                    # ".php" | ".py" | ".ts" | ".rb" | ...
+      _source: [<sample file:lines>]
+      extras: {}                               # framework-specific (Laravel: {methods, base_class}; Django: {as_view, mixins}; …)
+    data_model:                                # persistence-layer entity (universal)
+      location: <dir-path>
+      naming: <pattern>
+      extension: <file-ext>
+      _source: [<sample file:lines>]
+      extras: {}                               # Laravel: {traits, cast_style}; Django: {meta, managers}; Prisma: {schema_file}; …
+    request_validator:                         # input validation/parsing layer (optional per framework)
+      location: <dir | null>                   # null when framework has no validation layer (e.g., Express w/o zod)
+      naming: <pattern | null>
+      extension: <file-ext | null>
+      _source: [<sample> or empty]
+      extras: {}                               # Laravel: {validation_style: array-rules|rule-objects|inline}; Django: {form_or_serializer}; Express: {schema_lib: zod|joi|yup}
+    business_logic:                            # service/usecase layer (optional)
+      location: <dir | null>                   # null when framework convention has no service layer
+      naming: <pattern | null>
+      extension: <file-ext | null>
+      _source: [<sample> or empty]
+      extras: {}                               # NestJS: {injectable, providers}; Laravel: {action_class_style}; …
     test:
-      location: "tests/Feature/"
-      naming: "{Model}Test.php"
-      framework: "phpunit"                     # phpunit | pest
-      _source: ["tests/Feature/"]
+      location: <dir-path>
+      naming: <pattern>                        # "{Model}Test.php" | "{model}.test.ts" | "test_{model}.py"
+      extension: <file-ext>
+      framework: <test framework>              # phpunit | pest | jest | vitest | pytest | rspec | go-test | other
+      _source: [<sample file:lines>]
+      extras: {}
+    schema_migration:                          # DDL / migration files (universal)
+      location: <dir-path>
+      naming: <pattern>                        # framework-specific format
+      extension: <file-ext>
+      _source: [<sample file:lines>]
+      extras: {}                               # Laravel: {timestamp_format}; Django: {numbered_seq}; Rails: {timestamped}; Prisma: {single_schema_file}
     route:
-      api_prefix: "api"
-      web_file: "routes/web.php"
-      api_file: "routes/api.php"
-      resource_style: "Route::resource"        # resource | apiResource | explicit
-      _source: ["routes/api.php:1-5"]
+      location: <dir or single-file path>
+      style: <generic descriptor>              # "centralized-routes" | "decorator-based" | "file-based-routing" | "manual"
+      api_prefix: <string | null>
+      web_file: <path | null>
+      api_file: <path | null>
+      _source: [<sample file:lines>]
+      extras: {}                               # Laravel: {resource_style: resource|apiResource}; FastAPI: {router_count}; NestJS: {controller_decorators}
 
   cache_signatures:                      # v2.0 schema (replaces v1.0 cache_key:)
     composer_lock_sha256: <hex>          # retained for reproducibility
@@ -78,6 +87,194 @@ starterkit_context:
       ui_ux:  { signature_sha256: <hex>, generated_at: <ISO8601> }
       libs:   { signature_sha256: <hex>, generated_at: <ISO8601> }
 ```
+
+## §patterns block — multi-framework examples (v3.0+)
+
+The schema container is framework-agnostic. Values come from the framework pack (`framework-conventions/<pack>.md`) + deep-scan reading of the real codebase. Same schema, different concrete values per framework:
+
+### Example A — Laravel pack (laravel-base-26)
+
+```yaml
+patterns:
+  controller:
+    location: "app/Http/Controllers/"
+    naming: "{Model}Controller.php"
+    extension: ".php"
+    _source: ["app/Http/Controllers/UserController.php:1-5"]
+    extras:
+      base_class: "App\\Http\\Controllers\\Controller"
+      methods: [index, create, store, show, edit, update, destroy]
+  data_model:
+    location: "app/Models/"
+    naming: "{Model}.php"
+    extension: ".php"
+    _source: ["app/Models/User.php:1-10"]
+    extras:
+      traits: [HasFactory, HasUuid, SoftDeletes]
+      cast_style: "method"
+  request_validator:
+    location: "app/Http/Requests/"
+    naming: "{Action}{Model}Request.php"
+    extension: ".php"
+    _source: ["app/Http/Requests/StoreUserRequest.php:1-3"]
+    extras:
+      validation_style: "array-rules"
+  business_logic:
+    location: "app/Services/"
+    naming: "{Model}Service.php"
+    extension: ".php"
+    _source: ["app/Services/NotificationService.php:1-5"]
+    extras:
+      action_class_style: false
+  test:
+    location: "tests/Feature/"
+    naming: "{Model}Test.php"
+    extension: ".php"
+    framework: "phpunit"
+    _source: ["tests/Feature/UserTest.php:1-5"]
+    extras: {}
+  schema_migration:
+    location: "database/migrations/"
+    naming: "YYYY_MM_DD_HHMMSS_create_{table}_table.php"
+    extension: ".php"
+    _source: ["database/migrations/2024_01_01_000000_create_users_table.php"]
+    extras:
+      timestamp_format: "YYYY_MM_DD_HHMMSS"
+  route:
+    location: "routes/"
+    style: "centralized-routes"
+    api_prefix: "api"
+    web_file: "routes/web.php"
+    api_file: "routes/api.php"
+    _source: ["routes/api.php:1-5"]
+    extras:
+      resource_style: "apiResource"
+```
+
+### Example B — Django pack
+
+```yaml
+patterns:
+  controller:
+    location: "<app>/views.py | <app>/views/"
+    naming: "{model}_views.py"
+    extension: ".py"
+    _source: ["users/views.py:1-10"]
+    extras:
+      class_based: true
+      as_view: ["ListView", "DetailView", "CreateView", "UpdateView", "DeleteView"]
+      mixins: ["LoginRequiredMixin"]
+  data_model:
+    location: "<app>/models.py"
+    naming: "{Model}.py"                       # class within models.py — pattern is class name, not file name
+    extension: ".py"
+    _source: ["users/models.py:5-30"]
+    extras:
+      meta_class: true
+      managers: ["objects", "active"]
+  request_validator:
+    location: "<app>/forms.py | <app>/serializers.py"
+    naming: "{Model}Form.py | {Model}Serializer.py"
+    extension: ".py"
+    _source: ["users/serializers.py:1-5"]
+    extras:
+      form_or_serializer: "drf-serializer"
+  business_logic:
+    location: null                              # Django does not enforce a service layer convention
+    naming: null
+    extension: null
+    _source: []
+    extras: {}
+  test:
+    location: "<app>/tests.py | <app>/tests/"
+    naming: "test_{module}.py"
+    extension: ".py"
+    framework: "pytest"
+    _source: ["users/tests.py:1-10"]
+    extras: {}
+  schema_migration:
+    location: "<app>/migrations/"
+    naming: "{NNNN}_{description}.py"
+    extension: ".py"
+    _source: ["users/migrations/0001_initial.py"]
+    extras:
+      numbered_seq: true
+  route:
+    location: "<app>/urls.py + <project>/urls.py"
+    style: "centralized-routes"
+    api_prefix: "api/v1"
+    web_file: "myproject/urls.py"
+    api_file: null
+    _source: ["myproject/urls.py:1-10"]
+    extras:
+      include_pattern: true
+```
+
+### Example C — Express + Zod (Node/TypeScript)
+
+```yaml
+patterns:
+  controller:
+    location: "src/controllers/ | src/handlers/"
+    naming: "{Model}.handler.ts"
+    extension: ".ts"
+    _source: ["src/controllers/leave.ts:1-5"]
+    extras:
+      style: "function-handlers"
+      async: true
+  data_model:
+    location: "src/models/ | src/entities/"
+    naming: "{Model}.ts"
+    extension: ".ts"
+    _source: ["src/models/user.ts:1-10"]
+    extras:
+      orm: "typeorm"
+      decorator_based: true
+  request_validator:
+    location: "src/validators/ | src/schemas/"
+    naming: "{Model}.schema.ts"
+    extension: ".ts"
+    _source: ["src/validators/leave.ts:1-3"]
+    extras:
+      schema_lib: "zod"
+  business_logic:
+    location: "src/services/"
+    naming: "{Model}.service.ts"
+    extension: ".ts"
+    _source: ["src/services/leave.service.ts:1-5"]
+    extras: {}
+  test:
+    location: "tests/ | src/**/*.spec.ts"
+    naming: "{model}.test.ts"
+    extension: ".ts"
+    framework: "jest"
+    _source: ["tests/leave.test.ts:1-5"]
+    extras: {}
+  schema_migration:
+    location: "src/migrations/"
+    naming: "<timestamp>-{description}.ts"
+    extension: ".ts"
+    _source: ["src/migrations/1700000000000-initial.ts"]
+    extras:
+      orm_native: true
+  route:
+    location: "src/routes/"
+    style: "manual"
+    api_prefix: "api"
+    web_file: null
+    api_file: "src/routes/api.ts"
+    _source: ["src/app.ts:10-15"]
+    extras:
+      router_lib: "express-router"
+```
+
+### Genericness guarantees
+
+- **Container schema is identical** across packs (7 categories, same field names, `extras: {}` per category).
+- **`location` can be `null`** when the framework has no convention for that category (Django has no service layer ⇒ `business_logic: { location: null, ... }`).
+- **`naming` template uses `{Model}` / `{model}` placeholders** filled by pack-specific casing rules.
+- **`extras: {}` is the escape hatch** for framework quirks — anything not generic goes here. Validators MUST NOT introspect `extras` (it varies per pack).
+- **Pack-driven extraction**: `framework-conventions/<pack>.md` tells deep-scan WHERE to look for each category. `_universal.md` fallback covers unknown frameworks with best-effort heuristics.
 
 ## §auth block
 

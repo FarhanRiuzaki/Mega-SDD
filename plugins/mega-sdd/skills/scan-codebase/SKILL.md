@@ -374,6 +374,59 @@ Subagents:
 - DO NOT write starterkit-context.yaml (preserve any existing prior version untouched)
 - Chain halts; user re-runs scan-codebase later
 
+### Step 10.5.2.5 — Deep-read code patterns (v3.0+, Iter 68; pack-driven, framework-agnostic)
+
+Runs in main thread (no extra subagent — reuses just-written codebase-map.md from Step 10 + the framework pack identified at §7 Framework). Populates the `patterns:` block of starterkit-context.yaml so `validate-starterkit-conformance.sh` can check unit `target_files` against actual codebase conventions.
+
+**Inputs to this step:**
+- `codebase-map.md §1 Top-level structure` (the directory layout discovered in Step 10)
+- `codebase-map.md §7 Framework.pack_path` (the framework pack file — e.g., `framework-conventions/laravel-base-26.md`, `framework-conventions/django.md`, `framework-conventions/_universal.md`)
+- The just-resolved framework pack — read its §patterns hints block (each pack tells deep-scan WHERE each generic category typically lives for that framework)
+
+**Generic categories (universal semantic roles; same for every framework):**
+
+| Category | Universal meaning | Pack provides | Skill body must NOT hardcode |
+|---|---|---|---|
+| `controller` | endpoint / request handler | Where handlers live in this framework | Laravel `app/Http/Controllers/` |
+| `data_model` | persistence-layer entity | Where models live | Laravel `app/Models/` |
+| `request_validator` | input validation layer (optional) | Where validators live; null if framework convention absent | Laravel `app/Http/Requests/` |
+| `business_logic` | service/usecase layer (optional) | Where services live; null if framework convention absent | Laravel `app/Services/` |
+| `test` | test suite | Where tests live | Laravel `tests/Feature/` |
+| `schema_migration` | DDL/migration files | Where migrations live | Laravel `database/migrations/` |
+| `route` | URL routing definition | Centralized file vs decorator-based vs file-based-routing | Laravel `routes/api.php` |
+
+**Algorithm per category:**
+
+```
+1. Read framework pack §patterns hints to discover the conventional location for this category.
+   - Laravel pack → "controllers typically live at app/Http/Controllers/"
+   - Django pack → "controllers (views) live at <app>/views.py or <app>/views/"
+   - Express pack → "handlers live at src/controllers/ or src/handlers/"
+   - _universal pack → best-effort heuristic (grep for *Controller, *.handler.*, *View*)
+2. Confirm against codebase-map.md §1 Top-level — does that dir exist in the actual repo?
+   - YES → location = <pack-suggested dir>
+   - NO → category may be absent. Look for nearest analog under §1. Still absent → emit category with location: null and _source: [].
+3. Pick 2-3 representative source files in that dir (NOT generated, NOT vendor, NOT test fixtures).
+4. Read first ~30 lines of each to derive:
+   - naming pattern (e.g., {Model}Controller<ext>) — read several samples + abstract
+   - extension (the actual file extension observed)
+   - framework-specific quirks → emit into `extras: {}` per pack's hints (Laravel pack tells you to extract base_class + methods; Django pack tells you to extract as_view + mixins)
+5. Cite each derived field with `_source: ["<path>:<line-range>"]` — anti-halu rail (per starterkit-context-schema.md §Anti-halu rails).
+6. NEVER fabricate. NEVER guess across frameworks (Laravel idioms in a Django repo = halt).
+   - If you cannot find a sample file for a category, that category MUST emit `location: null` and `_source: []`.
+   - `extras: {}` is ALWAYS present (may be empty object).
+```
+
+**Pack-driven, NOT skill-hardcoded:** the skill body does NOT contain framework-specific paths. The framework pack (`framework-conventions/<pack>.md`) is the source of "where to look". A new framework pack (e.g., Rails, FastAPI, NestJS) makes this step work for that framework without skill body edits — pack-add is the extension point.
+
+**Universal fallback:** when no framework pack matches (greenfield, unknown stack), use `framework-conventions/_universal.md` heuristics: grep the codebase for `*Controller*`, `*model*`, `*service*`, `*test*`, `migrations/` directories — derive best-effort locations. Emit `extras: {}` empty (no pack quirks to capture).
+
+**Concurrency note:** Step 10.5.2.5 runs AFTER Step 10.5.2 subagents return (sequential — uses their slice citations as hints for which files are representative) and BEFORE Step 10.5.3 consolidator (which merges patterns block into the YAML).
+
+**Failure mode:** if codebase-map.md §1 has no recognizable structure for a category, emit that category as `{ location: null, naming: null, extension: null, _source: [], extras: {} }` — do NOT emit halt. Downstream `validate-starterkit-conformance.sh` treats null-location categories as opt-out and skips checks for them.
+
+**Multi-framework examples:** see `plugins/mega-sdd/references/starterkit-context-schema.md §patterns block — multi-framework examples (v3.0+)` — same container schema filled with Laravel, Django, and Express values to prove genericness.
+
 ### Step 10.5.3 — Consolidate + write starterkit-context.yaml (v2.7.0+ per-slice cache)
 
 ```
@@ -387,8 +440,8 @@ Subagents:
 5. Build merged YAML structure (cache_signatures v2.0 schema; Iter 42):
 
      starterkit_context:
-       schema_version: 2.0                          # v2.7.0+ bump (was 1.0 Iter 32)
-       generated_by: scan-codebase v2.7.0
+       schema_version: 3.0                          # v3.0 bump (Iter 68 — adds patterns: block); v2.0 was Iter 42; v1.0 was Iter 32
+       generated_by: scan-codebase v3.0.0
        generated_at: <ISO8601 of MOST RECENT slice write>
        framework: <from §7 Framework.name>
        framework_version: <from §7 Framework.version>
@@ -400,6 +453,52 @@ Subagents:
        rbac: {...}                                  # fresh OR cached
        ui_ux: {...}                                 # fresh OR cached
        libs: [...]                                  # fresh OR cached
+       patterns:                                    # v3.0+ — generic schema, pack-driven values (see Step 10.5.2.5)
+         controller:                                # endpoint/request handler (universal semantic role)
+           location: <dir path | null>              # pack tells WHERE; deep-scan confirms in real codebase
+           naming: <pattern>                        # e.g., "{Model}Controller<ext>" | "{model}_views.py" | "{Model}.handler.ts"
+           extension: <file ext>                    # ".php" | ".py" | ".ts" | ".rb" | …
+           _source: [<sample file:lines>]
+           extras: {}                               # framework-specific (Laravel: {methods, base_class}; Django: {as_view, mixins}; …)
+         data_model:                                # persistence-layer entity (universal)
+           location: <dir path | null>
+           naming: <pattern>                        # e.g., "{Model}<ext>"
+           extension: <file ext>
+           _source: [<sample file:lines>]
+           extras: {}                               # Laravel: {traits, cast_style}; Django: {meta, managers}; Prisma: {schema_file}; …
+         request_validator:                         # input validation layer (optional per framework)
+           location: <dir | null>                   # null when framework has no validation layer
+           naming: <pattern | null>
+           extension: <file ext | null>
+           _source: [<sample> or empty]
+           extras: {}                               # Laravel: {validation_style}; Django: {form_or_serializer}; Express: {schema_lib}
+         business_logic:                            # service/usecase layer (optional)
+           location: <dir | null>
+           naming: <pattern | null>
+           extension: <file ext | null>
+           _source: [<sample> or empty]
+           extras: {}                               # NestJS: {injectable}; Laravel: {action_class_style}; …
+         test:
+           location: <dir path>
+           naming: <pattern>                        # "{Model}Test.php" | "{model}.test.ts" | "test_{model}.py"
+           extension: <file ext>
+           framework: <test framework>              # phpunit | pest | jest | vitest | pytest | rspec | go-test | …
+           _source: [<sample file:lines>]
+           extras: {}
+         schema_migration:                          # DDL / migration files (universal)
+           location: <dir path>
+           naming: <pattern>                        # framework-specific format
+           extension: <file ext>
+           _source: [<sample file:lines>]
+           extras: {}                               # Laravel: {timestamp_format}; Django: {numbered_seq}; Rails: {timestamped}; Prisma: {single_schema_file}
+         route:
+           location: <dir or single-file path>
+           style: <generic descriptor>              # "centralized-routes" | "decorator-based" | "file-based-routing" | "manual"
+           api_prefix: <string | null>
+           web_file: <path | null>
+           api_file: <path | null>
+           _source: [<sample file:lines>]
+           extras: {}                               # Laravel: {resource_style}; FastAPI: {router_count}; NestJS: {controller_decorators}
        cache_signatures:                            # v2.0 schema (replaces v1.0 cache_key:)
          composer_lock_sha256: <from Step 10.5.1>
          package_lock_sha256: <from Step 10.5.1>
