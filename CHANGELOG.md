@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.60.0] - 2026-05-28
+
+### Iter 68 — Production-confirm gap closure (3 fixes)
+
+**Trigger:** TF Import production-confirm run (`/Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/new-tradefinance-import`) after v3.59.0 ship — verified scan-codebase artifact alignment + hook fire evidence. Audit revealed 3 closeable gaps before Step 2 (extract-intelligence) can begin.
+
+### Fix 1 — §patterns producer wired in scan-codebase + schema generalized
+
+**Was:** v3.0 §patterns block was authored as consumer-side schema (`references/starterkit-context-schema.md`) + validator (`validate-starterkit-conformance.sh`), but the PRODUCER (`scan-codebase/SKILL.md`) still emitted `schema_version: 2.0` and never wrote a `patterns:` block. Validator standby with nothing to validate.
+
+**Now:** 
+- `scan-codebase/SKILL.md` emit template bumped to `schema_version: 3.0` + `generated_by: scan-codebase v3.0.0` + adds `patterns:` block emission in the consolidator stage.
+- New Step 10.5.2.5 — Deep-read code patterns (pack-driven, framework-agnostic). Runs in main thread after Step 10.5.2 subagents return; framework pack tells deep-scan WHERE each generic category lives. Skill body contains zero Laravel-specific paths.
+- Schema generalized per Farhan revisi: 7 universal semantic categories (`controller`, `data_model`, `request_validator`, `business_logic`, `test`, `schema_migration`, `route`) with core fields (`location`, `naming`, `extension`, `_source`) + `extras: {}` per category for framework-specific quirks. Validators MUST NOT introspect `extras`.
+- `route.style` uses generic descriptor (`centralized-routes` / `decorator-based` / `file-based-routing` / `manual`) — not framework-specific terms like `apiResource`.
+- `location: null` supported for absent framework-layer conventions (e.g., Django has no service-layer convention → `business_logic: { location: null, ... }`).
+- `validate-starterkit-conformance.sh` accepts both v3.0 generic names (`data_model`, `request_validator`) and v2.x legacy aliases (`model`, `request`); skips categories with `location: null`; detects schema/validator dirs (zod-style) for `request_validator`.
+- Schema-doc adds multi-framework examples (Laravel + Django + Express) side-by-side to make genericness inspection-obvious.
+
+**Logic-proof fixtures:**
+- `tests/fixtures/sample-project/.mega-sdd/codebase/starterkit-context.yaml` migrated to v3.0 generic schema; validator parses 7 generic categories, still catches U-003 `src/handlers/` violation.
+- `tests/fixtures/scan-frameworks/{laravel,django,express}-fixture.yaml` — same 7 generic categories, framework-appropriate values; Django proves `null` layer support; `route.style` proves generic descriptors.
+
+### Fix 2 — Path-scoped PostToolUse validator dispatch
+
+**Was:** `hooks/post-tool-use` dispatched validator only when `SKILL_NAME == mega-sdd:generate-units` (line ~142). Writes from `scan-codebase`, `extract-intelligence`, `bind-codebase`, manual edits — all bypassed validators. TF Import run had zero `.codebase-map-state.json` / `.starterkit-conformance-state.json` despite both files being written.
+
+**Now:** Path-scoped triggers in the `Write|Edit` branch (in addition to existing skill-name dispatch which remains for `validate-starterkit-metrics` since it needs `--transcript-path`):
+
+| Path | Validator(s) fired |
+|---|---|
+| `*.mega-sdd/codebase/codebase-map.md` | `validate-codebase-map` |
+| `*.mega-sdd/codebase/starterkit-context.yaml` | `validate-starterkit-conformance` |
+| `*.mega-sdd/knowledge-base/**/*.md` | + `validate-kb-citations` (new — adds to existing `kb-output`/`kb-markers`/`kb-flows` trio) |
+| `*-bound/binding*.md` | `validate-constitution-propagation` + `validate-vault-binding-coverage` (mirror of unit-write trigger at producer side) |
+| `*-bound/units/U-*.md` | + `validate-starterkit-conformance` (added to existing `handoff-binding-units` + `constitution-propagation` pair) |
+
+**Logic-proven via direct-invoke** against `tests/fixtures/sample-project/` (version-skew-immune — invokes canonical script, not the install snapshot). 4 paths → 5 distinct validators fire with state files written / FAIL detection working.
+
+### Fix 3 — SessionStart debug-log diagnostic
+
+**Was:** TF Import run produced zero SessionStart guard telemetry. No way to distinguish (a) hook not invoked by harness from (b) hook invoked but every guard silent-passed.
+
+**Now:** `hooks/session-start` prepends a debug-log block (mirror of Stop-hook 67.5 pattern) that runs BEFORE all logic. Captures stdin SessionStart JSON, extracts `session_id`, writes one line per invocation to `<cwd>/.mega-sdd/memory/hook-debug.log`:
+
+```json
+{"ts":"<ISO8601>","hook":"session-start","session_id":"<id>","cwd":"<path>","stdin_bytes":<n>}
+```
+
+- Only writes when `.mega-sdd/` exists in CWD (no pollution of unrelated sessions).
+- Honors `telemetry: false` opt-out via `<cwd>/.mega-sdd/config.yaml`.
+
+After future fresh sessions: presence of `"hook":"stop"` entries WITHOUT `"hook":"session-start"` entries in `hook-debug.log` = harness wires Stop but not SessionStart (install/registration issue), not a hook-logic bug. Without this diagnostic, the audit gap was undiagnosable.
+
+**Logic-proven** via direct-invoke at `tests/fixtures/sample-project/` — log file empty → invoke with stdin → exactly one `session-start` line gained with captured fields.
+
+### Files changed
+
+- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` — schema bump, emit template, Step 10.5.2.5
+- `plugins/mega-sdd/references/starterkit-context-schema.md` — v3.0 generic schema + multi-framework examples
+- `plugins/mega-sdd/scripts/validate-starterkit-conformance.sh` — v3.0 generic field-name support + v2.x legacy aliases
+- `plugins/mega-sdd/hooks/post-tool-use` — path-scoped dispatch (codebase-map, starterkit-context.yaml, kb-citations, binding-write, unit-write conformance)
+- `plugins/mega-sdd/hooks/session-start` — diagnostic debug-log layer
+- `tests/fixtures/sample-project/.mega-sdd/codebase/starterkit-context.yaml` — migrated to v3.0 generic
+- `tests/fixtures/scan-frameworks/{laravel,django,express}-fixture.yaml` — NEW multi-framework dummies
+
+### Soak status
+
+Iter 68 ships during shakedown window — production-confirm validation deferred to next TF Import fresh session (Step 3 of original task). Stop-hook freeze window (Iter 67.5) preserved; no hook semantics changes were made to Stop. SessionStart and PostToolUse paths-scoped dispatch are net-additive; existing skill-name dispatch retained for backward compat.
+
+---
+
 ## [3.59.0] - 2026-05-27
 
 ### Iter 67.14 — Cleanup + C2 recommendation pattern-prove (diff_conflict)
