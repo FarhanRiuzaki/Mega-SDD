@@ -366,6 +366,52 @@ except Exception:
         if [ -x "$VALIDATOR_CP" ]; then
           bash "$VALIDATOR_CP" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
         fi
+        # Starterkit conformance — units must match starterkit-context.yaml §patterns
+        VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
+        if [ -x "$VALIDATOR_SKC" ]; then
+          bash "$VALIDATOR_SKC" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Iter 68 path-scoped dispatch: codebase-map.md write ─────────────────
+    # Triggers validate-codebase-map (frontmatter + 7-section schema integrity).
+    case "$FILE_PATH" in
+      *.mega-sdd/codebase/codebase-map.md)
+        VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
+        if [ -x "$VALIDATOR_CM" ]; then
+          bash "$VALIDATOR_CM" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Iter 68 path-scoped dispatch: starterkit-context.yaml write ─────────
+    # Triggers validate-starterkit-conformance against current units (if any).
+    # Note: validate-starterkit-metrics (cross-check vs generate-units handoff)
+    # remains on Skill matcher — it needs --transcript-path.
+    case "$FILE_PATH" in
+      *.mega-sdd/codebase/starterkit-context.yaml)
+        VALIDATOR_SKC2="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
+        if [ -x "$VALIDATOR_SKC2" ]; then
+          bash "$VALIDATOR_SKC2" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Iter 68 path-scoped dispatch: binding*.md write ─────────────────────
+    # Constitution clause propagation re-runs when binding clauses change
+    # (mirror of the unit-write trigger above, but at producer side).
+    case "$FILE_PATH" in
+      *-bound/binding*.md|*.mega-sdd/vaults/*-bound/binding*.md|*/binding.md)
+        VALIDATOR_CP2="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
+        if [ -x "$VALIDATOR_CP2" ]; then
+          bash "$VALIDATOR_CP2" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
+        # Also re-run vault→binding coverage (current-truth)
+        VALIDATOR_VBC="${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh"
+        if [ -x "$VALIDATOR_VBC" ]; then
+          bash "$VALIDATOR_VBC" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 
@@ -469,6 +515,11 @@ except Exception:
           "${SCRIPT_DIR}/../scripts/validate-kb-flows.sh" \
           "${CWD}/.mega-sdd/.kb-flows-state.json" \
           "PostToolUse-Write-validate-kb-flows"
+        # Iter 68: KB §11 citation resolution (auto-detects legacy root)
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-citations.sh" \
+          "${CWD}/.mega-sdd/.kb-citations-state.json" \
+          "PostToolUse-Write-validate-kb-citations"
         ;;
     esac
 
