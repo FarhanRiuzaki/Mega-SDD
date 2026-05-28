@@ -101,10 +101,21 @@ Every file under `10-domains/` MUST have all 11 sections, in order. Empty sectio
 
 ## 3. Flow (Input → Process → Output)
 
+**Mermaid emission rules (MANDATORY):** see `plugins/mega-sdd/references/mermaid-emission-rules.md`. Quick checklist before writing the block:
+- Every node text wrapped in **double quotes** regardless of shape (Rule 1)
+- Newlines in node text use `<br/>` (Rule 2) — never literal `\n` or actual line breaks
+- Special chars (`<`, `>`, `&`, embedded `"`) HTML-escaped (Rule 3)
+- Edge labels with parens/commas/colons also wrapped in quotes (Rule 4)
+- Paraphrase raw code expressions (e.g., `IN (2.2, 4)` → `"amend flag in (2.2 OR 4)"`) (Rule 5)
+
 ```mermaid
 flowchart LR
-  …
+    Start(["LC import received"]) --> Validate{"Has amend flag?"}
+    Validate -- "yes" --> Amend["Reverse Amend Maker<br/>input/import_reverse_amends.php"]
+    Validate -- "no" --> Skip(["No amend processing"])
 ```
+
+`validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
 
 ## 4. Inputs
 
@@ -142,10 +153,16 @@ Depth expectations (v3.60.0+):
 - Each transition: event name + guard condition + citation.
 - If no explicit state machine exists in code but status/state fields drive branching → reconstruct the implicit state machine.
 
-```
-state-A --event [guard]--> state-B (file:line)
-state-B --timeout--> error-state (file:line)
-…
+**Mermaid emission rules (MANDATORY):** see `plugins/mega-sdd/references/mermaid-emission-rules.md`. State-machine syntax uses `:` for transition labels — wrap label in double quotes if it contains commas/parens/special chars.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: "user submits (controller.php:42)"
+    Submitted --> Approved: "approver clicks approve"
+    Submitted --> Rejected: "approver clicks reject"
+    Approved --> [*]
+    Rejected --> Draft: "user edits (controller.php:78)"
 ```
 
 ## 9. Edge Cases & Gotchas

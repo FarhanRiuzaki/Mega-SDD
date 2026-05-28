@@ -7,6 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.64.0] - 2026-05-29
+
+### Iter 72 — Mermaid emission rules + heuristic syntax validation
+
+**Trigger:** TF Import production run emitted parser-failing Mermaid in extract-intelligence KB output:
+
+```
+PRE([LC has flag_amend IN (2.2, 4)])
+```
+
+The unquoted `(2.2, 4)` inside the stadium shape `[(...)]` broke the Mermaid lexer. `validate-kb-flows.sh` v1 only checked fence presence (` ```mermaid `) and did not parse syntax — so the invalid block passed validation and shipped downstream where the renderer failed.
+
+**Two-track fix:**
+
+### Track 1 — Skill body Mermaid emission rules
+
+NEW reference `plugins/mega-sdd/references/mermaid-emission-rules.md` — 6 rules with side-by-side ❌/✅ examples:
+
+| Rule | Summary |
+|---|---|
+| Rule 1 | ALWAYS wrap node text in double quotes regardless of shape |
+| Rule 2 | Newlines in node text = `<br/>`, NEVER literal `\n` or actual newline |
+| Rule 3 | Escape `<`, `>`, `&`, embedded `"` with HTML entities |
+| Rule 4 | Edge labels with parens/commas/colons also wrapped in quotes |
+| Rule 5 | Paraphrase raw code expressions (`IN (2.2, 4)` → `"amend flag in (2.2 OR 4)"`) |
+| Rule 6 | `classDef` + `style` at end of block; verify spelling (`stroke-dasharray`, not `stroke-dash-array`) |
+
+Reference cross-linked from:
+- `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` §Quality gates between waves
+- `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §3 Flow + §8 State Machine (both blocks now show the canonical quoted form as the default example)
+- `plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md` (Wave 2 prompt instructions)
+
+### Track 2 — `validate-kb-flows.sh` v2 heuristic Mermaid syntax check
+
+Rewrote the validator with a stateful tokenizer that:
+- Identifies node specs by walking each line character-by-character (respects quoted strings so cases like `PRE(["text with (parens, commas)"])` don't false-positive)
+- Recognizes all 11 Mermaid shape pairs (`[(/)]`, `([/])`, `[[/]]`, `((/))`, `{{/}}`, `[//]`, `[\\/\]`, `(/)`, `[/]`, `{/}`, `>/]`)
+- For each unquoted, non-identifier node text, checks for:
+  - **Rule 1**: dangerous chars (`,`, `(`, `)`, `:`, `|`) → flags with suggested-fix `wrap in double quotes`
+  - **Rule 2**: literal `\n` inside content → flags with suggested-fix `replace with <br/>`
+  - **Rule 3**: multiple unescaped `"` → flags with HTML-entity escape suggestion
+
+Failure reports include: `line_number`, `node_id`, `rule_violated`, `excerpt` (120 chars), `suggested_fix` (exact corrective rewrite).
+
+**Verdict tier:** C2 (producer must rewrite). NOT C1 — auto-rewriting Mermaid risks semantic change (e.g., paraphrasing a condition incorrectly). Producer-side responsibility.
+
+**v2 mmdc full-parser deferred:** evaluated `npx -y @mermaid-js/mermaid-cli` for ground-truth syntax checks — adds node/npx dependency, slow first-invocation, offline-flaky. Documented as Fork-B-future in `mermaid-emission-rules.md §Deferred to Iter 73+`. Trigger condition: heuristic v1 misses ≥3 real failures in soak window.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `plugins/mega-sdd/references/mermaid-emission-rules.md` | NEW — 6 rules + multi-framework examples + anti-pattern catalog |
+| `plugins/mega-sdd/scripts/validate-kb-flows.sh` | Rewritten — added v2 tokenizer + 3 rule checks; preserves v1 fence-presence checks |
+| `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` | §Quality gates: added Mermaid emission rules to gate-check list |
+| `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` | §3 Flow + §8 State Machine: added rule pointers + canonical quoted examples |
+| `plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md` | Wave 2 instructions: added rule pointer |
+| `tests/fixtures/kb-flows-mermaid/.mega-sdd/knowledge-base/10-domains/01-bad-mermaid.md` | NEW fixture — reproduces TF Import bug + literal `\n` + unquoted edge label |
+| `tests/fixtures/kb-flows-mermaid/.mega-sdd/knowledge-base/10-domains/02-good-mermaid.md` | NEW fixture — rules-compliant variant of 01-bad-mermaid.md |
+
+### Logic-proven via direct-invoke
+
+**BAD fixture** (`01-bad-mermaid.md`):
+```json
+"status": "FAIL",
+"issues": [
+  {"line_number": 19, "node_id": "PRE", "rule_violated": "Rule 1 — unquoted text with special chars ((),)",
+   "suggested_fix": "wrap node text in double quotes: PRE([\"LC has flag_amend IN (2.2, 4)\"])"},
+  {"line_number": 20, "node_id": "M1", "rule_violated": "Rule 2 — literal \\n in unquoted node text",
+   "suggested_fix": "replace `\\n` with `<br/>` and wrap in quotes: M1[\"Reverse Amend Maker<br/>input/import_reverse_amends.php\"]"}
+]
+```
+
+Suggested-fix for the headline issue (line 19) is **exactly** the canonical form the user provided in the task spec: `PRE(["LC has flag_amend IN (2.2, 4)"])`.
+
+**GOOD fixture** (`02-good-mermaid.md`, same content quoted):
+```json
+"status": "PASS", "issues": 0
+```
+
+### PostToolUse wiring (no change needed)
+
+`hooks/post-tool-use` already dispatches `validate-kb-flows.sh` on KB writes (wired in Iter 68 path-scoped dispatch, line 529-531). New v2 syntax checks inherit the existing trigger — no hook update required.
+
+Plugin version 3.63.0 → 3.64.0 (MINOR per classifier: new validator capability + new reference file + skill body update).
+
+---
+
 ## [3.63.0] - 2026-05-29
 
 ### Iter 71 — CWD class-bug: walk up to project root before writing state

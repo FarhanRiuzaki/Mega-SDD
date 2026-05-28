@@ -183,7 +183,7 @@ SCOPE: Produce files in {out}/knowledge-base/20-workflows/ for each cross-cuttin
 CONTEXT:
 - Don't enumerate every workflow yet — only the cross-cutting patterns that span multiple domains.
 - Per-domain transactional workflows belong to Wave 3, not here.
-- State-machine docs use a state-diagram table or mermaid stateDiagram.
+- State-machine docs use a state-diagram table or mermaid stateDiagram. When using Mermaid blocks, MANDATORY follow `plugins/mega-sdd/references/mermaid-emission-rules.md` (quote all node text, `<br/>` for newlines, escape `<>&"`, paraphrase raw code) — `validate-kb-flows.sh` v2 enforces a heuristic subset.
 ```
 
 **Gate before Wave 2:**
