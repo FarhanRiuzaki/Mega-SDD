@@ -76,8 +76,22 @@ eval "$PARSE_OUTPUT" 2>/dev/null || true
 
 if [ -z "${CWD:-}" ]; then exit 0; fi
 
-# Opt-out: <cwd>/.mega-sdd/config.yaml `telemetry: false`
-CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
+# ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
+# CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
+# during a chain step). Walk UP to outermost .mega-sdd/ parent so state files
+# land in the canonical location instead of a nested .mega-sdd/<sub>/.mega-sdd/.
+SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
+if [ -f "$RPR_HELPER" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR_HELPER"
+  PROJECT_ROOT=$(resolve_project_root "$CWD")
+else
+  PROJECT_ROOT="$CWD"
+fi
+
+# Opt-out: <project-root>/.mega-sdd/config.yaml `telemetry: false`
+CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
     exit 0
@@ -85,7 +99,7 @@ if [ -f "$CONFIG_FILE" ]; then
 fi
 
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
+TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
 
 # Helper: emit one ref_loaded event for a path (computes lines/bytes/est_tokens).
 emit_ref_loaded() {
@@ -152,8 +166,8 @@ except Exception:
         SCRIPT_DIR_HV2="$(cd "$(dirname "$0")" && pwd)"
         VALIDATOR_SKM="${SCRIPT_DIR_HV2}/../scripts/validate-starterkit-metrics.sh"
         if [ -x "$VALIDATOR_SKM" ] && [ -n "$TRANSCRIPT_PATH" ]; then
-          bash "$VALIDATOR_SKM" --cwd="$CWD" --transcript-path="$TRANSCRIPT_PATH" --quiet >/dev/null 2>&1 || true
-          STATE_SKM="${CWD}/.mega-sdd/.starterkit-metrics-state.json"
+          bash "$VALIDATOR_SKM" --cwd="$PROJECT_ROOT" --transcript-path="$TRANSCRIPT_PATH" --quiet >/dev/null 2>&1 || true
+          STATE_SKM="${PROJECT_ROOT}/.mega-sdd/.starterkit-metrics-state.json"
           if [ -f "$STATE_SKM" ]; then
             SKM_STATUS=$(python3 -c "
 import json
@@ -304,8 +318,8 @@ except Exception:
         SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
         VALIDATOR_PANDOC="${SCRIPT_DIR_HV}/../scripts/validate-pandoc-render.sh"
         if [ -x "$VALIDATOR_PANDOC" ]; then
-          bash "$VALIDATOR_PANDOC" --cwd="$CWD" --bash-command-b64="$BASH_CMD_B64" --exit-code="$BASH_EXIT_CODE" --quiet >/dev/null 2>&1 || true
-          STATE_PANDOC="${CWD}/.mega-sdd/.pandoc-render-state.json"
+          bash "$VALIDATOR_PANDOC" --cwd="$PROJECT_ROOT" --bash-command-b64="$BASH_CMD_B64" --exit-code="$BASH_EXIT_CODE" --quiet >/dev/null 2>&1 || true
+          STATE_PANDOC="${PROJECT_ROOT}/.mega-sdd/.pandoc-render-state.json"
           if [ -f "$STATE_PANDOC" ]; then
             PANDOC_STATUS=$(python3 -c "
 import json
@@ -359,17 +373,17 @@ except Exception:
       *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md)
         VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
         if [ -x "$VALIDATOR_BU" ]; then
-          bash "$VALIDATOR_BU" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         # Constitution clause propagation (same boundary, same trigger)
         VALIDATOR_CP="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
         if [ -x "$VALIDATOR_CP" ]; then
-          bash "$VALIDATOR_CP" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_CP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         # Starterkit conformance — units must match starterkit-context.yaml §patterns
         VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
         if [ -x "$VALIDATOR_SKC" ]; then
-          bash "$VALIDATOR_SKC" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
@@ -380,7 +394,7 @@ except Exception:
       *.mega-sdd/codebase/codebase-map.md)
         VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
         if [ -x "$VALIDATOR_CM" ]; then
-          bash "$VALIDATOR_CM" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_CM" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
@@ -393,7 +407,7 @@ except Exception:
       *.mega-sdd/codebase/starterkit-context.yaml)
         VALIDATOR_SKC2="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
         if [ -x "$VALIDATOR_SKC2" ]; then
-          bash "$VALIDATOR_SKC2" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_SKC2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
@@ -405,12 +419,12 @@ except Exception:
       *-bound/binding*.md|*.mega-sdd/vaults/*-bound/binding*.md|*/binding.md)
         VALIDATOR_CP2="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
         if [ -x "$VALIDATOR_CP2" ]; then
-          bash "$VALIDATOR_CP2" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_CP2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         # Also re-run vault→binding coverage (current-truth)
         VALIDATOR_VBC="${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh"
         if [ -x "$VALIDATOR_VBC" ]; then
-          bash "$VALIDATOR_VBC" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
+          bash "$VALIDATOR_VBC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
@@ -421,7 +435,7 @@ except Exception:
       local state_file="$2"        # absolute path to state file the script writes
       local script_label="$3"      # human label for original_emit_site
       [ -x "$validator" ] || return 0
-      bash "$validator" --cwd="$CWD" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+      bash "$validator" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
       [ -f "$state_file" ] || return 0
       local v_status
       v_status=$(python3 -c "
@@ -469,32 +483,32 @@ except Exception:
     # ── Validator 2 (Phase B slice B.2): bolt artifacts ─────────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-bolt-artifacts.sh" \
-      "${CWD}/.mega-sdd/.bolt-artifacts-state.json" \
+      "${PROJECT_ROOT}/.mega-sdd/.bolt-artifacts-state.json" \
       "PostToolUse-Write-validate-bolt-artifacts"
 
     # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-unit-spec.sh" \
-      "${CWD}/.mega-sdd/.unit-spec-state.json" \
+      "${PROJECT_ROOT}/.mega-sdd/.unit-spec-state.json" \
       "PostToolUse-Write-validate-unit-spec"
 
     # ── Validator 4 (Phase B slice B.4): vault OQ citations ─────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-vault-oqs.sh" \
-      "${CWD}/.mega-sdd/.vault-oqs-state.json" \
+      "${PROJECT_ROOT}/.mega-sdd/.vault-oqs-state.json" \
       "PostToolUse-Write-validate-vault-oqs"
 
     # ── Validator 5 (Phase B slice B.5): FSD template slots ─────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-fsd-slots.sh" \
-      "${CWD}/.mega-sdd/.fsd-slots-state.json" \
+      "${PROJECT_ROOT}/.mega-sdd/.fsd-slots-state.json" \
       "PostToolUse-Write-validate-fsd-slots"
 
     # ── Validator 6 (Phase C slices 4+5): vault→binding + units→bolts ──────
     # Project-wide scan; runs on any Write|Edit (script self-skips when no vaults).
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh" \
-      "${CWD}/.mega-sdd/.vault-binding-coverage-state.json" \
+      "${PROJECT_ROOT}/.mega-sdd/.vault-binding-coverage-state.json" \
       "PostToolUse-Write-validate-vault-binding-coverage"
 
     # ── Validator 7 (R2): KB output validation ────────────────────────────
@@ -503,22 +517,22 @@ except Exception:
       *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
-          "${CWD}/.mega-sdd/.kb-output-state.json" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-output-state.json" \
           "PostToolUse-Write-validate-kb-output"
         # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \
-          "${CWD}/.mega-sdd/.kb-markers-state.json" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-markers-state.json" \
           "PostToolUse-Write-validate-kb-markers"
         # Mermaid-consistency for flow sections
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-flows.sh" \
-          "${CWD}/.mega-sdd/.kb-flows-state.json" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-flows-state.json" \
           "PostToolUse-Write-validate-kb-flows"
         # Iter 68: KB §11 citation resolution (auto-detects legacy root)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-citations.sh" \
-          "${CWD}/.mega-sdd/.kb-citations-state.json" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-citations-state.json" \
           "PostToolUse-Write-validate-kb-citations"
         ;;
     esac
@@ -532,7 +546,7 @@ except Exception:
       */binding*.md|*/vault.json|*-bound/units/_index.md|*/fsd/FSD.md|*/DRIFT-REPORT*.md)
         ANALYZE_SCRIPT="${SCRIPT_DIR}/../scripts/run-analyze.sh"
         if [ -x "$ANALYZE_SCRIPT" ]; then
-          bash "$ANALYZE_SCRIPT" --cwd="$CWD" --aggregate-only --quiet >/dev/null 2>&1 || true
+          bash "$ANALYZE_SCRIPT" --cwd="$PROJECT_ROOT" --aggregate-only --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac

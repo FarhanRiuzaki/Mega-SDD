@@ -61,9 +61,24 @@ eval "$PARSE_OUTPUT" 2>/dev/null || true
 
 if [ -z "${CWD:-}" ]; then exit 0; fi
 
+# ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
+# Model may cd into a subfolder during a chain step (extract-intelligence often
+# operates inside .mega-sdd/knowledge-base/). Without walking up, ${CWD}/.mega-sdd/
+# → .mega-sdd/knowledge-base/.mega-sdd/ (nested). resolve_project_root walks UP
+# to the outermost .mega-sdd/ parent. Fallback: original CWD.
+SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
+if [ -f "$RPR_HELPER" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR_HELPER"
+  PROJECT_ROOT=$(resolve_project_root "$CWD")
+else
+  PROJECT_ROOT="$CWD"
+fi
+
 # Opt-out: telemetry: false in config.yaml also disables this hook
 # (a project that opts out of telemetry generally wants to opt out of guards too)
-CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
+CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
     exit 0
@@ -71,7 +86,7 @@ if [ -f "$CONFIG_FILE" ]; then
 fi
 
 # Only act on mega-sdd projects (skip if .mega-sdd/ doesn't exist)
-if [ ! -d "${CWD}/.mega-sdd" ]; then exit 0; fi
+if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
 
 # Helper: emit block JSON to stdout and exit
 emit_block() {
@@ -127,11 +142,11 @@ if last_user_text:
             SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
             VALIDATOR_SCOPE="${SCRIPT_DIR_HV}/../scripts/validate-scope-flag.sh"
             if [ -x "$VALIDATOR_SCOPE" ]; then
-              SCOPE_RESULT=$(printf '%s' "$USER_MSG" | bash "$VALIDATOR_SCOPE" --cwd="$CWD" --quiet 2>/dev/null)
+              SCOPE_RESULT=$(printf '%s' "$USER_MSG" | bash "$VALIDATOR_SCOPE" --cwd="$PROJECT_ROOT" --quiet 2>/dev/null)
               SCOPE_EXIT=$?
               if [ "$SCOPE_EXIT" = "1" ]; then
                 # FAIL — extract stopReason from state file and emit block
-                STATE_SCOPE="${CWD}/.mega-sdd/.scope-flag-state.json"
+                STATE_SCOPE="${PROJECT_ROOT}/.mega-sdd/.scope-flag-state.json"
                 if [ -f "$STATE_SCOPE" ]; then
                   STOP_REASON=$(python3 -c "
 import json
@@ -161,7 +176,7 @@ except Exception:
     case "${SKILL_NAME:-}" in
       mega-sdd:*)
         if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
-          HANDOFF_STATE="${CWD}/.mega-sdd/.handoff-validation-state.json"
+          HANDOFF_STATE="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
           if [ -f "$HANDOFF_STATE" ]; then
             HSTATUS_AND_PRODUCER=$(STATE_PATH="$HANDOFF_STATE" python3 -c "
 import json, os
@@ -199,7 +214,7 @@ try:
 except Exception as e:
     print(f'(state file parse error: {e})')
 " 2>/dev/null)
-                REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by EITHER (a) re-invoke the upstream producer (${STATE_PRODUCER:-unknown}) — this is auto-allowed and overwrites the FAIL state when it emits a valid handoff; OR (b) delete the stale state file manually: rm ${CWD}/.mega-sdd/.handoff-validation-state.json (the file is NOT in the anti-self-bypass protected list)."
+                REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by EITHER (a) re-invoke the upstream producer (${STATE_PRODUCER:-unknown}) — this is auto-allowed and overwrites the FAIL state when it emits a valid handoff; OR (b) delete the stale state file manually: rm ${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json (the file is NOT in the anti-self-bypass protected list)."
                 emit_block "$REASON"
               fi
             fi
@@ -211,7 +226,7 @@ except Exception as e:
     # Branch 1b: existing binding→units handoff gate for execute-bolts (Iter 67.6 slice 1)
     case "${SKILL_NAME:-}" in
       mega-sdd:execute-bolts)
-        BLOCKER_FILE="${CWD}/.mega-sdd/.validation-blockers.json"
+        BLOCKER_FILE="${PROJECT_ROOT}/.mega-sdd/.validation-blockers.json"
         if [ -f "$BLOCKER_FILE" ]; then
           # Read status field
           STATUS=$(python3 -c "
@@ -232,7 +247,7 @@ try:
 except Exception:
     print('?')
 " 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — handoff validator detected ${DROPS_COUNT} unresolved drops at binding→units boundary. Run /mega-sdd:validate-handoff to see drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: ${CWD}/.mega-sdd/.validation-blockers.json"
+            REASON="mega-sdd:execute-bolts is blocked — handoff validator detected ${DROPS_COUNT} unresolved drops at binding→units boundary. Run /mega-sdd:validate-handoff to see drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: ${PROJECT_ROOT}/.mega-sdd/.validation-blockers.json"
             emit_block "$REASON"
           fi
         fi

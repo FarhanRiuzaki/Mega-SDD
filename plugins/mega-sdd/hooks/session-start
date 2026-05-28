@@ -19,6 +19,20 @@ ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
 cwd="$(pwd)"
 has_sdd_signal=0
 
+# ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
+# Model may cd into a subfolder (e.g., .mega-sdd/knowledge-base/) during a chain
+# step. Without walking up, ${cwd}/.mega-sdd/ → .mega-sdd/knowledge-base/.mega-sdd/
+# (nested). resolve_project_root walks UP until it finds the outermost .mega-sdd/
+# parent. Fallback: original cwd (greenfield).
+RPR_HELPER="${SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
+if [ -f "$RPR_HELPER" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR_HELPER"
+  project_root=$(resolve_project_root "$cwd")
+else
+  project_root="$cwd"
+fi
+
 # ─── DIAGNOSTIC LAYER (Iter 68 — verify harness invocation) ──────────────────
 # Mirror of Stop-hook 67.5 diagnostic. Proves the harness is invoking SessionStart
 # for this project CWD. Only writes when .mega-sdd/ exists (avoids polluting
@@ -26,9 +40,9 @@ has_sdd_signal=0
 # a fresh session in a mega-sdd project, the hook is NOT being invoked — that's
 # an install/registration issue, not a hook bug.
 #
-# Honors --no-telemetry opt-out via <cwd>/.mega-sdd/config.yaml (same as Stop).
-if [ -d "${cwd}/.mega-sdd" ]; then
-  CONFIG_FILE="${cwd}/.mega-sdd/config.yaml"
+# Honors --no-telemetry opt-out via <project_root>/.mega-sdd/config.yaml (same as Stop).
+if [ -d "${project_root}/.mega-sdd" ]; then
+  CONFIG_FILE="${project_root}/.mega-sdd/config.yaml"
   TELEMETRY_OFF=0
   if [ -f "$CONFIG_FILE" ]; then
     if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
@@ -44,14 +58,14 @@ try:
 except Exception:
     print("unknown-session")
 ' 2>/dev/null || echo "unknown-session")
-    DEBUG_DIR="${cwd}/.mega-sdd/memory"
+    DEBUG_DIR="${project_root}/.mega-sdd/memory"
     mkdir -p "$DEBUG_DIR" 2>/dev/null || true
-    echo "{\"ts\":\"$TS\",\"hook\":\"session-start\",\"session_id\":\"$SESSION_ID_DBG\",\"cwd\":\"$cwd\",\"stdin_bytes\":${#STDIN_JSON}}" \
+    echo "{\"ts\":\"$TS\",\"hook\":\"session-start\",\"session_id\":\"$SESSION_ID_DBG\",\"cwd\":\"$cwd\",\"project_root\":\"$project_root\",\"stdin_bytes\":${#STDIN_JSON}}" \
       >> "$DEBUG_DIR/hook-debug.log" 2>/dev/null || true
   fi
 fi
 for signal in ".mega-sdd" "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
-  if [ -e "${cwd}/${signal}" ]; then
+  if [ -e "${project_root}/${signal}" ]; then
     has_sdd_signal=1
     break
   fi
