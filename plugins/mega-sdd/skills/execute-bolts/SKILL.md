@@ -940,10 +940,12 @@ handoff:
   emitted_by: execute-bolts
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
-  artifacts:
-    - <absolute path to vault/bolts/U-001/>
-    - <absolute path to vault/bolts/U-002/>
-    # ... one per unit executed
+  artifacts:                                                  # Enumerate ONE LINE per bolt dir actually written; NO "..." shorthand ranges; NO "(N units)" annotations
+    - <absolute path to vault/bolts/U-001/>                   # e.g., /Users/.../.mega-sdd/vaults/<vault>/bolts/U-001
+    - <absolute path to vault/bolts/U-002/>                   # one line per executed unit
+    # WRONG: "/.../bolts/U-001/ ... U-016/"  ← validator expands ellipsis defensively (Iter 74), but producers SHOULD enumerate explicitly
+    # WRONG: "/.../bolts/ (16 units)"        ← annotation will be stripped, but be explicit
+    # Repeat "- <abs path to bolts/U-NNN/>" for EVERY unit you executed — no shortcuts. validate-handoff-yaml.sh os.path.exists() each entry.
   starterkit_context:                                       # v2.7.0+, Iter 32 (passthrough + metrics)
     reused: false
     framework: laravel
