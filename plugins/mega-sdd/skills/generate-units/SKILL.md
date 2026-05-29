@@ -800,9 +800,12 @@ handoff:
   emitted_by: generate-units
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
-  artifacts:
-    - <absolute path to units/ directory>
-    - <absolute path to units/_index.md>
+  artifacts:                                       # MUST be plain filesystem paths — NO annotations like "(N files)", "(latest)", or comments
+    - <absolute path to units/ directory>          # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units (or <vault>/units when --no-bind)
+    - <absolute path to units/_index.md>           # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units/_index.md
+    # WRONG: "/Users/.../units/ (18 files)"        ← validator strips trailing " (...)" defensively, but producers SHOULD emit clean paths
+    # WRONG: "/Users/.../units/ # latest"          ← inline comments invalid in YAML scalars
+    # Each path MUST be a thing validate-handoff-yaml.sh can os.path.exists() against.
   next_action:
     suggested_skill: mega-sdd:execute-bolts
     suggested_args: ["--all", "--auto"]

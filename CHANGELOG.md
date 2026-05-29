@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.65.0] - 2026-05-29
+
+### Iter 73 — Handoff artifact annotation tolerance (false-positive fix)
+
+**Trigger:** TF Import production run, post-3.64.0 ship. User attempted `/mega-sdd:execute-bolts --all --auto` after successful KB → units chain; PreToolUse blocked with:
+
+```
+upstream mega-sdd:generate-units emitted bad handoff (artifact_missing, retry=2, escalate_c2=True)
+missing_artifacts: [".mega-sdd/vaults/tradefinance-rebuild-phase-1/units/ (18 files)"]
+```
+
+Disk inspection: the path `.mega-sdd/vaults/tradefinance-rebuild-phase-1/units/` DOES exist with 18 entries (16 units + `_index.md` + `_dependency-graph.json`). The validator failed because the producer emitted the path with a `" (18 files)"` count annotation appended, and `os.path.exists("<path>/ (18 files)")` returns False.
+
+**Root cause:** `generate-units/SKILL.md` handoff template placeholder reads `<absolute path to units/ directory>` — semantically ambiguous. The model interpreted "describe the units directory" and appended a count annotation. The template never explicitly forbade annotations; `validate-handoff-yaml.sh` walks artifacts strict-equal against `os.path.exists()`.
+
+**Two-track fix:**
+
+### Track 1 — Producer template hardening
+
+`plugins/mega-sdd/skills/generate-units/SKILL.md` line 803-809 — handoff `artifacts:` block now carries inline comments explicitly forbidding annotations:
+
+```yaml
+artifacts:                                       # MUST be plain filesystem paths — NO annotations like "(N files)", "(latest)", or comments
+  - <absolute path to units/ directory>          # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units (or <vault>/units when --no-bind)
+  - <absolute path to units/_index.md>           # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units/_index.md
+  # WRONG: "/Users/.../units/ (18 files)"        ← validator strips trailing " (...)" defensively, but producers SHOULD emit clean paths
+  # WRONG: "/Users/.../units/ # latest"          ← inline comments invalid in YAML scalars
+```
+
+### Track 2 — Validator defense-in-depth
+
+`plugins/mega-sdd/scripts/validate-handoff-yaml.sh` Step 5 (artifact existence check) — strips 3 trailing annotation patterns before `os.path.exists()`:
+
+| Pattern | Example | Strip |
+|---|---|---|
+| `\s+\([^)]*\)\s*$` | `path/ (18 files)` | trailing parenthesized text |
+| `\s+-\s+.*$` | `path/ - latest` | trailing dash-comment |
+| `\s+#\s+.*$` | `path/ # note` | trailing hash-comment |
+
+Plus a `rstrip("/")` to tolerate trailing slash on directory paths.
+
+The ORIGINAL path is reported in `missing_artifacts` (so producer can see what they emitted) — only the existence check uses the cleaned form.
+
+**Scope:** the strip applies to ALL skills' handoff artifacts (generate-units, bind-codebase, extract-intelligence, diff-vault, emit-fsd, execute-bolts, generate-intent, detect-drift, emit-agents-md) — all share the same `<absolute path to ...>` placeholder pattern and same potential failure mode. Validator-side fix covers the class.
+
+### Logic-proven via direct-invoke
+
+Built fixture at `/tmp/iter73-genunits/` matching Farhan's exact disk state (16 units + _index + _dependency-graph = 18 entries):
+
+| Scenario | Handoff content | Verdict |
+|---|---|---|
+| A. Farhan's exact bug | `artifacts: ["/path/ (18 files)"]`, files exist | **PASS** ✓ (strip resolves to real dir) |
+| B. Clean variant | `artifacts: ["/path/", "/path/_index.md"]`, files exist | **PASS** ✓ |
+| C. Genuinely missing | `artifacts: ["/missing/", "/missing/ (50 files)"]`, files DO NOT exist | **FAIL** ✓ (detection signal preserved) |
+
+Scenario C confirms the defense doesn't introduce false negatives — actual missing artifacts still surface, with the ORIGINAL annotated path reported.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `plugins/mega-sdd/skills/generate-units/SKILL.md` | Handoff template — inline comments forbidding annotations + WRONG examples |
+| `plugins/mega-sdd/scripts/validate-handoff-yaml.sh` | Step 5 — defensive strip of trailing annotations before `os.path.exists()` |
+
+Plugin version 3.64.0 → 3.65.0 (MINOR per classifier: producer template hardening + validator behavior change).
+
+### Immediate workaround for affected installs
+
+For projects already in the FAIL-state-with-retry-2-escalate (Farhan's case):
+
+```bash
+rm <project>/.mega-sdd/.handoff-validation-state.json
+```
+
+(File NOT in anti-self-bypass protected list.) Then re-run `/mega-sdd:execute-bolts --all --auto`. After v3.65.0 update lands, future runs do not need the manual rm — validator tolerates the annotation natively.
+
+---
+
 ## [3.64.0] - 2026-05-29
 
 ### Iter 72 — Mermaid emission rules + heuristic syntax validation
