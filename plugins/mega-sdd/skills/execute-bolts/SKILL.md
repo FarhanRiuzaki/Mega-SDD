@@ -168,16 +168,18 @@ Replaces the prior "single-halt at 10KB" enforcement. Tracks running T2 consumpt
 
 ```
 running_budget = {
-  cap_hard:      10240         # 10KB hard cap (unchanged from Iter 30)
-  cap_target:    7168          # 7KB total target
+  cap_hard:      12288         # 12KB hard cap (v3.67.0+, Iter 76 — raised from 10KB to make room for §patterns + controller code-slice)
+  cap_target:    9216          # 9KB total target (raised from 7KB Iter 44 baseline)
   cap_t1:        2048          # 2KB T1 budget
-  cap_t2:        5120          # 5KB T2 budget (newly enforced — was aspirational pre-Iter-44)
+  cap_t2:        10240         # 10KB T2 budget (v3.67.0+, Iter 76 — raised from 5KB; option-A walking-skeleton: more context reach over tight cap)
   consumed_t1:   <bytes of TIER 1 from Step a>
   consumed_t2:   0             # accumulates during Step b
   remaining_t2:  cap_t2
   warnings:      []            # truncation events (logged to provenance)
 }
 ```
+
+**Iter 76 cap bump rationale (revisit at Iter 77):** Step 4.5.b-starterkit now injects §patterns block (≤1KB) + 1 controller code example (≤3KB) — together ~4KB additional T2 load on top of legacy auth/rbac/ui_ux/libs slices. Bumping cap_t2 5KB → 10KB ensures walking-skeleton patterns reach the bolt subagent without forcing aggressive truncation that would defeat the purpose. cap_hard 10KB → 12KB preserves ~2KB T1 headroom. Monitor in Iter 77 telemetry: if total prompts stay <8KB in practice, revert to tighter caps; if patterns saturate budget, tune category priority cascade (libs first to drop).
 
 After EACH T2 section loads in Step b, update tracker:
 - `consumed_t2 += section_bytes`
@@ -241,9 +243,9 @@ Read unit.frontmatter.starterkit_relevance array (from generate-units Step 7.7.e
 IF unit.starterkit_relevance is missing OR empty → skip Steps b-starterkit.build + b-starterkit.inject
 ```
 
-### Step 4.5.b-starterkit.build — Build T2 slice based on unit.starterkit_relevance
+### Step 4.5.b-starterkit.build — Build T2 slice based on unit.starterkit_relevance + §patterns
 
-For each relevance flag in `unit.starterkit_relevance`, include ONLY that slice from `starterkit-context.yaml`:
+For each relevance flag in `unit.starterkit_relevance`, include ONLY that slice from `starterkit-context.yaml`. Additionally, the §patterns block is wired independently of `starterkit_relevance` (it triggers on `target_files` match against pack-discovered locations):
 
 ```
 slice = {}
@@ -262,10 +264,96 @@ IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
   (NOT the full inventory — only libs whose usage_hint contains any of unit.target_files paths or path prefixes)
 ```
 
-Truncation order if slice exceeds 2KB budget:
-1. Truncate `slice.libs[]` first — keep top 10 by relevance score (overlap count with target_files)
-2. If still >2KB → truncate `slice.ui_ux.idioms[]` to top 3
-3. If still >2KB → emit halt `dispatch_prompt_too_large` (existing Iter 30 halt; chain stops)
+**Step 4.5.b-starterkit.build.patterns — Wire §patterns to T2 slice (v3.67.0+, Iter 76)**
+
+Closes Iter 75 regression where §patterns block (produced by scan-codebase v3.0 Step 10.5.2.5) was built but never injected into T2 — bolt subagent received "follow starterkit conventions" without ever being told what those conventions ARE.
+
+```
+IF starterkit_context.patterns exists AND unit.target_files is non-empty:
+  slice.patterns = {}
+
+  FOR each pattern_category in [controller, data_model, request_validator, business_logic, test, schema_migration, route]:
+    pattern = starterkit_context.patterns[pattern_category]
+    IF pattern is None:
+      CONTINUE
+
+    has_location = pattern.location is not None
+    matched = False
+
+    FOR each target_file in unit.target_files:
+      # PRIMARY: location prefix match (most discriminating)
+      IF has_location:
+        location_norm = pattern.location.rstrip("/") + "/"
+        IF target_file.startswith(location_norm):
+          slice.patterns[pattern_category] = pattern
+          matched = True
+          BREAK
+
+      # FALLBACK: naming-pattern match against basename — ONLY when pattern.location is null
+      # (e.g., file-based-routing frameworks where convention is naming, not directory).
+      # Why not OR-with-location when location is set: generic patterns like "{Model}<ext>"
+      # (data_model with extension .php) match ANY PascalCase .php basename including
+      # controllers — false-positive across categories. Location-primary avoids this.
+      IF (not has_location) AND pattern.naming is not None:
+        naming_regex = compile_pattern_to_regex(pattern.naming, pattern.extension)
+        basename = path.basename(target_file)
+        IF naming_regex AND naming_regex.search(basename):
+          slice.patterns[pattern_category] = pattern
+          matched = True
+          BREAK
+```
+
+**Matching semantics (Iter 76 decision):** location is the primary discriminator. Naming-fallback fires only when `pattern.location is null` (= framework genuinely has no directory convention for that category — e.g., Next.js file-based routing, Express where handlers live anywhere). User-spec said `OR location/naming` but that proved too loose in fixture (data_model `{Model}<ext>` regex collides with controller basenames). Location-primary is conservative and avoids crowding T2 with false-positive categories. Revisit Iter 77+ if real-run telemetry shows missed-match cases for null-location frameworks.
+
+`compile_pattern_to_regex` converts pack naming pattern (e.g., `{Model}Controller<ext>` or `{Model}.handler.ts`) by replacing `{Model}` → `[A-Z]\w+`, `{model}` → `[a-z_]+`, `<ext>` → `re.escape(extension)`, anchored with `$`. On compile failure → log + skip naming-regex fallback (location match still applies if available).
+
+Matching is conservative: ONE target_file match per category sets the slice; absence of any match means the unit doesn't touch that category and it's omitted from the slice (no false-positive injection).
+
+**Step 4.5.b-starterkit.build.code-slice — Inject reference code example (v3.67.0+, Iter 76 — walking-skeleton: controller only)**
+
+Few-shot anchoring: when patterns.controller matches, embed an actual code sample from the starterkit so the bolt subagent has a concrete reference to follow (not just a location/naming hint).
+
+```
+slice.code_examples = {}
+
+IF slice.patterns.controller exists
+   AND starterkit_context.patterns.controller._source is non-empty:
+  # _source entries look like: "app/Http/Controllers/ExampleController.php:1-30"
+  first_source = starterkit_context.patterns.controller._source[0]
+  example_path = first_source.split(":")[0]   # strip line-range suffix
+  full_example_path = <project_root> / example_path
+
+  IF full_example_path exists AND is a regular file:
+    file_size = stat(full_example_path).st_size
+
+    IF file_size < 3072:   # <3KB → include full
+      slice.code_examples.controller = {
+        path: example_path,
+        content: read_text(full_example_path),
+        truncated: false,
+      }
+    ELSE:                  # ≥3KB → truncate to first 100 lines + marker
+      lines = read_text(full_example_path).splitlines()[:100]
+      slice.code_examples.controller = {
+        path: example_path,
+        content: "\n".join(lines) + "\n# ... (truncated at 100 lines — see full file via Read tool)",
+        truncated: true,
+      }
+  ELSE:
+    # _source path absent on disk → skip code example, NOT a halt (pattern still injected without code)
+    log "starterkit.controller._source[0] not found on disk: <full_example_path>"
+```
+
+**Walking-skeleton scope (Iter 76):** controller category ONLY. data_model / request_validator / business_logic / test / schema_migration / route categories deferred to Iter 77+ after telemetry confirms controller injection lands cleanly in real-run + no T2 budget thrash. Pattern is identical — extend the loop above to other categories once validated.
+
+**Anti-halu rail:** `slice.code_examples.controller.path` MUST equal the actual file read (provenance); never invent or substitute.
+
+Truncation order if slice exceeds T2 budget (v3.67.0+, Iter 76 — extended):
+1. Truncate `slice.libs[]` — keep top 10 by relevance score (overlap count with target_files)
+2. If still over → truncate `slice.code_examples.controller.content` to first 50 lines (was 100); mark `truncated: true`
+3. If still over → truncate `slice.ui_ux.idioms[]` to top 3
+4. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved)
+5. If still over → emit halt `dispatch_prompt_too_large` (existing Iter 30 halt; chain stops)
 
 ### Step 4.5.b-starterkit.inject — Inject into bolt-dispatch-prompt T2.3 section
 
@@ -289,9 +377,40 @@ UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notificat
 <IF slice.libs present AND non-empty:>
 Libs in scope: <for each lib in slice.libs: <lib.name>@<lib.version> (used in: <lib.usage_hint joined by ", ">)>
 </IF>
+
+<IF slice.patterns present AND non-empty:>     # v3.67.0+, Iter 76
+### Starterkit code patterns (follow these conventions)
+
+<for each category in slice.patterns (controller, data_model, ...):>
+- <category>:
+    location:  <pattern.location>
+    naming:    <pattern.naming>
+    extension: <pattern.extension>
+    <IF pattern.extras is non-empty object:>
+    extras:    <yaml-flow-style representation of pattern.extras>
+    </IF>
+    _source:   <pattern._source[0] (single citation; first entry only — anti-halu)>
+</for>
+</IF>
+
+<IF slice.code_examples present AND non-empty:>     # v3.67.0+, Iter 76 — walking-skeleton: controller only
+### Reference code example (from starterkit)
+
+<IF slice.code_examples.controller present:>
+Pattern: controller
+File:    <slice.code_examples.controller.path>
+<IF slice.code_examples.controller.truncated:>(truncated — full file available via Read tool)</IF>
+
+```<file-extension>
+<slice.code_examples.controller.content>
 ```
 
-Sections for absent relevance flags are OMITTED entirely (not emitted as empty headers).
+Follow this style for new <controller> files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
+</IF>
+</IF>
+```
+
+Sections for absent relevance flags / unmatched categories are OMITTED entirely (not emitted as empty headers).
 
 Wall-clock cost: 0sec when starterkit-context.yaml is absent (b-starterkit.read exits early). When present: ≤500ms (YAML parse + filter + format).
 
