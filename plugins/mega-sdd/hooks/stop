@@ -139,10 +139,21 @@ if last_text:
     SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
     VALIDATOR_HV="${SCRIPT_DIR_HV}/../scripts/validate-handoff-yaml.sh"
     if [ -x "$VALIDATOR_HV" ]; then
+      # Iter 74 fix (audit 2026-05-29 §post-3.65.0 doubled-prefix bug):
+      # handoff-contract.md says `emitted_by: <skill-name>` should be the bare
+      # skill (e.g., "extract-intelligence"), but producers in the wild emit
+      # both forms — `emitted_by: extract-intelligence` AND `emitted_by:
+      # mega-sdd:extract-intelligence`. The pre-Iter-74 regex `[\w-]+` stopped
+      # at the colon, captured just "mega-sdd", then prepended "mega-sdd:"
+      # again → "mega-sdd:mega-sdd". This (a) breaks Iter 70 producer-self-fix
+      # matching (SKILL_NAME never equals "mega-sdd:mega-sdd"), (b) shows up
+      # cosmetically in PreToolUse block messages. Match both forms now:
+      # extended regex tolerates optional "mega-sdd:" prefix on the value;
+      # downstream code unconditionally prepends.
       INFERRED_SKILL=$(echo "$LAST_ASSISTANT_TEXT" | python3 -c '
 import sys, re
 text = sys.stdin.read()
-m = re.search(r"^\s*emitted_by:\s*([\w-]+)", text, re.MULTILINE)
+m = re.search(r"^\s*emitted_by:\s*(?:mega-sdd:)?([\w-]+)", text, re.MULTILINE)
 print(m.group(1) if m else "unknown")
 ' 2>/dev/null)
       printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR_HV" --cwd="$PROJECT_ROOT" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true

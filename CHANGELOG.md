@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.65.1] - 2026-05-29
+
+### Iter 74 (patch) — Stop hook emitted_by regex tolerates `mega-sdd:` prefix
+
+**Trigger:** TF Import detect-drift block message showed `upstream mega-sdd:mega-sdd emitted bad handoff` — doubled `mega-sdd:` prefix in the producer name.
+
+**Root cause:** `hooks/stop` regex extracting `emitted_by` from handoff used `[\w-]+`, which stops at colon. When the producer emitted `emitted_by: mega-sdd:execute-bolts` (with full prefix — variant the wild produces despite handoff-contract.md saying bare form), the regex captured only `mega-sdd`, then the downstream code unconditionally prepended `mega-sdd:` → final `mega-sdd:mega-sdd` written to state file `skill_name` field.
+
+**Side effects:**
+- **Iter 70 producer-self-fix broken in this case**: `SKILL_NAME` being invoked is `mega-sdd:execute-bolts`, but `state.skill_name` is `mega-sdd:mega-sdd`. They don't match → producer-self-fix allow doesn't fire → producer can't retry to fix its own bad handoff (the deadlock Iter 70 was meant to prevent reappeared in a new shape).
+- **Cosmetic**: PreToolUse block message displayed `upstream mega-sdd:mega-sdd` instead of the real producer name.
+
+**Fix:** Extended regex to tolerate optional `mega-sdd:` prefix on the value: `^\s*emitted_by:\s*(?:mega-sdd:)?([\w-]+)`. Matches both forms — bare and prefixed — extracting just the skill identifier. Downstream prepend produces `mega-sdd:<skill>` consistently regardless of which form the producer emitted.
+
+**Logic-proven via direct regex tests:**
+| Producer wrote | Extracted |
+|---|---|
+| `emitted_by: extract-intelligence` | `extract-intelligence` |
+| `emitted_by: mega-sdd:execute-bolts` | `execute-bolts` |
+| `emitted_by:    mega-sdd:scan-codebase` (extra spaces) | `scan-codebase` |
+| `emitted_by: mega-sdd:detect-drift` (inside YAML fence) | `detect-drift` |
+
+PATCH bump 3.65.0 → 3.65.1 (regex tweak only, no semantic change to validator logic).
+
+---
+
 ## [3.65.0] - 2026-05-29
 
 ### Iter 73 — Handoff artifact annotation tolerance (false-positive fix)
