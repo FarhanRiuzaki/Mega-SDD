@@ -257,11 +257,45 @@ else:
                 # ─── Step 5: Artifact existence check ───────────────────────
                 # Iter 73 hardening: defensively strip trailing producer-added
                 # annotations like " (18 files)", " (latest)", " - generated 2026-..."
-                # before exists check. Catches templates where the model interpreted
-                # placeholder text like "<absolute path to units/ directory>" as an
-                # invitation to append a count/comment. Producer-side fix is to NOT
-                # emit annotations (see generate-units/SKILL.md handoff template
-                # comments); this strip is the defense-in-depth.
+                # before exists check.
+                # Iter 74 hardening: defensively expand " ... " ellipsis ranges
+                # like "/path/bolts/U-001/ ... U-016/" → 16 explicit paths. The
+                # `# ... one per unit executed` comment in execute-bolts handoff
+                # template gave the model a cue to use ellipsis shorthand in the
+                # output; this expansion recovers the intended enumeration.
+                #
+                # Producer-side fix is to NOT use shorthand (see execute-bolts and
+                # generate-units handoff template comments); these strips/expansions
+                # are defense-in-depth.
+
+                def expand_ellipsis_range(p):
+                    """If path has ' ... ' shorthand for a U-NNN range, expand."""
+                    if " ... " not in p:
+                        return [p]
+                    # Pattern: <prefix>U-<start>/ ... U-<end>/ (trailing slashes optional)
+                    m = re.match(
+                        r"^(.+?)U-(\d+)/?\s+\.\.\.\s+U-(\d+)/?$",
+                        p.strip(),
+                    )
+                    if m:
+                        prefix, start_str, end_str = m.groups()
+                        try:
+                            start = int(start_str)
+                            end = int(end_str)
+                            width = len(start_str)
+                            # Sanity cap: max 1000 entries to avoid pathological inputs
+                            if start <= end and (end - start) <= 1000:
+                                return [
+                                    f"{prefix}U-{i:0{width}d}"
+                                    for i in range(start, end + 1)
+                                ]
+                        except ValueError:
+                            pass
+                    # Couldn't parse — fall back: check the LEFT side as a literal path.
+                    # If the start exists, assume producer at least got the location right;
+                    # better than failing on a shorthand we couldn't expand.
+                    return [p.split(" ... ")[0].rstrip()]
+
                 missing_artifacts = []
                 artifacts = h.get("artifacts") or []
                 if isinstance(artifacts, list):
@@ -276,12 +310,17 @@ else:
                         cleaned = re.sub(r"\s+-\s+.*$", "", cleaned)
                         # Pattern 3: trailing " # comment"  e.g., "/path/ # note"
                         cleaned = re.sub(r"\s+#\s+.*$", "", cleaned)
-                        cleaned = cleaned.rstrip("/")  # tolerate trailing slash on dirs
-                        # Resolve relative to cwd
-                        full = cleaned if os.path.isabs(cleaned) else os.path.join(cwd, cleaned)
-                        if not os.path.exists(full):
-                            # Report the ORIGINAL path (so producer sees what they emitted)
-                            missing_artifacts.append(ap)
+                        # Iter 74: expand " ... " ellipsis range (do BEFORE rstrip("/")
+                        # because the ellipsis match needs trailing slashes)
+                        expanded_paths = expand_ellipsis_range(cleaned)
+                        # Each expanded path checked for existence; ALL must exist
+                        for ep in expanded_paths:
+                            ep_clean = ep.rstrip("/")  # tolerate trailing slash
+                            full = ep_clean if os.path.isabs(ep_clean) else os.path.join(cwd, ep_clean)
+                            if not os.path.exists(full):
+                                # Report the ORIGINAL path (so producer sees what they emitted)
+                                missing_artifacts.append(ap)
+                                break  # one expanded miss → whole artifact entry FAIL
 
                 if missing_artifacts:
                     result = {

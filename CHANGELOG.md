@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.66.0] - 2026-05-29
+
+### Iter 75 — Handoff ellipsis range expansion (`U-001/ ... U-016/`)
+
+**Trigger:** TF Import detect-drift block, post-3.65.1 ship. execute-bolts emitted:
+
+```yaml
+artifacts:
+  - .mega-sdd/vaults/tradefinance-rebuild-phase-1/bolts/U-001/ ... U-016/
+```
+
+Validator strict-check `os.path.exists("<path>/U-001/ ... U-016/")` → False → `artifact_missing`. All 16 bolt directories actually exist on disk; the model condensed the enumeration into ellipsis shorthand.
+
+**Root cause:** `execute-bolts/SKILL.md` handoff template had:
+```yaml
+artifacts:
+  - <absolute path to vault/bolts/U-001/>
+  - <absolute path to vault/bolts/U-002/>
+  # ... one per unit executed     ← the "..." in the COMMENT cued the model to use "..." in OUTPUT
+```
+
+The trailing `# ... one per unit executed` comment was meant as instruction to the reader ("repeat for each unit"); the model interpreted "..." as a valid shorthand to emit verbatim.
+
+**Two-track fix:**
+
+### Track 1 — Producer template hardening
+
+`plugins/mega-sdd/skills/execute-bolts/SKILL.md` line 943-948 — handoff `artifacts:` block now carries explicit anti-pattern comments:
+
+```yaml
+artifacts:                                                  # Enumerate ONE LINE per bolt dir actually written; NO "..." shorthand ranges; NO "(N units)" annotations
+  - <absolute path to vault/bolts/U-001/>                   # e.g., /Users/.../.mega-sdd/vaults/<vault>/bolts/U-001
+  - <absolute path to vault/bolts/U-002/>                   # one line per executed unit
+  # WRONG: "/.../bolts/U-001/ ... U-016/"  ← validator expands ellipsis defensively (Iter 75), but producers SHOULD enumerate explicitly
+  # WRONG: "/.../bolts/ (16 units)"        ← annotation will be stripped, but be explicit
+  # Repeat "- <abs path to bolts/U-NNN/>" for EVERY unit you executed — no shortcuts.
+```
+
+### Track 2 — Validator defense-in-depth: ellipsis range expansion
+
+`plugins/mega-sdd/scripts/validate-handoff-yaml.sh` Step 5 — new helper `expand_ellipsis_range(p)` detects `<prefix>U-<start>/ ... U-<end>/` pattern, parses start/end as integers, expands to explicit path list, checks each `os.path.exists()`. Sanity cap: max 1000 entries to bound pathological inputs.
+
+Fallback: if path contains ` ... ` but doesn't match the U-NNN range pattern, treat the LEFT side as the actual path (defense: if start exists, producer at least got the location right).
+
+Both Iter 73 strip patterns AND Iter 75 ellipsis expansion now apply to every artifact path defensively.
+
+### Logic-proven via direct-invoke
+
+Fixture at `/tmp/iter74-bolts/` with 16 bolt directories on disk (mirrors Farhan's TF Import disk state):
+
+| Scenario | Handoff content | Verdict |
+|---|---|---|
+| A. Farhan's exact ellipsis bug | `artifacts: ["/bolts/U-001/ ... U-016/"]`, U-001..U-016 all exist | **PASS** ✓ (expansion + exists check) |
+| B. Clean enumerated | 4 explicit paths | **PASS** ✓ |
+| C. Ellipsis claims U-001..U-020 but disk only U-001..U-016 | range expands → U-017..U-020 don't exist | **FAIL** ✓ (detection preserved) |
+
+Scenario C confirms the expansion correctly flags genuinely missing artifacts even when shorthand was used — defense doesn't introduce false negatives.
+
+### Cross-skill scope
+
+Validator-side fix applies to ANY skill emitting U-NNN ranges with ellipsis (execute-bolts, generate-units, list-modules, etc.). One defensive expansion covers the class. Generic-numeric patterns (non-U-NNN) currently fall back to the LEFT-side-as-path check — extension candidate if other patterns emerge in soak.
+
+Plugin version 3.65.1 → 3.66.0 (MINOR per classifier: new validator capability + producer template hardening).
+
+---
+
 ## [3.65.1] - 2026-05-29
 
 ### Iter 74 (patch) — Stop hook emitted_by regex tolerates `mega-sdd:` prefix
