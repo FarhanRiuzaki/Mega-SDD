@@ -255,15 +255,32 @@ else:
                 }
             else:
                 # ─── Step 5: Artifact existence check ───────────────────────
+                # Iter 73 hardening: defensively strip trailing producer-added
+                # annotations like " (18 files)", " (latest)", " - generated 2026-..."
+                # before exists check. Catches templates where the model interpreted
+                # placeholder text like "<absolute path to units/ directory>" as an
+                # invitation to append a count/comment. Producer-side fix is to NOT
+                # emit annotations (see generate-units/SKILL.md handoff template
+                # comments); this strip is the defense-in-depth.
                 missing_artifacts = []
                 artifacts = h.get("artifacts") or []
                 if isinstance(artifacts, list):
                     for ap in artifacts:
                         if not isinstance(ap, str):
                             continue
+                        # Strip trailing whitespace + annotations
+                        cleaned = ap.strip()
+                        # Pattern 1: trailing " (anything)"  e.g., "/path/ (18 files)"
+                        cleaned = re.sub(r"\s+\([^)]*\)\s*$", "", cleaned)
+                        # Pattern 2: trailing " - comment"  e.g., "/path/ - latest"
+                        cleaned = re.sub(r"\s+-\s+.*$", "", cleaned)
+                        # Pattern 3: trailing " # comment"  e.g., "/path/ # note"
+                        cleaned = re.sub(r"\s+#\s+.*$", "", cleaned)
+                        cleaned = cleaned.rstrip("/")  # tolerate trailing slash on dirs
                         # Resolve relative to cwd
-                        full = ap if os.path.isabs(ap) else os.path.join(cwd, ap)
+                        full = cleaned if os.path.isabs(cleaned) else os.path.join(cwd, cleaned)
                         if not os.path.exists(full):
+                            # Report the ORIGINAL path (so producer sees what they emitted)
                             missing_artifacts.append(ap)
 
                 if missing_artifacts:
