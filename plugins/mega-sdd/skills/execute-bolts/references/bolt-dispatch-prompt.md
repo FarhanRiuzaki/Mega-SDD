@@ -184,13 +184,13 @@ TIER 2 — Conditional context (target ≤5KB total)
 
 Pattern: <pattern-description> → <past resolution>
 
-## T2.3 — Starterkit context (relevant slice) (v2.7.0+, Iter 32)
+## T2.3 — Starterkit context (relevant slice) (v2.7.0+, Iter 32; §patterns + code example added v3.67.0+, Iter 76)
 
 This section is populated by execute-bolts Step 4.5.b-starterkit when:
 1. `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists (deep-scan was run)
-2. `unit.starterkit_relevance` is non-empty (unit intersects ≥1 starterkit domain)
+2. EITHER `unit.starterkit_relevance` is non-empty (auth/rbac/ui_ux/libs slices) OR `starterkit_context.patterns` exists AND `unit.target_files` matches a pack-discovered location (§patterns slice — independent of starterkit_relevance, added Iter 76)
 
-If both conditions met, the dispatcher injects the relevant slice (≤2KB) here. Sections for non-relevant domains are OMITTED entirely.
+The dispatcher injects relevant slices (≤8KB total under v3.67.0 caps). Non-matching domains are OMITTED.
 
 **Slice template (sections appear only when relevant):**
 
@@ -201,11 +201,45 @@ Auth: lib=<auth.lib>, guard=<auth.guard>, user_model=<auth.user_model>
 RBAC: lib=<rbac.lib>, role_model=<rbac.role_model>, middleware=<rbac.middleware joined by ", ">
 UI/UX: extends=<ui_ux.layout_extends>, notification=<ui_ux.notification_lib>, idioms=[<idioms joined by "; ">]
 Libs in scope: <lib.name>@<lib.version> (used in: <usage_hint joined by ", ">), ...
+
+### Starterkit code patterns (follow these conventions)        (v3.67.0+, Iter 76)
+
+- controller:
+    location:  app/Http/Controllers/
+    naming:    {Model}Controller<ext>
+    extension: .php
+    extras:    {base_class: "Controller", methods: ["index","show","store","update","destroy"]}
+    _source:   app/Http/Controllers/ExampleController.php:1-30
+- data_model: (... same shape for each matched category ...)
+- ...
+
+### Reference code example (from starterkit)                   (v3.67.0+, Iter 76 — walking-skeleton: controller only)
+
+Pattern: controller
+File:    app/Http/Controllers/ExampleController.php
+
+```php
+<?php
+namespace App\Http\Controllers;
+// ... full file content (or first 100 lines + truncation marker) ...
 ```
 
-**Budget:** total slice content ≤2KB. Truncation order: libs[] (keep top 10 by relevance) → idioms[] (keep top 3) → halt `dispatch_prompt_too_large` if still over.
+Follow this style for new controller files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
+```
 
-**Anti-halu rail:** when this section is present, the bolt subagent MUST honor the constraints listed. Do NOT invent libs not listed; do NOT use a different layout than `extends:` value; do NOT use a different notification lib.
+**Budget (v3.67.0+, Iter 76):** total slice content target ≤4KB (was ≤2KB Iter 32). Hard cap rolls up to overall T2 budget (10KB) — see SKILL.md §T2 Section Priority + Truncation.
+
+Truncation order:
+1. `libs[]` — keep top 10 by relevance score
+2. `code_examples.controller.content` — truncate from 100 → 50 lines
+3. `ui_ux.idioms[]` — keep top 3
+4. Drop `code_examples` entirely (patterns metadata preserved)
+5. Halt `dispatch_prompt_too_large` if still over hard cap
+
+**Anti-halu rails:**
+- When auth/rbac/ui_ux/libs sections present, bolt subagent MUST honor the constraints listed. Do NOT invent libs not listed; do NOT use a different layout; do NOT use a different notification lib.
+- When `### Starterkit code patterns` present, bolt subagent MUST match `location` + `naming` + `extension` for new files in that category. Path conventions are non-negotiable.
+- When `### Reference code example` present, bolt subagent MUST follow the structural idioms (import order, base class, method shape, response pattern) shown — provenance citation `path:` is the source of truth.
 
 **Absence is valid:** if this section is absent, no starterkit context is available — the bolt should produce code following framework defaults (per the framework pack T1 section).
 

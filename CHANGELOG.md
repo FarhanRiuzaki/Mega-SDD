@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.67.0] - 2026-05-29
+
+### Iter 76 — Wire §patterns + controller code-slice into T2.3 (walking-skeleton)
+
+**Trigger:** Post-Iter-68 regression discovered while tracing bolt output quality. scan-codebase v3.0 (Iter 68) produces a `patterns:` block in `<project>/.mega-sdd/codebase/starterkit-context.yaml` capturing pack-driven location + naming + extras + `_source` per generic category (controller / data_model / request_validator / business_logic / test / schema_migration / route). execute-bolts Step 4.5.b-starterkit.build (last touched Iter 32) injects 4 legacy slices (auth / rbac / ui_ux / libs) into T2.3 BUT NEVER reads the `patterns:` block — bolt subagent is told "follow starterkit conventions" without ever being told what those conventions ARE. Cross-skill producer/consumer split that no validator caught.
+
+**Root cause:** Iter 32's slice builder was authored before §patterns existed; Iter 68 added the producer side (deep-read) but didn't update the consumer (execute-bolts). Classic shape: producer ships, consumer left stale. Same class-bug as Iter 75 (handoff template "..." comment guidance), Iter 73 (annotation tolerance), Iter 69 (next_action shape).
+
+**Fix (two-part wire-up):**
+
+1. **`plugins/mega-sdd/skills/execute-bolts/SKILL.md` — Step 4.5.b-starterkit.build.patterns (NEW)**
+   - Iterates all 7 generic categories.
+   - **Location-primary match:** if `unit.target_files[i]` starts with `pattern.location` (normalized to trailing slash), category enters slice.
+   - **Naming-fallback (only when location is null):** for frameworks with file-based routing (Next.js, Express handlers-anywhere) where convention is naming-not-location. Compiles `{Model}<ext>` → `[A-Z]\w+\.<ext>$`, matches against basename only.
+   - **Why not the user-spec OR-semantics:** in fixture testing, `data_model.naming = "{Model}<ext>"` with `.php` greedily matched ANY PascalCase `.php` basename — including `SampleController.php` — causing data_model false-positive injection alongside controller. Location-primary is conservative and avoids crowding T2. Decision logged in SKILL prose; revisit if Iter 77 telemetry shows missed null-location matches.
+
+2. **`plugins/mega-sdd/skills/execute-bolts/SKILL.md` — Step 4.5.b-starterkit.build.code-slice (NEW; walking-skeleton: controller-only)**
+   - When `slice.patterns.controller` matched, embed the FIRST `_source` file verbatim as a few-shot anchor.
+   - File-size budget: `<3KB` → embed full; `≥3KB` → first 100 lines + `# ... (truncated)` marker.
+   - `_source` path missing on disk → log + skip code embed (pattern metadata still injected; NOT a halt).
+   - Walking-skeleton: controller-only this iter; extend to other 6 categories Iter 77+ after real-run validates the controller path.
+
+3. **`plugins/mega-sdd/skills/execute-bolts/SKILL.md` Step 4.5.a.5 — T2 budget cap bump (Option A)**
+   - `cap_t2`: 5120 → 10240 (5KB → 10KB; makes room for patterns + 1 code example).
+   - `cap_hard`: 10240 → 12288 (10KB → 12KB; preserves ~2KB T1 headroom).
+   - Rationale prose calls out Iter 77 telemetry as revisit gate; truncation cascade extended with `code_examples.controller.content` (100 → 50 lines) priority slot.
+
+4. **`plugins/mega-sdd/skills/execute-bolts/SKILL.md` Step 4.5.b-starterkit.inject + `references/bolt-dispatch-prompt.md` §T2.3 — render templates**
+   - Two new sections: `### Starterkit code patterns (follow these conventions)` + `### Reference code example (from starterkit)`.
+   - Anti-halu rails for each: when patterns block present, bolt MUST honor location + naming + extension for new files in that category; when code example present, bolt MUST follow structural idioms (imports, base class, method shape).
+
+**Logic-proof (3 scenarios, `tests/fixtures/iter76-patterns-injection/`):**
+
+Fixture: Laravel-style starterkit with full §patterns block + `app/Http/Controllers/ExampleController.php` (~720 bytes). Unit with `target_files: [app/Http/Controllers/SampleController.php]`, `starterkit_relevance: [controller]`.
+
+| Scenario | Verdict |
+|---|---|
+| A_match — unit matches `patterns.controller.location` | **PASS** ✓ — slice.patterns.controller populated, slice.code_examples.controller embeds ExampleController.php verbatim, T2.3 render shows both sections (rendered 1428 bytes). data_model NOT false-positively injected. |
+| B_no_match — `target_files: [resources/views/random.blade.php]` matches no category | **PASS** ✓ — slice.patterns empty, no patterns/example render (rendered 47 bytes — header only). |
+| C_missing_src — `patterns.controller._source[0]` points to nonexistent file | **PASS** ✓ — pattern metadata still rendered (preserves conventions), code_examples skipped (no halt). |
+
+**Files changed (this iter):**
+
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — Step 4.5.a.5 caps bump; Step 4.5.b-starterkit.build extended with `.patterns` + `.code-slice` sub-blocks; Step 4.5.b-starterkit.inject render extended; truncation cascade extended (5 levels).
+- `plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md` — §T2.3 template extended with `### Starterkit code patterns` + `### Reference code example` sections + anti-halu rails per section.
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — version 3.66.0 → 3.67.0.
+- `tests/fixtures/iter76-patterns-injection/` — NEW: simulate-build.py + Laravel-style starterkit fixture + README documenting 3 scenarios.
+- `CHANGELOG.md` — this entry.
+
+**Logic-proven on fixtures; production live-firing pending `/mega-sdd:update-plugin` at TF Import.** Walking-skeleton: controller-only this iter. Iter 77 extends to data_model + test categories after real-run telemetry confirms patterns reach bolts + budget stays manageable.
+
+**Discipline:** authored in canonical (gitlab.com/airnd1/grand-design-spec), no TF Import touches.
+
+**Classifier (EP2):** MINOR (4 files changed; no halt-enum diff; no new skill dir; no BREAKING marker; existing SKILL bodies modified). plugin.json 3.66.0 → 3.67.0 ✓.
+
 ## [3.66.0] - 2026-05-29
 
 ### Iter 75 — Handoff ellipsis range expansion (`U-001/ ... U-016/`)

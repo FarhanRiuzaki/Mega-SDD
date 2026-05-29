@@ -1,0 +1,82 @@
+starterkit_context:
+  schema_version: 3.0
+  generated_by: scan-codebase v3.0.0
+  generated_at: 2026-05-29T08:00:00Z
+  framework: laravel
+  framework_version: "11.x"
+  framework_pack: framework-conventions/laravel-base-26.md
+  partial: false
+  partial_slices: []
+  reused_slices: []
+  auth:
+    lib: laravel/sanctum
+    guard: web
+    user_model: App\Models\User
+    _source: ["config/auth.php:1-30"]
+  rbac:
+    lib: spatie/laravel-permission
+    role_model: App\Models\Role
+    permission_model: App\Models\Permission
+    middleware: ["role", "permission"]
+    _source: ["app/Http/Kernel.php:30-60"]
+  ui_ux:
+    layout_extends: layouts.app
+    notification_lib: sweetalert2
+    idioms: ["form-validation-via-livewire", "vuexy-dashboard", "blade-components"]
+    _source: ["resources/views/dashboard.blade.php:1-50"]
+  libs:
+    - name: spatie/laravel-permission
+      version: "^6.0"
+      usage_hint: ["app/Models/", "app/Http/Middleware/"]
+    - name: laravel/sanctum
+      version: "^4.0"
+      usage_hint: ["app/Http/Controllers/", "config/auth.php"]
+  patterns:
+    controller:
+      location: app/Http/Controllers/
+      naming: "{Model}Controller<ext>"
+      extension: .php
+      _source: ["app/Http/Controllers/ExampleController.php:1-30"]
+      extras:
+        base_class: Controller
+        methods: [index, show, store, update, destroy]
+    data_model:
+      location: app/Models/
+      naming: "{Model}<ext>"
+      extension: .php
+      _source: ["app/Models/Example.php:1-20"]
+      extras:
+        traits: [HasFactory]
+        cast_style: array
+    request_validator:
+      location: app/Http/Requests/
+      naming: "{Model}Request<ext>"
+      extension: .php
+      _source: ["app/Http/Requests/ExampleRequest.php:1-25"]
+      extras:
+        validation_style: rules-method
+    business_logic:
+      location: null
+      naming: null
+      extension: null
+      _source: []
+      extras: {}
+    test:
+      location: tests/Feature/
+      naming: "{Model}Test<ext>"
+      extension: .php
+      framework: pest
+      _source: ["tests/Feature/ExampleTest.php:1-30"]
+      extras: {}
+    schema_migration:
+      location: database/migrations/
+      naming: "{timestamp}_create_{table}_table<ext>"
+      extension: .php
+      _source: ["database/migrations/2026_01_01_000000_create_examples_table.php:1-30"]
+      extras:
+        timestamp_format: YYYY_MM_DD_HHMMSS
+    route:
+      location: routes/api.php
+      style: centralized-routes
+      _source: ["routes/api.php:1-30"]
+      extras: {}
