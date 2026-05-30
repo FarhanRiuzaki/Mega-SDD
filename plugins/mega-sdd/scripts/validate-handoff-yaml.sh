@@ -268,15 +268,35 @@ else:
                 # generate-units handoff template comments); these strips/expansions
                 # are defense-in-depth.
 
-                def expand_ellipsis_range(p):
-                    """If path has ' ... ' shorthand for a U-NNN range, expand."""
-                    if " ... " not in p:
+                # Iter 77: generalize beyond '...' — model invents new range
+                # shorthand variants ('through', 'to', 'thru', Unicode ellipsis '…').
+                # Pattern: <prefix>U-<start>/ <SEP> U-<end>/ (trailing slashes optional)
+                # SEP ∈ {..., …, through, to, thru} (case-insensitive for words)
+                RANGE_SEP_REGEX = re.compile(
+                    r"^(.+?)U-(\d+)/?\s+(?:\.\.\.|…|through|thru|to)\s+U-(\d+)/?$",
+                    re.IGNORECASE,
+                )
+                # Quick detector — has any known separator present?
+                RANGE_SEP_PROBE = re.compile(
+                    r"U-\d+/?\s+(?:\.\.\.|…|through|thru|to)\s+U-\d+/?",
+                    re.IGNORECASE,
+                )
+
+                def expand_range_shorthand(p):
+                    """If path has ' <sep> ' shorthand for a U-NNN range, expand to explicit list.
+
+                    Supported separators (Iter 75+77): '...', '…', 'through', 'to', 'thru'.
+                    All case-insensitive for word separators. Range cap: 1000 entries.
+
+                    Returns:
+                      list of explicit paths if expansion succeeded
+                      [p] if no shorthand detected (path is literal — no transformation needed)
+                      [left_side_of_shorthand] if shorthand detected but couldn't parse
+                          (defensive fallback — at least verify the producer's start path)
+                    """
+                    if not RANGE_SEP_PROBE.search(p):
                         return [p]
-                    # Pattern: <prefix>U-<start>/ ... U-<end>/ (trailing slashes optional)
-                    m = re.match(
-                        r"^(.+?)U-(\d+)/?\s+\.\.\.\s+U-(\d+)/?$",
-                        p.strip(),
-                    )
+                    m = RANGE_SEP_REGEX.match(p.strip())
                     if m:
                         prefix, start_str, end_str = m.groups()
                         try:
@@ -291,10 +311,16 @@ else:
                                 ]
                         except ValueError:
                             pass
-                    # Couldn't parse — fall back: check the LEFT side as a literal path.
-                    # If the start exists, assume producer at least got the location right;
-                    # better than failing on a shorthand we couldn't expand.
-                    return [p.split(" ... ")[0].rstrip()]
+                    # Couldn't parse — fall back: split on first detected separator
+                    # and use LEFT side as a literal path. Better than failing on a
+                    # shorthand we couldn't expand.
+                    for sep in (" ... ", " … ", " through ", " THROUGH ", " thru ", " THRU ", " to ", " TO "):
+                        if sep in p:
+                            return [p.split(sep)[0].rstrip()]
+                    return [p]
+
+                # Backward-compat alias (Iter 75 name preserved for any external caller)
+                expand_ellipsis_range = expand_range_shorthand
 
                 missing_artifacts = []
                 artifacts = h.get("artifacts") or []
@@ -310,9 +336,10 @@ else:
                         cleaned = re.sub(r"\s+-\s+.*$", "", cleaned)
                         # Pattern 3: trailing " # comment"  e.g., "/path/ # note"
                         cleaned = re.sub(r"\s+#\s+.*$", "", cleaned)
-                        # Iter 74: expand " ... " ellipsis range (do BEFORE rstrip("/")
+                        # Iter 75: expand " ... " ellipsis range (do BEFORE rstrip("/")
                         # because the ellipsis match needs trailing slashes)
-                        expanded_paths = expand_ellipsis_range(cleaned)
+                        # Iter 77: generalized to '...', '…', 'through', 'to', 'thru'
+                        expanded_paths = expand_range_shorthand(cleaned)
                         # Each expanded path checked for existence; ALL must exist
                         for ep in expanded_paths:
                             ep_clean = ep.rstrip("/")  # tolerate trailing slash
