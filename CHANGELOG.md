@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.68.0] - 2026-05-30
+
+### Iter 77 — Generalize range-shorthand expansion (`through` / `to` / `thru` / `…`)
+
+**Trigger:** Post-Iter-76 ship, TF Import detect-drift blocked again. State file:
+
+```yaml
+missing_artifacts:
+  - .mega-sdd/vaults/tradefinance-rebuild-phase-2/bolts/U-017/ through U-025/
+```
+
+All 9 directories (U-017..U-025) confirmed on disk. Iter 75 caught ` ... ` ellipsis shorthand; Iter 77 trigger reveals model invented a NEW natural-language range condensation (`through` instead of `...`). Class-bug shape continues: model gravitates to English range expressions when asked to enumerate filesystem paths.
+
+**Root cause:** Iter 75 `expand_ellipsis_range` regex matched only literal `...`. Producer template `execute-bolts/SKILL.md:1062-1067` only listed `...` and `(N units)` as WRONG examples; never anticipated `through`, `to`, `thru`, Unicode ellipsis. Defense-in-depth (validator) AND producer-hardening (template) both had a narrow blind spot.
+
+**Fix (two-track, both files):**
+
+1. **`plugins/mega-sdd/scripts/validate-handoff-yaml.sh` — `expand_ellipsis_range` → `expand_range_shorthand`**
+   - Generalized regex to match `(?:\.\.\.|…|through|thru|to)` (case-insensitive for word separators).
+   - Backward-compat alias kept (`expand_ellipsis_range = expand_range_shorthand`) — Iter 75 name preserved for any external caller.
+   - Fallback handler: if shorthand detected but couldn't expand (malformed U-NNN range), checks each known separator and uses the LEFT side as a literal path (defensive — at least verify the producer's start path; better than failing on a shorthand we can't parse).
+   - Call site updated to use new name.
+
+2. **`plugins/mega-sdd/skills/execute-bolts/SKILL.md:1062-1077` handoff template anti-pattern comment**
+   - Broadened from "NO '...' shorthand ranges" → "NO range shorthand of ANY kind".
+   - Five explicit WRONG examples now listed (ellipsis / Unicode ellipsis / `through` / `to` / `thru`) so the model sees each variant called out by name.
+   - Added explicit CORRECT example block showing one-per-line enumeration with absolute paths.
+   - Reasoning: model invents new condensations specifically because the prior comment was narrow. Naming each forbidden separator individually makes the rule self-evident even when the model is searching for a "more natural" alternative.
+
+**Why not also handle `-` (single dash) as separator:**
+The dash-comment strip pattern `\s+-\s+.*$` would conflict — a path `U-001/ - U-016/` would be stripped to `U-001/` before range expansion. Single dash is excluded from the range-separator set for that reason. If the model ever invents `-` shorthand, the conflicting strip will be detected first; we'll handle that explicitly then.
+
+**Logic-proof (6 scenarios, `tests/fixtures/iter77-range-shorthand/`):**
+
+Fixture: 10 bolt dirs (U-001 + U-017..U-025) on disk.
+
+| Scenario | Verdict |
+|---|---|
+| `farhan-through-bug` — Farhan's exact production input (U-001 + `U-017/ through U-025/`) | **PASS** ✓ (the bug, fixed) |
+| `scenario-D-through` — lowercase `through` only | **PASS** ✓ |
+| `scenario-E-to` — lowercase `to` separator | **PASS** ✓ |
+| `scenario-F-uppercase` — `THROUGH` case-insensitive | **PASS** ✓ |
+| `scenario-G-genuine-miss` — `through U-030/` but only U-017..U-025 on disk | **FAIL** ✓ (false-negative preserved; U-026..U-030 correctly flagged) |
+| `scenario-H-iter75-regression` — original `...` ellipsis | **PASS** ✓ (defense intact) |
+
+**Files changed (this iter):**
+
+- `plugins/mega-sdd/scripts/validate-handoff-yaml.sh` — rename + regex generalization + call site update.
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — broadened anti-pattern comment with 5 WRONG examples + 1 CORRECT block.
+- `plugins/mega-sdd/.claude-plugin/plugin.json` — 3.67.0 → 3.68.0.
+- `tests/fixtures/iter77-range-shorthand/` — NEW: 6 scenarios + bolt dir fixture + README.
+- `CHANGELOG.md` — this entry.
+
+**Logic-proven on fixtures; production live-firing pending `/mega-sdd:update-plugin` at TF Import.**
+
+**Discipline:** authored in canonical, no TF Import touches.
+
+**Classifier (EP2):** MINOR (5 files changed; no halt-enum diff; no new skill dir; no BREAKING marker; validator script + SKILL body modified). plugin.json 3.67.0 → 3.68.0 ✓.
+
+**Class-bug iteration count:** This is the THIRD iter in the "model shorthand vs validator strict-check" class (Iter 73 = parenthetical annotations, Iter 75 = ellipsis, Iter 77 = English range words). Pattern: defense-in-depth strip/expand + producer template anti-pattern comments grow per-shape. Considered an alternative architecture (forbid all artifact field shapes with regex pre-emit), but that's higher complexity vs incremental shape coverage. Stay with current approach; revisit if Iter 78 surfaces a 4th shape — at that point it may indicate a deeper producer-side intervention is needed.
+
 ## [3.67.0] - 2026-05-29
 
 ### Iter 76 — Wire §patterns + controller code-slice into T2.3 (walking-skeleton)

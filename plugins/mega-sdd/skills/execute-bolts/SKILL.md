@@ -1059,12 +1059,21 @@ handoff:
   emitted_by: execute-bolts
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
-  artifacts:                                                  # Enumerate ONE LINE per bolt dir actually written; NO "..." shorthand ranges; NO "(N units)" annotations
+  artifacts:                                                  # Enumerate ONE LINE per bolt dir actually written; NO range shorthand of ANY kind; NO "(N units)" annotations
     - <absolute path to vault/bolts/U-001/>                   # e.g., /Users/.../.mega-sdd/vaults/<vault>/bolts/U-001
     - <absolute path to vault/bolts/U-002/>                   # one line per executed unit
-    # WRONG: "/.../bolts/U-001/ ... U-016/"  ← validator expands ellipsis defensively (Iter 74), but producers SHOULD enumerate explicitly
-    # WRONG: "/.../bolts/ (16 units)"        ← annotation will be stripped, but be explicit
-    # Repeat "- <abs path to bolts/U-NNN/>" for EVERY unit you executed — no shortcuts. validate-handoff-yaml.sh os.path.exists() each entry.
+    # WRONG (range shorthand — DON'T do any of these — validator strips defensively but produce explicit lists):
+    #   "/.../bolts/U-001/ ... U-016/"       ← ellipsis (Iter 75 catches)
+    #   "/.../bolts/U-001/ through U-016/"   ← "through" (Iter 77 catches)
+    #   "/.../bolts/U-001/ to U-016/"        ← "to"      (Iter 77 catches)
+    #   "/.../bolts/U-001/ thru U-016/"      ← "thru"    (Iter 77 catches)
+    #   "/.../bolts/U-001/ … U-016/"         ← Unicode ellipsis (Iter 77 catches)
+    # WRONG (annotation): "/.../bolts/ (16 units)"  ← annotation will be stripped, but be explicit
+    # CORRECT: list each executed unit on its OWN line with absolute path:
+    #   - /Users/.../.mega-sdd/vaults/<vault>/bolts/U-001
+    #   - /Users/.../.mega-sdd/vaults/<vault>/bolts/U-002
+    #   ... (continue one-per-line for ALL units; no shortcuts; no English ranges)
+    # validate-handoff-yaml.sh os.path.exists() each entry.
   starterkit_context:                                       # v2.7.0+, Iter 32 (passthrough + metrics)
     reused: false
     framework: laravel
