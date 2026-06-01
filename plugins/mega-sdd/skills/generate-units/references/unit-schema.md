@@ -67,11 +67,19 @@ consumes_interfaces: []            # OPTIONAL — list of vault interface IDs th
                                    # `execute-bolts` halts (cross_squad_interface_draft) if any referenced
                                    # interface has status: draft.
 acceptance_test:                   # how to verify the bolt succeeded
-  - type: test                     # test | manual | lint | typecheck
+  - type: test                     # test | manual | lint | typecheck | render
     command: "npm test -- auth"
     expects: "passes"
   - type: manual
     desc: "Hit /login with valid creds, expect 200 + token"
+  - type: render                   # REQUIRED for any unit whose target_files include a
+                                   # detail/show view (code-delivery slice D). Asserts the
+                                   # detail route renders a real field — catches empty-model
+                                   # show / branch `—` / null-timestamp crashes a route-200
+                                   # smoke test misses. Derived from the active framework
+                                   # pack `## Test patterns` -> detail_view_render template.
+    command: "php artisan test --filter WidgetShowRendersTest"
+    expects: "GET detail route 200 + asserts a real display field renders"
 superpowers_skills:                # which superpowers skills execute-bolts invokes
   - test-driven-development
   - subagent-driven-development
@@ -252,6 +260,7 @@ Omitted entirely for legacy single-scope vaults (no `scope` field in source vaul
 - Unit MAY ONLY reference vault sections + binding entries (cited explicitly).
 - Unit MAY ONLY touch files listed in `target_files`.
 - Unit MUST have at least one acceptance_test entry of type `test`. No exceptions.
+- (slice D) Any unit whose `target_files` include a detail/show view (matching the active framework pack `## Test patterns` -> `detail_view_glob`) MUST ALSO carry at least one acceptance_test entry of type `render`. Absent → `validate-unit-spec.sh` emits `render_test_missing` and BLOCKS `execute-bolts`. The render test is derived from the pack `detail_view_render` template; a prose `## Tests` / `## Acceptance` bullet does NOT satisfy this — it must be a structured `acceptance_test:` entry with `type: render` (or `kind: render`). Packs that omit `## Test patterns` → check SKIPs (the stack never declared a detail-view convention).
 - If unit body cannot meet a contract, halt — do not generate a partial unit.
 - (v1.1+) In multi-squad mode, `depends_on` MUST be intra-squad only. Cross-squad direct deps halt with `cross_squad_dep_invalid`.
 - (v1.1+) `consumes_interfaces` entries MUST resolve to existing interface files; status field is read at bolt time to gate execution.

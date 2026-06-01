@@ -290,6 +290,34 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 6: render-test gate for execute-bolts (code-delivery slice D).
+    # Blocks bolts when validate-unit-spec.sh flagged a `render_test_missing` issue
+    # — a unit ships a detail/show view (pack detail_view_glob) but carries no
+    # acceptance_test of type `render`. Detail pages 200 with a blank body or throw
+    # on a null/empty field; a render test is the cheap durable proof. PRECISE: only
+    # the render_test_missing issue blocks here (advisory / unrelated unit-spec
+    # issues do not gate bolts via this branch). PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        US_STATE="${PROJECT_ROOT}/.mega-sdd/.unit-spec-state.json"
+        if [ -f "$US_STATE" ]; then
+          US_RENDER=$(python3 -c "
+import json
+try:
+    d = json.load(open('$US_STATE'))
+    rt = [i for i in d.get('issues', []) if i.get('halt_type') == 'render_test_missing']
+    print(len(rt))
+except Exception:
+    print('0')
+" 2>/dev/null)
+          if [ -n "$US_RENDER" ] && [ "$US_RENDER" != "0" ]; then
+            REASON="mega-sdd:execute-bolts is blocked — unit-spec validator flagged ${US_RENDER} unit(s) shipping a detail/show view with no \`acceptance_test\` of type \`render\` (render_test_missing). A route-200 smoke test misses empty-model / null-field render crashes. Add a structured \`acceptance_test:\` entry with \`type: render\` (derived from the active pack \`## Test patterns\` -> detail_view_render template) to each view-bearing unit, then re-save the unit (PostToolUse re-validates). State: ${US_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)
