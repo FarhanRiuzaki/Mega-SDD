@@ -1,0 +1,2 @@
+# Intentionally empty: no starterkit-context.yaml, no codebase-map.md.
+# Exercises the resolver's graceful fallback to _universal.md.
