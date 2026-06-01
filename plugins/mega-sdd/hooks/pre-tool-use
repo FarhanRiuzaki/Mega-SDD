@@ -318,6 +318,45 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 8: UI scaffold-tells gate for execute-bolts (code-delivery slice E).
+    # Blocks bolts when validate-ui-quality.sh flagged a written VIEW file carrying raw
+    # scaffold tells (controller-class page title, column-id labels, raw UUID FK echoes,
+    # unformatted money, native alert/confirm) or — on a non-trivial view — missing a
+    # required element (app-layout extend, responsive grid). Honest Fork-A enforcement:
+    # the gate cannot un-write a view a bolt subagent just wrote mid-turn, but it blocks
+    # the NEXT execute-bolts invocation so the offending view must be fixed before the
+    # next unit runs (see spec §1.6 "post-write detect-and-block-next"). PASS/SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        UIQ_STATE="${PROJECT_ROOT}/.mega-sdd/.ui-quality-blockers.json"
+        if [ -f "$UIQ_STATE" ]; then
+          UIQ_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UIQ_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$UIQ_STATUS" = "FAIL" ]; then
+            UIQ_COUNTS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UIQ_STATE'))
+    s = d.get('summary', {})
+    print('%s %s' % (s.get('scaffold_tells_matched', 0), s.get('required_elements_missing', 0)))
+except Exception:
+    print('? ?')
+" 2>/dev/null)
+            UIQ_TELLS=$(echo "$UIQ_COUNTS" | cut -d' ' -f1)
+            UIQ_MISS=$(echo "$UIQ_COUNTS" | cut -d' ' -f2)
+            REASON="mega-sdd:execute-bolts is blocked — UI-quality validator found ${UIQ_TELLS} raw-scaffold tell(s) (e.g. a Controller-class page title, 'Customer Id'-style column labels, raw UUID foreign-key echoes, unformatted money, or a native alert/confirm dialog) and ${UIQ_MISS} missing required element(s) (app-layout extend / responsive grid) in a written view file. Humanize labels, resolve FK ids to a human label via the relation, format money, replace native dialogs with the project notification idiom, and ensure the view extends the app layout + carries a responsive grid; then re-save the view (PostToolUse re-validates). State: ${UIQ_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

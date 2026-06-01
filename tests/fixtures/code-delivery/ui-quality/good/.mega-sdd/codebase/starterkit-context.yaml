@@ -1,0 +1,4 @@
+# Fixture starterkit context — selects the laravel-base-26 framework pack so the
+# UI-quality validator resolves the Blade scaffold_tells (laravel.md) + Vuexy
+# required_elements (laravel-base-26.md).
+framework_pack: laravel-base-26

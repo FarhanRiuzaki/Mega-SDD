@@ -396,6 +396,23 @@ except Exception:
         ;;
     esac
 
+    # ── Code-delivery slice E: UI scaffold-tells quality gate ───────────────
+    # Style-A dispatch on Write|Edit of a VIEW file (generated UI source — NOT a
+    # mega-sdd artifact). The trigger glob is deliberately GENEROUS (common view
+    # locations across stacks: resources/views, templates, components, .blade/.vue/
+    # .jsx/.tsx/.html); validate-ui-quality.sh re-resolves the active pack and re-scans
+    # by the pack-declared view_glob, self-SKIPping when the pack omits the
+    # `## UI quality signatures` section. Writes .ui-quality-blockers.json; PreToolUse
+    # Branch 8 reads its status to gate execute-bolts. Scan is project-wide / current-truth.
+    case "$FILE_PATH" in
+      *resources/views/*|*/templates/*|*/components/*|*.blade.php|*.vue|*.jsx|*.tsx)
+        VALIDATOR_UIQ="${SCRIPT_DIR}/../scripts/validate-ui-quality.sh"
+        if [ -x "$VALIDATOR_UIQ" ]; then
+          bash "$VALIDATOR_UIQ" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
     # ── Iter 68 path-scoped dispatch: codebase-map.md write ─────────────────
     # Triggers validate-codebase-map (frontmatter + 7-section schema integrity).
     case "$FILE_PATH" in
