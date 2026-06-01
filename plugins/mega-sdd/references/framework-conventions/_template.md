@@ -245,6 +245,57 @@ ANY `scaffold_tells.regex` matches, or — when the file has more than `min_view
 lines — if ANY `required_elements.regex` is absent. Findings are emitted as
 `violations[{file, id, message, line}]` to `.ui-quality-blockers.json`.
 
+## Cross-cutting concerns
+
+> Consumed by `validate-sibling-consistency.sh` (code-delivery slice B — decomposition)
+> and `validate-cross-cutting-registration.sh` (slice C — execution). Declares a
+> CROSS-CUTTING obligation that applies UNIFORMLY to every structurally-analogous
+> sibling unit (a set of units whose models share a column / role). The validator is
+> tech-agnostic: it reads these signatures, never hardcodes a stack. A pack that omits
+> this section → the sibling-consistency validator writes `status: SKIP` (graceful,
+> never errors). Adding a stack = adding a pack; never editing the validator.
+
+```yaml
+cross_cutting_concerns:
+  - concern: <id, e.g. branch-scoping | soft-delete | audit | authz-bypass>
+    applies_when: <unit/model signal that brings the concern into scope. Closed
+                   grammar: `has_column:<col>` — the unit declares a model that
+                   lists <col> as a column. (Other signals reserved for future.)>
+    spec_obligation: <regex/token the UNIT body MUST contain when applies_when matches
+                      — checked by sibling-consistency (slice B). Keep this a single
+                      grep-able SIGNATURE (e.g. a trait name), NOT a prose sentence:
+                      a sibling that omits the signature is the divergence.>
+    registration_signature: <regex the BOLT-written SOURCE file MUST contain — checked
+                             post-flight by slice C (validate-cross-cutting-registration).
+                             NOT consumed by slice B.>
+```
+
+The sibling-consistency validator groups units by `module` + `scope` frontmatter (when
+present; absent → one group), then for each concern finds every unit whose model matches
+`applies_when` and asserts ALL of them contain the `spec_obligation` signature. A unit in
+the matched set that lacks the signature is an `inconsistent[]` divergence (the concern is
+implemented one way in its siblings and a different/no way here).
+
+## Relation derivation
+
+> Consumed by `validate-sibling-consistency.sh` (code-delivery slice B — relation
+> coherence). Declares how a foreign-key column maps to the relation accessor a model
+> MUST declare. The universal default lives in `_universal.md`; a framework pack may
+> override the accessor KIND/casing here. A pack that omits BOTH this section and the
+> universal default → the relation check is skipped (graceful).
+
+```yaml
+relation_derivation:
+  fk_to_accessor:
+    rule: '<human-readable rule, e.g. {singular}_id => belongsTo accessor `{singular}` (camelCase)>'
+    # The validator strips the trailing `_id` from each FK column a unit's model
+    # declares, applies the stack's casing, and asserts an accessor of that name is
+    # declared in the unit body (e.g. `branch_id` => a `branch()` accessor). A missing
+    # accessor is a `missing_relations[]` finding. FK columns are recognized by the
+    # universal `<name>_id` shape (see `_universal.md` §Naming standards FK row).
+    accessor_template: '<optional — how the accessor renders, e.g. {camelSingular}()>'
+```
+
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>

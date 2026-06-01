@@ -291,6 +291,41 @@ except Exception:
         ;;
     esac
 
+    # Branch 7: sibling-consistency gate for execute-bolts (code-delivery slice B).
+    # Blocks bolts when validate-sibling-consistency.sh found a cross-cutting concern
+    # implemented inconsistently across sibling units (fan-out divergence) and/or an
+    # FK column with no derived relation accessor. The units are the input; fix them
+    # before bolts run. PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        SIB_STATE="${PROJECT_ROOT}/.mega-sdd/.sibling-consistency-state.json"
+        if [ -f "$SIB_STATE" ]; then
+          SIB_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$SIB_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$SIB_STATUS" = "FAIL" ]; then
+            SIB_COUNTS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$SIB_STATE'))
+    print('%s %s' % (len(d.get('inconsistent', [])), len(d.get('missing_relations', []))))
+except Exception:
+    print('? ?')
+" 2>/dev/null)
+            SIB_INCON=$(echo "$SIB_COUNTS" | cut -d' ' -f1)
+            SIB_REL=$(echo "$SIB_COUNTS" | cut -d' ' -f2)
+            REASON="mega-sdd:execute-bolts is blocked — sibling-consistency validator found ${SIB_INCON} cross-cutting concern divergence(s) across sibling units (a shared concern such as branch-scoping implemented differently in one sibling than the others) and ${SIB_REL} FK column(s) with no derived relation accessor. Make every sibling sharing a concern declare the same mechanism, and declare the relation accessor for each FK column, then re-save the unit (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.sibling-consistency-state.json"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
+
     # Branch 6: render-test gate for execute-bolts (code-delivery slice D).
     # Blocks bolts when validate-unit-spec.sh flagged a `render_test_missing` issue
     # — a unit ships a detail/show view (pack detail_view_glob) but carries no
