@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.10.4
+version: 2.11.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -258,7 +258,14 @@ IF "rbac" in unit.starterkit_relevance AND starterkit_context.rbac exists:
   slice.rbac = starterkit_context.rbac (lib, role_model, permission_model, middleware only — exclude policies, _source)
 
 IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
-  slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms only — exclude design_tokens, _source)
+  slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
+  # v3.68.0+, Task F (slice F): design_tokens (colors/spacing/fonts) is now INCLUDED in the
+  # ui_ux slice. A UI bolt that never sees the project's colors/spacing/fonts re-invents
+  # generic AI defaults; injecting the actual tokens anchors the view to the design system.
+  # design_tokens is a MID-priority item in the truncation cascade below (truncated before
+  # code_examples, NOT first-dropped). The deterministic validate-dispatch-prompt.sh asserts
+  # the emitted prompt actually carries a `Design tokens:` line for ui_ux units (makes this
+  # non-no-op-able); this prose is defense-in-depth.
 
 IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
   slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
@@ -273,7 +280,12 @@ Closes Iter 75 regression where §patterns block (produced by scan-codebase v3.0
 IF starterkit_context.patterns exists AND unit.target_files is non-empty:
   slice.patterns = {}
 
-  FOR each pattern_category in [controller, data_model, request_validator, business_logic, test, schema_migration, route]:
+  # v3.68.0+, Task F: component + view ADDED so a ui_ux unit's view target_files set
+  # slice.patterns.view / slice.patterns.component — the build.code-slice loop below is
+  # gated on slice.patterns.<category>, so without this the view/component exemplar would
+  # never inject (real-run no-op). component is listed BEFORE view so the more-specific
+  # component subdir (e.g. resources/views/components/) location-matches first.
+  FOR each pattern_category in [controller, data_model, request_validator, business_logic, test, schema_migration, route, component, view]:
     pattern = starterkit_context.patterns[pattern_category]
     IF pattern is None:
       CONTINUE
@@ -310,51 +322,70 @@ IF starterkit_context.patterns exists AND unit.target_files is non-empty:
 
 Matching is conservative: ONE target_file match per category sets the slice; absence of any match means the unit doesn't touch that category and it's omitted from the slice (no false-positive injection).
 
-**Step 4.5.b-starterkit.build.code-slice — Inject reference code example (v3.67.0+, Iter 76 — walking-skeleton: controller only)**
+**Step 4.5.b-starterkit.build.code-slice — Inject reference code example (v3.67.0+, Iter 76 — controller; v3.68.0+, Task F — extended to view/component)**
 
-Few-shot anchoring: when patterns.controller matches, embed an actual code sample from the starterkit so the bolt subagent has a concrete reference to follow (not just a location/naming hint).
+Few-shot anchoring: when a pattern category matches, embed an actual code sample from the starterkit so the bolt subagent has a concrete reference to follow (not just a location/naming hint).
 
 ```
 slice.code_examples = {}
 
-IF slice.patterns.controller exists
-   AND starterkit_context.patterns.controller._source is non-empty:
-  # _source entries look like: "app/Http/Controllers/ExampleController.php:1-30"
-  first_source = starterkit_context.patterns.controller._source[0]
-  example_path = first_source.split(":")[0]   # strip line-range suffix
+# Categories that get a code exemplar. controller is the original Iter-76 walking
+# skeleton; view/component is added by Task F (slice F) so a ui_ux unit gets a REAL
+# rendered-view few-shot — not a controller-only skeleton.
+FOR each (category, source_list) in [
+    ("controller", starterkit_context.patterns.controller._source),
+    ("view",       starterkit_context.patterns.view._source),       # Task F (new pattern category)
+    ("component",  starterkit_context.patterns.component._source),  # Task F (new pattern category)
+]:
+  IF slice.patterns.<category> does NOT exist:   # unit doesn't touch this category
+    CONTINUE
+  IF source_list is empty:
+    CONTINUE
+
+  # EXEMPLAR SELECTION (Task F): choose by exemplar_selection: linter-clean — i.e. the
+  # cleanest/most-idiomatic sample, NOT source_list[0]. scan-codebase tags each pattern
+  # category with `exemplar_selection` + orders `_source` best-first (cleanest first)
+  # per codebase-map-schema.md §view/component pattern category. So pick the FIRST entry
+  # whose file lints clean / carries no scaffold tells; fall back to source_list[0] only
+  # if none is tagged. NEVER blindly take [0] for view/component — a raw-scaffold view
+  # would anchor the bolt to exactly the tells slice E flags.
+  chosen_source = first(source_list where exemplar_is_linter_clean) OR source_list[0]
+  example_path = chosen_source.split(":")[0]   # strip line-range suffix
   full_example_path = <project_root> / example_path
 
   IF full_example_path exists AND is a regular file:
     file_size = stat(full_example_path).st_size
 
     IF file_size < 3072:   # <3KB → include full
-      slice.code_examples.controller = {
+      slice.code_examples.<category> = {
         path: example_path,
         content: read_text(full_example_path),
         truncated: false,
       }
     ELSE:                  # ≥3KB → truncate to first 100 lines + marker
       lines = read_text(full_example_path).splitlines()[:100]
-      slice.code_examples.controller = {
+      slice.code_examples.<category> = {
         path: example_path,
         content: "\n".join(lines) + "\n# ... (truncated at 100 lines — see full file via Read tool)",
         truncated: true,
       }
   ELSE:
     # _source path absent on disk → skip code example, NOT a halt (pattern still injected without code)
-    log "starterkit.controller._source[0] not found on disk: <full_example_path>"
+    log "starterkit.<category>._source not found on disk: <full_example_path>"
 ```
 
-**Walking-skeleton scope (Iter 76):** controller category ONLY. data_model / request_validator / business_logic / test / schema_migration / route categories deferred to Iter 77+ after telemetry confirms controller injection lands cleanly in real-run + no T2 budget thrash. Pattern is identical — extend the loop above to other categories once validated.
+**Scope (Task F):** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one (the bolt needs a concrete rendered view to mirror — layout extend, responsive grid, relation-resolved labels). The deterministic `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt actually carries a view/component exemplar (`exemplar_missing` otherwise); this prose is defense-in-depth. Remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
 
-**Anti-halu rail:** `slice.code_examples.controller.path` MUST equal the actual file read (provenance); never invent or substitute.
+**Anti-halu rail:** `slice.code_examples.<category>.path` MUST equal the actual file read (provenance); never invent or substitute. The chosen exemplar must be a real `_source` entry — selecting by linter-clean re-ORDERS the real candidates, it never fabricates one.
 
-Truncation order if slice exceeds T2 budget (v3.67.0+, Iter 76 — extended):
+Truncation order if slice exceeds T2 budget (v3.67.0+, Iter 76 — extended; v3.68.0+, Task F — design_tokens is MID-priority):
 1. Truncate `slice.libs[]` — keep top 10 by relevance score (overlap count with target_files)
-2. If still over → truncate `slice.code_examples.controller.content` to first 50 lines (was 100); mark `truncated: true`
+2. If still over → truncate `slice.code_examples.<category>.content` to first 50 lines (was 100); mark `truncated: true` (applies to controller/view/component alike)
 3. If still over → truncate `slice.ui_ux.idioms[]` to top 3
-4. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved)
-5. If still over → emit halt `dispatch_prompt_too_large` (existing Iter 30 halt; chain stops)
+4. If still over → compact `slice.ui_ux.design_tokens` — keep `colors` + `fonts`, drop `spacing` detail to `spacing=<scale-name|default>`. **design_tokens is MID-priority: it is compacted/dropped only AFTER libs + idioms, and BEFORE code_examples are dropped (step 5). It is NEVER first-dropped** — a ui_ux bolt that loses its design tokens re-invents generic colors. (The `Design tokens:` line itself is retained as long as any token survives, so validate-dispatch-prompt.sh still sees it.)
+5. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved)
+6. If still over → drop the remaining `slice.ui_ux.design_tokens` line
+7. If still over → emit halt `dispatch_prompt_too_large` (existing Iter 30 halt; chain stops)
 
 ### Step 4.5.b-starterkit.inject — Inject into bolt-dispatch-prompt T2.3 section
 
@@ -373,6 +404,9 @@ RBAC: lib=<slice.rbac.lib>, role_model=<slice.rbac.role_model>, middleware=<slic
 
 <IF slice.ui_ux present:>
 UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notification_lib>, idioms=[<slice.ui_ux.idioms joined by "; ">]
+<IF slice.ui_ux.design_tokens present:>     # v3.68.0+, Task F — un-excluded; emit the literal `Design tokens:` marker line
+Design tokens: colors=<slice.ui_ux.design_tokens.colors as compact map>; spacing=<slice.ui_ux.design_tokens.spacing>; fonts=[<slice.ui_ux.design_tokens.fonts joined by ", ">]
+</IF>
 </IF>
 
 <IF slice.libs present AND non-empty:>
@@ -394,20 +428,31 @@ Libs in scope: <for each lib in slice.libs: <lib.name>@<lib.version> (used in: <
 </for>
 </IF>
 
-<IF slice.code_examples present AND non-empty:>     # v3.67.0+, Iter 76 — walking-skeleton: controller only
+<IF slice.code_examples present AND non-empty:>     # v3.67.0+, Iter 76 (controller); v3.68.0+, Task F (view/component)
 ### Reference code example (from starterkit)
 
-<IF slice.code_examples.controller present:>
-Pattern: controller
-File:    <slice.code_examples.controller.path>
-<IF slice.code_examples.controller.truncated:>(truncated — full file available via Read tool)</IF>
+<for each category in slice.code_examples (controller, view, component):>     # emit the literal `Pattern:`/`File:` marker lines
+Pattern: <category>
+File:    <slice.code_examples.<category>.path>
+<IF slice.code_examples.<category>.truncated:>(truncated — full file available via Read tool)</IF>
 
 ```<file-extension>
-<slice.code_examples.controller.content>
+<slice.code_examples.<category>.content>
 ```
 
-Follow this style for new <controller> files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
+Follow this style for new <category> files. Do not deviate from the conventions shown above (for a view/component: the layout extend, responsive grid, relation-resolved human labels, and notification idiom) unless the unit explicitly requires it.
+</for>
 </IF>
+
+<IF unit.starterkit_relevance contains "ui_ux":>     # v3.68.0+, Task F — frontend-design heuristics as INJECTED CONTEXT (NOT a Skill-invoke)
+### UI design quality heuristics
+
+Inject the body of `plugins/mega-sdd/references/ui-design-heuristics.md` here (stack-agnostic
+design-quality guidance — visual hierarchy, every state shown, value formatting, accessibility,
+consistency). This is HOOK/DISPATCH-INJECTED TEXT the bolt subagent reads inline — it is NOT a
+prose instruction to invoke the `frontend-design` skill (prose-only Skill-invoke wire-ups
+historically no-op'd — see plugins/mega-sdd/CLAUDE.md Fork A). The deterministic
+validate-dispatch-prompt.sh asserts the design tokens + view exemplar above actually landed.
 </IF>
 ```
 

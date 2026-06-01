@@ -50,6 +50,16 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 - Auth pattern: middleware|session|jwt|none
 - Error handling: try-catch|result-monad|throw
 - State: redux|context|none|composer-event
+- View/component pattern (v2.5+, Task F): the presentation-layer convention — view dir + naming
+  + `exemplar_selection: linter-clean`. This is the codebase-map counterpart of the
+  `starterkit-context.yaml` `patterns.view` / `patterns.component` categories (scan-codebase
+  Step 10.5.2.5). `exemplar_selection: linter-clean` records that, for a presentation exemplar,
+  the cleanest/most-idiomatic sample (passes the pack `## UI quality signatures` scaffold_tells)
+  is selected — NOT the first file found — because the sample becomes a few-shot the UI bolt
+  mirrors. API-only stacks emit this as `none`/absent (no presentation layer).
+  - View dir: <e.g. resources/views/ | src/pages/ | templates/ | none>
+  - View naming: <e.g. {model}.blade.php | {Model}Page.tsx | none>
+  - Exemplar selection: linter-clean | none
 
 ## 7. Framework (v2.4+, Iter 23)
 framework:

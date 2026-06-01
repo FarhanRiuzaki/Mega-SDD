@@ -357,6 +357,45 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 9: UI dispatch-prompt enrichment gate for execute-bolts (code-delivery slice F).
+    # Blocks bolts when validate-dispatch-prompt.sh flagged a PRIOR run's emitted ui_ux
+    # dispatch prompt as missing injected design tokens (tokens_not_injected) and/or a
+    # view/component exemplar (exemplar_missing) — i.e. the UI T2-slice enrichment no-op'd.
+    # Honest Fork-A semantics: the prompt is written MID execute-bolts, so this is a
+    # RE-INVOCATION guard — it cannot fix the in-flight prompt, but it blocks the NEXT
+    # execute-bolts run so the enrichment regression is corrected before more UI units run
+    # (same "post-write detect-and-block-next" pattern as Branch 8). PASS/SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        DP_STATE="${PROJECT_ROOT}/.mega-sdd/.dispatch-prompt-state.json"
+        if [ -f "$DP_STATE" ]; then
+          DP_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$DP_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$DP_STATUS" = "FAIL" ]; then
+            DP_COUNTS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$DP_STATE'))
+    s = d.get('summary', {})
+    print('%s %s' % (s.get('tokens_not_injected', 0), s.get('exemplar_missing', 0)))
+except Exception:
+    print('? ?')
+" 2>/dev/null)
+            DP_TOK=$(echo "$DP_COUNTS" | cut -d' ' -f1)
+            DP_EX=$(echo "$DP_COUNTS" | cut -d' ' -f2)
+            REASON="mega-sdd:execute-bolts is blocked — dispatch-prompt validator found a ui_ux unit's emitted bolt dispatch prompt missing ${DP_TOK} design-token injection(s) (no 'Design tokens:' line) and ${DP_EX} view/component exemplar(s). The UI T2-slice enrichment no-op'd: ensure execute-bolts includes design_tokens (colors/spacing/fonts) in the ui_ux slice (mid-priority, not first-dropped) AND injects a linter-clean view/component code exemplar (not [0]) for ui_ux units, then re-run execute-bolts (re-emitting the prompt re-validates via PostToolUse). State: ${DP_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

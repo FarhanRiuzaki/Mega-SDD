@@ -413,6 +413,23 @@ except Exception:
         ;;
     esac
 
+    # ── Code-delivery slice F: UI dispatch-prompt enrichment gate ───────────
+    # Style-A dispatch on Write|Edit of an emitted bolt dispatch prompt
+    # (<vault>/bolts/U-XXX/dispatch-prompt.md — written by execute-bolts). The
+    # validator asserts a ui_ux unit's prompt actually carries injected design tokens
+    # + a view/component exemplar (makes the execute-bolts UI enrichment non-no-op-able);
+    # it self-SKIPs when the pack omits `## UI quality signatures` (no view_glob) or no
+    # ui_ux prompt exists. Writes .dispatch-prompt-state.json; PreToolUse Branch 9 reads
+    # its status. Scan is project-wide / current-truth.
+    case "$FILE_PATH" in
+      *.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md)
+        VALIDATOR_DP="${SCRIPT_DIR}/../scripts/validate-dispatch-prompt.sh"
+        if [ -x "$VALIDATOR_DP" ]; then
+          bash "$VALIDATOR_DP" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
     # ── Iter 68 path-scoped dispatch: codebase-map.md write ─────────────────
     # Triggers validate-codebase-map (frontmatter + 7-section schema integrity).
     case "$FILE_PATH" in
