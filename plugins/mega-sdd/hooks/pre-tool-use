@@ -253,6 +253,43 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 5: flow-coverage gate for execute-bolts (code-delivery slice A).
+    # Blocks bolts when validate-flow-coverage.sh found input-accepting flow steps
+    # that no unit maps to a required artifact (missing Form Requests etc.) and/or
+    # dead scaffold stubs (e.g. edit views with no update/PUT flow). The units are
+    # the input; fix them before bolts run. SKIP/PASS state never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        FC_STATE="${PROJECT_ROOT}/.mega-sdd/.flow-coverage-state.json"
+        if [ -f "$FC_STATE" ]; then
+          FC_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FC_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$FC_STATUS" = "FAIL" ]; then
+            FC_COUNTS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FC_STATE'))
+    miss = sum(m.get('shortfall', 1) for m in d.get('missing_artifacts', []))
+    dead = len(d.get('dead_scaffold', []))
+    print('%s %s' % (miss, dead))
+except Exception:
+    print('? ?')
+" 2>/dev/null)
+            FC_MISS=$(echo "$FC_COUNTS" | cut -d' ' -f1)
+            FC_DEAD=$(echo "$FC_COUNTS" | cut -d' ' -f2)
+            REASON="mega-sdd:execute-bolts is blocked — flow-coverage validator found ${FC_MISS} input-accepting flow step(s) with no mapped input-validation artifact (e.g. missing per-stage Form Requests) and ${FC_DEAD} dead scaffold stub(s) (e.g. edit views with no update/PUT flow step) in the current units. Add the missing per-step artifacts to the relevant module unit's '## Target files' and remove the dead scaffold stubs, then re-save the unit (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.flow-coverage-state.json"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

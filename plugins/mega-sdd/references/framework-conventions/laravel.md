@@ -214,6 +214,75 @@ HARD_RULE: Routes file MUST NOT contain business logic
 - Seeder: `php artisan db:seed --class=UsersSeeder`
 - Tinker: `php artisan tinker` (REPL for debugging)
 
+## Flow-artifact derivation
+
+> Concrete Laravel fill of the universal §Flow-artifact derivation principle
+> (`_universal.md`). Consumed by `validate-flow-coverage.sh` (code-delivery slice A).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: 8 per-stage Form
+> Requests were missing because the maker-checker flows enumerate more
+> input-accepting transition steps than the module units shipped Form Requests.
+
+In Laravel, an input-accepting state-transition step (a workflow step that POSTs a
+payload to advance state — submit / review / approve / reject / confirm / dispatch /
+apply / finalize / enrich) is validated by a dedicated **Form Request** under
+`app/Http/Requests/`. One Form Request per transition action (per the
+"Form Requests for validation" idiom above), NOT one shared `Request` for the whole
+controller.
+
+```yaml
+endpoint_kinds:
+  - flow_signal: '(?i)\b(submit|submitted|review|approve|approved|reject|confirm|dispatch|apply|finalize|enrich|examine|resubmit)\b'
+    required_artifact: form-request
+    path_glob: app/Http/Requests/**/*.php
+    naming: '{Action}{Module}Request'
+```
+
+## Conditional scaffold artifacts
+
+> Concrete Laravel fill of the universal §Conditional scaffold artifacts principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — anti dead-stub).
+> Proven against the fixture: the controller-acl scaffolder emits an
+> `edit.blade.php` for every resource, but maker-checker entities are advanced
+> through workflow transitions, not a generic update/PUT form — so the edit views
+> were dead stubs unless the module actually exposes an update/edit flow step.
+
+```yaml
+- artifact_glob: 'resources/views/**/edit.blade.php'
+  requires_flow_endpoint: '(?i)\b(update|edit|put|patch)\b'
+```
+
+## Entity source globs
+
+> Concrete Laravel fill of the universal §Entity source globs principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — module matching).
+> In Laravel the entity name lives in three predictable path shapes: the Controller
+> class, the resource view directory, and the Eloquent model. These were the regexes
+> formerly hardcoded in the validator; they are declared HERE so adding Django/Express
+> = adding a pack, never editing the validator.
+
+```yaml
+entity_sources:
+  - pattern: '/(?P<entity>[A-Za-z]+)Controller\.php'        # WidgetController.php -> Widget
+  - pattern: 'resources/views/(?P<entity>[a-zA-Z0-9_-]+)/'   # views/widgets/ -> widgets
+    exclude: ['_partials', 'components', 'layouts', 'vendor']
+  - pattern: 'app/Models/(?P<entity>[A-Za-z]+)\.php'         # Models/Widget.php -> Widget
+```
+
+## Entity matching tokens
+
+> Concrete Laravel fill of the universal §Entity matching tokens principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — token tuning).
+> The validator core already strips generic + vault-format vocabulary; this section
+> adds NOTHING domain-specific at the Laravel-generic level (a vanilla Laravel app has
+> no industry jargon to strip). Project starterkits with a specific business domain
+> (e.g. trade-finance) declare their own `stop_tokens` / `compound_aliases` in their
+> pack (see `laravel-base-26.md`) or a project fork — never in the validator.
+
+```yaml
+stop_tokens: []
+compound_aliases: {}
+```
+
 ## Notes / Laravel-specific guidance
 
 - **Naming controversy**: Laravel docs flip between singular and plural for Resource Controllers (`UserController` vs `UsersController`). Pick one consistently per project; pack defaults to **singular** because routes auto-pluralize.
