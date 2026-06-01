@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.9.0
+version: 2.10.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -449,6 +449,7 @@ blocker:
    - At least one `type: test` entry (mandatory)
    - Generate test command stub matching detected test framework from codebase-map (greenfield: pick sensible default)
    - Add `type: manual` for user-visible flows
+   - **Render test for view-bearing units (code-delivery slice D):** if any `target_files` path matches the active framework pack `## Test patterns` → `detail_view_glob` (a detail/show view, e.g. `resources/views/**/show.blade.php`), the unit MUST ALSO carry a `type: render` acceptance_test built from the pack `detail_view_render` template (factory-create the model, GET the detail route, assert 200 + assert a real display field renders). A route-200 smoke test does NOT satisfy this — empty-model / null-field render crashes slip through. The deterministic `validate-unit-spec.sh` emits `render_test_missing` and the PreToolUse render-test gate (Branch 6) blocks `mega-sdd:execute-bolts` if it is absent; this prose is defense-in-depth. Packs that declare no `## Test patterns` → no render obligation (stack declared no detail-view convention).
    - Per Iter 47 (v2.7.0+): this is the FIRST PASS — adversarial review runs in Step 9.5 below
 
 9.5. **Adversarial test review pass (v2.7.0+, Iter 47 — closes audit D4-006)**

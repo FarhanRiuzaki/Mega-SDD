@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.10.2
+version: 2.10.3
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -146,7 +146,7 @@ Follow `references/superpowers-bridge.md` per-unit flow. Standard sequence (Iter
 
 1. **Pre-flight: parse and snapshot Hard rules** (per §Pre-flight checks step 4)
 2. Read unit body; pass to superpowers `executing-plans` for code implementation
-3. Run acceptance tests (per superpowers `test-driven-development`)
+3. Run acceptance tests (per superpowers `test-driven-development`). **Render test emission (code-delivery slice D):** if the unit ships a detail/show view (a `target_files` path matching the active framework pack `## Test patterns` → `detail_view_glob`), the bolt MUST emit the `type: render` acceptance_test from the pack `detail_view_render` template — a Feature test that factory-creates the model, GETs the detail route, asserts 200, AND asserts a real display field renders (not a bare route-200 smoke test; that misses empty-model / null-field render crashes). The unit's render acceptance_test (authored by generate-units Step 9) is the contract; emit the actual test file under the pack `test_glob`. This prose is defense-in-depth — the deterministic `validate-unit-spec.sh` (`render_test_missing`) + PreToolUse render-test gate (Branch 6) already block execution of any view-bearing unit lacking the render acceptance_test.
 4. **Post-flight: re-validate Hard rules** (see §Post-flight Hard Rule validation below)
 
 ## Step 4.5: Tiered context enrichment per bolt (v2.6.0+, Iter 30; budget tracker v2.8.0+, Iter 44)

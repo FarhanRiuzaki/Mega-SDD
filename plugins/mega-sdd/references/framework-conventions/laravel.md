@@ -283,6 +283,29 @@ stop_tokens: []
 compound_aliases: {}
 ```
 
+## Test patterns
+
+> Concrete Laravel fill of the universal §Test patterns principle.
+> Consumed by `validate-unit-spec.sh` (code-delivery slice D — render-test-per-module gate).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: the module Show views
+> (`resources/views/*/show.blade.php`) shipped with NO render test, which is exactly the
+> gap behind the empty-model `show` / branch `—` / null-timestamp crashes repaired in
+> `abe8d9b` / `4e0b485` / `390fdd0` — one render test per view-bearing unit catches all three.
+> In Laravel a detail view is a `show.blade.php`; the render test is a Feature test that
+> factory-creates the model, GETs the named `.show` route, asserts 200, and asserts a real
+> display field renders (so a blank body or a null-field throw fails the test).
+
+```yaml
+detail_view_glob: 'resources/views/**/show.blade.php'
+detail_view_render:
+  template: |
+    $m = {Model}::factory()->create();
+    $this->get(route('{resource}.show', $m))
+         ->assertOk()
+         ->assertSee((string) $m->{display_field});
+  test_glob: tests/Feature/**/*Test.php
+```
+
 ## Notes / Laravel-specific guidance
 
 - **Naming controversy**: Laravel docs flip between singular and plural for Resource Controllers (`UserController` vs `UsersController`). Pick one consistently per project; pack defaults to **singular** because routes auto-pluralize.

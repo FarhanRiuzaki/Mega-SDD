@@ -181,6 +181,30 @@ stop_tokens: []          # e.g. ['lc', 'swift', 'settlement'] for a trade-financ
 compound_aliases: {}     # e.g. { letterofcredit: [letterofcredit, lc, letter, credit] }
 ```
 
+## Test patterns
+
+> Consumed by `validate-unit-spec.sh` (code-delivery slice D — render-test-per-module
+> gate). Declares (a) `detail_view_glob`: the path shape of a DETAIL/SHOW view in this
+> stack, and (b) `detail_view_render`: the test template a bolt must emit so the detail
+> route is actually rendered (not just route-200-smoke-tested). The validator is
+> tech-agnostic: any unit whose `target_files` (frontmatter list OR the `## Target files`
+> body block) include a path matching `detail_view_glob` MUST carry a structured
+> `acceptance_test:` entry of `type: render` (or `kind: render`); absent → issue
+> `render_test_missing` → blocks `execute-bolts`. A pack that omits this section → the
+> render check SKIPs (this stack declared no detail-view convention); the other unit-spec
+> checks still run. Adding a stack = adding a pack, never editing the validator.
+
+```yaml
+detail_view_glob: <glob for a detail/show view, e.g. resources/views/**/show.blade.php>
+detail_view_render:
+  template: |
+    <stack test snippet that builds a model, GETs the detail route, asserts 200,
+     and asserts a REAL display field renders — e.g.
+     $m = {Model}::factory()->create();
+     $this->get(route('{resource}.show', $m))->assertOk()->assertSee((string) $m->{display_field});>
+  test_glob: <glob where that render test lives, e.g. tests/Feature/**/*Test.php>
+```
+
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>

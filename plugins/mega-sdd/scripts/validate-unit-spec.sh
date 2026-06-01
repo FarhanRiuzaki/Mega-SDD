@@ -50,16 +50,33 @@ if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
   exit 0
 fi
 
-# Quick path filter: only validate unit files
+# Quick path filter: only validate unit files. Accept the bound layout
+# (*-bound/units/...) AND the plain vault layout (*/vaults/*/units/U-*.md) so the
+# render-test check (slice D) reaches non-bound vaults too — consistent with the
+# PostToolUse dispatch broadening in commit e945991 (Task A).
 case "$FILE_PATH" in
   *-bound/units/U-*.md|*-bound/units/U-*/unit.md) ;;
+  *.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/U-*/unit.md) ;;
   *) exit 0 ;;
 esac
 
 STATE_FILE="${CWD}/.mega-sdd/.unit-spec-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: state dir" >&2; exit 2; }
 
-CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" python3 <<'PYEOF'
+# ── Pack-driven render-test signatures (code-delivery slice D, tech-agnostic) ──
+# The detail-view glob is read from the active framework pack `## Test patterns`
+# section via the shared resolver — NEVER hardcoded. A pack that omits the section
+# (or omits detail_view_glob) → the render check SKIPs gracefully; the other
+# unit-spec checks still run. Adding a stack = adding a pack, never editing this.
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+PACK_RESOLVER="${SCRIPT_DIR}/_lib/resolve-framework-pack.sh"
+TEST_PATTERNS_SECTION=""
+if [ -x "$PACK_RESOLVER" ]; then
+  TEST_PATTERNS_SECTION=$(bash "$PACK_RESOLVER" --cwd="$CWD" --section="Test patterns" --quiet 2>/dev/null) || TEST_PATTERNS_SECTION=""
+fi
+
+CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" \
+TEST_PATTERNS_SECTION="$TEST_PATTERNS_SECTION" python3 <<'PYEOF'
 import json
 import os
 import re
@@ -70,6 +87,7 @@ cwd = os.environ["CWD"]
 file_path = os.environ["FILE_PATH"]
 state_file = os.environ["STATE_FILE"]
 quiet = os.environ.get("QUIET", "0") == "1"
+test_patterns_section = os.environ.get("TEST_PATTERNS_SECTION", "")
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 rel_path = os.path.relpath(file_path, cwd)
 
@@ -261,11 +279,11 @@ if hr_match:
             found_trace = False
             for j in range(i, min(i + 6, len(lines))):
                 ck = lines[j]
-                if _re.search(r"(?:Citation|Source|Ref(?:erence)?|From):", ck, _re.IGNORECASE):
+                if re.search(r"(?:Citation|Source|Ref(?:erence)?|From):", ck, re.IGNORECASE):
                     found_trace = True
                     break
                 # Inline mention of binding/KB/starterkit/constitution = also count as trace
-                if _re.search(r"\b(?:binding\.md|knowledge-base|starterkit-context|constitution\.md|D-\d+|C-\d+|CONFLICT-)", ck, _re.IGNORECASE):
+                if re.search(r"\b(?:binding\.md|knowledge-base|starterkit-context|constitution\.md|D-\d+|C-\d+|CONFLICT-)", ck, re.IGNORECASE):
                     found_trace = True
                     break
             if not found_trace:
@@ -279,6 +297,143 @@ if hr_match:
             "unit_id": unit_id,
             "untraced_rules": untraced_rules[:5],
             "severity": "advisory",
+        })
+
+# ─── Check 5 (code-delivery slice D): render_test_missing ────────────────────
+# Any unit whose target_files include a DETAIL/SHOW view (matching the active
+# framework pack `## Test patterns` -> detail_view_glob) MUST carry a structured
+# acceptance_test entry of type/kind `render`. Detection is STRUCTURED, never a
+# fuzzy grep-for-"render": a prose `## Tests` bullet named "...renders..." does NOT
+# satisfy this (that was the false-negative trap). The detail-view glob is
+# PACK-DECLARED — no `## Test patterns` section / no detail_view_glob => this check
+# SKIPs (the stack declared no detail-view convention); the checks above still run.
+def _glob_to_regex(pat):
+    """Translate a pack glob (with `**` = any-depth) into a compiled regex. Mirrors
+    validate-flow-coverage.sh so the same `resources/views/**/show.blade.php` shape
+    matches both nested and direct paths."""
+    i, out, n = 0, ["(?s:"], len(pat)
+    while i < n:
+        c = pat[i]
+        if c == "*":
+            if pat[i:i + 3] == "**/":
+                out.append("(?:.*/)?"); i += 3; continue
+            if pat[i:i + 2] == "**":
+                out.append(".*"); i += 2; continue
+            out.append("[^/]*"); i += 1; continue
+        if c == "?":
+            out.append("[^/]")
+        else:
+            out.append(re.escape(c))
+        i += 1
+    out.append(r")\Z")
+    return re.compile("".join(out))
+
+
+def _glob_match(path, rx):
+    if rx.match(path):
+        return True
+    # also try suffix match (a target path may carry leading dirs the glob omits)
+    return rx.match(path.split("/", 1)[-1]) is not None if "/" in path else False
+
+
+def _parse_detail_view_glob(section_text):
+    """Pull `detail_view_glob:` from the FIRST yaml fence of the resolver section dump
+    (most-specific pack wins). Returns the glob string or None. We ONLY parse inside a
+    real ```yaml fence — a pack that declares the §Test patterns PRINCIPLE in prose but
+    no concrete yaml (e.g. _universal) yields None => the render check SKIPs (the stack
+    declared no detail-view convention)."""
+    if not section_text or not section_text.strip():
+        return None
+    m = re.search(r"```ya?ml\s*\n(.*?)```", section_text, re.DOTALL)
+    if not m:
+        return None
+    gm = re.search(r"^\s*detail_view_glob\s*:\s*(.+?)\s*$", m.group(1), re.MULTILINE)
+    if not gm:
+        return None
+    return gm.group(1).strip().strip('"').strip("'") or None
+
+
+def _expand_braces(p):
+    """Expand a single {a,b} brace group (e.g. views/x/{index,show}.blade.php)."""
+    m = re.search(r"\{([^{}]*)\}", p)
+    if not m:
+        return [p]
+    pre, post = p[:m.start()], p[m.end():]
+    out = []
+    for opt in m.group(1).split(","):
+        out.extend(_expand_braces(pre + opt.strip() + post))
+    return out
+
+
+def _collect_target_files(frontmatter, body_text):
+    """Union of target-file paths from BOTH the frontmatter `target_files:` list AND
+    the `## Target files` body block. TF units carry paths ONLY in the body block
+    (with ` (edit)`/` (new)` annotations), so reading frontmatter alone misses them."""
+    paths = []
+    # (a) frontmatter list: `target_files:` followed by `- path` items, or inline []
+    fm_tf = re.search(r"^target_files\s*:\s*(.*)$", frontmatter, re.MULTILINE)
+    if fm_tf:
+        inline = fm_tf.group(1).strip()
+        if inline.startswith("["):
+            for item in re.findall(r"[^\[\],\s'\"][^\[\],]*", inline):
+                paths.append(item.strip().strip('"').strip("'"))
+        # indented `- path` / `- path: x` items after the key
+        after = frontmatter[fm_tf.end():]
+        for ln in after.splitlines():
+            if re.match(r"^[A-Za-z_]", ln):  # next top-level key ends the list
+                break
+            mm = re.match(r"^\s*-\s*(?:path\s*:\s*)?(.+?)\s*$", ln)
+            if mm:
+                paths.append(mm.group(1).strip().strip('"').strip("'"))
+    # (b) `## Target files` body block (fenced or raw)
+    tm = re.search(r"^##\s+Target files\s*\n(.*?)(?:\n##\s|\Z)", body_text, re.DOTALL | re.MULTILINE)
+    if tm:
+        block = tm.group(1)
+        fence = re.search(r"```[^\n]*\n(.*?)```", block, re.DOTALL)
+        blk = fence.group(1) if fence else block
+        for ln in blk.splitlines():
+            ln = ln.strip().lstrip("-").strip()
+            if not ln:
+                continue
+            path_only = re.split(r"\s+\(", ln, maxsplit=1)[0].strip()
+            if path_only:
+                paths.append(path_only)
+    # expand brace groups; drop empties
+    expanded = []
+    for p in paths:
+        if p:
+            expanded.extend(_expand_braces(p))
+    return expanded
+
+
+def _has_render_acceptance_test(full_text):
+    """True iff the unit has a STRUCTURED acceptance_test entry whose type/kind is
+    literally `render`. Only inspects the `acceptance_test:` YAML region (frontmatter
+    or a body `acceptance_test:` block) — never a prose `## Tests` bullet."""
+    at = re.search(r"^acceptance_test\s*:\s*\n(.*?)(?:^\S|\Z)", full_text, re.DOTALL | re.MULTILINE)
+    if not at:
+        return False
+    return re.search(r"^\s*-?\s*(?:type|kind)\s*:\s*[\"']?render[\"']?\s*$",
+                     at.group(1), re.MULTILINE) is not None
+
+
+detail_glob = _parse_detail_view_glob(test_patterns_section)
+if detail_glob:
+    targets = _collect_target_files(fm, body_after_fm)
+    rx = _glob_to_regex(detail_glob)
+    detail_views = [t for t in targets if _glob_match(t, rx)]
+    if detail_views and not _has_render_acceptance_test(body):
+        issues.append({
+            "halt_type": "render_test_missing",
+            "detail": (
+                f"unit {unit_id} ships detail view(s) {detail_views[:3]} but has no "
+                f"acceptance_test of type `render` (pack detail_view_glob={detail_glob}). "
+                f"A route-200 smoke test misses empty-model / null-field render crashes."
+            ),
+            "unit_id": unit_id,
+            "detail_views": detail_views[:5],
+            "detail_view_glob": detail_glob,
+            "expected": "one acceptance_test entry with `type: render` (or `kind: render`), per pack `## Test patterns` -> detail_view_render template",
         })
 
 # ─── Build state file ───────────────────────────────────────────────────────
