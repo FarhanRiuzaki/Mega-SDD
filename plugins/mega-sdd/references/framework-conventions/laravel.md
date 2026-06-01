@@ -306,6 +306,42 @@ detail_view_render:
   test_glob: tests/Feature/**/*Test.php
 ```
 
+## UI quality signatures
+
+> Concrete Laravel/Blade fill of the universal §UI quality signatures principle
+> (`_universal.md`). Consumed by `validate-ui-quality.sh` (code-delivery slice E).
+> These are the STACK-GENERIC Blade tells — every Laravel project inherits them through
+> the `extends` chain. A project pack (`laravel-base-26.md`) adds the project-specific
+> `required_elements` (layout + responsive grid); the lists merge.
+>
+> Proven against the `new-tradefinance-import` Phase-2 LC `show.blade.php`: the
+> pre-polish blob (`bf950ef`) shipped `>Customer Id<` / `>Branch Id<` labels (3×), raw
+> `{{ $model->customer_id ?? '-' }}` FK echoes (3×), an unformatted `{{ $model->amount }}`
+> (1×), and native `alert(...)` dialogs (2×) — every one of which is a tell below. The
+> post-polish blob (`a07704a`) humanized the labels, resolved the FKs via relations,
+> formatted money, and dropped the native dialogs — and is clean on all tells.
+
+```yaml
+view_glob: 'resources/views/**/*.blade.php'
+min_view_lines: 20
+scaffold_tells:
+  - id: title-is-controller
+    regex: "@section\('title',\s*'[^']*Controller"
+    message: "Page title leaks the Controller class name (raw scaffold). Set a human page title."
+  - id: label-is-column-id
+    regex: ">\s*[A-Z][a-z]+ Id\s*<"
+    message: "Field label is a Str::title(column) like 'Customer Id' / 'Branch Id'. Humanize/relabel (e.g. 'Customer')."
+  - id: raw-uuid-fk
+    regex: "\{\{\s*\$[a-zA-Z_]+->[a-z_]+_id\s*(\?\?|\}\})"
+    message: "Foreign key rendered as a raw id. Resolve to a human label via the relation (e.g. {{ $model->customer->name }})."
+  - id: money-without-format
+    regex: "\{\{\s*\$[a-zA-Z_]+->(amount|total|price|balance)\s*(\?\?|\}\})"
+    message: "Money field printed without number_format / currency formatting."
+  - id: native-alert
+    regex: "\b(alert|confirm|prompt)\s*\("
+    message: "Native JS dialog (alert/confirm/prompt) instead of the project notification idiom (SweetAlert2 Swal.fire)."
+```
+
 ## Notes / Laravel-specific guidance
 
 - **Naming controversy**: Laravel docs flip between singular and plural for Resource Controllers (`UserController` vs `UsersController`). Pick one consistently per project; pack defaults to **singular** because routes auto-pluralize.

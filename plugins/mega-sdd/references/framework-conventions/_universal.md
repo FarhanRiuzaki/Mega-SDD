@@ -199,3 +199,32 @@ framework-specific (Laravel: a Blade `show.blade.php` GET-tested with
 overrides this section with concrete `detail_view_glob:` + `detail_view_render:` (see
 `_template.md` §Test patterns). When NO pack in the chain declares them, the render check
 SKIPs — a stack is never blocked for a detail-view convention it never declared.
+
+## UI quality signatures
+
+> Universal reasoning core for code-delivery slice E (`validate-ui-quality.sh` —
+> UI scaffold-tells gate). The PRINCIPLE is stack-neutral; the SIGNATURES are not.
+
+Universal principle (holds across all UI-bearing stacks): **a generated view must be
+fit for a human operator, not a raw scaffold dump.** The recurring real-world defect is
+a code generator that emits a structurally-correct-but-unusable page — the title leaks
+the controller class name, every field label is the database column auto-humanized
+(`Customer Id`, `Branch Id`), foreign keys render as raw UUIDs instead of the related
+record's human label, money prints unformatted, and confirmations use a native browser
+`alert()` instead of the project's notification idiom. Each of these is a TELL: a
+signature of un-finished scaffold that ships to production because the spec never modeled
+the primary user task. Conversely a non-trivial view that does NOT extend the app layout
+or carry a responsive grid is missing a REQUIRED element. The cheap durable enforcement
+is a deterministic scan: a touched view that matches any tell, or (when non-trivial) is
+missing any required element, fails the gate before the next bolt runs.
+
+This pack declares ONLY the principle — it does NOT name a concrete view path, tell
+regex, or required-element regex, because WHAT a scaffold tell looks like is entirely
+framework-specific (Laravel/Blade: `@section('title', '…Controller')`, `>Customer Id<`,
+`{{ $m->customer_id }}`; Django: `{{ object.customer_id }}` in a template; React: a
+`{row.customer_id}` JSX expression). A framework pack overrides this section with concrete
+`view_glob:` + `scaffold_tells:` + `required_elements:` (see `_template.md`
+§UI quality signatures). When NO pack in the chain declares them, the gate SKIPs — a stack
+is never blocked for a UI convention it never declared. The tells/elements lists MERGE
+(union, dedup by `id`) across the `extends` chain so a base pack can declare stack-generic
+tells while a project pack adds project-specific required elements; both apply.

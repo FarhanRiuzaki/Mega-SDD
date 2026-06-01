@@ -205,6 +205,46 @@ detail_view_render:
   test_glob: <glob where that render test lives, e.g. tests/Feature/**/*Test.php>
 ```
 
+## UI quality signatures
+
+> Consumed by `validate-ui-quality.sh` (code-delivery slice E — UI scaffold-tells gate).
+> Declares (a) `view_glob`: the path shape of a renderable view in this stack, (b)
+> `scaffold_tells`: raw generator output that MUST NOT ship (a match = a defect), and
+> (c) `required_elements`: signatures a NON-TRIVIAL view (more than `min_view_lines`)
+> MUST contain (an absence = a defect). The validator is tech-agnostic: it reads these
+> signatures, never hardcodes a stack. A pack that omits this section → the validator
+> writes `status: SKIP` (graceful, never errors). Adding a stack = adding a pack.
+>
+> LIST MERGE: `scaffold_tells` + `required_elements` are MERGED (union, dedup by `id`)
+> across the whole pack `extends` chain, so a base pack can declare stack-generic tells
+> (`laravel.md`) while a project pack adds project-specific required elements
+> (`laravel-base-26.md`); both apply. Scalars (`view_glob`, `min_view_lines`,
+> `scaffold_stub_glob`) are first-occurrence-wins (most-specific pack overrides).
+
+```yaml
+view_glob: <glob for a renderable view, e.g. resources/views/**/*.blade.php>
+min_view_lines: <optional int (default 20) — views with fewer lines are "trivial"
+                 (partials, fragments) and are EXEMPT from the required_elements check;
+                 scaffold_tells are checked on EVERY matched view regardless of size>
+scaffold_stub_glob: <optional — path of the generator's stub template, reserved for a
+                     future min-delta diff; NOT consumed by the v1 tells/elements check>
+scaffold_tells:
+  # raw generator output that must NOT ship. Each match is a violation.
+  - id: <stable name, e.g. title-is-controller>
+    regex: <pattern matched against the view text>
+    message: <why it is wrong + how to fix>
+required_elements:
+  # signatures a non-trivial view MUST contain. Each ABSENCE is a violation.
+  - id: <stable name, e.g. layout-extends>
+    regex: <pattern that must appear at least once>
+    message: <what is missing>
+```
+
+The validator scans every file under `--cwd` matching `view_glob`. For each it FAILs if
+ANY `scaffold_tells.regex` matches, or — when the file has more than `min_view_lines`
+lines — if ANY `required_elements.regex` is absent. Findings are emitted as
+`violations[{file, id, message, line}]` to `.ui-quality-blockers.json`.
+
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>

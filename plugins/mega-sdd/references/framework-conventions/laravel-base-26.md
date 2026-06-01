@@ -368,6 +368,30 @@ Living docs at `docs/` in starterkit repo:
 | Deployment / security / perf | `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/PERFORMANCE.md` |
 | Troubleshooting | `docs/TROUBLESHOOTING.md` |
 
+## UI quality signatures
+
+> Project-specific (Vuexy / Bootstrap 5) ADDITIONS to the stack-generic Blade tells
+> declared in `laravel.md` §UI quality signatures. Consumed by `validate-ui-quality.sh`
+> (code-delivery slice E). The `scaffold_tells` from `laravel.md` and these
+> `required_elements` MERGE (union, dedup by `id`) across the `extends` chain — both
+> apply to a base-26 project. `view_glob` / `min_view_lines` are inherited from
+> `laravel.md` (most-specific scalar wins; we do not override them here).
+>
+> Vuexy is Bootstrap-5-based and server-side-rendered Blade (see §Frontend conventions),
+> so a non-trivial page MUST extend the app layout and carry a responsive grid. A view
+> that renders bare content with no `@extends`/`<x-layouts` wrapper, or with no
+> `row`/`col-*` responsive classes, is missing a required element.
+
+```yaml
+required_elements:
+  - id: layout-extends
+    regex: "@extends\(|<x-(app-)?layout|<x-layouts"
+    message: "View does not extend the app layout (@extends('layouts.app') or an <x-layouts.* component)."
+  - id: responsive
+    regex: "\b(col-(sm|md|lg|xl)-|row\b)"
+    message: "No responsive grid classes (Bootstrap row / col-{sm,md,lg,xl}-*). Page must work at 375px + desktop."
+```
+
 ## Notes / pack-specific guidance
 
 - **`old-reference/` is legacy**: any code under `old-reference/` is NOT current. Don't pattern-match from it. Look at sibling files in `app/` for the live pattern.
