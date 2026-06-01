@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.11.0
+version: 2.12.0
 description: Execute one or more units to produce code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with vendored fallback. (v1.2+, Iter 3) Pre-flight + post-flight Hard Rule scan validates unit `## Hard rules` constraints against codebase state; violations halt commit. (v2.7.0+, Iter 32) T2 starterkit slice injection — auto-injects relevant starterkit context per unit into bolt dispatch prompt. Triggers — "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -622,6 +622,12 @@ Parse JSON output. Match found → VIOLATED with file:line + matched text as evi
 | `NAMING_RULE <path-glob> <case-style>` | Enumerate new files matching `path-glob`. Apply case-style regex. Mismatch → VIOLATED. |
 | `SIGNATURE_RULE function <name>` | Re-extract current signature from codebase. Compare to preflight. Differs → VIOLATED. |
 | `FILE_PRESENCE_RULE file <path>` | Probe `<path>` exists. Absent → VIOLATED. |
+
+### Per-sibling cross-cutting registration scan (code-delivery slice C, defense-in-depth)
+
+When a unit fans out into N structurally-analogous sibling models (a module's golden exemplar plus its siblings), a cross-cutting concern proven on the exemplar (e.g. registering the `BranchScoped` global scope) must be verified in EACH sibling's generated source — not once. The classic execution-fidelity miss (tradefinance `2bdfc1b`): every sibling SPEC named the `BranchScoped` trait, but the bolt forgot the `addGlobalScope(new BranchScoped)` registration in 5 of the generated models — a silent cross-branch authorization leak that no unit-spec or Hard-Rule check catches (the spec was correct; the runtime call was dropped).
+
+This is ENFORCED by `scripts/validate-cross-cutting-registration.sh`, which reads the active framework pack's `## Cross-cutting concerns` (each concern's `registration_signature` + `registration_target_glob`) and scans every generated source file that references the concern mechanism AND carries the `applies_when` column, flagging any that lack the registration call. It runs PostToolUse on model/source writes (→ `.cross-cutting-state.json`); PreToolUse Branch 11 blocks the NEXT `execute-bolts` on FAIL (honest Fork-A detect-and-block-next — a hook cannot un-write a file a bolt just wrote mid-turn). This prose is defense-in-depth; the validator is the gate. Tech-agnostic: never assume a stack's registration idiom — it comes from the pack, so add a stack = add a pack.
 
 ### Violation handling
 

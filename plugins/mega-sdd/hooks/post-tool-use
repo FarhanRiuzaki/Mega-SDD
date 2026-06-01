@@ -421,6 +421,22 @@ except Exception:
         ;;
     esac
 
+    # ── Code-delivery slice C: cross-cutting registration scan ──────────────
+    # Style-A dispatch on Write|Edit of a backend model/source file. The trigger glob is
+    # GENEROUS (common model dirs across stacks: app/Models, Models, models, app/Entities,
+    # domain, src/models); validate-cross-cutting-registration.sh re-resolves the active pack
+    # and re-scans the pack-declared registration_target_glob (current-truth, project-wide),
+    # self-SKIPping when no concern declares a registration_signature + target glob. Writes
+    # .cross-cutting-state.json; PreToolUse Branch 11 reads its status to gate execute-bolts.
+    case "$FILE_PATH" in
+      */app/Models/*|*/Models/*|*/models/*|*/app/Entities/*|*/domain/*|*/src/models/*)
+        VALIDATOR_CC="${SCRIPT_DIR}/../scripts/validate-cross-cutting-registration.sh"
+        if [ -x "$VALIDATOR_CC" ]; then
+          bash "$VALIDATOR_CC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
     # ── Code-delivery slice F: UI dispatch-prompt enrichment gate ───────────
     # Style-A dispatch on Write|Edit of an emitted bolt dispatch prompt
     # (<vault>/bolts/U-XXX/dispatch-prompt.md — written by execute-bolts). The
