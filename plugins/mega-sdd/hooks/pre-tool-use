@@ -396,6 +396,35 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 10: operator-workflow-UX capture gate for execute-bolts (code-delivery slice G).
+    # Blocks bolts when validate-vault-oqs.sh recorded a CAPTURE-stage miss: a vault
+    # with a multi-stage approval (maker-checker) workflow that models NO operator
+    # surface and carries NO Design-Source OQ (operator_surface_missing), or a vault
+    # with UI components but all design-system flags false and no Design-Source OQ
+    # (design_source_oq_missing). PRECISE: only these two halt_types gate bolts here —
+    # pre-existing OQ-citation FAILs do NOT block via this branch (no behavior change
+    # to the existing PostToolUse-only citation check). PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        OQ_STATE="${PROJECT_ROOT}/.mega-sdd/.vault-oqs-state.json"
+        if [ -f "$OQ_STATE" ]; then
+          OQ_OPUX=$(python3 -c "
+import json
+try:
+    d = json.load(open('$OQ_STATE'))
+    n = [i for i in d.get('issues', []) if i.get('halt_type') in ('operator_surface_missing','design_source_oq_missing')]
+    print(len(n))
+except Exception:
+    print('0')
+" 2>/dev/null)
+          if [ -n "$OQ_OPUX" ] && [ "$OQ_OPUX" != "0" ]; then
+            REASON="mega-sdd:execute-bolts is blocked — vault-OQ validator captured an operator-workflow-UX miss (${OQ_OPUX} issue(s) of type operator_surface_missing / design_source_oq_missing). A multi-stage approval (maker-checker) workflow needs a FIRST-CLASS operator surface (worklist/inbox, decision affordance, human-readable state labels, audit timeline) GROUNDED in the flows — never invented; OR, where UI components exist but design tokens / accessibility / voice-brand source is undecided, a high-priority Design-Source Open Question (DO NOT default WCAG/Material values). Re-run /mega-sdd:generate-intent to model the surface or emit the Design-Source OQ, then re-save the vault (PostToolUse re-validates). State: ${OQ_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 1.16.0
+version: 1.17.0
 description: Spec-driven intent generation — convert PRD/BRD + Figma OR free-text brief OR knowledge-base (legacy-rebuild scenario) into a 7-file vault with anti-hallucination guarantees. Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from positional argument shape — no flag required. `--from-prompt` flag preserved for explicit override. `--kb=<path>` flag (v1.2+) consumes a `mega-sdd:extract-intelligence` knowledge base as Mode B brief input. (v1.3+, Iter 1) OQs carry `category: business | tech` tag. (v1.4+, Iter 2) Auto-classifier tags every OQ with `category` + `resolution_mode` + `classification_confidence` per `references/vault-contract.md` §Auto-classifier heuristics. (v1.14+, Iter 35) `--phase=N` flag for Mode B KB sub-mode; vault.json gets `phase` + `phase_total` fields; 00-index.md emits §Phase context block. Triggers — "spec out this feature", "buat dev handoff", "from this prompt", "pecah PRD ini buat AI dev", "rebuild from KB", or paraphrases.
 ---
 
@@ -532,6 +532,21 @@ Output to the **resolved output folder from Step 0** (referred to as `<OUTPUT_DI
 > - `00-index.md > Glossary`: design-system glossary entries (design tokens, design system, WCAG, a11y, semantic HTML) appear **only if** the term is actually used elsewhere in the generated vault.
 >
 > **No shape-based defaulting.** A project with `PROJECT_SHAPE=mobile-app` but no source coverage of design-system content produces a vault identical to v0.5 output. Skill never injects WCAG levels, color palettes, spacing scales, or component lists from prior knowledge.
+
+#### Operator-workflow-UX capture + Design-Source OQ (v1.17+, code-delivery slice G)
+
+> Durable enforcement is `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; PreToolUse Branch 10 blocks `mega-sdd:execute-bolts` on a capture-stage miss). This prose is defense-in-depth — get it right at generation time so the gate never has to fire.
+
+**Rule 1 — model the operator surface when the flows show a workflow.** When the PRD/KB flows in `04-flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
+
+- **Worklist / inbox** — where each actor (checker, confirmer, …) finds the items awaiting *their* decision, filtered by role + current workflow state.
+- **Decision affordance** — the approve / reject (and any return-to-prior-stage) actions available to the actor in the entity's current state.
+- **Human-readable state labels** — a label map from the raw `workflow_state` enum to operator-facing text (e.g. `SUBMITTED` → "Awaiting Checker").
+- **Audit timeline** — the append-only transition history rendered for the operator (who acted, when, prior → next state).
+
+Capture these in `02-architecture.md` (and the component/view inventory) and reflect them in `vault.json`. **Grounded, not invented**: every operator-surface requirement must trace to a flow step / actor / state in `04-flows.md`. If the surface design is genuinely undecided, capture it as an OQ instead of inventing it (see Rule 2). The validator FAILs with `operator_surface_missing` when a workflow flow exists but the vault models no operator surface AND carries no Design-Source OQ.
+
+**Rule 2 — emit a Design-Source OQ, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design tokens, no accessibility spec, no voice/brand source was provided), emit a single high-priority **Design-Source Open Question** — e.g. `OQ-DESIGN-SOURCE-{N} [P1]` — requesting the design-system source (token palette, WCAG target, brand voice) before UI units are enriched. **DO NOT relax the anti-hallucination rail**: never default WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge — the gap is captured as an OQ ONLY. The validator FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and no Design-Source OQ is present.
 
 > Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag drives content of `00-index.md` "Implementation Notes for AI Consumers" section, not the file count.
 
