@@ -365,7 +365,17 @@ cross_cutting_concerns:
     applies_when: 'has_column:branch_id'
     spec_obligation: '\bBranchScoped\b'
     registration_signature: 'addGlobalScope\(\s*new BranchScoped'
+    registration_target_glob: 'app/Models/**/*.php'
+    registration_source_glob: 'database/migrations/**/*.php'
 ```
+
+`registration_target_glob` tells slice C (`validate-cross-cutting-registration.sh`) WHERE
+the concern's generated source lives (Eloquent models). The scan flags a model that
+references `BranchScoped` and carries `branch_id` but never calls
+`addGlobalScope(new BranchScoped)` in `booted()` — the silent cross-branch leak repaired in
+the Phase-2 run (`2bdfc1b`). The `BranchScoped` Scope DEFINITION (`app/Models/Scopes/…`)
+matches the glob but carries no `branch_id` column, so it is correctly excluded (no false
+positive).
 
 In Laravel, a model that owns a multi-branch (multi-tenant) `branch_id` key MUST apply the
 `BranchScoped` global scope so every query is automatically filtered to the authed user's

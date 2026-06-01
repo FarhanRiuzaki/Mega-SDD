@@ -268,6 +268,15 @@ cross_cutting_concerns:
     registration_signature: <regex the BOLT-written SOURCE file MUST contain — checked
                              post-flight by slice C (validate-cross-cutting-registration).
                              NOT consumed by slice B.>
+    registration_target_glob: <glob (recursive ** ok) for the MODEL source files slice C
+                             scans, e.g. app/Models/**/*.php.>
+    registration_source_glob: <glob for the files that DECLARE the applies_when column at the
+                             schema level (migrations), e.g. database/migrations/**/*.php. Slice C
+                             reads these to learn WHICH tables carry the column (a model does not
+                             list its columns in source); a model whose `$table` is one of those
+                             tables (or whose class tokens match) but lacks registration_signature
+                             is flagged. Both globs required for slice C; absent => slice C skips
+                             this concern's runtime scan.>
 ```
 
 The sibling-consistency validator groups units by `module` + `scope` frontmatter (when

@@ -460,6 +460,40 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 11: cross-cutting registration gate for execute-bolts (code-delivery slice C).
+    # Honest Fork-A detect-and-block-next: validate-cross-cutting-registration.sh scans
+    # generated SOURCE (PostToolUse) for a declared cross-cutting concern (e.g. BranchScoped)
+    # that was never REGISTERED (the addGlobalScope call is missing). Fork A cannot un-write a
+    # file a bolt just wrote mid-turn, so the NEXT execute-bolts is blocked until the
+    # registrations land. PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        CC_STATE="${PROJECT_ROOT}/.mega-sdd/.cross-cutting-state.json"
+        if [ -f "$CC_STATE" ]; then
+          CC_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$CC_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$CC_STATUS" = "FAIL" ]; then
+            CC_MISS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$CC_STATE'))
+    print(len(d.get('missing_registration', [])))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — cross-cutting-registration validator found ${CC_MISS} generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model's booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.cross-cutting-state.json"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)
