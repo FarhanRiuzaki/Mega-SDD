@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.8.0
+version: 2.9.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -55,6 +55,15 @@ Turns intent into actionable atomic specs for AI dev execution.
 1. **Load vault.** Read 7 files + vault.json. If bound-vault path provided, also read binding.md.
 
 2. **Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (a component, endpoint, schema migration, etc.) becomes a candidate unit.
+
+2.2. **Flow-step → artifact derivation (v2.9+, Iter — code-delivery slice A; defense-in-depth alongside `validate-flow-coverage.sh`).**
+
+   Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`) in `04-flows.md`, enumerate its **input-accepting state-transition steps** — every numbered step (including signals in its sub-bullets, e.g. `workflow_state → SUBMITTED`) that accepts a payload to advance state (submit / review / approve / reject / confirm / dispatch / apply / finalize / enrich / examine / resubmit per the active pack's `## Flow-artifact derivation` `flow_signal`). The set of per-step input-validation artifacts a module unit ships **equals** the set of input-accepting steps its flow enumerates — no more, no fewer:
+
+   - **One artifact per step, not one per controller.** A 5-stage maker-checker flow needs 5 Form Requests (Laravel) / 5 serializers (DRF) / 5 validation schemas (Express) — list each in the unit's `## Target files`. Listing only `Store…Request` + `CraApprove…Request` while the flow has 5 input steps is the exact under-decomposition the validator flags (proven: 8 missing per-stage Form Requests in the tradefinance Phase-2 run).
+   - **Drop conditional scaffold artifacts with no gating flow.** A generic CRUD scaffolder emits an `edit`/update view for every resource, but a maker-checker entity advanced through workflow transitions has no update/PUT flow step — so that view is a dead stub. Do NOT list a conditional artifact (active pack `## Conditional scaffold artifacts` `artifact_glob`) in `## Target files` unless a flow step matches its `requires_flow_endpoint` (proven: 6 dead `edit.blade.php` stubs in the same run).
+
+   The artifact kinds + paths are read from the active framework pack — never hardcode a stack here. `mega-sdd:execute-bolts` is BLOCKED by `validate-flow-coverage.sh` (`.flow-coverage-state.json` status FAIL) until every input-accepting step maps to an artifact and no dead scaffold remains; this prose is the design rationale, the validator is the enforcement.
 
 2.5. **Determine task_type per candidate (v1.2+, Iter 1).**
 

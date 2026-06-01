@@ -99,6 +99,88 @@ Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:
 - Install command: <e.g., `composer install`, `npm install`>
 - Build/compile command: <e.g., `npm run build` for assets, `php artisan optimize`>
 
+## Flow-artifact derivation
+
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A). Declares how an
+> input-accepting state-transition step in `04-flows.md` maps to a REQUIRED code
+> artifact. The validator is tech-agnostic: it reads these signatures, never
+> hardcodes a stack. A pack that omits this section → the validator writes
+> `status: SKIP` (graceful, never errors). NOTE: `target_files` is parsed from a
+> unit's `## Target files` fenced block, NOT a frontmatter field.
+
+```yaml
+endpoint_kinds:
+  - flow_signal: <regex matching an input-accepting transition step in 04-flows.
+                  The validator splits each flow into per-step BLOCKS (a numbered
+                  `N.` line plus its indented sub-bullets) and matches the regex
+                  against the whole block — so a signal that appears in a step's
+                  detail bullet (e.g. `workflow_state -> SUBMITTED`) still counts.>
+    required_artifact: <artifact-kind, e.g. form-request | serializer | form-object | validation-schema>
+    path_glob: <glob where that artifact lives, e.g. app/Http/Requests/**/*.php>
+    naming: <optional naming template, e.g. '{Action}{Module}Request'>
+```
+
+The validator counts, PER MODULE unit, the distinct input-accepting flow steps
+(flow_signal match, one count per matching step block) against the count of
+`path_glob`-matching artifacts the unit lists in `## Target files`; a shortfall
+(steps > artifacts) is a coverage miss.
+
+## Conditional scaffold artifacts
+
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — anti dead-stub).
+> Declares an artifact that is ONLY valid when a matching flow endpoint exists.
+> If a unit lists `artifact_glob` in `## Target files` but NO flow step matches
+> `requires_flow_endpoint`, the artifact is a dead scaffold stub → flagged.
+> Dead-stub findings are de-duplicated by resolved artifact PATH (not by unit),
+> so two units pointing at the same view path count once.
+
+```yaml
+- artifact_glob: <e.g. resources/views/**/edit.blade.php>
+  requires_flow_endpoint: <regex of the endpoint-kind that must exist for this
+                           artifact to be valid, e.g. (?i)\b(update|edit|put|patch)\b>
+```
+
+## Entity source globs
+
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — module matching).
+> Declares HOW to recover a unit's entity name from the paths in its `## Target files`
+> block, so a flow can be matched to the unit(s) that implement its module. This is the
+> stack-specific half of module matching: a flow titled "Widget Approval" must associate
+> with the unit whose controller / view-dir / model is "Widget". The validator is
+> tech-agnostic: it reads these capture patterns, never hardcodes a stack. A pack that
+> omits this section → the validator degrades to TITLE-ONLY matching (flow title tokens
+> vs unit `title:` / `module:` frontmatter tokens) — never errors, just coarser.
+
+```yaml
+entity_sources:
+  # Each pattern is a Python regex run against every target-files path. The FIRST
+  # capture group (or a named group `(?P<entity>...)`) is tokenized into the unit's
+  # entity token set. `exclude` (optional) drops capture values that are framework
+  # scaffolding dirs, not entities.
+  - pattern: '/(?P<entity>[A-Za-z]+)Controller\.php'        # e.g. WidgetController.php -> Widget
+  - pattern: 'resources/views/(?P<entity>[a-zA-Z0-9_-]+)/'   # e.g. views/widgets/ -> widgets
+    exclude: ['_partials', 'components', 'layouts', 'vendor']
+  - pattern: 'app/Models/(?P<entity>[A-Za-z]+)\.php'         # e.g. Widget.php -> Widget
+```
+
+## Entity matching tokens
+
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — token tuning).
+> The validator core carries ONLY generic structural stopwords (articles, prepositions)
+> plus mega-sdd vault-FORMAT vocabulary (the workflow / ceremony nouns that appear in
+> every vault regardless of stack — e.g. `module`, `flow`, `approve`, `maker`). A pack
+> may add DOMAIN-SPECIFIC stopwords (industry jargon that is noise for entity matching
+> in THIS project's domain) and compound aliases (multi-word entity → stable token set).
+> Optional: a pack that omits this section just uses the validator's universal stopword
+> set. Keep project-specific jargon HERE (or in your fork's pack), never in the validator.
+
+```yaml
+# Domain stopwords: tokens stripped before entity matching (noise for THIS domain).
+stop_tokens: []          # e.g. ['lc', 'swift', 'settlement'] for a trade-finance domain
+# Compound aliases: a compacted multi-word entity -> the set of tokens it should match.
+compound_aliases: {}     # e.g. { letterofcredit: [letterofcredit, lc, letter, credit] }
+```
+
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>

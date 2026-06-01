@@ -370,7 +370,7 @@ except Exception:
     # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
     # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).
     case "$FILE_PATH" in
-      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md)
+      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md|*.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/_index.md)
         VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
         if [ -x "$VALIDATOR_BU" ]; then
           bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -384,6 +384,14 @@ except Exception:
         VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
         if [ -x "$VALIDATOR_SKC" ]; then
           bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        # Flow-coverage (code-delivery slice A): flow-step -> artifact derivation +
+        # scaffold-filter. SKIPs gracefully if the active pack declares no
+        # `## Flow-artifact derivation` section. Writes .flow-coverage-state.json;
+        # PreToolUse Branch 5 reads its status to gate execute-bolts.
+        VALIDATOR_FC="${SCRIPT_DIR}/../scripts/validate-flow-coverage.sh"
+        if [ -x "$VALIDATOR_FC" ]; then
+          bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac

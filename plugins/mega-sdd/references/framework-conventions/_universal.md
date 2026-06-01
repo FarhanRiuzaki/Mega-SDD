@@ -114,3 +114,66 @@ Choose ONE per project (frameworks may default to a specific choice):
 | UUID v4 | Distributed systems; external-facing URLs; offline-generated | Larger storage; random — poor index locality |
 | UUID v7 (time-ordered) | Distributed + needs index locality | New (2026+); framework support varies |
 | Composite key | Junction tables only | Awkward for ORMs |
+
+## Flow-artifact derivation
+
+> Universal reasoning core for code-delivery slice A (`validate-flow-coverage.sh`).
+> The PRINCIPLE is stack-neutral; the SIGNATURES are not.
+
+Universal principle (holds across all backends): **every input-accepting
+state-transition step in a flow must map to exactly one input-validation artifact
+in the unit that builds that module — no more, no fewer.** A module unit that
+enumerates N input-accepting flow steps but ships fewer validation artifacts has
+under-decomposed the flow (a step accepts input with no place to validate it).
+
+This pack declares ONLY the principle — it does NOT name a concrete artifact kind
+or path, because "where input validation lives" is framework-specific (Laravel:
+Form Request under `app/Http/Requests/`; Django: a `Form`/serializer; Express: a
+validation-schema middleware). A framework pack overrides this section with its own
+`endpoint_kinds:` block (see `_template.md` §Flow-artifact derivation). When NO pack
+in the chain declares concrete `endpoint_kinds:`, the validator writes `status: SKIP`
+— a stack is never blocked for a signature it never declared.
+
+## Conditional scaffold artifacts
+
+> Universal reasoning core for code-delivery slice A (anti dead-stub).
+
+Universal principle: **a scaffolding generator emits some artifacts that are only
+valid when a corresponding flow endpoint exists** (e.g. an edit/update view is dead
+weight if the entity has no update flow). A unit that lists such an artifact in its
+target files without the gating flow endpoint is shipping a dead stub.
+
+As above, the universal pack declares only the principle; the concrete
+`artifact_glob` + `requires_flow_endpoint` signatures are framework-specific and
+live in the framework pack. Absent → the validator skips the dead-stub check.
+
+## Entity source globs
+
+> Universal reasoning core for code-delivery slice A (module matching).
+
+Universal principle: **to compare a flow against the unit that builds its module,
+the validator must recover each unit's entity name.** The strongest evidence is the
+unit's own `module:`/`title:` frontmatter; the next-strongest is the entity baked
+into the paths it ships (a `WidgetController`, a `widgets/` view dir, a `Widget`
+model). WHERE that entity lives in a path is framework-specific — Laravel buries it
+in `app/Http/Controllers/{Entity}Controller.php`; Django in an app/`models.py` class;
+Express in a `routes/{entity}.js`. This universal pack declares ONLY the principle.
+
+The concrete `entity_sources:` capture patterns live in the framework pack (see
+`_template.md` §Entity source globs). When NO pack in the chain declares them, the
+validator degrades to TITLE-ONLY matching (flow title tokens vs unit frontmatter
+tokens) — coarser, but never an error and never a crash on an undeclared stack.
+
+## Entity matching tokens
+
+> Universal reasoning core for code-delivery slice A (token tuning).
+
+Universal principle: **entity matching reduces both a flow title and a unit to a SET
+of significant tokens and intersects them.** Generic structural words (articles,
+prepositions) and mega-sdd vault-FORMAT vocabulary (`module`, `flow`, `approve`,
+`maker`, …) are universal noise and are stripped by the validator core itself.
+
+DOMAIN-specific jargon (industry terms that are noise for entity matching in a given
+project) and compound-entity aliases are NOT universal — they belong in the framework
+pack (or a project fork's pack) via `stop_tokens:` / `compound_aliases:` (see
+`_template.md` §Entity matching tokens). The validator never bakes in a domain term.
