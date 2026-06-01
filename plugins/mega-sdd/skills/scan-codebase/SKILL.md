@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.7.3
+version: 2.8.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -394,6 +394,8 @@ Runs in main thread (no extra subagent — reuses just-written codebase-map.md f
 | `test` | test suite | Where tests live | Laravel `tests/Feature/` |
 | `schema_migration` | DDL/migration files | Where migrations live | Laravel `database/migrations/` |
 | `route` | URL routing definition | Centralized file vs decorator-based vs file-based-routing | Laravel `routes/api.php` |
+| `view` | renderable view/page (presentation; v3.1+, Task F) | Where views live (pack `## UI quality signatures` view_glob narrows it); null when API-only | Laravel `resources/views/` |
+| `component` | reusable presentation component (optional; v3.1+, Task F) | Where components live; null when stack has no component layer | Laravel `resources/views/components/` |
 
 **Algorithm per category:**
 
@@ -415,6 +417,15 @@ Runs in main thread (no extra subagent — reuses just-written codebase-map.md f
 6. NEVER fabricate. NEVER guess across frameworks (Laravel idioms in a Django repo = halt).
    - If you cannot find a sample file for a category, that category MUST emit `location: null` and `_source: []`.
    - `extras: {}` is ALWAYS present (may be empty object).
+7. **Exemplar ordering for `view`/`component` (v3.1+, Task F — `exemplar_selection: linter-clean`):** for the
+   presentation categories, the chosen sample becomes a FEW-SHOT the bolt subagent mirrors, so a raw-scaffold
+   view would anchor the bolt to exactly the tells slice E flags. When picking the 2-3 representative samples,
+   ORDER `_source` BEST-FIRST: put the cleanest / most-idiomatic view first (passes the pack `## UI quality
+   signatures` scaffold_tells — humanized labels, FK resolved via relation, formatted money, app layout +
+   responsive grid, project notification idiom). execute-bolts' code-slice then picks the first linter-clean
+   entry, NOT `_source[0]` blindly. Emit `exemplar_selection: linter-clean` on the `view`/`component` category.
+   (controller/data_model/etc. keep their existing unordered `_source` — selection ordering is a presentation-
+   category concern only.)
 ```
 
 **Pack-driven, NOT skill-hardcoded:** the skill body does NOT contain framework-specific paths. The framework pack (`framework-conventions/<pack>.md`) is the source of "where to look". A new framework pack (e.g., Rails, FastAPI, NestJS) makes this step work for that framework without skill body edits — pack-add is the extension point.
@@ -499,6 +510,20 @@ Runs in main thread (no extra subagent — reuses just-written codebase-map.md f
            api_file: <path | null>
            _source: [<sample file:lines>]
            extras: {}                               # Laravel: {resource_style}; FastAPI: {router_count}; NestJS: {controller_decorators}
+         view:                                      # v3.1+, Task F — renderable view/page (presentation layer; null when stack is API-only)
+           location: <dir path | null>              # pack tells WHERE (pack `## UI quality signatures` view_glob narrows it); null when API-only
+           naming: <pattern | null>                 # e.g., "{model}.blade.php" | "{Model}Page.tsx" | "{model}.html"
+           extension: <file ext | null>             # ".blade.php" | ".vue" | ".tsx" | ".html" | …
+           exemplar_selection: linter-clean         # v3.1+, Task F — REQUIRED selection rule; see note below
+           _source: [<sample file:lines>, …]        # ORDERED best-first (cleanest/most-idiomatic view FIRST — execute-bolts code-slice picks the first linter-clean, NOT [0] blindly)
+           extras: {}                               # Laravel: {layout_extends, component_dir}; Vue: {sfc}; React: {jsx_runtime}; …
+         component:                                 # v3.1+, Task F — reusable presentation component (optional; null when stack has no component layer)
+           location: <dir path | null>
+           naming: <pattern | null>                 # e.g., "{name}.blade.php" | "{Name}.vue" | "{Name}.tsx"
+           extension: <file ext | null>
+           exemplar_selection: linter-clean         # v3.1+, Task F
+           _source: [<sample file:lines>, …]        # ORDERED best-first
+           extras: {}
        cache_signatures:                            # v2.0 schema (replaces v1.0 cache_key:)
          composer_lock_sha256: <from Step 10.5.1>
          package_lock_sha256: <from Step 10.5.1>

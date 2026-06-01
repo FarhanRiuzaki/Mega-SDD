@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.10.0
+version: 2.11.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -451,6 +451,33 @@ blocker:
    - Add `type: manual` for user-visible flows
    - **Render test for view-bearing units (code-delivery slice D):** if any `target_files` path matches the active framework pack `## Test patterns` → `detail_view_glob` (a detail/show view, e.g. `resources/views/**/show.blade.php`), the unit MUST ALSO carry a `type: render` acceptance_test built from the pack `detail_view_render` template (factory-create the model, GET the detail route, assert 200 + assert a real display field renders). A route-200 smoke test does NOT satisfy this — empty-model / null-field render crashes slip through. The deterministic `validate-unit-spec.sh` emits `render_test_missing` and the PreToolUse render-test gate (Branch 6) blocks `mega-sdd:execute-bolts` if it is absent; this prose is defense-in-depth. Packs that declare no `## Test patterns` → no render obligation (stack declared no detail-view convention).
    - Per Iter 47 (v2.7.0+): this is the FIRST PASS — adversarial review runs in Step 9.5 below
+
+9.b. **Attach a UI contract to view-bearing units (v2.10.0+, Task F — code-delivery slice F).**
+
+   A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`04-flows.md` steps + states, `02-architecture` entities/fields, the design-system signals in `01-context`/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `references/vault-contract.md`; do NOT default a value (anti-hallucination rail, spec §5).
+
+   ```yaml
+   ## UI contract
+   label_map:                       # human label per displayed field — from 02-architecture field names + 01-context copy; NEVER a Str::title(column) like "Customer Id"
+     customer_id: "Customer"
+     created_at: "Created"
+   fk_display:                      # FK column => the related entity's display field, resolved via the relation (pack `## Relation derivation`); never render the raw id
+     customer_id: "customer.name"
+     branch_id: "branch.name"
+   value_formatting:                # money/number/date/status formatting — from field types in 02-architecture
+     amount: "currency (2dp, thousands sep)"
+     status: "human label + badge (map enum -> label from flow states)"
+     created_at: "human date (null-safe placeholder)"
+   required_states:                 # the states this view MUST handle — DERIVED from the flow (04-flows.md), not boilerplate
+     - empty       # list with zero rows (grounded: flow allows an empty collection)
+     - loading     # async fetch/action present in the flow
+     - error       # failure branch present in the flow (surface via the project notification idiom)
+     - pending     # workflow item mid-process (maker-checker / multi-stage flow) -> show human status label
+   grounded_in: ["04-flows.md F-U-003 step 2", "02-architecture §Widget"]   # citations (anti-halu)
+   ```
+
+   - `required_states` is the load-bearing, flow-derived part: include only the states the flow actually produces (a read-only view with no async has no `loading`; a single-stage flow has no `pending`). The execute-bolts `ui_ux` slice injects the design tokens + a linter-clean view exemplar + `references/ui-design-heuristics.md`, and `validate-dispatch-prompt.sh` asserts the emitted prompt carries them — this UI contract is the unit-spec-stage complement (what to render) to that execution-stage enrichment (how the project renders it).
+   - Provenance: mark `_grounded: true` only when every entry cites a vault source; otherwise emit the gap as an OQ. Do NOT fabricate labels, statuses, formatting rules, or states the vault does not establish.
 
 9.5. **Adversarial test review pass (v2.7.0+, Iter 47 — closes audit D4-006)**
 
