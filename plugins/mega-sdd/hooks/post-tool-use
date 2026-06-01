@@ -393,6 +393,14 @@ except Exception:
         if [ -x "$VALIDATOR_FC" ]; then
           bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
+        # Sibling-consistency (code-delivery slice B): cross-cutting concern coherence
+        # + FK relation derivation across sibling units. SKIPs when the active pack
+        # declares no `## Cross-cutting concerns`/`## Relation derivation`. Writes
+        # .sibling-consistency-state.json; PreToolUse Branch 7 reads it to gate execute-bolts.
+        VALIDATOR_SIB="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
+        if [ -x "$VALIDATOR_SIB" ]; then
+          bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 

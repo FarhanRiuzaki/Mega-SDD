@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.11.0
+version: 2.12.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -756,6 +756,8 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
          - "If existing files SHOULD be replaced (rebuild scenario), confirm intent and re-run with --force-overwrite (NOT YET IMPLEMENTED — pause and consult human)."
      next_action: "Resolve manually then re-run /mega-sdd:generate-units."
    ```
+
+12.7. **Sibling-consistency sweep (code-delivery slice B, defense-in-depth).** After units are written, reason about SIBLING units *together*, not one at a time. Group units by `module` + `scope`. For each cross-cutting concern the active framework pack declares (`## Cross-cutting concerns` — e.g. a tenant/branch-scoping key, soft-delete, audit-trail) whose `applies_when` matches a unit's model, EVERY sibling in the group the concern applies to MUST declare the SAME mechanism (the concern's `spec_obligation`) — one consistent mechanism per shared concern. A sibling that scopes "a different way" or omits it is **fan-out divergence** (the golden exemplar is correct, the siblings drift — the exact failure proven in the tradefinance Phase-2 run, where one model scoped "via lc_id" while its siblings used the shared trait). Likewise, every FK column a unit declares (`<name>_id`) MUST declare its derived relation accessor (pack `## Relation derivation`; universal default: the camelCase singular of `<name>`). This sweep is ENFORCED by `scripts/validate-sibling-consistency.sh` (PostToolUse → `.sibling-consistency-state.json`; PreToolUse Branch 7 blocks `execute-bolts` on FAIL) — this prose is defense-in-depth; the validator is the gate. Tech-agnostic + anti-hallucination: never invent a concern the active pack does not declare.
 
 13. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 

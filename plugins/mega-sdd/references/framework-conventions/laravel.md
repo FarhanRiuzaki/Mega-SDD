@@ -342,6 +342,56 @@ scaffold_tells:
     message: "Native JS dialog (alert/confirm/prompt) instead of the project notification idiom (SweetAlert2 Swal.fire)."
 ```
 
+## Cross-cutting concerns
+
+> Concrete Laravel fill of the universal §Cross-cutting concerns principle
+> (`_universal.md`). Consumed by `validate-sibling-consistency.sh` (slice B —
+> decomposition) and `validate-cross-cutting-registration.sh` (slice C — execution).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: the LetterOfCredit
+> exemplar (U-017) declares the `BranchScoped` trait + a `branch()` relation, but
+> sibling models carrying the same `branch_id` key diverged — some declared the trait
+> without the relation, some carried the column with neither (the `addGlobalScope`
+> registration was likewise dropped in 5 bolt-generated models, caught by slice C).
+>
+> NOTE: `BranchScoped` is the RECON / base-laravel-26 starterkit tenant-isolation trait;
+> it is declared HERE in the base Laravel pack because every Laravel project in this
+> family inherits it through the `extends` chain (laravel-base-26 → laravel → _universal).
+> A vanilla Laravel project without the trait simply has no model declaring `branch_id`,
+> so `applies_when` never matches and the concern is inert (no false positives).
+
+```yaml
+cross_cutting_concerns:
+  - concern: branch-scoping
+    applies_when: 'has_column:branch_id'
+    spec_obligation: '\bBranchScoped\b'
+    registration_signature: 'addGlobalScope\(\s*new BranchScoped'
+```
+
+In Laravel, a model that owns a multi-branch (multi-tenant) `branch_id` key MUST apply the
+`BranchScoped` global scope so every query is automatically filtered to the authed user's
+branch. The UNIT spec must name the `BranchScoped` trait (the `spec_obligation` signature);
+a sibling that scopes "via lc_id" or omits the trait entirely is a divergence (slice B).
+At runtime the model's `booted()` must call `addGlobalScope(new BranchScoped)` — the
+`registration_signature` slice C scans the written source for.
+
+## Relation derivation
+
+> Concrete Laravel fill of the universal §Relation derivation principle (`_universal.md`).
+> Consumed by `validate-sibling-consistency.sh` (slice B — relation coherence).
+
+In Laravel an FK column `{singular}_id` maps to a **camelCase `belongsTo` accessor named
+`{singular}`** — e.g. `branch_id` => a `branch()` method returning `belongsTo(Branch::class)`,
+`customer_id` => `customer()`, `import_lc_id` => `importLc()`. A model unit that declares an
+FK column but never declares the derived accessor has under-specified the relation (the
+`branch()` relations missing from 3 Phase-2 model units were exactly this defect).
+
+```yaml
+relation_derivation:
+  fk_to_accessor:
+    rule: '{singular}_id => belongsTo accessor `{singular}` (camelCase)'
+    accessor_template: '{camelSingular}()'
+```
+
 ## Notes / Laravel-specific guidance
 
 - **Naming controversy**: Laravel docs flip between singular and plural for Resource Controllers (`UserController` vs `UsersController`). Pick one consistently per project; pack defaults to **singular** because routes auto-pluralize.

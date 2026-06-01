@@ -164,6 +164,52 @@ The concrete `entity_sources:` capture patterns live in the framework pack (see
 validator degrades to TITLE-ONLY matching (flow title tokens vs unit frontmatter
 tokens) — coarser, but never an error and never a crash on an undeclared stack.
 
+## Cross-cutting concerns
+
+> Universal reasoning core for code-delivery slice B (`validate-sibling-consistency.sh`)
+> + slice C (`validate-cross-cutting-registration.sh`). The PRINCIPLE is stack-neutral;
+> the SIGNATURES are not.
+
+Universal principle (holds across all backends): **when a concern cuts across a set of
+structurally-analogous sibling units (models that share a column or a role — e.g. every
+model carrying a tenant/branch key, every soft-deletable model), that concern must be
+implemented the SAME way in every sibling — one consistent mechanism per shared concern.**
+A sibling group where the golden exemplar declares the concern's obligation but a peer
+declares it differently (or not at all) has DIVERGED at decomposition time — a class of
+bug where the exemplar module is built correctly and the siblings quietly drift.
+
+How the validator groups siblings is universal: partition units by their `module` + `scope`
+frontmatter (when those fields exist); when they don't (a vault that never set them), the
+whole vault is one group and the pack concern's obligation is absolute. The CONCERN
+DEFINITIONS themselves — which column brings the concern into scope (`applies_when`), which
+signature the unit must declare (`spec_obligation`) — are stack-specific and live in the
+framework pack (`cross_cutting_concerns:`, see `_template.md`). When NO pack in the chain
+declares any concern, the validator writes `status: SKIP` — a stack is never blocked for a
+concern it never declared.
+
+## Relation derivation
+
+> Universal reasoning core for code-delivery slice B (relation coherence).
+
+Universal principle: **a foreign-key column implies a relation accessor — a model that
+declares an FK column should declare the relation that reads it back.** The naming is
+near-universal across ORMs: an FK column named `<thing>_id` maps to an accessor named for
+`<thing>` (the singular target), and the canonical kind is the inverse "belongs-to".
+
+```yaml
+relation_derivation:
+  fk_to_accessor:
+    rule: '{singular}_id => belongs-to accessor `{singular}`'
+    # Default for ALL stacks: strip the trailing `_id` from each `<name>_id` FK column
+    # a unit's model declares and assert an accessor of that singular name is declared
+    # in the unit body. A framework pack may override the accessor casing/kind (e.g.
+    # Laravel: camelCase `belongsTo` accessor). Missing accessor → `missing_relations[]`.
+```
+
+A framework pack MAY override `fk_to_accessor` (casing, accessor kind) in its own
+`relation_derivation:` block. When neither a pack nor this universal default is parseable,
+the relation check is skipped — never an error.
+
 ## Entity matching tokens
 
 > Universal reasoning core for code-delivery slice A (token tuning).
