@@ -65,6 +65,20 @@ phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed fr
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
 - Keep this file in sync with the markdown on every regeneration / `diff-vault` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
 
+### Operator-workflow-UX capture + Design-Source OQ (v1.17+, code-delivery slice G)
+
+Two CAPTURE-stage rails enforced by `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; PreToolUse Branch 10 blocks `mega-sdd:execute-bolts` on a miss). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
+
+- **Workflow flow signal (closed grammar).** A user-facing flow (`F-U-` prefix, or prefix-less; the `F-S-` / `F-C-` / `F-X-` internal classes are excluded) is a **multi-stage approval / maker-checker / workflow** flow when EITHER its actor/title line shows a maker→checker hand-off chain (a `maker … checker|approver|confirmer|reviewer|…` chain joined by `->` / `→` arrows) OR its step body carries **≥ 2 distinct decision transition steps** (approve / reject / review / confirm). One decision step alone is a simple submit; two or more is multi-stage.
+
+- **Operator-surface requirement (the four first-class surfaces).** When a workflow flow exists, the vault MUST model the operator-facing surface as requirements **grounded in the flows** (never invented): (1) **worklist / inbox**, (2) **decision affordance** (approve/reject actions in the current state), (3) **human-readable workflow-state labels**, (4) **audit timeline** of transitions. Presence is detected by the operator-surface vocabulary in the vault's prose docs (`02-architecture.md`, `01-overview.md`, `03-data-model.md`, `04-flows.md`). (The Design-Source OQ check below additionally scans `vault.json`.)
+  - **Halt `operator_surface_missing`** — workflow flow present AND no operator-surface requirement AND no Design-Source OQ → FAIL.
+
+- **Design-Source OQ (anti-hallucination escape hatch).** When `design_system_flags.HAS_UI_COMPONENTS = true` but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`**, the vault MUST carry a high-priority Design-Source Open Question (recommended tag shape `OQ-DESIGN-SOURCE-{N} [P1]`, or any OQ whose tag/text names a design-source concern — tokens / a11y / voice-brand source). **DO NOT default WCAG/Material/token values** — capture the gap as an OQ only.
+  - **Halt `design_source_oq_missing`** — UI components present AND all three design flags false AND no Design-Source OQ → FAIL. (This was the captured trade-finance Phase-2 miss.)
+
+A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the accepted "captured the miss" signal): a vault that has not yet decided its operator surface may carry a Design-Source OQ instead of inventing the surface, and the gate passes.
+
 ### When skills must regenerate `vault.json`
 
 - `generate-intent` Step 3 — initial generation.
