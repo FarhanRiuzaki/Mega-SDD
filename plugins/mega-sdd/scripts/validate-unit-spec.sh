@@ -410,11 +410,18 @@ def _has_render_acceptance_test(full_text):
     """True iff the unit has a STRUCTURED acceptance_test entry whose type/kind is
     literally `render`. Only inspects the `acceptance_test:` YAML region (frontmatter
     or a body `acceptance_test:` block) — never a prose `## Tests` bullet."""
-    at = re.search(r"^acceptance_test\s*:\s*\n(.*?)(?:^\S|\Z)", full_text, re.DOTALL | re.MULTILINE)
+    # ADV-07: capture inline content on the same line AND any following indented block,
+    # so both block form (`acceptance_test:\n  - type: render`) and inline-list form
+    # (`acceptance_test: [{type: render}]` / `acceptance_test: [render]`) are accepted.
+    at = re.search(r"^acceptance_test\s*:\s*(.*?)(?:^\S|\Z)", full_text, re.DOTALL | re.MULTILINE)
     if not at:
         return False
-    return re.search(r"^\s*-?\s*(?:type|kind)\s*:\s*[\"']?render[\"']?\s*$",
-                     at.group(1), re.MULTILINE) is not None
+    region = at.group(1)
+    if re.search(r"(?:type|kind)\s*:\s*[\"']?render[\"']?\b", region):
+        return True
+    if "[" in region and re.search(r"[\[,]\s*[\"']?render[\"']?\s*[,\]]", region):
+        return True
+    return False
 
 
 detail_glob = _parse_detail_view_glob(test_patterns_section)
