@@ -25,7 +25,9 @@ The E2E audit (`docs/superpowers/audits/2026-06-02-e2e-integration-audit.md`) fo
 
 Also fixed: **ADV-07** (render-test accepts inline-list `acceptance_test`; dispatch-prompt rejects placeholder tokens / bare `Pattern:` label — requires a view-glob `File:`), **IE-2** (execute-bolts parent-thread post-flight re-scan documented to close the `--parallel` subagent-blind window), **IE-5** (spec branch number), and the **CD-6/IE-4 + TAE2E-03 invariant docs** (halt_type-counting on extension gates; `_universal` stays principle-only; `errors="replace"` on reads).
 
-Remaining audit punch-list (1 item, MEDIUM, tracked): **CD-4** — prepend a multi-failure summary before the first `emit_block` so a simultaneous multi-gate FAIL surfaces all failing gates at once (additive recovery-UX; deferred as the lowest-risk pre-tool-use change).
+**CD-4 (done in v3.69.2):** the execute-bolts path now precomputes a multi-gate failure summary; `emit_block` prepends it so the first block surfaces ALL failing gates at once (`[N execute-bolts gates are failing: …]`) instead of forcing serial one-gate-at-a-time round-trips. Additive prefix only — empty when ≤1 gate fails; no control-flow change; all 9 fixtures + the 9-branch smoke pass.
+
+**Audit punch-list: CLEARED.** All 35 E2E-audit findings are resolved or were verified design strengths (CD-1/CD-5/CD-6 etc.).
 
 ## [3.69.0] - 2026-06-02
 

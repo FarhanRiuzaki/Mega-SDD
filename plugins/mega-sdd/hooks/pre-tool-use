@@ -91,6 +91,10 @@ if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
 # Helper: emit block JSON to stdout and exit
 emit_block() {
   local reason="$1"
+  # CD-4: if a multi-gate failure summary was precomputed (execute-bolts path), prepend it so the
+  # FIRST emit_block surfaces ALL failing gates at once (emit_block exits, short-circuiting later
+  # branches). Empty for every other call site — a pure no-op prefix.
+  reason="${MEGA_MULTIFAIL_PREFIX:-}${reason}"
   # Escape for JSON string (basic)
   local reason_json
   reason_json=$(printf '%s' "$reason" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
@@ -222,6 +226,39 @@ except Exception as e:
         fi
         ;;
     esac
+
+    # CD-4: precompute a multi-gate failure summary for execute-bolts. emit_block exits on the
+    # FIRST failing gate, so without this an agent serially re-invokes against one gate at a time.
+    # When >1 execute-bolts gate is FAILing, MEGA_MULTIFAIL_PREFIX surfaces the full set up front
+    # (emit_block prepends it). Additive text only — no control-flow change. Empty when <=1 fails.
+    MEGA_MULTIFAIL_PREFIX=""
+    if [ "${SKILL_NAME:-}" = "mega-sdd:execute-bolts" ]; then
+      MEGA_MULTIFAIL_PREFIX=$(python3 -c "
+import json, os
+root = '${PROJECT_ROOT}'
+fails = []
+# status==FAIL gates
+for fn, name in [('.validation-blockers.json','binding->units'), ('.flow-coverage-state.json','flow-coverage'),
+                 ('.sibling-consistency-state.json','sibling-consistency'), ('.cross-cutting-state.json','cross-cutting'),
+                 ('.ui-quality-blockers.json','ui-quality'), ('.dispatch-prompt-state.json','dispatch-prompt')]:
+    try:
+        if json.load(open(os.path.join(root, '.mega-sdd', fn))).get('status') == 'FAIL':
+            fails.append(name)
+    except Exception:
+        pass
+# halt_type-counted EXTENSION gates (never status==FAIL — see Iter-78.1 invariants)
+for fn, name, hts in [('.unit-spec-state.json','render-test',('render_test_missing',)),
+                      ('.vault-oqs-state.json','operator-UX',('operator_surface_missing','design_source_oq_missing'))]:
+    try:
+        d = json.load(open(os.path.join(root, '.mega-sdd', fn)))
+        if any(i.get('halt_type') in hts for i in d.get('issues', [])):
+            fails.append(name)
+    except Exception:
+        pass
+if len(fails) > 1:
+    print('[%d execute-bolts gates are failing: %s — fix ALL before re-running; each is reported in turn] ' % (len(fails), ', '.join(fails)))
+" 2>/dev/null) || MEGA_MULTIFAIL_PREFIX=""
+    fi
 
     # Branch 1b: existing binding→units handoff gate for execute-bolts (Iter 67.6 slice 1)
     case "${SKILL_NAME:-}" in

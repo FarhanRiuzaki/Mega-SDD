@@ -1,6 +1,6 @@
 {
   "name": "mega-sdd",
-  "version": "3.69.1",
+  "version": "3.69.2",
   "description": "Spec-Driven Development as an autonomous agent pipeline with persistent memory, self-learning, AST-precise codebase analysis, and ast-grep-validated Hard Rules. v3.0 swaps regex → tree-sitter for scan-codebase, bespoke grammar → ast-grep YAML for Hard Rules, adds personalized PageRank for target_files suggestions (Aider pattern), emits AGENTS.md for tool-agnostic interop (60k+ repo ecosystem), and per-step JSONL checkpoints for mid-skill resume (LangGraph pattern). Builds on v2.1 Memory Layer + v2.0 Autonomy Layer + Iter 1-3 invariants. Native binary deps (tree-sitter + ast-grep) — graceful regex/v1 fallback when unavailable. Halt-protocol preserved across all iters; anti-hallucination via citation discipline throughout.",
   "author": {
     "name": "Farhan Riuzaki"
