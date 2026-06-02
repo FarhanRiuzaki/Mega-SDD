@@ -23,7 +23,9 @@ The E2E audit (`docs/superpowers/audits/2026-06-02-e2e-integration-audit.md`) fo
 - **ADV-05/ADV-06:** broadened FK-column detection (backticked); strip comments before the cross-cutting registration check (a commented-out registration no longer satisfies it).
 - **CD-2/CD-3:** Branch 9 + Branch 10 recovery REASONs rewritten to lead with a non-circular deterministic escape (direct edit / `rm` state) instead of re-running the just-blocked skill.
 
-Remaining audit punch-list (MEDIUM/LOW, tracked): CD-4 (multi-failure summary), ADV-07 (inline-list acceptance_test + dispatch placeholder), IE-2 (parent-thread post-flight re-scan), IE-5 (stale spec branch number), invariant docs.
+Also fixed: **ADV-07** (render-test accepts inline-list `acceptance_test`; dispatch-prompt rejects placeholder tokens / bare `Pattern:` label — requires a view-glob `File:`), **IE-2** (execute-bolts parent-thread post-flight re-scan documented to close the `--parallel` subagent-blind window), **IE-5** (spec branch number), and the **CD-6/IE-4 + TAE2E-03 invariant docs** (halt_type-counting on extension gates; `_universal` stays principle-only; `errors="replace"` on reads).
+
+Remaining audit punch-list (1 item, MEDIUM, tracked): **CD-4** — prepend a multi-failure summary before the first `emit_block` so a simultaneous multi-gate FAIL surfaces all failing gates at once (additive recovery-UX; deferred as the lowest-risk pre-tool-use change).
 
 ## [3.69.0] - 2026-06-02
 
