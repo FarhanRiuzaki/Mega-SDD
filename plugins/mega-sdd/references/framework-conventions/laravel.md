@@ -400,6 +400,7 @@ relation_derivation:
   fk_to_accessor:
     rule: '{singular}_id => belongsTo accessor `{singular}` (camelCase)'
     accessor_template: '{camelSingular}()'
+    accessor_form: call   # Laravel relations are paren-call methods: `branch()`, `customer()`
 ```
 
 ## Notes / Laravel-specific guidance

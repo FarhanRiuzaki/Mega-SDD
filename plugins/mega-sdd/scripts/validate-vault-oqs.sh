@@ -77,7 +77,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 rel = os.path.relpath(file_path, cwd)
 
 try:
-    body = open(file_path).read()
+    body = open(file_path, errors="replace").read()
 except Exception:
     sys.exit(0)
 
@@ -92,7 +92,7 @@ if kb_present:
         kb_sections.add(rel_kb)
         # Extract headers from file for section-level matching
         try:
-            for line in open(kb_file):
+            for line in open(kb_file, errors="replace"):
                 m = re.match(r"^#{1,6}\s+(.+?)$", line.rstrip())
                 if m:
                     section_id = m.group(1).strip().lower().replace(" ", "-")
@@ -329,7 +329,7 @@ DESIGN_SOURCE_OQ_RE = re.compile(
 
 def _read(path):
     try:
-        return open(path).read()
+        return open(path, errors="replace").read()
     except Exception:
         return ""
 

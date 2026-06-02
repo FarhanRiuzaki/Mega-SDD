@@ -160,8 +160,18 @@ def relation_enabled(text):
     return bool(text and ("fk_to_accessor" in text or "relation_derivation" in text))
 
 
+def parse_accessor_form(text):
+    """Pack-declared relation accessor SHAPE (TAE2E-01 fix — never hardcode the Eloquent
+    paren idiom in the validator core). 'call' => `accessor(` (Laravel/ActiveRecord);
+    'attribute'/'any' => the accessor name as a word (Django attribute, etc.). Default
+    'any' so a stack the pack does not specialize is matched permissively, never false-FAILed."""
+    m = re.search(r"accessor_form\s*:\s*([a-z]+)", text or "")
+    return m.group(1).strip() if m else "any"
+
+
 concerns = parse_concerns(concerns_section)
 rel_on = relation_enabled(relation_section)
+accessor_form = parse_accessor_form(relation_section)
 
 if not concerns and not rel_on:
     skip("pack declares neither '## Cross-cutting concerns' nor '## Relation derivation'")
@@ -195,7 +205,7 @@ FM_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 def parse_unit(path):
-    with open(path) as f:
+    with open(path, errors="replace") as f:
         text = f.read()
     fm = {}
     m = FM_RE.match(text)
@@ -218,13 +228,20 @@ def camel_singular_accessor(col):
 
 
 def declared_fk_columns(body):
-    """A declared FK column = a `<name>_id` token appearing on a line that marks it a
-    foreign key (the token 'FK' or 'foreign' on the same line). Deduped. This avoids
-    matching FK names mentioned only in prose (e.g. 'isolation via lc_id correlation')."""
+    """A declared FK column = a `<name>_id` token that is either (a) backticked
+    (`branch_id` — a structured column reference), or (b) on a line marking it a foreign
+    key (FK/foreign/column/uuid/$table->). Deduped. ADV-05 broadening: backticked columns
+    count even without an 'FK' keyword, while still excluding FK names mentioned only in
+    free prose (e.g. 'isolation via lc_id correlation' — not backticked, no keyword)."""
     cols = set()
+    FK_ID = r"([a-z][a-z0-9]*(?:_[a-z0-9]+)*_id)"
+    # (a) backticked column references anywhere
+    for m in re.finditer(r"`" + FK_ID + r"`", body, re.IGNORECASE):
+        cols.add(m.group(1).lower())
+    # (b) FK-marked / schema-context lines
     for line in body.splitlines():
-        if re.search(r"\b(fk|foreign)\b", line, re.IGNORECASE):
-            for m in re.finditer(r"\b([a-z][a-z0-9]*(?:_[a-z0-9]+)*_id)\b", line, re.IGNORECASE):
+        if re.search(r"\b(fk|foreign|column)\b|uuid|\$table->", line, re.IGNORECASE):
+            for m in re.finditer(r"\b" + FK_ID + r"\b", line, re.IGNORECASE):
                 cols.add(m.group(1).lower())
     return cols
 
@@ -233,9 +250,13 @@ def column_present(body, col):
     return re.search(r"\b" + re.escape(col) + r"\b", body) is not None
 
 
-def accessor_declared(body, accessor):
-    # the relation method appears as `accessor(` (allow leading word-boundary, any case)
-    return re.search(r"\b" + re.escape(accessor) + r"\s*\(", body, re.IGNORECASE) is not None
+def accessor_declared(body, accessor, form="any"):
+    """TAE2E-01: honor the pack-declared accessor SHAPE rather than hardcoding the paren
+    call. form='call' => `accessor(` (Laravel belongsTo, ActiveRecord); 'attribute'/'any'
+    => the accessor name as a word (Django `branch = ForeignKey(...)`, attribute access)."""
+    if form == "call":
+        return re.search(r"\b" + re.escape(accessor) + r"\s*\(", body, re.IGNORECASE) is not None
+    return re.search(r"\b" + re.escape(accessor) + r"\b", body, re.IGNORECASE) is not None
 
 
 units = []
@@ -277,19 +298,34 @@ for concern in concerns:
                     "reason": "cross-cutting concern applies (sibling group shares it) but this unit declares a different/no mechanism — fan-out divergence",
                 })
 
-# ── 2. Missing relation accessor for declared FK columns ──
+# ── 2. Relation accessor divergence ACROSS SIBLINGS (FPP-4 + TAE2E-01 fix) ──
+# Not an absolute "every FK must spell its accessor" rule (that false-positived solo +
+# convention-derived units and hardcoded the Eloquent paren shape). Instead: within a
+# sibling group, for each FK column, flag a unit ONLY when a SIBLING declares the relation
+# accessor and this unit does not — a genuine fan-out divergence. Uniform groups (all
+# declare, or all rely on ORM convention) are consistent and never flagged; a solo unit has
+# no sibling to diverge from. Accessor SHAPE is pack-declared (accessor_form), so a
+# non-Laravel stack is never false-FAILed for not using the paren-call idiom.
 missing_relations = []
 if rel_on:
-    for u in units:
-        for col in sorted(declared_fk_columns(u["body"])):
+    for gkey, members in groups.items():
+        col_units = defaultdict(list)
+        for u in members:
+            for col in declared_fk_columns(u["body"]):
+                col_units[col].append(u)
+        for col, us in col_units.items():
             accessor = camel_singular_accessor(col)
-            if not accessor_declared(u["body"], accessor):
-                missing_relations.append({
-                    "unit": u["uid"],
-                    "fk_column": col,
-                    "expected_accessor": accessor + "()",
-                    "reason": f"declares FK column `{col}` but no derived relation accessor `{accessor}()` — under-specified relation",
-                })
+            declarers = [u for u in us if accessor_declared(u["body"], accessor, accessor_form)]
+            non_declarers = [u for u in us if not accessor_declared(u["body"], accessor, accessor_form)]
+            if declarers and non_declarers:   # divergence only
+                for u in non_declarers:
+                    missing_relations.append({
+                        "unit": u["uid"],
+                        "fk_column": col,
+                        "module": gkey[0], "scope": gkey[1],
+                        "expected_accessor": accessor,
+                        "reason": f"sibling(s) {sorted(d['uid'] for d in declarers)} declare the `{accessor}` relation for FK `{col}` but this unit does not — fan-out divergence (relation under-specified relative to siblings)",
+                    })
 
 status = "FAIL" if (inconsistent or missing_relations) else "PASS"
 report = {

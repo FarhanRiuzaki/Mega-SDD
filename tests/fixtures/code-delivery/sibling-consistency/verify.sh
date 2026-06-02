@@ -36,7 +36,7 @@ except Exception as e:
 }
 
 # ─── BAD fixture: must FAIL, flag 1 divergence + 3 missing relations ─────────
-note "=== BAD fixture (expect FAIL: 1 inconsistent + 3 missing_relations) ==="
+note "=== BAD fixture (expect FAIL: 1 inconsistent + 1 missing_relation (cross-sibling divergence)) ==="
 bash "$VALIDATOR" --cwd="$HERE/bad" --quiet
 BAD_EXIT=$?
 BAD_STATE="$HERE/bad/.mega-sdd/.sibling-consistency-state.json"
@@ -50,7 +50,7 @@ note "bad: status=$BAD_STATUS exit=$BAD_EXIT inconsistent=$BAD_INCON missing_rel
 [ "$BAD_STATUS" = "FAIL" ] || fail "bad: status expected FAIL, got '$BAD_STATUS'"
 [ "$BAD_EXIT" = "1" ] || fail "bad: exit expected 1 (FAIL), got '$BAD_EXIT'"
 [ "$BAD_INCON" = "1" ] || fail "bad: inconsistent expected 1, got '$BAD_INCON'"
-[ "$BAD_MISSING" = "3" ] || fail "bad: missing_relations expected 3, got '$BAD_MISSING'"
+[ "$BAD_MISSING" = "1" ] || fail "bad: missing_relations expected 1, got '$BAD_MISSING'"
 
 # ─── GOOD fixture: must PASS, no divergence / no missing relation ────────────
 note ""
