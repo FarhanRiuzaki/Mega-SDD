@@ -169,6 +169,41 @@ except Exception:
         ;;
     esac
 
+    # Branch 0 (Iter-79 O-1): predictive preflight — fatal INPUT-precondition check for the
+    # skill about to run, BEFORE it burns minutes and halts mid-way. Fork-A enforcement of
+    # the F2 "predictive halt" theme (was prose-only orchestrate-flow Step 3.5 +
+    # predictive-checks.md). Conservative: only GENUINELY-FATAL preconditions block (a skill
+    # that cannot do anything useful without the missing input). scan-codebase tree-sitter is
+    # WARN-only (never FATAL). State recomputed each invocation → self-clears (no deadlock).
+    case "${SKILL_NAME:-}" in
+      mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)
+        PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
+        if [ -x "$PREFLIGHT" ]; then
+          bash "$PREFLIGHT" --cwd="$PROJECT_ROOT" --skill="$SKILL_NAME" --quiet >/dev/null 2>&1 || true
+          PF_STATE="${PROJECT_ROOT}/.mega-sdd/.preflight-state.json"
+          if [ -f "$PF_STATE" ]; then
+            PF_STATUS=$(python3 -c "
+import json
+try:
+    print(json.load(open('$PF_STATE')).get('status', 'PASS'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+            if [ "$PF_STATUS" = "FATAL" ]; then
+              PF_MSG=$(python3 -c "
+import json
+try:
+    print(json.load(open('$PF_STATE')).get('fatal_on_fail', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+              emit_block "${SKILL_NAME} is blocked by a predictive preflight check — ${PF_MSG} (preflight state: ${PF_STATE})"
+            fi
+          fi
+        fi
+        ;;
+    esac
+
     # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
     # except using-mega-sdd (auto-loaded anchor, not a chain step).
     #
