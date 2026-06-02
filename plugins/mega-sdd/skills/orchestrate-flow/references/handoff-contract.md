@@ -285,9 +285,12 @@ handoff:
   metrics:
     items_processed: 48    # OQs generated
     items_blocked: 12      # OQs requiring stakeholder input (business / blocking)
+    flows_with_stages: 3   # OPTIONAL (v3.71.0+, semantic-depth) — count of 04-flows.md flows that carried a `stages:` block verbatim from KB §3a (multi-step workflows preserved, not flattened)
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works, but user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `memory_in_use`.
+
+> **Staged-input carry-over invariant (v3.71.0+, semantic-depth).** `stages:` propagates KB §3a → vault `04-flows.md` → units the SAME way OQ-IDs and constitution clauses do: copied verbatim, never re-derived (see `generate-intent/references/vault-contract.md §stages-propagation`). The `metrics.flows_with_stages` field above is **OPTIONAL** — type-checked-when-present by `validate-handoff-yaml.sh` (it rides the existing `metrics:` object check; an `int` when emitted), **never required-on-absence** (a vault with no staged workflows simply omits it; the O-3/O-4 false-FAIL trap is avoided). The carry-over itself is ENFORCED at the artifact layer, not the handoff layer: `validate-vault-flow-staging.sh` follows each flow's `_kb_source` back-reference and blocks execute-bolts (PreToolUse Branch 14) on a `vault_flow_staging_drop`. The handoff metric is a visibility signal, not the gate.
 
 ### `scan-codebase`
 

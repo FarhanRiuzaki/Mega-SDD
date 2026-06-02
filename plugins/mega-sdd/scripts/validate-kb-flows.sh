@@ -68,6 +68,7 @@ except Exception as e:
 
 checks = []
 issues = []
+advisories = []   # v3.71.0+ semantic-depth: non-blocking signals (never flip status)
 lines = content.split("\n")
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -364,15 +365,91 @@ if sec8_match:
 else:
     checks.append({"check": "sec8_state_machine_fence", "status": "SKIP", "detail": "no section 8"})
 
+# ──────────────────────────────────────────────────────────────────────────
+# Staged-input advisory (v3.71.0+, semantic-depth) — ADVISORY ONLY.
+# Flags a workflow KB file that looks multi-step (workflow flow signal OR
+# >5 inputs) but carries no `## 3a` stages: block. NEVER flips status (rides a
+# separate advisories[] channel per the Iter-78.1 invariant). Pairs with the
+# extract-intelligence §3a staged-input detection guidance; points the user to
+# /mega-sdd:enrich-semantics. See knowledge-base-schema.md §3a.
+# ──────────────────────────────────────────────────────────────────────────
+def _frontmatter(text):
+    m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    return m.group(1) if m else ""
+
+_fm = _frontmatter(content)
+_classification = ""
+_mfm = re.search(r"^classification:\s*([A-Za-z_-]+)", _fm, re.MULTILINE)
+if _mfm:
+    _classification = _mfm.group(1).strip().lower()
+
+# §8 present and non-N/A is itself a workflow signal when frontmatter is silent
+_sec8_is_workflow = False
+if sec8_match:
+    _sec8_head = content[sec8_match.start():sec8_match.start() + 400]
+    _sec8_is_workflow = not bool(re.search(r"N/A|not a workflow", _sec8_head, re.IGNORECASE))
+_is_workflow = (_classification == "workflow") or _sec8_is_workflow
+
+# stages: block present? require BOTH the `stages:` line AND a `stage_id:` token
+# (robust vs prose that merely mentions the word "stages").
+_has_stages_block = bool(re.search(r"^\s*stages:\s*$", content, re.MULTILINE)) and ("stage_id:" in content)
+
+# multi-step signal — reuse the operator-surface closed grammar (decision verbs)
+_decision_re = re.compile(r"\b(approve|reject|review|confirm|verify|authorize|endorse)\b", re.IGNORECASE)
+_transition_lines = [ln for ln in lines if ("-->" in ln or "->" in ln)]
+_decision_transitions = sum(1 for ln in _transition_lines if _decision_re.search(ln))
+_maker_checker = bool(re.search(r"\bmaker\b.{0,80}\b(checker|approver|reviewer|confirmer)\b",
+                                content, re.IGNORECASE | re.DOTALL))
+
+# §4 Inputs list-item count
+_input_field_count = 0
+_sec4_m = re.search(r"^## 4\.\s", content, re.MULTILINE)
+if _sec4_m:
+    _sec4_end = re.search(r"^## 5\.", content[_sec4_m.end():], re.MULTILINE)
+    _sec4_text = (content[_sec4_m.start(): _sec4_m.end() + _sec4_end.start()]
+                  if _sec4_end else content[_sec4_m.start():])
+    _input_field_count = (len(re.findall(r"^\s*[-*]\s+\S", _sec4_text, re.MULTILINE))
+                          + len(re.findall(r"^\s*\d+\.\s+\S", _sec4_text, re.MULTILINE)))
+
+_multistep = _is_workflow and (_decision_transitions >= 2 or _maker_checker or _input_field_count > 5)
+
+if _multistep and not _has_stages_block:
+    _reasons = []
+    if _decision_transitions >= 2:
+        _reasons.append(f"{_decision_transitions} decision transitions")
+    if _maker_checker:
+        _reasons.append("maker->checker hand-off")
+    if _input_field_count > 5:
+        _reasons.append(f"{_input_field_count} input fields")
+    advisories.append({
+        "halt_type": "kb_flow_staging_missing",
+        "severity": "advisory",
+        "section": "3a",
+        "detail": ("workflow looks multi-step (" + "; ".join(_reasons) +
+                   ") but carries no `## 3a` stages: block — staging may be lost downstream "
+                   "(single-form bolt instead of multi-step wizard)"),
+        "suggested_fix": ("author the `## 3a. Staged inputs` stages: block (knowledge-base-schema.md §3a), "
+                          "or retro-fit via `/mega-sdd:enrich-semantics --vault=<vault> "
+                          "--legacy-root=<legacy> --semantic=staged-input`"),
+    })
+
 has_fail = any(c["status"] == "FAIL" for c in checks)
+_summary = (
+    f"{len(issues)} flow format/syntax issue(s) — see issues[] for line numbers + suggested fixes"
+    if issues else "all flows use Mermaid; heuristic syntax checks pass"
+)
+if advisories:
+    _summary += f" | {len(advisories)} staging advisory(ies) — run /mega-sdd:enrich-semantics"
 result = {
     "status": "FAIL" if has_fail else "PASS",
     "checked_file": os.path.relpath(file_path, cwd),
     "checks": checks,
     "issues": issues,
-    "summary": (
-        f"{len(issues)} flow format/syntax issue(s) — see issues[] for line numbers + suggested fixes"
-        if issues else "all flows use Mermaid; heuristic syntax checks pass"
+    "advisories": advisories,   # v3.71.0+ semantic-depth — non-blocking
+    "summary": _summary,
+    "next_action": (
+        "Advisory: workflow looks multi-step but has no stages: block. Run /mega-sdd:enrich-semantics to retro-fit staging."
+        if advisories else None
     ),
 }
 print(json.dumps(result))
