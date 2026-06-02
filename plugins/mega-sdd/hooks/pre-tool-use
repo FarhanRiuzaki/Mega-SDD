@@ -566,6 +566,40 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 13: UI-deferral gate for execute-bolts (Iter-79 B1).
+    # Blocks bolts when validate-ui-deferral.sh found a committed bolt-report that defers a
+    # unit's `## UI contract` to a future polish unit ("scaffold kept; UI polish deferred").
+    # Honest Fork-A detect-and-block-next: cannot un-commit the scaffold view, but blocks the
+    # NEXT execute-bolts until the contract states are realized. Dedicated single-purpose
+    # validator → status==FAIL is precise. PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        UID_STATE="${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json"
+        if [ -f "$UID_STATE" ]; then
+          UID_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UID_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$UID_STATUS" = "FAIL" ]; then
+            UID_CNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UID_STATE'))
+    print(d.get('summary', {}).get('deferral_count', '?'))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — UI-deferral validator found ${UID_CNT} bolt-report(s) that defer a unit's \`## UI contract\` to a future polish unit ('scaffold kept; UI polish deferred'). The contract's required_states must be realized in the bolt that writes the view, not deferred to a later unit. Realize the deferred UI, then re-run the bolt (PostToolUse re-validates). State: ${UID_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

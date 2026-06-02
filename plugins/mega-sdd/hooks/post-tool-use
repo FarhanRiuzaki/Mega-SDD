@@ -569,6 +569,14 @@ except Exception:
       "${PROJECT_ROOT}/.mega-sdd/.bolt-artifacts-state.json" \
       "PostToolUse-Write-validate-bolt-artifacts"
 
+    # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
+    # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
+    # bolt-reports / no pack UI signatures. PreToolUse Branch 13 gates on status==FAIL.
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
+      "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \
+      "PostToolUse-Write-validate-ui-deferral"
+
     # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-unit-spec.sh" \
