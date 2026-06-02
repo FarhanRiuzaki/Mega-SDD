@@ -87,7 +87,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-**15-layer anti-hallucination defense** (v3.24+, includes Iter 33 F3+F4):
+**16-layer anti-hallucination + delivery-quality defense** (v3.24+, includes Iter 33 F3+F4 and Iter 78 code-delivery gates):
 
 1. Intent layer — uncertain claims promote to Open Questions; never guess
 2. OQ classification — business vs tech; tech auto-resolves via codebase scan
@@ -104,6 +104,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 13. **Convergence loops** (v3.12+) — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
 14. **Schema validation gate** (v3.24+, Iter 33) — every handoff YAML validated against typed schema at emission; missing REQUIRED/CONDITIONAL fields halt at PRODUCER side (immediate developer feedback, not silent consumer miss)
 15. **Type-checked field propagation** (v3.24+, Iter 33) — handoff schema declares TYPE annotations; orchestrator validates types at each chain step; prevents silent shape drift (e.g., `scope.id` being string in one skill but object in another)
+16. **Code-delivery quality gates** (v3.69+, Iter 78) — 7 tech-agnostic validators wired to PreToolUse blocks on `execute-bolts`, targeting *delivery* quality, not just structure: flow-step→artifact coverage (catches missing per-stage Form Requests + dead scaffold stubs), cross-unit sibling-consistency (fan-out divergence + FK→relation), per-sibling cross-cutting registration scan (the silent cross-branch-leak class), per-view-unit render test, UI scaffold-tells (raw-scaffold labels / unresolved FKs / unformatted money / native dialogs), design-token + UI-exemplar dispatch enrichment, and operator-workflow-UX capture. All read stack-specific signatures from the framework-convention pack (add a stack = add a pack; graceful SKIP otherwise), each fixture-verified against a real Laravel run. See `docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md`.
 
 ---
 
@@ -162,6 +163,8 @@ Major versions close prior audit findings. Four forensic audits documented in `d
 | Iter 53 (v3.36.0) | proactive producer→consumer meta-audit | 3 PARTIAL findings (no orphans) | Iter 53 wired all 3 consumers atomically (same-iter closure) |
 | Iter 56 (v3.38.0) | post-Iter-55 fresh deep audit | 38 findings (8 P1 / 22 P2 / 8 P3) — same scale as Iter 38 | Iter 57-62 closed 34 of 38 (all P1 + 17 P2 + 5 P3 + 4 design-accepts); v3.38.1 → v3.41.0 range; 4 deferred items documented |
 | Iter 63 (v3.42.0) | Performance + sharpness SP1 (Quick Wins) — perf audit | 7 audit findings (sizing + duplication + bloat) | 5 of 6 deliverables ship (FSD opt-out + CHANGELOG rotation + classifier rules + guard preview + command differentiation); 1 deferred (skill body trim → Iter 63.5 dedicated). SP2 (Iter 64-70) + SP3 (v4.0.0 candidate) roadmap committed in spec |
+| Iter 78 (v3.69.0) | code-delivery deep audit + real-run evidence (tradefinance Phase-2) | root causes: unenforced delivery quality, zero UI/UX gate, module-altitude decomposition, fan-out divergence | 7 tech-agnostic code-delivery gates shipped (decomposition reasoning + UI/UX), each fixture-verified against the real run |
+| Iter 78.1 (v3.69.2) | E2E integration audit of the 8-gate `execute-bolts` stack (43-agent) | 35 findings (3 CRITICAL: fail-open, tech-agnostic breach, partial false-positive) | ALL resolved — stack is deadlock-safe + precision-sound; punch-list cleared |
 
 Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
 
