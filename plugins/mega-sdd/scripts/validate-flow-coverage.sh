@@ -542,7 +542,7 @@ FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 def parse_unit(path):
-    with open(path) as f:
+    with open(path, errors="replace") as f:
         text = f.read()
     fm = {}
     m = FRONTMATTER_RE.match(text)
@@ -621,7 +621,7 @@ def unit_entity_tokens(fm, target_files):
 
 
 # ── Parse 04-flows.md into per-flow, per-step blocks ─────────────────────────
-with open(flows_path) as f:
+with open(flows_path, errors="replace") as f:
     flows_text = f.read()
 
 # Split into flow sections by '### ' headers (flow id + title line).

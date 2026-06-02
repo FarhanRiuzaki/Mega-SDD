@@ -1,6 +1,6 @@
 ---
-unit_id: U-001
-title: widgets migration + Widget model
+unit_id: U-002 Gadget gadgets
+title:  migration +  model
 task_type: create
 phase: 1
 module: catalog
@@ -8,7 +8,7 @@ scope: branch-scoped
 loc_budget: 150
 ---
 
-# U-001 widgets migration + Widget model
+# U-002 Gadget gadgets  migration +  model
 
 ## Hard rules
 - `branch_id` UUID FK branches (denormalized for BranchScoped direct hop)
@@ -16,10 +16,15 @@ loc_budget: 150
 - DO NOT add new composer dependencies
 
 ## Implementation steps
-1. Create migration creating `widgets` with a `branch_id` UUID FK.
-2. Create model `app/Models/Widget.php`:
+1. Create migration creating `` with a `branch_id` UUID FK.
+2. Create model `app/Models/.php`:
    - `HasUuids`, `BranchScoped` global scope (direct branch_id)
-   - Relationships: branch() belongsTo Branch
+   - Relationships: `branch()` belongsTo Branch
+
+## Target files
+```
+app/Models/.php
+```
 
 ## Acceptance
 - Migration runs cleanly

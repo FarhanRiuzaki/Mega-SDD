@@ -92,7 +92,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 rel_path = os.path.relpath(file_path, cwd)
 
 try:
-    body = open(file_path).read()
+    body = open(file_path, errors="replace").read()
 except Exception as e:
     print(f"ERROR: cannot read {file_path}: {e}", file=sys.stderr)
     sys.exit(2)

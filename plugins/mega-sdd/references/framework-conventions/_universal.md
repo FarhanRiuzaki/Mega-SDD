@@ -200,10 +200,16 @@ near-universal across ORMs: an FK column named `<thing>_id` maps to an accessor 
 relation_derivation:
   fk_to_accessor:
     rule: '{singular}_id => belongs-to accessor `{singular}`'
-    # Default for ALL stacks: strip the trailing `_id` from each `<name>_id` FK column
-    # a unit's model declares and assert an accessor of that singular name is declared
-    # in the unit body. A framework pack may override the accessor casing/kind (e.g.
-    # Laravel: camelCase `belongsTo` accessor). Missing accessor → `missing_relations[]`.
+    accessor_form: any   # 'any' = match the accessor as a word (attribute OR call). A
+                         # framework pack overrides with its idiom: 'call' for paren-call
+                         # ORMs (Laravel belongsTo `branch()`, ActiveRecord); 'attribute'
+                         # for attribute-relation ORMs (Django `branch = ForeignKey(...)`).
+                         # NEVER hardcode the shape in the validator — a stack the pack does
+                         # not specialize is matched permissively, never false-FAILed (TAE2E-01).
+    # The relation check is a CROSS-SIBLING divergence test (not an absolute per-unit rule):
+    # within a sibling group it flags a unit lacking the accessor for an FK ONLY when a
+    # sibling declares it. Uniform groups (all declare, or all rely on ORM convention) and
+    # solo units are never flagged (FPP-4). A pack may override accessor casing/kind/form.
 ```
 
 A framework pack MAY override `fk_to_accessor` (casing, accessor kind) in its own
