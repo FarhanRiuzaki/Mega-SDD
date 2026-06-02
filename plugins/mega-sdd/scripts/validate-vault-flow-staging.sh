@@ -88,7 +88,10 @@ KB_PROBE = [
 kb_root = next((d for d in KB_PROBE if os.path.isdir(d)), None)
 
 issues = []
+advisories = []   # v3.71.0: non-blocking vault-internal signal (never flips status)
 vault_summary = {}
+_DECISION_RE = re.compile(r"\b(approve|reject|review|confirm|verify|authorize|endorse)\b", re.IGNORECASE)
+_MAKER_CHECKER_RE = re.compile(r"\bmaker\b.{0,80}\b(checker|approver|reviewer|confirmer)\b", re.IGNORECASE | re.DOTALL)
 
 # A KB-source reference can be written several ways; extract any *.md path token that
 # follows a `_kb_source` marker on a line.
@@ -148,11 +151,27 @@ for vault_dir in vault_dirs:
         for ln in seg.split("\n"):
             if KB_SOURCE_LINE.search(ln):
                 kb_tokens.extend(MD_TOKEN.findall(ln))
-        if not kb_tokens:
-            continue  # no back-reference -> not a KB-derived staged flow; skip (back-compat)
-        flows_with_kb_source += 1
-
         vault_flow_has_stages = has_stages_block(seg)
+        # Advisory arm (v3.71.0): the DOMINANT flatten case — a flow that LOOKS like a multi-step
+        # workflow (maker->checker / >=2 decision steps) but has NEITHER a stages: block NOR a
+        # _kb_source back-reference (generate-intent ignored staging wholesale, OR a PRD-only
+        # multi-step flow with no KB). The blocking arm below cannot see this (it needs _kb_source),
+        # so surface it as WARN — never status-flipping. Vault-internal heuristic; simple flows
+        # (no workflow signal) never trip it, so no false-stop.
+        if not kb_tokens:
+            _decisions = len(_DECISION_RE.findall(seg))
+            if (_decisions >= 2 or bool(_MAKER_CHECKER_RE.search(seg))) and not vault_flow_has_stages:
+                advisories.append({
+                    "halt_type": "vault_flow_staging_missing",
+                    "vault": vault_name, "flow_id": flow_id, "severity": "advisory",
+                    "detail": ("vault flow looks like a multi-step workflow (maker->checker / >=2 decision "
+                               "steps) but has no stages: block AND no _kb_source back-reference — staging "
+                               "likely flattened wholesale (or PRD-only multi-step). Non-blocking signal."),
+                    "suggested_fix": ("author a **Stages** block (+ _kb_source if KB-derived) per "
+                                      "vault-contract.md §stages-propagation, or run /mega-sdd:enrich-semantics"),
+                })
+            continue  # no back-reference -> blocking drop-check N/A; advisory handled above
+        flows_with_kb_source += 1
 
         # any cited KB workflow that HAS stages while the vault flow does NOT -> drop
         for tok in kb_tokens:
@@ -189,11 +208,16 @@ report = {
     "kb_root": os.path.relpath(kb_root, cwd) if kb_root else None,
     "summary": {
         "drop_count": len(issues),
+        "advisory_count": len(advisories),
         "vaults": vault_summary,
     },
     "issues": issues,
+    "advisories": advisories,   # v3.71.0 — non-blocking (flatten-without-backref / PRD-only)
     "next_action": (
-        "Staged-input preserved across KB->vault boundary (or no staged KB workflows present)."
+        (f"{len(advisories)} flow(s) look multi-step but carry no staging AND no _kb_source "
+         f"(advisory — likely wholesale flatten). Consider /mega-sdd:enrich-semantics."
+         if advisories else
+         "Staged-input preserved across KB->vault boundary (or no staged workflows present).")
         if status == "PASS"
         else f"{len(issues)} vault flow(s) dropped a `stages:` block that the cited KB workflow carried. "
              f"Restore the stages: block per vault-contract.md §stages-propagation, then re-save 04-flows.md."
