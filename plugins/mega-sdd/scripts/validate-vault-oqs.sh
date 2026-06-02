@@ -247,8 +247,10 @@ SYSTEM_FLOW_RE = re.compile(r"\bF-[SCX]-?\d+\b", re.IGNORECASE)
 # decision (approve/reject/review/confirm) transition steps. One decision step alone
 # is a simple submit; two or more is a multi-stage approval needing an operator surface.
 DECISION_STEP_RE = re.compile(
-    r"\b(approve|approval|reject|rejection|review|confirm|countersign|"
-    r"second\s*approval|dual[\s-]?key|four[\s-]?eyes)\b",
+    # ADV-03: inflection-tolerant — bare lemmas missed `approves`/`reviews`/`confirms`/`rejected`
+    r"\b(approv(?:e|es|ed|al|ing)|reject(?:s|ed|ing|ion)?|review(?:s|ed|ing)?|"
+    r"confirm(?:s|ed|ing|ation)?|countersign(?:s|ed|ing|ature)?|"
+    r"second\s*approval|dual[\s-]?key|four[\s-]?eyes|maker[\s-]?checker)\b",
     re.IGNORECASE,
 )
 MAKER_CHECKER_CHAIN_RE = re.compile(
@@ -258,12 +260,28 @@ MAKER_CHECKER_CHAIN_RE = re.compile(
 STAGE_ARROW_RE = re.compile(r"(->|→|=>|»)")  # actor-chain hand-off arrows
 
 
+_NUMBERED_STEP_RE = re.compile(r"^\s*\d+[.)]\s+\S")            # N. | N) (any indent)
+_TOPLEVEL_BULLET_RE = re.compile(r"^[-*+]\s+\S")              # top-level bullet (col 0)
+_MERMAID_EDGE_RE = re.compile(r"--+>|==+>|-\.->|→")            # mermaid/flowchart edges
+
+
 def _split_flow_steps(body):
-    """Split a flow body into per-step blocks (numbered `N.` line + indented
-    continuation), mirroring flow-coverage's step-block parser."""
+    """Split a flow body into per-step blocks, FORMAT-AWARE (ADV-02), mirroring flow-coverage:
+    numbered `N.`/`N)` if present (top-level bullets are then post-conditions/sub-notes, not
+    steps); else top-level `-`/`*`/`+` bullets; else mermaid edge lines. A numbered-only parser
+    silently PASSed mermaid/bullet maker-checker flows — leaving both operator-UX rails inert."""
+    lines = body.splitlines()
+    if any(_NUMBERED_STEP_RE.match(ln) for ln in lines):
+        step_re = _NUMBERED_STEP_RE
+    elif any(_TOPLEVEL_BULLET_RE.match(ln) for ln in lines):
+        step_re = _TOPLEVEL_BULLET_RE
+    elif any(_MERMAID_EDGE_RE.search(ln) for ln in lines):
+        return [ln for ln in lines if _MERMAID_EDGE_RE.search(ln)]
+    else:
+        return []
     blocks, cur = [], None
-    for line in body.splitlines():
-        if re.match(r"^\s*\d+\.\s", line):
+    for line in lines:
+        if step_re.match(line):
             if cur is not None:
                 blocks.append("\n".join(cur))
             cur = [line]

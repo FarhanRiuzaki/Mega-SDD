@@ -49,9 +49,29 @@ else
 fi
 
 note ""
+# ─── ADV-02/03: a MERMAID maker-checker flow must be DETECTED (was a silent PASS) ───
+note ""
+note "=== ADV-02/03: vault-oqs must detect a mermaid/bullet maker-checker workflow (expect a workflow rail fires) ==="
+P3="$HERE/adv02-mermaid-workflow"
+VJSON="$P3/.mega-sdd/vaults/demo-phase/vault.json"
+bash "$SCRIPTS/validate-vault-oqs.sh" --cwd="$P3" --file-path="$VJSON" --quiet
+S3="$P3/.mega-sdd/.vault-oqs-state.json"
+if [ -f "$S3" ]; then
+  WF=$(python3 -c "
+import json
+d=json.load(open('$S3'))
+print(1 if any(i.get('halt_type') in ('operator_surface_missing','design_source_oq_missing') for i in d.get('issues',[])) else 0)
+" 2>/dev/null)
+  note "mermaid-workflow: workflow_rail_fired=$WF (pre-fix: numbered-only parser => 0 => silent PASS)"
+  [ "$WF" = "1" ] || fail "ADV-02/03 regression: a mermaid maker-checker flow was NOT detected — both operator-UX rails inert (silent PASS)"
+else
+  fail "ADV-02/03: vault-oqs wrote no state file for the mermaid fixture"
+fi
+
+note ""
 if [ "$FAILED" -eq 0 ]; then
-  note "ALL ASSERTIONS PASS — TAE2E-01 + ADV-01 regressions are fixed."
+  note "ALL ASSERTIONS PASS — TAE2E-01 + ADV-01 + ADV-02/03 regressions are fixed."
   exit 0
 else
-  note "VERIFY FAILED — a CRITICAL audit fix regressed."; exit 1
+  note "VERIFY FAILED — a CRITICAL/HIGH audit fix regressed."; exit 1
 fi

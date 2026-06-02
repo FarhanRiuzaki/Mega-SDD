@@ -636,15 +636,33 @@ while i < len(parts):
     i += 2
 
 
+NUMBERED_STEP_RE = re.compile(r"^\s*\d+[.)]\s+\S")                 # N. | N) (any indent)
+TOPLEVEL_BULLET_RE = re.compile(r"^[-*+]\s+\S")                    # top-level bullet (col 0)
+MERMAID_EDGE_RE = re.compile(r"--+>|==+>|-\.->|→")                 # mermaid/flowchart edges
+
+
 def split_step_blocks(body):
-    """Split a flow body into per-step blocks: a numbered `N.` line + its indented
-    continuation lines (sub-bullets) until the next numbered line or a blank-line
-    dedent to a non-indented non-numbered line (section break)."""
+    """Split a flow body into per-step blocks, FORMAT-AWARE (ADV-02). A flow uses ONE primary
+    step format; we detect it and never mix:
+      - numbered `N.`/`N)` present  -> numbered steps only (top-level bullets are then
+        post-conditions / sub-notes, NOT steps — they stay continuations);
+      - else top-level `-`/`*`/`+` bullets -> bullet steps (a bullet-format flow);
+      - else mermaid/flowchart edges -> each edge line is a step.
+    A numbered-only parser silently PASSed bullet + mermaid flows (one of the two real
+    production formats) with false confidence — strictly worse than a SKIP."""
     lines = body.splitlines()
+    if any(NUMBERED_STEP_RE.match(ln) for ln in lines):
+        step_re = NUMBERED_STEP_RE
+    elif any(TOPLEVEL_BULLET_RE.match(ln) for ln in lines):
+        step_re = TOPLEVEL_BULLET_RE
+    elif any(MERMAID_EDGE_RE.search(ln) for ln in lines):
+        return [ln for ln in lines if MERMAID_EDGE_RE.search(ln)]
+    else:
+        return []
     blocks = []
     cur = None
     for line in lines:
-        if re.match(r"^\s*\d+\.\s", line):
+        if step_re.match(line):
             if cur is not None:
                 blocks.append("\n".join(cur))
             cur = [line]

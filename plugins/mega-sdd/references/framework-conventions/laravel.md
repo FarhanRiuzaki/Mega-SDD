@@ -231,7 +231,7 @@ controller.
 
 ```yaml
 endpoint_kinds:
-  - flow_signal: '(?i)\b(submit|submitted|review|approve|approved|reject|confirm|dispatch|apply|finalize|enrich|examine|resubmit)\b'
+  - flow_signal: '(?i)\b(submit(?:s|ted|ting)?|resubmit(?:s|ted|ting)?|review(?:s|ed|ing)?|approv(?:e|es|ed|al|ing)|reject(?:s|ed|ing|ion)?|confirm(?:s|ed|ing|ation)?|dispatch(?:es|ed|ing)?|appl(?:y|ies|ied|ying)|finaliz(?:e|es|ed|ing)|enrich(?:es|ed|ing)?|examin(?:e|es|ed|ing|ation))\b'
     required_artifact: form-request
     path_glob: app/Http/Requests/**/*.php
     naming: '{Action}{Module}Request'
