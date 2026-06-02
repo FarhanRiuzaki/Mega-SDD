@@ -108,6 +108,12 @@ EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
 - **Integration contract depth**: for every external system call (API, DB query, file I/O, message queue), document: protocol, authentication method, payload shape, error handling, retry policy, timeout. Each as a separate cited claim.
 - **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
 
+DEEP DISCIPLINES (v3.72.0+ — catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
+- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set by UPDATE/INSERT/assignment), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (`INSERT … SELECT`, snapshot, record-duplicate), list the fields carried over IMPLICITLY (the bareword / non-overwritten columns) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
+- **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the TOP of every controller / form file for entry-point dispatchers (`mode == …`, `sendingpage == …`, `request.method == …`, `$_GET['action']`): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
+- **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional `die()` / `exit()` / early-return halts on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]`); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (`if (true)`, `$debug = 1`, `// delete after testing`); and silent-success paths (empty catch, `|| true`, "expected failure → return success").
+- **P4 — Classify files by structure, not naming**: a file's role comes from its shape, not its filename prefix. Inspect template/output ratio, form-tag presence, and early-return action gates to classify each in-scope file as view / action_handler / dual_purpose / dispatcher / service. When the structural fingerprint contradicts the filename hint (a file named `act_*` that ALSO renders a full view → `dual_purpose`), document the mismatch in §9 — downstream rebuild planning depends on the real role.
+
 REPORT BACK (last line of your response, exact format):
 - path: <absolute output path>
 - verified: <int>
@@ -117,8 +123,13 @@ REPORT BACK (last line of your response, exact format):
 - intent: <int>
 - artifact: <int>
 - sources_cited: <int>
+- provenance_pairs_checked: <int>      # P1: state values where BOTH writer + reader were located
+- provenance_anomalies: <int>          # P1: write-only OR read-only-cross-domain values flagged (each MUST carry an [OPEN] or seam annotation)
+- rule_sites_multi: <int>              # P2: rules found in >1 site (each documented separately)
 - gate_self_check: pass | fail (<reason if fail>)
 ```
+
+> **P1 self-check rail:** if you report `provenance_anomalies > 0`, every anomaly MUST appear in the output as a `write-only` / `inherited / cross-domain seam` note WITH an `[OPEN]` marker (or a cited seam). An anomaly count with no matching annotation in the file is a `fail` on `gate_self_check`.
 
 ---
 
@@ -256,8 +267,11 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 - §6 Business Rules: extract IMPLICIT rules (coded as conditionals) as explicitly named rules. Format: "**BR-{domain}-{N}**: {rule in business language}. [marker] (`file:line`)".
 - §8 Edge Cases: minimum 3 entries per workflow domain. Look for: empty-collection edge cases, boundary values (0, max, null), race conditions between concurrent users, timezone/date-boundary issues.
 - §9 Rebuild Recommendations: for each edge case, explicitly state: replicate (it's a real business rule) / do-not-replicate (it's a bug) / open question (unclear).
+- §8 State Machine — apply **P1 provenance** (see DEEP DISCIPLINES in the generic prompt): for every transition you document from a state WRITE, also locate the READ that consumes that state; flag write-only / inherited-cross-domain values rather than silently assuming a transition the read-side never honors. Apply **P2** to any classifier/gate in the flow (enumerate all sites; capture distinct entry-point initial states separately).
 
 **Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥3 entries per workflow file (≥1 was too lenient — shallow extraction passed the gate with trivial entries).
+
+**Advisory (non-blocking, P1 provenance — v3.72.0+):** for each workflow agent that reports `provenance_anomalies > 0`, confirm the file carries a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. If a workflow file documents state transitions but its body never references the read-side (no predicate / filter / condition language consuming the state) → surface an advisory `provenance_read_side_thin` and re-dispatch the agent with the P1 discipline as feedback. This NEVER blocks the wave (mirrors `kb_flow_staging_missing`) — it is a quality nudge; genuinely unpaired states are legitimate `[OPEN]`s.
 
 ---
 
