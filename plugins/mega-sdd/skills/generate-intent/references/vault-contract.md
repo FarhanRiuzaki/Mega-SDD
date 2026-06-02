@@ -79,6 +79,17 @@ Two CAPTURE-stage rails enforced by `validate-vault-oqs.sh` (PostToolUse re-vali
 
 A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the accepted "captured the miss" signal): a vault that has not yet decided its operator surface may carry a Design-Source OQ instead of inventing the surface, and the gate passes.
 
+### Staged-input preservation + `_kb_source` propagation (§stages-propagation) (v3.71.0+, semantic-depth)
+
+A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its inputs: which fields enter at which step, in what order, by which role, gated by which transition. When that structure is flattened to a single "Inputs: A,B,C,D,E,F" list, the downstream bolt builds ONE form instead of the multi-step wizard (the captured trade-finance regression). To prevent it, staging is carried as a **stable structured field** and propagated the SAME way as OQ-IDs (§id-stability) and constitution clauses — copied verbatim, never re-derived:
+
+- **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/knowledge-base-schema.md §3a`). Each stage cites its own `_source` anchor.
+- **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `04-flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flat `**Steps**` narrative MAY remain for human readability, but the `stages:` block is authoritative.)
+- **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a blocking `vault_flow_staging_drop` halt (gates execute-bolts via PreToolUse Branch 14). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
+- **Advisory at the source.** `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, pointing the user to `/mega-sdd:enrich-semantics` to retro-fit staging without a full re-extract.
+
+> **Walking-skeleton scope (v3.71.0):** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.
+
 ### When skills must regenerate `vault.json`
 
 - `generate-intent` Step 3 — initial generation.
