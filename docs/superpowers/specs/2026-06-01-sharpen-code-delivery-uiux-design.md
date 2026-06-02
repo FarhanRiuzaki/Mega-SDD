@@ -112,7 +112,7 @@ Each slice = **validator(s) + pack-schema fill + sharpened SKILL prose + test fi
 
 ### Slice E — UI scaffold-tells quality gate  *(stage: gate / new hook)*
 - **Universal core:** `validate-ui-quality.sh` scans touched view files (pack `view_glob`) for pack `scaffold_tells` (must be absent) + `required_elements` (must be present) + optional min-delta vs `scaffold_stub_glob`.
-- **Enforcement:** `.ui-quality-blockers.json` + new PreToolUse Branch 5 blocking `mega-sdd:execute-bolts`; PostToolUse Style-A dispatch on Write|Edit of view files.
+- **Enforcement:** `.ui-quality-blockers.json` + new PreToolUse Branch 8 blocking `mega-sdd:execute-bolts` (slice E shipped as Branch 8; flow-coverage took Branch 5); PostToolUse Style-A dispatch on Write|Edit of view files.
 - **Prose:** execute-bolts dispatch contract gains positive UI obligations (defense-in-depth).
 - **Fixture proof:** against pre-polish LC view (`bf950ef`) → flags Controller-title + "Customer Id" + raw UUID; against post-polish (`a07704a`) → passes.
 
