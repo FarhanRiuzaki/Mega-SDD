@@ -130,7 +130,7 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
   - stage_id: "S1"
     stage_name: "Initial input"
     actor_role: "Maker"           # who fills / acts at this stage
-    input_fields: ["field_a", "field_b", "field_c"]  # subset of TOTAL workflow inputs allocated to THIS stage
+    input_fields: ["field_a", "field_b", "field_c"]  # BARE-STRING form — still fully valid (back-compat). Subset of TOTAL workflow inputs allocated to THIS stage
     transitions:
       - to: "S2"
         trigger: "submit_partial"  # the event that advances the workflow
@@ -139,13 +139,27 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
   - stage_id: "S2"
     stage_name: "Review & complete"
     actor_role: "Checker"
-    input_fields: ["field_d", "field_e", "field_f"]
+    input_fields:                  # ENRICHED OBJECT form (v3.72.0+, OPTIONAL) — progressive-disclosure delta semantics
+      - { name: "field_a", mutability: "dual-key-re-entry", visibility: "shown", conditional: "always" }  # re-typed by checker (G-110 dual-key)
+      - { name: "field_d", mutability: "required",          visibility: "shown", conditional: "always" }
+      - { name: "field_g", mutability: "optional",          visibility: "conditional", conditional: "if discount_type != 'none'" }
+    new_fields_vs_prior: ["field_d", "field_g"]          # fields collected HERE that no prior stage collected
+    hidden_fields_vs_prior: ["field_b", "field_c"]       # fields shown at a prior stage, no longer in THIS form
+    promoted_to_mutable_vs_prior: ["field_a (display-only at S1 → dual-key-re-entry at S2)"]
+    dynamic_disclosures:           # WITHIN-stage show/hide (JS / server-side conditional render)
+      - { trigger: "discount_type dropdown change", fields_shown: ["field_g"], _source: "legacy/path/file.php:215-222" }
     transitions:
       - to: "DONE"
         trigger: "approve"
         conditions: ["actor_role in {MGRL1, MGRL2}"]
     _source: ["legacy/path/file.php:201-240"]
 ```
+
+**Enriched per-field & delta fields (v3.72.0+, OPTIONAL — reuse-compliant extension of the SAME `stages:` block, NOT a parallel artifact):**
+- `input_fields` accepts EITHER bare strings (back-compat — S1 above) OR objects with `name` + optional `mutability` ∈ {`required`, `optional`, `display-only`, `dual-key-re-entry`} + `visibility` ∈ {`shown`, `hidden`, `conditional`} + `conditional` (trigger expr, default `"always"`). A consumer that doesn't read the enriched fields simply uses `name` (or the bare string) — no consumer breaks (per CLAUDE.md semantic-depth invariant #7).
+- Per-stage delta lists (all OPTIONAL): `new_fields_vs_prior` (the progressive-disclosure kernel — fields introduced at this stage), `hidden_fields_vs_prior` (collected earlier, no longer shown), `promoted_to_mutable_vs_prior` (was display-only, now mutable — e.g. dual-key re-entry).
+- `dynamic_disclosures` (OPTIONAL): within-stage show/hide keyed to a control (dropdown / checkbox / radio / AJAX sub-table) — `trigger` + `fields_shown` + `_source` anchor.
+- **Enforcement stance:** these dimensions are **best-effort / advisory** in v3.72.0 (the per-field mutability / conditional / dynamic-disclosure dims are the Fork-B-future dimensions named in the walking-skeleton note below). They are NOT validator-blocking — recording them makes the stage→stage delta auditable; absence never fails a gate.
 
 **Detection (when to author this block):** the source is multi-step when ANY of —
 - a multi-page form / wizard (a `step` / `stage` / `page` param or hidden state field switches which fields render),
