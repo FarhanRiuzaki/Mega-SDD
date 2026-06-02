@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.72.0] - 2026-06-02
+
+### Extract-intelligence deepening — smarter reasoning, more cases caught, automatically
+
+Makes `extract-intelligence` reason deeper and catch the cases a write-side-only read misses — *automatically*, every run. Distilled from a deep audit of `extract-intelligence` output against a real legacy trade-finance codebase (`new-tradefinance-import`, 22 findings). The bridging design proposed verbatim skill-body patches; on contact with the current plugin two facts reshaped the work: (a) the bridging "CRITICAL" item (multi-stage progressive disclosure) is **already shipped** as v3.71.0 staged-input → enriched the EXISTING §3a schema, not a parallel artifact; (b) Fork A doctrine — enforcement must be a validator, not prose that says "HALT". Priority reframe (user): **KB captures business intent + flow; rebuild owns implementation cleanliness — status-naming drift is NOT a gap.**
+
+**Track 1 — P1–P4 deep disciplines wired to fire automatically (the core):**
+- `wave-dispatch-templates.md`: the generic subagent prompt's **DEEP DISCIPLINES** block (received by EVERY Wave 1–5 subagent, so the reasoning fires automatically — not SKILL.md-only prose the subagents never read) — P1 state writer↔reader provenance + `INSERT…SELECT` clone-inheritance tracing (captured as a *business outcome*, never a pinned legacy value); P2 enumerate ALL rule/flow sites + entry-point dispatchers (distinct initial states stay distinguishable); P3 behaviour-as-EXECUTED (unconditional halts as `[ARTIFACT: debug-code-as-feature]`, rollback policy, test flags, silent-success); P4 structural file classification. REPORT BACK gains `provenance_pairs_checked`/`provenance_anomalies`/`rule_sites_multi` self-checks + a P1 self-check rail. Wave-3 gate adds **non-blocking** advisory `provenance_read_side_thin` (mirrors `kb_flow_staging_missing` — never fails the wave).
+- `extract-intelligence/SKILL.md`: `### Deep extraction disciplines (P1–P4)` design-vocabulary section (authoritative copy = dispatch template) + §7.1 business-intent framing; skill 1.7.0→1.8.0.
+
+**Track 2 — §3a staged-input schema enrichment (reuse-compliant, NOT a parallel artifact):**
+- `knowledge-base-schema.md §3a`: `input_fields` accepts bare strings (back-compat) OR objects `{name, mutability ∈ required|optional|display-only|dual-key-re-entry, visibility ∈ shown|hidden|conditional, conditional}`; new per-stage OPTIONAL deltas `new_fields_vs_prior`/`hidden_fields_vs_prior`/`promoted_to_mutable_vs_prior` + `dynamic_disclosures` (within-stage show/hide). Captures the "fields A,B,C at maker; D,E,F at the next stage" case in depth. Best-effort/advisory — optional fields break no consumer (semantic-depth invariant #7).
+
+**Track 3 — Extraction Completeness Contract + real validator (advisory, Fork-A):**
+- NEW `scripts/validate-extraction-scorecard.sh` — runnable validator (bash+Python, modeled on `validate-kb-flows.sh`): **SKIP** when absent (back-compat), **PASS** when consistent, **FAIL** on internal inconsistency OR a hidden gap (a PARTIAL/MISSING principle with ZERO `[OPEN]` markers — the silent-drift failure mode). `extract-intelligence/SKILL.md §Step 5.6` — Wave 5 emits `.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md` scoring P1–P4 + P5; anti-halu rail (an honest PARTIAL+`[OPEN]` is the passing state; never up-rank to hide a gap). `bind-codebase/SKILL.md`: scorecard **preflight advisory** consult (surfaces FAIL/absent, non-blocking this iter); skill 1.10.5→1.11.0.
+- **Scoped Fork-B-future** (no prose pretending to HALT without a backing validator): B1 hard-block (promote the advisory to a blocking PreToolUse branch), and B2/B3/E1/E2/E3 handshake/post-flight gates — each needs its own `validate-*.sh` + fixtures; B2/B3 to verify the *business outcome* survives, not legacy status values (per the reframe). The bridging design's downstream generate-units/execute-bolts prose gates are DEFERRED (scope narrowed to making *extract* smarter).
+
+**Track 4 — proof:** `tests/fixtures/iter80-extract-deepening/verify.sh` — Fork-A assertions (exit 0): P1–P4 + provenance self-checks reach the wave dispatch prompt; scorecard validator verdicts (PASS / FAIL-hidden_gap / PASS+advisory-when-[OPEN] / SKIP-absent); §3a enriched fields + bare-string back-compat. Fork-B (subagents ACTUALLY reasoning deeper; Wave 5 emitting an honest scorecard) documented as real-run-only, NOT script-asserted. No regressions: iter77 (16/16) + 19/19 code-delivery fixtures still green.
+
+**Invariants honored:** advisories never flip a blocking `status` (Iter-78.1 #1 / Iter-79 #5); `stages:` sub-fields stay OPTIONAL (semantic-depth #7); no new PreToolUse branch this iter (protects Iter-78.1 / Iter-79 / semantic-depth #6/#7 hook invariants). Spec: `docs/superpowers/specs/2026-06-02-extract-intelligence-deepening-design.md`.
+
 ## [3.71.0] - 2026-06-02
 
 ### Semantic-depth — staged-input walking skeleton (regression: multi-step workflows flattened to single-form)
