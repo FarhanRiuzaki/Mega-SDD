@@ -602,6 +602,17 @@ except Exception:
       "${PROJECT_ROOT}/.mega-sdd/.vault-binding-coverage-state.json" \
       "PostToolUse-Write-validate-vault-binding-coverage"
 
+    # ── Validator 6b (semantic-depth): staged-input non-loss KB→vault ──────
+    # Follows each 04-flows.md flow's `_kb_source` back-reference; FAILs with
+    # vault_flow_staging_drop when the cited KB workflow has a `stages:` block but
+    # the vault flow dropped it. Project-wide scan; self-skips when no KB / no
+    # `_kb_source` (backward-compatible). PreToolUse Branch 14 gates execute-bolts
+    # on its status==FAIL (dedicated single-purpose validator -> status gate is precise).
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-vault-flow-staging.sh" \
+      "${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json" \
+      "PostToolUse-Write-validate-vault-flow-staging"
+
     # ── Validator 7 (R2): KB output validation ────────────────────────────
     # Fires when KB domain/workflow/business-rules files are saved.
     case "$FILE_PATH" in

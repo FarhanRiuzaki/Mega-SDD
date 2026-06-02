@@ -635,6 +635,40 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 14: vault-flow-staging gate for execute-bolts (semantic-depth, v3.71.0+).
+    # Blocks bolts when validate-vault-flow-staging.sh found a vault 04-flows flow that
+    # dropped a `stages:` block its cited KB workflow (_kb_source) carried — staging
+    # flattened, so the bolt would build a single form where the legacy is a multi-step
+    # wizard. Dedicated single-purpose validator -> status==FAIL is precise (Iter-79 #4).
+    # PASS / SKIP (no KB, no _kb_source on flows, or staging preserved) never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        VFS_STATE="${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json"
+        if [ -f "$VFS_STATE" ]; then
+          VFS_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$VFS_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$VFS_STATUS" = "FAIL" ]; then
+            VFS_CNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$VFS_STATE'))
+    print(d.get('summary', {}).get('drop_count', '?'))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — vault-flow-staging validator found ${VFS_CNT} flow(s) in 04-flows.md that dropped a \`stages:\` block their cited KB workflow (\`_kb_source\`) carried. Staging was flattened, so the bolt would build a single form where the legacy is a multi-step wizard. Copy the KB §3a stages: block verbatim into the flow's \`**Stages**\` block + emit the Mermaid stateDiagram (vault-contract.md §stages-propagation), then re-save 04-flows.md (PostToolUse re-validates). State: ${VFS_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)
