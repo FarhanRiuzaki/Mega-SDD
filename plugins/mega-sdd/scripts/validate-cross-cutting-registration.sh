@@ -134,9 +134,17 @@ def parse_concerns(text):
         m = re.match(r"([a-z_]+)\s*:\s*(.*)$", s)
         if not m:
             continue
-        k, v = m.group(1), m.group(2).strip().strip('"').strip("'")
+        k = m.group(1)
+        raw = m.group(2)
+        # For path/glob keys, strip a trailing inline `# comment` BEFORE unquoting so an inline
+        # doc comment on the value never becomes part of the glob (these keys never contain '#').
+        if k in ("registration_target_glob", "registration_source_glob", "registration_exempt_glob",
+                 "applies_when", "concern"):
+            raw = re.sub(r"\s+#.*$", "", raw)
+        v = raw.strip().strip('"').strip("'")
         if k in ("concern", "applies_when", "spec_obligation",
-                 "registration_signature", "registration_target_glob", "registration_source_glob"):
+                 "registration_signature", "registration_target_glob", "registration_source_glob",
+                 "registration_exempt_glob"):
             cur[k] = v
     flush()
     return out
@@ -177,6 +185,21 @@ def read(path):
         return ""
 
 
+def strip_comments(src):
+    """ADV-06: remove // line, # line, and /* block */ comments before checking the
+    registration signature, so a COMMENTED-OUT registration (e.g. `// addGlobalScope(new
+    BranchScoped)`) does NOT satisfy the check and let a real leak pass. Conservative: only
+    affects the registration scan; string-literal edge cases are acceptable here (a comment
+    masking a real omission is the dangerous direction we must close)."""
+    src = re.sub(r"/\*.*?\*/", " ", src, flags=re.DOTALL)
+    out = []
+    for line in src.splitlines():
+        line = re.sub(r"//.*$", "", line)
+        line = re.sub(r"(^|\s)#.*$", r"\1", line)
+        out.append(line)
+    return "\n".join(out)
+
+
 missing_registration = []
 models_scanned = 0
 for c in concerns:
@@ -189,6 +212,16 @@ for c in concerns:
     except re.error:
         continue
     col_re = re.compile(r"\b" + re.escape(column) + r"\b")
+
+    # FPP-3: pack-declared exemptions — models that carry the column but must NOT register
+    # the concern (the SCOPE SOURCE, e.g. the auth User whose branch_id DRIVES scoping onto
+    # others; self-scoping it would break auth). A pack lists them via registration_exempt_glob.
+    exempt = set()
+    ex_glob = c.get("registration_exempt_glob")
+    if ex_glob:
+        for eg in re.split(r"\s*,\s*", ex_glob):
+            if eg:
+                exempt |= {os.path.realpath(p) for p in glob.glob(os.path.join(cwd, eg), recursive=True)}
 
     # 1. Branch-scoped TABLES: tables a migration gives the column (exact names + token-sets).
     scoped_tables = set()
@@ -210,6 +243,8 @@ for c in concerns:
     for mp in sorted(glob.glob(os.path.join(cwd, c["registration_target_glob"]), recursive=True)):
         if not os.path.isfile(mp):
             continue
+        if os.path.realpath(mp) in exempt:   # FPP-3: scope-source / pack-exempt model
+            continue
         content = read(mp)
         models_scanned += 1
         tbl_m = MODEL_TABLE_RE.search(content)
@@ -222,7 +257,7 @@ for c in concerns:
             is_scoped = any(ctoks & ts for ts in scoped_tablesets) if ctoks else False
         if not is_scoped:
             continue
-        if not reg_re.search(content):
+        if not reg_re.search(strip_comments(content)):   # ADV-06: ignore commented-out registration
             missing_registration.append({
                 "file": os.path.relpath(mp, cwd),
                 "concern": c.get("concern", "?"),

@@ -32,11 +32,15 @@ BAD_STATE="$HERE/bad/.mega-sdd/.cross-cutting-state.json"
 BAD_STATUS=$(read_state "$BAD_STATE" "d.get('status')")
 BAD_MISS=$(read_state "$BAD_STATE" "len(d.get('missing_registration',[]))")
 BAD_DECOY=$(read_state "$BAD_STATE" "sum(1 for x in d.get('missing_registration',[]) if 'Scopes/' in x.get('file',''))")
-note "bad: status=$BAD_STATUS exit=$BAD_EXIT missing_registration=$BAD_MISS decoy_flagged=$BAD_DECOY"
+BAD_USER=$(read_state "$BAD_STATE" "sum(1 for x in d.get('missing_registration',[]) if 'User.php' in x.get('file',''))")
+BAD_COG=$(read_state "$BAD_STATE" "sum(1 for x in d.get('missing_registration',[]) if 'Cog.php' in x.get('file',''))")
+note "bad: status=$BAD_STATUS exit=$BAD_EXIT missing_registration=$BAD_MISS decoy_flagged=$BAD_DECOY user_flagged=$BAD_USER cog_flagged=$BAD_COG"
 [ "$BAD_STATUS" = "FAIL" ] || fail "bad: status expected FAIL, got '$BAD_STATUS'"
 [ "$BAD_EXIT" = "1" ] || fail "bad: exit expected 1, got '$BAD_EXIT'"
-[ "$BAD_MISS" = "5" ] || fail "bad: missing_registration expected 5, got '$BAD_MISS'"
+[ "$BAD_MISS" = "5" ] || fail "bad: missing_registration expected 5 (5 scoped models; User exempt; Setting unscoped; Scope-def excluded), got '$BAD_MISS'"
 [ "$BAD_DECOY" = "0" ] || fail "bad: the Scope DEFINITION must NOT be flagged (false positive), got $BAD_DECOY"
+[ "$BAD_USER" = "0" ] || fail "FPP-3 regression: the scope-SOURCE User.php (registration_exempt_glob) must NOT be flagged, got $BAD_USER"
+[ "$BAD_COG" = "1" ] || fail "ADV-06 regression: Cog.php has a COMMENTED-OUT registration and MUST still be flagged (comment != registration), got $BAD_COG"
 
 note ""
 note "=== GOOD fixture (expect PASS) ==="

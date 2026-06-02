@@ -367,7 +367,15 @@ cross_cutting_concerns:
     registration_signature: 'addGlobalScope\(\s*new BranchScoped'
     registration_target_glob: 'app/Models/**/*.php'
     registration_source_glob: 'database/migrations/**/*.php'
+    registration_exempt_glob: 'app/Models/User.php'
 ```
+
+`registration_exempt_glob` (FPP-3) lists models that carry the column but MUST NOT register the
+concern — the SCOPE SOURCE. `User.php` holds `branch_id` as the authenticated user's home branch:
+that key DRIVES `BranchScoped` onto other models; self-scoping `User` would break auth (you must
+resolve users across branches). Add other genuine exceptions here as a comma-separated list of
+globs — never by editing the validator. (Slice C resolves this glob against the project root and
+skips matching files before the registration scan.)
 
 `registration_target_glob` tells slice C (`validate-cross-cutting-registration.sh`) WHERE
 the concern's generated source lives (Eloquent models). The scan flags a model that

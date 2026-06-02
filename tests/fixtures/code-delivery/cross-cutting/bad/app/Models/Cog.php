@@ -8,6 +8,6 @@ class Cog extends Model
     protected $fillable = ['name'];
     protected static function booted(): void
     {
-        // BUG: branch-scoped table but global scope never registered
+        // static::addGlobalScope(new BranchScoped);  <-- commented out by mistake (real leak)
     }
 }
