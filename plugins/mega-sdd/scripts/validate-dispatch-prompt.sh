@@ -237,7 +237,13 @@ UI_SLICE_LINE_RE = re.compile(r"^\s*UI/UX\s*:", re.MULTILINE | re.IGNORECASE)
 # (1) injected design tokens — a `Design tokens:` line. The token keys
 #     colors/spacing/fonts are schema field names; the LINE LABEL is the durable
 #     contract the execute-bolts T2 slice builder emits (un-excluded design_tokens).
-DESIGN_TOKENS_RE = re.compile(r"^\s*Design tokens\s*:", re.MULTILINE | re.IGNORECASE)
+DESIGN_TOKENS_RE = re.compile(r"^\s*Design tokens\s*:(.*)$", re.MULTILINE | re.IGNORECASE)
+# ADV-07b: a `Design tokens:` LABEL alone (or a placeholder value) is a vacuous pass. Require
+# REAL token content within the label value + the few following lines: a hex color, a CSS unit,
+# or a colors/spacing/fonts/palette key with a value.
+TOKEN_CONTENT_RE = re.compile(
+    r"#[0-9a-fA-F]{3,8}\b|\b\d+(?:\.\d+)?(?:px|rem|em)\b|\b(colors?|spacing|fonts?|palette|radius|shadow)\b\s*[:=]",
+    re.IGNORECASE)
 
 # (2) a view/component exemplar — a `Pattern: view|component` code-example header
 #     AND/OR a cited `File:` path matching the pack view_glob. We accept EITHER the
@@ -252,14 +258,20 @@ def is_ui_prompt(text):
 
 
 def has_design_tokens(text):
-    return bool(DESIGN_TOKENS_RE.search(text))
+    m = DESIGN_TOKENS_RE.search(text)
+    if not m:
+        return False
+    # ADV-07b: require REAL token content (in the label value OR the next few lines), not a
+    # bare label / placeholder like `Design tokens: TODO none captured yet`.
+    window = m.group(1) + "\n" + text[m.end():m.end() + 400]
+    return bool(TOKEN_CONTENT_RE.search(window))
 
 
 def has_view_exemplar(text):
-    # explicit category label?
-    if PATTERN_LINE_RE.search(text):
-        return True
-    # else: any cited code-example File: path that matches the pack view_glob.
+    # ADV-07b: a bare `Pattern: view` label is NOT sufficient (it passed vacuously). Require a
+    # cited code-example `File:` whose path matches the pack view_glob — a real view/component
+    # exemplar, stack-agnostic via the pack glob. (The Pattern label alone, with a controller-only
+    # File: or no File:, no longer satisfies the check.)
     for m in FILE_LINE_RE.finditer(text):
         cited = m.group(1).strip()
         if glob_match(cited, view_glob):
