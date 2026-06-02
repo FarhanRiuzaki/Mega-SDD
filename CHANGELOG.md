@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.69.1] - 2026-06-02
+
+### Iter 78.1 — E2E integration audit remediation (precision-soundness of the 8-gate stack)
+
+The E2E audit (`docs/superpowers/audits/2026-06-02-e2e-integration-audit.md`) found the integrated 8-gate `execute-bolts` stack deadlock-safe but not precision-sound. Fixed (all fixture-verified; `tests/fixtures/code-delivery/regressions/`):
+
+- **ADV-01 (CRITICAL fail-open):** bare `open()` in flow-coverage/sibling-consistency/unit-spec/vault-oqs crashed on non-UTF-8 bytes → PostToolUse `|| true` swallowed it → gate silently disabled. Added `errors="replace"` to every read.
+- **TAE2E-01 (CRITICAL tech-agnostic breach):** sibling-consistency hardcoded the Eloquent paren-call accessor idiom → false-FAILed + BLOCKED any non-Laravel FK project. Accessor shape is now pack-declared (`accessor_form: any|call`); non-Laravel stacks pass.
+- **FPP-2 (CRITICAL false-positive):** ui-quality `required_elements` blocked correct Blade partials/components. Now exempts partials (`is_partial()`); `scaffold_tells` still apply to all views.
+- **FPP-4:** sibling `missing_relations` was absolute → now a cross-sibling divergence check (solo/convention units pass).
+- **FPP-3:** cross-cutting flagged the scope-source `User` model → pack-declared `registration_exempt_glob`.
+- **ADV-02/ADV-03:** flow-step parser was numbered-only → now format-aware (numbered / bullet / mermaid); decision verbs + flow_signal inflection-tolerant. Mermaid maker-checker flows (a real production format) are no longer silently passed.
+- **ADV-04:** tightened evadable UI scaffold-tell regexes (multi-word/uppercase ID labels, array-access FK echoes, `*_amount`/`*_total` money).
+- **ADV-05/ADV-06:** broadened FK-column detection (backticked); strip comments before the cross-cutting registration check (a commented-out registration no longer satisfies it).
+- **CD-2/CD-3:** Branch 9 + Branch 10 recovery REASONs rewritten to lead with a non-circular deterministic escape (direct edit / `rm` state) instead of re-running the just-blocked skill.
+
+Remaining audit punch-list (MEDIUM/LOW, tracked): CD-4 (multi-failure summary), ADV-07 (inline-list acceptance_test + dispatch placeholder), IE-2 (parent-thread post-flight re-scan), IE-5 (stale spec branch number), invariant docs.
+
 ## [3.69.0] - 2026-06-02
 
 ### Iter 78 — Sharpen code delivery: decomposition reasoning + UI/UX quality (tech-agnostic, fixture-verified)
