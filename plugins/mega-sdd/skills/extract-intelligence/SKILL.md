@@ -267,6 +267,47 @@ After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, 
 
 If write fails: log warning + continue (snapshot is freshness check optimization; KB itself remains the consumable output).
 
+## Step 5.6 — Emit Extraction Completeness Contract scorecard (v3.72.0+)
+
+The contract makes extraction *falsifiable*: it summarizes how well each of the five Deep extraction disciplines (P1–P4 above + P5 staged inputs) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
+
+- `.extraction-scorecard.json` (machine-readable — validated by `scripts/validate-extraction-scorecard.sh`)
+- `EXTRACTION-SCORECARD.md` (human-readable companion)
+
+**Deriving each principle's status** (from the Wave REPORT BACK self-checks + a holistic KB scan):
+
+| Principle | COVERED when | PARTIAL / MISSING when |
+|---|---|---|
+| `P1_state_provenance` | every documented state writer has a located reader (or an explicit `write-only` / `inherited / cross-domain seam` `[OPEN]` note) | `provenance_anomalies` reported but not all carry an `[OPEN]`/seam note |
+| `P2_rule_enumeration` | repeated rules documented at every site; entry-point branches captured as distinct initial states | a rule documented at only one site when grep shows more; disagreeing sites not marked `[OPEN]`/conflict |
+| `P3_behavior_executed` | unconditional halts / rollback policy / test flags / silent-success paths documented as observed | a transaction wrapper in scope with no documented rollback policy |
+| `P4_structural_classification` | in-scope files classified by structure; filename-vs-structure mismatches noted | files left role-ambiguous with no `[OPEN]` |
+| `P5_staged_inputs` | every multi-step `classification: workflow` carries a `## 3a` `stages:` block | a multi-step workflow with no stages block (see `kb_flow_staging_missing`) |
+
+**`overall_status`:** `PASS` = all five COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
+
+**Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure.
+
+```json
+{
+  "version": "1.0",
+  "extracted_at": "<ISO8601>",
+  "extractor_version": "extract-intelligence@1.8.0",
+  "scope": { "legacy_root": "<path>", "files_in_scope": 0, "files_read_fully": 0 },
+  "principles": {
+    "P1_state_provenance":        { "status": "COVERED|PARTIAL|MISSING", "anomalies_count": 0, "anomalies": [] },
+    "P2_rule_enumeration":        { "status": "COVERED|PARTIAL|MISSING", "rules_documented": 0, "conflicts_open": 0 },
+    "P3_behavior_executed":       { "status": "COVERED|PARTIAL|MISSING", "artifact_markers": 0 },
+    "P4_structural_classification":{ "status": "COVERED|PARTIAL|MISSING", "files_classified": 0, "naming_structure_drift_count": 0 },
+    "P5_staged_inputs":           { "status": "COVERED|PARTIAL|MISSING", "workflows_audited": 0, "workflows_with_stages": 0 }
+  },
+  "overall_status": "PASS|PARTIAL|FAIL",
+  "open_markers_present": true
+}
+```
+
+**Validation + downstream consumption:** `scripts/validate-extraction-scorecard.sh --cwd=<project>` checks the scorecard's internal consistency + the `[OPEN]`-correspondence rule (SKIP when absent — back-compat; FAIL only on inconsistency or a hidden gap). `bind-codebase` consults it as a **preflight advisory** (surfaces FAIL/absent; non-blocking this iter). If write fails: log warning + continue (the KB itself remains the consumable output).
+
 ## Bridge to rebuild + mega-sdd pipeline
 
 After extraction, suggest one of:

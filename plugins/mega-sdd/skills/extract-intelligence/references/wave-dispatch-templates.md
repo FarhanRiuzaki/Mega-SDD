@@ -305,6 +305,7 @@ Produce in order:
 4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 + per-module acceptance criteria.
 5. **`99-rebuild-architecture/data-mutation-policy.md`** (v1.4+, Iter 22) — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
 6. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
+7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** (v3.72.0+) — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the five principle statuses (P1–P4 + P5 staged inputs) from the Wave REPORT BACK self-checks + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
 
 README MUST surface REENGINEERING OPPORTUNITIES + Critical findings BEFORE TOC + before stats. Format:
 
@@ -385,6 +386,12 @@ critical_line=$(grep -n '^## Critical Findings' README.md | head -1 | cut -d: -f
 if [[ -z "$reengineering_line" || -z "$critical_line" || "$reengineering_line" -gt "$critical_line" ]]; then
   echo "FINAL FAIL: README must lead with Reengineering Opportunities before Critical Findings"
 fi
+
+# 7. Extraction Completeness Contract scorecard present + self-consistent (v3.72.0+; advisory)
+[[ -f ".extraction-scorecard.json" ]] || echo "ADVISORY: .extraction-scorecard.json not emitted (see SKILL.md §Step 5.6)"
+bash "${CLAUDE_PLUGIN_ROOT:-../..}/scripts/validate-extraction-scorecard.sh" --cwd="$(pwd)" --quiet \
+  && echo "SCORECARD: consistent (or absent → SKIP)" \
+  || echo "ADVISORY: scorecard integrity FAIL — re-check §Step 5.6 (a PARTIAL/MISSING principle must carry [OPEN] markers)"
 ```
 
 If any FINAL FAIL → halt, surface output to user, ask whether to re-dispatch a specific agent or accept gaps as `[OPEN]`.
