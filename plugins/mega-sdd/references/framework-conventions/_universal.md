@@ -114,3 +114,169 @@ Choose ONE per project (frameworks may default to a specific choice):
 | UUID v4 | Distributed systems; external-facing URLs; offline-generated | Larger storage; random — poor index locality |
 | UUID v7 (time-ordered) | Distributed + needs index locality | New (2026+); framework support varies |
 | Composite key | Junction tables only | Awkward for ORMs |
+
+## Flow-artifact derivation
+
+> Universal reasoning core for code-delivery slice A (`validate-flow-coverage.sh`).
+> The PRINCIPLE is stack-neutral; the SIGNATURES are not.
+
+Universal principle (holds across all backends): **every input-accepting
+state-transition step in a flow must map to exactly one input-validation artifact
+in the unit that builds that module — no more, no fewer.** A module unit that
+enumerates N input-accepting flow steps but ships fewer validation artifacts has
+under-decomposed the flow (a step accepts input with no place to validate it).
+
+This pack declares ONLY the principle — it does NOT name a concrete artifact kind
+or path, because "where input validation lives" is framework-specific (Laravel:
+Form Request under `app/Http/Requests/`; Django: a `Form`/serializer; Express: a
+validation-schema middleware). A framework pack overrides this section with its own
+`endpoint_kinds:` block (see `_template.md` §Flow-artifact derivation). When NO pack
+in the chain declares concrete `endpoint_kinds:`, the validator writes `status: SKIP`
+— a stack is never blocked for a signature it never declared.
+
+## Conditional scaffold artifacts
+
+> Universal reasoning core for code-delivery slice A (anti dead-stub).
+
+Universal principle: **a scaffolding generator emits some artifacts that are only
+valid when a corresponding flow endpoint exists** (e.g. an edit/update view is dead
+weight if the entity has no update flow). A unit that lists such an artifact in its
+target files without the gating flow endpoint is shipping a dead stub.
+
+As above, the universal pack declares only the principle; the concrete
+`artifact_glob` + `requires_flow_endpoint` signatures are framework-specific and
+live in the framework pack. Absent → the validator skips the dead-stub check.
+
+## Entity source globs
+
+> Universal reasoning core for code-delivery slice A (module matching).
+
+Universal principle: **to compare a flow against the unit that builds its module,
+the validator must recover each unit's entity name.** The strongest evidence is the
+unit's own `module:`/`title:` frontmatter; the next-strongest is the entity baked
+into the paths it ships (a `WidgetController`, a `widgets/` view dir, a `Widget`
+model). WHERE that entity lives in a path is framework-specific — Laravel buries it
+in `app/Http/Controllers/{Entity}Controller.php`; Django in an app/`models.py` class;
+Express in a `routes/{entity}.js`. This universal pack declares ONLY the principle.
+
+The concrete `entity_sources:` capture patterns live in the framework pack (see
+`_template.md` §Entity source globs). When NO pack in the chain declares them, the
+validator degrades to TITLE-ONLY matching (flow title tokens vs unit frontmatter
+tokens) — coarser, but never an error and never a crash on an undeclared stack.
+
+## Cross-cutting concerns
+
+> Universal reasoning core for code-delivery slice B (`validate-sibling-consistency.sh`)
+> + slice C (`validate-cross-cutting-registration.sh`). The PRINCIPLE is stack-neutral;
+> the SIGNATURES are not.
+
+Universal principle (holds across all backends): **when a concern cuts across a set of
+structurally-analogous sibling units (models that share a column or a role — e.g. every
+model carrying a tenant/branch key, every soft-deletable model), that concern must be
+implemented the SAME way in every sibling — one consistent mechanism per shared concern.**
+A sibling group where the golden exemplar declares the concern's obligation but a peer
+declares it differently (or not at all) has DIVERGED at decomposition time — a class of
+bug where the exemplar module is built correctly and the siblings quietly drift.
+
+How the validator groups siblings is universal: partition units by their `module` + `scope`
+frontmatter (when those fields exist); when they don't (a vault that never set them), the
+whole vault is one group and the pack concern's obligation is absolute. The CONCERN
+DEFINITIONS themselves — which column brings the concern into scope (`applies_when`), which
+signature the unit must declare (`spec_obligation`) — are stack-specific and live in the
+framework pack (`cross_cutting_concerns:`, see `_template.md`). When NO pack in the chain
+declares any concern, the validator writes `status: SKIP` — a stack is never blocked for a
+concern it never declared.
+
+## Relation derivation
+
+> Universal reasoning core for code-delivery slice B (relation coherence).
+
+Universal principle: **a foreign-key column implies a relation accessor — a model that
+declares an FK column should declare the relation that reads it back.** The naming is
+near-universal across ORMs: an FK column named `<thing>_id` maps to an accessor named for
+`<thing>` (the singular target), and the canonical kind is the inverse "belongs-to".
+
+```yaml
+relation_derivation:
+  fk_to_accessor:
+    rule: '{singular}_id => belongs-to accessor `{singular}`'
+    accessor_form: any   # 'any' = match the accessor as a word (attribute OR call). A
+                         # framework pack overrides with its idiom: 'call' for paren-call
+                         # ORMs (Laravel belongsTo `branch()`, ActiveRecord); 'attribute'
+                         # for attribute-relation ORMs (Django `branch = ForeignKey(...)`).
+                         # NEVER hardcode the shape in the validator — a stack the pack does
+                         # not specialize is matched permissively, never false-FAILed (TAE2E-01).
+    # The relation check is a CROSS-SIBLING divergence test (not an absolute per-unit rule):
+    # within a sibling group it flags a unit lacking the accessor for an FK ONLY when a
+    # sibling declares it. Uniform groups (all declare, or all rely on ORM convention) and
+    # solo units are never flagged (FPP-4). A pack may override accessor casing/kind/form.
+```
+
+A framework pack MAY override `fk_to_accessor` (casing, accessor kind) in its own
+`relation_derivation:` block. When neither a pack nor this universal default is parseable,
+the relation check is skipped — never an error.
+
+## Entity matching tokens
+
+> Universal reasoning core for code-delivery slice A (token tuning).
+
+Universal principle: **entity matching reduces both a flow title and a unit to a SET
+of significant tokens and intersects them.** Generic structural words (articles,
+prepositions) and mega-sdd vault-FORMAT vocabulary (`module`, `flow`, `approve`,
+`maker`, …) are universal noise and are stripped by the validator core itself.
+
+DOMAIN-specific jargon (industry terms that are noise for entity matching in a given
+project) and compound-entity aliases are NOT universal — they belong in the framework
+pack (or a project fork's pack) via `stop_tokens:` / `compound_aliases:` (see
+`_template.md` §Entity matching tokens). The validator never bakes in a domain term.
+
+## Test patterns
+
+> Universal reasoning core for code-delivery slice D (`validate-unit-spec.sh` —
+> render-test-per-module gate). The PRINCIPLE is stack-neutral; the SIGNATURES are not.
+
+Universal principle (holds across all UI-bearing stacks): **a unit that ships a detail
+view must prove that view actually renders.** A route-200 smoke test is not enough — the
+recurring real-world crash is the detail page that returns 200 with a blank body or
+throws on a null/empty field (an empty-model `show`, a `—` branch label, a null
+timestamp formatted without a guard). The cheap durable proof is a render test that
+builds a model, GETs the detail route, and asserts a REAL display field appears. Every
+view-bearing unit therefore carries one `acceptance_test` of `type: render`.
+
+This pack declares ONLY the principle — it does NOT name a concrete view path or test
+template, because WHERE a detail view lives and HOW you render+assert it is
+framework-specific (Laravel: a Blade `show.blade.php` GET-tested with
+`$this->get(route(...))->assertSee(...)`; Django: a `DetailView` template tested with
+`self.client.get(...)`; Express+React: a component render test). A framework pack
+overrides this section with concrete `detail_view_glob:` + `detail_view_render:` (see
+`_template.md` §Test patterns). When NO pack in the chain declares them, the render check
+SKIPs — a stack is never blocked for a detail-view convention it never declared.
+
+## UI quality signatures
+
+> Universal reasoning core for code-delivery slice E (`validate-ui-quality.sh` —
+> UI scaffold-tells gate). The PRINCIPLE is stack-neutral; the SIGNATURES are not.
+
+Universal principle (holds across all UI-bearing stacks): **a generated view must be
+fit for a human operator, not a raw scaffold dump.** The recurring real-world defect is
+a code generator that emits a structurally-correct-but-unusable page — the title leaks
+the controller class name, every field label is the database column auto-humanized
+(`Customer Id`, `Branch Id`), foreign keys render as raw UUIDs instead of the related
+record's human label, money prints unformatted, and confirmations use a native browser
+`alert()` instead of the project's notification idiom. Each of these is a TELL: a
+signature of un-finished scaffold that ships to production because the spec never modeled
+the primary user task. Conversely a non-trivial view that does NOT extend the app layout
+or carry a responsive grid is missing a REQUIRED element. The cheap durable enforcement
+is a deterministic scan: a touched view that matches any tell, or (when non-trivial) is
+missing any required element, fails the gate before the next bolt runs.
+
+This pack declares ONLY the principle — it does NOT name a concrete view path, tell
+regex, or required-element regex, because WHAT a scaffold tell looks like is entirely
+framework-specific (Laravel/Blade: `@section('title', '…Controller')`, `>Customer Id<`,
+`{{ $m->customer_id }}`; Django: `{{ object.customer_id }}` in a template; React: a
+`{row.customer_id}` JSX expression). A framework pack overrides this section with concrete
+`view_glob:` + `scaffold_tells:` + `required_elements:` (see `_template.md`
+§UI quality signatures). When NO pack in the chain declares them, the gate SKIPs — a stack
+is never blocked for a UI convention it never declared. The tells/elements lists MERGE
+(union, dedup by `id`) across the `extends` chain so a base pack can declare stack-generic
+tells while a project pack adds project-specific required elements; both apply.

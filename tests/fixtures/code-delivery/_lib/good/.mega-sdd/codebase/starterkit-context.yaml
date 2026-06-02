@@ -1,0 +1,6 @@
+starterkit_context:
+  schema_version: 3.0
+  generated_by: fixture (code-delivery/_lib)
+  framework: laravel-base-26
+  framework_version: "12.x"
+  framework_pack: laravel-base-26.md

@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.8.0
+version: 2.12.0
 description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -55,6 +55,15 @@ Turns intent into actionable atomic specs for AI dev execution.
 1. **Load vault.** Read 7 files + vault.json. If bound-vault path provided, also read binding.md.
 
 2. **Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (a component, endpoint, schema migration, etc.) becomes a candidate unit.
+
+2.2. **Flow-step → artifact derivation (v2.9+, Iter — code-delivery slice A; defense-in-depth alongside `validate-flow-coverage.sh`).**
+
+   Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`) in `04-flows.md`, enumerate its **input-accepting state-transition steps** — every numbered step (including signals in its sub-bullets, e.g. `workflow_state → SUBMITTED`) that accepts a payload to advance state (submit / review / approve / reject / confirm / dispatch / apply / finalize / enrich / examine / resubmit per the active pack's `## Flow-artifact derivation` `flow_signal`). The set of per-step input-validation artifacts a module unit ships **equals** the set of input-accepting steps its flow enumerates — no more, no fewer:
+
+   - **One artifact per step, not one per controller.** A 5-stage maker-checker flow needs 5 Form Requests (Laravel) / 5 serializers (DRF) / 5 validation schemas (Express) — list each in the unit's `## Target files`. Listing only `Store…Request` + `CraApprove…Request` while the flow has 5 input steps is the exact under-decomposition the validator flags (proven: 8 missing per-stage Form Requests in the tradefinance Phase-2 run).
+   - **Drop conditional scaffold artifacts with no gating flow.** A generic CRUD scaffolder emits an `edit`/update view for every resource, but a maker-checker entity advanced through workflow transitions has no update/PUT flow step — so that view is a dead stub. Do NOT list a conditional artifact (active pack `## Conditional scaffold artifacts` `artifact_glob`) in `## Target files` unless a flow step matches its `requires_flow_endpoint` (proven: 6 dead `edit.blade.php` stubs in the same run).
+
+   The artifact kinds + paths are read from the active framework pack — never hardcode a stack here. `mega-sdd:execute-bolts` is BLOCKED by `validate-flow-coverage.sh` (`.flow-coverage-state.json` status FAIL) until every input-accepting step maps to an artifact and no dead scaffold remains; this prose is the design rationale, the validator is the enforcement.
 
 2.5. **Determine task_type per candidate (v1.2+, Iter 1).**
 
@@ -440,7 +449,35 @@ blocker:
    - At least one `type: test` entry (mandatory)
    - Generate test command stub matching detected test framework from codebase-map (greenfield: pick sensible default)
    - Add `type: manual` for user-visible flows
+   - **Render test for view-bearing units (code-delivery slice D):** if any `target_files` path matches the active framework pack `## Test patterns` → `detail_view_glob` (a detail/show view, e.g. `resources/views/**/show.blade.php`), the unit MUST ALSO carry a `type: render` acceptance_test built from the pack `detail_view_render` template (factory-create the model, GET the detail route, assert 200 + assert a real display field renders). A route-200 smoke test does NOT satisfy this — empty-model / null-field render crashes slip through. The deterministic `validate-unit-spec.sh` emits `render_test_missing` and the PreToolUse render-test gate (Branch 6) blocks `mega-sdd:execute-bolts` if it is absent; this prose is defense-in-depth. Packs that declare no `## Test patterns` → no render obligation (stack declared no detail-view convention).
    - Per Iter 47 (v2.7.0+): this is the FIRST PASS — adversarial review runs in Step 9.5 below
+
+9.b. **Attach a UI contract to view-bearing units (v2.10.0+, Task F — code-delivery slice F).**
+
+   A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`04-flows.md` steps + states, `02-architecture` entities/fields, the design-system signals in `01-context`/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `references/vault-contract.md`; do NOT default a value (anti-hallucination rail, spec §5).
+
+   ```yaml
+   ## UI contract
+   label_map:                       # human label per displayed field — from 02-architecture field names + 01-context copy; NEVER a Str::title(column) like "Customer Id"
+     customer_id: "Customer"
+     created_at: "Created"
+   fk_display:                      # FK column => the related entity's display field, resolved via the relation (pack `## Relation derivation`); never render the raw id
+     customer_id: "customer.name"
+     branch_id: "branch.name"
+   value_formatting:                # money/number/date/status formatting — from field types in 02-architecture
+     amount: "currency (2dp, thousands sep)"
+     status: "human label + badge (map enum -> label from flow states)"
+     created_at: "human date (null-safe placeholder)"
+   required_states:                 # the states this view MUST handle — DERIVED from the flow (04-flows.md), not boilerplate
+     - empty       # list with zero rows (grounded: flow allows an empty collection)
+     - loading     # async fetch/action present in the flow
+     - error       # failure branch present in the flow (surface via the project notification idiom)
+     - pending     # workflow item mid-process (maker-checker / multi-stage flow) -> show human status label
+   grounded_in: ["04-flows.md F-U-003 step 2", "02-architecture §Widget"]   # citations (anti-halu)
+   ```
+
+   - `required_states` is the load-bearing, flow-derived part: include only the states the flow actually produces (a read-only view with no async has no `loading`; a single-stage flow has no `pending`). The execute-bolts `ui_ux` slice injects the design tokens + a linter-clean view exemplar + `references/ui-design-heuristics.md`, and `validate-dispatch-prompt.sh` asserts the emitted prompt carries them — this UI contract is the unit-spec-stage complement (what to render) to that execution-stage enrichment (how the project renders it).
+   - Provenance: mark `_grounded: true` only when every entry cites a vault source; otherwise emit the gap as an OQ. Do NOT fabricate labels, statuses, formatting rules, or states the vault does not establish.
 
 9.5. **Adversarial test review pass (v2.7.0+, Iter 47 — closes audit D4-006)**
 
@@ -719,6 +756,8 @@ This enables downstream skills (execute-bolts, multi-squad routing) to verify th
          - "If existing files SHOULD be replaced (rebuild scenario), confirm intent and re-run with --force-overwrite (NOT YET IMPLEMENTED — pause and consult human)."
      next_action: "Resolve manually then re-run /mega-sdd:generate-units."
    ```
+
+12.7. **Sibling-consistency sweep (code-delivery slice B, defense-in-depth).** After units are written, reason about SIBLING units *together*, not one at a time. Group units by `module` + `scope`. For each cross-cutting concern the active framework pack declares (`## Cross-cutting concerns` — e.g. a tenant/branch-scoping key, soft-delete, audit-trail) whose `applies_when` matches a unit's model, EVERY sibling in the group the concern applies to MUST declare the SAME mechanism (the concern's `spec_obligation`) — one consistent mechanism per shared concern. A sibling that scopes "a different way" or omits it is **fan-out divergence** (the golden exemplar is correct, the siblings drift — the exact failure proven in the tradefinance Phase-2 run, where one model scoped "via lc_id" while its siblings used the shared trait). Likewise, every FK column a unit declares (`<name>_id`) MUST declare its derived relation accessor (pack `## Relation derivation`; universal default: the camelCase singular of `<name>`). This sweep is ENFORCED by `scripts/validate-sibling-consistency.sh` (PostToolUse → `.sibling-consistency-state.json`; PreToolUse Branch 7 blocks `execute-bolts` on FAIL) — this prose is defense-in-depth; the validator is the gate. Tech-agnostic + anti-hallucination: never invent a concern the active pack does not declare.
 
 13. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 

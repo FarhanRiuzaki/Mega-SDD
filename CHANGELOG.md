@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.69.1] - 2026-06-02
+
+### Iter 78.1 — E2E integration audit remediation (precision-soundness of the 8-gate stack)
+
+The E2E audit (`docs/superpowers/audits/2026-06-02-e2e-integration-audit.md`) found the integrated 8-gate `execute-bolts` stack deadlock-safe but not precision-sound. Fixed (all fixture-verified; `tests/fixtures/code-delivery/regressions/`):
+
+- **ADV-01 (CRITICAL fail-open):** bare `open()` in flow-coverage/sibling-consistency/unit-spec/vault-oqs crashed on non-UTF-8 bytes → PostToolUse `|| true` swallowed it → gate silently disabled. Added `errors="replace"` to every read.
+- **TAE2E-01 (CRITICAL tech-agnostic breach):** sibling-consistency hardcoded the Eloquent paren-call accessor idiom → false-FAILed + BLOCKED any non-Laravel FK project. Accessor shape is now pack-declared (`accessor_form: any|call`); non-Laravel stacks pass.
+- **FPP-2 (CRITICAL false-positive):** ui-quality `required_elements` blocked correct Blade partials/components. Now exempts partials (`is_partial()`); `scaffold_tells` still apply to all views.
+- **FPP-4:** sibling `missing_relations` was absolute → now a cross-sibling divergence check (solo/convention units pass).
+- **FPP-3:** cross-cutting flagged the scope-source `User` model → pack-declared `registration_exempt_glob`.
+- **ADV-02/ADV-03:** flow-step parser was numbered-only → now format-aware (numbered / bullet / mermaid); decision verbs + flow_signal inflection-tolerant. Mermaid maker-checker flows (a real production format) are no longer silently passed.
+- **ADV-04:** tightened evadable UI scaffold-tell regexes (multi-word/uppercase ID labels, array-access FK echoes, `*_amount`/`*_total` money).
+- **ADV-05/ADV-06:** broadened FK-column detection (backticked); strip comments before the cross-cutting registration check (a commented-out registration no longer satisfies it).
+- **CD-2/CD-3:** Branch 9 + Branch 10 recovery REASONs rewritten to lead with a non-circular deterministic escape (direct edit / `rm` state) instead of re-running the just-blocked skill.
+
+Also fixed: **ADV-07** (render-test accepts inline-list `acceptance_test`; dispatch-prompt rejects placeholder tokens / bare `Pattern:` label — requires a view-glob `File:`), **IE-2** (execute-bolts parent-thread post-flight re-scan documented to close the `--parallel` subagent-blind window), **IE-5** (spec branch number), and the **CD-6/IE-4 + TAE2E-03 invariant docs** (halt_type-counting on extension gates; `_universal` stays principle-only; `errors="replace"` on reads).
+
+**CD-4 (done in v3.69.2):** the execute-bolts path now precomputes a multi-gate failure summary; `emit_block` prepends it so the first block surfaces ALL failing gates at once (`[N execute-bolts gates are failing: …]`) instead of forcing serial one-gate-at-a-time round-trips. Additive prefix only — empty when ≤1 gate fails; no control-flow change; all 9 fixtures + the 9-branch smoke pass.
+
+**Audit punch-list: CLEARED.** All 35 E2E-audit findings are resolved or were verified design strengths (CD-1/CD-5/CD-6 etc.).
+
+## [3.69.0] - 2026-06-02
+
+### Iter 78 — Sharpen code delivery: decomposition reasoning + UI/UX quality (tech-agnostic, fixture-verified)
+
+**Trigger:** Deep audit (`docs/superpowers/audits/2026-06-01-code-delivery-uiux-deep-audit.md`) + the `new-tradefinance-import` Phase-2 real-run: code *delivery* was the weak link — UI/UX a coin-flip and flow→file decomposition shallow (module-altitude only). Root causes proven from the fixture's own post-generation repair commits: fan-out divergence (golden exemplar correct, siblings drift), zero UI/UX quality gate, capture missing the operator surface.
+
+**Approach (per spec `docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md`):** validator-first (skill prose is defense-in-depth only — prose-only wire-ups failed 4× historically), tech-agnostic (universal validator core + framework-pack-declared signatures; add a stack = add a pack), and **fixture-verified DoD** — each validator must flag the real defect in the tradefinance git history and pass on the repaired state.
+
+**Shipped (7 slices + shared helper, all [HOOK-VALIDATE] Fork-A):**
+- `scripts/_lib/resolve-framework-pack.sh` — shared pack resolver (the tech-agnostic backbone; resolves the `extends` chain + merges `--section` bodies).
+- **A** `validate-flow-coverage.sh` — flow-step→artifact derivation + scaffold-filter (flags missing per-stage Form Requests + dead `edit` view stubs). PreToolUse Branch 5.
+- **B** `validate-sibling-consistency.sh` — cross-unit shared-concern coherence + FK→relation derivation (flags fan-out divergence). PreToolUse Branch 7.
+- **C** `validate-cross-cutting-registration.sh` — per-sibling runtime-registration scan on generated source (flags the `2bdfc1b` BranchScoped-not-registered leak; migration-driven table detection). PreToolUse Branch 11.
+- **D** render-test-per-view-bearing-unit gate (`render` acceptance_test kind + `validate-unit-spec.sh` extension). PreToolUse Branch 6.
+- **E** `validate-ui-quality.sh` — UI scaffold-tells gate (pack-declared `scaffold_tells`/`required_elements`). PreToolUse Branch 8.
+- **F** `validate-dispatch-prompt.sh` + execute-bolts enrichment — design tokens un-excluded, UI exemplar few-shot, frontend-design heuristics injected for UI units. PreToolUse Branch 9.
+- **G** operator-workflow-UX capture + Design-Source OQ (generate-intent + `validate-vault-oqs.sh`; anti-hallucination rail preserved). PreToolUse Branch 10.
+- Framework-pack schema (`_template.md`/`_universal.md`/`laravel.md`/`laravel-base-26.md`) extended with: Flow-artifact derivation, Conditional scaffold artifacts, Entity source globs, Entity matching tokens, Cross-cutting concerns, Relation derivation, Test patterns, UI quality signatures.
+- Skill bumps: generate-units 2.8.0→2.12.0, execute-bolts →2.12.0, generate-intent + scan-codebase (per slice).
+- Fixtures: `tests/fixtures/code-delivery/**` — every slice has a `{bad,good}/` + `verify.sh` proving FLAG-on-bad + PASS-on-good; 8/8 pass.
+
 ## [3.68.0] - 2026-05-30
 
 ### Iter 77 — Generalize range-shorthand expansion (`through` / `to` / `thru` / `…`)
