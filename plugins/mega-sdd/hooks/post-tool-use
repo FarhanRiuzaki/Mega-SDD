@@ -605,11 +605,18 @@ except Exception:
     # ── Validator 7 (R2): KB output validation ────────────────────────────
     # Fires when KB domain/workflow/business-rules files are saved.
     case "$FILE_PATH" in
-      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md)
+      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md|*.mega-sdd/knowledge-base/99-rebuild-architecture/*.md)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-output-state.json" \
           "PostToolUse-Write-validate-kb-output"
+        # Iter-79 U-EI: reengineering-synthesis presence (the phase's REASONING output,
+        # vs the transcription checks above). Advisory; self-SKIPs when no mutability
+        # markers / no 99-rebuild-architecture/.
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-reengineering.sh" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-reengineering-state.json" \
+          "PostToolUse-Write-validate-kb-reengineering"
         # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \
