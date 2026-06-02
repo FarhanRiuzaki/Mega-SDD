@@ -86,6 +86,22 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new
 
+### v3.69.0 → v3.69.2 (Iter 78 + 78.1) — Code-delivery sharpening: decomposition reasoning + UI/UX quality gates (tech-agnostic)
+
+A deep audit + real-run evidence (the `new-tradefinance-import` Laravel Phase-2 build) showed the weak link was code **delivery** — UI/UX quality was a coin-flip and decomposition stopped at *module altitude* (never flow-step→artifact, no cross-sibling consistency), letting siblings drift from the golden module ("fan-out divergence"). Iter 78 adds **7 tech-agnostic, fixture-verified code-delivery gates**, each a deterministic validator wired to a PreToolUse block on `execute-bolts` (validator-first — skill-body prose is defense-in-depth only):
+
+- **flow-coverage** (`validate-flow-coverage.sh`, Branch 5) — every input-accepting flow step maps to an artifact; flags missing per-stage Form Requests + dead scaffold stubs (`edit` views with no update flow).
+- **sibling-consistency** (`validate-sibling-consistency.sh`, Branch 7) — a cross-cutting concern shared by sibling units must be declared the same way; FK columns must declare their relation accessor (cross-sibling divergence, not an absolute rule).
+- **cross-cutting registration** (`validate-cross-cutting-registration.sh`, Branch 11) — generated source that should register a concern (e.g. a tenant/branch global scope) actually does — catches the silent cross-branch-leak class.
+- **render-test** (via `validate-unit-spec.sh`, Branch 6) — every view-bearing unit carries a `render` acceptance test (catches blank/null-field detail pages).
+- **ui-quality** (`validate-ui-quality.sh`, Branch 8) — scaffold-tells gate: raw controller-name titles, `Customer Id` labels, unresolved UUID FKs, unformatted money, native JS dialogs; partials exempt from layout/responsive checks.
+- **dispatch enrichment** (`validate-dispatch-prompt.sh`, Branch 9) — a UI unit's bolt prompt actually carries design tokens + a view exemplar.
+- **operator-workflow-UX capture** (via `validate-vault-oqs.sh`, Branch 10) — a maker-checker workflow vault models the operator surface (worklist/inbox, decision affordance, human state labels, audit timeline) or emits a Design-Source OQ (anti-hallucination rail preserved).
+
+**Tech-agnostic by construction:** every validator reads stack-specific signatures from the framework-convention pack via `scripts/_lib/resolve-framework-pack.sh` and writes `status: SKIP` when a pack omits a section — *add a stack = add a pack, never edit a validator*. Laravel is only the example + verification fixture; pack schema extended in `references/framework-conventions/` (`_template.md`/`_universal.md`/`laravel.md`/`laravel-base-26.md`). Fixtures: `tests/fixtures/code-delivery/**` (each gate proves FLAG-on-bad + PASS-on-good).
+
+**Iter 78.1 — E2E integration audit (v3.69.2):** a 43-agent audit of the integrated 8-gate `execute-bolts` stack (35 findings) confirmed it deadlock-safe and drove remediation to precision-soundness: fixed a fail-open crash on non-UTF-8 input (ADV-01), a tech-agnostic breach that false-blocked non-Laravel FK projects (TAE2E-01), a partial-view false-positive (FPP-2), a scope-source false-positive (FPP-3), numbered-only flow parsing that silently passed mermaid/bullet flows (ADV-02/03), evadable UI tells (ADV-04), and added a multi-gate failure summary (CD-4). Punch-list cleared. See `docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md` + `docs/superpowers/audits/2026-06-0{1,2}-*.md`.
+
 ### v3.38.0 (Iter 55, minor) — OS-Aware Auto-Install Deps (new skill `install-deps`)
 
 User-driven feature after Iter 54: dependency install friction. Iter 54 shipped emit-fsd which needs pandoc + tectonic for PDF rendering — but installing these (plus tree-sitter, ast-grep, ripgrep, jd) was manual per-OS work. Iter 55 adds dedicated installer skill that detects OS + package manager + auto-installs with safety rails.
@@ -694,7 +710,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 - **Iter 29 v3.20.0 audit closure** — 13 findings closed from post-Iter-28 deep audit (`docs/superpowers/audits/2026-05-24-iter-28-v3.20.0-deep-audit.md`). Pattern was Iter 28 producer-only: generate-intent wrote scope to vault.json + handoff YAML, but ZERO downstream skills consumed it. Fix: scope propagation to 6 consumer skills (bind-codebase v1.9.3, generate-units v2.5.4, emit-agents-md v1.2.4, execute-bolts v2.4.2, detect-drift v1.2.2, resolve-oq v0.9.1). Also: diff-vault v1.3.0 implements prd_sha256 change detection (closed unimplemented spec claim). Orchestrate-flow v2.4.1 halt taxonomy gains 4 new entries (3 Iter 28 + 1 Iter 29). Generate-intent gains formal §Halt conditions section with full YAML envelope examples. Step 0.9 execution-order guard added (file order ≠ runtime order). agents-md-schema.md stale legacy vault paths fixed
 - **Iter 30 execute-bolts seamless pipeline** — bolt subagent dispatched via tiered context enrichment (T1 always ≤2KB / T2 conditional ≤5KB / T3 reference-on-demand) per `references/bolt-dispatch-prompt.md`. Implements 10 AI-executor principles from spec (anti-context, confidence labels, past-failure intelligence, self-assessment vocabulary, halt vocabulary, validation hints, atomic discipline, provenance trailers, graceful partial-state). Plus seamless pipeline: compact streaming progress + aggregate `<vault>/bolts/_summary.md` + propose-and-confirm halt UX (AI fix proposer for test_fail / hard_rule_violated / pbt_property_violated; user single-click approve) + auto-drift gate DEFAULT-ON after batch (~6x faster via shared snapshot reuse) + DRIFT-REPORT.md `## Suggested next actions` with auto-handoff commands + convergence loops bridge bolt halts. New halts: dispatch_prompt_too_large, bolt_repeated_partial_failure, provenance_missing, self_assessment_missing, bolt_introduces_locked_drift
 
-## Anti-hallucination defense (15 layers)
+## Anti-hallucination defense (16 layers)
 
 1. **Intent** — uncertain claims promote to Open Questions
 2. **OQ classification** — business vs tech; tech auto-resolves
@@ -711,6 +727,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 13. **Framework convention packs** — laravel/django/rails/etc. conventions inject into Suggested Unit Hard Rules (Iter 23)
 14. **Predictive preflight** — orchestrate-flow surfaces upcoming halts before they fire (Iter 33 F2)
 15. **Handoff schema validation** — handoff YAML type-checked against handoff-contract.md per skill (Iter 33 F3+F4)
+16. **Code-delivery quality gates** — 7 tech-agnostic validators (flow-coverage, sibling-consistency, cross-cutting registration, render-test, ui-quality, dispatch enrichment, operator-UX capture) wired to PreToolUse blocks on `execute-bolts`; target delivery quality (UI/UX + flow→file decomposition reasoning), read signatures from the framework-convention pack, SKIP gracefully off-stack (Iter 78; see What's new)
 
 ## Memory layer (v2.1+)
 
