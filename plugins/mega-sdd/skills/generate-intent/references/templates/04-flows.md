@@ -50,6 +50,32 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 2. <action>
 3. <action>
 
+<!-- staged-only: present ONLY when this flow collects inputs across multiple steps/pages/roles
+     (wizard, maker→checker). Copy the `stages:` block from the source KB workflow §3a VERBATIM —
+     do NOT re-flatten it — then render the state diagram and stamp `_kb_source`. Omit all three
+     blocks for single-step flows. validate-vault-flow-staging.sh follows `_kb_source` to prove the
+     KB's staging was preserved here (a drop is a `vault_flow_staging_drop` halt). -->
+**Stages** (multi-step workflows only):
+```yaml
+stages:
+  - stage_id: "S1"
+    stage_name: "<step name>"
+    actor_role: "<role>"
+    input_fields: ["<field>", "..."]
+    transitions: [{ to: "S2", trigger: "<event>", conditions: [] }]
+    _source: ["<legacy file:line>"]
+  # ... one entry per stage
+```
+**Workflow state diagram** (when Stages present):
+```mermaid
+stateDiagram-v2
+    [*] --> S1
+    S1 --> S2: "S1 maker submits"
+    S2 --> [*]: "S2 checker approves"
+```
+**_kb_source**: [20-workflows/<workflow-file>.md]
+<!-- /staged-only -->
+
 <!-- full-only -->
 **Postconditions**: <state after flow completes>
 <!-- /full-only -->
