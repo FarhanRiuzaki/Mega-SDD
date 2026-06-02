@@ -142,6 +142,10 @@ Skill authors: ensure your `§Handoff emission` step runs even on error paths (b
 
 TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rationale: string }`. Required even on `status==halted` — must point to the resolution path (e.g., `resolve-oq` for binding conflicts).
 
+**`next_action.confidence` (OPTIONAL, Iter-79 O-4)** — TYPE: number in `[0,1]` or `null`. The producer's confidence that the recommended next step is correct. Promotes confidence from a prose/chat string (the iter-33 D5 gap — the convergence loop's hardcoded `≥0.80` was never a typed field) to a **typed, validator-enforced** field: `validate-handoff-yaml.sh` now type-checks it (a present value outside `[0,1]` → `handoff_type_mismatch`). This lays the F4 foundation for confidence-aware orchestration (e.g. demote auto-continue to user-review below a config floor) without the prior free-text-parsing brittleness. Omitting it never fails the handoff.
+
+> **Validator coverage (Iter-79 O-3):** `validate-handoff-yaml.sh` now type-checks the CONDITIONAL fields below **when present** (list fields: `blockers`/`checkpoints`/`cycles`; object fields: `metrics`/`constitution`/`pbt`/`mutability`/`scope`/`replay`/`starterkit_context`/`metadata`) in addition to the four required fields. Type-checks are **never required-on-absence** — a handoff that legitimately omits an optional block is not failed; only a PRESENT field of the wrong shape is. This closes the F3/F4 "PARTIAL" gap (the validator previously enforced only the 4 required fields + `artifacts`) without changing the blocking contract for handoffs that omit optional fields.
+
 ### `blockers:` (REQUIRED)
 
 TYPE: array\<object\> — empty array when `status==completed`; non-empty per halt-protocol `§blocker envelope` when `status==paused|halted`.

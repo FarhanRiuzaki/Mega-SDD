@@ -1,0 +1,10 @@
+Some chat preamble.
+
+handoff:
+  emitted_by: bind-codebase
+  emitted_at: 2026-06-02T10:00:00Z
+  status: completed
+  next_action:
+    confidence: 1.5
+    type: invoke_skill
+    hint: run generate-units
