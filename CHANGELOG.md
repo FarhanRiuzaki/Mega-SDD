@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.70.0] - 2026-06-02
+
+### Iter 79 — End-to-end pipeline-intelligence audit + 11 enforceable fixes
+
+Fresh end-to-end intelligence audit (`docs/superpowers/audits/2026-06-02-intelligence-e2e/` — 00-SYNTHESIS + 4 detail lanes) targeting per-phase reasoning, advisor-sharpened: every finding graded `enforceable: Y/N` (prose-only "reason harder" asks rejected — 0-for-4 track record), anchored to reproduced `new-tradefinance-import` failures, baselined against shipped machinery. All 11 enforceable findings fixed (each = validator + pack-declared tech-agnostic signature + hook wiring + bad/good fixture; 19/19 code-delivery fixtures pass).
+
+**Tier 0 — real defect (a gate enforcing nothing):**
+- **X-1:** `validate-conflict-classification.sh` was vacuous — wired to NO hook + greped for ` ```yaml binding_conflict``` ` blocks the producer never emits (it emits `### CONFLICT-N` markdown) → SKIPped on every real binding. Rewritten to detect the real markdown form (exempting resolved conflicts), wired PostToolUse on binding write, and `binding-contract.md` now templates `conflict_class` + `resolution_complexity`. WARN-not-FAIL (backward-compat).
+
+**Tier 1 — decomposition/delivery (the survivor-bias cluster):**
+- **A2 (fan-out parity):** new `validate-fanout-parity.sh` (PreToolUse Branch 12) — presence-parity of deliverable obligations (`## UI contract`, `type: render` test) across VIEW-BEARING siblings. Catches "LC is always the survivor"; relative-to-peers (no false-stop on legitimately-simpler siblings).
+- **A1 (decomposition-altitude):** `validate-flow-coverage.sh` emits advisory `decomposition_altitude_high` when an N≥4-step flow is absorbed by a SINGLE unit (does NOT flip status — symptom gates already neutralize the damage).
+- **B1 (UI-deferral):** new `validate-ui-deferral.sh` (PreToolUse Branch 13) — a bolt-report that defers a unit's `## UI contract` to a future polish unit ("scaffold kept; UI polish deferred") → `ui_obligation_deferred`.
+- **N-1 (shared side-effect parity):** new `flow_step:<regex>` applies_when operator in `validate-sibling-consistency.sh` + pack-declared `inbox-surfacing` concern — closes the af49ede inbox-invisibility gap (amendment/doc_exam created zero `workflow_assignments` rows).
+
+**Tier 2 — upstream transcription-vs-reasoning:**
+- **U-GI:** `validate-vault-oqs.sh` re-applies the Auto-classifier heuristic table to EVERY OQ → `oq_misclassified_tech` (a tech-reading OQ lazily tagged business).
+- **U-SC:** `validate-codebase-map.sh` depth check — `precision_tier: ast` but bare §2 rows → WARN (bind-codebase field-diff would silently degrade).
+- **U-EI:** new `validate-kb-reengineering.sh` — the Wave-5 reengineering synthesis (`99-rebuild-architecture/`) is validated, not just transcription discipline.
+
+**Tier 3 — orchestrator machinery:**
+- **O-3/O-4:** `validate-handoff-yaml.sh` now type-checks CONDITIONAL fields when present + promotes `next_action.confidence` to a typed, validated field in `[0,1]` (the iter-33 F4/D5 foundation). Type-only, never required-on-absence — cannot break a live chain that omits an optional block.
+- **O-1:** new `validate-preflight.sh` (PreToolUse Branch 0) — predictive halt detection (iter-33 F2 closure): fatal INPUT-precondition checks for the skill about to run (bind needs vault+map; bolts need units), self-clearing.
+
+**Invariants preserved:** every new gate is tech-agnostic (signatures from the framework-convention pack; SKIP off-stack), `errors="replace"` on reads, and new issue types are non-blocking unless a dedicated single-purpose validator (status==FAIL precise) or an explicit COUNT-gated branch opts them in.
+
 ## [3.69.1] - 2026-06-02
 
 ### Iter 78.1 — E2E integration audit remediation (precision-soundness of the 8-gate stack)
