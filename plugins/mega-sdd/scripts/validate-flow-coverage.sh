@@ -796,6 +796,33 @@ for u in units:
                         "reason": f"no flow step matching {e['requires_flow_endpoint']} in this module's flow(s) — dead scaffold stub",
                     })
 
+# ── Decomposition altitude (Iter-79 A1, ADVISORY) ─────────────────────────────
+# A whole N-step flow absorbed by a SINGLE unit is module-altitude decomposition (the
+# 6-stage F-U-008 owned by one unit in the tradefinance run). Signal computed from data
+# already parsed: one matched unit + a flow with n_input_steps ≥ K. ADVISORY ONLY — it does
+# NOT flip status (the symptom gates above already neutralize the damage; the per-stage
+# under-coverage shows up as missing_artifacts). Surfaced as telemetry so a coarse unit is
+# visible without over-blocking a legitimately-single-unit flow that DOES cover every step.
+ALTITUDE_K = 4
+altitude_concentration = []
+for fl in flows:
+    if fl["n_input_steps"] < ALTITUDE_K:
+        continue
+    matched = [u for u in units if tokens_match(fl["tokens"], u["tokens"])]
+    if len(matched) == 1:
+        altitude_concentration.append({
+            "halt_type": "decomposition_altitude_high",
+            "flow": fl["header"],
+            "n_input_steps": fl["n_input_steps"],
+            "absorbing_unit": matched[0]["uid"],
+            "detail": (
+                f"flow '{fl['header']}' has {fl['n_input_steps']} input-accepting steps but is "
+                f"absorbed by a SINGLE unit ({matched[0]['uid']}) — likely cut at module altitude "
+                f"rather than stage altitude. Advisory: confirm per-stage artifacts + render test "
+                f"+ sibling parity are all present on this coarse unit."
+            ),
+        })
+
 # ── Verdict ──────────────────────────────────────────────────────────────────
 status = "FAIL" if (missing_artifacts or dead_scaffold) else "PASS"
 total_missing = sum(m["shortfall"] for m in missing_artifacts)
@@ -810,9 +837,11 @@ report = {
         "flows_with_input_steps": sum(1 for fl in flows if fl["n_input_steps"] > 0),
         "missing_form_artifacts_total": total_missing,
         "dead_scaffold_stubs": len(dead_scaffold),
+        "altitude_concentration_count": len(altitude_concentration),
     },
     "missing_artifacts": missing_artifacts,
     "dead_scaffold": dead_scaffold,
+    "altitude_concentration": altitude_concentration,
     "next_action": (
         "Add the missing per-step input-validation artifacts (e.g. Form Requests) "
         "to the relevant module unit's `## Target files`, and remove any dead "

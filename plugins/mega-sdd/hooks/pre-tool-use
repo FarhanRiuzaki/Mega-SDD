@@ -169,6 +169,41 @@ except Exception:
         ;;
     esac
 
+    # Branch 0 (Iter-79 O-1): predictive preflight — fatal INPUT-precondition check for the
+    # skill about to run, BEFORE it burns minutes and halts mid-way. Fork-A enforcement of
+    # the F2 "predictive halt" theme (was prose-only orchestrate-flow Step 3.5 +
+    # predictive-checks.md). Conservative: only GENUINELY-FATAL preconditions block (a skill
+    # that cannot do anything useful without the missing input). scan-codebase tree-sitter is
+    # WARN-only (never FATAL). State recomputed each invocation → self-clears (no deadlock).
+    case "${SKILL_NAME:-}" in
+      mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)
+        PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
+        if [ -x "$PREFLIGHT" ]; then
+          bash "$PREFLIGHT" --cwd="$PROJECT_ROOT" --skill="$SKILL_NAME" --quiet >/dev/null 2>&1 || true
+          PF_STATE="${PROJECT_ROOT}/.mega-sdd/.preflight-state.json"
+          if [ -f "$PF_STATE" ]; then
+            PF_STATUS=$(python3 -c "
+import json
+try:
+    print(json.load(open('$PF_STATE')).get('status', 'PASS'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+            if [ "$PF_STATUS" = "FATAL" ]; then
+              PF_MSG=$(python3 -c "
+import json
+try:
+    print(json.load(open('$PF_STATE')).get('fatal_on_fail', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+              emit_block "${SKILL_NAME} is blocked by a predictive preflight check — ${PF_MSG} (preflight state: ${PF_STATE})"
+            fi
+          fi
+        fi
+        ;;
+    esac
+
     # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
     # except using-mega-sdd (auto-loaded anchor, not a chain step).
     #
@@ -526,6 +561,75 @@ except Exception:
     print('?')
 " 2>/dev/null)
             REASON="mega-sdd:execute-bolts is blocked — cross-cutting-registration validator found ${CC_MISS} generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model's booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.cross-cutting-state.json"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
+
+    # Branch 12: fan-out parity gate for execute-bolts (Iter-79 A2).
+    # Blocks bolts when validate-fanout-parity.sh found a deliverable-richness divergence:
+    # among the VIEW-BEARING siblings of a module/scope group, ≥1 declares an obligation
+    # (a `## UI contract` or a `type: render` test) that a peer omits — the "LC is always
+    # the survivor" pattern. Dedicated single-purpose validator: status==FAIL is exactly
+    # "≥1 divergence" (no unrelated checks ride this state), so gating on status is precise.
+    # PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        FOP_STATE="${PROJECT_ROOT}/.mega-sdd/.fanout-parity-state.json"
+        if [ -f "$FOP_STATE" ]; then
+          FOP_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FOP_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$FOP_STATUS" = "FAIL" ]; then
+            FOP_CNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FOP_STATE'))
+    print(d.get('summary', {}).get('divergence_count', '?'))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — fan-out parity validator found ${FOP_CNT} deliverable-richness divergence(s) across view-bearing sibling units: a sibling declares an obligation (a \`## UI contract\` or a \`type: render\` acceptance test) that a peer in the same module/scope group omits — the 'survivor is served better than its peers' pattern. Bring every view-bearing sibling to parity (declare the same KIND of obligation), then re-save the unit(s) (PostToolUse re-validates). State: ${FOP_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
+
+    # Branch 13: UI-deferral gate for execute-bolts (Iter-79 B1).
+    # Blocks bolts when validate-ui-deferral.sh found a committed bolt-report that defers a
+    # unit's `## UI contract` to a future polish unit ("scaffold kept; UI polish deferred").
+    # Honest Fork-A detect-and-block-next: cannot un-commit the scaffold view, but blocks the
+    # NEXT execute-bolts until the contract states are realized. Dedicated single-purpose
+    # validator → status==FAIL is precise. PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        UID_STATE="${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json"
+        if [ -f "$UID_STATE" ]; then
+          UID_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UID_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$UID_STATUS" = "FAIL" ]; then
+            UID_CNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$UID_STATE'))
+    print(d.get('summary', {}).get('deferral_count', '?'))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — UI-deferral validator found ${UID_CNT} bolt-report(s) that defer a unit's \`## UI contract\` to a future polish unit ('scaffold kept; UI polish deferred'). The contract's required_states must be realized in the bolt that writes the view, not deferred to a later unit. Realize the deferred UI, then re-run the bolt (PostToolUse re-validates). State: ${UID_STATE}"
             emit_block "$REASON"
           fi
         fi

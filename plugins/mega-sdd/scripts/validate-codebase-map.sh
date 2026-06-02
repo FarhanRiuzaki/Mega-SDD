@@ -113,6 +113,47 @@ if sec2_match:
         checks.append({"check": "interfaces_populated", "status": "PASS",
                        "detail": f"§2 has {data_rows} interface rows"})
 
+# Check 4 (Iter-79 U-SC): DEPTH — the map's only consumer (bind-codebase field-level
+# diff) REQUIRES `precision_tier: ast` + signature-bearing §2 rows; on regex it degrades
+# to binary classification. Prior validator checked §2 ROW COUNT only, never row DEPTH —
+# a map of bare symbol names passed while silently degrading binding. Advisory (WARN):
+#   - precision_tier: ast  but no §2 row carries a signature token (param/field list) →
+#     codebase_map_depth_claim_unmet (claims ast precision; binding will get bare names).
+#   - precision_tier: regex (or absent)  → note that binding field-diff degrades to binary.
+precision_tier = None
+if fm_match:
+    pt = re.search(r"^\s*precision_tier\s*:\s*([A-Za-z_]+)", fm_match.group(1), re.MULTILINE)
+    precision_tier = pt.group(1).lower() if pt else None
+
+if sec2_match:
+    sec2_body = sec2_match.group(1)
+    # a signature-bearing row carries a param list `(...)` or a typed field `name: Type`
+    sig_rows = 0
+    for row in re.findall(r"^\|.*\|\s*$", sec2_body, re.MULTILINE):
+        if re.search(r"\([^)]*\)", row) or re.search(r"\w+\s*:\s*\w+", row):
+            sig_rows += 1
+    if precision_tier == "ast":
+        if sig_rows == 0:
+            issues.append({
+                "halt_type": "codebase_map_depth_claim_unmet",
+                "detail": "frontmatter declares precision_tier: ast but no §2 Public-interfaces "
+                          "row carries a signature (param/field list) — bind-codebase field-level "
+                          "diff will silently degrade to binary classification.",
+            })
+            checks.append({"check": "interface_depth", "status": "WARN",
+                           "detail": "precision_tier: ast but §2 rows carry no signatures"})
+        else:
+            checks.append({"check": "interface_depth", "status": "PASS",
+                           "detail": f"precision_tier: ast with {sig_rows} signature-bearing §2 row(s)"})
+    elif precision_tier == "regex":
+        checks.append({"check": "interface_depth", "status": "WARN",
+                       "detail": "precision_tier: regex — bind-codebase field-level diff degrades "
+                                 "to binary classification (no per-field ADD/KEEP/REMOVE)."})
+    else:
+        checks.append({"check": "interface_depth", "status": "WARN",
+                       "detail": "frontmatter declares no precision_tier — binding cannot tell "
+                                 "whether field-level diff is available; add precision_tier: ast|regex."})
+
 has_fail = any(c["status"] == "FAIL" for c in checks)
 has_warn = any(c["status"] == "WARN" for c in checks)
 status = "FAIL" if has_fail else ("WARN" if has_warn else "PASS")
