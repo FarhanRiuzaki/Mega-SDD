@@ -1,0 +1,26 @@
+{
+  "vault_version": "1.0",
+  "generated_by": "fixture (Task G bad/ — operator_surface_missing)",
+  "phase": 1,
+  "phase_total": 1,
+  "project_shape": "web-app",
+  "flows": [
+    { "id": "F-U-001", "title": "Widget Approval (Maker -> Checker -> Confirmer)" }
+  ],
+  "open_questions": [
+    {
+      "tag": "OQ-BIZ-01",
+      "priority": "P2",
+      "doc": "01-overview.md",
+      "status": "open",
+      "category": "business",
+      "text": "Confirm the SLA for the Checker review stage."
+    }
+  ],
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": false,
+    "HAS_TOKENS": false,
+    "HAS_A11Y": false,
+    "HAS_VOICE_BRAND": false
+  }
+}

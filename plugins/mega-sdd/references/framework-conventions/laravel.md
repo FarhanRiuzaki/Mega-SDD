@@ -214,6 +214,203 @@ HARD_RULE: Routes file MUST NOT contain business logic
 - Seeder: `php artisan db:seed --class=UsersSeeder`
 - Tinker: `php artisan tinker` (REPL for debugging)
 
+## Flow-artifact derivation
+
+> Concrete Laravel fill of the universal §Flow-artifact derivation principle
+> (`_universal.md`). Consumed by `validate-flow-coverage.sh` (code-delivery slice A).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: 8 per-stage Form
+> Requests were missing because the maker-checker flows enumerate more
+> input-accepting transition steps than the module units shipped Form Requests.
+
+In Laravel, an input-accepting state-transition step (a workflow step that POSTs a
+payload to advance state — submit / review / approve / reject / confirm / dispatch /
+apply / finalize / enrich) is validated by a dedicated **Form Request** under
+`app/Http/Requests/`. One Form Request per transition action (per the
+"Form Requests for validation" idiom above), NOT one shared `Request` for the whole
+controller.
+
+```yaml
+endpoint_kinds:
+  - flow_signal: '(?i)\b(submit(?:s|ted|ting)?|resubmit(?:s|ted|ting)?|review(?:s|ed|ing)?|approv(?:e|es|ed|al|ing)|reject(?:s|ed|ing|ion)?|confirm(?:s|ed|ing|ation)?|dispatch(?:es|ed|ing)?|appl(?:y|ies|ied|ying)|finaliz(?:e|es|ed|ing)|enrich(?:es|ed|ing)?|examin(?:e|es|ed|ing|ation))\b'
+    required_artifact: form-request
+    path_glob: app/Http/Requests/**/*.php
+    naming: '{Action}{Module}Request'
+```
+
+## Conditional scaffold artifacts
+
+> Concrete Laravel fill of the universal §Conditional scaffold artifacts principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — anti dead-stub).
+> Proven against the fixture: the controller-acl scaffolder emits an
+> `edit.blade.php` for every resource, but maker-checker entities are advanced
+> through workflow transitions, not a generic update/PUT form — so the edit views
+> were dead stubs unless the module actually exposes an update/edit flow step.
+
+```yaml
+- artifact_glob: 'resources/views/**/edit.blade.php'
+  requires_flow_endpoint: '(?i)\b(update|edit|put|patch)\b'
+```
+
+## Entity source globs
+
+> Concrete Laravel fill of the universal §Entity source globs principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — module matching).
+> In Laravel the entity name lives in three predictable path shapes: the Controller
+> class, the resource view directory, and the Eloquent model. These were the regexes
+> formerly hardcoded in the validator; they are declared HERE so adding Django/Express
+> = adding a pack, never editing the validator.
+
+```yaml
+entity_sources:
+  - pattern: '/(?P<entity>[A-Za-z]+)Controller\.php'        # WidgetController.php -> Widget
+  - pattern: 'resources/views/(?P<entity>[a-zA-Z0-9_-]+)/'   # views/widgets/ -> widgets
+    exclude: ['_partials', 'components', 'layouts', 'vendor']
+  - pattern: 'app/Models/(?P<entity>[A-Za-z]+)\.php'         # Models/Widget.php -> Widget
+```
+
+## Entity matching tokens
+
+> Concrete Laravel fill of the universal §Entity matching tokens principle.
+> Consumed by `validate-flow-coverage.sh` (code-delivery slice A — token tuning).
+> The validator core already strips generic + vault-format vocabulary; this section
+> adds NOTHING domain-specific at the Laravel-generic level (a vanilla Laravel app has
+> no industry jargon to strip). Project starterkits with a specific business domain
+> (e.g. trade-finance) declare their own `stop_tokens` / `compound_aliases` in their
+> pack (see `laravel-base-26.md`) or a project fork — never in the validator.
+
+```yaml
+stop_tokens: []
+compound_aliases: {}
+```
+
+## Test patterns
+
+> Concrete Laravel fill of the universal §Test patterns principle.
+> Consumed by `validate-unit-spec.sh` (code-delivery slice D — render-test-per-module gate).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: the module Show views
+> (`resources/views/*/show.blade.php`) shipped with NO render test, which is exactly the
+> gap behind the empty-model `show` / branch `—` / null-timestamp crashes repaired in
+> `abe8d9b` / `4e0b485` / `390fdd0` — one render test per view-bearing unit catches all three.
+> In Laravel a detail view is a `show.blade.php`; the render test is a Feature test that
+> factory-creates the model, GETs the named `.show` route, asserts 200, and asserts a real
+> display field renders (so a blank body or a null-field throw fails the test).
+
+```yaml
+detail_view_glob: 'resources/views/**/show.blade.php'
+detail_view_render:
+  template: |
+    $m = {Model}::factory()->create();
+    $this->get(route('{resource}.show', $m))
+         ->assertOk()
+         ->assertSee((string) $m->{display_field});
+  test_glob: tests/Feature/**/*Test.php
+```
+
+## UI quality signatures
+
+> Concrete Laravel/Blade fill of the universal §UI quality signatures principle
+> (`_universal.md`). Consumed by `validate-ui-quality.sh` (code-delivery slice E).
+> These are the STACK-GENERIC Blade tells — every Laravel project inherits them through
+> the `extends` chain. A project pack (`laravel-base-26.md`) adds the project-specific
+> `required_elements` (layout + responsive grid); the lists merge.
+>
+> Proven against the `new-tradefinance-import` Phase-2 LC `show.blade.php`: the
+> pre-polish blob (`bf950ef`) shipped `>Customer Id<` / `>Branch Id<` labels (3×), raw
+> `{{ $model->customer_id ?? '-' }}` FK echoes (3×), an unformatted `{{ $model->amount }}`
+> (1×), and native `alert(...)` dialogs (2×) — every one of which is a tell below. The
+> post-polish blob (`a07704a`) humanized the labels, resolved the FKs via relations,
+> formatted money, and dropped the native dialogs — and is clean on all tells.
+
+```yaml
+view_glob: 'resources/views/**/*.blade.php'
+min_view_lines: 20
+scaffold_tells:
+  - id: title-is-controller
+    regex: "@section\('title',\s*'[^']*Controller"
+    message: "Page title leaks the Controller class name (raw scaffold). Set a human page title."
+  - id: label-is-column-id
+    regex: ">\s*([A-Za-z]+ )+(Id|ID|Uuid|UUID)\s*<"
+    message: "Field label is a Str::title(column) like 'Customer Id' / 'Beneficiary Bic Id' / 'CUSTOMER ID'. Humanize/relabel (e.g. 'Customer')."
+  - id: raw-uuid-fk
+    regex: "\{\{\s*\$[a-zA-Z_]+\s*(->\s*|\[['\"])[a-z_]+_id\b"
+    message: "Foreign key rendered as a raw id (arrow OR array access). Resolve to a human label via the relation (e.g. {{ $model->customer->name }})."
+  - id: money-without-format
+    regex: "\{\{\s*\$[a-zA-Z_]+\s*(?:->\s*|\[['\"])[a-z_]*(amount|total|price|balance|sum|fee|cost|nominal)\b\s*(\?\?|\}\}|\])"
+    message: "Money/decimal field printed without number_format / currency formatting (matches *_amount / *_total / etc.)."
+  - id: native-alert
+    regex: "\b(alert|confirm|prompt)\s*\("
+    message: "Native JS dialog (alert/confirm/prompt) instead of the project notification idiom (SweetAlert2 Swal.fire)."
+```
+
+## Cross-cutting concerns
+
+> Concrete Laravel fill of the universal §Cross-cutting concerns principle
+> (`_universal.md`). Consumed by `validate-sibling-consistency.sh` (slice B —
+> decomposition) and `validate-cross-cutting-registration.sh` (slice C — execution).
+> Proven against the `new-tradefinance-import` Phase-2 fixture: the LetterOfCredit
+> exemplar (U-017) declares the `BranchScoped` trait + a `branch()` relation, but
+> sibling models carrying the same `branch_id` key diverged — some declared the trait
+> without the relation, some carried the column with neither (the `addGlobalScope`
+> registration was likewise dropped in 5 bolt-generated models, caught by slice C).
+>
+> NOTE: `BranchScoped` is the RECON / base-laravel-26 starterkit tenant-isolation trait;
+> it is declared HERE in the base Laravel pack because every Laravel project in this
+> family inherits it through the `extends` chain (laravel-base-26 → laravel → _universal).
+> A vanilla Laravel project without the trait simply has no model declaring `branch_id`,
+> so `applies_when` never matches and the concern is inert (no false positives).
+
+```yaml
+cross_cutting_concerns:
+  - concern: branch-scoping
+    applies_when: 'has_column:branch_id'
+    spec_obligation: '\bBranchScoped\b'
+    registration_signature: 'addGlobalScope\(\s*new BranchScoped'
+    registration_target_glob: 'app/Models/**/*.php'
+    registration_source_glob: 'database/migrations/**/*.php'
+    registration_exempt_glob: 'app/Models/User.php'
+```
+
+`registration_exempt_glob` (FPP-3) lists models that carry the column but MUST NOT register the
+concern — the SCOPE SOURCE. `User.php` holds `branch_id` as the authenticated user's home branch:
+that key DRIVES `BranchScoped` onto other models; self-scoping `User` would break auth (you must
+resolve users across branches). Add other genuine exceptions here as a comma-separated list of
+globs — never by editing the validator. (Slice C resolves this glob against the project root and
+skips matching files before the registration scan.)
+
+`registration_target_glob` tells slice C (`validate-cross-cutting-registration.sh`) WHERE
+the concern's generated source lives (Eloquent models). The scan flags a model that
+references `BranchScoped` and carries `branch_id` but never calls
+`addGlobalScope(new BranchScoped)` in `booted()` — the silent cross-branch leak repaired in
+the Phase-2 run (`2bdfc1b`). The `BranchScoped` Scope DEFINITION (`app/Models/Scopes/…`)
+matches the glob but carries no `branch_id` column, so it is correctly excluded (no false
+positive).
+
+In Laravel, a model that owns a multi-branch (multi-tenant) `branch_id` key MUST apply the
+`BranchScoped` global scope so every query is automatically filtered to the authed user's
+branch. The UNIT spec must name the `BranchScoped` trait (the `spec_obligation` signature);
+a sibling that scopes "via lc_id" or omits the trait entirely is a divergence (slice B).
+At runtime the model's `booted()` must call `addGlobalScope(new BranchScoped)` — the
+`registration_signature` slice C scans the written source for.
+
+## Relation derivation
+
+> Concrete Laravel fill of the universal §Relation derivation principle (`_universal.md`).
+> Consumed by `validate-sibling-consistency.sh` (slice B — relation coherence).
+
+In Laravel an FK column `{singular}_id` maps to a **camelCase `belongsTo` accessor named
+`{singular}`** — e.g. `branch_id` => a `branch()` method returning `belongsTo(Branch::class)`,
+`customer_id` => `customer()`, `import_lc_id` => `importLc()`. A model unit that declares an
+FK column but never declares the derived accessor has under-specified the relation (the
+`branch()` relations missing from 3 Phase-2 model units were exactly this defect).
+
+```yaml
+relation_derivation:
+  fk_to_accessor:
+    rule: '{singular}_id => belongsTo accessor `{singular}` (camelCase)'
+    accessor_template: '{camelSingular}()'
+    accessor_form: call   # Laravel relations are paren-call methods: `branch()`, `customer()`
+```
+
 ## Notes / Laravel-specific guidance
 
 - **Naming controversy**: Laravel docs flip between singular and plural for Resource Controllers (`UserController` vs `UsersController`). Pick one consistently per project; pack defaults to **singular** because routes auto-pluralize.

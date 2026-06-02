@@ -370,7 +370,7 @@ except Exception:
     # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
     # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).
     case "$FILE_PATH" in
-      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md)
+      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md|*.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/_index.md)
         VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
         if [ -x "$VALIDATOR_BU" ]; then
           bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -384,6 +384,72 @@ except Exception:
         VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
         if [ -x "$VALIDATOR_SKC" ]; then
           bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        # Flow-coverage (code-delivery slice A): flow-step -> artifact derivation +
+        # scaffold-filter. SKIPs gracefully if the active pack declares no
+        # `## Flow-artifact derivation` section. Writes .flow-coverage-state.json;
+        # PreToolUse Branch 5 reads its status to gate execute-bolts.
+        VALIDATOR_FC="${SCRIPT_DIR}/../scripts/validate-flow-coverage.sh"
+        if [ -x "$VALIDATOR_FC" ]; then
+          bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        # Sibling-consistency (code-delivery slice B): cross-cutting concern coherence
+        # + FK relation derivation across sibling units. SKIPs when the active pack
+        # declares no `## Cross-cutting concerns`/`## Relation derivation`. Writes
+        # .sibling-consistency-state.json; PreToolUse Branch 7 reads it to gate execute-bolts.
+        VALIDATOR_SIB="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
+        if [ -x "$VALIDATOR_SIB" ]; then
+          bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Code-delivery slice E: UI scaffold-tells quality gate ───────────────
+    # Style-A dispatch on Write|Edit of a VIEW file (generated UI source — NOT a
+    # mega-sdd artifact). The trigger glob is deliberately GENEROUS (common view
+    # locations across stacks: resources/views, templates, components, .blade/.vue/
+    # .jsx/.tsx/.html); validate-ui-quality.sh re-resolves the active pack and re-scans
+    # by the pack-declared view_glob, self-SKIPping when the pack omits the
+    # `## UI quality signatures` section. Writes .ui-quality-blockers.json; PreToolUse
+    # Branch 8 reads its status to gate execute-bolts. Scan is project-wide / current-truth.
+    case "$FILE_PATH" in
+      *resources/views/*|*/templates/*|*/components/*|*.blade.php|*.vue|*.jsx|*.tsx)
+        VALIDATOR_UIQ="${SCRIPT_DIR}/../scripts/validate-ui-quality.sh"
+        if [ -x "$VALIDATOR_UIQ" ]; then
+          bash "$VALIDATOR_UIQ" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Code-delivery slice C: cross-cutting registration scan ──────────────
+    # Style-A dispatch on Write|Edit of a backend model/source file. The trigger glob is
+    # GENEROUS (common model dirs across stacks: app/Models, Models, models, app/Entities,
+    # domain, src/models); validate-cross-cutting-registration.sh re-resolves the active pack
+    # and re-scans the pack-declared registration_target_glob (current-truth, project-wide),
+    # self-SKIPping when no concern declares a registration_signature + target glob. Writes
+    # .cross-cutting-state.json; PreToolUse Branch 11 reads its status to gate execute-bolts.
+    case "$FILE_PATH" in
+      */app/Models/*|*/Models/*|*/models/*|*/app/Entities/*|*/domain/*|*/src/models/*)
+        VALIDATOR_CC="${SCRIPT_DIR}/../scripts/validate-cross-cutting-registration.sh"
+        if [ -x "$VALIDATOR_CC" ]; then
+          bash "$VALIDATOR_CC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
+    # ── Code-delivery slice F: UI dispatch-prompt enrichment gate ───────────
+    # Style-A dispatch on Write|Edit of an emitted bolt dispatch prompt
+    # (<vault>/bolts/U-XXX/dispatch-prompt.md — written by execute-bolts). The
+    # validator asserts a ui_ux unit's prompt actually carries injected design tokens
+    # + a view/component exemplar (makes the execute-bolts UI enrichment non-no-op-able);
+    # it self-SKIPs when the pack omits `## UI quality signatures` (no view_glob) or no
+    # ui_ux prompt exists. Writes .dispatch-prompt-state.json; PreToolUse Branch 9 reads
+    # its status. Scan is project-wide / current-truth.
+    case "$FILE_PATH" in
+      *.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md)
+        VALIDATOR_DP="${SCRIPT_DIR}/../scripts/validate-dispatch-prompt.sh"
+        if [ -x "$VALIDATOR_DP" ]; then
+          bash "$VALIDATOR_DP" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac
