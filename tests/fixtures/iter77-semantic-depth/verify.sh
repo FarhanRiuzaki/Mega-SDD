@@ -95,6 +95,25 @@ note "  vault-good: status=$VG_STATUS exit=$VG_EXIT drops=$VG_CNT"
 [ "$VG_EXIT" = "0" ] && ok "exit 0" || fail "vault-good expected exit 0, got '$VG_EXIT'"
 [ "$VG_CNT" = "0" ] && ok "0 drops" || fail "vault-good expected 0 drops, got '$VG_CNT'"
 
+# 2b — the DOMINANT flatten case (no stages AND no _kb_source) → non-blocking advisory.
+# The blocking arm needs _kb_source; this advisory covers wholesale-flatten + PRD-only.
+mkdir -p "$WORK/vault-flatten/.mega-sdd/vaults/demo"
+cat > "$WORK/vault-flatten/.mega-sdd/vaults/demo/04-flows.md" <<'FEOF'
+# 04 — Flows
+### F-U-001: Import request (maker-checker)
+**Steps**:
+1. Maker submits lc_number, amount, beneficiary
+2. Checker reviews then approves or rejects
+FEOF
+bash "$SCRIPTS/validate-vault-flow-staging.sh" --cwd="$WORK/vault-flatten" --quiet >/dev/null; VF_EXIT=$?
+VF_STATE="$WORK/vault-flatten/.mega-sdd/.vault-flow-staging-state.json"
+VF_STATUS=$(jget "$VF_STATE" "d.get('status')")
+VF_ADV=$(jget "$VF_STATE" "','.join(a['halt_type'] for a in d.get('advisories',[]))")
+note "  vault-flatten (workflow signal, no stages, no _kb_source): status=$VF_STATUS exit=$VF_EXIT advisories=[$VF_ADV]"
+[ "$VF_STATUS" = "PASS" ] && ok "advisory does NOT block (dominant flatten case is WARN, not FAIL)" || fail "flatten advisory must not flip status, got '$VF_STATUS'"
+[ "$VF_EXIT" = "0" ] && ok "exit 0 (advisory never blocks bolts)" || fail "flatten advisory expected exit 0, got '$VF_EXIT'"
+echo "$VF_ADV" | grep -q "vault_flow_staging_missing" && ok "vault_flow_staging_missing raised (covers flatten-without-backref + PRD-only)" || fail "flatten case missing the advisory"
+
 # ── 3. Enrichment helper proposes + applies (Fork-A) ───────────────────────────
 note ""
 note "=== 3. enrich-workflows-staging propose + apply — Fork-A ==="

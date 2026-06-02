@@ -23,7 +23,7 @@ Fixes a semantic-depth regression surfaced from real legacy code: a multi-step w
 
 **Track 3 — enforcement:**
 - `validate-kb-flows.sh`: ADVISORY `kb_flow_staging_missing` on a separate `advisories[]` channel — multi-step workflow KB without a `stages:` block. NEVER flips status (Iter-78.1 #1).
-- new `validate-vault-flow-staging.sh` (PreToolUse **Branch 14**): follows each flow's `_kb_source`; KB has `stages:` but vault dropped it → `vault_flow_staging_drop`, `status==FAIL` (blocking). Backward-compatible by construction (no KB / no `_kb_source` / KB had no stages → SKIP — pre-staging vaults never trip it).
+- new `validate-vault-flow-staging.sh` (PreToolUse **Branch 14**): follows each flow's `_kb_source`; KB has `stages:` but vault dropped it → `vault_flow_staging_drop`, `status==FAIL` (blocking). Backward-compatible by construction (no KB / no `_kb_source` / KB had no stages → SKIP — pre-staging vaults never trip it). It ALSO carries an advisory arm (`vault_flow_staging_missing`, WARN-only, never status-flip) for the dominant flatten case — a flow showing the workflow signal but with NEITHER stages NOR `_kb_source` (the blocking arm can't see it). **Honest coverage:** the KB advisory + vault advisory are the broad detectors; the block is the narrow precise case (back-ref preserved, stages dropped).
 
 **Track 4 — remediation:** new `/mega-sdd:enrich-semantics` (`scripts/enrich-workflows-staging.sh`) — two-phase (propose → `--apply`) retro-fit of staging onto an existing KB without a full re-extract; re-reads cited legacy `_source`, detects the wizard pattern, allocates fields per stage. Consumes the `kb_flow_staging_missing` advisory.
 
