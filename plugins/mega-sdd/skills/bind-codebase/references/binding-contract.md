@@ -83,6 +83,32 @@ When in doubt → `UNKNOWN` with low confidence. Never silently claim `IMPLEMENT
 
 Implementation-State Classification (v1.2+) does NOT change blocking rules. It is an annotation on CONFIRMED claims consumed downstream by `generate-units`. A claim that is `IMPLEMENTED` is still CONFIRMED.
 
+### CONFLICT entry format (classification enrichment — Iter-79 X-1)
+
+Every CONFLICT in `binding.md` is written as a markdown detail heading plus a
+`## Conflicts (N)` summary row. Each ACTIVE (unresolved) CONFLICT detail heading
+MUST carry two enrichment fields so downstream review can triage by kind and
+effort. A resolved conflict (marked `✅` / `RESOLVED`) is exempt.
+
+```markdown
+### CONFLICT-1 — `App\Models\Product` name collision
+- **Vault doc**: 01-entities.md §Product
+- **Codebase artifact**: app/Models/Product.php
+- **conflict_class**: naming-collision      # naming-collision | signature-drift | semantic | regulatory
+- **resolution_complexity**: low            # low | medium | high
+- **Verdict**: CONFLICT (BLOCKING)
+- **Suggested action**: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+```
+
+- `conflict_class` — the *kind* of disagreement:
+  - `naming-collision` — same identifier, different entity (class/table name clash).
+  - `signature-drift` — same entity, divergent fields/params (field-level set-diff conflict).
+  - `semantic` — same shape, different meaning/behavior (enum cases, business rule).
+  - `regulatory` — the conflict touches a `[LOCKED]` / compliance constraint.
+- `resolution_complexity` — `low` (rename/remove), `medium` (migration + code edit), `high` (data backfill / cross-module / regulatory sign-off).
+
+This enrichment is **advisory** — `validate-conflict-classification.sh` (PostToolUse on binding write) WARNs when an active CONFLICT omits these fields; it does NOT change the CONFLICT-blocking contract (which still blocks on `conflict > 0`, per the table above).
+
 ## Tech-OQ Auto-Resolution (v1.3+, Iter 2)
 
 For each OQ in the vault tagged `category: tech` AND `classification_confidence: high`, bind-codebase performs one of two operations based on `resolution_mode`:
