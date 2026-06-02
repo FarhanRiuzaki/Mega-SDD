@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.7.0
+version: 1.8.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -201,6 +201,19 @@ A workflow that collects its inputs across MORE THAN ONE step / page / role is *
 
 > Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
 
+### Deep extraction disciplines (P1–P4) — v3.72.0+
+
+Five extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `references/wave-dispatch-templates.md` §generic-agent-prompt-structure → DEEP DISCIPLINES** — that is the block injected into every wave subagent prompt, so the deeper reasoning fires *automatically* every run (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
+
+- **P1 — State & data provenance.** For every state *writer*, locate the *reader*; for every clone copy (`INSERT … SELECT`, snapshot), trace the implicitly-inherited fields and who reads them downstream. Writer with no reader → `write-only / vestigial`; reader with no in-scope writer → `inherited / cross-domain seam`. Anti-halu: an unpaired side is `[OPEN]`, never invented.
+- **P2 — Enumerate ALL sites of a rule or flow.** Document every site of a repeated rule (diff them, mark `[OPEN]` on disagreement — never average); treat each entry-point dispatcher branch as a distinct flow with its own initial state.
+- **P3 — Behaviour-as-EXECUTED.** Unconditional halts (`die()`/`exit()`) as `[ARTIFACT: debug-code-as-feature]`; full transaction-rollback policy; hardcoded test flags; silent-success paths — what an operator OBSERVES.
+- **P4 — Classify files by structure, not naming.** Role from template-ratio / form-tags / early-return gates (view / action_handler / dual_purpose / dispatcher / service); document filename-vs-structure mismatches in §9.
+
+**Framing (per user directive 2026-06-02):** the KB captures **business intent + flow**; the rebuild owns **implementation cleanliness**. So P1 captures coupling as a *business outcome* ("the amendment must still trigger downstream dispatch + facility re-balance"), NOT the legacy implementation accident, and **status-naming drift between legacy and rebuild is NOT a gap** (legacy `flag_amend='4'` normalizing to a clean `workflow_state` is a cleanup, not drift). The disciplines surface coupling and distinct operating models so the rebuild can preserve the *outcome* while redesigning the *encoding*.
+
+These four are reasoning disciplines (P5 FE-completeness is covered by the staged-input mechanism above; its progressive-disclosure delta enrichment lives in `references/knowledge-base-schema.md §3a`). Completeness across the five principles is summarized end-of-extraction by an **Extraction Completeness Contract** scorecard.
+
 ## Quality gates between waves
 
 After each wave, run the grep checks from `references/wave-dispatch-templates.md` §gate-checks:
@@ -212,6 +225,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
 - **Staged inputs** (v3.71.0+, semantic-depth) — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
+- **P1 provenance** (v3.72.0+) — a workflow agent reporting `provenance_anomalies > 0` (per `wave-dispatch-templates.md` REPORT BACK) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
