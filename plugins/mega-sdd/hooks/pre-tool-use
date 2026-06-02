@@ -531,6 +531,41 @@ except Exception:
         fi
         ;;
     esac
+
+    # Branch 12: fan-out parity gate for execute-bolts (Iter-79 A2).
+    # Blocks bolts when validate-fanout-parity.sh found a deliverable-richness divergence:
+    # among the VIEW-BEARING siblings of a module/scope group, ≥1 declares an obligation
+    # (a `## UI contract` or a `type: render` test) that a peer omits — the "LC is always
+    # the survivor" pattern. Dedicated single-purpose validator: status==FAIL is exactly
+    # "≥1 divergence" (no unrelated checks ride this state), so gating on status is precise.
+    # PASS / SKIP never blocks.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:execute-bolts)
+        FOP_STATE="${PROJECT_ROOT}/.mega-sdd/.fanout-parity-state.json"
+        if [ -f "$FOP_STATE" ]; then
+          FOP_STATUS=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FOP_STATE'))
+    print(d.get('status', 'UNKNOWN'))
+except Exception:
+    print('PARSE_ERROR')
+" 2>/dev/null)
+          if [ "$FOP_STATUS" = "FAIL" ]; then
+            FOP_CNT=$(python3 -c "
+import json
+try:
+    d = json.load(open('$FOP_STATE'))
+    print(d.get('summary', {}).get('divergence_count', '?'))
+except Exception:
+    print('?')
+" 2>/dev/null)
+            REASON="mega-sdd:execute-bolts is blocked — fan-out parity validator found ${FOP_CNT} deliverable-richness divergence(s) across view-bearing sibling units: a sibling declares an obligation (a \`## UI contract\` or a \`type: render\` acceptance test) that a peer in the same module/scope group omits — the 'survivor is served better than its peers' pattern. Bring every view-bearing sibling to parity (declare the same KIND of obligation), then re-save the unit(s) (PostToolUse re-validates). State: ${FOP_STATE}"
+            emit_block "$REASON"
+          fi
+        fi
+        ;;
+    esac
     ;;
 
   Bash)

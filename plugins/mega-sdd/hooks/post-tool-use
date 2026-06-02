@@ -401,6 +401,15 @@ except Exception:
         if [ -x "$VALIDATOR_SIB" ]; then
           bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
+        # Fan-out parity (Iter-79 A2): presence-parity of deliverable obligations
+        # (UI contract, render test) across VIEW-BEARING siblings — catches "LC is
+        # always the survivor". SKIPs when the pack declares no view_glob. Writes
+        # .fanout-parity-state.json; PreToolUse Branch 12 gates execute-bolts on its
+        # fanout_parity_divergence COUNT (EXTENSION-gate pattern — never status==FAIL).
+        VALIDATOR_FOP="${SCRIPT_DIR}/../scripts/validate-fanout-parity.sh"
+        if [ -x "$VALIDATOR_FOP" ]; then
+          bash "$VALIDATOR_FOP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 
