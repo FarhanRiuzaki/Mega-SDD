@@ -183,6 +183,24 @@ The rebuild's job is to satisfy goals + locked constraints, not to mirror legacy
 
 **No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
 
+### Staged-input detection (multi-step workflows) — v3.71.0+, semantic-depth
+
+A workflow that collects its inputs across MORE THAN ONE step / page / role is **staged** — a wizard, a maker→checker hand-off, a multi-page form. If you transcribe it as one flat "Inputs: A,B,C,D,E,F" list, the rebuild loses the staging and a bolt builds ONE form where the legacy had a multi-step wizard (the captured trade-finance regression). For every `classification: workflow` domain, actively look for staging and, when found, author the `## 3a. Staged inputs` `stages:` block (schema: `references/knowledge-base-schema.md §3a`).
+
+**Signals the source is staged (any ONE is enough to author §3a):**
+- **Multi-page form / wizard** — a `step` / `stage` / `page` request param or hidden state field that switches which fields render (`<input type="hidden" name="step">`, `?page=2`, `wizard_step`).
+- **Conditional rendering keyed to a stage** — `if (stage == 'review') { … }`, `switch ($step)`, view partials selected by a phase variable.
+- **State-machine transitions that gate inputs** — a `status` / `state` field whose value (`draft → pending → approved`) decides which fields are accepted or shown next.
+- **Role-gated visibility** — a maker form vs a checker form; different roles supply different fields in sequence (maker enters A,B,C; checker then enters D,E,F).
+
+**Discipline:**
+- One `stages:` entry per step. Allocate each input field to the stage that actually collects it (`input_fields`), in source order.
+- **Anchor MANDATORY per stage** — each stage's `_source` cites the `file:line` proving that stage exists. A stage you cannot anchor is an `[OPEN]`, not an invented step.
+- Name the `actor_role` per stage and the `transitions` (trigger + guard `conditions`) that advance it. Reference each `stage_id` in the §8 state-machine transition labels.
+- If staging is genuinely ambiguous (sequential flows exist but no explicit stage concept in code), still author §3a with `[INFERRED]` stages + an `[OPEN]` note — do NOT silently flatten.
+
+> Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
+
 ## Quality gates between waves
 
 After each wave, run the grep checks from `references/wave-dispatch-templates.md` §gate-checks:
@@ -193,6 +211,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
+- **Staged inputs** (v3.71.0+, semantic-depth) — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
