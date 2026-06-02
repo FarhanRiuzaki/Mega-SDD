@@ -492,6 +492,14 @@ except Exception:
         if [ -x "$VALIDATOR_VBC" ]; then
           bash "$VALIDATOR_VBC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
+        # Iter-79 X-1: conflict-classification enrichment (advisory WARN; was
+        # previously wired to NO hook + greped a structure the producer never
+        # emits → vacuous. Now dispatched on binding write, detects the real
+        # `### CONFLICT-N` markdown form).
+        VALIDATOR_CCL="${SCRIPT_DIR}/../scripts/validate-conflict-classification.sh"
+        if [ -x "$VALIDATOR_CCL" ]; then
+          bash "$VALIDATOR_CCL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 
