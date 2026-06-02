@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [3.71.0] - 2026-06-02
+
+### Semantic-depth — staged-input walking skeleton (regression: multi-step workflows flattened to single-form)
+
+Fixes a semantic-depth regression surfaced from real legacy code: a multi-step workflow (wizard / maker→checker / multi-page form) stages its inputs (fields A,B,C at step 1; D,E,F at step 2), but the KB→vault→units→bolts handoff **flattened** it to one "Inputs: A,B,C,D,E,F" list — so the bolt built ONE form where the legacy had a multi-step wizard. Root cause: staging was structured *nowhere* and the handoff schema never required it. Walking-skeleton scope: the **staged-input** dimension only (conditional / role-matrix / transition-guard dimensions follow later). Consumer-audited first (`stages:` is an OPTIONAL field — breaks no existing consumer; execute-bolts multi-step is vertical decomposition, deferred Fork-B-future). Advisor-sharpened: deterministic `_kb_source` back-reference (the OQ-ID-class propagation the codebase already uses) instead of fuzzy title-matching.
+
+**Track 1 — schema + contracts (deterministic propagation):**
+- `knowledge-base-schema.md`: new `## 3a. Staged inputs` section + the `stages:` YAML block (`stage_id`/`stage_name`/`actor_role`/`input_fields`/`transitions`/`_source`), REQUIRED-when-multi-step (conditional → backward-compatible), per-stage `_source` anchor as anti-halu rail.
+- `templates/04-flows.md`: `**Stages**` block (verbatim from KB §3a) + Mermaid `stateDiagram` + `_kb_source` back-reference.
+- `vault-contract.md §stages-propagation` + `handoff-contract.md`: explicit KB→vault preservation rule; optional `metrics.flows_with_stages` (type-checked-when-present, never required-on-absence).
+
+**Track 2 — skill bodies (paired with enforcing validators, no prose-only):**
+- `extract-intelligence/SKILL.md`: staged-input detection guidance (4 source signals; MANDATORY per-stage anchor). `generate-intent/SKILL.md`: preserve `stages:` verbatim, never flatten.
+
+**Track 3 — enforcement:**
+- `validate-kb-flows.sh`: ADVISORY `kb_flow_staging_missing` on a separate `advisories[]` channel — multi-step workflow KB without a `stages:` block. NEVER flips status (Iter-78.1 #1).
+- new `validate-vault-flow-staging.sh` (PreToolUse **Branch 14**): follows each flow's `_kb_source`; KB has `stages:` but vault dropped it → `vault_flow_staging_drop`, `status==FAIL` (blocking). Backward-compatible by construction (no KB / no `_kb_source` / KB had no stages → SKIP — pre-staging vaults never trip it). It ALSO carries an advisory arm (`vault_flow_staging_missing`, WARN-only, never status-flip) for the dominant flatten case — a flow showing the workflow signal but with NEITHER stages NOR `_kb_source` (the blocking arm can't see it). **Honest coverage:** the KB advisory + vault advisory are the broad detectors; the block is the narrow precise case (back-ref preserved, stages dropped).
+
+**Track 4 — remediation:** new `/mega-sdd:enrich-semantics` (`scripts/enrich-workflows-staging.sh`) — two-phase (propose → `--apply`) retro-fit of staging onto an existing KB without a full re-extract; re-reads cited legacy `_source`, detects the wizard pattern, allocates fields per stage. Consumes the `kb_flow_staging_missing` advisory.
+
+**Track 5 — proof:** `tests/fixtures/iter77-semantic-depth/` — 16/16 Fork-A assertions incl. the advisor's non-negotiable **hook-fire gate** (PreToolUse Branch 14 emits `continue:false` on a real drop, falls through on preserved). Fork-B (LLM skill-body authoring/preservation) explicitly documented as NOT script-asserted. 19/19 code-delivery fixtures still pass; kb-flows-mermaid unaffected.
+
 ## [3.70.0] - 2026-06-02
 
 ### Iter 79 — End-to-end pipeline-intelligence audit + 11 enforceable fixes

@@ -117,9 +117,51 @@ flowchart LR
 
 `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
 
+## 3a. Staged inputs (multi-step workflows)
+
+<Only when classification = workflow AND the legacy flow collects inputs across MORE THAN ONE sequential step / page / role (a wizard, a maker→checker hand-off, a multi-page form). Otherwise: "_N/A — single-step flow._">
+
+A flat "Inputs: A, B, C, D, E, F" list silently destroys staging: a downstream bolt then builds ONE form when the legacy was a multi-step wizard (the captured trade-finance regression). When a workflow stages its inputs, capture the staging EXPLICITLY as a structured `stages:` block so `generate-intent` can preserve it verbatim (it does NOT re-derive staging from prose) and the rebuild keeps the multi-step shape.
+
+**REQUIRED when the source has a multi-step pattern** (see §detection below). Each stage carries its own `_source` citation (anti-hallucination rail: a stage with no anchor is an `[OPEN]`, never an invented step).
+
+```yaml
+stages:                          # NEW (v3.71.0+, semantic-depth — staged-input). REQUIRED when source is multi-step.
+  - stage_id: "S1"
+    stage_name: "Initial input"
+    actor_role: "Maker"           # who fills / acts at this stage
+    input_fields: ["field_a", "field_b", "field_c"]  # subset of TOTAL workflow inputs allocated to THIS stage
+    transitions:
+      - to: "S2"
+        trigger: "submit_partial"  # the event that advances the workflow
+        conditions: []             # guard conditions (role / field / status); empty list if none
+    _source: ["legacy/path/file.php:120-184"]   # anchor(s) proving this stage exists
+  - stage_id: "S2"
+    stage_name: "Review & complete"
+    actor_role: "Checker"
+    input_fields: ["field_d", "field_e", "field_f"]
+    transitions:
+      - to: "DONE"
+        trigger: "approve"
+        conditions: ["actor_role in {MGRL1, MGRL2}"]
+    _source: ["legacy/path/file.php:201-240"]
+```
+
+**Detection (when to author this block):** the source is multi-step when ANY of —
+- a multi-page form / wizard (a `step` / `stage` / `page` param or hidden state field switches which fields render),
+- conditional rendering keyed to a stage (`if (stage == 'review')`),
+- a maker→checker / multi-role hand-off (different roles supply different fields in sequence),
+- a state field whose transitions gate which inputs are accepted next (`status: draft → pending → approved`).
+
+**Carry-over:** `stages:` propagates KB → vault `04-flows.md` → units — the SAME class of stable-identifier propagation as OQ-IDs and constitution clauses (see `generate-intent/references/vault-contract.md §stages-propagation`). `generate-intent` MUST copy the block verbatim and emit the matching Mermaid `stateDiagram`, never re-flatten it. `validate-vault-flow-staging.sh` enforces non-loss across the KB→vault boundary (blocking); `validate-kb-flows.sh` raises an advisory (`kb_flow_staging_missing`) when a workflow looks multi-step but carries no `stages:` block, pointing the user to `/mega-sdd:enrich-semantics`.
+
+> **Walking-skeleton scope (v3.71.0):** only the staged-input dimension is enforced. Other semantic-depth dimensions (rich per-stage conditional logic beyond `conditions:`, fine-grained role matrices, full transition guards) are captured best-effort here but not yet validator-enforced (Fork-B-future — `conditional` / `role-stage` / `transition` dimensions follow in a later iter).
+
 ## 4. Inputs
 
 <What triggers / data this domain accepts. Tech-agnostic (e.g., "customer details", not "POST /api/v2/customers").>
+
+> **Staged workflows:** if §3a `stages:` is present, the per-stage `input_fields` together enumerate this section's inputs — keep §4 as the flat union (back-compat for consumers that don't read §3a) AND keep §3a as the authoritative field→stage allocation. Never let §4 be the ONLY place inputs live for a multi-step workflow.
 
 ## 5. Process
 
@@ -164,6 +206,8 @@ stateDiagram-v2
     Approved --> [*]
     Rejected --> Draft: "user edits (controller.php:78)"
 ```
+
+> **Staged workflows (§3a present):** label each transition with the `stage_id` it advances from §3a (e.g. `Draft --> Submitted: "S1 maker submits (controller.php:42)"`) so the state topology stays joined to the staged-input allocation. A transition whose actor differs from the prior state's actor MUST name the actor/role.
 
 ## 9. Edge Cases & Gotchas
 
@@ -374,9 +418,10 @@ For every `[LOCKED]` field, list explicitly:
 - Section presence is mandatory — empty sections render as `_None detected — see §10._`, never omitted.
 - Forbidden patterns (language/DB names) absent in domain files except `## 11. Source References` and `50-integrations/`.
 - README "Critical findings" leads with do-not-replicate bugs — surfaced first, not buried.
+- Every `## 3a` stage carries its own `_source` anchor — a stage with no citation is `[OPEN]`, never invented; staging is reconstructed from code evidence, not assumed.
 
 ## Consumed by
 
-- **`mega-sdd:generate-intent` (Mode B with `--kb`)**: reads `README.md` + relevant domain files as PRD-equivalent source quotes. `[VERIFIED]` items → vault body; `[INFERRED]` → confirmation prompt; `[OPEN]` → vault OQ.
+- **`mega-sdd:generate-intent` (Mode B with `--kb`)**: reads `README.md` + relevant domain files as PRD-equivalent source quotes. `[VERIFIED]` items → vault body; `[INFERRED]` → confirmation prompt; `[OPEN]` → vault OQ. When a workflow domain carries a §3a `stages:` block, generate-intent copies it **verbatim** into the matching `04-flows.md` flow, emits the corresponding Mermaid `stateDiagram`, and stamps the flow with `_kb_source: [20-workflows/<file>.md]` (the back-reference `validate-vault-flow-staging.sh` follows to prove staging was not dropped).
 - **`mega-sdd:bind-codebase`**: when codebase-map.md is silent on a vault claim, consults the matching domain file. KB `[VERIFIED]` → CONFIRMED; `[INFERRED]` → CONFIRMED with note; `[OPEN]` → escalate as OQ. Never overrides a codebase-map CONFLICT.
 - **`mega-sdd:orchestrate-flow`**: detects KB presence in CWD and routes the next step.
