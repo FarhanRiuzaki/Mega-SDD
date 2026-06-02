@@ -355,6 +355,25 @@ def line_of(text, pos):
     return text[:pos].count("\n") + 1
 
 
+def is_partial(rel, stub_glob):
+    """FPP-2: a partial / component / included fragment does NOT own its page layout —
+    its parent supplies @extends + the responsive grid — so required_elements (layout-extends,
+    responsive) must NOT be required of it. scaffold_tells STILL apply (a raw-scaffold tell is a
+    defect anywhere). Detection: basename starts with `_` (Blade/Rails partial convention),
+    OR the path sits under a partials/components/layouts segment, OR it matches the pack's
+    declared scaffold_stub_glob. Pure path heuristics → tech-agnostic across stacks."""
+    norm = rel.replace("\\", "/")
+    base = os.path.basename(norm)
+    if base.startswith("_"):
+        return True
+    segs = norm.split("/")
+    if any(s in ("_partials", "partials", "components", "layouts", "partial", "shared") for s in segs):
+        return True
+    if stub_glob and glob_match(norm, stub_glob):
+        return True
+    return False
+
+
 # ── Scan each view ────────────────────────────────────────────────────────────
 violations = []
 for full, rel in view_files:
@@ -377,8 +396,9 @@ for full, rel in view_files:
                 "line": line_of(text, m.start()),
             })
 
-    # required_elements — only on NON-TRIVIAL views (size > min_view_lines).
-    if n_lines > min_view_lines:
+    # required_elements — only on NON-TRIVIAL, NON-PARTIAL views (FPP-2): a partial /
+    # component / modal fragment is @include'd into a parent that owns the layout + grid.
+    if n_lines > min_view_lines and not is_partial(rel, cfg.get("scaffold_stub_glob")):
         for r in required_elements:
             if not r["_re"].search(text):
                 violations.append({

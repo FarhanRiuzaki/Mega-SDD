@@ -329,14 +329,14 @@ scaffold_tells:
     regex: "@section\('title',\s*'[^']*Controller"
     message: "Page title leaks the Controller class name (raw scaffold). Set a human page title."
   - id: label-is-column-id
-    regex: ">\s*[A-Z][a-z]+ Id\s*<"
-    message: "Field label is a Str::title(column) like 'Customer Id' / 'Branch Id'. Humanize/relabel (e.g. 'Customer')."
+    regex: ">\s*([A-Za-z]+ )+(Id|ID|Uuid|UUID)\s*<"
+    message: "Field label is a Str::title(column) like 'Customer Id' / 'Beneficiary Bic Id' / 'CUSTOMER ID'. Humanize/relabel (e.g. 'Customer')."
   - id: raw-uuid-fk
-    regex: "\{\{\s*\$[a-zA-Z_]+->[a-z_]+_id\s*(\?\?|\}\})"
-    message: "Foreign key rendered as a raw id. Resolve to a human label via the relation (e.g. {{ $model->customer->name }})."
+    regex: "\{\{\s*\$[a-zA-Z_]+\s*(->\s*|\[['\"])[a-z_]+_id\b"
+    message: "Foreign key rendered as a raw id (arrow OR array access). Resolve to a human label via the relation (e.g. {{ $model->customer->name }})."
   - id: money-without-format
-    regex: "\{\{\s*\$[a-zA-Z_]+->(amount|total|price|balance)\s*(\?\?|\}\})"
-    message: "Money field printed without number_format / currency formatting."
+    regex: "\{\{\s*\$[a-zA-Z_]+\s*(?:->\s*|\[['\"])[a-z_]*(amount|total|price|balance|sum|fee|cost|nominal)\b\s*(\?\?|\}\}|\])"
+    message: "Money/decimal field printed without number_format / currency formatting (matches *_amount / *_total / etc.)."
   - id: native-alert
     regex: "\b(alert|confirm|prompt)\s*\("
     message: "Native JS dialog (alert/confirm/prompt) instead of the project notification idiom (SweetAlert2 Swal.fire)."
