@@ -115,6 +115,22 @@ citation_pattern = re.compile(
 )
 oq_pattern = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
 
+# Iter-79 U-GI: independently re-apply the deterministic Auto-classifier heuristic
+# text-pattern table (vault-contract.md §Auto-classifier heuristics) to detect an OQ
+# whose TEXT clearly reads as `tech` but is tagged `business`/untagged — the lazy-default
+# blind spot the prior validator missed (it only checked OQs ALREADY tagged [tech]).
+# These are the literal tech patterns from that table; matching is a text-pattern test,
+# never LLM judgment.
+TECH_TEXT_RE = re.compile(
+    r"\btest\s+framework\b|\btesting\s+library\b|\btest\s+runner\b"
+    r"|\bnaming\s+convention\b|\bcase\s+style\b|\bfile\s+naming\b"
+    r"|\bfile\s+location\b|\bwhere\s+should\b.{0,30}\blive\b|\bdirectory\s+structure\b"
+    r"|\berror\s+code\s+format\b|\bresponse\s+shape\b|\bapi\s+envelope\b"
+    r"|\bwhich\s+library\b|\bwhich\s+version\b|\bdependency\s+choice\b"
+    r"|\bframework\s+standard\b",
+    re.IGNORECASE,
+)
+
 # Walk the body. Build per-OQ blocks: text from OQ mention up to (but excluding)
 # the next OQ mention. This avoids the bug where OQ-A's metadata window catches
 # OQ-B's `mode:` line (15-line proximity false-positives).
@@ -166,6 +182,24 @@ for oq, window in oq_blocks:
         # Category indicator: `[tech]` or `[business]` in OQ line, OR `category: tech` field
         has_tech_category = bool(re.search(r"\[tech\]|category:\s*tech", window, re.IGNORECASE))
         has_business_category = bool(re.search(r"\[business\]|category:\s*business", window, re.IGNORECASE))
+
+        # ─── Iter-79 U-GI: oq_misclassified_tech (advisory) ──────────────────
+        # OQ text reads tech (matches the heuristic table) but is NOT tagged tech —
+        # the lazy-default-to-business blind spot. Advisory (not in the Branch-10
+        # blocking filter): surfaces a tag the classifier should have caught.
+        if not has_tech_category and TECH_TEXT_RE.search(window):
+            mt = TECH_TEXT_RE.search(window)
+            issues.append({
+                "halt_type": "oq_misclassified_tech",
+                "detail": (
+                    f"OQ {oq} text matches a tech heuristic pattern (\"{mt.group(0)}\") but is "
+                    f"tagged {'[business]' if has_business_category else 'untagged'} — likely a "
+                    f"mis-classification (should be category: tech with a resolution_mode)."
+                ),
+                "oq_id": oq,
+                "matched_pattern": mt.group(0),
+                "current_tag": "business" if has_business_category else "untagged",
+            })
 
         # mode: line in window
         mode_match = re.search(r"^\s*[-*]?\s*mode:\s*(\w+)", window, re.MULTILINE)

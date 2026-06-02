@@ -401,6 +401,15 @@ except Exception:
         if [ -x "$VALIDATOR_SIB" ]; then
           bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
+        # Fan-out parity (Iter-79 A2): presence-parity of deliverable obligations
+        # (UI contract, render test) across VIEW-BEARING siblings — catches "LC is
+        # always the survivor". SKIPs when the pack declares no view_glob. Writes
+        # .fanout-parity-state.json; PreToolUse Branch 12 gates execute-bolts on its
+        # fanout_parity_divergence COUNT (EXTENSION-gate pattern — never status==FAIL).
+        VALIDATOR_FOP="${SCRIPT_DIR}/../scripts/validate-fanout-parity.sh"
+        if [ -x "$VALIDATOR_FOP" ]; then
+          bash "$VALIDATOR_FOP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 
@@ -492,6 +501,14 @@ except Exception:
         if [ -x "$VALIDATOR_VBC" ]; then
           bash "$VALIDATOR_VBC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
+        # Iter-79 X-1: conflict-classification enrichment (advisory WARN; was
+        # previously wired to NO hook + greped a structure the producer never
+        # emits → vacuous. Now dispatched on binding write, detects the real
+        # `### CONFLICT-N` markdown form).
+        VALIDATOR_CCL="${SCRIPT_DIR}/../scripts/validate-conflict-classification.sh"
+        if [ -x "$VALIDATOR_CCL" ]; then
+          bash "$VALIDATOR_CCL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
         ;;
     esac
 
@@ -552,6 +569,14 @@ except Exception:
       "${PROJECT_ROOT}/.mega-sdd/.bolt-artifacts-state.json" \
       "PostToolUse-Write-validate-bolt-artifacts"
 
+    # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
+    # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
+    # bolt-reports / no pack UI signatures. PreToolUse Branch 13 gates on status==FAIL.
+    run_validator_and_emit \
+      "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
+      "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \
+      "PostToolUse-Write-validate-ui-deferral"
+
     # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-unit-spec.sh" \
@@ -580,11 +605,18 @@ except Exception:
     # ── Validator 7 (R2): KB output validation ────────────────────────────
     # Fires when KB domain/workflow/business-rules files are saved.
     case "$FILE_PATH" in
-      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md)
+      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md|*.mega-sdd/knowledge-base/99-rebuild-architecture/*.md)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-output-state.json" \
           "PostToolUse-Write-validate-kb-output"
+        # Iter-79 U-EI: reengineering-synthesis presence (the phase's REASONING output,
+        # vs the transcription checks above). Advisory; self-SKIPs when no mutability
+        # markers / no 99-rebuild-architecture/.
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-kb-reengineering.sh" \
+          "${PROJECT_ROOT}/.mega-sdd/.kb-reengineering-state.json" \
+          "PostToolUse-Write-validate-kb-reengineering"
         # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \

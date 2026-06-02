@@ -244,6 +244,41 @@ else:
             if not (isinstance(na, str) or isinstance(na, dict)):
                 type_errors.append(f"next_action must be string OR dict, got {type(na).__name__}")
 
+            # ─── Iter-79 O-3: CONDITIONAL-field type checks (when present) ──────
+            # handoff-contract.md accreted ~50 per-skill fields since Iter 32; the
+            # validator type-checked only the 4 required + artifacts. Extend the TYPE
+            # table to the common CONDITIONAL fields — TYPE-ONLY, never required-on-
+            # absence (a handoff that legitimately omits a field is NOT failed; only a
+            # PRESENT field of the wrong shape is — so this cannot break a live chain
+            # that simply doesn't emit an optional block). Closes the F3/F4 PARTIAL gap.
+            # The no-deps parser builds real lists/dicts for BLOCK-style sequences/maps
+            # but leaves inline scalars (`[]`, `0.92`, `none`) as strings — so these
+            # checks are parser-tolerant: a value is wrong-typed only when it is a real
+            # scalar of the wrong shape, not merely string-encoded.
+            def is_listish(v):
+                return isinstance(v, list) or (isinstance(v, str) and v.strip().startswith("["))
+            def is_dictish(v):
+                return isinstance(v, dict) or (isinstance(v, str) and v.strip().startswith("{"))
+            LIST_FIELDS = ["blockers", "checkpoints", "cycles"]
+            DICT_FIELDS = ["metrics", "constitution", "pbt", "mutability", "scope",
+                           "replay", "starterkit_context", "metadata"]
+            for f in LIST_FIELDS:
+                if f in h and h[f] is not None and not is_listish(h[f]):
+                    type_errors.append(f"{f} must be a list when present, got scalar {h[f]!r}")
+            for f in DICT_FIELDS:
+                if f in h and h[f] is not None and not is_dictish(h[f]):
+                    type_errors.append(f"{f} must be an object/map when present, got scalar {h[f]!r}")
+            # next_action.confidence (Iter-79 O-4): when present must be a number in [0,1] or
+            # null. Parser-tolerant — coerce the string the no-deps parser hands us.
+            if isinstance(na, dict) and "confidence" in na and na["confidence"] is not None:
+                c = na["confidence"]
+                try:
+                    cf = float(c)
+                    if not (0.0 <= cf <= 1.0):
+                        type_errors.append(f"next_action.confidence must be in [0,1], got {c!r}")
+                except (TypeError, ValueError):
+                    type_errors.append(f"next_action.confidence must be a number or null, got {c!r}")
+
             if type_errors:
                 result = {
                     "status": "FAIL",

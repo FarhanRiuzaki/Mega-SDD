@@ -86,6 +86,19 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new
 
+### v3.70.0 (Iter 79) — End-to-end pipeline-intelligence audit + 11 enforceable fixes
+
+A fresh end-to-end audit of *per-phase reasoning intelligence* (`docs/superpowers/audits/2026-06-02-intelligence-e2e/` — a synthesis + 4 parallel lanes). The audit was advisor-sharpened so it would actually land instead of becoming the 5th prose failure: **every finding carries an `enforceable: Y/N` verdict** ("reason harder" prose asks are rejected outright — 0-for-4 track record), is **anchored to a reproduced `new-tradefinance-import` failure**, and is **baselined against already-shipped machinery** (so no closed gap is re-proposed). The audit's headline catch was a **real defect**: `validate-conflict-classification.sh` was a *vacuous gate* — wired to no hook and matching a ` ```yaml binding_conflict``` ` structure the producer never emits, so it SKIPped on every real binding while looking like enforcement.
+
+All 11 enforceable findings shipped, each following the proven Iter-78 archetype (validator + pack-declared tech-agnostic signature + hook wiring + bad/good fixture; **19/19 code-delivery fixtures pass**):
+
+- **Tier 0 — X-1:** de-vacuoused the conflict-classification gate (real markdown `### CONFLICT-N` detection, resolved-exempt, wired PostToolUse; `binding-contract.md` templates `conflict_class` + `resolution_complexity`).
+- **Tier 1 (decomposition/delivery):** **A2** fan-out parity (`validate-fanout-parity.sh`, Branch 12 — "LC is always the survivor": view-bearing siblings must be served at equal richness); **B1** UI-deferral (`validate-ui-deferral.sh`, Branch 13 — blocks "scaffold kept; UI polish deferred"); **N-1** shared side-effect parity (new `flow_step:` applies_when operator + `inbox-surfacing` pack concern — the af49ede inbox-invisibility class); **A1** advisory decomposition-altitude signal.
+- **Tier 2 (upstream):** **U-GI** mis-tagged-tech-OQ detection; **U-SC** codebase-map depth check; **U-EI** `validate-kb-reengineering.sh` (validates the Wave-5 synthesis, not just transcription).
+- **Tier 3 (orchestrator):** **O-3/O-4** conditional handoff type-checks + a typed `next_action.confidence` ∈ [0,1] (the iter-33 F4/D5 foundation); **O-1** `validate-preflight.sh` (Branch 0 — predictive fatal input-precondition check; iter-33 F2 closure).
+
+Tech-agnostic throughout (signatures from the framework-convention pack; SKIP off-stack), `errors="replace"` on every read, and new issue types are non-blocking unless a dedicated single-purpose validator or an explicit COUNT-gated branch opts them in.
+
 ### v3.69.0 → v3.69.2 (Iter 78 + 78.1) — Code-delivery sharpening: decomposition reasoning + UI/UX quality gates (tech-agnostic)
 
 A deep audit + real-run evidence (the `new-tradefinance-import` Laravel Phase-2 build) showed the weak link was code **delivery** — UI/UX quality was a coin-flip and decomposition stopped at *module altitude* (never flow-step→artifact, no cross-sibling consistency), letting siblings drift from the golden module ("fan-out divergence"). Iter 78 adds **7 tech-agnostic, fixture-verified code-delivery gates**, each a deterministic validator wired to a PreToolUse block on `execute-bolts` (validator-first — skill-body prose is defense-in-depth only):
@@ -710,7 +723,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 - **Iter 29 v3.20.0 audit closure** — 13 findings closed from post-Iter-28 deep audit (`docs/superpowers/audits/2026-05-24-iter-28-v3.20.0-deep-audit.md`). Pattern was Iter 28 producer-only: generate-intent wrote scope to vault.json + handoff YAML, but ZERO downstream skills consumed it. Fix: scope propagation to 6 consumer skills (bind-codebase v1.9.3, generate-units v2.5.4, emit-agents-md v1.2.4, execute-bolts v2.4.2, detect-drift v1.2.2, resolve-oq v0.9.1). Also: diff-vault v1.3.0 implements prd_sha256 change detection (closed unimplemented spec claim). Orchestrate-flow v2.4.1 halt taxonomy gains 4 new entries (3 Iter 28 + 1 Iter 29). Generate-intent gains formal §Halt conditions section with full YAML envelope examples. Step 0.9 execution-order guard added (file order ≠ runtime order). agents-md-schema.md stale legacy vault paths fixed
 - **Iter 30 execute-bolts seamless pipeline** — bolt subagent dispatched via tiered context enrichment (T1 always ≤2KB / T2 conditional ≤5KB / T3 reference-on-demand) per `references/bolt-dispatch-prompt.md`. Implements 10 AI-executor principles from spec (anti-context, confidence labels, past-failure intelligence, self-assessment vocabulary, halt vocabulary, validation hints, atomic discipline, provenance trailers, graceful partial-state). Plus seamless pipeline: compact streaming progress + aggregate `<vault>/bolts/_summary.md` + propose-and-confirm halt UX (AI fix proposer for test_fail / hard_rule_violated / pbt_property_violated; user single-click approve) + auto-drift gate DEFAULT-ON after batch (~6x faster via shared snapshot reuse) + DRIFT-REPORT.md `## Suggested next actions` with auto-handoff commands + convergence loops bridge bolt halts. New halts: dispatch_prompt_too_large, bolt_repeated_partial_failure, provenance_missing, self_assessment_missing, bolt_introduces_locked_drift
 
-## Anti-hallucination defense (16 layers)
+## Anti-hallucination defense (17 layers)
 
 1. **Intent** — uncertain claims promote to Open Questions
 2. **OQ classification** — business vs tech; tech auto-resolves
@@ -728,6 +741,7 @@ See [docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design
 14. **Predictive preflight** — orchestrate-flow surfaces upcoming halts before they fire (Iter 33 F2)
 15. **Handoff schema validation** — handoff YAML type-checked against handoff-contract.md per skill (Iter 33 F3+F4)
 16. **Code-delivery quality gates** — 7 tech-agnostic validators (flow-coverage, sibling-consistency, cross-cutting registration, render-test, ui-quality, dispatch enrichment, operator-UX capture) wired to PreToolUse blocks on `execute-bolts`; target delivery quality (UI/UX + flow→file decomposition reasoning), read signatures from the framework-convention pack, SKIP gracefully off-stack (Iter 78; see What's new)
+17. **Pipeline-intelligence gates** — from the Iter-79 end-to-end intelligence audit (every finding graded *enforceable*): fan-out parity (Branch 12), UI-deferral (Branch 13), predictive preflight (Branch 0, F2 closure), the de-vacuoused conflict-classification gate (was wired to no hook), a shared side-effect parity concern (`flow_step:` operator), `validate-kb-reengineering`, plus advisory signals (decomposition-altitude, mis-tagged tech OQs, codebase-map depth) and a typed `next_action.confidence`. Same tech-agnostic discipline; 19/19 fixtures (Iter 79; see What's new)
 
 ## Memory layer (v2.1+)
 

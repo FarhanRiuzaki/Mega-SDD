@@ -368,6 +368,12 @@ cross_cutting_concerns:
     registration_target_glob: 'app/Models/**/*.php'
     registration_source_glob: 'database/migrations/**/*.php'
     registration_exempt_glob: 'app/Models/User.php'
+  - concern: inbox-surfacing
+    applies_when: 'flow_step:workflow_assignments'
+    spec_obligation: '\badvanceAssignments\b|WorkflowEngine::transition'
+    registration_signature: 'advanceAssignments|WorkflowEngine::transition'
+    registration_target_glob: 'app/Http/Controllers/**/*.php'
+    registration_source_glob: 'app/**/WorkflowEngine.php'
 ```
 
 `registration_exempt_glob` (FPP-3) lists models that carry the column but MUST NOT register the
@@ -391,6 +397,27 @@ branch. The UNIT spec must name the `BranchScoped` trait (the `spec_obligation` 
 a sibling that scopes "via lc_id" or omits the trait entirely is a divergence (slice B).
 At runtime the model's `booted()` must call `addGlobalScope(new BranchScoped)` — the
 `registration_signature` slice C scans the written source for.
+
+### `inbox-surfacing` (Iter-79 N-1) — a SHARED RUNTIME SIDE-EFFECT, not a column-concern
+
+`branch-scoping` keys on `has_column` (a static schema fact). `inbox-surfacing` keys on
+`flow_step:workflow_assignments` — the maker-checker `applies_when` operator added in
+Iter-79: the concern applies to any sibling unit whose flow cites the assignment-row update
+step (`04-flows.md` "Update workflow_assignments …"). Such a unit MUST declare the
+implementation obligation — calling `advanceAssignments` (or going through
+`WorkflowEngine::transition`, which calls it) — so the cross-module Approval Inbox surfaces
+its items. This closes the Phase-2 `af49ede` repair: `lc_amendments` + `doc_examinations`
+created ZERO `workflow_assignments` rows (one lacked `branch_id` so `advanceAssignments`
+silently skipped; the other never fired a transition), making those items invisible in the
+inbox while LC + payment surfaced correctly — the same collapse-toward-the-survivor shape as
+branch-scoping, but on a runtime side-effect. The obligation (`spec_obligation`,
+`registration_signature`) names the WorkflowEngine MECHANISM, never the flow-step phrase
+itself — so the check is not tautological (a unit citing the step but not naming the
+mechanism is flagged). Stack-agnostic: a project with no maker-checker flow has no unit
+citing the step, so the concern is inert (no false positives). `workflow_assignments` /
+`WorkflowEngine` are the RECON / base-laravel-26 starterkit's approval-engine convention,
+declared here in the base Laravel pack because the family inherits it through the `extends`
+chain (the same rationale as `BranchScoped`).
 
 ## Relation derivation
 

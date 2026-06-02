@@ -271,16 +271,41 @@ for u in units:
     key = (u["fm"].get("module", "_all"), u["fm"].get("scope", "_all"))
     groups[key].append(u)
 
+# ── applies_when operators (Iter-79 N-1) ──
+# Two pack-declared forms, both per-unit predicates:
+#   has_column:<col>     — unit body references the FK/column (static declaration).
+#   flow_step:<regex>    — unit body cites a flow step matching the regex (a SHARED
+#                          runtime side-effect obligation, e.g. the maker-checker
+#                          inbox-surfacing write). Lets a pack require that every
+#                          sibling whose flow includes step X declares the same
+#                          implementation obligation — closes the af49ede inbox-parity
+#                          gap (a side-effect, not a column-concern). Stack-agnostic:
+#                          when no unit cites the step, the concern is inert.
+def concern_predicate(aw):
+    aw = (aw or "").strip()
+    mc = re.match(r"has_column\s*:\s*(.+)$", aw)
+    if mc:
+        col = mc.group(1).strip()
+        return lambda u: column_present(u["body"], col)
+    mf = re.match(r"flow_step\s*:\s*(.+)$", aw)
+    if mf:
+        try:
+            fr = re.compile(mf.group(1).strip(), re.IGNORECASE)
+        except re.error:
+            return lambda u: False
+        return lambda u: bool(fr.search(u["body"]))
+    return lambda u: False
+
+
 # ── 1. Inconsistent cross-cutting concern across siblings ──
 inconsistent = []
 for concern in concerns:
     aw = concern["applies_when"]
-    m = re.match(r"has_column\s*:\s*(.+)$", aw.strip())
-    col = m.group(1).strip() if m else None
+    applies = concern_predicate(aw)
     oblig_re = re.compile(concern["spec_obligation"])
     for gkey, members in groups.items():
         # which members the concern applies to
-        applicable = [u for u in members if (col and column_present(u["body"], col))]
+        applicable = [u for u in members if applies(u)]
         if len(applicable) < 1:
             continue
         satisfying = [u for u in applicable if oblig_re.search(u["body"])]
