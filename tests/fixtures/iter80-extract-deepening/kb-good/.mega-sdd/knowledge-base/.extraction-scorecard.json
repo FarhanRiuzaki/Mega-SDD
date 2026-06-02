@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "extracted_at": "2026-06-02T00:00:00Z",
+  "extractor_version": "extract-intelligence@1.8.0",
+  "scope": { "legacy_root": "legacy/", "files_in_scope": 12, "files_read_fully": 12 },
+  "principles": {
+    "P1_state_provenance":         { "status": "COVERED", "anomalies_count": 0, "anomalies": [] },
+    "P2_rule_enumeration":         { "status": "COVERED", "rules_documented": 7, "conflicts_open": 0 },
+    "P3_behavior_executed":        { "status": "COVERED", "artifact_markers": 2 },
+    "P4_structural_classification": { "status": "COVERED", "files_classified": 12, "naming_structure_drift_count": 1 },
+    "P5_staged_inputs":            { "status": "COVERED", "workflows_audited": 2, "workflows_with_stages": 2 }
+  },
+  "overall_status": "PASS",
+  "open_markers_present": false
+}
