@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 1.10.5
+version: 1.11.0
 description: Validate a vault against `codebase-map.md` (primary ground truth) + `.mega-sdd/knowledge-base/` (secondary ground truth, v1.1+). Produces `<vault>-bound/` + `binding.md` with CONFIRMED/CONFLICT/OQ verdicts per claim + Implementation State Map (v1.2+, Iter 1) + Tech-OQ auto-resolution (v1.3+, Iter 2) + Suggested Unit Hard Rules (v1.4+, Iter 3 — emits machine-parseable constraints for generate-units to pull into unit body). BLOCKS downstream unit generation on conflicts. Triggers — "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or paraphrases.
 ---
 
@@ -27,6 +27,27 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 - `binding.md` — always written, even when blocking
 - `<vault>-bound/` (sibling of vault dir) — written only when no CONFLICTs (or `--strict` and no OQs)
+
+## Extraction scorecard preflight (advisory, v3.72.0+)
+
+When a knowledge base is present (the legacy-rebuild lane — KB consulted as secondary ground truth), run the **Extraction Completeness Contract** check BEFORE processing KB claims, so binding builds on extraction whose gaps are visible:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
+```
+
+Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):
+- **SKIP** (no scorecard — pre-v3.72.0 KB, or none emitted) → proceed normally. Back-compat; absence is not a blocker.
+- **PASS** → proceed. If the scorecard self-reports `overall_status: PARTIAL` with `[OPEN]` markers, carry those `[OPEN]`s through to `binding.md` as OQ candidates (they are honest gaps, not errors).
+- **FAIL** (scorecard internally inconsistent, or a PARTIAL/MISSING principle with NO `[OPEN]` markers — a hidden gap) → **surface prominently in `binding.md`** under a `## Extraction quality (advisory)` note and recommend re-running `extract-intelligence` for the failing principle. **Advisory this iter — does NOT hard-block binding** (the bridging-design B1 "HALT" is scoped to a follow-up; see below).
+
+### Pipeline handshake gates — scope note (Fork-B-future)
+
+The full anti-drift handshake from the source design (B2 unverified-state-machine, B3 cross-domain-seam consistency; and the execute-bolts post-flight E1/E2/E3 scans) are **NOT enforced in v3.72.0**. Per the plugin's Fork A doctrine, an enforcement gate must be a deterministic validator wired to a hook — prose that says "HALT" enforces nothing. These are scoped as a separable follow-up:
+- **B1 hard-block** — promote the advisory preflight above to a blocking PreToolUse branch (block bind/units when scorecard `FAIL`). Deferred to protect the existing hook invariants (Iter-78.1 / Iter-79 / semantic-depth #6/#7).
+- **B2 / B3 / E1 / E2 / E3** — require their own `validate-*.sh` validators + fixtures before wiring. Per the user's 2026-06-02 reframe (status-naming drift is NOT a gap; capture business outcome, not legacy encoding), B2/B3 should verify the **business outcome** survives, not that rebuild status values match legacy — to be specced when built.
+
+Do not add prose that claims to HALT here without a backing validator.
 
 ## Procedure
 

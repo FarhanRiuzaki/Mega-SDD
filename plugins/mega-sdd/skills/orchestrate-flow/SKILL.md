@@ -360,6 +360,7 @@ next_action: "Install tree-sitter (brew install tree-sitter OR cargo install tre
 
    | Phase | Auto-runs | Output integration |
    |---|---|---|
+   | After `extract-intelligence` completes (or whenever a KB is present) AND `.mega-sdd/.kb-flows-state.json` carries a `kb_flow_staging_missing` advisory | `enrich-semantics` in **propose** mode (`scripts/enrich-workflows-staging.sh --vault=<vault> --semantic=staged-input`; `--legacy-root` AUTO-DISCOVERED from the KB README's "source codebase path" + common legacy dirs, or pass it explicitly) | Writes `<vault>/ENRICHMENT-PROPOSALS.md` and **PAUSES the chain** (`status: paused`) with a one-line summary: "staging-missing in N workflow(s) → proposals at ENRICHMENT-PROPOSALS.md; review + `/mega-sdd:enrich-semantics --apply`, then `--resume`". NEVER auto-applies. |
    | After `generate-units` completes | `lint-units` (per `commands/lint-units.md` Procedure) | One-line chat summary: "lint: N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
    | Before `execute-bolts` invocation | `analyze-parallelism` (per `commands/analyze-parallelism.md`) | Wave plan computed; passed to execute-bolts to drive `--parallel` batch dispatch |
    | After `execute-bolts` completes | `list-modules` (per `commands/list-modules.md` table format) | Per-module status table in chain end summary |
@@ -368,6 +369,8 @@ next_action: "Install tree-sitter (brew install tree-sitter OR cargo install tre
    | After all phases complete | Memory review check (per `commands/memory.md review` if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
 
    These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
+
+   **Exception — staged-input enrichment PAUSES (v3.71.0+, semantic-depth).** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `/mega-sdd:enrich-semantics --apply` → `/mega-sdd:auto --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging` on `auto`/`orchestrate-flow`.
 
    **Manual override**: users invoking individual commands directly (`/mega-sdd:lint-units` etc.) still works for debugging/one-off use. Auto-invocations skip when user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on `auto`/`orchestrate-flow`.
 
