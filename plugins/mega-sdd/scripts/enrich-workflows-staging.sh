@@ -113,6 +113,23 @@ if not kb_root or not os.path.isdir(kb_root):
     print(json.dumps(result, indent=2))
     sys.exit(2)
 
+# ── Auto-discover the legacy root when --legacy-root is omitted (for /mega-sdd:auto) ──
+# Probe order: (1) the KB README's recorded "source codebase path", (2) common legacy dirs
+# under the project root. Lets orchestrate-flow call this without hand-feeding the path.
+if not legacy_root:
+    probes = []
+    readme = os.path.join(kb_root, "README.md")
+    rt = read_text(readme) or ""
+    if rt:
+        m = re.search(r"source\s+codebase\s+path[:\s*]+`?([^\s`\n]+)`?", rt, re.IGNORECASE)
+        if m:
+            cand = m.group(1)
+            probes.append(cand if os.path.isabs(cand) else os.path.join(proj, cand))
+    probes += [os.path.join(proj, d) for d in ("old-reference", "legacy", "legacy-src", "src-legacy", "_legacy")]
+    legacy_root = next((p for p in probes if os.path.isdir(p)), "")
+    result["legacy_root"] = legacy_root
+    result["legacy_root_auto_discovered"] = bool(legacy_root)
+
 # ── Consume the kb_flow_staging_missing advisory (advisory drives action) ─────
 adv_state = os.path.join(proj, ".mega-sdd", ".kb-flows-state.json")
 if os.path.isfile(adv_state):

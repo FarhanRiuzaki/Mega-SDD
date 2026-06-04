@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.7.0
+version: 1.8.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -198,8 +198,22 @@ A workflow that collects its inputs across MORE THAN ONE step / page / role is *
 - **Anchor MANDATORY per stage** — each stage's `_source` cites the `file:line` proving that stage exists. A stage you cannot anchor is an `[OPEN]`, not an invented step.
 - Name the `actor_role` per stage and the `transitions` (trigger + guard `conditions`) that advance it. Reference each `stage_id` in the §8 state-machine transition labels.
 - If staging is genuinely ambiguous (sequential flows exist but no explicit stage concept in code), still author §3a with `[INFERRED]` stages + an `[OPEN]` note — do NOT silently flatten.
+- **Progressive-disclosure deltas (v3.72.0+, OPTIONAL / best-effort):** when a stage's form clearly differs from the prior stage, capture the delta in §3a — which fields are NEW here (`new_fields_vs_prior`), which were shown earlier but are gone (`hidden_fields_vs_prior`), which were promoted to mutable (`promoted_to_mutable_vs_prior`, e.g. display-only → dual-key re-entry), and any within-stage show/hide (`dynamic_disclosures`). Use the enriched object form of `input_fields` (`{name, mutability, visibility, conditional}`) when you can read per-field mutability/visibility; bare strings remain valid. Schema: `references/knowledge-base-schema.md §3a`. This deepens the staging capture (the user's "fields A,B,C at maker; D,E,F appear at the next stage" case) — but it is NOT validator-blocking; absence never fails a gate.
 
 > Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
+
+### Deep extraction disciplines (P1–P4) — v3.72.0+
+
+Five extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `references/wave-dispatch-templates.md` §generic-agent-prompt-structure → DEEP DISCIPLINES** — that is the block injected into every wave subagent prompt, so the deeper reasoning fires *automatically* every run (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
+
+- **P1 — State & data provenance.** For every state *writer*, locate the *reader*; for every clone copy (`INSERT … SELECT`, snapshot), trace the implicitly-inherited fields and who reads them downstream. Writer with no reader → `write-only / vestigial`; reader with no in-scope writer → `inherited / cross-domain seam`. Anti-halu: an unpaired side is `[OPEN]`, never invented.
+- **P2 — Enumerate ALL sites of a rule or flow.** Document every site of a repeated rule (diff them, mark `[OPEN]` on disagreement — never average); treat each entry-point dispatcher branch as a distinct flow with its own initial state.
+- **P3 — Behaviour-as-EXECUTED.** Unconditional halts (`die()`/`exit()`) as `[ARTIFACT: debug-code-as-feature]`; full transaction-rollback policy; hardcoded test flags; silent-success paths — what an operator OBSERVES.
+- **P4 — Classify files by structure, not naming.** Role from template-ratio / form-tags / early-return gates (view / action_handler / dual_purpose / dispatcher / service); document filename-vs-structure mismatches in §9.
+
+**Framing (per user directive 2026-06-02):** the KB captures **business intent + flow**; the rebuild owns **implementation cleanliness**. So P1 captures coupling as a *business outcome* ("the amendment must still trigger downstream dispatch + facility re-balance"), NOT the legacy implementation accident, and **status-naming drift between legacy and rebuild is NOT a gap** (legacy `flag_amend='4'` normalizing to a clean `workflow_state` is a cleanup, not drift). The disciplines surface coupling and distinct operating models so the rebuild can preserve the *outcome* while redesigning the *encoding*.
+
+These four are reasoning disciplines (P5 FE-completeness is covered by the staged-input mechanism above; its progressive-disclosure delta enrichment lives in `references/knowledge-base-schema.md §3a`). Completeness across the five principles is summarized end-of-extraction by an **Extraction Completeness Contract** scorecard.
 
 ## Quality gates between waves
 
@@ -212,6 +226,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
 - **Staged inputs** (v3.71.0+, semantic-depth) — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
+- **P1 provenance** (v3.72.0+) — a workflow agent reporting `provenance_anomalies > 0` (per `wave-dispatch-templates.md` REPORT BACK) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` (a MANUAL between-wave grep nudge — NOT a validator-emitted state signal, unlike `kb_flow_staging_missing`) when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
@@ -251,6 +266,47 @@ After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, 
 ```
 
 If write fails: log warning + continue (snapshot is freshness check optimization; KB itself remains the consumable output).
+
+## Step 5.6 — Emit Extraction Completeness Contract scorecard (v3.72.0+)
+
+The contract makes extraction *falsifiable*: it summarizes how well each of the five Deep extraction disciplines (P1–P4 above + P5 staged inputs) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
+
+- `.extraction-scorecard.json` (machine-readable — validated by `scripts/validate-extraction-scorecard.sh`)
+- `EXTRACTION-SCORECARD.md` (human-readable companion)
+
+**Deriving each principle's status** (from the Wave REPORT BACK self-checks + a holistic KB scan):
+
+| Principle | COVERED when | PARTIAL / MISSING when |
+|---|---|---|
+| `P1_state_provenance` | every documented state writer has a located reader (or an explicit `write-only` / `inherited / cross-domain seam` `[OPEN]` note) | `provenance_anomalies` reported but not all carry an `[OPEN]`/seam note |
+| `P2_rule_enumeration` | repeated rules documented at every site; entry-point branches captured as distinct initial states | a rule documented at only one site when grep shows more; disagreeing sites not marked `[OPEN]`/conflict |
+| `P3_behavior_executed` | unconditional halts / rollback policy / test flags / silent-success paths documented as observed | a transaction wrapper in scope with no documented rollback policy |
+| `P4_structural_classification` | in-scope files classified by structure; filename-vs-structure mismatches noted | files left role-ambiguous with no `[OPEN]` |
+| `P5_staged_inputs` | every multi-step `classification: workflow` carries a `## 3a` `stages:` block | a multi-step workflow with no stages block (see `kb_flow_staging_missing`) |
+
+**`overall_status`:** `PASS` = all five COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
+
+**Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure.
+
+```json
+{
+  "version": "1.0",
+  "extracted_at": "<ISO8601>",
+  "extractor_version": "extract-intelligence@1.8.0",
+  "scope": { "legacy_root": "<path>", "files_in_scope": 0, "files_read_fully": 0 },
+  "principles": {
+    "P1_state_provenance":        { "status": "COVERED|PARTIAL|MISSING", "anomalies_count": 0, "anomalies": [] },
+    "P2_rule_enumeration":        { "status": "COVERED|PARTIAL|MISSING", "rules_documented": 0, "conflicts_open": 0 },
+    "P3_behavior_executed":       { "status": "COVERED|PARTIAL|MISSING", "artifact_markers": 0 },
+    "P4_structural_classification":{ "status": "COVERED|PARTIAL|MISSING", "files_classified": 0, "naming_structure_drift_count": 0 },
+    "P5_staged_inputs":           { "status": "COVERED|PARTIAL|MISSING", "workflows_audited": 0, "workflows_with_stages": 0 }
+  },
+  "overall_status": "PASS|PARTIAL|FAIL",
+  "open_markers_present": true
+}
+```
+
+**Validation + downstream consumption:** `scripts/validate-extraction-scorecard.sh --cwd=<project>` checks the scorecard's internal consistency + the `[OPEN]`-correspondence rule (SKIP when absent — back-compat; FAIL only on inconsistency or a hidden gap). `bind-codebase` consults it as a **preflight advisory** (surfaces FAIL/absent; non-blocking this iter). If write fails: log warning + continue (the KB itself remains the consumable output).
 
 ## Bridge to rebuild + mega-sdd pipeline
 

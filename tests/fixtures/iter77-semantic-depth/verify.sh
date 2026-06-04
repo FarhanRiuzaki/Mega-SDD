@@ -116,10 +116,17 @@ echo "$VF_ADV" | grep -q "vault_flow_staging_missing" && ok "vault_flow_staging_
 
 # ── 3. Enrichment helper proposes + applies (Fork-A) ───────────────────────────
 note ""
-note "=== 3. enrich-workflows-staging propose + apply — Fork-A ==="
-# enrich scenario's KB cites legacy/import_request.php — point --legacy-root at the shared legacy/.
+note "=== 3. enrich-workflows-staging propose + apply (legacy-root AUTO-DISCOVERED) — Fork-A ==="
+# Place the legacy under the enrich project root so --legacy-root can be AUTO-DISCOVERED
+# (probe: <proj>/legacy). Proves /mega-sdd:auto can call enrich without hand-feeding the path.
+mkdir -p "$WORK/enrich/legacy"; cp "$WORK/legacy/import_request.php" "$WORK/enrich/legacy/"
 bash "$SCRIPTS/enrich-workflows-staging.sh" --vault="$WORK/enrich/.mega-sdd/vaults/demo" \
-     --legacy-root="$WORK/legacy" --semantic=staged-input --quiet >/dev/null
+     --semantic=staged-input --quiet >/dev/null
+DISC=$(jget "$WORK/enrich/.mega-sdd/vaults/demo/.x" "0" 2>/dev/null)
+# the script prints legacy_root_auto_discovered; re-run capturing stdout to assert it
+AUTO_JSON=$(bash "$SCRIPTS/enrich-workflows-staging.sh" --vault="$WORK/enrich/.mega-sdd/vaults/demo" --semantic=staged-input 2>/dev/null)
+echo "$AUTO_JSON" | python3 -c "import json,sys; d=json.load(sys.stdin); print('  auto-discovered legacy_root:', d.get('legacy_root_auto_discovered'), '->', d.get('legacy_root'))" 2>/dev/null
+echo "$AUTO_JSON" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('legacy_root_auto_discovered') else 1)" 2>/dev/null && ok "legacy-root AUTO-DISCOVERED (no --legacy-root needed → /mega-sdd:auto-friendly)" || fail "legacy-root not auto-discovered"
 PROP="$WORK/enrich/.mega-sdd/vaults/demo/ENRICHMENT-PROPOSALS.md"
 [ -f "$PROP" ] && ok "ENRICHMENT-PROPOSALS.md written" || fail "proposals file not written"
 if [ -f "$PROP" ]; then
