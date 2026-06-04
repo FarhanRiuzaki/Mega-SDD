@@ -4,6 +4,22 @@ Semantic grouping layer ABOVE units. Units stay atomic (1 unit = 1 PR-sized comm
 
 Per user UX request — units felt "too small" cognitively; need module-level grouping to match team mental model (auth phase, leave-mgmt phase, etc.).
 
+## Contents
+- Why modules ≠ bigger units
+- Vault layout addition
+- `_meta/modules.yaml` schema
+- Auto-derivation rules (when modules.yaml absent)
+- Unit frontmatter extension
+- `_index.md` template (grouped by module)
+- Module dependency graph
+- Module-level DoD validation
+- Filtered execution (`execute-bolts --module=<id>`)
+- Module-level progress in memory
+- Halt protocol additions
+- Backward compatibility
+- Migration
+- References
+
 ## Why modules ≠ bigger units
 
 Module = **semantic grouping** (like Jira Epic over Stories). Units = **atomic implementation work** (TDD-discipline + bolt-focus + rollback granularity preserved). The two layer; neither replaces the other.
@@ -221,7 +237,7 @@ Existing v3.4 vaults can opt into modules by:
 
 ## References
 
-- Iter 1 unit-schema.md — atomic unit definition (unchanged)
-- Iter 1.1 squads.yaml — social partition (orthogonal to modules)
-- Iter 11 — this semantic grouping layer
+- The atomic unit definition (the unit-schema reference listed in the skill router) — unchanged by this layer
+- `squads.yaml` — the social partition (orthogonal to modules)
+- This file — the semantic grouping layer above atomic units
 - `commands/list-modules.md` — module progress query command

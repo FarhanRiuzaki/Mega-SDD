@@ -4,6 +4,19 @@ Optional unit-level extension. Per Anthropic NeurIPS 2025 paper "Property-Based 
 
 Mega-sdd extends unit schema with `properties:` array alongside existing `acceptance_test:`. Each property = invariant statement. Generate-units emits PBT-style test stubs in the target language WHEN a PBT framework is detected; skip silently otherwise (anti-halu: never fabricate test infrastructure).
 
+## Contents
+- Schema extension
+- Required fields per property
+- Framework detection (auto)
+- Emission example — PHP/Eris
+- Emission example — TypeScript/fast-check
+- Execute-bolts integration
+- Properties vs acceptance_test — when to use which
+- Multi-language story (open question)
+- Anti-halu rails (mandatory)
+- Backward compatibility
+- References
+
 ## Schema extension
 
 ```yaml

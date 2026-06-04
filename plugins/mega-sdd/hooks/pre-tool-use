@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# PreToolUse hook for mega-sdd plugin — Iter 67.6 v3.49.0+.
+# PreToolUse hook for mega-sdd plugin.
 #
-# [HOOK-VALIDATE] enforcement layer for walking-skeleton slice 1 (audit §F).
-# Blocks two classes of agent actions:
-#   1. Bolt-generation while binding→units handoff has unresolved drops
-#      (skill_name matching mega-sdd:execute-bolts → checks .validation-blockers.json)
-#   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite state files
-#      managed by the guard layer (.validation-blockers.json, .plan-pending,
-#      .replan-budget, .iter-classifier.json).
+# [HOOK-VALIDATE] enforcement layer. Blocks two classes of agent actions:
+#   1. mega-sdd:execute-bolts while a HARD-BLOCK gate is FAILing (the gate
+#      aggregator below — the binding->units moat gate + the kept code-delivery
+#      quality gates). The DEMOTED code-delivery checks (dispatch-prompt,
+#      operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are advisory
+#      only and surface via /mega-sdd:analyze — they do NOT block here.
+#   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite guard state
+#      files (.validation-blockers.json, .plan-pending, .replan-budget,
+#      .iter-classifier.json).
 #
 # Honest design constraint: the human user (Farhan) is not the adversary — they
 # are on the same side as the guard. The agent (Claude) is what we constrain.
@@ -61,7 +63,7 @@ eval "$PARSE_OUTPUT" 2>/dev/null || true
 
 if [ -z "${CWD:-}" ]; then exit 0; fi
 
-# ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
+# ─── Resolve project root ────────────────────────────────────────────────────
 # Model may cd into a subfolder during a chain step (extract-intelligence often
 # operates inside .mega-sdd/knowledge-base/). Without walking up, ${CWD}/.mega-sdd/
 # → .mega-sdd/knowledge-base/.mega-sdd/ (nested). resolve_project_root walks UP
@@ -91,10 +93,6 @@ if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
 # Helper: emit block JSON to stdout and exit
 emit_block() {
   local reason="$1"
-  # CD-4: if a multi-gate failure summary was precomputed (execute-bolts path), prepend it so the
-  # FIRST emit_block surfaces ALL failing gates at once (emit_block exits, short-circuiting later
-  # branches). Empty for every other call site — a pure no-op prefix.
-  reason="${MEGA_MULTIFAIL_PREFIX:-}${reason}"
   # Escape for JSON string (basic)
   local reason_json
   reason_json=$(printf '%s' "$reason" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
@@ -106,15 +104,11 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
-# Block mega-sdd:execute-bolts when handoff binding→units blockers present
-# (Iter 67.6 slice 1). Block ANY mega-sdd:* skill when handoff-validation
-# state shows upstream failure (Phase B slice B.1 v3.53.0+).
 case "${TOOL_NAME:-}" in
   Skill)
-    # Branch 1c (Phase B slice B.6 PATTERN-PROVE): scope flag validation for
-    # mega-sdd:auto / mega-sdd:generate-intent / mega-sdd:orchestrate-flow.
-    # Reads transcript_path to find user's most recent message + extract
-    # --scope=X flag (args not in tool_input). Validates against PRD scopes.
+    # Branch 1c: scope flag validation for mega-sdd:auto / generate-intent /
+    # orchestrate-flow. Reads transcript_path to find user's most recent message +
+    # extract --scope=X flag (args not in tool_input). Validates against PRD scopes.
     case "${SKILL_NAME:-}" in
       mega-sdd:auto|mega-sdd:generate-intent|mega-sdd:orchestrate-flow)
         if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
@@ -169,12 +163,11 @@ except Exception:
         ;;
     esac
 
-    # Branch 0 (Iter-79 O-1): predictive preflight — fatal INPUT-precondition check for the
-    # skill about to run, BEFORE it burns minutes and halts mid-way. Fork-A enforcement of
-    # the F2 "predictive halt" theme (was prose-only orchestrate-flow Step 3.5 +
-    # predictive-checks.md). Conservative: only GENUINELY-FATAL preconditions block (a skill
-    # that cannot do anything useful without the missing input). scan-codebase tree-sitter is
-    # WARN-only (never FATAL). State recomputed each invocation → self-clears (no deadlock).
+    # Branch 0: predictive preflight — fatal INPUT-precondition check for the skill
+    # about to run, BEFORE it burns minutes and halts mid-way. Conservative: only
+    # GENUINELY-FATAL preconditions block (a skill that cannot do anything useful
+    # without the missing input). scan-codebase tree-sitter is WARN-only (never
+    # FATAL). State recomputed each invocation → self-clears (no deadlock).
     case "${SKILL_NAME:-}" in
       mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)
         PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
@@ -204,14 +197,13 @@ except Exception:
         ;;
     esac
 
-    # Branch 1a: handoff validation gate (Phase B slice B.1) — applies to ALL mega-sdd:* skills
-    # except using-mega-sdd (auto-loaded anchor, not a chain step).
+    # Branch 1a: handoff validation gate — applies to ALL mega-sdd:* skills except
+    # using-mega-sdd (auto-loaded anchor, not a chain step).
     #
-    # Iter 70 fix (audit 2026-05-28 §post-3.61.0 deadlock): producer self-fix attempts
-    # MUST be allowed. The state file records WHICH skill emitted the bad handoff
-    # (state.skill_name); when the same skill is being re-invoked, that IS the producer
-    # attempting to re-run with a fixed template — block it and the deadlock is sealed
-    # (state stays FAIL forever; user cannot clear except by manual rm).
+    # Producer self-fix attempts MUST be allowed. The state file records WHICH skill
+    # emitted the bad handoff (state.skill_name); when the same skill is being
+    # re-invoked, that IS the producer attempting to re-run with a fixed template —
+    # let it through so its re-emitted handoff overwrites the FAIL state.
     case "${SKILL_NAME:-}" in
       mega-sdd:*)
         if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
@@ -230,13 +222,8 @@ except Exception:
             HSTATUS=$(echo "$HSTATUS_AND_PRODUCER" | sed -n '1p')
             STATE_PRODUCER=$(echo "$HSTATUS_AND_PRODUCER" | sed -n '2p')
             if [ "$HSTATUS" = "FAIL" ]; then
-              # Producer self-fix allow: if the skill being invoked IS the same producer
-              # that emitted the bad handoff, this is a retry attempt — let it run. The
-              # producer will re-emit handoff, validate-handoff-yaml.sh will overwrite the
-              # state file with the new verdict (PASS clears the block for everyone;
-              # repeated FAIL bumps retry_count + escalate_to_c2 per C1 protocol).
               if [ -n "$STATE_PRODUCER" ] && [ "$SKILL_NAME" = "$STATE_PRODUCER" ]; then
-                : # fall through to allow
+                : # producer self-fix retry — fall through to allow
               else
                 HDETAIL=$(STATE_PATH="$HANDOFF_STATE" python3 -c "
 import json, os
@@ -262,413 +249,77 @@ except Exception as e:
         ;;
     esac
 
-    # CD-4: precompute a multi-gate failure summary for execute-bolts. emit_block exits on the
-    # FIRST failing gate, so without this an agent serially re-invokes against one gate at a time.
-    # When >1 execute-bolts gate is FAILing, MEGA_MULTIFAIL_PREFIX surfaces the full set up front
-    # (emit_block prepends it). Additive text only — no control-flow change. Empty when <=1 fails.
-    MEGA_MULTIFAIL_PREFIX=""
+    # ─── execute-bolts HARD-BLOCK gate aggregator ────────────────────────────
+    # One data-driven pass over the gates Farhan kept as HARD BLOCKS (v4 Phase 2,
+    # Hybrid decision). Replaces the former Branch 1b + Branches 5/6/7/8/11 + the
+    # CD-4 multi-fail precompute. The MOAT gate (binding->units) is checked first.
+    # Each gate reads its PostToolUse-written state file and blocks on its precise
+    # failing condition (status==FAIL, or a specific halt_type count for render-test).
+    # Multi-fail surfacing is built in: when >1 gate fails, all names are listed up
+    # front so the agent fixes them together instead of one-at-a-time.
+    #
+    # DEMOTED to /mega-sdd:analyze advisory (NOT blocking here): dispatch-prompt,
+    # operator-UX (vault-oqs), fan-out-parity, ui-deferral, vault-flow-staging.
     if [ "${SKILL_NAME:-}" = "mega-sdd:execute-bolts" ]; then
-      MEGA_MULTIFAIL_PREFIX=$(python3 -c "
+      GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
-root = '${PROJECT_ROOT}'
+md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
+def L(fn):
+    try:
+        return json.load(open(os.path.join(md, fn)))
+    except Exception:
+        return None
 fails = []
-# status==FAIL gates
-for fn, name in [('.validation-blockers.json','binding->units'), ('.flow-coverage-state.json','flow-coverage'),
-                 ('.sibling-consistency-state.json','sibling-consistency'), ('.cross-cutting-state.json','cross-cutting'),
-                 ('.ui-quality-blockers.json','ui-quality'), ('.dispatch-prompt-state.json','dispatch-prompt')]:
-    try:
-        if json.load(open(os.path.join(root, '.mega-sdd', fn))).get('status') == 'FAIL':
-            fails.append(name)
-    except Exception:
-        pass
-# halt_type-counted EXTENSION gates (never status==FAIL — see Iter-78.1 invariants)
-for fn, name, hts in [('.unit-spec-state.json','render-test',('render_test_missing',)),
-                      ('.vault-oqs-state.json','operator-UX',('operator_surface_missing','design_source_oq_missing'))]:
-    try:
-        d = json.load(open(os.path.join(root, '.mega-sdd', fn)))
-        if any(i.get('halt_type') in hts for i in d.get('issues', [])):
-            fails.append(name)
-    except Exception:
-        pass
-if len(fails) > 1:
-    print('[%d execute-bolts gates are failing: %s — fix ALL before re-running; each is reported in turn] ' % (len(fails), ', '.join(fails)))
-" 2>/dev/null) || MEGA_MULTIFAIL_PREFIX=""
+
+# MOAT GATE — binding->units: unresolved drops/CONFLICT block unit->bolt.
+d = L(".validation-blockers.json")
+if d and d.get("status") == "FAIL":
+    n = len(d.get("drops", []))
+    fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) at the binding->units boundary. Run /mega-sdd:validate-handoff to see the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: %s/.validation-blockers.json" % (n, md)))
+
+# flow-coverage (status==FAIL)
+d = L(".flow-coverage-state.json")
+if d and d.get("status") == "FAIL":
+    miss = sum(m.get("shortfall", 1) for m in d.get("missing_artifacts", []))
+    dead = len(d.get("dead_scaffold", []))
+    fails.append(("flow-coverage", "flow-coverage validator found %s input-accepting flow step(s) with no mapped input-validation artifact (e.g. missing per-stage Form Requests) and %s dead scaffold stub(s) (e.g. edit views with no update/PUT flow step). Add the missing per-step artifacts to the relevant module unit ## Target files and remove the dead scaffold stubs, then re-save the unit. State: %s/.flow-coverage-state.json" % (miss, dead, md)))
+
+# render-test (precise halt_type count, never status==FAIL)
+d = L(".unit-spec-state.json")
+if d:
+    n = len([i for i in d.get("issues", []) if i.get("halt_type") == "render_test_missing"])
+    if n:
+        fails.append(("render-test", "unit-spec validator flagged %s unit(s) shipping a detail/show view with no acceptance_test of type render (render_test_missing). A route-200 smoke test misses empty-model / null-field render crashes. Add a structured acceptance_test entry with type: render to each view-bearing unit, then re-save the unit. State: %s/.unit-spec-state.json" % (n, md)))
+
+# sibling-consistency (status==FAIL)
+d = L(".sibling-consistency-state.json")
+if d and d.get("status") == "FAIL":
+    incon = len(d.get("inconsistent", []))
+    rel = len(d.get("missing_relations", []))
+    fails.append(("sibling-consistency", "sibling-consistency validator found %s cross-cutting concern divergence(s) across sibling units (a shared concern such as branch-scoping implemented differently in one sibling than the others) and %s FK column(s) with no derived relation accessor. Make every sibling sharing a concern declare the same mechanism, and declare the relation accessor for each FK column, then re-save the unit. State: %s/.sibling-consistency-state.json" % (incon, rel, md)))
+
+# ui-quality (status==FAIL)
+d = L(".ui-quality-blockers.json")
+if d and d.get("status") == "FAIL":
+    s = d.get("summary", {})
+    tells = s.get("scaffold_tells_matched", 0)
+    miss = s.get("required_elements_missing", 0)
+    fails.append(("ui-quality", "UI-quality validator found %s raw-scaffold tell(s) (e.g. a Controller-class page title, Customer Id-style column labels, raw UUID foreign-key echoes, unformatted money, or a native alert/confirm dialog) and %s missing required element(s) (app-layout extend / responsive grid) in a written view file. Humanize labels, resolve FK ids to a human label via the relation, format money, replace native dialogs with the project notification idiom, and ensure the view extends the app layout + carries a responsive grid; then re-save the view. State: %s/.ui-quality-blockers.json" % (tells, miss, md)))
+
+# cross-cutting-registration (status==FAIL)
+d = L(".cross-cutting-state.json")
+if d and d.get("status") == "FAIL":
+    n = len(d.get("missing_registration", []))
+    fails.append(("cross-cutting", "cross-cutting-registration validator found %s generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it. State: %s/.cross-cutting-state.json" % (n, md)))
+
+if fails:
+    prefix = ""
+    if len(fails) > 1:
+        prefix = "[%d execute-bolts gates are failing: %s — fix ALL before re-running; each is reported in turn] " % (len(fails), ", ".join(n for n, _ in fails))
+    print("mega-sdd:execute-bolts is blocked — " + prefix + fails[0][1])
+' 2>/dev/null)
+      if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
     fi
-
-    # Branch 1b: existing binding→units handoff gate for execute-bolts (Iter 67.6 slice 1)
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        BLOCKER_FILE="${PROJECT_ROOT}/.mega-sdd/.validation-blockers.json"
-        if [ -f "$BLOCKER_FILE" ]; then
-          # Read status field
-          STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$BLOCKER_FILE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$STATUS" = "FAIL" ]; then
-            # Count drops for the reason message
-            DROPS_COUNT=$(python3 -c "
-import json
-try:
-    d = json.load(open('$BLOCKER_FILE'))
-    print(len(d.get('drops', [])))
-except Exception:
-    print('?')
-" 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — handoff validator detected ${DROPS_COUNT} unresolved drops at binding→units boundary. Run /mega-sdd:validate-handoff to see drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: ${PROJECT_ROOT}/.mega-sdd/.validation-blockers.json"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 5: flow-coverage gate for execute-bolts (code-delivery slice A).
-    # Blocks bolts when validate-flow-coverage.sh found input-accepting flow steps
-    # that no unit maps to a required artifact (missing Form Requests etc.) and/or
-    # dead scaffold stubs (e.g. edit views with no update/PUT flow). The units are
-    # the input; fix them before bolts run. SKIP/PASS state never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        FC_STATE="${PROJECT_ROOT}/.mega-sdd/.flow-coverage-state.json"
-        if [ -f "$FC_STATE" ]; then
-          FC_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$FC_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$FC_STATUS" = "FAIL" ]; then
-            FC_COUNTS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$FC_STATE'))
-    miss = sum(m.get('shortfall', 1) for m in d.get('missing_artifacts', []))
-    dead = len(d.get('dead_scaffold', []))
-    print('%s %s' % (miss, dead))
-except Exception:
-    print('? ?')
-" 2>/dev/null)
-            FC_MISS=$(echo "$FC_COUNTS" | cut -d' ' -f1)
-            FC_DEAD=$(echo "$FC_COUNTS" | cut -d' ' -f2)
-            REASON="mega-sdd:execute-bolts is blocked — flow-coverage validator found ${FC_MISS} input-accepting flow step(s) with no mapped input-validation artifact (e.g. missing per-stage Form Requests) and ${FC_DEAD} dead scaffold stub(s) (e.g. edit views with no update/PUT flow step) in the current units. Add the missing per-step artifacts to the relevant module unit's '## Target files' and remove the dead scaffold stubs, then re-save the unit (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.flow-coverage-state.json"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 7: sibling-consistency gate for execute-bolts (code-delivery slice B).
-    # Blocks bolts when validate-sibling-consistency.sh found a cross-cutting concern
-    # implemented inconsistently across sibling units (fan-out divergence) and/or an
-    # FK column with no derived relation accessor. The units are the input; fix them
-    # before bolts run. PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        SIB_STATE="${PROJECT_ROOT}/.mega-sdd/.sibling-consistency-state.json"
-        if [ -f "$SIB_STATE" ]; then
-          SIB_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$SIB_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$SIB_STATUS" = "FAIL" ]; then
-            SIB_COUNTS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$SIB_STATE'))
-    print('%s %s' % (len(d.get('inconsistent', [])), len(d.get('missing_relations', []))))
-except Exception:
-    print('? ?')
-" 2>/dev/null)
-            SIB_INCON=$(echo "$SIB_COUNTS" | cut -d' ' -f1)
-            SIB_REL=$(echo "$SIB_COUNTS" | cut -d' ' -f2)
-            REASON="mega-sdd:execute-bolts is blocked — sibling-consistency validator found ${SIB_INCON} cross-cutting concern divergence(s) across sibling units (a shared concern such as branch-scoping implemented differently in one sibling than the others) and ${SIB_REL} FK column(s) with no derived relation accessor. Make every sibling sharing a concern declare the same mechanism, and declare the relation accessor for each FK column, then re-save the unit (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.sibling-consistency-state.json"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 6: render-test gate for execute-bolts (code-delivery slice D).
-    # Blocks bolts when validate-unit-spec.sh flagged a `render_test_missing` issue
-    # — a unit ships a detail/show view (pack detail_view_glob) but carries no
-    # acceptance_test of type `render`. Detail pages 200 with a blank body or throw
-    # on a null/empty field; a render test is the cheap durable proof. PRECISE: only
-    # the render_test_missing issue blocks here (advisory / unrelated unit-spec
-    # issues do not gate bolts via this branch). PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        US_STATE="${PROJECT_ROOT}/.mega-sdd/.unit-spec-state.json"
-        if [ -f "$US_STATE" ]; then
-          US_RENDER=$(python3 -c "
-import json
-try:
-    d = json.load(open('$US_STATE'))
-    rt = [i for i in d.get('issues', []) if i.get('halt_type') == 'render_test_missing']
-    print(len(rt))
-except Exception:
-    print('0')
-" 2>/dev/null)
-          if [ -n "$US_RENDER" ] && [ "$US_RENDER" != "0" ]; then
-            REASON="mega-sdd:execute-bolts is blocked — unit-spec validator flagged ${US_RENDER} unit(s) shipping a detail/show view with no \`acceptance_test\` of type \`render\` (render_test_missing). A route-200 smoke test misses empty-model / null-field render crashes. Add a structured \`acceptance_test:\` entry with \`type: render\` (derived from the active pack \`## Test patterns\` -> detail_view_render template) to each view-bearing unit, then re-save the unit (PostToolUse re-validates). State: ${US_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 8: UI scaffold-tells gate for execute-bolts (code-delivery slice E).
-    # Blocks bolts when validate-ui-quality.sh flagged a written VIEW file carrying raw
-    # scaffold tells (controller-class page title, column-id labels, raw UUID FK echoes,
-    # unformatted money, native alert/confirm) or — on a non-trivial view — missing a
-    # required element (app-layout extend, responsive grid). Honest Fork-A enforcement:
-    # the gate cannot un-write a view a bolt subagent just wrote mid-turn, but it blocks
-    # the NEXT execute-bolts invocation so the offending view must be fixed before the
-    # next unit runs (see spec §1.6 "post-write detect-and-block-next"). PASS/SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        UIQ_STATE="${PROJECT_ROOT}/.mega-sdd/.ui-quality-blockers.json"
-        if [ -f "$UIQ_STATE" ]; then
-          UIQ_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$UIQ_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$UIQ_STATUS" = "FAIL" ]; then
-            UIQ_COUNTS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$UIQ_STATE'))
-    s = d.get('summary', {})
-    print('%s %s' % (s.get('scaffold_tells_matched', 0), s.get('required_elements_missing', 0)))
-except Exception:
-    print('? ?')
-" 2>/dev/null)
-            UIQ_TELLS=$(echo "$UIQ_COUNTS" | cut -d' ' -f1)
-            UIQ_MISS=$(echo "$UIQ_COUNTS" | cut -d' ' -f2)
-            REASON="mega-sdd:execute-bolts is blocked — UI-quality validator found ${UIQ_TELLS} raw-scaffold tell(s) (e.g. a Controller-class page title, 'Customer Id'-style column labels, raw UUID foreign-key echoes, unformatted money, or a native alert/confirm dialog) and ${UIQ_MISS} missing required element(s) (app-layout extend / responsive grid) in a written view file. Humanize labels, resolve FK ids to a human label via the relation, format money, replace native dialogs with the project notification idiom, and ensure the view extends the app layout + carries a responsive grid; then re-save the view (PostToolUse re-validates). State: ${UIQ_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 9: UI dispatch-prompt enrichment gate for execute-bolts (code-delivery slice F).
-    # Blocks bolts when validate-dispatch-prompt.sh flagged a PRIOR run's emitted ui_ux
-    # dispatch prompt as missing injected design tokens (tokens_not_injected) and/or a
-    # view/component exemplar (exemplar_missing) — i.e. the UI T2-slice enrichment no-op'd.
-    # Honest Fork-A semantics: the prompt is written MID execute-bolts, so this is a
-    # RE-INVOCATION guard — it cannot fix the in-flight prompt, but it blocks the NEXT
-    # execute-bolts run so the enrichment regression is corrected before more UI units run
-    # (same "post-write detect-and-block-next" pattern as Branch 8). PASS/SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        DP_STATE="${PROJECT_ROOT}/.mega-sdd/.dispatch-prompt-state.json"
-        if [ -f "$DP_STATE" ]; then
-          DP_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$DP_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$DP_STATUS" = "FAIL" ]; then
-            DP_COUNTS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$DP_STATE'))
-    s = d.get('summary', {})
-    print('%s %s' % (s.get('tokens_not_injected', 0), s.get('exemplar_missing', 0)))
-except Exception:
-    print('? ?')
-" 2>/dev/null)
-            DP_TOK=$(echo "$DP_COUNTS" | cut -d' ' -f1)
-            DP_EX=$(echo "$DP_COUNTS" | cut -d' ' -f2)
-            REASON="mega-sdd:execute-bolts is blocked — dispatch-prompt validator found a ui_ux unit's emitted bolt dispatch prompt missing ${DP_TOK} design-token injection(s) (no 'Design tokens:' line) and ${DP_EX} view/component exemplar(s). TO CLEAR (CD-2, non-circular): EITHER directly Edit the offending bolts/U-*/dispatch-prompt.md to add a 'Design tokens:' line (colors/spacing/fonts) + a 'Pattern: view' exemplar block, OR delete the state file: rm ${DP_STATE} (NOT in the anti-bypass protected list). The prompt re-validates on the next PostToolUse Write of dispatch-prompt.md. NOTE: simply re-invoking execute-bolts will re-block until the ui_ux T2-slice enrichment actually emits design_tokens (mid-priority, not first-dropped) + a linter-clean view exemplar (not [0]) — fix that enrichment, do not loop. State: ${DP_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 10: operator-workflow-UX capture gate for execute-bolts (code-delivery slice G).
-    # Blocks bolts when validate-vault-oqs.sh recorded a CAPTURE-stage miss: a vault
-    # with a multi-stage approval (maker-checker) workflow that models NO operator
-    # surface and carries NO Design-Source OQ (operator_surface_missing), or a vault
-    # with UI components but all design-system flags false and no Design-Source OQ
-    # (design_source_oq_missing). PRECISE: only these two halt_types gate bolts here —
-    # pre-existing OQ-citation FAILs do NOT block via this branch (no behavior change
-    # to the existing PostToolUse-only citation check). PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        OQ_STATE="${PROJECT_ROOT}/.mega-sdd/.vault-oqs-state.json"
-        if [ -f "$OQ_STATE" ]; then
-          OQ_OPUX=$(python3 -c "
-import json
-try:
-    d = json.load(open('$OQ_STATE'))
-    n = [i for i in d.get('issues', []) if i.get('halt_type') in ('operator_surface_missing','design_source_oq_missing')]
-    print(len(n))
-except Exception:
-    print('0')
-" 2>/dev/null)
-          if [ -n "$OQ_OPUX" ] && [ "$OQ_OPUX" != "0" ]; then
-            REASON="mega-sdd:execute-bolts is blocked — vault-OQ validator captured an operator-workflow-UX miss (${OQ_OPUX} issue(s) of type operator_surface_missing / design_source_oq_missing). A multi-stage approval (maker-checker) workflow needs a FIRST-CLASS operator surface (worklist/inbox, decision affordance, human-readable state labels, audit timeline) GROUNDED in the flows — never invented; OR, where UI components exist but design tokens / accessibility / voice-brand source is undecided, a high-priority Design-Source Open Question (DO NOT default WCAG/Material values). TO CLEAR (CD-3, deterministic): directly Edit the VAULT to add the operator-surface requirement (02-architecture) and/or the Design-Source OQ (vault.json oqs[]), then re-save it (PostToolUse re-validates); OR delete the state file: rm ${OQ_STATE} (not anti-bypass protected). LAST RESORT: re-run /mega-sdd:generate-intent — but a regenerated vault may re-fail the same deterministic check, so prefer the direct edit. State: ${OQ_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 11: cross-cutting registration gate for execute-bolts (code-delivery slice C).
-    # Honest Fork-A detect-and-block-next: validate-cross-cutting-registration.sh scans
-    # generated SOURCE (PostToolUse) for a declared cross-cutting concern (e.g. BranchScoped)
-    # that was never REGISTERED (the addGlobalScope call is missing). Fork A cannot un-write a
-    # file a bolt just wrote mid-turn, so the NEXT execute-bolts is blocked until the
-    # registrations land. PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        CC_STATE="${PROJECT_ROOT}/.mega-sdd/.cross-cutting-state.json"
-        if [ -f "$CC_STATE" ]; then
-          CC_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$CC_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$CC_STATUS" = "FAIL" ]; then
-            CC_MISS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$CC_STATE'))
-    print(len(d.get('missing_registration', [])))
-except Exception:
-    print('?')
-" 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — cross-cutting-registration validator found ${CC_MISS} generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model's booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it (PostToolUse re-validates). State: ${PROJECT_ROOT}/.mega-sdd/.cross-cutting-state.json"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 12: fan-out parity gate for execute-bolts (Iter-79 A2).
-    # Blocks bolts when validate-fanout-parity.sh found a deliverable-richness divergence:
-    # among the VIEW-BEARING siblings of a module/scope group, ≥1 declares an obligation
-    # (a `## UI contract` or a `type: render` test) that a peer omits — the "LC is always
-    # the survivor" pattern. Dedicated single-purpose validator: status==FAIL is exactly
-    # "≥1 divergence" (no unrelated checks ride this state), so gating on status is precise.
-    # PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        FOP_STATE="${PROJECT_ROOT}/.mega-sdd/.fanout-parity-state.json"
-        if [ -f "$FOP_STATE" ]; then
-          FOP_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$FOP_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$FOP_STATUS" = "FAIL" ]; then
-            FOP_CNT=$(python3 -c "
-import json
-try:
-    d = json.load(open('$FOP_STATE'))
-    print(d.get('summary', {}).get('divergence_count', '?'))
-except Exception:
-    print('?')
-" 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — fan-out parity validator found ${FOP_CNT} deliverable-richness divergence(s) across view-bearing sibling units: a sibling declares an obligation (a \`## UI contract\` or a \`type: render\` acceptance test) that a peer in the same module/scope group omits — the 'survivor is served better than its peers' pattern. Bring every view-bearing sibling to parity (declare the same KIND of obligation), then re-save the unit(s) (PostToolUse re-validates). State: ${FOP_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 13: UI-deferral gate for execute-bolts (Iter-79 B1).
-    # Blocks bolts when validate-ui-deferral.sh found a committed bolt-report that defers a
-    # unit's `## UI contract` to a future polish unit ("scaffold kept; UI polish deferred").
-    # Honest Fork-A detect-and-block-next: cannot un-commit the scaffold view, but blocks the
-    # NEXT execute-bolts until the contract states are realized. Dedicated single-purpose
-    # validator → status==FAIL is precise. PASS / SKIP never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        UID_STATE="${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json"
-        if [ -f "$UID_STATE" ]; then
-          UID_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$UID_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$UID_STATUS" = "FAIL" ]; then
-            UID_CNT=$(python3 -c "
-import json
-try:
-    d = json.load(open('$UID_STATE'))
-    print(d.get('summary', {}).get('deferral_count', '?'))
-except Exception:
-    print('?')
-" 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — UI-deferral validator found ${UID_CNT} bolt-report(s) that defer a unit's \`## UI contract\` to a future polish unit ('scaffold kept; UI polish deferred'). The contract's required_states must be realized in the bolt that writes the view, not deferred to a later unit. Realize the deferred UI, then re-run the bolt (PostToolUse re-validates). State: ${UID_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
-
-    # Branch 14: vault-flow-staging gate for execute-bolts (semantic-depth, v3.71.0+).
-    # Blocks bolts when validate-vault-flow-staging.sh found a vault 04-flows flow that
-    # dropped a `stages:` block its cited KB workflow (_kb_source) carried — staging
-    # flattened, so the bolt would build a single form where the legacy is a multi-step
-    # wizard. Dedicated single-purpose validator -> status==FAIL is precise (Iter-79 #4).
-    # PASS / SKIP (no KB, no _kb_source on flows, or staging preserved) never blocks.
-    case "${SKILL_NAME:-}" in
-      mega-sdd:execute-bolts)
-        VFS_STATE="${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json"
-        if [ -f "$VFS_STATE" ]; then
-          VFS_STATUS=$(python3 -c "
-import json
-try:
-    d = json.load(open('$VFS_STATE'))
-    print(d.get('status', 'UNKNOWN'))
-except Exception:
-    print('PARSE_ERROR')
-" 2>/dev/null)
-          if [ "$VFS_STATUS" = "FAIL" ]; then
-            VFS_CNT=$(python3 -c "
-import json
-try:
-    d = json.load(open('$VFS_STATE'))
-    print(d.get('summary', {}).get('drop_count', '?'))
-except Exception:
-    print('?')
-" 2>/dev/null)
-            REASON="mega-sdd:execute-bolts is blocked — vault-flow-staging validator found ${VFS_CNT} flow(s) in 04-flows.md that dropped a \`stages:\` block their cited KB workflow (\`_kb_source\`) carried. Staging was flattened, so the bolt would build a single form where the legacy is a multi-step wizard. Copy the KB §3a stages: block verbatim into the flow's \`**Stages**\` block + emit the Mermaid stateDiagram (vault-contract.md §stages-propagation), then re-save 04-flows.md (PostToolUse re-validates). State: ${VFS_STATE}"
-            emit_block "$REASON"
-          fi
-        fi
-        ;;
-    esac
     ;;
 
   Bash)
@@ -687,15 +338,11 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
     [ -z "$BASH_CMD" ] && exit 0
 
     # ── Scope exclusion: skip guard for test/fixture/plugin-dev paths ──────
-    # If the command targets files under tests/, examples/, or the plugin
-    # source repo itself (CWD contains plugins/mega-sdd/) → not a live
-    # project, guard doesn't apply.
     GUARD_SKIP=0
     if echo "$BASH_CMD" | grep -qE "tests/|examples/|fixtures/"; then
       GUARD_SKIP=1
     fi
     # Plugin-dev-mode: CWD is the plugin source repo, not a target project.
-    # Detect by checking if CWD has plugins/mega-sdd/hooks/ (= this repo).
     if [ -d "${CWD}/plugins/mega-sdd/hooks" ]; then
       GUARD_SKIP=1
     fi
@@ -703,7 +350,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
       exit 0
     fi
 
-    # Protected state files (scope: walking-skeleton slice 1 + Plan/Act + budget + classifier future)
+    # Protected state files
     PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json'
 
     BYPASS_DETECTED=""

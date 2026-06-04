@@ -2,6 +2,21 @@
 
 A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via superpowers.
 
+## Contents
+- Required frontmatter
+- Required body sections (polished AI-coding-prompt shape)
+- Hard rule grammar (closed 5-type set; EBNF + validation table)
+- Per-task_type contracts
+- Atomicity rules
+- Multi-squad rules
+- Interface reference resolution
+- Dependency graph
+- ID stability
+- Greenfield vs brownfield (+ scope fields)
+- Anti-hallucination rails
+
+(Note: the headings inside "Required body sections" — Goal, Context, Anchors, Hard rules, Anti-patterns, Implementation steps, Migration notes, Acceptance criteria, Out of scope — are the unit body's own section template, not sections of this reference.)
+
 ## Required frontmatter
 
 ```yaml
