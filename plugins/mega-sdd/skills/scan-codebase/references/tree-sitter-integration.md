@@ -1,6 +1,16 @@
-# Tree-sitter Integration (v2.0+, Iter 6)
+# Tree-sitter Integration
 
-`scan-codebase` v2.0 uses tree-sitter for precise AST-level symbol extraction. Replaces regex-based v1 extraction (which is preserved as fallback when tree-sitter is unavailable).
+## Contents
+- Detection
+- Installation guidance (`dep_missing` blocker)
+- Query files (`queries/tags-<lang>.scm`) — schema + per-language coverage
+- Invocation
+- Precision tier in codebase-map.md frontmatter
+- Grammar pinning
+- Fallback behavior
+- Performance characteristics
+
+`scan-codebase` uses tree-sitter for precise AST-level symbol extraction. Replaces regex-based extraction (which is preserved as fallback when tree-sitter is unavailable).
 
 ## Detection
 

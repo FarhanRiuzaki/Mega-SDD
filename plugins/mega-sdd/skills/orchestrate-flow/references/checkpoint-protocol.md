@@ -4,6 +4,20 @@
 
 Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JSONL files (per ITER6-OQ-5).
 
+## Contents
+
+- [Why](#why)
+- [File location + format](#file-location--format)
+- [Skill responsibilities](#skill-responsibilities)
+- [Append-only writes (race-tolerant)](#append-only-writes-race-tolerant)
+- [Resume command](#resume-command)
+- [Rotation policy](#rotation-policy-per-iter6-oq-7-resolved)
+- [Integration with handoff YAML](#integration-with-handoff-yaml)
+- [Backward compatibility](#backward-compatibility)
+- [Privacy + cleanup](#privacy--cleanup)
+- [Anti-hallucination rails](#anti-hallucination-rails)
+- [References](#references)
+
 ## Why
 
 Iter 4's `--resume` is CWD-driven: it reads artifact presence to rebuild the cursor. That works for inter-skill resume (e.g., bind-codebase completed → skip ahead to generate-units). It does NOT work for mid-skill failures (e.g., bind-codebase crashed at claim 45; CWD shows partial binding.md; resume would re-run from claim 1).

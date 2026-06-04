@@ -2,6 +2,19 @@
 
 `orchestrate-flow` inspects CWD and proposes a chain of skills based on detected state. This document specifies the decision matrix.
 
+## Contents
+
+- [CWD inspection (deterministic, in order)](#cwd-inspection-deterministic-in-order)
+- [Decision matrix](#decision-matrix)
+- [Multi-squad detection](#multi-squad-detection-v11)
+- [Chain depth limit](#chain-depth-limit)
+- [Deep-chain decision matrix](#deep-chain-decision-matrix-v13-iter-4-reordered-for-brownfield-v14-iter-16)
+- [Resume + skip](#resume--skip)
+- [Single confirmation](#single-confirmation)
+- [Halt-pause behavior](#halt-pause-behavior)
+- [Greenfield vs brownfield detection](#greenfield-vs-brownfield-detection)
+- [First-run dependency check](#first-run-dependency-check)
+
 ## CWD inspection (deterministic, in order)
 
 1. **PRD/seed detection.** Does CWD contain `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates?
@@ -77,7 +90,7 @@ If interface files exist (`<vault>/interfaces/*.md`):
 
 Hard cap: **3 sub-skills per chain** (default mode).
 
-**v1.3+ (Iter 4)**: `--deep` flag LIFTS the cap. Chain extends to pipeline-end with auto-continue via handoff YAML (per `references/handoff-contract.md`). Cap-lift is opt-in; default mode unchanged for backward compatibility.
+`--deep` flag LIFTS the cap. Chain extends to pipeline-end with auto-continue via the handoff YAML protocol (the handoff-contract reference is indexed in SKILL.md §Specialist references). Cap-lift is opt-in; default mode unchanged for backward compatibility.
 
 ## Deep-chain decision matrix (v1.3+, Iter 4; reordered for brownfield v1.4+ Iter 16)
 

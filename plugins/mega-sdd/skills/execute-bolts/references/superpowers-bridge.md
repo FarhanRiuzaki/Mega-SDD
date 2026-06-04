@@ -1,77 +1,68 @@
-# Superpowers Bridge
+# Dispatch Bridge
 
-Specifies how `execute-bolts` dispatches each unit to superpowers skills, with vendored fallback.
+How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by default**, with superpowers (or its vendored copy) as optional technique skills + a legacy fallback.
 
-## Detection order (which skills set to use)
+## Dispatch order
 
-1. **Installed superpowers** (preferred):
-   - Detection: directory under `~/.claude/plugins/cache/**/superpowers/` exists
-   - Use skills via their plugin namespace: `superpowers:executing-plans`, `superpowers:subagent-driven-development`, etc.
+0. **First-class mega-sdd agents (default).** The plugin ships its own subagents in `agents/`:
+   - `mega-sdd:bolt-implementer` — implements the unit (writes target_files, writes + runs the acceptance test, commits).
+   - `mega-sdd:spec-reviewer` — verifies spec compliance + Hard rules honored (read-only).
+   - `mega-sdd:code-quality-reviewer` — reviews quality (read-only).
 
-2. **Vendored fallback** (if superpowers not installed):
-   - Detection: `${CLAUDE_PLUGIN_ROOT}/skills/_vendored/executing-plans/SKILL.md` exists
-   - Use skills via local reference paths in `_vendored/`
+   `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh agent per unit, then the two-stage review. Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 
-3. **Neither**:
-   - Halt. Print install instructions:
-     ```
-     ⚠️ execute-bolts requires superpowers OR vendored fallback.
-     Install: /plugin install superpowers (from same marketplace)
-     OR run: bash plugins/mega-sdd/scripts/sync-superpowers.sh
-     ```
+1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A unit's optional `superpowers_skills` frontmatter is treated as a technique hint.
 
-## Mapping unit → superpowers skills
+2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `${CLAUDE_PLUGIN_ROOT}/skills/_vendored/`.
 
-Per unit's `superpowers_skills` frontmatter, dispatch in this order:
+3. **Legacy path.** If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before.
 
-| Listed skill | Action |
-|---|---|
-| `test-driven-development` | Invoke first — write failing acceptance tests before implementation |
-| `using-git-worktrees` | If `--worktree` flag set, create isolation worktree for this unit's bolt |
-| `subagent-driven-development` | If `--parallel` and unit has no blocking deps in current batch, dispatch subagent |
-| `executing-plans` | Default executor — runs implementation steps from unit body |
-
-## Per-unit flow
+## Per-unit flow (two-stage review)
 
 ```
 load unit U-XXX
-   │
+   │  verify target_files (per each file's operation); if --worktree, isolate
+   │  (superpowers using-git-worktrees if present, else a plain git branch)
    ▼
-verify target_files exist or can be created (per unit's operation field)
-   │
+DISPATCH mega-sdd:bolt-implementer        (Agent tool)
+   pass: the full unit body + frontmatter (target_files, acceptance_test,
+   ## Hard rules, ## Anchors, ## Anti-patterns, binding_refs) + context.
+   The implementer writes the failing acceptance test first (TDD), implements,
+   runs the tests, commits with a provenance trailer.
    ▼
-if --worktree: spawn worktree via using-git-worktrees
-   │
-   ▼
-invoke test-driven-development:
-   - write tests from acceptance_test entries (type: test)
-   - verify they fail
-   │
-   ▼
-invoke executing-plans on unit body's "Implementation steps":
-   - if --parallel and deps satisfied: dispatch via subagent-driven-development
-   - else inline execution
-   │
-   ▼
-re-run acceptance tests
-   ├── pass → write bolt-report.md, commit, mark unit DONE
-   └── fail → retry up to --max-retries (default 3)
-         └── if still fail: halt, write bolt-report.md with failure analysis, surface to user
+implementer reports  DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+   ├─ BLOCKED / NEEDS_CONTEXT → controller supplies context or halts — never silent-skip
+   ▼ DONE
+DISPATCH mega-sdd:spec-reviewer           (Agent tool, read-only)
+   verifies by reading the actual code: every requirement met, nothing extra,
+   Hard rules honored, acceptance_test real (render tests assert a display field).
+   ├─ ❌ issues → re-dispatch bolt-implementer with the issue list (cap: --max-retries, default 3)
+   ▼ ✅ compliant
+DISPATCH mega-sdd:code-quality-reviewer   (Agent tool, read-only)
+   returns Strengths + Issues (Critical/Important/Minor) + Assessment.
+   ├─ Critical → re-dispatch bolt-implementer to fix (within the retry cap)
+   ▼ clean (only Minor/Important remain)
+write bolt-report.md, commit, mark unit DONE
+   └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
 ```
+
+The controller constructs each agent's task prompt from the unit — see `references/bolt-dispatch-prompt.md` for the tiered-context (T1/T2) assembly. The agent never inherits session history; the controller passes exactly what it needs.
+
+> Post-flight Hard Rule validation (ast-grep) still runs per `references/hard-rule-scan.md` regardless of dispatch path. The spec-reviewer's Hard-rule check is defense-in-depth, not a replacement for the deterministic scan + the PreToolUse gate.
 
 ## Halt protocol
 
 After max retries failed:
-- DO NOT silently move to next unit
-- Emit blocker YAML
-- Bolt-report.md must include: last test output, files touched, what was attempted
-- User decides: retry, edit unit, edit code manually, skip
+- DO NOT silently move to the next unit.
+- Emit the blocker YAML.
+- `bolt-report.md` must include: last test output, files touched, what was attempted.
+- User decides: retry, edit the unit, edit code manually, or skip.
 
 ## Whitelist enforcement
 
-Before each implementation step, verify the step only touches files in unit's `target_files`. If a step would touch out-of-list file:
-- Halt
-- Surface message: "Unit U-XXX wants to modify <file> but it's not in target_files. Edit unit or restructure."
+Before each implementation step, verify the step only touches files in the unit's `target_files`. If a step would touch an out-of-list file:
+- Halt.
+- Surface: "Unit U-XXX wants to modify <file> but it's not in target_files. Edit the unit or restructure."
 
 ## bolt-report.md schema
 
@@ -103,10 +94,6 @@ retries: N
 <test output, error messages, hypothesis>
 ```
 
-## Squad-level fan-out (v1.1+)
+## Squad-level fan-out
 
-When `execute-bolts --per-squad` is invoked, fan-out happens at the squad
-level BEFORE the per-unit skill mapping above. See
-`references/squad-subagent.md` for the dispatch protocol. Each squad's
-subagent then independently follows the per-unit flow described in this
-document.
+When `execute-bolts --per-squad` is invoked, fan-out happens at the squad level BEFORE the per-unit dispatch above. See `references/squad-subagent.md` for the protocol. Each squad's controller then independently follows the per-unit flow in this document (dispatching the first-class agents).

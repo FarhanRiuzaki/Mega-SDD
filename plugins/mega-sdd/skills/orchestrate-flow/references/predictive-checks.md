@@ -7,6 +7,28 @@
 
 ---
 
+## Contents
+
+- [Purpose](#purpose)
+- [Check entry format](#check-entry-format)
+- [scan-codebase preflight checks](#scan-codebase-preflight-checks)
+- [bind-codebase preflight checks](#bind-codebase-preflight-checks)
+- [execute-bolts preflight checks](#execute-bolts-preflight-checks)
+- [generate-intent preflight checks](#generate-intent-preflight-checks)
+- [detect-drift preflight checks](#detect-drift-preflight-checks-v3340-iter-50--queue-9-closure)
+- [diff-vault preflight checks](#diff-vault-preflight-checks-v3340-iter-50)
+- [resolve-oq preflight checks](#resolve-oq-preflight-checks-v3340-iter-50)
+- [extract-intelligence preflight checks](#extract-intelligence-preflight-checks-v3340-iter-50)
+- [emit-agents-md preflight checks](#emit-agents-md-preflight-checks-v3340-iter-50)
+- [Cold-halt anticipation checks](#cold-halt-anticipation-checks-v370-iter-62--a2-008009-partial-triage)
+- [install-deps preflight checks](#install-deps-preflight-checks-v360-iter-58--a2-002-closure)
+- [emit-fsd preflight checks](#emit-fsd-preflight-checks-v350-iter-54)
+- [memory preflight checks](#memory-preflight-checks-v3340-iter-50)
+- [Read protocol (Step 3.5)](#read-protocol-step-35)
+- [Anti-halu rails](#anti-halu-rails)
+- [Adding new checks](#adding-new-checks)
+- [See also](#see-also)
+
 ## Purpose
 
 Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'."
@@ -315,7 +337,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 
 ```
 For each skill in proposed chain:
-  Read references/predictive-checks.md §<skill> section
+  Read this catalog's §<skill> section
   For each check entry:
     Run command
     If expected condition met → pass; continue to next check

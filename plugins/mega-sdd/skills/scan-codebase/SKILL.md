@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.8.0
+version: 2.0.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -10,714 +10,93 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 **Announce at start:** "I'm using the scan-codebase skill to map the repository."
 
+> **Instruction language:** this skill reasons in English. Detected symbols, paths, and line numbers are recorded verbatim from the codebase.
+
 ## When to use
 
 - User runs `/mega-sdd:scan-codebase`
-- `orchestrate-flow` detects brownfield project + missing `codebase-map.md`
-- **`orchestrate-flow` Mode A/B (v2.4+ Iter 27) — starterkit detected: scan runs FIRST in the pipeline (before generate-intent) so vault generation is pack-aware from the start**
+- `orchestrate-flow` detects a brownfield project + missing `codebase-map.md`
+- **`orchestrate-flow` Mode A/B — starterkit detected:** scan runs FIRST in the pipeline (before generate-intent) so vault generation is pack-aware from the start
 - User asks "siapkan context buat AI dev di repo ini" or paraphrases
-- After significant code changes to refresh stale map
+- After significant code changes, to refresh a stale map
 
-## v2.5+ (Iter 27) — scan-first usage
+### Scan-first usage (FIRST phase in starterkit-first mode)
 
-When invoked as the FIRST phase in starterkit-first mode (`orchestrate-flow` decision matrix Mode A/B):
-- Scaffold-only repos are OK — codebase-map.md will have minimal symbols but POPULATED §7 Framework section (the critical output for downstream generate-intent)
-- Empty `app/` directory does NOT halt the scan; framework detection comes from package manifests, not file content
-- Output is consumed by `generate-intent --scan=<codebase-map>` to inform vault sections with starterkit conventions (dual-citation format per `generate-intent/references/vault-contract.md`)
+When invoked as the FIRST phase (`orchestrate-flow` decision matrix Mode A/B):
+- Scaffold-only repos are OK — `codebase-map.md` will have minimal symbols but a POPULATED §7 Framework section (the critical output for downstream generate-intent).
+- An empty `app/` directory does NOT halt the scan; framework detection comes from package manifests, not file content.
+- Output is consumed by `generate-intent --scan=<codebase-map>` to inform vault sections with starterkit conventions (dual-citation format per `generate-intent/references/vault-contract.md`).
 
 ## Inputs
 
 - Repo path (positional, default `./`)
 - `--depth=N` (default 8)
 - `--include=<glob>` (repeatable; default infers from package manager)
-- `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems — see §Default exclusions below). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
+- `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
 
-## Default exclusions (v2.6.3+)
-
-The scan walks every path NOT matching these globs. List grouped by ecosystem for maintainability — implementation treats them as a flat allowlist applied to `find` / `tree-sitter` walk.
-
-**Dependency managers (all ecosystems):**
-- `node_modules/**` (npm/yarn/pnpm)
-- `vendor/**` (composer, go modules, ruby bundler — when vendored)
-- `.pnpm-store/**`, `.yarn/**` (yarn berry / pnpm caches)
-- `bower_components/**` (legacy)
-
-**Build / dist output:**
-- `dist/**`, `build/**`, `out/**` (generic + Next.js export + IntelliJ)
-- `target/**` (Rust + Maven/Java)
-- `bin/**`, `obj/**` (.NET / Eclipse)
-- `*.class`, `*.jar`, `*.war` (Java compiled — file glob)
-- `*.pyc`, `*.pyo` (Python compiled)
-
-**Framework caches:**
-- `.next/**`, `.nuxt/**`, `.svelte-kit/**`, `.astro/**` (JS meta-frameworks)
-- `.turbo/**`, `.parcel-cache/**`, `.cache/**` (build tool caches)
-- `.gradle/**`, `.mvn/**` (JVM build tool caches)
-- `storage/framework/**`, `bootstrap/cache/**` (Laravel runtime caches)
-- `public/build/**`, `public/hot/**` (Laravel Vite/Mix output)
-
-**Virtualenvs / language sandboxes:**
-- `.venv/**`, `venv/**`, `env/**` (Python)
-- `__pycache__/**` (Python bytecode)
-- `.bundle/**`, `vendor/bundle/**` (Ruby)
-
-**Test / coverage / lint artifacts:**
-- `coverage/**`, `.nyc_output/**`, `htmlcov/**` (JS + Python coverage)
-- `.pytest_cache/**`, `.mypy_cache/**`, `.ruff_cache/**`, `.tox/**` (Python tooling)
-- `*.egg-info/**` (Python packaging artifacts)
-
-**Version control / IDE / OS:**
-- `.git/**`, `.svn/**`, `.hg/**` (VCS internals)
-- `.idea/**`, `.vs/**` (IntelliJ + Visual Studio)
-- `.vscode/**` (VS Code workspace settings — exclude by default; user can `--include=.vscode/**` if project ships shared config worth scanning)
-- `.DS_Store`, `Thumbs.db` (OS noise)
-
-**Logs / temp:**
-- `*.log`, `logs/**`, `tmp/**`, `temp/**`
-
-**Mega-SDD self-reference (avoid scanning own outputs):**
-- `.mega-sdd/**` (v3.4+ canonical layout)
-- `bound-vault/**`, `units/**`, `bolts/**`, `codebase-map.md` (legacy paths — back-compat exclusion so re-scan doesn't re-ingest prior outputs)
-- `docs/mega-sdd/**`, `docs/knowledge-base/**`
-
-> **Why exclude SDD outputs from bulk scan:** `.mega-sdd/` contains INTENT (vaults, KB, units) — not code. Scan's job is mapping REALITY; reading vault during scan creates confirmation bias (the map silently "agrees" with vault claims that never got verified against source). Reconciliation between intent and reality is `bind-codebase`'s job, not scan's. This exclusion is an **anti-hallucination rail**, not just noise-reduction.
->
-> **Targeted reads still happen by explicit path** (orthogonal to the bulk-walk exclude list):
-> - `.mega-sdd/memory/conventions.md` — past convention detections (Step §Memory layer; skip re-detect for `status: established`)
-> - `.mega-sdd/codebase/starterkit-context.yaml` — deep-scan cache (Step 10.5.2; cache-hit short-circuit when lock files unchanged)
->
-> These are read by name, not discovered via glob walk, so the exclusion does not block them. Do NOT add other `.mega-sdd/` files as targeted reads without explicit spec amendment — the bias risk is real.
-
-**Override flags:**
-- `--exclude=<glob>` appends to this list (most common usage — add project-specific noise like `public/storage/**`).
-- `--no-default-excludes` disables the entire default list (rare; use when scanning a dependency tree intentionally).
-- `--include=<glob>` is evaluated AFTER excludes — to scan a normally-excluded path, combine `--no-default-excludes` with explicit `--include`.
+The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**.
 
 ## Output
 
-`codebase-map.md` written to `.mega-sdd/codebase/codebase-map.md` (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`). Override via `--out=<path>` flag. Idempotent — overwrites prior map.
-
-## Procedure
-
-0. **Engine detection (v2.0+, Iter 6; v2.1+ Iter 9 Bug 8 fix — multi-binary probe).**
-   - Probe for tree-sitter via TWO binary names (different package managers ship under different names):
-     ```bash
-     command -v tree-sitter || command -v tree-sitter-cli
-     ```
-     - `tree-sitter` — typically when installed via `brew install tree-sitter` or `cargo install tree-sitter-cli` (binary name is just `tree-sitter`)
-     - `tree-sitter-cli` — typically when installed via `npm install -g tree-sitter-cli` (binary may keep the package name)
-   - Found (either) → `engine: tree-sitter` (AST-precise extraction per `references/tree-sitter-integration.md`); stash the actual binary name found for subsequent invocations
-   - Not found AND `--engine=tree-sitter` flag set → halt `dep_missing` with install commands
-   - Not found AND no flag → fall back to `engine: regex` (v1 behavior); emit chat warning: "⚠️ tree-sitter not found (probed: tree-sitter, tree-sitter-cli); using regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli"
-   - Override via `--engine=tree-sitter|regex` flag
-
-1. **Detect repo root.** Walk up from CWD until `.git` directory found. If none, treat CWD as root and warn user.
-
-2. **Detect package manager / language.** Probe in order:
-   - `package.json` → npm/node
-   - `composer.json` → php/composer
-   - `Cargo.toml` → rust
-   - `go.mod` → go
-   - `requirements.txt` / `pyproject.toml` → python
-   - `pom.xml` / `build.gradle` → java
-   - Multiple → multi-language project; record all
-
-3. **Detect test framework.** Grep for known imports/configs:
-   - `jest.config.*`, `vitest.config.*`, `playwright.config.*`
-   - `phpunit.xml`, `pest.php`
-   - `pytest.ini`, `tox.ini`
-   - `Cargo.toml [dev-dependencies]`
-
-4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respect `--exclude`. Output as markdown tree.
-
-5. **Extract public interfaces.**
-
-   **Per-file invalidation gate (v2.7.1+):**
-
-   This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, gate compares each source file's current sha256 to the `Last_Scanned_Sha256` column in prior codebase-map.md §2:
-   - File current sha256 == prior Last_Scanned_Sha256 → REUSE prior §2 entries for this file; SKIP tree-sitter/regex re-extraction for it
-   - File current sha256 != prior → re-extract symbols via tree-sitter/regex (logic below); update Last_Scanned_Sha256 to current sha256
-   - File not in prior map → re-extract symbols + add to §2 with current sha256
-   - File in prior map but not in current repo enumeration → drop from §2 (file removed)
-
-   For default `--deep-scan` (no flag) OR `--no-cache` → SKIP gate; full re-extract for every file (current behavior; correctness guarantee preserved for deep scans).
-
-   The gate runs BEFORE tree-sitter / regex per-file extraction so it actually short-circuits the expensive per-file invocations.
-
-   **If `engine: tree-sitter` (v2.0+, default when available):**
-   - For each detected language, locate `queries/tags-<lang>.scm` in plugin dir
-   - For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue
-   - Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file
-   - Parse capture output (line + col + capture name + symbol text) into interface table
-   - Capture names map: `name.definition.<kind>` → §2 (public interfaces); `name.reference.<kind>` → symbol graph (used by generate-units PageRank per Iter 6 Swap #3)
-   - Languages without `.scm` file → fall back to regex (graceful per-language degradation)
-
-   **If `engine: regex` (v1 fallback; v2.3+ uses ripgrep when available for structured JSON output, falls back to GNU grep):**
-
-   ```bash
-   # Prefer ripgrep --json when installed for structured matches (v2.3+, Iter 14)
-   if command -v rg >/dev/null; then
-     RG_OPTS="--json --type-add 'php:*.php' --type-add 'ts:*.ts'"
-     # Per-language patterns:
-     #   TS/JS: rg --type ts $RG_OPTS '^export (default |async )?(function|class|const|interface|type)' <paths>
-     #   PHP:   rg --type php $RG_OPTS '^(class|interface|trait|function) |public function ' <paths>
-     #   Python: rg --type py $RG_OPTS '^(class|def) ' <paths>
-     #   Go:    rg --type go $RG_OPTS '^func [A-Z]' <paths>
-     #   Rust:  rg --type rust $RG_OPTS '^pub (fn|struct|enum|trait)' <paths>
-   else
-     # Fallback to GNU grep when ripgrep absent
-     # ... per-language patterns above without --json structure
-   fi
-   ```
-
-   Per-language patterns (engine: regex):
-   - **TypeScript/JS:** `^export (default |async )?(function|class|const|interface|type)` in `--include` files
-   - **PHP:** `^(class|interface|trait|function) ` and `public function `
-   - **Python:** `^(class|def) ` (exclude `_private`)
-   - **Go:** `^func [A-Z]` (exported)
-   - **Rust:** `^pub (fn|struct|enum|trait)`
-
-   Ripgrep `--json` output structured: emit `begin`/`match`/`end`/`summary` records; skill parses these into interface table (faster + more reliable than text grep).
-
-   See `plugins/mega-sdd/references/tooling-install.md` for ripgrep install (`brew install ripgrep` etc.); install is OPTIONAL — GNU grep fallback always works.
-
-6. **Extract routes.** Per known framework signatures:
-   - **Express:** `app.(get|post|put|delete|patch)\(`
-   - **Laravel:** `Route::(get|post|...)` or controller method routing
-   - **Next.js:** files under `pages/api/` or `app/**/route.{ts,js}`
-   - **FastAPI:** `@app.(get|post|...)` decorators
-   - **Spring:** `@(Get|Post|Put|Delete)Mapping`
-
-7. **Extract data models.** Per known patterns:
-   - **TypeORM / Prisma:** `@Entity()`, `model X {` in schema.prisma
-   - **Eloquent:** `class * extends Model`
-   - **Sequelize:** `sequelize.define(`
-   - **Pydantic:** `class X(BaseModel):`
-
-8. **Detect naming conventions.** Sample 20+ files per language:
-   - File case: kebab vs camel vs snake (majority wins)
-   - Symbol case: camel vs snake vs Pascal
-   - Test file suffix: `.test.ts`, `.spec.ts`, `Test.php`
-
-8.5. **Detect framework (v2.4+, Iter 23).** Parse package manifest for framework dependency fingerprints; write to `codebase-map.md` §Framework section. Detection rules (first match wins per language):
-   | Manifest | Grep pattern | Framework |
-   |---|---|---|
-   | `composer.json` | `"pixinvent/vuexy-laravel-bootstrap-jetstream"` | laravel-base-26 (starterkit variant; takes precedence over plain laravel) |
-   | `composer.json` | `"laravel/framework"` | laravel |
-   | `composer.json` | `"symfony/framework-bundle"` | symfony |
-   | `composer.json` | `"slim/slim"` | slim |
-   | `package.json` | `"next"` (dependencies) | next |
-   | `package.json` | `"nuxt"` (dependencies) | nuxt |
-   | `package.json` | `"@nestjs/core"` | nestjs |
-   | `package.json` | `"express"` | express |
-   | `package.json` | `"fastify"` | fastify |
-   | `package.json` | `"@remix-run/"` | remix |
-   | `package.json` | `"@sveltejs/kit"` | sveltekit |
-   | `Gemfile` | `gem ['"]rails['"]` | rails |
-   | `Gemfile` | `gem ['"]sinatra['"]` | sinatra |
-   | `pyproject.toml`/`requirements.txt` | `django` | django |
-   | `pyproject.toml`/`requirements.txt` | `fastapi` | fastapi |
-   | `pyproject.toml`/`requirements.txt` | `flask` | flask |
-   | `go.mod` | `github.com/gin-gonic/gin` | gin |
-   | `go.mod` | `github.com/labstack/echo` | echo |
-   | `go.mod` | `github.com/gofiber/fiber` | fiber |
-   | `Cargo.toml` | `actix-web` | actix |
-   | `Cargo.toml` | `axum` | axum |
-   | `Cargo.toml` | `rocket` | rocket |
-   
-   Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to codebase-map.md.
-
-   **First-match-wins ordering**: more specific starterkit packs take precedence over generic framework packs. Examples:
-
-   YAML for plain Laravel detection:
-   ```yaml
-   framework:
-     name: laravel
-     version: "11.x"
-     confidence: high          # high (explicit dep), medium (transitive), low (heuristic)
-     pack_path: plugins/mega-sdd/references/framework-conventions/laravel.md
-     detection_source: "composer.json — laravel/framework"
-   ```
-
-   YAML for base-laravel-26 starterkit detection (Vuexy fingerprint detected, takes precedence over plain laravel):
-   ```yaml
-   framework:
-     name: laravel-base-26
-     version: "12.x"
-     confidence: high
-     pack_path: plugins/mega-sdd/references/framework-conventions/laravel-base-26.md
-     detection_source: "composer.json — pixinvent/vuexy-laravel-bootstrap-jetstream + joelbutcher/socialstream"
-     extends: laravel           # pack inheritance (recursive load resolves base laravel.md + _universal.md)
-   ```
-
-   If no match → `framework: { name: "_universal", confidence: "fallback", pack_path: "plugins/mega-sdd/references/framework-conventions/_universal.md" }`.
-
-9. **Detect pattern signatures.** Heuristic grep for indicators:
-   - Auth: search for `middleware`, `jwt`, `session`, `@Auth` decorators
-   - State management: imports of `redux`, `zustand`, `mobx`, `react context`
-   - Error handling: ratio of `try/catch` vs `Result<T>` patterns
-
-10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark genuinely empty sections as "None detected" not omitted. Frontmatter stamps `engine: tree-sitter | regex` + `precision_tier: ast | regex` so downstream `bind-codebase` knows the confidence level.
-
-## Step 10.5 — Deep-scan stage (v2.6.0+, Iter 32, DEFAULT-ON when framework detected)
-
-After Step 10 writes `codebase-map.md` (so §7 Framework block is fully populated), run this stage automatically. No user flag required. Opt-out: `--shallow-scan`.
-
-### Step 10.5.0 — Trigger check
-
-```
-IF framework.confidence == HIGH or MEDIUM (≥ 0.5):
-  → proceed to Step 10.5.1 (cache check)
-ELSE:
-  → log "framework confidence LOW (X.XX); deep-scan skipped — install ambiguous, run /mega-sdd:scan-codebase --force-deep to override"
-  → skip Step 10.5 entirely; proceed to Step 11
-```
-
-### Step 10.5.1 — Cache check (v2.7.0+, Iter 42 — per-slice signature)
-
-Mirrors Iter 30 shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shared-snapshot-schema.md`).
-
-**v2.7.0+ change:** cache invalidation moves from whole-file to per-slice. When only some inputs change (e.g., frontend dep added in package.json), unchanged slices (auth, rbac) reuse cached output; only invalidated slices (ui_ux, libs) re-dispatch. Closes Iter 38 audit D2-003.
-
-```
-1. Compute composer_lock_sha256 = sha256(<project>/composer.lock) if file exists, else empty string
-2. Compute package_lock_sha256 = sha256(<project>/package-lock.json) if exists,
-   else sha256(<project>/yarn.lock) if exists,
-   else sha256(<project>/pnpm-lock.yaml) if exists,
-   else empty string
-3. Compute per-slice signatures:
-   - auth_sig_input = composer_lock_sha256 + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md)
-   - rbac_sig_input = composer_lock_sha256 + framework_pack §rbac section content + sha256(lib-patterns/<fw>/rbac-libs.md)
-   - ui_ux_sig_input = package_lock_sha256 + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md)
-   - libs_sig_input = composer_lock_sha256 + package_lock_sha256 + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md)
-   - auth_signature = sha256(auth_sig_input); similarly for rbac/ui_ux/libs
-4. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
-     a. Read its `cache_signatures:` block (v2.0 schema) OR `cache_key:` block (v1.0 schema, backward-compat).
-     b. IF v1.0 schema detected → treat as "all slices stale" (full re-dispatch); migrate to v2.0 on next write.
-     c. IF v2.0 schema → per-slice diff:
-        - stale_slices = []
-        - For each slice in [auth, rbac, ui_ux, libs]:
-            IF prior.cache_signatures.per_slice[<slice>].signature_sha256 != current_<slice>_signature:
-              stale_slices.append(<slice>)
-        - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml; set handoff_reused_flag = true; proceed to Step 11.
-        - IF stale_slices is non-empty → PARTIAL CACHE HIT: proceed to Step 10.5.1.5; dispatch only stale_slices subagents in Step 10.5.2; consolidator merges fresh slices with cached slices in Step 10.5.3.
-5. ELSE (file not present) → FULL CACHE MISS: stale_slices = [auth, rbac, ui_ux, libs]; proceed to Step 10.5.1.5.
-```
-
-Force full re-scan: `--no-cache` (existing flag; sets `stale_slices = [all]` regardless of signatures).
-
-### Step 10.5.1.5 — Manifest pre-parse (v2.7.0+, Iter 42 — D1-002 closure)
-
-**Runs only when `stale_slices` non-empty (not on full cache hit).** Closes Iter 38 audit D1-002 — eliminates redundant manifest re-reads by 4 subagents.
-
-Main thread reads + parses manifest files ONCE, builds `manifest_facts` struct, passes to each subagent prompt as `<MANIFEST_FACTS>` placeholder:
-
-```
-1. IF <project>/composer.json exists:
-     - Parse JSON
-     - Extract: require (dependencies), require-dev (dev_dependencies), scripts, autoload (PSR-4 map)
-2. IF <project>/package.json exists:
-     - Parse JSON
-     - Extract: dependencies, devDependencies, peerDependencies, scripts, type (module|commonjs)
-3. Build manifest_facts YAML struct:
-
-     manifest_facts:
-       composer:
-         dependencies: {<name>: <version>, ...}        # require: block
-         dev_dependencies: {<name>: <version>, ...}    # require-dev: block
-         scripts: {<name>: <command>, ...}
-         autoload_psr4: {<namespace>: <path>, ...}
-       package:
-         dependencies: {<name>: <version>, ...}
-         dev_dependencies: {<name>: <version>, ...}
-         peer_dependencies: {<name>: <version>, ...}
-         scripts: {<name>: <command>, ...}
-         type: module | commonjs
-
-4. Embed manifest_facts struct into the <MANIFEST_FACTS> placeholder of each subagent prompt (see `references/deep-scan-prompts.md`).
-5. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read composer.json / package.json / lock files. Spend your context budget on framework-specific source files (config/auth.php, app/Models/, etc.) — see INPUTS TO READ for the per-domain list."
-```
-
-**Net savings:** ~9-24KB per scan (4 subagents × ~2-6KB saved per subagent).
-
-### Step 10.5.2 — Dispatch subagents in PARALLEL (selective dispatch v2.7.0+)
-
-**v2.7.0+ change (Iter 42):** dispatch only the subagents whose slice is in `stale_slices` (from Step 10.5.1). If all 4 slices stale → dispatch 4 in parallel (current behavior). If only 1-3 slices stale → dispatch only those (selective re-dispatch).
-
-Dispatch stale-slice subagents IN A SINGLE MESSAGE with N Agent tool calls (parallel-safe per `superpowers:subagent-driven-development` convention — reuses extract-intelligence wave-dispatch pattern). N = len(stale_slices).
-
-Use prompt templates from `references/deep-scan-prompts.md`, substituting:
-- `<FRAMEWORK>` → from §7 Framework.name (e.g., `laravel`)
-- `<PROJECT_ROOT>` → absolute path to project root
-- `<CATALOG_PATH>` → for each subagent, the matching catalog under `plugins/mega-sdd/references/lib-patterns/<FRAMEWORK>/<domain>-libs.md`
-
-Subagents:
-1. **auth-extractor** — model: per `references/model-tiers.md §auth-extractor` (default sonnet); catalog: `lib-patterns/<framework>/auth-libs.md`
-2. **rbac-extractor** — model: per `references/model-tiers.md §rbac-extractor` (default sonnet); catalog: `lib-patterns/<framework>/rbac-libs.md`
-3. **ui-ux-extractor** — model: per `references/model-tiers.md §ui-ux-extractor` (default sonnet); catalog: `lib-patterns/<framework>/ui-libs.md`
-4. **libs-extractor** — model: per `references/model-tiers.md §libs-extractor` (default sonnet); catalog: `lib-patterns/<framework>/generic-libs.md`
-
-> If invoked via orchestrate-flow chain, model tier may be overridden via handoff metadata.model_tiers per role (CLI flag / project config / user preference). Standalone invocation uses catalog default unconditionally.
-
-**Fallback:** if `lib-patterns/<FRAMEWORK>/` directory does not exist:
-- Log "no lib-pattern pack for <framework>; using generic extraction"
-- Subagents proceed using framework-conventions/_universal.md fallback patterns + manifest-only detection
-- No halt; graceful degradation
-
-**Timeout handling:** if a subagent exceeds 10 min wall-clock OR returns malformed YAML:
-- Emit halt `deep_scan_subagent_failed` (soft); auto-retry ONCE with same model
-- If second attempt also fails: mark that slice as failed; consolidator (Step 10.5.3) sets `partial: true` and adds the domain to `partial_slices: [...]`
-- Pipeline continues (warn-only, NOT chain-stopping)
-
-**All-fail handling:** if ALL 4 subagents fail (likely API outage):
-- Emit halt `deep_scan_subagent_all_failed` (ALWAYS STOP)
-- DO NOT write starterkit-context.yaml (preserve any existing prior version untouched)
-- Chain halts; user re-runs scan-codebase later
-
-### Step 10.5.2.5 — Deep-read code patterns (v3.0+, Iter 68; pack-driven, framework-agnostic)
-
-Runs in main thread (no extra subagent — reuses just-written codebase-map.md from Step 10 + the framework pack identified at §7 Framework). Populates the `patterns:` block of starterkit-context.yaml so `validate-starterkit-conformance.sh` can check unit `target_files` against actual codebase conventions.
-
-**Inputs to this step:**
-- `codebase-map.md §1 Top-level structure` (the directory layout discovered in Step 10)
-- `codebase-map.md §7 Framework.pack_path` (the framework pack file — e.g., `framework-conventions/laravel-base-26.md`, `framework-conventions/django.md`, `framework-conventions/_universal.md`)
-- The just-resolved framework pack — read its §patterns hints block (each pack tells deep-scan WHERE each generic category typically lives for that framework)
-
-**Generic categories (universal semantic roles; same for every framework):**
-
-| Category | Universal meaning | Pack provides | Skill body must NOT hardcode |
-|---|---|---|---|
-| `controller` | endpoint / request handler | Where handlers live in this framework | Laravel `app/Http/Controllers/` |
-| `data_model` | persistence-layer entity | Where models live | Laravel `app/Models/` |
-| `request_validator` | input validation layer (optional) | Where validators live; null if framework convention absent | Laravel `app/Http/Requests/` |
-| `business_logic` | service/usecase layer (optional) | Where services live; null if framework convention absent | Laravel `app/Services/` |
-| `test` | test suite | Where tests live | Laravel `tests/Feature/` |
-| `schema_migration` | DDL/migration files | Where migrations live | Laravel `database/migrations/` |
-| `route` | URL routing definition | Centralized file vs decorator-based vs file-based-routing | Laravel `routes/api.php` |
-| `view` | renderable view/page (presentation; v3.1+, Task F) | Where views live (pack `## UI quality signatures` view_glob narrows it); null when API-only | Laravel `resources/views/` |
-| `component` | reusable presentation component (optional; v3.1+, Task F) | Where components live; null when stack has no component layer | Laravel `resources/views/components/` |
-
-**Algorithm per category:**
-
-```
-1. Read framework pack §patterns hints to discover the conventional location for this category.
-   - Laravel pack → "controllers typically live at app/Http/Controllers/"
-   - Django pack → "controllers (views) live at <app>/views.py or <app>/views/"
-   - Express pack → "handlers live at src/controllers/ or src/handlers/"
-   - _universal pack → best-effort heuristic (grep for *Controller, *.handler.*, *View*)
-2. Confirm against codebase-map.md §1 Top-level — does that dir exist in the actual repo?
-   - YES → location = <pack-suggested dir>
-   - NO → category may be absent. Look for nearest analog under §1. Still absent → emit category with location: null and _source: [].
-3. Pick 2-3 representative source files in that dir (NOT generated, NOT vendor, NOT test fixtures).
-4. Read first ~30 lines of each to derive:
-   - naming pattern (e.g., {Model}Controller<ext>) — read several samples + abstract
-   - extension (the actual file extension observed)
-   - framework-specific quirks → emit into `extras: {}` per pack's hints (Laravel pack tells you to extract base_class + methods; Django pack tells you to extract as_view + mixins)
-5. Cite each derived field with `_source: ["<path>:<line-range>"]` — anti-halu rail (per starterkit-context-schema.md §Anti-halu rails).
-6. NEVER fabricate. NEVER guess across frameworks (Laravel idioms in a Django repo = halt).
-   - If you cannot find a sample file for a category, that category MUST emit `location: null` and `_source: []`.
-   - `extras: {}` is ALWAYS present (may be empty object).
-7. **Exemplar ordering for `view`/`component` (v3.1+, Task F — `exemplar_selection: linter-clean`):** for the
-   presentation categories, the chosen sample becomes a FEW-SHOT the bolt subagent mirrors, so a raw-scaffold
-   view would anchor the bolt to exactly the tells slice E flags. When picking the 2-3 representative samples,
-   ORDER `_source` BEST-FIRST: put the cleanest / most-idiomatic view first (passes the pack `## UI quality
-   signatures` scaffold_tells — humanized labels, FK resolved via relation, formatted money, app layout +
-   responsive grid, project notification idiom). execute-bolts' code-slice then picks the first linter-clean
-   entry, NOT `_source[0]` blindly. Emit `exemplar_selection: linter-clean` on the `view`/`component` category.
-   (controller/data_model/etc. keep their existing unordered `_source` — selection ordering is a presentation-
-   category concern only.)
-```
-
-**Pack-driven, NOT skill-hardcoded:** the skill body does NOT contain framework-specific paths. The framework pack (`framework-conventions/<pack>.md`) is the source of "where to look". A new framework pack (e.g., Rails, FastAPI, NestJS) makes this step work for that framework without skill body edits — pack-add is the extension point.
-
-**Universal fallback:** when no framework pack matches (greenfield, unknown stack), use `framework-conventions/_universal.md` heuristics: grep the codebase for `*Controller*`, `*model*`, `*service*`, `*test*`, `migrations/` directories — derive best-effort locations. Emit `extras: {}` empty (no pack quirks to capture).
-
-**Concurrency note:** Step 10.5.2.5 runs AFTER Step 10.5.2 subagents return (sequential — uses their slice citations as hints for which files are representative) and BEFORE Step 10.5.3 consolidator (which merges patterns block into the YAML).
-
-**Failure mode:** if codebase-map.md §1 has no recognizable structure for a category, emit that category as `{ location: null, naming: null, extension: null, _source: [], extras: {} }` — do NOT emit halt. Downstream `validate-starterkit-conformance.sh` treats null-location categories as opt-out and skips checks for them.
-
-**Multi-framework examples:** see `plugins/mega-sdd/references/starterkit-context-schema.md §patterns block — multi-framework examples (v3.0+)` — same container schema filled with Laravel, Django, and Express values to prove genericness.
-
-### Step 10.5.3 — Consolidate + write starterkit-context.yaml (v2.7.0+ per-slice cache)
-
-```
-1. Collect responses from dispatched subagents (= len(stale_slices))
-2. Read prior starterkit-context.yaml (if exists) to harvest cached slices for non-stale domains.
-3. For each successful subagent response: validate YAML against starterkit-context-schema.md §<domain> slice
-   - If validation fails: drop slice; add domain to partial_slices: []
-   - If validation passes: include slice in merged output
-4. Merge fresh slices (from dispatched subagents) with cached slices (from prior YAML).
-   - Conflict resolution: fresh always wins over cached for same domain (cached is the fallback for non-stale domains).
-5. Build merged YAML structure (cache_signatures v2.0 schema; Iter 42):
-
-     starterkit_context:
-       schema_version: 3.0                          # v3.0 bump (Iter 68 — adds patterns: block); v2.0 was Iter 42; v1.0 was Iter 32
-       generated_by: scan-codebase v3.0.0
-       generated_at: <ISO8601 of MOST RECENT slice write>
-       framework: <from §7 Framework.name>
-       framework_version: <from §7 Framework.version>
-       framework_pack: <from §7 Framework.pack_path basename>
-       partial: true                                # if ≥1 slice failed in this run
-       partial_slices: [<list>]                     # only when partial: true
-       reused_slices: [<list of cached domains>]    # v2.7.0+ — provenance of cache reuse
-       auth: {...}                                  # fresh OR cached
-       rbac: {...}                                  # fresh OR cached
-       ui_ux: {...}                                 # fresh OR cached
-       libs: [...]                                  # fresh OR cached
-       patterns:                                    # v3.0+ — generic schema, pack-driven values (see Step 10.5.2.5)
-         controller:                                # endpoint/request handler (universal semantic role)
-           location: <dir path | null>              # pack tells WHERE; deep-scan confirms in real codebase
-           naming: <pattern>                        # e.g., "{Model}Controller<ext>" | "{model}_views.py" | "{Model}.handler.ts"
-           extension: <file ext>                    # ".php" | ".py" | ".ts" | ".rb" | …
-           _source: [<sample file:lines>]
-           extras: {}                               # framework-specific (Laravel: {methods, base_class}; Django: {as_view, mixins}; …)
-         data_model:                                # persistence-layer entity (universal)
-           location: <dir path | null>
-           naming: <pattern>                        # e.g., "{Model}<ext>"
-           extension: <file ext>
-           _source: [<sample file:lines>]
-           extras: {}                               # Laravel: {traits, cast_style}; Django: {meta, managers}; Prisma: {schema_file}; …
-         request_validator:                         # input validation layer (optional per framework)
-           location: <dir | null>                   # null when framework has no validation layer
-           naming: <pattern | null>
-           extension: <file ext | null>
-           _source: [<sample> or empty]
-           extras: {}                               # Laravel: {validation_style}; Django: {form_or_serializer}; Express: {schema_lib}
-         business_logic:                            # service/usecase layer (optional)
-           location: <dir | null>
-           naming: <pattern | null>
-           extension: <file ext | null>
-           _source: [<sample> or empty]
-           extras: {}                               # NestJS: {injectable}; Laravel: {action_class_style}; …
-         test:
-           location: <dir path>
-           naming: <pattern>                        # "{Model}Test.php" | "{model}.test.ts" | "test_{model}.py"
-           extension: <file ext>
-           framework: <test framework>              # phpunit | pest | jest | vitest | pytest | rspec | go-test | …
-           _source: [<sample file:lines>]
-           extras: {}
-         schema_migration:                          # DDL / migration files (universal)
-           location: <dir path>
-           naming: <pattern>                        # framework-specific format
-           extension: <file ext>
-           _source: [<sample file:lines>]
-           extras: {}                               # Laravel: {timestamp_format}; Django: {numbered_seq}; Rails: {timestamped}; Prisma: {single_schema_file}
-         route:
-           location: <dir or single-file path>
-           style: <generic descriptor>              # "centralized-routes" | "decorator-based" | "file-based-routing" | "manual"
-           api_prefix: <string | null>
-           web_file: <path | null>
-           api_file: <path | null>
-           _source: [<sample file:lines>]
-           extras: {}                               # Laravel: {resource_style}; FastAPI: {router_count}; NestJS: {controller_decorators}
-         view:                                      # v3.1+, Task F — renderable view/page (presentation layer; null when stack is API-only)
-           location: <dir path | null>              # pack tells WHERE (pack `## UI quality signatures` view_glob narrows it); null when API-only
-           naming: <pattern | null>                 # e.g., "{model}.blade.php" | "{Model}Page.tsx" | "{model}.html"
-           extension: <file ext | null>             # ".blade.php" | ".vue" | ".tsx" | ".html" | …
-           exemplar_selection: linter-clean         # v3.1+, Task F — REQUIRED selection rule; see note below
-           _source: [<sample file:lines>, …]        # ORDERED best-first (cleanest/most-idiomatic view FIRST — execute-bolts code-slice picks the first linter-clean, NOT [0] blindly)
-           extras: {}                               # Laravel: {layout_extends, component_dir}; Vue: {sfc}; React: {jsx_runtime}; …
-         component:                                 # v3.1+, Task F — reusable presentation component (optional; null when stack has no component layer)
-           location: <dir path | null>
-           naming: <pattern | null>                 # e.g., "{name}.blade.php" | "{Name}.vue" | "{Name}.tsx"
-           extension: <file ext | null>
-           exemplar_selection: linter-clean         # v3.1+, Task F
-           _source: [<sample file:lines>, …]        # ORDERED best-first
-           extras: {}
-       cache_signatures:                            # v2.0 schema (replaces v1.0 cache_key:)
-         composer_lock_sha256: <from Step 10.5.1>
-         package_lock_sha256: <from Step 10.5.1>
-         framework_pack: <pack basename>
-         per_slice:
-           auth: { signature_sha256: <hex>, generated_at: <ISO8601> }
-           rbac: { signature_sha256: <hex>, generated_at: <ISO8601> }
-           ui_ux: { signature_sha256: <hex>, generated_at: <ISO8601> }
-           libs: { signature_sha256: <hex>, generated_at: <ISO8601> }
-       # NOTE: cached slices keep their original generated_at; fresh slices get current ISO8601.
-6. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
-   (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, then mv)
-7. Validate the written file is parseable:
-   - If parse fails: emit halt deep_scan_cache_corrupt (soft); delete file; retry write once
-   - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
-```
-
-**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0, Iter 32), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 4 subagents; Step 10.5.3 writes new v2.0 `cache_signatures:` schema. One-time migration cost per project; no user action required.
-
-### Step 10.5.4 — Concurrency guard
-
-Use existing memory file-lock pattern (per `mega-sdd:memory` SKILL.md §file-lock: backoff + retry 3x; fail with `memory_in_use` blocker if all retries fail) on `.mega-sdd/codebase/starterkit-context.yaml`:
-- Acquire exclusive lock before write
-- If lock held by concurrent scan-codebase invocation → fail fast with `memory_in_use` halt (existing halt type)
-- Release lock after write
-
-### Step 10.6 — Emit codebase-map shared snapshot (v2.7.1+, Iter 46 — D1-006 closure)
-
-After Step 10 codebase-map.md write completes, additionally write a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §scan-codebase (codebase-map snapshot)`. Enables downstream `bind-codebase` to skip per-source-file re-tokenization when codebase-map.md is fresh.
-
-```
-1. Compute codebase_map_sha256 = sha256(<just-written codebase-map.md>)
-2. Build source_files_sha256_map from the files enumerated during Step 10 symbol extraction:
-   {
-     "<repo-relative-path>": "<sha256-hex>",
-     ...
-   }
-3. Write atomically to <project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json:
-   {
-     "snapshot_schema_version": "1.1",
-     "snapshot_type": "codebase-map",
-     "generated_by": "scan-codebase@2.7.1",
-     "generated_at": "<ISO8601>",
-     "scope": null,
-     "files": [],
-     "codebase_map_sha256": "<from step 1>",
-     "source_files_sha256_map": { ... }
-   }
-4. Use temp-file + rename for atomicity (same pattern as Step 10.5.3 starterkit-context write).
-```
-
-If write fails (disk full / permissions): log warning + continue (snapshot is optimization, not correctness — bind-codebase falls back gracefully per shared-snapshot-schema.md §bind-codebase consumer).
-
----
+`codebase-map.md` written to `.mega-sdd/codebase/codebase-map.md` (canonical per `plugins/mega-sdd/references/paths.md`). Override via `--out=<path>`. Idempotent — overwrites prior map. Section schema (frontmatter + §1 structure, §2 public interfaces, §3 routes, §4 data models, §5 naming conventions, §6 pattern signatures, §7 framework) is defined in **`references/codebase-map-schema.md`**, and is the contract `bind-codebase` consumes.
+
+## Procedure (compact skeleton)
+
+Detailed per-step logic — including the tree-sitter multi-binary probe, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. Tree-sitter query usage, precision tiers, and graceful regex fallback are in **`references/tree-sitter-integration.md`**.
+
+0. **Engine detection.** Probe tree-sitter via TWO binary names (`command -v tree-sitter || command -v tree-sitter-cli`). Found → `engine: tree-sitter` (precision_tier `ast`). Not found + `--engine=tree-sitter` → halt `dep_missing`. Not found + no flag → fall back to `engine: regex` (precision_tier `regex`) with a one-line chat warning. Override via `--engine=`.
+1. **Detect repo root.** Walk up to `.git`; else treat CWD as root and warn.
+2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle`. Multiple → record all.
+3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
+4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respecting `--exclude` (defaults in `references/exclusions.md`).
+5. **Extract public interfaces.** Run the per-file invalidation gate first (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` → symbol graph) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
+6. **Extract routes.** Per-framework signatures (Express/Laravel/Next.js/FastAPI/Spring).
+7. **Extract data models.** Per-pattern (TypeORM/Prisma, Eloquent, Sequelize, Pydantic).
+8. **Detect naming conventions.** Sample 20+ files/language: file case, symbol case, test-file suffix.
+8.5. **Detect framework.** Parse manifest fingerprints (first-match-wins; specific starterkit packs precede generic packs); record `name/version/confidence/pack_path/detection_source` to §7. No match → `_universal` fallback pack.
+9. **Detect pattern signatures.** Heuristic grep for auth (`middleware|jwt|session`), state management, error handling.
+10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark empty ones "None detected" (never omit). Stamp `engine` + `precision_tier` in frontmatter so `bind-codebase` knows the confidence level.
+
+### Step 10.5 — Deep-scan stage (DEFAULT-ON when framework detected)
+
+After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / rbac / ui_ux / libs slices + a pack-driven `patterns:` block). Full algorithm — trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, the framework-agnostic deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, and the concurrency guard — is in **`references/deep-scan-stage.md`**. Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
+
+- **Trigger:** framework confidence ≥ 0.5 (HIGH/MEDIUM) → run; LOW → skip (override with `--force-deep`).
+- **Cache:** per-slice signature diff; full hit short-circuits; `--no-cache` forces full re-dispatch.
+- **Dispatch:** only stale slices, in a single parallel message (read-only subagents). Missing `lib-patterns/<framework>/` → generic extraction, no halt.
+- **Failure:** one slice fails → `partial: true` + `partial_slices`; all fail → halt `deep_scan_subagent_all_failed` (preserve prior YAML).
+- **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can skip re-tokenization (per `references/deep-scan-stage.md`).
 
 11. **Suggest next step:** `/mega-sdd:bind-codebase <vault-path>` to validate a vault against this map.
 
-## Anti-hallucination rails
+## Mandatory rails
 
-- If a section has no detection: write "None detected" — do NOT invent.
-- Limit symbol extraction to **first 200 per category** in v1 (prevents giant maps). Note "truncated at 200, see file scan log for full list."
-- Cite line numbers for routes/models (`src/foo.ts:42`) so binding can verify.
-- (v2.6.0+, Iter 32) Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. Schema-validation drops slices that violate.
-- (v2.6.0+, Iter 32) Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field. Schema-validation drops slices without _source.
-- (v2.6.0+, Iter 32) Deep-scan read-only: subagents have NO Edit/Write/mutating-Bash tool access. Read-only enforced at dispatch.
-
-## Halt conditions
-
-- Repo > 100k files: confirm with user (`--force-large` flag required to proceed).
-- Detection produces 0 public interfaces: warn user — likely scan misconfiguration; offer to re-run with different `--include`.
-- (v2.0+) `--engine=tree-sitter` set AND tree-sitter not on PATH → halt `dep_missing` with install commands (per `references/tree-sitter-integration.md` §Installation guidance).
-
-### `deep_scan_subagent_failed` (v2.6.0+, Iter 32) — SOFT
-
-```yaml
-type: deep_scan_subagent_failed
-source_skill: scan-codebase
-details:
-  domain: <auth | rbac | ui_ux | libs>
-  subagent_index: <1-4>
-  failure_reason: <"timeout" | "malformed_yaml" | "api_error: <msg>">
-  retry_count: <1 or 2>
-next_action: "Continue with partial output — starterkit-context.yaml will be emitted with partial: true and partial_slices: [<domain>]. Pipeline continues; downstream consumers degrade gracefully for missing slices."
-```
-
-Recovery: auto-retry once. On second failure: emit partial output. Soft halt — chain continues.
-
-### `deep_scan_cache_corrupt` (v2.6.0+, Iter 32) — SOFT
-
-```yaml
-type: deep_scan_cache_corrupt
-source_skill: scan-codebase
-details:
-  file_path: "<project>/.mega-sdd/codebase/starterkit-context.yaml"
-  parse_error: "<error message from YAML parser>"
-next_action: "Auto-invalidate corrupt cache and re-dispatch subagents. Transparent to user; no manual action required."
-```
-
-Recovery: auto-invalidate cache + re-run subagents. Soft halt — chain continues.
-
-### `deep_scan_subagent_all_failed` (v2.6.0+, Iter 32) — ALWAYS STOP
-
-```yaml
-type: deep_scan_subagent_all_failed
-source_skill: scan-codebase
-details:
-  failed_domains: [auth, rbac, ui_ux, libs]
-  common_failure_reason: <"api_outage" | "rate_limited" | "unknown">
-next_action: "Re-run /mega-sdd:scan-codebase later (likely API outage; user retry required). Existing starterkit-context.yaml (if any) preserved untouched."
-```
-
-Recovery: user re-runs scan-codebase later. Chain halts.
-
-## Flags
-
-- `--depth=N`: tree depth (default 8)
-- `--include=<glob>`: scan only matching files (repeatable)
-- `--exclude=<glob>`: skip matching files (repeatable; **appended** to defaults — see §Default exclusions)
-- `--no-default-excludes` (v2.6.3+): disable the default exclusion list entirely (rare; opt-in scan of dep trees)
-- `--out=<path>`: override output location
-  - **v2.2+ default (Iter 10)**: `<project-root>/.mega-sdd/codebase/codebase-map.md` per `plugins/mega-sdd/references/paths.md`
-  - **Legacy default (≤v2.1)**: `<project-root>/codebase-map.md` (preserved when `.mega-sdd/` dir absent OR `layout: legacy` in config)
-  - User explicit `--out=<path>` always respected
-- `--auto`: skip confirmation prompts
-- `--force-large`: proceed on >100k file repos
-- `--engine=tree-sitter|regex` (v2.0+): force engine; default auto-detect via `command -v tree-sitter`
-- `--shallow-scan` (v2.6.0+, Iter 32): skip Step 10.5 deep-scan stage; emit only surface codebase-map.md (opt-out for deep-scan)
-- `--force-deep` (v2.6.0+, Iter 32): force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
-- `--no-cache` (v2.6.0+, Iter 32): invalidate deep-scan cache; re-run all 4 subagents even if lock files unchanged
+- **Anti-hallucination.** No detection → write "None detected"; never invent. Cap symbol extraction at the first 200 per category (note truncation). Cite line numbers (`src/foo.ts:42`) so binding can verify. Deep-scan subagents are READ-ONLY, must emit `not_detected` rather than guess, and every field carries a `_source` citation — schema-validation drops slices that violate. Full rail list in `references/halts-flags-handoff.md`.
+- **Exclude SDD outputs from the bulk walk.** `.mega-sdd/**` and legacy output paths are excluded by default — reading vault during scan creates confirmation bias. This is an anti-hallucination rail, not just noise-reduction. Reconciliation is `bind-codebase`'s job. Rationale + the two by-name targeted reads (`conventions.md`, `starterkit-context.yaml`) are in `references/exclusions.md`.
+- **Halts.** `>100k files` → confirm (`--force-large`). `0 public interfaces` → warn (likely misconfig; offer re-run with different `--include`). `--engine=tree-sitter` with tree-sitter absent → halt `dep_missing` with install commands. Deep-scan soft halts (`deep_scan_subagent_failed`, `deep_scan_cache_corrupt`) auto-recover; `deep_scan_subagent_all_failed` always stops. Full YAML for each in `references/halts-flags-handoff.md`.
+- **Idempotency.** Re-running overwrites the prior map; `--shallow-scan` reuses unchanged per-file §2 entries via sha256.
 
 ## Hand-off
 
 On completion, announce: "Codebase map written to `<path>`. Run `/mega-sdd:bind-codebase <vault>` to validate your vault against it."
 
-## Handoff emission (v1.1+, Iter 4)
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record per `mega-sdd:orchestrate-flow/references/handoff-contract.md` — the record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`**.
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+## Memory layer
 
-```yaml
-handoff:
-  emitted_by: scan-codebase
-  emitted_at: <ISO8601 timestamp>
-  status: completed                                 # or paused | halted
-  artifacts:
-    - <absolute path to .mega-sdd/codebase/codebase-map.md>
-    - <absolute path to .mega-sdd/codebase/starterkit-context.yaml>  # NEW v2.6.0+ (only when deep-scan ran)
-  starterkit_context:                                                  # NEW v2.6.0+ block (only when deep-scan ran)
-    reused: false                                                       # true if cache hit
-    framework: laravel
-    auth_lib: sanctum
-    rbac_lib: spatie/permission
-    ui_stack: "alpine + tailwind + sweetalert2"
-    libs_count: 47
-  next_action:
-    suggested_skill: mega-sdd:generate-intent
-    suggested_args:
-      - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
-      - "--auto"
-    rationale: "Scan complete; starterkit-first ordering (Iter 27) — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation."
-  blockers: []                                          # populated when status: halted
-  metrics:
-    files_scanned: <int>
-    symbols_extracted: <int>
-    deep_scan_wall_clock_sec: <int>                     # NEW v2.6.0+: 0 on cache hit
-  scope:                                  # v3.20+ (Iter 28) — when vault has scope_metadata
-    id: <scope id, e.g., "BE">
-    name: <scope name>
-    sibling_scopes: []
-    prd_sha256: <sha256 from vault.json>
-```
+When memory is enabled (default; opt-out `--memory-off`), participates in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`: writes detected conventions to `.mega-sdd/memory/conventions.md` AFTER the map is written, and skips re-detection for conventions marked `status: established` (still re-verified each scan). Read/write tables + anti-halu rails are in **`references/halts-flags-handoff.md`**.
 
-> The `starterkit_context:` block + the `starterkit-context.yaml` artifact entry are CONDITIONAL — emitted only when deep-scan ran successfully (framework detected at MEDIUM+ confidence). Skip both when deep-scan was skipped or failed entirely.
+## Specialist references (load on demand)
 
-Status `halted` on: `dep_missing` | `deep_scan_subagent_all_failed` | `memory_in_use`. Required ONLY under `--auto`.
+- **`references/scan-procedure.md`** — full surface scan (Steps 0–10): engine multi-binary probe, per-file invalidation gate, tree-sitter + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
+- **`references/deep-scan-stage.md`** — the deep-scan stage (Steps 10.5.x + 10.6): trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, pack-driven deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, concurrency guard, shared snapshot.
+- **`references/deep-scan-prompts.md`** — the four deep-scan subagent prompt templates (auth / rbac / ui-ux / libs), variable substitution, `<MANIFEST_FACTS>` injection, and cross-cutting anti-halu rails.
+- **`references/codebase-map-schema.md`** — the full `codebase-map.md` output schema (frontmatter + §1–§7), how `bind-codebase` consumes it, and detection-precision caveats.
+- **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.
+- **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.
+- **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, the `--auto` handoff YAML, and the memory layer.
+- **`queries/`** — tree-sitter `tags-<lang>.scm` capture queries (TS/PHP/Python) consumed by Step 5; tested grammar versions in `queries/VERSIONS.md`.
 
-## Memory layer (v1.2+, Iter 5)
+## Related skills
 
-When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
-
-### Writes
-
-| When | File | Content |
-|---|---|---|
-| After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (per MEMORY-OQ-4 threshold) |
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past convention detections | `<project>/.mega-sdd/memory/conventions.md` | SKIP re-detection for conventions marked `status: established` (per learning-rules.md §2.5); just confirm signal still present |
-
-### Anti-halu rails
-
-- Memory write happens AFTER `codebase-map.md` is written (memory is derivative)
-- Conventions marked `established` STILL get re-verified each scan; status only affects whether the verbose detection is re-emitted
-- `--memory-off` disables both reads and writes
-- Skipped conventions are logged in scan output for transparency
+Output `codebase-map.md` is consumed by `bind-codebase` (vault validation) and `generate-intent --scan=` (pack-aware vault generation in starterkit-first mode). Dual-citation convention + `vault.json` field rules: `../generate-intent/references/vault-contract.md`.
