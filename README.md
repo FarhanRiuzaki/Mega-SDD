@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 3.59.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 4.0.0 · **License:** MIT
 
 </div>
 
@@ -87,7 +87,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-**19-layer anti-hallucination + delivery-quality defense** (v3.24+, includes Iter 33 F3+F4, Iter 78 code-delivery gates, Iter 79 pipeline-intelligence gates, v3.71 semantic-depth fidelity, and v3.72 extraction-depth):
+**Layered anti-hallucination + delivery-quality defense.** Every handoff is contracted and grounded:
 
 1. Intent layer — uncertain claims promote to Open Questions; never guess
 2. OQ classification — business vs tech; tech auto-resolves via codebase scan
@@ -102,12 +102,11 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 11. **Constitution layer** (v3.10+) — project-facing rules in 8th vault file; clauses inject into bolt Hard Rules
 12. **Property-Based Testing** (v3.11+) — invariants over input space; counterexamples preserved on violation
 13. **Convergence loops** (v3.12+) — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
-14. **Schema validation gate** (v3.24+, Iter 33) — every handoff YAML validated against typed schema at emission; missing REQUIRED/CONDITIONAL fields halt at PRODUCER side (immediate developer feedback, not silent consumer miss)
-15. **Type-checked field propagation** (v3.24+, Iter 33) — handoff schema declares TYPE annotations; orchestrator validates types at each chain step; prevents silent shape drift (e.g., `scope.id` being string in one skill but object in another)
-16. **Code-delivery quality gates** (v3.69+, Iter 78) — 7 tech-agnostic validators wired to PreToolUse blocks on `execute-bolts`, targeting *delivery* quality, not just structure: flow-step→artifact coverage (catches missing per-stage Form Requests + dead scaffold stubs), cross-unit sibling-consistency (fan-out divergence + FK→relation), per-sibling cross-cutting registration scan (the silent cross-branch-leak class), per-view-unit render test, UI scaffold-tells (raw-scaffold labels / unresolved FKs / unformatted money / native dialogs), design-token + UI-exemplar dispatch enrichment, and operator-workflow-UX capture. All read stack-specific signatures from the framework-convention pack (add a stack = add a pack; graceful SKIP otherwise), each fixture-verified against a real Laravel run. See `docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md`.
-17. **Pipeline-intelligence gates** (v3.70+, Iter 79) — an end-to-end intelligence audit (every finding graded *enforceable*, anchored to reproduced failures) turned 11 per-phase reasoning gaps into real gates: **fan-out parity** ("LC is always the survivor" — view-bearing siblings must be served at equal richness; Branch 12), **UI-deferral** (blocks "scaffold kept; UI polish deferred to a future unit"; Branch 13), **predictive preflight** (fatal input-precondition check *before* a skill burns time; Branch 0 — iter-33 F2 closure), the **de-vacuoused conflict-classification** gate (it was wired to no hook and matched a structure the producer never emits), a **shared side-effect parity** concern (`flow_step:` operator — closes a silent inbox-invisibility class), plus advisory signals for decomposition-altitude, mis-tagged tech OQs, codebase-map depth, KB reengineering-synthesis, and a typed `next_action.confidence`. See `docs/superpowers/audits/2026-06-02-intelligence-e2e/`.
-18. **Semantic-depth fidelity gates** (v3.71+) — preserve workflow *meaning* across the KB→vault handoff, not just structure. A multi-step workflow's staging (which fields enter at which step, role-per-stage, transitions) is captured as a `## 3a` `stages:` block and MUST survive into `04-flows.md` or `execute-bolts` is blocked: `validate-vault-flow-staging` (Branch 14) follows each flow's deterministic `_kb_source` back-reference and FAILs on a dropped `stages:` block — catching the "single-form bolt where the legacy was a multi-step wizard" regression. **Coverage is layered, honestly:** the blocking gate is the *narrow* precise case (back-ref preserved but stages dropped); the *broad* detectors are non-blocking advisories — `kb_flow_staging_missing` at the KB source, and `vault_flow_staging_missing` for the dominant wholesale-flatten / PRD-only case (a workflow-signal flow with neither stages nor a back-ref). `/mega-sdd:enrich-semantics` retro-fits staging onto an existing KB without a full re-extract. Walking-skeleton: the staged-input dimension first (conditional / role-matrix / transition-guard dimensions follow). See CHANGELOG v3.71.0 + `tests/fixtures/iter77-semantic-depth/`.
-19. **Extraction-depth disciplines + completeness contract** (v3.72+, *deeper reasoning + an advisory scorecard — not a blocking gate like 16–18*) — makes `extract-intelligence` reason deeper *automatically* by wiring four disciplines into the generic wave-subagent dispatch prompt (so every extraction subagent runs them, not SKILL.md-only prose): **P1** state writer↔reader provenance + `INSERT…SELECT` clone-inheritance (coupling captured as a *business outcome*, not a legacy value), **P2** enumerate ALL rule/flow sites + entry-point dispatchers, **P3** behaviour-as-EXECUTED (debug-code-as-feature, rollback policy, silent-success), **P4** structural file classification. The §3a staged-input schema gains reuse-compliant progressive-disclosure deltas (per-field mutability/visibility + new/hidden/promoted-vs-prior + within-stage dynamic disclosure — optional, back-compatible). A real `validate-extraction-scorecard.sh` (advisory) scores the five principles and **FAILs on a hidden gap** (a PARTIAL/MISSING principle with zero `[OPEN]` markers — silent drift); `bind-codebase` consults it as preflight. Framing: KB captures business intent + flow; rebuild owns implementation cleanliness — status-naming drift is NOT a gap. See CHANGELOG v3.72.0 + `tests/fixtures/iter80-extract-deepening/`.
+14. **Schema validation gate** — every handoff YAML validated against a typed schema at emission; missing REQUIRED/CONDITIONAL fields halt at the PRODUCER side (immediate developer feedback, not a silent consumer miss)
+15. **Type-checked field propagation** — handoff schema declares TYPE annotations; the orchestrator validates types at each chain step; prevents silent shape drift (e.g., `scope.id` being a string in one skill but an object in another)
+16. **Code-delivery quality gates** — tech-agnostic validators targeting *delivery* quality, not just structure: flow-step→artifact coverage (missing per-stage Form Requests + dead scaffold stubs), per-view render tests, cross-unit sibling-consistency (fan-out divergence + FK→relation), cross-cutting registration (the silent cross-branch-leak class), UI scaffold-tells (raw labels / unresolved FKs / unformatted money / native dialogs), dispatch enrichment, operator-workflow-UX, fan-out parity, UI-deferral, and KB→vault staging fidelity (a multi-step wizard must not flatten into a single-form bolt). All read stack-specific signatures from the framework-convention pack — add a stack = add a pack; graceful SKIP otherwise — each fixture-verified against a real Laravel run.
+17. **Hybrid enforcement** (v4) — the highest-value code-delivery gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration) **hard-block** `execute-bolts` via a synchronous PreToolUse hook, alongside the core invariants. The rest (dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are **advisory** — surfaced by `/mega-sdd:analyze`, never blocking. The doctrine: deterministic hooks for what must hold; advisory for the rest; never prose pretending to enforce.
+18. **Extraction-depth disciplines** — `extract-intelligence` reasons deeper automatically: writer↔reader provenance, enumerate-all-sites, behaviour-as-executed, structural file classification. An advisory `validate-extraction-scorecard` flags a hidden gap (a PARTIAL/MISSING principle with zero `[OPEN]` markers — silent drift); `bind-codebase` consults it as preflight. Framing: the KB captures business intent + flow; the rebuild owns implementation cleanliness.
 
 ---
 
@@ -125,19 +124,19 @@ Six differentiators:
 
 PRD → cited-claim vault → bound to live codebase → atomic units → tested commits → AGENTS.md. **Single upfront confirmation**; auto-continues clean phases. Halts surface YAML blockers with concrete `next_action` (exact command to recover). No "what do I run next?" friction.
 
-### 2. Smart orchestrator (v3.24+, Iter 33)
+### 2. Smart orchestrator
 
 The orchestrator learns and predicts:
 - **Memory-driven routing** — reads `.mega-sdd/memory/routing-outcomes.md`. After 3+ successful runs of your project shape, it recommends the proven chain (overriding default routing). Fingerprint-cached via lock-file sha256 — re-scan with unchanged deps is 0sec.
 - **Predictive halt detection** — runs lightweight preflight checks BEFORE invoking each skill. Instead of "scan-codebase halted on `dep_missing` 8 min in", you see *"before chain starts: tree-sitter not installed; install or use --engine=regex"* — actionable upfront.
 
-### 3. Flawless handoffs (v3.24+, Iter 33)
+### 3. Flawless handoffs
 
 Every cross-skill handoff is **validated at the producer side**:
 - **Schema validation gate** — handoff-contract.md declares fields as REQUIRED/CONDITIONAL/OPTIONAL. Missing required field = `invalid_handoff` halt; producer skill author gets immediate feedback. No more "field claimed in skill body prose but missing in handoff template" debt.
 - **Type-checked propagation** — every field has a TYPE annotation. `scope.id` is `string (enum)`, not object. `mutability.tier_distribution` is `object {LOCKED: int, INTENT: int, ARTIFACT: int}`. Shape mismatch = `handoff_type_mismatch` halt at the moment of drift.
 
-### 4. Starterkit-aware (v3.23+, Iter 32)
+### 4. Starterkit-aware
 
 mega-sdd auto-detects your stack's actual feature patterns when a framework is present (no flag needed). For Laravel: which auth lib (Sanctum/Breeze/Jetstream/Fortify/Passport), which RBAC (Spatie/permission), which UI stack (Alpine/Livewire/Inertia + Tailwind + SweetAlert2/Toastr), which DataTable, your custom layout extends, your library inventory with usage hints.
 
@@ -154,7 +153,7 @@ Three scopes of markdown + JSON memory:
 
 ### 6. Audit-driven evolution (honest debt accounting)
 
-Major versions close prior audit findings. Four forensic audits documented in `docs/superpowers/audits/`:
+Major versions close prior audit findings. The **v4 lean-core** rebuild was driven by [`research/2026-06-04-architecture-modernization-audit.md`](research/2026-06-04-architecture-modernization-audit.md) — skills −70%, Hybrid enforcement, first-class agents. The pre-v4 iteration-by-iteration audit log (in `docs/superpowers/audits/`) is retained below for transparency:
 
 | Audit iter | Method | Findings | Closure iter |
 |---|---|---|---|
@@ -188,7 +187,7 @@ flowchart TD
     CODE([💻 Existing code]):::input
 
     %% Optional KB extraction branch
-    LEG -->|extract-intelligence| KB[(🧠 knowledge-base/<br/>tech-agnostic markers)]:::artifact
+    LEG -->|extract-intelligence| KB[(🧠 knowledge-base/<br/>tech-agnostic markers<br/>via domain-extractor agents)]:::artifact
 
     %% Intent generation
     KB -.->|--kb| INT
@@ -203,25 +202,32 @@ flowchart TD
 
     %% Brownfield path
     MODE -->|brownfield| SCAN
-    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST<br/>+ deep-scan stage v2.6.0+]:::phase
+    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST<br/>+ deep-scan stage]:::phase
     SCAN --> MAP[(🗺️ codebase-map.md<br/>precision: ast)]:::artifact
-    SCAN --> STARTERKIT[(📐 starterkit-context.yaml<br/>auth · rbac · ui_ux · libs<br/>4 parallel subagents · v3.23+)]:::artifact
-    MAP --> BIND[bind-codebase<br/>+ impl-state + field-diff<br/>+ Suggested Hard Rules]:::phase
+    SCAN --> STARTERKIT[(📐 starterkit-context.yaml<br/>auth · rbac · ui_ux · libs<br/>4 parallel subagents)]:::artifact
+    MAP --> BIND[bind-codebase<br/>CONFIRMED / CONFLICT / OQ<br/>+ impl-state + Suggested Hard Rules]:::phase
     VAULT --> BIND
-    BIND --> BOUND[(🔒 bound-vault/<br/>+ binding.md)]:::artifact
+    BIND --> BGATE{CONFLICT?}:::decision
+    BGATE -->|blocks units| RESOLVE
+    BGATE -->|clean| BOUND[(🔒 bound-vault/<br/>+ binding.md)]:::artifact
     BOUND --> GEN
 
     %% Greenfield path
     MODE -->|greenfield| GEN[generate-units<br/>+ PageRank symbol-graph<br/>+ defensive checks]:::phase
 
-    %% Iter 32 — starterkit context flows into consumers
+    %% starterkit context flows into consumers
     STARTERKIT -.Anchors + Hard Rules with citations.-> GEN
-    STARTERKIT -.T2 slice ≤2KB per unit.-> BOLTS
+    STARTERKIT -.T2 starterkit slice.-> BOLTS
 
     %% Units → bolts
     GEN --> UNITS[(⚙️ units/U-*.md<br/>atomic + Anchors<br/>+ Hard Rules ast-grep<br/>+ starterkit citations)]:::artifact
-    UNITS --> BOLTS[execute-bolts<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules<br/>+ T2 starterkit slice]:::phase
-    BOLTS --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
+    UNITS --> HGATE{{🛡️ PreToolUse gate<br/>binding · flow-coverage · render-test<br/>sibling · ui-quality · cross-cutting}}:::gate
+    HGATE -->|fail| UNITS
+    HGATE -->|pass| BOLTS[execute-bolts controller<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules]:::phase
+    BOLTS --> IMPL[bolt-implementer agent<br/>TDD · writes code + tests]:::agent
+    IMPL --> SREV[spec-reviewer agent<br/>spec compliance]:::agent
+    SREV --> QREV[code-quality-reviewer agent]:::agent
+    QREV --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
 
     %% End-of-chain emissions
     COMMITS --> AGENTS[emit-agents-md]:::phase
@@ -234,10 +240,10 @@ flowchart TD
     MEMORY -.-> RESOLVE
     MEMORY -.-> BOLTS
 
-    %% Iter 33 — Intelligence layer (orchestrator becomes smart router)
-    ROUTING[(🧭 routing-outcomes.md<br/>chain learning · v3.24+)]:::intel
-    PREDICT[\\📋 predictive-checks.md<br/>preflight catalog · v3.24+\\]:::intel
-    GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks<br/>v3.24+ Iter 33 F3+F4}}:::gate
+    %% Intelligence layer (orchestrator = smart router)
+    ROUTING[(🧭 routing-outcomes.md<br/>chain learning)]:::intel
+    PREDICT[\\📋 predictive-checks.md<br/>preflight catalog\\]:::intel
+    GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks}}:::gate
 
     %% Orchestrator with intelligence layer
     AUTO([🚀 /mega-sdd:auto --deep<br/>single confirm + auto-continue<br/>+ checkpoints + smart routing]):::primary
@@ -265,11 +271,12 @@ flowchart TD
     classDef primary fill:#fef2f2,stroke:#dc2626,stroke-width:3px,color:#7f1d1d
     classDef intel fill:#f3e8ff,stroke:#7c3aed,stroke-width:1.5px,color:#4c1d95
     classDef gate fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63
+    classDef agent fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
 ```
 
 **Legend**:
 - 🟦 inputs (PRD, code, legacy) · 🟨 artifacts produced · 🟩 outputs · 🟧 decisions · 🟫 cross-cutting (memory) · 🟥 orchestrator
-- 🟪 **intelligence layer** (v3.24+, Iter 33): routing-outcomes, predictive-checks · 🟦 **validation gate** (schema + type-check)
+- 🟪 **intelligence layer**: routing-outcomes, predictive-checks · 🟦 **validation gate** (schema + type-check)
 - 📐 **starterkit-context** (v3.23+, Iter 32): auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
 - **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting + intelligence-layer consults
 
@@ -289,6 +296,7 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 | **Phase commands** (manual control) | `generate-intent`, `extract-intelligence`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `orchestrate-flow` | When you want phase-by-phase control |
 | **Event-driven** | `resolve-oq`, `diff-vault`, `detect-drift` | Triggered by halts, PRD revisions, periodic checks |
 | **Maintenance** | `memory`, `migrate-rules`, `migrate-paths`, `update-plugin` | Rare/one-off configuration |
+| **Verify / consistency** | `analyze` | One-command cross-artifact consistency report (`CONSISTENCY-REPORT.md`) — runs the validators incl. the demoted advisory gates; auto-runs at chain boundaries, invoke anytime |
 | **Diagnostic (auto-invoked)** | `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd` | Run automatically by `auto`; available standalone for debugging |
 
 `/mega-sdd:auto` is the dominant path. Other commands exist for advanced use + most users never type them.
@@ -302,12 +310,12 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline mapping to superpowers' `read → scan → writing-plans → executing-plans`. 15 skills (incl. 1 anchor) + 22 slash commands (1 primary + 21 advanced/auto-invoked). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **15 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **4 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, domain-extractor) + **25 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
-| **How** | 15-layer anti-hallucination defense, TDD discipline via vendored superpowers, halt-on-blocker protocol, deterministic tech (tree-sitter + ast-grep + ripgrep + jd), markdown-driven memory with mandatory audit log + rollback. |
+| **How** | Layered anti-hallucination defense; execution via first-class bolt agents (two-stage review: spec compliance then code quality), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (tree-sitter + ast-grep + ripgrep + jd); markdown-driven memory with mandatory audit log + rollback. |
 
 ### Folder layout (v3.4+)
 
@@ -355,7 +363,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer. Major bump for breaking renames, rails changes, marketplace incompatibility, or new top-level entrypoints. v3.0 = ast-grep grammar migration. Currently 3.59.0.
+- **Plugin**: SemVer; `plugin.json` is the single source of truth (`marketplace.json` matches it). Major bump for breaking renames, rails changes, or marketplace incompatibility. Currently **4.0.0** (v4 lean-core).
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -366,7 +374,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 <details>
 <summary><b>⚡ Tech upgrades (v3.0+)</b></summary>
 
-5 production-grade swaps from Iter 6 + Iter 14, all with graceful fallback:
+5 production-grade swaps, all with graceful fallback:
 
 | Subsystem | Native tool | Fallback |
 |---|---|---|
@@ -415,7 +423,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 /mega-sdd:memory export ~/backup.tar.gz        # backup memory
 ```
 
-10 memory-layer invariants from Iter 5 (complements the 15-layer pipeline defense above): suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
+10 memory-layer invariants (complement the layered pipeline defense above): suggestion-only, audit log mandatory, rollback path, citation required, current-evidence wins, cross-project promotion explicit, `--memory-off` honored, memory does NOT affect halt-protocol.
 
 </details>
 
@@ -425,7 +433,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v3.59.0)
+├── plugins/mega-sdd/                       # the plugin itself (v4.0.0)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 15 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
@@ -444,11 +452,12 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   │   ├── detect-drift/                   # code vs vault
 │   │   ├── diff-vault/                     # PRD revision handler
 │   │   └── _vendored/                      # superpowers fallback
-│   ├── commands/                           # 22 slash commands
+│   ├── agents/                             # 4 first-class subagents (bolt-implementer · spec/code reviewers · domain-extractor)
+│   ├── commands/                           # 25 slash commands (manual /mega-sdd: CLI entry points)
 │   ├── references/                         # plugin-level conventions
 │   │   ├── paths.md                        # canonical layout
 │   │   └── tooling-install.md              # install matrix
-│   ├── hooks/                              # SessionStart hook
+│   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
 ├── docs/
@@ -464,7 +473,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   ├── skill-triggering/                   # 14 manual trigger fixtures
 │   ├── integration/                        # 7 E2E pipeline tests
 │   └── vendoring/
-├── CHANGELOG.md                            # 75+ versions documented (Iter 1 → Iter 54)
+├── CHANGELOG.md                            # version history → v4.0.0 (pre-v4 rotated to CHANGELOG-ARCHIVE.md)
 ├── CONTRIBUTING.md
 └── LICENSE
 ```

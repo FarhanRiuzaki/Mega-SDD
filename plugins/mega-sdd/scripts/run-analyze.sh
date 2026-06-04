@@ -338,6 +338,13 @@ validator_results = {
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
     "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},
     "codebase_map": {"rc": os.environ["V12_RC"], "state_file": ".codebase-map-state.json"},
+    # v4 Phase 2 (Hybrid) — code-delivery checks DEMOTED from PreToolUse hard-block to
+    # advisory. Surfaced here read-only from their PostToolUse-written state files (no
+    # re-run); "NOT_RUN" until a real chain writes them. They no longer block execute-bolts.
+    "dispatch_prompt (advisory)": {"rc": "STATE_FILE", "state_file": ".dispatch-prompt-state.json"},
+    "fanout_parity (advisory)": {"rc": "STATE_FILE", "state_file": ".fanout-parity-state.json"},
+    "ui_deferral (advisory)": {"rc": "STATE_FILE", "state_file": ".ui-deferral-state.json"},
+    "vault_flow_staging (advisory)": {"rc": "STATE_FILE", "state_file": ".vault-flow-staging-state.json"},
 }
 
 # Read state files for detail
@@ -393,8 +400,10 @@ for name, vr in validator_results.items():
 
     boundaries[name] = {"status": status, "state_file": sf, "detail": detail}
 
-# Compute overall
-all_statuses = [b["status"] for b in boundaries.values() if b["status"] != "SKIP"]
+# Compute overall. Advisory (v4 Phase 2 Hybrid) boundaries are surfaced in the report
+# but never flip overall to a blocking FAIL — an advisory FAIL contributes WARN at most.
+all_statuses = [b["status"] for name, b in boundaries.items() if b["status"] != "SKIP" and "(advisory)" not in name]
+advisory_statuses = [b["status"] for name, b in boundaries.items() if "(advisory)" in name and b["status"] not in ("SKIP", "NOT_RUN")]
 vault_statuses = []
 for vc in vault_consistency:
     for chk in vc.get("checks", []):
@@ -402,7 +411,7 @@ for vc in vault_consistency:
             vault_statuses.append(chk["status"])
 
 has_fail = "FAIL" in all_statuses or "FAIL" in vault_statuses
-has_warn = "WARN" in vault_statuses
+has_warn = ("WARN" in vault_statuses) or ("FAIL" in advisory_statuses) or ("WARN" in advisory_statuses)
 overall = "FAIL" if has_fail else ("WARN" if has_warn else "PASS")
 
 # Write .analyze-state.json

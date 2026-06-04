@@ -47,6 +47,17 @@ Re-runs ALL 14 validators fresh + vault internal consistency checks. Use when:
 
 Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
 
+### Advisory (non-blocking) code-delivery checks
+
+Surfaced read-only from their PostToolUse state files. These were demoted from PreToolUse hard-blocks to advisory — they appear in the report (an advisory FAIL shows as overall WARN, never FAIL) but never block `execute-bolts`:
+
+- `dispatch-prompt` — the ui_ux bolt dispatch prompt carries design tokens + a view exemplar
+- `fanout-parity` — view-bearing siblings declare the same kind of obligation
+- `ui-deferral` — a bolt-report doesn't defer a `## UI contract` to a later unit
+- `vault-flow-staging` — a flow preserves the `stages:` block its KB workflow carried
+
+The code-delivery gates that **remain HARD-BLOCKS** at PreToolUse (not advisory): flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration — plus the core invariants (binding→units handoff, preflight, scope-flag, anti-self-bypass).
+
 ## Outputs
 
 - `<cwd>/.mega-sdd/.analyze-state.json` — machine-readable aggregate

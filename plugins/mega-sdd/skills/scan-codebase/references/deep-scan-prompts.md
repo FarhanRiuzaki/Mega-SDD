@@ -1,6 +1,16 @@
 # Deep-Scan Subagent Prompts
 
-> Prompt templates for the 4 parallel subagents dispatched by `scan-codebase` v2.6.0+ Step 2 deep-scan stage.
+## Contents
+- Common dispatch contract
+- Variable substitution + `<MANIFEST_FACTS>` injection format
+- auth-extractor prompt
+- rbac-extractor prompt
+- ui-ux-extractor prompt
+- libs-extractor prompt
+- Subagent dispatch pattern (for reference)
+- Anti-halu rails (cross-cutting)
+
+> Prompt templates for the 4 parallel subagents dispatched by `scan-codebase` in the deep-scan stage.
 
 **Introduced:** v3.23.0 (Iter 32)
 **Consumed by:** `scan-codebase/SKILL.md` Step 2.2 (subagent dispatch)

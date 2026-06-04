@@ -1,903 +1,162 @@
 ---
 name: generate-units
-version: 2.12.0
-description: Decompose a (bound-)vault into atomic AI-executable unit specs per `references/unit-schema.md`. Each unit = one PR-sized bolt. (v1.2+, Iter 1) Reads `binding.md` Implementation State Map to assign `task_type: create | verify` per unit. (v1.3+, Iter 3) Emits polished AI-coding-prompt-shape units — Anchors mandatory when binding evidence exists, Anti-patterns drawn from binding+KB, Hard rules parseable grammar, Implementation steps as directive prose. Builds dependency graph; rejects cycles. Triggers — "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
+version: 2.0.0
+description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type: create | verify` per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
-# Generate-Units
+# Generate-Units — vault → atomic AI-executable unit specs
 
-Turns intent into actionable atomic specs for AI dev execution.
+Turns intent into actionable atomic specs for AI dev execution. Each unit corresponds to one bolt — one PR-sized code commit handed off to `execute-bolts`.
 
 **Announce at start:** "I'm using the generate-units skill to decompose the vault into atomic units."
 
 ## When to use
 
-- After `bind-codebase` produced bound-vault (brownfield) OR directly after `generate-intent` (greenfield)
-- `orchestrate-flow` auto-routes to this after vault is ready
+- After `bind-codebase` produced a bound-vault (brownfield) OR directly after `generate-intent` (greenfield)
+- `orchestrate-flow` auto-routes here once the vault is ready
 - User explicit: `/mega-sdd:generate-units <bound-vault>`
 
-## Inputs
+Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — that is a hard block (see The hard gate below); re-run binding first.
+
+## Inputs & flags
 
 - Bound-vault OR vault path (positional, required)
-- Flags:
-  - `--refresh` (re-number IDs from scratch)
-  - `--max-complexity=small|medium` (split anything bigger)
-  - `--auto`
-  - `--adversarial-subagent` (v2.7.0+, Iter 47) — for Step 9.5 adversarial test review, dispatch a SEPARATE subagent per unit instead of main-thread self-re-prompt. Stronger blind-spot coverage at cost of one extra dispatch per unit. Auto-set for any unit with frontmatter `risk: high`.
-  - `--no-adversarial-review` (v2.7.0+, Iter 47) — SKIP Step 9.5 adversarial test review entirely. Sets every generated unit's `acceptance_test._authored_by: same-pass`. **DISCOURAGED** — preserves pre-Iter-47 D4-006 blind-spot risk. Use for debug / regression testing only.
-  - `--regenerate` (v2.7.0+, Iter 47) — rewrite existing unit files. PRESERVES units with `acceptance_test._authored_by: human` (user-edited; do not overwrite). Other units rewritten per Step 9 + 9.5.
+- `--refresh` (re-number IDs from scratch) · `--max-complexity=small|medium` (split anything bigger) · `--auto`
+- `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`)
+- `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
+- `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
+- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank`, `--memory-off`
 
 ## Output
 
-`<vault>/units/U-001.md`, `U-002.md`, ... per `references/unit-schema.md`. Also writes `<vault>/units/_index.md` with dependency graph.
+`<vault>/units/U-001.md`, `U-002.md`, … per `references/unit-schema.md`. Also writes `<vault>/units/_index.md` with the dependency graph.
+
+## The hard gate (MOAT-CRITICAL — invariant #2)
+
+> **Unresolved CONFLICT entries in `binding.md` BLOCK unit generation.** If the bound-vault's binding manifest carries any unresolved CONFLICT, this skill REFUSES to generate units and instructs the user to re-run `bind-codebase` to resolve the conflict first. Units are NEVER generated over an unresolved CONFLICT.
+
+This gate is checked before any candidate is atomized. A CONFLICT that somehow survives into the Step 2.5 task_type aggregation (`Mix of CONFIRMED + CONFLICT`) is treated as a bypass of this gate → halt and report the inconsistency rather than emitting a unit. CONFLICTs (and OQ-IDs, per Step 12.5.g) propagate into unit `binding_refs:` so the traceability link is never silently dropped.
 
 ## Procedure
 
-0.5. **Defensive pre-flight check (v2.1+, Iter 8).**
+The step skeleton is below with every gate/rail inline. Heavy detail (full state tables, halt YAML, schemas, templates) lives in the specialist references — each step names the file to load.
 
-   Per `references/defensive-generation.md` §Step 0.5. Probe upstream artifacts before vault parsing:
+**0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode` — and act per the decision matrix in `references/defensive-generation.md §Step 0.5`. Both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
 
-   - `codebase-map.md` presence (current dir / repo root / vault parent)
-   - `binding.md` presence (vault-bound/ or vault parent)
-   - vault.json `implementation_mode` (greenfield | existing)
+**1. Load vault.** Read the 7 vault files + vault.json. If a bound-vault path was provided, also read `binding.md`.
 
-   Decision matrix:
-   - Both present → ✅ proceed (HIGH grounding confidence)
-   - Both absent + greenfield → ✅ proceed (MEDIUM confidence — expected)
-   - Both absent + existing → ⚠️ INTERACTIVE prompt: (1) auto-run scan-codebase + bind-codebase (recommended) (2) proceed with LOW confidence (3) cancel
-   - codebase-map present, binding absent + existing → ⚠️ INTERACTIVE prompt: (1) run bind-codebase first (recommended) (2) proceed with MEDIUM confidence (3) cancel
-   - codebase-map absent, binding present → warn (stale binding); proceed MEDIUM
+**1.x. THE HARD GATE.** Before anything else: scan `binding.md` for unresolved CONFLICT entries. If any exist → REFUSE; tell the user to re-run `bind-codebase`. Do not proceed. (See The hard gate above.)
 
-   On "auto-run upstream": invoke scan-codebase / bind-codebase (per orchestrate-flow auto-route pattern); return to Step 1 after they complete (halts in upstream skills propagate normally).
+**2. Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (component, endpoint, schema migration, etc.) becomes a candidate unit.
 
-   `--no-defensive` flag skips this step entirely (back to v2.0 behavior). `--auto` flag in chain mode defaults to safest option (auto-run upstream).
+**2.2. Flow-step → artifact derivation.** Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`), enumerate its input-accepting state-transition steps; the set of per-step input-validation artifacts a module unit ships EQUALS the set of input-accepting steps its flow enumerates — no more (drop dead conditional scaffolds with no gating flow step), no fewer (one artifact per step, not one per controller). Enforced by `validate-flow-coverage.sh`; full rule + the tradefinance-proven failure modes in `references/decomposition-rails.md §Flow-step`.
 
-1. **Load vault.** Read 7 files + vault.json. If bound-vault path provided, also read binding.md.
+**2.5. Determine `task_type` per candidate (MOAT-CRITICAL — read binding's Implementation State Map).** If the bound-vault's `binding.md` has an Implementation State Map, assign `task_type` by aggregating the binding-claim states each candidate derives from. If no State Map (greenfield OR pre-State-Map binding) → every candidate is `create`. Core assignment:
+   - All NEW / no binding → `create`
+   - All IMPLEMENTED (`confidence: high`) → `verify`
+   - `PARTIAL_FIELDS_*` → `extend` with Migration notes auto-populated from binding's `field_diff` (SURPLUS/BOTH fire a HUMAN REVIEW prompt)
+   - Mix of NEW + IMPLEMENTED → SPLIT (one `create`, one `verify`; chain so verify runs first)
+   - Any UNKNOWN → `create` (conservative default) + note in body
+   - **Mix of CONFIRMED + CONFLICT → HALT** (the hard gate should already have blocked; report the inconsistency)
 
-2. **Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (a component, endpoint, schema migration, etc.) becomes a candidate unit.
+   `verify` units carry empty/`none` target_files, a MANDATORY `## Anchors` entry citing the binding `anchor`, a one-line Implementation-steps body, and assertions that prove existing code still works. A `verify` unit whose binding `anchor` is empty → halt (binding gap); never silently downgrade. Full state matrix, `extend` Migration-notes population, and `verify`/target_files mechanics: `references/task-typing.md`.
 
-2.2. **Flow-step → artifact derivation (v2.9+, Iter — code-delivery slice A; defense-in-depth alongside `validate-flow-coverage.sh`).**
+**3. Group + atomize.** < 300 LOC and ≤ 5 files → single unit; larger → split into N units with an explicit `depends_on` chain. A unit needing an OQ resolved → mark "TBD: <OQ-ID>" in body + add to acceptance criteria.
 
-   Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`) in `04-flows.md`, enumerate its **input-accepting state-transition steps** — every numbered step (including signals in its sub-bullets, e.g. `workflow_state → SUBMITTED`) that accepts a payload to advance state (submit / review / approve / reject / confirm / dispatch / apply / finalize / enrich / examine / resubmit per the active pack's `## Flow-artifact derivation` `flow_signal`). The set of per-step input-validation artifacts a module unit ships **equals** the set of input-accepting steps its flow enumerates — no more, no fewer:
+**4. Resolve dependency graph (strict by default — maximize parallelism).** Emit `depends_on: U-X` ONLY with concrete evidence of coupling: file overlap, symbol cross-reference, Migration-notes reference, an explicit vault ordering declaration, or module-level `blocked_by`. Do NOT emit for same-section/same-module conceptual sequencing without target_files evidence. Then build the DAG and:
+   - **Reject cycles** → halt `cycle_detected`; user restructures vault sections so deps form a DAG.
+   - **Reject cross-squad direct deps** (multi-squad mode, after Step 5): a `depends_on` edge crossing `squad:` boundaries → halt `cross_squad_dep_invalid`; route via interface notes.
+   - **Validate interface references:** every `consumes_interfaces` / `produces_interfaces` ID must resolve to an `interfaces/<id>.md` file → else halt `interface_ref_missing`.
 
-   - **One artifact per step, not one per controller.** A 5-stage maker-checker flow needs 5 Form Requests (Laravel) / 5 serializers (DRF) / 5 validation schemas (Express) — list each in the unit's `## Target files`. Listing only `Store…Request` + `CraApprove…Request` while the flow has 5 input steps is the exact under-decomposition the validator flags (proven: 8 missing per-stage Form Requests in the tradefinance Phase-2 run).
-   - **Drop conditional scaffold artifacts with no gating flow.** A generic CRUD scaffolder emits an `edit`/update view for every resource, but a maker-checker entity advanced through workflow transitions has no update/PUT flow step — so that view is a dead stub. Do NOT list a conditional artifact (active pack `## Conditional scaffold artifacts` `artifact_glob`) in `## Target files` unless a flow step matches its `requires_flow_endpoint` (proven: 6 dead `edit.blade.php` stubs in the same run).
+   Emission rules + flag behavior: `references/decomposition-rails.md §Dependency-graph`. Halt YAML: `references/halt-protocol.md`.
 
-   The artifact kinds + paths are read from the active framework pack — never hardcode a stack here. `mega-sdd:execute-bolts` is BLOCKED by `validate-flow-coverage.sh` (`.flow-coverage-state.json` status FAIL) until every input-accepting step maps to an artifact and no dead scaffold remains; this prose is the design rationale, the validator is the enforcement.
+**4.5. Module assignment.** Semantic grouping ABOVE atomic units (units stay atomic). Load `_meta/modules.yaml` (auto-derive `.auto` when absent); match each candidate's `vault_source` to a module; unmatched → `M-unassigned` (warn at ≥10%). Cross-module `depends_on` requires explicit `blocked_by` → else halt `cross_module_dep_invalid`; module DAG cycle → halt `module_cycle_detected`. Detail: `references/decomposition-rails.md §Module assignment` + `references/modules-schema.md`.
 
-2.5. **Determine task_type per candidate (v1.2+, Iter 1).**
+**5. Squad assignment.** No `_meta/squads.yaml` or single squad → all units `squad: default`, skip multi-squad validations. ≥2 squads → route by `vault_source` with precedence `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`; unrouted → warn + `default`; two squads claim one artifact at the same precedence → halt `cross_squad_ambiguous`. Detail: `references/decomposition-rails.md §Squad assignment`.
 
-   If bound-vault has `binding.md` with Implementation State Map (v1.2+), assign `task_type` per the table below. If no Implementation State Map (greenfield OR pre-v1.2 binding) → every candidate is `create`.
+**6. Allocate IDs.** Topologically sort candidates; number U-001, U-002, …. `--refresh` re-numbers from scratch; default re-run preserves IDs of unchanged units by content hash.
 
-   For each candidate unit, find the binding claims it derives from (via vault claim → binding C-XXX mapping). Aggregate their states:
+**7. Fill `target_files` whitelist.** Greenfield → expected files from vault component definitions; brownfield → bound-vault citations (specific paths from binding). Can't determine target_files → halt (vault too vague).
 
-   | Bound claim states (v1.7+ set: IMPLEMENTED / PARTIAL_FIELDS_MISSING / PARTIAL_FIELDS_SURPLUS / NEW / UNKNOWN) | Unit task_type |
-   |---|---|
-   | All NEW, or no binding | `create` |
-   | All IMPLEMENTED with `confidence: high` | `verify` |
-   | **PARTIAL_FIELDS_MISSING** (v2.1+, Iter 8) — code missing fields from claim | `extend` with Migration notes auto-populated from binding's `field_diff`: ADD/KEEP/REMOVE lists |
-   | **PARTIAL_FIELDS_SURPLUS** (v2.1+, Iter 8) — code has fields not in claim | `extend` with HUMAN REVIEW interactive prompt (could be feature drift, vault gap, legacy deprecation, or rename) |
-   | **PARTIAL_FIELDS_BOTH** (v2.1+, Iter 8) — both directions diff | strong warning; surface interactive prompt; usually signals semantic mismatch needing vault update OR code triage |
-   | Mix of NEW + IMPLEMENTED | SPLIT — emit one `create` unit for NEW claims, one `verify` unit for IMPLEMENTED claims; chain via `depends_on` so verify runs first |
-   | Any UNKNOWN (regardless of confidence) | `create` (conservative default per DESIGN-OQ-1) — surface a note in unit body: "Binding marked one or more claims as UNKNOWN (anchor: ...). Verify manually whether this work is needed." |
-   | Mix of CONFIRMED + CONFLICT | Halt — binding gate should have blocked already; report inconsistency |
+**7.5. PageRank target_files suggestions.** When `codebase-map.md` is `precision_tier: ast`, surface top-K symbol-graph file suggestions in the unit's `## PageRank suggestions` section — informational, NEVER auto-added to target_files (user promotes manually). Skipped on regex tier / `--skip-pagerank`. Detail: `references/task-typing.md §Step 7.5` + `references/pagerank-targeting.md`.
 
-   `verify` unit specifics (enforced by `references/unit-schema.md` §Per-task_type contracts):
-   - `target_files` is empty OR all entries `operation: none`
-   - `acceptance_test` carries assertions that prove existing implementation still works
-   - Body's `## Implementation steps` is ONE line: "No code changes. Run acceptance tests against existing implementation at <anchor>."
-   - Body's `## Anchors` section is MANDATORY — cite the file:line where the implementation lives (from binding's `anchor` field)
-   - Estimated complexity: small
+**7.6. Per-unit target_files collision check.** Before writing each unit, for each `operation: create` entry that already exists on disk → INTERACTIVE prompt (convert to `verify`/`extend`, rename, force-create, or skip). Fires ONLY on genuine collision; `--auto` picks the safest default; `--collision-policy` overrides. Detail: `references/task-typing.md §Step 7.6` + `references/defensive-generation.md §Step 7.6`.
 
-   `extend` was forward-compat-only in Iter 1 (deferred PARTIAL state). **Iter 8 (v2.1+) activates auto-emission** for `PARTIAL_FIELDS_*` states with Migration notes populated from binding's `field_diff` column. UNKNOWN states still default to `create` (conservative — no field-diff signal available).
+**7.7. Derive starterkit Anchors + Hard Rules per unit.** After target_files are final and before Step 8: if `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists, compute per-unit starterkit relevance (ui_ux / auth / rbac / libs), append starterkit-specific Anchors + Hard Rules, and set `starterkit_context_consumed` / `starterkit_relevance` frontmatter. EVERY starterkit-derived Hard Rule MUST carry a `Citation: starterkit-context.yaml §<path>` (machine-checked in Step 12.5.f → halt `starterkit_rule_citation_missing` if missing). Absent file → `starterkit_context_consumed: false`, skip. Full derivation: `references/starterkit-derivation.md`.
 
-   **Migration notes auto-population from binding field_diff (Iter 8):**
+**8. Fill `existing_interfaces`.** Brownfield → pull from binding-manifest CONFIRMED entries for the targeted files. Greenfield → empty.
 
-   When binding state is PARTIAL_FIELDS_MISSING:
-   - **ADD** sub-list = `field_diff.ADD` from binding (missing fields to add)
-   - **KEEP** sub-list = `field_diff.KEEP` (shared fields; bolt MUST NOT modify their behavior)
-   - **REMOVE** sub-list = (empty)
+**9. Fill `acceptance_test`.** ≥1 `type: test` entry (mandatory); generate a command stub matching the detected test framework; add `type: manual` for user-visible flows. **Render test:** if any target_file matches the active pack's `detail_view_glob`, the unit MUST ALSO carry a `type: render` test (factory-create model, GET detail route, assert 200 + a real field renders) — a route-200 smoke test does NOT satisfy this. Enforced by `validate-unit-spec.sh` (`render_test_missing`). This is the FIRST PASS — adversarial review runs in Step 9.5. Detail: `references/decomposition-rails.md §Render test`.
 
-   When binding state is PARTIAL_FIELDS_SURPLUS:
-   - **ADD** sub-list = (empty)
-   - **KEEP** sub-list = `field_diff.KEEP`
-   - **REMOVE** sub-list = `field_diff.REMOVE` with CAUTION note
-   - INTERACTIVE prompt fires: user decides if surplus is feature drift / vault gap / legacy / rename
+**9.b. Attach a UI contract to view-bearing units.** When a target_file matches the pack's `view_glob`, attach a `## UI contract` (label_map, fk_display, value_formatting, flow-derived `required_states`) so the bolt renders a production-grade view. Every entry is GROUNDED in the vault — never invented; a missing source becomes an Open Question, never a defaulted value. Detail: `references/decomposition-rails.md §UI contract`.
 
-   When binding state is PARTIAL_FIELDS_BOTH:
-   - Both lists populated; HUMAN REVIEW mandatory before bolt
-   - Strong warning in unit body
+**9.5. Adversarial test review pass (closes audit D4-006).** acceptance_test authored by the same LLM pass as the unit inherits the same blind spots ("never trust AI to both generate and validate"). For each unit, run the adversarial review (`references/adversarial-test-prompt.md`): default mode re-prompts the main thread as a QA reviewer; `--adversarial-subagent` (or `risk: high`) dispatches a separate subagent; `--no-adversarial-review` skips (sets `_authored_by: same-pass`). Gaps merge into acceptance_test with `_authored_by:` provenance. `--regenerate` PRESERVES `_authored_by: human` units. Detail: `references/decomposition-rails.md §Adversarial`.
 
-3. **Group + atomize.** For each candidate:
-   - If estimated change < 300 LOC and touches ≤ 5 files → single unit
-   - If larger → split into N units with explicit `depends_on` chain
-   - If a unit needs an OQ resolved → mark in body as "TBD: <OQ-ID>" + add to acceptance criteria
+**10. Write each unit file** using `references/templates/unit.md` as the body template. When vault.json has a `scope` field, every unit's frontmatter MUST include `scope:` + `scope_name:` sourced verbatim from `scope_metadata` (omit for legacy single-scope). Detail: `references/auto-and-memory.md §Scope propagation`.
 
-4. **Resolve dependency graph (v2.3+ Iter 12 — stricter `depends_on` emission).**
+**11. Write `_index.md`** — total unit + module counts, units grouped by module (status, priority, DoD, units table), per-module + cross-module dependency DAGs (Mermaid), suggested topological execution order; falls back to a flat list when only `M-default` exists. Detail: `references/auto-and-memory.md §_index.md`.
 
-   **Principle**: emit `depends_on` ONLY when there is concrete evidence of unit coupling. Conservative defaults previously over-emitted deps, forcing sequential execution where units could parallelize. Tighter rules maximize parallelism by default; user can add deps manually when implicit ordering matters.
+**12. Post-write validation + audit.** The 12.x sub-procedures run in declared order, then step 13 logs. Full procedures + anti-halu rails: `references/validation-passes.md`. Halt YAML: `references/halt-protocol.md`.
+   - **12.3 Per-anchor verification (runs FIRST).** Probe each `## Anchors` entry; missing file / out-of-bounds line → SOFT WARNING in body footer (anchors may be aspirational). Never halts.
+   - **12.4 Inject constitution clauses.** Read `<vault>/constitution.md`; inject relevant clauses into `## Hard rules` (severity `error`); surface non-translatable clauses as informational warnings. Constitution drift between gen and bolt → halt `constitution_drift_detected`.
+   - **12.4.5 Framework pack provenance citation.** Emit each pack-derived Hard Rule (from binding §Suggested Unit Hard Rules) WITH an explicit `source:` citation to the specific pack file; rules whose `path_glob` doesn't match the unit's target_files are skipped.
+   - **12.5 Polished-prompt render pass.** Validate the prompt-shape contract per `references/unit-schema.md`:
+     - **(a) Anchors presence — MANDATORY when binding evidence exists:** `verify`/`extend` MUST have ≥1 `## Anchors` entry; `create` with a `binding_refs` entry pointing to a related pattern MUST cite the closest pattern; fully-greenfield `create` → optional. Missing → halt `unit_underspecified`.
+     - **(b) Hard rules grammar parse:** every `## Hard rules` line MUST match one of the 5 grammar productions (`references/unit-schema.md §Hard rule grammar`); unparseable → halt `hard_rule_unparseable` (NEVER silently skip).
+     - **(c)** Implementation-steps directive-prose check → bullet-only emits a WARNING (not halt).
+     - **(d)** `extend` MUST have `## Migration notes` (REMOVE/KEEP/ADD all present); `create`/`verify` MUST NOT → else halt `unit_underspecified`.
+     - **(e) Anti-patterns harvesting (suggestion):** auto-populate `## Anti-patterns` from binding CONFLICTs + KB `Edge Cases & Gotchas` for domains the unit covers — guidance only, no halt.
+     - **(f) Starterkit citation check:** any starterkit-derived Hard Rule missing its `Citation:` → halt `starterkit_rule_citation_missing` (ALWAYS STOP; do not write the unit).
+     - **(g) OQ-ID propagation check (MOAT-CRITICAL — the binding→units handoff):** every implementation-relevant OQ (resolution touches the unit's files/body, or `priority: P1`) MUST appear in the unit's `binding_refs:` frontmatter; any missing → halt `unit_oq_trace_missing`. CONFLICTs already propagate this way; this rail extends the discipline to OQs so the design decision stays traceable to its source OQ.
+   - **12.6 Deduplication check.** A `create` unit whose `target_files` ALL already exist → halt `dedup_ambiguous` (NEVER silent-rewrite the task_type).
+   - **12.7 Sibling-consistency sweep.** Reason about siblings TOGETHER (grouped by module + scope): every sibling a pack-declared cross-cutting concern applies to MUST declare the SAME mechanism (no fan-out divergence); every FK column MUST declare its derived relation accessor. Enforced by `validate-sibling-consistency.sh`.
 
-   **Emit `depends_on: U-X` ONLY IF** at least one is true:
-
-   a. **File overlap**: target unit modifies a file the dependent unit creates OR reads from
-      - Source: `target_files` set comparison; if intersection non-empty AND ordering matters → emit dep
-      - Example: U-002 modifies `app/Models/User.php`; U-001 creates that file → U-002 depends_on U-001
-   b. **Symbol cross-reference**: dependent unit's body Anchors cite a symbol planned by target unit
-      - Source: parse `## Anchors` for symbol names; cross-reference target unit's `target_files` + planned outputs
-   c. **Migration Notes reference**: extend unit's Migration notes ADD/KEEP/REMOVE explicitly references a symbol another unit creates
-   d. **Vault dependency declaration**: vault section explicitly orders flows (e.g., `04-flows.md §F-U-002` says "after F-U-001 complete")
-   e. **Module-level blocked_by** (Iter 11): unit's module has explicit `blocked_by: [<other-module>]` AND other module has units that target same files
-
-   **DO NOT emit** `depends_on` for:
-   - Same vault section / same module — implicit ordering not guaranteed
-   - Conceptual sequencing without file overlap
-   - "Logical" precedence without target_files evidence
-
-   Effect: units default to parallel-eligible unless concrete coupling exists.
-
-   **Flag override**:
-   - `--strict-deps` (default ON in v2.3+) — apply above rules conservatively
-   - `--loose-deps` — pre-v2.3 conservative deps (over-emit; sequential bias) for legacy parity
-   - `--no-deps` — emit zero `depends_on`; assume all parallel (USE WITH CAUTION; for testing)
-
-   - Build DAG from semantic deps (per above)
-   - **Reject cycles.** If detected, halt and instruct user to restructure vault sections.
-   - **(v1.1+) Reject cross-squad direct deps in multi-squad mode.** After Step 5
-     (squad assignment) completes, walk every `depends_on` edge and verify both
-     endpoints have the same `squad:`. If a `depends_on` edge crosses squads,
-     halt with `cross_squad_dep_invalid` (see §halt-protocol).
-   - **(v1.1+) Validate interface references.** For each unit with
-     `consumes_interfaces` or `produces_interfaces`, verify each listed
-     interface ID resolves to an existing `<vault>/interfaces/<id>.md` file.
-     Dangling references halt with `interface_ref_missing`.
-
-**Structured halt per `vault-contract.md §halt-protocol`:**
-
-```yaml
-blocker:
-  type: cycle_detected
-  emitted_at: <ISO8601 timestamp>
-  emitted_by: generate-units
-  details:
-    cycle_path: [U-001, U-002, ..., U-001]  # node sequence forming the cycle
-  next_action: "Restructure vault sections so unit dependencies form a DAG (no back-edges)"
-```
-
-**Structured halt per `vault-contract.md §halt-protocol` (v1.1+):**
-
-```yaml
-blocker:
-  type: cross_squad_dep_invalid
-  emitted_at: <ISO8601 timestamp>
-  emitted_by: generate-units
-  details:
-    unit_id: U-XXX
-    unit_squad: squad-fe-web
-    dependency_id: U-YYY
-    dependency_squad: squad-be
-  next_action: "Cross-squad direct depends_on is not allowed. Route the coupling through an interface note: producer squad declares produces_interfaces, consumer squad declares consumes_interfaces. See interfaces/_index.md."
-```
-
-```yaml
-blocker:
-  type: interface_ref_missing
-  emitted_at: <ISO8601 timestamp>
-  emitted_by: generate-units
-  details:
-    unit_id: U-XXX
-    missing_interface_id: api-leave-request-submit
-    referenced_in: consumes_interfaces
-  next_action: "Create interfaces/api-leave-request-submit.md from interface-note.template.md, fill the contract, and re-run generate-units."
-```
-
-```yaml
-blocker:
-  type: cross_squad_ambiguous
-  emitted_at: <ISO8601 timestamp>
-  emitted_by: generate-units
-  details:
-    artifact: F-U-007
-    artifact_kind: flow
-    claimed_by_squads: [squad-fe-web, squad-mobile]
-    matched_via: owns_layers
-  next_action: "Two squads claim ownership at the same precedence level. Refine _meta/squads.yaml so exactly one squad matches this artifact, then re-run generate-units."
-```
-
-4.5. **Module assignment (v2.2+, Iter 11).**
-
-   Per `references/modules-schema.md`. Semantic grouping layer ABOVE atomic units (units stay atomic; modules group related units per domain/flow/component).
-
-   - **Load `_meta/modules.yaml`** if present
-   - **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `02-architecture.md`); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
-   - **For each unit candidate**: match `vault_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
-   - **Unassigned units** → `module: M-unassigned` (fallback); emit chat warning if ≥10% of units unassigned
-   - **Cross-module dependency validation**: every unit `depends_on` edge crossing module boundary requires explicit `blocked_by` declaration in the dependent module's modules.yaml entry. Cycle through Step 4 if module DAG has cycle.
-
-   Backward compat: v3.4 vaults without modules → all units get `module: M-default` (single implicit module); `_index.md` falls back to flat list.
-
-5. **Squad assignment (v1.1+).** Load `_meta/squads.yaml` if present.
-
-   **If file absent OR single squad declared:**
-   - Single-squad / no-squad mode active
-   - All units get `squad: default` (or field omitted)
-   - Skip all multi-squad validations below
-
-   **If ≥2 squads declared:**
-   - Per `references/squad-partition.md` routing rules, assign `squad:` to each
-     unit based on its `vault_source` and the relevant layer/feature tags.
-   - For each candidate unit:
-     - Determine primary layer from its `vault_source` (e.g., a unit derived
-       from `02-architecture.md#backend` → layer `backend`)
-     - Match against squad ownership rules with precedence:
-       `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`
-     - Set `squad: <matched-id>`
-   - **Unrouted units**: emit warning (not halt) and assign `squad: default` so
-     execution can proceed. User should refine `squads.yaml` and re-run.
-   - **Ambiguous routing** (two squads claim same artifact at same precedence
-     level): halt with `cross_squad_ambiguous` (see §halt-protocol additions).
-
-6. **Allocate IDs.** Stable scheme:
-   - Sort candidates topologically
-   - Number U-001, U-002, ...
-   - On `--refresh`: re-number from scratch
-   - On default re-run: preserve IDs of unchanged units by content hash
-
-7. **Fill `target_files` whitelist.**
-   - Greenfield: list expected files (from vault component definitions)
-   - Brownfield: list bound-vault citations (specific file paths from binding)
-   - If a unit can't determine target_files: halt — vault too vague
-
-7.5. **PageRank target_files suggestions (v2.0+, Iter 6).**
-
-   When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan, Iter 6 Swap #1):
-
-   - Build/load symbol-reference graph per `references/pagerank-targeting.md` §Algorithm
-   - For each unit, compute personalized PageRank with seed = current `target_files` + binding citations
-   - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
-   - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
-
-   Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to v1.5 behavior (binding-only target_files).
-
-   Symbol graph cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical per paths.md) per scan-codebase run; reused across all units.
-
-7.6. **Per-unit target_files collision check (v2.1+, Iter 8).**
-
-   Per `references/defensive-generation.md` §Step 7.6. Before writing each unit:
-
-   For EACH `target_files` entry where `operation: create`:
-   1. Probe path existence (fs check OR codebase-map §1)
-   2. If file does NOT exist → proceed normally (true create)
-   3. If file EXISTS:
-      - If binding has IMPLEMENTED state for related claim → INTERACTIVE prompt:
-        ```
-        "Target `<path>` already exists. Binding state: IMPLEMENTED.
-         Options for unit U-XXX:
-           1. Convert to `verify` (no code change) (recommended)
-           2. Convert to `extend` (modify; fill Migration notes)
-           3. Rename target file
-           4. Force `create` (overwrite — DANGEROUS)
-           5. Skip this unit"
-        ```
-      - If binding state PARTIAL_FIELDS_* or NEW or UNKNOWN → INTERACTIVE prompt with `extend` as recommended default
-
-   **Prompt frequency control**:
-   - Prompts fire ONLY on genuine collision (file exists + task_type=create)
-   - Same-session memory: previous picks default future similar collisions
-   - `--auto` flag suppresses interactive — picks safest default (`extend`)
-   - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
-
-7.7. **Load starterkit-context.yaml + derive starterkit-specific Anchors and Hard Rules per unit (v2.6.0+, Iter 32).**
-
-   Runs AFTER Step 7.6 (target_files finalized) and BEFORE Step 8 (existing_interfaces). Starterkit relevance computation depends on `unit.target_files` being fully populated.
-
-   ### Step 7.7.a — Resolve starterkit-context.yaml
-
-   ```
-   Path: <project>/.mega-sdd/codebase/starterkit-context.yaml
-
-   IF file absent:
-     → log "starterkit-context unavailable; emit framework-pack-only Anchors"
-     → set every unit's frontmatter `starterkit_context_consumed: false`
-     → SKIP Steps 7.7.b - 7.7.e
-   IF file present:
-     → parse YAML
-     → IF parse fails: log warning; treat as absent; proceed as above
-     → IF starterkit_context.partial == true: note which slices are missing (partial_slices: [...])
-     → proceed to Step 7.7.b
-   ```
-
-   ### Step 7.7.b — Compute starterkit relevance per unit
-
-   For each unit being generated, inspect `unit.target_files` (finalized by Steps 7, 7.5, 7.6) and unit body content. Determine which starterkit slices apply:
-
-   ```
-   starterkit_relevance = []
-
-   IF any target_file matches:
-     resources/views/**, resources/js/**, resources/css/**, public/css/**, public/js/**
-   THEN starterkit_relevance += ["ui_ux"]
-      (skip if starterkit_context.ui_ux missing OR ui_ux in partial_slices)
-
-   IF any target_file matches app/Http/Controllers/**
-   AND unit body mentions any of: "auth", "login", "register", "logout", "password", "session"
-   THEN starterkit_relevance += ["auth"]
-      (skip if auth missing)
-
-   IF any target_file matches app/Http/Middleware/** OR app/Policies/**
-   OR unit body mentions any of: "role", "permission", "gate", "policy", "Spatie\\Permission"
-   THEN starterkit_relevance += ["rbac"]
-      (skip if rbac missing)
-
-   IF any target_file path appears in any libs[].usage_hint[]
-   THEN starterkit_relevance += ["libs"]
-      (skip if libs missing)
-   ```
-
-   Empty `starterkit_relevance: []` is a valid result for units that don't intersect any starterkit slice. In that case, skip Steps 7.7.c + 7.7.d for that unit.
-
-   ### Step 7.7.c — Derive starterkit Anchors per unit
-
-   For each unit with `starterkit_relevance` non-empty, append starterkit-specific anchors to `unit.anchors[]` (same structure as KB/binding anchors from Step 12.3 per-anchor verification):
-
-   ```
-   IF "ui_ux" in starterkit_relevance:
-     add anchor: <starterkit_context.ui_ux.layout_file>   (e.g., resources/views/layouts/app.blade.php)
-     IF starterkit_context.ui_ux.component_dir exists:
-       add anchor: <starterkit_context.ui_ux.component_dir>   (e.g., resources/views/components/)
-
-   IF "auth" in starterkit_relevance:
-     add anchor: <file path of starterkit_context.auth.user_model class>   (e.g., app/Models/User.php)
-     IF starterkit_context.auth.routes.login != "":
-       add anchor: routes/auth.php (or routes/web.php if auth.php absent)
-
-   IF "rbac" in starterkit_relevance:
-     IF starterkit_context.rbac.middleware contains entries:
-       add anchor: app/Http/Middleware/<middleware-class>.php for each middleware alias
-     add anchor: app/Providers/AuthServiceProvider.php
-
-   IF "libs" in starterkit_relevance:
-     for each lib in starterkit_context.libs whose usage_hint overlaps unit.target_files:
-       add the lib's usage_hint[0] file as an anchor (first hint file)
-   ```
-
-   Anchors append to `unit.anchors[]` alongside KB/binding anchors from prior steps. Deduplicate paths if a file is anchored multiple times.
-
-   ### Step 7.7.d — Derive starterkit Hard Rules per unit (with mandatory citation)
-
-   For each unit with `starterkit_relevance` non-empty, append starterkit-specific Hard Rules to `unit.hard_rules[]`. Follows the same shape as framework pack rules from Step 12.4.5 — EVERY rule MUST include an explicit `citation:` field referencing `starterkit-context.yaml §<path>`.
-
-   **Template format for each rule:**
-
-   ```
-   - text: "<rule text>"
-     citation: "starterkit-context.yaml §<path>"
-     source: starterkit-context.yaml
-   ```
-
-   **UI/UX-relevant unit examples (when "ui_ux" in starterkit_relevance):**
-
-   ```
-   - text: "MUST extend `<starterkit_context.ui_ux.layout_extends>` (e.g., layouts.app) in all Blade views generated by this unit"
-     citation: "starterkit-context.yaml §ui_ux.layout_extends"
-
-   - IF starterkit_context.ui_ux.notification_lib == "sweetalert2":
-       - text: "MUST use SweetAlert2 for confirmations and notifications (NEVER native alert() or window.confirm())"
-         citation: "starterkit-context.yaml §ui_ux.notification_lib"
-
-   - FOR EACH idiom in starterkit_context.ui_ux.idioms:
-       - text: "MUST follow starterkit idiom: <idiom>"
-         citation: "starterkit-context.yaml §ui_ux.idioms"
-
-     (Examples — emitted only if idiom is empirically present per ui-ux-extractor):
-     - "use document.addEventListener('DOMContentLoaded', ...) over $(document).ready"
-     - "responsive mobile-first (sm/md/lg breakpoints)"
-   ```
-
-   **Auth-relevant unit examples (when "auth" in starterkit_relevance):**
-
-   ```
-   - text: "MUST use auth guard '<starterkit_context.auth.guard>' (e.g., sanctum or web)"
-     citation: "starterkit-context.yaml §auth.guard"
-
-   - text: "MUST reference User model `<starterkit_context.auth.user_model>` not generic Auth::user()::class"
-     citation: "starterkit-context.yaml §auth.user_model"
-
-   - IF "2fa" in starterkit_context.auth.features:
-       - text: "Two-factor authentication is enabled in this starterkit; auth flows MUST respect 2fa challenge state"
-         citation: "starterkit-context.yaml §auth.features"
-   ```
-
-   **RBAC-relevant unit examples (when "rbac" in starterkit_relevance):**
-
-   ```
-   - IF starterkit_context.rbac.lib == "spatie/permission":
-       - text: "MUST use Spatie/permission middleware: route()->middleware('role:<role>') OR middleware('permission:<perm>')"
-         citation: "starterkit-context.yaml §rbac.middleware"
-
-       - text: "MUST reference Spatie\\Permission\\Models\\Role for role queries (NOT custom Role models)"
-         citation: "starterkit-context.yaml §rbac.role_model"
-   ```
-
-   **Libs-relevant unit examples (when "libs" in starterkit_relevance):**
-
-   ```
-   FOR EACH lib in starterkit_context.libs whose usage_hint overlaps unit.target_files:
-     - text: "MUST use existing starterkit library `<lib.name>` v<lib.version> for <lib.category> functionality, NOT a competing alternative"
-       citation: "starterkit-context.yaml §libs (name: <lib.name>)"
-   ```
-
-   ### Step 7.7.e — Update unit frontmatter
-
-   For each unit (even those with empty starterkit_relevance):
-
-   ```yaml
-   ---
-   unit_id: U-001
-   # ... existing frontmatter ...
-   starterkit_context_consumed: <true | false>     # NEW v2.6.0+, Iter 32
-   starterkit_relevance: [<list of applicable slices>]   # NEW v2.6.0+, Iter 32; may be empty list
-   ---
-   ```
-
-   Also append `starterkit-context.yaml` as a citation source in the unit's §Citations footer section (only if starterkit_context_consumed: true).
-
-8. **Fill `existing_interfaces`.**
-   - Brownfield only: pull from binding manifest CONFIRMED entries for the targeted files
-   - Greenfield: empty (no existing interfaces)
-
-9. **Fill `acceptance_test`.**
-   - At least one `type: test` entry (mandatory)
-   - Generate test command stub matching detected test framework from codebase-map (greenfield: pick sensible default)
-   - Add `type: manual` for user-visible flows
-   - **Render test for view-bearing units (code-delivery slice D):** if any `target_files` path matches the active framework pack `## Test patterns` → `detail_view_glob` (a detail/show view, e.g. `resources/views/**/show.blade.php`), the unit MUST ALSO carry a `type: render` acceptance_test built from the pack `detail_view_render` template (factory-create the model, GET the detail route, assert 200 + assert a real display field renders). A route-200 smoke test does NOT satisfy this — empty-model / null-field render crashes slip through. The deterministic `validate-unit-spec.sh` emits `render_test_missing` and the PreToolUse render-test gate (Branch 6) blocks `mega-sdd:execute-bolts` if it is absent; this prose is defense-in-depth. Packs that declare no `## Test patterns` → no render obligation (stack declared no detail-view convention).
-   - Per Iter 47 (v2.7.0+): this is the FIRST PASS — adversarial review runs in Step 9.5 below
-
-9.b. **Attach a UI contract to view-bearing units (v2.10.0+, Task F — code-delivery slice F).**
-
-   A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`04-flows.md` steps + states, `02-architecture` entities/fields, the design-system signals in `01-context`/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `references/vault-contract.md`; do NOT default a value (anti-hallucination rail, spec §5).
-
-   ```yaml
-   ## UI contract
-   label_map:                       # human label per displayed field — from 02-architecture field names + 01-context copy; NEVER a Str::title(column) like "Customer Id"
-     customer_id: "Customer"
-     created_at: "Created"
-   fk_display:                      # FK column => the related entity's display field, resolved via the relation (pack `## Relation derivation`); never render the raw id
-     customer_id: "customer.name"
-     branch_id: "branch.name"
-   value_formatting:                # money/number/date/status formatting — from field types in 02-architecture
-     amount: "currency (2dp, thousands sep)"
-     status: "human label + badge (map enum -> label from flow states)"
-     created_at: "human date (null-safe placeholder)"
-   required_states:                 # the states this view MUST handle — DERIVED from the flow (04-flows.md), not boilerplate
-     - empty       # list with zero rows (grounded: flow allows an empty collection)
-     - loading     # async fetch/action present in the flow
-     - error       # failure branch present in the flow (surface via the project notification idiom)
-     - pending     # workflow item mid-process (maker-checker / multi-stage flow) -> show human status label
-   grounded_in: ["04-flows.md F-U-003 step 2", "02-architecture §Widget"]   # citations (anti-halu)
-   ```
-
-   - `required_states` is the load-bearing, flow-derived part: include only the states the flow actually produces (a read-only view with no async has no `loading`; a single-stage flow has no `pending`). The execute-bolts `ui_ux` slice injects the design tokens + a linter-clean view exemplar + `references/ui-design-heuristics.md`, and `validate-dispatch-prompt.sh` asserts the emitted prompt carries them — this UI contract is the unit-spec-stage complement (what to render) to that execution-stage enrichment (how the project renders it).
-   - Provenance: mark `_grounded: true` only when every entry cites a vault source; otherwise emit the gap as an OQ. Do NOT fabricate labels, statuses, formatting rules, or states the vault does not establish.
-
-9.5. **Adversarial test review pass (v2.7.0+, Iter 47 — closes audit D4-006)**
-
-Closes Iter 38 audit Pattern F structural risk: acceptance_test authored by the SAME LLM pass as the unit body inherits the same blind spots. Per ACM FSE 2025: "Never trust AI to both generate and validate."
-
-For each unit just authored in Step 9, run the adversarial review per `references/adversarial-test-prompt.md`:
-
-**Default mode (main-thread self-re-prompt):**
-
-1. Re-prompt with adversarial framing (see `references/adversarial-test-prompt.md` §Default mode). Same LLM, different role context = QA engineer reviewing the unit's test for blind spots.
-2. Adversarial pass returns YAML `adversarial_review:` block with `gaps_identified[]` + `coverage_verdict`.
-3. Merge per `references/adversarial-test-prompt.md §Gap merge logic`:
-   - `coverage_verdict: strong` AND no gaps → mark `_authored_by: adversarial-reviewed (no gaps)`
-   - Non-empty gaps → append `proposed_additional_assertion` to acceptance_test; mark `_authored_by: adversarial-reviewed (+N gaps merged)`
-   - `coverage_verdict: weak` AND no gaps (incoherent) → keep original; mark `_authored_by: adversarial-review-failed (kept original; manual review recommended)`. Log warning.
-
-**Opt-in subagent mode (`--adversarial-subagent` flag OR unit `risk: high`):**
-
-Dispatch a separate subagent for the adversarial review per `references/adversarial-test-prompt.md §Opt-in subagent mode`. Separate LLM context = stronger blind-spot coverage at cost of one extra dispatch per unit. Marked `_authored_by: independent-llm`.
-
-**Skip mode (`--no-adversarial-review` flag):**
-
-Preserves pre-Iter-47 behavior. Sets `_authored_by: same-pass`. Use for debug / regression testing only — NOT recommended for production unit generation.
-
-**Regenerate behavior:**
-
-When `generate-units --regenerate` re-encounters a unit:
-- If existing unit has `_authored_by: human` → PRESERVE acceptance_test untouched (user-edited; do not overwrite)
-- Otherwise → rewrite per Step 9 + run Step 9.5 adversarial review
-
-**Provenance written to unit frontmatter:**
-
-```yaml
-acceptance_test:
-  _authored_by: adversarial-reviewed (+2 gaps merged)   # provenance per Iter 47
-  - type: test
-    description: "..."
-    command: "..."
-  - type: test
-    description: "<gap 1 merged from adversarial pass>"
-    command: "..."
-  - type: test
-    description: "<gap 2 merged from adversarial pass>"
-    command: "..."
-```
-
-10. **Write each unit file** using `references/templates/unit.md` as the body template.
-
-**v2.5.4+ Iter 29 scope propagation (P1-3 audit fix)**: When vault.json contains a `scope` field (v1.12+ multi-scope vault per Iter 28), every unit's frontmatter MUST include:
-
-```yaml
-scope: <vault.scope_metadata.id>           # e.g., "BE", "MW", "FE"
-scope_name: <vault.scope_metadata.name>    # e.g., "Backend API"
-```
-
-This enables downstream skills (execute-bolts, multi-squad routing) to verify they're operating in the correct scope context. Omit both fields when vault has no scope (legacy single-vault back-compat).
-
-11. **Write `_index.md`** with:
-    - Total unit count + **module count (v2.2+)**
-    - **Grouped by module** (v2.2+) — per module section: name, status (X/Y complete), priority, DoD checklist, units table (ID, title, task_type, depends_on, status); `M-unassigned` group rendered if non-empty with warning
-    - Per-module dependency DAG (Mermaid graph) — units within module
-    - Cross-module dependency graph — high-level
-    - Suggested execution order (topological within + across modules)
-    - Backward compat: when only `M-default` exists → fall back to flat unit list (v3.4 behavior)
-
-12. **Post-write validation + audit (the 12.x sub-procedures below run in declared order, then step 13 logs).**
-
-12.3. **Per-anchor verification (v2.1+, Iter 8 — renumbered v2.5.1 Iter 25; runs FIRST as precondition check before constitution inject + render).**
-
-   Per `references/defensive-generation.md` §Step 12.4.5. For each Anchor entry in each unit's `## Anchors` section:
-
-   1. Parse `<file>:<line-range> — <description>` format
-   2. Probe file existence (fs OR codebase-map §1)
-   3. Apply outcome:
-      - **File MISSING + greenfield unit** → WARNING in unit body footer (HTML comment): "anchor aspirational for new file; verify before bolt"
-      - **File MISSING + brownfield unit** → stronger WARNING: "anchor points to non-existent file; binding may be incomplete; review"
-      - **File EXISTS, line out of bounds** → WARNING: "anchor line-range may have drifted; current file has N lines"
-      - **File EXISTS, line valid** → ✓ verified
-
-   Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirational (especially for new files in `create` units). Warnings surface visually in chat output + unit body footer so user can review.
-
-12.4. **Inject constitution clauses (v2.4+, Iter 17 — renumbered v2.5.1 Iter 25).**
-
-   Per `generate-intent/references/vault-contract.md` §constitution.
-
-   For each unit, read `<vault>/constitution.md` + identify clauses relevant to the unit's:
-   - target_files paths (matches §A clauses for files in those paths)
-   - task_type (different clauses apply for create vs extend vs verify)
-   - module (per `_meta/modules.yaml` if multi-module)
-   - vault_source (clauses referenced in that vault section)
-
-   Inject relevant clauses into the unit's `## Hard rules` section:
-
-   ```yaml
-   id: constitution-A-001
-   language: <unit's primary language>
-   message: "All API endpoints MUST use Sanctum auth middleware (constitution §A-001)"
-   rule:
-     pattern: |
-       Route::$$$('/api/$$$', $$$)
-     not:
-       inside:
-         pattern: |
-           ->middleware(['auth:sanctum', $$$])
-   ```
-
-   Format:
-   - Rule `id` prefix `constitution-` + clause ID
-   - `message` cites clause source
-   - Pattern detection: convert clause text to ast-grep YAML when feasible; fall back to text-match grep when not
-   - Severity: `error` (constitution clauses are non-negotiable; halts bolt commit if violated)
-
-   **Anti-halu rails**:
-   - Constitution clauses NEVER silently apply — surface in unit body for user review
-   - Clauses that can't translate to ast-grep grammar are flagged in unit body as `## Constitution warnings` informational section (not Hard Rule)
-   - Anti-pattern (§D) clauses always inject as Anti-patterns (informational), not Hard Rules (machine-validated), unless mechanically detectable per Iter 6 DESIGN-OQ-6
-   - Constitution version + hash tracked: if constitution drifts between unit generation and bolt execution → halt `constitution_drift_detected`
-
-12.4.5. **Framework pack provenance citation (v2.5.1+, Iter 25 — propagates Iter 23 framework pack into unit body).**
-
-   When `binding.md` §Suggested Unit Hard Rules contains rules sourced from framework pack (introduced by bind-codebase Step 2.8), emit each pack-derived Hard Rule into the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
-
-   Format inside unit's `## Hard rules` section:
-
-   ```yaml
-   - id: framework-pack-naming-001
-     source: "framework-conventions/laravel-base-26.md §Hard Rules — UUID PK enforcement"
-     framework: laravel-base-26
-     framework_pack_version: 1.0  # framework_version_range when last_verified_against passed
-     message: "Domain entity migrations MUST use UUID primary key per starterkit convention"
-     severity: error
-     rule:
-       pattern: |
-         $table->id()
-       inside:
-         pattern: |
-           Schema::create($_, function (Blueprint $table) { $$$ })
-   ```
-
-   Aggregate in unit body:
-
-   ```markdown
-   ## Framework pack source
-
-   Conventions enforced from: `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` (v1.0, extends `laravel.md` extends `_universal.md`)
-   Rules pulled into this unit's Hard Rules: N (see §Hard rules for line-level enforcement)
-   ```
-
-   **Anti-halu rails**:
-   - Framework pack rules NEVER silently apply — citation mandatory so user can audit + override
-   - Rules whose `path_glob` doesn't match this unit's `target_files` are SKIPPED (not all pack rules apply to every unit)
-   - When pack `extends:` chain → cite the SPECIFIC pack file the rule lives in (not the chain head), so override edits are traceable
-
-12.5. **Polished-prompt render pass (v1.3+, Iter 3 — renumbered v2.5.1 Iter 25).**
-
-   After all units written but BEFORE the dedup check, sweep each unit and validate the prompt-shape contract per `references/unit-schema.md`:
-
-   a. **Anchors presence rule**:
-      - `task_type: verify` OR `task_type: extend` → `## Anchors` section MUST have ≥1 entry. Missing → halt `unit_underspecified`.
-      - `task_type: create` AND ≥1 `binding_refs` entry pointing to a related pattern → `## Anchors` MUST have ≥1 entry citing the closest pattern. Missing → halt `unit_underspecified`.
-      - `task_type: create` AND fully greenfield (no binding) → Anchors section optional.
-
-   b. **Hard rules grammar parse**: each line under `## Hard rules` MUST match one of the 5 grammar productions in `references/unit-schema.md` §Hard rule grammar. Unparseable line → halt `hard_rule_unparseable` with the offending line + which production failed.
-
-   c. **Directive prose check on Implementation steps**:
-      - Extract the body of `## Implementation steps`
-      - If body is pure bullet list (no sentence >15 words detected) → emit WARNING (not halt) in chat: "Unit U-XXX Implementation steps is bullet-only. Consider directive prose for AI coding consumption."
-      - For `task_type: verify`: the single-line "No code changes..." sentence is acceptable as-is (special case).
-
-   d. **Migration notes rule**:
-      - `task_type: extend` → `## Migration notes` MUST exist AND have all three sub-lists (REMOVE / KEEP / ADD) populated (any can be `none` but must be present). Missing → halt `unit_underspecified`.
-      - `task_type: create` OR `task_type: verify` → `## Migration notes` section MUST be absent.
-
-   e. **Anti-patterns harvesting (suggestion, not requirement)**:
-      - If binding has CONFLICTs or KB has gotchas in domains this unit covers → suggest filling `## Anti-patterns` section with the relevant items
-      - Auto-populate from `binding.md` "## Suggested Unit Hard Rules" (Iter 3 addition in bind-codebase) and KB `## 9. Edge Cases & Gotchas` sections when applicable
-      - Anti-patterns are guidance only — no halt if absent
-
-   f. **Starterkit citation check (v2.6.0+, Iter 32)**:
-
-      ```
-      IF unit.frontmatter.starterkit_context_consumed == true:
-        FOR EACH hard_rule in unit.hard_rules:
-          IF hard_rule.source == "starterkit-context.yaml" AND hard_rule.citation field is missing or empty:
-            → HALT `starterkit_rule_citation_missing`
-            → emit blocker YAML:
-                type: starterkit_rule_citation_missing
-                source_skill: generate-units
-                details:
-                  unit_id: <U-XXX>
-                  rule_text: "<text of offending rule>"
-                  missing_citation: "starterkit-context.yaml §<expected path>"
-                  rule_index: <index of rule in hard_rules[]>
-                next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run /mega-sdd:generate-units."
-            → do NOT write the unit; halt is ALWAYS STOP
-      ```
-
-      This rail enforces that every starterkit-derived Hard Rule includes its citation — mirrors existing "every Hard Rule needs a Citation" rail (Step 12.4.5) extended to starterkit-derived rules.
-
-   g. **OQ-ID propagation check (v2.7+, Iter 67.5 — audit response 2026-05-27 §F):**
-
-      Every Open Question that influenced this unit's content MUST appear in `binding_refs:` frontmatter. An OQ "influenced" the unit when its resolution (per `binding.md` or `binding-<phase>.md` Resolution Table) corresponds to design choices reflected in the unit body, target_files, hard rules, or migration notes.
-
-      ```
-      FOR EACH unit being written:
-        binding_resolution_table = parse binding.md (or binding-<phase>.md) Resolution Table
-        oq_ids_in_table = collect all OQ-* IDs from resolution table
-        oq_ids_in_binding_refs = unit.frontmatter.binding_refs intersect (OQ-* prefix)
-
-        # An OQ is "implementation-relevant" to this unit when:
-        # - the OQ's resolution touches files in unit.target_files, OR
-        # - the OQ's resolution text appears semantically in unit.body (anchors, hard rules, migration notes), OR
-        # - the OQ's `priority: P1` (P1 OQs are always implementation-critical per vault-contract)
-
-        relevant_oqs = filter oq_ids_in_table by above criteria
-        missing = relevant_oqs - oq_ids_in_binding_refs
-
-        IF missing is non-empty:
-          → HALT `unit_oq_trace_missing`
-          → blocker.details: { unit_id, missing_oqs: [...], reason: "OQ resolutions implemented in this unit but ID not propagated to binding_refs" }
-          → next_action: "Append the listed OQ-IDs to the unit's binding_refs frontmatter; re-run generate-units."
-      ```
-
-      **Why this rail exists:** audit 2026-05-27 §F traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). Future readers reviewing U-005 cannot trace the design decision back to its source OQ. CONFLICTs already propagate via this same mechanism (per phase-1 verification); this rail extends the discipline to OQs.
-
-      **Halt YAML:**
-
-      ```yaml
-      blocker:
-        type: unit_oq_trace_missing
-        emitted_at: <ISO8601 timestamp>
-        emitted_by: generate-units
-        details:
-          unit_id: U-XXX
-          missing_oqs: [OQ-DM-P2-1, OQ-FE-P2-3]
-          binding_source: binding-phase-2.md
-        next_action: "Append the listed OQ-IDs to unit's binding_refs frontmatter so the traceability link is preserved."
-      ```
-
-   **Halt YAML format:**
-
-   ```yaml
-   blocker:
-     type: unit_underspecified
-     emitted_at: <ISO8601 timestamp>
-     emitted_by: generate-units
-     details:
-       unit_id: U-XXX
-       missing_sections: [Anchors, Migration notes]
-       reason: "task_type=extend requires Anchors AND Migration notes; both missing"
-     next_action: "Re-run generate-units OR manually populate the missing sections."
-   ```
-
-12.6. **Deduplication check (v1.2+, Iter 1 — renumbered v2.5.1 Iter 25).**
-
-   After all units written, sanity-check `task_type: create` units against the Implementation State Map:
-
-   - For each `task_type: create` unit where EVERY `target_files` entry's path is already present in codebase-map §1 (Top-level structure / file tree) AND its operation is `create`:
-     - This signals a likely mistake — the unit wants to create a file that already exists.
-     - Halt with structured `dedup_ambiguous` blocker (per DESIGN-OQ-2). NEVER silent-rewrite.
-
-   **Halt YAML:**
-
-   ```yaml
-   blocker:
-     type: dedup_ambiguous
-     emitted_at: <ISO8601 timestamp>
-     emitted_by: generate-units
-     details:
-       unit_id: U-XXX
-       conflicting_paths: [src/foo.ts, tests/foo.test.ts]
-       reason: "Unit task_type=create but all target_files already exist in codebase-map. Implementation State Map did not classify these claims as IMPLEMENTED — possible binding gap OR genuine intent to overwrite."
-       suggested_resolutions:
-         - "If existing files are unrelated (name collision), rename the unit's target_files."
-         - "If existing files SHOULD be modified, edit unit frontmatter: task_type=extend + fill Migration notes."
-         - "If existing files SHOULD be replaced (rebuild scenario), confirm intent and re-run with --force-overwrite (NOT YET IMPLEMENTED — pause and consult human)."
-     next_action: "Resolve manually then re-run /mega-sdd:generate-units."
-   ```
-
-12.7. **Sibling-consistency sweep (code-delivery slice B, defense-in-depth).** After units are written, reason about SIBLING units *together*, not one at a time. Group units by `module` + `scope`. For each cross-cutting concern the active framework pack declares (`## Cross-cutting concerns` — e.g. a tenant/branch-scoping key, soft-delete, audit-trail) whose `applies_when` matches a unit's model, EVERY sibling in the group the concern applies to MUST declare the SAME mechanism (the concern's `spec_obligation`) — one consistent mechanism per shared concern. A sibling that scopes "a different way" or omits it is **fan-out divergence** (the golden exemplar is correct, the siblings drift — the exact failure proven in the tradefinance Phase-2 run, where one model scoped "via lc_id" while its siblings used the shared trait). Likewise, every FK column a unit declares (`<name>_id`) MUST declare its derived relation accessor (pack `## Relation derivation`; universal default: the camelCase singular of `<name>`). This sweep is ENFORCED by `scripts/validate-sibling-consistency.sh` (PostToolUse → `.sibling-consistency-state.json`; PreToolUse Branch 7 blocks `execute-bolts` on FAIL) — this prose is defense-in-depth; the validator is the gate. Tech-agnostic + anti-hallucination: never invent a concern the active pack does not declare.
-
-13. **Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
+**13. Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 
 ## Anti-hallucination rails
 
-- Every unit MUST cite vault source (file:section).
-- No unit may touch files outside its `target_files` (enforced at bolt time).
-- No unit may have empty `acceptance_test`.
-- Unit body MUST NOT invent functionality not present in vault.
-- OQs surface explicitly as "TBD" — never silently fabricated.
-- (v1.1+) `depends_on` is intra-squad only; cross-squad coupling MUST route through interface notes.
-- (v1.1+) Interface references resolve to existing files; no fabricated interface IDs.
-- (v1.2+, Iter 1) `task_type` is assigned ONLY from binding's Implementation State Map. Never inferred from vague heuristics. UNKNOWN state → conservative `create` default.
-- (v1.2+, Iter 1) `verify` units MUST have a concrete `anchor` from binding; missing anchor → downgrade to `create`.
-- (v1.2+, Iter 1) Dedup check halts with `dedup_ambiguous` — NEVER silent-rewrites a unit's task_type.
-- (v1.3+, Iter 3) Anchors section is MANDATORY when binding evidence exists (per task_type rules). Missing → halt `unit_underspecified`.
-- (v1.3+, Iter 3) Hard rules grammar is parseable (5 closed grammar types). Unparseable rule → halt `hard_rule_unparseable`. NEVER silently skip.
-- (v1.3+, Iter 3) Anti-patterns drawn from binding CONFLICTs + KB gotchas; suggestion only (not halt-condition).
-- (v2.0+, Iter 6) PageRank symbol-graph suggestions surface as informational `## PageRank suggestions` body section; NEVER auto-added to target_files. User must manually promote.
-- (v2.0+, Iter 6) Symbol graph requires `precision_tier: ast` in codebase-map; skipped gracefully on regex tier.
-- (v2.1+, Iter 8) Defensive pre-flight auto-detects missing upstream artifacts; offers auto-route (no death-by-prompts in clean chains).
-- (v2.1+, Iter 8) Per-unit target_files collision triggers INTERACTIVE prompt ONLY when file exists + task_type=create (otherwise silent). Prompts cap-limited by `--collision-policy` batch flag.
-- (v2.1+, Iter 8) `PARTIAL_FIELDS_*` states from bind-codebase v1.7+ auto-populate Migration notes from binding's `field_diff` — bolt knows EXACTLY which fields to add/keep/remove.
-- (v2.1+, Iter 8) `grounding_confidence: HIGH | MEDIUM | LOW` field in unit frontmatter reflects upstream + anchor + collision verification.
-- (v2.1+, Iter 8) Anchor warnings are SOFT — visible in chat + body footer but do NOT halt. Anchors can be aspirational for new files in `create` units.
-- (v2.2+, Iter 11) Module assignment is derived from `vault_source` matching against `_meta/modules.yaml`. Unmatched units → `M-unassigned` (warning); never silently grouped.
-- (v2.2+, Iter 11) Cross-module dependencies require explicit `blocked_by` declaration in modules.yaml; violation → halt `cross_module_dep_invalid`.
-- (v2.2+, Iter 11) Module DAG validated for cycles same as unit DAG. `module_cycle_detected` halt if cycle found.
-- (v2.3+, Iter 12) `depends_on` emission STRICT by default — only emitted with concrete evidence (file overlap, symbol cross-ref, Migration notes ref, vault declaration, module blocked_by). Maximizes parallelism eligibility; user explicitly adds deps when implicit ordering matters.
-- (v2.3+, Iter 12) `--strict-deps` (default) | `--loose-deps` (legacy bias) | `--no-deps` (assume all parallel; testing only) flags available.
-- (v2.6.0+, Iter 32) `starterkit_context:` YAML file consumed read-only in Step 7.7; NEVER modified by generate-units. starterkit_context_consumed frontmatter flag set based on file presence only — never inferred.
-- (v2.6.0+, Iter 32) Starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` explicitly. Citation is machine-checked in Step 12.5.f. Missing citation → halt `starterkit_rule_citation_missing` (ALWAYS STOP — not a soft warning).
-- (v2.6.0+, Iter 32) Starterkit relevance computed from `unit.target_files` paths + unit body text only. NEVER fabricate relevance for domains not matched by the rules in Step 7.7.b.
-- (v2.6.0+, Iter 32) When `starterkit_context.partial == true`, skip Anchors + Hard Rules for slices listed in `partial_slices:`. Degrade to framework-pack-only for missing slices; do NOT guess absent slice content.
-- (v2.7.0+, Iter 67.5) OQ-IDs propagate from binding Resolution Table → unit `binding_refs:` frontmatter when the OQ resolution is implemented in the unit. Step 12.5.g halts `unit_oq_trace_missing` if any implementation-relevant OQ is missing. CONFLICTs already did this; OQs were silently dropped pre-67.5 (audit 2026-05-27 §F).
+- Every unit MUST cite its vault source (file:section); no unit may invent functionality absent from the vault; no unit may touch files outside `target_files` (enforced at bolt time); no unit may have an empty `acceptance_test`.
+- OQs surface explicitly as "TBD" — never silently fabricated. OQ-IDs propagate from the binding Resolution Table into `binding_refs:` when their resolution is implemented in the unit (Step 12.5.g halts `unit_oq_trace_missing` otherwise). CONFLICTs propagate the same way.
+- `task_type` is assigned ONLY from the binding's Implementation State Map — never inferred from vague heuristics; UNKNOWN → conservative `create`. `verify` units MUST have a concrete binding `anchor` (missing → downgrade-to-create only if no anchor exists; a `verify` with intent but no anchor halts as a binding gap). The dedup check halts (`dedup_ambiguous`) — NEVER silent-rewrites a task_type.
+- Anchors are MANDATORY when binding evidence exists (per task_type); missing → halt `unit_underspecified`. Hard rules grammar is a closed 5-type set; unparseable → halt `hard_rule_unparseable`. Anti-patterns are drawn from binding CONFLICTs + KB gotchas (suggestion only, not a halt condition).
+- `depends_on` is intra-squad only (cross-squad coupling routes through interface notes); interface references must resolve to existing files. `--strict-deps` (default) emits deps only on concrete coupling evidence.
+- PageRank suggestions are informational, never auto-added to target_files. Anchor warnings are SOFT (visible, non-halting; anchors can be aspirational for new files). Per-unit collision prompts fire only on genuine collision.
+- `PARTIAL_FIELDS_*` Migration notes are populated from binding's `field_diff` so the bolt knows EXACTLY which fields to add/keep/remove. `grounding_confidence: HIGH|MEDIUM|LOW` reflects upstream + anchor + collision verification.
+- Module assignment derives from `vault_source` matching `_meta/modules.yaml`; unmatched → `M-unassigned` (warning), never silently grouped. Cross-module deps need explicit `blocked_by`. Module + unit DAGs both validated for cycles.
+- `starterkit-context.yaml` is consumed read-only (never modified); starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` (Step 12.5.f → halt). Relevance is computed from target_files paths + body text only — never fabricated; `partial_slices` are skipped, never guessed.
 
-## Halt conditions
+## Halt conditions (index)
 
-- Dependency cycle detected → halt, restructure required
-- Unit needs target_files but vault doesn't specify → halt, vault refinement needed
-- Bound-vault has unresolved CONFLICTs → refuse, instruct binding re-run
-- `vault.json` missing → halt, vault corruption
-- (v1.1+) Cross-squad direct dependency in `depends_on` → halt, route via interface
-- (v1.1+) `consumes_interfaces` or `produces_interfaces` references missing file → halt, author interface first
-- (v1.1+) Two squads claim same artifact at same precedence level → halt, refine squads.yaml
-- (v1.2+, Iter 1) `verify` unit task_type assigned but binding's `anchor` field is empty → halt, binding gap
-- (v1.2+, Iter 1) Dedup check finds a `create` unit whose target_files all exist → halt with `dedup_ambiguous`
-- (v1.3+, Iter 3) Unit missing required `## Anchors` (verify/extend), `## Migration notes` (extend), or required structure → halt `unit_underspecified`
-- (v1.3+, Iter 3) Hard rule line cannot be parsed against 5-grammar set → halt `hard_rule_unparseable`
-- (v2.6.0+, Iter 32) Starterkit-derived Hard Rule missing mandatory Citation field → halt `starterkit_rule_citation_missing` — ALWAYS STOP
+Full blocker YAML for every type → `references/halt-protocol.md`.
 
-### `starterkit_rule_citation_missing` (v2.6.0+, Iter 32) — ALWAYS STOP
-
-Emitted by Step 12.5.f polished-prompt render pass when a unit's starterkit-derived Hard Rule lacks the mandatory `Citation: starterkit-context.yaml §<path>` field.
-
-```yaml
-type: starterkit_rule_citation_missing
-source_skill: generate-units
-details:
-  unit_id: <U-XXX>
-  rule_text: "<text of offending rule>"
-  missing_citation: "starterkit-context.yaml §<expected path>"
-  rule_index: <int>
-next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run /mega-sdd:generate-units."
-```
-
-Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass.
+- **Unresolved CONFLICTs in binding → REFUSE; re-run binding** (the hard gate — invariant #2).
+- Dependency cycle → `cycle_detected`. Cross-squad direct dep → `cross_squad_dep_invalid`. Missing interface ref → `interface_ref_missing`. Two squads claim one artifact → `cross_squad_ambiguous`. Cross-module dep without `blocked_by` → `cross_module_dep_invalid`; module cycle → `module_cycle_detected`.
+- Unit needs target_files but vault too vague → halt. `vault.json` missing → halt (vault corruption).
+- `verify` task_type assigned but binding `anchor` empty → halt (binding gap). `create` unit whose target_files all exist → `dedup_ambiguous`.
+- Missing required `## Anchors` (verify/extend) or `## Migration notes` (extend) → `unit_underspecified`. Unparseable Hard rule → `hard_rule_unparseable`. Implementation-relevant OQ-ID absent from `binding_refs` → `unit_oq_trace_missing`. Starterkit Hard Rule missing Citation → `starterkit_rule_citation_missing` (ALWAYS STOP).
 
 ## Hand-off
 
-- "Generated N units. Suggested next: `/mega-sdd:execute-bolts --all` to execute in order, or `/mega-sdd:execute-bolts U-001` to start with the first."
+"Generated N units. Suggested next: `/mega-sdd:execute-bolts --all` to execute in order, or `/mega-sdd:execute-bolts U-001` to start with the first."
 
-## Handoff emission (v1.4+, Iter 4)
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit the handoff YAML record per `../orchestrate-flow/references/handoff-contract.md` — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+## Specialist references (load on demand)
 
-```yaml
-handoff:
-  emitted_by: generate-units
-  emitted_at: <ISO8601 timestamp>
-  status: completed | halted
-  artifacts:                                       # MUST be plain filesystem paths — NO annotations like "(N files)", "(latest)", or comments
-    - <absolute path to units/ directory>          # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units (or <vault>/units when --no-bind)
-    - <absolute path to units/_index.md>           # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units/_index.md
-    # WRONG: "/Users/.../units/ (18 files)"        ← validator strips trailing " (...)" defensively, but producers SHOULD emit clean paths
-    # WRONG: "/Users/.../units/ # latest"          ← inline comments invalid in YAML scalars
-    # Each path MUST be a thing validate-handoff-yaml.sh can os.path.exists() against.
-  next_action:
-    suggested_skill: mega-sdd:execute-bolts
-    suggested_args: ["--all", "--auto"]
-    rationale: "Units generated; execute via bolts."
-  blockers: []   # populated on cycle/cross-squad/dedup/unit_underspecified/hard_rule_unparseable/starterkit_rule_citation_missing
-  metrics:
-    items_processed: <N units>
-    items_blocked: 0
-    units_with_starterkit_anchors: <int>       # NEW v2.6.0+, Iter 32 (count of units that gained starterkit Anchors)
-    units_with_starterkit_rules: <int>         # NEW v2.6.0+, Iter 32 (count of units that gained starterkit Hard Rules)
-  scope:                                       # v2.5.4+ Iter 29 (P1-3) — omit block when vault has no scope field
-    id: <vault.scope_metadata.id>
-    name: <vault.scope_metadata.name>
-    sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
-    prd_sha256: <vault.prd_sha256>
-  starterkit_context:                          # NEW v2.6.0+, Iter 32 — passthrough from scan-codebase + generate-units metrics; omit block when starterkit-context.yaml absent
-    reused: false
-    framework: laravel
-    auth_lib: sanctum
-    rbac_lib: spatie/permission
-    ui_stack: "alpine + tailwind + sweetalert2"
-    libs_count: 47
-    units_with_starterkit_anchors: 12          # NEW metric (mirrors metrics block above)
-    units_with_starterkit_rules: 8             # NEW metric (mirrors metrics block above)
-    # Consumer (v2.7.1+, Iter 53 wiring closure): orchestrate-flow Step 6.b.ix cross-checks
-    # units_with_starterkit_rules > 0 against starterkit-context.yaml `starterkit_context.partial:` flag.
-    # If rules > 0 AND partial == true → halt `quality_gate_failed` subtype `starterkit_metrics_inconsistent`
-    # (rules pulled from incomplete framework slice — may cite missing conventions). Pre-Iter-53 these
-    # metrics were producer-only emission with no downstream consumer.
-```
+- **`references/unit-schema.md`** — the full unit frontmatter + body section schema, the 5-type Hard rule grammar (EBNF + validation table), per-task_type contracts, atomicity / multi-squad / interface-resolution / scope-field rules.
+- **`references/task-typing.md`** — the full binding-state → task_type table, `verify` specifics, `extend` Migration-notes auto-population, and Step 7 / 7.5 / 7.6 target_files mechanics (whitelist, PageRank, collision check).
+- **`references/decomposition-rails.md`** — flow-step → artifact derivation, the `depends_on` emission rules + cycle/cross-squad rejection, module + squad assignment, ID allocation, render test + UI contract for view-bearing units, and the adversarial test review pass.
+- **`references/validation-passes.md`** — the Step 12.x post-write passes in order (per-anchor verification, constitution inject, framework-pack citation, polished-prompt render pass a–g, dedup, sibling-consistency).
+- **`references/halt-protocol.md`** — every blocker's emitted YAML + recovery action, with a "which step fires which halt" index.
+- **`references/starterkit-derivation.md`** — Step 7.7 in full: relevance computation, starterkit Anchors + Hard Rules (with the mandatory citation), and frontmatter updates.
+- **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels, the five-state Implementation State Map + `field_diff` mechanics, and the halt-vs-warning matrix.
+- **`references/auto-and-memory.md`** — scope propagation into unit frontmatter, `_index.md` contents, the `--auto` handoff YAML, and the memory layer (reads / writes / anti-halu).
+- **`references/pagerank-targeting.md`** — the PageRank symbol-graph algorithm + detection prerequisites for Step 7.5.
+- **`references/modules-schema.md`** — the modules layer schema (why modules ≠ bigger units, auto-derivation, modules.yaml format) for Step 4.5.
+- **`references/adversarial-test-prompt.md`** — the Step 9.5 adversarial review prompt (default + subagent modes) and the gap-merge logic.
+- **`references/pbt-integration.md`** — optional property-based-testing unit extension (`properties:` array; emitted only when a PBT framework is detected).
+- **`references/templates/unit.md`** — the unit body template used by Step 10.
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`. Required ONLY under `--auto`.
+## Related skills
 
-**v2.5.4+ Iter 29 (P1-3)**: `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md` v3.20+ contract (line 44). Omit the entire `scope:` block when vault is legacy single-scope.
-
-## Memory layer (v1.5+, Iter 5)
-
-When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
-| Project decision history | `<project>/.mega-sdd/memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
-| Classifier override patterns | `<vault>/.memory/classifier-accuracy.json` | When unit derives from a vault OQ that was overridden by user, surface in unit's `## Context` as note: "this OQ was reclassified manually; original heuristic may not match" |
-
-### Writes
-
-This skill does NOT write to memory directly. Unit generation is read-mostly; bolt-time outcomes (success / Hard Rule violation / acceptance test results) are written by `execute-bolts` to `<vault>/.memory/bolt-outcomes.json`.
-
-### Anti-halu rails
-
-- Memory consultation surfaces in unit body (Anti-patterns section or Context note); never modifies frontmatter without user review
-- Downgraded Hard Rules (memory-derived) cite the violation history in Anti-pattern line
-- `--memory-off` disables memory reads; units fall back to binding-only suggestions
+Upstream: `bind-codebase` (produces the binding manifest + Implementation State Map this skill reads). OQ conventions + `vault.json` field rules + the halt-protocol contract: `../generate-intent/references/vault-contract.md`. Downstream: `execute-bolts` (consumes units; enforces `target_files`, Hard rules, render tests, sibling-consistency). Orchestration: `orchestrate-flow` (auto-routes here and consumes the handoff YAML).

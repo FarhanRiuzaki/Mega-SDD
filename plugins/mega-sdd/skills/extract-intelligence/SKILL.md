@@ -1,7 +1,7 @@
 ---
 name: extract-intelligence
 version: 1.8.0
-description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers + (v1.4+ Iter 22) `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
+description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
 # Extract-Intelligence — Legacy Domain Knowledge Extractor
@@ -70,7 +70,7 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 
 ## Wave-based execution
 
-5 sequential waves with parallel subagents inside each wave. Read `references/wave-dispatch-templates.md` for the per-wave dispatch prompts and quality-gate grep commands.
+5 sequential waves with parallel subagents inside each wave — each wave subagent is the first-class **`mega-sdd:domain-extractor`** agent (dispatched via the Agent tool), given its domain assignment + legacy paths + the KB schema as its task. Read `references/wave-dispatch-templates.md` for the per-wave dispatch prompts and quality-gate grep commands.
 
 | Wave | Output | Subagents | Why |
 |---|---|---|---|

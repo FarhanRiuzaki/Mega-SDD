@@ -6,6 +6,20 @@ Mitigates "ngawang" (floating/disconnected) units. User UX request:
 
 > "ketika generate units. dan ketika generate itu ada di source code base, bisa auto detecs, atau kasih pertanyaan terlebih dahulu... nanti hasil yg di generate sudah cross check dlu/scan codebase dlu. jadi hasil nya lebih robust tidak ngawang"
 
+## Contents
+- Design principle
+- Step 0.5 — Pre-flight upstream check
+- Step 7.6 — Per-unit target_files cross-check
+- Step 12.3 — Per-anchor verification
+- Grounding confidence labels
+- Halt vs warning matrix
+- Anti-halu rails preserved
+- Backward compatibility
+- Examples
+- Field-level diff detection (the "ngawang" mitigation)
+- Five-state Implementation State Map + field_diff mechanics
+- References
+
 ## Design principle
 
 **Auto-detect first, ask only when genuinely ambiguous.** Avoid death-by-prompts.
