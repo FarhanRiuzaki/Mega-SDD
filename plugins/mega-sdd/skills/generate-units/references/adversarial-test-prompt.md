@@ -6,6 +6,13 @@
 **Consumed by:** `generate-units/SKILL.md` Step 9.5
 **Output target:** updates `acceptance_test` in unit frontmatter with merged gap assertions + sets `_authored_by:` provenance field
 
+## Contents
+- Default mode (main-thread self-re-prompt)
+- Opt-in subagent mode (`--adversarial-subagent`)
+- Gap merge logic (Step 9.5 post-review)
+- `_authored_by:` provenance values
+- Anti-halu rails
+
 ---
 
 ## Default mode (main-thread self-re-prompt)

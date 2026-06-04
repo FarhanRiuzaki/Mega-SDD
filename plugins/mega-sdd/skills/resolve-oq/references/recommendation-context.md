@@ -1,8 +1,19 @@
-# Context-Aware Recommendations (v0.6+, Iter 7)
+# resolve-oq — context-aware recommendations
 
-`resolve-oq` v0.6+ builds context-aware `(recommended)` answers per OQ before presenting `AskUserQuestion`. Extends the Iter 2 `resolution_mode: recommend` pattern from tech-OQs (at generate-intent time) to ALL OQ types (at resolve-oq time).
+## Contents
+- Anti-halu invariants (NON-NEGOTIABLE)
+- Context sources (priority order: KB → memory → vault → codebase-map → fallback)
+- Recommendation generation algorithm
+- Citation probe step
+- AskUserQuestion presentation
+- Audit trail
+- Memory feedback loop (override self-correction)
+- High-stakes domain warning
+- Examples
 
-Inspired by user UX request — "kasih (recommended) base on dia baca context, dan kasih suggest yg paling sesuai".
+`resolve-oq` builds context-aware `(recommended)` answers per OQ before presenting `AskUserQuestion`. Extends the `resolution_mode: recommend` pattern from tech-OQs (at generate-intent time) to ALL OQ types (at resolve-oq time).
+
+Inspired by a user UX request — "kasih (recommended) base on dia baca context, dan kasih suggest yg paling sesuai".
 
 ## Anti-halu invariants (NON-NEGOTIABLE)
 

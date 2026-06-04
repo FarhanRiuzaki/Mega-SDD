@@ -5,7 +5,23 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26 (Iter 63 SP1 perf refactor). Rotation rule (Iter 63+): when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
+> **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
+
+## [4.0.0] - 2026-06-04
+
+### v4 lean-core — radical modernization to current Claude Code / Anthropic guidance
+
+A ground-up restructure (branch `v4-lean-core`) bringing the plugin in line with current Agent-Skills best practices and superpowers' "gates > rules > hooks" discipline — **without weakening the spec↔code grounding moat**. Driven by `research/2026-06-04-architecture-modernization-audit.md` + `docs/superpowers/specs/2026-06-04-v4-lean-core-design.md`.
+
+**Skills — progressive disclosure.** Every one of the 16 `SKILL.md` bodies is now a lean router ≤500 lines (was up to 1,285); total skill-body prose dropped 8,758 → 2,574 lines (−70%), with detail relocated into 87 on-demand reference files. Descriptions stripped of version archaeology; all trigger keywords (EN + ID) preserved; the moat (binding verdicts, the CONFLICT gate, the anti-hallucination rail, the hard-rule commit gate) verified in-body.
+
+**Enforcement — Hybrid.** `pre-tool-use` rewritten as a single data-driven gate aggregator (730 → 377 lines). Hard-blocks retained: the binding→units moat gate, predictive preflight, scope-flag, anti-self-bypass, and the high-value code-delivery gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration). Demoted to `/mega-sdd:analyze` advisory (non-blocking, surfaced read-only): dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging. Fixture-tested (kept gates still block, demoted gates allow, anti-bypass fires).
+
+**First-class subagents.** New `agents/`: `bolt-implementer`, `spec-reviewer`, `code-quality-reviewer`, `domain-extractor` — validated against the current Claude Code subagent spec. `execute-bolts` dispatches the bolt agents (two-stage review: spec compliance then code quality); `extract-intelligence` dispatches `domain-extractor` per wave. **All 25 `/mega-sdd:` pipeline commands preserved** (manual CLI entry points).
+
+**Narrative reset.** `CLAUDE.md` rewritten 375 → ~95 lines (invariants + the enforcement doctrine kept; retracted-feature archaeology dropped to git). Version reconciled to a single source of truth — `plugin.json` and `marketplace.json` now both **4.0.0** (was 3.72.0 / 1.3.0).
+
+Pre-v4 "Iter N" development history remains in `CHANGELOG-ARCHIVE.md` and git.
 
 ## [3.72.0] - 2026-06-02
 
