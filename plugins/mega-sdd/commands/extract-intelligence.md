@@ -9,7 +9,7 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - First positional: legacy codebase path. Required.
-- Flags: `--out` (default `.mega-sdd/knowledge-base/` per `plugins/mega-sdd/references/paths.md`), `--seed` (forensic dump, optional), `--max-parallel` (default 5, hard cap 8), `--auto`.
+- Flags: `--out` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — the KB lands at `<out>/knowledge-base/`), `--seed` (forensic dump, optional), `--max-parallel` (default 3, soft-warn >5, hard cap 8), `--auto`.
 
 Follow `skills/extract-intelligence/SKILL.md` procedure exactly. Output to `<out>/knowledge-base/` (default `.mega-sdd/knowledge-base/`); legacy `docs/knowledge-base/` only triggered when prior extraction artifacts already exist there.
 
