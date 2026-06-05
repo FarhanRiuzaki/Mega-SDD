@@ -47,7 +47,7 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
   },
   "design_system": {
     "style": "minimalism",
-    "palette": "primary #2563EB; accent #EA580C",
+    "palette": "primary #2563EB, accent #EA580C",
     "typography": "Modern Professional (Poppins/Open Sans)",
     "a11y_level": "WCAG AA",
     "source": "design-intelligence-recommend",
@@ -85,7 +85,7 @@ phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed fr
 
 ### Operator-workflow-UX capture + Design-Source OQ (v1.17+, code-delivery slice G)
 
-Two CAPTURE-stage rails enforced by `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; PreToolUse Branch 10 blocks `mega-sdd:execute-bolts` on a miss). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
+Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; surfaced as **advisory** via `/mega-sdd:analyze` — v4 Hybrid demoted this from a hard-block, so it no longer blocks `mega-sdd:execute-bolts`). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
 
 - **Workflow flow signal (closed grammar).** A user-facing flow (`F-U-` prefix, or prefix-less; the `F-S-` / `F-C-` / `F-X-` internal classes are excluded) is a **multi-stage approval / maker-checker / workflow** flow when EITHER its actor/title line shows a maker→checker hand-off chain (a `maker … checker|approver|confirmer|reviewer|…` chain joined by `->` / `→` arrows) OR its step body carries **≥ 2 distinct decision transition steps** (approve / reject / review / confirm). One decision step alone is a simple submit; two or more is multi-stage.
 
@@ -103,7 +103,7 @@ A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its 
 
 - **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/knowledge-base-schema.md §3a`). Each stage cites its own `_source` anchor.
 - **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `04-flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flat `**Steps**` narrative MAY remain for human readability, but the `stages:` block is authoritative.)
-- **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a blocking `vault_flow_staging_drop` halt (gates execute-bolts via PreToolUse Branch 14). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
+- **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `/mega-sdd:analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
 - **Advisory at the source.** `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, pointing the user to `/mega-sdd:enrich-semantics` to retro-fit staging without a full re-extract.
 
 > **Walking-skeleton scope (v3.71.0):** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.

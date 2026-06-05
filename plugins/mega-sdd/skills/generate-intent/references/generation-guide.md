@@ -29,7 +29,7 @@ Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The 7-fil
 
 ## Operator-workflow-UX capture + Design-Source OQ
 
-> Durable enforcement is `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; PreToolUse Branch 10 blocks `mega-sdd:execute-bolts` on a capture-stage miss). This prose is defense-in-depth — get it right at generation time so the gate never has to fire.
+> `validate-vault-oqs.sh` re-validates every vault doc write (PostToolUse) and surfaces a capture-stage miss as **advisory** via `/mega-sdd:analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks `mega-sdd:execute-bolts`). This prose is the real win — get it right at generation time.
 
 **Rule 1 — model the operator surface when the flows show a workflow.** When the flows in `04-flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
 
@@ -42,7 +42,7 @@ Capture these in `02-architecture.md` (and the component/view inventory) and ref
 
 > **Same workflow-flow signal also governs staging.** The maker→checker / multi-stage pattern that triggers operator-surface modeling here is also the staged-input pattern: if the source KB workflow carries a `## 3a` `stages:` block, PRESERVE it verbatim into this flow's `**Stages**` block + `_kb_source` per the 04-flows generation step (`generate-intent/references/vault-contract.md §stages-propagation`). Modeling the operator surface and preserving the staging are two halves of the same workflow fidelity — don't do one and flatten the other.
 
-**Rule 2 — design system: template-first, then recommend, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design source in PRD/Figma/KB), resolve the design system by **precedence** — never by silently defaulting WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge:
+**Rule 2 — design system: template-first, then recommend, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design source in PRD/Figma/KB), resolve the design system by **precedence** — never by silently defaulting WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge. (These three flags reflect the **PRD/Figma/KB source only**; a scanned starterkit is a SEPARATE input, evaluated in path 1 below — so this rule still fires when the PRD has no design source even though a template was scanned.)
 
 1. **Scanned template wins (source: `scanned-template`).** If a starterkit was scanned and `starterkit-context.yaml §ui_ux` supplies a design system (`design_tokens` / `layout_extends` / `idioms`), DERIVE `design_system` from the template — its flow is authoritative. **ui-ux-pro-max does NOT recommend a style here; it must not override or contradict the template.** Emit a Design-Source OQ ONLY for a genuine gap the template is silent on (e.g. a missing chart palette), and that gap-fill OQ must align with template idioms. Write `design_system` with `source: scanned-template`, `provenance` citing the `starterkit-context.yaml §ui_ux` anchor.
 

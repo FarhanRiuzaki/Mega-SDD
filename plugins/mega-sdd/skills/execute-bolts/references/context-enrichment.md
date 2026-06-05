@@ -110,7 +110,7 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   # TEMPLATE FLOW IS AUTHORITATIVE: the starterkit design_tokens/layout/idioms above WIN. Anything
   # from design_system only SUPPLEMENTS them — it must never override the scanned template.
   IF vault.design_system present (vault-contract.md §design_system):
-    slice.design_system = vault.design_system (style, palette, a11y_level, source)
+    slice.design_system = vault.design_system (style, palette, typography, a11y_level, source — exclude provenance, which is audit-only)
     IF design_system.source == "scanned-template":
       # the `Design system:` line restates the TEMPLATE's own style/tokens; the design-intelligence
       # slice (style-principles/ux-rules) is injected ONLY as gap-fill, explicitly subordinate to the
@@ -258,7 +258,7 @@ UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notificat
 Design tokens: colors=<design_tokens.colors as compact map>; spacing=<design_tokens.spacing>; fonts=[<design_tokens.fonts joined by ", ">]
 </IF>
 <IF slice.design_system present:>           # emit the literal `Design system:` marker line (validate-dispatch-prompt.sh asserts it)
-Design system: <design_system.style>/<design_system.palette> (a11y <design_system.a11y_level>, source <design_system.source>) — render on this style; see injected style-principles + ux-rules. When source=scanned-template, the starterkit tokens above are authoritative.
+Design system: <design_system.style>/<design_system.palette> (type <design_system.typography>, a11y <design_system.a11y_level>, source <design_system.source>) — render on this style; see injected style-principles + ux-rules. When source=scanned-template, the starterkit tokens above are authoritative.
 </IF>
 </IF>
 
