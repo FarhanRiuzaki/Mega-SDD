@@ -448,9 +448,10 @@ with:
   },
   "design_system": {
     "style": "minimalism",
-    "palette": "primary #2563EB; cta #F97316",
+    "palette": "primary #2563EB; accent #EA580C",
     "typography": "Modern Professional (Poppins/Open Sans)",
     "a11y_level": "WCAG AA",
+    "source": "design-intelligence-recommend",
     "provenance": "recommend:OQ-DESIGN-SOURCE-1 (references/design-intelligence/product-style-map.yaml#saas-general + PRD §1)"
   }
 ```
@@ -462,10 +463,11 @@ After the closing ``` of the schema block, add a `§design_system` subsection:
 ```markdown
 ### §design_system (v1.1+)
 
-Present ONLY when a Design-Source recommendation was accepted (see generate-intent Rule 2, `resolution_mode: recommend`). Absent otherwise — never a silent default. Fields:
+Present when a design system has been resolved for the vault — from a scanned template, an accepted Design-Source recommendation, or an explicit PRD source. Absent otherwise — never a silent default. Fields:
 
-- `style` / `palette` / `typography` / `a11y_level` — the chosen design system, each traceable to `references/design-intelligence/*` + the PRD signal that selected it.
-- `provenance` — the resolving OQ tag + the design-intelligence citation + PRD signal. Required when the block is present (anti-halu: no design system without provenance).
+- `style` / `palette` / `typography` / `a11y_level` — the resolved design system, each traceable to its source.
+- `source` — one of `prd` | `scanned-template` | `design-intelligence-recommend`. **Precedence (highest→lowest): `prd` > `scanned-template` > `design-intelligence-recommend`.** When a template was scanned (`starterkit-context.yaml §ui_ux`), `source: scanned-template` and the values are DERIVED FROM the template — ui-ux-pro-max never overrides it, only gap-fills.
+- `provenance` — the source citation: the resolving OQ tag + design-intelligence citation + PRD signal (for `design-intelligence-recommend`), or the `starterkit-context.yaml §ui_ux` anchor (for `scanned-template`). Required when the block is present (anti-halu: no design system without provenance).
 
 `vault_version` is bumped to `1.1` because this block is additive to the manifest. Consumers on `1.0` simply do not see it (backward compatible).
 ```
@@ -497,16 +499,18 @@ Replace:
 ```
 with:
 ```
-**Rule 2 — emit a Design-Source OQ, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design tokens, no accessibility spec, no voice/brand source was provided), emit a single high-priority **Design-Source Open Question** — e.g. `OQ-DESIGN-SOURCE-{N} [P1]`. **DO NOT relax the anti-hallucination rail:** never silently default WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge.
+**Rule 2 — design system: template-first, then recommend, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design source in PRD/Figma/KB), resolve the design system by **precedence** — never by silently defaulting WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge:
 
-This OQ is emitted with `resolution_mode: recommend` (NOT a silent default — see vault-contract.md §OQ schema). Consult `references/design-intelligence/product-style-map.yaml` using PRD signals (product type, industry, brand hints) to populate a grounded recommendation:
+1. **Scanned template wins (source: `scanned-template`).** If a starterkit was scanned and `starterkit-context.yaml §ui_ux` supplies a design system (`design_tokens` / `layout_extends` / `idioms`), DERIVE `design_system` from the template — its flow is authoritative. **ui-ux-pro-max does NOT recommend a style here; it must not override or contradict the template.** Emit a Design-Source OQ ONLY for a genuine gap the template is silent on (e.g. a missing chart palette), and that gap-fill OQ must align with template idioms. Write `design_system` with `source: scanned-template`, `provenance` citing the `starterkit-context.yaml §ui_ux` anchor.
 
-- `recommendation`: the chosen `{style, palette, typography, a11y_level}` from the matched `product-style-map` entry.
-- `rationale`: the PRD signal → matched map key (e.g. "product_type=SaaS dashboard (PRD §1) → product-style-map.yaml#saas-general").
-- `scan_citations`: `["references/design-intelligence/product-style-map.yaml#<key>", "<PRD §>"]` — **never fabricate**; if no map entry matches, fall back to a bare `resolution_mode: blocking` OQ instead.
-- `fallback_if_wrong`: "blocking — request an explicit design source from the PO".
+2. **Greenfield — recommend (source: `design-intelligence-recommend`).** ONLY when there is no scanned template design system (true greenfield / `--greenfield`), emit a single high-priority **Design-Source Open Question** `OQ-DESIGN-SOURCE-{N} [P1]` with `resolution_mode: recommend` (NOT a silent default — see vault-contract.md §OQ schema). Consult `references/design-intelligence/product-style-map.yaml` using PRD signals (product type, industry, brand hints):
+   - `recommendation`: the chosen `{style, palette, typography, a11y_level}` from the matched `product-style-map` entry.
+   - `rationale`: the PRD signal → matched map key (e.g. "product_type=SaaS dashboard (PRD §1) → product-style-map.yaml#saas-general").
+   - `scan_citations`: `["references/design-intelligence/product-style-map.yaml#<key>", "<PRD §>"]` — **never fabricate**; if no map entry matches, fall back to a bare `resolution_mode: blocking` OQ instead.
+   - `fallback_if_wrong`: "blocking — request an explicit design source from the PO".
+   Only when the user accepts is the `design_system` block written (with `source: design-intelligence-recommend`).
 
-Only when the user accepts the recommendation (interactively or via resolve-oq) is the `design_system` block (vault-contract.md §design_system) written to `vault.json` + the `06-constraints.md > Design system` section, each line cited. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present.
+In both cases the `design_system` block (vault-contract.md §design_system) is written to `vault.json` + the `06-constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
 ```
 
 - [ ] **Step 2: Verify**
@@ -568,11 +572,19 @@ with:
 ```
 IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
+  # TEMPLATE FLOW IS AUTHORITATIVE: the starterkit design_tokens/layout/idioms above WIN. Anything
+  # from design_system only SUPPLEMENTS them — it must never override the scanned template.
   IF vault.design_system present (vault-contract.md §design_system):
-    slice.design_system = vault.design_system (style, palette, a11y_level)   # the accepted Design-Source recommendation
-    # Also pull the matching slice of references/design-intelligence: style-principles[style]
-    # (traits + CSS keywords + anti-patterns) and the a11y rows of ux-rules.md, as injected text
-    # so the bolt renders ON the chosen style. INJECTED TEXT — never a Skill-invoke.
+    slice.design_system = vault.design_system (style, palette, a11y_level, source)
+    IF design_system.source == "scanned-template":
+      # the `Design system:` line restates the TEMPLATE's own style/tokens; the design-intelligence
+      # slice (style-principles/ux-rules) is injected ONLY as gap-fill, explicitly subordinate to the
+      # starterkit tokens already in the prompt — the bolt follows the repo's existing flow.
+    ELSE:  # source == design-intelligence-recommend or prd (greenfield / explicit source)
+      # pull the matching slice of references/design-intelligence: style-principles[style]
+      # (traits + CSS keywords + anti-patterns) and the a11y rows of ux-rules.md, as injected text
+      # so the bolt renders ON the chosen style.
+    # ALL of this is INJECTED TEXT — never a Skill-invoke.
 ```
 
 - [ ] **Step 2: Extend the slice EMIT** — after the `Design tokens:` emit line (currently lines 244–246), add the `Design system:` marker line. Replace:
