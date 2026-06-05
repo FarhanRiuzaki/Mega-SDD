@@ -43,7 +43,7 @@ Naming: this is the mega-sdd-flavored counterpart to `superpowers:reverse-engine
 ## Inputs
 
 - Legacy codebase path (positional, required)
-- `--out=<path>` (output directory; default `.mega-sdd/knowledge-base/` per `plugins/mega-sdd/references/paths.md`)
+- `--out=<path>` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — the KB is written to `<out>/knowledge-base/`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
 - `--max-parallel=N` (subagent cap per wave; **default 3** as of v1.7.0+ Iter 51 per Zylos 2026 empirical optimum; soft warn at >5; hard cap 8 — see audit D2-001 + predictive-checks.md `subagent_capacity_reasonable`)
 - `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)

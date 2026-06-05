@@ -6,7 +6,7 @@ description: One-shot autonomous pipeline — THE primary mega-sdd command. Dete
 > - **`/mega-sdd:orchestrate-flow`** — power-user lower-level chain executor. Skips input-shape detection (assumes you already know what to chain). Use for advanced cases (custom chain composition, partial re-run, debugging).
 >
 > Both accept same flags. Both invoke the same skill.
-argument-hint: [input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N]
+argument-hint: [input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--no-telemetry] [--plan|--act|--plan-then-act]
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` flags + the detected starting phase based on input shape.
@@ -17,7 +17,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 1. **Is `<input>` a path to a directory?**
    - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO vault at any of these paths: `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical), `docs/mega-sdd/vaults/*/vault.json` (legacy), `vaults/*/vault.json` (pre-Iter-10)?
-     - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous; default `--out=.mega-sdd/knowledge-base/`).
+     - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous; `--out` is the OUTPUT_ROOT / parent dir, default `--out=.mega-sdd/` → KB at `<out>/knowledge-base/`).
    - Does it contain a vault at any of these paths (priority order): `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy)?
      - YES → existing vault. Propose chain starting with `scan-codebase` (if no codebase-map at `.mega-sdd/codebase/codebase-map.md` or legacy `codebase-map.md`) or `bind-codebase` (if codebase-map exists) or `generate-units` (if bound-vault exists).
    - Otherwise → halt; ask user to clarify directory purpose.
@@ -40,7 +40,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
    - `--stop-after=<phase>` — halt after this phase even if no blocker.
    - `--resume` — re-enter a paused/halted chain; CWD inspection rebuilds cursor; halts re-fire if blockers unresolved.
    - `--manual` — disable autonomy entirely; reverts to per-skill explicit-command behavior (each skill's chat hint replaces auto-continue).
-   - `--out=<path>` — REQUIRED when starting phase is `extract-intelligence` (legacy rebuild scenario). Specifies output dir for knowledge-base.
+   - `--out=<path>` — REQUIRED when starting phase is `extract-intelligence` (legacy rebuild scenario). Specifies the OUTPUT_ROOT (parent dir), default `.mega-sdd/`; the KB is written to `<out>/knowledge-base/`.
 
 ## Starterkit detection (v3.19+, Iter 27)
 

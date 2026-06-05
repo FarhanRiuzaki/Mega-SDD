@@ -2,7 +2,7 @@
 description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills with single confirmation. Halt-pauses on blockers. `--deep` chains to pipeline-end; `--resume` continues a paused chain from CWD state.
 
 > Iter 63 differentiation note (cross-ref below frontmatter): `/mega-sdd:orchestrate-flow` is the power-user front-door (assumes user knows what to chain); `/mega-sdd:auto` is the user-facing entry with input-shape detection. See cross-ref block in body.
-argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto] [--memory-off] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--with-fsd]
+argument-hint: [vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--auto] [--memory-off] [--greenfield|--brownfield] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--with-fsd] [--no-fsd] [--no-drift-check] [--no-enrich-staging]
 ---
 
 > **`/mega-sdd:orchestrate-flow` vs `/mega-sdd:auto`** (Iter 63 clarification): both invoke the same orchestrate-flow skill. The difference:

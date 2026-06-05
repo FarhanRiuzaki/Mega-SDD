@@ -1,6 +1,6 @@
 ---
 description: Scan an existing repository and produce a `codebase-map.md` for SDD binding. Brownfield prep for mega-sdd pipeline.
-argument-hint: [repo-path] [--depth=N] [--include=<glob>] [--exclude=<glob>] [--auto]
+argument-hint: [repo-path] [--depth=N] [--include=<glob>] [--exclude=<glob>] [--out=<path>] [--auto] [--force-large]
 ---
 
 Invoke the `mega-sdd:scan-codebase` skill via the Skill tool.
