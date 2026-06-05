@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.1.0] - 2026-06-05
+
+### Added — UI/UX design intelligence (distilled ui-ux-pro-max)
+
+Distilled `ui-ux-pro-max` v2.5.0 (MIT, nextlevelbuilder) design knowledge into `references/design-intelligence/` (product-style-map, style/palette/typography principles, ux-rules) via a sync-time distiller (`scripts/_lib/distill-ui-ux.py` + `scripts/sync-ui-ux.sh`). **No runtime dependency** — mega-sdd reads only the committed markdown/YAML.
+
+- **Intent-time (template-first):** a scanned starterkit/template's design flow is authoritative; ui-ux-pro-max only gap-fills, never overrides. When there is no PRD design source AND no scanned template, the Design-Source OQ resolves as `resolution_mode: recommend` with a grounded `{style, palette, typography, a11y_level}` from `product-style-map.yaml` (rationale + citation + fallback + user confirmation). Anti-halu moat preserved — recommendation, never a silent default.
+- **Vault:** new `design_system` block in `vault.json` (`vault_version` 1.0 → 1.1) carrying the resolved design system + `source` (`prd` | `scanned-template` | `design-intelligence-recommend`) + provenance.
+- **Units:** `## UI contract` gains `design_system_ref` to propagate the choice to bolts.
+- **Bolt-time:** `execute-bolts` Step 4.5 injects a `Design system:` line + the matching style-principles/ux-rules slice into ui_ux dispatch prompts; scanned-template tokens stay authoritative.
+- **Enforcement:** `validate-dispatch-prompt.sh` now also asserts a non-placeholder `Design system:` line for ui_ux units (`design_system_not_injected`).
+
+Skills bumped: `generate-intent`, `generate-units`, `execute-bolts` → 2.1.0.
+
 ## [4.0.0] - 2026-06-04
 
 ### v4 lean-core — radical modernization to current Claude Code / Anthropic guidance
