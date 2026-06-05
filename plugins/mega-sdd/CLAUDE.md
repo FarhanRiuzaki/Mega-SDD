@@ -38,6 +38,30 @@ Skill bodies shape behavior but cannot *enforce* it — the model may or may not
 - **Hooks** (`hooks/`) — SessionStart anchor injection; a synchronous PreToolUse gate aggregator; PostToolUse validators (write the state files); Stop telemetry + handoff validation.
 - **`/mega-sdd:analyze`** is the consolidated consistency surface — runs the validators, emits `CONSISTENCY-REPORT.md`.
 
+## Authoring standards (current Claude Code / Anthropic guidance)
+
+These are the rules v4 was built to. They are **derived from Anthropic's published guidance, not invented** — follow them; do not regress to the pre-v4 anti-patterns (1,000-line skills, version archaeology, enforcement-by-prose).
+
+**Skills**
+- **SKILL.md body ≤ 500 lines** (anchor / hot skills ≤ ~200). Use **progressive disclosure**: the SKILL.md is a thin router; heavy procedure / schema / template / example detail lives in `references/*.md` loaded on demand. Don't reinflate a slimmed body.
+- **Description = what it does + when to use it**, third person, ≤ 1024 chars. **No time-sensitive info** — never put `Iter N` / `vN+` / changelog fragments in a description (or any runtime prose). Preserve every trigger keyword, **including the Indonesian variants** (they drive ID/EN routing).
+- **Frontmatter must be valid YAML.** A description containing a bare `key: value` (colon-space) is parsed as a nested mapping and breaks loading → rephrase to `key (value)` or quote the string. (This regressed once on `generate-intent` / `generate-units`; the audit caught it.)
+
+**References**
+- One level deep. A ref file must NOT link to a sibling ref in the same `references/` dir. Cross-skill refs use the skill-name-relative form `<skill>/references/X.md`; plugin-root refs use `plugins/mega-sdd/references/X.md`. No `@`-links (they force-load context). Any ref > 100 lines gets a `## Contents` ToC.
+
+**Enforcement — gates > rules > hooks**
+- Prefer a self-checked **gate** in skill prose. Escalate to a deterministic **hook + validator** only for an invariant that is both critical AND un-promptable. Don't grow the hot-path PreToolUse surface; advisory checks belong in `/mega-sdd:analyze`, not a blocking hook.
+
+**Agents (`agents/*.md`)**
+- A plugin subagent needs only `name` (lowercase-hyphens) + `description`; the body IS its system prompt. **Do NOT use `hooks`, `mcpServers`, or `permissionMode`** — these are silently ignored for plugin agents. `tools` must exclude subagent-unavailable tools (`Agent`, `AskUserQuestion`). Assign the cheapest capable `model` per role.
+
+**Commands** — the user's manual `/mega-sdd:` CLI entry points; keep command↔skill parity (one per pipeline step). **Never delete a pipeline command in a cull**, even if a same-named skill exists.
+
+**Paths** — canonical nested layout per `references/paths.md`: `<vault>/{bound,units,bolts}/` + `<vault>/binding.md`, never the legacy `<vault>-bound/` sibling.
+
+> Sources: Anthropic *Skill authoring best practices* (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) · Claude Code *Plugins reference* + *Create custom subagents* (code.claude.com) · superpowers "rules vs gates vs hooks" (blog.fsck.com). Full analysis: `research/2026-06-04-architecture-modernization-audit.md`.
+
 ## What we will not accept
 
 - **Extra runtime dependencies.** Mega-SDD runs standalone; superpowers (or its vendored copy) is an optional enhancement, not a requirement.
