@@ -43,13 +43,24 @@ npm install -g tree-sitter-cli @ast-grep/cli markdownlint-cli2
 # ripgrep + jd + gh: install via system package manager (apt/brew/scoop/etc)
 ```
 
-If you have **Scoop** (Windows):
+If you are on **Windows** (git-bash / MSYS2):
+
+`tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep`, `pandoc`, and `gh` install via either winget or scoop.
 
 ```powershell
-scoop install tree-sitter ast-grep ripgrep gh
-# jd: go install
-# markdownlint-cli2: npm install
+# Scoop (covers every tool natively — recommended on Windows):
+scoop install tree-sitter ast-grep ripgrep jd pandoc tectonic gh
+npm install -g markdownlint-cli2          # optional; vault prose lint
+
+# winget (covers ripgrep / pandoc / gh only):
+winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc GitHub.cli
+# tree-sitter / ast-grep / tectonic / jd: use scoop above, or the cargo/npm/go fallback:
+cargo install tree-sitter-cli ast-grep tectonic   # if Rust present
+npm install -g tree-sitter-cli @ast-grep/cli      # if Node present
+go install github.com/josephburnett/jd@latest     # if Go present
 ```
+
+`/mega-sdd:install-deps` automates this: on a winget-primary box it also uses Scoop as a fallback when present, and for any tool it can't reach it prints the concrete remedy (install Scoop, or a runtime) instead of silently skipping.
 
 ## Verify install
 
