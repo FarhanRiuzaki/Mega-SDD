@@ -124,13 +124,13 @@ The bolt subagent renders the view per the **template's flow** (when scanned) or
 ## 6. Validation (reuse, no new hook)
 
 Per the rule → gate → hook doctrine, no new hook is added:
-- **Extend `validate-dispatch-prompt.sh`** — it already asserts a `Design tokens:` line is present for `ui_ux` units; add an assertion that a `Design system: <style>/<palette>` line is present. Deterministic, cheap, wired to the existing PreToolUse gate.
+- **Extend `validate-dispatch-prompt.sh`** — it already asserts a `Design tokens:` line is present for `ui_ux` units; add an assertion that a `Design system: <style>/<palette>` line is present. Deterministic, cheap. Per the v4 enforcement doctrine (`CLAUDE.md`), `dispatch-prompt` is **advisory** — surfaced via `/mega-sdd:analyze` (non-blocking), exactly like its sibling `tokens_not_injected`. The new finding ships at the same advisory level (no enforcement upgrade).
 - **`validate-ui-quality.sh` is left unchanged** — it keeps checking scaffold_tells / required_elements. It is deliberately NOT made to verify hex/color matching (fragile, over-build).
 
 ## 7. Error handling / halts
 
 - Intent-time: if the user rejects the recommendation and supplies no design source, the OQ falls back to `blocking` (existing `design_source_oq_missing` behavior). No regression.
-- Bolt-time: if a `ui_ux` unit's dispatch prompt lacks the `Design system:` line, `validate-dispatch-prompt.sh` fails the existing gate (blocks the bolt) — surfaced like any other dispatch-prompt failure.
+- Bolt-time: if a `ui_ux` unit's dispatch prompt lacks the `Design system:` line, `validate-dispatch-prompt.sh` records `design_system_not_injected` — surfaced (advisory, non-blocking) via `/mega-sdd:analyze` like any other dispatch-prompt finding; re-emit the prompt to clear it.
 - Sync: if `ui-ux-pro-max` is not installed, `sync-ui-ux.sh` errors with guidance (same shape as `sync-superpowers.sh`); the committed distilled files remain usable regardless (runtime never needs the plugin).
 
 ## 8. Versioning consistency (first-class deliverable, same iteration)
