@@ -99,9 +99,9 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 8. Memory layer — suggestions only; mandatory audit log + rollback
 9. Drift detection — code vs vault + constitution reconciliation
 10. Interface lock — cross-squad consumed interfaces must be `status: locked`
-11. **Constitution layer** (v3.10+) — project-facing rules in 8th vault file; clauses inject into bolt Hard Rules
-12. **Property-Based Testing** (v3.11+) — invariants over input space; counterexamples preserved on violation
-13. **Convergence loops** (v3.12+) — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
+11. **Constitution layer** — project-facing rules in an 8th vault file; clauses inject into bolt Hard Rules
+12. **Property-Based Testing** — invariants over input space; counterexamples preserved on violation
+13. **Convergence loops** — auto-recovery on cycle-eligible halts via memory recommendations; max-cycles limit
 14. **Schema validation gate** — every handoff YAML validated against a typed schema at emission; missing REQUIRED/CONDITIONAL fields halt at the PRODUCER side (immediate developer feedback, not a silent consumer miss)
 15. **Type-checked field propagation** — handoff schema declares TYPE annotations; the orchestrator validates types at each chain step; prevents silent shape drift (e.g., `scope.id` being a string in one skill but an object in another)
 16. **Code-delivery quality gates** — tech-agnostic validators targeting *delivery* quality, not just structure: flow-step→artifact coverage (missing per-stage Form Requests + dead scaffold stubs), per-view render tests, cross-unit sibling-consistency (fan-out divergence + FK→relation), cross-cutting registration (the silent cross-branch-leak class), UI scaffold-tells (raw labels / unresolved FKs / unformatted money / native dialogs), dispatch enrichment, operator-workflow-UX, fan-out parity, UI-deferral, and KB→vault staging fidelity (a multi-step wizard must not flatten into a single-form bolt). All read stack-specific signatures from the framework-convention pack — add a stack = add a pack; graceful SKIP otherwise — each fixture-verified against a real Laravel run.
@@ -146,7 +146,7 @@ Generated units cite YOUR conventions: *"MUST extend layouts.app (Citation: star
 
 Three scopes of markdown + JSON memory:
 - **User** (`~/.mega-sdd/memory/`) — preferences, patterns, learning log (cross-project)
-- **Project** (`<project>/.mega-sdd/memory/`) — decisions, conventions, outcomes, **routing-outcomes** (Iter 33)
+- **Project** (`<project>/.mega-sdd/memory/`) — decisions, conventions, outcomes, **routing-outcomes**
 - **Vault** (`<vault>/.memory/`) — classifier-accuracy, bind-history, bolt-outcomes
 
 **Suggestion-only**: every learning surfaces via `/mega-sdd:memory review` (ACCEPT/REJECT/DEFER). Mandatory audit log + rollback path. Memory NEVER affects halt protocol — your halts stay deterministic. Disable entirely via `--memory-off`.
@@ -278,12 +278,12 @@ flowchart TD
 **Legend**:
 - 🟦 inputs (PRD, code, legacy) · 🟨 artifacts produced · 🟩 outputs · 🟧 decisions · 🟫 cross-cutting (memory) · 🟥 orchestrator
 - 🟪 **intelligence layer**: routing-outcomes, predictive-checks · 🟦 **validation gate** (schema + type-check)
-- 📐 **starterkit-context** (v3.23+, Iter 32): auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
+- 📐 **starterkit-context**: auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
 - **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting + intelligence-layer consults
 
 All phases auto-chained via `/mega-sdd:auto`. Each phase produces typed handoff YAML for the orchestrator to validate (schema + types) + continue. Halts on real issues (CONFLICT, business OQ P1, Hard Rule violation, `invalid_handoff`, `handoff_type_mismatch`, `predictive_check_failed`, dedup ambiguity, etc.); auto-continues otherwise.
 
-**Intelligence layer reading order (Iter 33):** at chain start, orchestrator (1) reads `routing-outcomes.md` to recommend past-successful chain for this project shape, (2) runs `predictive-checks.md` catalog for each skill BEFORE invoking (catches `dep_missing` upfront instead of mid-chain), (3) validates every received handoff against schema (REQUIRED/CONDITIONAL/OPTIONAL + TYPE annotations) before propagating to next skill. At chain end, writes outcome row to routing-outcomes.md so future runs benefit.
+**Intelligence layer reading order:** at chain start, orchestrator (1) reads `routing-outcomes.md` to recommend past-successful chain for this project shape, (2) runs `predictive-checks.md` catalog for each skill BEFORE invoking (catches `dep_missing` upfront instead of mid-chain), (3) validates every received handoff against schema (REQUIRED/CONDITIONAL/OPTIONAL + TYPE annotations) before propagating to next skill. At chain end, writes outcome row to routing-outcomes.md so future runs benefit.
 
 ---
 
@@ -311,14 +311,14 @@ Most users only need `/mega-sdd:auto`. These exist for power users + edge cases:
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **15 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **4 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, domain-extractor) + **25 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **16 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **4 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, domain-extractor) + **25 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
-| **Where** | All outputs under `<project>/.mega-sdd/` (Iter 10 consolidation). User memory at `~/.mega-sdd/`. Project source unchanged. |
+| **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
 | **How** | Layered anti-hallucination defense; execution via first-class bolt agents (two-stage review: spec compliance then code quality), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (tree-sitter + ast-grep + ripgrep + jd); markdown-driven memory with mandatory audit log + rollback. |
 
-### Folder layout (v3.4+)
+### Folder layout
 
 ```
 <project>/
@@ -373,7 +373,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 </details>
 
 <details>
-<summary><b>⚡ Tech upgrades (v3.0+)</b></summary>
+<summary><b>⚡ Native-tool upgrades (all optional, graceful fallback)</b></summary>
 
 5 production-grade swaps, all with graceful fallback:
 
@@ -390,7 +390,7 @@ All adoptions OPTIONAL. Detection via `command -v`. Install once via your packag
 </details>
 
 <details>
-<summary><b>🤖 Autonomy Layer (v2.0+)</b></summary>
+<summary><b>🤖 Autonomy Layer</b></summary>
 
 Single-confirm pipeline-end execution with auto-continue, progress indication, CWD + mid-skill-checkpoint resume.
 
@@ -404,7 +404,7 @@ Single-confirm pipeline-end execution with auto-continue, progress indication, C
 /mega-sdd:auto --no-lint                   # skip auto lint-units pass
 /mega-sdd:auto --no-analyze                # skip auto analyze-parallelism
 /mega-sdd:auto --no-agents-md              # skip auto AGENTS.md emit
-/mega-sdd:auto --no-fsd                    # skip auto FSD emit (Iter 54)
+/mega-sdd:auto --no-fsd                    # skip auto FSD emit
 ```
 
 ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, conflict resolutions, hard-rule violations). Otherwise silent + auto-progresses.
@@ -412,7 +412,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 </details>
 
 <details>
-<summary><b>🧠 Memory + Self-Learning (v2.1+)</b></summary>
+<summary><b>🧠 Memory + Self-Learning</b></summary>
 
 Three scopes of markdown + JSON memory persist context across sessions. Self-learning via threshold-based suggestions (NEVER auto-applied without ACCEPT).
 
@@ -436,22 +436,16 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself (v4.2.0)
 │   ├── README.md                           # plugin folder shortform
-│   ├── skills/                             # 15 skills + _vendored/
+│   ├── skills/                             # 16 skills (lean routers + progressive disclosure) + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
-│   │   ├── memory/                         # memory + self-learning
-│   │   ├── emit-agents-md/                 # AGENTS.md flatten
-│   │   ├── emit-fsd/                       # Confluence FSD generator (Iter 54)
-│   │   ├── install-deps/                   # OS-aware dep installer (Iter 55)
-│   │   ├── extract-intelligence/           # legacy → KB
+│   │   ├── extract-intelligence/           # legacy → knowledge-base
 │   │   ├── generate-intent/                # PRD/brief/KB → vault
 │   │   ├── scan-codebase/                  # tree-sitter AST scan
-│   │   ├── bind-codebase/                  # validation gate
+│   │   ├── bind-codebase/                  # validation gate (CONFIRMED/CONFLICT/OQ)
 │   │   ├── generate-units/                 # atomic unit decomposition
-│   │   ├── execute-bolts/                  # superpowers TDD
-│   │   ├── orchestrate-flow/               # lifecycle router
-│   │   ├── resolve-oq/                     # OQ resolver
-│   │   ├── detect-drift/                   # code vs vault
-│   │   ├── diff-vault/                     # PRD revision handler
+│   │   ├── execute-bolts/                  # bolt execution (two-stage agent review)
+│   │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/
+│   │   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
 │   │   └── _vendored/                      # superpowers fallback
 │   ├── agents/                             # 4 first-class subagents (bolt-implementer · spec/code reviewers · domain-extractor)
 │   ├── commands/                           # 25 slash commands (manual /mega-sdd: CLI entry points)
@@ -462,16 +456,16 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   ├── scripts/                            # sync-superpowers + migrations
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
 ├── docs/
-│   ├── superpowers/specs/                  # design specs (30 iters)
+│   ├── superpowers/specs/                  # design specs
 │   ├── superpowers/audits/                 # honest audits (sprawl + quality)
 │   ├── knowledge-base/                     # legacy default output
 │   └── mega-sdd/                           # legacy vault output
 ├── tests/
-│   ├── scenarios/                          # USER-FACING walkthroughs (NEW)
+│   ├── scenarios/                          # USER-FACING walkthroughs
 │   │   ├── README.md                       # scenario chooser
 │   │   ├── sample-prd-clinic.md            # copy-paste sample PRD
 │   │   └── scenario-1 ... scenario-6.md
-│   ├── skill-triggering/                   # 14 manual trigger fixtures
+│   ├── skill-triggering/                   # per-skill trigger fixtures
 │   ├── integration/                        # 7 E2E pipeline tests
 │   └── vendoring/
 ├── CHANGELOG.md                            # version history → v4.2.0 (pre-v4 rotated to CHANGELOG-ARCHIVE.md)
@@ -499,8 +493,8 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 | Inspect memory | `/mega-sdd:memory show <topic>` |
 | Review pending learning suggestions | `/mega-sdd:memory review` |
 | Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
-| Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end; Iter 54) |
-| Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr; Iter 55) |
+| Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end) |
+| Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
 | Privacy-sensitive run | `/mega-sdd:auto ./prd.md --memory-off` |
