@@ -17,6 +17,13 @@ The outcome is better-looking, more consistent, more accessible generated UI —
 2. **mega-sdd's architecture rejects prose Skill-invokes.** Per `CLAUDE.md` Fork-A doctrine + `references/ui-design-heuristics.md`, "invoke skill X" wire-ups in skill bodies historically no-op'd. The proven pattern is **distilled data → injected text context → deterministic validator wired to a hook** (rule → gate → hook). This integration uses that pattern exclusively.
 3. **Anti-hallucination moat — "no defaulted standards."** WCAG levels, palettes, type scales may appear ONLY when a source supplies them, otherwise they become Open Questions. A design recommendation therefore cannot be a silent default; it must be a **flagged recommendation** that resolves an OQ with rationale + citation + fallback + user confirmation.
 4. **Tech-stack agnostic mandate.** Design decisions (style/palette/typography) are stack-independent and live in a universal reference. Per-stack rendering detail stays in the existing framework-pack lane — no duplication.
+5. **Scanned-template flow wins — design-intelligence never improvises over it.** When a starterkit/template repo has been scanned (`scan-codebase` → `starterkit-context.yaml §ui_ux` with `design_tokens` / `layout_extends` / `idioms` / component patterns), THAT design flow is authoritative. ui-ux-pro-max must NOT override, contradict, or replace it — it may only fill genuine gaps the template is silent on, and even then must align with the template's existing conventions. This is the established mega-sdd precedence (starterkit > generic); the integration must honor it, not bypass it.
+
+### Design-system source precedence (highest → lowest)
+
+1. **Explicit PRD/Figma design source** (`HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`) — already authoritative; unchanged.
+2. **Scanned template/starterkit design system** (`starterkit-context.yaml §ui_ux`) — when present, `design_system` is DERIVED FROM the template (its tokens/layout/idioms). ui-ux-pro-max only supplements genuine gaps (e.g. a missing chart palette) and never contradicts the template.
+3. **ui-ux-pro-max distilled recommendation** — fires ONLY when neither 1 nor 2 supplies a design system (true greenfield / `--greenfield` / no scanned template tokens). This is the gap-filler, surfaced as a `recommend` OQ.
 
 ## 3. Architecture overview
 
@@ -57,25 +64,34 @@ Mirrors `sync-superpowers.sh`:
 
 ### 5.1 Intent-time (generate-intent) — resolve the Design-Source OQ as `recommend`
 
-Reuse the **existing** Design-Source OQ mechanism. Today: when `HAS_UI_COMPONENTS=true` but no design source is present, a blocking OQ is emitted. New behavior:
+Reuse the **existing** Design-Source OQ mechanism. Today: when `HAS_UI_COMPONENTS=true` but no design source is present, a blocking OQ is emitted. New behavior — **template-first** (per §2 precedence):
 
 ```
-IF HAS_UI_COMPONENTS=true AND no design source in PRD/Figma/KB:
-  → consult references/design-intelligence/product-style-map.yaml using PRD signals
-    (product type, industry, brand hints)
-  → emit a GROUNDED RECOMMENDATION (never a silent default):
-      OQ-DESIGN-SOURCE-1 [P1] [tech]
-        resolution_mode: recommend
-        recommendation: { style, palette, typography, a11y_level }
-        rationale: "<PRD signal> → design-intelligence/product-style-map"
-        scan_citations: [references/design-intelligence/product-style-map.yaml#<key>, <PRD §>]
-        fallback_if_wrong: "blocking — request a design source from the PO"
-  → user CONFIRMS (or via resolve-oq) → THEN write the design_system block
+IF HAS_UI_COMPONENTS=true:
+  IF a scanned template supplies a design system (starterkit-context.yaml §ui_ux has
+     design_tokens / layout_extends / idioms):
+    → design_system is DERIVED FROM the template (source: "scanned-template").
+      ui-ux-pro-max does NOT recommend a style here — the template's flow is authoritative.
+      It may only fill a GAP the template is explicitly silent on (e.g. no chart palette),
+      and that gap-fill is itself a `recommend` OQ that must not contradict template idioms.
+    → no Design-Source recommend OQ for the parts the template already covers.
+  ELIF no design source in PRD/Figma/KB AND no scanned template design system
+       (true greenfield / --greenfield):
+    → consult references/design-intelligence/product-style-map.yaml using PRD signals
+      (product type, industry, brand hints)
+    → emit a GROUNDED RECOMMENDATION (never a silent default):
+        OQ-DESIGN-SOURCE-1 [P1] [tech]
+          resolution_mode: recommend
+          recommendation: { style, palette, typography, a11y_level }
+          rationale: "<PRD signal> → design-intelligence/product-style-map"
+          scan_citations: [references/design-intelligence/product-style-map.yaml#<key>, <PRD §>]
+          fallback_if_wrong: "blocking — request a design source from the PO"
+    → user CONFIRMS (or via resolve-oq) → THEN write the design_system block
 ```
 
-On acceptance, the vault gains:
-- `06-constraints.md > Design system` — style / palette / tokens / a11y, each line cited to design-intelligence + the PRD signal.
-- `vault.json` → new `design_system: { style, palette, typography, a11y_level, provenance }` block.
+On acceptance (or template derivation), the vault gains:
+- `06-constraints.md > Design system` — style / palette / tokens / a11y, each line cited to its source (template `starterkit-context.yaml §ui_ux`, or design-intelligence + the PRD signal).
+- `vault.json` → new `design_system: { style, palette, typography, a11y_level, source, provenance }` block, where `source ∈ {prd, scanned-template, design-intelligence-recommend}`.
 
 **Moat preserved:** this is `recommend` (flagged + rationale + citation + fallback + confirmation), exactly the existing tech-OQ `recommend` pattern — not the forbidden "defaulted standard."
 
@@ -89,14 +105,21 @@ Extend the existing `ui_ux` starterkit slice (which already injects `design_toke
 
 ```
 IF "ui_ux" in unit.starterkit_relevance:
-  slice.design_system = vault.design_system          # style + palette + tokens + a11y
-  + inject the RELEVANT slice of references/design-intelligence:
-      - style-principles[chosen_style]   (traits, CSS keywords, anti-patterns)
-      - ux-rules                          (required states + a11y for this unit's component)
-  → all as INJECTED TEXT in the dispatch prompt (NOT a Skill-invoke)
+  # Template flow is authoritative: the EXISTING starterkit design_tokens / layout_extends /
+  # idioms (already injected) WIN. design_system supplements; it never overrides them.
+  IF vault.design_system present:
+    slice.design_system = vault.design_system          # style + palette + a11y
+    + inject the RELEVANT slice of references/design-intelligence:
+        - style-principles[chosen_style]   (traits, CSS keywords, anti-patterns)
+        - ux-rules                          (required states + a11y for this unit's component)
+    → all as INJECTED TEXT in the dispatch prompt (NOT a Skill-invoke)
+    → when design_system.source == "scanned-template": the `Design system:` line restates the
+      TEMPLATE's tokens/idioms (so the bolt follows the repo's existing flow), and the
+      design-intelligence slice is injected ONLY as gap-fill guidance — explicitly subordinate
+      to the starterkit tokens already in the prompt.
 ```
 
-The bolt subagent renders the view per the **chosen, cited** style/palette instead of a generic look.
+The bolt subagent renders the view per the **template's flow** (when scanned) or the **chosen, cited** style/palette (greenfield) — never a generic look, and never overriding an existing template.
 
 ## 6. Validation (reuse, no new hook)
 
