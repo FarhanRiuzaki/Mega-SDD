@@ -22,6 +22,16 @@ Deep advisor-guided audit of the mega-sdd skills (full trail in `plugins/mega-sd
 - `README.md` release narrative was stuck at `v4.0.0 (current)` despite the 4.1.0 stamp → added the v4.1.0 and v4.2.0 narratives.
 - `commands/replay.md` example used a non-canonical `vault_version: "1.2.0"` → corrected to `"1.1"`.
 
+### Fixed — Windows install-deps (skill 1.0.0 → 1.1.0)
+
+- **Some native deps could not install on Windows.** `tree-sitter`, `ast-grep`, `tectonic`, and `jd` had no `windows-bash` entry in `tool-matrix.yaml` — they only resolved through the `cargo`/`npm`/`go` fallback, so a Windows box with winget/scoop but no Rust/Node/Go reported them `unsupported` and skipped them. Added native **Scoop** matrix entries for all four (Scoop is their canonical Windows source per their own docs and `references/tooling-install.md`); now every tool has at least one Windows install path.
+- **Fallback chain is now Windows-aware** (`os-detection.md`): a secondary native Windows manager that is installed but not the detected primary (scoop → winget → choco) is tried before the cargo/npm/go runtime fallbacks — so a winget-primary box reaches the scoop-only tools when Scoop is present.
+- **No more silent skips on Windows:** a tool skipped purely for lack of a manager now surfaces the concrete remedy (install Scoop, or a runtime), instead of a bare "unsupported" line. Human guide `references/tooling-install.md` updated to match.
+
+### Changed — example PRD reflects the canonical standard
+
+- `tests/scenarios/sample-prd-clinic.md` (the first-run reference PRD) rewritten to the canonical `docs/templates/prd-template.md` standard: full required frontmatter (`type`/`version`/`status`/`date`/`authors`/`industry`/`stakeholders`), a single `CLINIC` scope, `universal_sections`, and the `§`-section convention (`§1`–`§9` universal + `§Clinic` scope sections). All original content preserved (flows F-U/F-S, data model, OQs re-tagged `OQ-CLINIC-NNN [P*]`).
+
 ### Noted — confirmed but deferred (advisory-layer, future iter)
 
 - execute-bolts→detect-drift handoff carries `suggested_args: []`; the snapshot-reuse / `--auto-gate` coupling is prose-only (handoff seamlessness).

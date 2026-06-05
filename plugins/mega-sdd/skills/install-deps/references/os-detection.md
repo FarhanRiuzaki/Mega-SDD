@@ -84,8 +84,20 @@ case "$OS" in
     ;;
 esac
 
-# === Step 3: Detect cross-platform fallback managers ===
+# === Step 3: Detect fallback managers ===
 FALLBACKS=""
+# On Windows, a SECONDARY native manager (scoop/winget/choco that is present but is
+# NOT the detected primary) is a first-class fallback. Several tools (tree-sitter,
+# ast-grep, tectonic, jd) ship natively only via scoop, so a winget-primary box must
+# still reach them when scoop is installed — prefer these over runtime installs.
+if [ "$OS" = "windows-bash" ]; then
+  for m in scoop winget choco; do
+    if [ "$m" != "$PKG_MGR" ] && command -v "$m" >/dev/null 2>&1; then
+      FALLBACKS="${FALLBACKS}${m} "
+    fi
+  done
+fi
+# Cross-platform runtime fallbacks (work on every OS incl. Windows when present)
 command -v cargo >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}cargo "
 command -v npm >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}npm "
 command -v go >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}go "
@@ -111,18 +123,20 @@ echo "FALLBACKS: $FALLBACKS"
 
 - **macOS without brew**: PKG_MGR = `none` initially; install-deps proposes installing brew first via official Apple-pkg-manager-friendly method. Auto-execution of Homebrew's own install script (`/bin/bash -c "$(curl -fsSL https://...)"`) is FORBIDDEN per safety rails — instead, point user to https://brew.sh and instruct manual install.
 - **WSL Ubuntu without `apt`**: extremely rare; happens in chroot/container envs. Halt `pkg_mgr_not_found` with hint to install apt.
-- **Windows native (no WSL, no git-bash)**: out of scope for Iter 55 — user instructed to install WSL Ubuntu and re-run.
+- **Windows native (no WSL, no git-bash)**: out of scope — user instructed to install WSL Ubuntu (or git-bash) and re-run.
+- **Windows + winget primary (no scoop, no runtimes)**: `ripgrep`, `pandoc`, and `gh` install via winget, but `tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is `scoop`, with `cargo`/`npm`/`go` as cross-platform fallbacks. If none of scoop/cargo/npm/go is present, those four are reported `unsupported` with the concrete remedy (install scoop, or a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
 - **Alpine `apk`**: most mega-sdd deps (pandoc, tree-sitter) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
 
 ## Fallback chain
 
 When primary PKG_MGR lacks a tool (per `tool-matrix.yaml`), install-deps Step 3 tries fallback managers in this order:
 
+0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. This matters because `tree-sitter`, `ast-grep`, `tectonic`, and `jd` ship natively on Windows only via **scoop**, so a `winget`-primary box reaches them through this step when scoop is present.
 1. `cargo` (Rust-based: tree-sitter-cli, ast-grep, ripgrep, tectonic)
 2. `npm` (Node-based: markdownlint-cli2, tree-sitter-cli, @ast-grep/cli)
 3. `go install` (Go-based: jd)
 
-If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation).
+If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation). On Windows specifically, when an `unsupported` tool was skipped purely for lack of a manager, the warning MUST name the concrete remedy — "install `scoop` (https://scoop.sh) then re-run, or install Node/Rust/Go for the cross-platform fallback" — rather than a bare skip, so the user knows why the tool is missing and how to get it.
 
 ## Cross-reference
 

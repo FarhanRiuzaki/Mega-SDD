@@ -29,17 +29,24 @@ tools:
         requires_sudo: true
         verify_cmd: "command -v tree-sitter-cli"
         size_mb: 5
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install tree-sitter"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        size_mb: 6
+        notes: "scoop is the native Windows source for tree-sitter (per tree-sitter docs); no winget package"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install tree-sitter-cli"
         verify_cmd: "command -v tree-sitter-cli"
         size_mb: 8
-        notes: "Cross-platform fallback when no native pkg available"
+        notes: "Cross-platform fallback when no native pkg available (incl. Windows w/ Rust)"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g tree-sitter-cli"
         verify_cmd: "command -v tree-sitter-cli"
         size_mb: 6
+        notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
   - id: ast-grep
     used_by: [execute-bolts, generate-units]
@@ -58,16 +65,24 @@ tools:
         verify_cmd: "command -v ast-grep"
         size_mb: 12
         notes: "No native apt pkg; cargo is the canonical install for ast-grep on Debian/Ubuntu"
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install ast-grep"
+        verify_cmd: "command -v ast-grep || command -v sg"
+        size_mb: 10
+        notes: "scoop is the native Windows source (matches references/tooling-install.md); no winget package"
       - os: any
         pkg_mgr: cargo
-        install_cmd: "cargo install ast-grep"
+        install_cmd: "cargo install ast-grep --locked"
         verify_cmd: "command -v ast-grep"
         size_mb: 12
+        notes: "Cross-platform fallback (incl. Windows w/ Rust)"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g @ast-grep/cli"
         verify_cmd: "command -v ast-grep"
         size_mb: 10
+        notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
   - id: ripgrep
     used_by: [scan-codebase, bind-codebase, detect-drift, lint-units]
@@ -117,11 +132,18 @@ tools:
         install_cmd: "brew install jd"
         verify_cmd: "command -v jd"
         size_mb: 4
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install jd"
+        verify_cmd: "command -v jd"
+        size_mb: 8
+        notes: "scoop native Windows source; otherwise the go fallback below"
       - os: any
         pkg_mgr: go
         install_cmd: "go install github.com/josephburnett/jd@latest"
         verify_cmd: "command -v jd"
         size_mb: 8
+        notes: "Cross-platform fallback (incl. Windows w/ Go)"
 
   - id: pandoc
     used_by: [emit-fsd]
@@ -173,11 +195,18 @@ tools:
         verify_cmd: "command -v tectonic"
         size_mb: 60
         notes: "No native apt pkg in older Ubuntu; cargo fallback"
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install tectonic"
+        verify_cmd: "command -v tectonic"
+        size_mb: 60
+        notes: "scoop native Windows source (per tectonic docs); no winget package"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install tectonic"
         verify_cmd: "command -v tectonic"
         size_mb: 60
+        notes: "Cross-platform fallback (incl. Windows w/ Rust)"
 
   - id: markdownlint-cli2
     used_by: [lint-units]
