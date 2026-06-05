@@ -36,20 +36,24 @@ That's it. Mega-sdd runs the full pipeline: parse PRD → scan codebase → bind
 /plugin install superpowers   # recommended companion (TDD discipline)
 ```
 
-For higher precision (recommended, optional):
+For higher precision (optional, recommended), let the OS-aware installer set up the native binaries for you:
 
 ```bash
-# macOS:
-brew install tree-sitter ast-grep ripgrep jd
-
-# Cross-platform:
-cargo install tree-sitter-cli ast-grep ripgrep
-go install github.com/josephburnett/jd@latest
+/mega-sdd:install-deps
 ```
 
-Mega-sdd works WITHOUT these native binaries (graceful fallbacks). Install for AST-precise extraction + faster diff + structured analysis. Full install matrix: [`plugins/mega-sdd/references/tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+It detects your OS + package manager (brew / apt / dnf / winget / scoop / cargo / npm / go) and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `tectonic` with safety rails (never sudo-auto, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Manual one-liners per platform (incl. Windows): [`plugins/mega-sdd/references/tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
-### 2. Try a guided scenario
+### 2. Keep it updated
+
+```bash
+/mega-sdd:update-plugin                          # pull the latest plugin from the marketplace repo (fast-forward only)
+/plugin marketplace update grand-design-spec     # rebuild the plugin cache to the new version
+```
+
+Then restart Claude Code (or reload the plugin) so new commands + skills register. `/mega-sdd:update-plugin` reports the before→after version, never touches your project, and tells you if you're already current. Your installed version shows in the header above and in `/plugin`.
+
+### 3. Try a guided scenario
 
 Step-by-step walkthroughs in [`tests/scenarios/`](tests/scenarios/):
 
@@ -68,7 +72,7 @@ Each scenario:
 - Common pitfalls + recovery
 - Sample PRD included ([`tests/scenarios/sample-prd-clinic.md`](tests/scenarios/sample-prd-clinic.md))
 
-### 3. Common invocations
+### 4. Common invocations
 
 ```bash
 /mega-sdd:auto ./prd.md                   # PRD → working code (5 phases)
@@ -153,24 +157,9 @@ Three scopes of markdown + JSON memory:
 
 ### 6. Audit-driven evolution (honest debt accounting)
 
-Major versions close prior audit findings. The **v4 lean-core** rebuild was driven by [`research/2026-06-04-architecture-modernization-audit.md`](research/2026-06-04-architecture-modernization-audit.md) — skills −70%, Hybrid enforcement, first-class agents. The pre-v4 iteration-by-iteration audit log (in `docs/superpowers/audits/`) is retained below for transparency:
+Major versions close prior audit findings. Each audit is structured markdown with severity-classified findings + a recommended closure scope — **nothing hidden, nothing inflated.** The **v4 lean-core** rebuild came out of [`research/2026-06-04-architecture-modernization-audit.md`](research/2026-06-04-architecture-modernization-audit.md) (skills −70%, Hybrid enforcement, first-class agents). The latest — **v4.2.0** — was an advisor-guided skills audit that traced the enforcement spine end-to-end and found + closed one real moat gap (the binding→units gate now enforces CONFLICT *resolution*, not just ID propagation); trail in [`plugins/mega-sdd/AUDIT.md`](plugins/mega-sdd/AUDIT.md).
 
-| Audit iter | Method | Findings | Closure iter |
-|---|---|---|---|
-| Iter 24 (v3.16.0) | manual + targeted | 27 findings | Iter 25 (v3.17.0) |
-| Iter 28 (v3.20.0) | manual + targeted | 13 findings | Iter 29 (v3.21.0) |
-| Iter 31 (v3.22.0) | 13 parallel subagents × 10 dimensions | 179 findings | Iter 33 (v3.24.0) closes 3 of top 5 areas |
-| Iter 33 (v3.24.0) | hybrid: deep audit + per-skill probe | 13-skill scorecard | Iter 34 candidates documented |
-| Iter 38 (v3.26.2) | E2E pipeline optimization audit | 37 findings (12 P1/HIGH + 17 P2/MEDIUM + 8 LOW) | Iters 39-52 (v3.26.3 → v3.35.1) — all P1/HIGH + bulk P2 closed; 3 fix-forwards (Iter 43/48/52) caught release-blockers |
-| Iter 53 (v3.36.0) | proactive producer→consumer meta-audit | 3 PARTIAL findings (no orphans) | Iter 53 wired all 3 consumers atomically (same-iter closure) |
-| Iter 56 (v3.38.0) | post-Iter-55 fresh deep audit | 38 findings (8 P1 / 22 P2 / 8 P3) — same scale as Iter 38 | Iter 57-62 closed 34 of 38 (all P1 + 17 P2 + 5 P3 + 4 design-accepts); v3.38.1 → v3.41.0 range; 4 deferred items documented |
-| Iter 63 (v3.42.0) | Performance + sharpness SP1 (Quick Wins) — perf audit | 7 audit findings (sizing + duplication + bloat) | 5 of 6 deliverables ship (FSD opt-out + CHANGELOG rotation + classifier rules + guard preview + command differentiation); 1 deferred (skill body trim → Iter 63.5 dedicated). SP2 (Iter 64-70) + SP3 (v4.0.0 candidate) roadmap committed in spec |
-| Iter 78 (v3.69.0) | code-delivery deep audit + real-run evidence (tradefinance Phase-2) | root causes: unenforced delivery quality, zero UI/UX gate, module-altitude decomposition, fan-out divergence | 7 tech-agnostic code-delivery gates shipped (decomposition reasoning + UI/UX), each fixture-verified against the real run |
-| Iter 78.1 (v3.69.2) | E2E integration audit of the 8-gate `execute-bolts` stack (43-agent) | 35 findings (3 CRITICAL: fail-open, tech-agnostic breach, partial false-positive) | ALL resolved — stack is deadlock-safe + precision-sound; punch-list cleared |
-| Iter 79 (v3.70.0) | end-to-end pipeline-intelligence audit (4 parallel lanes, every finding graded enforceable, fixture-anchored) | a real defect (conflict-classification gate enforced nothing) + 10 per-phase reasoning gaps across all phases | 11 enforceable fixes shipped (fan-out parity, UI-deferral, predictive preflight, inbox side-effect parity, decomposition-altitude, OQ mis-tag, codebase-map depth, KB reengineering, typed confidence); 19/19 fixtures pass |
-| v4.2.0 (2026-06-05) | advisor-guided deep skills audit — enforcement spine (prose-claim vs hook-reality), command↔skill parity, inter-skill data contracts, every subagent lead re-traced in code | "works by design" overall + 1 real moat gap (binding→units gate checked CONFLICT-ID propagation, not resolution — an unresolved-but-cited CONFLICT slipped) + 1 cap inconsistency + 3 doc/version-stamp drifts | moat gate now fail-closes on unresolved `### CONFLICT-` headings (TDD `tests/moat/`); dispatch-prompt caps synced; doc/version fixes; 2 advisory-layer gaps logged for a future iter. Trail: `plugins/mega-sdd/AUDIT.md` |
-
-Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
+The full per-release audit history lives in [`docs/superpowers/audits/`](docs/superpowers/audits/) and every version in [`CHANGELOG.md`](CHANGELOG.md) — that's how the plugin keeps technical debt visible instead of accumulating silently.
 
 ### TL;DR — why pick mega-sdd
 
@@ -210,7 +199,7 @@ flowchart TD
     VAULT --> BIND
     BIND --> BGATE{CONFLICT?}:::decision
     BGATE -->|blocks units| RESOLVE
-    BGATE -->|clean| BOUND[(🔒 bound-vault/<br/>+ binding.md)]:::artifact
+    BGATE -->|clean| BOUND[(🔒 bound/<br/>+ binding.md)]:::artifact
     BOUND --> GEN
 
     %% Greenfield path
@@ -375,17 +364,19 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 <details>
 <summary><b>⚡ Native-tool upgrades (all optional, graceful fallback)</b></summary>
 
-5 production-grade swaps, all with graceful fallback:
+8 optional native tools, each with a graceful fallback. `/mega-sdd:install-deps` installs them OS-aware (or install manually):
 
 | Subsystem | Native tool | Fallback |
 |---|---|---|
-| scan-codebase symbol extraction | tree-sitter (Aider pattern, 45k ⭐) | regex (v1.2 behavior) |
-| Hard Rules grammar | ast-grep YAML v2 (5-10× expressivity) | bespoke v1 grammar preserved |
+| scan-codebase symbol extraction | tree-sitter (Aider pattern) | regex engine |
+| Hard Rules grammar | ast-grep YAML v2 (5–10× expressivity) | bespoke v1 grammar |
 | Internal grep operations | ripgrep `--json` (structured records) | GNU grep |
 | Vault JSON/YAML diff | jd (RFC-6902 patches; replay-able) | manual Read+compare |
-| Vault prose lint | markdownlint-cli2 (optional) | skill-internal heuristics |
+| FSD PDF rendering | pandoc + tectonic | Markdown / HTML print-to-PDF |
+| Vault prose lint | markdownlint-cli2 | skill-internal heuristics |
+| PR automation | gh (GitHub CLI) | manual PR |
 
-All adoptions OPTIONAL. Detection via `command -v`. Install once via your package manager — see [`plugins/mega-sdd/references/tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+All OPTIONAL, detected via `command -v`. Install with `/mega-sdd:install-deps`, or per-platform (incl. Windows) — see [`plugins/mega-sdd/references/tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
 </details>
 
@@ -495,6 +486,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 | Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
 | Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end) |
 | Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
+| Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update grand-design-spec` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
 | Privacy-sensitive run | `/mega-sdd:auto ./prd.md --memory-off` |
