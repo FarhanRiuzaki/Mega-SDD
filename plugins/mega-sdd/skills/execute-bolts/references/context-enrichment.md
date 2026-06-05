@@ -107,6 +107,19 @@ IF "rbac" in unit.starterkit_relevance AND starterkit_context.rbac exists:
 
 IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
+  # TEMPLATE FLOW IS AUTHORITATIVE: the starterkit design_tokens/layout/idioms above WIN. Anything
+  # from design_system only SUPPLEMENTS them — it must never override the scanned template.
+  IF vault.design_system present (vault-contract.md §design_system):
+    slice.design_system = vault.design_system (style, palette, a11y_level, source)
+    IF design_system.source == "scanned-template":
+      # the `Design system:` line restates the TEMPLATE's own style/tokens; the design-intelligence
+      # slice (style-principles/ux-rules) is injected ONLY as gap-fill, explicitly subordinate to the
+      # starterkit tokens already in the prompt — the bolt follows the repo's existing flow.
+    ELSE:  # source == design-intelligence-recommend or prd (greenfield / explicit source)
+      # pull the matching slice of references/design-intelligence: style-principles[style]
+      # (traits + CSS keywords + anti-patterns) and the a11y rows of ux-rules.md, as injected text
+      # so the bolt renders ON the chosen style.
+    # ALL of this is INJECTED TEXT — never a Skill-invoke.
   # design_tokens (colors/spacing/fonts) is INCLUDED in the ui_ux slice. A UI bolt that never
   # sees the project's colors/spacing/fonts re-invents generic defaults; injecting the actual
   # tokens anchors the view to the design system. design_tokens is MID-priority in the
@@ -243,6 +256,9 @@ RBAC: lib=<slice.rbac.lib>, role_model=<slice.rbac.role_model>, middleware=<slic
 UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notification_lib>, idioms=[<slice.ui_ux.idioms joined by "; ">]
 <IF slice.ui_ux.design_tokens present:>     # emit the literal `Design tokens:` marker line
 Design tokens: colors=<design_tokens.colors as compact map>; spacing=<design_tokens.spacing>; fonts=[<design_tokens.fonts joined by ", ">]
+</IF>
+<IF slice.design_system present:>           # emit the literal `Design system:` marker line (validate-dispatch-prompt.sh asserts it)
+Design system: <design_system.style>/<design_system.palette> (a11y <design_system.a11y_level>, source <design_system.source>) — render on this style; see injected style-principles + ux-rules. When source=scanned-template, the starterkit tokens above are authoritative.
 </IF>
 </IF>
 
