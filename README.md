@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 4.0.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 4.2.0 · **License:** MIT
 
 </div>
 
@@ -168,6 +168,7 @@ Major versions close prior audit findings. The **v4 lean-core** rebuild was driv
 | Iter 78 (v3.69.0) | code-delivery deep audit + real-run evidence (tradefinance Phase-2) | root causes: unenforced delivery quality, zero UI/UX gate, module-altitude decomposition, fan-out divergence | 7 tech-agnostic code-delivery gates shipped (decomposition reasoning + UI/UX), each fixture-verified against the real run |
 | Iter 78.1 (v3.69.2) | E2E integration audit of the 8-gate `execute-bolts` stack (43-agent) | 35 findings (3 CRITICAL: fail-open, tech-agnostic breach, partial false-positive) | ALL resolved — stack is deadlock-safe + precision-sound; punch-list cleared |
 | Iter 79 (v3.70.0) | end-to-end pipeline-intelligence audit (4 parallel lanes, every finding graded enforceable, fixture-anchored) | a real defect (conflict-classification gate enforced nothing) + 10 per-phase reasoning gaps across all phases | 11 enforceable fixes shipped (fan-out parity, UI-deferral, predictive preflight, inbox side-effect parity, decomposition-altitude, OQ mis-tag, codebase-map depth, KB reengineering, typed confidence); 19/19 fixtures pass |
+| v4.2.0 (2026-06-05) | advisor-guided deep skills audit — enforcement spine (prose-claim vs hook-reality), command↔skill parity, inter-skill data contracts, every subagent lead re-traced in code | "works by design" overall + 1 real moat gap (binding→units gate checked CONFLICT-ID propagation, not resolution — an unresolved-but-cited CONFLICT slipped) + 1 cap inconsistency + 3 doc/version-stamp drifts | moat gate now fail-closes on unresolved `### CONFLICT-` headings (TDD `tests/moat/`); dispatch-prompt caps synced; doc/version fixes; 2 advisory-layer gaps logged for a future iter. Trail: `plugins/mega-sdd/AUDIT.md` |
 
 Each audit produces structured markdown with severity-classified findings + recommended closure scope. **Nothing hidden, nothing inflated.** This is how the plugin keeps technical debt visible instead of accumulating silently.
 
@@ -363,7 +364,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer; `plugin.json` is the single source of truth (`marketplace.json` matches it). Major bump for breaking renames, rails changes, or marketplace incompatibility. Currently **4.0.0** (v4 lean-core).
+- **Plugin**: SemVer; `plugin.json` is the single source of truth (`marketplace.json` matches it). Major bump for breaking renames, rails changes, or marketplace incompatibility. Currently **4.2.0** (moat audit: binding→units gate enforces CONFLICT resolution; 4.1.0 added UI/UX design intelligence; 4.0.0 v4 lean-core).
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -433,7 +434,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 ```
 .
 ├── .claude-plugin/marketplace.json         # marketplace manifest
-├── plugins/mega-sdd/                       # the plugin itself (v4.0.0)
+├── plugins/mega-sdd/                       # the plugin itself (v4.2.0)
 │   ├── README.md                           # plugin folder shortform
 │   ├── skills/                             # 15 skills + _vendored/
 │   │   ├── using-mega-sdd/                 # anchor skill (auto-injected)
@@ -473,7 +474,7 @@ Three scopes of markdown + JSON memory persist context across sessions. Self-lea
 │   ├── skill-triggering/                   # 14 manual trigger fixtures
 │   ├── integration/                        # 7 E2E pipeline tests
 │   └── vendoring/
-├── CHANGELOG.md                            # version history → v4.0.0 (pre-v4 rotated to CHANGELOG-ARCHIVE.md)
+├── CHANGELOG.md                            # version history → v4.2.0 (pre-v4 rotated to CHANGELOG-ARCHIVE.md)
 ├── CONTRIBUTING.md
 └── LICENSE
 ```
