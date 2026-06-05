@@ -1,5 +1,10 @@
 ---
-# REQUIRED frontmatter (machine-read by mega-sdd v3.20.0+)
+# REQUIRED frontmatter — machine-read by the mega-sdd skills (keep this block 1:1 with them).
+#   Primary reader:  generate-intent  → Mode A PRD parse + scope picker (Step 0.9).
+#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 sign-off table;
+#                    resolve-oq        → industry seeds OQ recommendation context;
+#                    diff-vault        → re-diffs the vault when this doc changes (by sha256).
+#   Every key below is consumed by ≥1 skill EXCEPT where annotated "informational only".
 title: "<Project Name>"
 type: PRD
 version: "1.0"
@@ -49,7 +54,8 @@ cross_scope_dependencies:
   - { from: BE, to: MW, contract: "Event bus per §Middleware.2 message schema" }
   - { from: FE, to: MW, contract: "Realtime channels per §Middleware.4" }
 
-# OPTIONAL: Industry-specific compliance mapping
+# OPTIONAL: Industry-specific compliance mapping.
+# INFORMATIONAL ONLY — not machine-read by any mega-sdd skill; kept for human/audit reference.
 regulatory_mapping:
   - { ref: "<regulation citation>", applies_to: "<scope>.<area>" }
 ---

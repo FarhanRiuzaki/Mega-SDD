@@ -1,5 +1,10 @@
 ---
-# REQUIRED frontmatter (machine-read by mega-sdd v3.20.0+)
+# REQUIRED frontmatter — machine-read by the mega-sdd skills (keep this block 1:1 with them).
+#   Primary reader:  generate-intent  → Mode A BRD parse + scope picker (Step 0.9); `type: BRD`
+#                                        routes the business-view sections below.
+#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 sign-off table;
+#                    resolve-oq        → industry seeds OQ recommendation context;
+#                    diff-vault        → re-diffs the vault when this doc changes (by sha256).
 title: "<Project Name>"
 type: BRD
 version: "1.0"
