@@ -33,7 +33,7 @@ When this skill is invoked without `--auto`, behavior is the standard interactiv
 
 ## Memory layer
 
-When memory is enabled (default; opt-out via `--memory-off`), this skill participates in the mega-sdd memory layer per `../memory/references/memory-schema.md`.
+When memory is enabled (default; opt-out via `--memory-off`), this skill participates in the mega-sdd memory layer per `memory/references/memory-schema.md`.
 
 ### Writes
 
@@ -119,11 +119,11 @@ OQ-AR-7 [P1] [tech] (scope: BE — Backend API):
   ...
 ```
 
-This helps multi-architect scenarios where one OQ might involve cross-scope dependencies — the user knows which scope they are answering for. Decisions written to memory `<project>/.mega-sdd/memory/decisions.md` `## OQ resolutions` table get the optional `scope` column when applicable. The handoff YAML includes the `scope:` block (below) per `../orchestrate-flow/references/handoff-contract.md` when the vault has scope.
+This helps multi-architect scenarios where one OQ might involve cross-scope dependencies — the user knows which scope they are answering for. Decisions written to memory `<project>/.mega-sdd/memory/decisions.md` `## OQ resolutions` table get the optional `scope` column when applicable. The handoff YAML includes the `scope:` block (below) per `orchestrate-flow/references/handoff-contract.md` when the vault has scope.
 
 ## Handoff emission
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per `../orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per `orchestrate-flow/references/handoff-contract.md`:
 
 ```yaml
 handoff:

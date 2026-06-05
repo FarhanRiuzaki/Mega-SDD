@@ -26,7 +26,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 ## Outputs
 
 - `binding.md` — always written, even when blocking.
-- `<vault>-bound/` (sibling of the vault dir) — written ONLY when no CONFLICTs (or `--strict` and no OQs).
+- `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/` per `references/paths.md`) — written ONLY when no CONFLICTs (or `--strict` and no OQs).
 
 ## Procedure
 
@@ -60,8 +60,8 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 **5. Decision gate — non-negotiable:**
 
-- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>-bound/`** (copy the vault dir; inject inline binding annotations per `binding-contract.md`). Announce clean + next step `/mega-sdd:generate-units <vault>-bound/`.
-- If `conflict > 0` OR (`--strict` AND `oq > 0`): **DO NOT write `<vault>-bound/`.** Announce the blocker, emit the `bind_conflict` halt YAML (below), route to `resolve-oq`. Per-conflict recovery (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind ↔ resolve-oq sequence → `references/conflict-resolution.md`.
+- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>/bound/`** (copy the 7 vault files into the nested `bound/` subdir; inject inline binding annotations per `binding-contract.md`). Announce clean + next step `/mega-sdd:generate-units <vault>/`.
+- If `conflict > 0` OR (`--strict` AND `oq > 0`): **DO NOT write `<vault>/bound/`.** Announce the blocker, emit the `bind_conflict` halt YAML (below), route to `resolve-oq`. Per-conflict recovery (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind ↔ resolve-oq sequence → `references/conflict-resolution.md`.
 
 ```yaml
 blocker:
@@ -100,7 +100,7 @@ Missing `codebase-map.md` → run `scan-codebase` first. Vault missing `00-index
 
 ## Hand-off
 
-Clean binding → `/mega-sdd:generate-units <vault>-bound/`. Blocked → `/mega-sdd:resolve-oq --binding <binding.md>`. Under `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd:auto`), emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — and participate in the memory layer. Both → `references/auto-memory-handoff.md`.
+Clean binding → `/mega-sdd:generate-units <vault>/` (the bound-vault is the nested `<vault>/bound/`). Blocked → `/mega-sdd:resolve-oq --binding <binding.md>`. Under `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd:auto`), emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — and participate in the memory layer. Both → `references/auto-memory-handoff.md`.
 
 ## Specialist references (load on demand)
 

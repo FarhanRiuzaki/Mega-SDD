@@ -18,7 +18,7 @@ Procedure:
 
 1. **Verify vault**: `<vault-path>/units/U-*.md` exists; halt with helpful error if not.
 
-2. **Pre-flight**: probe `ast-grep` on PATH (required for v2 syntax validation). If absent, halt with install commands per `skills/execute-bolts/references/hard-rule-grammar-v2.md` §Installation guidance.
+2. **Pre-flight**: probe `ast-grep` on PATH (required for v2 syntax validation). If absent, halt with install commands per `execute-bolts/references/hard-rule-grammar-v2.md` §Installation guidance.
 
 3. **Run migrate script**:
    ```bash
@@ -28,7 +28,7 @@ Procedure:
 
 4. **Per unit (when --auto-confirm not set)**:
    - Show v1 rules detected
-   - Show proposed v2 YAML conversion (Claude transforms via pattern matching per `references/hard-rule-grammar-v2.md` §Mapping v1 → v2)
+   - Show proposed v2 YAML conversion (Claude transforms via pattern matching per `execute-bolts/references/hard-rule-grammar-v2.md` §Mapping v1 → v2)
    - User confirms: ACCEPT / SKIP / EDIT (edit proposed v2 inline)
    - On ACCEPT: write v2 YAML; preserve v1 as HTML comment for audit
    - On SKIP: no changes; log to .migration-log.md

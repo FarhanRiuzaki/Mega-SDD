@@ -19,7 +19,7 @@ Argument parsing:
   - `--framework-pack=<path>` (v1.9+, Iter 23) — override built-in pack with project-specific file
   - `--strict-constitution` (v1.8+, Iter 20) — halt on constitution-violating CONFLICTs (default: warn-only)
 
-Follow `skills/bind-codebase/SKILL.md` procedure exactly. Output to `<vault>-bound/` (sibling) + `binding.md` at vault parent dir.
+Follow `skills/bind-codebase/SKILL.md` procedure exactly. Output to `<vault>/bound/` (nested, beside `units/` and `bolts/`) + `binding.md` at the vault root.
 
 Hard rails:
 - BLOCKING on conflict: never auto-resolve.

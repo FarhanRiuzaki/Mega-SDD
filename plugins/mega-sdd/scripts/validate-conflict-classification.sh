@@ -61,7 +61,8 @@ conflicts_resolved = 0
 
 binding_files = sorted(
     glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "binding.md")) +
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "*-bound", "binding*.md")) +
+    # Widened inner *-bound to * — covers canonical <vault>/bound/ AND legacy <vault>/*-bound/.
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "*", "binding*.md")) +
     glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "binding*.md"))
 )
 

@@ -26,7 +26,7 @@ For each unit with a non-empty `## Hard rules` body section:
 
 **For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via `ast-grep test --validate`. Unparseable → halt `hard_rule_unparseable`.
 
-**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `unit-schema.md` §Hard rule grammar. NEVER silently skip an unrecognized line — unparseable → halt `hard_rule_unparseable`:
+**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `generate-units/references/unit-schema.md` §Hard rule grammar. NEVER silently skip an unrecognized line — unparseable → halt `hard_rule_unparseable`:
 
 - `DO NOT modify <path>`
 - `DO NOT add new <manifest> dependencies`
@@ -73,7 +73,7 @@ blocker:
     unit_id: U-XXX
     offending_line: "<verbatim>"
     expected_grammar: [DO_NOT_MODIFY, DO_NOT_ADD_DEPS, NAMING_RULE, SIGNATURE_RULE, FILE_PRESENCE_RULE]
-  next_action: "Fix the unit's ## Hard rules section per references/unit-schema.md §Hard rule grammar."
+  next_action: "Fix the unit's ## Hard rules section per generate-units/references/unit-schema.md §Hard rule grammar."
 ```
 
 ```yaml

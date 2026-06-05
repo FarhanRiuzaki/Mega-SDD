@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 3.59.0 · **License:** MIT
+**Version:** 4.1.0 · **License:** MIT
 
 > 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
@@ -41,38 +41,22 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v3.59.0)
-├── skills/                       # 15 skills + _vendored/
-│   ├── using-mega-sdd/           # anchor skill (auto-injected) (v1.3.4)
-│   ├── memory/                   # memory + self-learning (v1.3.1)
-│   ├── emit-agents-md/           # AGENTS.md flatten (v1.2.5)
-│   ├── emit-fsd/                 # Confluence FSD generator (v1.0.0) — Iter 54
-│   ├── install-deps/             # OS-aware dep installer (v1.0.0) — NEW Iter 55
-│   ├── extract-intelligence/     # legacy → knowledge-base (v1.7.0)
-│   ├── generate-intent/          # PRD/brief/KB → vault (v1.15.1)
-│   ├── scan-codebase/            # tree-sitter AST scan (v2.7.2)
-│   ├── bind-codebase/            # validation gate + field diff (v1.10.3)
-│   ├── generate-units/           # atomic decomposition (v2.7.1)
-│   ├── execute-bolts/            # superpowers TDD bridge (v2.10.0)
-│   ├── orchestrate-flow/         # lifecycle router (v3.5.0)
-│   ├── resolve-oq/               # OQ resolver + recommendations (v0.9.3)
-│   ├── detect-drift/             # code vs vault (v1.4.1)
-│   ├── diff-vault/               # PRD revision + jd patches (v1.3.2)
-│   └── _vendored/                # superpowers fallback
-├── commands/                     # 22 slash commands (1 primary + 21 advanced)
-│   ├── auto.md                   # ⭐ THE command
-│   ├── generate-intent.md, scan-codebase.md, bind-codebase.md, generate-units.md, execute-bolts.md
-│   ├── extract-intelligence.md, orchestrate-flow.md, resolve-oq.md, diff-vault.md, detect-drift.md
-│   ├── memory.md, emit-agents-md.md, emit-fsd.md, install-deps.md, replay.md
-│   ├── lint-units.md, analyze-parallelism.md, list-modules.md    # [auto-invoked by /mega-sdd:auto]
-│   ├── migrate-rules.md, migrate-paths.md                         # one-off maintenance
-│   └── update-plugin.md
-├── references/
-│   ├── paths.md                  # canonical folder layout (Iter 10)
-│   └── tooling-install.md        # optional native binaries install matrix (Iter 14)
-├── hooks/                        # SessionStart hook
-├── scripts/                      # sync-superpowers + memory-migrations/
-├── CLAUDE.md                     # AI-agent contributor guidelines
+├── .claude-plugin/plugin.json    # plugin manifest (v4.1.0)
+├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
+│   ├── using-mega-sdd/           # anchor skill (auto-injected)
+│   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
+│   ├── generate-units/  execute-bolts/          # the core pipeline
+│   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/
+│   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
+│   └── _vendored/                # superpowers fallback (optional technique skills)
+├── agents/                       # 4 first-class subagents (NEW v4)
+│   ├── bolt-implementer.md, spec-reviewer.md, code-quality-reviewer.md   # execute-bolts two-stage review
+│   └── domain-extractor.md       # extract-intelligence wave worker
+├── commands/                     # 25 slash commands — your manual /mega-sdd: CLI entry points (auto = THE command)
+├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
+├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
+├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync-superpowers
+├── CLAUDE.md                     # AI-agent contributor guide (contracts + invariants)
 └── LICENSE
 ```
 
@@ -85,6 +69,10 @@ plugins/mega-sdd/
 Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfront confirmation. Diagnostics (lint, analyze, modules, emit) AUTO-INVOKED at appropriate phases per Iter 13 consolidation. Halt-protocol preserved across all iters.
 
 ## What's new
+
+### v4.0.0 — lean-core (current)
+
+Ground-up modernization to current Claude Code / Anthropic guidance. Skills slimmed to lean routers + progressive disclosure (−70% body prose, each ≤500 lines); **Hybrid hook enforcement** — the binding gate + high-value code-delivery gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting) hard-block `execute-bolts`, while the rest (dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are **advisory** via `/mega-sdd:analyze`; **first-class `agents/`** (bolt-implementer + spec/code reviewers for the two-stage review, domain-extractor for KB waves); bound-vault nested at `<vault>/bound/` per the canonical `paths.md`; CLAUDE.md narrative reset; version reconciled to 4.0.0. Full detail: root [`README.md`](../../README.md) + [`CHANGELOG.md`](../../CHANGELOG.md). *(The historical entries below describe pre-v4 versions; where they say a code-delivery gate "blocks," see the Hybrid split above for the current model.)*
 
 ### v3.72.0 — Extract-intelligence deepening (smarter reasoning, more cases, automatically)
 

@@ -77,10 +77,11 @@ def is_bolt_report(p):
     return bool(re.search(r"(?:^|/)bolts/U-[^/]+/bolt-report\.md$", p))
 
 def is_unit_path(p):
-    """Match unit file (both layouts: U-*.md OR U-*/unit.md) under *-bound/units/"""
-    if re.search(r"-bound/units/U-[^/]+\.md$", p):
+    """Match unit file (both file layouts: U-*.md OR U-*/unit.md) under any
+    .../units/ — covers canonical <vault>/units/ AND legacy <vault>-bound/units/."""
+    if re.search(r"/units/U-[^/]+\.md$", p):
         return True
-    if re.search(r"-bound/units/U-[^/]+/unit\.md$", p):
+    if re.search(r"/units/U-[^/]+/unit\.md$", p):
         return True
     return False
 
@@ -95,8 +96,9 @@ def find_unit_for_target(target_path):
     rel_target_from_cwd = os.path.relpath(abs_target, cwd) if abs_target.startswith(cwd) else None
 
     unit_paths = sorted(
-        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
-        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"))
+        # Widened *-bound → * — covers canonical <vault>/units AND legacy <vault>-bound/units.
+        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*.md")) +
+        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*", "unit.md"))
     )
     for up in unit_paths:
         try:
@@ -195,7 +197,7 @@ if is_unit_path(file_path):
         # Build inventory of available decision IDs from vault decisions/
         available = set()
         for dec_dir in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "decisions")) + \
-                       glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "decisions")):
+                       glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "*", "decisions")):
             for f in glob.glob(os.path.join(dec_dir, "*.md")):
                 # Filename pattern: D-NNN.md or D-P2-NNN.md etc.
                 fname = os.path.basename(f).replace(".md", "")

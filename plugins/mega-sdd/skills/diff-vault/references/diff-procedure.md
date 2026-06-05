@@ -78,7 +78,7 @@ For each approved change, use `Edit` (preferred) or `Write` (when restructuring 
 After applying approved changes, regenerate `vault.json` from the now-updated markdown so AI consumers don't see stale state.
 
 1. Read all 7 markdown files (post-apply state).
-2. Rebuild the manifest fields per `../generate-intent/references/vault-contract.md` §schema:
+2. Rebuild the manifest fields per `generate-intent/references/vault-contract.md` §schema:
    - `entities[]` from `03-data-model.md` DBML — add new entries this round, preserve existing.
    - `flows[]` from `04-flows.md` — add new flow IDs, optionally mark removed flows with their banner annotation in metadata. Existing flow IDs stay even when their content changed.
    - `adrs[]` from `05-decisions.md` — new D-XXX entries get `status: accepted` (or `superseded` if this round flipped a prior decision).

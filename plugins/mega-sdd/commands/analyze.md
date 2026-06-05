@@ -20,13 +20,13 @@ The report updates silently; user sees it in `.mega-sdd/CONSISTENCY-REPORT.md`.
 /mega-sdd:analyze
 ```
 
-Re-runs ALL 14 validators fresh + vault internal consistency checks. Use when:
+Re-runs the full validator suite fresh + vault internal consistency checks, and surfaces every code-delivery gate read-only from its state file. Use when:
 - Starting a new session (state files may be stale from prior session)
 - After resolving CONFLICTs or OQs — verify resolution propagated correctly
 - Before execute-bolts — comprehensive pre-flight
 - Periodic health check
 
-## Validators orchestrated (14)
+## Validators orchestrated (core set, re-run fresh)
 
 | # | Validator | Boundary |
 |---|---|---|
@@ -47,16 +47,12 @@ Re-runs ALL 14 validators fresh + vault internal consistency checks. Use when:
 
 Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
 
-### Advisory (non-blocking) code-delivery checks
+### Code-delivery gates (surfaced read-only)
 
-Surfaced read-only from their PostToolUse state files. These were demoted from PreToolUse hard-blocks to advisory — they appear in the report (an advisory FAIL shows as overall WARN, never FAIL) but never block `execute-bolts`:
+Beyond the core set above, the report surfaces every code-delivery gate's last status read-only from its PostToolUse state file (`NOT_RUN` until a chain writes it), so `/mega-sdd:analyze` is a true pre-flight of what will block `execute-bolts`:
 
-- `dispatch-prompt` — the ui_ux bolt dispatch prompt carries design tokens + a view exemplar
-- `fanout-parity` — view-bearing siblings declare the same kind of obligation
-- `ui-deferral` — a bolt-report doesn't defer a `## UI contract` to a later unit
-- `vault-flow-staging` — a flow preserves the `stages:` block its KB workflow carried
-
-The code-delivery gates that **remain HARD-BLOCKS** at PreToolUse (not advisory): flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration — plus the core invariants (binding→units handoff, preflight, scope-flag, anti-self-bypass).
+- **KEPT hard-blocks** — block `execute-bolts` at the PreToolUse gate; a FAIL here flips the report to FAIL: `flow-coverage`, `render-test` (via unit-spec), `sibling-consistency`, `ui-quality`, `cross-cutting-registration`. (Plus the core invariants enforced at the hook: binding→units handoff, preflight, scope-flag, anti-self-bypass.)
+- **DEMOTED to advisory** (v4 Hybrid — surfaced but NEVER block; an advisory FAIL shows as overall WARN): `dispatch-prompt`, `operator-UX` (vault-oqs), `fanout-parity`, `ui-deferral`, `vault-flow-staging`.
 
 ## Outputs
 

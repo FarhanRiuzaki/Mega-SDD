@@ -8,7 +8,7 @@ Invoke `mega-sdd:generate-units` via the Skill tool.
 User arguments: $ARGUMENTS
 
 Argument parsing:
-- First positional: vault or bound-vault directory (REQUIRED).
+- First positional: vault directory (REQUIRED) — contains `binding.md` + nested `bound/` after binding.
 - Flags: --refresh (renumber IDs), --max-complexity, --auto.
 
 Follow `skills/generate-units/SKILL.md` procedure. Output to `<vault>/units/` directory.

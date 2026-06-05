@@ -74,4 +74,4 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 ...
 ```
 
-Bound-vault annotation format (HTML comments injected into the `<vault>-bound/` copy) is specified in `binding-contract.md`.
+Bound-vault annotation format (HTML comments injected into the `<vault>/bound/` copy) is specified in `binding-contract.md`.

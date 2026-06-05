@@ -163,7 +163,7 @@ After action selection, write the field updates to `vault.json` immediately and 
 8. Update the OQ roll-up entry in `00-index.md` to also show `[x]` resolved with the same pointer.
 9. **Update `vault.json` (lock contract):** change the OQ's `status` from `open` to `resolved` in the manifest, recompute `open_questions_summary` counts. If a new ADR was created, add it to `adrs[]`. If a new entity field was added, update that entity in `entities[]`.
 
-   Acquire an exclusive file lock on `<vault>/vault.json.lock` per `../generate-intent/references/vault-contract.md §Concurrency contract` BEFORE writing vault.json. Backoff + retry 3×; fail with a `memory_in_use` halt if all retries fail. Release the lock after the atomic write completes. Lock acquisition is REQUIRED for every vault.json regen path in resolve-oq (Resolve / Out-of-Scope / Defer outcomes ALL write vault.json).
+   Acquire an exclusive file lock on `<vault>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE writing vault.json. Backoff + retry 3×; fail with a `memory_in_use` halt if all retries fail. Release the lock after the atomic write completes. Lock acquisition is REQUIRED for every vault.json regen path in resolve-oq (Resolve / Out-of-Scope / Defer outcomes ALL write vault.json).
 10. Show the user a confirmation summary of the diff.
 
 **If `Out of Scope`:**

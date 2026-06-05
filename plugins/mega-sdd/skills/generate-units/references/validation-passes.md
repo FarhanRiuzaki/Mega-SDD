@@ -26,7 +26,7 @@ Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirat
 
 ## 12.4 — Inject constitution clauses
 
-Per `../generate-intent/references/vault-contract.md §constitution`.
+Per `generate-intent/references/vault-contract.md §constitution`.
 
 For each unit, read `<vault>/constitution.md` + identify clauses relevant to the unit's:
 - target_files paths (matches §A clauses for files in those paths)
