@@ -10,7 +10,7 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
 
 ```json
 {
-  "vault_version": "1.0",
+  "vault_version": "1.1",
   "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
   "phase": 1,
   "phase_total": 1,
@@ -44,9 +44,27 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
     "HAS_TOKENS": false,
     "HAS_A11Y": false,
     "HAS_VOICE_BRAND": true
+  },
+  "design_system": {
+    "style": "minimalism",
+    "palette": "primary #2563EB; accent #EA580C",
+    "typography": "Modern Professional (Poppins/Open Sans)",
+    "a11y_level": "WCAG AA",
+    "source": "design-intelligence-recommend",
+    "provenance": "recommend:OQ-DESIGN-SOURCE-1 (references/design-intelligence/product-style-map.yaml#saas-general + PRD §1)"
   }
 }
 ```
+
+### §design_system (v1.1+)
+
+Present when a design system has been resolved for the vault — from a scanned template, an accepted Design-Source recommendation, or an explicit PRD source. Absent otherwise — never a silent default. Fields:
+
+- `style` / `palette` / `typography` / `a11y_level` — the resolved design system, each traceable to its source.
+- `source` — one of `prd` | `scanned-template` | `design-intelligence-recommend`. **Precedence (highest→lowest): `prd` > `scanned-template` > `design-intelligence-recommend`.** When a template was scanned (`starterkit-context.yaml §ui_ux`), `source: scanned-template` and the values are DERIVED FROM the template — ui-ux-pro-max never overrides it, only gap-fills.
+- `provenance` — the source citation: the resolving OQ tag + design-intelligence citation + PRD signal (for `design-intelligence-recommend`), or the `starterkit-context.yaml §ui_ux` anchor (for `scanned-template`). Required when the block is present (anti-halu: no design system without provenance).
+
+`vault_version` is bumped to `1.1` because this block is additive to the manifest. Consumers on `1.0` simply do not see it (backward compatible).
 
 ### Phase fields (v1.14+, Iter 35)
 
