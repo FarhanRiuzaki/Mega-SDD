@@ -40,7 +40,7 @@ cross_scope_dependencies:
   - { from: BE, to: MW, contract: "OrderCreated event per §Middleware.2 schema" }
   - { from: FE, to: MW, contract: "Realtime order updates per §Middleware.4" }
 
-regulatory_mapping:
+regulatory_mapping:   # informational only — not machine-read by any mega-sdd skill
   - { ref: "PCI-DSS 3.2", applies_to: "BE.payment_storage" }
 ---
 
