@@ -298,7 +298,7 @@ Install tree-sitter + re-run scan-codebase:
 ```bash
 brew install tree-sitter
 /mega-sdd:scan-codebase --engine=tree-sitter
-/mega-sdd:bind-codebase --refresh
+/mega-sdd:bind-codebase
 /mega-sdd:generate-units --refresh
 ```
 
