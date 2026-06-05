@@ -30,7 +30,7 @@ Build snapshot:
   "replay_schema": 1,
   "unit_id": "U-001",
   "captured_at": "2026-05-21T16:30:00Z",
-  "vault_version": "1.2.0",
+  "vault_version": "1.1",
   "git_sha_before": "<commit before bolt>",
   "git_sha_after": "<commit after bolt>",
   "test_command": "./vendor/bin/phpunit --filter=LoginExtensionTest",

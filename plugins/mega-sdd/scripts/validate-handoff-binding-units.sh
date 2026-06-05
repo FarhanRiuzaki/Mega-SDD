@@ -3,16 +3,21 @@
 #
 # Per plugins/mega-sdd/CLAUDE.md §Fork A scope. Audit response 2026-05-27 §F.
 #
-# Validates the binding → units handoff boundary for OQ-ID propagation discipline.
-# Walks <vault-root>/<phase>-bound/units/*.md frontmatter binding_refs against the
-# OQ-IDs declared in the corresponding binding doc. Drops are reported as
-# structured blockers; the result file is OVERWRITE-NOT-APPEND (current truth).
+# Validates the binding → units handoff boundary on two axes:
+#   1. OQ-ID + CONFLICT-ID *propagation* — every ID declared in the binding doc must be
+#      cited in some unit's frontmatter binding_refs (uncited => a "drop").
+#   2. CONFLICT *resolution* (the moat's invariant #2) — every ACTIVE `### CONFLICT-<id>`
+#      detail heading in the binding doc must be resolved (re-bound to conflicts=0, or
+#      marked ✅ / RESOLVED) before units/bolts proceed. An unresolved heading is a drop
+#      even if its ID is cited — closing the "cited-but-unresolved" gap.
+# Drops are reported as structured blockers; the result file is OVERWRITE-NOT-APPEND
+# (current truth) and is read by the execute-bolts PreToolUse gate (status==FAIL blocks).
 #
-# Honest scope (slice 1 — expanded later if this proves):
-#   - OQ-IDs only (CONFLICT-IDs and Hard Rules deferred to slice 2/3)
-#   - One boundary only: binding → units (vault→binding and units→bolts later)
-#   - Frontmatter citation = canonical trace (body mentions don't count — body is
-#     semantic context, frontmatter is structured traceability)
+# Scope notes:
+#   - Boundary: binding → units (vault→binding and units→bolts validated elsewhere)
+#   - Frontmatter citation = canonical trace for propagation (body mentions don't count)
+#   - Resolution scan reads structured `### CONFLICT-<id>` headings (not every mention),
+#     fail-closed: a heading with no resolution marker is treated as ACTIVE/blocking
 #
 # Usage:
 #   validate-handoff-binding-units.sh --cwd=<project-root> [--quiet]
@@ -174,6 +179,47 @@ for conflict_id in sorted(binding_conflicts.keys()):
             "found_in_units": [],
         })
 
+# --- Pass 3b: unresolved-CONFLICT block (the moat's literal invariant #2) ---
+# Invariant #2 promises "unresolved CONFLICTs block downstream unit/bolt generation."
+# The propagation passes above only check that CONFLICT-IDs are *cited*, not that they
+# are *resolved* — so an unresolved-but-cited CONFLICT would slip the gate. Per
+# binding-contract.md, each ACTIVE conflict is a `### CONFLICT-<id>` detail heading
+# carrying `Verdict: CONFLICT (BLOCKING)`; a resolved one is "marked ✅ / RESOLVED" and
+# is exempt. We scan the structured detail headings (not every CONFLICT-ID mention) and
+# fail-closed: a heading with no resolution marker is treated as ACTIVE → blocking.
+HEADING_RE = re.compile(r"^#{1,3}\s")
+CONFLICT_HEADING_RE = re.compile(r"^###\s+CONFLICT-", re.IGNORECASE)
+RESOLVED_RE = re.compile(r"✅|\bRESOLVED\b", re.IGNORECASE)
+for bp in binding_paths:
+    try:
+        with open(bp) as f:
+            blines = f.read().splitlines()
+    except Exception:
+        continue
+    i = 0
+    n_lines = len(blines)
+    while i < n_lines:
+        if CONFLICT_HEADING_RE.match(blines[i]):
+            head = blines[i]
+            j = i + 1
+            # Block spans from the heading to the next h1–h3 heading (exclusive) or EOF.
+            while j < n_lines and not HEADING_RE.match(blines[j]):
+                j += 1
+            block = "\n".join(blines[i:j])
+            cm = CONFLICT_RE.search(head)
+            cid = cm.group(0) if cm else "CONFLICT-?"
+            if not RESOLVED_RE.search(block):
+                drops.append({
+                    "type": "conflict_unresolved",
+                    "conflict_id": cid,
+                    "source_binding": os.path.relpath(bp, cwd),
+                    "heading": head.lstrip("# ").strip(),
+                    "expected": "resolve the CONFLICT (re-run /mega-sdd:bind-codebase until conflicts=0, or mark the entry ✅ / RESOLVED) before generating units or running bolts",
+                })
+            i = j
+        else:
+            i += 1
+
 # --- Pass 4: extras (cited by units but not in binding) ---
 extras = []
 for oq_id, cites in sorted(unit_oq_citations.items()):
@@ -199,7 +245,7 @@ report = {
     "status": status,
     "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     "validator": "validate-handoff-binding-units.sh",
-    "slice": "binding-to-units / OQ-IDs + CONFLICT-IDs / frontmatter",
+    "slice": "binding-to-units / OQ-IDs + CONFLICT-IDs propagation + CONFLICT resolution",
     "summary": {
         "binding_docs_checked": len(binding_paths),
         "units_checked": len(units_paths),
@@ -207,6 +253,7 @@ report = {
         "conflict_ids_in_binding": len(binding_conflicts),
         "oq_ids_cited_by_some_unit": len(unit_oq_citations),
         "conflict_ids_cited_by_some_unit": len(unit_conflict_citations),
+        "conflicts_unresolved": len([d for d in drops if d.get("type") == "conflict_unresolved"]),
         "drops": len(drops),
         "extras": len(extras),
     },

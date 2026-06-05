@@ -9,7 +9,7 @@
       "name": "mega-sdd",
       "source": "./plugins/mega-sdd",
       "description": "Spec-Driven Development for AI dev: intent → units → bolts pipeline with anti-hallucination guarantees and brownfield codebase grounding.",
-      "version": "4.1.0",
+      "version": "4.2.0",
       "author": { "name": "Farhan Riuzaki" },
       "license": "MIT",
       "keywords": [
@@ -18,7 +18,7 @@
       ],
       "category": "development",
       "tags": ["sdd", "spec", "ai", "architecture", "code-generation"],
-      "version_note": "4.0.0 = v4 lean-core: skills slimmed (progressive disclosure), Hybrid hook enforcement, first-class agents/."
+      "version_note": "4.2.0 = moat audit: the binding→units gate now enforces CONFLICT *resolution* (not just ID propagation); 4.1.0 = UI/UX design intelligence; 4.0.0 = v4 lean-core."
     },
     {
       "name": "grand-design-spec",
