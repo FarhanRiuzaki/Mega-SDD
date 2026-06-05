@@ -90,7 +90,16 @@ for const_path in const_files:
 
     # Check: do units reference constitution clauses?
     bound_dir = vault_dir.rstrip("/") + "-bound" if not vault_dir.endswith("-bound") else vault_dir
-    units_dir = os.path.join(bound_dir, "units")
+    # Canonical layout: units live at <vault>/units. Legacy: <vault>-bound/units.
+    # Prefer canonical; fall back to legacy -bound only if canonical is empty/absent.
+    canon_units_dir = os.path.join(vault_dir, "units")
+    legacy_units_dir = os.path.join(bound_dir, "units")
+    if glob.glob(os.path.join(canon_units_dir, "U-*.md")):
+        units_dir = canon_units_dir
+    elif glob.glob(os.path.join(legacy_units_dir, "U-*.md")):
+        units_dir = legacy_units_dir
+    else:
+        units_dir = canon_units_dir
 
     if os.path.isdir(units_dir):
         unit_files = sorted(glob.glob(os.path.join(units_dir, "U-*.md")))

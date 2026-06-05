@@ -123,9 +123,10 @@ vault_content = ""
 vault_file_patterns = [
     os.path.join(cwd, ".mega-sdd", "vaults", "*", "0[0-6]-*.md"),
     os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md"),
-    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "0[0-6]-*.md"),
-    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "constitution.md"),
-    os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "binding.md"),
+    # Widened from *-bound to * — covers canonical <vault>/ AND legacy <vault>-bound/.
+    os.path.join(cwd, ".mega-sdd", "vaults", "*", "0[0-6]-*.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md"),
+    os.path.join(cwd, ".mega-sdd", "vaults", "*", "binding.md"),
     os.path.join(cwd, ".mega-sdd", "vaults", "binding*.md"),
 ]
 vault_files_read = set()

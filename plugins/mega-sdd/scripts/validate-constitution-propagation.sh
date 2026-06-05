@@ -57,7 +57,8 @@ all_unit_clauses = set()
 
 # Find binding docs that cite constitution clauses
 binding_files = sorted(
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "binding.md")) +
+    # Widened from *-bound to * — covers canonical <vault>/binding.md AND legacy <vault>-bound/binding.md.
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "binding.md")) +
     glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "binding*.md"))
 )
 binding_files = [f for f in binding_files if "/.archived/" not in f]
@@ -95,10 +96,10 @@ if not all_binding_clauses:
     }))
     raise SystemExit(0)
 
-# Find unit files in bound vaults
+# Find unit files (canonical <vault>/units AND legacy <vault>-bound/units; widened *-bound → *)
 unit_files = sorted(
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"))
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*.md")) +
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*", "unit.md"))
 )
 unit_files = [f for f in unit_files if "/.archived/" not in f]
 

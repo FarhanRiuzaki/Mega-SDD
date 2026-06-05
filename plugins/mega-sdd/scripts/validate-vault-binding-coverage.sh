@@ -64,8 +64,9 @@ vault_dirs = [d for d in vault_dirs if os.path.isdir(d) and not d.endswith("-bou
 
 for vault_dir in vault_dirs:
     vault_name = os.path.basename(vault_dir)
-    # Find binding doc (might be at vault root OR in a parallel -bound dir)
+    # Find binding doc (canonical: <vault>/binding.md; legacy: parallel -bound dir)
     binding_candidates = [
+        os.path.join(vault_dir, "binding.md"),
         os.path.join(cwd, ".mega-sdd", "vaults", "binding.md"),
         os.path.join(cwd, ".mega-sdd", "vaults", f"binding-{vault_name}.md"),
         os.path.join(cwd, ".mega-sdd", "vaults", f"{vault_name}-bound", "binding.md"),
@@ -118,16 +119,28 @@ for vault_dir in vault_dirs:
         })
 
 # ─── Slice 5: units → bolts traceability ────────────────────────────────────
-# For each bound vault, check if bolts/ directory exists. If yes, each unit
-# should have matching bolts/U-XXX/bolt-report.md.
+# Check if bolts/ directory exists. If yes, each unit should have matching
+# bolts/U-XXX/bolt-report.md.
 # If bolts/ doesn't exist at all → pre-execution state, graceful skip (PASS).
-bound_dirs = sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound")))
-for bound_dir in bound_dirs:
+# Canonical layout: units + bolts are siblings at <vault>/units, <vault>/bolts.
+# Legacy layout: <vault>-bound/units, <vault>-bound/bolts.
+# Enumerate canonical vault dirs (vault_dirs, already excludes -bound) AND
+# legacy *-bound dirs, so BOTH layouts are covered.
+legacy_bound_dirs = sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound")))
+legacy_bound_dirs = [d for d in legacy_bound_dirs if os.path.isdir(d) and "/.archived/" not in d]
+slice5_dirs = list(vault_dirs) + legacy_bound_dirs
+seen_units_dirs = set()
+for bound_dir in slice5_dirs:
     bound_name = os.path.basename(bound_dir)
     bolts_dir = os.path.join(bound_dir, "bolts")
     units_dir = os.path.join(bound_dir, "units")
     if not os.path.isdir(units_dir):
         continue
+    # Avoid double-counting if both <vault>/units and <vault>-bound/units exist.
+    real_units = os.path.realpath(units_dir)
+    if real_units in seen_units_dirs:
+        continue
+    seen_units_dirs.add(real_units)
     if not os.path.isdir(bolts_dir):
         # Pre-execution — correct state, skip
         slice5_summary[bound_name] = {"bolts_dir": "absent (pre-execution)", "skipped": True}

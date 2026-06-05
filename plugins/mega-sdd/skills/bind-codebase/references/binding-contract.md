@@ -166,6 +166,6 @@ See `bind-codebase/SKILL.md` for the file template. Required sections:
 
 ## bound-vault structure
 
-`bound-vault/` is a copy of the vault directory with two augmentations:
+`<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/`) is a copy of the vault's 7 markdown files with two augmentations:
 1. Each markdown file gets inline binding annotations as HTML comments: `<!-- BIND: confirmed | conflict=C-01 | oq=OQ-12 -->`
-2. `bound-vault/binding.md` is added (same content as standalone binding.md).
+2. `<vault>/bound/binding.md` mirrors the vault-root `<vault>/binding.md` (same content).

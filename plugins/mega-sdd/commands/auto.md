@@ -138,6 +138,6 @@ See `orchestrate-flow/SKILL.md` §Convergence loops for full algorithm + safety 
 - **No persisted state file** per AUTONOMY-OQ-2. `--resume` re-runs CWD inspection; cursor position derives from artifact presence.
 - **No `--skip-preflight`** for Hard rules (Iter 3 contract preserved per DESIGN-OQ-5).
 
-On halt OR pause: chain stops; surface verbatim blocker YAMLs in chat (per `references/handoff-contract.md`). User resolves and re-runs `--resume`.
+On halt OR pause: chain stops; surface verbatim blocker YAMLs in chat (per `orchestrate-flow/references/handoff-contract.md`). User resolves and re-runs `--resume`.
 
 On chain completion: emit final summary per `orchestrate-flow/SKILL.md` Step 7 — total phases completed/paused/halted, flat list of all artifacts produced.

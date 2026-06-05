@@ -87,18 +87,21 @@ if not os.path.isdir(vault_dir):
         print(json.dumps(report))
     sys.exit(0)
 
-# Binding docs: binding.md, binding-phase-*.md at vault root
+# Binding docs: binding.md / binding-phase-*.md — at the vaults container (legacy)
+# AND per-vault root (canonical: <vault>/binding.md, v3.4+).
 binding_paths = sorted(
     glob.glob(os.path.join(vault_dir, "binding.md")) +
-    glob.glob(os.path.join(vault_dir, "binding-*.md"))
+    glob.glob(os.path.join(vault_dir, "binding-*.md")) +
+    glob.glob(os.path.join(vault_dir, "*", "binding.md")) +
+    glob.glob(os.path.join(vault_dir, "*", "binding-*.md"))
 )
 
-# Units: TWO layouts supported (audit response Iter 67.6 — phase-1 vs phase-2 conventions):
-#   Layout A (phase-2 style):  <vault>/*-bound/units/U-*.md
-#   Layout B (phase-1 style):  <vault>/*-bound/units/U-*/unit.md
+# Units: file layouts (U-*.md OR U-*/unit.md) under any .../units/.
+# Widened from *-bound to * — covers canonical <slug>/units/ (v3.4+) AND legacy
+# <slug>-bound/units/. Both <slug> and <slug>-bound are children of vaults/.
 units_paths = sorted(
-    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*.md")) +
-    glob.glob(os.path.join(vault_dir, "*-bound", "units", "U-*", "unit.md"))
+    glob.glob(os.path.join(vault_dir, "*", "units", "U-*.md")) +
+    glob.glob(os.path.join(vault_dir, "*", "units", "U-*", "unit.md"))
 )
 
 # OQ-ID regex: starts with OQ-, alphanumerics+hyphens, ends with -digit

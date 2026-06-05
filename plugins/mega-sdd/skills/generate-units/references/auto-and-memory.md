@@ -31,7 +31,7 @@ Write `<vault>/units/_index.md` with:
 
 ## Handoff emission (--auto)
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `../orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `orchestrate-flow/references/handoff-contract.md`:
 
 ```yaml
 handoff:
@@ -76,11 +76,11 @@ handoff:
 
 Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`. Required ONLY under `--auto`.
 
-The `scope:` block is included in handoff YAML when vault.json has `scope` field, per `../orchestrate-flow/references/handoff-contract.md`. Omit the entire `scope:` block when vault is legacy single-scope.
+The `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md`. Omit the entire `scope:` block when vault is legacy single-scope.
 
 ## Memory layer
 
-When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `../memory/references/memory-schema.md`.
+When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `memory/references/memory-schema.md`.
 
 ### Reads
 

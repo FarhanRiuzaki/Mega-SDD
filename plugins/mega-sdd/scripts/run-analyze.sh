@@ -97,12 +97,12 @@ V6_RC=$(run_validator "validate-vault-binding-coverage.sh" --cwd="$CWD" --quiet)
 
 # 1b. Per-unit-file validator
 V2_WORST=0
-for uf in $(find "${CWD}/.mega-sdd/vaults" -path "*-bound/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null); do
+for uf in $(find "${CWD}/.mega-sdd/vaults" -path "*/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null); do
   rc=$(run_validator "validate-unit-spec.sh" --cwd="$CWD" --file-path="$uf" --quiet)
   [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V2_WORST" ] && V2_WORST=$rc
 done
 V2_RC=$V2_WORST
-if ! find "${CWD}/.mega-sdd/vaults" -path "*-bound/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null | grep -q .; then
+if ! find "${CWD}/.mega-sdd/vaults" -path "*/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null | grep -q .; then
   V2_RC="SKIP"
 fi
 
@@ -118,7 +118,7 @@ V3_RC=$( [ "$V3_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V3_WORST" )
 
 # 1d. Per-vault-doc OQ validator
 V4_WORST=0
-for vf in $(find "${CWD}/.mega-sdd/vaults" -name "0[0-6]-*.md" -not -path "*-bound/*" -not -path "*/.archived/*" 2>/dev/null); do
+for vf in $(find "${CWD}/.mega-sdd/vaults" -name "0[0-6]-*.md" -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null); do
   rc=$(run_validator "validate-vault-oqs.sh" --cwd="$CWD" --file-path="$vf" --quiet)
   [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V4_WORST" ] && V4_WORST=$rc
 done
@@ -338,6 +338,13 @@ validator_results = {
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
     "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},
     "codebase_map": {"rc": os.environ["V12_RC"], "state_file": ".codebase-map-state.json"},
+    # v4 — KEPT hard-block code-delivery gates (enforced at PreToolUse on execute-bolts);
+    # surfaced here read-only from their PostToolUse state files so /analyze is a true
+    # pre-flight of what WILL block bolts (a FAIL here flips overall, as it should).
+    "flow_coverage": {"rc": "STATE_FILE", "state_file": ".flow-coverage-state.json"},
+    "sibling_consistency": {"rc": "STATE_FILE", "state_file": ".sibling-consistency-state.json"},
+    "cross_cutting_registration": {"rc": "STATE_FILE", "state_file": ".cross-cutting-state.json"},
+    "ui_quality": {"rc": "STATE_FILE", "state_file": ".ui-quality-blockers.json"},
     # v4 Phase 2 (Hybrid) — code-delivery checks DEMOTED from PreToolUse hard-block to
     # advisory. Surfaced here read-only from their PostToolUse-written state files (no
     # re-run); "NOT_RUN" until a real chain writes them. They no longer block execute-bolts.

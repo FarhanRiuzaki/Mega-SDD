@@ -173,16 +173,6 @@ The rebuild's job is to satisfy goals + locked constraints, not to mirror legacy
 
 **No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
 
-**Citation required:** every non-trivial claim has a `file:line` reference in the file's `## 11. Source References` section. Inline claims may use a short `(see §11)` pointer if the citation is shared.
-
-**Tech-agnostic vocabulary:** no language / framework / DB names in domain files except `## 11. Source References` and `50-integrations/`.
-- ✓ "Customer entity (persisted in legacy as table `cifmast`)"
-- ✗ "MySQL `cifmast` table"
-
-**`.bak` / dated-file handling:** compare with live version, document discrepancies in `## 9. Edge Cases & Gotchas`. Don't assume `.bak` is older — sometimes it contains logic removed due to a regression.
-
-**No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
-
 ### Staged-input detection (multi-step workflows) — v3.71.0+, semantic-depth
 
 A workflow that collects its inputs across MORE THAN ONE step / page / role is **staged** — a wizard, a maker→checker hand-off, a multi-page form. If you transcribe it as one flat "Inputs: A,B,C,D,E,F" list, the rebuild loses the staging and a bolt builds ONE form where the legacy had a multi-step wizard (the captured trade-finance regression). For every `classification: workflow` domain, actively look for staging and, when found, author the `## 3a. Staged inputs` `stages:` block (schema: `references/knowledge-base-schema.md §3a`).

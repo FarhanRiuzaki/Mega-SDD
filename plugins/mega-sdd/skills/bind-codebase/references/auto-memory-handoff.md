@@ -51,7 +51,7 @@ handoff:
   status: completed | paused | halted
   artifacts:
     - <absolute path to binding.md>
-    - <absolute path to vault-bound/>   # only if no CONFLICTs
+    - <absolute path to <vault>/bound/>   # only if no CONFLICTs
   next_action:
     suggested_skill: mega-sdd:generate-units   # completed
     # OR mega-sdd:resolve-oq                    # halted on conflict

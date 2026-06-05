@@ -101,9 +101,11 @@ if not patterns:
     }))
     raise SystemExit(0)
 
-# Find unit files
+# Find unit files (widened *-bound → * — canonical <vault>/units AND legacy <vault>-bound/units;
+# also handle the U-*/unit.md sub-layout).
 unit_files = sorted(
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md"))
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*.md")) +
+    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*", "unit.md"))
 )
 if not unit_files:
     print(json.dumps({

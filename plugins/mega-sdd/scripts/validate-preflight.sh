@@ -75,7 +75,11 @@ def has_vault():
 
 
 def has_bound_or_vault():
-    return has_vault() or bool(glob.glob(os.path.join(vault_root, "*-bound", "*")))
+    # Bound copy: canonical <vault>/bound/ (v3.4+) OR legacy <vault>-bound/.
+    return has_vault() or bool(
+        glob.glob(os.path.join(vault_root, "*", "bound", "*")) or
+        glob.glob(os.path.join(vault_root, "*-bound", "*"))
+    )
 
 
 def has_units():
