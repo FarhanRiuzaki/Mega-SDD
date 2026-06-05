@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits with anti-hallucination at every handoff.
 
-**Version:** 4.1.0 · **License:** MIT
+**Version:** 4.2.0 · **License:** MIT
 
 > 📖 Full documentation + user-facing scenarios at the repo root. See [`../../README.md`](../../README.md) + [`../../tests/scenarios/`](../../tests/scenarios/).
 
@@ -41,7 +41,7 @@ That's it. Full install matrix: [`references/tooling-install.md`](./references/t
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v4.1.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v4.2.0)
 ├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
@@ -70,7 +70,15 @@ Wrapped by `/mega-sdd:auto` for autonomous end-to-end execution with single upfr
 
 ## What's new
 
-### v4.0.0 — lean-core (current)
+### v4.2.0 — Moat: CONFLICT-resolution gate (current)
+
+Deep advisor-guided audit of the skills (trail: [`AUDIT.md`](AUDIT.md)). Result: the skills work correctly by design — the enforcement spine traces end-to-end and command↔skill parity is healthy. The audit found **one real moat gap and closed it**: invariant #2 promises "unresolved CONFLICTs block downstream generation," but `validate-handoff-binding-units.sh` only checked CONFLICT-ID *propagation* (is the ID cited in a unit?), not *resolution* — so an unresolved-but-cited CONFLICT slipped the gate. The validator now also scans structured `### CONFLICT-<id>` headings and **fail-closes on any active (unmarked) conflict** — re-bind to `conflicts=0` or mark the entry `✅ / RESOLVED` to proceed. Reuses the existing `.validation-blockers.json` + execute-bolts PreToolUse gate (no new hook); covered by `tests/moat/test-conflict-unresolved.sh`. Also synced the dispatch-prompt budget caps to their canonical source and three doc/version-stamp fixes.
+
+### v4.1.0 — UI/UX design intelligence
+
+Raises the quality of generated UIs by bringing distilled design knowledge (67 styles, 161 product→palette/typography maps, 99 UX rules from `ui-ux-pro-max`) into the pipeline as **injected-context references** — no runtime Python, preserving the "no extra runtime deps" rule. Injection at **both** points: intent-time (`generate-intent` resolves a Design-Source OQ as `resolution_mode: recommend` — grounded recommendation + rationale + `scan_citations` + fallback, never a silent default) and bolt-time (`execute-bolts` Step 4.5 enriches the `ui_ux` dispatch with the chosen `design_system` slice, asserted by `validate-dispatch-prompt.sh`). **Scanned-template precedence** is honored: when a starterkit was scanned, its design flow is authoritative (`prd > scanned-template > design-intelligence-recommend`) — the design intelligence only gap-fills, never overrides ("ga ngide"). Footprint: `references/design-intelligence/` + `scripts/sync-ui-ux.sh`; `vault_version` 1.1 (additive `design_system` block). Spec: `docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`.
+
+### v4.0.0 — lean-core
 
 Ground-up modernization to current Claude Code / Anthropic guidance. Skills slimmed to lean routers + progressive disclosure (−70% body prose, each ≤500 lines); **Hybrid hook enforcement** — the binding gate + high-value code-delivery gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting) hard-block `execute-bolts`, while the rest (dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are **advisory** via `/mega-sdd:analyze`; **first-class `agents/`** (bolt-implementer + spec/code reviewers for the two-stage review, domain-extractor for KB waves); bound-vault nested at `<vault>/bound/` per the canonical `paths.md`; CLAUDE.md narrative reset; version reconciled to 4.0.0. Full detail: root [`README.md`](../../README.md) + [`CHANGELOG.md`](../../CHANGELOG.md). *(The historical entries below describe pre-v4 versions; where they say a code-delivery gate "blocks," see the Hybrid split above for the current model.)*
 

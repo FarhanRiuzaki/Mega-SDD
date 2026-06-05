@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.2.0] - 2026-06-05
+
+### Changed — Moat hardening: the binding→units gate now enforces CONFLICT *resolution*
+
+Deep advisor-guided audit of the mega-sdd skills (full trail in `plugins/mega-sdd/AUDIT.md`). Headline: the skills work correctly by design — the enforcement spine (every hard-block gate → validator → hook → state file) traces end-to-end, and command↔skill parity is healthy. One real moat gap was found and closed.
+
+- **CONFLICT-resolution enforcement (was propagation-only).** Invariant #2 promises "unresolved CONFLICTs block downstream unit/bolt generation," but `scripts/validate-handoff-binding-units.sh` only verified CONFLICT-ID *propagation* (is the ID cited in some unit's frontmatter?), not *resolution status*. An unresolved-but-cited CONFLICT therefore produced no drop → `status: PASS` → `execute-bolts` not blocked. The validator now also scans structured `### CONFLICT-<id>` detail headings and **fail-closes**: an active heading (per `binding-contract.md`, one carrying `Verdict: CONFLICT (BLOCKING)` and lacking a `✅`/`RESOLVED` marker) emits a new `conflict_unresolved` drop → `status: FAIL`, blocking the existing execute-bolts PreToolUse gate. Resolve by re-running `bind-codebase` to `conflicts=0` or marking the entry resolved. Reuses `.validation-blockers.json` + the existing gate (no new hook, no new state file). TDD: `tests/moat/test-conflict-unresolved.sh` (active-but-cited blocks, resolved exempt, clean binding no-false-positive). OQ-drop + no-vault regressions green.
+
+### Fixed — consistency (doc-only)
+
+- **Dispatch-prompt budget caps** synced: `bolt-dispatch-prompt.md` carried stale 7KB/10KB/5KB figures while the canonical `context-enrichment.md` + `execute-bolts/SKILL.md` use target 9KB / hard 12KB / T2 10KB. Aligned all figures + added a "MUST match `context-enrichment.md`" pointer.
+- `skills/analyze/SKILL.md` was missing a `version:` stamp → added `2.0.0` (matches its v4 lean-core sibling cohort).
+- `README.md` release narrative was stuck at `v4.0.0 (current)` despite the 4.1.0 stamp → added the v4.1.0 and v4.2.0 narratives.
+- `commands/replay.md` example used a non-canonical `vault_version: "1.2.0"` → corrected to `"1.1"`.
+
+### Noted — confirmed but deferred (advisory-layer, future iter)
+
+- execute-bolts→detect-drift handoff carries `suggested_args: []`; the snapshot-reuse / `--auto-gate` coupling is prose-only (handoff seamlessness).
+- `validate-fanout-parity.sh` checks spec obligations (`ui_contract`, `render_test`) but not `starterkit_relevance` consistency across siblings — divergent bolt context can still pass parity.
+
 ## [4.1.0] - 2026-06-05
 
 ### Added — UI/UX design intelligence (distilled ui-ux-pro-max)

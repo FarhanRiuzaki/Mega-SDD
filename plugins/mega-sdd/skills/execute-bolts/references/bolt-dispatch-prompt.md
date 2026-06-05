@@ -2,7 +2,7 @@
 
 Canonical prompt template for dispatching bolt subagent via superpowers `executing-plans`. Implements the 10 AI-executor principles from spec §4. Tiered context (T1/T2/T3) per spec §6.10.
 
-**Token budget**: T1 ≤2KB, T2 ≤5KB, T3 reference-only. Total dispatch prompt ≤7KB (hard cap 10KB → halt `dispatch_prompt_too_large`).
+**Token budget**: T1 ≤2KB, T2 ≤10KB, T3 reference-only. Total dispatch prompt ≤9KB target (hard cap 12KB → halt `dispatch_prompt_too_large`). Canonical budget numbers live in `context-enrichment.md` §running budget tracker (`cap_hard=12288`, `cap_target=9216`, `cap_t1=2048`, `cap_t2=10240`); the figures in this template MUST match that source.
 
 ## Template structure
 
@@ -149,7 +149,7 @@ Hard Rules active: <list of rule IDs>
 Post-flight scan VERIFIES presence. Missing → halt `provenance_missing`.
 
 ═══════════════════════════════════════════
-TIER 2 — Conditional context (target ≤5KB total)
+TIER 2 — Conditional context (target ≤10KB total)
 ═══════════════════════════════════════════
 
 ## Upstream bolts (depends_on chain — 1-line summary each)
@@ -227,7 +227,7 @@ namespace App\Http\Controllers;
 Follow this style for new controller files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
 ```
 
-**Budget (v3.67.0+, Iter 76):** total slice content target ≤4KB (was ≤2KB Iter 32). Hard cap rolls up to overall T2 budget (10KB) — see SKILL.md §T2 Section Priority + Truncation.
+**Budget (v3.67.0+, Iter 76):** total slice content target ≤4KB (was ≤2KB Iter 32). Hard cap rolls up to overall T2 budget (cap_t2=10240) — see SKILL.md §T2 Section Priority + Truncation.
 
 Truncation order:
 1. `libs[]` — keep top 10 by relevance score
@@ -273,7 +273,7 @@ T2 BUDGET TRACKER (v2.8.0+, Iter 44 — informational)
 ```
 ### T2 budget tracker
 consumed_t1: <X> bytes (cap 2048)
-consumed_t2: <Y> bytes (cap 5120, hard 10240)
+consumed_t2: <Y> bytes (cap 10240, hard 12288)
 total: <X+Y> bytes
 truncations_applied:
   <if any T2 section was truncated below default contents:>
@@ -327,13 +327,13 @@ ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
 
   # ─── Step a.5: Initialize running budget tracker (v2.0+, Iter 44) ───
   budget = {
-    cap_hard:     10_240,    # 10KB hard cap (unchanged)
-    cap_target:    7_168,    # 7KB total target
+    cap_hard:     12_288,    # 12KB hard cap (canonical — matches context-enrichment.md)
+    cap_target:    9_216,    # 9KB total target
     cap_t1:        2_048,    # 2KB T1
-    cap_t2:        5_120,    # 5KB T2 (NEWLY ENFORCED)
+    cap_t2:       10_240,    # 10KB T2 (walking-skeleton: context reach over a tight cap)
     consumed_t1:   consumed_t1,
     consumed_t2:   0,
-    remaining_t2:  5_120,
+    remaining_t2: 10_240,
     warnings:      []
   }
 
