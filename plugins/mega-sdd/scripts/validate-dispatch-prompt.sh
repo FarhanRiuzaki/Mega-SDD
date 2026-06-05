@@ -245,6 +245,16 @@ TOKEN_CONTENT_RE = re.compile(
     r"#[0-9a-fA-F]{3,8}\b|\b\d+(?:\.\d+)?(?:px|rem|em)\b|\b(colors?|spacing|fonts?|palette|radius|shadow)\b\s*[:=]",
     re.IGNORECASE)
 
+# (1b) injected design system — a `Design system:` line carrying a chosen style/palette.
+#      Like `Design tokens:`, this is mega-sdd FORMAT vocabulary (the vault `design_system`
+#      block, surfaced by execute-bolts Step 4.5), NOT a stack signature.
+DESIGN_SYSTEM_RE = re.compile(r"^\s*Design system\s*:(.*)$", re.MULTILINE | re.IGNORECASE)
+# ADV-07b parity: a real style/palette token (>=3 alnum chars starting with a letter), and NOT a
+# placeholder — so `Design system: TODO`/`none`/`tbd` is a vacuous pass and is rejected, exactly
+# like the sibling `Design tokens:` content guard.
+DESIGN_SYSTEM_CONTENT_RE = re.compile(r"[A-Za-z][A-Za-z0-9]{2,}")
+DESIGN_SYSTEM_PLACEHOLDER_RE = re.compile(r"\b(tbd|tba|tbc|todo|none|n/?a|pending|placeholder)\b", re.IGNORECASE)
+
 # (2) a view/component exemplar — a `Pattern: view|component` code-example header
 #     AND/OR a cited `File:` path matching the pack view_glob. We accept EITHER the
 #     explicit category label OR a view-glob-matching cited file (robust to label
@@ -265,6 +275,17 @@ def has_design_tokens(text):
     # bare label / placeholder like `Design tokens: TODO none captured yet`.
     window = m.group(1) + "\n" + text[m.end():m.end() + 400]
     return bool(TOKEN_CONTENT_RE.search(window))
+
+
+def has_design_system(text):
+    m = DESIGN_SYSTEM_RE.search(text)
+    if not m:
+        return False
+    val = m.group(1).strip()
+    # ADV-07b parity: reject empty / placeholder values; require a real style/palette token.
+    if not val or DESIGN_SYSTEM_PLACEHOLDER_RE.search(val):
+        return False
+    return bool(DESIGN_SYSTEM_CONTENT_RE.search(val))
 
 
 def has_view_exemplar(text):
@@ -308,6 +329,20 @@ for pp in prompt_paths:
             ),
         })
 
+    if not has_design_system(text):
+        issues.append({
+            "unit": unit,
+            "prompt": rel,
+            "issue": "design_system_not_injected",
+            "message": (
+                "A ui_ux unit's dispatch prompt carries no chosen design system "
+                "(no `Design system:` line). execute-bolts Step 4.5 must inject the vault "
+                "`design_system` (style/palette) for ui_ux units when the vault resolved a "
+                "Design-Source recommendation; the bolt must render per the chosen style, "
+                "not a generic look."
+            ),
+        })
+
     if not has_view_exemplar(text):
         issues.append({
             "unit": unit,
@@ -331,6 +366,7 @@ if prompts_checked == 0:
 # ── Verdict ──────────────────────────────────────────────────────────────────
 status = "FAIL" if issues else "PASS"
 tokens_n = sum(1 for i in issues if i["issue"] == "tokens_not_injected")
+design_system_n = sum(1 for i in issues if i["issue"] == "design_system_not_injected")
 exemplar_n = sum(1 for i in issues if i["issue"] == "exemplar_missing")
 report = {
     "status": status,
@@ -341,16 +377,18 @@ report = {
     "summary": {
         "ui_prompts_checked": prompts_checked,
         "tokens_not_injected": tokens_n,
+        "design_system_not_injected": design_system_n,
         "exemplar_missing": exemplar_n,
     },
     "issues": issues,
     "next_action": (
         "Re-emit the flagged ui_ux unit's bolt dispatch prompt with the UI enrichment: "
-        "(a) include design_tokens (colors/spacing/fonts) in the ui_ux T2 slice, and "
+        "(a) include design_tokens (colors/spacing/fonts) in the ui_ux T2 slice, "
         "(b) inject a view/component code exemplar (linter-clean, not [0]) via the "
-        "extended Iter-76 code-slice. Then re-run execute-bolts (the prompt re-write "
-        "re-triggers this validator via PostToolUse)."
-    ) if status == "FAIL" else "No action — every ui_ux dispatch prompt carries injected design tokens + a view exemplar.",
+        "extended Iter-76 code-slice, and (c) include a `Design system:` line (the vault "
+        "design_system style/palette) when the vault resolved one. Then re-run execute-bolts "
+        "(the prompt re-write re-triggers this validator via PostToolUse)."
+    ) if status == "FAIL" else "No action — every ui_ux dispatch prompt carries injected design tokens, a design system, and a view exemplar.",
 }
 
 write_and_exit(report, 0 if status == "PASS" else 1)
