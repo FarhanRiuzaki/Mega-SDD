@@ -1,7 +1,7 @@
 ---
 name: generate-units
-version: 2.0.0
-description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type: create | verify` per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
+version: 2.1.0
+description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
 # Generate-Units — vault → atomic AI-executable unit specs
@@ -14,13 +14,13 @@ Turns intent into actionable atomic specs for AI dev execution. Each unit corres
 
 - After `bind-codebase` produced a bound-vault (brownfield) OR directly after `generate-intent` (greenfield)
 - `orchestrate-flow` auto-routes here once the vault is ready
-- User explicit: `/mega-sdd:generate-units <bound-vault>`
+- User explicit: `/mega-sdd:generate-units <vault>/` (the vault dir; reads the nested `bound/` + `binding.md` when present)
 
 Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — that is a hard block (see The hard gate below); re-run binding first.
 
 ## Inputs & flags
 
-- Bound-vault OR vault path (positional, required)
+- Vault path (positional, required) — the vault dir; brownfield runs carry `<vault>/binding.md` + `<vault>/bound/` (units are written to `<vault>/units/`, beside `bound/` and `bolts/`)
 - `--refresh` (re-number IDs from scratch) · `--max-complexity=small|medium` (split anything bigger) · `--auto`
 - `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`)
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
@@ -43,7 +43,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode` — and act per the decision matrix in `references/defensive-generation.md §Step 0.5`. Both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
 
-**1. Load vault.** Read the 7 vault files + vault.json. If a bound-vault path was provided, also read `binding.md`.
+**1. Load vault.** Read the 7 vault files + vault.json. If `<vault>/binding.md` + `<vault>/bound/` exist (brownfield), read them too.
 
 **1.x. THE HARD GATE.** Before anything else: scan `binding.md` for unresolved CONFLICT entries. If any exist → REFUSE; tell the user to re-run `bind-codebase`. Do not proceed. (See The hard gate above.)
 
