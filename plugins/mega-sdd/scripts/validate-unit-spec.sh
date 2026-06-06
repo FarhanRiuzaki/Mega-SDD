@@ -111,8 +111,10 @@ if not fm_match:
         "ts": ts, "checked_file": rel_path, "status": "FAIL",
         "issues_count": len(issues), "issues": issues,
     }
-    with open(state_file, "w") as f:
+    _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
+    with open(_tmp, "w") as f:
         json.dump(state, f, indent=2)
+    os.replace(_tmp, state_file)
     if not quiet:
         print(json.dumps(state, indent=2))
     sys.exit(1)
@@ -459,8 +461,10 @@ state = {
 }
 
 try:
-    with open(state_file, "w") as f:
+    _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
+    with open(_tmp, "w") as f:
         json.dump(state, f, indent=2)
+    os.replace(_tmp, state_file)
 except Exception as e:
     print(f"ERROR: state write: {e}", file=sys.stderr)
     sys.exit(2)

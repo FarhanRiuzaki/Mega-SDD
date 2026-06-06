@@ -86,8 +86,10 @@ if not os.path.isdir(vault_dir):
         "reason": "no_vault",
         "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
-    with open(blocker_file, "w") as f:
+    _tmp = blocker_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
+    with open(_tmp, "w") as f:
         json.dump(report, f, indent=2)
+    os.replace(_tmp, blocker_file)
     if not quiet:
         print(json.dumps(report))
     sys.exit(0)
@@ -265,9 +267,13 @@ report = {
     ) if drops else "No action needed — handoff trace is clean.",
 }
 
-# Write CURRENT-truth blocker file (overwrite, not append)
-with open(blocker_file, "w") as f:
+# Write CURRENT-truth blocker file (overwrite, not append).
+# AUDIT L4: atomic write (tmp + os.replace) — a concurrent gate read (the PreToolUse
+# aggregator) must never see a torn .validation-blockers.json (the moat state file).
+_tmp = blocker_file + ".tmp.%d" % os.getpid()
+with open(_tmp, "w") as f:
     json.dump(report, f, indent=2)
+os.replace(_tmp, blocker_file)
 
 # Emit to stdout (consumed by hook + slash command)
 if not quiet:

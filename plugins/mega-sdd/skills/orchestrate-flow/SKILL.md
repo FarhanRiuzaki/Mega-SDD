@@ -99,7 +99,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 ## Hard rails
 
 - No content generation by the orchestrator itself.
-- No state file (resumption = re-invoke `orchestrate-flow --resume`; CWD inspection rebuilds state).
+- No **chain-level** state file: `orchestrate-flow --resume` rebuilds chain state by CWD/artifact inspection (which *phase* to resume). A phase skill MAY keep its own sub-step checkpoint (`references/checkpoint-protocol.md`) that resumes *within* the re-entered phase — a different granularity that never conflicts with phase selection (precedence table → `references/handoff-contract.md` §Resume mechanics).
 - No skill runs in parallel.
 - Sub-skill substance prompts ALWAYS surface to the human (per-OQ choices, conflict resolutions) regardless of `--auto`.
 - Chain depth ≤ 3 by default; `--deep` lifts the cap with auto-continue via handoff YAML.
