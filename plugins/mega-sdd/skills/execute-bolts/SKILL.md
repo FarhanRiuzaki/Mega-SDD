@@ -22,13 +22,13 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 
 - Unit path OR unit ID OR `--all` (positional).
 - **Flags:**
-  - `--parallel` — dispatch independent units via `subagent-driven-development`.
+  - `--parallel` — the main-thread controller dispatches independent units concurrently (multiple `bolt-implementer` Agent calls in one message), each still running the two-stage review. Depth-1: the controller never forks a sub-controller (`subagent-driven-development` is an optional technique hint, not a nested dispatch).
   - `--worktree` — isolate each bolt in a git worktree.
   - `--max-retries=N` — default 3.
   - `--dry-run` — walk steps, do not commit.
   - `--force` — re-execute completed units / proceed on a dirty tree.
   - `--auto` — non-interactive (emit handoff YAML; participate in the memory layer).
-  - `--per-squad` — fan out across all squads in `_meta/squads.yaml`; one subagent per squad, each filtering by its `squad:` field, run in parallel.
+  - `--per-squad` — fan out across all squads in `_meta/squads.yaml`. The main-thread controller runs each squad's units (filtered by its `squad:` field) through the per-unit two-stage flow, parallelizing independent units across squads via concurrent `bolt-implementer` dispatch (depth-1; NO squad subagent — see `references/squad-subagent.md`).
   - `--squad=<id>` — filter units to one squad (human-team handoff). Halts on `cross_squad_interface_draft` if a consumed interface is still draft.
   - `--module=<id>` — filter units to one module (per `generate-units/references/modules-schema.md`); topo-sort within module. Halts on `module_blocked_by` if a prerequisite module is incomplete.
   - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar; default `auto` (detect from YAML presence under `## Hard rules`).
