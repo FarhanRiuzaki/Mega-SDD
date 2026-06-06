@@ -5,7 +5,26 @@
 > Anchor: `CLAUDE.md` (the contract — 5 invariants + enforcement doctrine).
 > Discipline: subagent output is *leads*, not findings — every claim verified before it lands here.
 
-Started 2026-06-05. Status: Batches 0–4 complete + v4.2.0 shipped. **Round 2 (2026-06-06): deep end-to-end + subagent-decomposition audit — in progress.**
+Started 2026-06-05. Status: Batches 0–4 complete + v4.2.0 shipped. **Round 2 (2026-06-06): deep end-to-end + subagent-decomposition audit — COMPLETE; all findings fixed on branch `fix/round2-audit-pipeline-integrity`.**
+
+## Round-2 RESOLUTION (2026-06-06)
+
+All actionable findings fixed (audit-first held: every finding was surfaced + verified before any edit). Commits by contract:
+
+| Finding | Sev | Fix | Commit / verification |
+|---|---|---|---|
+| **L1** | — | (not a defect — moat NOT bypassed on fan-out) | empirical probe (Round-2) |
+| **L2** | S3 | corrected the false "subagents invisible to PostToolUse" premise → re-attributed under-count to lossy async emission (post-tool-use, telemetry-schema, +execute-bolts fan-out refs) | `fix(docs)…` + `fix(execute-bolts)…` |
+| **L3** | S1 | `--per-squad` rewritten as a **main-thread loop** (depth-1, two-stage review preserved) — no squad subagent | `fix(execute-bolts)…` + **test-no-depth2-dispatch.sh** (PASS on fix, FAIL on pre-fix) |
+| **L5** | S3 | `--all --parallel` reworded to the v4 main-thread concurrent-Agent pattern (unified with L3) | same commit + same test |
+| **L6** | S2 | orchestrate-flow no longer defaults multi-squad into a broken topology (the default path is now valid) | same commit |
+| **L4** | S2 | (a) moat file **fails closed on corrupt** in the aggregator; (b) **atomic write** (tmp+os.replace) at all 6 aggregator-read validators — shipped WITH the parallelism enablement | `fix(gate-state)…` + **test-moat-corrupt-fail-closed.sh** (4 cases; discrimination proven vs pre-fix) |
+| **L7** | S2 | resume contract reconciled to a two-level precedence (chain = CWD/phase; sub-step = skill checkpoint) | same commit (prose, review-verified) |
+| **L9** | S2 | execute-bolts→detect-drift handoff seeds `--scope` when scope-filtered | `fix(handoff)…` |
+| **L8** | S3 | generate-intent preserves the enriched stages form (no downgrade) + cross-refs the ui-ux-intelligence design | `fix(generate-intent)…` (prose, review-verified) |
+| **L10** | S3 | dropped the stale "PreToolUse Branch 12" enforcement overclaim from fan-out-parity (it is advisory) | `fix(docs)…` |
+
+**New regression tests (enforceable, not prose):** `tests/moat/test-no-depth2-dispatch.sh` (pins the depth-1 invariant across 7 files), `tests/moat/test-moat-corrupt-fail-closed.sh` (pins moat fail-closed). All 3 moat tests pass. Decomposition-scoring verdict: extract-intelligence (waves) + scan-codebase (slices) are the reference depth-1 patterns; execute-bolts squad fan-out was the only break (now fixed).
 
 ---
 
