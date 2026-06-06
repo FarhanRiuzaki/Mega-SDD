@@ -116,7 +116,7 @@ Two verbosity tiers of the same vault. **Compact is the default** — token-effi
 
 After project shape and implementation mode are decided, ask:
 
-> **Q (squad count):** "How many development squads will work on this project? Single-squad (1) = current default; multi-squad (≥2) enables per-squad execution via `/mega-sdd:execute-bolts --per-squad` with one Claude subagent per squad."
+> **Q (squad count):** "How many development squads will work on this project? Single-squad (1) = current default; multi-squad (≥2) enables per-squad execution via `/mega-sdd:execute-bolts --per-squad` (a main-thread loop over squads — concurrent depth-1 bolt dispatch, no squad subagent)."
 
 If answer is `1`: skip remaining squad questions; do NOT emit `_meta/squads.yaml` or `interfaces/`; set `multi_squad_mode: false` in `vault.json`.
 

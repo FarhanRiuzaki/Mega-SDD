@@ -17,8 +17,10 @@ PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 EB="${PLUGIN_ROOT}/skills/execute-bolts"
 OF="${PLUGIN_ROOT}/skills/orchestrate-flow"
+GI="${PLUGIN_ROOT}/skills/generate-intent"
 
-# Files in scope: the fan-out / dispatch prose.
+# Files in scope: the fan-out / dispatch prose (anywhere the squad/parallel topology
+# is described — including upstream skills that point users at --per-squad).
 FILES=(
   "${EB}/SKILL.md"
   "${EB}/references/squad-subagent.md"
@@ -26,6 +28,7 @@ FILES=(
   "${EB}/references/superpowers-bridge.md"
   "${EB}/references/hard-rule-scan.md"
   "${OF}/references/routing-rules.md"
+  "${GI}/references/setup-flow.md"
 )
 
 fail=0
@@ -39,6 +42,7 @@ FORBIDDEN=(
   "each running multiple unit subagents internally"   # --per-squad --parallel depth-2 claim
   "dispatch ONE subagent"                              # squad-level subagent dispatch
   "inside its own subagent"                            # squad runs its parallel-units stream in a subagent
+  "subagent per squad"                                 # squad-level subagent dispatch (e.g. setup-flow upsell prose)
   "subagent batch via"                                 # --parallel as a nested subagent batch
   "writes are invisible"                               # L2 false premise (subagent writes invisible)
   "Each squad's controller then independently"         # squad subagent IS the controller (superpowers-bridge)

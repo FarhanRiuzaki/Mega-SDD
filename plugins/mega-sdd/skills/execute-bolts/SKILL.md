@@ -125,7 +125,7 @@ After the last unit: suggest `/mega-sdd:detect-drift` to verify the bolts honore
 - `references/bolt-dispatch-prompt.md` — the canonical bolt-subagent dispatch prompt template (T1/T2/T3 sections the assembly populates).
 - `references/partial-state-and-saga.md` — partial-state v2.0 schema, step-type taxonomy, `--resume` integrity checks, `partial_state_corrupt` halt, and the `--rollback` saga flow.
 - `references/batch-and-fanout.md` — `--all` / `--per-squad` / `--squad` / `--module` procedures, per-bolt drift check, and the `cross_squad_interface_draft` / `module_blocked_by` halts.
-- `references/squad-subagent.md` — per-squad subagent dispatch protocol.
+- `references/squad-subagent.md` — per-squad main-thread fan-out protocol (filter + consolidation; depth-1, no squad subagent).
 - `references/propose-and-confirm-prompt.md` — the AI fix-proposer subagent prompt template.
 - `references/halts-and-handoff.md` — halt protocol + YAMLs, propose-and-confirm UX + config, new-halt-types table, Property-Based Testing flow, streaming + `_summary.md` formats, outputs detail, handoff YAML + end-of-chain phasing, and the memory layer.
 - `references/bolt-contract.md` — bolt failure modes + the canonical blocker YAML envelope.
