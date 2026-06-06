@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.3.0] - 2026-06-06
+
+### Fixed — Round-2 end-to-end + subagent-decomposition audit (full trail in `plugins/mega-sdd/AUDIT.md`)
+
+Deep flow-by-flow audit of the whole pipeline + how heavy skills decompose into subagents when one pass is too heavy. Linchpin settled empirically: **PostToolUse hooks fire on subagent writes** (3-sentinel telemetry probe), so the moat quality gates are NOT bypassed on fan-out. Decomposition verdict: extract-intelligence (6 waves) and scan-codebase (4 slices) are correct **depth-1** patterns (main-thread controller + read-only subagents with no Agent tool + bash gates between stages); execute-bolts' squad fan-out was the only structural break. Audit-first held — every finding surfaced + verified before any edit.
+
+- **`execute-bolts --per-squad` was depth-2 broken → now a main-thread loop (L3/L5/L6).** The old design forked one subagent per squad and made it the per-unit controller — which would then have to dispatch the three bolt agents (depth-2; the runtime forbids subagent nesting), silently degrading to inline implementation and **losing the two-stage review** (the moat's quality enforcement). `--all --parallel` carried the same stale "subagent batch" framing, and orchestrate-flow **defaulted** every multi-squad vault into the broken path. Rewritten: the main-thread controller dispatches `bolt-implementer` Agent calls concurrently across independent units (incl. across squads) at depth-1, each unit still going `bolt-implementer → spec-reviewer → code-quality-reviewer`. Enforceable: `tests/moat/test-no-depth2-dispatch.sh` pins the depth-1 invariant across 7 files (PASS on fix, FAIL on every pre-fix phrase).
+- **Gate-state hardening, shipped WITH the parallelism enablement (L4).** Enabling depth-1 parallelism activates concurrent state-file writes, so in the same change: (a) the binding→units moat file `.validation-blockers.json` now **fails closed** on a present-but-corrupt state in the PreToolUse aggregator (a torn/garbage write must not silently open the gate — invariant #2); the other 5 gates stay fail-open to avoid spurious transient blocks. (b) **atomic writes** (tmp + `os.replace`, pid-keyed) at every write-site of the 6 aggregator-read validators, so a concurrent reader never sees a torn JSON. TDD: `tests/moat/test-moat-corrupt-fail-closed.sh` (corrupt blocks, absent allows, valid FAIL blocks, valid PASS allows; discrimination proven vs the pre-fix hook).
+- **execute-bolts → detect-drift seeds `--scope` (L9).** Resolves the 4.2.0-deferred handoff-seamlessness item: a scope-filtered bolt batch now propagates `--scope=<id>` into the chained drift check instead of falling back to a full scan.
+- **generate-intent preserves the enriched stages form (L8).** extract-intelligence v3.72.0+ emits enriched `input_fields` objects + per-stage delta fields (progressive-disclosure intent); generate-intent only documented the bare-string form, risking a silent downgrade. The preservation rule + `04-flows.md` template now mandate carrying the enriched form through (no flatten) and cross-reference the ui-ux-design-intelligence integration design where the semantics are consumed.
+
+### Fixed — doc / honesty (no behavior change)
+
+- **False "subagents invisible to PostToolUse" premise corrected (L2).** The post-tool-use header, `references/telemetry-schema.md`, and the execute-bolts fan-out refs claimed subagent tool calls are invisible to the parent hook — disproven by the L1 probe. The `ref_loaded` under-count is real but caused by **lossy async emission** (async hook + best-effort `>> … 2>/dev/null || true`), not invisibility; re-attributed.
+- **fan-out-parity enforcement overclaim dropped (L10).** Resolves the other 4.2.0-deferred item: the validator + post-tool-use comment claimed a blocking "PreToolUse Branch 12" gate that does not exist (the aggregator never reads `.fanout-parity-state.json`; it is advisory per CLAUDE.md). The check itself is sound — obligation-presence parity (`ui_contract` + `render_test` across view-bearing siblings), not a richness proxy.
+- **Resume contract reconciled (L7).** orchestrate-flow's "no state file" (chain-level, CWD/artifact-driven phase selection) vs the per-skill checkpoint cursor (sub-step) are now documented as two non-conflicting granularities with explicit precedence.
+
+Skills: execute-bolts 2.1.0 → 2.2.0, orchestrate-flow 2.0.0 → 2.1.0, generate-intent 2.1.0 → 2.2.0.
+
 ## [4.2.0] - 2026-06-05
 
 ### Changed — Moat hardening: the binding→units gate now enforces CONFLICT *resolution*
