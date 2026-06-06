@@ -391,7 +391,7 @@ handoff:
     # ... one per unit executed
   next_action:
     suggested_skill: mega-sdd:detect-drift
-    suggested_args: []
+    suggested_args: []                     # → ["--scope=<id>"] when the bolt batch ran scope-filtered (vault has scope_metadata): propagate scope so detect-drift inherits it instead of full-scanning (AUDIT L9). Stays [] for a single-scope vault.
     rationale: "All bolts executed; recommend periodic drift check."
   metrics:
     items_processed: 12    # units executed
