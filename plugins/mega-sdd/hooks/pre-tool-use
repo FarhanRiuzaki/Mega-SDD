@@ -272,10 +272,21 @@ def L(fn):
 fails = []
 
 # MOAT GATE — binding->units: unresolved drops/CONFLICT block unit->bolt.
-d = L(".validation-blockers.json")
-if d and d.get("status") == "FAIL":
-    n = len(d.get("drops", []))
-    fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) at the binding->units boundary. Run /mega-sdd:validate-handoff to see the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: %s/.validation-blockers.json" % (n, md)))
+# Fail-CLOSED on a corrupt moat state (AUDIT L4): a present-but-unparseable
+# .validation-blockers.json must NOT silently pass — a torn/garbage write would
+# otherwise fail-open via L()=None and open the binding->units gate (invariant #2).
+# Absent = never evaluated = allow (unchanged). ONLY the moat file is fail-closed;
+# the other gates below stay fail-open to avoid spurious blocks on transient corruption.
+moat_path = os.path.join(md, ".validation-blockers.json")
+if os.path.exists(moat_path):
+    try:
+        d = json.load(open(moat_path))
+    except Exception as e:
+        d = None
+        fails.append(("binding->units", "the binding->units moat state file .validation-blockers.json is PRESENT but UNPARSEABLE (%s) — failing CLOSED: a corrupt moat state must not silently open the gate (invariant #2). Re-run /mega-sdd:validate-handoff (or bind-codebase) to rewrite a clean state; or delete the file if you are certain no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
+    if d and d.get("status") == "FAIL":
+        n = len(d.get("drops", []))
+        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) at the binding->units boundary. Run /mega-sdd:validate-handoff to see the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: %s/.validation-blockers.json" % (n, md)))
 
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")

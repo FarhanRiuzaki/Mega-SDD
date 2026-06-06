@@ -701,6 +701,15 @@ This gives the user real-time visibility without polluting chat with verbose per
 
 This keeps orchestrator stateless (per the spec's "no state file" decision).
 
+**Two-level resume — no contradiction with per-skill checkpoints (AUDIT L7).** "No state file" applies to the **chain level** only. There are two distinct, non-conflicting mechanisms at two granularities:
+
+| Level | Granularity | Mechanism | Owner |
+|---|---|---|---|
+| Chain | *which phase* to resume | CWD / artifact inspection (`routing-rules.md`) — reads NO persisted chain-state file | orchestrate-flow |
+| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` | the phase skill (e.g. bind-codebase) |
+
+Precedence is unambiguous because the levels never overlap: CWD inspection first selects the phase. If that phase's artifacts already exist (completed), the orchestrator **skips it entirely** and its stale checkpoints are irrelevant. If the phase is incomplete, the orchestrator **re-enters it** and the skill's checkpoint resumes mid-execution from its cursor. A checkpoint never overrides phase selection, and phase selection never reaches into a skill's sub-steps.
+
 ---
 
 ## Anti-halu invariants for handoff YAML

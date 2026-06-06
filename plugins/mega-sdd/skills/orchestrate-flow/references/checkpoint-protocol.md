@@ -71,11 +71,13 @@ Each checkpoint write is a single fs.append. Concurrent skill invocations on sam
 
 For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/mega-sdd:auto --resume`:
 
-1. Orchestrator reads ALL checkpoints in current vault
-2. Identifies last incomplete skill invocation (most recent checkpoint without a "completed" marker)
-3. Invokes that skill with `--resume-from=<latest-step-id>`
-4. Skill resumes mid-execution
-5. After skill completes, chain continues per Iter 4 handoff YAML protocol
+1. CWD / artifact inspection (`routing-rules.md`) first selects WHICH PHASE to resume — the orchestrator itself keeps NO chain-level state file (see handoff-contract.md §Resume mechanics).
+2. *Within that re-entered phase only*, read the phase skill's checkpoints in the current vault; identify the last incomplete invocation (most recent checkpoint without a "completed" marker).
+3. Invoke that skill with `--resume-from=<latest-step-id>`.
+4. Skill resumes mid-execution from its checkpoint cursor (SUB-STEP granularity).
+5. After the skill completes, the chain continues per the handoff YAML protocol.
+
+> **Two-level resume (AUDIT L7):** checkpoints resume a skill's *sub-step*; they do NOT pick the phase. A *completed* phase (artifacts present) is skipped by the orchestrator regardless of any stale checkpoint, so chain-level "no state file" and skill-level checkpoint resume never conflict. Full precedence table → handoff-contract.md §Resume mechanics.
 
 ## Rotation policy (per ITER6-OQ-7 resolved)
 
