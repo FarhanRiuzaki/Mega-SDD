@@ -340,7 +340,7 @@ handoff:
     slice_avg_size_kb: 1.6
   next_action:
     suggested_skill: mega-sdd:detect-drift
-    suggested_args: []
+    suggested_args: []                     # → ["--scope=<id>"] when the `scope:` block below is present (AUDIT L9): propagate THIS batch's scope so the chained detect-drift inherits it instead of full-scanning. Stays [] for a single-scope vault.
     rationale: "All bolts executed; recommend a periodic drift check."
   blockers: []   # populated on test_fail / hard_rule_violated / hard_rule_unparseable / hard_rule_unanchored / cross_squad_interface_draft / verify_unit_writable
   metrics:
@@ -358,6 +358,8 @@ handoff:
     sibling_scopes: []
     prd_sha256: <sha256 from vault.json>
 ```
+
+> **Scope propagation to detect-drift (AUDIT L9).** When this handoff carries a `scope:` block, `next_action.suggested_args` MUST include `--scope=<scope.id>` — `detect-drift` accepts `--scope`, and the orchestrator's consumption loop passes `suggested_args` straight through. Without it, a scope-filtered bolt batch hands off to a **full-scan** drift check (the seam asymmetry: detect-drift propagates scope to ITS downstream, but nothing seeded scope into detect-drift). For a single-scope vault there is no `scope:` block and `suggested_args` stays `[]`.
 
 Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.
 
