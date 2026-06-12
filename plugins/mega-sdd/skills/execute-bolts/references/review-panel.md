@@ -43,7 +43,7 @@ Resolve the tier BEFORE dispatch, once per unit:
 ## Blind dispatch protocol
 
 - **One message, N Agent calls** — all selected lenses dispatch concurrently from the main-thread controller. Depth-1 is preserved: the controller→agent shape is unchanged; the panel adds parallelism, not nesting.
-- **Each lens prompt contains:** the unit body + frontmatter, base/head commit SHAs, and lens-specific context only — security gets the constitution §B clauses + binding_refs; standards gets the pack naming/location/idiom slice + codebase-map conventions; quality gets the reuse-index path + reuse_candidates.
+- **Each lens prompt contains:** the unit body + frontmatter, base/head commit SHAs, and lens-specific context only — security gets the constitution §B clauses + binding_refs + the active pack's `## Security idioms` slice; standards gets the pack naming/location/idiom slice + codebase-map conventions; quality gets the reuse-index path + reuse_candidates.
 - **Each lens prompt NEVER contains:** the implementer's report or self-assessment, another lens's verdict, or any prior attempt's review. Blind review is the anti-rubber-stamp rail — do not "save tokens" by sharing context between lenses.
 - **Each lens prompt DOES contain the L0 code-gate results** (`## Deterministic scan results`, per `code-gates.md`) — machine fact, not another lens's opinion, so blindness is intact. Lenses skip what machines already caught and judge what machines can't.
 - Re-reviews after a re-dispatch are equally blind: the lens gets the new SHAs and the unit, not the history of what it flagged before.

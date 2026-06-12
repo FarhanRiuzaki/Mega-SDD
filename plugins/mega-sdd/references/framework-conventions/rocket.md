@@ -96,6 +96,22 @@ HARD_RULE: JSON request bodies MUST be received as Json<T> where T derives serde
   rationale: Json<T> provides automatic deserialization and a 422 Unprocessable Entity on malformed input; raw body reads bypass type-safe validation
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `FromForm` structs with `#[field(validate = ...)]` validators run before the handler body, and `Json<T>` rejects malformed bodies with a 422; the bypass is accepting raw `Data`/`String` parameters or `&str` segments that skip typed parsing — keep every input behind a form/guard/`Json` type so failed validation never reaches the handler.
+- **SQL injection** — `rocket_db_pools` with sqlx (`query!`/`.bind()` placeholders) or Diesel's typed DSL parameterizes by construction; `format!`-built SQL strings handed to `sqlx::query(&s)` or `diesel::sql_query` reintroduce SQLi — bind parameters or stay in the macro/DSL.
+- **XSS / output escaping** — `rocket_dyn_templates` (Tera or Handlebars) auto-escapes HTML output in `Template::render`; Tera's `| safe` filter and Handlebars' triple-brace `{{{...}}}` mark input as raw — those are the bypasses — as is returning `content::RawHtml(format!(...))` built from user input.
+- **CSRF** — no built-in token mechanism; bearer-token APIs are CSRF-immune by design, but cookie-session apps (private cookies) need a double-submit or synchronizer-token check in a request guard or fairing on state-changing routes, plus an explicit `SameSite` policy on the session cookie — a cookie-auth POST without a token check is the hole.
+- **AuthN/AuthZ enforcement point** — request guards (`FromRequest` types like `AuthenticatedUser`, `AdminUser`) declared as handler parameters short-circuit with 401/403 before the body runs; the bypass is structural: a route that omits the guard parameter compiles and is wide open — guards protect only the signatures that declare them, so audit every mounted route for the expected guard.
+- **Password hashing** — the `argon2` crate (argon2id) or `bcrypt` crate via `PasswordHasher`/`verify_password`; hashing a password with `sha2` or comparing digests with `==` is the bypass — fast hashes are brute-forceable and naive comparison leaks timing.
+- **Mass assignment** — dedicated `CreateUserInput`/`LoginRequest`-style structs (already the pack's naming standard) carry only client-settable fields; deriving `Deserialize`/`FromForm` on the DB model exposes `role`/`is_admin`/`id` to over-posting — map input structs to models explicitly and add `#[serde(deny_unknown_fields)]` on JSON inputs.
+- **Secrets / config** — `Rocket.toml` + `ROCKET_`-prefixed env vars via figment; the `secret_key` encrypts/signs private cookies and MUST come from the environment in release (Rocket refuses ephemeral keys there) — committing `secret_key` or a database URL into `Rocket.toml`/source is the bypass.
+- **File uploads** — accept via the `TempFile` form guard with size caps from `Rocket.toml` limits (`limits.file`, per-type `limits."file/jpg"`), allowlist the content type, and `persist_to` a server-generated name outside any `FileServer::from`-mounted directory; trusting `raw_name()` (the client filename) invites traversal, and persisting into `static/` makes uploads directly retrievable — those are the bypasses.
+
 ## Testing conventions
 
 - **Test runner**: `cargo test` — standard Rust test runner; run `cargo test` from the project root

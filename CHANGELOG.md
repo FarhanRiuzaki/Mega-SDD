@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.23.0] - 2026-06-12
+
+### Added — `## Security idioms` across all 22 framework packs (Phase 3)
+
+Closes the review-panel trilogy (spec `docs/superpowers/specs/2026-06-12-review-panel-design.md`): every full-tier pack now carries a `## Security idioms` section — stack-correct, mechanism-named, with **the dangerous bypass spelled out next to each idiom** (e.g. Laravel `{!! !!}`, Django `mark_safe`, Rails `html_safe`, axum routes added after `.layer()`, Next.js `NEXT_PUBLIC_` client-bundle leak, Spring `csrf().disable()`).
+
+- **Schema** (`_template.md`): 9 canonical classes per stack — input validation, SQLi, XSS/escaping, CSRF, authn/authz enforcement point, password hashing, mass assignment, secrets/config, file uploads (+ optional session posture). A class that genuinely doesn't apply gets an honest per-bullet opt-out, never silence. Mechanically-expressible idioms route through the existing `## Hard Rules emitted` machinery — no parallel rules channel.
+- **Consumption**: the review-panel `security-reviewer` lens receives the section as its pack security slice; `bolt-implementer` receives it via T2 framework-pack rules — generated code is born with the stack's security idioms, not retrofitted.
+- Authored via the plugin's own pattern: 3 parallel blind subagents (one per language family) against a canonical Laravel exemplar + the cross-framework token ban; verified independently by `tests/security-idioms/` (exactly-one section, ≥7 class bullets, key classes present, per-pack) + the pack lint + token-leak suites.
+
 ## [4.22.0] - 2026-06-12
 
 ### Added — L0 Code Gates: the deterministic floor under the review panel (Phase 2)

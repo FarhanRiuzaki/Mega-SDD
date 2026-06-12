@@ -125,6 +125,22 @@ HARD_RULE: The handle hook MUST be exported from src/hooks.server.ts
   rationale: SvelteKit only calls the handle hook when exported with the name `handle` from hooks.server.ts; a differently-named export is never invoked
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — form actions and `+server.ts` handlers validate `await request.formData()` / `request.json()` with `zod` (or `sveltekit-superforms`); the bypass is reading form fields and trusting them — actions and endpoints are plain HTTP surfaces anyone can POST to directly.
+- **SQL injection** — Prisma/Drizzle in `$lib/server/` parameterize; string-built SQL with interpolated request values (`$queryRawUnsafe`, concatenated `sql` strings) reintroduces SQLi — use bindings/tagged templates or stay in the ORM query API.
+- **XSS / output escaping** — Svelte auto-escapes template expressions; `{@html}` is the bypass and is only valid for content sanitized server-side — never for user input.
+- **CSRF** — SvelteKit blocks cross-origin form POSTs by default (`csrf.checkOrigin`); the bypass is setting `csrf: { checkOrigin: false }` in `svelte.config.js` — if you disable it you own token-based protection yourself; cookie-authenticated JSON endpoints in `+server.ts` should also verify origin.
+- **AuthN/AuthZ enforcement point** — the `handle` hook in `src/hooks.server.ts` resolves the session and populates `event.locals.user`; each protected `load` / action then checks `locals` and throws `redirect()`. The bypass is checking in the component, or relying solely on a `+layout.server.ts` guard — child loads can run without re-running the layout load, so per-route checks against `locals` are the contract.
+- **Password hashing** — `bcrypt`/`argon2` in `$lib/server/` modules; never in client-bundled code, never plain `crypto` hashes.
+- **Mass assignment** — the zod schema's parsed output is the field allowlist; the bypass is `Object.fromEntries(await request.formData())` passed straight into a DB write, letting an injected `role` field escalate privileges.
+- **Secrets / config** — `$env/static/private` vs `$env/static/public` (`PUBLIC_` prefix) split; the build fails if private env is imported client-side (pack hard rule mirrors this). The bypasses are renaming a secret to `PUBLIC_*` to silence the error, or returning it from a `load` function — load return values ship to the browser.
+- **File uploads** — handle in a form action or `+server.ts` with a size cap and mimetype allowlist, stored outside `static/`; never trust the client filename — generate your own.
+
 ## Testing conventions
 
 - **Unit test runner**: Vitest — configured via `vite.config.ts` (or `vitest.config.ts`); run with `npx vitest` or `vitest run`

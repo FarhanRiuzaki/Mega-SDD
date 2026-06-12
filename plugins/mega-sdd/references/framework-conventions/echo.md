@@ -100,6 +100,22 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
   rationale: Mixing public library code in internal/ makes reuse impossible; pkg/ signals intentional external API
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `c.Bind(&req)` then `c.Validate(&req)` against `validate:"..."` tags via the registered `e.Validator`; the bypass is calling `Bind` without `Validate` — Echo does NOT auto-validate on bind — or reading raw `c.QueryParam()`/`c.FormValue()` strings that no tag ever sees.
+- **SQL injection** — `database/sql` placeholders (`db.QueryContext(ctx, "... WHERE id = ?", id)`), sqlx, or GORM method chains parameterize automatically; `fmt.Sprintf`-interpolated SQL passed to `db.Query` or `gorm.Raw` is the classic Go SQLi escape hatch — bind params or stay in the builder.
+- **XSS / output escaping** — a `TemplateRenderer` backed by `html/template` contextually auto-escapes in `c.Render`; using `text/template` for HTML, casting user input to `template.HTML(...)`, or writing user input through `c.HTML(code, rawString)`/`c.HTMLBlob` emits it unescaped — those are the XSS bypasses.
+- **CSRF** — Echo ships `middleware.CSRF()` (labstack token middleware); apply it to cookie/session-authenticated route groups — a state-changing cookie-auth route registered outside the CSRF-wrapped group is the hole; pure bearer-token APIs are CSRF-immune but still want `SameSite` on any auth cookie that creeps in.
+- **AuthN/AuthZ enforcement point** — auth is `echo.MiddlewareFunc` on groups (`admin := e.Group("/admin", echojwt.WithConfig(cfg), middleware.RequireRole("admin"))`); the bypass is a route registered on `e` beside the protected group instead of inside it — group membership IS the protection, so audit every registration site.
+- **Password hashing** — `golang.org/x/crypto/bcrypt` (`bcrypt.GenerateFromPassword`) or argon2id; a fast hash (`crypto/sha256`, md5) over a password is the brute-forceable bypass, and hand-rolled `==` comparison leaks timing where `bcrypt.CompareHashAndPassword` does not.
+- **Mass assignment** — `c.Bind` into the persistence/GORM model makes every field client-settable (`role`, `isAdmin`, `id`); bind a dedicated request struct with only the intended fields and map explicitly to the model — binding the DB model is the over-posting bypass.
+- **Secrets / config** — `os.Getenv` or viper-loaded config in `internal/config/`; the bypass is a hardcoded JWT secret or DSN literal in source, or a committed `.env` — keep `.env` gitignored and fail fast at startup when a required secret is empty.
+- **File uploads** — cap request size with Echo's `middleware.BodyLimit("2M")`, allowlist both extension AND sniffed content type (`http.DetectContentType`) on the `c.FormFile` result, and store under a server-generated name outside any `e.Static`-served directory; trusting the client-supplied filename invites path traversal, and saving into `static/` makes the upload directly retrievable — those are the bypasses.
+
 ## Testing conventions
 
 - **Test runner**: standard `go test ./...` — no test framework required; run from the module root

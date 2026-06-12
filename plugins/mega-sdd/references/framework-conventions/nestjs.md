@@ -111,6 +111,22 @@ HARD_RULE: Modules that expose providers to other modules MUST list those provid
   rationale: A provider not in exports[] cannot be injected by importing modules — causes runtime DI errors
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — global `ValidationPipe` + `class-validator` decorators on DTO classes; the bypass is a DTO-less `@Body()` (typed `any` or a bare interface) — class-validator only runs against decorated classes, so such a handler accepts anything.
+- **SQL injection** — TypeORM/Prisma parameterize automatically; `repository.query()` with string-built SQL, query-builder `.where("col = '" + v + "'")`, or `prisma.$queryRawUnsafe` reintroduces SQLi — use parameter placeholders (`:param`, `$1`) or stay in the repository/query API.
+- **XSS / output escaping** — not a primary exposure in this stack (controllers return JSON serialized by the framework); the adjacent risks are raw `@Res()` responses emitting HTML from user input, and missing `@Exclude()`/serialization interceptors leaking sensitive entity fields.
+- **CSRF** — bearer-token (JWT header) APIs are not exposed; cookie-session deployments need a token check (double-submit middleware on the underlying HTTP adapter) plus `SameSite` cookies. The bypass is switching auth to cookies without adding either.
+- **AuthN/AuthZ enforcement point** — Guards via `@UseGuards(JwtAuthGuard, RolesGuard)` at controller/handler level, or a global `APP_GUARD`; the bypass smell is a new controller shipped without guards, or inline `user.role === 'admin'` checks scattered in services instead of a `CanActivate` guard (also a pack hard rule).
+- **Password hashing** — `bcrypt` or `argon2` inside the auth service; never `crypto.createHash()` or manual salts.
+- **Mass assignment** — `ValidationPipe({ whitelist: true })` strips unknown properties (add `forbidNonWhitelisted: true` to reject them); the bypass is whitelist off — or no DTO at all — and the body spread straight into an entity save, letting a `role`/`isAdmin` field ride along.
+- **Secrets / config** — `ConfigModule.forRoot({ isGlobal: true })` with a `validationSchema`/`validate` function so missing env fails at boot; read only via `ConfigService`; never `process.env` in providers (pack hard rule), never commit `.env`.
+- **File uploads** — `FileInterceptor` (multer underneath) with `limits` and a `fileFilter` mimetype allowlist; store outside any statically served directory and never trust the client filename.
+
 ## Testing conventions
 
 - **Test runner**: Jest (bundled with the NestJS CLI scaffold); configured in `package.json` or `jest.config.ts`

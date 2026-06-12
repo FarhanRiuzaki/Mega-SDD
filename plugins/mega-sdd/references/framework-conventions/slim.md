@@ -99,6 +99,23 @@ HARD_RULE: Middleware MUST be applied via $app->add() or $group->add() / route->
   rationale: Direct calls to middleware in action bodies bypass the PSR-15 middleware stack and break orthogonal concerns
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Slim ships none; validate `$request->getParsedBody()` with Respect\Validation (or a validation middleware) inside the Action before it reaches the domain layer — handing the parsed body straight to a service is unvalidated input.
+- **SQL injection** — PDO prepared statements / Doctrine DBAL with bound parameters; concatenating request values into `$pdo->query("... $v")` (or DBAL `executeQuery` with interpolated strings) is the bypass — always `prepare` + bind.
+- **XSS / output escaping** — with slim/twig-view, Twig autoescapes and `|raw` is the bypass; with plain PHP-View templates there is NO autoescape — every echo of user data must pass through `htmlspecialchars(..., ENT_QUOTES)`.
+- **CSRF** — not built in; the idiom is slim/csrf (`Slim\Csrf\Guard`) added as app-level middleware with the token pair rendered in every form — a cookie-session Slim app without it is exposed.
+- **AuthN/AuthZ enforcement point** — PSR-15 middleware on routes/groups (`$group->add(AuthMiddleware::class)`, or tuupola/slim-jwt-auth) returning 401/403 before the Action runs; auth checks written inside Action bodies are the bypass smell — skippable and inconsistent.
+- **Password hashing** — PHP native `password_hash($pw, PASSWORD_DEFAULT)` / `password_verify()` (bcrypt/argon2id); never `md5()`/`sha1()` or hand-rolled salts.
+- **Mass assignment** — stock Slim has no model auto-binding, so the exposure is hand-rolled hydration: spreading the parsed body into an entity constructor or a generic `fill($body)` writes whatever the client posts — hydrate via an explicit field allowlist in the Action/DTO.
+- **Secrets / config** — env via vlucas/phpdotenv loaded into container settings; credentials hardcoded in the settings array or a committed `.env` are the leak.
+- **File uploads** — PSR-7 `UploadedFileInterface`: check `getError()`, enforce size limits and a server-side MIME sniff, and generate your own filename for `moveTo()` — `getClientFilename()`/`getClientMediaType()` are attacker-controlled.
+- **Session/cookie posture** — PHP sessions are app-managed here: `session_set_cookie_params(['httponly' => true, 'secure' => true, 'samesite' => 'Lax'])` plus `session_regenerate_id(true)` on login; the PHP defaults are not production-safe.
+
 ## Testing conventions
 
 - **Test runner**: PHPUnit (`phpunit/phpunit`) — run via `./vendor/bin/phpunit`

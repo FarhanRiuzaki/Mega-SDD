@@ -100,6 +100,23 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
   rationale: Direct process.env access in services/controllers makes config untestable and breaks 12-factor isolation
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `zod`/`joi`/`express-validator` in a validation middleware at the route boundary (before the controller); a handler that reads `req.body.x` / `req.query.x` with no validation layer in the chain is the defect — Express validates nothing by itself.
+- **SQL injection** — parameterize through the project's driver/ORM (`db.query('SELECT … WHERE id = $1', [id])`, Sequelize/Knex bindings); template-literal SQL (`` `WHERE id = ${id}` ``) or string-concatenated `sequelize.query()`/`knex.raw()` is the escape hatch that reintroduces SQLi — bind params or stay in the builder.
+- **XSS / output escaping** — Express gives no autoescape guarantee; it depends on the view engine (EJS `<%= %>` escapes but `<%- %>` is raw; Pug/Handlebars escape by default, `!{}` / triple-stash bypass). `res.send()` of raw user input on an HTML response is reflected XSS — escape at the template, or return JSON.
+- **CSRF** — nothing built in; cookie-session apps need a token (double-submit pattern or a maintained `csurf`-style middleware) plus `SameSite=Lax/Strict` cookies. The bypass is any state-changing route authenticated by cookie with no token check — bearer-token-only APIs are the exception.
+- **AuthN/AuthZ enforcement point** — `requireAuth` / role middleware in the chain (`router.get('/', requireAuth, checkRole('admin'), handler)`), with `helmet` and global auth applied in `app.js` before route mounting; the bypass smell is a new route added without the middleware, or an ordering bug where auth is registered after the routes it should protect.
+- **Password hashing** — `bcrypt` or `argon2` libraries (`bcrypt.hash`/`bcrypt.compare`); `crypto.createHash('sha256')` or homegrown salting is the bypass — never roll your own.
+- **Mass assignment** — build writes from an explicit field allowlist (the validation schema's output); `Object.assign(model, req.body)` / `new Model(req.body)` turns request payloads into column writes. Cap payloads with `express.json({ limit })`.
+- **Secrets / config** — `dotenv` loaded in the entry point, read only via `src/config/`; never commit `.env`, never hardcode secrets, never read `process.env` in business logic (pack hard rule).
+- **File uploads** — `multer` with storage outside the web root (not `public/`), a mimetype/extension allowlist, and size limits; never trust the client filename — generate your own.
+- **Session/cookie posture** — `express-session`/`cookie-session` with `secure: true`, `httpOnly: true`, `sameSite` set in production and the secret from env; regenerate the session ID on login to prevent fixation.
+
 ## Testing conventions
 
 - **Test runners**: Jest (most common) or Mocha + Chai; detected from `package.json` `devDependencies`
