@@ -23,6 +23,8 @@ gateguard: true            # false → disable the LOCKED-file deny-once investi
 preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — when set, the design
                            #   lens captures live screenshots via capture-views.sh to judge the
                            #   rendered ceiling, not just code. Empty → design lens is code-only.
+compaction_notice: true    # false → suppress the Stop-hook "near context limit, /compact at a phase
+                           #   boundary" advisory (PreCompact state snapshot still runs)
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):

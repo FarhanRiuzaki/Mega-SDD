@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# PreCompact hook for mega-sdd — ECC-adoption Batch 2 (spec
+# 2026-06-12-compaction-advisor-design.md §B).
+#
+# The harness compacts on its own schedule; if it fires mid-chain the next
+# window has no idea which phase/unit was in flight. This snapshots pipeline
+# state to .mega-sdd/.compaction-snapshot.json BEFORE compaction so SessionStart
+# can re-orient. Pure reads, exit 0 ALWAYS — a snapshot must never block
+# compaction. Shares the telemetry: false opt-out.
+
+set -uo pipefail
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+
+CWD=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
+try: print(json.loads(sys.stdin.read()).get("cwd",""))
+except Exception: print("")' 2>/dev/null)
+[ -n "$CWD" ] || exit 0
+
+# Resolve project root (walk up to outermost .mega-sdd/)
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+RPR="${SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
+PROJECT_ROOT="$CWD"
+if [ -f "$RPR" ]; then . "$RPR"; PROJECT_ROOT=$(resolve_project_root "$CWD"); fi
+[ -d "${PROJECT_ROOT}/.mega-sdd" ] || exit 0
+
+# Opt-out shared with telemetry
+CFG="${PROJECT_ROOT}/.mega-sdd/config.yaml"
+if [ -f "$CFG" ] && grep -qE "^[[:space:]]*telemetry:[[:space:]]*false" "$CFG" 2>/dev/null; then exit 0; fi
+
+TRIGGER=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
+try: print(json.loads(sys.stdin.read()).get("trigger","unknown"))
+except Exception: print("unknown")' 2>/dev/null)
+
+PROJECT_ROOT="$PROJECT_ROOT" TRIGGER="$TRIGGER" python3 <<'PYEOF' 2>/dev/null || true
+import glob, json, os, subprocess
+from datetime import datetime, timezone
+
+root = os.environ["PROJECT_ROOT"]
+trigger = os.environ.get("TRIGGER", "unknown")
+
+def head():
+    try:
+        r = subprocess.run(["git", "-C", root, "rev-parse", "HEAD"], capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+# Newest vault = the in-flight one
+vaults = sorted(glob.glob(os.path.join(root, ".mega-sdd", "vaults", "*")), key=lambda p: os.path.getmtime(p) if os.path.isdir(p) else 0, reverse=True)
+phase = {"vault": None, "units_total": 0, "bolts_done": 0, "last_bolt_unit": None, "guess": "unknown"}
+if vaults:
+    v = vaults[0]
+    phase["vault"] = os.path.basename(v)
+    units = glob.glob(os.path.join(v, "units", "U-*.md"))
+    bolts = glob.glob(os.path.join(v, "bolts", "U-*", "bolt-report.md"))
+    phase["units_total"] = len(units)
+    phase["bolts_done"] = len(bolts)
+    if bolts:
+        newest = max(bolts, key=lambda p: os.path.getmtime(p))
+        phase["last_bolt_unit"] = os.path.basename(os.path.dirname(newest))
+    # crude phase guess from artifact presence
+    if not units:
+        phase["guess"] = "pre-units (intent/scan/bind)"
+    elif not bolts:
+        phase["guess"] = "units ready, no bolts yet"
+    elif len(bolts) < len(units):
+        phase["guess"] = "executing bolts (%d/%d done)" % (len(bolts), len(units))
+    else:
+        phase["guess"] = "bolts complete"
+
+pending = 0
+for ps in glob.glob(os.path.join(root, ".mega-sdd", "vaults", "*", "PENDING-SYNC.md")):
+    try:
+        pending += sum(1 for ln in open(ps) if ln.startswith("- [ ]"))
+    except OSError:
+        pass
+
+snap = {
+    "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    "trigger": trigger,
+    "head": head(),
+    "phase": phase,
+    "pending_sync_open": pending,
+}
+out = os.path.join(root, ".mega-sdd", ".compaction-snapshot.json")
+tmp = out + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(snap, f, indent=1)
+os.replace(tmp, out)
+PYEOF
+exit 0
