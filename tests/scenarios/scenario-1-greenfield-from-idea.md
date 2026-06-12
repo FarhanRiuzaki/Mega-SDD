@@ -1,14 +1,14 @@
 # Scenario 1 — Greenfield from Idea
 
 **Time**: ~15 minutes
-**Goal**: Run mega-sdd end-to-end on a fresh idea (no PRD, no existing code). Get a working Laravel feature shipped with passing tests.
+**Goal**: Run mega-sdd end-to-end on a fresh idea (no PRD, no existing code). Get a working Next.js feature shipped with passing tests.
 
 You'll start with just a sentence ("build a clinic appointment system") and end with committed code + passing tests.
 
 ## Prerequisites
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
-- Empty (or new) Laravel 11 project (or just an empty directory — `composer create-project` not strictly required for this scenario; mega-sdd can scaffold structure)
+- Empty (or new) Next.js project (or just an empty directory — `bunx create-next-app` not strictly required for this scenario; mega-sdd can scaffold structure)
 - Recommended: `tree-sitter` + `ast-grep` installed (optional; precision boost)
 
 ```bash
@@ -60,9 +60,9 @@ Mega-sdd opens an interactive Q&A (≤10 questions) to extract concrete spec fro
 
 - Project shape? → **web-app**
 - Implementation mode? → **new** (greenfield)
-- Tech stack preference? → **Laravel 11 + MySQL** (or accept defaults)
+- Tech stack preference? → **Next.js 16 + Bun + PostgreSQL** (or accept defaults)
 - Output mode? → **compact** (recommended for first run)
-- Auth approach? → **Laravel Sanctum**
+- Auth approach? → **Better Auth**
 
 Answer based on the [sample PRD](sample-prd-clinic.md) if you want exact reproduction. Or improvise — mega-sdd accepts your choices.
 
@@ -127,8 +127,8 @@ After OQ resolution, mega-sdd generates atomic units. For clinic system, expect 
 
 Mega-sdd auto-invokes lint + analyze (Iter 13 consolidation). Each unit:
 - Atomic (~1 PR-sized commit; <300 LOC)
-- Has Anchors citing Laravel patterns
-- Has acceptance_test (PHPUnit)
+- Has Anchors citing Next.js patterns
+- Has acceptance_test (Vitest/Playwright)
 - Has Hard Rules (ast-grep YAML if v2 grammar installed)
 - Has grounding_confidence: HIGH (with full context)
 
@@ -172,8 +172,8 @@ Total wall-clock for execution: ~13 minutes (vs ~40 min sequential).
 git log --oneline -20
 
 # Run all tests
-./vendor/bin/phpunit
-# Or if Laravel not scaffolded yet, mega-sdd will have run via superpowers TDD
+bun test && bunx playwright test
+# Or if Next.js not scaffolded yet, mega-sdd will have run via superpowers TDD
 # in isolated environment
 
 # View tool-agnostic export
@@ -182,7 +182,7 @@ cat AGENTS.md
 
 You should see:
 - 14 atomic commits (one per unit)
-- All PHPUnit tests passing
+- All Vitest/Playwright tests passing
 - `AGENTS.md` at root with project overview, build commands, test commands, conventions
 
 ## Step 8 — Memory review (if pending)
@@ -219,8 +219,8 @@ cat .mega-sdd/vaults/clinic-app/bolts/U-XXX/bolt-report.md
 ```
 
 Common causes:
-- PHPUnit not installed (run `composer require --dev phpunit/phpunit`)
-- Database not migrated (run `php artisan migrate`)
+- Test runner not installed (run `bun add -d vitest @playwright/test`)
+- Database not migrated (run `bun run db:migrate`)
 - Test references file that doesn't exist (unit may be missing target_file dependency)
 
 Resolve, then `/mega-sdd:auto --resume`.

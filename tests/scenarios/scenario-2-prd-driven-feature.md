@@ -3,12 +3,12 @@
 **Time**: ~30 minutes
 **Goal**: Build a feature in an existing project starting from a written PRD.
 
-You'll use the [sample clinic PRD](sample-prd-clinic.md) on an existing Laravel project. Mega-sdd will scan the codebase, bind PRD claims against it, and generate units that respect existing patterns.
+You'll use the [sample clinic PRD](sample-prd-clinic.md) on an existing Next.js project. Mega-sdd will scan the codebase, bind PRD claims against it, and generate units that respect existing patterns.
 
 ## Prerequisites
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
-- Existing Laravel 11 project (or similar — mega-sdd works with PHP, TypeScript, Python, Go, Rust)
+- Existing Next.js project (or similar — mega-sdd works with PHP, TypeScript, Python, Go, Rust)
 - Recommended: `tree-sitter` + `ast-grep` installed for AST precision
 
 ## Step 1 — Setup
@@ -96,7 +96,7 @@ Mega-sdd inspects existing code:
 ▶ Phase 2 of 5: invoking scan-codebase
 ✓ Phase 2 of 5: scan-codebase → engine: tree-sitter, precision: ast
   Found: 47 classes, 142 methods, 12 routes, 6 models
-  Test framework: phpunit
+  Test framework: vitest + playwright
   Naming: PascalCase classes; kebab-case routes
 ```
 
@@ -111,7 +111,7 @@ Then binding:
     PARTIAL_FIELDS_MISSING: 2 (existing models need new fields)
     UNKNOWN: 0
   Tech-OQ auto-resolved (scan): 3 (test framework, naming convention, error format)
-  Tech-OQ recommendations surfaced: 1 (Sanctum vs Passport)
+  Tech-OQ recommendations surfaced: 1 (Better Auth vs Auth.js)
 ```
 
 Two PARTIAL_FIELDS_MISSING claims signal the field-level diff Iter 8 catches — e.g., your existing User model has `email + password` but PRD adds `phone` for patient role.
@@ -209,13 +209,13 @@ Atomic git commits, one per unit. Each commit:
 git log --oneline -15
 # Shows 12 atomic commits
 
-php artisan migrate
+bun run db:migrate            # drizzle-kit migrate
 # Applies the patient fields migration
 
-./vendor/bin/phpunit
+bun test && bunx playwright test
 # All tests pass (new + existing)
 
-php artisan serve
+bun dev
 # Visit / — clinic app live
 ```
 
@@ -235,12 +235,12 @@ blocker:
   details:
     conflicts:
       - id: C-007
-        vault_claim: "Patient auth uses Sanctum tokens"
-        codebase_reality: "Auth uses Laravel session cookies (existing pattern)"
+        vault_claim: "Staff auth uses Better Auth sessions"
+        codebase_reality: "Auth uses Auth.js / NextAuth (existing pattern)"
         suggested_resolutions:
-          - KEEP_CODE — preserve existing session-based auth
-          - KEEP_VAULT — migrate to Sanctum
-          - SPLIT — patients use Sanctum; staff use session
+          - KEEP_CODE — preserve existing NextAuth session auth
+          - KEEP_VAULT — migrate to Better Auth
+          - SPLIT — keep NextAuth for now; migrate to Better Auth in a follow-up
 ```
 
 Run `/mega-sdd:resolve-oq --binding`. Walks each conflict interactively. Pick KEEP_VAULT if PRD trumps code; KEEP_CODE if existing pattern is canonical; SPLIT for nuanced cases.
