@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.25.0] - 2026-06-12
+
+### Added — ECC-adoption Batch 1: instincts (closed learning loop) + GateGuard (LOCKED investigation gate)
+
+Adopted from the affaan-m/everything-claude-code review (spec `docs/superpowers/specs/2026-06-12-instincts-and-gateguard-design.md`); both mechanisms re-shaped to mega-sdd's doctrine.
+
+- **Instincts** (`memory/references/instincts.md`): atomic trigger→action learnings with confidence 0.3–0.9 (birth 0.5, +0.1 reconfirm capped 0.9, −0.2 on user correction, −0.1 staleness, retire <0.3), mandatory evidence (no fabricated learnings), project scope with auto-promotion to global (same key from ≥2 projects at avg ≥0.8 via `_seen.jsonl` ledger). **The point: bounded re-injection** — SessionStart appends a `<learned-instincts>` block (top 6, conf ≥0.7, 1200-char budget, advisory-explicit); matching-domain instincts also ride the bolt T2 historical-memory slice. Emission owned by the existing chain-end learning pass (Step 7.6) — no mid-chain evaluation. Opt-out `instincts: false`.
+- **GateGuard** (pre-tool-use `Edit|Write|MultiEdit` branch; matcher widened): the FIRST edit touching a file anchored to a **[LOCKED]** claim is denied with the exact investigation prescribed (read the claim + binding verdict, Grep the file's importers, name the covering acceptance test; behavior changes routed via sync/propose-and-confirm) — **the retry passes** (deny-once; session-scoped state, 30-min expiry, 500-entry cap). Converts the LOCKED rule into a pre-edit gate — today LOCKED violations are only caught post-hoc (bolt drift check / sync). Index (`scripts/build-locked-index.sh`) parses binding/vault docs for `[LOCKED]` anchors, lazily rebuilt by the hook; **no LOCKED markers (typical greenfield) → inert, zero false positives**. Opt-out `gateguard: false`; state file intentionally NOT bypass-protected (deleting it merely re-gates — fail-safe direction).
+- `tests/instincts-gateguard/` — functional fixtures (deny→retry-allow→new-session-regates→opt-out→greenfield-inert; conf-0.8 injected / conf-0.5 + retired excluded / opt-out honored) + wiring pins.
+
+### Fixed
+
+- Platform pins back to ALL PASS: P6 exemption casing in `code-gates.md` ("is NOT substituted") and the long-standing P7d — plugin README now names the full activation chain (`/plugin marketplace update mega-sdd` + `/reload-plugins`).
+
 ## [4.24.0] - 2026-06-12
 
 ### Fixed/Added — UI/UX awareness: the greenfield design pipe + a design lens

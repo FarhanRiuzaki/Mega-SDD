@@ -56,6 +56,12 @@ elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     cmd_b64 = base64.b64encode(cmd.encode()).decode()
     print(f"BASH_CMD_B64={cmd_b64}")
+elif tool_name in ("Edit", "Write", "MultiEdit"):
+    fp = tool_input.get("file_path", "")
+    fp_b64 = base64.b64encode(fp.encode()).decode()
+    print(f"FILE_PATH_B64={fp_b64}")
+    sid = data.get("session_id", "")
+    print(f"SESSION_ID={sid}")
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then
@@ -395,6 +401,91 @@ if d and d.get("status") == "FAIL":
 ' 2>/dev/null)
       if [ -n "$MAP_REASON" ]; then emit_block "$MAP_REASON"; fi
     fi
+    ;;
+
+  Edit|Write|MultiEdit)
+    # ─── GateGuard: LOCKED-file investigation gate (deny→force→allow) ────────
+    # ECC-adoption Batch 1 (spec 2026-06-12-instincts-and-gateguard-design.md §B).
+    # The FIRST edit touching a file anchored to a [LOCKED] claim is denied with
+    # the exact investigation to perform; the RETRY passes (session-scoped state,
+    # 30-min expiry). Empty/absent index (greenfield, no LOCKED markers) = inert.
+    # Fast path: two stat-class checks before any python.
+    [ -z "${FILE_PATH_B64:-}" ] && exit 0
+    if grep -qE "^[[:space:]]*gateguard:[[:space:]]*false" "$CONFIG_FILE" 2>/dev/null; then exit 0; fi
+    GG_IDX="${PROJECT_ROOT}/.mega-sdd/.locked-files-index.json"
+    # Lazy rebuild: index absent or older than the newest binding.md
+    GG_NEWEST=$(ls -t "${PROJECT_ROOT}/.mega-sdd/vaults"/*/binding.md 2>/dev/null | head -1)
+    if [ -n "$GG_NEWEST" ]; then
+      if [ ! -f "$GG_IDX" ] || [ "$GG_NEWEST" -nt "$GG_IDX" ]; then
+        bash "${SCRIPT_DIR_RPR}/../scripts/build-locked-index.sh" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
+      fi
+    fi
+    [ -f "$GG_IDX" ] || exit 0
+    GG_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" FILE_PATH_B64="$FILE_PATH_B64" SESSION_ID="${SESSION_ID:-}" GG_IDX="$GG_IDX" python3 - 2>/dev/null <<'PYGG'
+import base64, json, os, time
+
+root = os.environ["PROJECT_ROOT"]
+idx_path = os.environ["GG_IDX"]
+sid = os.environ.get("SESSION_ID", "") or "no-session"
+try:
+    fp = base64.b64decode(os.environ["FILE_PATH_B64"]).decode()
+except Exception:
+    raise SystemExit(0)
+try:
+    idx = json.load(open(idx_path))
+except Exception:
+    raise SystemExit(0)  # corrupt index never crashes the tool call (gate is advisory-shaped)
+files = idx.get("files", {})
+if not files:
+    raise SystemExit(0)
+try:
+    rel = os.path.relpath(os.path.abspath(fp), root)
+except Exception:
+    raise SystemExit(0)
+if rel not in files:
+    raise SystemExit(0)
+
+state_path = os.path.join(root, ".mega-sdd", ".gateguard-state.json")
+now = time.time()
+state = {"session_id": sid, "entries": {}}
+try:
+    s = json.load(open(state_path))
+    if s.get("session_id") == sid:
+        state = s
+except Exception:
+    pass
+entries = {k: v for k, v in state.get("entries", {}).items() if now - v < 1800}
+if rel in entries:
+    raise SystemExit(0)  # already investigated this session — allow
+
+# Record FIRST (deny-once: the retry passes even if the model ignores the prescription)
+entries[rel] = now
+if len(entries) > 500:
+    entries = dict(sorted(entries.items(), key=lambda kv: kv[1])[-500:])
+state = {"session_id": sid, "entries": entries}
+tmp = state_path + ".tmp"
+try:
+    with open(tmp, "w") as f:
+        json.dump(state, f)
+    os.replace(tmp, state_path)
+except Exception:
+    pass  # state-write failure must not crash the deny
+
+refs = ", ".join(files[rel][:3])
+print(
+    "GateGuard (LOCKED grounding gate): %s is anchored to a [LOCKED] claim (%s). "
+    "Before editing, gather these facts in THIS session: "
+    "(1) Read the claim + its binding verdict at the ref above; "
+    "(2) Grep every file that imports/uses %s and list them; "
+    "(3) name the acceptance test that covers this behavior. "
+    "Then RETRY the same edit — the retry is allowed (deny-once gate). "
+    "If the change ALTERS the locked behavior, do not edit directly: route it through "
+    "/mega-sdd:sync (drift triage) or the bolt propose-and-confirm path." % (rel, refs, rel)
+)
+PYGG
+)
+    if [ -n "$GG_REASON" ]; then emit_block "$GG_REASON"; fi
+    exit 0
     ;;
 
   Bash)

@@ -207,5 +207,6 @@ handoff:
 
 - `references/memory-schema.md` — full per-file schemas + format specs + scope rules
 - `references/learning-rules.md` — threshold tables + audit-log format + rollback path
+- `references/instincts.md` — instinct schema (trigger→action, confidence 0.3–0.9), lifecycle, project→global promotion, SessionStart re-injection contract
 - `docs/superpowers/specs/2026-05-21-memory-self-learning-design.md` — design spec this skill implements
 - Claude Code built-in `auto memory` (`~/.claude/projects/<project>/memory/`) — COMPLEMENTARY system (mega-sdd memory writes elsewhere; never duplicates)
