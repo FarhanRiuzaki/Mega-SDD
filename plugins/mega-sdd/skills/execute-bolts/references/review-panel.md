@@ -18,6 +18,7 @@ How the execute-bolts controller reviews a bolt after `bolt-implementer` reports
 | quality | `mega-sdd:code-quality-reviewer` | §code-quality-reviewer | duplication/failure-to-reuse, test quality, over-engineering, maintainability |
 | security | `mega-sdd:security-reviewer` | §security-reviewer | input validation, authz vs spec, secrets, new deps, fail-open, architectural drift |
 | standards | `mega-sdd:standards-reviewer` | §standards-reviewer | naming/location/idiom conformance vs pack + surrounding code |
+| design | `mega-sdd:design-reviewer` | §design-reviewer | modern UI quality vs the vault design_system + modern-baseline (UI-bearing units only) |
 
 Models are NEVER hardcoded — cite `plugins/mega-sdd/references/model-tiers.md` rows; the override chain (CLI > project config > user preference > catalog) applies per lens.
 
@@ -29,7 +30,9 @@ Resolve the tier BEFORE dispatch, once per unit:
 |---|---|---|
 | `minimal` | spec | ALL of: ≤2 target files · zero risk signals · no `operation: create` files |
 | `standard` | spec + quality | default — anything neither minimal nor full |
-| `full` | all four | ANY risk signal fires |
+| `full` | spec + quality + security + standards | ANY risk signal fires |
+
+**Additive design lens:** `design-reviewer` JOINS the selected tier (any tier) whenever the unit is UI-bearing per `context-enrichment.md §Design slice` (target_files match the pack `view_glob` or the universal frontend shapes). It receives the SAME design slice injected into the implementer's prompt as its rubric — one contract, two sides. Pure-backend units never pay for it.
 
 **Risk signals** (evaluate against the unit + active framework pack):
 1. Any `target_files` path matches the pack's `auth_hints` or `authz_hints` globs.
@@ -43,7 +46,7 @@ Resolve the tier BEFORE dispatch, once per unit:
 ## Blind dispatch protocol
 
 - **One message, N Agent calls** — all selected lenses dispatch concurrently from the main-thread controller. Depth-1 is preserved: the controller→agent shape is unchanged; the panel adds parallelism, not nesting.
-- **Each lens prompt contains:** the unit body + frontmatter, base/head commit SHAs, and lens-specific context only — security gets the constitution §B clauses + binding_refs + the active pack's `## Security idioms` slice; standards gets the pack naming/location/idiom slice + codebase-map conventions; quality gets the reuse-index path + reuse_candidates.
+- **Each lens prompt contains:** the unit body + frontmatter, base/head commit SHAs, and lens-specific context only — security gets the constitution §B clauses + binding_refs + the active pack's `## Security idioms` slice; standards gets the pack naming/location/idiom slice + codebase-map conventions; quality gets the reuse-index path + reuse_candidates; design gets the design slice (vault design_system + style-principles slice + modern-baseline digest).
 - **Each lens prompt NEVER contains:** the implementer's report or self-assessment, another lens's verdict, or any prior attempt's review. Blind review is the anti-rubber-stamp rail — do not "save tokens" by sharing context between lenses.
 - **Each lens prompt DOES contain the L0 code-gate results** (`## Deterministic scan results`, per `code-gates.md`) — machine fact, not another lens's opinion, so blindness is intact. Lenses skip what machines already caught and judge what machines can't.
 - Re-reviews after a re-dispatch are equally blind: the lens gets the new SHAs and the unit, not the history of what it flagged before.

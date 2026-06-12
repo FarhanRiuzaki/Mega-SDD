@@ -110,6 +110,7 @@ IF reuse-index.yaml absent: skip slice.reuse (the T1 path line above still instr
 Path: <project>/.mega-sdd/codebase/starterkit-context.yaml
 
 IF file absent → skip build + inject; do not inject the starterkit slice into T2
+                 (the DESIGN slice below still applies — it is independent of starterkit)
 IF file present → parse YAML
   IF parse fails → log warning; emit `deep_scan_cache_corrupt` soft halt; skip
   IF starterkit_context.partial == true → note partial_slices for slice availability
@@ -165,6 +166,45 @@ IF starterkit_context absent AND codebase-map.md §6 (Pattern signatures) presen
   # emitted as one `Codebase patterns:` line in the dispatch prompt — "new code matches these
   # unless the unit's Hard rules say otherwise". Informational context, never a gate.
 ```
+
+## Design slice: build + inject (INDEPENDENT of starterkit — the greenfield pipe)
+
+> Closes the clinic-project audit gap (2026-06-12): generate-intent wrote a full
+> `vault.json design_system` (style/palette/typography/a11y picked from
+> `design-intelligence/product-style-map.yaml`), but the only injection path lived
+> INSIDE the starterkit branch above — greenfield projects have no
+> starterkit-context.yaml, so UI bolts received ZERO design guidance and rendered
+> default-browser ("kuno") UI. This slice is built whenever the unit ships UI files,
+> starterkit or not.
+
+```
+ui_bearing = any target_files path matches the active pack `## UI quality signatures`
+             view_glob, OR matches the universal frontend shapes:
+             *.blade.php, *.html.erb, *.twig, *.jsx, *.tsx, *.vue, *.svelte,
+             *.html, *.css, components/**, pages/**, views/**, templates/**
+
+IF NOT ui_bearing → skip (no design slice for pure-backend bolts)
+IF slice.ui_ux already built above (starterkit path) → skip (template is AUTHORITATIVE;
+   the starterkit branch already carries design_system as supplement)
+
+ELSE build design_slice:
+  IF vault.design_system present (vault-contract.md §design_system):
+    design_slice.system   = style, palette, typography, a11y_level (exclude provenance)
+    design_slice.style    = the matching style-principles[style] rows
+                            (traits + CSS keywords + anti-patterns)
+    design_slice.ux       = ux-rules.md a11y rows + form/feedback rows
+  ELSE:
+    design_slice.note     = "no design_system in vault — raise as OQ at chain end"
+  design_slice.baseline   = design-intelligence/modern-baseline.md
+                            §Non-negotiables + §Anti-kuno tells (verbatim digest)
+```
+
+Injection: a T2 section `## Design system (UI-bearing unit)` per
+`bolt-dispatch-prompt.md`. Priority: same tier as `starterkit_slice` in the
+truncation cascade (truncated late, never first-dropped — an un-designed view is
+a rework cycle, not a nice-to-have). ALL injected text — never a Skill-invoke.
+The review-panel `design-reviewer` lens receives the SAME slice as its rubric, so
+the implementer and the reviewer judge against one contract.
 
 ## Starterkit slice: §patterns wiring
 
