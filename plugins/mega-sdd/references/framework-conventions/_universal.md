@@ -280,3 +280,33 @@ framework-specific (Laravel/Blade: `@section('title', '…Controller')`, `>Custo
 is never blocked for a UI convention it never declared. The tells/elements lists MERGE
 (union, dedup by `id`) across the `extends` chain so a base pack can declare stack-generic
 tells while a project pack adds project-specific required elements; both apply.
+
+## Deep-scan file hints (generic fallback — NOT framework-specific)
+
+```yaml
+auth_hints:  [ "**/auth*", "**/login*", "**/session*", "**/*security*", "config/**" ]
+authz_hints: [ "**/middleware/**", "**/permission*", "**/policies/**", "**/decorators*", "**/guards/**", "**/rbac*", "**/roles*" ]
+ui_hints:    [ "**/templates/**", "**/views/**", "**/components/**", "**/layouts/**", "**/pages/**", "**/static/**", "**/assets/**" ]
+```
+
+## Authz mapping (generic heuristic)
+
+- `mechanism`: infer from where rules live — a `middleware/` dir -> `middleware`; decorators on handlers -> `decorator`; mixin/base classes -> `mixin`; else `unknown`.
+- Construct -> `declarations[].kind`: any named role/group -> `role`/`group`; any named permission/ability -> `permission`; route/handler guards -> record with `applies_to`.
+
+## UI detection (generic heuristic)
+
+- dominant layout: the most-included/extended base template across the UI dir.
+- component: the convention used under the components/ dir.
+- notification call: a notification lib import in the JS entrypoint, else native flash messages.
+
+## Reuse discovery (generic fallback)
+
+```yaml
+reuse_hints:
+  helpers:  [ "**/helpers*", "**/util*", "**/lib/**" ]
+  model_api:[ "**/models/**", "**/entities/**", "**/domain/**" ]
+  services: [ "**/services/**", "**/actions/**", "**/usecases/**" ]
+  commands: [ "**/commands/**", "**/cli/**", "**/cmd/**" ]
+```
+- helpers: top-level functions + static util methods. model_api: public methods on entity classes. services: public entrypoints on service/action classes. commands: declared CLI command handlers.

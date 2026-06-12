@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# mega-sdd UserPromptExpansion gate — defense-in-depth for the binding→units moat.
+# Typing /mega-sdd:execute-bolts expands the command WITHOUT a PreToolUse Skill
+# event; the model usually then calls the Skill tool (where the primary gate
+# fires), but MAY follow the expanded prompt directly. This hook closes that
+# seam: when the moat state attests FAIL, block the expansion itself.
+# Output contract (current docs): top-level {"decision": "block", "reason": ...}.
+# Fail-open on anything undeterminable — the PreToolUse gate remains the backstop.
+set -uo pipefail
+
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+CWD=""
+if command -v python3 >/dev/null 2>&1; then
+  CWD=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
+try:
+    print(json.loads(sys.stdin.read()).get("cwd") or "")
+except Exception:
+    pass' 2>/dev/null)
+else
+  CWD=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+fi
+[ -n "$CWD" ] || exit 0
+
+SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
+PROJECT_ROOT="$CWD"
+if [ -f "$RPR_HELPER" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR_HELPER"
+  PROJECT_ROOT=$(resolve_project_root "$CWD")
+fi
+[ -d "${PROJECT_ROOT}/.mega-sdd" ] || exit 0
+
+MOAT="${PROJECT_ROOT}/.mega-sdd/.validation-blockers.json"
+# Same semantics as the PreToolUse aggregator: absent file allows; a file that
+# does not attest PASS blocks (fail-closed on corrupt/FAIL state).
+if [ -f "$MOAT" ] && ! grep -q '"status"[[:space:]]*:[[:space:]]*"PASS"' "$MOAT" 2>/dev/null; then
+  printf '{"decision": "block", "reason": "mega-sdd gate: binding/units validation state does not attest PASS — resolve blockers (see .mega-sdd/.validation-blockers.json) before execute-bolts. This guard also covers the /command path that bypasses PreToolUse."}\n'
+fi
+exit 0

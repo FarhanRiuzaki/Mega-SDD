@@ -52,7 +52,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 
 <!-- staged-only: present ONLY when this flow collects inputs across multiple steps/pages/roles
      (wizard, maker→checker). Copy the `stages:` block from the source KB workflow §3a VERBATIM —
-     do NOT re-flatten it. If the KB used the ENRICHED form (v3.72.0+ — `input_fields` as objects
+     do NOT re-flatten it. If the KB used the ENRICHED form (`input_fields` as objects
      with name/mutability/visibility/conditional, plus per-stage delta fields new_fields_vs_prior /
      hidden_fields_vs_prior / promoted_to_mutable_vs_prior / dynamic_disclosures), preserve THAT
      form; do NOT downgrade enriched objects to bare strings (AUDIT L8 — they carry the

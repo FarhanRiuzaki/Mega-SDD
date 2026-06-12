@@ -4,6 +4,15 @@ Canonical JSON schema for code-state snapshots consumed by mega-sdd skills acros
 
 Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Iter 30 baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); Iter 46 extension adds 30-50% re-run I/O savings on incremental dev cycles (scan→bind hop) + KB freshness check (extract→intent hop).
 
+## Contents
+
+- Schema
+- Producer responsibilities
+- Consumer responsibilities
+- Anti-halu rails
+- Backward compatibility
+- File locations summary
+
 ## Schema
 
 ```json

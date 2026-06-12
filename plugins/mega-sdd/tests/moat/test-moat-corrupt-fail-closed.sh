@@ -23,7 +23,7 @@ run_hook() {
   printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-sdd:execute-bolts"}}' "$ROOT" \
     | bash "$HOOK" 2>/dev/null
 }
-blocked() { printf '%s' "$1" | grep -q '"continue": false'; }
+blocked() { printf '%s' "$1" | grep -q '"permissionDecision": "deny"'; }
 
 # --- Case 1 (corrupt): garbage moat state => must BLOCK (fail-closed) ---
 printf '{ this is not valid json ]]' > "$STATE"

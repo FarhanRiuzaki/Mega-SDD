@@ -1,6 +1,6 @@
 ---
-description: [ADVANCED / AUTO-INVOKED] Show module progress. Auto-invoked by `/mega-sdd:auto` in chain end summary. Run standalone for mid-pipeline status check OR interactive DoD marking via --mark-dod flag. computes per-module unit completion + DoD checklist status. Supports --mark-dod for interactive DoD item toggling. Module = semantic grouping ABOVE atomic units (Iter 11; per generate-units/references/modules-schema.md).
-argument-hint: [vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]
+description: ADVANCED / AUTO-INVOKED — Show module progress. Auto-invoked by `/mega-sdd:auto` in chain end summary. Run standalone for mid-pipeline status check OR interactive DoD marking via --mark-dod flag. computes per-module unit completion + DoD checklist status. Supports --mark-dod for interactive DoD item toggling. Module = semantic grouping ABOVE atomic units (per generate-units/references/modules-schema.md).
+argument-hint: "[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]"
 ---
 
 Display module progress + DoD status for the current vault.
@@ -12,7 +12,7 @@ User arguments: $ARGUMENTS
 ### Step 1 — Resolve vault path
 
 - If positional arg provided: use it
-- Otherwise probe `<project>/.mega-sdd/vaults/*/vault.json` (v3.4+ layout) FIRST, then `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy) — first match
+- Otherwise probe `<project>/.mega-sdd/vaults/*/vault.json` (canonical layout) FIRST, then `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy) — first match
 - Halt if no vault found OR if vault.json malformed
 
 ### Step 2 — Load modules
@@ -90,7 +90,7 @@ After display:
 
 - **Module status is derived from objective signals**: unit count from filesystem + bolt-outcomes.json from memory + DoD checklist from modules.yaml — NEVER inferred
 - **DoD test commands**: invoked via Bash; exit code = pass/fail (deterministic). Never "LLM thinks it passes".
-- **blocked_by status**: probed by recursively reading dependent module status. Cycle detection via Iter 11 cross-module DAG validation.
+- **blocked_by status**: probed by recursively reading dependent module status. Cycle detection via cross-module DAG validation.
 
 ## References
 

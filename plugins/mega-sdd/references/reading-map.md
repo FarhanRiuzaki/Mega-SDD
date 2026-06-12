@@ -4,6 +4,20 @@
 >
 > **Convention**: ⭐ marks the primary entry-point per stage. Read that first.
 
+## Contents
+
+- Pre-pipeline (your inputs)
+- Stage 1 — After extract-intelligence (legacy-rebuild only)
+- Stage 2 — After generate-intent
+- Stage 3 — After scan-codebase
+- Stage 4 — After bind-codebase
+- Stage 5 — After generate-units
+- Stage 6 — After execute-bolts
+- Stage 7 — Cross-cutting + interop
+- Phase 2+ workflow (after Phase 1 completes)
+- E2E one-liner
+- See also
+
 ## Pre-pipeline (your inputs)
 
 | What | Where | Read when |
@@ -90,14 +104,17 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 |---|---|---|
 | ⭐ Tool-agnostic AI context | `<repo-root>/AGENTS.md` | Other AI tools (Continue, Cursor, Aider) consume this |
 | Pipeline run history | `.mega-sdd/memory/outcomes.md` | "What did past runs do" |
-| Routing learning (v3.24+) | `.mega-sdd/memory/routing-outcomes.md` | What chain works for this project shape |
+| Routing learning | `.mega-sdd/memory/routing-outcomes.md` | What chain works for this project shape |
 | Project decisions | `.mega-sdd/memory/decisions.md` | OQ resolutions across runs |
 | Project conventions | `.mega-sdd/memory/conventions.md` | Detected naming/structure conventions |
 | Drift report (after detect-drift) | `<vault>/DRIFT-REPORT.md` | Code-vs-vault divergence |
 | Vault diff (after diff-vault) | `<vault>/VAULT-DIFF.md` | Cross-revision vault changes |
-| ⭐ Corporate FSD (after emit-fsd, Iter 54) | `<vault>/fsd/FSD.pdf` + `FSD.md` | Confluence-format FSD for stakeholder sign-off; upload PDF manually to Confluence |
+| 🔄 Sync run report (after /mega-sdd:sync) | `<vault>/SYNC-REPORT.md` | What the last sync applied vs queued + the closing staleness verification |
+| 🔄 Pending sync decisions | `<vault>/PENDING-SYNC.md` | Human-only decisions an autonomous sync deferred (CONFLICTs, drift direction calls, vault patch drafts) |
+| Dirty-paths journal (ambient) | `.mega-sdd/codebase/.dirty-paths.jsonl` | Which files changed in-session since the last scan (consumed by sync; not for manual editing) |
+| ⭐ Corporate FSD (after emit-fsd) | `<vault>/fsd/FSD.pdf` + `FSD.md` | Confluence-format FSD for stakeholder sign-off; upload PDF manually to Confluence |
 | FSD citation trace (after emit-fsd) | `<vault>/fsd/.citation-map.json` | Audit which vault/units/bolts source each FSD section was grounded on |
-| Install outcomes (after install-deps, Iter 55) | `<project>/.mega-sdd/memory/install-outcomes.md` | Per-tool install audit log; skip re-audit next session unless --force-recheck |
+| Install outcomes (after install-deps) | `<project>/.mega-sdd/memory/install-outcomes.md` | Per-tool install audit log; skip re-audit next session unless --force-recheck |
 
 ## Phase 2+ workflow (after Phase 1 completes)
 

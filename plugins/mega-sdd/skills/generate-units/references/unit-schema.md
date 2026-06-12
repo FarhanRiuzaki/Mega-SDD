@@ -24,24 +24,30 @@ A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Ea
 id: U-001                         # zero-padded, monotonic
 title: <short imperative phrase>
 vault_source: <vault-file:section>  # which vault section this unit derives from
-task_type: create                  # (v1.2+) create | extend | verify
+task_type: create                  # create | extend | verify
                                    # create: new code, target_files all `create`
                                    # extend: modify existing; Migration notes mandatory
-                                   #   Iter 1 (v1.2): reserved (no auto-emit; manual only)
-                                   #   Iter 8 (v2.1+): AUTO-emitted for PARTIAL_FIELDS_* binding states with Migration notes populated from binding's field_diff
+                                   #   AUTO-emitted for PARTIAL_FIELDS_* binding states with Migration notes populated from binding's field_diff
                                    # verify: NO code generation; only acceptance_test against existing implementation
                                    # Default: create. Auto-assigned from binding.md Implementation State Map when present.
-grounding_confidence: HIGH | MEDIUM | LOW   # (v2.1+, Iter 8) — reflects defensive generation checks
+status: implemented                # OPTIONAL (living-vault lifecycle; absence = legacy/not-yet-executed)
+                                   # implemented: bolt committed AND all bolt-report target_hashes still match the working tree
+                                   # stale: bolt committed BUT a target file changed since (per scripts/compute-unit-staleness.sh)
+                                   #   - eligible for re-execution in the sync lane
+                                   # superseded: the claim this unit derives from vanished from the (re-)bound vault
+                                   #   - assigned ONLY by generate-units --reconcile; unit kept (audit trail), never deleted;
+                                   #     execute-bolts SKIPS superseded units with a warning
+grounding_confidence: HIGH | MEDIUM | LOW   # — reflects defensive generation checks
                                    # HIGH = binding present + all anchors verified + no target collisions + binding state all HIGH-conf
                                    # MEDIUM = binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex
                                    # LOW = no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors
-                                   # Required when v2.1+ generated; omitted in pre-v2.1 units.
-grounding_evidence:                # (v2.1+, Iter 8) — descriptive metadata; not enforced downstream
+                                   # Required on newly generated units; may be absent on legacy units.
+grounding_evidence:                # — descriptive metadata; not enforced downstream
   upstream_artifacts: []           # what was consulted: [codebase-map.md, binding.md]
   anchors_verified: <N>/<M>        # how many of M anchors resolved (file exists + line valid)
   target_files_collision_check: passed | warning | resolved-via-prompt
   binding_state_summary: {}        # { IMPLEMENTED: N, PARTIAL_FIELDS_MISSING: N, ... }
-mutability:                        # (v2.5.1+, Iter 25 — propagates Iter 22 mutability tier from binding/KB)
+mutability:                        # propagates the mutability tier from binding/KB
   tier: LOCKED | INTENT | ARTIFACT # tier of the vault claims this unit implements
   source: kb_locked | kb_intent | kb_artifact | vault_locked | inferred
   rationale: <string>              # 1-line reason (e.g., "BI Reg 23/2/2021 §4 — field name + type + validation MUST preserve")
@@ -53,13 +59,17 @@ mutability:                        # (v2.5.1+, Iter 25 — propagates Iter 22 mu
   # Pre-v2.5.1 units OR units without KB-derived claims → field omitted; downstream treats as INTENT (safe default).
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
-scope: <scope-id>                  # (v2.5.4+, Iter 29 — P1-3) OPTIONAL — written when source vault.json has `scope` field
+scope: <scope-id>                  # OPTIONAL — written when source vault.json has `scope` field
                                    # e.g., "BE", "MW", "FE". Matches vault.json `scope_metadata.id`.
                                    # Omitted entirely for legacy single-scope vaults.
-scope_name: "<scope-name>"         # (v2.5.4+, Iter 29 — P1-3) OPTIONAL — written alongside `scope:`
+scope_name: "<scope-name>"         # OPTIONAL — written alongside `scope:`
                                    # e.g., "Backend API". Matches vault.json `scope_metadata.name`.
                                    # Omitted entirely for legacy single-scope vaults.
-module: <module-id>                # (v2.2+, Iter 11) — semantic grouping per _meta/modules.yaml
+reuse_candidates:                  # OPTIONAL — fast-path hints from reuse-index.yaml (NOT exhaustive; the bolt reads the full index)
+  - { name: <symbol>, path: <file>, signature: <sig>, purpose: <1-line> }
+                                   # Absent when no candidate matched; never fabricated.
+                                   # These are hints — the bolt receives the full reuse-index.yaml path and scans it at write time.
+module: <module-id>                # — semantic grouping per _meta/modules.yaml
                                    # Format: M-<kebab-case>. Auto-derived from vault_source matching modules.yaml.
                                    # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source not matching any module.
 depends_on: []                     # list of unit IDs that must complete first
@@ -85,6 +95,14 @@ acceptance_test:                   # how to verify the bolt succeeded
   - type: test                     # test | manual | lint | typecheck | render
     command: "npm test -- auth"
     expects: "passes"
+    ears: "WHEN a login request carries an expired token THE SYSTEM SHALL respond 401 with problem+json"
+                                   # OPTIONAL (additive, backward-compatible) — an EARS-shaped statement
+                                   # ("WHEN <trigger> THE SYSTEM SHALL <response>" / "WHILE <state> ..." /
+                                   # "IF <condition> THEN THE SYSTEM SHALL ...") making the criterion
+                                   # machine-checkable. When present, the bolt's TDD test MUST assert
+                                   # exactly this statement (and PBT properties MAY be derived from it).
+                                   # Absent → prose `expects:` remains the criterion (no behavior change);
+                                   # validators tolerate absence everywhere.
   - type: manual
     desc: "Hit /login with valid creds, expect 200 + token"
   - type: render                   # REQUIRED for any unit whose target_files include a
@@ -105,7 +123,7 @@ estimated_complexity: small        # small | medium | large
 ---
 ```
 
-## Required body sections (v1.3+, Iter 3 — polished AI-coding-prompt shape)
+## Required body sections (polished AI-coding-prompt shape)
 
 ```markdown
 ## Goal
@@ -114,7 +132,7 @@ estimated_complexity: small        # small | medium | large
 ## Context (read first)
 <which vault sections, which binding entries, KB sections (if KB present), and WHY this scope exists. Conversational directive prose, NOT bullets. Aim for 2-4 sentences that orient an AI coding agent: what's the surrounding system, what's the user-visible outcome, what changes nothing.>
 
-## Anchors  (v1.2+ schema; v1.3+ mandatory for ALL task_types when binding evidence exists)
+## Anchors  (mandatory for ALL task_types when binding evidence exists)
 <file:line where existing code lives that this unit references or modifies. AI coding agent reads these BEFORE writing.>
 <For task_type=verify and task_type=extend: MANDATORY — cite the implementation anchor from binding.>
 <For task_type=create: MANDATORY when at least one binding entry exists pointing to a related pattern in codebase-map. Cite the closest pattern to follow. Optional when fully greenfield.>
@@ -123,7 +141,7 @@ estimated_complexity: small        # small | medium | large
 - src/Models/User.php:12 — entity to extend
 - docs/knowledge-base/10-domains/10-cif-customer.md §5 (if KB present) — domain behavior to honor
 
-## Hard rules  (v1.3+, Iter 3 — validated at bolt time by execute-bolts pre/post-flight)
+## Hard rules  (validated at bolt time by execute-bolts pre/post-flight)
 <Machine-parseable constraints. Grammar closed in v1 per DESIGN-OQ-4 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>
 
 - DO NOT modify <path>
@@ -132,14 +150,14 @@ estimated_complexity: small        # small | medium | large
 - function <name> MUST preserve signature: <type-signature>
 - file <path> MUST exist after bolt
 
-## Anti-patterns  (v1.3+ — guidance, NOT validated)
+## Anti-patterns  (guidance, NOT validated)
 <Conversational don'ts drawn from binding CONFLICTS + KB gotchas + tech-OQ recommendations + experience. AI agent reads these as context; not machine-enforced.>
 
 - Don't bypass middleware `auth.role` — RBAC pattern in routes/web.php:34
 - Don't replicate the typo `cfkdhl → CFKDDL` from legacy at <legacy-anchor>
 - Don't add a new HTTP error envelope; existing pattern at ErrorResource.php:12 is canonical
 
-## Implementation steps  (v1.3+ — directive prose, not bullet schema)
+## Implementation steps  (directive prose, not bullet schema)
 <Written like a senior teammate briefing another teammate. AT LEAST one sentence >15 words. Reference Anchors inline. Avoid pure bullet checklists.>
 <For task_type=verify: ONE line — "No code changes. Run acceptance tests against existing implementation at <anchor>.">
 <For task_type=create: directive prose explaining the build sequence with anchor references.>
@@ -147,7 +165,7 @@ estimated_complexity: small        # small | medium | large
 
 First, open `app/Http/Controllers/UserController.php` and look at the `index` method at line 45 to see how the existing read endpoints structure their response. Then add a `store` method that mirrors this shape but accepts validated input from `StoreUserRequest`. The trickier part is the role assignment — see the Anchor at `routes/api.php:34` for how roles are attached after the existing flow.
 
-## Migration notes  (v1.2+; mandatory for task_type=extend; omitted otherwise)
+## Migration notes  (mandatory for task_type=extend; omitted otherwise)
 <Three sub-lists when this section is present:>
 - **REMOVE**: <code to delete>
 - **KEEP**: <code to preserve, do not touch>
@@ -161,7 +179,7 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
 <explicit list — prevents scope creep into adjacent units>
 ```
 
-## Hard rule grammar (v1.3+, Iter 3 — closed v1 per DESIGN-OQ-4)
+## Hard rule grammar (closed v1)
 
 Five rule types supported. Unsupported grammar → halt at bolt time with `hard_rule_unparseable`.
 
@@ -205,7 +223,7 @@ file src/Models/AuditLog.php MUST exist after bolt
 
 Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip.
 
-### Per-task_type contracts (v1.2+)
+### Per-task_type contracts
 
 | task_type | target_files | Anchors | Migration notes | acceptance_test | Implementation steps body |
 |---|---|---|---|---|---|
@@ -213,20 +231,20 @@ Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip
 | `extend` | At least one `operation: modify`; new files allowed `operation: create` | MANDATORY | MANDATORY (REMOVE/KEEP/ADD) | Tests for new behavior; existing-behavior assertions in `existing_interfaces` | Numbered modification steps |
 | `verify` | Empty OR all `operation: none` | MANDATORY (cite the existing implementation) | Omitted | All assertions against existing implementation | ONE line: "No code changes. Run acceptance tests against existing implementation at <anchor>." |
 
-> **Iter 1 scope** (v1.2): `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map. `extend` type is in the schema (forward-compat for Iter 2/3) but does NOT auto-emit.
+> `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map.
 >
-> **Iter 8 scope** (v2.1+): `extend` type AUTO-EMITTED when bind-codebase v1.7+ detects `PARTIAL_FIELDS_MISSING` or `PARTIAL_FIELDS_SURPLUS` or `PARTIAL_FIELDS_BOTH` states. Migration notes populated from binding's `field_diff` column (ADD/KEEP/REMOVE lists). User can override via interactive prompt for PARTIAL_FIELDS_SURPLUS (which signals ambiguity between feature drift / vault gap / legacy / rename).
+> `extend` type is AUTO-EMITTED when bind-codebase detects `PARTIAL_FIELDS_MISSING` / `PARTIAL_FIELDS_SURPLUS` / `PARTIAL_FIELDS_BOTH` states. Migration notes populated from binding's `field_diff` column (ADD/KEEP/REMOVE lists). User can override via interactive prompt for PARTIAL_FIELDS_SURPLUS (which signals ambiguity between feature drift / vault gap / legacy / rename).
 
 ## Atomicity rules
 
 - One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into U-001, U-001.1, U-001.2.
 - `target_files` whitelist is enforced by `execute-bolts` — bolt may not touch files outside this list.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
-- (v1.2+) `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
-- (v1.3+, Iter 3) `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight (before commit) validates. Violations halt with `hard_rule_violated`.
-- (v1.3+, Iter 3) `## Implementation steps` MUST contain at least one sentence >15 words (directive prose check). Pure bullet checklists trigger render-pass warning.
+- `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
+- `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight (before commit) validates. Violations halt with `hard_rule_violated`.
+- `## Implementation steps` MUST contain at least one sentence >15 words (directive prose check). Pure bullet checklists trigger render-pass warning.
 
-## Multi-squad rules (v1.1+)
+## Multi-squad rules
 
 Applies only when `_meta/squads.yaml` exists with ≥2 squads. Single-squad / no-squad-config vaults skip these rules.
 
@@ -261,9 +279,9 @@ Unit IDs are stable across regenerations:
 - **Greenfield:** units derived directly from vault (no binding). `binding_refs` is empty.
 - **Brownfield:** units derived from bound-vault. `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
 
-### Scope fields (v2.5.4+, Iter 29)
+### Scope fields
 
-Optional fields written ONLY when source vault.json has `scope` field (multi-scope vault per Iter 28):
+Optional fields written ONLY when source vault.json has `scope` field (multi-scope vault):
 
 - `scope: <id>` — e.g., `BE`, `MW`, `FE`. Matches vault.json `scope_metadata.id`.
 - `scope_name: "<name>"` — e.g., `"Backend API"`. Matches vault.json `scope_metadata.name`.
@@ -277,6 +295,6 @@ Omitted entirely for legacy single-scope vaults (no `scope` field in source vaul
 - Unit MUST have at least one acceptance_test entry of type `test`. No exceptions.
 - (slice D) Any unit whose `target_files` include a detail/show view (matching the active framework pack `## Test patterns` -> `detail_view_glob`) MUST ALSO carry at least one acceptance_test entry of type `render`. Absent → `validate-unit-spec.sh` emits `render_test_missing` and BLOCKS `execute-bolts`. The render test is derived from the pack `detail_view_render` template; a prose `## Tests` / `## Acceptance` bullet does NOT satisfy this — it must be a structured `acceptance_test:` entry with `type: render` (or `kind: render`). Packs that omit `## Test patterns` → check SKIPs (the stack never declared a detail-view convention).
 - If unit body cannot meet a contract, halt — do not generate a partial unit.
-- (v1.1+) In multi-squad mode, `depends_on` MUST be intra-squad only. Cross-squad direct deps halt with `cross_squad_dep_invalid`.
-- (v1.1+) `consumes_interfaces` entries MUST resolve to existing interface files; status field is read at bolt time to gate execution.
-- (v2.5.4+, Iter 29) `scope:` / `scope_name:` MUST be sourced verbatim from vault.json `scope_metadata`. NEVER inferred or invented. Omit both fields when vault has no `scope` field.
+- In multi-squad mode, `depends_on` MUST be intra-squad only. Cross-squad direct deps halt with `cross_squad_dep_invalid`.
+- `consumes_interfaces` entries MUST resolve to existing interface files; status field is read at bolt time to gate execution.
+- `scope:` / `scope_name:` MUST be sourced verbatim from vault.json `scope_metadata`. NEVER inferred or invented. Omit both fields when vault has no `scope` field.

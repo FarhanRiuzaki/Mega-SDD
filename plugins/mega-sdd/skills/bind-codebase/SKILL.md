@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.0.0
+version: 2.5.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -21,7 +21,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 - **Vault path** (positional, required) — the 7-file vault directory.
 - **Codebase map** (optional; probe order `.mega-sdd/codebase/codebase-map.md` → `<repo-root>/codebase-map.md` → `./codebase-map.md`).
 - **Knowledge base** (optional; probe `.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`, first hit wins; override `--kb=<path>`).
-- **Flags:** `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>`, `--no-kb`, `--no-framework-pack`, `--framework-pack=<custom-path>`, `--strict-constitution`.
+- **Flags:** `--strict` (block on OQ too, not just CONFLICT), `--auto`, `--kb=<path>`, `--no-kb`, `--no-framework-pack`, `--framework-pack=<custom-path>`, `--strict-constitution`, `--no-advisor` (skip the phase-advisor pass; the advisor is default-on and still runs under `--auto` unless this flag is set), `--memory-off` (disable memory-layer reads and writes per `references/auto-memory-handoff.md`), `--paths=<csv|@file>` (claim-scoped re-bind for the sync lane — re-verdict ONLY claims whose anchors or vault sections intersect the changed paths; everything else carried forward per `references/binding-contract.md §Claim-scoped re-bind`; **active CONFLICTs are ALWAYS re-validated, never carried silently** — the gate sees the full verdict set either way).
 
 ## Outputs
 
@@ -53,6 +53,12 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 - **2.8 Framework-convention pack load** + **2.9 Suggested Unit Hard Rules** → packs from `plugins/mega-sdd/references/framework-conventions/`; a rule is promoted to a machine-validated Hard Rule ONLY when its KB marker is `[VERIFIED]` and it is mechanically detectable + anchored in the codebase-map, otherwise it becomes an informational Anti-pattern. → `references/hard-rules-and-packs.md`.
 - **2.10 Constitution-aware CONFLICT surfacing** → cite constitution §A–F clauses on relevant conflicts; `--strict-constitution` raises `bind_conflict_constitution_violation`; persist `constitution_hash` for `detect-drift`. → `references/constitution-and-oq.md`.
 - **2.11 Deferred-OQ auto-resolution** → high-confidence codebase-map evidence resolves `defer_to: binding` OQs; ambiguous/no match → stays `deferred`; never write an evidence string that is not actually in the codebase-map. → `references/oq-resolution.md`.
+
+**2.12 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus), the draft verdicts, `codebase-map.md`, the vault, and the KB. Materialize its findings INTO the verdict set BEFORE Step 3 so they are counted + written as canonical `### CONFLICT-NNN` headings in Step 4 (the exact token the Step 5 gate AND `validate-handoff-binding-units.sh` → `.validation-blockers.json` read):
+- `false_confirmed`/`missed_match` confidence HIGH → add a real CONFLICT verdict (canonical `CONFLICT-NNN`, tagged `source: advisor`). This is fail-safe blocking — a suspected hole in the moat closes the gate until a human clears it via `resolve-oq`.
+- same, confidence MED/LOW → add an OQ (non-blocking, surfaced).
+- `false_conflict`/`state_map_error` → FLAG ONLY in `binding.md`; the advisor may ADD a blocker autonomously but may NEVER auto-remove or auto-downgrade a CONFLICT (downgrade is human-only — invariant #2).
+- Evidenceless findings are dropped. Record the pass in the Step 6 audit log: `advisor: {model, findings: {high,med,low}}` OR `advisor: skipped` (`--no-advisor`) OR `advisor: unavailable` (agent error — NEVER reported as clean). Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`.
 
 **3. Aggregate counts.** `claims_total`, `confirmed`, `conflict`, `oq`.
 

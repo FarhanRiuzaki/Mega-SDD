@@ -13,7 +13,8 @@
 When a KB is present (legacy-rebuild lane), run the Extraction Completeness Contract check BEFORE processing KB claims so binding builds on extraction whose gaps are visible:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
+bash "<plugin-root>/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
+# (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read)
 ```
 
 Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):

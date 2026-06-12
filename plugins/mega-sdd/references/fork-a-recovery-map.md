@@ -6,7 +6,7 @@ Audit 2026-05-27 classified runtime control as "Fork-B-future." Research + ACK 2
 
 | Class | What it means | Fork A availability |
 |---|---|---|
-| **[HOOK]** | Enforced via Claude Code hook (SessionStart / PreToolUse / PostToolUse / Stop). Hook can BLOCK tool calls (`{"continue": false, "stopReason": "..."}`), not just observe. | ✅ Available |
+| **[HOOK]** | Enforced via Claude Code hook (SessionStart / PreToolUse / PostToolUse / Stop). Hook can BLOCK tool calls (PreToolUse: `hookSpecificOutput.permissionDecision: "deny"`; `continue:false` halts the whole session and is NOT a per-call block), not just observe. | ✅ Available |
 | **[HOOK-VALIDATE]** | Can't generate deterministically but CAN validate deterministically. Hook reads artifact files vs schema/expectations, halts on drift. | ✅ Available — proven Iter 67.6 slice 1 |
 | **[VERIFY-STEP]** | Spec Kit pattern: explicit slash command + deterministic script that cross-checks artifacts. Run by user/agent between phases. | ✅ Available |
 | **[FORK-B-ONLY]** | Needs to intercept the model's reasoning loop mid-turn (not at tool boundary). Genuinely needs custom runtime. | ❌ Parked |
@@ -72,7 +72,7 @@ The canonical Fork A pattern for deterministic artifact integrity. Three compone
 
 **(2) PostToolUse trigger** — fires when a relevant artifact is written/edited. Invokes validator silently. State file auto-updates.
 
-**(3) PreToolUse enforcement** — fires before downstream operations (the ones whose correctness depends on the validated invariant). Reads state file, blocks with `{"continue": false, "stopReason": "..."}` if status=FAIL.
+**(3) PreToolUse enforcement** — fires before downstream operations (the ones whose correctness depends on the validated invariant). Reads state file, blocks with `hookSpecificOutput.permissionDecision: "deny"` if status=FAIL.
 
 **(4) Anti-self-bypass** — PreToolUse on Bash detects agent attempts to `rm`/`>`/`sed -i`/`mv`/`cp`/`tee` the state file. Blocks. Human shell override remains by design.
 

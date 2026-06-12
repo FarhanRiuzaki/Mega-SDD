@@ -1,6 +1,6 @@
-# Modules Schema (v2.2+, Iter 11)
+# Modules Schema
 
-Semantic grouping layer ABOVE units. Units stay atomic (1 unit = 1 PR-sized commit per Iter 1 invariant); modules aggregate related units per domain / flow / component for human mental-model fit + progress tracking + filtered execution.
+Semantic grouping layer ABOVE units. Units stay atomic (1 unit = 1 PR-sized commit invariant); modules aggregate related units per domain / flow / component for human mental-model fit + progress tracking + filtered execution.
 
 Per user UX request — units felt "too small" cognitively; need module-level grouping to match team mental model (auth phase, leave-mgmt phase, etc.).
 
@@ -44,8 +44,8 @@ Modules are the strictly-better answer for the user's stated pain.
 ├── 01-overview.md ... 06-constraints.md
 ├── vault.json
 ├── _meta/
-│   ├── squads.yaml                  # multi-squad (Iter 1.1; unchanged)
-│   └── modules.yaml                 # NEW v2.2+ (Iter 11) — semantic grouping
+│   ├── squads.yaml                  # multi-squad
+│   └── modules.yaml                 # semantic grouping
 ├── units/
 │   ├── U-*.md                       # each unit gains `module: <id>` frontmatter field
 │   └── _index.md                    # grouped by module (NEW format)
@@ -74,7 +74,7 @@ modules:
 
 ## Auto-derivation rules (when modules.yaml absent)
 
-If user does NOT provide `_meta/modules.yaml`, `generate-units` v2.2+ auto-derives a minimal modules.yaml from vault structure:
+If user does NOT provide `_meta/modules.yaml`, `generate-units` auto-derives a minimal modules.yaml from vault structure:
 
 | Vault structure signal | Auto-derived module |
 |---|---|
@@ -90,7 +90,7 @@ Auto-derivation produces a `_meta/modules.yaml.auto` file (note `.auto` suffix).
 ---
 id: U-007
 title: Add nama field to login endpoint
-module: M-auth                       # NEW v2.2+ (Iter 11) — references _meta/modules.yaml
+module: M-auth                       # references _meta/modules.yaml
 vault_source: 04-flows.md#F-U-001-login
 task_type: extend
 grounding_confidence: HIGH
@@ -98,7 +98,7 @@ grounding_confidence: HIGH
 ---
 ```
 
-### Module assignment algorithm in `generate-units` (v2.2+)
+### Module assignment algorithm in `generate-units`
 
 For each unit's `vault_source`, find matching module:
 
@@ -116,7 +116,7 @@ if unit.module is still null:
 
 `M-unassigned` is special — units not matching any module. Render warning: "N units have no module; consider adding vault section to modules.yaml or creating new module."
 
-## `_index.md` template (v2.2+ grouped by module)
+## `_index.md` template (grouped by module)
 
 ```markdown
 # Vault Units Index
@@ -204,13 +204,13 @@ Runs only units where `module: M-auth`. Topologically sorted within module. Resp
 
 ## Module-level progress in memory
 
-After each unit completes (Iter 5 memory layer integration):
+After each unit completes:
 
 - `<vault>/.memory/bolt-outcomes.json` already tracks per-unit outcomes (existing)
 - Module progress derived: `units in module M-X where status=completed / total units in M-X`
 - `/mega-sdd:list-modules` reads this for live progress display
 
-## Halt protocol additions (v2.2+)
+## Halt protocol additions
 
 | Halt type | When |
 |---|---|

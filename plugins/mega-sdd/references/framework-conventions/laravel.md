@@ -8,6 +8,7 @@ detection_signature:
   dependency_marker: "laravel/framework"
   version_regex: '"laravel/framework"\s*:\s*"[\^~]?(\d+)\.'
 extends: _universal
+pack_tier: full
 ---
 
 # Laravel Convention Pack (10.x — 12.x)
@@ -451,3 +452,60 @@ relation_derivation:
 - **Octane** (high-performance): if request latency matters, use Octane (Swoole or RoadRunner) — but be careful with shared state (static vars, container singletons can leak).
 - **Sanctum vs Passport**: Sanctum for SPA + simple API tokens (most common); Passport for full OAuth2 server use cases.
 - **Database transactions**: `DB::transaction(fn() => ...)` rolls back automatically on exception — don't manually commit/rollback unless using nested savepoints.
+
+## Deep-scan file hints
+
+```yaml
+authz_hints:
+  - config/permission.php
+  - app/Models/User.php          # traits
+  - app/Http/Middleware/         # role/permission middleware
+  - app/Http/Kernel.php          # $routeMiddleware aliases
+  - app/Providers/AuthServiceProvider.php   # Gate::define + $policies
+  - app/Policies/
+  - database/seeders/RoleSeeder.php
+auth_hints:
+  - config/auth.php
+  - routes/auth.php              # Breeze/Fortify
+  - routes/web.php
+  - app/Http/Middleware/Authenticate.php
+  - config/fortify.php
+  - config/jetstream.php
+ui_hints:
+  - resources/views/layouts/
+  - resources/views/components/
+  - resources/views/components/notification.blade.php
+  - resources/js/app.js
+  - resources/css/app.css
+  - tailwind.config.js
+```
+
+## Authz mapping
+
+- `mechanism`: `middleware` (+ `policy` when policies present)
+- `role_source`: `model` (spatie roles table) — or `config` for custom
+- Construct → `declarations[].kind`:
+  - `Gate::define('<name>', ...)` in `AuthServiceProvider.php` → `{kind: gate, name}`
+  - entries of the `$policies` array → `{kind: policy, name}`
+  - Spatie roles (the `Spatie\\Permission\\Models\\Role` model, seeded via RoleSeeder `Role::create(['name'=>...])`) → `{kind: role, name}`
+  - `$routeMiddleware` RBAC aliases (role, permission, role_or_permission) → record as `mechanism: middleware` + applies_to on guarded routes
+
+## UI detection
+
+- dominant layout: most-referenced `@extends('layouts.<x>')` across `resources/views/`
+- component dir: `resources/views/components/`
+- notification call: SweetAlert/Toastr import in `resources/js/app.js` or `resources/views/components/notification.blade.php`
+- icon lib: `@heroicons/*` / `@fortawesome/*` in package.json or `blade-ui-kit/blade-heroicons` in composer.json
+- datatable lib: `yajra/laravel-datatables-oracle` in composer.json
+
+## Reuse discovery
+
+```yaml
+reuse_hints:
+  helpers:  [ "app/Helpers/**", "app/Support/**" ]
+  model_api: [ "app/Models/**" ]
+  services: [ "app/Services/**", "app/Actions/**" ]
+  commands: [ "app/Console/Commands/**" ]
+```
+- model_api: public methods + `scope*` scopes + `use` traits on each Eloquent model.
+- commands: the `$signature` string of each Artisan command.

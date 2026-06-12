@@ -18,6 +18,34 @@ mega_sdd_version: "{{plugin_version}}"
 ---
 
 # {{project_name}}
+## Contents
+
+- Functional Specification Document
+- Section 1 — Overview
+- 1. Overview
+- Section 2 — Goals & Non-Goals
+- 2. Goals & Non-Goals
+- Section 3 — Stakeholders / Owners
+- 3. Stakeholders & Owners
+- Section 4 — User Stories
+- 4. User Stories
+- Section 5 — Functional Requirements
+- 5. Functional Requirements
+- Section 6 — Non-Functional Requirements
+- 6. Non-Functional Requirements
+- Section 7 — Design / Architecture
+- 7. Design & Architecture
+- Section 8 — API & Data Contracts
+- 8. API & Data Contracts
+- Section 9 — Test Plan & UAT
+- 9. Test Plan & UAT
+- 9. Test Plan & UAT
+- Section 10 — Risks & Open Issues
+- 10. Risks & Open Issues
+- Slot semantics
+- Citation footer format
+- Drift callout format (when re-emit detects sha256 change)
+
 ## Functional Specification Document
 
 **Version:** {{vault_version}} · **Date:** {{generation_date_human}} · **Classification:** {{styling.classification}}

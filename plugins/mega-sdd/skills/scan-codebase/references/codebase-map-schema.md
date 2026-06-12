@@ -11,15 +11,17 @@ generated_at: 2026-05-13T10:00:00Z
 repo_root: ./
 scan_depth: 8
 scan_includes: ["src/**", "app/**", "lib/**"]
-scan_excludes: ["node_modules/**", "vendor/**", "dist/**", "build/**", "target/**", ".next/**", ".gradle/**", "storage/framework/**", "__pycache__/**", ".venv/**", "coverage/**", ".git/**", ".idea/**", ".mega-sdd/**", "..."]  # Full list per SKILL.md §Default exclusions
+scan_excludes: ["node_modules/**", "vendor/**", "dist/**", "build/**", "target/**", ".next/**", ".gradle/**", "storage/framework/**", "__pycache__/**", ".venv/**", "coverage/**", ".git/**", ".idea/**", ".mega-sdd/**", "..."]  # Full list per references/exclusions.md (the owner)
 languages_detected: ["typescript", "php", "javascript"]
 package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
-# v2.0+ (Iter 6): engine + precision metadata
+# engine + precision metadata
 engine: tree-sitter | regex
 precision_tier: ast | regex
 tree_sitter_version: <version-string>          # only when engine=tree-sitter
 grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
+# staleness stamp — git HEAD at scan time (omit when repo has no .git)
+last_scanned_commit: <git rev-parse HEAD>
 ---
 
 # Codebase Map
@@ -31,7 +33,7 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 | File | Type | Symbol | Signature | Last_Scanned_Sha256 |
 |---|---|---|---|---|
 
-> **v2.7.1+, Iter 46 (D2-007 closure):** the `Last_Scanned_Sha256` column captures the source file's content hash at the time symbols were extracted. `scan-codebase --shallow-scan` uses this for per-file invalidation — only files whose current sha256 differs trigger re-extraction (saves 5-10s on iterative shallow re-scans). The column is OPTIONAL — pre-Iter-46 codebase-map.md files lack it and trigger full re-extraction on first --shallow-scan after upgrade.
+> The `Last_Scanned_Sha256` column captures the source file's content hash at the time symbols were extracted. `scan-codebase --shallow-scan` uses this for per-file invalidation — only files whose current sha256 differs trigger re-extraction (saves 5-10s on iterative shallow re-scans). The column is OPTIONAL — older codebase-map.md files that lack it trigger full re-extraction on the first `--shallow-scan` after upgrade.
 
 ## 3. Routes / Endpoints
 | Method | Path | Handler |
@@ -47,10 +49,12 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
 - Test files: .test.ts, Test.php
 
 ## 6. Pattern signatures
+
+> Consumers: `bind-codebase` validates `06-constraints.md` claims against these rows (binding-contract §Claim categories); `execute-bolts` injects them as the `Codebase patterns:` dispatch line when `starterkit-context.yaml` is absent (context-enrichment §Map §6 fallback) — the section is never write-only.
 - Auth pattern: middleware|session|jwt|none
 - Error handling: try-catch|result-monad|throw
 - State: redux|context|none|composer-event
-- View/component pattern (v2.5+, Task F): the presentation-layer convention — view dir + naming
+- View/component pattern: the presentation-layer convention — view dir + naming
   + `exemplar_selection: linter-clean`. This is the codebase-map counterpart of the
   `starterkit-context.yaml` `patterns.view` / `patterns.component` categories (scan-codebase
   Step 10.5.2.5). `exemplar_selection: linter-clean` records that, for a presentation exemplar,
@@ -61,7 +65,7 @@ grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
   - View naming: <e.g. {model}.blade.php | {Model}Page.tsx | none>
   - Exemplar selection: linter-clean | none
 
-## 7. Framework (v2.4+, Iter 23)
+## 7. Framework
 framework:
   name: <framework-id from references/framework-conventions/>
   version: <e.g., "11.x" or "unknown">
@@ -70,15 +74,22 @@ framework:
   detection_source: <manifest filename + dependency marker that triggered detection>
 ```
 
+## Staleness detection (`last_scanned_commit`)
+
+`last_scanned_commit` records `git rev-parse HEAD` at scan time. Consumers use it to detect a stale map cheaply:
+
+- `detect-drift` / `bind-codebase` compare it to current HEAD; if it differs, `git diff --name-only <last_scanned_commit>..HEAD` yields exactly the paths that changed since the scan — a scoped re-scan signal far cheaper than re-walking the repo.
+- The field is OPTIONAL: maps scanned outside a git repo omit it, and consumers fall back to full-content comparison. Older maps that lack the field are treated the same way.
+
 ## How `bind-codebase` uses this
 
 For each vault claim referencing code (endpoint, field, file path), `bind-codebase` greps codebase-map sections 2-4 and naming conventions. Match → CONFIRMED. Mismatch → CONFLICT. Absent → OQ.
 
 ## Detection precision
 
-v1.0 scan is **heuristic** (regex + file traversal). It will miss:
+The scan is **heuristic** (AST captures when `engine: tree-sitter`, regex + file traversal otherwise). Either engine will miss:
 - Dynamic routes generated at runtime
 - Magic methods / metaprogramming
 - Out-of-tree dependencies
 
-These misses surface as OQ during binding, not silent gaps. Acceptable trade-off for v1.
+These misses surface as OQ during binding, not silent gaps — an acceptable trade-off the binding gate is designed to absorb.

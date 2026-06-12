@@ -6,6 +6,20 @@
 
 ---
 
+## Contents
+
+- Why this exists
+- Rule 1 — Always wrap node text in double quotes
+- Rule 2 — Newline in node text = `<br/>`, NEVER a literal line break
+- Rule 3 — Escape special characters inside quoted text
+- Rule 4 — Edge labels follow the same quoting discipline
+- Rule 5 — Avoid raw code expressions in node text; paraphrase
+- Rule 6 — `classDef` and `style` go at end of block; verify spelling
+- Reference patterns — known-good examples
+- Anti-pattern catalog (validator-detected)
+- Cross-references
+- Deferred to Iter 73+ (Fork-B-future candidates)
+
 ## Why this exists
 
 Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. `validate-kb-flows.sh` v1 (pre-Iter 72) only checked fence presence; it did not parse syntax.

@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.8.0
+version: 1.10.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -38,17 +38,19 @@ Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowl
 **Typical chain:**
 `extract-intelligence` → `generate-intent --kb=<kb>` → `generate-units` → `execute-bolts`
 
-Naming: this is the mega-sdd-flavored counterpart to `superpowers:reverse-engineering-legacy-codebase`. The mega-sdd version produces a structured `.mega-sdd/knowledge-base/` that downstream mega-sdd skills explicitly consume. Use this version when the next step is mega-sdd unit/bolt generation.
+Naming: this is the mega-sdd-flavored take on the legacy reverse-engineering pattern (no equivalently-named superpowers skill ships today — do not Skill-invoke one). The mega-sdd version produces a structured `.mega-sdd/knowledge-base/` that downstream mega-sdd skills explicitly consume. Use this version when the next step is mega-sdd unit/bolt generation.
 
 ## Inputs
 
 - Legacy codebase path (positional, required)
 - `--out=<path>` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — the KB is written to `<out>/knowledge-base/`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
-- `--max-parallel=N` (subagent cap per wave; **default 3** as of v1.7.0+ Iter 51 per Zylos 2026 empirical optimum; soft warn at >5; hard cap 8 — see audit D2-001 + predictive-checks.md `subagent_capacity_reasonable`)
+- `--max-parallel=N` (subagent cap per wave; **default 3** per the empirical optimum; soft warn at >5; hard cap 8 — see orchestrate-flow/references/predictive-checks.md `subagent_capacity_reasonable`)
 - `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)
 
 ## Output
+
+**Secret-scan gate (mirrors scan-codebase Step 10a):** before EACH KB file is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact <assembled-file>` — legacy code routinely hardcodes credentials, and KB citations would otherwise carry them verbatim. Findings → value replaced with `[REDACTED-SECRET]` in the KB artifact (the legacy SOURCE is never edited) + one chat warning citing source file:line.
 
 Per `references/knowledge-base-schema.md` (read this file before generating any wave output):
 
@@ -70,7 +72,7 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 
 ## Wave-based execution
 
-5 sequential waves with parallel subagents inside each wave — each wave subagent is the first-class **`mega-sdd:domain-extractor`** agent (dispatched via the Agent tool), given its domain assignment + legacy paths + the KB schema as its task. Read `references/wave-dispatch-templates.md` for the per-wave dispatch prompts and quality-gate grep commands.
+6 sequential waves (Wave 0–5) with parallel subagents inside each wave — each wave subagent is the first-class **`mega-sdd:domain-extractor`** agent (dispatched via the Agent tool), given its domain assignment + legacy paths + the KB schema as its task. Read `references/wave-dispatch-templates.md` for the per-wave dispatch prompts and quality-gate grep commands.
 
 | Wave | Output | Subagents | Why |
 |---|---|---|---|
@@ -81,7 +83,7 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 | **4 — Integrations** | External system contracts, reporting/monitoring | 3 parallel | Wraps domain coverage |
 | **5 — Synthesis** | ERD, system-flow, dependency-graph, phasing, README | Main thread | Needs holistic view across all wave outputs |
 
-**Model tier per wave (v1.5.0+, Iter 34):** Model resolved from `references/model-tiers.md` per role (override via handoff metadata.model_tiers if invoked through orchestrate-flow):
+**Model tier per wave:** Model resolved from `references/model-tiers.md` per role (override via handoff metadata.model_tiers if invoked through orchestrate-flow):
 - Wave 1: `(model: per references/model-tiers.md §extract-intelligence-wave-1, default sonnet)`
 - Wave 2: `(model: per references/model-tiers.md §extract-intelligence-wave-2, default sonnet)`
 - Wave 3: `(model: per references/model-tiers.md §extract-intelligence-wave-3, default sonnet)`
@@ -96,17 +98,17 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 
 **Common timeout pitfall:** subagents reading >40 KB single files hit stream timeout. Mitigation: tighten Read scope with line ranges, prefer `Grep` for targeted patterns, fall back to synthesis-from-siblings (read other KB files instead of legacy source) for late waves.
 
-**Glossary pre-parse (v1.7.0+, Iter 51 — closes audit D1-004):**
+**Glossary pre-parse:**
 
-Wave 1 writes `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction). Pre-Iter-51, every wave 2/3/4 subagent independently re-read the full glossary file when cross-referencing terms — ~96 KB redundant I/O per wave subagent (15% of 535K wave token budget).
+Wave 1 writes `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction). Without an index, every wave 2/3/4 subagent would independently re-read the full glossary file when cross-referencing terms — ~96 KB redundant I/O per wave subagent (15% of 535K wave token budget).
 
-Iter 51 mitigation: between Wave 1 completion and Wave 2 dispatch, the main thread parses glossary.md ONCE and builds a compact `glossary_index` (term → 1-line definition + line number in glossary.md). Inject `glossary_index` into each wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder (per `references/wave-dispatch-templates.md` v1.1+ contract).
+Mitigation: between Wave 1 completion and Wave 2 dispatch, the main thread parses glossary.md ONCE and builds a compact `glossary_index` (term → 1-line definition + line number in glossary.md). Inject `glossary_index` into each wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder (per `references/wave-dispatch-templates.md` contract).
 
 Subagent prompts updated to instruct: "Reference glossary terms via `<GLOSSARY_INDEX>` — it's the authoritative compact index. ONLY read `glossary.md` directly when you need full prose context for a specific term (with `offset/limit` line range from the index). Do NOT re-read the entire glossary file."
 
 **Net savings:** ~96KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
 
-**Reference offset hints (v1.7.0+, Iter 51 — closes audit D1-007):**
+**Reference offset hints:**
 
 Section citations in wave outputs (e.g., `glossary.md §customer-onboarding`) now include line range hints when known. Format: `glossary.md §customer-onboarding:42-58` instead of bare `glossary.md §customer-onboarding`. Downstream consumers (other waves, generate-intent --kb) can use the line range with Read tool's `offset/limit` parameters for targeted reads (30-60% I/O reduction per reference read).
 
@@ -122,7 +124,7 @@ Every non-trivial claim carries TWO orthogonal axes — **confidence** (epistemi
 - `[INFERRED]` — single source code path; needs confirmation.
 - `[OPEN]` — unknown from code; needs domain expert. Propagates to vault as OQ when KB is consumed by `generate-intent`.
 
-### Axis 2 — Mutability tiers (v1.4+, Iter 22)
+### Axis 2 — Mutability tiers
 
 Per user directive "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1" — every claim is tagged with the freedom rebuild has to change it:
 
@@ -173,7 +175,7 @@ The rebuild's job is to satisfy goals + locked constraints, not to mirror legacy
 
 **No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
 
-### Staged-input detection (multi-step workflows) — v3.71.0+, semantic-depth
+### Staged-input detection (multi-step workflows)
 
 A workflow that collects its inputs across MORE THAN ONE step / page / role is **staged** — a wizard, a maker→checker hand-off, a multi-page form. If you transcribe it as one flat "Inputs: A,B,C,D,E,F" list, the rebuild loses the staging and a bolt builds ONE form where the legacy had a multi-step wizard (the captured trade-finance regression). For every `classification: workflow` domain, actively look for staging and, when found, author the `## 3a. Staged inputs` `stages:` block (schema: `references/knowledge-base-schema.md §3a`).
 
@@ -188,11 +190,11 @@ A workflow that collects its inputs across MORE THAN ONE step / page / role is *
 - **Anchor MANDATORY per stage** — each stage's `_source` cites the `file:line` proving that stage exists. A stage you cannot anchor is an `[OPEN]`, not an invented step.
 - Name the `actor_role` per stage and the `transitions` (trigger + guard `conditions`) that advance it. Reference each `stage_id` in the §8 state-machine transition labels.
 - If staging is genuinely ambiguous (sequential flows exist but no explicit stage concept in code), still author §3a with `[INFERRED]` stages + an `[OPEN]` note — do NOT silently flatten.
-- **Progressive-disclosure deltas (v3.72.0+, OPTIONAL / best-effort):** when a stage's form clearly differs from the prior stage, capture the delta in §3a — which fields are NEW here (`new_fields_vs_prior`), which were shown earlier but are gone (`hidden_fields_vs_prior`), which were promoted to mutable (`promoted_to_mutable_vs_prior`, e.g. display-only → dual-key re-entry), and any within-stage show/hide (`dynamic_disclosures`). Use the enriched object form of `input_fields` (`{name, mutability, visibility, conditional}`) when you can read per-field mutability/visibility; bare strings remain valid. Schema: `references/knowledge-base-schema.md §3a`. This deepens the staging capture (the user's "fields A,B,C at maker; D,E,F appear at the next stage" case) — but it is NOT validator-blocking; absence never fails a gate.
+- **Progressive-disclosure deltas (OPTIONAL / best-effort):** when a stage's form clearly differs from the prior stage, capture the delta in §3a — which fields are NEW here (`new_fields_vs_prior`), which were shown earlier but are gone (`hidden_fields_vs_prior`), which were promoted to mutable (`promoted_to_mutable_vs_prior`, e.g. display-only → dual-key re-entry), and any within-stage show/hide (`dynamic_disclosures`). Use the enriched object form of `input_fields` (`{name, mutability, visibility, conditional}`) when you can read per-field mutability/visibility; bare strings remain valid. Schema: `references/knowledge-base-schema.md §3a`. This deepens the staging capture (the user's "fields A,B,C at maker; D,E,F appear at the next stage" case) — but it is NOT validator-blocking; absence never fails a gate.
 
 > Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
 
-### Deep extraction disciplines (P1–P4) — v3.72.0+
+### Deep extraction disciplines (P1–P4)
 
 Five extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `references/wave-dispatch-templates.md` §generic-agent-prompt-structure → DEEP DISCIPLINES** — that is the block injected into every wave subagent prompt, so the deeper reasoning fires *automatically* every run (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
 
@@ -214,9 +216,9 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - `^## 11\. Source References` exists in every new domain file
 - Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections
 - Frontmatter present with required keys
-- **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
-- **Staged inputs** (v3.71.0+, semantic-depth) — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
-- **P1 provenance** (v3.72.0+) — a workflow agent reporting `provenance_anomalies > 0` (per `wave-dispatch-templates.md` REPORT BACK) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` (a MANUAL between-wave grep nudge — NOT a validator-emitted state signal, unlike `kb_flow_staging_missing`) when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
+- **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
+- **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
+- **P1 provenance** — a workflow agent reporting `provenance_anomalies > 0` (per `wave-dispatch-templates.md` REPORT BACK) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` (a MANUAL between-wave grep nudge — NOT a validator-emitted state signal, unlike `kb_flow_staging_missing`) when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
@@ -230,10 +232,10 @@ Wave 5 MUST be main thread, not a subagent — it needs holistic context across 
 2. **`suggested-system-flow.md`** — service boundaries (logical, not framework-mandate). Anti-corruption layer pattern for integrations. Idempotency requirements. No framework prescription.
 3. **`module-dependency-graph.md`** — DAG (Mermaid). Leaf-vs-trunk analysis. Critical-path estimate.
 4. **`suggested-phasing.md`** — Phase 1/2/3 sprint plan with acceptance criteria per phase. Pre-milestone blocker list. Per-module acceptance template.
-5. **`data-mutation-policy.md`** (v1.4+, Iter 22) — entity-by-entity table listing which tables/fields are `[LOCKED]` vs `[INTENT]` vs `[ARTIFACT]`. Drives ERD freedom in `generate-intent --kb` — without this file the consumer doesn't know what it's allowed to redesign.
+5. **`data-mutation-policy.md`** — entity-by-entity table listing which tables/fields are `[LOCKED]` vs `[INTENT]` vs `[ARTIFACT]`. Drives ERD freedom in `generate-intent --kb` — without this file the consumer doesn't know what it's allowed to redesign.
 6. **`README.md`** roll-up — navigation, **reengineering opportunities + critical findings surfaced first**, mutability tier distribution table, OQ roll-up grouped by phase blocker, stats, next steps.
 
-## Step 5.5 — Emit extracted-kb shared snapshot (v1.6+, Iter 46 — D1-006 closure)
+## Step 5.5 — Emit extracted-kb shared snapshot
 
 After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, emit a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §extract-intelligence (extracted-kb snapshot)`. Enables downstream `generate-intent --kb` to verify KB freshness against source codebase without re-extracting.
 
@@ -257,7 +259,7 @@ After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, 
 
 If write fails: log warning + continue (snapshot is freshness check optimization; KB itself remains the consumable output).
 
-## Step 5.6 — Emit Extraction Completeness Contract scorecard (v3.72.0+)
+## Step 5.6 — Emit Extraction Completeness Contract scorecard
 
 The contract makes extraction *falsifiable*: it summarizes how well each of the five Deep extraction disciplines (P1–P4 above + P5 staged inputs) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
 
@@ -316,7 +318,7 @@ If the rebuild lives in a different directory: copy `knowledge-base/` to the new
 - Same wave's quality gate fails twice for the same agent → halt; surface the gate output verbatim.
 - Wave 5 dispatched as a subagent → halt; config error, must be main thread.
 
-## Path resolution (v1.3+, Iter 21 hotfix)
+## Path resolution
 
 Per `plugins/mega-sdd/references/paths.md`. **No-excuse rule: ALL output defaults to `.mega-sdd/`** — back-compat to legacy `docs/knowledge-base/` triggers ONLY when legacy paths already exist on disk.
 
@@ -335,7 +337,7 @@ On completion, announce:
 
 > "Knowledge base written to `<out>/knowledge-base/`. Critical findings: N. Open questions: N total (P1: …, P2: …, P3: …). Source citations: N. Next: review `<out>/knowledge-base/README.md`, then `/mega-sdd:generate-intent --kb=<out>/knowledge-base/` to bootstrap a vault."
 
-## Handoff emission (v1.1+, Iter 4)
+## Handoff emission
 
 When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`. The orchestrator parses this to decide auto-continue.
 
@@ -355,12 +357,12 @@ handoff:
   metrics:
     items_processed: <N MD files written>
     items_blocked: 0
-  scope:                                  # v3.20+ (Iter 28) — when target vault will have scope_metadata
+  scope:                                  # when target vault will have scope_metadata
     id: <scope id>
     name: <scope name>
     sibling_scopes: []
     prd_sha256: <sha256 from PRD if available>
-  mutability:                             # v3.17+ (Iter 25) — extract-intelligence is PRIMARY tier producer
+  mutability:                             # extract-intelligence is PRIMARY tier producer
     tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
     locked_claims_touched: []
     artifact_discards_proposed: <N>

@@ -1,5 +1,5 @@
 ---
-description: [ADVANCED / AUTO-INVOKED] Generate Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts state with sha256-stamped citation discipline. Auto-invoked by `/mega-sdd:auto` at chain end (skip via `--no-fsd`). Run standalone for on-demand regen (e.g., after diff-vault / resolve-oq). Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Anti-hallucination — every section traces to source artifact; missing source emits [Pending — X] placeholder, never fabricates.
+description: ADVANCED / AUTO-INVOKED — Generate Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts state with sha256-stamped citation discipline. Auto-invoked by `/mega-sdd:auto` at chain end (skip via `--no-fsd`). Run standalone for on-demand regen (e.g., after diff-vault / resolve-oq). Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Anti-hallucination — every section traces to source artifact; missing source emits [Pending — X] placeholder, never fabricates.
 argument-hint: "[vault-path] [--mode=pre-dev|post-dev|auto] [--no-pdf] [--styling=<path>] [--sections=<csv>] [--auto]"
 ---
 
@@ -8,7 +8,7 @@ Invoke the `mega-sdd:emit-fsd` skill via the Skill tool.
 User arguments: $ARGUMENTS
 
 Argument parsing:
-- First positional: vault path (default: detect in priority order — `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
+- First positional: vault path (default: detect in priority order — `.mega-sdd/vaults/*/vault.json` (canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
 - `--mode=pre-dev|post-dev|auto`: emit mode override (default `auto` — detect from CWD state)
 - `--no-pdf`: markdown-only output (skips pandoc invocation; useful when pandoc/LaTeX absent or for fast preview)
 - `--styling=<path-to-yaml>`: override default `<vault>/fsd/FSD.styling.yaml` location

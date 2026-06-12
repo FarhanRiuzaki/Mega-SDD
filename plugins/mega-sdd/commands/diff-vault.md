@@ -1,6 +1,6 @@
 ---
 description: Diff a vault against a new PRD revision and produce a structured change report (added / changed / removed / OQ delta).
-argument-hint: [path/to/old-vault] [path/to/new-prd]
+argument-hint: "[path/to/old-vault] [path/to/new-prd]"
 ---
 
 Invoke the `mega-sdd:diff-vault` skill via the Skill tool to compare an existing vault against a revised PRD/BRD.

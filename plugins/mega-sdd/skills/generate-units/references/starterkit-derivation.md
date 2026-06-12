@@ -44,9 +44,9 @@ THEN starterkit_relevance += ["auth"]
    (skip if auth missing)
 
 IF any target_file matches app/Http/Middleware/** OR app/Policies/**
-OR unit body mentions any of: "role", "permission", "gate", "policy", "Spatie\\Permission"
-THEN starterkit_relevance += ["rbac"]
-   (skip if rbac missing)
+OR unit body mentions any of: "role", "permission", "gate", "policy", "authorization"
+THEN starterkit_relevance += ["authz"]
+   (skip if authz missing)
 
 IF any target_file path appears in any libs[].usage_hint[]
 THEN starterkit_relevance += ["libs"]
@@ -67,13 +67,13 @@ IF "ui_ux" in starterkit_relevance:
 
 IF "auth" in starterkit_relevance:
   add anchor: <file path of starterkit_context.auth.user_model class>   (e.g., app/Models/User.php)
-  IF starterkit_context.auth.routes.login != "":
-    add anchor: routes/auth.php (or routes/web.php if auth.php absent)
+  IF starterkit_context.auth.entrypoints contains an entry named "login":
+    add anchor: the _source file of that "login" entrypoints entry
 
-IF "rbac" in starterkit_relevance:
-  IF starterkit_context.rbac.middleware contains entries:
-    add anchor: app/Http/Middleware/<middleware-class>.php for each middleware alias
-  add anchor: app/Providers/AuthServiceProvider.php
+IF "authz" in starterkit_relevance:
+  IF starterkit_context.authz.declarations is non-empty:
+    for each declaration in authz.declarations:
+      add anchor: the declaration._source file   (captures role/permission/gate/policy definition sites; the role source is among these)
 
 IF "libs" in starterkit_relevance:
   for each lib in starterkit_context.libs whose usage_hint overlaps unit.target_files:
@@ -116,8 +116,8 @@ For each unit with `starterkit_relevance` non-empty, append starterkit-specific 
 **Auth-relevant unit examples (when "auth" in starterkit_relevance):**
 
 ```
-- text: "MUST use auth guard '<starterkit_context.auth.guard>' (e.g., sanctum or web)"
-  citation: "starterkit-context.yaml §auth.guard"
+- text: "MUST apply authorization via <starterkit_context.authz.mechanism> using the existing declarations (<names from starterkit_context.authz.declarations>)"
+  citation: "starterkit-context.yaml §authz.mechanism"
 
 - text: "MUST reference User model `<starterkit_context.auth.user_model>` not generic Auth::user()::class"
   citation: "starterkit-context.yaml §auth.user_model"
@@ -127,15 +127,15 @@ For each unit with `starterkit_relevance` non-empty, append starterkit-specific 
       citation: "starterkit-context.yaml §auth.features"
 ```
 
-**RBAC-relevant unit examples (when "rbac" in starterkit_relevance):**
+**Authz-relevant unit examples (when "authz" in starterkit_relevance):**
 
 ```
-- IF starterkit_context.rbac.lib == "spatie/permission":
-    - text: "MUST use Spatie/permission middleware: route()->middleware('role:<role>') OR middleware('permission:<perm>')"
-      citation: "starterkit-context.yaml §rbac.middleware"
+- IF starterkit_context.authz.declarations has any kind in [role, permission]:
+    - text: "MUST enforce authorization via <starterkit_context.authz.mechanism> using the declared roles/permissions in authz.declarations (NOT ad-hoc checks outside the existing declarations)"
+      citation: "starterkit-context.yaml §authz.declarations"
 
-    - text: "MUST reference Spatie\\Permission\\Models\\Role for role queries (NOT custom Role models)"
-      citation: "starterkit-context.yaml §rbac.role_model"
+    - text: "MUST use <starterkit_context.authz.role_source> as the authoritative source for role definitions (NOT a competing model or custom table)"
+      citation: "starterkit-context.yaml §authz.role_source"
 ```
 
 **Libs-relevant unit examples (when "libs" in starterkit_relevance):**
@@ -160,6 +160,24 @@ starterkit_relevance: [<list of applicable slices>]   # NEW; may be empty list
 ```
 
 Also append `starterkit-context.yaml` as a citation source in the unit's §Citations footer section (only if starterkit_context_consumed: true).
+
+## 7.7.f — Reuse candidate derivation (fast-path hint, NOT the bolt's primary surface)
+
+```
+IF reuse-index.yaml exists at <project>/.mega-sdd/codebase/reuse-index.yaml:
+  For this unit, select up to ~12 entries from reuse-index.{helpers,model_api,services,commands}
+  whose name/purpose keywords overlap the unit's title/description/domain
+  OR whose path overlaps the unit's target_files prefix.
+  Attach them as unit.reuse_candidates [{name, path, signature, purpose}].
+  These are a FAST-PATH HINT only — the bolt receives the full reuse-index.yaml path and
+  scans it at write time (a cross-cutting helper often won't keyword-match a unit but is
+  in the index; per-unit keyword matching has low recall for cross-cutting helpers, so
+  candidates are a hint, NOT the boundary — the full reuse-index.yaml is the bolt's
+  primary surface for reuse discovery).
+  No match => omit reuse_candidates entirely (valid result; never fabricate).
+IF reuse-index.yaml absent:
+  → omit reuse_candidates (do not set to empty list; omit the field entirely)
+```
 
 ## Anti-halu rails
 

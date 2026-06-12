@@ -137,7 +137,7 @@ from datetime import datetime, timezone
 cwd = os.environ["CWD"]
 telemetry_file = os.environ["TELEMETRY_FILE"]
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-session_id = os.environ.get("CLAUDE_SESSION_ID", "session-start-hook")
+session_id = os.environ.get("CLAUDE_SESSION_ID", "session-start-hook")  # not a documented hook env var; label-only fallback (stdin session_id is the real source if ever needed)
 notices = []
 
 def emit_event(halt_type, fix_applied, **payload_extras):
@@ -517,7 +517,7 @@ catalog_candidates = [
 # Fallback: walk cache directory for any version
 import glob as _glob_mt
 for cached in sorted(_glob_mt.glob(os.path.expanduser(
-        "~/.claude/plugins/cache/grand-design-spec/mega-sdd/*/references/model-tiers.md")), reverse=True):
+        "~/.claude/plugins/cache/mega-sdd/mega-sdd/*/references/model-tiers.md")), reverse=True):
     catalog_candidates.append(cached)
     break  # newest version first
 for c in catalog_candidates:
@@ -615,10 +615,59 @@ if [ -n "$SELF_RESOLVE_NOTICES" ]; then
   SELF_RESOLVE_BLOCK=$'\n\n<self-resolve-log>\n'"${SELF_RESOLVE_NOTICES}"$'\n</self-resolve-log>'
 fi
 
+# ─── Living-vault staleness notice (advisory; spec 2026-06-10-living-vault) ──
+# One line, counts only — ambient awareness that the code moved since the last
+# scan. Signals: dirty-paths journal non-empty OR git HEAD ≠ the map's
+# last_scanned_commit stamp. Never blocks; absent when clean.
+STALENESS_NOTICE=""
+LV_MAP="${project_root}/.mega-sdd/codebase/codebase-map.md"
+if [ -f "$LV_MAP" ] && \
+   ! grep -qE "^[[:space:]]*staleness_notice:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
+  LV_JOURNAL="${project_root}/.mega-sdd/codebase/.dirty-paths.jsonl"
+  LV_DIRTY=0
+  if [ -s "$LV_JOURNAL" ]; then
+    LV_DIRTY=$(grep -c . "$LV_JOURNAL" 2>/dev/null || echo 0)
+  fi
+  LV_STAMP=$(sed -n 's/^last_scanned_commit:[[:space:]]*//p' "$LV_MAP" 2>/dev/null | head -1)
+  LV_HEAD=""
+  if [ -n "$LV_STAMP" ] && command -v git >/dev/null 2>&1; then
+    LV_HEAD=$(git -C "$project_root" rev-parse HEAD 2>/dev/null || true)
+  fi
+  LV_DETAIL="${LV_DIRTY} journaled write(s)"
+  if [ -n "$LV_STAMP" ] && [ -n "$LV_HEAD" ] && [ "$LV_HEAD" != "$LV_STAMP" ]; then
+    LV_DETAIL="${LV_DETAIL}; map stamp ${LV_STAMP:0:8} ≠ HEAD ${LV_HEAD:0:8}"
+  fi
+  # Deferred-decision queue (PENDING-SYNC.md): when open items exist, the
+  # notice points at the queue FIRST (sync-digest contract) — a fresh sync
+  # would just re-queue the same decisions.
+  LV_OPEN=0
+  LV_PENDING=""
+  for lv_ps in "${project_root}/.mega-sdd/vaults"/*/PENDING-SYNC.md "${project_root}/docs/mega-sdd/vaults"/*/PENDING-SYNC.md; do
+    [ -f "$lv_ps" ] || continue
+    lv_n=$(grep -c '^- \[ \]' "$lv_ps" 2>/dev/null || echo 0)
+    if [ "${lv_n:-0}" -gt 0 ]; then
+      LV_OPEN=$((LV_OPEN + lv_n))
+      LV_PENDING="${lv_ps#"${project_root}"/}"
+    fi
+  done
+  LV_MOVED=0
+  if [ "$LV_DIRTY" -gt 0 ] || { [ -n "$LV_STAMP" ] && [ -n "$LV_HEAD" ] && [ "$LV_HEAD" != "$LV_STAMP" ]; }; then
+    LV_MOVED=1
+  fi
+  if [ "$LV_OPEN" -gt 0 ]; then
+    STALENESS_NOTICE=$'\n\n'"mega-sdd: ${LV_OPEN} open sync decision(s) queued in ${LV_PENDING} — resolve the queue first."
+    if [ "$LV_MOVED" -eq 1 ]; then
+      STALENESS_NOTICE="${STALENESS_NOTICE} Code also moved since last scan (${LV_DETAIL}) — re-run \`/mega-sdd:sync\` after."
+    fi
+  elif [ "$LV_MOVED" -eq 1 ]; then
+    STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — \`/mega-sdd:sync\` reconciles map → drift → binding → units."
+  fi
+fi
+
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}
+${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}
 <</EXTREMELY_IMPORTANT>>
 EOF

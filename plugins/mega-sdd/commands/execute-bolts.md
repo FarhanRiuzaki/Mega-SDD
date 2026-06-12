@@ -1,6 +1,6 @@
 ---
 description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist enforced.
-argument-hint: <unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>]
+argument-hint: "<unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>] [--hard-rule-grammar=v1|v2] [--no-pbt] [--resume] [--rollback <unit-id>] [--memory-off] [--force-skip-postflight]"
 ---
 
 Invoke `mega-sdd:execute-bolts` via the Skill tool.
@@ -16,9 +16,9 @@ Argument parsing:
   - `--dry-run` — print plan without committing
   - `--force` — override pre-flight warnings (use sparingly)
   - `--auto` — non-interactive; suppress confirmation prompts (halts still emit blocker YAML)
-  - `--per-squad` (v2.2+) — execute one squad/module at a time; useful for multi-team coordination
-  - `--squad=<id>` (v2.2+) — execute only units in the named squad
-  - `--module=<id>` (v2.2+) — execute only units in the named module
+  - `--per-squad` — execute one squad/module at a time; useful for multi-team coordination
+  - `--squad=<id>` — execute only units in the named squad
+  - `--module=<id>` — execute only units in the named module
 
 Follow `skills/execute-bolts/SKILL.md` procedure. Pre-flight checks MUST pass before any execution.
 

@@ -52,7 +52,7 @@ def compile_pattern_to_regex(naming, extension):
 
 
 def build_slice(starterkit_context, unit):
-    slice_ = {"patterns": {}, "code_examples": {}, "auth": None, "rbac": None, "ui_ux": None, "libs": []}
+    slice_ = {"patterns": {}, "code_examples": {}, "auth": None, "authz": None, "ui_ux": None, "libs": []}
 
     relevance = unit.get("starterkit_relevance") or []
     target_files = unit.get("target_files") or []
@@ -60,10 +60,10 @@ def build_slice(starterkit_context, unit):
     # Legacy slices (Iter 32+ — kept as-is)
     if "auth" in relevance and starterkit_context.get("auth"):
         a = starterkit_context["auth"]
-        slice_["auth"] = {k: a.get(k) for k in ("lib", "guard", "user_model")}
-    if "rbac" in relevance and starterkit_context.get("rbac"):
-        r = starterkit_context["rbac"]
-        slice_["rbac"] = {k: r.get(k) for k in ("lib", "role_model", "permission_model", "middleware")}
+        slice_["auth"] = {k: a.get(k) for k in ("lib", "mechanism", "user_model")}
+    if "authz" in relevance and starterkit_context.get("authz"):
+        r = starterkit_context["authz"]
+        slice_["authz"] = {k: r.get(k) for k in ("lib", "mechanism", "role_source", "declarations")}
     if "ui_ux" in relevance and starterkit_context.get("ui_ux"):
         u = starterkit_context["ui_ux"]
         slice_["ui_ux"] = {k: u.get(k) for k in ("layout_extends", "notification_lib", "idioms")}
@@ -134,10 +134,10 @@ def render_t23_section(slice_):
 
     if slice_["auth"]:
         a = slice_["auth"]
-        lines.append(f"Auth: lib={a['lib']}, guard={a['guard']}, user_model={a['user_model']}")
-    if slice_["rbac"]:
-        r = slice_["rbac"]
-        lines.append(f"RBAC: lib={r['lib']}, role_model={r['role_model']}, middleware={', '.join(r['middleware'] or [])}")
+        lines.append(f"Auth: lib={a['lib']}, mechanism={a['mechanism']}, user_model={a['user_model']}")
+    if slice_["authz"]:
+        r = slice_["authz"]
+        lines.append(f"Authz: lib={r['lib']}, mechanism={r['mechanism']}, declarations={', '.join(d['name'] for d in (r['declarations'] or []))}")
     if slice_["ui_ux"]:
         u = slice_["ui_ux"]
         lines.append(f"UI/UX: extends={u['layout_extends']}, notification={u['notification_lib']}, idioms=[{'; '.join(u['idioms'] or [])}]")

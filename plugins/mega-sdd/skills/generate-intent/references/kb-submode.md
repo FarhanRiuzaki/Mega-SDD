@@ -59,16 +59,26 @@ The `00-index.md` §Phase context block that consumes these values is specified 
 | KB marker pair | Vault treatment | Vault location |
 |---|---|---|
 | `[VERIFIED][LOCKED]` | Verbatim — exact legacy field name, type, constraint preserved | `02-architecture.md` + Hard Rule emission for execute-bolts; tagged `mutability_source: kb_locked` |
-| `[VERIFIED][INTENT]` | Outcome goal — state transition + business rule preserved; implementation references rebuild proposal | `02-architecture.md` (rebuild shape) + `04-functional-spec.md` (outcome); tagged `mutability_source: kb_intent` |
+| `[VERIFIED][INTENT]` | Outcome goal — state transition + business rule preserved; implementation references rebuild proposal | `02-architecture.md` (rebuild shape) + `04-flows.md` (outcome); tagged `mutability_source: kb_intent` |
 | `[VERIFIED][ARTIFACT]` | Vault `## Open Questions` — default "discard unless preserve required" | `00-index.md` OQ section; tagged `mutability_source: kb_artifact`, default resolution: discard |
 | `[INFERRED][LOCKED]` | Single confirmation question (high stakes); default "keep as LOCKED" pending user veto | OQ until confirmed, then promoted per the `[VERIFIED][LOCKED]` rule |
-| `[INFERRED][INTENT]` | Vault body with note "INFERRED — confirm in dev"; outcome already captured | `04-functional-spec.md` with `[INFERRED]` annotation |
+| `[INFERRED][INTENT]` | Vault body with note "INFERRED — confirm in dev"; outcome already captured | `04-flows.md` with `[INFERRED]` annotation |
 | `[INFERRED][ARTIFACT]` | Skip the vault entry entirely; log to `_diagnostics/kb-skipped-artifacts.md` | Diagnostic only |
 | `[OPEN][?]` | Vault `Open Question` — answering resolves both axes | `00-index.md` OQ section |
 
 ## ERD freedom
 
 Vault `02-architecture.md` uses `99-rebuild-architecture/suggested-erd.md` as the proposed new shape — NOT the legacy `30-data-model/conceptual-erd.md`. **Exception:** `[LOCKED]` entities/fields from `data-mutation-policy.md` retain the legacy shape verbatim (name, type, constraints, validation rules).
+
+## Rebuild-architecture + integrations consumption (every extraction output lands somewhere)
+
+The remaining `99-rebuild-architecture/` synthesis files and the integrations domain are consumed here — no extraction wave's output is write-only:
+
+| KB source | Vault treatment | Vault location |
+|---|---|---|
+| `99-rebuild-architecture/suggested-system-flow.md` | Proposed component/flow shape — the peer of suggested-erd for behavior: seed `02-architecture.md` component boundaries + `04-flows.md` system-flow skeletons from it (legacy flow shape is reference, not the target) | `02-architecture.md` + `04-flows.md` |
+| `99-rebuild-architecture/module-dependency-graph.md` | Carried as a vault pointer for unit decomposition — record the KB path under `00-index.md` §Implementation Notes (`kb_module_graph: <path>`); `generate-units` reads it as a module-grouping + dependency seed | `00-index.md` §Implementation Notes (pointer) |
+| `50-integrations/` | Each external contract becomes EITHER a `06-constraints.md` integration constraint (when `[LOCKED]` — wire format/SLA preserved verbatim) OR a templated OQ ("preserve legacy contract `<name>` in the rebuild? — evidence: `50-integrations/<file>`") when `[INTENT]`/`[ARTIFACT]`. Never silently dropped: an extraction wave that found integrations MUST surface every one of them as constraint or OQ | `06-constraints.md` + `00-index.md` OQ section |
 
 ## KB Q&A loop
 

@@ -341,7 +341,7 @@ for r in required_elements:
 # ── Discover view files under --cwd matching view_glob ────────────────────────
 # Walk the tree once; match each project-relative path against view_glob. Exclude
 # anything under .mega-sdd/ (our own artifacts), .git/, node_modules/, vendor/.
-SKIP_DIRS = {".git", ".mega-sdd", "node_modules", "vendor", "storage", ".idea", "__pycache__"}
+SKIP_DIRS = {".git", ".mega-sdd", "node_modules", "vendor", "storage", ".idea", "__pycache__", "dist", "build", "target", ".next", ".venv", "coverage"}  # aligned with scan-codebase references/exclusions.md
 view_files = []
 for root, dirs, files in os.walk(cwd):
     dirs[:] = [d for d in dirs if d not in SKIP_DIRS]

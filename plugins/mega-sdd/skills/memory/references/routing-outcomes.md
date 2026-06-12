@@ -3,11 +3,22 @@
 > Schema for `<project>/.mega-sdd/memory/routing-outcomes.md` — orchestrator routing decisions log.
 
 **Version:** 1.0
-**Introduced:** v3.24.0 (Iter 33)
-**Produced by:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 7.5 end-of-chain memory write
-**Consumed by:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 2.7 routing preflight
+**Produced by:** `mega-sdd:orchestrate-flow` Step 7.5 end-of-chain memory write
+**Consumed by:** `mega-sdd:orchestrate-flow` Step 2.7 routing preflight
 
 ---
+
+## Contents
+
+- Purpose
+- File format
+- Schema
+- Entries
+- Project fingerprint computation
+- Read protocol (Step 2.7)
+- Write protocol (Step 7.5)
+- Anti-halu rails
+- See also
 
 ## Purpose
 

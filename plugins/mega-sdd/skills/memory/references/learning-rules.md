@@ -1,6 +1,6 @@
 # Learning Rules — Threshold-Based Self-Learning
 
-Self-learning in mega-sdd is **suggestion-only** (per Iter 5 design lock). This document defines:
+Self-learning in mega-sdd is **suggestion-only** (design lock). This document defines:
 
 1. Observation patterns mega-sdd tracks
 2. Thresholds before a suggestion fires
@@ -8,6 +8,17 @@ Self-learning in mega-sdd is **suggestion-only** (per Iter 5 design lock). This 
 4. Audit log format + rollback path
 
 ---
+
+## Contents
+
+- 1. Threshold table
+- 2. Observation patterns mega-sdd tracks
+- 3. Suggestion review flow (`/mega-sdd:memory review`)
+- 4. Audit log format (`~/.mega-sdd/memory/learning-log.md`)
+- Learning #N — <ISO8601 timestamp>
+- 5. Rollback path
+- 6. Anti-halu rails
+- 7. References
 
 ## 1. Threshold table
 
@@ -21,8 +32,13 @@ All thresholds are user-configurable via `~/.mega-sdd/memory/config.yaml` (per M
 | Recommendation REJECT on category C | 3 rejects | 0.66 | per-project |
 | Convention X detected consistently across runs | 2 scan runs | 1.00 (binary) | per-project |
 | Flag F picked same value across runs | 5 runs | 0.80 | per-user (cross-project) |
+| Drift direction D on same fingerprint class | 3 same-direction resolutions | 0.80 | per-vault |
+| Sync write-back class consistently ACCEPTed | 3 consecutive sync runs | 1.00 (binary) | per-project |
+| Acceptance-test concern C recurs across bolts | 3 bolts | 0.66 | per-vault → project |
 
 Thresholds higher than 5 hits = conservative; lower thresholds = aggressive learning. Configure per use case.
+
+**When thresholds are evaluated (owned step — not implied):** orchestrate-flow runs the threshold pass ONCE at chain end (Step 7.6 extract-learnings) over the rows touched this chain, appending threshold-crossing candidates to `## Pending suggestions` with `status: pending`. `/mega-sdd:memory review` also evaluates on demand. No skill evaluates thresholds mid-chain.
 
 ## 2. Observation patterns mega-sdd tracks
 
@@ -42,7 +58,7 @@ observation:
   confidence: 0.875
 suggestion:
   action: "Add to vault-contract.md heuristic table: 'should we (support|allow|enable)' → category: business, resolution_mode: blocking"
-  effective_after_accept: "generate-intent v1.6+ runs"
+  effective_after_accept: "next generate-intent runs"
 ```
 
 ### 2.2 CONFLICT resolution pattern
@@ -62,7 +78,7 @@ observation:
   projects: ["proj-a", "proj-b"]
 suggestion:
   action: "Pre-fill KEEP_CODE in resolve-oq --binding when claim matches 'auth|session|login|token'"
-  effective_after_accept: "resolve-oq v1.2+ runs"
+  effective_after_accept: "next resolve-oq runs"
 ```
 
 ### 2.3 Hard Rule violation + revert pattern
@@ -81,7 +97,7 @@ observation:
   vaults: ["v1", "v2", "v3", "v4"]
 suggestion:
   action: "Remove 'DO NOT modify src/Models/User.php' from bind-codebase Suggested Unit Hard Rules; the rule consistently obstructs intended extensions"
-  effective_after_accept: "bind-codebase v1.6+ runs (rule still allowed if manually added to unit)"
+  effective_after_accept: "next bind-codebase runs (rule still allowed if manually added to unit)"
 ```
 
 ### 2.4 Recommendation REJECT pattern
@@ -100,7 +116,7 @@ observation:
   confidence: 1.00
 suggestion:
   action: "Update vault-contract.md heuristic: 'which version of X' → category: business / blocking (was: tech / recommend)"
-  effective_after_accept: "generate-intent v1.6+ runs"
+  effective_after_accept: "next generate-intent runs"
 ```
 
 ### 2.5 Convention detection pattern
@@ -119,7 +135,7 @@ observation:
   confidence: 1.00
 suggestion:
   action: "Mark phpunit as 'established' in conventions.md; scan-codebase emits stable signal without re-probing"
-  effective_after_accept: "scan-codebase v1.2+ runs"
+  effective_after_accept: "next scan-codebase runs"
 ```
 
 ### 2.6 Flag value pattern
@@ -138,8 +154,39 @@ observation:
   confidence: 1.00
 suggestion:
   action: "Pre-fill OUTPUT_MODE = compact at Step 0.7; still ask user to confirm"
-  effective_after_accept: "generate-intent v1.6+ runs"
+  effective_after_accept: "next generate-intent runs"
 ```
+
+### 2.7 Drift direction pattern
+
+**Source**: `<vault>/.memory/drift-history.md` `## Direction calls` table
+**Pattern key**: drift fingerprint class (`<category>:<vault-section>:*` — class, not exact name) + direction
+**Aggregation**: per-vault
+**Suggested action**: Pre-fill that direction in detect-drift Step 5 / the PENDING-SYNC.md entry (`source: drift-history, n=N`). **Never auto-resolves** — under `--auto` the finding still queues; the suggestion rides along.
+
+```yaml
+observation:
+  pattern_key: "name-drift:03-data-model:* → code_right"
+  occurrences: 3
+  confidence: 1.00
+suggestion:
+  action: "Pre-fill direction=code_right for name-drift findings in 03-data-model (user still confirms)"
+  effective_after_accept: "next detect-drift runs on this vault"
+```
+
+### 2.8 Sync write-back class pattern
+
+**Source**: `<project>/.mega-sdd/memory/outcomes.md` `kind: sync` rows
+**Pattern key**: safe write-back class queued AND later ACCEPTed unchanged, 3 consecutive sync runs
+**Aggregation**: per-project
+**Suggested action**: Default `--auto-apply=safe` for `/mega-sdd:sync` in this project. This widens the autonomy surface — it fires as ONE suggestion and applies ONLY on explicit ACCEPT (recorded in learning-log.md; rollback per §5).
+
+### 2.9 Acceptance-test concern recurrence
+
+**Source**: `<vault>/.memory/bolt-outcomes.json` `bolts[].concerns`
+**Pattern key**: normalized concern text class across bolts
+**Aggregation**: per-vault; promote to project when the same class recurs in 2+ vaults
+**Suggested action**: Surface as a generate-units advisory ("3 bolts flagged brittle column-order assertions — consider a unit Hard rule or test-helper note"); NEVER edits units automatically.
 
 ---
 

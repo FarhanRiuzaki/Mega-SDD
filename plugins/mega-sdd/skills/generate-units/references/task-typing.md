@@ -4,6 +4,7 @@
 - Full task_type table (binding state → task_type)
 - `verify` unit specifics
 - `extend` activation + Migration-notes auto-population
+- Reconcile pass (`--reconcile` — living-vault sync lane)
 - Step 7 — target_files whitelist
 - Step 7.5 — PageRank target_files suggestions
 - Step 7.6 — Per-unit target_files collision check
@@ -97,3 +98,20 @@ Per the §Step 7.6 cross-check in the defensive-generation reference (listed in 
 - Same-session memory: previous picks default future similar collisions
 - `--auto` flag suppresses interactive — picks safest default (`extend`)
 - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
+
+## Reconcile pass (`--reconcile` — living-vault sync lane)
+
+Invoked by `orchestrate-flow --sync` after a re-bind (spec `2026-06-10-living-vault-continuous-sync-design.md` S6). Updates the EXISTING unit set against the refreshed `binding.md` — id-stability is the contract: a unit ID never changes meaning, and the pass never creates a duplicate for a claim that already has a unit (the `dedup_ambiguous` gate still applies).
+
+Per existing unit (matched by `vault_source` → claim):
+
+1. **task_type re-derivation** — re-read the claim's NEW Implementation State Map row and re-apply the standard table:
+   - was `create`, claim now `IMPLEMENTED` → flip to `verify` (code landed out-of-pipeline; verify it, don't rewrite it)
+   - was `create`/`verify`, claim now `PARTIAL_FIELDS_*` → flip to `extend`; REFRESH Migration notes from the new `field_diff` (ADD/KEEP/REMOVE)
+   - state unchanged → task_type unchanged (do not churn the file)
+2. **status re-computation** — run `scripts/compute-unit-staleness.sh --vault=<vault>`; write each unit's `status:` (`implemented` | `stale` | absent for never-executed). `unknown` results (legacy bolt-reports without `target_hashes`) leave `status` absent — never guessed.
+3. **superseded detection** — a unit whose claim no longer exists in the re-bound vault → `status: superseded` + a one-line note in the unit body citing the binding run that dropped the claim. The unit file is KEPT (audit trail); execute-bolts skips it with a warning.
+4. **new claims** — claims in the refreshed binding with no matching unit → emit new units through the NORMAL full pipeline (Steps 2–12 incl. adversarial test review), not a shortcut.
+5. **untouched units are byte-identical** — the pass writes only units whose task_type / status / Migration notes actually changed; `_index.md` is regenerated (graph may have changed).
+
+**Anti-halu rails:** every flip cites the binding row that caused it (same citation discipline as first generation); a claim↔unit match that is ambiguous (multiple candidate units) → `dedup_ambiguous` halt, never a guess; `--reconcile` without a refreshed `binding.md` newer than the units → halt with "re-run bind-codebase first".

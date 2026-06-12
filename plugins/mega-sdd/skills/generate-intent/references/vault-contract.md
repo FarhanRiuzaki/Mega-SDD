@@ -4,6 +4,19 @@ Shared definitions referenced by all `mega-sdd` skills. **Single source of truth
 
 > **Maintenance rule**: edits to this file are breaking changes for sibling skills. Bump the affected skill versions + CHANGELOG entry whenever you touch this file.
 
+## Contents
+
+- §schema — `vault.json` manifest (incl. phase fields, design_system, stages-propagation, concurrency contract)
+- §OQ-conventions — Open Question tagging (category / resolution mode / classification confidence / auto-classifier)
+- Auto-Classification Review
+- §constitution — Project-Facing Rules (§A–§F clause template + lifecycle)
+- §Starterkit-binding — Dual-citation format
+- §Multi-scope vault — Scope tagging schema (sibling scopes, locked contracts)
+- §boilerplate — Skill instruction language
+- §id-stability — ID conventions
+- §halt-escalation-discipline (C1/C2/C3 anti-erosion gate)
+- §halt-protocol — Unified `blocker` envelope + canonical halt registry + `quality_gate_failed` subtypes
+
 ## §schema — `vault.json` manifest
 
 Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
@@ -51,12 +64,12 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
     "typography": "Modern Professional (Poppins/Open Sans)",
     "a11y_level": "WCAG AA",
     "source": "design-intelligence-recommend",
-    "provenance": "recommend:OQ-DESIGN-SOURCE-1 (references/design-intelligence/product-style-map.yaml#saas-general + PRD §1)"
+    "provenance": "recommend:OQ-DESIGN-SOURCE-1 (plugins/mega-sdd/references/design-intelligence/product-style-map.yaml#saas-general + PRD §1)"
   }
 }
 ```
 
-### §design_system (v1.1+)
+### §design_system
 
 Present when a design system has been resolved for the vault — from a scanned template, an accepted Design-Source recommendation, or an explicit PRD source. Absent otherwise — never a silent default. Fields:
 
@@ -66,16 +79,16 @@ Present when a design system has been resolved for the vault — from a scanned 
 
 `vault_version` is bumped to `1.1` because this block is additive to the manifest. Consumers on `1.0` simply do not see it (backward compatible).
 
-### Phase fields (v1.14+, Iter 35)
+### Phase fields
 
 ```yaml
-phase: <int>          # NEW v1.14.0+ Iter 35 — which phase this vault represents (1, 2, 3, ...). Default 1 if not legacy-rebuild.
-phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed from suggested-phasing.md `## Phase` heading count). Default 1 if not legacy-rebuild.
+phase: <int>          # which phase this vault represents (1, 2, 3, ...). Default 1 if not legacy-rebuild.
+phase_total: <int>    # total phases planned (parsed from suggested-phasing.md `## Phase` heading count). Default 1 if not legacy-rebuild.
 ```
 
 ### Field rules
 
-- `phase` + `phase_total`: REQUIRED v1.14.0+. Defaults `phase: 1, phase_total: 1` for back-compat (greenfield + Mode A PRD-driven + single-phase Mode B). Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase count. Missing field on old vault.json (pre-v3.26.0) → treat as `phase: 1, phase_total: 1`.
+- `phase` + `phase_total`: REQUIRED. Defaults `phase: 1, phase_total: 1` for back-compat (greenfield + Mode A PRD-driven + single-phase Mode B). Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase count. Missing field on an older vault.json → treat as `phase: 1, phase_total: 1`.
 - Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`).
 - `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
 - `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.
@@ -83,7 +96,7 @@ phase_total: <int>    # NEW v1.14.0+ Iter 35 — total phases planned (parsed fr
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
 - Keep this file in sync with the markdown on every regeneration / `diff-vault` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
 
-### Operator-workflow-UX capture + Design-Source OQ (v1.17+, code-delivery slice G)
+### Operator-workflow-UX capture + Design-Source OQ
 
 Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; surfaced as **advisory** via `/mega-sdd:analyze` — v4 Hybrid demoted this from a hard-block, so it no longer blocks `mega-sdd:execute-bolts`). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
 
@@ -97,17 +110,17 @@ Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` (PostToolUse re-valid
 
 A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the accepted "captured the miss" signal): a vault that has not yet decided its operator surface may carry a Design-Source OQ instead of inventing the surface, and the gate passes.
 
-### Staged-input preservation + `_kb_source` propagation (§stages-propagation) (v3.71.0+, semantic-depth)
+### Staged-input preservation + `_kb_source` propagation (§stages-propagation)
 
 A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its inputs: which fields enter at which step, in what order, by which role, gated by which transition. When that structure is flattened to a single "Inputs: A,B,C,D,E,F" list, the downstream bolt builds ONE form instead of the multi-step wizard (the captured trade-finance regression). To prevent it, staging is carried as a **stable structured field** and propagated the SAME way as OQ-IDs (§id-stability) and constitution clauses — copied verbatim, never re-derived:
 
 - **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/knowledge-base-schema.md §3a`). Each stage cites its own `_source` anchor.
 - **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `04-flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flat `**Steps**` narrative MAY remain for human readability, but the `stages:` block is authoritative.)
-- **Enriched-stages preservation (v3.72.0+, AUDIT L8).** The KB `stages:` block MAY carry an enriched form: `input_fields` as objects (`{name, mutability, visibility, conditional}`) instead of bare strings, plus per-stage delta fields (`new_fields_vs_prior`, `hidden_fields_vs_prior`, `promoted_to_mutable_vs_prior`, `dynamic_disclosures`) — see `extract-intelligence/references/knowledge-base-schema.md §3a`. "Verbatim" **includes these**: generate-intent MUST preserve whichever form the KB used and MUST NOT downgrade enriched `input_fields` objects to bare strings (a silent drop of the maker→checker field-promotion / show-hide intent the extractor captured). generate-intent does not itself *act on* the delta semantics — those are consumed at UI/bolt time per the UI/UX-design-intelligence integration (`docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`); carrying them through unmodified is precisely what makes that downstream consumption possible. Pre-v3.72 / bare-string KBs are unaffected (nothing to preserve).
+- **Enriched-stages preservation.** The KB `stages:` block MAY carry an enriched form: `input_fields` as objects (`{name, mutability, visibility, conditional}`) instead of bare strings, plus per-stage delta fields (`new_fields_vs_prior`, `hidden_fields_vs_prior`, `promoted_to_mutable_vs_prior`, `dynamic_disclosures`) — see `extract-intelligence/references/knowledge-base-schema.md §3a`. "Verbatim" **includes these**: generate-intent MUST preserve whichever form the KB used and MUST NOT downgrade enriched `input_fields` objects to bare strings (a silent drop of the maker→checker field-promotion / show-hide intent the extractor captured). generate-intent does not itself *act on* the delta semantics — those are consumed at UI/bolt time per the UI/UX-design-intelligence integration (`docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`); carrying them through unmodified is precisely what makes that downstream consumption possible. Bare-string KBs are unaffected (nothing to preserve).
 - **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `/mega-sdd:analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
 - **Advisory at the source.** `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, pointing the user to `/mega-sdd:enrich-semantics` to retro-fit staging without a full re-extract.
 
-> **Walking-skeleton scope (v3.71.0):** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.
+> **Walking-skeleton scope:** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.
 
 ### When skills must regenerate `vault.json`
 
@@ -117,15 +130,15 @@ A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its 
 - `bind-codebase` Step 6 — audit log append (small append, not full regen, but still subject to lock per §Concurrency below).
 - `detect-drift` — does NOT regenerate. detect-drift produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + generate-intent re-run (for entity/flow/ADR additions).
 
-### Concurrency contract (v0.15+, Iter 49 — closes audit D3-012)
+### Concurrency contract (closes audit D3-012)
 
-All `vault.json` writers MUST acquire an exclusive advisory file lock before writing. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the existing Iter 5 memory file-lock pattern — no new mechanism.
+All `vault.json` writers MUST acquire an exclusive advisory file lock before writing. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the memory file-lock pattern (per `mega-sdd:memory`) — no new mechanism.
 
 **Writers subject to lock (4 total):**
 - `generate-intent` Step 11 (initial vault.json write)
-- `bind-codebase` Step 6 (audit log append)
+- `bind-codebase` Step 6 (audit log append) — and bind-codebase writes `binding.md` while HOLDING this same lock (binding.md has no separate lock; the vault lock covers the whole-rewrite so two concurrent binds can't interleave)
 - `diff-vault` Step 8 (regen from markdown)
-- `resolve-oq` Step 2c step 9 (regen after Resolve / Out-of-Scope / Defer outcome — v0.9.3+ Iter 52 fix-forward added explicit inline lock acquisition note; pre-v0.9.3 versions had no explicit lock note despite being listed here)
+- `resolve-oq` Step 2c step 9 (regen after Resolve / Out-of-Scope / Defer outcome)
 
 **Lock acquisition pattern (per `mega-sdd:memory` SKILL.md §file-lock):**
 
@@ -157,9 +170,9 @@ next_action:
 
 **detect-drift exception:** detect-drift NEVER writes vault.json (existing convention per detect-drift SKILL.md §writes). No lock acquisition required.
 
-**Backward compatibility:** pre-Iter-49 writers (any skill version that pre-dates this iter) MAY race; concurrent-write users should upgrade all skills atomically (single plugin version bump).
+**Backward compatibility:** writers from plugin versions predating this contract MAY race; concurrent-write users should upgrade all skills atomically (single plugin version bump).
 
-### OQ status tracking (v1.1+)
+### OQ status tracking
 
 OQ entries in vault.json now support optional status-tracking fields. The full OQ entry shape:
 
@@ -214,7 +227,7 @@ Every Open Question MUST have a unique tag and priority marker.
 - `[~]` — out of scope (followed by `→ Out of Scope v{X.Y}: <reason>`)
 - `[ ]` + `**Deferred (v{X.Y})**: <reason>` — deferred (still open, but waiting on something specific)
 
-### Category (v1.3+, Iter 1 — tagging; v1.4+, Iter 2 — auto-resolution activates)
+### Category
 
 Every OQ carries `category`:
 
@@ -223,20 +236,20 @@ Every OQ carries `category`:
 
 **Default**: `business`.
 
-### Resolution mode (v1.4+, Iter 2 — required when category=tech)
+### Resolution mode (required when category=tech)
 
 Tech OQs carry a `resolution_mode` describing how the OQ is answered without blocking human review:
 
 - `scan` — answer deterministically found by probing codebase-map / KB. Requires `scan_query`. `bind-codebase` auto-resolves on single unambiguous match.
 - `recommend` — AI picks with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation). `bind-codebase` surfaces in `binding.md` review section; user ACCEPTS / OVERRIDES / REJECTS.
-- `hard_rule` — encoded as bolt-time constraint (Iter 3). Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
+- `hard_rule` — encoded as bolt-time constraint. Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
 - `blocking` — explicit "no auto-resolve; still needs human". Rare for tech (used when scan is inconclusive AND no safe default).
 
 A tech OQ MUST specify `resolution_mode`; absence is a generate-intent validation error (halt with `oq_tech_missing_mode` blocker).
 
-### Classification confidence (v1.4+, Iter 2 — DESIGN-OQ-3 resolved)
+### Classification confidence
 
-Auto-classification per Iter 2's heuristic carries a confidence label:
+Auto-classification (per the auto-classifier heuristics below) carries a confidence label:
 
 - `high` — heuristic matched strongly (single clear pattern hit)
 - `medium` — partial match (some signal, but not unambiguous)
@@ -244,7 +257,7 @@ Auto-classification per Iter 2's heuristic carries a confidence label:
 
 **Auto-resolve gate**: only `high`-confidence tech OQs auto-resolve in `bind-codebase`. `medium`/`low` confidence OQs go to `00-index.md` "## Auto-Classification Review" section. User reviews tags one-pass before binding runs; any OQ user flips from tech-to-business stays human-decided.
 
-### Auto-classifier heuristics (v1.4+, Iter 2)
+### Auto-classifier heuristics
 
 `generate-intent` tags new OQs with `category` + `resolution_mode` + `classification_confidence` at generation time. Heuristic table:
 
@@ -270,7 +283,7 @@ Auto-classification per Iter 2's heuristic carries a confidence label:
 After OQ classification, `00-index.md` MUST include a new section before the main OQ roll-up:
 
 ```markdown
-## Auto-Classification Review (v1.4+)
+## Auto-Classification Review
 
 > Total classified: {N} OQs. Auto-resolution active: {M} (tech, high-confidence).
 > Manual review recommended: {K} (tech medium/low-confidence + any flipped from business to tech).
@@ -329,12 +342,12 @@ For `resolution_mode: recommend`:
 - Every OQ with `category: tech` MUST have `resolution_mode` set; absence → halt `oq_tech_missing_mode`.
 - Every OQ with `resolution_mode: scan` MUST have `scan_query` populated.
 - Every OQ with `resolution_mode: recommend` MUST have `recommendation` + `rationale` + at least one `scan_citations` entry + `fallback_if_wrong`. Missing any → halt `oq_recommend_underspecified`.
-- Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (Iter 3 enforces grammar).
+- Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (grammar enforced at execute-bolts pre-flight).
 - `classification_confidence` MUST be one of `high | medium | low`.
 
 **Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing v1.0–v1.5 vaults load unchanged.
 
-## §constitution — Project-Facing Rules (v1.8+, Iter 17)
+## §constitution — Project-Facing Rules
 
 Per Spec Kit `/speckit.constitution` + AWS Kiro "steering files" pattern (independent convergence in spec-driven-dev tools 2025-2026). Mega-sdd adopts as **8th vault file**: `constitution.md`.
 
@@ -403,11 +416,11 @@ Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing
 
 ### How constitution drives bolts
 
-1. **At `generate-intent`** (v1.8+): write constitution.md from PRD + KB constraints sections + user Q&A; user reviews + signs off; updates trigger version bump
-2. **At `bind-codebase`** (v1.7+): cite constitution clauses when surfacing CONFLICTs; flag binding entries that violate constitution as halts
-3. **At `generate-units`** (v2.2+): for each unit, inject relevant constitution clauses into the unit's `## Hard rules` section as `id: constitution-<clause-id>` rules
-4. **At `execute-bolts`** (v2.2+): pre/post-flight Hard Rule scan automatically validates constitution clauses (no separate command)
-5. **At `detect-drift`** (v1.1+): flag code that violates constitution as drift findings
+1. **At `generate-intent`**: write constitution.md from PRD + KB constraints sections + user Q&A; user reviews + signs off; updates trigger version bump
+2. **At `bind-codebase`**: cite constitution clauses when surfacing CONFLICTs; flag binding entries that violate constitution as halts
+3. **At `generate-units`**: for each unit, inject relevant constitution clauses into the unit's `## Hard rules` section as `id: constitution-<clause-id>` rules
+4. **At `execute-bolts`**: pre/post-flight Hard Rule scan automatically validates constitution clauses (no separate command)
+5. **At `detect-drift`**: flag code that violates constitution as drift findings
 
 ### Constitution version pinning
 
@@ -435,7 +448,7 @@ Constitution version pinned to vault:
 - Existing 7-file vault structure unchanged; constitution is 8th additive file
 - Tools that hardcoded 7-file count → graceful fallback (treat missing constitution as empty list)
 
-## §Starterkit-binding — Dual-citation format (v1.11+, Iter 27)
+## §Starterkit-binding — Dual-citation format
 
 When `generate-intent` runs with `--scan=<codebase-map-path>` (orchestrate-flow Mode A/B starterkit-first), vault sections that touch implementation conventions use a DUAL-CITATION format: **Intent** (what the design intends) + **Starterkit binding** (how this scaffold realizes that intent). Greenfield mode skips Starterkit binding entirely.
 
@@ -489,9 +502,9 @@ Within each affected section, every architectural decision gets TWO sub-fields:
 
 - Pre-v1.11 vaults (no Starterkit binding fields) → consumed unchanged by bind-codebase + generate-units; conventions resolved from binding step instead.
 - Mixed vaults (some sections have Starterkit binding, others don't) → permitted; downstream skills handle absence gracefully.
-- `bind-codebase` reading a v1.11+ vault: Starterkit binding fields supplement Hard Rule emission (clauses cited inline as `source: vault §02-architecture > Starterkit binding > Authentication strategy`).
+- `bind-codebase` reading a vault with Starterkit binding fields: they supplement Hard Rule emission (clauses cited inline as `source: vault §02-architecture > Starterkit binding > Authentication strategy`).
 
-## §Multi-scope vault — Scope tagging schema (v1.12+, Iter 28)
+## §Multi-scope vault — Scope tagging schema
 
 When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scopes:` block, the vault is tagged with scope metadata. Single-scope PRDs without scopes block use current single-vault schema (no scope tagging).
 
@@ -600,7 +613,7 @@ Across all skills, these identifiers are **stable across rounds**:
 
 When a sibling skill creates new entries, use **next-available** number, never reuse.
 
-## §halt-escalation-discipline (v3.50.0+, Iter 67.7 — anti-erosion gate)
+## §halt-escalation-discipline (anti-erosion gate)
 
 Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). See `docs/superpowers/audits/2026-05-27-halt-escalation-classification.md` and `docs/superpowers/audits/2026-05-27-c1-collapse-attestation.md` for full classification + per-halt reasoning + reviewer attestation.
 
@@ -612,7 +625,7 @@ Halts are classified into THREE operational categories. Categorization is per-ha
 | **C2 — Business gate** | Halt + PROPOSE recommendation + sign-off. No raw "what should I do?" questions. | Resolution needs domain/stakeholder intent (scope choice, conflict resolution, business rule). Skill emits halt envelope with `recommendation:` field populated. |
 | **C3 — Grounding gate** | Halt — enforce via [HOOK-VALIDATE] slice (deterministic validator), not prose. | Continuing would require hallucinating ground truth (vault↔code conflict, traceability ID drop). Enforced by hook + state file, not skill body text. |
 
-### C1 self-resolve protocol (v3.50.0+, Iter 67.7 Phase A)
+### C1 self-resolve protocol
 
 When a skill detects a C1 condition during execution:
 
@@ -641,7 +654,7 @@ A C1 halt MUST escalate to C2 (with proposal) when:
 
 When escalating, emit standard C2 halt envelope WITH the C1 attempt history in `details.retry_attempts: [...]` for forensics.
 
-### C2 propose-and-confirm discipline (v3.50.0+, Iter 67.7 Phase D candidate — future iter)
+### C2 propose-and-confirm discipline (future candidate — not yet active)
 
 Every C2 halt envelope MUST include a `recommendation:` field with the skill's best-effort guess + rationale. The halt should not pose a raw question. Format:
 
@@ -661,7 +674,7 @@ Implementation deferred to Phase D after Phase A real-run proof. Current C2 halt
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
-C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `plugins/mega-sdd/references/fork-a-recovery-map.md`. Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. Slice 1 shipped Iter 67.6 (binding→units OQ-IDs); slices 2-5 follow the same pattern for CONFLICT-IDs / Hard Rules / vault→binding / units→bolts.
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `plugins/mega-sdd/references/fork-a-recovery-map.md`. Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The binding→units OQ-ID slice is hook-enforced today; CONFLICT-IDs / Hard Rules / vault→binding / units→bolts follow the same pattern.
 
 ### Backward compatibility
 
@@ -693,12 +706,12 @@ blocker:
   expected_framework: "<e.g. 'PHP/Laravel'>"  # drift_framework_mismatch only
 ```
 
-### Canonical `next_action` field shape (v0.15+, Iter 62 per A3-004)
+### Canonical `next_action` field shape
 
-The `next_action` field in halt envelope is documented per-producer with varying shapes (object `{type, hint}`, plain string, or omitted). Consumer dispatch must branch on shape. Iter 62 pins canonical shape:
+The `next_action` field in halt envelope is documented per-producer with varying shapes (object `{type, hint}`, plain string, or omitted). Consumer dispatch must branch on shape. The canonical shape is pinned:
 
 ```yaml
-# CANONICAL (preferred for new halts, v0.15+):
+# CANONICAL (preferred for new halts):
 next_action:
   type: <action_id>                            # enum (see below)
   hint: "<one-line user-facing instruction>"   # required
@@ -707,7 +720,7 @@ next_action:
 # LEGACY (accepted for backward compat, pre-v0.15):
 next_action: "<one-line prose string>"         # plain string form
 
-# OMITTED (NOT accepted v0.15+):
+# OMITTED (NOT accepted):
 # next_action: <missing>                        → halt invalid_handoff during validation
 ```
 
@@ -722,7 +735,7 @@ next_action: "<one-line prose string>"         # plain string form
 - `user_review` — user inspects artifact + decides
 - `invoke_skill` — orchestrator auto-invokes recovery skill
 - `chain_complete` — terminal; no further action
-- `file_plugin_bug` — internal bug; user files at gitlab/issue tracker
+- `file_plugin_bug` — internal bug; user files at github.com/FarhanRiuzaki/Mega-SDD/issues
 - `log_and_continue` — soft halt; orchestrator logs + proceeds
 - `manual_review` — user reviews state manually (no auto-action)
 
@@ -730,7 +743,7 @@ Consumer dispatch (orchestrate-flow halt displayer):
 
 1. Read `next_action.type` if present → format hint per type semantics (e.g., wrap commands in code fence)
 2. Else read `next_action.hint` if it's a string → display as plain text
-3. Else (no next_action) → emit `invalid_handoff` halt at validation gate (Iter 60 strict mode)
+3. Else (no next_action) → emit `invalid_handoff` halt at validation gate
 
 **Backward compatibility:** all pre-v0.15 halt emit sites work unchanged. The canonical shape is RECOMMENDED for new halts but not enforced — consumers fall back to legacy string-only form.
 
@@ -742,80 +755,80 @@ Consumer dispatch (orchestrate-flow halt displayer):
 
 **`drift_framework_mismatch`** — emitted by `detect-drift` Step 1.5 when the vault implies one framework but the codebase is another. `tag` is `n/a`. `priority` is `n/a`. `detected_framework` and `expected_framework` are required.
 
-- `deep_scan_subagent_failed` — scan-codebase v2.6.0+: a deep-scan subagent (auth/rbac/ui-ux/libs) failed once. Soft halt: auto-retried; on second failure emits partial starterkit-context.yaml with `partial: true`. Pipeline continues (warn-only).
-- `deep_scan_cache_corrupt` — scan-codebase v2.6.0+: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache auto-invalidated; subagents re-dispatched. Transparent to user.
-- `deep_scan_subagent_all_failed` — scan-codebase v2.6.0+: ALL 4 deep-scan subagents failed (likely API outage). ALWAYS STOP: user re-runs scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched.
-- `starterkit_rule_citation_missing` — generate-units v2.6.0+: a starterkit-derived Hard Rule lacks `Citation: starterkit-context.yaml §<path>` field. ALWAYS STOP: user must edit unit to add citation, then re-run Step 12.5 polished-prompt render pass.
-- `bind_conflict_constitution_violation` — bind-codebase v1.8+, Iter 20: claim conflicts with constitution.md security clause. ALWAYS STOP. Resolution: review constitution clauses + reject/accept conflict.
-- `framework_pack_missing` — bind-codebase v1.9+, Iter 23: framework convention pack referenced but file absent. ALWAYS STOP. Resolution: create pack or remove reference.
-- `framework_pack_cycle` — bind-codebase v1.9+, Iter 23: pack inheritance has cycle (A extends B extends A). ALWAYS STOP.
-- `framework_pack_unparseable` — bind-codebase v1.9+, Iter 23: pack file fails YAML/markdown parse. ALWAYS STOP.
-- `constitution_drift_detected` — detect-drift v1.4+, Iter 30: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
-- `drift_framework_mismatch` — detect-drift v1.2+, Iter 12: scanned code framework differs from vault framework. ALWAYS STOP.
-- `diff_conflict` — diff-vault v0.3+, Iter 3: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk). Emitted by `diff-vault`.
-- `memory_in_use` — memory v1.0+: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A):** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). Emits `halt_self_resolved` telemetry event with `fix_applied: "retry_exhausted_memory_skipped"`. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
-- `dispatch_prompt_too_large` — execute-bolts v2.6+, Iter 30: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
-- `bolt_repeated_partial_failure` — execute-bolts v2.6+, Iter 30: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
-- `provenance_missing` — execute-bolts v2.6+, Iter 30: bolt modified file lacks provenance trailer. ALWAYS STOP.
-- `bolt_introduces_locked_drift` — execute-bolts v2.6+, Iter 30: bolt drift hits a LOCKED entity. ALWAYS STOP (eligible for propose-and-confirm override).
-- `self_assessment_missing` — execute-bolts v2.6+, Iter 30: bolt-report.md lacks self-assessment section. ALWAYS STOP.
-- `dep_missing` — scan-codebase v2.0+, Iter 6: required binary (tree-sitter when --engine=tree-sitter forced) not found. ALWAYS STOP.
-- `oq_recommend_citation_invalid` — generate-intent v1.3+, Iter 2: OQ recommendation cites non-existent KB section. ALWAYS STOP.
-- `mode_migrate` — orchestrate-flow v1.0+: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A):** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. Emits `halt_self_resolved` telemetry with `fix_applied: "mode_redetected: <old> → <new>"`. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
-- `routing_outcome_corrupt` — orchestrate-flow v3.0.0+, Iter 33: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (v3.52.0+, Iter 67.7.3 — HOOK-LAYER ENFORCED via SessionStart):** at session start, hook checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing. Sandbox-proven 2026-05-27. NEVER halts.
-- `predictive_check_failed` — orchestrate-flow v3.0.0+, Iter 33: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. Resolution: user fixes precondition (install dep / add framework pack / etc.) per `next_action.hint`; re-run chain.
-- `invalid_handoff` — orchestrate-flow v3.0.0+, Iter 33: handoff YAML from sub-skill fails schema validation (missing REQUIRED field, or CONDITIONAL field missing when condition met, or YAML parse error). **C1 SELF-RESOLVE (v3.53.0+, Iter 67.8 Phase B slice B.1 — HOOK-LAYER ENFORCED via Stop+PreToolUse):** at turn end, Stop hook scans transcript for last assistant message; if it contains `handoff:` block, invokes `plugins/mega-sdd/scripts/validate-handoff-yaml.sh` which parses + validates against this schema and writes `<cwd>/.mega-sdd/.handoff-validation-state.json` (current-truth, overwrite-not-append). PreToolUse Skill matcher `mega-sdd:*` (excluding `mega-sdd:using-mega-sdd` anchor) reads that state — if status=FAIL, blocks the next mega-sdd skill invocation with the validator's reason. Retry counter tracks repeated failures of same skill+halt: 1st failure = self-resolve with "re-invoke producer" recommendation; 2nd failure = escalate to C2 user_review. Producer skill author still fixes handoff template per handoff-contract.md schema for permanent fix; hook is the enforcement layer. NEVER halts the chain on first fail; blocks next-skill consumption deterministically. Sandbox-proven 2026-05-27.
-- `handoff_type_mismatch` — orchestrate-flow v3.0.0+, Iter 33 F4: handoff YAML field type doesn't match TYPE annotation in handoff-contract.md schema. ALWAYS STOP. Resolution: producer skill author fixes type emission per handoff-contract.md TYPE annotation; re-run chain.
-- `model_tier_unknown` — orchestrate-flow v3.1.0+, Iter 34: model-tier override references a role not in references/model-tiers.md catalog. **C1 SELF-RESOLVE (v3.50.0+, Iter 67.7 Phase A — formalizing pre-existing SOFT semantics):** log + ignore override; chain proceeds with catalog default for unknown roles. Emits `halt_self_resolved` telemetry with `fix_applied: "unknown_role_catalog_default_used"`. Forward-compat for future role additions. NEVER halts.
-- `pbt_citation_invalid` — execute-bolts v2.4+, Iter 20: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault `decisions/` directory. ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt. Closes Iter 38 audit finding D3-004.
-- `handoff_missing` — orchestrate-flow v3.2.1+, Iter 40 (semantics corrected Iter 43): sub-skill chat output contains no parseable `handoff:` YAML block (skills emit handoff inline in chat, not to a file). ALWAYS STOP. Resolution: inspect sub-skill chat output (`chat_tail_excerpt` in halt envelope shows last 500 chars) for crash logs / parse errors / OS-level failures; re-run sub-skill standalone to reproduce; report as skill-author bug if reproducible. Closes Iter 38 audit finding D3-001 (silent-failure path closure).
-- `artifact_missing` — orchestrate-flow v3.2.0+, Iter 40: handoff YAML lists `artifacts: [paths]` and one or more paths fail existence check (`test -f` for files, `test -d` for directories). ALWAYS STOP. Resolution: re-run producer skill standalone to confirm artifacts actually written; inspect producer chat for mid-write crash logs. Closes Iter 38 audit finding D3-002 (silent-failure path closure).
-- `partial_state_corrupt` — execute-bolts v2.7.3+, Iter 40: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract — corrected from initial Iter 40 vault-contract description) and JSON parse failed. **C1 SELF-RESOLVE (v3.51.1+, Iter 67.7.2 — HOOK-LAYER ENFORCED via SessionStart):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. Emits `halt_self_resolved` telemetry with full payload (`unit_id`, `original_path`, `corrupt_path`). Sandbox-tested 2026-05-27 (NOT against TF Import production data per safety rule). NEVER halts.
-- `dedup_ambiguous` — generate-units v2.5+, Iter 41 registry closure: dedupe step finds multiple existing units that could match a new claim (target_files overlap >threshold). ALWAYS STOP. Resolution: user picks the canonical unit OR confirms creating a new one. Previously emitted but missing from canonical halt registry — Iter 41 sweep closure.
-- `hard_rule_unparseable` — generate-units v2.0+, Iter 6: a unit's `## Hard Rules` block contains ast-grep YAML that fails parse OR an ANCHOR reference that cannot be resolved. ALWAYS STOP. Resolution: user fixes the unit's Hard Rules block syntax. Iter 41 sweep closure (was emitted but missing from canonical registry).
-- `hard_rule_violated` — execute-bolts v1.2+, Iter 3: post-flight ast-grep scan found code in working tree violates a unit's Hard Rule. ALWAYS STOP (no auto-retry; user reviews + decides revert vs edit). Resolution: amend the bolt OR override the rule with explicit user approval. Iter 41 sweep closure (was emitted but missing from canonical registry).
-- `memory_schema_mismatch` — memory subsystem v1.0+, Iter 5: persisted memory file schema_version differs from current code's expected schema. ALWAYS STOP (presents migration prompt). Resolution: user opts in to migration via `/mega-sdd:memory migrate`. Iter 41 sweep closure.
-- `prd_no_scopes_block_user_rejected_retrofit` — generate-intent v1.6+, Iter 28: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chose cancel. ALWAYS STOP. Resolution: user manually retrofits PRD OR re-runs with single-scope fallback. Iter 41 sweep closure (was emitted by Iter 28 but missing from canonical registry).
-- `prd_path_missing` — diff-vault v1.3+, Iter 29: `vault.json.prd_path_at_generation` points to non-existent PRD file. ALWAYS STOP. Resolution: user restores the PRD at the recorded path OR regenerates the vault with the current PRD. Iter 41 sweep closure.
-- `prd_retrofit_low_confidence` — generate-intent v1.6+, Iter 28: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP. Resolution: user reviews and accepts anyway / chooses single-scope fallback / cancels. Iter 41 sweep closure.
-- `quality_gate_failed` — extract-intelligence v1.0+, Iter 9 (wave-based KB extraction): a wave's quality-gate threshold (citation density / hallucination floor / canonicalization completeness) is not met. ALWAYS STOP. Resolution: user reviews wave output and either accepts (with QA notes recorded) OR re-runs wave with adjusted prompt. Iter 41 sweep closure.
-- `scope_not_declared_in_prd` — generate-intent v1.6+, Iter 28: `--scope=<id>` flag references a scope ID that's not in the PRD's `scopes:` frontmatter block. ALWAYS STOP. Resolution: user picks a valid scope from PRD's declared list OR cancels. Iter 41 sweep closure.
-- `install_failed` — install-deps v1.0.0+, Iter 55: install command exited non-zero OR `verify_cmd` failed post-install. ALWAYS STOP. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail (last 500 chars), subtype: install_command_failed | verify_after_install_failed}`. Resolution: inspect stderr_tail, fix root cause (PATH refresh / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool. Source skill: `install-deps`.
-- `pkg_mgr_not_found` — install-deps v1.0.0+, Iter 55: no compatible package manager detected for OS (PKG_MGR=`none` AND no cross-platform fallbacks like cargo/npm/go on PATH). ALWAYS STOP. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt is on PATH (Linux) / install WSL Ubuntu (Windows native) → re-run `/mega-sdd:install-deps`. Source skill: `install-deps`.
+- `deep_scan_subagent_failed` — scan-codebase: a deep-scan slice subagent (auth/authz/ui-ux/libs/reuse) failed once. Soft halt: auto-retried; on second failure emits partial starterkit-context.yaml with `partial: true`. Pipeline continues (warn-only).
+- `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache auto-invalidated; subagents re-dispatched. Transparent to user.
+- `deep_scan_subagent_all_failed` — scan-codebase: ALL 5 deep-scan slice subagents failed (likely API outage). ALWAYS STOP: user re-runs scan-codebase later. Existing starterkit-context.yaml (if any) preserved untouched.
+- `starterkit_rule_citation_missing` — generate-units: a starterkit-derived Hard Rule lacks `Citation: starterkit-context.yaml §<path>` field. ALWAYS STOP: user must edit unit to add citation, then re-run Step 12.5 polished-prompt render pass.
+- `bind_conflict_constitution_violation` — bind-codebase: claim conflicts with constitution.md security clause. ALWAYS STOP. Resolution: review constitution clauses + reject/accept conflict.
+- `framework_pack_missing` — bind-codebase: framework convention pack referenced but file absent. ALWAYS STOP. Resolution: create pack or remove reference.
+- `framework_pack_cycle` — bind-codebase: pack inheritance has cycle (A extends B extends A). ALWAYS STOP.
+- `framework_pack_unparseable` — bind-codebase: pack file fails YAML/markdown parse. ALWAYS STOP.
+- `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
+- `drift_framework_mismatch` — detect-drift: scanned code framework differs from vault framework. ALWAYS STOP.
+- `diff_conflict` — diff-vault: Resolved-OQ or Decision conflict requires stakeholder input. ALWAYS STOP (user resolves via diff-vault interactive walk). Emitted by `diff-vault`.
+- `memory_in_use` — memory: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE:** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). Emits `halt_self_resolved` telemetry event with `fix_applied: "retry_exhausted_memory_skipped"`. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
+- `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
+- `bolt_repeated_partial_failure` — execute-bolts: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
+- `provenance_missing` — execute-bolts: bolt modified file lacks provenance trailer. ALWAYS STOP.
+- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (eligible for propose-and-confirm override).
+- `self_assessment_missing` — execute-bolts: bolt-report.md lacks self-assessment section. ALWAYS STOP.
+- `dep_missing` — scan-codebase: required binary (tree-sitter when --engine=tree-sitter forced) not found. ALWAYS STOP.
+- `oq_recommend_citation_invalid` — generate-intent: OQ recommendation cites non-existent KB section. ALWAYS STOP.
+- `mode_migrate` — orchestrate-flow: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE:** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. Emits `halt_self_resolved` telemetry with `fix_applied: "mode_redetected: <old> → <new>"`. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
+- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (HOOK-LAYER ENFORCED via SessionStart):** at session start, hook checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing. NEVER halts.
+- `predictive_check_failed` — orchestrate-flow: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. Resolution: user fixes precondition (install dep / add framework pack / etc.) per `next_action.hint`; re-run chain.
+- `invalid_handoff` — orchestrate-flow: handoff YAML from sub-skill fails schema validation (missing REQUIRED field, or CONDITIONAL field missing when condition met, or YAML parse error). **C1 SELF-RESOLVE (HOOK-LAYER ENFORCED via Stop+PreToolUse):** at turn end, Stop hook scans transcript for last assistant message; if it contains `handoff:` block, invokes `plugins/mega-sdd/scripts/validate-handoff-yaml.sh` which parses + validates against this schema and writes `<cwd>/.mega-sdd/.handoff-validation-state.json` (current-truth, overwrite-not-append). PreToolUse Skill matcher `mega-sdd:*` (excluding `mega-sdd:using-mega-sdd` anchor) reads that state — if status=FAIL, blocks the next mega-sdd skill invocation with the validator's reason. Retry counter tracks repeated failures of same skill+halt: 1st failure = self-resolve with "re-invoke producer" recommendation; 2nd failure = escalate to C2 user_review. Producer skill author still fixes handoff template per handoff-contract.md schema for permanent fix; hook is the enforcement layer. NEVER halts the chain on first fail; blocks next-skill consumption deterministically.
+- `handoff_type_mismatch` — orchestrate-flow: handoff YAML field type doesn't match TYPE annotation in handoff-contract.md schema. ALWAYS STOP. Resolution: producer skill author fixes type emission per handoff-contract.md TYPE annotation; re-run chain.
+- `model_tier_unknown` — orchestrate-flow: model-tier override references a role not in plugins/mega-sdd/references/model-tiers.md catalog. **C1 SELF-RESOLVE (formalizing pre-existing SOFT semantics):** log + ignore override; chain proceeds with catalog default for unknown roles. Emits `halt_self_resolved` telemetry with `fix_applied: "unknown_role_catalog_default_used"`. Forward-compat for future role additions. NEVER halts.
+- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault `decisions/` directory. ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
+- `handoff_missing` — orchestrate-flow: sub-skill chat output contains no parseable `handoff:` YAML block (skills emit handoff inline in chat, not to a file). ALWAYS STOP. Resolution: inspect sub-skill chat output (`chat_tail_excerpt` in halt envelope shows last 500 chars) for crash logs / parse errors / OS-level failures; re-run sub-skill standalone to reproduce; report as skill-author bug if reproducible.
+- `artifact_missing` — orchestrate-flow: handoff YAML lists `artifacts: [paths]` and one or more paths fail existence check (`test -f` for files, `test -d` for directories). ALWAYS STOP. Resolution: re-run producer skill standalone to confirm artifacts actually written; inspect producer chat for mid-write crash logs.
+- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (HOOK-LAYER ENFORCED via SessionStart):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. Emits `halt_self_resolved` telemetry with full payload (`unit_id`, `original_path`, `corrupt_path`). NEVER halts.
+- `dedup_ambiguous` — generate-units: dedupe step finds multiple existing units that could match a new claim (target_files overlap >threshold). ALWAYS STOP. Resolution: user picks the canonical unit OR confirms creating a new one. Previously emitted but missing from canonical halt registry —
+- `hard_rule_unparseable` — generate-units: a unit's `## Hard Rules` block contains ast-grep YAML that fails parse OR an ANCHOR reference that cannot be resolved. ALWAYS STOP. Resolution: user fixes the unit's Hard Rules block syntax.
+- `hard_rule_violated` — execute-bolts: post-flight ast-grep scan found code in working tree violates a unit's Hard Rule. ALWAYS STOP (no auto-retry; user reviews + decides revert vs edit). Resolution: amend the bolt OR override the rule with explicit user approval.
+- `memory_schema_mismatch` — memory subsystem: persisted memory file schema_version differs from current code's expected schema. ALWAYS STOP (presents migration prompt). Resolution: user opts in to migration via `/mega-sdd:memory migrate`.
+- `prd_no_scopes_block_user_rejected_retrofit` — generate-intent: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chose cancel. ALWAYS STOP. Resolution: user manually retrofits PRD OR re-runs with single-scope fallback.
+- `prd_path_missing` — diff-vault: `vault.json.prd_path_at_generation` points to non-existent PRD file. ALWAYS STOP. Resolution: user restores the PRD at the recorded path OR regenerates the vault with the current PRD.
+- `prd_retrofit_low_confidence` — generate-intent: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP. Resolution: user reviews and accepts anyway / chooses single-scope fallback / cancels.
+- `quality_gate_failed` — extract-intelligence: a wave's quality-gate threshold (citation density / hallucination floor / canonicalization completeness) is not met. ALWAYS STOP. Resolution: user reviews wave output and either accepts (with QA notes recorded) OR re-runs wave with adjusted prompt.
+- `scope_not_declared_in_prd` — generate-intent: `--scope=<id>` flag references a scope ID that's not in the PRD's `scopes:` frontmatter block. ALWAYS STOP. Resolution: user picks a valid scope from PRD's declared list OR cancels.
+- `install_failed` — install-deps: install command exited non-zero OR `verify_cmd` failed post-install. ALWAYS STOP. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail (last 500 chars), subtype: install_command_failed | verify_after_install_failed}`. Resolution: inspect stderr_tail, fix root cause (PATH refresh / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool. Source skill: `install-deps`.
+- `pkg_mgr_not_found` — install-deps: no compatible package manager detected for OS (PKG_MGR=`none` AND no cross-platform fallbacks like cargo/npm/go on PATH). ALWAYS STOP. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt is on PATH (Linux) / install WSL Ubuntu (Windows native) → re-run `/mega-sdd:install-deps`. Source skill: `install-deps`.
 
-#### Iter 58 enum closure — 9 halts previously orphan-in-the-wild (Iter 56 audit A1-001)
+#### Additional canonical halts
 
-These 9 halt types were emitted by producers as `→ halt <name>` or `type: <name>` in skill bodies but were missing from the canonical enum. Per Iter 33 schema validation, orchestrate-flow would have rejected them as `invalid_handoff`. Iter 58 added all 9 to the enum + canonical description blocks below.
+These halt types are emitted by producers as `→ halt <name>` or `type: <name>` in skill bodies and are part of the canonical enum (orchestrate-flow schema validation rejects undeclared types as `invalid_handoff`).
 
-- `oq_tech_missing_mode` — generate-intent v1.6+, Iter 28: PRD declares technical OQ but `mode` field missing on the OQ entry (can't classify as `tech / scan` vs `tech / recommend`). ALWAYS STOP. Resolution: user adds `mode: scan` or `mode: recommend` to the OQ frontmatter; re-run generate-intent. Source skill: `generate-intent`.
+- `oq_tech_missing_mode` — generate-intent: PRD declares technical OQ but `mode` field missing on the OQ entry (can't classify as `tech / scan` vs `tech / recommend`). ALWAYS STOP. Resolution: user adds `mode: scan` or `mode: recommend` to the OQ frontmatter; re-run generate-intent. Source skill: `generate-intent`.
 
-- `oq_recommend_underspecified` — generate-intent v1.6+ / bind-codebase v1.4+, Iter 3: an OQ marked `mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `citations`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
+- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `citations`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
 
-- `oq_scan_missing_query` — generate-intent v1.6+, Iter 28: an OQ marked `mode: scan` lacks the `scan_target` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_target: codebase-map §<section>` or `scan_target: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
+- `oq_scan_missing_query` — generate-intent: an OQ marked `mode: scan` lacks the `scan_target` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_target: codebase-map §<section>` or `scan_target: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
 
-- `oq_business_p1_unresolved` — orchestrate-flow v1.3+, Iter 4 (canonical of `oq_blocker`): a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `/mega-sdd:resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
+- `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `/mega-sdd:resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
 
-- `no_starterkit_detected` — orchestrate-flow v2.4+, Iter 27: starterkit-first mode default but no framework manifest detected (no composer.json / package.json / Gemfile / etc.) AND user did NOT pass `--greenfield` flag. ALWAYS STOP. Details `{cwd, detected_manifests, suggestions}`. Resolution: user picks (a) scaffold starterkit, (b) re-run with `--greenfield`, or (c) cancel. Source skill: `orchestrate-flow`.
+- `no_starterkit_detected` — orchestrate-flow: starterkit-first mode default but no framework manifest detected (no composer.json / package.json / Gemfile / etc.) AND user did NOT pass `--greenfield` flag. ALWAYS STOP. Details `{cwd, detected_manifests, suggestions}`. Resolution: user picks (a) scaffold starterkit, (b) re-run with `--greenfield`, or (c) cancel. Source skill: `orchestrate-flow`.
 
-- `module_blocked_by` — execute-bolts v2.0+, Iter 11: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
+- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
 
-- `hard_rule_unanchored` — execute-bolts v2.0+, Iter 6: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
+- `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
 
-- `unit_underspecified` — generate-units v2.0+, Iter 1: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
+- `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
 
-- `verify_unit_writable` — execute-bolts v2.0+, Iter 1: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (v3.52.0+, Iter 67.7.4 — HOOK-LAYER DETECTION via SessionStart, DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in anchor injection. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at SessionStart means the warning re-fires on every session until human fixes the unit — intentional visibility. Sandbox-proven 2026-05-27. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (HOOK-LAYER DETECTION via SessionStart, DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in anchor injection. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at SessionStart means the warning re-fires on every session until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
 
-#### Iter 58 — `quality_gate_failed` subtypes (Iter 53/54 closure per A1-003)
+#### `quality_gate_failed` subtypes
 
-Iter 53 (`starterkit_metrics_inconsistent`) and Iter 54 (`pdf_render_failed`, `template_slot_unfilled`) extended the existing `quality_gate_failed` halt with a `subtype:` discriminator. Iter 58 documents the canonical subtype enum here:
+The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum:
 
 `quality_gate_failed` subtypes:
-- *(omitted OR `wave_quality_threshold_unmet`)* — extract-intelligence v1.0+, Iter 9 (original): wave-based KB extraction quality threshold (citation density / hallucination floor / canonicalization completeness) not met. Resolution: user reviews wave output + accepts (with QA notes) OR re-runs wave with adjusted prompt.
-- `starterkit_metrics_inconsistent` — orchestrate-flow v3.4.0+, Iter 53: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase --force-deep` then regenerate units.
-- `pdf_render_failed` — emit-fsd v1.0.0+, Iter 54: pandoc exited non-zero during PDF render in §Step 5.3. Details include `pandoc_stderr_tail` (last 500 chars). Resolution: inspect stderr, fix LaTeX engine config (typically install tectonic via `/mega-sdd:install-deps`), re-run emit-fsd.
-- `template_slot_unfilled` — emit-fsd v1.0.0+, Iter 54: an FSD-template slot marker `{{slot_name}}` remained unfilled in `FSD.md` output (internal bug — section-mapping.md missing extraction rule for the slot). Resolution: file plugin bug; meanwhile run emit-fsd with `--sections=<subset>` to skip the affected section.
-- `replan_budget_exceeded` — anti-recursive guard v3.45.0+, Iter 65 (per spec §4.2 meta-tune #5 reuse-first decision): a task's re-plan count exceeded `max_replan_count` cap (default 2; configurable post-Iter-68 telemetry tuning). Details `{task_id, max_replan_count, actual_replan_count, trigger_history: [<closed-enum triggers per RULE 1>]}`. Resolution: user reviews trigger history; if hitting same trigger repeatedly, root-cause the underlying issue (don't just raise the cap); if scope grew beyond original task, restart task with corrected scope.
-- `revalidate_budget_exceeded` — anti-recursive guard v3.45.0+, Iter 65: a task's re-validate count exceeded `max_revalidate_count` cap (default 3). Details `{task_id, max_revalidate_count, actual_revalidate_count}`. Resolution: validators are LEAF NODES — repeated validation failure means root issue is in validated artifact, not validation logic. Fix artifact; do not validate the validation.
+- *(omitted OR `wave_quality_threshold_unmet`)* — extract-intelligence: wave-based KB extraction quality threshold (citation density / hallucination floor / canonicalization completeness) not met. Resolution: user reviews wave output + accepts (with QA notes) OR re-runs wave with adjusted prompt.
+- `starterkit_metrics_inconsistent` — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase --force-deep` then regenerate units.
+- `pdf_render_failed` — emit-fsd: pandoc exited non-zero during PDF render in §Step 5.3. Details include `pandoc_stderr_tail` (last 500 chars). Resolution: inspect stderr, fix LaTeX engine config (typically install tectonic via `/mega-sdd:install-deps`), re-run emit-fsd.
+- `template_slot_unfilled` — emit-fsd: an FSD-template slot marker `{{slot_name}}` remained unfilled in `FSD.md` output (internal bug — section-mapping.md missing extraction rule for the slot). Resolution: file plugin bug; meanwhile run emit-fsd with `--sections=<subset>` to skip the affected section.
+- `replan_budget_exceeded` — anti-recursive guard: a task's re-plan count exceeded `max_replan_count` cap (default 2; configurable). Details `{task_id, max_replan_count, actual_replan_count, trigger_history: [<closed-enum triggers per RULE 1>]}`. Resolution: user reviews trigger history; if hitting same trigger repeatedly, root-cause the underlying issue (don't just raise the cap); if scope grew beyond original task, restart task with corrected scope.
+- `revalidate_budget_exceeded` — anti-recursive guard: a task's re-validate count exceeded `max_revalidate_count` cap (default 3). Details `{task_id, max_revalidate_count, actual_revalidate_count}`. Resolution: validators are LEAF NODES — repeated validation failure means root issue is in validated artifact, not validation logic. Fix artifact; do not validate the validation.
 
 Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the original `wave_quality_threshold_unmet` semantic (extract-intelligence).
 
@@ -865,7 +878,7 @@ blocker:
   ...
 ```
 
-Vaults regenerated under v0.14+ produce only the new form.
+Regenerated vaults produce only the new form.
 
 ### Field rules
 

@@ -1,6 +1,6 @@
 ---
-description: [ADVANCED / AUTO-INVOKED] Static analysis of vault units for quality + grounding. Auto-invoked by `/mega-sdd:auto` after generate-units phase — users rarely need to run this directly. Run standalone for debugging vault quality issues OR CI integration (--strict flag). Per-unit quality breakdown (HIGH/MEDIUM/LOW grounding_confidence), anchor verification status, Hard Rule coverage, acceptance_test presence, module + squad assignment status, Migration notes structure (extend units), task_type validity vs binding state. Returns prioritized recommendations for unit improvements before bolt execution. Read-only; never modifies vault.
-argument-hint: [vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]
+description: ADVANCED / AUTO-INVOKED — Static analysis of vault units for quality + grounding. Auto-invoked by `/mega-sdd:auto` after generate-units phase — users rarely need to run this directly. Run standalone for debugging vault quality issues OR CI integration (--strict flag). Per-unit quality breakdown (HIGH/MEDIUM/LOW grounding_confidence), anchor verification status, Hard Rule coverage, acceptance_test presence, module + squad assignment status, Migration notes structure (extend units), task_type validity vs binding state. Returns prioritized recommendations for unit improvements before bolt execution. Read-only; never modifies vault.
+argument-hint: "[vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]"
 ---
 
 Static lint of vault units. Read-only diagnostic; surfaces issues BEFORE bolts run so user can fix vault/binding/units instead of debugging failed bolts.
@@ -11,7 +11,7 @@ User arguments: $ARGUMENTS
 
 ### Step 1 — Resolve vault path
 
-Probe both v3.4+ (`.mega-sdd/vaults/*/`) and legacy (`docs/mega-sdd/vaults/*/`) locations. Use positional arg if given. Halt if no vault found.
+Probe both canonical (`.mega-sdd/vaults/*/`) and legacy (`docs/mega-sdd/vaults/*/`) locations. Use positional arg if given. Halt if no vault found.
 
 ### Step 2 — Load context
 
@@ -38,18 +38,18 @@ For each unit, run these checks:
 - [ ] `depends_on` references resolve (no dangling unit IDs)
 - [ ] `binding_refs` if present, references resolve to claims in binding.md
 
-#### Iter 8+ defensive checks
+#### Defensive-grounding checks
 - [ ] `grounding_confidence` present (HIGH | MEDIUM | LOW)
 - [ ] `grounding_evidence.anchors_verified` reasonable for task_type
 - [ ] `grounding_evidence.binding_state_summary` consistent with task_type
 - [ ] If LOW confidence → flag for review
 
-#### Iter 11+ module checks
+#### Module checks
 - [ ] `module: <id>` present (M-XXX or M-default)
 - [ ] Module ID resolves to entry in `_meta/modules.yaml` (or M-default fallback)
 - [ ] If `M-unassigned` → flag for module assignment review
 
-#### Iter 1.1 squad checks (only if `_meta/squads.yaml` declares ≥2 squads)
+#### Squad checks (only if `_meta/squads.yaml` declares ≥2 squads)
 - [ ] `squad: <id>` present
 - [ ] Squad ID resolves to entry in squads.yaml
 - [ ] Cross-squad `depends_on` routed via `consumes_interfaces`
@@ -57,15 +57,15 @@ For each unit, run these checks:
 #### Body checks (SOFT — warnings)
 - [ ] `## Goal` present and 1-2 sentences
 - [ ] `## Context (read first)` present with vault_source citation
-- [ ] `## Anchors` per task_type mandatory rules (Iter 3+8)
-- [ ] `## Implementation steps` has ≥1 sentence >15 words (directive prose check; Iter 3)
-- [ ] `## Migration notes` MANDATORY for extend, ABSENT for create/verify (Iter 1+8)
-- [ ] `## Hard rules` parseable per grammar v1 OR v2 (Iter 3+6)
+- [ ] `## Anchors` per task_type mandatory rules
+- [ ] `## Implementation steps` has ≥1 sentence >15 words (directive prose check)
+- [ ] `## Migration notes` MANDATORY for extend, ABSENT for create/verify
+- [ ] `## Hard rules` parseable per grammar v1 OR v2
 - [ ] `## Anti-patterns` populated (informational; not enforced)
 - [ ] `## Acceptance criteria` non-empty
 - [ ] `## Out of scope` populated
 
-#### Anchor verification (Iter 8, Step 12.3 post-v2.5.1 renumber)
+#### Anchor verification (Step 12.3)
 - [ ] For each Anchor `<file>:<line>` — probe file exists in codebase-map OR fs
 - [ ] If file missing AND task_type: verify or extend → WARNING (anchor likely aspirational; review)
 - [ ] If file missing AND task_type: create → OK (greenfield anchors acceptable)
@@ -73,12 +73,12 @@ For each unit, run these checks:
 
 #### Hard Rule validation
 - [ ] If v1 grammar: parse each line against 5 closed types
-- [ ] If v2 grammar: validate YAML via ast-grep parse-via-scan (Iter 9 Bug 7 fix)
+- [ ] If v2 grammar: validate YAML via ast-grep parse-via-scan
 - [ ] Mixed grammar in single unit → halt-equivalent warning
 - [ ] `SIGNATURE_RULE function <name>` references symbol in codebase-map (else `hard_rule_unanchored` warning)
 
 #### Binding consistency (when binding.md exists)
-- [ ] `task_type` matches binding's Implementation State Map per state→task_type mapping (Iter 1 + Iter 8 v1.7+ PARTIAL_FIELDS_*)
+- [ ] `task_type` matches binding's Implementation State Map per state→task_type mapping (incl. PARTIAL_FIELDS_*)
 - [ ] If binding state PARTIAL_FIELDS_MISSING/SURPLUS → unit's Migration notes match field_diff ADD/KEEP/REMOVE
 - [ ] If binding state IMPLEMENTED → task_type=verify (not create)
 
@@ -144,7 +144,7 @@ For `--format=json`: structured JSON output for tooling integration.
 - `--squad=<id>` — lint only units in squad S-X
 - `--strict` — promote SOFT warnings to halt-equivalent failures (CI mode)
 
-### Step 6.5 — Optional markdownlint-cli2 prose pass (v1.1+, Iter 14)
+### Step 6.5 — Optional markdownlint-cli2 prose pass
 
 If `markdownlint-cli2` available (`command -v markdownlint-cli2`), run prose quality check on vault + units:
 

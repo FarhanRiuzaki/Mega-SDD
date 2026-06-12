@@ -1,6 +1,6 @@
 ---
 description: Interactively resolve Open Questions in an existing vault and write answers back into the right docs + vault.json.
-argument-hint: [path/to/vault] [optional OQ tag like OQ-FLOWS-3]
+argument-hint: "[path/to/vault] [optional OQ tag like OQ-FLOWS-3]"
 ---
 
 Invoke the `mega-sdd:resolve-oq` skill via the Skill tool to walk through unresolved Open Questions in a generated vault.

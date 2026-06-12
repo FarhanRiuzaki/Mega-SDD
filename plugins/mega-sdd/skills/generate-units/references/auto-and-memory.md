@@ -63,7 +63,7 @@ handoff:
     reused: false
     framework: laravel
     auth_lib: sanctum
-    rbac_lib: spatie/permission
+    authz_lib: spatie/permission
     ui_stack: "alpine + tailwind + sweetalert2"
     libs_count: 47
     units_with_starterkit_anchors: 12          # mirrors metrics block above

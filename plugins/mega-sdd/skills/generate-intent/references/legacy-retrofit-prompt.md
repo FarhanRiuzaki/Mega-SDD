@@ -1,6 +1,15 @@
-# Legacy PRD Retrofit Prompt Template (v1.12+, Iter 28)
+# Legacy PRD Retrofit Prompt Template
 
 When generate-intent encounters a PRD without `scopes:` frontmatter, dispatches an AI subagent with this prompt template. Subagent analyzes PRD content + proposes canonical retrofit.
+
+## Contents
+
+- Subagent dispatch contract
+- Prompt template
+- Main thread post-processing
+- Low-confidence handling
+- Anti-halu rails
+- Backward compatibility
 
 ## Subagent dispatch contract
 
@@ -29,7 +38,7 @@ TASK:
    - Assign confidence: HIGH (≥3 indicators), MEDIUM (1-2 indicators), LOW (inferred only)
    - Cite EVIDENCE — specific line numbers + quoted text
    - Propose which existing PRD sections belong to this scope
-4. Propose canonical frontmatter (per `references/scope-picker.md` schema)
+4. Propose canonical frontmatter (per `generate-intent/references/scope-picker.md` schema)
 5. Propose section restructure — preserve original content; add scope headers where missing
 
 DISCIPLINE (non-negotiable):

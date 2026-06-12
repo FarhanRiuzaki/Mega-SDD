@@ -4,6 +4,19 @@
 
 **Companion docs:** `reading-map.md` (where to read), `paths.md` (canonical layout), `CHANGELOG.md` (per-iter behavior changes), `tests/scenarios/scenario-6-recovery-from-halt.md` (generic halt recovery walkthrough).
 
+## Contents
+
+- TL;DR — two paths
+- Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
+- Recommended upgrade paths
+- Compatibility matrix
+- Migration commands — run in this order
+- Common halts after upgrade + recovery
+- Decision tree
+- Per-iter behavior changes (what changed between iters affects you)
+- Pre-flight checklist before upgrade
+- See also
+
 ## TL;DR — two paths
 
 **Path A (easiest, recommended): Regenerate from inputs**

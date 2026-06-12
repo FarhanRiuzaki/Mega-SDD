@@ -4,7 +4,25 @@ Per-wave subagent prompt templates + grep commands for the quality gate that run
 
 ---
 
-## Model tier per wave (v3.25.0+, Iter 34)
+## Contents
+
+- Model tier per wave
+- `<GLOSSARY_INDEX>` placeholder
+- Reference offset hints
+- Generic agent prompt structure
+- Wave 0 — Prep (main thread)
+- Wave 1 — Foundation (3 parallel subagents)
+- Wave 2 — Masters (4 parallel subagents)
+- Wave 3 — Workflows (5 parallel subagents)
+- Wave 4 — Integrations & Reporting (3 parallel subagents)
+- Wave 5 — Synthesis (main thread only)
+- Reengineering Opportunities (Surface First)
+- Mutability Tier Distribution
+- Critical Findings — Do-Not-Replicate Bugs
+- Final gate (main thread, after Wave 5)
+- Token budget guidance
+
+## Model tier per wave
 
 Each wave dispatch consults `plugins/mega-sdd/references/model-tiers.md` for its model tier:
 
@@ -14,11 +32,11 @@ Each wave dispatch consults `plugins/mega-sdd/references/model-tiers.md` for its
 - **Wave 4** (mutability classification): `extract-intelligence-wave-4` → default sonnet
 - **Wave 5** (synthesis): `extract-intelligence-wave-5` → **default opus** (holistic synthesis)
 
-Override per role via CLI flag / project config / user preference (see `references/model-tiers.md §Override syntax`).
+Override per role via CLI flag / project config / user preference (see `plugins/mega-sdd/references/model-tiers.md §Override syntax`).
 
 ---
 
-## `<GLOSSARY_INDEX>` placeholder (v1.7.0+, Iter 51 — closes audit D1-004)
+## `<GLOSSARY_INDEX>` placeholder
 
 Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
 
@@ -43,7 +61,7 @@ glossary_index:
 
 **Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
 
-## Reference offset hints (v1.7.0+, Iter 51 — closes audit D1-007)
+## Reference offset hints
 
 Beyond glossary citations, all reference citations in wave outputs (e.g., `data-mutation-policy.md §Customer-tier`, `workflows/onboarding.md §step-3`) SHOULD include line range hints when known. Format: `<file>.md §<section>:line-X-Y`. Downstream consumers use the line range with Read tool's `offset`/`limit` parameters for targeted reads (30-60% I/O reduction per reference read).
 
@@ -67,7 +85,7 @@ CONTEXT:
 SEED INPUT (cross-check only, do NOT blindly trust):
 - <path to forensic dump if it exists; otherwise: "none">
 
-# === GLOSSARY INDEX (auto-injected by main thread for Wave 2/3/4 — v1.7.0+, Iter 51 + Iter 52 wiring) ===
+# === GLOSSARY INDEX (auto-injected by main thread for Wave 2/3/4) ===
 <GLOSSARY_INDEX>
 # === END GLOSSARY INDEX ===
 #
@@ -93,7 +111,7 @@ USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-
 DISCIPLINE (non-negotiable):
 - Citation required: file:line for every non-trivial claim ON THE SAME LINE as the marker, AND listed in §11. A claim without inline citation is UNCITED — downstream validators flag it for downgrade.
 - Confidence marker: [VERIFIED] / [INFERRED] / [OPEN] on every non-trivial claim.
-- Mutability tier (v1.4+ Iter 22): [LOCKED] / [INTENT] / [ARTIFACT] paired with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
+- Mutability tier: [LOCKED] / [INTENT] / [ARTIFACT] paired with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
   - Default tier when uncertain: [INTENT] (NEVER auto-default to [LOCKED] or [ARTIFACT] — both need positive evidence)
   - [LOCKED]: regulatory citation, contract spec, audit trail, external FK
   - [ARTIFACT]: zero-caller code, legacy stack workaround, dead branch
@@ -108,7 +126,7 @@ EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
 - **Integration contract depth**: for every external system call (API, DB query, file I/O, message queue), document: protocol, authentication method, payload shape, error handling, retry policy, timeout. Each as a separate cited claim.
 - **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
 
-DEEP DISCIPLINES (v3.72.0+ — catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
+DEEP DISCIPLINES (catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
 - **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set by UPDATE/INSERT/assignment), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (`INSERT … SELECT`, snapshot, record-duplicate), list the fields carried over IMPLICITLY (the bareword / non-overwritten columns) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
 - **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the TOP of every controller / form file for entry-point dispatchers (`mode == …`, `sendingpage == …`, `request.method == …`, `$_GET['action']`): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
 - **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional `die()` / `exit()` / early-return halts on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]`); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (`if (true)`, `$debug = 1`, `// delete after testing`); and silent-success paths (empty catch, `|| true`, "expected failure → return success").
@@ -262,7 +280,7 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 
 **Operational rules file** (`40-business-rules/operational-rules.md`) — synthesize from the 5 agent outputs on main thread. Same for hidden-gotchas.md.
 
-**Depth requirements for Wave 3 (v3.60.0+):**
+**Depth requirements for Wave 3:**
 - §3 Flow: reconstruct the FULL lifecycle state machine, not just the happy path. Include: error states, timeout states, cancellation/reversal paths, partial-completion states. Cite each transition.
 - §6 Business Rules: extract IMPLICIT rules (coded as conditionals) as explicitly named rules. Format: "**BR-{domain}-{N}**: {rule in business language}. [marker] (`file:line`)".
 - §8 Edge Cases: minimum 3 entries per workflow domain. Look for: empty-collection edge cases, boundary values (0, max, null), race conditions between concurrent users, timezone/date-boundary issues.
@@ -271,7 +289,7 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 
 **Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥3 entries per workflow file (≥1 was too lenient — shallow extraction passed the gate with trivial entries).
 
-**Advisory (non-blocking, P1 provenance — v3.72.0+):** for each workflow agent that reports `provenance_anomalies > 0`, confirm the file carries a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. If a workflow file documents state transitions but its body never references the read-side (no predicate / filter / condition language consuming the state) → surface an advisory `provenance_read_side_thin` and re-dispatch the agent with the P1 discipline as feedback. **This is a MANUAL between-wave grep nudge, NOT a validator-emitted state-file signal** (unlike `kb_flow_staging_missing`, which `validate-kb-flows.sh` emits on its `advisories[]` channel) — do not grep for it in a state file. It NEVER blocks the wave; genuinely unpaired states are legitimate `[OPEN]`s.
+**Advisory (non-blocking, P1 provenance):** for each workflow agent that reports `provenance_anomalies > 0`, confirm the file carries a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. If a workflow file documents state transitions but its body never references the read-side (no predicate / filter / condition language consuming the state) → surface an advisory `provenance_read_side_thin` and re-dispatch the agent with the P1 discipline as feedback. **This is a MANUAL between-wave grep nudge, NOT a validator-emitted state-file signal** (unlike `kb_flow_staging_missing`, which `validate-kb-flows.sh` emits on its `advisories[]` channel) — do not grep for it in a state file. It NEVER blocks the wave; genuinely unpaired states are legitimate `[OPEN]`s.
 
 ---
 
@@ -303,14 +321,14 @@ Produce in order:
 2. `99-rebuild-architecture/suggested-system-flow.md` — logical service boundaries.
 3. `99-rebuild-architecture/module-dependency-graph.md` — DAG + leaf-vs-trunk + critical path.
 4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 + per-module acceptance criteria.
-5. **`99-rebuild-architecture/data-mutation-policy.md`** (v1.4+, Iter 22) — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
+5. **`99-rebuild-architecture/data-mutation-policy.md`** — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
 6. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
-7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** (v3.72.0+) — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the five principle statuses (P1–P4 + P5 staged inputs) from the Wave REPORT BACK self-checks + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
+7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the five principle statuses (P1–P4 + P5 staged inputs) from the Wave REPORT BACK self-checks + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
 
 README MUST surface REENGINEERING OPPORTUNITIES + Critical findings BEFORE TOC + before stats. Format:
 
 ```markdown
-## Reengineering Opportunities (Surface First — v1.4+ Iter 22)
+## Reengineering Opportunities (Surface First)
 
 KB analysis reveals these proposed improvements over legacy. See `99-rebuild-architecture/` for detailed proposals.
 
@@ -375,21 +393,22 @@ done
 grep -rn 'varchar\|int(11)\|MySQL\|MSSQL\|composer\|namespace ' 10-domains/ 20-workflows/ 30-data-model/ 2>/dev/null | grep -v 'Source References' | head -10
 # Expect: no output (or only matches inside §11)
 
-# 5. Rebuild architecture all 5 files present (v1.4+ Iter 22 adds data-mutation-policy.md)
+# 5. Rebuild architecture all 5 files present
 for f in suggested-erd suggested-system-flow module-dependency-graph suggested-phasing data-mutation-policy; do
   [[ -f "99-rebuild-architecture/${f}.md" ]] || echo "FINAL FAIL: missing ${f}.md"
 done
 
-# 6. README leads with Reengineering Opportunities BEFORE Critical Findings (v1.4+ Iter 22)
+# 6. README leads with Reengineering Opportunities BEFORE Critical Findings
 reengineering_line=$(grep -n '^## Reengineering Opportunities' README.md | head -1 | cut -d: -f1)
 critical_line=$(grep -n '^## Critical Findings' README.md | head -1 | cut -d: -f1)
 if [[ -z "$reengineering_line" || -z "$critical_line" || "$reengineering_line" -gt "$critical_line" ]]; then
   echo "FINAL FAIL: README must lead with Reengineering Opportunities before Critical Findings"
 fi
 
-# 7. Extraction Completeness Contract scorecard present + self-consistent (v3.72.0+; advisory)
+# 7. Extraction Completeness Contract scorecard present + self-consistent (advisory)
 [[ -f ".extraction-scorecard.json" ]] || echo "ADVISORY: .extraction-scorecard.json not emitted (see SKILL.md §Step 5.6)"
-bash "${CLAUDE_PLUGIN_ROOT:-../..}/scripts/validate-extraction-scorecard.sh" --cwd="$(pwd)" --quiet \
+bash "<plugin-root>/scripts/validate-extraction-scorecard.sh" --cwd="$(pwd)" --quiet \
+# (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read) — the old `:-../..` fallback was CWD-relative and wrong \
   && echo "SCORECARD: consistent (or absent → SKIP)" \
   || echo "ADVISORY: scorecard integrity FAIL — re-check §Step 5.6 (a PARTIAL/MISSING principle must carry [OPEN] markers)"
 ```

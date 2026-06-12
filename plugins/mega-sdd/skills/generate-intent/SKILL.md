@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.2.0
+version: 2.7.0
 description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -80,6 +80,7 @@ When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules **in ord
 | `--no-pre-scan` | Skip Step 0.8 scan-aware context loading. | `references/setup-flow.md` |
 | `--no-constitution` | Skip Step 3.4 (`constitution.md`) — 7-file vault only. | `references/setup-flow.md` |
 | `--memory-off` | Disable memory-layer reads + writes. | `references/auto-and-handoff.md` |
+| `--no-advisor` | Skip the phase-advisor adversarial pass before finalize. Default-on; still runs under `--auto` unless this flag is set. | `references/advisor-checklist.md` |
 
 When BOTH `--scan` AND `--kb` are set (legacy-rebuild on a target scaffold): the vault synthesizes legacy domain intent (from the KB) with target scaffold conventions (from the scan). `[LOCKED]` KB items are preserved 1:1; `[INTENT]` items are rendered using starterkit conventions; `[ARTIFACT]` items are discarded.
 
@@ -114,6 +115,7 @@ Every Open Question is tagged at generation time with `category: business | tech
 - **`tech`** OQs → `scan` (resolvable from a codebase-map; needs `scan_query`), `recommend` (Claude proposes a pick; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**), or `blocking`.
 - **Conservative default** when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low` (preserves blocking behavior — safe).
 - Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the `00-index.md` `## Auto-Classification Review` section.
+- **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. A user override recorded in `classifier-accuracy.json` always wins over re-classification (never silently overwrite a human correction).
 
 The classifier runs at Step 3.5 (after the 7 files, before the self-check) and writes results to both the markdown body and `vault.json` per `vault-contract.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`) → `references/generation-guide.md`.
 
@@ -127,8 +129,14 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
 4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **`vault.json`** (with the advisory lock) + multi-squad artifacts if applicable.
 5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-contract.md §constitution`.
 6. **Step 3.5 — OQ auto-classification** on every generated OQ (see "OQ classification" above) → validation gate → `references/generation-guide.md`.
-7. **Step 4 — Self-check before delivery.** Full anti-halu + readability + output-mode + `vault.json` integrity checklist → `references/self-check.md`.
-8. **Step 5 — Present.** Chat-only summary: doc + OQ counts, `PRD_STATUS`/`OUTPUT_MODE`, top blocker OQs, vault path, suggested next skill (`resolve-oq` / `detect-drift` / `diff-vault`). No "I have created…" preamble → `references/self-check.md`.
+7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus), the drafted 7 vault files, and the source (PRD/brief/KB). Materialize its findings BEFORE finalize:
+   - `fabrication` → demote the claim to an OQ (or flag) + Changelog note.
+   - `missed_oq` → add an OQ to the roll-up (run it through the Step 3.5 classifier).
+   - `misclassification` → retag the OQ `category`.
+   - `coverage_gap` → add an OQ / flagged note.
+   Evidenceless findings are dropped. Record the pass in `vault.json` provenance: `advisor: {model, findings:{high,med,low}}` OR `advisor: skipped` (`--no-advisor`) OR `advisor: unavailable` (agent error — NEVER reported as clean). Focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`.
+8. **Step 4 — Self-check before delivery.** Full anti-halu + readability + output-mode + `vault.json` integrity checklist → `references/self-check.md`.
+9. **Step 5 — Present.** Chat-only summary: doc + OQ counts, `PRD_STATUS`/`OUTPUT_MODE`, top blocker OQs, vault path, suggested next skill (`resolve-oq` / `detect-drift` / `diff-vault`). No "I have created…" preamble → `references/self-check.md`.
 
 ## Simplicity policy
 
