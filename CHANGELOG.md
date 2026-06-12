@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.27.1] - 2026-06-12
+
+### Fixed — official-docs conformance audit (2 real gaps; `research/2026-06-12-official-docs-conformance-audit.md`)
+
+Deep audit of every hook/agent surface against code.claude.com/docs (two parallel agents + direct WebFetch of contested claims). The moat surfaces were already conformant; two gaps from this sprint fixed:
+
+- **Compaction advisor was invisible (4.27.0).** It printed to the **Stop** hook's stdout — but per docs, Stop stdout is debug-log-only (Stop is not one of the stdout→context events) and the hook is async, so the advisory reached no one. **Relocated to a new `UserPromptSubmit` hook**, where docs confirm *"stdout is added as context that Claude can see and act on."* Same threshold (80% of the window) and `compaction_notice:` opt-out; now actually surfaces so Claude can suggest `/compact` at a phase boundary.
+- **`MultiEdit` matcher (4.25.0).** Not a current Claude Code tool name. Dropped from the PreToolUse matcher, GateGuard case label, and parse tuple — now `Edit|Write` (the documented file-mutating tools).
+- Verified CONFORM (no change): SessionStart/UserPromptExpansion raw-stdout→context (sub-agent's "JSON-only" claim disproved by direct fetch + the live-session anchor injection), PreToolUse `permissionDecision: deny`, PreCompact side-effect-only, plugin-agent frontmatter (only hooks/mcpServers/permissionMode banned; none used).
+
 ## [4.27.0] - 2026-06-12
 
 ### Added — ECC-adoption Batch 2: phase-aware compaction advisor + PreCompact state snapshot
