@@ -10,6 +10,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
    - `mega-sdd:code-quality-reviewer` — reviews quality: duplication/reuse, tests, maintainability (read-only).
    - `mega-sdd:security-reviewer` — reviews security: input validation, authz vs spec, secrets, new deps, drift (read-only).
    - `mega-sdd:standards-reviewer` — reviews convention conformance vs pack + surrounding code (read-only).
+   - `mega-sdd:design-reviewer` — reviews modern UI quality vs the vault design system (read-only; UI-bearing units only).
 
    `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh implementer per unit, then the **review panel** (parallel blind lenses per `references/review-panel.md`). Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 

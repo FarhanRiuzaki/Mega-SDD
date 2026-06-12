@@ -267,6 +267,26 @@ Truncation order:
 
 **Absence is valid:** if this section is absent, no starterkit context is available — the bolt should produce code following framework defaults (per the framework pack T1 section).
 
+## Design system (UI-bearing unit — per context-enrichment.md §Design slice)
+
+<present ONLY when the unit ships UI files AND the starterkit ui_ux slice is absent (greenfield / no template). When the starterkit slice IS present it is authoritative and this section is omitted.>
+
+```
+Design system (vault): style=<design_system.style> · palette=<design_system.palette> · typography=<design_system.typography> · a11y=<design_system.a11y_level>
+Style traits: <style-principles[style] traits + CSS keywords>
+Style anti-patterns: <style-principles[style] anti-patterns>
+UX floor: <ux-rules a11y + form/feedback rows>
+Modern baseline (non-negotiables): <modern-baseline.md §Non-negotiables digest>
+Anti-kuno tells (a match in your output = defect): <modern-baseline.md §Anti-kuno digest>
+```
+
+**Anti-halu rails:**
+- The palette/typography lines are the SOURCE for your tokens — never invent a second palette or pairing.
+- Every view you write MUST satisfy the Non-negotiables (tokens, spacing scale, type scale, page shell, interactive states, loading/empty/error states, designed forms, a11y floor) and MUST NOT match an anti-kuno tell.
+- The design-reviewer panel lens judges your output against THIS EXACT section — it is the contract, not a suggestion.
+
+**Absence is valid:** absent for pure-backend units, or when the starterkit template governs the UI.
+
 ## Confidence labels per claim
 
 <for each claim this unit implements (from binding.md):>

@@ -78,8 +78,9 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 18 | `domain-research` | **haiku** | Web fetches + structured extraction; low reasoning depth |
 | 19 | `security-reviewer` | **opus** | Semantic authz-vs-spec + architectural-drift reasoning; deep code review per the opus criteria (review-panel security lens) |
 | 20 | `standards-reviewer` | sonnet | Pattern recognition vs pack rules + sibling files; bounded judgment with known output schema (review-panel standards lens) |
+| 21 | `design-reviewer` | sonnet | Code-evidence checks against an explicit design contract (tokens/states/a11y rubric); pattern recognition, not open-ended taste (review-panel design lens) |
 
-**Distribution:** 4 opus + 13 sonnet + 3 haiku. Sonnet-dominant by design.
+**Distribution:** 4 opus + 14 sonnet + 3 haiku. Sonnet-dominant by design.
 
 ---
 
