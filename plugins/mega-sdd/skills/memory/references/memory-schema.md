@@ -76,6 +76,7 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 | `patterns.md` | Cross-project learned patterns + pending suggestions | Markdown sections |
 | `learning-log.md` | Audit log of accepted/rejected/rolled-back learnings | Markdown chronological log |
 | `config.yaml` | User configuration (thresholds, opt-outs) | YAML key/value |
+| `instincts/*.yaml` + `instincts/_seen.jsonl` | GLOBAL-scope instincts (auto-promoted from ≥2 projects at avg conf ≥0.8 — the one exception to the explicit-promote rule, per `references/instincts.md`) + the promotion ledger | One YAML per instinct |
 
 ### PROJECT scope (`<project-root>/.mega-sdd/memory/`)
 

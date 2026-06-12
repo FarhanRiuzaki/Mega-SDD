@@ -23,7 +23,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | curl to the official registry | offline → `unverified` WARNING |
 
-Scripts live at `<plugin-root>/scripts/` (derive the root from this file's path — `${CLAUDE_PLUGIN_ROOT}` is not substituted inside reference files). All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean".
+Scripts live at `<plugin-root>/scripts/` (derive the root from this file's path — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files). All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean".
 
 ## Toolchain detection (detect, never impose)
 

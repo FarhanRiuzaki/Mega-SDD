@@ -14,7 +14,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Skill|Bash",
+        "matcher": "Skill|Bash|Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
