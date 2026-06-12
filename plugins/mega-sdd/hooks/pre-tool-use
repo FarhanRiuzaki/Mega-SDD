@@ -318,6 +318,16 @@ if os.path.exists(moat_path):
         n = len(d.get("drops", []))
         fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) at the binding->units boundary. Run /mega-sdd:validate-handoff to see the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: %s/.validation-blockers.json" % (n, md)))
 
+# bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run
+# gap, clinic-project audit 2026-06-12). The Stop hook writes this state on every
+# turn end; blocking the NEXT execute-bolts is what makes the audit trail
+# un-skippable without --auto.
+d = L(".bolt-orphans-state.json")
+if d and d.get("status") == "FAIL":
+    n = d.get("issues_count", len(d.get("issues", [])))
+    units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
+    fails.append(("bolt-orphans", "orphan-bolt scan found %s bolt commit(s) with NO <vault>/bolts/U-XXX/bolt-report.md (%s%s) — code shipped but the audit trail was never written (Procedure Step 0/5 skipped). Backfill a bolt-report (mark retroactive: true) for each listed unit, or re-run those units; then the scan re-passes on the next turn end. State: %s/.bolt-orphans-state.json" % (n, units, ", …" if n > 8 else "", md)))
+
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
 if d and d.get("status") == "FAIL":
@@ -360,6 +370,30 @@ if fails:
     print("mega-sdd:execute-bolts is blocked — " + prefix + fails[0][1])
 ' 2>/dev/null)
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
+    fi
+
+    # ─── bind-codebase DEGENERATE-MAP gate (clinic-project audit 2026-06-12) ──
+    # The moat's invariant #1 is spec↔code grounding; binding against a
+    # codebase-map.md that is missing its frontmatter languages AND all content
+    # sections is false grounding (the clinic run bound against an empty shell
+    # and every downstream verdict inherited the void). Block bind-codebase when
+    # the map validator attests the map is structurally degenerate; a partial
+    # map (some sections present) is NOT blocked — only the empty-shell shape.
+    if [ "${SKILL_NAME:-}" = "mega-sdd:bind-codebase" ]; then
+      MAP_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
+import json, os
+p = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd", ".codebase-map-state.json")
+try:
+    d = json.load(open(p))
+except Exception:
+    d = None
+if d and d.get("status") == "FAIL":
+    issues = d.get("issues", [])
+    sec = next((i for i in issues if i.get("halt_type") == "codebase_map_sections_incomplete"), None)
+    if sec and "7 sections" in (sec.get("detail") or "") or (sec and len(sec.get("missing", [])) >= 7):
+        print("mega-sdd:bind-codebase is blocked — codebase-map.md is structurally DEGENERATE (all content sections missing per the map validator). Binding against an empty map produces false CONFIRMED/CONFLICT verdicts (invariant #1: spec-to-code grounding). Re-run /mega-sdd:scan-codebase to produce a real map, then bind. State: %s" % p)
+' 2>/dev/null)
+      if [ -n "$MAP_REASON" ]; then emit_block "$MAP_REASON"; fi
     fi
     ;;
 

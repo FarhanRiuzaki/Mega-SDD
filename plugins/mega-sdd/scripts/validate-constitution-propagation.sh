@@ -76,13 +76,28 @@ if not binding_files:
 # Pattern: A-001, B-002, C-003 etc. (uppercase letter + dash + 3 digits)
 clause_pattern = re.compile(r"\b([A-F]-\d{3})\b")
 
+# Retired clauses are exempt (clinic-project audit 2026-06-12 false positive):
+# a clause whose constitution.md line marks it dropped/retired/superseded — e.g.
+# `A-003: *(dropped in v2.0 — ...)*` — may still be MENTIONED in binding.md
+# (supersession discussion is good practice), but units must NOT be required to
+# cite a clause that no longer binds; demanding it would force noise citations.
+retired_clauses = set()
+for cf in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md")):
+    try:
+        for line in open(cf):
+            m = re.match(r"\s*-\s*([A-F]-\d{3}):\s*(.*)", line)
+            if m and re.search(r"\((?:dropped|retired|superseded)\b", m.group(2), re.IGNORECASE):
+                retired_clauses.add(m.group(1))
+    except Exception:
+        continue
+
 binding_clause_sources = {}  # clause_id → set of binding files
 for bf in binding_files:
     try:
         content = open(bf).read()
     except Exception:
         continue
-    clauses = set(clause_pattern.findall(content))
+    clauses = set(clause_pattern.findall(content)) - retired_clauses
     for c in clauses:
         all_binding_clauses.add(c)
         binding_clause_sources.setdefault(c, set()).add(os.path.relpath(bf, cwd))
