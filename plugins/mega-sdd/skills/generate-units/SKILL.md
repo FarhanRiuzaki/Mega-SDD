@@ -1,7 +1,7 @@
 ---
 name: generate-units
-version: 2.1.0
-description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
+version: 2.8.0
+description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
 # Generate-Units — vault → atomic AI-executable unit specs
@@ -25,6 +25,7 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 - `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`)
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
+- `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass`
 - Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank`, `--memory-off`
 
 ## Output
@@ -74,7 +75,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **5. Squad assignment.** No `_meta/squads.yaml` or single squad → all units `squad: default`, skip multi-squad validations. ≥2 squads → route by `vault_source` with precedence `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`; unrouted → warn + `default`; two squads claim one artifact at the same precedence → halt `cross_squad_ambiguous`. Detail: `references/decomposition-rails.md §Squad assignment`.
 
-**6. Allocate IDs.** Topologically sort candidates; number U-001, U-002, …. `--refresh` re-numbers from scratch; default re-run preserves IDs of unchanged units by content hash.
+**6. Allocate IDs.** Topologically sort candidates; number U-001, U-002, …. **Scale advisory:** >100 candidate units → one warning (suggest module split or multi-vault per scope); >500 → confirm before writing (unit explosion usually means the vault mixes scopes). `--refresh` re-numbers from scratch; default re-run preserves IDs of unchanged units by content hash.
 
 **7. Fill `target_files` whitelist.** Greenfield → expected files from vault component definitions; brownfield → bound-vault citations (specific paths from binding). Can't determine target_files → halt (vault too vague).
 

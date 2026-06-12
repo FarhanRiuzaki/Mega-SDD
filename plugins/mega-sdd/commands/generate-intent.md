@@ -1,13 +1,13 @@
 ---
 description: Generate a 7-file SDD intent vault from PRD/BRD/Figma OR free-text brief. Anti-hallucination guarantees.
-argument-hint: [<prd-path> | --from-prompt "<brief>" | --kb=<path>] [--scan=<path>|--greenfield] [--scope=<id>] [--out=<path>] [--auto]
+argument-hint: '[<prd-path> | --from-prompt "<brief>" | --kb=<path>] [--scan=<path>|--greenfield] [--scope=<id>] [--out=<path>] [--auto]'
 ---
 
 Invoke the `mega-sdd:generate-intent` skill via the Skill tool.
 
 User arguments: $ARGUMENTS
 
-Mode resolution (v1.2+ — auto-detect per `skills/generate-intent/SKILL.md` §Detection rules):
+Mode resolution (auto-detect per `skills/generate-intent/SKILL.md` §Detection rules):
 
 - `--from-prompt` flag present → Mode B (explicit override)
 - Positional arg resolves to existing file → Mode A
@@ -17,9 +17,9 @@ Mode resolution (v1.2+ — auto-detect per `skills/generate-intent/SKILL.md` §D
 
 The user typically does NOT need `--from-prompt`; just type the brief in quotes or the path. Flag is for explicit control.
 
-Follow `skills/generate-intent/SKILL.md` invocation modes exactly. Output goes to `.mega-sdd/vaults/<auto-named>/` (v3.4+ canonical per `plugins/mega-sdd/references/paths.md`) unless user overrides via `--out=<path>`. Legacy `docs/mega-sdd/vaults/<auto-named>/` only honored when legacy layout already exists on disk.
+Follow `skills/generate-intent/SKILL.md` invocation modes exactly. Output goes to `.mega-sdd/vaults/<auto-named>/` (canonical per `plugins/mega-sdd/references/paths.md`) unless user overrides via `--out=<path>`. Legacy `docs/mega-sdd/vaults/<auto-named>/` only honored when legacy layout already exists on disk.
 
-Mode B (KB sub-mode, v1.10+ Iter 22):
+Mode B (KB sub-mode):
 - `--kb=<path>` reads KB as ANALYSIS INPUT (not 1:1 mirror)
 - Tier-aware routing per claim's `[LOCKED]/[INTENT]/[ARTIFACT]` mutability marker (see `skills/generate-intent/SKILL.md` §Mode B routing table)
 - Reads `<kb>/99-rebuild-architecture/data-mutation-policy.md` for ERD freedom
@@ -31,7 +31,7 @@ Hard rails:
 - Language: vault language matches input PRD language.
 - Halt on critical gaps; do not invent.
 
-## Flag combinations (v1.12+, Iter 28)
+## Flag combinations
 
 | Flag combo | Behavior |
 |---|---|
@@ -43,5 +43,5 @@ Hard rails:
 | `--scope=all` | Legacy single-vault behavior + warning |
 | `--greenfield` + scopes block | Warning (scopes ignored); stack-agnostic single vault |
 | `--scope=<id>` + `--kb=<path>` | Multi-scope legacy rebuild: KB intent × target scaffold × scope filter |
-| `--scope=<id>` + `--scan=<map>` + `--kb=<path>` | Iter 22+23+27+28 full composition: pack-aware, mutability-tier-routed, scope-filtered vault |
+| `--scope=<id>` + `--scan=<map>` + `--kb=<path>` | Full composition: pack-aware, mutability-tier-routed, scope-filtered vault |
 | `--auto` + memory hit | Silent default scope from memory; no picker prompt |

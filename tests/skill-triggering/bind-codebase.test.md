@@ -205,9 +205,12 @@
 - **Setup:** clean greenfield-ish binding, no KB, no CONFLICTs
 - **Expect:** "## Suggested Unit Hard Rules" section exists with both sub-tables empty (rather than omitted) — generate-units reads it; no rules to insert
 
+### Canonical CONFLICT heading emission
+- On a blocking run: every ACTIVE conflict in `binding.md` is written as a canonical `### CONFLICT-N` detail heading (with `conflict_class` + `resolution_complexity`), not table-only — the heading form is the token `validate-handoff-binding-units.sh` and `validate-conflict-classification.sh` read.
+
 ## Pass criteria
 
-All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7 per Iter 2 spec. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 per Iter 3 spec — DESIGN-OQ-6 gates: `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
+All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 — `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
 
 ---
 

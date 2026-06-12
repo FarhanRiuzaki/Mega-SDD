@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.1.2
+version: 1.2.0
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -93,7 +93,7 @@ h. Substitute slot in `references/fsd-template.md §Section N` template.
 3. Add YAML frontmatter at top (per fsd-template.md §Document control header) with resolved styling + vault metadata.
 4. Write to `<vault>/fsd/FSD.md`.
 
-### Step 4.5: Post-emission unfilled-slot scan (v1.1.0+, Iter 61 — closes D3)
+### Step 4.5: Post-emission unfilled-slot scan
 
 After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...}}` slot markers (defensive check — should be impossible if Step 3 extracted all slots correctly).
 
@@ -102,7 +102,7 @@ After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...
 grep -oE '\{\{[a-z0-9_-]+\}\}' <vault>/fsd/FSD.md
 ```
 
-If ANY match found → emit halt `quality_gate_failed` with `subtype: template_slot_unfilled` per vault-contract.md §quality_gate_failed subtypes (Iter 58 closure):
+If ANY match found → emit halt `quality_gate_failed` with `subtype: template_slot_unfilled` per vault-contract.md §quality_gate_failed subtypes:
 
 ```yaml
 type: quality_gate_failed
@@ -111,7 +111,7 @@ details:
   subtype: template_slot_unfilled
   unfilled_slots: ["{{section-3-stakeholders-table}}", "{{section-7-binding-confirmed-content}}"]
   fsd_path: <vault>/fsd/FSD.md
-next_action: "Internal bug: fsd-template.md has slot marker(s) that section-mapping.md has no extraction rule for. File plugin bug at gitlab.com/airnd1/grand-design-spec. Meanwhile, skip affected section via --sections=<csv> excluding the failing section."
+next_action: "Internal bug: fsd-template.md has slot marker(s) that section-mapping.md has no extraction rule for. File plugin bug at github.com/FarhanRiuzaki/Mega-SDD/issues. Meanwhile, skip affected section via --sections=<csv> excluding the failing section."
 ```
 
 STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` literals to PDF OR allowing pandoc to interpret them as template variables would be an anti-hallucination rail break.
@@ -138,9 +138,9 @@ STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` l
 4. On pandoc non-zero exit: emit halt `quality_gate_failed` with subtype `pdf_render_failed`, details `{pandoc_stderr_tail: <last 500 chars>}`; STOP.
 5. On success: log `"✓ FSD.pdf rendered (<N> pages, <size_kb>KB)"`.
 
-### Step 5.5: Populate `missing_sources[]` (v1.1.1+, Iter 62 — closes D4)
+### Step 5.5: Populate `missing_sources[]`
 
-Iter 54 citation-map schema declared a `missing_sources[]` array but no procedure step populated it. Iter 62 adds population logic:
+The citation-map schema declares a `missing_sources[]` array; this step populates it. Adds population logic:
 
 During Step 3.d (per-section emission), when a source artifact is missing AND the section emits a `[Pending — X not yet generated]` placeholder, ALSO append an entry to in-memory `citation_map.missing_sources[]`:
 
@@ -166,7 +166,7 @@ Write `<vault>/fsd/.citation-map.json` with `citation_map` assembled in Step 3, 
 
 ### Step 7: Emit handoff (when --auto flag)
 
-Per `mega-sdd:orchestrate-flow/references/handoff-contract.md`, emit handoff YAML in chat (NOT to file — chat-block semantics per Iter 43 fix-forward).
+Per `mega-sdd:orchestrate-flow/references/handoff-contract.md`, emit handoff YAML in chat (NOT to file — chat-block semantics).
 
 See §Handoff emission below for template.
 
@@ -193,7 +193,7 @@ Per `mega-sdd:generate-intent/references/vault-contract.md §halt-protocol`. emi
 
 No new halt types added by emit-fsd; all halts reuse existing taxonomy.
 
-## Handoff emission (v1.0.0+, Iter 54)
+## Handoff emission
 
 When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit handoff YAML at end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
 
@@ -213,14 +213,14 @@ handoff:
     rationale: "FSD emitted; upload <vault>/fsd/FSD.pdf to Confluence per corporate workflow."
   blockers: []   # populated on quality_gate_failed
   metrics:
-    sections_emitted: <int>          # NEW v1.0.0+, Iter 54
-    sections_excluded: <int>         # NEW v1.0.0+, Iter 54 (per --sections / include_sections filter)
-    citations_count: <int>           # NEW v1.0.0+, Iter 54 (total citations in .citation-map.json)
-    drift_callouts_count: <int>      # NEW v1.0.0+, Iter 54 (sections changed since last emit; 0 on first emit)
-    mode: <"pre-dev" | "post-dev">   # NEW v1.0.0+, Iter 54
-    pdf_emitted: <true | false>      # NEW v1.0.0+, Iter 54
-    fallback_format: <null | "html" | "markdown">  # NEW v1.0.0+, Iter 54 (when pandoc/LaTeX absent)
-  scope:                             # OPTIONAL per Iter 28 — when vault has scope_metadata
+    sections_emitted: <int>          #
+    sections_excluded: <int>         # per --sections / include_sections filter
+    citations_count: <int>           # total citations in .citation-map.json
+    drift_callouts_count: <int>      # sections changed since last emit; 0 on first emit
+    mode: <"pre-dev" | "post-dev">   #
+    pdf_emitted: <true | false>      #
+    fallback_format: <null | "html" | "markdown">  # when pandoc/LaTeX absent
+  scope:                             # OPTIONAL — when vault has scope_metadata
     id: <scope id>
     name: <scope name>
     sibling_scopes: []
@@ -231,7 +231,7 @@ Status `halted` on `quality_gate_failed`. Required ONLY under `--auto`.
 
 ## Memory layer
 
-Out of scope for Iter 54. emit-fsd does NOT participate in mega-sdd memory layer (no reads, no writes). FSD generation is deterministic from vault state; no learning needed.
+Out of scope: emit-fsd does NOT participate in mega-sdd memory layer (no reads, no writes). FSD generation is deterministic from vault state; no learning needed.
 
 ## Anti-hallucination rails
 

@@ -48,7 +48,7 @@ These are the rules v4 was built to. They are **derived from Anthropic's publish
 - **Frontmatter must be valid YAML.** A description containing a bare `key: value` (colon-space) is parsed as a nested mapping and breaks loading → rephrase to `key (value)` or quote the string. (This regressed once on `generate-intent` / `generate-units`; the audit caught it.)
 
 **References**
-- One level deep. A ref file must NOT link to a sibling ref in the same `references/` dir. Cross-skill refs use the skill-name-relative form `<skill>/references/X.md`; plugin-root refs use `plugins/mega-sdd/references/X.md`. No `@`-links (they force-load context). Any ref > 100 lines gets a `## Contents` ToC.
+- One level deep — **SKILL.md is the only router**: every ref file must be reachable directly from its SKILL.md, and a ref file must never be the ONLY route to another ref. A sibling cross-pointer (naming another ref that SKILL.md already routes to) is allowed; a sibling link whose target SKILL.md does NOT route is a violation. Cross-skill refs use the skill-name-relative form `<skill>/references/X.md`; plugin-root refs use `plugins/mega-sdd/references/X.md` (never bare `references/X.md` from inside a skill's ref — it resolves ambiguously). No `@`-links (they force-load context). Any ref > 100 lines gets a `## Contents` ToC. Exempt: framework-convention packs + lib-pattern catalogs (rigid-schema catalogs consumed whole by extractors, linted by `validate-pack.sh`), `templates/` output scaffolds (a ToC there would leak into generated user artifacts), and script-generated catalogs marked "Do not hand-edit".
 
 **Enforcement — gates > rules > hooks**
 - Prefer a self-checked **gate** in skill prose. Escalate to a deterministic **hook + validator** only for an invariant that is both critical AND un-promptable. Don't grow the hot-path PreToolUse surface; advisory checks belong in `/mega-sdd:analyze`, not a blocking hook.
@@ -59,6 +59,15 @@ These are the rules v4 was built to. They are **derived from Anthropic's publish
 **Commands** — the user's manual `/mega-sdd:` CLI entry points; keep command↔skill parity (one per pipeline step). **Never delete a pipeline command in a cull**, even if a same-named skill exists.
 
 **Paths** — canonical nested layout per `references/paths.md`: `<vault>/{bound,units,bolts}/` + `<vault>/binding.md`, never the legacy `<vault>-bound/` sibling.
+
+**Tech-agnosticism** — the pipeline must work for ANY supported stack, not just PHP/JS. Low-level extraction (manifests, lock digests, route/model signatures, test-framework probes) enumerates EVERY ecosystem in the §8.5 framework table; framework-specific knowledge lives in packs (`framework-conventions/`, `lib-patterns/`), never hardcoded in skill bodies. When adding a capability, ask "does this work for a Rails/Gin/Axum repo too?" before shipping.
+
+**Capability-adoption decisions (evaluated, with rationale — do not re-adopt blindly)**
+- `disable-model-invocation: true` — REJECTED for pipeline skills: it removes the skill from Claude's context entirely, which breaks natural-language routing ("scan codebase ini", "pasang tools"); mega-sdd's ID/EN trigger phrases are a core feature.
+- `when_to_use:` frontmatter — NOT adopted: descriptions already carry the what+when + trigger keywords within budget; duplicating them into `when_to_use` only inflates the always-loaded listing.
+- Deterministic logic belongs in `scripts/` (e.g., `compute-lock-digests.sh`, `secret-scan.sh`) invoked with explicit "Run …" intent — per Anthropic "prefer scripts for deterministic operations".
+- `context: fork` + `agent:` — PILOT-GATED, not yet applied (evaluated 2026-06-11 against code.claude.com/docs/en/skills): a forked skill's body becomes the subagent prompt with NO conversation history — but every chain-participating mega-sdd skill receives memory slices via the invocation's handoff `metadata.memory_context` and several need `AskUserQuestion` (unavailable in subagents). No current skill is a clean candidate without behavior change. Re-evaluate when a genuinely standalone, non-interactive diagnostic skill exists; measure context savings in a field test first.
+- Skill-scoped `hooks:` frontmatter — NOT adopted for the moat (evaluated 2026-06-11): the global PreToolUse gate must also see (a) Bash calls that could tamper with state files (anti-self-bypass) and (b) USER edits outside any skill lifecycle — both invisible to skill-scoped hooks. Global hooks stay; skill-scoped hooks remain an option for future skill-local, non-moat conveniences only.
 
 > Sources: Anthropic *Skill authoring best practices* (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) · Claude Code *Plugins reference* + *Create custom subagents* (code.claude.com) · superpowers "rules vs gates vs hooks" (blog.fsck.com). Full analysis: `research/2026-06-04-architecture-modernization-audit.md`.
 

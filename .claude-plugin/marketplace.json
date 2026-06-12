@@ -4,30 +4,23 @@
     "name": "Farhan Riuzaki",
     "email": "riuzakif@gmail.com"
   },
+  "description": "Marketplace for the mega-sdd plugin — Spec-Driven Development for AI dev with anti-hallucination guarantees.",
   "plugins": [
     {
       "name": "mega-sdd",
       "source": "./plugins/mega-sdd",
       "description": "Spec-Driven Development for AI dev: intent → units → bolts pipeline with anti-hallucination guarantees and brownfield codebase grounding.",
-      "version": "4.3.0",
+      "version": "4.20.1",
       "author": { "name": "Farhan Riuzaki" },
+      "homepage": "https://github.com/FarhanRiuzaki/Mega-SDD",
+      "repository": "https://github.com/FarhanRiuzaki/Mega-SDD.git",
       "license": "MIT",
       "keywords": [
         "sdd", "spec-driven-development", "ai-coding",
         "anti-hallucination", "intent-unit-bolt", "superpowers"
       ],
       "category": "development",
-      "tags": ["sdd", "spec", "ai", "architecture", "code-generation"],
-      "version_note": "4.3.0 = Round-2 audit: execute-bolts squad/parallel fan-out fixed to a main-thread depth-1 loop (was depth-2 broken, losing the two-stage review), gate state files made atomic + the moat fails closed on a corrupt state, execute-bolts→detect-drift scope-seed; 4.2.0 = moat audit (binding→units enforces CONFLICT resolution); 4.1.0 = UI/UX design intelligence; 4.0.0 = v4 lean-core."
-    },
-    {
-      "name": "grand-design-spec",
-      "source": "./plugins/mega-sdd",
-      "description": "DEPRECATED — renamed to mega-sdd. Install mega-sdd instead. Removed after 2 release cycles.",
-      "version": "0.16.0",
-      "deprecated": true,
-      "deprecated_in_favor_of": "mega-sdd",
-      "license": "MIT"
+      "tags": ["sdd", "spec", "ai", "architecture", "code-generation"]
     }
   ]
 }

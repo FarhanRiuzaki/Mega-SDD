@@ -9,6 +9,14 @@
 
 ---
 
+## Contents
+
+- Tier selection rubric
+- Catalog
+- Override syntax
+- Adding new roles
+- See also
+
 ## Tier selection rubric
 
 Pick the LEAST powerful model that can handle the task. Each tier has clear criteria:
@@ -29,7 +37,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Bounded reasoning depth (≤5 reasoning steps)
 - Mid-range cost/quality tradeoff
 
-**Examples:** deep-scan extractors (auth/rbac/ui-ux/libs); pipeline-audit per-skill; spec-reviewer; implementer for typical tasks.
+**Examples:** deep-scan extractors (auth/authz/ui-ux/libs/reuse); pipeline-audit per-skill; spec-reviewer; implementer for typical tasks.
 
 ### opus — pick when ANY of these hold
 - Open-ended reasoning (no fixed output schema)
@@ -51,24 +59,25 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | # | Role | Tier | Rationale |
 |---|---|---|---|
 | 1 | `auth-extractor` | sonnet | Fuzzy detection across 5 auth libs + version + features; multi-file evidence (scan-codebase Iter 32) |
-| 2 | `rbac-extractor` | sonnet | Same pattern; 3 RBAC libs + middleware + policies (scan-codebase Iter 32) |
+| 2 | `authz-extractor` | sonnet | Same pattern; RBAC libs + middleware + policies (scan-codebase Iter 32) |
 | 3 | `ui-ux-extractor` | sonnet | Multi-domain (JS+CSS+notification+icon+datatable+idioms); empirically-grounded idiom inference needs reasoning (scan-codebase Iter 32) |
 | 4 | `libs-extractor` | sonnet | Manifest parsing + category mapping + usage-hint grep across many libs (scan-codebase Iter 32) |
-| 5 | `extract-intelligence-wave-1` | sonnet | Artifact extraction; bounded artifact-set per agent (extract-intelligence) |
-| 6 | `extract-intelligence-wave-2` | sonnet | Domain extraction; pattern recognition + multi-source synthesis |
-| 7 | `extract-intelligence-wave-3` | sonnet | Cross-reference resolution across domain docs |
-| 8 | `extract-intelligence-wave-4` | sonnet | Mutability tier classification (LOCKED/INTENT/ARTIFACT) with criteria |
-| 9 | `extract-intelligence-wave-5` | **opus** | Holistic synthesis across all prior waves; main-thread; needs broadest context |
-| 10 | `pipeline-audit-per-skill` | sonnet | Forensic audit across 10 dimensions per skill; bounded scope per skill (Iter 31 style) |
-| 11 | `pipeline-audit-consolidator` | **opus** | Cross-skill pattern detection; consolidates 13 YAML inputs; broad reasoning (Iter 31 style) |
-| 12 | `intelligence-audit-deep` | sonnet | 6-dimension audit on orchestrate-flow + handoff-contract; bounded (Iter 33 Phase B) |
-| 13 | `intelligence-audit-probe` | **haiku** | Per-skill 0-3 scoring + 1-sentence justification; narrow decision space (Iter 33 Phase B) |
-| 14 | `implementer` | sonnet | Typical implementation task (subagent-driven-development pattern); user can override to opus for complex tasks |
-| 15 | `spec-reviewer` | sonnet | Compliance verification against spec (subagent-driven-development pattern) |
-| 16 | `code-quality-reviewer` | **opus** | Deep code review; cross-cutting concerns; security/performance (subagent-driven-development pattern) |
-| 17 | `domain-research` | **haiku** | Web fetches + structured extraction; low reasoning depth |
+| 5 | `reuse-extractor` | sonnet | First-party source trawl (helpers/model_api/services/commands); multi-file pattern recognition; outputs reuse-index.yaml (scan-codebase reuse-awareness) |
+| 6 | `extract-intelligence-wave-1` | sonnet | Artifact extraction; bounded artifact-set per agent (extract-intelligence) |
+| 7 | `extract-intelligence-wave-2` | sonnet | Domain extraction; pattern recognition + multi-source synthesis |
+| 8 | `extract-intelligence-wave-3` | sonnet | Cross-reference resolution across domain docs |
+| 9 | `extract-intelligence-wave-4` | sonnet | Mutability tier classification (LOCKED/INTENT/ARTIFACT) with criteria |
+| 10 | `extract-intelligence-wave-5` | **opus** | Holistic synthesis across all prior waves; main-thread; needs broadest context |
+| 11 | `pipeline-audit-per-skill` | sonnet | Forensic audit across 10 dimensions per skill; bounded scope per skill (Iter 31 style) |
+| 12 | `pipeline-audit-consolidator` | **opus** | Cross-skill pattern detection; consolidates 13 YAML inputs; broad reasoning (Iter 31 style) |
+| 13 | `intelligence-audit-deep` | sonnet | 6-dimension audit on orchestrate-flow + handoff-contract; bounded (Iter 33 Phase B) |
+| 14 | `intelligence-audit-probe` | **haiku** | Per-skill 0-3 scoring + 1-sentence justification; narrow decision space (Iter 33 Phase B) |
+| 15 | `implementer` | sonnet | Typical implementation task (subagent-driven-development pattern); user can override to opus for complex tasks |
+| 16 | `spec-reviewer` | sonnet | Compliance verification against spec (subagent-driven-development pattern) |
+| 17 | `code-quality-reviewer` | **opus** | Deep code review; cross-cutting concerns; security/performance (subagent-driven-development pattern) |
+| 18 | `domain-research` | **haiku** | Web fetches + structured extraction; low reasoning depth |
 
-**Distribution:** 3 opus + 11 sonnet + 3 haiku. Sonnet-dominant by design.
+**Distribution:** 3 opus + 12 sonnet + 3 haiku. Sonnet-dominant by design.
 
 ---
 

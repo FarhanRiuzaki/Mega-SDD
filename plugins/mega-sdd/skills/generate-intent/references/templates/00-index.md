@@ -149,11 +149,11 @@ This document is the **single source of truth for requirements**. When working f
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
 
-### Halt protocol for autonomous runs (v0.11, unified envelope v0.14)
+### Halt protocol for autonomous runs
 
 In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows, the `flow` orchestrator), silent halt loses the signal. Instead, emit a structured `blocker` artifact so the runner can route it.
 
-The unified envelope (per `references/vault-contract.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (diff-vault conflict), and `drift_framework_mismatch` (detect-drift framework mismatch).
+The unified envelope (per the mega-sdd plugin's `generate-intent/references/vault-contract.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (diff-vault conflict), and `drift_framework_mismatch` (detect-drift framework mismatch).
 
 When you hit an unresolved P1 OQ that blocks your current task, emit (in addition to any chat response):
 
@@ -191,7 +191,7 @@ blockers:
     source_skill: generate-intent
 ```
 
-The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See `references/vault-contract.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).
+The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See the mega-sdd plugin's `generate-intent/references/vault-contract.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).
 
 > **Backward compat note (v0.11→v0.14)**: vaults generated under v0.13 emit `oq_blocker:` (legacy form). AI consumers should accept both `oq_blocker:` and `blocker: type: oq_blocker` shapes for one release cycle.
 

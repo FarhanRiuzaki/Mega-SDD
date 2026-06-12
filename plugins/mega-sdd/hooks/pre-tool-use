@@ -18,9 +18,9 @@
 # agent; user-shell ops bypass hooks naturally.
 #
 # Output protocol (Claude Code PreToolUse):
-#   - JSON to stdout with {"continue": false, "stopReason": "...", "suppressOutput": false}
+#   - JSON to stdout with hookSpecificOutput.permissionDecision: "deny" (current
 #     → tool is blocked; reason shown to agent
-#   - Or exit non-zero with stderr message → tool is blocked
+#   - Or exit 2 with stderr message → tool is blocked (other non-zero codes are non-blocking notices)
 #   - Else exit 0 → tool proceeds normally
 #
 # Input (stdin): JSON {session_id, cwd, tool_name, tool_input, ...}
@@ -58,7 +58,28 @@ elif tool_name == "Bash":
     print(f"BASH_CMD_B64={cmd_b64}")
 ' 2>/dev/null)
 
-if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
+if [ -z "$PARSE_OUTPUT" ]; then
+  # ── python3-absent fail-closed fallback (moat integrity) ───────────────────
+  # Without python3 the JSON parse yields nothing and this hook would silently
+  # fail OPEN — bypassing the binding→units gate. Best-effort shell extraction:
+  # block execute-bolts when a blockers file exists and does not attest PASS.
+  if ! command -v python3 >/dev/null 2>&1; then
+    FB_CWD=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    FB_SKILL=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"skill"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    if [ -n "$FB_CWD" ] && [ -d "${FB_CWD}/.mega-sdd" ]; then
+      case "$FB_SKILL" in
+        *execute-bolts*)
+          FB_MOAT="${FB_CWD}/.mega-sdd/.validation-blockers.json"
+          if [ -f "$FB_MOAT" ] && ! grep -q '"status"[[:space:]]*:[[:space:]]*"PASS"' "$FB_MOAT" 2>/dev/null; then
+            printf '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "mega-sdd gate (fail-closed): python3 unavailable and .validation-blockers.json does not attest PASS — install python3 or resolve blockers before execute-bolts"}, "decision": "block", "reason": "mega-sdd gate fail-closed without python3"}\n'
+            exit 0
+          fi
+          ;;
+      esac
+    fi
+  fi
+  exit 0
+fi
 eval "$PARSE_OUTPUT" 2>/dev/null || true
 
 if [ -z "${CWD:-}" ]; then exit 0; fi
@@ -78,6 +99,11 @@ else
   PROJECT_ROOT="$CWD"
 fi
 
+# Only act on mega-sdd projects (skip if .mega-sdd/ doesn't exist).
+# Ordered BEFORE the config grep: this 1-stat check is the common-case exit for
+# every non-SDD project, and config.yaml only exists inside .mega-sdd/ anyway.
+if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
+
 # Opt-out: telemetry: false in config.yaml also disables this hook
 # (a project that opts out of telemetry generally wants to opt out of guards too)
 CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
@@ -87,18 +113,22 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-# Only act on mega-sdd projects (skip if .mega-sdd/ doesn't exist)
-if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
-
 # Helper: emit block JSON to stdout and exit
 emit_block() {
   local reason="$1"
   # Escape for JSON string (basic)
   local reason_json
   reason_json=$(printf '%s' "$reason" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
-  if [ -z "$reason_json" ]; then reason_json="\"$reason\""; fi
+  if [ -z "$reason_json" ]; then
+    # no-python3 fallback: strip JSON-hostile chars so the deny JSON stays valid
+    reason_json="\"$(printf '%s' "$reason" | tr '"\\' "'/" | tr -d '\n')\""
+  fi
+  # Current PreToolUse contract (code.claude.com/docs/en/hooks): deny via
+  # hookSpecificOutput.permissionDecision — {"continue": false} is NOT
+  # processed for PreToolUse (it only stops the session on other events).
+  # The legacy decision/block pair rides along for older Claude Code versions.
   cat <<EOF
-{"continue": false, "stopReason": $reason_json, "suppressOutput": false}
+{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": $reason_json}, "decision": "block", "reason": $reason_json}
 EOF
   exit 0  # PreToolUse uses stdout JSON for block, not exit code
 }

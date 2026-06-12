@@ -8,6 +8,9 @@
 #   - invalid_handoff       (required field missing OR YAML parse error)
 #   - handoff_type_mismatch (field type doesn't match annotation)
 #   - artifact_missing      (artifacts: paths don't exist on disk)
+#   - bolt_artifacts_missing (execute-bolts completed but produced no bolts/ dir)
+#   - scope_args_missing     (execute-bolts handoff carries scope: + routes to
+#                             detect-drift but suggested_args lacks --scope=<id> — AUDIT L9 seam)
 #
 # Per attestation reclassification (Iter 67.7): C1 self-resolve on first attempt
 # (treat as "warn + suggest re-invoke producer with --strict-handoff"); 2nd
@@ -103,6 +106,7 @@ def parse_handoff_yaml(text):
     children_col = base_col + 2  # YAML children indent
     handoff = {}
     current_top_key = None
+    pending_sub_key = None  # nested dict key awaiting block-list items (2-level)
     # Walk subsequent lines belonging to handoff: block
     j = base_idx + 1
     while j < len(lines):
@@ -120,6 +124,7 @@ def parse_handoff_yaml(text):
             if m:
                 key, val = m.group(1), m.group(2)
                 current_top_key = key
+                pending_sub_key = None
                 if val == "":
                     handoff[key] = None  # block-style; will populate from children
                 elif val.startswith("[") and val.endswith("]"):
@@ -133,9 +138,19 @@ def parse_handoff_yaml(text):
             if content.startswith("- "):
                 # Block list item
                 item_val = content[2:].strip().strip("'\"")
-                if not isinstance(handoff.get(current_top_key), list):
-                    handoff[current_top_key] = []
-                handoff[current_top_key].append(item_val)
+                cur = handoff.get(current_top_key)
+                if isinstance(cur, dict) and pending_sub_key:
+                    # 2-level: list items belong to the nested key that opened
+                    # block-style (e.g. next_action: > suggested_args:) — do NOT
+                    # clobber the parent dict (pre-2026-06-11 bug: scope-args
+                    # check silently no-fired on block-style suggested_args).
+                    if not isinstance(cur.get(pending_sub_key), list):
+                        cur[pending_sub_key] = []
+                    cur[pending_sub_key].append(item_val)
+                else:
+                    if not isinstance(cur, list):
+                        handoff[current_top_key] = []
+                    handoff[current_top_key].append(item_val)
             else:
                 # Nested dict key
                 m = re.match(r"^([\w_-]+):\s*(.*?)\s*$", content)
@@ -144,6 +159,7 @@ def parse_handoff_yaml(text):
                     if not isinstance(handoff.get(current_top_key), dict):
                         handoff[current_top_key] = {}
                     handoff[current_top_key][sub_key] = sub_val.strip("'\"") if sub_val else None
+                    pending_sub_key = sub_key if not sub_val else None
         j += 1
     return {"handoff": handoff}
 
@@ -384,6 +400,74 @@ else:
                                 missing_artifacts.append(ap)
                                 break  # one expanded miss → whole artifact entry FAIL
 
+                # ─── Step 5b: bolt-artifacts presence (execute-bolts) ───────
+                # The artifact-existence check above only verifies that paths the
+                # handoff DECLARES exist — it passes vacuously when execute-bolts
+                # completed real work but the controller never created/listed any
+                # bolt folder (the prose-only bolt-folder-creation gap). A COMPLETED
+                # execute-bolts run THAT EXECUTED ≥1 UNIT MUST produce at least one
+                # <vault>/bolts/U-XXX/ directory; assert it independently of the
+                # self-reported list. Scoped tightly to avoid false positives:
+                #   - only emitted_by execute-bolts (substring tolerant of namespace)
+                #   - only status == completed (a `halted` pre-flight run legitimately
+                #     produces nothing; `paused` may stop before the first bolt)
+                #   - only when metrics.items_processed > 0 (POSITIVE work evidence).
+                #     A `--dry-run` or an "all units already done" no-op re-run
+                #     legitimately completes with items_processed == 0 and no bolt
+                #     dir — those MUST NOT fire. When metrics/items_processed is
+                #     absent or unparseable we stay conservative and do NOT fire
+                #     (no false positive; a missing metrics block is a separate
+                #     handoff-completeness concern, not the bolt-folder bug).
+                def _items_processed(metrics_val):
+                    # Tolerate the no-deps parser's two shapes: a real dict (block
+                    # style, values may carry an inline "# comment") or an inline-
+                    # flow string like "{ items_processed: 12, ... }". Returns an
+                    # int when determinable, else None.
+                    if isinstance(metrics_val, dict):
+                        raw = metrics_val.get("items_processed")
+                        if raw is None:
+                            return None
+                        mm = re.search(r"-?\d+", str(raw))
+                        return int(mm.group(0)) if mm else None
+                    if isinstance(metrics_val, str):
+                        mm = re.search(r"items_processed\s*:\s*(-?\d+)", metrics_val)
+                        return int(mm.group(1)) if mm else None
+                    return None
+                emitted_by = str(h.get("emitted_by") or "").lower()
+                is_execute_bolts = "execute-bolts" in emitted_by or "execute_bolts" in emitted_by
+                items_processed = _items_processed(h.get("metrics"))
+                did_execute_units = items_processed is not None and items_processed > 0
+                has_bolt_dir = any("/bolts/" in str(ap) or str(ap).rstrip("/").endswith("/bolts")
+                                   for ap in artifacts)
+
+                # AUDIT L9 scope-seam check: an execute-bolts handoff that carries a
+                # scope: block AND routes to detect-drift MUST propagate the scope in
+                # next_action.suggested_args (--scope=<id>), else the next drift run
+                # silently full-scans all scopes. Conservative: fire only when scope
+                # presence, target skill, and args are all determinable.
+                def _scope_args_violation(h):
+                    if not (is_execute_bolts and h.get("status") == "completed"):
+                        return False
+                    scope_val = h.get("scope")
+                    has_scope = isinstance(scope_val, dict) or (
+                        isinstance(scope_val, str) and scope_val.strip() not in ("", "null", "~", "{}")
+                    )
+                    if not has_scope:
+                        return False
+                    na = h.get("next_action")
+                    if isinstance(na, dict):
+                        skill_s = str(na.get("suggested_skill") or "")
+                        args_s = str(na.get("suggested_args") or "")
+                    elif isinstance(na, str):
+                        skill_s = na
+                        args_s = na
+                    else:
+                        return False  # undeterminable → conservative no-fire
+                    if "detect-drift" not in skill_s:
+                        return False
+                    return "--scope=" not in args_s
+                scope_args_missing = _scope_args_violation(h)
+
                 if missing_artifacts:
                     result = {
                         "status": "FAIL",
@@ -392,6 +476,26 @@ else:
                             "reason": "handoff declares artifacts that don't exist on disk",
                             "missing_artifacts": missing_artifacts,
                             "total_artifacts": len(artifacts),
+                        },
+                    }
+                elif is_execute_bolts and h.get("status") == "completed" and did_execute_units and not has_bolt_dir:
+                    result = {
+                        "status": "FAIL",
+                        "halt_type": "bolt_artifacts_missing",
+                        "details": {
+                            "reason": "execute-bolts completed and executed units (metrics.items_processed > 0) but listed no <vault>/bolts/U-XXX/ artifact — the bolt folder was not generated (bolt-folder-creation gap)",
+                            "emitted_by": h.get("emitted_by"),
+                            "items_processed": items_processed,
+                            "artifacts_count": len(artifacts),
+                        },
+                    }
+                elif scope_args_missing:
+                    result = {
+                        "status": "FAIL",
+                        "halt_type": "scope_args_missing",
+                        "details": {
+                            "reason": "execute-bolts handoff carries a scope: block and routes to detect-drift, but next_action.suggested_args lacks --scope=<id> — the scope dies at the seam and the next drift run would full-scan (AUDIT L9 contract: suggested_args MUST include --scope when the bolt batch ran scope-filtered)",
+                            "emitted_by": h.get("emitted_by"),
                         },
                     }
                 else:

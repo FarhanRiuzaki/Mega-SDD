@@ -1,6 +1,6 @@
 ---
-description: [ADVANCED / AUTO-INVOKED] DAG analysis of vault units. Auto-invoked by `/mega-sdd:auto` before execute-bolts when --parallel set. Run standalone for inspection / debugging / mermaid visual export. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
-argument-hint: [vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--depth-only]
+description: ADVANCED / AUTO-INVOKED — DAG analysis of vault units. Auto-invoked by `/mega-sdd:auto` before execute-bolts when --parallel set. Run standalone for inspection / debugging / mermaid visual export. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
+argument-hint: "[vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--depth-only]"
 ---
 
 Analyze unit dependency graph for parallelism opportunities and bottlenecks. Read-only.
@@ -11,7 +11,7 @@ User arguments: $ARGUMENTS
 
 ### Step 1 — Resolve vault path
 
-Same as lint-units: probe v3.4+ then legacy paths.
+Same as lint-units: probe canonical then legacy paths.
 
 ### Step 2 — Build DAG
 
@@ -19,7 +19,7 @@ For each unit:
 - Node = unit ID
 - Edge = entry in `depends_on` (unit-level dep)
 - Cross-module edge = `depends_on` where target is in different `module:` than source
-- Cross-squad edge = `depends_on` where target is in different `squad:` (should not exist per Iter 1.1; via interfaces only)
+- Cross-squad edge = `depends_on` where target is in different `squad:` (should not exist per squad-partition rules; via interfaces only)
 
 Graph properties to compute:
 - Depth (longest path)
@@ -205,4 +205,4 @@ After display:
 - `plugins/mega-sdd/skills/generate-units/SKILL.md` — DAG construction logic (Step 4)
 - `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — cross-module blocked_by
 - `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--per-squad --parallel` execution
-- Iter 1.1 spec — squad partition rules
+- Squad-partition rules spec

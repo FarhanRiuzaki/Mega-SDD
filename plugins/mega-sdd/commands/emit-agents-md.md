@@ -1,6 +1,6 @@
 ---
-description: [ADVANCED / AUTO-INVOKED] Flatten vault → AGENTS.md. Auto-invoked by `/mega-sdd:auto` at chain end (respects config flag default-on). Run standalone for one-off regeneration OR --mode=sibling when AGENTS.md already exists user-authored. Tool-agnostic interop — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence. Pure write-out; idempotent regeneration.
-argument-hint: [vault-path] [--out=<path>] [--mode=overwrite|append|sibling] [--auto]
+description: ADVANCED / AUTO-INVOKED — Flatten vault → AGENTS.md. Auto-invoked by `/mega-sdd:auto` at chain end (respects config flag default-on). Run standalone for one-off regeneration OR --mode=sibling when AGENTS.md already exists user-authored. Tool-agnostic interop — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence. Pure write-out; idempotent regeneration.
+argument-hint: "[vault-path] [--out=<path>] [--mode=overwrite|append|sibling] [--auto]"
 ---
 
 Invoke the `mega-sdd:emit-agents-md` skill via the Skill tool.
@@ -8,7 +8,7 @@ Invoke the `mega-sdd:emit-agents-md` skill via the Skill tool.
 User arguments: $ARGUMENTS
 
 Argument parsing:
-- First positional: vault path (default: detect in priority order — `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
+- First positional: vault path (default: detect in priority order — `.mega-sdd/vaults/*/vault.json` (canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy back-compat))
 - `--out=<path>`: output file (default `<repo-root>/AGENTS.md`)
 - `--mode=overwrite|append|sibling`: behavior when AGENTS.md already exists; default `sibling` (safest)
 - `--include-section=<list>`: filter sections; default all

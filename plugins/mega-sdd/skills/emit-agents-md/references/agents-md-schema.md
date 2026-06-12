@@ -2,6 +2,33 @@
 
 Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits a subset focused on what AI coding tools (Continue.dev, Cursor, Aider, Copilot) actually consume.
 
+## Contents
+
+- Header
+- Section 1 — Project overview
+- Project overview
+- Section 2 — Build commands
+- Build commands
+- Section 3 — Test commands
+- Test commands
+- Section 4 — Code style + conventions
+- Code style + conventions
+- Section 5 — Architecture overview
+- Architecture overview
+- Section 6 — Key decisions
+- Key decisions
+- Section 7 — Open questions
+- Open questions (cautions for AI tools)
+- Section 7.5 — Constitution
+- Constitution (project-facing rules)
+- Section 8 — Mega-sdd interop notes
+- Mega-sdd interop notes
+- Conditional section presence
+- Conditional header field presence
+- Append mode
+- Sibling mode
+- Idempotent regeneration
+
 ## Header
 
 ```markdown
@@ -9,8 +36,8 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 
 <!-- generated_by: mega-sdd:emit-agents-md v1.2.4 -->
 <!-- vault_source: {{vault_path}}/vault.json -->
-<!-- scope_id: <scope_metadata.id> -->                 (v1.2.4+ Iter 29; omit line when vault has no scope)
-<!-- scope_name: <scope_metadata.name> -->             (v1.2.4+ Iter 29; omit line when vault has no scope)
+<!-- scope_id: <scope_metadata.id> --> (omit line when vault has no scope)
+<!-- scope_name: <scope_metadata.name> --> (omit line when vault has no scope)
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: <vault.json version field> -->
 <!-- framework: <detected from codebase-map.md §7 — e.g., laravel-base-26, laravel, django, _universal> -->
@@ -23,9 +50,9 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 <!-- DO NOT EDIT BELOW THIS LINE — regenerate via /mega-sdd:emit-agents-md -->
 ```
 
-> **v1.2.2+ Iter 25**: Header declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
-> **v1.2.3+ Iter 26 (closes P1-9)**: Header also declares `constitution_hash` (Iter 17 sha256 for staleness detection), `properties_validated` (Iter 18 PBT invariant count), `replay_snapshot_count` (Iter 18 regression baseline count), and `convergence_cycle_count` (Iter 19 auto-recovery cycle count). Tools consuming AGENTS.md can now surface these as caution badges (e.g., "this AGENTS.md was generated after N convergence cycles — vault has undergone semi-automated repair; review for divergence from human intent").
-> **v1.2.4+ Iter 29 (closes P1-4)**: Header also declares `scope_id` and `scope_name` when vault is scope-tagged (multi-scope vault Iter 28+). A BE-scoped vault and FE-scoped vault now produce distinguishable AGENTS.md exports. Both lines omitted entirely for legacy single-scope vaults (back-compat).
+> Header declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
+> Header also declares `constitution_hash` (sha256 for staleness detection), `properties_validated` (PBT invariant count), `replay_snapshot_count` (regression baseline count), and `convergence_cycle_count` (auto-recovery cycle count). Tools consuming AGENTS.md can now surface these as caution badges (e.g., "this AGENTS.md was generated after N convergence cycles — vault has undergone semi-automated repair; review for divergence from human intent").
+> Header also declares `scope_id` and `scope_name` when vault is scope-tagged (multi-scope vault). A BE-scoped vault and FE-scoped vault now produce distinguishable AGENTS.md exports. Both lines omitted entirely for legacy single-scope vaults (back-compat).
 
 The generation marker (HTML comment) is MANDATORY. Re-emission detects existing mega-sdd output via this marker.
 
@@ -133,9 +160,9 @@ These items are unresolved at vault generation time. AI tools should NOT make as
 For full OQ roll-up: `.mega-sdd/vaults/<slug>/00-index.md` §Open Questions roll-up
 ```
 
-## Section 7.5 — Constitution (NEW v1.2+, Iter 20 — closes Iter 17 Bug 4)
+## Section 7.5 — Constitution
 
-When `<vault>/constitution.md` exists (Iter 17+), include flattened constitution section in AGENTS.md for tool-agnostic consumption:
+When `<vault>/constitution.md` exists , include flattened constitution section in AGENTS.md for tool-agnostic consumption:
 
 ```markdown
 ## Constitution (project-facing rules)
@@ -178,7 +205,7 @@ Cite source for every clause flattened. Section omitted when constitution.md abs
 |---|---|
 | `<vault>/constitution.md` exists + non-empty | Render full §A-F flattened |
 | `<vault>/constitution.md` exists but empty | Skip section (no fluff) |
-| `<vault>/constitution.md` absent (pre-Iter-17 vaults) | Skip section gracefully |
+| `<vault>/constitution.md` absent (older vaults) | Skip section gracefully |
 
 ### Anti-halu
 
@@ -191,12 +218,12 @@ Cite source for every clause flattened. Section omitted when constitution.md abs
 ```markdown
 ## Mega-sdd interop notes
 
-This project uses mega-sdd (https://gitlab.com/airnd1/mega-sdd) for spec-driven AI development. Additional context beyond this AGENTS.md:
+This project uses mega-sdd (https://github.com/FarhanRiuzaki/Mega-SDD) for spec-driven AI development. Additional context beyond this AGENTS.md:
 
-- **Full vault**: `.mega-sdd/vaults/<slug>/` (v3.4+ canonical; 7-file structured spec + vault.json manifest)
+- **Full vault**: `.mega-sdd/vaults/<slug>/` (canonical)
 - **Binding manifest**: `<vault>/binding.md` (vault claims validated against codebase; CONFIRMED / CONFLICT / OQ verdicts; Implementation State Map)
 - **Unit specs**: `<vault>/units/U-*.md` (atomic AI-coding-prompt units with Hard Rules pre/post-flight validation)
-- **Memory** (operational context across sessions): `<project>/.mega-sdd/memory/` (v3.4+ canonical)
+- **Memory** (operational context across sessions): `<project>/.mega-sdd/memory/` (canonical)
 
 For tools that understand mega-sdd: consume the vault + binding directly for higher precision than this flattened view.
 
@@ -218,22 +245,22 @@ For tools that consume only AGENTS.md: this section + above sections are everyth
 
 Empty sections OMITTED (not rendered with placeholders).
 
-## Conditional header field presence (v1.2.3+, Iter 26 — closes P1-9)
+## Conditional header field presence
 
 Header HTML comments declare vault-state fields. Each field renders ONLY when its source data exists; otherwise the line is OMITTED entirely (NOT rendered with a placeholder).
 
 | Header field | Source | Render when |
 |---|---|---|
-| `scope_id` | `vault.json` `scope_metadata.id` | vault has `scope` field (multi-scope vault Iter 28+); OMIT line otherwise (v1.2.4+ Iter 29 P1-4) |
-| `scope_name` | `vault.json` `scope_metadata.name` | vault has `scope` field (multi-scope vault Iter 28+); OMIT line otherwise (v1.2.4+ Iter 29 P1-4) |
-| `constitution_hash` | `binding.md` frontmatter `constitution_hash` | `<vault>/constitution.md` exists AND binding.md has been written (Iter 17+) |
-| `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block (Iter 18+) |
-| `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `/mega-sdd:replay` (Iter 18+) |
+| `scope_id` | `vault.json` `scope_metadata.id` | vault has `scope` field (multi-scope vault); OMIT line otherwise |
+| `scope_name` | `vault.json` `scope_metadata.name` | vault has `scope` field (multi-scope vault); OMIT line otherwise |
+| `constitution_hash` | `binding.md` frontmatter `constitution_hash` | `<vault>/constitution.md` exists AND binding.md has been written  |
+| `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block  |
+| `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `/mega-sdd:replay`  |
 | `replay_snapshot_count` value 0 | omit field entirely | new vault, never replayed |
-| `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd:auto --converge` has run ≥1 successful cycle (Iter 19+) |
+| `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd:auto --converge` has run ≥1 successful cycle  |
 | `convergence_cycle_count` value 0 | omit field entirely | no convergence runs |
 
-**Anti-halu rails (Iter 26):**
+**Anti-halu rails:**
 
 - Each header field cites a SPECIFIC source location in vault.json or binding.md. NEVER invented; if the source is missing, the field is omitted.
 - `constitution_hash` is the canonical staleness signal — if AGENTS.md emit predates a constitution.md update, the hash differs and downstream tools flag this AGENTS.md as stale.

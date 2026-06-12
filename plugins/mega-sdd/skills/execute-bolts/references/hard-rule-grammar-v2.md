@@ -1,6 +1,20 @@
-# Hard Rule Grammar v2 (ast-grep YAML — v2.0+, Iter 6)
+# Hard Rule Grammar v2 (ast-grep YAML)
 
-Replaces bespoke 5-type grammar (Iter 3 v1). Each Hard Rule in a unit's `## Hard rules` body section is now an ast-grep YAML rule. Pre/post-flight `execute-bolts` invokes `ast-grep scan --rule <rule-file>`.
+Replaces the bespoke 5-type v1 grammar. Each Hard Rule in a unit's `## Hard rules` body section is now an ast-grep YAML rule. Pre/post-flight `execute-bolts` invokes `ast-grep scan --rule <rule-file>`.
+
+## Contents
+
+- Why v2
+- Detection
+- Installation guidance
+- v2 rule file format
+- Hard rules
+- Mapping v1 → v2 (the 5 original types)
+- Pre/post-flight validation flow
+- Migration command (per ITER6-OQ-2 resolved explicit)
+- Backward compatibility
+- ast-grep limitation: syntax-only
+- References
 
 ## Why v2
 
@@ -87,14 +101,14 @@ message: "Function authenticateUser signature is locked by Hard Rule"
 | `function <name> MUST preserve signature: <sig>` | Pattern with `$EMAIL: string, $PASSWORD: string` shape; constraint on params |
 | `file <path> MUST exist after bolt` | Post-flight file existence check (no AST rule; simple `test -f`) |
 
-## Pre/post-flight validation flow (v2)
+## Pre/post-flight validation flow
 
-### Pre-flight (per `execute-bolts/SKILL.md` Step 4 v2.0+)
+### Pre-flight (per `execute-bolts/SKILL.md` pre-flight)
 
 For each rule in unit's `## Hard rules`:
 
 1. Parse YAML block
-2. Validate via ast-grep parse (v2.1+, Iter 9 Bug 7 fix — `ast-grep test --validate` flag does not exist in CLI; use parse-via-scan instead):
+2. Validate via ast-grep parse (`ast-grep test --validate` flag does not exist in the CLI; use parse-via-scan instead):
    ```bash
    # Parse the rule by running scan with --dry-run against /dev/null (or empty input)
    echo "" | ast-grep scan --rule <rule-yaml-tempfile> --json /dev/stdin 2>&1
@@ -127,7 +141,7 @@ For each rule:
 
 ### Halt on violation
 
-Same as Iter 3 — `hard_rule_violated` blocker; code stays in working tree; user reviews.
+Same as grammar v1 — `hard_rule_violated` blocker; code stays in working tree; user reviews.
 
 ## Migration command (per ITER6-OQ-2 resolved explicit)
 
@@ -167,6 +181,6 @@ ast-grep matches AST patterns; it does NOT do dataflow analysis. For mega-sdd's 
 ## References
 
 - ast-grep docs: https://ast-grep.github.io/
-- Tree-sitter integration (shared): `../../scan-codebase/references/tree-sitter-integration.md`
-- Iter 3 spec: `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (v1 grammar)
-- Iter 6 spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.2
+- Tree-sitter integration (shared): `scan-codebase/references/tree-sitter-integration.md`
+- Design spec: `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (v1 grammar)
+- Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.2

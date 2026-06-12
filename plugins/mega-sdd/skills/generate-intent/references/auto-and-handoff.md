@@ -117,4 +117,4 @@ Additional outputs in multi-squad mode (≥2 squads), emitted per the setup-flow
 
 - `_meta/squads.yaml` — squad partition declaration.
 - `interfaces/_index.md` — cross-squad contract index (stub; the architect authors the actual contracts).
-- `.obsidian/graph.json` — Obsidian graph-view defaults with squad color groups.
+- `.obsidian/graph.json` — Obsidian graph-view defaults with squad color groups. EXTERNAL-INTEROP TERMINAL artifact (consumed by Obsidian when the user opens the vault there) — no mega-sdd skill reads it; that is by design, not a delivery gap.

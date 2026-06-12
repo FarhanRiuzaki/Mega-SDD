@@ -2,7 +2,7 @@
 name: code-quality-reviewer
 description: Reviews a bolt's code for quality — clean, tested, maintainable, single-responsibility files following the unit's intended structure. Read-only. Use after spec-reviewer passes. Returns Strengths, Issues graded Critical/Important/Minor with file:line references, and an overall Assessment.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 color: purple
 ---
 

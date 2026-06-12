@@ -7,6 +7,402 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.20.1] - 2026-06-11
+
+### Fixed — adversarial bug hunt on the freshly-shipped surfaces (2 REAL + 2 LATENT, all verified by repro)
+
+- **validate-handoff-yaml.sh parser collapsed 2-level nesting**: BLOCK-style `suggested_args:` items under `next_action:` clobbered the parent dict → the `scope_args_missing` check silently no-fired on block-style handoffs (false negative; inline form was unaffected). Parser now tracks the pending nested key; repro'd both directions + new pin D8d.
+- **memory-write.sh stale-lock race**: the rmdir+mkdir steal let a second process rmdir the winner's FRESH lock — both then "held" it. Steal is now an atomic `mv` (exactly one winner).
+- **secret-scan.sh --redact** now preserves the file's permission bits (0600 stayed 0600 in repro; was rewritten as default umask).
+- **compute-unit-staleness.sh** tolerates unreadable paths (perm/NFS/overlong) as missing instead of crashing.
+- **pre-tool-use emit_block no-python3 fallback** sanitizes quotes/backslashes/newlines so the deny JSON stays valid.
+- Hunt discipline held: 2 agent claims REFUTED with evidence (stop-hook if/fi nesting — disproved by functional smoke + read; closure-binding concern — checked correct). Stdin-first stop path smoke-proved end-to-end (empty transcript → handoff from `last_assistant_message`, single-prefix skill name).
+
+## [4.20.0] - 2026-06-11
+
+### Fixed — platform-assumption sweep: 5 verified WRONGs against current Claude Code docs
+
+The AGENTS.md/worktree bug class, hunted systematically (3 doc-verification agents + manual fetches; every fix doc-quoted):
+
+- **MOAT: PreToolUse block format** — `{"continue": false}` is NOT processed for PreToolUse (it session-halts on other events); the gate now emits `hookSpecificOutput.permissionDecision: "deny"` + legacy `decision: "block"` rider. All moat/fmea tests updated and green.
+- **MOAT: /command bypass closed** — typing `/mega-sdd:execute-bolts` expands without a PreToolUse Skill event; new `hooks/user-prompt-expansion` gate (UserPromptExpansion, `decision: "block"`) blocks the expansion itself when the blockers state isn't PASS (functional 2-state test).
+- **pandoc failure detection was dead code** — PostToolUse fires on SUCCESS only and carries no `exit_code` field; failures route via the newly-wired `PostToolUseFailure` (matcher Bash) into the same handler.
+- **stop-hook fossil removed** — a second, older handoff-validation block re-ran the validator AFTER the fixed one and overwrote its state with the pre-Iter-74 doubled-prefix skill name (re-introducing a fixed bug); now ONE pass, preferring the documented `last_assistant_message` stdin field over transcript parsing (transcript scan kept as fallback).
+- **`${CLAUDE_PLUGIN_ROOT}` in references/** — substitution happens in skill/agent/hook content only; reference files are Read raw and the var is NOT exported to the Bash tool → 6 sites now use `<plugin-root>` + a derivation note (the `:-../..` fallback was CWD-relative and wrong).
+
+Also: SessionStart matcher gains `resume` (guards + staleness notice re-fire on resumed sessions); propose-and-confirm AskUserQuestion trimmed to the platform's 4-option cap; AAIF link fixed (Agentic AI Foundation, aaif.io — old URL 404); `/reload-plugins` named as the canonical refresh; ghost `superpowers:reverse-engineering-legacy-codebase` reference removed; exit-code comment corrected (only exit 2 blocks); fork-a-recovery-map block-format prose corrected.
+
+Tests: `tests/platform/test-platform-pins.sh` (15 pins incl. functional UPE gate).
+
+## [4.19.0] - 2026-06-11
+
+### Added — adopt-now roadmap executed (carefully): worktree-proofing, interop pair, CI recipe, EARS tier
+
+Each item verified against the official docs before adoption; two items deliberately NOT flipped, with recorded evidence.
+
+- **Worktree-proofing**: every git-state probe now uses `git rev-parse --git-path …` (rebase/merge state, client hook detection); scan walk-up tests `-e` not `-d` (in a linked worktree `.git` is a FILE). Fixed the v4.18 rails' own literal `.git/...` probes. execute-bolts → 2.11.0, scan-codebase → 2.13.0.
+- **AGENTS.md interop pair**: emit-agents-md Step 6.5 offers the OFFICIAL Claude Code bridge — Claude Code does NOT read AGENTS.md natively; the sanctioned path is an `@AGENTS.md` import in CLAUDE.md. Stub creation/append is consent-gated (CLAUDE.md is user-owned). emit-agents-md → 1.4.0.
+- **Headless/CI recipe** (`references/ci-recipe.md`): PR drift gate, sync-on-merge, pure-script exit-code gates; surface table (hooks fire under `-p`/action, NOT under `--bare` — script gates are the CI-stable layer); CI never auto-resolves PENDING-SYNC.md (the moat). Wired from README + project-config.
+- **EARS structured-criteria tier** (optional, additive): `acceptance_test[].ears` — "WHEN <trigger> THE SYSTEM SHALL <response>"; when present the bolt's TDD test asserts exactly that statement (PBT may derive from it); absent → prose `expects:` unchanged, validators tolerate absence. generate-units → 2.8.0.
+- **Capability decisions recorded** (CLAUDE.md §Capability-adoption, do not re-propose): `context: fork` PILOT-GATED — forked skills get NO conversation history, so chain skills lose their handoff `metadata.memory_context` and interactive steps lose AskUserQuestion; no clean candidate today. Skill-scoped `hooks:` NOT adopted for the moat — the global PreToolUse gate must also see Bash state-file tampering and user edits outside any skill lifecycle.
+- Tests: `tests/roadmap/test-roadmap-pins.sh` (10 pins).
+
+## [4.18.0] - 2026-06-11
+
+### Added — FMEA rails + future roadmap (spec `2026-06-10-fmea-and-future-roadmap.md`)
+
+Per-phase edge-case audit (4 parallel passes: upstream 62 cases / downstream 36 / environment / cited ecosystem research). 71% of stressed cases were already covered; the rails below close the verified HIGH-likelihood gaps. Every lead re-verified before shipping.
+
+- **Moat fail-closed without python3** (the one verified moat hole): pre-tool-use shell fallback — when python3 is absent, execute-bolts is BLOCKED unless `.validation-blockers.json` attests PASS. Functionally tested in 3 states (FAIL→block, PASS→allow, non-gated→allow) under a no-python PATH harness.
+- **extract-intelligence secret-scan gate** before every KB file write (legacy creds no longer ride into KB citations; artifact redacted, source never edited). extract-intelligence → 1.10.0.
+- **scan-codebase rails**: never follow symlinked dirs (loop hang); >10MB files skip tree-sitter; monorepo with app-root manifests in multiple dirs → ask the PRIMARY app once. scan-codebase → 2.12.0.
+- **binding.md REGENERATED banner** (manual verdict edits are lost on re-bind — resolutions belong in resolve-oq) + binding.md now written while HOLDING the vault.json lock (two concurrent binds can't interleave). bind-codebase → 2.5.0.
+- **execute-bolts rails**: parallel waves never share intersecting `target_files` (serialize, don't race); pre-flight 3.5 probes the ecosystem's TEST RUNNER (absent → `dep_missing`; "TDD without a runner is fiction"); new `commit_rejected_by_hook` halt for husky/pre-commit/GPG rejection (`--no-verify` stays forbidden); mid-rebase/merge repo state → stop. execute-bolts → 2.10.0.
+- **generate-units scale advisory**: >100 units warn, >500 confirm. generate-units → 2.7.0.
+- **PENDING-SYNC.md lifecycle**: archive resolved rows at 100KB/50-resolved → `PENDING-SYNC.archive.md`; loud triage notice at >50 open; `⚠ stale?` marker when the vault moved since queueing. orchestrate-flow → 2.8.0.
+- **sync git-state guard**: mid-rebase/merge → stop before scanning garbage.
+- **Headless/CI section** in project-config.md (`--auto` everywhere; `--bare` bypasses hook gates — the script-form gates are the CI-stable surface) + **multi-dev note** in paths.md (vault.json/binding.md git-merge corruption; one-writer discipline or gitignore-the-derived).
+- generate-intent → 2.7.0 (KB consumption hardening carried in).
+- **Future roadmap** (cited): adopt-now = context-fork pilot, skill-scoped hooks for bolt guards, worktree-proof paths, AGENTS.md interop pair; prepare = unit-DAG-as-workflow-plan, CI recipe, optional EARS criteria tier; validated = lean-core does NOT expire at 1M context (description budgets tightened upstream); not-yet = ultracode rebuild, SDK port, MCP servers, shared-memory features.
+- Tests: `tests/fmea/test-fmea-pins.sh` — 16 pins incl. the 3-state functional python3-absent gate test.
+
+## [4.17.0] - 2026-06-10
+
+### Changed — redundancy + process-waste audit: optimize without touching the moat
+
+3-layer audit (execution redundancy / contract-prose duplication / hot-path overhead); every lead re-verified before acting — refuted leads NOT applied: glossary pre-parse already fully specified; constitution_hash/prd_sha256 recomputes are intentional fresh-vs-recorded safety comparisons; sync changed-paths already computed once; deep-scan manifest pre-parse already shared; vault.json design_system + phase fields already consumed.
+
+**Hot path:**
+- `pre-tool-use`: the 1-stat `.mega-sdd` existence check now runs BEFORE the config grep — fastest exit for every tool call in non-SDD projects; the moat gate path is unchanged (verified empirically + all moat tests green).
+- `post-tool-use`: the 6 independent unit-write validators now run in PARALLEL (+`wait`) instead of 6 sequential spawns — each writes its own state file; PreToolUse stays the consumer.
+
+**Execution redundancy:**
+- detect-drift Step 1.5 REUSE FIRST: adopts codebase-map §7 framework (confidence ≥ medium + stamp == HEAD) instead of re-parsing manifests the scan already parsed; manifest detection remains the fallback + the vault-stack safety check. detect-drift → 2.7.0.
+- generate-intent OQ classifier memoization: unchanged-text OQs reuse their existing classification on re-runs; human overrides never silently overwritten. generate-intent → 2.6.0.
+- code-quality-reviewer agent aligned to the model-tiers catalog (sonnet → opus; the catalog's own example documents sonnet as the USER override, not the default).
+
+**Anti-drift (duplicated contracts were already drifting — all verified):**
+- Phantom vault filenames eradicated: `04-functional-spec.md` → `04-flows.md` (kb-submode ×2), `01-entities.md` → `03-data-model.md` (binding-contract). bind-codebase → 2.4.0.
+- KB read-path priority unified to the 4-path order (paths.md was missing `docs/mega-sdd/knowledge-base/` while being cited as the authority).
+- Manifest-detection membership fixed: scan-codebase Step 2 gains `Gemfile` + pointer to the owning table; detect-drift repo-probe gains Python manifests. scan-codebase → 2.11.0.
+- install-deps handoff enum gains `choco` (support was claimed, enum omitted it). install-deps → 1.3.0.
+- handoff-contract.md: scan-codebase block no longer contradicts the skill's own emission spec (bind-codebase → CWD-conditional generate-intent/bind-codebase, matching starterkit-first); NEW Precedence anti-drift rule — the skill's own handoff reference is the OPERATIVE spec; the contract's per-skill blocks are a consumer-side index. orchestrate-flow → 2.7.0.
+- commands/sync.md safe write-back class now mirrors + cites its owner (detect-drift Step 5) instead of paraphrasing it.
+- validate-ui-quality.sh SKIP_DIRS aligned with exclusions.md (adds dist/build/target/.next/.venv/coverage); stale "SKILL.md §Default exclusions" pointer fixed.
+
+Tests: `tests/efficiency/test-efficiency-pins.sh` — 10 pins incl. functional non-SDD quick-exit run; full battery green.
+
+## [4.16.0] - 2026-06-10
+
+### Added — artifact delivery: every pipeline result lands somewhere (producer→consumer matrix audit)
+
+4-agent matrix audit over every artifact + handoff field; all ORPHAN/DROPPED leads re-verified before fixing (two agent claims refuted by verification: vault.json `design_system` and `phase`/`phase_total` ARE consumed — left untouched).
+
+- **KB extraction waste eliminated** — three `extract-intelligence` outputs had ZERO downstream consumers; all wired into `generate-intent --kb` (kb-submode §Rebuild-architecture + integrations consumption): `suggested-system-flow.md` → seeds 02-architecture components + 04-flows skeletons (peer of suggested-erd); `module-dependency-graph.md` → `kb_module_graph` pointer consumed by generate-units module auto-derivation as grouping/dependency SEED (evidence rule unchanged); `50-integrations/` → every external contract becomes a 06-constraints integration constraint (`[LOCKED]`) or a templated OQ — "never silently dropped". generate-intent → 2.5.0, generate-units → 2.6.0.
+- **codebase-map §6 delivered to bolts** — when `starterkit-context.yaml` is absent (no deep scan), execute-bolts now injects §6 Pattern signatures as a `Codebase patterns:` dispatch line instead of letting the bolt re-invent generic defaults; §6 consumer note added to the map schema. execute-bolts → 2.9.0, scan-codebase → 2.10.0.
+- **`scope_args_missing` validator halt (AUDIT L9 seam, deterministically enforced)** — a scoped `execute-bolts` handoff routing to detect-drift without `--scope=` in `suggested_args` now FAILS in `validate-handoff-yaml.sh` (was: contract said MUST, nothing checked; the scope died at the seam and drift full-scanned). Conservative no-fire when undeterminable. Functional 3-state test in `tests/delivery/`.
+- **`next_action.confidence` finally consumed** — the typed field now demotes auto-continue to user review when `< confidence_minimum` (default 0.80) in the orchestrator consumption loop (closes the field's own documented F4 intent). orchestrate-flow → 2.6.0.
+- **FSD `missing_sources[]` surfaced** — chain final summary reports "FSD emitted with N pending section(s)" (the field was populated but unread).
+- **Drift scope observability** — detect-drift Step 0 logs `Scope hint received: …` / `Full scan (no scope hint)` so a dropped scope is visible in one line. detect-drift → 2.6.0.
+- **Terminal artifacts documented as terminal** — `DRIFT-ACTIONS.md` is interactive-only (PENDING-SYNC.md is its autonomous counterpart) noted in routing-rules Mode D; `.obsidian/graph.json` marked external-interop terminal.
+- Tests: `tests/delivery/test-delivery-pins.sh` — 13 pins (10 contract greps + 3 functional validator runs), all green.
+
+## [4.15.0] - 2026-06-10
+
+### Added — learning loop: pipeline outcomes feed memory; nothing is wasted (spec `2026-06-10-learning-loop-design.md`)
+
+Doctrine: **capture automatic, behavior change suggestion-gated** (the suggestion-only lock is untouched).
+
+- **L1 detect-drift learns** (was: zero memory participation): vault-scope `.memory/drift-history.md` — per-run summaries + fingerprinted direction calls (`<category>:<vault-section>:<normalized-name>` → `code_right|vault_stale|deferred`). Read side pre-fills a suggested direction after ≥3 same-direction calls on a fingerprint class; NEVER auto-resolves (under `--auto` the finding still queues to PENDING-SYNC.md). detect-drift → 2.5.0.
+- **L2 sync runs learn**: Mode D appends one `kind: sync` row to project `outcomes.md` (channel mix, applied-vs-queued, safe-class accept/reject, closing staleness); after 3 consistently-ACCEPTed runs the chain-end pass MAY suggest defaulting `--auto-apply=safe` — applied only on explicit ACCEPT.
+- **L3 Reflexion failure memory**: `bolt-outcomes.json` gains `failure_reflection` (one-line root-cause on every retry/halt); pre-execution reads surface reflections of the unit's past attempts AND same-module siblings as `## Prior failure context`. execute-bolts → 2.8.0.
+- **L4 concerns persist**: per-bolt `acceptance_test_concerns` now ALSO land in `bolt-outcomes.json` (`concerns: [...]`) so recurrence can reach a threshold.
+- **L5 extract-learnings is owned**: orchestrate-flow Step 7.6 runs the `learning-rules.md §1` threshold pass ONCE at chain end → appends crossers to `patterns.md ## Pending suggestions`; no skill evaluates thresholds mid-chain. New threshold rows: drift direction (3), sync write-back class (3), concern recurrence (3). orchestrate-flow → 2.5.0, memory → 1.5.0.
+- **L6 scope `_index.md`**: derived (regenerated, the one non-append-only exception) per-scope index — row counts, last-entry dates, one-line current state, pending count, size flag; chain-start reads go index-first/just-in-time; a stale index is a hint, never the data.
+- **L7 hygiene rails**: secret-scan (`scripts/secret-scan.sh --check`) on EVERY memory append with `[REDACTED-SECRET]` redaction; >256 KB → prune *suggestion* (never auto-prune); detector versioning on conventions (skip-re-detect only while the recorded scan-codebase version matches). scan-codebase → 2.9.0.
+- Session-start staleness notice is now PENDING-SYNC-aware: open queue items → the notice points at the queue first ("resolve the queue first"), with the code-moved line appended when both signals fire (closes the sync-digest §consumers promise; hook tested in 3 states).
+- Tests: `tests/learning-loop/test-contract-pins.sh` — 17 grep pins on the contract sentences above.
+
+### Fixed — audit remediation (E2E skills audit, same day)
+
+- **Ref hygiene**: 13 bare `references/X` forms → canonical `plugins/mega-sdd/references/X`; 8 `../../` forms → skill-name-relative; vault templates no longer emit dead `references/vault-contract.md` pointers into user vaults. The CLAUDE.md refs rule codified with the verified nuance: SKILL.md is the only router; sibling cross-pointers allowed ONLY when SKILL.md already routes the target.
+- **ToCs**: `## Contents` added to 9 long plugin-root refs (paths, telemetry-schema, starterkit-context-schema, upgrade-from-old-version, shared-snapshot-schema, mermaid-emission-rules, model-tiers, tooling-install, reading-map). Exemptions codified: packs/lib-patterns catalogs, `templates/` scaffolds, generated do-not-hand-edit catalogs.
+- **Version archaeology purged** from `references/paths.md` (title + ~20 Iter/v3.x comments), `commands/migrate-paths.md` description/body, and the 00-index template heading.
+- **marketplace.json cleaned**: giant `version_note` blob removed (CHANGELOG.md is the history), long-overdue deprecated `grand-design-spec` alias entry removed (its own text said "removed after 2 release cycles"), marketplace `description` added, entry version synced — `claude plugin validate` now passes with ZERO warnings.
+- **README**: missing v4.14.0 "What's new" entry added.
+- **Config key truth**: `project-config.md` `layout:` values corrected to `new|legacy` (what `/mega-sdd:migrate-paths` actually writes) + `output_root` documented.
+
+## [4.14.0] - 2026-06-10
+
+### Added — per-project configuration surface (`.mega-sdd/config.yaml`)
+
+Adopts the plugin-settings pattern (quick-exit, defaults-when-absent, validation, no secrets) on mega-sdd's EXISTING single config surface — deliberately NOT a second `.claude/*.local.md` file. New documented keys with hook-honored opt-outs:
+
+- `dirty_journal: false` — living-vault journaling off for this project (git channel still drives `/mega-sdd:sync`); honored by the PostToolUse hook (quick-exit).
+- `staleness_notice: false` — suppress the session-start "codebase moved" line; honored by the SessionStart hook.
+- Existing keys (`telemetry`, `layout`) now documented in one place: NEW `references/project-config.md` (defaults, fail-open rules, user/project/vault scope table, commit-vs-gitignore guidance). README gains a "Per-project config" section.
+- Both opt-outs empirically tested; full hook suites still pass.
+
+## [4.13.0] - 2026-06-10
+
+### Living Vault — never-ending development (spec `2026-06-10-living-vault-continuous-sync-design.md`)
+
+The pipeline was one-shot (`intent → scan → bind → units → bolts → done`); real products never stop changing. This release ships slices S1–S3 of the continuous-sync architecture: the system now NOTICES code movement (however it happened — manual edit, AI-prompted change outside the pipeline, hotfix, git pull) and reconciles incrementally instead of requiring a cold full re-run. Tech-agnostic by construction (path/git-based; no framework assumptions).
+
+#### Added — S1: ambient change capture (hooks)
+
+- **Dirty-paths journal** — the existing async PostToolUse Write|Edit hook now appends `{ts, path, tool, session}` JSONL rows to `.mega-sdd/codebase/.dirty-paths.jsonl` for source writes in a MAPPED repo (codebase-map.md present). Captures in-session AI edits even before commit. Never journals `.mega-sdd/**` (anti-feedback-loop), never fires in unmapped repos, fail-silent, advisory-only — the hot-path PreToolUse surface does not grow. Pinned by new `tests/hooks/dirty-journal.test.sh` (3 cases, all empirically passing).
+- **Session-start staleness notice** — one line of additional context when the journal is non-empty OR git HEAD ≠ the map's `last_scanned_commit`: counts only, suggests `/mega-sdd:sync`. Existing session-start test still passes.
+
+#### Added — S2: incremental re-scan (scan-codebase 2.7.0)
+
+- **`--changed-only`** — resolves `changed_paths` as the union of the journal + `git diff <last_scanned_commit>..HEAD` + uncommitted changes; re-extracts §2/§3/§4 entries ONLY for those paths; carries every other row forward byte-identical; drops vanished files; re-runs framework detection only when a manifest changed; truncates the journal after a successful write. Auto-falls back to full scan (no halt) when preconditions are missing or the delta exceeds 40% of the file census.
+
+#### Added — S3: maintenance routing + front-door (orchestrate-flow 2.3.0, using-mega-sdd 2.1.0, detect-drift 2.2.0)
+
+- **Mode D (maintenance/sync)** in the routing decision matrix: map+binding exist AND change signal present → `scan-codebase --changed-only` → `detect-drift` (scoped to changed paths) → `bind-codebase` → `generate-units` → `execute-bolts` (stale/new units only). P0/P1 OQ intent gate and new-PRD-revision routing still outrank it. CWD snapshot gains `change_signal:` probes.
+- **`/mega-sdd:sync` command** — the user-facing entry (like `auto.md`, it invokes the orchestrate-flow skill with `--sync`); `--dry-run` shows the change summary + proposed chain; no change signal → reports "in sync" and stops (no vacuous re-runs). `tests/skill-triggering/sync.test.md` added (5 should-trigger incl. ID variants, 5 near-misses, contract checks).
+- Anchor skill (`using-mega-sdd`) routes "sync", "kode berubah", "lanjutin dari kode sekarang", "continue from current code"; detect-drift accepts the changed-paths set as its scope hint.
+
+#### Added — S7: autonomous sync (orchestrate-flow 2.4.0, detect-drift 2.4.0, scan-codebase 2.8.0, using-mega-sdd 2.2.0)
+
+- **Decision deferral** — `/mega-sdd:sync --auto` runs the whole Mode D chain after ONE upfront confirmation and never asks a mid-chain question: safe operations run through (scan merge, claim-scoped re-bind, reconcile, gated bolt execution); human-required decisions (drift direction calls, write-back drafts, re-bind CONFLICTs) queue into `<vault>/PENDING-SYNC.md`. CONFLICTs still close the gate for affected units — handoff `status: paused` with the digest path, never completed-with-silence.
+- **`--auto-apply=safe`** (opt-in, OFF by default) — auto-applies only the narrow write-back class: confidence HIGH + name/type-drift or missing-in-vault + claim NOT `[LOCKED]` + committed code (git provenance present). Everything else queues; plain `--auto` queues ALL write-backs.
+- **`SYNC-REPORT.md`** — end-of-run report (per-phase outcomes, applied-vs-queued with provenance, conflicts, reconcile counts) with a MANDATORY closing staleness verification (`compute-unit-staleness.sh` re-run; stale=0 or explained). Contracts for both files: new `orchestrate-flow/references/sync-digest.md`.
+- **Seamless entry** — the anchor skill treats "map+binding present + change signal" as a strong CWD signal: a continuation prompt proposes `/mega-sdd:sync --auto`. The session-start notice points to PENDING-SYNC.md when open items exist.
+- **Flawless journal handling** — consumers rotate (`mv` to `.consumed-<ts>`) instead of truncating (concurrent-session appends survive; crashed-sync leftovers re-unioned next run); the hook stops appending past 1 MB (runaway guard; git channel still covers everything). Cap pinned empirically.
+
+#### Added — S4: claim-scoped re-bind (bind-codebase 2.3.0)
+
+- **`--paths=<csv|@file>`** — incremental re-bind via the binding-anchor reverse-index (file → claims): only affected claims get fresh Step 2 verdicts; the rest carry forward VERBATIM with `provenance: carried_forward`. **Moat unchanged:** every ACTIVE CONFLICT from the previous binding is re-validated regardless of path intersection (never carried on trust); counts recomputed over the full set; `binding.md` rewritten whole with canonical `### CONFLICT-N` headings, so the Step 5 gate and validators see exactly the same surface as a full re-bind. Full-re-bind fallbacks: prior binding unparseable, vault regenerated, >40% of anchored files changed, or any carried anchor vanished. Pinned by new `tests/moat/test-sync-conflict-revalidate.sh` (6 invariant pins, all passing).
+
+#### Added — S5: drift write-back (detect-drift 2.3.0)
+
+- **Step 5.5 vault write-back** — accepted `UPDATE_VAULT` actions become DRAFTED vault patches with mandatory git provenance (`<short-sha> "<subject>" — <author>, <date>` from `git log -1` on the anchor file); batch diff presented; applied ONLY on explicit user ACCEPT; then `00-index.md` changelog + minor version bump + `vault.json` regen under the advisory lock. Per-category patch shapes in `report-format.md §Vault write-back protocol`. Rails: never patch from inference (only the finding's cited code evidence); LOW-confidence findings report-only; `[LOCKED]`-tier claims NEVER patched from code (compliance escalation, not a sync); `FIX_CODE` actions remain out-of-band (the skill never edits app source). The old report-only behavior is preserved verbatim when the user declines.
+
+#### Added — S6: unit lifecycle (generate-units 2.5.0, execute-bolts 2.7.0)
+
+- **`status: implemented | stale | superseded`** optional unit frontmatter (absence = legacy). `bolt-report.md` frontmatter now MUST carry `target_hashes:` (sha256 per target file at commit time) — the deterministic staleness anchor.
+- **`scripts/compute-unit-staleness.sh`** — compares bolt-report hashes to the working tree → `stale`/`implemented`/`unknown` JSON (legacy reports without hashes → `unknown`, never guessed). Empirically tested (3 cases).
+- **`generate-units --reconcile`** — updates EXISTING unit IDs in place against the refreshed binding: task_type flips per the new Implementation State Map (`create→verify` when code landed out-of-pipeline; `→extend` on PARTIAL_FIELDS_* with Migration notes refreshed), status recomputed, vanished claims → `superseded` (kept, never deleted), new claims → new units through the NORMAL full pipeline. Ambiguous claim↔unit match → `dedup_ambiguous` halt, never a guess.
+- **execute-bolts selection** — `superseded` units SKIPPED with a warning; `stale` units eligible for re-execution (the sync lane's "stale/new only" semantics); absent `status` = legacy behavior unchanged.
+
+
+## [4.12.0] - 2026-06-10
+
+### scan-codebase pipeline audit — drift fixes + research-driven hardening (skill 2.4.0 → 2.5.0)
+
+Pipeline-by-pipeline gap audit (scan-codebase first), grounded in current Anthropic skill-authoring guidance (platform best-practices, agentskills.io spec, Claude Code skills/plugins/sub-agents docs) and community patterns (aider repo-map, GSD codebase mapper, spec-kit, superpowers).
+
+#### Fixed — doc↔reality drift
+
+- **Shipped the 3 missing tree-sitter query files** — `queries/tags-javascript.scm`, `tags-go.scm`, `tags-rust.scm` (adapted from Aider's tags.scm). `tree-sitter-integration.md` claimed 6 query files but only 3 existed; JS/Go/Rust silently fell back to regex while docs promised AST precision. Coverage table in `queries/VERSIONS.md` now lists the query file per language.
+- **Deep-scan slice naming/count drift** — `halts-flags-handoff.md` still said `rbac` (renamed `authz`), `subagent_index: <1-4>` and "all 4 subagents" (there are 5 slices incl. `reuse`); `model-tiers.md` example list likewise. All corrected to the 5-slice reality.
+- **Stale step numbering** — `deep-scan-prompts.md` referenced "Step 2.2/2.3"; corrected to 10.5.2/10.5.3.
+- **libs-extractor prompt contradiction** — the template told the subagent to re-read `composer.json`/`package.json`, contradicting the `<MANIFEST_FACTS>` authoritative-injection rail. Template now consumes `<MANIFEST_FACTS>` directly; the "runtime dispatcher strips legacy entries" caveat removed.
+- **Phantom flag** — `scan-procedure.md` Step 5 referred to a non-existent `--deep-scan` flag; rephrased to "default scan (no `--shallow-scan`)".
+- **Inconsistent `generated_by` stamps** — examples pinned three different versions (v3.0.0 / @2.7.1 / skill 2.4.0); now derive from the SKILL.md frontmatter version.
+- **Single-binary probe drift** — `tree-sitter-integration.md` showed `command -v tree-sitter` only; aligned with SKILL.md's two-binary probe (`tree-sitter || tree-sitter-cli`).
+- **Grammar install claim** — `queries/VERSIONS.md` claimed grammars "download lazily"; corrected (the CLI does not auto-download; documented `parser-directories` setup).
+
+#### Changed — authoring-standards conformance
+
+- Stripped version archaeology (`Iter N`, `vN.N+`, internal OQ/closure IDs) from scan-codebase runtime prose (`codebase-map-schema.md`, `tree-sitter-integration.md`, `halts-flags-handoff.md`, `deep-scan-prompts.md`, `queries/VERSIONS.md`, `commands/scan-codebase.md`) per the v4 contract + Anthropic "no time-sensitive info" best practice.
+- `commands/scan-codebase.md` `argument-hint` now carries the full flag set (`--engine`, `--shallow-scan`, `--force-deep`, `--no-cache`, `--memory-off`, `--no-default-excludes`) — command↔skill parity restored.
+
+#### Fixed — 14 command files loaded with EMPTY frontmatter at runtime (`claude plugin validate` was failing)
+
+Surfaced by running `claude plugin validate` during the audit: 14 `commands/*.md` frontmatter blocks failed YAML parse, so `description` + `argument-hint` were **silently dropped at load time**. Three root causes, all fixed; validation now passes:
+
+- Unquoted `argument-hint` with multiple `[...]` groups parsed as a broken YAML flow-sequence (orchestrate-flow, auto, lint-units, emit-agents-md, analyze-parallelism, list-modules, diff-vault, detect-drift, resolve-oq, migrate-paths, scan-codebase, generate-intent) → values now quoted.
+- `description` starting with `[ADVANCED / AUTO-INVOKED]` / `[USER-INVOKED]` parsed as a flow-sequence (lint-units, emit-agents-md, analyze-parallelism, list-modules, emit-fsd, install-deps) → bracket prefix rephrased to `ADVANCED / AUTO-INVOKED —` form.
+- `auto.md` + `orchestrate-flow.md` had **markdown blockquotes inside the frontmatter block** (invalid YAML) plus `Per AUTONOMY-OQ-1 resolved:` colon-space breakage and Iter-N archaeology in descriptions → blockquote moved to the body, descriptions rewritten timeless.
+
+#### Added — research-driven hardening
+
+- **`last_scanned_commit` staleness stamp** in `codebase-map.md` frontmatter (git HEAD at scan time; optional outside git). Lets `detect-drift`/`bind-codebase` derive changed paths via `git diff --name-only <stamp>..HEAD` instead of re-walking the repo (GSD `last_mapped_commit` pattern).
+- **Step 10a secret-scan gate** — assembled `codebase-map.md`/`starterkit-context.yaml` content is scanned for credential patterns (AWS keys, private-key blocks, GitHub/Slack/API tokens, JWT-shaped strings, `password=` literals) BEFORE write; matched values redacted as `[REDACTED-SECRET]` with a chat warning citing source `file:line`. Redacts scan outputs only — never edits repo source (GSD secret-gate pattern).
+- **Refreshed `tests/skill-triggering/scan-codebase.test.md`** (repo-root suite): output path corrected to canonical `.mega-sdd/codebase/codebase-map.md` (was "repo root"), 6→7 required sections, new behavior checks for the `last_scanned_commit` stamp and the Step 10a secret-scan gate.
+
+### bind-codebase pipeline audit — contract drift + validator-visibility fix (skill 2.1.0 → 2.2.0)
+
+#### Fixed
+
+- **`binding-md-template.md` Conflicts example was invisible to the validators** — the template showed a table with ID `X-001`, which matches NEITHER `validate-handoff-binding-units.sh` (`CONFLICT-\d+`) NOR `validate-conflict-classification.sh` (`CONFLICT-\d+ | C-\d{2,}`). A binding written strictly from the template could carry conflicts the resolution validator never sees. Template now emits the canonical `### CONFLICT-N` detail heading (with `conflict_class` + `resolution_complexity` enrichment) per conflict, plus the summary table with canonical IDs, and documents WHY the heading form is mandatory.
+- **`binding-contract.md` described a retired 3-state model** — "only IMPLEMENTED / NEW / UNKNOWN; PARTIAL deferred to Iter 2" contradicted SKILL.md Step 2.5 and `implementation-state.md`, which implement 6 states (`PARTIAL_FIELDS_MISSING/SURPLUS/BOTH`). Contract table updated to the 6-state reality; per-claim probe rules deferred to the implementation-state reference; Implementation State Map example gains the `Field diff` column.
+- **`--no-constitution` mis-attributed** — `constitution-and-oq.md` claimed it as a bind-codebase opt-out flag; it is a generate-intent flag. Clarified: absence of `constitution.md` IS the opt-out for binding.
+- **Flag parity** — `--no-advisor` + `--memory-off` existed in SKILL.md/references but were missing from `commands/bind-codebase.md`; both added. SKILL.md flags list gains `--memory-off`.
+- Stripped version archaeology (`v1.2+/Iter 1`, `Iter-79 X-1`, `DESIGN-OQ-1/3`, `v1.1+/v1.9+/Iter 20/23`) from `binding-contract.md` + `commands/bind-codebase.md`.
+
+#### Added
+
+- `tests/skill-triggering/bind-codebase.test.md` (repo-root suite) gains a behavior check pinning canonical `### CONFLICT-N` heading emission (the validator-readable token).
+
+
+### generate-intent pipeline audit — vault-contract cleanup (skill 2.3.0 → 2.4.0)
+
+#### Fixed
+
+- **`vault-contract.md` (the shared cross-skill contract, 951 lines) carried 50+ version-archaeology fragments** (`v1.14+/Iter 35`, `Iter 41 sweep closure`, `Iter 58 enum closure`, `DESIGN-OQ-3 resolved`, `Sandbox-proven 2026-05-27`, per-halt `skill vX.Y+, Iter N:` prefixes) — all stripped to timeless prose per the v4 contract; canonical halt registry content unchanged.
+- **Stale 4-slice deep-scan naming in the halt registry** — `deep_scan_subagent_failed` said "(auth/rbac/ui-ux/libs)" and `deep_scan_subagent_all_failed` said "ALL 4 subagents"; corrected to the 5-slice reality (auth/authz/ui-ux/libs/reuse), matching the scan-codebase fix.
+- **Missing `## Contents` ToCs** on 4 references > 100 lines (`vault-contract.md`, `from-prompt-mode.md`, `legacy-retrofit-prompt.md`, `scope-picker.md`) — added per the >100-line ToC rule.
+- Archaeology stripped from `from-prompt-mode.md`, `legacy-retrofit-prompt.md`, `scope-picker.md` headings; `legacy-retrofit-prompt.md` sibling-ref path normalized to the canonical `generate-intent/references/scope-picker.md` form.
+
+#### Added
+
+- (Correction during audit: the repo-root `tests/skill-triggering/` suite already covers all pipelines — an earlier duplicate seeded under `plugins/mega-sdd/tests/skill-triggering/` was removed; the `.gitignore` negation fix for `plugins/mega-sdd/tests/**/*.test.md` is kept so future plugin-level test fixtures aren't silently excluded.)
+
+
+### execute-bolts pipeline audit — stale gate names + flag parity (skill 2.5.0 → 2.6.0)
+
+#### Fixed
+
+- **Stale PreToolUse "Branch 6/8" names** in SKILL.md Steps 2.5/3 — the named-branch architecture was consolidated into the unified gate aggregator in v4; gates are now referenced by name (ui-quality, render-test).
+- **detect-drift hand-off contradiction** — SKILL.md said "After a clean batch: `/mega-sdd:detect-drift`" while `halts-and-handoff.md` documents the auto-gate (DEFAULT-ON, `--no-drift-check` opt-out); SKILL.md now states both accurately.
+- **`commands/execute-bolts.md` argument-hint underdeclared 6 flags** (`--hard-rule-grammar`, `--no-pbt`, `--resume`, `--rollback`, `--memory-off`, `--force-skip-postflight`) — full parity restored; hint quoted; `(v2.2+)` markers stripped.
+- Version archaeology stripped across `bolt-dispatch-prompt.md`, `hard-rule-grammar-v2.md`, `propose-and-confirm-prompt.md`, `partial-state-and-saga.md` (Iter 30/32/38/44/45/47/76 markers, audit-closure IDs); the deprecated v1.0 tier-loading algorithm stays as a clearly-marked historical section.
+- **Missing `## Contents` ToCs** added to `bolt-dispatch-prompt.md` (433 lines), `hard-rule-grammar-v2.md`, `propose-and-confirm-prompt.md`.
+
+
+### orchestrate-flow + extract-intelligence + side-lane audit — plugin-wide archaeology zero (8 skills bumped)
+
+#### Fixed — orchestrate-flow (2.1.1 → 2.2.0)
+
+- **CWD-snapshot field drift** — SKILL.md declared `oq_p0_p1_count` while `routing-rules.md` (the decision matrix) distinguishes `pending_p0_p1_count` (gates) vs `deferred_p0_p1_count` (informational); snapshot now carries both fields.
+- **Broken schema path** — `chain-execution.md` cited `plugins/mega-sdd/references/memory/routing-outcomes.md` (doesn't exist); corrected to the mega-sdd:memory skill reference `memory/references/routing-outcomes.md` (2 spots).
+- **Flags gap** — SKILL.md §Flags gains `--strict-quality` + `--no-telemetry` (present in command argument-hints but undocumented in the skill).
+- **Related-skills list** now includes the auto-integrated diagnostics (`enrich-semantics`, `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd`, `install-deps`) that also emit handoff YAML.
+
+#### Fixed — extract-intelligence (1.8.0 → 1.9.0)
+
+- **Wave-count drift** — prose said "5 sequential waves" while the table dispatches Wave 0–5 (six); command also claimed "≤5 parallel per wave (hard cap 8)" vs the documented soft-warn>5/hard-cap-8; both corrected.
+- **Missing `## Contents` ToCs** added to `knowledge-base-schema.md` (441 lines) and `wave-dispatch-templates.md` (415 lines).
+- Cross-skill ref normalized (`predictive-checks.md` → `orchestrate-flow/references/predictive-checks.md`); person-attribution ("Zylos 2026 empirical optimum") and audit-closure IDs removed from runtime prose.
+
+#### Changed — plugin-wide version-archaeology ZERO
+
+Every remaining `Iter N` / `vN.N+` / audit-closure-ID / dated-proof fragment stripped from runtime prose across `skills/` + `commands/` + `agents/` (handoff-contract.md, predictive-checks.md, routing-rules.md, checkpoint-protocol.md, knowledge-base-schema.md, wave-dispatch-templates.md, memory-schema.md, learning-rules.md, agents-md-schema.md, section-mapping.md, tool-matrix.yaml, commands auto/replay/orchestrate-flow/generate-intent/validate-handoff/analyze-parallelism/list-modules/memory/migrate-rules, and more). `migrate-paths` / `upgrade-from-old-version` keep their layout-version mentions — there they are functional (the migration is BETWEEN versions), not archaeology. Verified: `grep -rE "Iter [0-9]|vN.N+"` over skills/commands/agents (excl. _vendored + migrate-paths) returns ZERO.
+
+`## Contents` ToCs also added to 9 further >100-line references (binding-contract, detect-drift auto-and-chain, agents-md-schema, fsd-template, section-mapping, os-detection, learning-rules, memory-schema, routing-outcomes).
+
+Side-lane skill versions bumped: emit-agents-md 1.3.0, emit-fsd 1.2.0, install-deps 1.2.0, memory 1.4.0, resolve-oq 2.1.0, detect-drift 2.1.0.
+
+
+### Tech-agnostic hardening — scan-codebase multi-ecosystem (skill 2.6.0)
+
+The plugin is tech-agnostic by design, but the scan pipeline's low-level extraction carried a PHP/JS bias. All closed:
+
+#### Fixed
+
+- **Stale-cache bug for non-PHP/JS stacks** — deep-scan cache signatures hashed ONLY `composer.lock` + a JS lock, so dependency changes in Rust/Go/Ruby/Python/JVM apps NEVER invalidated the auth/authz/ui_ux/libs slices (perpetually stale starterkit-context). Cache schema v2.1: per-ecosystem `locks_sha256` map (php/js/rust/go/ruby/python/jvm) + `app_locks_digest` / `frontend_locks_digest` / `all_locks_digest` groups derived from the §7 Framework ecosystem. v2.0 caches self-heal (signature inputs changed → one full re-dispatch). Invalidation matrix rewritten ecosystem-relative (Rails+esbuild example instead of Laravel-only).
+- **Manifest pre-parse was composer/package-only** — `manifest_facts` now parses EVERY detected manifest (Cargo.toml, go.mod, Gemfile, pyproject.toml/requirements/Pipfile, pom.xml/build.gradle) into per-ecosystem blocks; libs-extractor prompt inventories all ecosystems, not "composer.json + package.json".
+- **Language probe missed Ruby** — `Gemfile` added to Step 2 (Rails/Sinatra were in the framework table but their repos detected as "no package manager").
+- **Test-framework detection** extended: rspec/minitest (ruby), `*_test.go` + testify (go), JUnit (jvm), cypress (js), pyproject pytest config.
+- **Route extraction covered 5 of 22 frameworks** — Step 6 now has signatures for every framework in the §8.5 table (Express/Fastify/NestJS/Next/Nuxt/SvelteKit/Remix/Laravel/Symfony/Slim/Rails/Sinatra/Django/FastAPI/Flask/Gin/Echo/Fiber/Actix/Axum/Rocket/Spring) + `_universal` best-effort fallback.
+- **Model extraction covered 4 ORMs** — Step 7 now spans all ecosystems (Prisma/TypeORM/Sequelize/Drizzle, Eloquent/Doctrine, ActiveRecord, Django ORM/SQLAlchemy/Pydantic, GORM/ent, Diesel/SeaORM, JPA/Hibernate).
+
+#### Added
+
+- `queries/tags-ruby.scm` + `queries/tags-java.scm` — AST-precise extraction for Ruby (Rails/Sinatra) and Java (Spring) repos; regex fallback patterns for both added to Step 5; coverage tables updated (Kotlin/.erb noted as regex-tier gaps).
+- `starterkit-context-schema.md` archaeology cleaned to zero as part of the cache v2.1 rewrite.
+
+
+### Deterministic-script split + capability-adoption doctrine
+
+#### Added
+
+- **`scripts/compute-lock-digests.sh`** — deterministic per-ecosystem lock digests for the deep-scan cache v2.1 (probes php/js/rust/go/ruby/python/jvm locks; emits `locks_sha256` + app/frontend/all digest groups as JSON). The model no longer hand-composes sha256 inputs; deep-scan-stage Step 10.5.1 now says "RUN the script". Empirically tested (Rails+yarn fixture → distinct app vs frontend digests).
+- **`scripts/secret-scan.sh`** — deterministic credential scrub backing the Step 10a gate (`--check` reports; `--redact` rewrites matched values to `[REDACTED-SECRET]` in place + JSON report that never echoes the full secret). Empirically tested (AWS key + password assignment redacted; clean rows untouched).
+- **`CLAUDE.md` gains a Tech-agnosticism standard** ("does this work for a Rails/Gin/Axum repo too?") and a **Capability-adoption decisions** record: `disable-model-invocation` REJECTED (kills natural-language ID/EN routing), `when_to_use` not adopted (would duplicate description content into the always-loaded listing), deterministic logic → `scripts/` per Anthropic guidance.
+
+
+## [4.11.0] - 2026-06-10
+
+### Fixed — bolt folder not generated during execute-bolts
+
+A reported bug: running `execute-bolts` (via `orchestrate-flow --auto`) implemented and committed the unit's code but produced **no `<vault>/bolts/U-XXX/` folder + `bolt-report.md`**. Root cause: bolt-folder creation was **prose-only** — the `bolt-implementer` agent writes code/tests/commit but never the bolt folder, and the controller's instruction to write `dispatch-prompt.md`/`bolt-report.md` into it had no deterministic `mkdir` and no end-of-run existence gate, so a terse `--auto` controller could skip it silently (violating the plugin's own "gates > rules > hooks" doctrine).
+
+The fix is two layers — a **strengthened creation step** (still controller-run prose, but moved up and made mandatory) plus a **deterministic, hook-wired detection gate** that loudly catches the skip:
+
+- **`execute-bolts` SKILL.md** — new per-unit **Procedure Step 0**: `mkdir -p <vault>/bolts/U-XXX/` is the literal first per-unit action, *before* pre-flight/dispatch; the folder + `bolt-report.md` are now MANDATORY per-unit outputs. (This is the creation layer — an instruction the controller runs, not a hook; the hook below is what actually enforces it.) (execute-bolts 2.4.0 → 2.5.0.)
+- **`context-enrichment.md`** — the dispatch-prompt write step now `mkdir -p`s the bolt dir first (idempotent).
+- **`validate-handoff-yaml.sh`** — new **deterministic** halt `bolt_artifacts_missing` (the real enforcement): an `emitted_by: execute-bolts` `status: completed` handoff that **executed units** (`metrics.items_processed > 0`) but lists no `bolts/` artifact now FAILS the Stop-hook handoff validation. This narrows the vacuous-pass hole in the prior `artifact_missing` check (which only verified *declared* paths exist — passing vacuously when none were declared) for any run that reports work. Scoped to avoid false positives — a `--dry-run` / no-op re-run (`items_processed == 0`) or an absent metrics block does NOT fire (a conscious false-negative-over-false-positive trade; the mandatory Step-0 `mkdir` is the primary mechanism, this gate the loud backstop). The execute-bolts handoff contract now requires `items_processed` to report units *actually* committed (0 for dry-run/no-op), so the exemption is contract-grounded. Registered in the halt taxonomy (`halts-and-handoff.md`, `handoff-contract.md`). (orchestrate-flow 2.1.0 → 2.1.1.)
+- **Tests** — `tests/bolt-folder-fix/` gate suite (validator raises `bolt_artifacts_missing` on a units-executed no-bolts handoff, stays silent when a real bolts dir is listed, on a dry-run/no-op `items_processed:0` handoff, and on an absent metrics block; SKILL.md carries the mandatory `mkdir` step).
+
+## [4.10.0] - 2026-06-10
+
+### Added — per-stack packs wave 3: the long tail (full §8.5 coverage)
+
+Full-pack coverage reaches **all 22 detectable frameworks** in the scan-codebase §8.5 table. Nine more `pack_tier: full`, lint-clean packs, authored to the 3b `_template` contract via parallel doc-grounded (context7) subagents.
+
+- **`slim.md`** (PHP) — PSR-7/PSR-15, single-action invokables, PHP-DI, middleware authz.
+- **`fastify.md`** (Node) — plugins + encapsulation, JSON Schema validation, hooks, `@fastify/jwt`.
+- **`remix.md`** (React) — route modules, loaders/actions, `<Form>`, loader-guard authz (Remix v2; RR7 noted).
+- **`sinatra.md`** (Ruby) — route DSL, classic/modular, `before` filters, ERB, Rack.
+- **`echo.md`** (Go) — `echo.Context` handlers returning error, middleware authz.
+- **`fiber.md`** (Go) — fasthttp-based `*fiber.Ctx`, `app.Test`, middleware authz.
+- **`actix.md`** (Rust) — `App`/`.service()`, extractors, `.wrap()` middleware + FromRequest guards.
+- **`axum.md`** (Rust) — `Router`, Tower `.layer()`, extractors + `FromRequestParts` guards.
+- **`rocket.md`** (Rust) — attribute routes, `FromRequest` request guards, fairings, managed state.
+
+### Changed
+
+- **`_lint.md` leak map** — dropped generic `Gemfile` from rails tokens (it is generic Ruby, shared by sinatra; rails keeps `ActiveRecord`/`config/routes.rb`/`app/controllers`/`.html.erb`/`attr_accessible`).
+- **`_registry.md`** regenerated — all 22 detectable frameworks show `ready`. `--all` + `--check-registry` + all suites green. The only non-`ready` row is the project-specific `laravel-base-26` starterkit (`unknown` — an open governance decision, not a coverage gap).
+
+## [4.9.0] - 2026-06-10
+
+### Added — per-stack packs wave 2: seven more full framework packs
+
+Full-pack coverage extended from 5 → 12 frameworks. Seven `pack_tier: full`, lint-clean convention packs authored to the 3b `_template` contract via parallel doc-grounded (context7) subagents, each across the 9-section contract incl. the neutral 3a authz ontology.
+
+- **`flask.md`** (Python) — app factory + Blueprints, Flask-SQLAlchemy `db.Model`, `@login_required`/`@roles_required`, Jinja2.
+- **`symfony.md`** (PHP) — `#[Route]` attributes, Doctrine, Twig, Security voters + `#[IsGranted]`, `bin/console`.
+- **`rails.md`** (Ruby) — ActiveRecord MVC, Pundit/CanCanCan authz, Devise, Hotwire.
+- **`spring.md`** (Java) — layered controller/service/repository, Spring Data JPA, `@PreAuthorize`/SecurityFilterChain.
+- **`nuxt.md`** (Vue) — file-based routing, Nitro `server/api`, route middleware, Nuxt 3/4 srcDir.
+- **`sveltekit.md`** (Svelte) — `+page`/`+server` routing, load functions, form actions, `hooks.server.ts` auth.
+- **`gin.md`** (Go) — router groups, middleware-based authz (JWT/casbin), `internal/` layout.
+
+### Changed
+
+- **`scan-codebase` §8.5 detection** — added the first JVM row (`pom.xml`/`build.gradle` → `spring-boot-starter` → `spring`); Spring projects were previously undetectable. (scan-codebase 2.3.0 → 2.4.0.)
+- **`_lint.md` cross-framework leak map** — dropped non-distinctive tokens: generic PHP `composer.json` (symfony/slim use it) from laravel, and generic Jinja2 `{%extends`/`{%block` (Flask shares them) from django. Distinctive tokens retained.
+- **`_registry.md`** regenerated — all 12 full packs show `ready`; `--all` + `--check-registry` green.
+- **Tests** — added wave-proof `tests/per-stack-packs/test-all-full-ready.sh` (every `pack_tier: full` pack must lint clean AND register `ready`).
+
+## [4.8.0] - 2026-06-10
+
+### Added — per-stack packs: five full framework convention packs
+
+Mega-SDD's deep-scan is now framework-accurate beyond Laravel. Five `pack_tier: full`, lint-clean convention packs were authored to the 3b `_template` contract (doc-grounded conventions across the 9-section contract, including the neutral 3a authz ontology). Content-only — no skill or pipeline behavior change.
+
+- **`fastapi.md`** (new) — Python async API; OAuth2/`Security()`/`Depends()` scopes, API-only UI.
+- **`next.md`** (new) — React/TS, App Router default (Pages Router noted); `middleware.ts` + NextAuth/Auth.js authz, RSC vs client components.
+- **`express.md`** (new) — Node minimal; middleware-based authz (passport/jwt), layered routes→controllers→services, optional view engine.
+- **`nestjs.md`** (new) — Node decorator/DI; Guards (`CanActivate`/`@UseGuards`)+`@Roles` authz, modules/providers, API-only UI.
+- **`django.md`** — promoted thin proof-pack → full (added Naming standards, Idioms, Hard Rules emitted, Testing conventions; `framework_version_range` 4.2–5.x).
+- **Registry:** `_registry.md` regenerated — all five show `ready`. `validate-pack.sh --all` and `--check-registry` exit 0.
+- **`_lint.md`:** removed the generic `pyproject.toml` from django's cross-framework token list (it is not django-distinctive; FastAPI/Flask/Poetry use it too).
+- **Tests:** new gate suite `tests/per-stack-packs/` (each-lints, five-ready, all-green); `tests/pack-kit/test-registry-fresh.sh` updated for django's promotion.
+
+## [4.7.0] - 2026-06-09
+
+### Added — pack-authoring kit: validate-pack/scaffold-pack/_registry; tier-aware --all CI gate
+
+Pack-authoring kit ships three author-time tools that make adding a new framework convention pack safe and consistent. No runtime/pipeline behavior change; one new advisory scan note added to `scan-codebase`.
+
+- **`scripts/validate-pack.sh`** — deterministic pack linter. Single-pack mode exits non-zero on any violation (missing section / bad YAML / cross-framework token leak). `--all` is tier-aware: `pack_tier: full` packs block on any violation; `thin`/untiered packs block only on structural errors (invalid YAML / cross-framework leak), keeping `--all` a green CI gate for in-progress thin proof-packs. `--registry` regenerates `_registry.md`. `--check-registry` gates freshness.
+- **`references/framework-conventions/_lint.md`** — human-readable conformance checklist + cross-framework token map (data-driven; extensible without script edits).
+- **`references/framework-conventions/_registry.md`** — auto-generated pack-readiness table (framework | detected? | pack file | status | lints_clean?). Never hand-edit; regenerate with `--registry`.
+- **`scripts/scaffold-pack.sh`** — produces a linter-valid `<framework>.md` skeleton from `_template.md`; refuses to clobber; prints next steps.
+- **`references/framework-conventions/_template.md`** — `## Reuse discovery` section added (reconciles the v4.5.0 gap: packs already carry this section; `_template.md` now documents it as the complete contract the linter validates against).
+- **`scan-codebase`** — one advisory note added: when `_registry.md` reports `thin`/`none` coverage for the detected framework, scan output emits `pack coverage: <status> for <framework> — generic _universal fallback in use; see framework-conventions/_registry.md`. Advisory only; never halts; absent registry → silently skip.
+- **README un-TBD** — `framework-conventions/README.md` "Adding a new pack" step 4 no longer says "TBD: pack linter". Updated to reference `validate-pack.sh`, `_lint.md`, tier-aware `--all`, and `scaffold-pack.sh` as step 1.
+- **`tests/pack-kit/` suite** — 6 tests (`test-linter-not-a-hook.sh` added; all others shipped earlier in this branch).
+
+Skills: scan-codebase 2.2.0 → 2.3.0.
+
 ## [4.3.0] - 2026-06-06
 
 ### Fixed — Round-2 end-to-end + subagent-decomposition audit (full trail in `plugins/mega-sdd/AUDIT.md`)

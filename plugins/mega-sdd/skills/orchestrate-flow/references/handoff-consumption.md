@@ -153,6 +153,11 @@ loop:
   if handoff.status == completed:
     log: "✓ Phase {N} of {M} completed: {skill}"
     if --deep AND no --stop-after match:
+      # Confidence-aware auto-continue: next_action.confidence is a TYPED field
+      # (handoff-contract §next_action.confidence) — consume it, don't just type-check it.
+      if handoff.next_action.confidence is present AND < confidence_minimum (config, default 0.80):
+        log: "⏸ {skill} recommends {next} with confidence {c} (< {floor}) — confirm before continuing"
+        ask user (continue / reroute / stop)   # demote auto-continue to user review; absent confidence → auto-continue unchanged
       current = handoff.next_action.suggested_skill
       args = handoff.next_action.suggested_args
       continue loop

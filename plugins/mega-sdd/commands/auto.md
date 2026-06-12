@@ -1,13 +1,13 @@
 ---
-description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. Per AUTONOMY-OQ-1 resolved: single upfront confirmation covers ALL phases including execute-bolts. Per Iter 13 audit: this is the ONE command users need; advanced/diagnostic commands available but auto-invoked transparently.
+description: One-shot autonomous pipeline — THE primary mega-sdd command. Detects input shape (PRD file / legacy codebase / existing vault / free-text brief), runs the full chain end-to-end with single upfront confirmation covering ALL phases including execute-bolts. Auto-integrates diagnostics (lint-units, analyze-parallelism, list-modules, emit-agents-md, memory review) — no separate command invocations needed. Halts on blockers; resume via --resume. This is the one command typical users need; advanced/diagnostic commands are auto-invoked transparently.
+argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--no-telemetry] [--plan|--act|--plan-then-act]"
+---
 
-> **`/mega-sdd:auto` vs `/mega-sdd:orchestrate-flow`** (Iter 63 clarification): both invoke the orchestrate-flow skill. The difference is which front-door makes sense:
+> **`/mega-sdd:auto` vs `/mega-sdd:orchestrate-flow`** — both invoke the orchestrate-flow skill. The difference is which front-door makes sense:
 > - **`/mega-sdd:auto`** (this command) — user-facing entry-point with input-shape detection (PRD / legacy code / brief / vault state) + chain proposal + single confirm. **Use this for typical workflows.**
 > - **`/mega-sdd:orchestrate-flow`** — power-user lower-level chain executor. Skips input-shape detection (assumes you already know what to chain). Use for advanced cases (custom chain composition, partial re-run, debugging).
 >
 > Both accept same flags. Both invoke the same skill.
-argument-hint: [input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--no-telemetry] [--plan|--act|--plan-then-act]
----
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` flags + the detected starting phase based on input shape.
 
@@ -16,9 +16,9 @@ User arguments: $ARGUMENTS
 Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-design.md` §4 Pillar 4):
 
 1. **Is `<input>` a path to a directory?**
-   - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO vault at any of these paths: `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical), `docs/mega-sdd/vaults/*/vault.json` (legacy), `vaults/*/vault.json` (pre-Iter-10)?
+   - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO vault at any of these paths: `.mega-sdd/vaults/*/vault.json` (canonical), `docs/mega-sdd/vaults/*/vault.json` (legacy), `vaults/*/vault.json` (oldest legacy)?
      - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous; `--out` is the OUTPUT_ROOT / parent dir, default `--out=.mega-sdd/` → KB at `<out>/knowledge-base/`).
-   - Does it contain a vault at any of these paths (priority order): `.mega-sdd/vaults/*/vault.json` (v3.4+ canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy)?
+   - Does it contain a vault at any of these paths (priority order): `.mega-sdd/vaults/*/vault.json` (canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy)?
      - YES → existing vault. Propose chain starting with `scan-codebase` (if no codebase-map at `.mega-sdd/codebase/codebase-map.md` or legacy `codebase-map.md`) or `bind-codebase` (if codebase-map exists) or `generate-units` (if bound-vault exists).
    - Otherwise → halt; ask user to clarify directory purpose.
 
@@ -35,14 +35,14 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 5. **Flag handling**:
    - `--deep` (default true for `auto`; opt-out via `--shallow` to revert to 3-skill cap).
-   - `--greenfield` (v3.19+ Iter 27) — EXPLICIT opt-in for stack-agnostic vault generation. REQUIRED when CWD has no framework manifest (package.json / composer.json / Gemfile / pyproject.toml / go.mod / Cargo.toml). Without this flag AND no manifest detected → halt `no_starterkit_detected`.
+   - `--greenfield` — EXPLICIT opt-in for stack-agnostic vault generation. REQUIRED when CWD has no framework manifest (package.json / composer.json / Gemfile / pyproject.toml / go.mod / Cargo.toml). Without this flag AND no manifest detected → halt `no_starterkit_detected`.
    - `--step-after=<phase>` — switch to manual handoffs after this phase (e.g., `--step-after=bind-codebase` to review binding before continuing).
    - `--stop-after=<phase>` — halt after this phase even if no blocker.
    - `--resume` — re-enter a paused/halted chain; CWD inspection rebuilds cursor; halts re-fire if blockers unresolved.
    - `--manual` — disable autonomy entirely; reverts to per-skill explicit-command behavior (each skill's chat hint replaces auto-continue).
    - `--out=<path>` — REQUIRED when starting phase is `extract-intelligence` (legacy rebuild scenario). Specifies the OUTPUT_ROOT (parent dir), default `.mega-sdd/`; the KB is written to `<out>/knowledge-base/`.
 
-## Starterkit detection (v3.19+, Iter 27)
+## Starterkit detection
 
 Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes per `orchestrate-flow/references/routing-rules.md` §Decision matrix:
 
@@ -56,7 +56,7 @@ When neither manifest nor `--greenfield` set → halt `no_starterkit_detected` w
 
 After detection + flag parse, invoke `orchestrate-flow --deep --auto [--from=<detected-start>] [--greenfield] [other-flags]`.
 
-## Multi-scope picker (v3.20+, Iter 28)
+## Multi-scope picker
 
 When PRD input has canonical `scopes:` frontmatter block, auto invokes scope picker BEFORE pipeline starts:
 
@@ -82,7 +82,7 @@ When memory has prior scope decision for this PRD + cwd matches → silent defau
 
 See `tests/scenarios/scenario-7-multi-architect.md` for walkthrough.
 
-## Auto-integrated diagnostics (v3.7+, Iter 13)
+## Auto-integrated diagnostics
 
 This command transparently invokes diagnostic skills at appropriate phases — user does NOT need to run them separately:
 
@@ -92,20 +92,20 @@ This command transparently invokes diagnostic skills at appropriate phases — u
 | Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
 | After `execute-bolts` | `list-modules` | Per-module status in chain summary |
 | At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
-| At chain end | `emit-fsd` (Iter 54; **OPT-IN since Iter 63 v3.42.0+** — requires `--with-fsd` flag; expensive pandoc/LaTeX deps) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
+| At chain end | `emit-fsd` (**OPT-IN** — requires `--with-fsd` flag; expensive pandoc/LaTeX deps) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
 | At chain end | Memory review prompt | Surface pending learning suggestions |
 
 **Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
 
-**Opt-in only (Iter 63 v3.42.0+):**
+**Opt-in only:**
 - `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; expensive pandoc/LaTeX deps; user can invoke `/mega-sdd:emit-fsd` manually for one-off)
-- `--no-fsd` — legacy alias / no-op since Iter 63 v3.42.0+ (was opt-out pre-v3.42.0; now FSD is opt-in)
-- `--no-telemetry` (v3.44.0+, Iter 64) — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
-- `--plan` (v3.46.0+, Iter 67) — force Plan mode regardless of classifier output. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via `--act` flag or `/mega-sdd:act` continuation.
-- `--act` (v3.46.0+, Iter 67) — force direct Act mode regardless of classifier. For MAJOR iter, requires confirmation prompt (safety gate). Used in Plan-then-Act transition.
-- `--plan-then-act` (v3.46.0+, Iter 67) — explicit two-phase: Plan first, halt, then Act on continuation. Overrides classifier default for any iter type.
+- `--no-fsd` — legacy alias / no-op (FSD is opt-in via `--with-fsd`)
+- `--no-telemetry` — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
+- `--plan` — force Plan mode regardless of classifier output. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via `--act` flag or `/mega-sdd:act` continuation.
+- `--act` — force direct Act mode regardless of classifier. For MAJOR iter, requires confirmation prompt (safety gate). Used in Plan-then-Act transition.
+- `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. Overrides classifier default for any iter type.
 
-## Convergence loops (v3.12+, Iter 19)
+## Convergence loops
 
 In `--deep` mode, `auto` auto-loops eligible halts up to `--max-cycles` (default 5) instead of stopping on first halt. Cycle-eligible halts:
 
@@ -136,7 +136,7 @@ See `orchestrate-flow/SKILL.md` §Convergence loops for full algorithm + safety 
 - **`--manual` flag disables autonomy entirely**; reverts to current per-skill explicit invocation behavior.
 - **Legacy rebuild scenarios** REQUIRE `--out=<path>` per AUTONOMY-OQ-7. If invoking on a legacy codebase without `--out`, halt with message asking for explicit destination dir.
 - **No persisted state file** per AUTONOMY-OQ-2. `--resume` re-runs CWD inspection; cursor position derives from artifact presence.
-- **No `--skip-preflight`** for Hard rules (Iter 3 contract preserved per DESIGN-OQ-5).
+- **No `--skip-preflight`** for Hard rules (the pre-flight contract is non-negotiable).
 
 On halt OR pause: chain stops; surface verbatim blocker YAMLs in chat (per `orchestrate-flow/references/handoff-contract.md`). User resolves and re-runs `--resume`.
 

@@ -1,4 +1,4 @@
-# Property-Based Testing Integration (v2.5+, Iter 18)
+# Property-Based Testing Integration
 
 Optional unit-level extension. Per Anthropic NeurIPS 2025 paper "Property-Based Testing with Claude" — PBT catches 30-32% of partial-correctness gaps that example-tests miss.
 
@@ -25,12 +25,12 @@ id: U-001
 title: Validate user nip + nama + password on login
 task_type: extend
 target_files: [...]
-acceptance_test:                       # existing (Iter 1)
+acceptance_test:                       # existing
   - type: test
     command: ./vendor/bin/phpunit --filter=LoginExtensionTest
     expected_exit_code: 0
 
-# NEW v2.5+ (Iter 18) — OPTIONAL property-based invariants
+# OPTIONAL property-based invariants
 properties:
   - id: PROP-001
     description: For any valid nip+nama+password triple, login() is idempotent
@@ -144,7 +144,7 @@ describe('Login - PBT properties', () => {
 });
 ```
 
-## Execute-bolts integration (v2.3+, Iter 18)
+## Execute-bolts integration
 
 Pre/post-flight scan extension: when unit has `properties:`:
 
@@ -175,13 +175,13 @@ blocker:
 | Speed | Fast (handful of test cases) | Slower (100+ random cases per run) |
 | Bug discovery | Catches what you predict | Catches edge cases you didn't predict |
 | Anti-halu | High (concrete inputs) | High when citations enforced |
-| Required | Yes (always) | No (opt-in; v2.5+) |
+| Required | Yes (always) | No (opt-in) |
 
 Use BOTH. Examples define the happy paths; properties stress-test invariants across input space.
 
 ## Multi-language story (open question)
 
-Per Iter 18 research OQ-3: PBT support varies across languages.
+PBT support varies across languages.
 
 | Language | Maturity | Mega-sdd support |
 |---|---|---|
@@ -218,4 +218,3 @@ Anti-halu: when emission isn't supported for language, properties stay in unit b
 - gopter (Go): https://github.com/leanovate/gopter
 - proptest (Rust): https://github.com/proptest-rs/proptest
 - Eris (PHP): https://github.com/giorgiosironi/eris
-- Iter 18 spec (this iter)

@@ -55,7 +55,7 @@ generate-intent --kb=<kb> --scan=<codebase-map> → vault aware of BOTH legacy d
 
 ## Memory-informed routing preflight
 
-Per `plugins/mega-sdd/references/memory/routing-outcomes.md` schema. Optional — falls through silently if memory file absent or insufficient history.
+Per `memory/references/routing-outcomes.md` (mega-sdd:memory skill) schema. Optional — falls through silently if memory file absent or insufficient history.
 
 a. Compute project fingerprint: `sha256(composer.json + package.json + framework_pack_path)[:16]`
 b. Read `<project>/.mega-sdd/memory/routing-outcomes.md` (if exists; else skip).
@@ -81,7 +81,7 @@ e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream ski
    metadata:
      model_tiers:
        auth-extractor: sonnet
-       rbac-extractor: sonnet
+       authz-extractor: sonnet
        code-quality-reviewer: sonnet  # override applied — was opus in catalog
      model_tier_sources:  # provenance trail (OPTIONAL)
        auth-extractor: catalog
@@ -218,7 +218,7 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 
 ## End-of-chain routing-outcomes write
 
-Per `plugins/mega-sdd/references/memory/routing-outcomes.md` write protocol. Skip entirely if `--memory-off` set.
+Per `memory/references/routing-outcomes.md` (mega-sdd:memory skill) write protocol. Skip entirely if `--memory-off` set.
 
 a. Compute:
    - `chain-used`: short label, e.g., "starterkit-first (scan→intent→bind→units→bolts)"
@@ -243,6 +243,7 @@ In `--deep` mode, append to the final summary:
   - AGENTS.md emission confirmation (file path + section count)
   - Memory review prompt if pending suggestions exist
   - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run /mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>)."`
+  - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit-fsd."`
 - **Predictive preflight metrics:**
   ```yaml
   metrics:

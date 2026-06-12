@@ -1,10 +1,10 @@
 ---
-description: Validate cross-artifact handoff integrity (Iter 67.6 walking-skeleton slice 1 — binding→units OQ-ID propagation). Halts deterministically when traceability IDs drop at the binding→unit boundary.
+description: Validate cross-artifact handoff integrity (walking-skeleton slice — binding→units OQ-ID propagation). Halts deterministically when traceability IDs drop at the binding→unit boundary.
 ---
 
 # /mega-sdd:validate-handoff
 
-Manually invoke the deterministic handoff-integrity validator. Iter 67.6 ships ONE slice — binding→units OQ-ID propagation. Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out.
+Manually invoke the deterministic handoff-integrity validator. This ships ONE slice — binding→units OQ-ID propagation. Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out.
 
 ## What it does
 
@@ -14,7 +14,7 @@ State file: `<cwd>/.mega-sdd/.validation-blockers.json` (OVERWRITE-NOT-APPEND �
 
 ## Why this exists (audit response)
 
-Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` §F traced one OQ-ID drop. Real-run inventory revealed 27 of 27 OQs are dropped in TF Import phase-1 + phase-2 units — the audit only saw the tip. The skill-body prose rule in `generate-units` Step 12.5.g (added Iter 67.5) cannot enforce this; the model may write a unit without citing the OQ regardless of what the skill body says.
+Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` §F traced one OQ-ID drop. Real-run inventory revealed 27 of 27 OQs are dropped in TF Import phase-1 + phase-2 units — the audit only saw the tip. The skill-body prose rule in `generate-units` Step 12.5.g cannot enforce this; the model may write a unit without citing the OQ regardless of what the skill body says.
 
 This validator + `PreToolUse` hook on `mega-sdd:execute-bolts` is the [HOOK-VALIDATE] enforcement layer that closes the loop: drops detected automatically when a unit is saved (`PostToolUse` on Write/Edit), bolt generation blocked until drops are resolved (`PreToolUse` on the bolt-gen skill).
 

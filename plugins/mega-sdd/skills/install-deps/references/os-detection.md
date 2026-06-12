@@ -3,6 +3,14 @@
 > Consumed by `install-deps/SKILL.md` Step 1 (Detect environment).
 > Cross-platform Bash patterns: macOS / Linux (Ubuntu/Debian/Fedora/Arch/Alpine) / WSL / Windows-bash (git-bash / MSYS2).
 
+## Contents
+
+- Detection algorithm (canonical)
+- Detection outcome table
+- Special-case notes
+- Fallback chain
+- Cross-reference
+
 ## Detection algorithm (canonical)
 
 ```bash

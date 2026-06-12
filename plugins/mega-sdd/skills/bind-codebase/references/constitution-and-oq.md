@@ -29,5 +29,4 @@ blocker:
 
 ## Backward compatibility
 
-- Vaults without `constitution.md` → Step 2.10 is SKIPPED gracefully; no halt, no citation.
-- `--no-constitution` opts out (preserves prior binding behavior).
+- Vaults without `constitution.md` → Step 2.10 is SKIPPED gracefully; no halt, no citation. (This includes vaults generated with generate-intent's `--no-constitution` flag — bind-codebase itself needs no opt-out flag; absence of the file IS the opt-out.)

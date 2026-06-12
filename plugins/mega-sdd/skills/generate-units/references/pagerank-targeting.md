@@ -1,16 +1,16 @@
-# PageRank Symbol-Graph Targeting (v2.0+, Iter 6)
+# PageRank Symbol-Graph Targeting
 
-`generate-units` v2.0+ uses personalized PageRank on a file-level symbol-reference graph to auto-rank candidate `target_files` per unit. Adapted from [Aider's repo-map](https://aider.chat/2023/10/22/repomap.html) (45k ⭐ proven at scale).
+`generate-units` uses personalized PageRank on a file-level symbol-reference graph to auto-rank candidate `target_files` per unit. Adapted from [Aider's repo-map](https://aider.chat/2023/10/22/repomap.html) (45k ⭐ proven at scale).
 
 ## Why
 
-In v1.5 (Iter 5), `target_files` populated from binding citations + manual unit-author input. Misses files that share symbols with the unit's domain (e.g., a unit on Auth flow may need to touch `routes/api.php` even if not explicitly cited in binding).
+In v1.5, `target_files` populated from binding citations + manual unit-author input. Misses files that share symbols with the unit's domain (e.g., a unit on Auth flow may need to touch `routes/api.php` even if not explicitly cited in binding).
 
 PageRank ranks files by their "centrality" to a set of seed files (the binding citations); top-K candidates surface as suggestions.
 
 ## Detection prerequisites
 
-Requires `engine: tree-sitter` in `codebase-map.md` frontmatter (per Iter 6 Swap #1). If precision tier is `regex`, PageRank is SKIPPED — fallback to v1.5 behavior (binding-only target_files).
+Requires `engine: tree-sitter` in `codebase-map.md` frontmatter. If precision tier is `regex`, PageRank is SKIPPED — fallback to binding-only target_files.
 
 ## Algorithm
 
@@ -79,7 +79,7 @@ For very large repos (>50k files), `--skip-pagerank` flag disables the suggestio
 
 ## Caching
 
-Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical per paths.md) per `scan-codebase` run. Re-used across all units in the same vault. Invalidated when `codebase-map.md` is regenerated.
+Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (canonical per paths.md) per `scan-codebase` run. Re-used across all units in the same vault. Invalidated when `codebase-map.md` is regenerated.
 
 ## Anti-hallucination rails
 
@@ -93,5 +93,5 @@ Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (v3.4+ canonical
 ## References
 
 - Aider repo-map: https://aider.chat/2023/10/22/repomap.html (PageRank algorithm)
-- Tree-sitter integration: `../../scan-codebase/references/tree-sitter-integration.md` (Swap #1)
-- Iter 6 spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.3
+- Tree-sitter integration: `scan-codebase/references/tree-sitter-integration.md` (Swap #1)
+- Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.3

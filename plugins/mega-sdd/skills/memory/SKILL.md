@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.3.1
+version: 1.5.0
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -41,11 +41,11 @@ Markdown-driven memory that persists pipeline outcomes across sessions. Skills W
 /mega-sdd:memory clear --scope=<user|project|vault> [--confirm-twice]
 ```
 
-## Path resolution (v1.2+, Iter 10)
+## Path resolution
 
 Per `plugins/mega-sdd/references/paths.md`:
 
-- **Project-scope memory** (v3.4+): `<project-root>/.mega-sdd/memory/` (was `<project-root>/.mega-sdd-memory/` in v3.3)
+- **Project-scope memory**: `<project-root>/.mega-sdd/memory/` (was `<project-root>/.mega-sdd-memory/` in v3.3)
 - **User-scope memory** (unchanged): `~/.mega-sdd/memory/`
 - **Vault-scope memory** (unchanged): `<vault>/.memory/`
 - **Detection**: probe both `<project>/.mega-sdd/memory/` AND `<project>/.mega-sdd-memory/` for back-compat
@@ -61,14 +61,14 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 ├── patterns.md                            # learned cross-project patterns
 └── learning-log.md                        # audit log of accepted learnings
 
-<project-root>/.mega-sdd/memory/            # PROJECT scope (v3.4+ canonical per paths.md; per-repo)
+<project-root>/.mega-sdd/memory/            # PROJECT scope (canonical)
 ├── decisions.md                           # OQ resolutions, CONFLICT actions, ACCEPTs
 ├── conventions.md                         # detected conventions (test framework, naming, error format)
 ├── outcomes.md                            # halt patterns, retry counts, success rates per run
-└── routing-outcomes.md                    # orchestrator routing decisions log (v1.3.0+, Iter 33)
+└── routing-outcomes.md                    # orchestrator routing decisions log
 
 # Legacy path: <project-root>/.mega-sdd-memory/ — read-side back-compat only;
-# write-side defaults to .mega-sdd/memory/ per Iter 21 no-excuse rule.
+# write-side defaults to .mega-sdd/memory/ (no-excuse rule).
 
 <vault-path>/.memory/                      # VAULT scope (per-vault, ephemeral)
 ├── classifier-accuracy.json               # auto-classifier tag vs user-override metrics
@@ -76,20 +76,20 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 └── bolt-outcomes.json                     # per-bolt success/failure + Hard Rule violations
 ```
 
-### routing-outcomes.md (v1.3.0+, Iter 33)
+### routing-outcomes.md
 
 **Scope:** PROJECT (`<project>/.mega-sdd/memory/routing-outcomes.md`)
-**Producer:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 7.5
-**Consumer:** `mega-sdd:orchestrate-flow` v3.0.0+ Step 2.7
+**Producer:** `mega-sdd:orchestrate-flow` Step 7.5
+**Consumer:** `mega-sdd:orchestrate-flow` Step 2.7
 **Format:** Markdown with append-only Entries section
 **Schema:** see `references/routing-outcomes.md`
 **Append mechanism:** Bash `>>` heredoc (per §6 POSIX append)
 **Lock:** standard memory file-lock pattern (backoff + retry 3x; fail with `memory_in_use`)
 **Soft halt:** `routing_outcome_corrupt` on parse failure (auto-invalidate; chain proceeds)
 
-### preferences.md `## Model tiers` section (v1.3.1+, Iter 34)
+### preferences.md `## Model tiers` section
 
-User-scope per-role model tier override. Format: markdown list with `- <role>: <tier>` per line. Schema: see `references/memory-schema.md §Model tiers`. Consumed by orchestrate-flow v3.1.0+ Step 2.8 override-chain resolution.
+User-scope per-role model tier override. Format: markdown list with `- <role>: <tier>` per line. Schema: see `references/memory-schema.md §Model tiers`. Consumed by orchestrate-flow Step 2.8 override-chain resolution.
 
 ## Self-learning mechanism (suggestion-only)
 
@@ -184,7 +184,7 @@ After N consistent observations (thresholds configurable per `~/.mega-sdd/config
 - After `promote`: announce "<key> promoted to <scope>. Use on future runs."
 - After `clear`: announce "<scope> memory cleared. Mega-sdd will rebuild memory from next pipeline run."
 
-## Handoff emission (v2.1+, when --auto)
+## Handoff emission (when --auto)
 
 This skill emits a handoff YAML when invoked under `--auto` per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
 

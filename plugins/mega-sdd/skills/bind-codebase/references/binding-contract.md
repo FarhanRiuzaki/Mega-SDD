@@ -2,6 +2,19 @@
 
 The binding contract specifies how vault claims are validated against `codebase-map.md`, what produces a CONFLICT vs OQ vs CONFIRMED, and the blocking rules for downstream phases.
 
+## Contents
+
+- Claim categories (validated)
+- Verdicts
+- Implementation-State Classification
+- Implementation State Map (field_diff column when precision_tier: ast)
+- Blocking rules
+- Tech-OQ Auto-Resolution
+- Claim-scoped re-bind (`--paths` — living-vault sync lane)
+- Resolution paths
+- binding.md output structure
+- bound-vault structure
+
 ## Claim categories (validated)
 
 | Vault section | Claim type | Map section consulted |
@@ -21,34 +34,20 @@ For each claim:
 - **CONFLICT**: claim contradicts codebase-map evidence (vault says "use bearer auth", code uses sessions).
 - **OQ**: claim references a code element NOT in codebase-map (e.g., "the legacy user table" — map shows no `user` table).
 
-## Implementation-State Classification (v1.2+, Iter 1)
+## Implementation-State Classification
 
-For each CONFIRMED claim, additionally classify implementation readiness. This signal drives `generate-units` task_type assignment (create vs verify) so units do not duplicate already-built functionality.
+For each CONFIRMED claim, additionally classify implementation readiness. This signal drives `generate-units` task_type assignment (create vs verify vs extend) so units do not duplicate already-built functionality.
 
 | State | Definition | Codebase signal |
 |---|---|---|
-| `IMPLEMENTED` | Entity AND its handler/method/function exist AND signature matches claim | route + handler symbol + (if entity claim) all claimed fields detected |
+| `IMPLEMENTED` | Entity AND its handler/method/function exist AND signature/field-set matches claim exactly (V == C) | route + handler symbol + (if entity claim) all claimed fields detected |
+| `PARTIAL_FIELDS_MISSING` | Entity/handler exists but code lacks some claimed fields (C ⊂ V) | field-level set diff at `precision_tier: ast` |
+| `PARTIAL_FIELDS_SURPLUS` | Entity/handler exists but code has fields the claim doesn't mention (V ⊂ C) | field-level set diff at `precision_tier: ast` |
+| `PARTIAL_FIELDS_BOTH` | Shared fields exist but both sides also diverge (rare; bidirectional drift) | field-level set diff at `precision_tier: ast` |
 | `NEW` | No matching evidence (verdict downgraded from CONFIRMED to OQ when no anchor at all) | not in any codebase-map section |
-| `UNKNOWN` | Codebase-map silent on this claim type (e.g., dynamic routes, magic methods) OR ambiguous match | heuristic detection limit reached |
+| `UNKNOWN` | Codebase-map silent on this claim type (e.g., dynamic routes, magic methods) OR ambiguous/disjoint match OR `precision_tier: regex` (PARTIAL collapses to UNKNOWN) | heuristic detection limit reached |
 
-> **Iter 1 scope (DESIGN-OQ-1 resolved binary)**: only IMPLEMENTED / NEW / UNKNOWN. The PARTIAL state (handler is a stub) is deferred to Iter 2 where `recommend` resolution mode handles the ambiguity properly.
-
-### Classification logic per claim type
-
-**Endpoint claims** (`POST /api/foo`, `GET /bar`, …):
-- Probe codebase-map §4 (routes) — if route found AND handler symbol present in §2 → `IMPLEMENTED`
-- Route found but handler symbol absent in §2 → `UNKNOWN` (Iter 2 will refine via stub detection)
-- Route not found AND handler absent → `NEW` (downgrade verdict to OQ — no longer CONFIRMED)
-
-**Entity claims** (User has email + role; Order has line_items):
-- Probe codebase-map §3 (data models) for entity name → found AND all claimed fields detected → `IMPLEMENTED`
-- Entity found but subset of fields detected → `UNKNOWN` (deferred PARTIAL case)
-- Entity not in §3 → `NEW`
-
-**Method/handler claims** (`sendEmail()`, `processPayment()`):
-- Probe codebase-map §2 (public interfaces) for symbol → found AND signature matches → `IMPLEMENTED`
-- Symbol found but signature differs → `UNKNOWN`
-- Symbol not in §2 → `NEW`
+The per-claim-type probe rules, the deterministic field-level diff (ADD/KEEP/REMOVE set ops), the disjoint-set check, and the worked example live in the implementation-state reference listed in `bind-codebase/SKILL.md` §Specialist references.
 
 ### Confidence labeling
 
@@ -64,12 +63,13 @@ When in doubt → `UNKNOWN` with low confidence. Never silently claim `IMPLEMENT
 ### Recorded in binding.md
 
 ```yaml
-## Implementation State Map (v1.2+)
-| Claim ID | Verdict | State | Anchor | Confidence |
-|---|---|---|---|---|
-| C-007 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high |
-| C-012 | OQ | NEW | — | n/a |
-| C-019 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic can't classify | low |
+## Implementation State Map (field_diff column when precision_tier: ast)
+| Claim ID | Verdict | State | Anchor | Confidence | Field diff |
+|---|---|---|---|---|---|
+| C-007 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high | (exact match) |
+| C-012 | OQ | NEW | — | n/a | n/a |
+| C-019 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic can't classify | low | n/a |
+| C-031 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
 ```
 
 ## Blocking rules
@@ -81,9 +81,9 @@ When in doubt → `UNKNOWN` with low confidence. Never silently claim `IMPLEMENT
 | Claims include OQ but no CONFLICT (default) | bound-vault produced; OQs propagated to unit-level grounding |
 | Claims include OQ + `--strict` flag set | bound-vault NOT produced; pipeline BLOCKED until OQs resolved |
 
-Implementation-State Classification (v1.2+) does NOT change blocking rules. It is an annotation on CONFIRMED claims consumed downstream by `generate-units`. A claim that is `IMPLEMENTED` is still CONFIRMED.
+Implementation-State Classification does NOT change blocking rules. It is an annotation on CONFIRMED claims consumed downstream by `generate-units`. A claim that is `IMPLEMENTED` (or any `PARTIAL_FIELDS_*` state) is still CONFIRMED.
 
-### CONFLICT entry format (classification enrichment — Iter-79 X-1)
+### CONFLICT entry format (classification enrichment)
 
 Every CONFLICT in `binding.md` is written as a markdown detail heading plus a
 `## Conflicts (N)` summary row. Each ACTIVE (unresolved) CONFLICT detail heading
@@ -92,7 +92,7 @@ effort. A resolved conflict (marked `✅` / `RESOLVED`) is exempt.
 
 ```markdown
 ### CONFLICT-1 — `App\Models\Product` name collision
-- **Vault doc**: 01-entities.md §Product
+- **Vault doc**: 03-data-model.md §Product
 - **Codebase artifact**: app/Models/Product.php
 - **conflict_class**: naming-collision      # naming-collision | signature-drift | semantic | regulatory
 - **resolution_complexity**: low            # low | medium | high
@@ -109,7 +109,7 @@ effort. A resolved conflict (marked `✅` / `RESOLVED`) is exempt.
 
 This enrichment is **advisory** — `validate-conflict-classification.sh` (PostToolUse on binding write) WARNs when an active CONFLICT omits these fields; it does NOT change the CONFLICT-blocking contract (which still blocks on `conflict > 0`, per the table above).
 
-## Tech-OQ Auto-Resolution (v1.3+, Iter 2)
+## Tech-OQ Auto-Resolution
 
 For each OQ in the vault tagged `category: tech` AND `classification_confidence: high`, bind-codebase performs one of two operations based on `resolution_mode`:
 
@@ -130,7 +130,7 @@ For each OQ in the vault tagged `category: tech` AND `classification_confidence:
 - Surfaced in `binding.md` "## Tech-OQ Recommendations (review required)" section with full structure (recommendation + rationale + citations + fallback + ACCEPT/OVERRIDE/REJECT user actions)
 - Does NOT block the pipeline — user reviews one-pass after binding completes
 
-### Confidence gate (per DESIGN-OQ-3)
+### Confidence gate
 
 ONLY `classification_confidence: high` tech OQs are processed by `bind-codebase`'s scan/recommend logic. `medium` and `low` confidence:
 - Skip auto-resolution
@@ -148,6 +148,24 @@ ONLY `classification_confidence: high` tech OQs are processed by `bind-codebase`
 
 Tech-OQ resolution adds no new BLOCKING outcomes. The binding gate continues to block on `conflict > 0` AND optionally on `oq > 0 + --strict`. Auto-resolved tech OQs reduce the `oq` count (they move to `confirmed` for accounting purposes), making `--strict` mode more practical to use in real projects.
 
+## Claim-scoped re-bind (`--paths` — living-vault sync lane)
+
+Invoked by `orchestrate-flow --sync` (spec `2026-06-10-living-vault-continuous-sync-design.md` S4). Full re-bind stays the default; `--paths` is the incremental optimization. The CONFLICT-blocking contract is IDENTICAL in both modes.
+
+**Affected-claim selection (anchor reverse-index):**
+1. Load the PREVIOUS `binding.md`; build the reverse index: for each claim, the set of files appearing in its evidence/anchor citations (Confirmed list + Implementation State Map `Anchor` column) plus its `vault file:line` source.
+2. `affected_claims` = claims whose anchor files intersect the changed-paths set, PLUS claims whose vault source section changed (vault edited), PLUS **every ACTIVE CONFLICT from the previous binding regardless of path intersection** (a suspected hole in the moat is never carried on trust).
+3. Claims in the codebase-map whose rows were re-extracted by `scan-codebase --changed-only` but that match no prior claim → candidate NEW evidence; run normal Step 2 verdict logic for any vault claim still OQ/NEW.
+
+**Verdict assembly:**
+- `affected_claims` → full Step 2 (+2.5–2.12) verdict logic, fresh citations.
+- All other claims → carried forward VERBATIM with `provenance: carried_forward` + the prior bind timestamp on the row. A carried-forward verdict is never silently upgraded or downgraded.
+- Counts (`claims_total`/`confirmed`/`conflict`/`oq`) are recomputed over the FULL set (fresh + carried). `binding.md` is rewritten whole — including the canonical `### CONFLICT-N` headings for EVERY active conflict (fresh or re-validated) — so the Step 5 gate, `validate-handoff-binding-units.sh`, and `.validation-blockers.json` see exactly the same surface as a full re-bind.
+
+**Fallback to full re-bind (one-line note, no halt):** previous `binding.md` absent/unparseable; the vault itself was regenerated (version bump since last bind); changed paths exceed 40% of anchored files; or any carried-forward claim's anchor file no longer exists (provenance can't be trusted → full re-run).
+
+**Anti-halu rails:** carried-forward rows keep their original citations untouched (no re-stamping); the phase-advisor pass (Step 2.12) runs over the FRESH verdicts at minimum and may sample carried ones; bound-vault production rules are unchanged (no `bound/` while any conflict — fresh OR carried — is active).
+
 ## Resolution paths
 
 When binding blocks:
@@ -158,7 +176,7 @@ When binding blocks:
 
 ## binding.md output structure
 
-See `bind-codebase/SKILL.md` for the file template. Required sections:
+The full file template is the binding-md-template reference listed in `bind-codebase/SKILL.md` §Specialist references. Required sections:
 - Summary counts (claims_total, confirmed, conflict, oq)
 - Confirmed list (cite vault file:line + codebase evidence)
 - Conflicts table (id, vault claim, codebase reality, resolution_needed)

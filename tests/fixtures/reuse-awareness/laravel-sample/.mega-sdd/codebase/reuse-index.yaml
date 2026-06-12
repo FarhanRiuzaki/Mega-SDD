@@ -1,0 +1,11 @@
+schema_version: "1.0"
+generated_from: "deadbeef"
+truncated: { helpers: false, model_api: false, services: false, commands: false }
+helpers:
+  - { name: format_currency, kind: global_helper, path: app/Helpers/money.php, signature: "format_currency(int $amount): string", purpose: "Format minor units to IDR", purpose_confidence: stated, _source: "app/Helpers/money.php:42" }
+model_api:
+  - { model: "App\\Models\\User", path: app/Models/User.php, methods: ["hasRole(string $r): bool   @88"], scopes: ["scopeActive(Builder $q): Builder @120"], traits: ["HasRoles"], _source: "app/Models/User.php" }
+services:
+  - { class: "App\\Services\\CreateOrderService", path: app/Services/CreateOrderService.php, entrypoints: ["handle(OrderData $d): Order @30"], purpose: "Create order + invoice", purpose_confidence: inferred, _source: "app/Services/CreateOrderService.php:30" }
+commands:
+  - { signature: "sync:catalog {--force}", class: "App\\Console\\Commands\\SyncCatalog", path: app/Console/Commands/SyncCatalog.php, purpose: "Re-sync catalog", purpose_confidence: stated, _source: "app/Console/Commands/SyncCatalog.php" }

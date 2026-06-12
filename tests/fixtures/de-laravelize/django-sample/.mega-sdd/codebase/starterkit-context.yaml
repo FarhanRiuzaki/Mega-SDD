@@ -1,0 +1,23 @@
+starterkit_context:
+  schema_version: "3.1"
+  framework: django
+  framework_pack: django
+  auth:
+    lib: django-built-in
+    lib_version: "5.0"
+    lib_source: "pyproject.toml:12"
+    mechanism: session
+    user_model: "accounts.User"
+    entrypoints:
+      - { name: login, _source: "accounts/urls.py:5" }
+    features: []
+    _source: ["pyproject.toml:12", "settings.py:40"]
+  authz:
+    lib: django.contrib.auth
+    lib_source: "settings.py:33"
+    mechanism: decorator
+    role_source: db
+    declarations:
+      - { name: "orders.add_order", kind: permission, applies_to: "orders.views.OrderCreate", _source: "orders/views.py:22" }
+      - { name: "Manager", kind: group, applies_to: null, _source: "accounts/migrations/0003_groups.py:10" }
+    _source: ["settings.py:33", "orders/views.py:22"]

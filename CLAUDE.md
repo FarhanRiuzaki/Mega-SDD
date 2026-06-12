@@ -1,4 +1,4 @@
-# grand-design-spec — the Mega-SDD plugin (repo)
+# mega-sdd — the Mega-SDD plugin (repo)
 
 This repository **is** the `mega-sdd` Claude Code plugin (plus its marketplace manifest). The plugin lives in [`plugins/mega-sdd/`](plugins/mega-sdd/).
 

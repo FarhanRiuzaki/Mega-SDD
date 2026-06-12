@@ -1,7 +1,7 @@
 ---
 name: using-mega-sdd
-version: 2.0.0
-description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, open questions, knowledge-base, extract intelligence, reverse engineer, rebuild, or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next; or the CWD shows .mega-sdd/ signals.
+version: 2.2.0
+description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, open questions, knowledge-base, extract intelligence, reverse engineer, rebuild, or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next, sync, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
 # Using Mega-SDD
@@ -13,7 +13,7 @@ Route SDD work through mega-sdd phases instead of answering inline. This anchor 
 Invoke a mega-sdd skill BEFORE responding when ANY of these hold:
 
 - User types `/mega-sdd:<command>`.
-- Prompt contains SDD keywords: intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, Open Question, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, auto, rebuild.
+- Prompt contains SDD keywords: intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, Open Question, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, auto, rebuild, sync ("code changed, catch the vault up", "continue from current code").
 - Indonesian variants: pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next.
 - CWD has SDD signals: `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` (back-compat: `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`).
 
@@ -21,7 +21,7 @@ Invoke a mega-sdd skill BEFORE responding when ANY of these hold:
 
 When the CWD signal is strong AND the prompt carries SDD intent (or is an empty/continuation prompt like `lanjut`, `ok`, `proceed`, `go`), propose `/mega-sdd:auto` (→ `orchestrate-flow --deep --auto`) with one upfront confirmation — don't wait for an explicit command.
 
-Strong CWD = one of: legacy code + no PRD + no vault; a PRD file present + no vault; vault present + no units; units present + no bolts.
+Strong CWD = one of: legacy code + no PRD + no vault; a PRD file present + no vault; vault present + no units; units present + no bolts; **map+binding present + change signal** (dirty journal non-empty OR HEAD ≠ map stamp) → propose `/mega-sdd:sync --auto` instead of the full pipeline.
 
 General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005") do NOT auto-trigger even on a strong CWD signal — the prompt must carry mega-sdd intent.
 
@@ -46,6 +46,8 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 ```
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
+
+Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
 
 ## Phase ownership
 
@@ -75,4 +77,4 @@ For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default 
 
 ## Reference
 
-Pipeline-stage reading guide → `references/reading-map.md`. Upgrade / compatibility → `references/upgrade-from-old-version.md`.
+Pipeline-stage reading guide → `plugins/mega-sdd/references/reading-map.md`. Upgrade / compatibility → `plugins/mega-sdd/references/upgrade-from-old-version.md`.

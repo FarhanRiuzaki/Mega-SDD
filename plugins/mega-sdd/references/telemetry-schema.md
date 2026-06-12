@@ -2,6 +2,16 @@
 
 > **Honest reset.** Iter 64 locked an aspirational 16-event schema; only 1 of those events ever emitted in real runs (per audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md`). Iter 67.5 shrinks the schema to what is *actually* emitted via Claude Code hooks (Fork A). The 11 control-layer events (classifier, guard, Plan/Act) are PARKED as Fork-B-future and are NOT emitted in Fork A.
 
+## Contents
+
+- Fork A scope (this doc) vs Fork B (future)
+- Storage location
+- Emission mechanism (Fork A — only the hook layer is reliable)
+- Event schema (live events only)
+- Fork-B-future (PARKED — NOT emitted in Fork A)
+- Iter 68 analysis prerequisites (REVISED for Fork A)
+- Schema evolution policy (revised)
+
 ## Fork A scope (this doc) vs Fork B (future)
 
 **Fork A — Telemetry-only, model-can't-no-op layer:**
