@@ -68,3 +68,16 @@ Edit: `superpowers-bridge.md` (flow), `execute-bolts/SKILL.md` (flag + routing, 
 - superpowers-bridge describes parallel blind dispatch + controller merge; depth-1 rationale intact.
 - Risk tiers + override chain documented in review-panel.md and project-config.md.
 - `claude plugin validate .` passes; `tests/review-panel/run-all.sh` green.
+
+## Phase 2 addendum — L0 deterministic floor (implemented same day)
+
+Machine gates run between implementer DONE and the panel, scoped to the bolt diff (`references/code-gates.md`):
+
+1. **Toolchain** (`scripts/detect-toolchain.sh`) — detect the repo's OWN formatter/linter/typechecker from config evidence (prettier/biome/eslint/tsc, ruff/black/mypy, gofmt/golangci/go-vet, rustfmt/clippy, pint/php-cs-fixer/phpstan/psalm, rubocop); **detect, never impose**. Format failures auto-fix + re-check; lint/typecheck failures are findings. Optional pack `## Toolchain` override (project packs only).
+2. **Secrets** (`scripts/scan-secrets-code.sh`) — gitleaks on the diff, plugin-regex fallback when absent (always scanned). Finding → halt `secret_in_code`, no override path.
+3. **SAST** (`scripts/run-code-scan.sh`) — semgrep on changed files; absent/failed tool = visible SKIP, never fabricated "clean". ERROR severity → halt `sast_critical_finding`.
+4. **New-dep existence** (`scripts/validate-new-deps.sh`) — anti-slopsquatting: every ADDED dependency across 7 manifest kinds verified against its official registry; 404 → halt `dep_not_found`; offline → `unverified` warning (fail-open with note).
+
+L0 JSON is injected into every panel lens prompt as `## Deterministic scan results` (machine fact — blindness intact). Opt-out: `code_gates: false` / `--no-code-gates` disables toolchain+SAST only; **secrets and dep-existence always run** (the critical + un-promptable pair). install-deps matrix gains semgrep/gitleaks/osv-scanner. Tests: `tests/code-gates/` (functional smoke on fixtures + wiring pins). execute-bolts → 2.13.0; plugin → 4.22.0.
+
+Phase 3 (pack `## Security idioms` emitted into Hard Rules) remains the open follow-up.

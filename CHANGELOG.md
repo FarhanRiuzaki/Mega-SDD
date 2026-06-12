@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.22.0] - 2026-06-12
+
+### Added — L0 Code Gates: the deterministic floor under the review panel (Phase 2)
+
+Deterministic-first, LLM-second (spec `docs/superpowers/specs/2026-06-12-review-panel-design.md` §Phase 2 addendum): machine checks run on every bolt diff between implementer DONE and the panel — an LLM lens never burns context on what a linter, scanner, or registry lookup decides for free.
+
+- **Toolchain detection** (`scripts/detect-toolchain.sh`): finds the repo's OWN formatter/linter/typechecker from config evidence across 7 ecosystems — detect, NEVER impose (no config evidence → no command). Format failures auto-fix + re-check (machine territory, not findings). Optional pack `## Toolchain` override for project packs (`_template.md`).
+- **Secret scan on the diff** (`scripts/scan-secrets-code.sh`): gitleaks preferred, plugin provider-shaped regex fallback when absent — secrets are ALWAYS scanned; values never echoed. Finding → halt `secret_in_code`, no override path exists.
+- **SAST** (`scripts/run-code-scan.sh`): semgrep over changed files only; tool absence/failure = visible SKIP with reason, never fabricated "clean". ERROR severity → halt `sast_critical_finding`.
+- **Anti-slopsquatting** (`scripts/validate-new-deps.sh`): every ADDED dependency (package.json/composer.json/pyproject/requirements/go.mod/Cargo.toml/Gemfile) verified to EXIST on its official registry; definite 404 → halt `dep_not_found` (hallucinated package — never install around it); offline → `unverified` warning.
+- L0 results injected into every panel lens prompt (`## Deterministic scan results` — machine fact, blindness intact); SKIPs recorded in the bolt-report so an unscanned run is never mistaken for a clean scan.
+- Opt-out per doctrine: `code_gates: false` config / `--no-code-gates` flag disable toolchain+SAST only; **secrets + dep-existence always run** (critical + un-promptable). install-deps matrix + tooling-install gain semgrep/gitleaks/osv-scanner. `tests/code-gates/` (functional fixtures: planted AWS key → exit 1 + value never echoed; hallucinated npm package → NOT_FOUND blocking; empty repo → no tools imposed). execute-bolts → 2.13.0.
+
 ## [4.21.0] - 2026-06-12
 
 ### Added — Review Panel: parallel blind reviewer lenses in execute-bolts (Phase 1)

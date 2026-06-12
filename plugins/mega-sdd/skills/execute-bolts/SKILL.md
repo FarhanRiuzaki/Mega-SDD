@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.12.0
+version: 2.13.0
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the commit on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -30,6 +30,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--auto` — non-interactive (emit handoff YAML; participate in the memory layer).
   - `--per-squad` — fan out across all squads in `_meta/squads.yaml`. The main-thread controller runs each squad's units (filtered by its `squad:` field) through the per-unit panel flow, parallelizing independent units across squads via concurrent `bolt-implementer` dispatch (depth-1; NO squad subagent — see `references/squad-subagent.md`).
   - `--review-panel=minimal|standard|full|auto` — force the review-panel tier; default `auto` (risk-based selection per `references/review-panel.md`). Forcing `minimal` on a unit with risk signals logs a warning in the bolt-report — never silent.
+  - `--no-code-gates` — skip the L0 toolchain + SAST gates for this run (logged in the bolt-report). The secret scan and new-dep existence check ALWAYS run — no flag disables them (per `references/code-gates.md`).
   - `--squad=<id>` — filter units to one squad (human-team handoff). Halts on `cross_squad_interface_draft` if a consumed interface is still draft.
   - `--module=<id>` — filter units to one module (per `generate-units/references/modules-schema.md`); topo-sort within module. Halts on `module_blocked_by` if a prerequisite module is incomplete.
   - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar; default `auto` (detect from YAML presence under `## Hard rules`).
@@ -56,7 +57,7 @@ Each check below can HALT before any code is written. Snapshot formats, grammar 
 
 ## Procedure (per unit)
 
-Follows `references/superpowers-bridge.md` per-unit flow — the default executor is the first-class **`mega-sdd:bolt-implementer`** agent, followed by the **review panel**: a risk-tiered set of read-only lenses (**spec-reviewer**, **code-quality-reviewer**, **security-reviewer**, **standards-reviewer**) dispatched **in parallel and blind**, merged in the controller per `references/review-panel.md` (spec ❌ or any Critical → re-dispatch within the retry cap). Superpowers technique skills are an optional enhancement, vendored fallback otherwise. Gate steps in **bold**:
+Follows `references/superpowers-bridge.md` per-unit flow — the default executor is the first-class **`mega-sdd:bolt-implementer`** agent, followed by the **L0 code gates** (deterministic floor: repo-own format/lint/typecheck, secret scan, SAST, new-dep existence — per `references/code-gates.md`; `secret_in_code` / `sast_critical_finding` / `dep_not_found` **halt before the panel**), then the **review panel**: a risk-tiered set of read-only lenses (**spec-reviewer**, **code-quality-reviewer**, **security-reviewer**, **standards-reviewer**) dispatched **in parallel and blind** with the L0 results in each prompt, merged in the controller per `references/review-panel.md` (spec ❌ or any Critical → re-dispatch within the retry cap). Superpowers technique skills are an optional enhancement, vendored fallback otherwise. Gate steps in **bold**:
 
 0. **Create the bolt artifact dir — deterministic, FIRST.** Run `mkdir -p <vault>/bolts/U-XXX/` as the literal first action for the unit, **before** pre-flight/dispatch. The folder MUST exist even for an empty-`## Hard rules` unit, a `task_type: verify` unit, an early pre-flight halt, or a `--auto`/`--parallel` run — do NOT rely on a later file-write to auto-create it (that is the prose-only gap that drops the folder when the controller is terse). Every per-unit artifact (`preflight.json`, `dispatch-prompt.md`, `bolt-report.md`) is written into this dir; the `bolt-implementer` agent writes code/tests/commit, NOT this dir — the controller owns it.
 1. **Pre-flight: parse + snapshot Hard rules** (per Pre-flight check 4).
@@ -125,6 +126,7 @@ After the last unit: suggest `/mega-sdd:detect-drift` to verify the bolts honore
 
 - `references/superpowers-bridge.md` — dispatch order (first-class `agents/` by default; superpowers optional), the review-panel per-unit flow, whitelist enforcement, bolt-report schema.
 - `references/review-panel.md` — the parallel blind lens panel: tier selection (risk signals), blind dispatch protocol, merge + severity gate, cost notes.
+- `references/code-gates.md` — L0 deterministic floor: toolchain detection (detect-never-impose), secret/SAST/new-dep gates + their halt YAMLs, blocking-vs-advisory split, panel injection, `code_gates:` config.
 - `references/hard-rule-scan.md` — Hard Rule pre/post-flight: grammar detection (v1/v2), snapshot + `preflight.json` formats, per-rule post-flight checks, cross-cutting-registration + parent-thread re-scan, and the `hard_rule_*` / `verify_unit_writable` halt YAMLs.
 - `references/hard-rule-grammar-v2.md` — the v2 (ast-grep YAML) Hard-rule grammar + installation guidance.
 - `references/context-enrichment.md` — Step 4.5 tiered prompt assembly: T1/T2/T3 contents, the T2 budget tracker + truncation cascade, and the full starterkit-slice read/build/§patterns/code-slice/inject logic.
