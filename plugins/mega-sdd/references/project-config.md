@@ -20,6 +20,9 @@ instincts: true            # false → no <learned-instincts> SessionStart injec
                            #   (instinct files still accumulate; see memory references/instincts.md)
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse
                            #   Edit/Write; inert anyway when no [LOCKED] anchors exist in any vault)
+preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — when set, the design
+                           #   lens captures live screenshots via capture-views.sh to judge the
+                           #   rendered ceiling, not just code. Empty → design lens is code-only.
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):

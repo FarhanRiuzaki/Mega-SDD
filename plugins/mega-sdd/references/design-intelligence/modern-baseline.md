@@ -49,6 +49,43 @@ or generic-AI aesthetics.
     typographic personality) — avoid the interchangeable bootstrap-default and
     purple-gradient-AI looks alike.
 
+## Ceiling moves (the floor is NOT the goal — clear it, then do these)
+
+The non-negotiables above are the FLOOR: passing them means "not broken, not
+default-browser, accessible." It does NOT mean done. A view that satisfies all
+10 and stops there reads as **correct but generic** — a lone centered card on an
+empty page, flat hierarchy, no personality. Field finding (clinic-project): the
+floor passed; the result was still "basic banget." Every UI bolt MUST also make
+the page feel like a designed product:
+
+1. **Page furniture.** A real branded header (logo/wordmark + primary nav) and a
+   footer — not a bare `<h1>` over a centered card. The app should feel like it
+   has a frame, not float in whitespace.
+2. **Composition, not a lone card.** Fill the width with intent: a two-column
+   layout (primary action + a supporting panel — summary, help, illustration,
+   trust signals), a hero on landing/empty pages, or a content grid. A single
+   centered 480px card on a 1280px page is the #1 "basic" tell.
+3. **Iconography.** Use an icon set (lucide, heroicons, the stack's idiom) for
+   actions, nav, status, and empty states. Icon + label, never icon-only for
+   primary actions. Plain-text-only UIs read as unfinished.
+4. **Visual hierarchy with depth.** More than one type size and weight in play;
+   section headers, supporting text, and metadata visually distinct. Use
+   elevation/borders/background tints to group — not everything on one flat plane.
+5. **A signature.** Commit to 2–3 memorable expressions of the chosen style: a
+   distinctive accent usage, a consistent radius/elevation language, an
+   illustrative or photographic moment, a confident empty-state. Pick the style's
+   personality and show it — don't render the interchangeable default.
+6. **Motion with purpose.** Entrance/hover/transition micro-interactions
+   (subtle, 150–250ms) on the primary surfaces — buttons, cards, step changes.
+7. **Density that fits the product.** A clinical tool, a consumer booking flow,
+   and a dashboard have different densities — match the product, don't ship the
+   same sparse centered form for everything.
+
+A design-reviewer judging a UI bolt treats "floor met, ceiling absent" as an
+**Important** finding (generic/undesigned), not a pass. When a rendered
+screenshot of the running view is available, judge the ceiling from the render —
+the floor is provable from code, the ceiling usually is not.
+
 ## Anti-kuno tells (a match = defect; mirror of the ui-quality gate's spirit)
 
 - Unstyled default browser controls / default link blue / default focus-less buttons.

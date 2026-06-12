@@ -81,3 +81,11 @@ Machine gates run between implementer DONE and the panel, scoped to the bolt dif
 L0 JSON is injected into every panel lens prompt as `## Deterministic scan results` (machine fact — blindness intact). Opt-out: `code_gates: false` / `--no-code-gates` disables toolchain+SAST only; **secrets and dep-existence always run** (the critical + un-promptable pair). install-deps matrix gains semgrep/gitleaks/osv-scanner. Tests: `tests/code-gates/` (functional smoke on fixtures + wiring pins). execute-bolts → 2.13.0; plugin → 4.22.0.
 
 Phase 3 (pack `## Security idioms` emitted into Hard Rules) remains the open follow-up.
+
+## Phase 4 addendum — floor-vs-ceiling (live-app design judgment, 2026-06-12)
+
+Field finding (clinic-project, browser-verified): the design pipe shipped, the floor passed (tokens/states/a11y/page-shell), but the result was still "basic banget" — a lone centered card in whitespace, no branding, no iconography, flat hierarchy. Root cause: 9 of `modern-baseline.md`'s 10 non-negotiables are binary floor checks provable from code; "distinctive, not generic" is the one that needs the RENDER and so was the weakest-enforced.
+
+- **`modern-baseline.md §Ceiling moves`**: an explicit distinctiveness contract on top of the floor — page furniture (header/nav/footer), width-filling composition (not a lone card), iconography, layered hierarchy, a style signature, purposeful motion, product-fit density. Framed as "the floor is NOT the goal." Injected into the implementer prompt (design slice) AND the design lens rubric.
+- **`design-reviewer` upgrade**: "floor met, ceiling absent" = **Important** (generic), not a pass; and when rendered screenshots are present, judge the actual render — with a hard rail never to imply a render it didn't see.
+- **`scripts/capture-views.sh`** (the live-app lens, ECC Batch 3 scoped): screenshots the unit's routes when a dev server is up (`preview_url`), feeding the design lens the render. **Stack-agnostic** — hits URLs, so any stack qualifies; driver tries system Chrome/Chromium (no Node — PHP/Python/Ruby/Go repos) then npx playwright. Every failure (server down, no driver, no URL) is a graceful SKIP; an un-captured render is never reported as fine. `tests/design-ceiling/`. plugin → 4.26.0.
