@@ -305,6 +305,23 @@ relation_derivation:
     accessor_template: '<optional — how the accessor renders, e.g. {camelSingular}()>'
 ```
 
+## Toolchain   <!-- OPTIONAL — override for L0 code gates -->
+
+> Consumed by `execute-bolts` L0 code gates (`references/code-gates.md`). OPTIONAL:
+> when ABSENT, the gates auto-detect the repo's own formatter/linter/typechecker via
+> `scripts/detect-toolchain.sh` (config-file evidence; detect, never impose) — which is
+> the right default for almost every pack. Declare this section ONLY in a PROJECT pack
+> (e.g. a starterkit pack) whose toolchain commands differ from what detection would
+> find (custom wrapper scripts, monorepo task runners). Pack override > detection.
+
+```yaml
+toolchain:
+  format_check_cmd: <e.g. composer format -- --test>
+  format_fix_cmd:   <e.g. composer format>
+  lint_cmd:         <e.g. composer analyse>
+  typecheck_cmd:    <optional>
+```
+
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>
