@@ -1,7 +1,7 @@
 # Squad Fan-Out (main-thread loop)
 
 How `execute-bolts --per-squad` executes every declared squad's units while the
-controller stays in the **main thread** — preserving the per-unit two-stage review.
+controller stays in the **main thread** — preserving the per-unit review panel.
 
 ## When this applies
 
@@ -12,11 +12,11 @@ controller stays in the **main thread** — preserving the per-unit two-stage re
 
 Subagents cannot spawn subagents (hard depth-1 limit enforced by the runtime; a
 dispatched plugin agent has no `Agent`/`Task` tool). The per-unit flow already
-dispatches three first-class agents — `bolt-implementer` → `spec-reviewer` →
-`code-quality-reviewer` (see `superpowers-bridge.md`). If a **squad subagent** were
-the per-unit controller, it would have to dispatch those three = **depth-2 =
+dispatches the first-class agents — `bolt-implementer` then the review-panel
+lenses (see `superpowers-bridge.md` + `review-panel.md`). If a **squad subagent**
+were the per-unit controller, it would have to dispatch those agents = **depth-2 =
 forbidden**; in practice it would silently degrade to inline implementation,
-**losing the two-stage review** (the moat's quality enforcement). So the controller
+**losing the review panel** (the moat's quality enforcement). So the controller
 **NEVER forks a squad subagent.**
 
 Instead the **main-thread controller** iterates squads and runs the SAME per-unit
@@ -37,11 +37,11 @@ units — depth-1 AND parallel, no tradeoff. This is the same mechanism as
 3. **Build the working set.** Union the squads' filtered units; topo-sort within
    each squad by `depends_on` (cross-squad deps are interfaces, not `depends_on`,
    by validation).
-4. **Dispatch the per-unit two-stage flow from the MAIN THREAD** (the per-unit flow
+4. **Dispatch the per-unit panel flow from the MAIN THREAD** (the per-unit flow
    in `superpowers-bridge.md`). Parallelize by dispatching **independent units —
    including units from different squads — concurrently** (multiple `bolt-implementer`
    Agent calls in one message), bounded by a sensible in-flight cap. Every unit still
-   goes `bolt-implementer` → `spec-reviewer` → `code-quality-reviewer`. **Never skip
+   goes `bolt-implementer` → the review panel (per `review-panel.md`). **Never skip
    the review on a parallel unit.**
 5. **Re-scan after each batch.** Run the project-wide quality validators against
    `$PROJECT_ROOT` (defense-in-depth, per `hard-rule-scan.md` §Parent-thread re-scan)

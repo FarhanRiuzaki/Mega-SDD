@@ -7,9 +7,11 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 0. **First-class mega-sdd agents (default).** The plugin ships its own subagents in `agents/`:
    - `mega-sdd:bolt-implementer` — implements the unit (writes target_files, writes + runs the acceptance test, commits).
    - `mega-sdd:spec-reviewer` — verifies spec compliance + Hard rules honored (read-only).
-   - `mega-sdd:code-quality-reviewer` — reviews quality (read-only).
+   - `mega-sdd:code-quality-reviewer` — reviews quality: duplication/reuse, tests, maintainability (read-only).
+   - `mega-sdd:security-reviewer` — reviews security: input validation, authz vs spec, secrets, new deps, drift (read-only).
+   - `mega-sdd:standards-reviewer` — reviews convention conformance vs pack + surrounding code (read-only).
 
-   `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh agent per unit, then the two-stage review. Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
+   `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh implementer per unit, then the **review panel** (parallel blind lenses per `references/review-panel.md`). Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 
 1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A unit's optional `superpowers_skills` frontmatter is treated as a technique hint.
 
@@ -17,7 +19,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 
 3. **Legacy path.** If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before.
 
-## Per-unit flow (two-stage review)
+## Per-unit flow (review panel)
 
 ```
 load unit U-XXX
@@ -33,15 +35,18 @@ DISPATCH mega-sdd:bolt-implementer        (Agent tool)
 implementer reports  DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
    ├─ BLOCKED / NEEDS_CONTEXT → controller supplies context or halts — never silent-skip
    ▼ DONE
-DISPATCH mega-sdd:spec-reviewer           (Agent tool, read-only)
-   verifies by reading the actual code: every requirement met, nothing extra,
-   Hard rules honored, acceptance_test real (render tests assert a display field).
-   ├─ ❌ issues → re-dispatch bolt-implementer with the issue list (cap: --max-retries, default 3)
-   ▼ ✅ compliant
-DISPATCH mega-sdd:code-quality-reviewer   (Agent tool, read-only)
-   returns Strengths + Issues (Critical/Important/Minor) + Assessment.
-   ├─ Critical → re-dispatch bolt-implementer to fix (within the retry cap)
-   ▼ clean (only Minor/Important remain)
+SELECT panel tier (risk-based)            (references/review-panel.md)
+   minimal = spec · standard = spec+quality · full = +security +standards
+   ▼
+DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-only)
+   each lens gets: unit body + base/head SHAs + its lens-specific context.
+   NEVER the implementer's report, NEVER another lens's verdict.
+   ▼
+MERGE in the controller (main thread)
+   evidence-or-drop (no file:line → discarded) → dedup, max severity → consensus marks
+   ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer with the merged
+   │  issue list (shared cap: --max-retries, default 3); re-review stays blind
+   ▼ clean (only Minor/Important remain — recorded in bolt-report ## Review panel)
 write bolt-report.md, commit, mark unit DONE
    └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
 ```
@@ -96,4 +101,4 @@ retries: N
 
 ## Squad-level fan-out
 
-When `execute-bolts --per-squad` is invoked, the **main-thread controller** loops over the declared squads and runs each squad's units through the per-unit flow above — dispatching the first-class agents at **depth-1**. There is **NO squad subagent**: a forked squad controller could not dispatch the bolt agents (that would be depth-2, which the runtime forbids), and would silently lose the two-stage review. Parallelism comes from the controller dispatching independent units (across squads) **concurrently**, not from nesting. See `references/squad-subagent.md` for the filter + consolidation protocol.
+When `execute-bolts --per-squad` is invoked, the **main-thread controller** loops over the declared squads and runs each squad's units through the per-unit flow above — dispatching the first-class agents at **depth-1**. There is **NO squad subagent**: a forked squad controller could not dispatch the bolt agents (that would be depth-2, which the runtime forbids), and would silently lose the review panel. Parallelism comes from the controller dispatching independent units (across squads) **concurrently**, not from nesting. See `references/squad-subagent.md` for the filter + consolidation protocol.
