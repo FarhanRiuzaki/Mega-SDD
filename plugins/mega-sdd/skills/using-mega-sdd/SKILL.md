@@ -49,6 +49,12 @@ Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), 
 
 Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
 
+Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):
+- Same source **revised** (PRD v1 → v1.1) → `diff-vault` (one vault evolves; history preserved).
+- **New epic** on top of shipped work → **new vault** via `generate-intent`, then `bind-codebase` **brownfield** against the codebase that now contains PRD 1 (+ the project constitution) — the binding gate catches contradictions with shipped reality.
+- **Code moved** → `sync`.
+When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; **when unsure, ASK** (evolve-in-place vs new-epic diverge hard). `.mega-sdd/project.md` (the project index) lists every vault + status so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
+
 ## Phase ownership
 
 | Phase | Skill | Repo access |

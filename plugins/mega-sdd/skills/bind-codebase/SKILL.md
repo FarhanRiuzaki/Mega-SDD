@@ -34,6 +34,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 **2. Per claim, produce a verdict** (per `references/binding-contract.md`). **This is the moat:**
 
+- **Project constitution gate (multi-PRD lifecycle).** Before binding a NEW vault's claims, read `.mega-sdd/constitution.md` (project-scope locked rules inherited by every vault, per `plugins/mega-sdd/references/multi-prd-lifecycle.md`) if present. Any vault claim that contradicts a project-locked clause (e.g. a new PRD proposes a different datastore than the project locks) is a **CONFLICT** at this gate — surfaced, never silently accepted. This is what keeps PRD 2..N inline with PRD 1's shipped decisions. Absent file = no project-scope layer = unchanged behavior.
 - Primary ground truth = the codebase-map. Search it for matching evidence:
   - Exact match (file path + signature) → **CONFIRMED**.
   - Found but contradicts → **CONFLICT** (NEVER overridden by KB — codebase-map wins for conflicts).
