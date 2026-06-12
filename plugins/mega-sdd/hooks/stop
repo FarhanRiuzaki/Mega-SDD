@@ -303,37 +303,11 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
   fi
 fi
 
-# ─── COMPACTION ADVISOR (ECC Batch 2) ────────────────────────────────────────
-# True context size from the transcript usage (already extracted above), summed:
-# input + cache_read + cache_creation. Window scale from the [1m] marker. When
-# over 80% AND a mega-sdd chain is active (this project has a vault with units),
-# print ONE advisory line — a phase boundary is the safe place to /compact.
-# Pure advisory (Stop can't block). Opt-out: compaction_notice: false.
-if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \
-   ! grep -qE "^[[:space:]]*compaction_notice:[[:space:]]*false" "$CONFIG_FILE" 2>/dev/null && \
-   [ "$USAGE_JSON" != "{}" ]; then
-  COMPACT_NOTICE=$(USAGE_JSON="$USAGE_JSON" MODEL_MARK="${MODEL_DISPLAY:-}" PROOT="$PROJECT_ROOT" python3 -c '
-import glob, json, os
-try:
-    u = json.loads(os.environ["USAGE_JSON"])
-except Exception:
-    raise SystemExit(0)
-ctx = (u.get("input_tokens", 0) or 0) + (u.get("cache_read_input_tokens", 0) or 0) + (u.get("cache_creation_input_tokens", 0) or 0)
-if ctx <= 0:
-    raise SystemExit(0)
-window = 1_000_000 if "[1m]" in os.environ.get("MODEL_MARK", "") else 200_000
-thresh = int(window * 0.80)
-if ctx < thresh:
-    raise SystemExit(0)
-# active chain? a vault with units in flight
-proot = os.environ["PROOT"]
-if not glob.glob(os.path.join(proot, ".mega-sdd", "vaults", "*", "units", "U-*.md")):
-    raise SystemExit(0)
-print("mega-sdd: context ~%dk of ~%dk (%d%%). A phase boundary is the safe place to /compact — pipeline state is snapshotted on compaction." % (ctx // 1000, window // 1000, ctx * 100 // window))
-' 2>/dev/null)
-  if [ -n "$COMPACT_NOTICE" ]; then
-    printf '%s\n' "$COMPACT_NOTICE"
-  fi
-fi
+# NOTE: the compaction advisor was RELOCATED out of this Stop hook (doc audit
+# 2026-06-12). Per code.claude.com/docs/en/hooks, plain stdout on a Stop hook is
+# debug-log-only (Stop is NOT one of the stdout→context events), and this hook is
+# async — so an advisory printed here reached no one. It now lives in
+# hooks/user-prompt-submit, where stdout IS added to context per the docs. The
+# PreCompact snapshot + SessionStart resume line (both doc-correct) are unchanged.
 
 exit 0

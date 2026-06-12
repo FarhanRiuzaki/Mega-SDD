@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# UserPromptSubmit hook for mega-sdd — phase-aware compaction advisor.
+#
+# Relocated here from the Stop hook (doc audit 2026-06-12): per
+# code.claude.com/docs/en/hooks, stdout on UserPromptSubmit "is added as context
+# that Claude can see and act on" — unlike Stop, whose stdout is debug-log-only.
+# So a per-turn advisory belongs here. Reads true context size from the
+# transcript usage, and when over 80% of the window AND a mega-sdd chain is in
+# flight, prints ONE line so Claude can suggest /compact at a phase boundary.
+# Advisory only (never blocks; exit 0). Opt-out: compaction_notice: false.
+
+set -uo pipefail
+STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+
+PARSE=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
+try: d=json.loads(sys.stdin.read())
+except Exception: sys.exit(0)
+print("CWD=%s" % d.get("cwd",""))
+print("TRANSCRIPT=%s" % d.get("transcript_path",""))' 2>/dev/null)
+[ -n "$PARSE" ] || exit 0
+eval "$PARSE" 2>/dev/null || true
+[ -n "${CWD:-}" ] || exit 0
+
+# Resolve project root; quick-exit for non-mega-sdd projects (the common case).
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+RPR="${SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
+PROJECT_ROOT="$CWD"
+if [ -f "$RPR" ]; then . "$RPR"; PROJECT_ROOT=$(resolve_project_root "$CWD"); fi
+[ -d "${PROJECT_ROOT}/.mega-sdd" ] || exit 0
+
+CFG="${PROJECT_ROOT}/.mega-sdd/config.yaml"
+if [ -f "$CFG" ]; then
+  grep -qE "^[[:space:]]*telemetry:[[:space:]]*false" "$CFG" 2>/dev/null && exit 0
+  grep -qE "^[[:space:]]*compaction_notice:[[:space:]]*false" "$CFG" 2>/dev/null && exit 0
+fi
+[ -n "${TRANSCRIPT:-}" ] && [ -f "$TRANSCRIPT" ] || exit 0
+
+# Sum the latest transcript usage (input + cache_read + cache_creation) = true
+# context size; window from the [1m] marker if present in the model id.
+TRANSCRIPT="$TRANSCRIPT" PROOT="$PROJECT_ROOT" python3 <<'PYEOF' 2>/dev/null || true
+import glob, json, os
+
+path = os.environ["TRANSCRIPT"]
+proot = os.environ["PROOT"]
+
+last_usage, model = None, ""
+try:
+    with open(path) as f:
+        for line in f:
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+            if msg and isinstance(msg.get("usage"), dict):
+                last_usage = msg["usage"]
+                model = msg.get("model", model) or model
+except Exception:
+    raise SystemExit(0)
+if not last_usage:
+    raise SystemExit(0)
+
+ctx = (last_usage.get("input_tokens", 0) or 0) + (last_usage.get("cache_read_input_tokens", 0) or 0) + (last_usage.get("cache_creation_input_tokens", 0) or 0)
+if ctx <= 0:
+    raise SystemExit(0)
+window = 1_000_000 if "[1m]" in model else 200_000
+if ctx < int(window * 0.80):
+    raise SystemExit(0)
+# only when a mega-sdd chain is in flight (a vault with units exists)
+if not glob.glob(os.path.join(proot, ".mega-sdd", "vaults", "*", "units", "U-*.md")):
+    raise SystemExit(0)
+
+print("mega-sdd: context ~%dk of ~%dk (%d%%) — a phase boundary is the safe place to /compact (pipeline state is snapshotted on compaction). Avoid compacting mid-bolt." % (ctx // 1000, window // 1000, ctx * 100 // window))
+PYEOF
+exit 0

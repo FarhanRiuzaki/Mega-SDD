@@ -56,7 +56,7 @@ elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     cmd_b64 = base64.b64encode(cmd.encode()).decode()
     print(f"BASH_CMD_B64={cmd_b64}")
-elif tool_name in ("Edit", "Write", "MultiEdit"):
+elif tool_name in ("Edit", "Write"):
     fp = tool_input.get("file_path", "")
     fp_b64 = base64.b64encode(fp.encode()).decode()
     print(f"FILE_PATH_B64={fp_b64}")
@@ -403,7 +403,7 @@ if d and d.get("status") == "FAIL":
     fi
     ;;
 
-  Edit|Write|MultiEdit)
+  Edit|Write)
     # ─── GateGuard: LOCKED-file investigation gate (deny→force→allow) ────────
     # ECC-adoption Batch 1 (spec 2026-06-12-instincts-and-gateguard-design.md §B).
     # The FIRST edit touching a file anchored to a [LOCKED] claim is denied with
