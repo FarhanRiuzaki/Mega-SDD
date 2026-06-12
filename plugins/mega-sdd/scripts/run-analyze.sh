@@ -61,7 +61,7 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   V5_RC="STATE_FILE"; V6_RC="STATE_FILE"; V7_RC="STATE_FILE"; V7M_RC="STATE_FILE"
   V7F_RC="STATE_FILE"; V7S_RC="STATE_FILE"; V7C_RC="STATE_FILE"
   V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
-  V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
+  V11_RC="STATE_FILE"; V12_RC="STATE_FILE"; V3B_RC="STATE_FILE"
 
   # Advisory checks not re-run in aggregate-only mode
   REUSE_DUP_OUTPUT=""
@@ -118,6 +118,11 @@ for bf in $(find "${CWD}/.mega-sdd/vaults" -path "*/bolts/U-*/bolt-report.md" -n
   [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V3_WORST" ] && V3_WORST=$rc
 done
 V3_RC=$( [ "$V3_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V3_WORST" )
+
+# 1c2. Orphan-bolt-commit scan (repo-wide; catches bolt commits whose
+# bolt-report.md was never written — the per-file loop above cannot see a
+# file that does not exist). Writes .bolt-orphans-state.json.
+V3B_RC=$(run_validator "validate-bolt-artifacts.sh" --cwd="$CWD" --orphan-scan --quiet)
 
 # 1d. Per-vault-doc OQ validator
 V4_WORST=0
@@ -315,7 +320,7 @@ fi  # end of FULL vs AGGREGATE_ONLY branch
 
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" \
-  V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
+  V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
   V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   python3 <<'PYEOF'
 import json
@@ -337,6 +342,7 @@ validator_results = {
     "binding_units_handoff": {"rc": os.environ["V1_RC"], "state_file": ".validation-blockers.json"},
     "unit_spec": {"rc": os.environ["V2_RC"], "state_file": ".unit-spec-state.json"},
     "bolt_artifacts": {"rc": os.environ["V3_RC"], "state_file": ".bolt-artifacts-state.json"},
+    "bolt_orphans": {"rc": os.environ.get("V3B_RC", "STATE_FILE"), "state_file": ".bolt-orphans-state.json"},
     "vault_oqs": {"rc": os.environ["V4_RC"], "state_file": ".vault-oqs-state.json"},
     "fsd_slots": {"rc": os.environ["V5_RC"], "state_file": ".fsd-slots-state.json"},
     "vault_binding_coverage": {"rc": os.environ["V6_RC"], "state_file": ".vault-binding-coverage-state.json"},

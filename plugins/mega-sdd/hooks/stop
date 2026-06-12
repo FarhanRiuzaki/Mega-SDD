@@ -207,6 +207,22 @@ except Exception:
   fi
 fi
 
+# ─── BOLT ORPHAN SCAN (clinic-project audit 2026-06-12) ─────────────────────
+# Runs on EVERY Stop for a mega-sdd git project — unconditionally, NOT only when
+# an --auto handoff was emitted. Closes the interactive-run gap: bolt commits
+# with no <vault>/bolts/U-XXX/bolt-report.md were invisible to every gate
+# (the handoff validator above only fires on a "handoff:" marker; the
+# file-scoped artifact validator never fires for a file that was never
+# written). Detection-only here (Stop must never block); the PreToolUse
+# execute-bolts aggregator blocks the NEXT run on the FAIL state.
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
+  SCRIPT_DIR_OS="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+  VALIDATOR_OS="${SCRIPT_DIR_OS}/../scripts/validate-bolt-artifacts.sh"
+  if [ -f "$VALIDATOR_OS" ]; then
+    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
+  fi
+fi
+
 # ─── TELEMETRY GATE (turn_end_marker only) ──────────────────────────────────
 TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
 if [ ! -f "$TELEMETRY_FILE" ]; then
