@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.0.0
+version: 2.13.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -18,7 +18,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 - `orchestrate-flow` detects a brownfield project + missing `codebase-map.md`
 - **`orchestrate-flow` Mode A/B — starterkit detected:** scan runs FIRST in the pipeline (before generate-intent) so vault generation is pack-aware from the start
 - User asks "siapkan context buat AI dev di repo ini" or paraphrases
-- After significant code changes, to refresh a stale map
+- After significant code changes, to refresh a stale map — use `--changed-only` for an incremental merge-update (journal + git delta; the `/mega-sdd:sync` lane)
 
 ### Scan-first usage (FIRST phase in starterkit-first mode)
 
@@ -34,7 +34,7 @@ When invoked as the FIRST phase (`orchestrate-flow` decision matrix Mode A/B):
 - `--include=<glob>` (repeatable; default infers from package manager)
 - `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
 
-The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**.
+The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**. Incremental mode (`--changed-only` — re-extract only changed paths from the dirty journal ∪ git delta, merge into the prior map, truncate the journal) is specified at the top of **`references/scan-procedure.md`**.
 
 ## Output
 
@@ -46,20 +46,20 @@ Detailed per-step logic — including the tree-sitter multi-binary probe, the pe
 
 0. **Engine detection.** Probe tree-sitter via TWO binary names (`command -v tree-sitter || command -v tree-sitter-cli`). Found → `engine: tree-sitter` (precision_tier `ast`). Not found + `--engine=tree-sitter` → halt `dep_missing`. Not found + no flag → fall back to `engine: regex` (precision_tier `regex`) with a one-line chat warning. Override via `--engine=`.
 1. **Detect repo root.** Walk up to `.git`; else treat CWD as root and warn.
-2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle`. Multiple → record all.
+2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle` (full per-ecosystem table: `references/scan-procedure.md §Step 2`). Multiple → record all.
 3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
 4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respecting `--exclude` (defaults in `references/exclusions.md`).
 5. **Extract public interfaces.** Run the per-file invalidation gate first (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` → symbol graph) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
-6. **Extract routes.** Per-framework signatures (Express/Laravel/Next.js/FastAPI/Spring).
-7. **Extract data models.** Per-pattern (TypeORM/Prisma, Eloquent, Sequelize, Pydantic).
+6. **Extract routes.** Per-framework signatures covering EVERY framework in the Step 8.5 detection table (Express/Laravel/Rails/Django/Gin/Axum/Spring/…) — full table in `references/scan-procedure.md` Step 6.
+7. **Extract data models.** Per-ORM signatures across all ecosystems (Prisma/Eloquent/ActiveRecord/Django ORM/GORM/Diesel/JPA/…) — full table in `references/scan-procedure.md` Step 7.
 8. **Detect naming conventions.** Sample 20+ files/language: file case, symbol case, test-file suffix.
 8.5. **Detect framework.** Parse manifest fingerprints (first-match-wins; specific starterkit packs precede generic packs); record `name/version/confidence/pack_path/detection_source` to §7. No match → `_universal` fallback pack.
 9. **Detect pattern signatures.** Heuristic grep for auth (`middleware|jwt|session`), state management, error handling.
-10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark empty ones "None detected" (never omit). Stamp `engine` + `precision_tier` in frontmatter so `bind-codebase` knows the confidence level.
+10. **Write `codebase-map.md`** per `references/codebase-map-schema.md`. Include all sections; mark empty ones "None detected" (never omit). Stamp `engine` + `precision_tier` + `last_scanned_commit` (git HEAD; staleness stamp for drift detection) in frontmatter. **Step 10a — secret-scan gate:** scan the assembled map content for credential patterns BEFORE writing; redact matches as `[REDACTED-SECRET]` + warn (per `references/scan-procedure.md` Step 10a).
 
 ### Step 10.5 — Deep-scan stage (DEFAULT-ON when framework detected)
 
-After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / rbac / ui_ux / libs slices + a pack-driven `patterns:` block). Full algorithm — trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, the framework-agnostic deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, and the concurrency guard — is in **`references/deep-scan-stage.md`**. Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
+After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / authz / ui_ux / libs slices + a pack-driven `patterns:` block; plus a separate `reuse-index.yaml`). Full algorithm — trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, the framework-agnostic deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, and the concurrency guard — is in **`references/deep-scan-stage.md`**. Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
 
 - **Trigger:** framework confidence ≥ 0.5 (HIGH/MEDIUM) → run; LOW → skip (override with `--force-deep`).
 - **Cache:** per-slice signature diff; full hit short-circuits; `--no-cache` forces full re-dispatch.
@@ -90,7 +90,7 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 
 - **`references/scan-procedure.md`** — full surface scan (Steps 0–10): engine multi-binary probe, per-file invalidation gate, tree-sitter + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
 - **`references/deep-scan-stage.md`** — the deep-scan stage (Steps 10.5.x + 10.6): trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, pack-driven deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, concurrency guard, shared snapshot.
-- **`references/deep-scan-prompts.md`** — the four deep-scan subagent prompt templates (auth / rbac / ui-ux / libs), variable substitution, `<MANIFEST_FACTS>` injection, and cross-cutting anti-halu rails.
+- **`references/deep-scan-prompts.md`** — the five deep-scan subagent prompt templates (auth / authz / ui-ux / libs / reuse), variable substitution, `<MANIFEST_FACTS>` injection, and cross-cutting anti-halu rails.
 - **`references/codebase-map-schema.md`** — the full `codebase-map.md` output schema (frontmatter + §1–§7), how `bind-codebase` consumes it, and detection-precision caveats.
 - **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.
 - **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.

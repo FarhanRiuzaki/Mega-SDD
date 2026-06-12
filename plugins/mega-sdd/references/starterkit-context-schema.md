@@ -2,19 +2,31 @@
 
 > Canonical schema for `.mega-sdd/codebase/starterkit-context.yaml` — single source of truth for all mega-sdd consumers.
 
-**Version:** 3.0 (Iter 68) — supersedes 2.0 (Iter 42), 1.0 (Iter 32)
-**Introduced:** v3.23.0 (Iter 32); cache schema bumped v3.28.0 (Iter 42); patterns: block added v3.59.0+ (Iter 68)
-**Produced by:** `mega-sdd:scan-codebase` v3.0.0+ Step 10.5 deep-scan stage + Step 10.5.2.5 pattern extraction
-**Consumed by:** `mega-sdd:generate-units` v2.6.0+ (Step 4.7), `mega-sdd:execute-bolts` v2.7.0+ (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation), `validate-starterkit-conformance.sh` (v3.0 patterns: block consumer)
-**Backward compat:** v1.0 readers (Iter 32 era) skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block (Iter 42 era — pre-v3.0). v3.0+ writers MUST emit `patterns:`. Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.0.
+**Version:** 3.1 — supersedes 3.0, 2.0, 1.0 (schema lineage: 1.0 initial; 2.0 added per-slice cache; 3.0 added `patterns:`; 3.1 neutral auth/authz reshape — rbac→authz, auth.routes→entrypoints, auth.guard→mechanism)
+**Produced by:** `mega-sdd:scan-codebase` Step 10.5 deep-scan stage + Step 10.5.2.5 pattern extraction
+**Consumed by:** `mega-sdd:generate-units` (Step 4.7), `mega-sdd:execute-bolts` (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation), `validate-starterkit-conformance.sh` (`patterns:` block consumer)
+**Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.0+ writers MUST emit `patterns:`. v3.1 reshapes auth/authz (breaking format change — see cache migration note in deep-scan-stage.md). Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.1.
 
 ---
+
+## Contents
+
+- Top-level structure
+- §patterns block — multi-framework examples (v3.0+)
+- §auth block (authentication — framework-neutral)
+- §authz block (authorization — framework-neutral; replaces the old Laravel-shaped `rbac` block)
+- §ui_ux block
+- §libs block
+- §cache_signatures block (v2.1)
+- Partial output protocol
+- Anti-halu rails
+- See also
 
 ## Top-level structure
 
 ```yaml
 starterkit_context:
-  schema_version: 3.0                    # v3.0 bump (Iter 68 — adds patterns:); v2.0 was Iter 42; v1.0 was Iter 32
+  schema_version: 3.1                    # v3.1 = neutral auth/authz reshape (rbac->authz, auth.routes->entrypoints, auth.guard->mechanism); v3.0 added patterns:
   generated_by: scan-codebase v3.0.0
   generated_at: <ISO8601 timestamp>      # MOST RECENT slice write time
   framework: laravel                     # from codebase-map.md §7 Framework.name
@@ -22,11 +34,11 @@ starterkit_context:
   framework_pack: laravel-base-26        # from codebase-map.md §7 Framework.pack_path basename
 
   partial: true                          # OPTIONAL — only when ≥1 slice failed
-  partial_slices: [rbac]                 # OPTIONAL — present when partial: true
+  partial_slices: [authz]                # OPTIONAL — present when partial: true
   reused_slices: [auth, ui_ux]           # v2.0+ — per-slice cache provenance (which slices reused vs freshly-dispatched)
 
   auth: { ... }                          # fresh OR cached slice content
-  rbac: { ... }                          # fresh OR cached
+  authz: { ... }                         # fresh OR cached (replaces old rbac: block)
   ui_ux: { ... }                         # fresh OR cached
   libs: [ ... ]                          # fresh OR cached
 
@@ -77,13 +89,14 @@ starterkit_context:
       _source: [<sample file:lines>]
       extras: {}                               # Laravel: {resource_style: resource|apiResource}; FastAPI: {router_count}; NestJS: {controller_decorators}
 
-  cache_signatures:                      # v2.0 schema (replaces v1.0 cache_key:)
-    composer_lock_sha256: <hex>          # retained for reproducibility
-    package_lock_sha256: <hex>           # retained for reproducibility
+  cache_signatures:                      # v2.1 schema (per-ecosystem locks; replaces v2.0 php/js-only + v1.0 cache_key:)
+    locks_sha256:                        # one digest per detected ecosystem (php|js|rust|go|ruby|python|jvm)
+      <ecosystem>: <hex>
+    app_ecosystem: <ecosystem>           # ecosystem of §7 Framework (drives app_locks_digest)
     framework_pack: <pack-name>          # retained
     per_slice:
       auth:   { signature_sha256: <hex>, generated_at: <ISO8601> }
-      rbac:   { signature_sha256: <hex>, generated_at: <ISO8601> }
+      authz:  { signature_sha256: <hex>, generated_at: <ISO8601> }
       ui_ux:  { signature_sha256: <hex>, generated_at: <ISO8601> }
       libs:   { signature_sha256: <hex>, generated_at: <ISO8601> }
 ```
@@ -276,35 +289,35 @@ patterns:
 - **`extras: {}` is the escape hatch** for framework quirks — anything not generic goes here. Validators MUST NOT introspect `extras` (it varies per pack).
 - **Pack-driven extraction**: `framework-conventions/<pack>.md` tells deep-scan WHERE to look for each category. `_universal.md` fallback covers unknown frameworks with best-effort heuristics.
 
-## §auth block
+## §auth block (authentication — framework-neutral)
 
 ```yaml
 auth:
-  lib: sanctum                     # enum: sanctum | breeze | jetstream | fortify | passport | not_detected
-  lib_version: "4.0"               # version string or "" if not_detected
-  guard: sanctum                   # default guard name from config/auth.php
-  user_model: "App\\Models\\User"  # FQCN of User model
-  routes:
-    login: "/login"                # or "" if route absent
-    register: "/register"
-    logout: "/logout"
-    password_reset: "/forgot-password"
-  features: [email_verification, 2fa, social_login]  # array; subset of recognized features
-  _source: ["composer.json:34", "config/auth.php:42"]  # files used to derive this slice (anti-halu citation)
+  lib: "<open string>"             # e.g. sanctum | django-allauth | passport | next-auth | not_detected (NOT a closed enum)
+  lib_version: ""                  # version string or "" if not_detected
+  lib_source: "<file:line>"        # evidence proving the lib (required unless not_detected)
+  mechanism: session               # session | token | jwt | oauth | builtin | unknown
+  user_model: "<FQCN or path or null>"
+  entrypoints:                     # login / register / logout handlers
+    - { name: "login", _source: "<file:line>" }
+  features: []                     # subset of recognized features (email_verification, 2fa, social_login, ...)
+  _source: ["<file:line>", ...]    # anti-halu citation
 ```
 
-## §rbac block
+## §authz block (authorization — framework-neutral; replaces the old Laravel-shaped `rbac` block)
 
 ```yaml
-rbac:
-  lib: spatie/permission           # enum: spatie/permission | laravel-permission | custom | not_detected
-  role_model: "Spatie\\Permission\\Models\\Role"
-  permission_model: "Spatie\\Permission\\Models\\Permission"
-  middleware: [role, permission, role_or_permission]  # array of middleware aliases
-  gates: [view-admin]              # array of Gate definitions found in AuthServiceProvider
-  policies: ["App\\Policies\\UserPolicy"]  # array of policy class FQCNs
-  default_roles: [admin, user]     # array; from RoleSeeder if present
-  _source: ["composer.json:42", "database/seeders/RoleSeeder.php"]
+authz:
+  lib: "<open string>"             # e.g. spatie/permission | django.contrib.auth | casl | not_detected (open, not an enum)
+  lib_source: "<file:line>"        # evidence (required unless not_detected)
+  mechanism: middleware            # middleware | decorator | guard | policy | mixin | builtin | unknown
+  role_source: model               # model | config | db | enum | unknown — where roles/groups are defined
+  declarations:                    # the access-control rules, stack-neutral
+    - name: "<role|permission|gate|policy name>"
+      kind: role                   # role | permission | gate | policy | group
+      applies_to: "<route/controller/view it guards, or null>"
+      _source: "<file:line>"
+  _source: ["<file:line>", ...]
 ```
 
 ## §ui_ux block
@@ -340,25 +353,27 @@ libs:
   # ... (repeat per lib in manifests)
 ```
 
-## §cache_signatures block (v2.0+, Iter 42)
+## §cache_signatures block (v2.1)
 
 ```yaml
 cache_signatures:
-  composer_lock_sha256: "abc123..."     # retained for reproducibility
-  package_lock_sha256: "def456..."      # retained for reproducibility
-  framework_pack: "laravel-base-26"     # retained
+  locks_sha256:                         # TECH-AGNOSTIC — one digest per detected ecosystem
+    ruby: "abc123..."                   #   e.g., sha256(Gemfile.lock) for a Rails app
+    js: "def456..."                     #   e.g., sha256(yarn.lock) for its asset layer
+  app_ecosystem: ruby                   # ecosystem of §7 Framework
+  framework_pack: "rails"               # retained
   per_slice:
     auth:
-      signature_sha256: <hex>           # sha256(composer.lock + framework_pack §auth + auth-libs.md)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md)
       generated_at: "2026-05-25T10:00:00Z"
-    rbac:
-      signature_sha256: <hex>           # sha256(composer.lock + framework_pack §rbac + rbac-libs.md)
+    authz:
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + authz-libs.md)
       generated_at: "2026-05-25T10:00:00Z"
     ui_ux:
-      signature_sha256: <hex>           # sha256(package.lock + framework_pack §ui + ui-libs.md)
+      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + ui-libs.md)
       generated_at: "2026-05-25T10:00:00Z"
     libs:
-      signature_sha256: <hex>           # sha256(composer.lock + package.lock + framework_pack §libs + generic-libs.md)
+      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + generic-libs.md)
       generated_at: "2026-05-25T10:00:00Z"
 ```
 
@@ -366,24 +381,26 @@ cache_signatures:
 - IF prior.per_slice[<slice>].signature_sha256 == current_<slice>_signature → slice reused (no subagent dispatch for that slice)
 - ELSE → that slice's subagent re-dispatched; consolidator merges fresh slice with other cached slices
 
-**Cache invalidation matrix (v2.0+):**
+**Cache invalidation matrix (v2.1, ecosystem-relative — examples for a non-JS app with a JS asset layer, e.g., Rails+esbuild or Laravel+Vite):**
 
 | Input changed | Slices invalidated | Subagent dispatches needed |
 |---|---|---|
-| composer.lock only | auth, rbac, libs (3/4) | 3 |
-| package.lock only | ui_ux, libs (2/4) | 2 |
-| Both lockfiles | auth, rbac, ui_ux, libs (4/4) | 4 (worst case) |
+| app-ecosystem lock only (Gemfile.lock / composer.lock / go.sum / Cargo.lock / …) | auth, authz, libs (3/4) | 3 |
+| js asset-layer lock only | ui_ux, libs (2/4) | 2 |
+| Both | auth, authz, ui_ux, libs (4/4) | 4 (worst case) |
 | framework_pack §auth section | auth (1/4) | 1 |
-| framework_pack §rbac section | rbac (1/4) | 1 |
+| framework_pack §authz section | authz (1/4) | 1 |
 | framework_pack §ui section | ui_ux (1/4) | 1 |
 | framework_pack §libs section | libs (1/4) | 1 |
 | lib-patterns/<fw>/auth-libs.md | auth (1/4) | 1 (best case — 75% saving) |
 
-**Typical savings:** PHP dep edit ≈ 25% (3 of 4 dispatched). JS dep edit ≈ 50% (2 of 4). Single lib-pattern edit ≈ 75% (1 of 4). Framework pack rewrite or initial scan ≈ 0% (all 4 dispatched).
+For a single-ecosystem app (pure Go API, pure Next.js), `app_locks_digest == frontend_locks_digest == all_locks_digest`, so any lock change re-dispatches all 4 — correctness preserved, granularity simply has nothing to split.
+
+**Typical savings:** app-dep edit ≈ 25% (3 of 4 dispatched). Asset-layer dep edit ≈ 50% (2 of 4). Single lib-pattern edit ≈ 75% (1 of 4). Framework pack rewrite or initial scan ≈ 0% (all 4 dispatched).
 
 ### Legacy v1.0 `cache_key:` block (deprecated — backward-compat read)
 
-v1.0 starterkit-context.yaml files (Iter 32 baseline) have a `cache_key:` block in place of `cache_signatures:`. Producers (v2.7.0+ scan-codebase) treat any prior v1.0 file as fully-stale on read (forces all 4 subagent re-dispatches) and write the new v2.0 `cache_signatures:` block. One-time migration cost per project; zero breaking change.
+Oldest starterkit-context.yaml files have a `cache_key:` block in place of `cache_signatures:`. Producers treat any prior v1.0 file as fully-stale on read (forces all 4 subagent re-dispatches) and write the current `cache_signatures:` schema. One-time migration cost per project; zero breaking change. (v2.0 php/js-only signature files self-heal the same way — changed signature inputs mismatch once, then v2.1 is written.)
 
 ---
 
@@ -393,11 +410,11 @@ When a subagent fails twice (after auto-retry), the consolidator MAY emit a part
 
 ```yaml
 starterkit_context:
-  schema_version: 2.0              # v2.7.0+ writers always emit 2.0
-  partial: true                    # NEW field (Iter 32) — present only when partial
-  partial_slices: [rbac]           # which slices are missing
+  schema_version: 3.1              # current writers emit 3.1 (matches the top-level structure)
+  partial: true                    # present only when partial
+  partial_slices: [authz]          # which slices are missing
   # auth, ui_ux, libs blocks present as normal
-  # rbac block ABSENT
+  # authz block ABSENT
 ```
 
 Downstream consumers MUST handle `partial: true` gracefully: if a slice they need is missing, skip starterkit-derived Anchors/Rules for that domain; degrade to framework-pack-only behavior.

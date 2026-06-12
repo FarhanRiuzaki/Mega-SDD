@@ -2,40 +2,19 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 4.2.0 · **License:** MIT
+**Version:** 4.20.1 · **License:** MIT
 
-> 📖 Deeper docs + walkthroughs: root [`../../README.md`](../../README.md) · scenarios [`../../tests/scenarios/`](../../tests/scenarios/) · full version history [`../../CHANGELOG.md`](../../CHANGELOG.md).
+> **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
-## Install
+## Install / update
 
-```
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
-/plugin install mega-sdd
-/plugin install superpowers     # recommended companion (optional)
-```
-
-Then install the optional native binaries that boost precision — the skill does it for you, OS-aware:
-
-```
-/mega-sdd:install-deps
-```
-
-That detects your OS + package manager (brew / apt / dnf / pacman / winget / scoop / cargo / npm / go) and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `tectonic` with safety rails (never sudo-auto, never `curl|bash`, always verify). Every tool is **optional** — mega-sdd has a graceful fallback for each. Manual one-liners per platform: [`references/tooling-install.md`](./references/tooling-install.md).
-
-Then, in any project:
+Canonical install, update, and uninstall instructions live in the **[root README — Quick start](../../README.md#quick-start-5-minutes)**. TL;DR (typed inside the Claude Code chat, not your shell): add the marketplace, `/plugin install mega-sdd`, optionally `/mega-sdd:install-deps` — then in any project:
 
 ```
 /mega-sdd:auto ./prd.md
 ```
 
-## Update
-
-```
-/mega-sdd:update-plugin                          # pull the latest plugin from the marketplace repo (fast-forward only)
-/plugin marketplace update grand-design-spec     # rebuild the plugin cache to the new version
-```
-
-Then restart Claude Code (or reload the plugin) so the new commands + skills register. `/mega-sdd:update-plugin` reports the before→after version, never touches your project, and tells you if you're already current. Your installed version is shown in this header and in `/plugin`.
+Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md).
 
 ## Commands you'll actually use
 
@@ -44,6 +23,7 @@ Then restart Claude Code (or reload the plugin) so the new commands + skills reg
 | Command | What it does |
 |---|---|
 | `/mega-sdd:auto <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
+| `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
 | `/mega-sdd:generate-intent <prd>` | PRD or idea → vault (entities, flows, decisions, open questions) |
 | `/mega-sdd:scan-codebase [path]` | AST-scan an existing repo → `codebase-map.md` |
 | `/mega-sdd:bind-codebase <vault>` | Validate vault claims against the real code → CONFIRMED / CONFLICT / OQ |
@@ -58,18 +38,11 @@ Then restart Claude Code (or reload the plugin) so the new commands + skills reg
 | `/mega-sdd:update-plugin` | Pull the latest plugin version |
 | `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
 
-Full set: **25 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.
+Full set: **26 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.
 
 ## First time? Start with a scenario
 
-| Scenario | When | Time |
-|---|---|---|
-| [Greenfield from idea](../../tests/scenarios/scenario-1-greenfield-from-idea.md) | Brand new; minimum viable demo | 15 min |
-| [PRD-driven feature](../../tests/scenarios/scenario-2-prd-driven-feature.md) | Have a PRD; existing project | 30 min |
-| [Field-level extension](../../tests/scenarios/scenario-3-field-extension.md) | Add a field to an existing model | 20 min |
-| [Legacy rebuild](../../tests/scenarios/scenario-4-legacy-rebuild.md) | Legacy → new framework | 4 hours |
-| [Multi-squad parallel](../../tests/scenarios/scenario-5-multi-squad-parallel.md) | Multi-team coordination | 45 min |
-| [Recovery from halt](../../tests/scenarios/scenario-6-recovery-from-halt.md) | A bolt halted; recover cleanly | 15 min |
+The full chooser table (13 guided walkthroughs with copy-paste inputs + expected outputs) lives in **[`tests/scenarios/README.md`](../../tests/scenarios/README.md)**. Most common entry points: [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md) (never used Claude Code) · [Scenario 1 — Greenfield from idea](../../tests/scenarios/scenario-1-greenfield-from-idea.md) · [Scenario 12 — Continuous sync](../../tests/scenarios/scenario-12-continuous-sync.md) (code changed after "done").
 
 A canonical example PRD (the standard frontmatter + `§`-section format) lives at [`../../tests/scenarios/sample-prd-clinic.md`](../../tests/scenarios/sample-prd-clinic.md); the blank template is [`../../docs/templates/prd-template.md`](../../docs/templates/prd-template.md).
 
@@ -81,11 +54,21 @@ A canonical example PRD (the standard frontmatter + `§`-section format) lives a
 
 `/mega-sdd:auto` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs insert `scan-codebase` + `bind-codebase`; the legacy-rebuild lane starts from `extract-intelligence`.
 
+**And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + the map's git stamp), surfaced as a one-line session-start notice, and reconciled by `/mega-sdd:sync`:
+
+```
+code moves (any way) → system notices → /mega-sdd:sync [--auto]
+  → scan --changed-only → drift (scoped) → bind --paths → units --reconcile → bolts (stale/new only)
+  → SYNC-REPORT.md (+ PENDING-SYNC.md queue for the decisions only a human may make) → repeat forever
+```
+
+Under `--auto`: one upfront confirmation, zero mid-chain questions — human-required decisions (drift direction calls, vault patches, CONFLICTs) are QUEUED, never auto-resolved. Walkthrough: [scenario 12](../../tests/scenarios/scenario-12-continuous-sync.md) · design: [`living-vault spec`](../../docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md).
+
 ## What's in this folder
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v4.2.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v4.20.1)
 ├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
@@ -93,10 +76,11 @@ plugins/mega-sdd/
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/
 │   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
-├── agents/                       # 4 first-class subagents
+├── agents/                       # 5 first-class subagents
 │   ├── bolt-implementer.md, spec-reviewer.md, code-quality-reviewer.md   # execute-bolts two-stage review
-│   └── domain-extractor.md       # extract-intelligence wave worker
-├── commands/                     # 25 slash commands — your manual /mega-sdd: CLI entry points
+│   ├── domain-extractor.md       # extract-intelligence wave worker
+│   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
+├── commands/                     # 26 slash commands — your manual /mega-sdd: CLI entry points
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts
@@ -110,7 +94,7 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 
 1. **Intent** — uncertain claims promote to Open Questions
 2. **OQ classification** — business vs tech; tech auto-resolves with cited evidence
-3. **Binding gate** — unresolved CONFLICTs (and CONFLICT *resolution*, v4.2) block downstream generation
+3. **Binding gate** — unresolved CONFLICTs (and CONFLICT *resolution*) block downstream generation
 4. **Implementation state** — IMPLEMENTED / NEW / PARTIAL_FIELDS_MISSING / UNKNOWN per claim
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
@@ -126,6 +110,7 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 16. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency, cross-cutting registration, render-test, ui-quality) hard-block `execute-bolts`; signatures from the framework pack, SKIP off-stack
 17. **Pipeline-intelligence gates** — fan-out parity, UI-deferral, the de-vacuoused conflict-classification gate, a typed `next_action.confidence`
 18. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff, or `execute-bolts` is blocked
+19. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 
 > The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); `/mega-sdd:analyze` surfaces the advisory ones.
 
@@ -138,6 +123,19 @@ Three scopes of markdown + JSON memory persist context across sessions (compleme
 - `<vault>/.memory/` — **VAULT** (per-vault, ephemeral)
 
 Self-learning via threshold-based suggestions, reviewed through `/mega-sdd:memory review`. **Never auto-applied** — mandatory audit log + rollback path. Disable with `--memory-off`.
+
+## Per-project config
+
+Optional `.mega-sdd/config.yaml` at the project root — every key has a default (missing file = all defaults, never an error):
+
+```yaml
+telemetry: true          # false → PostToolUse hook fully off for this project
+dirty_journal: true      # false → living-vault journaling off (git channel still covers sync)
+staleness_notice: true   # false → suppress the session-start "codebase moved" line
+layout: canonical        # legacy → pre-v3.4 output paths
+```
+
+Full key reference + scope table (user / project / vault): [`references/project-config.md`](./references/project-config.md). Safe to commit (no secrets by design) or gitignore for per-developer preferences.
 
 ## Optional native tools
 
@@ -154,15 +152,15 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 | `markdownlint-cli2` | lint-units (vault prose) | skill-internal heuristics |
 | `gh` | execute-bolts (optional PR automation) | manual PR by user |
 
-Full per-platform install matrix (incl. Windows): [`references/tooling-install.md`](./references/tooling-install.md).
+Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`references/ci-recipe.md`](./references/ci-recipe.md).
 
 ## What's new
 
-**v4.2.0** — *Moat audit:* the binding→units gate now enforces CONFLICT **resolution**, not just ID propagation (an unresolved-but-cited CONFLICT no longer slips the gate); audit trail in [`AUDIT.md`](./AUDIT.md). Plus Windows `install-deps` coverage for scoop-native tools.
-**v4.1.0** — UI/UX design intelligence distilled into the pipeline (grounded design recommendation at intent-time, design-system injection at bolt-time).
-**v4.0.0** — lean-core: skills slimmed to routers + progressive disclosure, Hybrid hook enforcement, first-class `agents/`.
+**v4.20.1** — *Adversarial bug-hunt patch:* fresh-surface hunt with verified repros — the handoff YAML parser now handles 2-level block nesting, memory-write's stale-lock steal is atomic, `secret-scan --redact` preserves file permission bits, staleness compute tolerates unreadable paths.
+**v4.20.0** — *Platform-truth sweep:* every assumption about Claude Code itself verified against current docs — the moat's PreToolUse block format modernized, the `/command` bypass path gated, pandoc failures rewired, a state-corrupting stop-hook fossil removed. 15 new platform pins.
+**v4.19.0** — *Future-ready, eyes open:* worktree-proof git probes, the official AGENTS.md↔CLAUDE.md interop pair, a headless/CI recipe, an optional EARS criteria tier — and two capabilities deliberately NOT adopted yet, with the evidence recorded.
 
-**Full version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).**
+Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single source of release history).
 
 ## Contributing
 

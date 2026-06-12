@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.1.0
+version: 1.3.0
 description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/scoop/cargo/npm/go) and install missing native deps mega-sdd can leverage (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh). Single explicit batch confirmation; never auto-sudo; never curl|bash; mandatory post-install verify; memory-cached outcomes. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -13,7 +13,7 @@ description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/sc
 - "install deps" / "auto install" / "install tools" / "pasang tools"
 - After fresh mega-sdd install — bootstrap optional native binaries
 - After predictive-checks warn (e.g., `pandoc_installed: warn` from emit-fsd predictive checks)
-- After Iter 54 emit-fsd ship — pandoc + tectonic needed for FSD PDF
+- Before generating FSD PDFs — pandoc + tectonic needed by emit-fsd
 - Cross-machine re-sync (memory layer skips already-installed tools)
 
 ## Inputs
@@ -153,7 +153,7 @@ If ANY unverified → halt `install_failed` with subtype `verify_after_install_f
 
 After all installs + verifies complete:
 
-1. Acquire memory file lock per Iter 5 pattern (`<project>/.mega-sdd/memory/install-outcomes.md.lock` — backoff + retry 3x; fail with `memory_in_use` if all retries fail).
+1. Acquire memory file lock per the memory file-lock pattern (`<project>/.mega-sdd/memory/install-outcomes.md.lock` — backoff + retry 3x; fail with `memory_in_use` if all retries fail).
 2. Append run record to `<project>/.mega-sdd/memory/install-outcomes.md` per schema in spec §9.
 3. Release lock.
 
@@ -179,11 +179,11 @@ If `--auto` flag → emit handoff YAML per §Handoff emission.
 
 Per `mega-sdd:generate-intent/references/vault-contract.md §halt-protocol`. install-deps emits these halts:
 
-- **`pkg_mgr_not_found`** (NEW v1.0.0+, Iter 55): no compatible package manager detected for OS. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt-on-PATH (Linux) / install WSL Ubuntu (Windows native) → re-run.
-- **`install_failed`** (NEW v1.0.0+, Iter 55): install command exited non-zero OR verify_cmd failed post-install. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail, subtype: <install_command_failed | verify_after_install_failed>}`. Resolution: inspect stderr_tail, fix root cause (PATH / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool.
-- **`memory_in_use`** (EXISTING from Iter 5/49): install-outcomes.md write lock collision. Resolution: retry after backoff; if persistent, manually remove stale `.lock` file.
+- **`pkg_mgr_not_found`**: no compatible package manager detected for OS. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt-on-PATH (Linux) / install WSL Ubuntu (Windows native) → re-run.
+- **`install_failed`**: install command exited non-zero OR verify_cmd failed post-install. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail, subtype: <install_command_failed | verify_after_install_failed>}`. Resolution: inspect stderr_tail, fix root cause (PATH / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool.
+- **`memory_in_use`**: install-outcomes.md write lock collision. Resolution: retry after backoff; if persistent, manually remove stale `.lock` file.
 
-## Handoff emission (v1.0.0+, Iter 55)
+## Handoff emission
 
 When invoked with `--auto` flag, emit handoff YAML at end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
 
@@ -200,18 +200,18 @@ handoff:
     rationale: "Deps installed; mega-sdd full-precision mode enabled. Re-run /mega-sdd:install-deps --force-recheck if needed."
   blockers: []   # populated on install_failed / pkg_mgr_not_found
   metrics:
-    tools_audited: <int>             # NEW v1.0.0+, Iter 55
-    tools_already_present: <int>     # NEW v1.0.0+, Iter 55 (already installed pre-skill)
-    tools_installed: <int>           # NEW v1.0.0+, Iter 55 (successfully installed this run)
-    tools_failed: <int>              # NEW v1.0.0+, Iter 55 (install or verify failed)
-    tools_sudo_pending: <int>        # NEW v1.0.0+, Iter 55 (requires_sudo — printed but not auto-run)
+    tools_audited: <int>             #
+    tools_already_present: <int>     # already installed pre-skill
+    tools_installed: <int>           # successfully installed this run
+    tools_failed: <int>              # install or verify failed
+    tools_sudo_pending: <int>        # requires_sudo — printed but not auto-run
     detected_os: <"macos" | "linux" | "wsl" | "windows-bash" | "unknown">
-    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "cargo-fallback" | "none">
+    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "cargo-fallback" | "none">
 ```
 
 Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under `--auto`.
 
-## Memory layer (v1.0.0+, Iter 55)
+## Memory layer
 
 Participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
 

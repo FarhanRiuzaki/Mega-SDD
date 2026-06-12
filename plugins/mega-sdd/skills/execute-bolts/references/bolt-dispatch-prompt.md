@@ -1,8 +1,32 @@
-# Bolt Subagent Dispatch Prompt Template (v1.0, Iter 30)
+# Bolt Subagent Dispatch Prompt Template
 
 Canonical prompt template for dispatching bolt subagent via superpowers `executing-plans`. Implements the 10 AI-executor principles from spec §4. Tiered context (T1/T2/T3) per spec §6.10.
 
 **Token budget**: T1 ≤2KB, T2 ≤10KB, T3 reference-only. Total dispatch prompt ≤9KB target (hard cap 12KB → halt `dispatch_prompt_too_large`). Canonical budget numbers live in `context-enrichment.md` §running budget tracker (`cap_hard=12288`, `cap_target=9216`, `cap_t1=2048`, `cap_t2=10240`); the figures in this template MUST match that source.
+
+## Contents
+
+- Template structure
+- Unit body (verbatim)
+- Halt vocabulary (pre-loaded for clean halts)
+- Self-assessment vocabulary (REQUIRED in bolt-report.md)
+- Acceptance-test provenance NOTE
+- Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section)
+- Atomic discipline (scaffolded, not assumed)
+- Anti-context (negative space = freedom + protection)
+- Provenance trailer (MANDATORY in every modified file)
+- Upstream bolts (depends_on chain — 1-line summary each)
+- Framework pack rules (filtered by your target_files glob match)
+- Constitution clauses (referenced by your vault_source)
+- KB anti-patterns (filtered by your domain tags)
+- Historical memory (last 5 relevant patterns)
+- T2.3 — Starterkit context (relevant slice)
+- Confidence labels per claim
+- Validation hints (specific, not vague)
+- Tier-loading algorithm (running budget tracker + progressive truncation)
+- Anti-halu rails
+- Logging
+- Backward compatibility
 
 ## Template structure
 
@@ -59,7 +83,7 @@ bolt_self_report:
       fix: "<what you changed>"
 ```
 
-## Acceptance-test provenance NOTE (v2.9.1+, Iter 47 — D4-006 surface)
+## Acceptance-test provenance NOTE
 
 execute-bolts injects this NOTE into the dispatch prompt when the unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `generate-units/references/adversarial-test-prompt.md` §provenance values).
 
@@ -79,9 +103,9 @@ execute-bolts injects this NOTE into the dispatch prompt when the unit's `accept
 > `independent-llm` / `human`) → no NOTE injected; trust the test.
 ```
 
-The NOTE is OMITTED for units with strong provenance (default Iter 47+ behavior). Pre-Iter-47 units (no `_authored_by:` field) are treated as `same-pass` and trigger the NOTE.
+The NOTE is OMITTED for units with strong provenance (the default for newly generated units). Legacy units (no `_authored_by:` field) are treated as `same-pass` and trigger the NOTE.
 
-## Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section — v2.9.0+, Iter 45)
+## Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section)
 
 For EACH significant step you perform (file write, dep add, migration, etc.), append a rollback hint to bolt-report.md `## Rollback hints` section. On crash, execute-bolts harvests these into partial-state.json v2.0 `rollback_hints[]` array. On `--rollback`, they're applied in reverse order.
 
@@ -112,7 +136,7 @@ For EACH significant step you perform (file write, dep add, migration, etc.), ap
 | `git_commit` | created a git commit | ✗ |
 | `git_branch_created` | created a git branch | ✓ |
 
-If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger `partial_state_corrupt` halt per Iter 45.
+If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger the `partial_state_corrupt` halt.
 
 **Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times. FALSE if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
 
@@ -184,11 +208,11 @@ TIER 2 — Conditional context (target ≤10KB total)
 
 Pattern: <pattern-description> → <past resolution>
 
-## T2.3 — Starterkit context (relevant slice) (v2.7.0+, Iter 32; §patterns + code example added v3.67.0+, Iter 76)
+## T2.3 — Starterkit context (relevant slice)
 
 This section is populated by execute-bolts Step 4.5.b-starterkit when:
 1. `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists (deep-scan was run)
-2. EITHER `unit.starterkit_relevance` is non-empty (auth/rbac/ui_ux/libs slices) OR `starterkit_context.patterns` exists AND `unit.target_files` matches a pack-discovered location (§patterns slice — independent of starterkit_relevance, added Iter 76)
+2. EITHER `unit.starterkit_relevance` is non-empty (auth/rbac/ui_ux/libs slices) OR `starterkit_context.patterns` exists AND `unit.target_files` matches a pack-discovered location (§patterns slice — independent of starterkit_relevance)
 
 The dispatcher injects relevant slices (≤8KB total under v3.67.0 caps). Non-matching domains are OMITTED.
 
@@ -197,12 +221,12 @@ The dispatcher injects relevant slices (≤8KB total under v3.67.0 caps). Non-ma
 ```
 ### Starterkit context (relevant to this unit)
 
-Auth: lib=<auth.lib>, guard=<auth.guard>, user_model=<auth.user_model>
-RBAC: lib=<rbac.lib>, role_model=<rbac.role_model>, middleware=<rbac.middleware joined by ", ">
+Auth: lib=<auth.lib>, mechanism=<auth.mechanism>, user_model=<auth.user_model>
+Authz: lib=<authz.lib>, mechanism=<authz.mechanism>, declarations=<authz.declarations[].name joined by ", ">
 UI/UX: extends=<ui_ux.layout_extends>, notification=<ui_ux.notification_lib>, idioms=[<idioms joined by "; ">]
 Libs in scope: <lib.name>@<lib.version> (used in: <usage_hint joined by ", ">), ...
 
-### Starterkit code patterns (follow these conventions)        (v3.67.0+, Iter 76)
+### Starterkit code patterns (follow these conventions)
 
 - controller:
     location:  app/Http/Controllers/
@@ -213,7 +237,7 @@ Libs in scope: <lib.name>@<lib.version> (used in: <usage_hint joined by ", ">), 
 - data_model: (... same shape for each matched category ...)
 - ...
 
-### Reference code example (from starterkit)                   (v3.67.0+, Iter 76 — walking-skeleton: controller only)
+### Reference code example (from starterkit — walking-skeleton: controller only)
 
 Pattern: controller
 File:    app/Http/Controllers/ExampleController.php
@@ -227,7 +251,7 @@ namespace App\Http\Controllers;
 Follow this style for new controller files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
 ```
 
-**Budget (v3.67.0+, Iter 76):** total slice content target ≤4KB (was ≤2KB Iter 32). Hard cap rolls up to overall T2 budget (cap_t2=10240) — see SKILL.md §T2 Section Priority + Truncation.
+**Budget:** total slice content target ≤4KB. Hard cap rolls up to overall T2 budget (cap_t2=10240) — see SKILL.md §T2 Section Priority + Truncation.
 
 Truncation order:
 1. `libs[]` — keep top 10 by relevance score
@@ -267,7 +291,7 @@ Also run static analysis (if framework pack specifies):
 Must pass at <pack-specified level>.
 
 ═══════════════════════════════════════════
-T2 BUDGET TRACKER (v2.8.0+, Iter 44 — informational)
+T2 BUDGET TRACKER (informational)
 ═══════════════════════════════════════════
 
 ```
@@ -311,11 +335,11 @@ GENERATE CODE THAT:
 - Self-reports via bolt_self_report YAML at end of bolt-report.md (Tier 1 §Self-assessment vocabulary)
 ```
 
-## Tier-loading algorithm (v2.0, Iter 44 — running budget tracker + progressive truncation)
+## Tier-loading algorithm (running budget tracker + progressive truncation)
 
-Per execute-bolts SKILL.md Step 4.5 (v2.8.0+). Closes Iter 38 audit D1-003 — replaces aspirational 5KB T2 soft cap + single 10KB halt with running byte tracker + per-section truncation cascade.
+Per execute-bolts SKILL.md Step 4.5. Replaces an aspirational 5KB T2 soft cap + single 10KB halt with a running byte tracker + per-section truncation cascade.
 
-**v1.0 (Iter 30) algorithm — DEPRECATED, kept here as historical reference at bottom — encoded single-halt-at-10KB semantics. v2.0 algorithm below supersedes it and is the canonical contract for execute-bolts v2.8.0+.**
+**v1.0 algorithm — DEPRECATED, kept here as historical reference at bottom — encoded single-halt-at-10KB semantics. The v2.0 algorithm below supersedes it and is the canonical contract.**
 
 ```
 ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
@@ -325,7 +349,7 @@ ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
   prompt += load_t1(unit)  # unit body + halt vocab + self-assess + atomic + anti-context + provenance
   consumed_t1 = size(load_t1.output)
 
-  # ─── Step a.5: Initialize running budget tracker (v2.0+, Iter 44) ───
+  # ─── Step a.5: Initialize running budget tracker ───
   budget = {
     cap_hard:     12_288,    # 12KB hard cap (canonical — matches context-enrichment.md)
     cap_target:    9_216,    # 9KB total target
@@ -344,7 +368,7 @@ ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
   #
   # Load order (priority 8 → priority 1):
   #   8. constitution_clauses (NEVER drop — LOCKED)
-  #   7. starterkit_slice (Iter 32 cascade)
+  #   7. starterkit_slice (truncation cascade)
   #   6. framework_pack_rules
   #   5. depends_on_summaries
   #   4. confidence_labels
@@ -378,7 +402,7 @@ ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
   # ─── Step c: T3 reference-only paths (negligible bytes) ───
   prompt += t3_references_list(vault, project)
 
-  # ─── Step d: Size check + budget tracker injection (v2.0+) ───
+  # ─── Step d: Size check + budget tracker injection ───
   total = budget.consumed_t1 + budget.consumed_t2
 
   # Hard halt only when constitution_clauses alone exceeds budget after all
@@ -403,16 +427,16 @@ ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
   return prompt
 ```
 
-**Key invariants (v2.0):**
+**Key invariants:**
 - `cap_hard` halt fires ONLY when constitution_clauses alone overflows
 - T2 sections load in PRIORITY ORDER (priority 8 first, priority 1 last) so HIGH-priority items always survive
 - Per-section truncation cascade applied PER SECTION as it loads (not on final assembled prompt)
 - Soft warning when T2 > 5KB but < 10KB total; truncation absorbs overage
 - `### T2 budget tracker` section ALWAYS injected so bolt subagent sees provenance
 
-### Deprecated v1.0 algorithm (Iter 30) — historical reference
+### Deprecated v1.0 algorithm — historical reference
 
-The pre-Iter-44 algorithm did NOT track running budget or apply per-section truncation. It assembled all T2 sections in fixed order then halted if total > 10KB. Audit D1-003 identified this as "T2 5KB soft cap aspirational — no running budget enforced," leading to either trip-the-hard-halt or oversize-but-under-halt unit dispatches. Iter 44 superseded this with the algorithm above.
+The v1.0 algorithm did NOT track running budget or apply per-section truncation. It assembled all T2 sections in fixed order then halted if total > 10KB. That made the 5KB T2 soft cap aspirational — no running budget enforced — leading to either trip-the-hard-halt or oversize-but-under-halt unit dispatches. Superseded by the algorithm above.
 
 ## Anti-halu rails
 

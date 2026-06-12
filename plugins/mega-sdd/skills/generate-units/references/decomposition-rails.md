@@ -60,6 +60,7 @@ Semantic grouping layer ABOVE atomic units (units stay atomic; modules group rel
 
 - **Load `_meta/modules.yaml`** if present
 - **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `02-architecture.md`); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
+- **KB module-graph seed (legacy-rebuild vaults):** when `00-index.md` §Implementation Notes carries `kb_module_graph: <path>` (written by generate-intent's KB sub-mode), read that `module-dependency-graph.md` FIRST and seed the auto-derivation from its module list + dependency edges — the extraction already computed the grouping; don't re-derive it blind. KB edges are a SEED for `blocked_by` declarations, not evidence: every cross-module `depends_on` still requires the concrete-coupling evidence rule below. Absent/unreadable path → fall through to plain auto-derivation silently.
 - **For each unit candidate**: match `vault_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
 - **Unassigned units** → `module: M-unassigned` (fallback); emit chat warning if ≥10% of units unassigned
 - **Cross-module dependency validation**: every unit `depends_on` edge crossing module boundary requires explicit `blocked_by` declaration in the dependent module's modules.yaml entry. Cycle through Step 4 if module DAG has cycle (halt `module_cycle_detected`); missing `blocked_by` → halt `cross_module_dep_invalid`.

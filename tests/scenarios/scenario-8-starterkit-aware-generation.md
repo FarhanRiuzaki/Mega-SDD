@@ -38,7 +38,7 @@ test -f .mega-sdd/codebase/starterkit-context.yaml && cat .mega-sdd/codebase/sta
 - File exists
 - `starterkit_context.framework` == `laravel`
 - `starterkit_context.auth.lib` == `sanctum`
-- `starterkit_context.rbac.lib` == `spatie/permission`
+- `starterkit_context.authz.lib` == `spatie/permission`
 - `starterkit_context.ui_ux.notification_lib` == `sweetalert2`
 - `starterkit_context.libs[]` includes ≥3 entries (laravel/sanctum, spatie/laravel-permission, sweetalert2)
 - `cache_key.composer_lock_sha256` is a 64-char hex string
@@ -128,7 +128,7 @@ cat .mega-sdd/codebase/starterkit-context.yaml
 
 Expected outcomes for `base-laravel-26`:
 - `auth.lib` correctly identifies auth lib in use
-- `rbac.lib` == `spatie/permission` (if Spatie is installed)
+- `authz.lib` == `spatie/permission` (if Spatie is installed)
 - `ui_ux.notification_lib` == `sweetalert2` (per standing user pref)
 - `ui_ux.idioms` includes `"use document.addEventListener('DOMContentLoaded', ...) over $(document).ready"`
 - `ui_ux.idioms` includes `"responsive mobile-first (sm/md/lg breakpoints)"`

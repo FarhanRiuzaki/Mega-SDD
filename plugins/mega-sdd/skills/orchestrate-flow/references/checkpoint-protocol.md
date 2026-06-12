@@ -1,6 +1,6 @@
-# Checkpoint Protocol (v2.0+, Iter 6)
+# Checkpoint Protocol
 
-`orchestrate-flow` v2.0+ writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume (Iter 4) but also "bind-codebase crashed at claim 45 of 100 → resume at claim 46".
+`orchestrate-flow` writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume but also "bind-codebase crashed at claim 45 of 100 → resume at claim 46".
 
 Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JSONL files (per ITER6-OQ-5).
 
@@ -20,7 +20,7 @@ Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JS
 
 ## Why
 
-Iter 4's `--resume` is CWD-driven: it reads artifact presence to rebuild the cursor. That works for inter-skill resume (e.g., bind-codebase completed → skip ahead to generate-units). It does NOT work for mid-skill failures (e.g., bind-codebase crashed at claim 45; CWD shows partial binding.md; resume would re-run from claim 1).
+The base `--resume` is CWD-driven: it reads artifact presence to rebuild the cursor. That works for inter-skill resume (e.g., bind-codebase completed → skip ahead to generate-units). It does NOT work for mid-skill failures (e.g., bind-codebase crashed at claim 45; CWD shows partial binding.md; resume would re-run from claim 1).
 
 Checkpoint protocol adds per-step persistence inside each skill invocation.
 
@@ -71,27 +71,29 @@ Each checkpoint write is a single fs.append. Concurrent skill invocations on sam
 
 For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/mega-sdd:auto --resume`:
 
-1. Orchestrator reads ALL checkpoints in current vault
-2. Identifies last incomplete skill invocation (most recent checkpoint without a "completed" marker)
-3. Invokes that skill with `--resume-from=<latest-step-id>`
-4. Skill resumes mid-execution
-5. After skill completes, chain continues per Iter 4 handoff YAML protocol
+1. CWD / artifact inspection (`routing-rules.md`) first selects WHICH PHASE to resume — the orchestrator itself keeps NO chain-level state file (see handoff-contract.md §Resume mechanics).
+2. *Within that re-entered phase only*, read the phase skill's checkpoints in the current vault; identify the last incomplete invocation (most recent checkpoint without a "completed" marker).
+3. Invoke that skill with `--resume-from=<latest-step-id>`.
+4. Skill resumes mid-execution from its checkpoint cursor (SUB-STEP granularity).
+5. After the skill completes, the chain continues per the handoff YAML protocol.
+
+> **Two-level resume (AUDIT L7):** checkpoints resume a skill's *sub-step*; they do NOT pick the phase. A *completed* phase (artifacts present) is skipped by the orchestrator regardless of any stale checkpoint, so chain-level "no state file" and skill-level checkpoint resume never conflict. Full precedence table → handoff-contract.md §Resume mechanics.
 
 ## Rotation policy (per ITER6-OQ-7 resolved)
 
 - Keep checkpoints for last 3 runs in `<vault>/.internal/checkpoints/`
 - Older checkpoints moved to `<vault>/.internal/checkpoints-archive/`
-- `mega-sdd:memory prune` (Iter 5) cleans archive older than 180 days
+- `mega-sdd:memory prune` cleans archive older than 180 days
 - "Run" boundaries detected by timestamp gaps >5 minutes between checkpoints
 
 ## Integration with handoff YAML
 
-Handoff YAML (Iter 4) gets one new field:
+Handoff YAML gets one new field:
 
 ```yaml
 handoff:
   # ... existing fields ...
-  checkpoints:                          # v2.0+ (Iter 6)
+  checkpoints:
     latest_step_id: claim-45
     checkpoint_file: <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl
     resume_command: "/mega-sdd:bind-codebase --resume-from=claim-46"
@@ -108,7 +110,7 @@ Resume command: /mega-sdd:auto --resume (re-enters chain at bind-codebase claim-
 
 ## Backward compatibility
 
-- v2.1 skills (no checkpoint emission) → resume continues to work via CWD-driven cursor (Iter 4 behavior)
+- Skills without checkpoint emission → resume continues to work via CWD-driven cursor (base behavior)
 - v3.0 skills emit checkpoints; orchestrator reads them when present
 - Old vaults without `.internal/checkpoints/` directory → created lazily on first checkpoint emission
 
@@ -128,5 +130,5 @@ Resume command: /mega-sdd:auto --resume (re-enters chain at bind-codebase claim-
 ## References
 
 - LangGraph checkpoint pattern: https://github.com/langchain-ai/langgraph (concept inspiration)
-- Iter 4 spec: `docs/superpowers/specs/2026-05-20-autonomy-layer-design.md` §6 (inter-skill resume)
-- Iter 6 spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.5
+- Design spec: `docs/superpowers/specs/2026-05-20-autonomy-layer-design.md` §6 (inter-skill resume)
+- Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.5

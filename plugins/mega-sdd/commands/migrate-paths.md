@@ -1,16 +1,16 @@
 ---
-description: Migrate mega-sdd outputs from pre-v3.4 layout (scattered paths) to v3.4+ canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows preview, asks confirm, moves via git mv when in git repo (preserves history), updates internal references in vault.json + binding.md + per-file frontmatter. Idempotent; safe to re-run.
-argument-hint: [--dry-run] [--from=auto|<layout>] [--to=new|legacy] [--auto-confirm]
+description: Migrate mega-sdd outputs from the legacy scattered layout to the canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows preview, asks confirm, moves via git mv when in git repo (preserves history), updates internal references in vault.json + binding.md + per-file frontmatter. Idempotent; safe to re-run.
+argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new|legacy] [--auto-confirm]"
 ---
 
-Migrate mega-sdd outputs to v3.4+ canonical layout per `plugins/mega-sdd/references/paths.md`.
+Migrate mega-sdd outputs to the canonical layout per `plugins/mega-sdd/references/paths.md`.
 
 User arguments: $ARGUMENTS
 
 Flag parsing:
 - `--dry-run` — Preview moves without writing
 - `--from=auto|legacy|mixed` — Source layout (default: auto-detect)
-- `--to=new|legacy` — Target layout (default: new; v3.4+ `.mega-sdd/` consolidation)
+- `--to=new|legacy` — Target layout (default: new; canonical `.mega-sdd/` consolidation)
 - `--auto-confirm` — Skip per-move AskUserQuestion (DANGEROUS without --dry-run first)
 
 ## Procedure
@@ -194,8 +194,8 @@ find .mega-sdd -maxdepth 3 -type d | sort
 
 ## Migration <ISO8601 timestamp>
 
-- Source layout: legacy (pre-v3.4)
-- Target layout: new (v3.4+)
+- Source layout: legacy (scattered paths)
+- Target layout: new (canonical `.mega-sdd/`)
 - Total files moved: <N>
 - Vaults migrated: <list>
 - KB migrated: yes | no | n/a

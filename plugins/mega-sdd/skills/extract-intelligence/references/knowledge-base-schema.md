@@ -1,10 +1,39 @@
 # Knowledge-Base Output Schema
 
-`.mega-sdd/knowledge-base/` (default, v3.4+ Iter 10) is the structured output of `extract-intelligence`. It is consumed by `mega-sdd:generate-intent` (Mode B brief) and `mega-sdd:bind-codebase` (secondary ground truth). Legacy default `docs/knowledge-base/` retained for read-side back-compat only.
+`.mega-sdd/knowledge-base/` (default) is the structured output of `extract-intelligence`. It is consumed by `mega-sdd:generate-intent` (Mode B brief) and `mega-sdd:bind-codebase` (secondary ground truth). Legacy default `docs/knowledge-base/` retained for read-side back-compat only.
 
 Regenerable — never edited manually. To revise: edit the source legacy code OR re-run extraction with updated `--seed`.
 
 ---
+
+## Contents
+
+- Directory layout
+- Per-domain file frontmatter (MANDATORY)
+- Per-domain 11-section template (MANDATORY)
+- 1. Purpose
+- 2. Actors
+- 3. Flow (Input → Process → Output)
+- 3a. Staged inputs (multi-step workflows)
+- 4. Inputs
+- 5. Process
+- 6. Outputs
+- 7. Business Rules
+- 8. State Machine
+- 9. Edge Cases & Gotchas
+- 10. Open Questions
+- 11. Source References
+- Marker conventions (two orthogonal axes)
+- ERD Quality Rails
+- `data-mutation-policy.md` template
+- Entity-level summary
+- Per-locked-field policy
+- Discardable artifacts
+- How rebuild teams use this file
+- README roll-up structure
+- 99-rebuild-architecture templates
+- Anti-hallucination invariants
+- Consumed by
 
 ## Directory layout
 
@@ -40,9 +69,9 @@ Regenerable — never edited manually. To revise: edit the source legacy code OR
         └── suggested-phasing.md
 ```
 
-**Default `--out`:** `.mega-sdd/knowledge-base/` (v3.4+ Iter 10 canonical, enforced as default since v1.3 Iter 21 hotfix). Configurable. Pipeline-consumers probe in this order:
+**Default `--out`:** `.mega-sdd/knowledge-base/` (canonical). Configurable. Pipeline-consumers probe in this order:
 
-1. `.mega-sdd/knowledge-base/` (v3.4+ default — checked FIRST)
+1. `.mega-sdd/knowledge-base/` (canonical default — checked FIRST)
 2. `docs/knowledge-base/` (legacy v1.x extraction)
 3. `docs/mega-sdd/knowledge-base/` (legacy v2.x layout)
 4. `old-reference/knowledge-base/` (cross-folder rebuild placement)
@@ -67,7 +96,7 @@ depends_on: [<other-domain-ids>]   # for dependency graph synthesis
 verified_count: <int>              # count of [VERIFIED] markers in the file
 inferred_count: <int>              # count of [INFERRED] markers
 open_count: <int>                  # count of [OPEN] markers / OQ entries
-# v1.4+ Iter 22 mutability distribution (machine-read by generate-intent --kb)
+# mutability distribution (machine-read by generate-intent --kb)
 locked_count: <int>                # count of [LOCKED] markers (1:1 preserve)
 intent_count: <int>                # count of [INTENT] markers (outcome-only)
 artifact_count: <int>              # count of [ARTIFACT] markers (discardable)
@@ -115,7 +144,7 @@ flowchart LR
     Validate -- "no" --> Skip(["No amend processing"])
 ```
 
-`validate-kb-flows.sh` v2 (Iter 72+) enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
+`validate-kb-flows.sh` enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
 
 ## 3a. Staged inputs (multi-step workflows)
 
@@ -126,7 +155,7 @@ A flat "Inputs: A, B, C, D, E, F" list silently destroys staging: a downstream b
 **REQUIRED when the source has a multi-step pattern** (see §detection below). Each stage carries its own `_source` citation (anti-hallucination rail: a stage with no anchor is an `[OPEN]`, never an invented step).
 
 ```yaml
-stages:                          # NEW (v3.71.0+, semantic-depth — staged-input). REQUIRED when source is multi-step.
+stages:                          # staged-input block. REQUIRED when source is multi-step.
   - stage_id: "S1"
     stage_name: "Initial input"
     actor_role: "Maker"           # who fills / acts at this stage
@@ -139,7 +168,7 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
   - stage_id: "S2"
     stage_name: "Review & complete"
     actor_role: "Checker"
-    input_fields:                  # ENRICHED OBJECT form (v3.72.0+, OPTIONAL) — progressive-disclosure delta semantics
+    input_fields:                  # ENRICHED OBJECT form (OPTIONAL) — progressive-disclosure delta semantics
       - { name: "field_a", mutability: "dual-key-re-entry", visibility: "shown", conditional: "always" }  # re-typed by checker (G-110 dual-key)
       - { name: "field_d", mutability: "required",          visibility: "shown", conditional: "always" }
       - { name: "field_g", mutability: "optional",          visibility: "conditional", conditional: "if discount_type != 'none'" }
@@ -155,7 +184,7 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
     _source: ["legacy/path/file.php:201-240"]
 ```
 
-**Enriched per-field & delta fields (v3.72.0+, OPTIONAL — reuse-compliant extension of the SAME `stages:` block, NOT a parallel artifact):**
+**Enriched per-field & delta fields (OPTIONAL — reuse-compliant extension of the SAME `stages:` block, NOT a parallel artifact):**
 - `input_fields` accepts EITHER bare strings (back-compat — S1 above) OR objects with `name` + optional `mutability` ∈ {`required`, `optional`, `display-only`, `dual-key-re-entry`} + `visibility` ∈ {`shown`, `hidden`, `conditional`} + `conditional` (trigger expr, default `"always"`). A consumer that doesn't read the enriched fields simply uses `name` (or the bare string) — no consumer breaks (per CLAUDE.md semantic-depth invariant #7).
 - Per-stage delta lists (all OPTIONAL): `new_fields_vs_prior` (the progressive-disclosure kernel — fields introduced at this stage), `hidden_fields_vs_prior` (collected earlier, no longer shown), `promoted_to_mutable_vs_prior` (was display-only, now mutable — e.g. dual-key re-entry).
 - `dynamic_disclosures` (OPTIONAL): within-stage show/hide keyed to a control (dropdown / checkbox / radio / AJAX sub-table) — `trigger` + `fields_shown` + `_source` anchor.
@@ -169,7 +198,7 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
 
 **Carry-over:** `stages:` propagates KB → vault `04-flows.md` → units — the SAME class of stable-identifier propagation as OQ-IDs and constitution clauses (see `generate-intent/references/vault-contract.md §stages-propagation`). `generate-intent` MUST copy the block verbatim and emit the matching Mermaid `stateDiagram`, never re-flatten it. `validate-vault-flow-staging.sh` checks non-loss across the KB→vault boundary (advisory via `/mega-sdd:analyze` in v4 Hybrid — no longer a hard-block); `validate-kb-flows.sh` raises an advisory (`kb_flow_staging_missing`) when a workflow looks multi-step but carries no `stages:` block, pointing the user to `/mega-sdd:enrich-semantics`.
 
-> **Walking-skeleton scope (v3.71.0):** only the staged-input dimension is enforced. Other semantic-depth dimensions (rich per-stage conditional logic beyond `conditions:`, fine-grained role matrices, full transition guards) are captured best-effort here but not yet validator-enforced (Fork-B-future — `conditional` / `role-stage` / `transition` dimensions follow in a later iter).
+> **Walking-skeleton scope:** only the staged-input dimension is enforced. Other semantic-depth dimensions (rich per-stage conditional logic beyond `conditions:`, fine-grained role matrices, full transition guards) are captured best-effort here but not yet validator-enforced (Fork-B-future — `conditional` / `role-stage` / `transition` dimensions follow in a later iter).
 
 ## 4. Inputs
 
@@ -195,7 +224,7 @@ stages:                          # NEW (v3.71.0+, semantic-depth — staged-inpu
 |---|---|---|---|---|---|
 | BR-{domain}-1 | <rule in business language — explicit, not code-level> | <business reason> | <file:line> | [VERIFIED] / [INFERRED] / [OPEN] | [LOCKED] / [INTENT] / [ARTIFACT] / [?] |
 
-Depth expectations (v3.60.0+):
+Depth expectations:
 - Extract IMPLICIT rules coded as conditionals — make the business rule EXPLICIT. E.g., `if amount > threshold` → "BR-PAYMENT-3: Transactions exceeding threshold require dual approval".
 - Minimum: every conditional branch that drives a different business outcome = one rule row.
 - Error-handling rules count: "BR-PAYMENT-7: Failed payment retries 3 times then flags for manual review" is a business rule, not just an implementation detail.
@@ -204,7 +233,7 @@ Depth expectations (v3.60.0+):
 
 <Only if classification = workflow. Otherwise: "_N/A — not a workflow domain._">
 
-Depth expectations (v3.60.0+):
+Depth expectations:
 - Include ALL states (not just happy-path): error states, timeout states, cancellation, reversal, partial-completion.
 - Each transition: event name + guard condition + citation.
 - If no explicit state machine exists in code but status/state fields drive branching → reconstruct the implicit state machine.
@@ -229,7 +258,7 @@ stateDiagram-v2
 
 - **Edge Case 1** [VERIFIED]: <description>. **Source**: <file:line>. **Rebuild guidance**: <do-not-replicate / replicate / open question>.
 
-Depth expectations (v3.60.0+):
+Depth expectations:
 - Minimum 3 entries per workflow domain (gate enforced). Look for:
   - Empty-collection edge cases (what happens when list is empty, no records match?)
   - Boundary values (0, max, null, empty string)
@@ -265,7 +294,7 @@ Depth expectations (v3.60.0+):
 | `[INFERRED]` | Single source code path; needs confirmation | `bind-codebase` → CONFIRMED with note when claim matches |
 | `[OPEN]` | Unknown from code; needs domain expert | `bind-codebase` → escalate as OQ; `generate-intent --kb` → propagates to vault as OQ |
 
-### Axis 2 — Mutability tier (v1.4+, Iter 22)
+### Axis 2 — Mutability tier
 
 | Marker | Meaning | `generate-intent --kb` behavior |
 |---|---|---|
@@ -296,13 +325,13 @@ Pre-v1.4 KBs that only carry confidence markers: `generate-intent --kb` treats e
 
 ---
 
-## ERD Quality Rails (v1.4+, Iter 22)
+## ERD Quality Rails
 
 `suggested-erd.md` MUST satisfy these checks before Wave 5 writes the file:
 
 ### Universal-good-practice defaults
 
-- **Column naming**: snake_case (universal default; framework pack may override — see [`plugins/mega-sdd/references/framework-conventions/`](../../references/framework-conventions/))
+- **Column naming**: snake_case (universal default; framework pack may override — see `plugins/mega-sdd/references/framework-conventions/`)
 - **Table naming**: plural snake_case (`customers`, `loan_applications`)
 - **Primary key**: `id` (auto-increment BIGINT or UUID per framework convention)
 - **Foreign key**: `{singular_target_table}_id` (e.g., `customer_id` on `loans` table referencing `customers.id`)
@@ -331,7 +360,7 @@ Each departure cross-references the `[LOCKED]/[INTENT]/[ARTIFACT]` tier of the a
 
 ---
 
-## `data-mutation-policy.md` template (v1.4+, Iter 22)
+## `data-mutation-policy.md` template
 
 ```markdown
 ---

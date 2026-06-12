@@ -2,6 +2,16 @@
 
 > **Honest reset.** Iter 64 locked an aspirational 16-event schema; only 1 of those events ever emitted in real runs (per audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md`). Iter 67.5 shrinks the schema to what is *actually* emitted via Claude Code hooks (Fork A). The 11 control-layer events (classifier, guard, Plan/Act) are PARKED as Fork-B-future and are NOT emitted in Fork A.
 
+## Contents
+
+- Fork A scope (this doc) vs Fork B (future)
+- Storage location
+- Emission mechanism (Fork A — only the hook layer is reliable)
+- Event schema (live events only)
+- Fork-B-future (PARKED — NOT emitted in Fork A)
+- Iter 68 analysis prerequisites (REVISED for Fork A)
+- Schema evolution policy (revised)
+
 ## Fork A scope (this doc) vs Fork B (future)
 
 **Fork A — Telemetry-only, model-can't-no-op layer:**
@@ -27,7 +37,7 @@
 
 | Event type | Emitted by | Reliability |
 |---|---|---|
-| `ref_loaded` | `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse, matcher `Read\|Skill\|Bash`) | HIGH — fires for parent-thread Read AND Bash `cat\|head\|tail\|grep\|less\|more\|rg` of mega-sdd paths. **HONEST BLIND SPOT:** subagent-internal tool calls (Read/Bash inside a dispatched Agent thread) are NOT visible to the parent's hook. Multi-line / complex Bash (shell redirection, `< file`, awk/sed reading via stdin, find-exec, xargs) is also missed. `ref_loaded` therefore UNDER-COUNTS true loads. |
+| `ref_loaded` | `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse, matcher `Read\|Skill\|Bash`) | HIGH — fires for Read AND Bash `cat\|head\|tail\|grep\|less\|more\|rg` of mega-sdd paths, **including inside dispatched subagents** (PostToolUse fires on subagent fg+bg tool calls — settled by a 3-sentinel telemetry probe; see AUDIT.md Round-2 L1). **HONEST UNDER-COUNT (cause = lossy emission, NOT subagent invisibility):** the hook is async + every append is best-effort (`>> … 2>/dev/null \|\| true`, exit-0-always) so events can drop under load; and complex Bash (shell redirection `< file`, awk/sed-via-stdin, find-exec, xargs) is unparseable by the verb-regex. `ref_loaded` therefore UNDER-COUNTS true loads. |
 | `skill_invoked` | `plugins/mega-sdd/hooks/post-tool-use` (PostToolUse, matcher `Skill`) | LOW — captures explicit `/mega-sdd:*` user invocations only. Most mega-sdd skill activation bypasses the Skill tool (anchor injection, in-thread CLAUDE.md context, internal orchestrate-flow chains). Audit-confirmed effective dead surface; kept in schema for completeness. |
 | `turn_end_marker` | `plugins/mega-sdd/hooks/stop` (Stop) | HIGH (if harness invokes Stop for project CWD — verified via `hook-debug.log`). Payload includes real harness-reported `usage: {input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens}` extracted from the last `assistant` message in `transcript_path`. |
 | `halt_fired` | Skill body (markdown convention) | **BEST-EFFORT, UNRELIABLE.** Audit-confirmed: 0 emissions in real runs pre-67.5. Skill bodies may include emit-step instructions; model may or may not execute them. Treat as supplementary, not ground truth. |

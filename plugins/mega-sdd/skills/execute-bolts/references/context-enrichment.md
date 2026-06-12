@@ -27,6 +27,9 @@ Assembly logic for the bolt-dispatch prompt. Implements the 10 AI-executor princ
 - Anti-context block (DO NOT MODIFY / DO NOT REPLICATE / DO NOT WRITE / DO NOT COMMIT IF).
 - Provenance trailer template.
 - **Acceptance-test provenance NOTE:** if the unit's `acceptance_test._authored_by` is `same-pass` OR `adversarial-review-failed` (weak blind-spot signals per `generate-units/references/adversarial-test-prompt.md`), append a NOTE warning the bolt subagent the acceptance_test may have missed bugs the implementation introduces. The subagent's self-assessment is instructed to flag `acceptance_test_concern: <details>` if the implementation passes the test but feels under-validated. The NOTE template lives in the dispatch-prompt template (listed in SKILL.md).
+- **Reuse index path (ALWAYS — even when `reuse_candidates` is empty):**
+  `Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup surface; scan it for any capability you are about to write (you have Read/Grep). The reuse_candidates above are a fast-path hint, NOT the boundary.`
+- **`unit.reuse_candidates`** (fast-path hint — include when present; empty list is fine to omit the hint line, but the reuse-index path line above is unconditional).
 
 ## T2 budget tracker
 
@@ -55,16 +58,17 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 |---|---|---|---|
 | 1 | `validation_hints` | drop expected-output patterns; keep test commands only | drop section entirely |
 | 2 | `historical_memory` | last 5 → last 3 → last 1 → drop | drop section |
-| 3 | `kb_anti_patterns` | top 3 → top 1 → drop | drop section |
-| 4 | `confidence_labels` | per-claim → aggregate ("HIGH×N / MEDIUM×N / LOW×N") | drop section |
-| 5 | `depends_on_summaries` | N most-recently-touched files only | keep at least 1 upstream |
-| 6 | `framework_pack_rules` | top 5 → top 3 → top 1 | keep top 1 always |
-| 7 | `starterkit_slice` | libs → top 10; ui_ux.idioms → top 3 (see slice cascade below) | per slice cascade (halt if still over) |
-| 8 (NEVER drop) | `constitution_clauses` | NEVER truncate — LOCKED security/compliance content | n/a — if it alone exceeds → halt `dispatch_prompt_too_large` |
+| 3 | `reuse_slice` | trim to top 5 entries by target_files overlap → top 3 → top 1 | "+N more — read reuse-index.yaml directly" (never fully dropped — at minimum 1 hint line survives) |
+| 4 | `kb_anti_patterns` | top 3 → top 1 → drop | drop section |
+| 5 | `confidence_labels` | per-claim → aggregate ("HIGH×N / MEDIUM×N / LOW×N") | drop section |
+| 6 | `depends_on_summaries` | N most-recently-touched files only | keep at least 1 upstream |
+| 7 | `framework_pack_rules` | top 5 → top 3 → top 1 | keep top 1 always |
+| 8 | `starterkit_slice` | libs → top 10; ui_ux.idioms → top 3 (see slice cascade below) | per slice cascade (halt if still over) |
+| 9 (NEVER drop) | `constitution_clauses` | NEVER truncate — LOCKED security/compliance content | n/a — if it alone exceeds → halt `dispatch_prompt_too_large` |
 
 ## Halt path + soft-budget warnings
 
-`dispatch_prompt_too_large` fires ONLY when: all disposable T2 sections (priorities 1–7) are already truncated to their drop floor AND total still exceeds `cap_hard` AND `constitution_clauses` alone is non-truncatable. In practice this halt now indicates a true config issue (a unit references too many constitution clauses for one bolt) requiring spec-level adjustment, not a bolt-fixable problem.
+`dispatch_prompt_too_large` fires ONLY when: all disposable T2 sections (priorities 1–8) are already truncated to their drop floor AND total still exceeds `cap_hard` AND `constitution_clauses` alone is non-truncatable. In practice this halt now indicates a true config issue (a unit references too many constitution clauses for one bolt) requiring spec-level adjustment, not a bolt-fixable problem.
 
 **Soft-budget warning** — when `consumed_t2 > cap_t2` but `total < cap_hard`: log a warning (NOT a halt): `"T2 exceeded soft cap: target=<cap>, actual=<N> — truncation applied"`; apply truncation to bring T2 back under target; the bolt proceeds with truncated context + a provenance trail visible to the subagent in the `### T2 budget tracker` section. The subagent is instructed: if the tracker shows truncated sections, set `confidence: MEDIUM` for any claim that depended on truncated context.
 
@@ -78,6 +82,27 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 - **Starterkit context slice:** see the slice sub-sections below.
 - Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale).
 - Validation hints (specific test commands + expected-output patterns).
+
+## Reuse slice: build
+
+```
+Path: <project>/.mega-sdd/codebase/reuse-index.yaml
+
+IF reuse-index.yaml exists:
+  Parse YAML → entries[]
+  slice.reuse = entries whose path overlaps any of unit.target_files
+              OR whose name is in unit.reuse_candidates
+  Sort by overlap count descending.
+  Cap to fit T2 budget (priority 3 in the T2 cascade above).
+  IF truncated: append note "+N more — read reuse-index.yaml directly" to slice.reuse
+  Inject into T2 as:
+    ### Reuse index (filtered slice)
+    <for each entry in slice.reuse:>
+    - <entry.name> (<entry.path>) — <entry.summary>
+    </for>
+    <IF truncated:> +N more — read reuse-index.yaml directly </IF>
+IF reuse-index.yaml absent: skip slice.reuse (the T1 path line above still instructs the bolt to check)
+```
 
 ## Starterkit slice: read
 
@@ -100,10 +125,10 @@ For each relevance flag in `unit.starterkit_relevance`, include ONLY that slice 
 slice = {}
 
 IF "auth" in unit.starterkit_relevance AND starterkit_context.auth exists:
-  slice.auth = starterkit_context.auth (lib, guard, user_model only — exclude routes, _source)
+  slice.auth = starterkit_context.auth (lib, mechanism, user_model only — exclude routes, _source)
 
-IF "rbac" in unit.starterkit_relevance AND starterkit_context.rbac exists:
-  slice.rbac = starterkit_context.rbac (lib, role_model, permission_model, middleware only — exclude policies, _source)
+IF "authz" in unit.starterkit_relevance AND starterkit_context.authz exists:
+  slice.authz = starterkit_context.authz (lib, mechanism, role_source, declarations — exclude _source)
 
 IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
@@ -130,6 +155,15 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
 IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
   slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
   (NOT the full inventory — only libs whose usage_hint contains any of unit.target_files paths/prefixes)
+
+# Map §6 fallback — codebase pattern signatures travel even WITHOUT a deep scan.
+# When starterkit-context.yaml is absent (regex-tier / shallow / no-deep-scan runs),
+# codebase-map.md §6 Pattern signatures is the only pattern source the scan produced —
+# deliver it instead of letting the bolt re-invent generic defaults.
+IF starterkit_context absent AND codebase-map.md §6 (Pattern signatures) present:
+  slice.map_patterns = §6 rows verbatim (auth pattern, error handling, state, view/component pattern)
+  # emitted as one `Codebase patterns:` line in the dispatch prompt — "new code matches these
+  # unless the unit's Hard rules say otherwise". Informational context, never a gate.
 ```
 
 ## Starterkit slice: §patterns wiring
@@ -245,11 +279,11 @@ Populate the T2.3 "Starterkit context (relevant slice)" section in the bolt-suba
 ### Starterkit context (relevant to this unit)
 
 <IF slice.auth present:>
-Auth: lib=<slice.auth.lib>, guard=<slice.auth.guard>, user_model=<slice.auth.user_model>
+Auth: lib=<slice.auth.lib>, mechanism=<slice.auth.mechanism>, user_model=<slice.auth.user_model>
 </IF>
 
-<IF slice.rbac present:>
-RBAC: lib=<slice.rbac.lib>, role_model=<slice.rbac.role_model>, middleware=<slice.rbac.middleware joined by ", ">
+<IF slice.authz present:>
+Authz: lib=<slice.authz.lib>, mechanism=<slice.authz.mechanism>, declarations=<slice.authz.declarations[].name joined by ", ">
 </IF>
 
 <IF slice.ui_ux present:>
@@ -333,7 +367,7 @@ Full upstream bolt-reports, full constitution, full KB domain files, full memory
 
 ## Log final prompt
 
-Write the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability, then dispatch via superpowers `executing-plans` with the enriched prompt as the plan body.
+Ensure the bolt dir exists first — `mkdir -p <vault>/bolts/U-XXX/` (idempotent; it was already created at execute-bolts Procedure Step 0, but never assume it). Then write the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability, then dispatch via superpowers `executing-plans` with the enriched prompt as the plan body.
 
 ## Anti-hallucination rails
 

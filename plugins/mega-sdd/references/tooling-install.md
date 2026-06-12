@@ -2,9 +2,32 @@
 
 > **v1.0.0+ Iter 55 update (documented Iter 61 per B-P3-1):** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify + memory-cache outcomes), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
 
+## Platform support matrix
+
+How much of mega-sdd works per environment (verified 2026-06-11 against the shipped hooks/scripts — all 5 hooks are bash and spawn `python3`; no `.ps1` ports ship yet):
+
+| Environment | Skills & commands | Hooks (gates, journal, staleness) | Scripts/validators | Moat enforcement | Verdict |
+|---|---|---|---|---|---|
+| **macOS / Linux** | ✅ | ✅ | ✅ | ✅ deterministic | Full support |
+| **Windows + WSL** | ✅ | ✅ | ✅ | ✅ deterministic | **Full support — the recommended Windows path** |
+| **Windows + Git Bash (MINGW)** | ✅ | ✅ *if `python3` on PATH* (Windows Python is usually `python`/`py` — add a `python3` alias/shim) | ✅ same condition | ✅ even WITHOUT python3 — the pre-tool-use fail-closed shell fallback still blocks execute-bolts when blockers ≠ PASS | Works; diagnostics degrade without python3 |
+| **Windows native (cmd/PowerShell, no bash)** | ⚠️ prose only — the model can follow skills via PowerShell | ❌ hooks are bash (`run-hook.cmd` routes to `hooks/<name>.ps1` when present, but no `.ps1` ports ship) | ❌ | ⚠️ **prose-enforced only — no deterministic gate** | Not recommended for real pipelines |
+
+`/mega-sdd:install-deps` detects winget/scoop/choco on Windows (best-effort) and apt inside WSL. PowerShell ports of the 5 hooks are a tracked roadmap item — tell us if your team needs native cmd.
+
 Centralized install commands for all native binaries mega-sdd can leverage. **All are OPTIONAL** — mega-sdd has graceful fallbacks for every tool. Install for higher precision + better UX; skip for minimal-footprint setup.
 
 Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md` + research): bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat, license redistribution, maintenance overhead). Install once via your package manager.
+
+## Contents
+
+- Tool matrix
+- One-command install (recommended setup)
+- Verify install
+- Minimal-footprint setup (skip everything optional)
+- License notes
+- Troubleshooting
+- References
 
 ## Tool matrix
 

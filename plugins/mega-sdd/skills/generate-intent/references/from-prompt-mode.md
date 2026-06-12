@@ -10,6 +10,16 @@ Converts a free-text user brief into a structured `seed-PRD.md` ready for `/mega
 
 > **Skill instruction language**: this skill is written in English for reasoning quality. Chat prompts (Q&A questions, summary) adapt to the user's language at runtime. Per `./vault-contract.md` §boilerplate.
 
+## Contents
+
+- When to use this skill
+- Core principle
+- Workflow (brief → Q&A elaboration → vault)
+- §brief / §qa — captured-source template (sections A–I)
+- Question taxonomy
+- --auto flag
+- Halt handling
+
 ## When to use this skill
 
 Trigger this skill for:
@@ -215,7 +225,7 @@ If invoked from `orchestrate-flow` Rule 0, control returns to orchestrate-flow w
 | 9 | Out of scope | Every doc OOS | "What's NOT in scope for v1?" | free-text or "nothing decided" |
 | 10 | Anything else | Catch-all | "Anything else critical?" | free-text or "no, proceed" |
 
-## --auto flag (v0.1+)
+## --auto flag
 
 The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow` via Rule 0 chain) to skip logistical prompts only. **Substance prompts — every Q&A question — ALWAYS stay interactive.** That's the entire point of this skill: capturing the user's actual answers, never Claude's guesses.
 
@@ -290,5 +300,5 @@ Per `./vault-contract.md` §halt-protocol. Caller (orchestrator) catches and sur
 
 - Schema, OQ conventions, halt protocol, citation conventions: `./vault-contract.md` (§schema, §OQ-conventions, §halt-protocol, §boilerplate).
 - Downstream consumer: `../SKILL.md` (generate-intent) consumes the seed-PRD as a normal source. PRD_STATUS auto-set to `draft` based on the seed-PRD's `Status: DRAFT` metadata.
-- Orchestrator: `../../orchestrate-flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
+- Orchestrator: `orchestrate-flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
 - For `vault.json.source_documents[].type = "seed-PRD"` is the recommended value when this skill's output is consumed; vault-contract.md §schema treats `type` as a free-form string.

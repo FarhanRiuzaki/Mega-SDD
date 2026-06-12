@@ -308,3 +308,35 @@ relation_derivation:
 ## Notes / pack-specific guidance
 
 <Free-form section for framework-specific quirks, common pitfalls, anti-patterns to call out, etc.>
+
+## Deep-scan file hints   <!-- REQUIRED when the stack has auth/authz/ui -->
+
+```yaml
+auth_hints:  [ <paths/globs where authentication config & handlers live> ]
+authz_hints: [ <paths/globs where access-control rules live> ]
+ui_hints:    [ <paths/globs where layouts/components/tokens live> ]
+```
+
+## Authz mapping   <!-- REQUIRED when the stack has authorization -->
+
+- `auth.mechanism`: <session|token|jwt|oauth|builtin>
+- `authz.mechanism`: <middleware|decorator|guard|policy|mixin|builtin>
+- `authz.role_source`: <model|config|db|enum>
+- Construct -> `declarations[].kind`: <table mapping THIS stack's authz constructs to role|permission|gate|policy|group>
+
+## UI detection   <!-- REQUIRED when the stack renders server/client UI -->
+
+- template inheritance / dominant layout: <how this stack declares it>
+- component: <how this stack declares a component>
+- notification call: <how this stack invokes notifications>
+
+## Reuse discovery   <!-- REQUIRED when the stack has reusable first-party code -->
+
+```yaml
+reuse_hints:
+  helpers:  [ <globs where helper/util functions live> ]
+  model_api: [ <globs where domain models live — methods/scopes/traits> ]
+  services: [ <globs where service/action classes live> ]
+  commands: [ <globs where CLI/commands live> ]
+```
+- model_api: public methods + scopes + traits on each model. commands: each command's signature/handler.

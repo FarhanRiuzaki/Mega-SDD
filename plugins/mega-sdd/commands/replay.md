@@ -3,7 +3,7 @@ description: Replay a bolt's execution + detect divergence vs prior runs. Read-o
 argument-hint: <unit-id> [--vault=<path>] [--capture-only] [--diff-against=<replay-id>] [--format=table|json]
 ---
 
-Replay + divergence detection for `execute-bolts` outcomes. Per Iter 18 research finding — IBM DFAH (2026) + LangGraph time-travel validate replay as missing primitive for agentic-dev debugging.
+Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel validate replay as missing primitive for agentic-dev debugging.
 
 User arguments: $ARGUMENTS
 
@@ -11,16 +11,16 @@ User arguments: $ARGUMENTS
 
 ### Step 1 — Resolve vault + unit
 
-- Probe `<project>/.mega-sdd/vaults/*/vault.json` (v3.4+) OR `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy)
+- Probe `<project>/.mega-sdd/vaults/*/vault.json` (canonical) OR `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy)
 - Required positional: `<unit-id>` (e.g., U-001)
 - Validate unit exists in vault; halt with helpful error if not
 
 ### Step 2 — Capture current bolt state (replay artifact)
 
 Read existing bolt artifacts:
-- `<vault>/bolts/<unit-id>/bolt-report.md` (Iter 3+)
-- `<vault>/bolts/<unit-id>/preflight.json` (Iter 3+; Hard Rule snapshots)
-- `<vault>/bolts/<unit-id>/postflight.json` (Iter 3+; Hard Rule validation results)
+- `<vault>/bolts/<unit-id>/bolt-report.md` 
+- `<vault>/bolts/<unit-id>/preflight.json` (Hard Rule snapshots)
+- `<vault>/bolts/<unit-id>/postflight.json` (Hard Rule validation results)
 - Unit's `target_files` after-state (file checksums via `sha256sum`)
 
 Build snapshot:
@@ -57,7 +57,7 @@ Build snapshot:
 }
 ```
 
-Persist to `<vault>/.internal/replays/<unit-id>-<timestamp>.json`. JSONL append pattern (race-tolerant per Iter 5+10 memory convention).
+Persist to `<vault>/.internal/replays/<unit-id>-<timestamp>.json`. JSONL append pattern (race-tolerant per the memory convention).
 
 ### Step 3 — Diff against prior runs (if any)
 
@@ -72,7 +72,7 @@ CURRENT=<vault>/.internal/replays/<unit-id>-<latest>.json
 jd "$PRIOR" "$CURRENT" > <vault>/.internal/replays/<unit-id>-divergence.patch
 ```
 
-If `jd` available (per Iter 14 adoption), use it for canonical JSON diff. Fall back to manual field-by-field comparison.
+If `jd` available, use it for canonical JSON diff. Fall back to manual field-by-field comparison.
 
 ### Step 4 — Classify divergence
 
@@ -149,7 +149,7 @@ If bolt-report.md shows `status: halted_*`, replay capture proceeds but classifi
 
 - Replay is READ-ONLY — never modifies code, vault, or memory
 - Diff classification is DETERMINISTIC (rule table; no LLM judgment)
-- Snapshots stored as JSON Lines (race-tolerant append per Iter 10 paths convention)
+- Snapshots stored as JSON Lines (race-tolerant append per the paths convention)
 - Cosmetic-only divergence (timestamps) explicitly excluded from halt classification
 - All halt classifications cite specific fields + values that differ
 
@@ -162,7 +162,6 @@ If bolt-report.md shows `status: halted_*`, replay capture proceeds but classifi
 
 ## References
 
-- Iter 18 spec (this iter)
-- Iter 14 jd adoption (used for canonical JSON diff)
-- Iter 6 checkpoint protocol (related but distinct — checkpoints are mid-skill state, replays are bolt outcomes)
+- jd (used for canonical JSON diff)
+- Checkpoint protocol (related but distinct — checkpoints are mid-skill state, replays are bolt outcomes)
 - `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — bolt-report.md + preflight.json + postflight.json producers

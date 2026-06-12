@@ -1,5 +1,5 @@
 ---
-description: [USER-INVOKED] Auto-detect OS + pkg manager + install missing native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh) with single batch confirmation. NEVER auto-sudo; NEVER curl|bash; mandatory post-install verify; memory-cached outcomes prevent re-asking next session. Supports macOS (brew), Ubuntu/Debian (apt), Fedora/RHEL (dnf), Arch (pacman), Alpine (apk), WSL, Windows-bash (winget/scoop/choco best-effort), cross-platform fallbacks (cargo/npm/go).
+description: USER-INVOKED — Auto-detect OS + pkg manager + install missing native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh) with single batch confirmation. NEVER auto-sudo; NEVER curl|bash; mandatory post-install verify; memory-cached outcomes prevent re-asking next session. Supports macOS (brew), Ubuntu/Debian (apt), Fedora/RHEL (dnf), Arch (pacman), Alpine (apk), WSL, Windows-bash (winget/scoop/choco best-effort), cross-platform fallbacks (cargo/npm/go).
 argument-hint: "[--dry-run] [--tools=<csv>] [--force-recheck] [--pkg-mgr=<name>] [--manual] [--auto]"
 ---
 

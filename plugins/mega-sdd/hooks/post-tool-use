@@ -11,11 +11,15 @@
 # 1. Matcher broadened to Read|Skill|Bash in hooks.json
 # 2. Bash branch added below — detects `cat|head|tail|grep|less|more|rg <mega-sdd-path>`
 #    and emits one ref_loaded per detected path
-# 3. HONEST blind-spot acknowledgment: subagent-internal tool calls
-#    (Read/Bash inside a dispatched Agent thread) are NOT visible to the
-#    parent's PostToolUse hook. ref_loaded therefore UNDER-COUNTS true loads
-#    in any chain that uses subagents. This is a Fork-A limitation documented
-#    in plugins/mega-sdd/references/telemetry-schema.md §Emission mechanism.
+# 3. HONEST limitation: ref_loaded UNDER-COUNTS true loads — but NOT because
+#    subagent calls are invisible. PostToolUse DOES fire on subagent (fg+bg)
+#    tool calls (settled empirically by a 3-sentinel telemetry probe; see
+#    AUDIT.md Round-2 L1). The under-count is because emission is intentionally
+#    LOSSY: this hook is async (hooks.json) and every append is best-effort
+#    (`>> ... 2>/dev/null || true`, exit-0-always), so events can drop under
+#    load; the Bash branch also can't parse complex pipelines (redirection,
+#    awk/sed-via-stdin, find-exec, xargs). Detail:
+#    plugins/mega-sdd/references/telemetry-schema.md §Emission mechanism.
 #
 # Emission:
 # - Honors --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml
@@ -255,7 +259,8 @@ print(status)
     # - Only catches cat/head/tail/grep/less/more/rg as command verb
     # - Misses: shell redirection (`< file`), command substitution, awk/sed reading via stdin,
     #   complex pipelines, find-exec, xargs, anything in shell functions/aliases
-    # - Subagent-internal Bash calls are NOT visible (different process, no hook propagation)
+    # - (Subagent-internal Bash calls ARE visible — PostToolUse fires inside subagents; see
+    #   AUDIT.md L1. The under-count is async/lossy emission + the unparseable patterns above.)
     # - This is a best-effort approximation; ref_loaded UNDER-COUNTS true reads.
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
@@ -297,20 +302,21 @@ for h in sorted(hits):
     fi
 
     # ── B.5-followup: pandoc render failure detection ──────────────────────
-    # When Bash command contains "pandoc" AND tool_response indicates non-zero
-    # exit, emit pdf_render_failed telemetry. tool_response.exit_code is in
-    # PostToolUse stdin for Bash. Read it from STDIN_JSON.
+    # PostToolUse fires only on SUCCESS and its Bash payload has no documented
+    # exit_code field — failures arrive via the PostToolUseFailure event (this
+    # same script, wired in hooks.json; stdin carries hook_event_name + error).
+    # Failure event + pandoc in the command → treat as render failure.
     if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -qi "pandoc"; then
       BASH_EXIT_CODE=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json, sys
 try:
     data = json.loads(sys.stdin.read())
-    tr = data.get("tool_response", {})
-    # exit_code may be at top-level OR inside response object
-    if isinstance(tr, dict):
-        print(tr.get("exit_code", tr.get("exitCode", 0)))
+    if data.get("hook_event_name") == "PostToolUseFailure":
+        print(1)  # tool failed; exact code unknown — non-zero is the signal
     else:
-        print(0)
+        tr = data.get("tool_response", {})
+        # legacy fallback for CC versions that exposed an exit code here
+        print(tr.get("exit_code", tr.get("exitCode", 0)) if isinstance(tr, dict) else 0)
 except Exception:
     print(0)
 ' 2>/dev/null)
@@ -367,23 +373,50 @@ except Exception:
 
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+    # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
+    # Source-file writes in a MAPPED repo (codebase-map.md exists) are journaled so
+    # /mega-sdd:sync + scan-codebase --changed-only know what moved without git
+    # archaeology — covers in-session AI edits even before they are committed.
+    # Append-only JSONL, fail-silent, a HINT not ground truth (consumers union it
+    # with the git channel). Never journals mega-sdd's own outputs.
+    case "$FILE_PATH" in
+      *"/.mega-sdd/"*) : ;;  # own outputs — never journal (anti-feedback-loop)
+      *)
+        if [ -f "${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md" ] && \
+           ! grep -qE "^\s*dirty_journal:\s*false" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null; then
+          DIRTY_JOURNAL="${PROJECT_ROOT}/.mega-sdd/codebase/.dirty-paths.jsonl"
+          # Runaway guard: stop appending past 1 MB — the git channel still covers
+          # everything, and a journal that large trips the >40% full-scan rule anyway.
+          DIRTY_SIZE=0
+          [ -f "$DIRTY_JOURNAL" ] && DIRTY_SIZE=$(wc -c < "$DIRTY_JOURNAL" 2>/dev/null || echo 0)
+          if [ "${DIRTY_SIZE:-0}" -lt 1048576 ]; then
+            DIRTY_REL="${FILE_PATH#"$PROJECT_ROOT"/}"
+            DIRTY_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '{"ts":"%s","path":"%s","tool":"%s","session":"%s"}\n' \
+              "$DIRTY_TS" "$DIRTY_REL" "${TOOL_NAME:-write}" "${SESSION_ID:-unknown}" \
+              >> "$DIRTY_JOURNAL" 2>/dev/null || true
+          fi
+        fi
+        ;;
+    esac
+
     # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
     # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).
     case "$FILE_PATH" in
       *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md|*.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/_index.md)
         VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
         if [ -x "$VALIDATOR_BU" ]; then
-          bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
         # Constitution clause propagation (same boundary, same trigger)
         VALIDATOR_CP="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
         if [ -x "$VALIDATOR_CP" ]; then
-          bash "$VALIDATOR_CP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_CP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
         # Starterkit conformance — units must match starterkit-context.yaml §patterns
         VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
         if [ -x "$VALIDATOR_SKC" ]; then
-          bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
         # Flow-coverage (code-delivery slice A): flow-step -> artifact derivation +
         # scaffold-filter. SKIPs gracefully if the active pack declares no
@@ -391,7 +424,7 @@ except Exception:
         # PreToolUse Branch 5 reads its status to gate execute-bolts.
         VALIDATOR_FC="${SCRIPT_DIR}/../scripts/validate-flow-coverage.sh"
         if [ -x "$VALIDATOR_FC" ]; then
-          bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
         # Sibling-consistency (code-delivery slice B): cross-cutting concern coherence
         # + FK relation derivation across sibling units. SKIPs when the active pack
@@ -399,17 +432,22 @@ except Exception:
         # .sibling-consistency-state.json; PreToolUse Branch 7 reads it to gate execute-bolts.
         VALIDATOR_SIB="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
         if [ -x "$VALIDATOR_SIB" ]; then
-          bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
         # Fan-out parity (Iter-79 A2): presence-parity of deliverable obligations
         # (UI contract, render test) across VIEW-BEARING siblings — catches "LC is
         # always the survivor". SKIPs when the pack declares no view_glob. Writes
-        # .fanout-parity-state.json; PreToolUse Branch 12 gates execute-bolts on its
-        # fanout_parity_divergence COUNT (EXTENSION-gate pattern — never status==FAIL).
+        # .fanout-parity-state.json. ADVISORY ONLY — surfaced via /mega-sdd:analyze;
+        # the PreToolUse aggregator does NOT read this state file (no blocking gate).
+        # (Per CLAUDE.md: fan-out-parity is advisory, not a hard block.)
         VALIDATOR_FOP="${SCRIPT_DIR}/../scripts/validate-fanout-parity.sh"
         if [ -x "$VALIDATOR_FOP" ]; then
-          bash "$VALIDATOR_FOP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          ( bash "$VALIDATOR_FOP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         fi
+        # The 6 validators above are INDEPENDENT (each writes its own state file;
+        # PreToolUse is the consumer) — run in parallel, then wait so all state
+        # files are written before this async hook exits. Was: 6 sequential spawns.
+        wait
         ;;
     esac
 

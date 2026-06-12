@@ -4,6 +4,44 @@ Full schemas for mega-sdd memory files across three scopes. Schema version `1`. 
 
 ---
 
+## Contents
+
+- 1. Schema version stamp
+- 2. File format conventions
+- 3. Architecture — three scopes
+- Schema
+- Entries
+- 4. Per-file schemas
+- Flag defaults
+- Project-shape preferences
+- Pending suggestions
+- Model tiers
+- CONFLICT resolution patterns
+- Hard Rule violation patterns
+- Recommendation acceptance patterns
+- Pending suggestions
+- Learning #1 — 2026-05-15T10:00:00Z
+- Learning #2 — 2026-05-18T14:00:00Z
+- CONFLICT resolutions
+- OQ resolutions
+- Recommendation outcomes
+- PRD Scope Decisions
+- Test framework
+- Naming conventions
+- Error envelope
+- Run #1 — 2026-05-15
+- Run #2 — 2026-05-15 (resume)
+- Run #3 — 2026-05-18
+- Run #1 — 2026-05-20T10:30:00Z
+- Run #2 — 2026-05-20T11:15:00Z (post-resolve-oq)
+- 5. Append-only convention (per MEMORY-OQ-6)
+- 6. Race-condition tolerance (per MEMORY-OQ-6)
+- Run #N — <ISO8601>
+- 7. Schema migration (per MEMORY-OQ-1)
+- 8. Memory consumption by orchestrate-flow
+- 8.5 Scope index (`_index.md`) + hygiene rails
+- 9. Privacy + opt-out
+
 ## 1. Schema version stamp
 
 Every memory file has a header:
@@ -43,17 +81,18 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 
 **Per-repo**. Git-trackable per-file (per MEMORY-OQ-2 resolved per-file decision). Survives vault lifecycle.
 
-> **Path resolution (v3.4+ Iter 10 canonical, enforced v1.2.1 Iter 25)**: write-side default is `<project-root>/.mega-sdd/memory/` per `plugins/mega-sdd/references/paths.md`. Legacy path `<project-root>/.mega-sdd-memory/` honored for read-side back-compat only — when both exist, NEW writes go to `.mega-sdd/memory/`. Use `/mega-sdd:migrate-paths` to consolidate.
+> **Path resolution (canonical)**: write-side default is `<project-root>/.mega-sdd/memory/` per `plugins/mega-sdd/references/paths.md`. Legacy path `<project-root>/.mega-sdd-memory/` honored for read-side back-compat only — when both exist, NEW writes go to `.mega-sdd/memory/`. Use `/mega-sdd:migrate-paths` to consolidate.
 
 | File | Purpose | Format | Default gitignore |
 |---|---|---|---|
 | `decisions.md` | OQ resolutions, CONFLICT actions, ACCEPTs | Markdown tables | Tracked (team-shared knowledge) |
 | `conventions.md` | Detected conventions (test framework, naming, error format) | Markdown sections | Tracked (team-shared) |
-| `outcomes.md` | Halt patterns, retry counts, success rates per run | Markdown chronological log | Gitignored (per-dev noise) |
-| `routing-outcomes.md` | Orchestrator routing decisions + outcomes log (v1.3.0+, Iter 33) | Markdown append-only rows | Gitignored (per-dev noise) |
-| `install-outcomes.md` | install-deps audit log: per-tool installed/skipped/failed/sudo-pending with OS detection (v1.0.0+, Iter 55; declared in memory-schema Iter 61 per B-P2-3) | Markdown append-only rows + per-run header | Gitignored (machine-specific) |
+| `outcomes.md` | Halt patterns, retry counts, success rates per run — incl. `kind: sync` rows (Mode D runs) | Markdown chronological log | Gitignored (per-dev noise) |
+| `routing-outcomes.md` | Orchestrator routing decisions + outcomes log | Markdown append-only rows | Gitignored (per-dev noise) |
+| `install-outcomes.md` | install-deps audit log: per-tool installed/skipped/failed/sudo-pending with OS detection | Markdown append-only rows + per-run header | Gitignored (machine-specific) |
+| `_index.md` | Scope index: per file — row count, last-entry date, one-line current-state summary, open pending-suggestion count, size-threshold flag | Markdown table, REGENERATED (not append-only) by the orchestrator at its batched-write point | Gitignored (derived) |
 
-### `<project>/.mega-sdd/memory/routing-outcomes.md` (v1.3.0+, Iter 33)
+### `<project>/.mega-sdd/memory/routing-outcomes.md`
 
 ```markdown
 # Routing Outcomes
@@ -71,13 +110,14 @@ Schema fully defined at `plugins/mega-sdd/skills/memory/references/routing-outco
 
 ### VAULT scope (`<vault-path>/.memory/`)
 
-**Per-vault, ephemeral**. Lives with vault; deleted/archived with vault per MEMORY-OQ-5 (b) — moved to `<project>/.mega-sdd/memory/archived-vaults/<vault-id>/` (v3.4+ canonical) when vault deleted.
+**Per-vault, ephemeral**. Lives with vault; deleted/archived with vault per MEMORY-OQ-5 (b) — moved to `<project>/.mega-sdd/memory/archived-vaults/<vault-id>/` (canonical) when vault deleted.
 
 | File | Purpose | Format |
 |---|---|---|
 | `classifier-accuracy.json` | Auto-classifier tag-rate + user-override metrics | JSON |
 | `bind-history.md` | Per-binding-run verdicts + state map summaries | Markdown chronological log |
-| `bolt-outcomes.json` | Per-bolt success/failure + Hard Rule violations | JSON |
+| `bolt-outcomes.json` | Per-bolt success/failure + Hard Rule violations + failure reflections + acceptance-test concerns | JSON |
+| `drift-history.md` | Per-drift-run finding summaries + per-finding user direction calls (fingerprinted) | Markdown chronological log |
 
 ---
 
@@ -114,7 +154,7 @@ scope: user
 - After 5/5 OUTPUT_MODE=compact: propose Step 0.7 default = compact. See `learning-log.md` candidate #3.
 ```
 
-#### `## Model tiers` section (v1.3.1+, Iter 34)
+#### `## Model tiers` section
 
 Per-role model tier override (user-scope). Lower precedence than CLI flag + project config; higher than catalog default.
 
@@ -256,7 +296,7 @@ scope: project
 | 2026-05-20 | OQ-AR-7 | RFC 7807 problem+json envelope | ACCEPT | matches industry standard | resolve-oq v1.1 |
 ```
 
-### PRD Scope Decisions (v1.12+, Iter 28)
+### PRD Scope Decisions
 
 Records each invocation's PRD → scope mapping. Drives "silent default" on re-invocation when PRD sha256 + cwd basename match.
 
@@ -336,7 +376,16 @@ scope: project
 - Phases: generate-intent (diff-vault from new PRD) → bind → units → bolts (4 phases; completed)
 - Hard Rule violations: 0
 - Total duration: 32 min
+
+## Run #4 — 2026-06-10 (kind: sync)
+- Vault: leave-mgmt v2
+- Trigger: 1 journal row ∪ 2 git-delta paths (3 changed)
+- Phases: scan --changed-only → drift (2 findings) → bind --paths (1 re-verdict) → units --reconcile (1 flip) → bolts (1 stale re-run)
+- Patches: applied 1 / queued 1 · auto-apply=safe: accepted 1, rejected 0
+- Closing staleness: stale=0
 ```
+
+`kind: sync` rows are appended by orchestrate-flow Mode D (one per sync run) — they make sync cadence, queue/apply ratios, and `--auto-apply=safe` accept rates observable. Suggestion read (gated): when the last ≥3 sync runs each queued ≥1 write-back of the same safe class that the user later ACCEPTed unchanged, surface ONE suggestion to default `--auto-apply=safe` — applied only on explicit ACCEPT (it widens the autonomy surface).
 
 ### `<vault>/.memory/classifier-accuracy.json`
 
@@ -430,11 +479,45 @@ scope: vault
       "resolution": "user_edited_unit",
       "resolution_at": "2026-05-20T12:30:00Z",
       "resolution_note": "Switched task_type to extend; filled Migration notes",
-      "retry_status": "succeeded_on_retry_1"
+      "retry_status": "succeeded_on_retry_1",
+      "failure_reflection": "Hard Rule predates the binding's extend verdict — unit was mis-typed create; root cause is task_type, not the bolt",
+      "concerns": ["acceptance test asserts column order — brittle if migration reordered"]
     }
   ]
 }
 ```
+
+Learning-loop fields (optional; absent on older entries — readers MUST tolerate absence):
+
+- `failure_reflection` — ONE-line root-cause written on EVERY retry or halt (Reflexion pattern): *why* it failed, not just the resolution enum. Written by the fix-proposer step of execute-bolts. Pre-execution reads surface the reflections of this unit's past attempts AND of sibling units in the same module, so retry N+1 and neighboring bolts start with the why.
+- `concerns` — the per-bolt `acceptance_test_concerns` execute-bolts already harvests into `_summary.md`, persisted here too so cross-vault recurrence can reach a learning threshold instead of dying with the handoff.
+
+### `<vault>/.memory/drift-history.md`
+
+```markdown
+---
+memory_schema: 1
+generated_by: mega-sdd
+scope: vault
+---
+
+# Drift History — vault leave-mgmt
+
+## Run #1 — 2026-06-10T09:00:00Z
+- source_run: detect-drift v2.5, scope: changed-paths (3)
+- findings: 2 (1 HIGH name-drift, 1 MED missing-endpoint)
+- resolved now: 1 · queued: 1 (PENDING-SYNC.md)
+
+## Direction calls
+
+| date | fingerprint | direction | provenance | source-run |
+|---|---|---|---|---|
+| 2026-06-10 | name-drift:03-data-model:failed_debit_count | code_right | a1b2c3 "rename to failed_attempts" — teammate | detect-drift v2.5 |
+```
+
+- **Fingerprint format**: `<category>:<vault-section>:<normalized-name>` — category from the drift report's finding class (`name-drift`, `missing-endpoint`, `mode-migration`, …), vault-section the numbered doc stem, normalized-name the entity/field lowercased.
+- **Direction values**: `code_right | vault_stale | deferred`.
+- Read side (detect-drift Step 5): ≥`thresholds.conflict_pattern_count`-style repetition (default 3) of the SAME direction on the SAME fingerprint class → PRE-FILL that direction as a suggestion (`source: drift-history, n=N`). **Never auto-resolves** — under `--auto` the finding still queues to PENDING-SYNC.md with the suggestion attached.
 
 ---
 
@@ -458,11 +541,11 @@ Append-only writes are atomic if each write is a single fs.append. Concurrent ru
 
 If a write fails (disk full, permission), skill logs the failure and continues — memory is OPTIONAL.
 
-### Append mechanism (v0.6+, Iter 9 Bug 3 fix)
+### Append mechanism
 
 **CRITICAL**: Memory writes MUST use POSIX append (`>>`) for atomicity, NOT Claude Code's `Write` tool (which is overwrite, not atomic-append).
 
-**Correct (Iter 9+)**:
+**Correct **:
 ```bash
 # Single-line append (atomic on POSIX file systems for small writes):
 echo "| 2026-05-21 | OQ-AR-7 | tech/recommend | ACCEPT: ... | resolve-oq@<timestamp> |" >> "$PROJECT_MEM/decisions.md"
@@ -477,7 +560,7 @@ cat >> "$VAULT_MEM/bind-history.md" << 'APPENDEOF'
 APPENDEOF
 ```
 
-**Wrong (pre-Iter-9 mistake)**: Using `Write` or `Edit` tools to append. These read-modify-write the entire file → two concurrent runs would overwrite each other.
+**Wrong**: Using `Write` or `Edit` tools to append. These read-modify-write the entire file → two concurrent runs would overwrite each other.
 
 ### Per-skill memory write protocol
 
@@ -495,7 +578,7 @@ When `memory_schema` version bumps in future iters:
 4. On confirm: backup memory dir to `~/.mega-sdd/memory.backup.YYYYMMDD/`, run migration, write log to `learning-log.md`
 5. On skip: skill operates in read-only mode for that file until migration done
 
-## 8. Memory consumption by orchestrate-flow (Iter 4 integration, per MEMORY-OQ-7)
+## 8. Memory consumption by orchestrate-flow
 
 Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (both resolved single-read-at-orchestrator):
 
@@ -507,10 +590,35 @@ Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (both resolved single-read-at-orchestrator):
 
 This keeps autonomy mode fast AND memory-aware.
 
+## 8.5 Scope index (`_index.md`) + hygiene rails
+
+Each scope dir MAY carry a derived `_index.md` (regenerated, not append-only — the one exception to §5):
+
+```markdown
+---
+memory_schema: 1
+generated_by: mega-sdd
+derived: true
+---
+
+# Memory index — project scope
+
+| File | Rows | Last entry | Current state (one line) | Pending suggestions | Size flag |
+|---|---|---|---|---|---|
+| decisions.md | 14 | 2026-06-10 | auth CONFLICTs trend KEEP_CODE (4/5) | 1 | ok |
+| outcomes.md | 9 | 2026-06-10 | last 3 syncs clean; stale=0 | 0 | ok |
+```
+
+- Maintained by orchestrate-flow at its batched-write point (§8 single I/O point unchanged). Standalone skill runs do NOT regenerate it (stale index tolerated; readers treat it as a hint, never as the data).
+- Chain-start reads consult `_index.md` FIRST and open only the files the chain needs (just-in-time, not preload).
+- **Size threshold**: any memory file > 256 KB sets `Size flag: prune?` in the index — a prune *suggestion* for `/mega-sdd:memory prune`; NEVER auto-prune.
+- **Secret scan on write (non-negotiable)**: every memory append runs `scripts/secret-scan.sh --check` on the content first; findings → redact the value (`[REDACTED-SECRET]`) before appending. Memory files can be git-tracked; do not rely on upstream redaction.
+- **Detector versioning**: `conventions.md` entries record the detecting skill version (already in the schema example: "via scan-codebase v1.1"). A convention's skip-re-detect privilege applies ONLY while the current scan-codebase version matches; on version change, re-detect (cache-version-bump pattern).
+
 ## 9. Privacy + opt-out
 
 - `--memory-off` flag on ANY skill disables both reads and writes
 - Global opt-out via `~/.mega-sdd/config.yaml` `defaults.memory_enabled: false`
-- Per-scope opt-out via `<project>/.mega-sdd/memory/.disabled` (empty file; v3.4+ canonical)
+- Per-scope opt-out via `<project>/.mega-sdd/memory/.disabled` (empty file; canonical)
 - Per-vault opt-out via `<vault>/.memory/.disabled` (empty file)
 - USER scope memory is plain markdown (per MEMORY-OQ-3 resolved) — do NOT run mega-sdd on shared infra without opt-out if patterns are sensitive

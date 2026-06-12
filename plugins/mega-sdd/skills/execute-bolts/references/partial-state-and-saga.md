@@ -18,7 +18,7 @@ If a bolt subagent crashes mid-execution, write `<vault>/bolts/U-XXX/partial-sta
 - `bolt_id`, `started_at`, `current_step`, `current_step_status` (enum: `crashed | partial | succeeded`).
 - `files_modified[]`: each `{path, sha256_before, sha256_after}`.
 - `last_test_result`, `last_action`.
-- **`rollback_hints[]`** (v2.0): harvested from `bolt-report.md` `## Rollback hints`. Each entry: `{step_id, step_type (taxonomy below), evidence (1-line what happened), compensating_action (literal shell command OR "(none — manual review required)"), idempotent (bool), applied_at (null until --rollback runs the action)}`.
+- **`rollback_hints[]`**: harvested from `bolt-report.md` `## Rollback hints`. Each entry: `{step_id, step_type (taxonomy below), evidence (1-line what happened), compensating_action (literal shell command OR "(none — manual review required)"), idempotent (bool), applied_at (null until --rollback runs the action)}`.
 
 `--resume` reads the partial-state and re-executes forward-only from `current_step` (doesn't start from zero). After 3 partial-state attempts → halt `bolt_repeated_partial_failure`.
 

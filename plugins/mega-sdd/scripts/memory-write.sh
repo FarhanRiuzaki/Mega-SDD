@@ -91,7 +91,11 @@ for i in $(seq 0 $((MAX_RETRIES - 1))); do
   if [ -d "$LOCK_FILE" ]; then
     LOCK_AGE=$(python3 -c "import os,time; print(int(time.time() - os.path.getmtime('$LOCK_FILE')))" 2>/dev/null || echo 0)
     if [ "$LOCK_AGE" -gt 30 ]; then
-      rmdir "$LOCK_FILE" 2>/dev/null || true
+      # Atomic steal: mv succeeds for exactly ONE process (the old rmdir+mkdir
+      # pair let a second process rmdir the winner's FRESH lock and both "hold" it)
+      if mv "$LOCK_FILE" "${LOCK_FILE}.stale.$$" 2>/dev/null; then
+        rmdir "${LOCK_FILE}.stale.$$" 2>/dev/null || true
+      fi
       if mkdir "$LOCK_FILE" 2>/dev/null; then
         ACQUIRED=1
         break
