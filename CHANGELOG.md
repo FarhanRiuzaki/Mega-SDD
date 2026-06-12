@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.23.1] - 2026-06-12
+
+### Fixed — field-audit of a real intent→bolts run (clinic-project): 3 enforcement gaps closed
+
+A full pipeline test run shipped 16 bolt commits with ZERO `<vault>/bolts/` artifacts, bound against a degenerate codebase-map, and left OQ/constitution propagation FAILs — none of it caught. Root causes + fixes:
+
+- **Orphan-bolt-commit gate (the big one)**: the bolt-report obligation was prose (Procedure Step 0/5) + a Stop gate that only fires on `--auto` handoffs; a terse interactive controller skipped both, and the file-scoped artifact validator can't see a file that was never written. NEW: `validate-bolt-artifacts.sh --orphan-scan` — repo-wide deterministic check (bolt commit subject `(bolt): U-XXX` + unit exists + no `bolts/U-XXX/bolt-report.md` → FAIL `.bolt-orphans-state.json`). Runs unconditionally from the Stop hook every turn end + in `/mega-sdd:analyze` (`bolt_orphans` boundary); the PreToolUse execute-bolts aggregator **blocks the next run** until reports are backfilled or units re-run. False-positive safe: bounded history (200 commits), only flags units that still exist in a vault.
+- **bind-codebase degenerate-map gate**: the run bound against a codebase-map.md missing ALL 7 content sections — false grounding for every downstream verdict (invariant #1). NEW PreToolUse gate blocks `bind-codebase` while the map validator attests the empty-shell shape (partial maps are NOT blocked); fix is re-running scan-codebase.
+- **Retired-clause false positive**: constitution-propagation demanded unit citations for a clause the constitution itself marks `*(dropped …)*` (mentioned in binding only as supersession context). The validator now exempts dropped/retired/superseded clauses.
+- `tests/bolt-orphans/` (functional fixture repo + wiring pins incl. `bash -n` on every edited hook/script). Field remediation applied to the test project: 16 retroactive bolt-reports backfilled (provenance from git, `retroactive: true`, no fabricated test results) + 5 dropped OQ-IDs and 4 constitution clauses attached to their owning units → binding-units PASS, constitution-propagation PASS, orphan-scan PASS.
+
 ## [4.23.0] - 2026-06-12
 
 ### Added — `## Security idioms` across all 22 framework packs (Phase 3)
