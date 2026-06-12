@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.26.0] - 2026-06-12
+
+### Fixed/Added — floor-vs-ceiling: live-app design judgment (UI was "basic", not "kuno")
+
+Browser-verified field finding (clinic-project): the v4.24 design pipe shipped, the floor passed (tokens, page shell, states, WCAG), but the rendered UI was still generic — a lone centered card in whitespace, no branding/nav, no iconography, flat hierarchy. Root cause: 9 of `modern-baseline.md`'s 10 non-negotiables are binary floor checks provable from code; "distinctive, not generic" needs the RENDER and was the weakest-enforced.
+
+- **`modern-baseline.md §Ceiling moves`**: a distinctiveness contract above the floor — page furniture (header/nav/footer, not a bare heading over a card), width-filling composition (two-column / hero / grid, not a lone 480px card on a 1280px page), iconography, layered hierarchy, a style signature, purposeful motion, product-fit density. Explicit framing: "the floor is NOT the goal." Injected into the implementer prompt (design slice) AND the design-lens rubric.
+- **`design-reviewer` upgrade**: "floor met, ceiling absent" is an **Important** finding (generic/undesigned), not a pass; when rendered screenshots are provided it judges the actual render, with a hard rail never to imply a render it didn't see.
+- **`scripts/capture-views.sh`** (live-app lens, ECC Batch 3 scoped to this gap): screenshots the unit's routes when a dev server is reachable (`preview_url` config / unit frontmatter / operator). **Stack-agnostic** — capture hits URLs so the app can be any stack (Laravel/Blade, Django, Rails, Spring, a Node/Next SPA); the screenshot driver tries a system Chrome/Chromium (zero Node — PHP/Python/Ruby/Go repos) then npx playwright. Every failure mode is a graceful SKIP; an un-captured render is never reported as fine. Config `preview_url:`.
+- `tests/design-ceiling/` — baseline→slice→dispatch→lens wiring + capture-views graceful-skip + stack-agnostic-driver pins.
+
 ## [4.25.0] - 2026-06-12
 
 ### Added — ECC-adoption Batch 1: instincts (closed learning loop) + GateGuard (LOCKED investigation gate)
