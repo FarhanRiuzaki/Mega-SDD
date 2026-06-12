@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.21.0] - 2026-06-12
+
+### Added — Review Panel: parallel blind reviewer lenses in execute-bolts (Phase 1)
+
+Research-driven (`research/2026-06-12-review-panel-quality-security-standards.md`; spec `docs/superpowers/specs/2026-06-12-review-panel-design.md`): the serial two-stage review tail is now a **risk-tiered panel** of read-only lenses dispatched **in parallel and blind** (no lens sees the implementer's report or another lens's verdict — the measured anti-rubber-stamp rail), merged in the main-thread controller (depth-1 preserved).
+
+- **New agents**: `security-reviewer` (opus — OWASP-keyed: input validation/injection, authz vs unit spec, secrets, hallucinated/unvetted new deps, fail-open error handling, architectural drift) and `standards-reviewer` (sonnet — convention conformance vs framework pack + surrounding code; forbidden from machine-fixable nits). Both read-only, evidence-or-drop (`file:line` mandatory).
+- **`code-quality-reviewer` narrowed**: security moved to the security lens; priority shifted to the measured AI defects — duplication/failure-to-reuse (vs reuse-index), tautological tests, over-engineering; linter-covered findings out of lane.
+- **Risk-tiered panel** (`execute-bolts/references/review-panel.md`): `minimal` (spec) / `standard` (spec+quality, default) / `full` (all 4 — fires on auth/authz-glob overlap, dep-manifest in target_files, ≥4 files, auth/payment/crypto keywords, constitution §B binding_refs). Override chain: `--review-panel=` flag > `.mega-sdd/config.yaml` `review_panel:` > auto. Models cited from `model-tiers.md` (rows 19–20), never hardcoded.
+- **Merge + gate in the controller**: evidence-or-drop → dedup at max severity → 2+-lens consensus marks → spec ❌ or any Critical re-dispatches the implementer (shared `--max-retries`); Important/Minor recorded in bolt-report `## Review panel`. The deterministic post-flight Hard-rule scan is unchanged — panel is judgment, scan is the contract.
+- execute-bolts → 2.12.0; squad/batch fan-out wording updated (panel replaces two-stage; depth-1 rationale intact); `tests/review-panel/` pin suite (agents read-only + no forbidden frontmatter, blind protocol, risk signals, catalog rows, no stale two-stage wording).
+
 ## [4.20.1] - 2026-06-11
 
 ### Fixed — adversarial bug hunt on the freshly-shipped surfaces (2 REAL + 2 LATENT, all verified by repro)

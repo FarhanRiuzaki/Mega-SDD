@@ -12,6 +12,8 @@ staleness_notice: true     # false → suppress the session-start "codebase move
 layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:migrate-paths writes);
                            #   legacy → outputs at pre-migration scattered paths (see plugins/mega-sdd/references/paths.md)
 output_root: .mega-sdd/    # where all outputs live, relative to project root (or absolute)
+review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
+                           #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):
