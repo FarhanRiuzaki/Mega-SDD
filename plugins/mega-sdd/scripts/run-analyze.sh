@@ -124,6 +124,10 @@ V3_RC=$( [ "$V3_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V3_WORST" )
 # file that does not exist). Writes .bolt-orphans-state.json.
 V3B_RC=$(run_validator "validate-bolt-artifacts.sh" --cwd="$CWD" --orphan-scan --quiet)
 
+# 1c3. Regenerate the project index (multi-PRD lifecycle — derived manifest of
+# every vault; cheap pure-read scan). Never blocks; advisory artifact only.
+bash "${SCRIPT_DIR}/build-project-index.sh" --cwd="$CWD" >/dev/null 2>&1 || true
+
 # 1d. Per-vault-doc OQ validator
 V4_WORST=0
 for vf in $(find "${CWD}/.mega-sdd/vaults" -name "0[0-6]-*.md" -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null); do

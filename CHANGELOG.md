@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.28.0] - 2026-06-12
+
+### Added — multi-PRD lifecycle: project index + shared constitution + explicit router
+
+A project that grows PRD-by-PRD (PRD 1 ships, PRD 2 adds an epic; docs can be PRD/BRD/Figma/brief) had real multi-vault support but no first-class linking — ambiguous, and PRD 2 could silently contradict PRD 1. Spec `docs/superpowers/specs/2026-06-12-multi-prd-lifecycle-design.md`.
+
+- **Project index** (`scripts/build-project-index.sh` → `.mega-sdd/project.md`): derived manifest of every vault (slug, title, source, version, status intent/units-ready/in-progress/shipped, unit+bolt counts, area). The vault sequence IS the PRD/epic history, so a new vault knows what PRD 1..N-1 shipped. Regenerated at chain end (wired into `run-analyze.sh`); pure-read, exit 0 always. (Surfaced a real case immediately: the test clinic already had a shipped vault + a started v2 vault.)
+- **Project constitution** (`.mega-sdd/constitution.md`, inherited by every vault): `bind-codebase` reads it before binding a NEW vault — a claim contradicting a project-locked clause (e.g. PRD 2 proposing a different datastore than the project locks) is a CONFLICT at the binding gate, never silently accepted. Keeps PRD 2..N inline. Absent = unchanged.
+- **Explicit lifecycle router** (`using-mega-sdd`, contract in `references/multi-prd-lifecycle.md`): a new doc routes by what changed — same source revised → `diff-vault`; new epic → new vault + brownfield bind; code moved → `sync`. Doc-type agnostic; **when unsure, ASK** (evolve-in-place vs new-epic diverge hard).
+- `tests/multi-prd/` (index functional on a 2-vault fixture + empty/non-sdd safety + wiring pins). Advisory/navigational — the only enforcement is the project-constitution CONFLICT at the existing binding gate (reuses the moat, no new blocking surface).
+
 ## [4.27.1] - 2026-06-12
 
 ### Fixed — official-docs conformance audit (2 real gaps; `research/2026-06-12-official-docs-conformance-audit.md`)
