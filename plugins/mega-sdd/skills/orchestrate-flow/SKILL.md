@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.0.0
+version: 2.8.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -32,10 +32,14 @@ The orchestrator inspects the working directory, infers where you are in the meg
    codebase_map: present | absent
    knowledge_base: present | absent (path: ...)  # priority: .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
    git_repo: yes | no
-   oq_p0_p1_count: N
+   pending_p0_p1_count: N    # status: pending (or absent) P0/P1 OQs — these gate
+   deferred_p0_p1_count: N   # status: deferred P0/P1 OQs — informational, do not gate
    mode_inferred: greenfield | brownfield | legacy-rebuild
    squad_count: N        # from <vault>/_meta/squads.yaml; 0 if absent or single squad
    interfaces_count: N   # count of files in <vault>/interfaces/ (excluding _index.md); 0 if folder absent
+   change_signal:        # Mode D probes (living-vault sync)
+     dirty_journal_rows: N            # grep -c . .mega-sdd/codebase/.dirty-paths.jsonl
+     map_stamp_matches_head: yes | no | n/a   # last_scanned_commit vs git HEAD
    starterkit: detected | absent  # framework manifest probe
      framework: <name|null>       # e.g., laravel-base-26 (pack match), laravel (universal), null
      pack_match: yes | no         # yes if framework-conventions/<framework>.md exists; no if universal fallback
@@ -87,7 +91,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 
 8. **Iter classifier EP2** — after the chain completes, classify again and compare to EP1; surface scope drift in the summary (per `references/chain-execution.md`).
 
-9. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then write the end-of-chain routing-outcomes memory entry (skipped if `--memory-off`).
+9. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then (skipped if `--memory-off`): write the end-of-chain routing-outcomes memory entry; run the **extract-learnings pass** (Step 7.6 — the ONE owned threshold evaluation over rows touched this chain, appending threshold-crossers to `## Pending suggestions`, nothing applied); regenerate touched scopes' `_index.md`. Mode D additionally appends the `kind: sync` outcomes row. Protocol: `references/memory-layer.md §Chain end`.
 
 10. **Resume support (`--resume`, CWD-driven, no state file).**
     - Skip the upfront confirmation (chain was already approved last run).
@@ -99,7 +103,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 ## Hard rails
 
 - No content generation by the orchestrator itself.
-- No state file (resumption = re-invoke `orchestrate-flow --resume`; CWD inspection rebuilds state).
+- No **chain-level** state file: `orchestrate-flow --resume` rebuilds chain state by CWD/artifact inspection (which *phase* to resume). A phase skill MAY keep its own sub-step checkpoint (`references/checkpoint-protocol.md`) that resumes *within* the re-entered phase — a different granularity that never conflicts with phase selection (precedence table → `references/handoff-contract.md` §Resume mechanics).
 - No skill runs in parallel.
 - Sub-skill substance prompts ALWAYS surface to the human (per-OQ choices, conflict resolutions) regardless of `--auto`.
 - Chain depth ≤ 3 by default; `--deep` lifts the cap with auto-continue via handoff YAML.
@@ -117,6 +121,9 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--memory-off`: disable the memory layer (no reads, no writes) for this chain
 - `--greenfield` / `--brownfield`: override starterkit/mode inference
 - `--with-fsd` / `--no-fsd`, `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`, `--no-drift-check`, `--no-enrich-staging`: diagnostic opt-outs (see `references/chain-execution.md`)
+- `--sync`: force the Mode D maintenance chain (incremental scan → drift → re-bind → unit reconcile) regardless of other inference — the `/mega-sdd:sync` front-door (per `references/routing-rules.md` §Mode D)
+- `--strict-quality`: escalate advisory quality findings to chain-pausing
+- `--no-telemetry`: disable telemetry event emission for this chain
 - Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
 
 ## Greenfield vs brownfield routing
@@ -146,7 +153,7 @@ Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop i
 
 ## Memory layer
 
-When memory is enabled (default; opt-out `--memory-off`), the orchestrator is the SINGLE memory I/O point for the chain: one read at chain start, per-skill slices passed via handoff, batched writes per phase, summary at chain end. Schema mismatch halts the chain; I/O failures degrade gracefully. Full read/write protocol in `references/memory-layer.md`.
+When memory is enabled (default; opt-out `--memory-off`), the orchestrator is the SINGLE memory I/O point for the chain: one read at chain start (index-first, just-in-time), per-skill slices passed via handoff, batched writes per phase (secret-scanned before append), the owned extract-learnings threshold pass + `_index.md` regeneration at chain end. Schema mismatch halts the chain; I/O failures degrade gracefully. Suggestions are NEVER auto-applied. Full read/write protocol in `references/memory-layer.md`.
 
 ## Specialist references (load on demand)
 
@@ -159,7 +166,8 @@ When memory is enabled (default; opt-out `--memory-off`), the orchestrator is th
 - **`references/halt-taxonomy.md`** — every halt type classified (cycle-eligible / always-stop / soft).
 - **`references/memory-layer.md`** — single-memory-I/O-point read/write batching across the chain.
 - **`references/checkpoint-protocol.md`** — per-step JSONL checkpoints + mid-skill resume.
+- **`references/sync-digest.md`** — Mode D autonomous deferral contracts: `PENDING-SYNC.md` (deferred-decision queue) + `SYNC-REPORT.md` (run report with closing staleness verification).
 
 ## Related skills
 
-Sub-skills orchestrated: `extract-intelligence`, `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault`. Each emits a handoff YAML the orchestrator consumes (`../generate-intent/references/vault-contract.md §halt-protocol` for canonical blocker envelopes).
+Sub-skills orchestrated: `extract-intelligence`, `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault` — plus the auto-integrated diagnostics `enrich-semantics`, `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd` (opt-in), and `install-deps` (each also emits a handoff YAML). Each emits a handoff YAML the orchestrator consumes (`../generate-intent/references/vault-contract.md §halt-protocol` for canonical blocker envelopes).

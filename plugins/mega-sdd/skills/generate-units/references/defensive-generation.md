@@ -1,6 +1,6 @@
-# Defensive Generation (v2.1+, Iter 8)
+# Defensive Generation
 
-`generate-units` v2.1+ becomes defensively grounded — auto-detects missing upstream signals, cross-checks per unit before writing, and surfaces a `grounding_confidence` label so users instantly see how well-anchored each unit is.
+`generate-units` is defensively grounded — auto-detects missing upstream signals, cross-checks per unit before writing, and surfaces a `grounding_confidence` label so users instantly see how well-anchored each unit is.
 
 Mitigates "ngawang" (floating/disconnected) units. User UX request:
 
@@ -188,7 +188,7 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 ```
 $ /mega-sdd:generate-units ./vault/
 
-⚠️ Defensive pre-flight check (v2.1):
+⚠️ Defensive pre-flight check:
   - codebase-map.md: absent
   - binding.md: absent
   - vault mode: existing (brownfield)
@@ -257,13 +257,13 @@ Summary:
   ⚠️ Recommend running scan-codebase + bind-codebase + re-generating for HIGH confidence
 ```
 
-## Field-level diff detection (NEW in Iter 8 — addresses "ngawang" at field granularity)
+## Field-level diff detection (addresses "ngawang" at field granularity)
 
-User example: PRD says login accepts (nip, nama, password). Codebase has only (nip, password). Vault claim CONFIRMED with state IMPLEMENTED (per Iter 1 binary classification) → generate-units assigns `task_type: verify` → bolt skips code generation → **the missing `nama` field never gets added**. That's ngawang.
+User example: PRD says login accepts (nip, nama, password). Codebase has only (nip, password). Under a binary IMPLEMENTED/NEW classification the vault claim would be CONFIRMED with state IMPLEMENTED → generate-units assigns `task_type: verify` → bolt skips code generation → **the missing `nama` field never gets added**. That's ngawang.
 
-This is the PARTIAL state that Iter 1 DEFERRED per DESIGN-OQ-1. Iter 8 fills it.
+The PARTIAL_FIELDS_* states exist precisely to close this hole.
 
-### bind-codebase enhancement (v1.7+, Iter 8 — PARTIAL_FIELDS state)
+### bind-codebase enhancement (PARTIAL_FIELDS state)
 
 For each CONFIRMED claim that specifies fields/params explicitly:
 
@@ -280,22 +280,23 @@ Diff:
 - C \ V  = { }                     (surplus in code / REMOVE or vault gap)
 ```
 
-### Five-state Implementation State Map (extends Iter 1 binary)
+### Six-state Implementation State Map
 
 | State | Definition | Code Signal |
 |---|---|---|
 | `IMPLEMENTED` | V == C (field sets match exactly) | tree-sitter signature == vault claim signature |
-| `PARTIAL_FIELDS_MISSING` (NEW v1.7) | C ⊂ V (code missing fields from claim) | extracted signature missing fields V \ C |
-| `PARTIAL_FIELDS_SURPLUS` (NEW v1.7) | V ⊂ C (code has extra fields not in claim) | extracted signature has extras C \ V; vault may need update |
+| `PARTIAL_FIELDS_MISSING` | C ⊂ V (code missing fields from claim) | extracted signature missing fields V \ C |
+| `PARTIAL_FIELDS_SURPLUS` | V ⊂ C (code has extra fields not in claim) | extracted signature has extras C \ V; vault may need update |
+| `PARTIAL_FIELDS_BOTH` | shared fields exist but both V\C and C\V non-empty (rare; bidirectional drift) | field-level set diff at precision_tier ast |
 | `NEW` | C absent (symbol missing) | not in codebase-map |
 | `UNKNOWN` | V ∩ C empty but symbol exists | semantic mismatch needs human review |
 
-### binding.md output extension (Iter 8)
+### binding.md output extension
 
 Implementation State Map row gains `field_diff` column:
 
 ```yaml
-## Implementation State Map (v1.2+; field-level since v1.7)
+## Implementation State Map
 | Claim ID | Verdict | State | Anchor | Confidence | Field diff |
 |---|---|---|---|---|---|
 | C-007 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
@@ -303,7 +304,7 @@ Implementation State Map row gains `field_diff` column:
 | C-023 | CONFIRMED | PARTIAL_FIELDS_SURPLUS | OrderController.php:88 | medium | ADD: [] · KEEP: [order_id, items] · REMOVE: [legacy_ref] · VAULT_REVIEW: code has fields not in vault claim |
 ```
 
-### generate-units task_type for new states (Iter 8)
+### generate-units task_type for new states
 
 | Implementation State | Unit task_type | Migration notes auto-populated |
 |---|---|---|
@@ -352,14 +353,13 @@ Unit content is now **field-aware**: bolt knows exactly which field to add, wher
 
 ### Cost / benefit
 
-**Cost**: tree-sitter must extract signature details (parameter names) — already done in Iter 6 .scm queries. bind-codebase needs field-comparison logic — ~50 lines new code per claim type.
+**Cost**: tree-sitter must extract signature details (parameter names) — already covered by the shipped .scm queries. bind-codebase needs field-comparison logic — ~50 lines new code per claim type.
 
 **Benefit**: eliminates the #1 source of "ngawang" — implementations that LOOK complete but are missing specific fields the spec requires.
 
 ## References
 
-- Iter 1 spec §DESIGN-OQ-1 — PARTIAL state DEFERRED; Iter 8 finally fills it
-- Iter 6 spec — tree-sitter scan extracts signature details (which Iter 8 leverages for field diff)
-- Iter 6 spec — PageRank target_files suggestions (which surfaces in Step 7.5; Step 7.6 cross-checks the picks)
-- `../../bind-codebase/SKILL.md` — Implementation State Map (which Step 7.6 reads to decide prompt content)
-- `../../bind-codebase/references/binding-contract.md` — five-state classification table (v1.7+)
+- tree-sitter scan extracts signature details (leveraged for field diff)
+- PageRank target_files suggestions (surface in Step 7.5; Step 7.6 cross-checks the picks)
+- `bind-codebase/SKILL.md` — Implementation State Map (which Step 7.6 reads to decide prompt content)
+- `bind-codebase/references/binding-contract.md` — five-state classification table

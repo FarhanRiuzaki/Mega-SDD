@@ -1,8 +1,7 @@
 # Predictive Checks Catalog
 
-> Per-skill preflight checks consulted by `mega-sdd:orchestrate-flow` v3.0.0+ Step 3.5.
+> Per-skill preflight checks consulted by `mega-sdd:orchestrate-flow` Step 3.5.
 
-**Introduced:** v3.24.0 (Iter 33)
 **Consumed by:** `mega-sdd:orchestrate-flow` Step 3.5 predictive preflight
 
 ---
@@ -60,7 +59,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `tree_sitter_present`**
   command: `command -v tree-sitter || command -v tree-sitter-cli`
   expected: exit 0
-  on_fail: "tree-sitter not installed; scan-codebase will fall back to regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
+  on_fail: "tree-sitter not installed; scan-codebase will fall back to regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install."
   fatal: no
   predicts_halt: dep_missing (avoided if user OK with regex fallback OR installs binary)
 
@@ -112,7 +111,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: yes
   predicts_halt: (chain order error)
 
-## detect-drift preflight checks (v3.34.0+, Iter 50 — Queue #9 closure)
+## detect-drift preflight checks
 
 - **check_id: `vault_present_for_drift`**
   command: `test -f <vault-path>/vault.json`
@@ -135,7 +134,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; degraded drift signal)
 
-## diff-vault preflight checks (v3.34.0+, Iter 50)
+## diff-vault preflight checks
 
 - **check_id: `current_vault_present_for_diff`**
   command: `test -f <vault-path>/vault.json`
@@ -158,7 +157,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: yes
   predicts_halt: invalid_handoff
 
-## resolve-oq preflight checks (v3.34.0+, Iter 50)
+## resolve-oq preflight checks
 
 - **check_id: `vault_present_for_oq`**
   command: `test -f <vault-path>/vault.json && test -f <vault-path>/03-open-questions.md`
@@ -169,7 +168,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 
 - **check_id: `oq_status_field_present`**
   command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); exit(0 if any('status' in oq for oq in v.get('open_questions', [])) else 1)"`
-  expected: at least one OQ entry has status field (v1.1+ schema)
+  expected: at least one OQ entry has status field (schema)
   on_fail: "vault.json open_questions[] entries lack 'status' field (pre-v1.1 schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --refresh."
   fatal: no
   predicts_halt: (no halt; degraded interactive walk)
@@ -181,7 +180,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; no-op invocation)
 
-## extract-intelligence preflight checks (v3.34.0+, Iter 50)
+## extract-intelligence preflight checks
 
 - **check_id: `legacy_codebase_path_present`**
   command: `test -d <legacy-path> && [ "$(ls -A <legacy-path>)" ]`
@@ -200,11 +199,11 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `subagent_capacity_reasonable`**
   command: `[ "<max-parallel-flag-value>" -le 5 ]`
   expected: exit 0 (max-parallel ≤ 5)
-  on_fail: "extract-intelligence --max-parallel=<N> exceeds Iter 38 audit D2-001 advisory threshold (5). Zylos 2026 empirical optimum is 3 — default lowered to 3 in v1.7.0+ (Iter 51) per audit. Higher values cause coordination overhead > gain. Soft warn at >5; hard cap at 8 still enforced by extract-intelligence."
+  on_fail: "extract-intelligence --max-parallel=<N> exceeds the advisory threshold (5). The empirical optimum is 3 (the default).0+ per audit. Higher values cause coordination overhead > gain. Soft warn at >5; hard cap at 8 still enforced by extract-intelligence."
   fatal: no
   predicts_halt: (no halt; degraded throughput)
 
-## emit-agents-md preflight checks (v3.34.0+, Iter 50)
+## emit-agents-md preflight checks
 
 - **check_id: `vault_present_for_agents_md`**
   command: `test -f <vault-path>/vault.json`
@@ -220,9 +219,9 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
-## Cold-halt anticipation checks (v3.7.0+, Iter 62 — A2-008/009 partial triage)
+## Cold-halt anticipation checks
 
-Iter 56 audit Dim A flagged ~33 halts firing cold (no anticipating predictive-check). Most are runtime-only (cannot statically predict). Iter 62 added these 4 feasible static checks for previously-uncovered halts:
+An earlier audit flagged ~33 halts firing cold (no anticipating predictive-check). Most are runtime-only (cannot statically predict). These 4 feasible static checks cover the previously-uncovered halts:
 
 - **check_id: `units_depends_on_dag_acyclic`** (anticipates `cycle_detected`)
   command: `python3 -c "import json, glob; from collections import defaultdict; g=defaultdict(list); [g[d.get('id','')].extend(d.get('depends_on',[])) for f in glob.glob('<vault-path>/units/U-*.md') for d in [{}]]; print('ok')"` (skeleton — actual implementation parses YAML frontmatter from each unit's depends_on and runs DAG cycle detection)
@@ -252,7 +251,7 @@ Iter 56 audit Dim A flagged ~33 halts firing cold (no anticipating predictive-ch
   fatal: yes
   predicts_halt: verify_unit_writable
 
-**Documented as RUNTIME-ONLY (no feasible static check) per Iter 62 A2-008 acceptance:**
+**Documented as RUNTIME-ONLY (no feasible static check):**
 
 - `handoff_missing`, `handoff_type_mismatch`, `artifact_missing` — orchestrate-flow self-emits on chain envelope state corruption; the corruption IS the runtime event
 - `predictive_check_failed`, `model_tier_unknown`, `routing_outcome_corrupt` — orchestrate-flow self-checks during runtime
@@ -262,7 +261,7 @@ Iter 56 audit Dim A flagged ~33 halts firing cold (no anticipating predictive-ch
 
 These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkthroughs for recovery (no static preflight feasible).
 
-## install-deps preflight checks (v3.6.0+, Iter 58 — A2-002 closure)
+## install-deps preflight checks
 
 - **check_id: `pkg_mgr_detected`**
   command: `command -v brew || command -v apt || command -v dnf || command -v pacman || command -v apk || command -v winget || command -v scoop || command -v cargo || command -v npm || command -v go`
@@ -285,7 +284,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   fatal: no
   predicts_halt: memory_in_use (memory write would fail)
 
-## emit-fsd preflight checks (v3.5.0+, Iter 54)
+## emit-fsd preflight checks
 
 - **check_id: `vault_present_for_fsd`**
   command: `test -f <vault-path>/vault.json`
@@ -297,18 +296,18 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 - **check_id: `pandoc_installed`**
   command: `command -v pandoc`
   expected: exit 0
-  on_fail: "pandoc not installed; emit-fsd will produce FSD.md only (no PDF render). Install: brew install pandoc (macOS) / apt install pandoc (Debian/Ubuntu) / dnf install pandoc (Fedora) — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
+  on_fail: "pandoc not installed; emit-fsd will produce FSD.md only (no PDF render). Install: brew install pandoc (macOS) / apt install pandoc (Debian/Ubuntu) / dnf install pandoc (Fedora) — OR run `/mega-sdd:install-deps` for auto-install."
   fatal: no
   predicts_halt: (no halt; degraded output — markdown-only)
 
 - **check_id: `pandoc_latex_engine_present`**
   command: `command -v xelatex || command -v tectonic`
   expected: exit 0
-  on_fail: "no LaTeX engine found; pandoc PDF render needs xelatex (brew install --cask basictex / apt install texlive-xetex) OR tectonic (brew install tectonic — recommended, lighter, ~50MB vs ~2GB BasicTeX). Falls back to FSD.html for browser print-to-PDF — OR run `/mega-sdd:install-deps` for auto-install (Iter 55+)."
+  on_fail: "no LaTeX engine found; pandoc PDF render needs xelatex (brew install --cask basictex / apt install texlive-xetex) OR tectonic (brew install tectonic — recommended, lighter, ~50MB vs ~2GB BasicTeX). Falls back to FSD.html for browser print-to-PDF — OR run `/mega-sdd:install-deps` for auto-install."
   fatal: no
   predicts_halt: (no halt; degraded — HTML fallback)
 
-## memory preflight checks (v3.34.0+, Iter 50)
+## memory preflight checks
 
 - **check_id: `memory_dir_writable`**
   command: `mkdir -p ~/.mega-sdd/.test-write && rmdir ~/.mega-sdd/.test-write && mkdir -p <project>/.mega-sdd/.test-write && rmdir <project>/.mega-sdd/.test-write`

@@ -22,74 +22,114 @@ ELSE:
   → skip Step 10.5 entirely; proceed to Step 11
 ```
 
+**Pack-coverage advisory (after trigger passes):** when the trigger proceeds, read `framework-conventions/_registry.md` (if absent, skip silently — never halt). If the detected framework's registry status is `thin` or `none`, emit one advisory note in the scan output:
+
+> `pack coverage: <status> for <framework> — generic _universal fallback in use; see framework-conventions/_registry.md`
+
+This is informational only — it surfaces that the deep-scan will use generic extraction rather than a full framework-specific pack. It never blocks the pipeline.
+
 ## Step 10.5.1 — Cache check (per-slice signature)
 
-Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shared-snapshot-schema.md`). Cache invalidation is per-slice: when only some inputs change (e.g., a frontend dep added in package.json), unchanged slices (auth, rbac) reuse cached output; only invalidated slices (ui_ux, libs) re-dispatch.
+Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shared-snapshot-schema.md`). Cache invalidation is per-slice: when only some inputs change (e.g., a frontend dep added in package.json), unchanged slices (auth, authz) reuse cached output; only invalidated slices (ui_ux, libs) re-dispatch.
 
 ```
-1. Compute composer_lock_sha256 = sha256(<project>/composer.lock) if file exists, else empty string
-2. Compute package_lock_sha256 = sha256(<project>/package-lock.json) if exists,
-   else sha256(<project>/yarn.lock) if exists,
-   else sha256(<project>/pnpm-lock.yaml) if exists,
-   else empty string
+1.+2. Compute per-ecosystem lock digests + digest groups — RUN the deterministic script
+   (do not hand-compute hashes):
+
+     bash "<plugin-root>/scripts/compute-lock-digests.sh" \
+     # (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read) \
+       --project=<project-root> --app-ecosystem=<ecosystem of §7 Framework>
+
+   It probes EVERY supported ecosystem's lock (php composer.lock; js package-lock/yarn/pnpm/bun;
+   rust Cargo.lock; go go.sum; ruby Gemfile.lock; python poetry/uv/Pipfile/requirements;
+   jvm gradle.lockfile/pom/gradle) and prints JSON:
+   - locks_sha256: {<ecosystem>: <hex>}   (only ecosystems present; + lock_files provenance)
+   - app_locks_digest      — locks of the APP ecosystem (ruby for Rails, go for Gin, js for Next.js)
+   - frontend_locks_digest — js lock when APP ecosystem ≠ js AND a js lock exists
+                             (asset/SPA layer of a non-JS app, e.g., Rails+esbuild, Laravel+Vite);
+                             else = app_locks_digest
+   - all_locks_digest      — every detected ecosystem folded together
 3. Compute per-slice signatures:
-   - auth_sig_input = composer_lock_sha256 + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md)
-   - rbac_sig_input = composer_lock_sha256 + framework_pack §rbac section content + sha256(lib-patterns/<fw>/rbac-libs.md)
-   - ui_ux_sig_input = package_lock_sha256 + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md)
-   - libs_sig_input = composer_lock_sha256 + package_lock_sha256 + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md)
-   - auth_signature = sha256(auth_sig_input); similarly for rbac/ui_ux/libs
+   - auth_sig_input = app_locks_digest + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md)
+   - authz_sig_input = app_locks_digest + framework_pack §authz section content + sha256(lib-patterns/<fw>/rbac-libs.md)
+   - ui_ux_sig_input = frontend_locks_digest + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md)
+   - libs_sig_input = all_locks_digest + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md)
+   - reuse_sig_input = sha256(listing+mtimes of the hinted first-party source dirs) + framework_pack §Reuse discovery section content
+     (NOT lock files — reuse tracks first-party source, not deps; output written to reuse-index.yaml, separate from starterkit-context.yaml)
+   - auth_signature = sha256(auth_sig_input); similarly for authz/ui_ux/libs/reuse
 4. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
      a. Read its `cache_signatures:` block (v2.0 schema) OR `cache_key:` block (v1.0 schema, backward-compat).
      b. IF v1.0 schema detected → treat as "all slices stale" (full re-dispatch); migrate to v2.0 on next write.
+     - IF a cached starterkit-context.yaml has schema_version < 3.1 (pre-authz `rbac:` shape) → treat the authz slice as STALE and regenerate it in the neutral shape (the rbac->authz reshape is not cache-compatible).
      c. IF v2.0 schema → per-slice diff:
         - stale_slices = []
-        - For each slice in [auth, rbac, ui_ux, libs]:
+        - For each slice in [auth, authz, ui_ux, libs, reuse]:
             IF prior.cache_signatures.per_slice[<slice>].signature_sha256 != current_<slice>_signature:
               stale_slices.append(<slice>)
-        - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml; set handoff_reused_flag = true; proceed to Step 11.
+        - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml AND existing reuse-index.yaml; set handoff_reused_flag = true; proceed to Step 11.
         - IF stale_slices is non-empty → PARTIAL CACHE HIT: proceed to Step 10.5.1.5; dispatch only stale_slices subagents in Step 10.5.2; consolidator merges fresh slices with cached slices in Step 10.5.3.
-5. ELSE (file not present) → FULL CACHE MISS: stale_slices = [auth, rbac, ui_ux, libs]; proceed to Step 10.5.1.5.
+5. ELSE (file not present) → FULL CACHE MISS: stale_slices = [auth, authz, ui_ux, libs, reuse]; proceed to Step 10.5.1.5.
 ```
 
 Force full re-scan: `--no-cache` (existing flag; sets `stale_slices = [all]` regardless of signatures).
 
 ## Step 10.5.1.5 — Manifest pre-parse
 
-**Runs only when `stale_slices` non-empty (not on full cache hit).** Eliminates redundant manifest re-reads by the 4 subagents.
+**Runs only when `stale_slices` non-empty (not on full cache hit).** Eliminates redundant manifest re-reads by the manifest-consuming subagents (auth/authz/ui_ux/libs). The reuse-extractor reads first-party source dirs directly and does NOT consume manifest_facts.
 
 Main thread reads + parses manifest files ONCE, builds `manifest_facts` struct, passes to each subagent prompt as `<MANIFEST_FACTS>` placeholder:
 
 ```
-1. IF <project>/composer.json exists:
-     - Parse JSON
-     - Extract: require (dependencies), require-dev (dev_dependencies), scripts, autoload (PSR-4 map)
-2. IF <project>/package.json exists:
-     - Parse JSON
-     - Extract: dependencies, devDependencies, peerDependencies, scripts, type (module|commonjs)
-3. Build manifest_facts YAML struct:
+1. For EVERY manifest detected in Step 2 of the surface scan (TECH-AGNOSTIC — parse all that exist,
+   not just composer/package):
+     - composer.json  → require / require-dev / scripts / autoload PSR-4 map
+     - package.json   → dependencies / devDependencies / peerDependencies / scripts / type
+     - Cargo.toml     → [dependencies] / [dev-dependencies] / workspace members
+     - go.mod         → module path + require list (direct deps; mark // indirect)
+     - Gemfile        → gem entries (name + version constraint + group)
+     - pyproject.toml → [project.dependencies] / [project.optional-dependencies]
+                        (else requirements.txt lines; else Pipfile [packages])
+     - pom.xml / build.gradle(.kts) → dependency coordinates (groupId:artifactId:version)
+2. Build manifest_facts YAML struct — one block PER detected ecosystem; omit absent ones:
 
      manifest_facts:
-       composer:
-         dependencies: {<name>: <version>, ...}        # require: block
-         dev_dependencies: {<name>: <version>, ...}    # require-dev: block
+       composer:                     # php
+         dependencies: {<name>: <version>, ...}
+         dev_dependencies: {<name>: <version>, ...}
          scripts: {<name>: <command>, ...}
          autoload_psr4: {<namespace>: <path>, ...}
-       package:
+       package:                      # js/ts
          dependencies: {<name>: <version>, ...}
          dev_dependencies: {<name>: <version>, ...}
          peer_dependencies: {<name>: <version>, ...}
          scripts: {<name>: <command>, ...}
          type: module | commonjs
+       cargo:                        # rust
+         dependencies: {<name>: <version>, ...}
+         dev_dependencies: {<name>: <version>, ...}
+       go:                           # go
+         module: <module path>
+         dependencies: {<name>: <version>, ...}   # direct only; indirect flagged
+       gem:                          # ruby
+         dependencies: {<name>: <constraint-or-empty>, ...}
+         groups: {<name>: <group>, ...}            # e.g., rspec-rails: test
+       python:                       # python
+         dependencies: {<name>: <constraint>, ...}
+         optional_dependencies: {<extra>: [<names>], ...}
+         source: pyproject | requirements | pipfile
+       jvm:                          # java/kotlin
+         dependencies: {"<groupId>:<artifactId>": <version>, ...}
+         build_tool: maven | gradle
 
-4. Embed manifest_facts struct into the <MANIFEST_FACTS> placeholder of each subagent prompt (templates in the deep-scan subagent prompts reference).
-5. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read composer.json / package.json / lock files. Spend your context budget on framework-specific source files (config/auth.php, app/Models/, etc.) — see INPUTS TO READ for the per-domain list."
+3. Embed manifest_facts struct into the <MANIFEST_FACTS> placeholder of each subagent prompt (templates in the deep-scan subagent prompts reference).
+4. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read ANY manifest or lock file (composer.json / package.json / Cargo.toml / go.mod / Gemfile / pyproject.toml / pom.xml / their locks). Spend your context budget on framework-specific source files per the pack's file hints — see INPUTS TO READ for the per-domain list."
 ```
 
-**Net savings:** ~9-24KB per scan (4 subagents × ~2-6KB saved per subagent).
+**Net savings:** ~9-24KB per scan (4 manifest-consuming subagents × ~2-6KB saved per subagent; reuse-extractor reads first-party source dirs directly, not manifests).
 
 ## Step 10.5.2 — Dispatch subagents in PARALLEL (selective dispatch)
 
-Dispatch only the subagents whose slice is in `stale_slices` (from Step 10.5.1). If all 4 slices stale → dispatch 4 in parallel. If only 1-3 slices stale → dispatch only those (selective re-dispatch).
+Dispatch only the subagents whose slice is in `stale_slices` (from Step 10.5.1). If all 5 slices stale → dispatch 5 in parallel. If only 1-4 slices stale → dispatch only those (selective re-dispatch).
 
 Dispatch stale-slice subagents IN A SINGLE MESSAGE with N Agent tool calls (parallel-safe per `superpowers:subagent-driven-development` convention — reuses the extract-intelligence wave-dispatch pattern). N = len(stale_slices).
 
@@ -99,10 +139,11 @@ Use the deep-scan subagent prompt templates (a separate reference linked from th
 - `<CATALOG_PATH>` → for each subagent, the matching catalog under `plugins/mega-sdd/references/lib-patterns/<FRAMEWORK>/<domain>-libs.md`
 
 Subagents:
-1. **auth-extractor** — model: per `references/model-tiers.md §auth-extractor` (default sonnet); catalog: `lib-patterns/<framework>/auth-libs.md`
-2. **rbac-extractor** — model: per `references/model-tiers.md §rbac-extractor` (default sonnet); catalog: `lib-patterns/<framework>/rbac-libs.md`
-3. **ui-ux-extractor** — model: per `references/model-tiers.md §ui-ux-extractor` (default sonnet); catalog: `lib-patterns/<framework>/ui-libs.md`
-4. **libs-extractor** — model: per `references/model-tiers.md §libs-extractor` (default sonnet); catalog: `lib-patterns/<framework>/generic-libs.md`
+1. **auth-extractor** — model: per `plugins/mega-sdd/references/model-tiers.md §auth-extractor` (default sonnet); catalog: `lib-patterns/<framework>/auth-libs.md`
+2. **authz-extractor** — model: per `plugins/mega-sdd/references/model-tiers.md §authz-extractor` (default sonnet); catalog: `lib-patterns/<framework>/rbac-libs.md`
+3. **ui-ux-extractor** — model: per `plugins/mega-sdd/references/model-tiers.md §ui-ux-extractor` (default sonnet); catalog: `lib-patterns/<framework>/ui-libs.md`
+4. **libs-extractor** — model: per `plugins/mega-sdd/references/model-tiers.md §libs-extractor` (default sonnet); catalog: `lib-patterns/<framework>/generic-libs.md`
+5. **reuse-extractor** — model: per `plugins/mega-sdd/references/model-tiers.md §reuse-extractor` (default sonnet); hints: framework pack `## Reuse discovery` section (or `_universal` generic); output: `.mega-sdd/codebase/reuse-index.yaml` (SEPARATE sibling artifact, NOT merged into starterkit-context.yaml).
 
 > If invoked via orchestrate-flow chain, model tier may be overridden via handoff metadata.model_tiers per role (CLI flag / project config / user preference). Standalone invocation uses catalog default unconditionally.
 
@@ -116,7 +157,7 @@ Subagents:
 - If second attempt also fails: mark that slice as failed; consolidator (Step 10.5.3) sets `partial: true` and adds the domain to `partial_slices: [...]`.
 - Pipeline continues (warn-only, NOT chain-stopping).
 
-**All-fail handling:** if ALL 4 subagents fail (likely API outage):
+**All-fail handling:** if ALL 5 subagents fail (likely API outage):
 - Emit halt `deep_scan_subagent_all_failed` (ALWAYS STOP).
 - DO NOT write starterkit-context.yaml (preserve any existing prior version untouched).
 - Chain halts; user re-runs scan-codebase later.
@@ -193,13 +234,18 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
 3. For each successful subagent response: validate YAML against starterkit-context-schema.md §<domain> slice
    - If validation fails: drop slice; add domain to partial_slices: []
    - If validation passes: include slice in merged output
+   - EXCEPTION — reuse slice: do NOT merge into starterkit-context.yaml. Write it atomically to
+     <project>/.mega-sdd/codebase/reuse-index.yaml per `plugins/mega-sdd/references/reuse-index-schema.md` (same
+     temp-file+rename pattern as starterkit-context write). The handoff carries:
+     `reuse_index: { path: .mega-sdd/codebase/reuse-index.yaml, counts: {helpers, model_api, services, commands}, truncated }`.
 4. Merge fresh slices (from dispatched subagents) with cached slices (from prior YAML).
+   NOTE: only auth/authz/ui_ux/libs slices are merged into starterkit-context.yaml; the reuse slice is consolidated separately (see step 3 EXCEPTION above).
    - Conflict resolution: fresh always wins over cached for same domain (cached is the fallback for non-stale domains).
 5. Build merged YAML structure (cache_signatures v2.0 schema):
 
      starterkit_context:
-       schema_version: 3.0                          # adds patterns: block; v2.0 added per-slice cache; v1.0 was initial
-       generated_by: scan-codebase v3.0.0
+       schema_version: 3.1                          # v3.1 = neutral authz reshape (rbac block replaced by authz; entrypoints replaces routes; mechanism replaces guard); v3.0 added patterns:; v2.0 added per-slice cache; v1.0 was initial
+       generated_by: scan-codebase@<skill version from SKILL.md frontmatter>
        generated_at: <ISO8601 of MOST RECENT slice write>
        framework: <from §7 Framework.name>
        framework_version: <from §7 Framework.version>
@@ -208,7 +254,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
        partial_slices: [<list>]                     # only when partial: true
        reused_slices: [<list of cached domains>]    # provenance of cache reuse
        auth: {...}                                  # fresh OR cached
-       rbac: {...}                                  # fresh OR cached
+       authz: {...}                                 # fresh OR cached
        ui_ux: {...}                                 # fresh OR cached
        libs: [...]                                  # fresh OR cached
        patterns:                                    # generic schema, pack-driven values (see Step 10.5.2.5)
@@ -271,16 +317,27 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
            exemplar_selection: linter-clean
            _source: [<sample file:lines>, …]        # ORDERED best-first
            extras: {}
-       cache_signatures:                            # v2.0 schema (replaces v1.0 cache_key:)
-         composer_lock_sha256: <from Step 10.5.1>
-         package_lock_sha256: <from Step 10.5.1>
+       cache_signatures:                            # v2.1 schema (per-ecosystem locks; replaces v2.0 php/js-only + v1.0 cache_key:)
+         locks_sha256:                              # one entry per detected ecosystem (Step 10.5.1.1)
+           <ecosystem>: <hex>                       # php | js | rust | go | ruby | python | jvm
+         app_ecosystem: <ecosystem of §7 Framework> # which ecosystem drove app_locks_digest
          framework_pack: <pack basename>
          per_slice:
            auth: { signature_sha256: <hex>, generated_at: <ISO8601> }
-           rbac: { signature_sha256: <hex>, generated_at: <ISO8601> }
+           authz: { signature_sha256: <hex>, generated_at: <ISO8601> }
            ui_ux: { signature_sha256: <hex>, generated_at: <ISO8601> }
            libs: { signature_sha256: <hex>, generated_at: <ISO8601> }
+           reuse: { signature_sha256: <hex>, generated_at: <ISO8601> }
        # NOTE: cached slices keep their original generated_at; fresh slices get current ISO8601.
+       # NOTE (v2.0 → v2.1): signature INPUTS changed (per-ecosystem digests), so v2.0-era cached
+       #   signatures mismatch on the first v2.1 scan → all slices re-dispatch once, then the new
+       #   schema is written. Self-healing; no special migration branch needed.
+       # NOTE (reuse slice): the reuse cache signature is stored here for bookkeeping, but the
+       #   reuse slice output is written to its OWN file: .mega-sdd/codebase/reuse-index.yaml
+       #   (per plugins/mega-sdd/references/reuse-index-schema.md), NOT merged into starterkit-context.yaml.
+       #   reuse_sig_input = sha256(listing+mtimes of the hinted first-party source dirs) +
+       #     framework_pack ## Reuse discovery section content (NOT lock files — reuse tracks
+       #     first-party source, not deps).
 6. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
    (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, then mv)
 7. Validate the written file is parseable:
@@ -288,7 +345,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
    - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
 ```
 
-**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 4 subagents; Step 10.5.3 writes the new v2.0 `cache_signatures:` schema. One-time migration cost per project; no user action required.
+**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 5 subagents; Step 10.5.3 writes the new v2.0 `cache_signatures:` schema. One-time migration cost per project; no user action required.
 
 ## Step 10.5.4 — Concurrency guard
 
@@ -312,7 +369,7 @@ After Step 10 codebase-map.md write completes, additionally write a shared-snaps
    {
      "snapshot_schema_version": "1.1",
      "snapshot_type": "codebase-map",
-     "generated_by": "scan-codebase@2.7.1",
+     "generated_by": "scan-codebase@<skill version from SKILL.md frontmatter>",
      "generated_at": "<ISO8601>",
      "scope": null,
      "files": [],

@@ -14,13 +14,13 @@
 
 ## Detection
 
-At skill startup, probe for tree-sitter:
+At skill startup, probe for tree-sitter via BOTH binary names (package managers ship under different names — see SKILL.md Step 0):
 
 ```bash
-command -v tree-sitter
+command -v tree-sitter || command -v tree-sitter-cli
 ```
 
-- Found → use tree-sitter engine (precision tier: `ast`)
+- Found (either) → use tree-sitter engine (precision tier: `ast`)
 - Not found → fall back to regex engine (precision tier: `regex`); emit one-line warning in chat
 - User can force engine via `--engine=tree-sitter` (halts if absent) or `--engine=regex` (skip detection)
 
@@ -43,7 +43,7 @@ blocker:
   next_action: "Install tree-sitter then re-run, OR use --engine=regex for fallback (lower precision)"
 ```
 
-Per ITER6-OQ-1 resolved: doc install, don't bundle binaries (keeps plugin small).
+Design decision: document the install, don't bundle binaries (keeps the plugin small and avoids per-OS binary maintenance).
 
 ## Query files (`queries/tags-<lang>.scm`)
 
@@ -57,7 +57,7 @@ Each query file targets entity extraction:
 
 Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public interfaces) + §3 (data models) + §4 (routes).
 
-### Per-language coverage (v2.0 initial set)
+### Per-language coverage (shipped query files)
 
 - `tags-typescript.scm` — TS classes, functions, interfaces, types
 - `tags-javascript.scm` — JS classes, functions, exports
@@ -65,6 +65,8 @@ Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public 
 - `tags-python.scm` — Python classes, functions, decorators
 - `tags-rust.scm` — Rust pub fn, struct, enum, trait, impl
 - `tags-go.scm` — Go func, type, method
+- `tags-ruby.scm` — Ruby classes, modules, methods
+- `tags-java.scm` — Java classes, interfaces, enums, records, methods
 
 Languages without `.scm` file → fall back to regex (graceful degradation).
 

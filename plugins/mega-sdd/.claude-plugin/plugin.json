@@ -1,12 +1,12 @@
 {
   "name": "mega-sdd",
-  "version": "4.2.0",
+  "version": "4.20.1",
   "description": "Spec-Driven Development as an autonomous agent pipeline: extract → intent → scan → bind → units → bolts. Anti-hallucination by construction — every claim cites its source, and spec↔code binding (CONFIRMED / CONFLICT / OQ verdicts) gates code generation. AST-precise codebase analysis (tree-sitter), ast-grep-validated Hard Rules, persistent memory, first-class subagents, and a consolidated /analyze consistency surface. Native binary deps (tree-sitter + ast-grep) with graceful regex fallback.",
   "author": {
     "name": "Farhan Riuzaki"
   },
-  "homepage": "https://gitlab.com/airnd1/mega-sdd",
-  "repository": "https://gitlab.com/airnd1/mega-sdd.git",
+  "homepage": "https://github.com/FarhanRiuzaki/Mega-SDD",
+  "repository": "https://github.com/FarhanRiuzaki/Mega-SDD.git",
   "license": "MIT",
   "keywords": [
     "sdd",

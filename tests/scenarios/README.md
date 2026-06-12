@@ -12,6 +12,7 @@ Each scenario:
 
 | Your situation | Scenario | Time |
 |---|---|---|
+| **Never installed Claude Code at all** | [Scenario 0 — Zero to first run](scenario-0-zero-to-first-run.md) | 20 min |
 | First time trying mega-sdd; want minimum viable run | [Scenario 1 — Greenfield from idea](scenario-1-greenfield-from-idea.md) | 15 min |
 | Have a PRD; existing project | [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md) | 30 min |
 | Field-level gap (PRD says X, code has Y) | [Scenario 3 — Field-level extension](scenario-3-field-extension.md) | 20 min |
@@ -23,29 +24,18 @@ Each scenario:
 | End-to-end intelligence layer test | [Scenario 9 — Flawless seamless intelligence](scenario-9-flawless-seamless-intelligence.md) | 30-40 min |
 | **Legacy rebuild with phased plan (multi-phase)** | **[Scenario 10 — Phased rebuild walkthrough](scenario-10-phased-rebuild-walkthrough.md)** | **~3 hr** |
 | **Model tier override (cost/quality control)** | **[Scenario 11 — Model tier override](scenario-11-model-tier-override.md)** | **~5 min** |
+| **Code changed after "done" — continuous sync** | **[Scenario 12 — Continuous sync](scenario-12-continuous-sync.md)** | **~10 min** |
 | Upgrading from older mega-sdd | (not a scenario) See `plugins/mega-sdd/references/upgrade-from-old-version.md` | — |
 
 ## Before you start — install check
 
-All scenarios assume mega-sdd is installed:
+**Step 0 — never used Claude Code itself?** Mega-sdd runs inside [Claude Code](https://claude.com/claude-code), Anthropic's terminal AI coding agent. If you haven't installed or tried it, follow [Scenario 0 — Zero to first run](scenario-0-zero-to-first-run.md) first — it covers installing Claude Code, logging in, and your first mega-sdd run with nothing assumed.
 
-```bash
-/plugin marketplace add https://gitlab.com/airnd1/grand-design-spec.git
-/plugin install mega-sdd
-/plugin install superpowers   # recommended companion (TDD discipline)
-```
+> **Note**: every command starting with `/` (like `/plugin …` or `/mega-sdd:…`) is typed **inside the Claude Code chat session**, not in your shell. Commands shown in `bash` blocks without a leading `/` run in your normal terminal.
 
-For higher precision (recommended):
+All scenarios assume mega-sdd is installed — canonical install steps: [root README — Quick start](../../README.md#quick-start-5-minutes).
 
-```bash
-brew install tree-sitter ast-grep ripgrep jd
-# OR
-cargo install tree-sitter-cli ast-grep ripgrep
-```
-
-Full install matrix: see [`plugins/mega-sdd/references/tooling-install.md`](../../plugins/mega-sdd/references/tooling-install.md).
-
-Mega-sdd works WITHOUT these tools (graceful fallbacks). Install for better precision + faster iteration.
+For higher precision (recommended, optional), run `/mega-sdd:install-deps` inside Claude Code — it detects your OS + package manager and installs the native tools with safety rails. Manual per-platform one-liners: [`tooling-install.md`](../../plugins/mega-sdd/references/tooling-install.md). Mega-sdd works WITHOUT these tools (graceful fallbacks).
 
 ## Verification — is mega-sdd ready?
 
@@ -94,8 +84,8 @@ For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ## Feedback + questions
 
-Scenarios assume mega-sdd v3.40.0+. If steps don't match your behavior:
-1. Check version: `cat plugins/mega-sdd/.claude-plugin/plugin.json | grep version`
+Scenarios assume mega-sdd v4.0.0+. If steps don't match your behavior:
+1. Check your installed version: type `/plugin` in Claude Code (works in any project)
 2. Update plugin: `/mega-sdd:update-plugin`
 3. Report mismatches with concrete steps reproduced
 

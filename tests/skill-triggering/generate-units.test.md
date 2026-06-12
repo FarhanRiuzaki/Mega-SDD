@@ -257,7 +257,7 @@ All triggers fire. Behavior checks pass. No unit generated without valid frontma
   - `{text: "MUST use SweetAlert2 for confirmations and notifications ...", citation: "starterkit-context.yaml §ui_ux.notification_lib"}`
   - `{text: "MUST follow starterkit idiom: use document.addEventListener('DOMContentLoaded', ...) over $(document).ready", citation: "starterkit-context.yaml §ui_ux.idioms"}`
   - `{text: "MUST follow starterkit idiom: responsive mobile-first (sm/md/lg breakpoints)", citation: "starterkit-context.yaml §ui_ux.idioms"}`
-  - `{text: "MUST use auth guard 'sanctum' ...", citation: "starterkit-context.yaml §auth.guard"}`
+  - `{text: "MUST use auth mechanism 'session' (lib: sanctum) ...", citation: "starterkit-context.yaml §auth.mechanism"}`
 - Step 7.7.e: unit.frontmatter gains:
   - `starterkit_context_consumed: true`
   - `starterkit_relevance: [ui_ux, auth, libs]`

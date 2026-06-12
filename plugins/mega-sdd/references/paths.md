@@ -1,8 +1,22 @@
-# Mega-SDD Canonical Path Convention (v3.4+, Iter 10)
+# Mega-SDD Canonical Path Convention
 
-Centralized path definitions for ALL mega-sdd skill outputs. Replaces scattered output locations across iterations with a unified `.mega-sdd/` container at project root.
+Centralized path definitions for ALL mega-sdd skill outputs: a unified `.mega-sdd/` container at project root, replacing the legacy scattered output locations (migration: `/mega-sdd:migrate-paths`).
 
 Per user UX request — "by default semua file output md hasil skill itu masuk saja otomatis ke `.mega-sdd/*`".
+
+## Contents
+
+- Path resolution algorithm
+- Canonical layout
+- User-scope
+- Per-skill path mapping (canonical → legacy)
+- Detection logic
+- Read-side compatibility
+- Config file format
+- Why .mega-sdd at project root (not docs/)
+- Migration
+- Recommended `.gitignore` entries
+- References
 
 ## Path resolution algorithm
 
@@ -10,10 +24,10 @@ Every writer skill resolves output paths via this protocol:
 
 1. **Check user override**: `~/.mega-sdd/memory/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference)
 2. **Check project override**: `<project-root>/.mega-sdd/config.yaml` `output_root: <abs-or-rel-path>` (per-repo override)
-3. **Default**: `<project-root>/.mega-sdd/` (new in v3.4+)
+3. **Default**: `<project-root>/.mega-sdd/`
 4. **Legacy detection**: if old-layout paths exist (e.g., `docs/mega-sdd/vaults/`, `.mega-sdd-memory/`, top-level `codebase-map.md`), skills WRITE to legacy paths for back-compat. User opts into new layout via `/mega-sdd:migrate-paths`.
 
-## Canonical layout (v3.4+)
+## Canonical layout
 
 ```
 <project-root>/
@@ -28,55 +42,57 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── bolts/U-*/bolt-report.md               # Bolt outcomes
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
 │   │   ├── interfaces/                            # Multi-squad interface notes
-│   │   ├── fsd/                                   # Confluence FSD output (Iter 54; documented Iter 61)
+│   │   ├── fsd/                                   # Confluence FSD output (emit-fsd)
 │   │   │   ├── FSD.md                             # Markdown source
 │   │   │   ├── FSD.pdf                            # Rendered PDF (pandoc + LaTeX)
 │   │   │   ├── FSD.styling.yaml                   # User-editable styling overrides
 │   │   │   └── .citation-map.json                 # Audit trace per section
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
-│   │   ├── .memory/                               # Vault-scope memory (Iter 5)
+│   │   ├── .memory/                               # Vault-scope memory
 │   │   │   ├── classifier-accuracy.json
 │   │   │   ├── bind-history.md
-│   │   │   ├── bolt-outcomes.json
-│   │   │   └── citation-failures.jsonl            # Iter 9 audit fix
-│   │   └── .internal/                             # Vault-internal state (NEW v3.4+)
-│   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # Iter 6
-│   │       └── symbol-graph.json                  # PageRank cache (Iter 6)
+│   │   │   ├── bolt-outcomes.json                 # + failure_reflection / concerns (learning loop)
+│   │   │   ├── drift-history.md                   # drift direction calls (learning loop)
+│   │   │   └── citation-failures.jsonl            # citation-failure audit log (emit-fsd)
+│   │   └── .internal/                             # Vault-internal state
+│   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
+│   │       └── symbol-graph.json                  # PageRank symbol-graph cache
 │   ├── knowledge-base/                            # Legacy KB extraction (extract-intelligence)
 │   │   ├── README.md
 │   │   ├── 00-overview/, 10-domains/, etc.
 │   │   └── .scan-meta.json
 │   ├── codebase/                                  # Codebase analysis outputs
 │   │   └── codebase-map.md                        # scan-codebase output
-│   ├── memory/                                    # PROJECT-scope memory (Iter 5)
+│   ├── memory/                                    # PROJECT-scope memory
 │   │   ├── decisions.md                           # OQ resolutions, CONFLICT actions
 │   │   ├── conventions.md                         # Detected conventions
 │   │   ├── outcomes.md                            # Pipeline run summaries
-│   │   ├── routing-outcomes.md                    # Orchestrator chain learning (Iter 33)
-│   │   ├── install-outcomes.md                    # install-deps audit log (Iter 55; documented Iter 61)
+│   │   ├── routing-outcomes.md                    # Orchestrator chain learning
+│   │   ├── install-outcomes.md                    # install-deps audit log
+│   │   ├── _index.md                              # derived scope index (regenerated; learning loop)
 │   │   └── archived-vaults/<slug>/                # Vault archive on delete (MEMORY-OQ-5)
 │   └── exports/                                   # Tool-agnostic exports
-│       └── (additional exports as iters add them)
+│       └── (additional exports)
 ├── AGENTS.md                                       # Tool-agnostic interop at REPO ROOT (unchanged — must be discoverable by other tools)
 ├── CLAUDE.md                                       # Project AI context (unchanged)
 └── (project source: app/, routes/, src/, etc.)
 ```
 
-## User-scope (unchanged across iters)
+## User-scope
 
 ```
 ~/.mega-sdd/
-├── memory/                                  # Cross-project user memory (Iter 5; unchanged)
+├── memory/                                  # Cross-project user memory
 │   ├── preferences.md
 │   ├── patterns.md
 │   ├── learning-log.md
 │   └── config.yaml                          # User defaults (thresholds, opt-outs, default_output_root override)
-└── migrations/<from>-to-<to>.sh              # Memory schema migrations (Iter 9)
+└── migrations/<from>-to-<to>.sh              # Memory schema migrations
 ```
 
-## Per-skill path mapping (v3.4 default → legacy)
+## Per-skill path mapping (canonical → legacy)
 
-| Skill | Artifact | Default path (v3.4+) | Legacy path (≤v3.3) |
+| Skill | Artifact | Default canonical path | Legacy path |
 |---|---|---|---|
 | `extract-intelligence` | knowledge-base/ | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
 | `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
@@ -88,8 +104,8 @@ Every writer skill resolves output paths via this protocol:
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `execute-bolts` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
-| `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat — introduced v3.24.0+) |
-| `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat — introduced v3.25.0+) |
+| `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat) |
+| `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
 | memory (user) | patterns.md, etc. | `~/.mega-sdd/memory/` (UNCHANGED) | same |
 | memory (vault) | classifier-accuracy.json | `<vault>/.memory/` (UNCHANGED) | same |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
@@ -112,7 +128,7 @@ if [ -f "<project>/.mega-sdd/config.yaml" ] && grep -q "output_root:" "<project>
   OUTPUT_ROOT=$(yaml_get "<project>/.mega-sdd/config.yaml" output_root)
 fi
 
-# 3. Default (v3.4+)
+# 3. Default (canonical)
 if [ -z "$OUTPUT_ROOT" ]; then
   OUTPUT_ROOT="<project>/.mega-sdd"
 fi
@@ -141,11 +157,11 @@ for candidate in \
 done
 ```
 
-Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` → `<project>/codebase-map.md`), KB (`<project>/.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `old-reference/knowledge-base/`), and project memory (`<project>/.mega-sdd/memory/` → `<project>/.mega-sdd-memory/`).
+Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` → `<project>/codebase-map.md`), KB (`<project>/.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`), and project memory (`<project>/.mega-sdd/memory/` → `<project>/.mega-sdd-memory/`).
 
 ## Config file format
 
-`<project-root>/.mega-sdd/config.yaml` (NEW in v3.4):
+`<project-root>/.mega-sdd/config.yaml` (full key reference: `plugins/mega-sdd/references/project-config.md`):
 
 ```yaml
 # Project-level mega-sdd config
@@ -155,9 +171,9 @@ mega_sdd_schema: 1
 output_root: .mega-sdd/    # relative to project root; or absolute
 
 # Layout mode
-layout: new                 # new (v3.4+ default) | legacy (preserves pre-v3.4 paths)
+layout: new                 # new (canonical default) | legacy (preserves pre-migration paths)
 
-# Per-skill opt-outs (per Iter 5+ skill memory opt-out)
+# Per-skill memory opt-outs
 defaults:
   memory_enabled: true
   emit_agents_md: true
@@ -192,7 +208,7 @@ User explicitly requested consolidation under `.mega-sdd/`. Trade-off: lose some
 
 Migration is opt-in. Existing projects continue to work with legacy paths via back-compat detection.
 
-## Recommended `.gitignore` entries (v3.4+)
+## Recommended `.gitignore` entries
 
 For project repo `.gitignore`:
 
@@ -206,8 +222,9 @@ For project repo `.gitignore`:
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
+**Multi-dev note:** `vault.json` and `binding.md` are whole-file regenerated state — git line-merge of either after two devs ran the pipeline concurrently produces a corrupt file (the SessionStart guard detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
+
 ## References
 
-- Iter 5 spec — original memory layer paths (now consolidated)
-- Iter 9 audit — Gap E2E-6 (archive scope on vault delete) — fixed in this iter via `.mega-sdd/memory/archived-vaults/`
 - `commands/migrate-paths.md` — migration helper
+- `plugins/mega-sdd/references/upgrade-from-old-version.md` — legacy-layout upgrade guide

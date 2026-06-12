@@ -73,7 +73,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 1. Bolt halt → check halt-type eligibility + user config override.
 2. If eligible: dispatch the fix-proposer subagent with the propose-and-confirm-prompt template (listed in SKILL.md).
 3. The subagent returns a `proposed_fix` YAML (root_cause + evidence_chain + fix diff + confidence + optional alternatives).
-4. Render to the user via `AskUserQuestion` (5 options: Apply / Alt / Reject / Cancel / Override).
+4. Render to the user via `AskUserQuestion` (4 options — the platform caps options at 4: Apply / Alt / Reject / Override; Cancel rides the built-in "Other"/Esc escape).
 5. On Apply: write `proposed_fix` to `<vault>/bolts/U-XXX/proposed-fix.md` → apply diff → re-execute the single bolt → continue the batch.
 6. On Reject: write `proposed_fix` to `<vault>/bolts/U-XXX/proposed-fix.md` (preserved for the next session) → the chain pauses.
 7. On Override: record to memory `decisions.md` as `forced_pass` → continue the batch (audit-significant).
@@ -103,6 +103,8 @@ Beyond the existing halts, this skill adds:
 | `provenance_missing` | Post-flight detects a missing provenance trailer in a modified file | NO (user adds the trailer) |
 | `bolt_introduces_locked_drift` | The per-bolt drift check detects drift on a LOCKED entity | YES (propose-and-confirm OR override) |
 | `self_assessment_missing` | `bolt-report.md` lacks the `bolt_self_report` YAML block | NO (bolt must self-report) |
+| `commit_rejected_by_hook` | The repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt's commit. Hook output verbatim in details. NEVER retried with `--no-verify` (forbidden plugin-wide). | NO (user fixes the hook finding or environment) |
+| `bolt_artifacts_missing` | An `emitted_by: execute-bolts` `status: completed` handoff that executed units (`metrics.items_processed > 0`) lists no `<vault>/bolts/U-XXX/` artifact — the bolt folder was never generated. Detected by the Stop-hook handoff validator (`validate-handoff-yaml.sh`); exempts dry-run/no-op (`items_processed == 0`). | NO (controller must create the dir at Procedure Step 0 + write `bolt-report.md`, then re-emit) |
 
 Halt YAML envelopes for each are documented in the propose-and-confirm-prompt template (listed in SKILL.md).
 
@@ -271,7 +273,12 @@ Written immediately after the batch loop completes (whether all bolts succeeded,
 
 Per unit:
 - Code commits (1+) on the current branch (skipped for `task_type: verify` if no changes).
-- `<vault>/bolts/U-XXX/bolt-report.md`.
+- `<vault>/bolts/U-XXX/bolt-report.md` — frontmatter MUST include `target_hashes:` (living-vault staleness anchor; spec `2026-06-10-living-vault-continuous-sync-design.md` S6):
+  ```yaml
+  target_hashes:                       # sha256 of each target_files entry AT COMMIT TIME
+    <repo-relative-path>: <sha256-hex> # computed by the controller AFTER the commit, from the committed content
+  ```
+  `scripts/compute-unit-staleness.sh` later compares these to the working tree — a mismatch marks the unit `stale` for the sync lane. Older bolt-reports without the field → staleness is `unknown` (treated as not-stale; never guessed).
 - `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff.
 - `<vault>/bolts/U-XXX/postflight.json` — Hard rule post-flight check results (per-rule pass/fail + evidence).
 
@@ -333,18 +340,18 @@ handoff:
     reused: false
     framework: laravel
     auth_lib: sanctum
-    rbac_lib: spatie/permission
+    authz_lib: spatie/permission
     ui_stack: "alpine + tailwind + sweetalert2"
     libs_count: 47
     bolts_used_starterkit_slice: 11
     slice_avg_size_kb: 1.6
   next_action:
     suggested_skill: mega-sdd:detect-drift
-    suggested_args: []
+    suggested_args: []                     # → ["--scope=<id>"] when the `scope:` block below is present (AUDIT L9): propagate THIS batch's scope so the chained detect-drift inherits it instead of full-scanning. Stays [] for a single-scope vault.
     rationale: "All bolts executed; recommend a periodic drift check."
   blockers: []   # populated on test_fail / hard_rule_violated / hard_rule_unparseable / hard_rule_unanchored / cross_squad_interface_draft / verify_unit_writable
   metrics:
-    items_processed: <N units executed>
+    items_processed: <N units ACTUALLY executed/committed — MUST be 0 for a --dry-run/preview or an "all units already done" no-op re-run; never the would-process count. The bolt_artifacts_missing gate keys off this field.>
     items_blocked: <N halts encountered>
     bolts_used_starterkit_slice: <int>
     slice_avg_size_kb: <float>
@@ -359,6 +366,8 @@ handoff:
     prd_sha256: <sha256 from vault.json>
 ```
 
+> **Scope propagation to detect-drift (AUDIT L9).** When this handoff carries a `scope:` block, `next_action.suggested_args` MUST include `--scope=<scope.id>` — `detect-drift` accepts `--scope`, and the orchestrator's consumption loop passes `suggested_args` straight through. Deterministically enforced: the Stop-hook handoff validator FAILs `scope_args_missing` when a scoped execute-bolts handoff routes to detect-drift without `--scope=` in `suggested_args`. Without it, a scope-filtered bolt batch hands off to a **full-scan** drift check (the seam asymmetry: detect-drift propagates scope to ITS downstream, but nothing seeded scope into detect-drift). For a single-scope vault there is no `scope:` block and `suggested_args` stays `[]`.
+
 Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.
 
 ## Memory layer
@@ -369,8 +378,8 @@ When memory is enabled (default; opt-out via `--memory-off`), this skill partici
 
 | When | File | Content |
 |---|---|---|
-| After each bolt commits (success) | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, run_at, task_type, status=completed, duration_ms, tests_passed=true, hard_rules_validated=[rule strings that passed] |
-| After each bolt halts (failure) | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, status=halted_*, halt_reason, violated_rules=[with evidence], resolution=pending |
+| After each bolt commits (success) | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, run_at, task_type, status=completed, duration_ms, tests_passed=true, hard_rules_validated=[rule strings that passed], concerns=[the bolt's `acceptance_test_concern` strings, if any — persisted here so cross-vault recurrence can reach a learning threshold instead of dying with the handoff] |
+| After each bolt halts (failure) OR retries | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, status=halted_*, halt_reason, violated_rules=[with evidence], resolution=pending, **failure_reflection** — ONE line of root-cause from the fix-proposer (the *why*, e.g. "Hard Rule predates the binding's extend verdict — unit was mis-typed create"), not just the resolution enum |
 | After a user resolves a halt (next session) | `<vault>/.memory/bolt-outcomes.json` | Update the prior entry: resolution=(user_reverted_code \| user_edited_unit \| user_force_committed \| user_skipped), resolution_at, resolution_note |
 | After a chain run completes | `<project>/.mega-sdd/memory/outcomes.md` | Append a run summary: phases run, halts encountered, total duration, hard rule violation count |
 
@@ -379,6 +388,7 @@ When memory is enabled (default; opt-out via `--memory-off`), this skill partici
 | What | Source | How used |
 |---|---|---|
 | Past bolt outcomes for the same unit | `<vault>/.memory/bolt-outcomes.json` | Before executing U-X: if a past run halted with violation Y → surface to the user pre-execution: "U-X previously halted on rule Y. Same risk now. Continue?" (informational; not blocking) |
+| Past failure reflections (Reflexion) | `<vault>/.memory/bolt-outcomes.json` `bolts[].failure_reflection` | Before executing U-X: surface the reflections of (a) U-X's own past attempts and (b) sibling units in the same module, as a `## Prior failure context` block in the bolt dispatch prompt — retry N+1 and neighboring bolts start with the *why*, not just the *what* |
 | Past Hard Rule violation+revert patterns | `<vault>/.memory/bolt-outcomes.json` | Pre-flight: if rule R has been violated AND reverted ≥3 times → emit a one-line chat warning before scanning: "Rule R has been overridden 3+ times. Validation will still fire; consider removing the rule from the unit" |
 
 **Anti-halu rails:**

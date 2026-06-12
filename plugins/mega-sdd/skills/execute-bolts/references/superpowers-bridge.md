@@ -13,7 +13,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 
 1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A unit's optional `superpowers_skills` frontmatter is treated as a technique hint.
 
-2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `${CLAUDE_PLUGIN_ROOT}/skills/_vendored/`.
+2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `<plugin-root>/skills/_vendored/` (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read).
 
 3. **Legacy path.** If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before.
 
@@ -96,4 +96,4 @@ retries: N
 
 ## Squad-level fan-out
 
-When `execute-bolts --per-squad` is invoked, fan-out happens at the squad level BEFORE the per-unit dispatch above. See `references/squad-subagent.md` for the protocol. Each squad's controller then independently follows the per-unit flow in this document (dispatching the first-class agents).
+When `execute-bolts --per-squad` is invoked, the **main-thread controller** loops over the declared squads and runs each squad's units through the per-unit flow above — dispatching the first-class agents at **depth-1**. There is **NO squad subagent**: a forked squad controller could not dispatch the bolt agents (that would be depth-2, which the runtime forbids), and would silently lose the two-stage review. Parallelism comes from the controller dispatching independent units (across squads) **concurrently**, not from nesting. See `references/squad-subagent.md` for the filter + consolidation protocol.

@@ -52,7 +52,12 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 
 <!-- staged-only: present ONLY when this flow collects inputs across multiple steps/pages/roles
      (wizard, maker→checker). Copy the `stages:` block from the source KB workflow §3a VERBATIM —
-     do NOT re-flatten it — then render the state diagram and stamp `_kb_source`. Omit all three
+     do NOT re-flatten it. If the KB used the ENRICHED form (`input_fields` as objects
+     with name/mutability/visibility/conditional, plus per-stage delta fields new_fields_vs_prior /
+     hidden_fields_vs_prior / promoted_to_mutable_vs_prior / dynamic_disclosures), preserve THAT
+     form; do NOT downgrade enriched objects to bare strings (AUDIT L8 — they carry the
+     progressive-disclosure intent consumed at UI/bolt time per the ui-ux-design-intelligence
+     integration). Then render the state diagram and stamp `_kb_source`. Omit all three
      blocks for single-step flows. validate-vault-flow-staging.sh follows `_kb_source` to prove the
      KB's staging was preserved here (a drop is a `vault_flow_staging_drop` halt). -->
 **Stages** (multi-step workflows only):
@@ -61,7 +66,10 @@ stages:
   - stage_id: "S1"
     stage_name: "<step name>"
     actor_role: "<role>"
-    input_fields: ["<field>", "..."]
+    input_fields: ["<field>", "..."]       # bare strings, OR enriched objects — preserve the KB's form (do NOT downgrade):
+    #   input_fields: [{ name: "<field>", mutability: "[LOCKED]|[INTENT]|[ARTIFACT]", visibility: "always|conditional", conditional: "<rule>" }]
+    # optional per-stage deltas (copy verbatim if the KB has them):
+    #   new_fields_vs_prior: [...]   hidden_fields_vs_prior: [...]   promoted_to_mutable_vs_prior: [...]   dynamic_disclosures: [...]
     transitions: [{ to: "S2", trigger: "<event>", conditions: [] }]
     _source: ["<legacy file:line>"]
   # ... one entry per stage

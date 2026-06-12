@@ -1,5 +1,5 @@
 starterkit_context:
-  schema_version: 3.0
+  schema_version: 3.1
   generated_by: scan-codebase v3.0.0
   generated_at: 2026-05-29T08:00:00Z
   framework: laravel
@@ -10,14 +10,15 @@ starterkit_context:
   reused_slices: []
   auth:
     lib: laravel/sanctum
-    guard: web
+    mechanism: session
     user_model: App\Models\User
     _source: ["config/auth.php:1-30"]
-  rbac:
+  authz:
     lib: spatie/laravel-permission
-    role_model: App\Models\Role
-    permission_model: App\Models\Permission
-    middleware: ["role", "permission"]
+    lib_source: "app/Http/Kernel.php:30-60"
+    mechanism: middleware
+    role_source: model
+    declarations: []
     _source: ["app/Http/Kernel.php:30-60"]
   ui_ux:
     layout_extends: layouts.app

@@ -1,8 +1,19 @@
-# Scope Picker Algorithm (v1.12+, Iter 28)
+# Scope Picker Algorithm
 
 Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion to `vault-contract.md` §Multi-scope vault.
 
-> **Step numbering note**: Step 0.9 (not 0.6) because existing Step 0.6 was already taken by PRD_STATUS flag (Iter 1). Scope detection runs AFTER all Step 0.x metadata config and BEFORE Step 1 Load PRD.
+> **Step numbering note**: Step 0.9 (not 0.6) because Step 0.6 is taken by the PRD_STATUS flag. Scope detection runs AFTER all Step 0.x metadata config and BEFORE Step 1 Load PRD.
+
+## Contents
+
+- Detection priority order
+- Smart default heuristic
+- --scope flag semantics
+- Filter logic
+- Sibling scope informational
+- Memory hit UX
+- Anti-halu rails
+- Edge cases handled
 
 ## Detection priority order
 
@@ -46,7 +57,7 @@ When asking the user, recommend a scope based on signal strength:
 | cwd basename matches `<project>-<scope>` | HIGH | `order-management-be/` → BE |
 | cwd basename matches `<scope>-<project>` | HIGH | `be-order-mgmt/` → BE |
 | cwd parent dir matches scope id | MEDIUM | `~/projects/order/be/` → BE |
-| Composer/package.json filename hints (per Iter 27) | MEDIUM | composer.json + Laravel → likely BE |
+| Composer/package.json filename hints | MEDIUM | composer.json + Laravel → likely BE |
 | Memory: last scope used on this PRD sha256 | HIGH (if same cwd) | matches BE → suggest BE |
 
 Conflict resolution:

@@ -18,14 +18,17 @@
 ## Behavior checks
 
 ### B1: Output presence
-- After invocation: `codebase-map.md` exists in repo root.
+- After invocation: `codebase-map.md` exists at `.mega-sdd/codebase/codebase-map.md` (canonical per `references/paths.md`; legacy repo-root only when `.mega-sdd/` absent or `--out` overrides).
 
 ### B2: Schema compliance
-- Output has all 6 required sections per `codebase-map-schema.md`.
-- Frontmatter has `generated_by: mega-sdd:scan-codebase`.
+- Output has all 7 required sections per `codebase-map-schema.md` (§1 structure … §7 framework).
+- Frontmatter has `generated_by: mega-sdd:scan-codebase`, `engine`, `precision_tier`, and `last_scanned_commit` (git HEAD; omitted only outside a git repo).
 
 ### B3: Anti-hallucination
 - Test on a repo with NO routes: section reads "None detected", not invented endpoints.
+
+### B4: Secret-scan gate (Step 10a)
+- Seed a fixture file containing a fake credential (e.g., `AKIA` + 16 uppercase alphanumerics) on a line that symbol extraction captures: the written map contains `[REDACTED-SECRET]` instead of the value, a chat warning cites the source `file:line`, and the repo source file is untouched.
 
 ## Pass criteria
 
@@ -33,7 +36,7 @@ All triggers fire. Output exists, schema-compliant, no hallucinations.
 
 ---
 
-## Iter 32 — Deep-scan stage cases (v2.6.0+)
+## Deep-scan stage cases
 
 ### SC-DS1 — Fresh deep-scan: full Laravel starterkit detected
 
@@ -49,9 +52,9 @@ All triggers fire. Output exists, schema-compliant, no hallucinations.
 - Step 10.5.0 trigger check passes (framework confidence ≥ MEDIUM)
 - Step 1 surface scan completes; codebase-map.md §7 Framework.confidence == HIGH (≥ 0.8) for Laravel
 - Step 10.5.1 cache check: no prior file → cache miss
-- Step 10.5.2: 4 subagents (auth/rbac/ui-ux/libs) dispatched in PARALLEL (single message, 4 Agent calls)
+- Step 10.5.2: 4 subagents (auth/authz/ui-ux/libs) dispatched in PARALLEL (single message, 4 Agent calls)
 - Step 10.5.3: 4 YAML responses consolidated → `.mega-sdd/codebase/starterkit-context.yaml` written
-- File contents include: `auth.lib: sanctum`, `rbac.lib: spatie/permission`, `ui_ux.notification_lib: sweetalert2`, ≥3 libs in libs[]
+- File contents include: `auth.lib: sanctum`, `authz.lib: spatie/permission`, `ui_ux.notification_lib: sweetalert2`, ≥3 libs in libs[]
 - Handoff YAML includes `starterkit_context:` block with `reused: false`
 - artifacts[] includes both `codebase-map.md` and `starterkit-context.yaml`
 
@@ -106,14 +109,14 @@ All triggers fire. Output exists, schema-compliant, no hallucinations.
 - Step 10.5.2: 4 subagents dispatched
 - auth-extractor: first attempt fails → auto-retry (single retry per spec §5.1)
 - auth-extractor: second attempt also fails → soft halt `deep_scan_subagent_failed` emitted
-- Other 3 subagents (rbac, ui-ux, libs) succeed
+- Other 3 subagents (authz, ui-ux, libs) succeed
 - Step 10.5.3: consolidator emits partial output:
   ```yaml
   starterkit_context:
-    schema_version: 1.0
+    schema_version: 3.1
     partial: true
     partial_slices: [auth]
-    rbac: {...}
+    authz: {...}
     ui_ux: {...}
     libs: [...]
     # auth block ABSENT

@@ -5,7 +5,114 @@
 > Anchor: `CLAUDE.md` (the contract — 5 invariants + enforcement doctrine).
 > Discipline: subagent output is *leads*, not findings — every claim verified before it lands here.
 
-Started 2026-06-05. Status: **Batch 0 complete**, Batch 1 pending advisor checkpoint.
+Started 2026-06-05. Status: Batches 0–4 complete + v4.2.0 shipped. **Round 2 (2026-06-06): deep end-to-end + subagent-decomposition audit — COMPLETE; all findings fixed on branch `fix/round2-audit-pipeline-integrity`.**
+
+## Round-2 RESOLUTION (2026-06-06)
+
+All actionable findings fixed (audit-first held: every finding was surfaced + verified before any edit). Commits by contract:
+
+| Finding | Sev | Fix | Commit / verification |
+|---|---|---|---|
+| **L1** | — | (not a defect — moat NOT bypassed on fan-out) | empirical probe (Round-2) |
+| **L2** | S3 | corrected the false "subagents invisible to PostToolUse" premise → re-attributed under-count to lossy async emission (post-tool-use, telemetry-schema, +execute-bolts fan-out refs) | `fix(docs)…` + `fix(execute-bolts)…` |
+| **L3** | S1 | `--per-squad` rewritten as a **main-thread loop** (depth-1, two-stage review preserved) — no squad subagent | `fix(execute-bolts)…` + **test-no-depth2-dispatch.sh** (PASS on fix, FAIL on pre-fix) |
+| **L5** | S3 | `--all --parallel` reworded to the v4 main-thread concurrent-Agent pattern (unified with L3) | same commit + same test |
+| **L6** | S2 | orchestrate-flow no longer defaults multi-squad into a broken topology (the default path is now valid) | same commit |
+| **L4** | S2 | (a) moat file **fails closed on corrupt** in the aggregator; (b) **atomic write** (tmp+os.replace) at all 6 aggregator-read validators — shipped WITH the parallelism enablement | `fix(gate-state)…` + **test-moat-corrupt-fail-closed.sh** (4 cases; discrimination proven vs pre-fix) |
+| **L7** | S2 | resume contract reconciled to a two-level precedence (chain = CWD/phase; sub-step = skill checkpoint) | same commit (prose, review-verified) |
+| **L9** | S2 | execute-bolts→detect-drift handoff seeds `--scope` when scope-filtered | `fix(handoff)…` |
+| **L8** | S3 | generate-intent preserves the enriched stages form (no downgrade) + cross-refs the ui-ux-intelligence design | `fix(generate-intent)…` (prose, review-verified) |
+| **L10** | S3 | dropped the stale "PreToolUse Branch 12" enforcement overclaim from fan-out-parity (it is advisory) | `fix(docs)…` |
+
+**New regression tests (enforceable, not prose):** `tests/moat/test-no-depth2-dispatch.sh` (pins the depth-1 invariant across 7 files), `tests/moat/test-moat-corrupt-fail-closed.sh` (pins moat fail-closed). All 3 moat tests pass. Decomposition-scoring verdict: extract-intelligence (waves) + scan-codebase (slices) are the reference depth-1 patterns; execute-bolts squad fan-out was the only break (now fixed).
+
+---
+
+## ROUND 2 — End-to-end pipeline + subagent-decomposition audit (2026-06-06)
+
+User ask: verify the whole pipeline runs correctly flow-by-flow (no miss/gap), and — grounded in real research on how Claude Code subagents work — that heavy skills correctly auto-decompose into subagents/batches/pipelines when one pass is too heavy.
+
+### Research grounding (claude-code-guide agent, doc-cited)
+- **Hooks fire on subagent tool calls** — `hooks.md` defines `agent_id` "present only when the hook fires inside a subagent call." Foreground AND background.
+- **Subagents CANNOT spawn subagents** — hard depth-1 limit (`agent-sdk/subagents.md`: "Subagents cannot spawn their own subagents… the runtime prevents nesting regardless"). Confirmed in-harness: a dispatched general-purpose agent has **no Agent/Task tool**.
+- Background subagents change only permission mode (auto-deny on prompt), not hook firing.
+- Canonical "too-heavy → decompose": Agent tool for a few tasks (isolated ctx, parent sees only final msg, pass paths explicitly); Workflow tool for dozens+; between-stage gates = separate runs; hooks inherited by all (cost multiplies).
+
+### FINDING L1 [RESOLVED — not a defect; moat NOT bypassed on fan-out]
+**Empirically settled the linchpin.** Probe: 3 sentinel `references/*.md` files at telemetry count 0, each read by a different actor → all logged `ref_loaded`:
+- `oq-resolution.md` (foreground subagent): 0 → 2 ✓
+- `constitution-drift.md` (background subagent): logged ✓
+- `pagerank-targeting.md` (main thread control): logged ✓
+
+**PostToolUse hooks DO fire on subagent (fg+bg) writes/reads.** So the moat quality gates fire on bolt-subagent writes — the fan-out path does **not** bypass enforcement. Good news for correctness.
+
+### FINDING L2 [S3 — false-premise rationale in plugin docs]
+`hooks/post-tool-use:13-18` header asserts "subagent-internal tool calls … are NOT visible to the parent's PostToolUse hook … Fork-A limitation"; `references/telemetry-schema.md §Emission mechanism` and `execute-bolts/references/batch-and-fanout.md:71` ("parent thread MUST explicitly re-invoke the project-wide quality validators after each batch") are all premised on that claim. **L1 proves the premise FALSE** — hooks DO fire on subagent writes. The resulting over-protection is harmless (re-scan is redundant belt-and-suspenders), but the rationale + telemetry under-count claim are wrong. Fix: correct the comments; note the re-scan is defense-in-depth, not load-bearing.
+- **Sharpened (telemetry under-count cause):** the under-count is **real but for a different reason** — telemetry is *lossy by construction* (PostToolUse `async:true` in `hooks.json:34`; every emit is `>> … 2>/dev/null || true`, exit-0-always), not because subagent calls are invisible. So keep the "ref_loaded UNDER-COUNTS" caveat, but re-attribute it to async/lossy emission, and delete every "subagents are invisible to PostToolUse" sentence.
+
+### FINDING L3 [S1 — CONFIRMED structural break] `execute-bolts --per-squad` violates the subagent depth-1 limit
+The v4 per-unit flow: `execute-bolts` (main-thread **controller**) dispatches `bolt-implementer` → `spec-reviewer` → `code-quality-reviewer` via the Agent tool (`superpowers-bridge.md:20-49`). `superpowers-bridge.md:12` states the controller MUST stay main-thread **"(Subagents cannot spawn subagents — that's why the controller stays in the main thread.)"**
+
+But `--per-squad` (`squad-subagent.md:12-57` + `superpowers-bridge.md:97-99`) dispatches **one subagent per squad** (general-purpose, `run_in_background`) and makes THAT subagent the per-unit controller ("Use the mega-sdd:execute-bolts skill recursively for each unit" → which dispatches the three bolt agents). That is **depth 2 → forbidden**. `squad-subagent.md:87` even promises "`--per-squad --parallel` → N squad subagents, each running multiple unit subagents internally" — structurally impossible.
+
+**Internal contradiction:** `superpowers-bridge.md:12` (controller must be main-thread, *because* nesting is forbidden) vs. `superpowers-bridge.md:99` + `squad-subagent.md` (a squad subagent IS the controller). Empirically confirmed: a dispatched subagent has no Agent tool, so the squad subagent cannot dispatch the bolt agents → either hard-fails or silently degrades to inline implementation (losing the two-stage review = the moat's quality enforcement).
+
+**Scope:** `--per-squad` + `--per-squad --parallel` broken. Single-unit + `--all` (sequential) fine (main-thread controller, depth-1 dispatch). `--all --parallel` is **salvageable at depth-1** but documented with stale pre-v4 prose → see **L5** (the SELF-TRACE resolved it as a doc fix, NOT a structural break).
+
+**Conservative fixes (defer to user):** (a) restructure squad fan-out as a **main-thread loop over squads** (controller stays main-thread; parallelism moves to concurrent bolt-agent dispatch across squads) — preserves two-stage review; (b) document `--per-squad` as running bolts inline without agent review (degraded, explicit); or (c) deprecate `--per-squad`. NOT fixing this pass — audit-first.
+
+### FINDING L4 [today S3-latent → S2-on-parallel: fail-open aggregator + non-atomic state writes] (SELF-TRACE 2)
+> **Reconciliation (advisor):** L4's *torn-write race* is **gated by L3 + L5 — there is no live concurrent-write path today.** `--per-squad` is structurally broken (L3); `--all --parallel` is stale/uncorrectly-implemented prose (L5); sequential bolts fire PostToolUse one-at-a-time (no torn write). So the **race cannot fire right now.** What IS live today is the fail-open hole. The actionable coupling: **whoever fixes L3/L5 (enables real parallelism) MUST ship atomic-write in the same change** — else turning parallelism on activates a silent moat bypass. Per [[feedback_propagation_within_iter]], that belongs in one iter, not deferred.
+
+**Live hole (fail-open on corrupt state, any cause).** The PreToolUse aggregator (`hooks/pre-tool-use:264-321`) loads each gate state file via `def L(fn): try: json.load(...) except Exception: return None`, and every gate is `if d and d.get("status")=="FAIL"`. **A corrupt/unparseable/absent state file FAILS OPEN** — `L()` returns `None`, the gate is skipped, a bolt that should be blocked slips through silently. This holds for ANY corruption cause (killed mid-write, disk-full), independent of the race. The aggregator cannot tell *parse-error* (suspicious — was a FAIL there?) from *absent* (legitimately never run).
+
+**Latent race (activates when parallelism is implemented correctly).** The state files are **OVERWRITE-not-append, no atomic write, no lock** — `validate-ui-quality.sh:142-147`, `validate-unit-spec.sh:114`, `validate-bolt-artifacts.sh:236`, `validate-vault-binding-coverage.sh:202` all do `open(state_file,"w"); json.dump(...)` (no tmp+`os.replace`, no flock). Hooks fire on subagent writes (L1), so once concurrent bolt dispatch exists, two validators `open(…,"w")` the same file simultaneously → torn JSON → fail-open.
+
+**Self-healing semantics (why even then it's S2 not S1).** Scans are **project-wide current-truth full-glob** (`validate-ui-quality.sh:339-351` re-walks the whole tree every run; PostToolUse fires *after* each write lands). A real FAIL can't be clobbered by a later PASS — no later scan sees a tree *without* the offending file. The only failure mode is a torn write coinciding with the gate read.
+
+**Exposed-file scoping (corrected, advisor catch).** During `--all --parallel` bolt *code* writes, the concurrently-overwritten **aggregator-read** files are `.ui-quality-blockers.json` (view sub-case), `.cross-cutting-state.json` (model sub-case), **and `.unit-spec-state.json`** — the latter via the `run_validator_and_emit` block (`post-tool-use:566-614`) which sits *outside* the path sub-cases and fires `validate-unit-spec` (+ bolt-artifacts, vault-binding-coverage, …) on **every** Write|Edit. The moat `.validation-blockers.json`, `.flow-coverage-state.json`, `.sibling-consistency-state.json` are written only inside the `units/U-*.md` sub-case (`post-tool-use:372-413`) → single-threaded in generate-units → not exposed during parallel bolts (but `--per-squad` would write units concurrently and expose the moat).
+
+**Conservative fixes (defer to user):** (a) atomic write everywhere — `json.dump` to `<state>.tmp` then `os.replace()` (atomic on POSIX) — kills the torn write; **ship this together with any L3/L5 parallelism fix**; (b) for the **moat file only**, make the aggregator fail-closed-with-surface on a *parse error* of `.validation-blockers.json` (a corrupt moat state should HALT, not pass) — distinct from absent. NOT fixing this pass — audit-first.
+
+### FINDING L5 [S3 — stale pre-v4 prose on the `--all --parallel` path] (SELF-TRACE 1)
+`SKILL.md:25` ("`--parallel` — dispatch independent units via `subagent-driven-development`") and `batch-and-fanout.md:16` ("dispatch the group **as a subagent batch** via `subagent-driven-development`") describe the **pre-v4** dispatch. The v4 authoritative design (`superpowers-bridge.md:12`) keeps the controller in the **main thread** dispatching `bolt-implementer`+reviewers directly via the Agent tool, *because* nesting is forbidden. `--all --parallel` is **valid at depth-1** when implemented as the main thread issuing several `bolt-implementer` Agent calls concurrently (two-stage review per unit as each returns) — but the stale wording invites a reader to implement it as "a subagent that runs subagent-driven-development" = depth-2 = the same break as L3. (`subagent-driven-development`'s own rules even forbid parallel implementers, so the literal reading is doubly wrong.) **Fix:** reword `SKILL.md:25` + `batch-and-fanout.md:16` to the v4 main-thread concurrent-Agent-dispatch pattern; this is a doc fix, not a structural break. NOT fixing this pass — audit-first.
+
+### Self-traces (DONE — done in main context, not delegated)
+- ✅ **`--all --parallel` topology** → resolved as **L5** (stale prose, salvageable depth-1; doc fix).
+- ✅ **State-file concurrency race** → resolved as **L4** (torn-write + fail-open aggregator; self-healing semantics, S2).
+
+### Round-2 RESULTS — workflow fan-out (6 lanes, both-sides-cited, every lead verified in main context)
+
+> Method: parallel evidence-gatherers returned cited file:line on both sides; verdicts synthesized + **independently re-verified** here (subagent output = leads, not findings, per [[project_phase2_realrun_evidence]] fan-out-divergence risk). V1–V5 = the verification greps/reads I ran before promoting each lead.
+
+#### Decomposition scoring (thread B of the user ask — "too-heavy → auto-split into subagents + pipeline")
+**3 of 4 heavy skills decompose CORRECTLY at depth-1. The one structural break is execute-bolts' squad fan-out (L3), and orchestrate-flow routes into it by default (L6).**
+
+| Heavy skill | Decompose pattern | Depth | Verdict |
+|---|---|---|---|
+| **extract-intelligence** | 6 waves; W0+W5 main-thread, W1–4 parallel `domain-extractor` subagents (3/4/5/3); 6 between-wave bash gates; split-at-30-files; `--max-parallel` cap (default 3, re-batches nominal 4/5) | depth-1 ✓ (`domain-extractor` has no Agent tool → depth-2 impossible) | ✅ **reference implementation** |
+| **scan-codebase** deep-scan | 4 fixed slice-extractors (auth/rbac/ui/libs), main-thread, selective re-dispatch (1–4 stale slices), read-only subagents; size valves = >100k-files CONFIRM halt + 200-symbol truncation | depth-1 ✓ | ✅ correct (parallelism keyed on slice, not file-count — by design). S3 doc-drift: "Step 2.2/2.3" vs "Step 10.5.x" numbering |
+| **execute-bolts** single / `--all` sequential | main-thread controller dispatches `bolt-implementer`→`spec-reviewer`→`code-quality-reviewer` per unit | depth-1 ✓ | ✅ correct |
+| **execute-bolts** `--per-squad` / `--all --parallel` | squad subagent becomes per-unit controller / stale "subagent batch" prose | **depth-2 ✗ / ambiguous** | ❌ **L3** (broken) / **L5** (stale prose) |
+
+#### New findings (verified)
+### FINDING L6 [S2 — auto-route into a broken topology] orchestrate-flow defaults multi-squad to `--per-squad`
+`routing-rules.md:57` ("Vault has `squad_count: ≥2`, units exist, some not in bolts → `execute-bolts --per-squad`") + `routing-rules.md:76` ("Default to `--per-squad` (parallel subagent fan-out)"). So the headline `/mega-sdd:auto` UX **silently routes any multi-squad vault into the L3-broken depth-2 path by default** — not a rarely-hit flag, but the default for an entire project class. **Amplifies L3's blast radius.** Confirmed V2. Fix is coupled to L3's fix (don't route into a topology that can't run).
+
+### FINDING L7 [S2 — resume contract self-contradiction] (F6, flagged at spec level — not asserted at runtime)
+`orchestrate-flow/SKILL.md:102` ("**No state file** … resumption = CWD inspection rebuilds state") + `handoff-contract.md:697` (resume "does NOT read a persisted state file", phase-granularity) **contradict** `checkpoint-protocol.md:72-78` (under `--auto`, "Orchestrator **reads ALL checkpoints** … `--resume-from=<step-id>` … Skill resumes mid-execution", sub-step granularity). Two resume mechanisms; the checkpoint JSONL *is* a state file; **precedence is unspecified** when both a completed-phase artifact (CWD says skip) AND a mid-skill checkpoint (cursor says resume claim-46) exist for the same phase. Confirmed V3. Behavioral verification deferred (audit-first); spec-level contradiction is itself the defect. *Note:* `checkpoint-protocol.md:61` uses **append-only JSONL with explicit concurrency-safety** — the plugin already knows how to do safe concurrent state; **L4's fix should reuse this pattern** for the gate files.
+
+### FINDING L8 [S3 — producer-only ship; capability gap] extract-intelligence enriched-stages is consumer-blind
+`knowledge-base-schema.md:158-162` (v3.72.0+) emits enriched `input_fields` objects + per-stage delta fields (`new_fields_vs_prior` / `hidden_fields_vs_prior` / `promoted_to_mutable_vs_prior` / `dynamic_disclosures`) for progressive-disclosure intent. **generate-intent never reads them** — grep across `skills/generate-intent/` = **0 hits** (V1). "Copy verbatim" (vault-contract.md:104) carries the bytes into `04-flows.md`, but the delta semantics are never modeled downstream → the captured maker→checker field-promotion / show-hide intent **dies at the intent phase, never reaching units/bolts**. By-design back-compat-tolerant (producer: "a consumer that doesn't read the enriched fields simply uses `name` — no consumer breaks"), so NOT a contract break — but a textbook producer-only ship per [[feedback_propagation_within_iter]], and squarely relevant to [[project_ui_ux_intelligence_integration]] (the progressive-disclosure intent the UI/UX work wants to preserve is being captured then dropped one phase later).
+
+### FINDING L9 [S2 — seam] execute-bolts → detect-drift drops scope
+execute-bolts emits `suggested_args: []` **and** a `scope:` block in the same handoff (`halts-and-handoff.md:343,355`); it never seeds `--scope` into detect-drift's `suggested_args`. orchestrate-flow's consumption loop injects `--auto` unconditionally (`handoff-consumption.md:151`, so `--auto` is NOT lost) but passes the empty `suggested_args` through, and there is **no separate scope-seed** (V4 = 0 hits). detect-drift's *own* downstream emission DOES propagate scope (`handoff-contract.md:515`) — an **asymmetry**: in a multi-squad / scope-filtered run, detect-drift falls back to a full scan instead of inheriting the bolt batch's scope. Aligns with [[feedback_seamless_pipeline]]. (Blast radius partly overlaps L3/L6.)
+
+### FINDING L10 [S3 — overclaimed enforcement] fan-out-parity validator claims a blocking gate it doesn't have
+`validate-fanout-parity.sh:27` + `post-tool-use:407-408` assert "PreToolUse **Branch 12** gates execute-bolts on `fanout_parity_divergence` COUNT" — but the aggregator never reads `.fanout-parity-state.json` (V5: `grep -c fanout hooks/pre-tool-use` = **0**), and `CLAUDE.md` lists fan-out-parity as **Advisory** (`/mega-sdd:analyze` only). The **check itself is GOOD** — obligation-presence parity (`## UI contract` section + `type: render` acceptance test across view-bearing siblings), exactly the spec-obligation semantics the user wants, NOT a richness proxy (this **refutes the B3-2 worry**). The defect is the stale comments overclaiming enforcement — the "prose that claims enforcement it doesn't have" anti-pattern; comments weren't updated when the gate was demoted to advisory.
+
+#### B3-2 worry → RESOLVED (not a finding)
+fan-out-parity checks **spec obligations**, not context richness (see L10) → the original B3-2 concern does not hold; only the stale-enforcement comment (L10) remains.
 
 ---
 

@@ -9,7 +9,7 @@ schema_version: "1.0"
 tools:
   - id: tree-sitter
     used_by: [scan-codebase]
-    purpose: "AST-precise symbol extraction (v2.0+ scan-codebase)"
+    purpose: "AST-precise symbol extraction (scan-codebase)"
     fallback_behavior: "Regex engine (lower precision)"
     matrix:
       - os: macos
@@ -147,7 +147,7 @@ tools:
 
   - id: pandoc
     used_by: [emit-fsd]
-    purpose: "FSD PDF rendering (Iter 54)"
+    purpose: "FSD PDF rendering (emit-fsd)"
     fallback_behavior: "Markdown-only output (no PDF)"
     matrix:
       - os: macos
@@ -180,7 +180,7 @@ tools:
 
   - id: tectonic
     used_by: [emit-fsd]
-    purpose: "LaTeX engine for FSD PDF (lighter alternative to BasicTeX, Iter 54)"
+    purpose: "LaTeX engine for FSD PDF (lighter alternative to BasicTeX54)"
     fallback_behavior: "HTML output (browser print-to-PDF) when neither tectonic nor xelatex available"
     notes: "Recommended over BasicTeX (~2GB) — tectonic is ~50MB self-contained"
     matrix:
@@ -210,7 +210,7 @@ tools:
 
   - id: markdownlint-cli2
     used_by: [lint-units]
-    purpose: "Vault prose lint (optional, Iter 14)"
+    purpose: "Vault prose lint (optional)"
     fallback_behavior: "Skill-internal heuristic checks"
     matrix:
       - os: any
@@ -250,5 +250,5 @@ tools:
 defaults:
   required_tools: []                                          # ALL tools optional; mega-sdd has graceful fallback for each
   recommended_minimum: [tree-sitter, ast-grep, ripgrep]        # baseline for brownfield projects
-  fsd_extension: [pandoc, tectonic]                            # Iter 54 FSD generation
+  fsd_extension: [pandoc, tectonic]                            # FSD generation
   full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh]

@@ -1,6 +1,6 @@
 ---
 description: Scan an existing repository and produce a `codebase-map.md` for SDD binding. Brownfield prep for mega-sdd pipeline.
-argument-hint: [repo-path] [--depth=N] [--include=<glob>] [--exclude=<glob>] [--out=<path>] [--auto] [--force-large]
+argument-hint: "[repo-path] [--depth=N] [--include=<glob>] [--exclude=<glob>] [--no-default-excludes] [--out=<path>] [--engine=tree-sitter|regex] [--changed-only] [--shallow-scan] [--force-deep] [--no-cache] [--memory-off] [--auto] [--force-large]"
 ---
 
 Invoke the `mega-sdd:scan-codebase` skill via the Skill tool.
@@ -9,9 +9,9 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - First positional (if not a flag): repo path. Default `./`.
-- Flags: `--depth`, `--include`, `--exclude`, `--out`, `--auto`, `--force-large`.
+- Flags: `--depth`, `--include`, `--exclude`, `--no-default-excludes`, `--out`, `--engine`, `--changed-only`, `--shallow-scan`, `--force-deep`, `--no-cache`, `--memory-off`, `--auto`, `--force-large` (full catalog in `skills/scan-codebase/references/halts-flags-handoff.md`).
 
-Follow `skills/scan-codebase/SKILL.md` procedure exactly. Output to `.mega-sdd/codebase/codebase-map.md` by default (v2.2+).
+Follow `skills/scan-codebase/SKILL.md` procedure exactly. Output to `.mega-sdd/codebase/codebase-map.md` by default.
 
 Hard rails:
 - No invention — sections without detections are marked "None detected".

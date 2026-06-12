@@ -1,8 +1,8 @@
 # Laravel — RBAC Libraries Detection Patterns
 
-> Catalog consumed by `rbac-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
+> Catalog consumed by `authz-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
 
-**Output target:** `starterkit-context.yaml §rbac` block
+**Output target:** `starterkit-context.yaml §authz` block
 
 ## Coverage
 
@@ -35,14 +35,16 @@
 
 **Sample output YAML slice:**
 ```yaml
-rbac:
+authz:
   lib: spatie/permission
-  role_model: "Spatie\\Permission\\Models\\Role"
-  permission_model: "Spatie\\Permission\\Models\\Permission"
-  middleware: [role, permission, role_or_permission]
-  gates: []                          # populate from AuthServiceProvider Gate::define calls
-  policies: []                       # populate from AuthServiceProvider $policies array
-  default_roles: [admin, user]
+  lib_source: "composer.json:<line>"
+  mechanism: middleware
+  role_source: model
+  declarations:
+    - { name: role, kind: role, applies_to: null, _source: "app/Http/Kernel.php:<line>" }
+    - { name: permission, kind: permission, applies_to: null, _source: "app/Http/Kernel.php:<line>" }
+    - { name: admin, kind: role, applies_to: null, _source: "database/seeders/RoleSeeder.php:<line>" }
+    - { name: user, kind: role, applies_to: null, _source: "database/seeders/RoleSeeder.php:<line>" }
   _source: ["composer.json:<line>", "config/permission.php", "app/Models/User.php:<line>", "app/Http/Kernel.php:<line>"]
 ```
 
@@ -74,14 +76,16 @@ rbac:
 
 **Sample output YAML slice:**
 ```yaml
-rbac:
+authz:
   lib: custom
-  role_model: "App\\Models\\Role"    # or "" if not present
-  permission_model: "App\\Models\\Permission"  # or ""
-  middleware: []                      # custom middleware names if app/Http/Middleware has role-checking middleware
-  gates: [view-admin, edit-posts]    # parsed from Gate::define calls
-  policies: ["App\\Policies\\UserPolicy", "App\\Policies\\PostPolicy"]
-  default_roles: []                  # from seeders if present
+  lib_source: "app/Providers/AuthServiceProvider.php:<line>"
+  mechanism: guard
+  role_source: model
+  declarations:
+    - { name: view-admin, kind: gate, applies_to: null, _source: "app/Providers/AuthServiceProvider.php:<line>" }
+    - { name: edit-posts, kind: gate, applies_to: null, _source: "app/Providers/AuthServiceProvider.php:<line>" }
+    - { name: UserPolicy, kind: policy, applies_to: "App\\Models\\User", _source: "app/Policies/UserPolicy.php:1" }
+    - { name: PostPolicy, kind: policy, applies_to: "App\\Models\\Post", _source: "app/Policies/PostPolicy.php:1" }
   _source: ["app/Providers/AuthServiceProvider.php:<line>", "app/Policies/"]
 ```
 
@@ -92,14 +96,12 @@ rbac:
 When neither a third-party lib NOR custom Gate/Policy setup is found:
 
 ```yaml
-rbac:
+authz:
   lib: not_detected
-  role_model: ""
-  permission_model: ""
-  middleware: []
-  gates: []
-  policies: []
-  default_roles: []
+  lib_source: ""
+  mechanism: unknown
+  role_source: unknown
+  declarations: []
   _source: ["composer.json", "app/Providers/AuthServiceProvider.php"]  # cite the absence
 ```
 

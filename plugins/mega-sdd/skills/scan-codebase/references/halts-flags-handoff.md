@@ -20,6 +20,7 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memor
 - Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. Schema-validation drops slices that violate.
 - Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field. Schema-validation drops slices without `_source`.
 - Deep-scan read-only: subagents have NO Edit/Write/mutating-Bash tool access. Read-only enforced at dispatch.
+- Secret-scan gate: assembled `codebase-map.md` / `starterkit-context.yaml` content is scrubbed BEFORE write by running `scripts/secret-scan.sh --redact` (deterministic; matched values become `[REDACTED-SECRET]`) + one chat warning citing the source `file:line` (per `references/scan-procedure.md` Step 10a). The gate redacts scan outputs only — it never edits repo source.
 
 ## Halt conditions
 
@@ -33,8 +34,8 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memor
 type: deep_scan_subagent_failed
 source_skill: scan-codebase
 details:
-  domain: <auth | rbac | ui_ux | libs>
-  subagent_index: <1-4>
+  domain: <auth | authz | ui_ux | libs | reuse>
+  subagent_index: <1-5>
   failure_reason: <"timeout" | "malformed_yaml" | "api_error: <msg>">
   retry_count: <1 or 2>
 next_action: "Continue with partial output — starterkit-context.yaml will be emitted with partial: true and partial_slices: [<domain>]. Pipeline continues; downstream consumers degrade gracefully for missing slices."
@@ -61,7 +62,7 @@ Recovery: auto-invalidate cache + re-run subagents. Soft halt — chain continue
 type: deep_scan_subagent_all_failed
 source_skill: scan-codebase
 details:
-  failed_domains: [auth, rbac, ui_ux, libs]
+  failed_domains: [auth, authz, ui_ux, libs, reuse]
   common_failure_reason: <"api_outage" | "rate_limited" | "unknown">
 next_action: "Re-run /mega-sdd:scan-codebase later (likely API outage; user retry required). Existing starterkit-context.yaml (if any) preserved untouched."
 ```
@@ -83,7 +84,8 @@ Recovery: user re-runs scan-codebase later. Chain halts.
 - `--engine=tree-sitter|regex`: force engine; default auto-detect via `command -v tree-sitter`
 - `--shallow-scan`: skip Step 10.5 deep-scan stage; emit only surface codebase-map.md (opt-out for deep-scan)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
-- `--no-cache`: invalidate deep-scan cache; re-run all 4 subagents even if lock files unchanged
+- `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
+- `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, truncate the journal; auto-falls back to full scan when preconditions absent (per `references/scan-procedure.md` §Incremental mode)
 - `--memory-off`: disable memory-layer reads and writes
 
 ## Hand-off announcement
@@ -106,7 +108,7 @@ handoff:
     reused: false                                                       # true if cache hit
     framework: laravel
     auth_lib: sanctum
-    rbac_lib: spatie/permission
+    authz_lib: spatie/permission
     ui_stack: "alpine + tailwind + sweetalert2"
     libs_count: 47
   next_action:
@@ -139,7 +141,7 @@ When memory enabled (default; opt-out via `--memory-off`), participates in the m
 
 | When | File | Content |
 |---|---|---|
-| After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (per MEMORY-OQ-4 threshold) |
+| After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (threshold per `mega-sdd:memory/references/learning-rules.md`) |
 
 ### Reads
 
@@ -151,5 +153,6 @@ When memory enabled (default; opt-out via `--memory-off`), participates in the m
 
 - Memory write happens AFTER `codebase-map.md` is written (memory is derivative).
 - Conventions marked `established` STILL get re-verified each scan; status only affects whether the verbose detection is re-emitted.
+- **Detector versioning** (cache-version-bump pattern): each convention entry records the scan-codebase version that detected it. The skip-re-detect privilege applies ONLY while the current skill version matches the recorded one — a detector upgrade forces full re-detection (the entry is then re-recorded under the new version).
 - `--memory-off` disables both reads and writes.
 - Skipped conventions are logged in scan output for transparency.

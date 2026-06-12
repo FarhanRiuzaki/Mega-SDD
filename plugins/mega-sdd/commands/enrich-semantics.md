@@ -3,7 +3,7 @@ description: Retro-fit staged-input semantics onto an existing knowledge base wi
 argument-hint: --vault=<path> [--legacy-root=<path>] --semantic=staged-input [--apply]
 ---
 
-> **Auto integration (v3.71.0+):** `/mega-sdd:auto` runs this step automatically in **propose** mode whenever a KB carries a `kb_flow_staging_missing` advisory — it writes `ENRICHMENT-PROPOSALS.md` and PAUSES for your review (never auto-applies). `--legacy-root` is OPTIONAL: when omitted it is auto-discovered from the KB README's "source codebase path" + common legacy dirs (`old-reference/`, `legacy/`, …). Pass `--legacy-root` explicitly to override. Disable the auto step with `--no-enrich-staging` on `auto`.
+> **Auto integration:** `/mega-sdd:auto` runs this step automatically in **propose** mode whenever a KB carries a `kb_flow_staging_missing` advisory — it writes `ENRICHMENT-PROPOSALS.md` and PAUSES for your review (never auto-applies). `--legacy-root` is OPTIONAL: when omitted it is auto-discovered from the KB README's "source codebase path" + common legacy dirs (`old-reference/`, `legacy/`, …). Pass `--legacy-root` explicitly to override. Disable the auto step with `--no-enrich-staging` on `auto`.
 
 Run the semantic-depth enrichment helper `plugins/mega-sdd/scripts/enrich-workflows-staging.sh` to retro-fit staged-input structure onto a knowledge base whose workflows were extracted before staged-input capture existed (the flattened "single Inputs list" that makes bolts build a single form instead of a multi-step wizard).
 

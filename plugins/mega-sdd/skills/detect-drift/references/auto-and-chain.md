@@ -2,6 +2,15 @@
 
 Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain phase.
 
+## Contents
+
+- `--auto` behavior
+- `drift_framework_mismatch` blocker
+- Handoff YAML
+- Auto-trigger as a chain phase
+- Snapshot reuse
+- Per-bolt incremental mode
+
 ## `--auto` behavior
 
 Passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logistical prompts and the optional Step 5 walkthrough.
@@ -9,7 +18,7 @@ Passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logi
 | Step | Interactive | `--auto` |
 |---|---|---|
 | Step 0 (vault path) | Ask | Auto-detect from CWD if exactly 1 |
-| Step 0 (codebase path) | Ask | Use CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod`); otherwise REQUIRE an explicit arg — never guess |
+| Step 0 (codebase path) | Ask | Use CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml`); otherwise REQUIRE an explicit arg — never guess |
 | Step 0 (mode=new) | Surface migration trigger | Emit `drift_framework_mismatch` if the trigger isn't detectable, or refuse cleanly with a structured message |
 | Step 0.5 (scope) | Ask | Default `full` |
 | Step 1.5 (framework) | Detect, propose, confirm | Auto-confirm if a single signature is found; multi/ambiguous → emit `drift_framework_mismatch` |

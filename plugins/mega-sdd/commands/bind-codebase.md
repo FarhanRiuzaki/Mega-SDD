@@ -1,6 +1,6 @@
 ---
-description: Validate a vault against codebase-map.md (primary) + KB (secondary, v1.1+) + framework convention pack (v1.9+). Produces bound-vault/ + binding.md. BLOCKS unit generation on conflicts.
-argument-hint: <vault-path> [<codebase-map-path>] [--strict] [--auto] [--kb=<path>] [--no-kb] [--no-framework-pack] [--framework-pack=<path>] [--strict-constitution]
+description: Validate a vault against codebase-map.md (primary ground truth), the knowledge base (secondary), and the framework convention pack. Produces bound-vault/ + binding.md. BLOCKS unit generation on conflicts.
+argument-hint: "<vault-path> [<codebase-map-path>] [--strict] [--auto] [--kb=<path>] [--no-kb] [--no-framework-pack] [--framework-pack=<path>] [--strict-constitution] [--no-advisor] [--memory-off] [--paths=<csv|@file>]"
 ---
 
 Invoke `mega-sdd:bind-codebase` via the Skill tool.
@@ -9,15 +9,18 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - First positional: vault directory path (REQUIRED).
-- Second positional: codebase-map.md path (default probe: `.mega-sdd/codebase/codebase-map.md` (v3.4+) → `<repo>/codebase-map.md` legacy).
+- Second positional: codebase-map.md path (default probe: `.mega-sdd/codebase/codebase-map.md` → `<repo>/codebase-map.md` legacy).
 - Flags:
   - `--strict` — block on OQ too, not just CONFLICT
   - `--auto` — skip confirmations
-  - `--kb=<path>` (v1.1+) — override KB auto-probe with explicit path
-  - `--no-kb` (v1.1+) — skip KB consultation entirely
-  - `--no-framework-pack` (v1.9+, Iter 23) — skip framework convention pack loading
-  - `--framework-pack=<path>` (v1.9+, Iter 23) — override built-in pack with project-specific file
-  - `--strict-constitution` (v1.8+, Iter 20) — halt on constitution-violating CONFLICTs (default: warn-only)
+  - `--kb=<path>` — override KB auto-probe with explicit path
+  - `--no-kb` — skip KB consultation entirely
+  - `--no-framework-pack` — skip framework convention pack loading
+  - `--framework-pack=<path>` — override built-in pack with project-specific file
+  - `--strict-constitution` — halt on constitution-violating CONFLICTs (default: warn-only)
+  - `--no-advisor` — skip the phase-advisor adversarial pass (default-on)
+  - `--memory-off` — disable memory-layer reads and writes
+  - `--paths=<csv|@file>` — claim-scoped re-bind (sync lane); active CONFLICTs always re-validated, never carried silently
 
 Follow `skills/bind-codebase/SKILL.md` procedure exactly. Output to `<vault>/bound/` (nested, beside `units/` and `bolts/`) + `binding.md` at the vault root.
 

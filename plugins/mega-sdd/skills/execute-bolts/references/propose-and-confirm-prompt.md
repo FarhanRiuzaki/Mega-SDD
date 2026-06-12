@@ -1,4 +1,4 @@
-# Propose-and-Confirm Prompt Template (v1.0, Iter 30)
+# Propose-and-Confirm Prompt Template
 
 Canonical prompt for AI fix proposer subagent dispatched when bolt halts with eligible halt type. User reviews proposed fix + approves/rejects via AskUserQuestion.
 
@@ -14,6 +14,17 @@ Canonical prompt for AI fix proposer subagent dispatched when bolt halts with el
 - `constitution_drift_detected` (audit-significant)
 - `bolt_repeated_partial_failure` (structural problem)
 - `provenance_missing` (post-flight detected; user must add trailer)
+
+## Contents
+
+- Subagent dispatch contract
+- Prompt template
+- Main thread post-processing
+- Confidence-driven defaults
+- Halt cycle safety
+- Anti-halu rails
+- Performance
+- Backward compatibility
 
 ## Subagent dispatch contract
 
@@ -173,7 +184,7 @@ Average bolt run with 1 halt + propose-and-confirm: ~30s additional vs pure paus
 
 ## Backward compatibility
 
-Pre-Iter-30 halts always paused for manual `--resume`. Iter 30 propose-and-confirm is opt-IN via halt type eligibility + user config (`~/.mega-sdd/memory/config.yaml` `halt_auto_propose` block per spec §6.3). Disable per-type via config:
+Without propose-and-confirm, halts always pause for manual `--resume`. Propose-and-confirm is opt-IN via halt type eligibility + user config (`~/.mega-sdd/memory/config.yaml` `halt_auto_propose` block). Disable per-type via config:
 
 ```yaml
 halt_auto_propose:

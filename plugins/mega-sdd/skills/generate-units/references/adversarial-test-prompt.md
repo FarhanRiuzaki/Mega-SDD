@@ -1,8 +1,7 @@
-# Adversarial Acceptance-Test Review Prompt (v2.7.0+, Iter 47 — closes audit D4-006)
+# Adversarial Acceptance-Test Review Prompt
 
 > Prompt template for `generate-units` Step 9.5 — adversarial review of acceptance_test authored in Step 9. Closes audit Pattern F structural risk (D4-006): "Never trust AI to both generate and validate" (ACM FSE 2025).
 
-**Introduced:** v3.32.0 (Iter 47)
 **Consumed by:** `generate-units/SKILL.md` Step 9.5
 **Output target:** updates `acceptance_test` in unit frontmatter with merged gap assertions + sets `_authored_by:` provenance field
 
@@ -90,19 +89,19 @@ Main thread (NOT the adversarial reviewer) handles merge:
 
 | Value | Origin | Trust signal |
 |---|---|---|
-| `same-pass` | pre-Iter-47 OR `--no-adversarial-review` flag set | weakest (original D4-006 risk) |
-| `adversarial-reviewed` | Iter 47 default, gaps merged or no-gap finding | recommended baseline |
-| `adversarial-reviewed (no gaps)` | Iter 47, adversarial pass found nothing to add | strong |
-| `adversarial-reviewed (+N gaps merged)` | Iter 47, N gaps merged into test | strong |
-| `adversarial-review-failed` | Iter 47, adversarial pass returned incoherent output | weak + warning |
+| `same-pass` | legacy unit (field absent) OR `--no-adversarial-review` flag set | weakest |
+| `adversarial-reviewed` | default; gaps merged or no-gap finding | recommended baseline |
+| `adversarial-reviewed (no gaps)` | adversarial pass found nothing to add | strong |
+| `adversarial-reviewed (+N gaps merged)` | N gaps merged into test | strong |
+| `adversarial-review-failed` | adversarial pass returned incoherent output | weak + warning |
 | `independent-llm` | `--adversarial-subagent` flag, separate subagent extended test | strongest LLM |
 | `human` | user manually edited acceptance_test post-generation | strongest overall |
 
-Pre-Iter-47 units (no field present) → treat as `same-pass` for execute-bolts surface logic.
+Legacy units (no field present) → treat as `same-pass` for execute-bolts surface logic.
 
 ## Anti-halu rails
 
 - Adversarial reviewer MUST NOT modify the unit body — only proposes test additions
 - Adversarial reviewer MUST output strict YAML matching the schema above; parse failures → fallback to `same-pass` provenance + log warning
-- `--no-adversarial-review` flag preserved for users who explicitly want the pre-Iter-47 behavior (debug / regression testing)
-- Pre-Iter-47 units re-encountered by `generate-units --regenerate` get the adversarial review pass on rewrite; user-marked `_authored_by: human` units are preserved untouched
+- `--no-adversarial-review` flag preserved for users who explicitly want the same-pass behavior (debug / regression testing)
+- Legacy units re-encountered by `generate-units --regenerate` get the adversarial review pass on rewrite; user-marked `_authored_by: human` units are preserved untouched

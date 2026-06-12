@@ -1,5 +1,5 @@
 ---
-description: Migrate v1 Hard Rule grammar (Iter 3 5-type) to v2 ast-grep YAML rules (Iter 6). Walks vault units; offers per-unit migration via AskUserQuestion (explicit confirm per ITER6-OQ-2). v1 rules preserved as HTML comments for audit. Writes .migration-log.md.
+description: Migrate v1 Hard Rule grammar (5-type) to v2 ast-grep YAML rules. Walks vault units; offers per-unit migration via AskUserQuestion (explicit confirm per ITER6-OQ-2). v1 rules preserved as HTML comments for audit. Writes .migration-log.md.
 argument-hint: <vault-path> [--dry-run] [--auto-confirm] [--to=v1|v2]
 ---
 
@@ -43,7 +43,7 @@ Procedure:
    - Total v1 rules → v2 rules count
    - Timestamp + tool version
 
-Hard rails (anti-halu, per Iter 6 spec §7):
+Hard rails (anti-halu):
 
 - Migration NEVER silent. User confirms per unit (--auto-confirm explicit opt-in).
 - v1 rules preserved as HTML comments below ## Hard rules header. Audit trail intact.
