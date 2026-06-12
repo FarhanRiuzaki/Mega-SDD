@@ -125,6 +125,22 @@ HARD_RULE: Domain error types MUST implement actix_web::ResponseError to produce
   rationale: Implementing ResponseError centralizes error-to-response mapping; returning raw unwrap/panic in handlers causes 500 responses with no client-visible detail
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `web::Json<T>` / `web::Query<T>` extractors deserialize via serde, but type-checking is not validation: pair with the `validator` crate (`#[derive(Validate)]` + `#[validate(...)]` fields, calling `.validate()` or using `actix-web-validator` wrappers); the bypass is treating a successful deserialize as "validated", or reading raw `web::Payload` bytes that skip extractors entirely.
+- **SQL injection** — sqlx's compile-time-checked `query!`/`query_as!` macros and Diesel's typed DSL parameterize by construction; `format!`-built SQL strings handed to `sqlx::query(&s)` or `diesel::sql_query` reintroduce SQLi — bind parameters or stay in the macro/DSL.
+- **XSS / output escaping** — askama and tera auto-escape HTML template output; tera's `| safe` filter (and askama's escape opt-outs) mark input as raw — that is the bypass — as is hand-building markup via `HttpResponse::Ok().content_type("text/html").body(format!(...))` with user input.
+- **CSRF** — no built-in; bearer-token-only APIs are CSRF-immune by design, but apps using `actix-session`/`actix-identity` cookies need a double-submit or synchronizer-token check (custom middleware or guard) on state-changing routes plus `SameSite` on the session cookie — a cookie-auth POST without a token check is the hole.
+- **AuthN/AuthZ enforcement point** — `HttpAuthentication::bearer(validator)` (actix-web-httpauth) wrapped on a `web::scope` via `.wrap()`, or a custom `FromRequest` guard extractor (`AdminUser`) in the handler signature; the bypass is a `.service()` registered outside the wrapped scope — or a handler that simply omits the guard parameter — both compile clean and ship unprotected.
+- **Password hashing** — the `argon2` crate (argon2id) or `bcrypt` crate via `PasswordHasher`/`verify_password`; hashing a password with `sha2` or comparing digests with `==` is the bypass — fast hashes are brute-forceable and naive comparison leaks timing.
+- **Mass assignment** — serde happily fills every named field, so deriving `Deserialize` on the DB model exposes `role`/`is_admin`/`id` to over-posting; use dedicated input structs with only the intended fields and add `#[serde(deny_unknown_fields)]` so unexpected keys are rejected rather than silently ignored.
+- **Secrets / config** — `dotenvy` for local `.env` loading plus a typed config layer (`config` crate or figment) read into the struct held in `web::Data`; the bypass is a hardcoded JWT secret or database URL literal in `src/`, or a committed `.env` — keep it gitignored and fail at startup on missing secrets.
+- **File uploads** — `actix-multipart` with explicit limits (`MultipartFormConfig::total_limit` / `PayloadConfig`), an extension + sniffed-content-type allowlist, and persistence under a server-generated name outside any `actix-files` `Files::new`-served directory; trusting the client filename invites path traversal, and writing into the static mount makes uploads directly retrievable — those are the bypasses.
+
 ## Testing conventions
 
 - **Test runner**: `cargo test` — standard Rust test runner; run `cargo test` from the crate root to execute all unit and integration tests

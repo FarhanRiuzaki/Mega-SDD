@@ -100,6 +100,23 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
   rationale: Direct process.env access in services or route handlers makes config untestable and breaks 12-factor isolation
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — JSON Schema per route (`schema: { body, querystring, params }`) compiled by `ajv` rejects bad input before the handler runs; the bypass is a route registered without a schema — it accepts anything, silently (also a pack hard rule).
+- **SQL injection** — parameterize through the project's driver/ORM (`pg` `$1` placeholders, Knex bindings, Prisma queries); interpolating request values into raw SQL strings (`knex.raw(\`… ${v}\`)`, `prisma.$queryRawUnsafe`) reintroduces SQLi — bind params or stay in the query API.
+- **XSS / output escaping** — not a primary exposure in this stack (Fastify serializes JSON responses by schema); the adjacent risks are `reply.type('text/html').send(userInput)` and any `@fastify/view` template engine with autoescaping disabled.
+- **CSRF** — `@fastify/csrf-protection` plus `SameSite` cookies for cookie-session apps; pure bearer-token APIs are not exposed. The bypass is a cookie-authenticated state-changing route registered without the plugin's token check.
+- **AuthN/AuthZ enforcement point** — `onRequest`/`preHandler` hooks (`fastify.decorate('authenticate', …)` with `@fastify/jwt`'s `request.jwtVerify()`) attached to protected routes; the bypass is auth logic inline in a handler, or a hook registered in an encapsulated plugin scope that never covers the route it was meant to guard.
+- **Password hashing** — `bcrypt` or `argon2` in `src/services/`; never `crypto.createHash()` or manual salts.
+- **Mass assignment** — the route's body schema with `additionalProperties: false` is the field allowlist; the bypass is a schema-less body (or `additionalProperties: true`) spread straight into a DB write (`{ ...request.body }`).
+- **Secrets / config** — `@fastify/env` (schema-validated env) or `src/config/` + `dotenv`; never commit `.env`, never read `process.env` outside config/entry (pack hard rule).
+- **File uploads** — `@fastify/multipart` with `limits` (`fileSize`, `files`), a mimetype allowlist, and storage outside any publicly served directory; never trust the client filename.
+- **Security headers / cookie posture** — `@fastify/helmet` registered at the app level; `@fastify/cookie`/`@fastify/session` with `secure`, `httpOnly`, `sameSite` set in production and the signing secret from env.
+
 ## Testing conventions
 
 - **Test runner**: `node:test` (preferred for Fastify 5.x projects; zero extra deps) or `tap` (classic Fastify community choice); Jest is used in some projects

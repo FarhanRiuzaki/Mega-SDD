@@ -148,6 +148,23 @@ HARD_RULE: Business logic MUST NOT be placed directly in controller actions; com
   rationale: Fat controllers are untestable in isolation and tightly couple HTTP concerns with domain logic; the fat-model/skinny-controller pattern is core Rails convention
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — model validations (`validates`) plus Strong Parameters at the controller boundary; writes via `update_column`/`update_attribute`/`save(validate: false)` skip validations and are the bypass to flag.
+- **SQL injection** — ActiveRecord parameterizes hash conditions; `where("name = '#{params[:q]}'")` string interpolation is the classic bypass — use placeholders (`where("name = ?", q)`) or the hash form.
+- **XSS / output escaping** — ERB `<%= %>` auto-escapes; `raw()`, `.html_safe`, and `<%== %>` are the bypasses — valid only for content passed through `sanitize`, never raw params.
+- **CSRF** — `protect_from_forgery with: :exception` is on by default in `ApplicationController`; `skip_before_action :verify_authenticity_token` is the smell — legitimate only for signature-verified webhooks or token-auth API controllers.
+- **AuthN/AuthZ enforcement point** — `before_action :authenticate_user!` (Devise) for authentication; Pundit `authorize record` (or CanCanCan abilities) for authorization — inline `current_user.admin?` checks scattered through actions are the bypass smell.
+- **Password hashing** — `has_secure_password` (bcrypt via `password_digest` column); never hand-rolled `Digest::SHA1`/MD5 or home-grown salting.
+- **Mass assignment** — Strong Parameters `params.require(:user).permit(:name, :email)` is the whitelist; `permit!` (or passing `params` through unfiltered) reopens the exact hole the old `attr_accessible` era was about.
+- **Secrets / config** — `Rails.application.credentials` (encrypted `credentials.yml.enc` + `RAILS_MASTER_KEY` from env); plaintext secrets committed in `config/*.yml` are the leak.
+- **File uploads** — ActiveStorage attachments with content-type/size validation; never build filesystem paths from params or serve user uploads out of `public/` under client-chosen names.
+- **Session/cookie posture** — the cookie store is signed and encrypted, but production still sets `config.force_ssl = true` (Secure flag + HSTS) and a SameSite policy; keep sensitive data out of the session cookie regardless.
+
 ## Testing conventions
 
 - Default test runner: `bin/rails test` (wraps Minitest)

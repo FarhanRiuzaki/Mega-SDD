@@ -110,6 +110,22 @@ HARD_RULE: `app/root.tsx` MUST export a default component rendering `<html>`, `<
   rationale: Remix requires root.tsx as the shell of the entire application; omitting Outlet breaks all child route rendering
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `zod` (or `conform`) parses `request.formData()` and `params` inside every `action`/`loader`; the bypass is reading `formData.get('x')` and trusting it — actions are plain HTTP endpoints anyone can POST to, regardless of what the `<Form>` renders.
+- **SQL injection** — Prisma (or the project's ORM) in `app/models/` parameterizes; `$queryRawUnsafe` or string-built SQL with interpolated request values reintroduces SQLi — use tagged-template bindings or stay in the ORM query API.
+- **XSS / output escaping** — React auto-escapes JSX output; `dangerouslySetInnerHTML` is the named bypass, valid only for server-sanitized HTML. Also watch user-controlled `href` values rendering `javascript:` URLs.
+- **CSRF** — `createCookieSessionStorage` cookies with `secure: true`, `httpOnly: true`, `sameSite: 'lax'` make SameSite the primary defense for `<Form>` POSTs; the bypass is relaxing to `sameSite: 'none'` (or supporting legacy browsers) without adding a token check (e.g. the `remix-utils` CSRF helper) on actions.
+- **AuthN/AuthZ enforcement point** — `requireUserSession` / `authenticator.isAuthenticated` called at the top of EVERY `loader` and `action` that needs protection; the bypass is checking in the component — or only in a parent layout loader — child loaders run in parallel and are individually fetchable, so each one must enforce its own check.
+- **Password hashing** — `bcrypt`/`argon2` in `*.server.ts` modules (e.g. `app/models/user.server.ts`); never in client-bundled code, never plain `crypto` hashes.
+- **Mass assignment** — the zod schema's parsed output is the field allowlist; the bypass is `Object.fromEntries(await request.formData())` passed straight into a DB write, letting an injected `role` field escalate privileges.
+- **Secrets / config** — server env lives in `*.server.ts` (excluded from the client bundle); Remix does not auto-expose env to the client, so the leak vector is hand-feeding it: returning a secret from a `loader`'s `json()` payload ships it to the browser — pass only deliberate public values.
+- **File uploads** — `unstable_parseMultipartFormData` with a file-upload handler configured with `maxPartSize` and a mimetype allowlist, stored outside `public/`; never trust the client filename.
+
 ## Testing conventions
 
 - **Unit / integration runner**: Vitest — configured via `vite.config.ts` or `vitest.config.ts`; run with `npx vitest` or `vitest run`
