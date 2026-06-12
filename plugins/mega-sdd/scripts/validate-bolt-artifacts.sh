@@ -13,16 +13,28 @@
 # Inputs: --cwd=<project> --file-path=<written-file>
 # Outputs: JSON report to stdout; writes .mega-sdd/.bolt-artifacts-state.json
 # Exit codes: 0=PASS, 1=FAIL (one or more issues detected), 2=error.
+#
+# ORPHAN-SCAN mode (--orphan-scan, no --file-path): repo-wide deterministic check
+# for the interactive-run gap (clinic-project audit 2026-06-12): bolt COMMITS
+# exist (subject `*(bolt): U-XXX*`) but the unit's <vault>/bolts/U-XXX/
+# bolt-report.md was never written — the prose-only Step-0/Step-5 obligation
+# was skipped by a terse controller and no file-scoped validator ever fired
+# (absence of an artifact is invisible to a written-file validator). Flags a
+# unit ONLY when it still exists under some vault's units/ (no false positives
+# from retired vaults). Writes .mega-sdd/.bolt-orphans-state.json; the
+# PreToolUse gate blocks the NEXT execute-bolts on FAIL.
 
 set -uo pipefail
 
 CWD=""
 FILE_PATH=""
 QUIET=0
+ORPHAN_SCAN=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) FILE_PATH="${arg#*=}" ;;
+    --orphan-scan) ORPHAN_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -41,6 +53,76 @@ fi
 if [ -z "$CWD" ] || [ ! -d "$CWD" ]; then
   echo "ERROR: --cwd=<project-root> required" >&2
   exit 2
+fi
+
+# ─── ORPHAN-SCAN mode ────────────────────────────────────────────────────────
+if [ "$ORPHAN_SCAN" = "1" ]; then
+  # Not a git repo (or no .mega-sdd) → nothing to scan; no state written.
+  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  ORPHAN_STATE="${CWD}/.mega-sdd/.bolt-orphans-state.json"
+  CWD="$CWD" ORPHAN_STATE="$ORPHAN_STATE" QUIET="$QUIET" python3 <<'PYEOF'
+import glob, json, os, re, subprocess, sys
+from datetime import datetime, timezone
+
+cwd = os.environ["CWD"]
+state_file = os.environ["ORPHAN_STATE"]
+quiet = os.environ.get("QUIET", "0") == "1"
+ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+# Bounded history walk: bolt commits carry `(bolt): U-XXX` in the subject
+# (per the execute-bolts commit discipline).
+r = subprocess.run(["git", "-C", cwd, "log", "--format=%H\t%s", "-200"],
+                   capture_output=True, text=True)
+bolted = {}  # unit_id -> first (newest) commit sha
+for line in r.stdout.splitlines():
+    sha, _, subj = line.partition("\t")
+    m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
+    if m:
+        bolted.setdefault(m.group(1), sha)
+
+# A unit is in scope only if it still exists under some vault's units/.
+def unit_exists(uid):
+    pats = [
+        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid + ".md"),
+        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid, "unit.md"),
+    ]
+    return any(glob.glob(p) for p in pats)
+
+def report_exists(uid):
+    return bool(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", uid, "bolt-report.md")))
+
+orphans = []
+for uid in sorted(bolted):
+    if unit_exists(uid) and not report_exists(uid):
+        orphans.append({
+            "halt_type": "bolt_artifacts_missing",
+            "unit_id": uid,
+            "commit": bolted[uid],
+            "detail": "bolt commit exists for %s but <vault>/bolts/%s/bolt-report.md was never written" % (uid, uid),
+        })
+
+state = {
+    "ts": ts,
+    "mode": "orphan-scan",
+    "status": "FAIL" if orphans else "PASS",
+    "bolt_commits_seen": len(bolted),
+    "issues_count": len(orphans),
+    "issues": orphans,
+    "next_action": ("%d bolt commit(s) have no bolt-report.md — the audit trail is missing. "
+                    "Backfill <vault>/bolts/U-XXX/bolt-report.md (mark retroactive: true) for each "
+                    "listed unit, or re-run the unit; execute-bolts is gated until resolved."
+                    % len(orphans)) if orphans else "Every bolt commit has its bolt-report.md.",
+}
+tmp = state_file + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(state, f, indent=1)
+os.replace(tmp, state_file)
+if not quiet:
+    print(json.dumps(state, indent=1))
+sys.exit(1 if orphans else 0)
+PYEOF
+  exit $?
 fi
 
 # FILE_PATH is the written file. May or may not exist (Edit happens, then validator
