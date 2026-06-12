@@ -196,7 +196,11 @@ ELSE build design_slice:
   ELSE:
     design_slice.note     = "no design_system in vault — raise as OQ at chain end"
   design_slice.baseline   = design-intelligence/modern-baseline.md
-                            §Non-negotiables + §Anti-kuno tells (verbatim digest)
+                            §Non-negotiables + §Ceiling moves + §Anti-kuno tells (verbatim digest)
+                            # Ceiling moves are NOT optional polish — the floor (tokens/states/a11y)
+                            # is "not broken", the ceiling (page furniture, width-filling composition,
+                            # iconography, hierarchy, a signature) is "designed product". The bolt
+                            # must aim for the ceiling, not stop at the floor (clinic-project finding).
 ```
 
 Injection: a T2 section `## Design system (UI-bearing unit)` per

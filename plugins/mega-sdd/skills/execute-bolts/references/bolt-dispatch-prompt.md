@@ -276,7 +276,8 @@ Design system (vault): style=<design_system.style> · palette=<design_system.pal
 Style traits: <style-principles[style] traits + CSS keywords>
 Style anti-patterns: <style-principles[style] anti-patterns>
 UX floor: <ux-rules a11y + form/feedback rows>
-Modern baseline (non-negotiables): <modern-baseline.md §Non-negotiables digest>
+Modern baseline (non-negotiables — the FLOOR): <modern-baseline.md §Non-negotiables digest>
+Ceiling moves (clear the floor, then DO these — a floor-only view is "basic/generic"): <modern-baseline.md §Ceiling moves digest>
 Anti-kuno tells (a match in your output = defect): <modern-baseline.md §Anti-kuno digest>
 ```
 
