@@ -16,6 +16,10 @@ review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) 
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
                            #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
+instincts: true            # false → no <learned-instincts> SessionStart injection for this project
+                           #   (instinct files still accumulate; see memory references/instincts.md)
+gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse
+                           #   Edit/Write; inert anyway when no [LOCKED] anchors exist in any vault)
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):

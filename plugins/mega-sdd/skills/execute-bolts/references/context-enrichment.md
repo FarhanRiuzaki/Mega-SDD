@@ -78,7 +78,7 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 - Framework pack rules: filter the pack file by `path_glob` match against this unit's `target_files`.
 - Constitution clauses: ONLY clauses referenced in this unit's `vault_source` sections.
 - KB anti-patterns: filter the KB by this unit's domain tags.
-- Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for bolts touching similar files OR pattern — last 5 only.
+- Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for bolts touching similar files OR pattern — last 5 only. Active instincts (`memory/instincts/*.yaml`, confidence ≥0.7) whose `domain` matches the unit (ui → UI-bearing, security → risk-signal units, conventions/testing → all) join this slice as one line each — same budget, same truncation tier (per `memory/references/instincts.md`).
 - **Starterkit context slice:** see the slice sub-sections below.
 - Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale).
 - Validation hints (specific test commands + expected-output patterns).

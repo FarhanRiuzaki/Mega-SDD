@@ -664,10 +664,60 @@ if [ -f "$LV_MAP" ] && \
   fi
 fi
 
+# ─── Instinct injection (continuous learning, ECC-adoption Batch 1) ─────────
+# Bounded re-injection of confidence-scored learnings: top 6 with confidence
+# ≥0.7, project scope before global, hard budget 1200 chars. Opt-out:
+# `instincts: false` in .mega-sdd/config.yaml. Schema + lifecycle:
+# skills/memory/references/instincts.md. Fail-open: any parse error = no block.
+INSTINCT_BLOCK=""
+if ! grep -qE "^[[:space:]]*instincts:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
+  INSTINCT_BLOCK=$(PROJ="$project_root" python3 - 2>/dev/null <<'PYINST'
+import glob, os
+
+proj = os.environ["PROJ"]
+dirs = [
+    (0, os.path.join(proj, ".mega-sdd", "memory", "instincts")),
+    (1, os.path.join(os.path.expanduser("~"), ".mega-sdd", "memory", "instincts")),
+]
+cands = []
+for rank, d in dirs:
+    for p in sorted(glob.glob(os.path.join(d, "*.yaml"))):
+        kv = {}
+        try:
+            for line in open(p, encoding="utf-8", errors="replace"):
+                if ":" in line and not line.startswith((" ", "\t", "-", "#")):
+                    k, _, v = line.partition(":")
+                    kv[k.strip()] = v.strip().strip("'\"")
+        except OSError:
+            continue
+        try:
+            conf = float(kv.get("confidence", "0"))
+        except ValueError:
+            continue
+        if kv.get("status", "active") != "active" or conf < 0.7:
+            continue
+        trig, act = kv.get("trigger", ""), kv.get("action", "")
+        if trig and act:
+            cands.append((rank, -conf, "- [%.1f|%s] WHEN %s -> %s" % (conf, kv.get("domain", "general"), trig, act)))
+cands.sort()
+out, total = [], 0
+for _, _, line in cands[:6]:
+    if total + len(line) > 1200:
+        break
+    out.append(line)
+    total += len(line)
+print("\n".join(out))
+PYINST
+)
+  if [ -n "$INSTINCT_BLOCK" ]; then
+    INSTINCT_BLOCK=$'\n\n<learned-instincts>\n'"Learned instincts (confidence-scored from this project + global memory — apply unless the user, spec, or a Hard rule says otherwise):"$'\n'"${INSTINCT_BLOCK}"$'\n</learned-instincts>'
+  fi
+fi
+
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}
+${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${INSTINCT_BLOCK}
 <</EXTREMELY_IMPORTANT>>
 EOF
