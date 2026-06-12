@@ -51,7 +51,8 @@ grep -q 'Instinct emission' plugins/mega-sdd/skills/memory/references/learning-r
 grep -q '_seen.jsonl' plugins/mega-sdd/skills/memory/references/instincts.md || { echo "instincts.md missing promotion ledger"; err=1; }
 grep -q 'instincts:' plugins/mega-sdd/references/project-config.md || { echo "project-config missing instincts key"; err=1; }
 grep -q 'gateguard:' plugins/mega-sdd/references/project-config.md || { echo "project-config missing gateguard key"; err=1; }
-grep -q 'Skill|Bash|Edit|Write|MultiEdit' plugins/mega-sdd/hooks/hooks.json || { echo "hooks.json PreToolUse matcher not widened"; err=1; }
+grep -q 'Skill|Bash|Edit|Write' plugins/mega-sdd/hooks/hooks.json || { echo "hooks.json PreToolUse matcher not widened for Edit/Write"; err=1; }
+grep -q 'MultiEdit' plugins/mega-sdd/hooks/hooks.json && { echo "hooks.json still references MultiEdit (not a current tool)"; err=1; }
 grep -q 'instincts' plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md || { echo "T2 historical-memory slice missing instincts"; err=1; }
 bash -n "$SS" || { echo "session-start syntax error"; err=1; }
 bash -n plugins/mega-sdd/hooks/pre-tool-use || { echo "pre-tool-use syntax error"; err=1; }

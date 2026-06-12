@@ -37,24 +37,36 @@ printf '{"cwd":"%s","trigger":"manual"}' "$T" | bash "$PC"; [ $? -eq 0 ] || { ec
 T2=$(mktemp -d); printf '{"cwd":"%s","trigger":"auto"}' "$T2" | bash "$PC"; [ $? -eq 0 ] || { echo "non-sdd must exit 0"; err=1; }
 [ -f "$T2/.mega-sdd/.compaction-snapshot.json" ] && { echo "non-sdd wrote a snapshot"; err=1; }; rm -rf "$T2"
 
-# Stop advisor: over-threshold usage + active vault -> notice; opt-out honored.
+# Compaction advisor lives on UserPromptSubmit (doc audit: Stop stdout is
+# debug-log-only; UserPromptSubmit stdout reaches context). Over-threshold +
+# active vault -> notice; opt-out honored; under-threshold silent; Stop is clean.
+UPS=plugins/mega-sdd/hooks/user-prompt-submit
+bash -n "$UPS" || { echo "user-prompt-submit syntax error"; err=1; }
 T3=$(mktemp -d)
-mkdir -p "$T3/.mega-sdd/vaults/v/units" "$T3/.mega-sdd/memory"
+mkdir -p "$T3/.mega-sdd/vaults/v/units"
 printf -- '---\nid: U-001\n---\n' > "$T3/.mega-sdd/vaults/v/units/U-001.md"
-: > "$T3/.mega-sdd/memory/telemetry.jsonl"
 TRANS=$(mktemp)
-printf '%s\n' '{"message":{"usage":{"input_tokens":10000,"cache_read_input_tokens":160000,"cache_creation_input_tokens":5000,"output_tokens":2000}}}' > "$TRANS"
-out=$(printf '{"cwd":"%s","transcript_path":"%s","session_id":"s1","stop_hook_active":"false"}' "$T3" "$TRANS" | bash "$ST")
+printf '%s\n' '{"message":{"usage":{"input_tokens":10000,"cache_read_input_tokens":160000,"cache_creation_input_tokens":5000,"output_tokens":2000},"model":"claude-fable-5"}}' > "$TRANS"
+out=$(printf '{"cwd":"%s","transcript_path":"%s"}' "$T3" "$TRANS" | bash "$UPS")
 echo "$out" | grep -qi 'safe place to /compact' || { echo "advisor did not fire over threshold"; err=1; }
 # opt-out
 echo "compaction_notice: false" > "$T3/.mega-sdd/config.yaml"
-out=$(printf '{"cwd":"%s","transcript_path":"%s","session_id":"s1","stop_hook_active":"false"}' "$T3" "$TRANS" | bash "$ST")
+out=$(printf '{"cwd":"%s","transcript_path":"%s"}' "$T3" "$TRANS" | bash "$UPS")
 echo "$out" | grep -qi 'safe place to /compact' && { echo "opt-out not honored"; err=1; }
 rm -f "$T3/.mega-sdd/config.yaml"
 # under threshold -> silent
-printf '%s\n' '{"message":{"usage":{"input_tokens":1000,"cache_read_input_tokens":5000,"cache_creation_input_tokens":1000,"output_tokens":500}}}' > "$TRANS"
-out=$(printf '{"cwd":"%s","transcript_path":"%s","session_id":"s1","stop_hook_active":"false"}' "$T3" "$TRANS" | bash "$ST")
+printf '%s\n' '{"message":{"usage":{"input_tokens":1000,"cache_read_input_tokens":5000,"cache_creation_input_tokens":1000},"model":"claude-fable-5"}}' > "$TRANS"
+out=$(printf '{"cwd":"%s","transcript_path":"%s"}' "$T3" "$TRANS" | bash "$UPS")
 echo "$out" | grep -qi 'safe place to /compact' && { echo "advisor fired under threshold"; err=1; }
+# Stop hook no longer emits the advisor (relocated)
+printf '%s\n' '{"message":{"usage":{"input_tokens":10000,"cache_read_input_tokens":160000,"cache_creation_input_tokens":5000}}}' > "$TRANS"
+mkdir -p "$T3/.mega-sdd/memory"; : > "$T3/.mega-sdd/memory/telemetry.jsonl"
+out=$(printf '{"cwd":"%s","transcript_path":"%s","session_id":"s1","stop_hook_active":"false"}' "$T3" "$TRANS" | bash "$ST")
+echo "$out" | grep -qi 'safe place to /compact' && { echo "Stop still emits advisor (should be relocated)"; err=1; }
+# hooks.json wires UserPromptSubmit + dropped MultiEdit
+grep -q '"UserPromptSubmit"' plugins/mega-sdd/hooks/hooks.json || { echo "hooks.json missing UserPromptSubmit"; err=1; }
+grep -q 'MultiEdit' plugins/mega-sdd/hooks/hooks.json && { echo "hooks.json still has MultiEdit (not a current tool)"; err=1; }
+grep -q 'Skill|Bash|Edit|Write"' plugins/mega-sdd/hooks/hooks.json || { echo "PreToolUse matcher not Edit|Write"; err=1; }
 rm -f "$TRANS"; rm -rf "$T3"
 
 # SessionStart resume line from a snapshot

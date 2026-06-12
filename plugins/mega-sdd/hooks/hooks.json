@@ -14,7 +14,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Skill|Bash|Edit|Write|MultiEdit",
+        "matcher": "Skill|Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",
@@ -55,6 +55,18 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" user-prompt-expansion",
+            "async": false
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" user-prompt-submit",
             "async": false
           }
         ]
