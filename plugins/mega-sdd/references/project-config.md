@@ -14,6 +14,8 @@ layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:m
 output_root: .mega-sdd/    # where all outputs live, relative to project root (or absolute)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
+code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
+                           #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):
