@@ -664,6 +664,31 @@ if [ -f "$LV_MAP" ] && \
   fi
 fi
 
+# ─── Resumed-after-compaction notice (ECC Batch 2) ──────────────────────────
+# When a fresh compaction snapshot exists (PreCompact wrote it) and the source
+# is a compact/resume, surface one line so the next window re-orients to the
+# in-flight phase instead of re-deriving it. Advisory; shares telemetry opt-out.
+COMPACT_RESUME=""
+SNAP="${project_root}/.mega-sdd/.compaction-snapshot.json"
+if [ -f "$SNAP" ]; then
+  COMPACT_RESUME=$(SNAP="$SNAP" python3 -c '
+import json, os
+try:
+    d = json.load(open(os.environ["SNAP"]))
+except Exception:
+    raise SystemExit(0)
+ph = d.get("phase", {})
+guess = ph.get("guess", "unknown")
+ut, bd = ph.get("units_total", 0), ph.get("bolts_done", 0)
+pend = d.get("pending_sync_open", 0)
+extra = (" — %d open sync decision(s)" % pend) if pend else ""
+print("mega-sdd: resumed after a compaction at phase [%s] — %d unit(s), %d bolt(s) done%s. Re-orient from .mega-sdd/.compaction-snapshot.json." % (guess, ut, bd, extra))
+' 2>/dev/null)
+  if [ -n "$COMPACT_RESUME" ]; then
+    COMPACT_RESUME=$'\n\n'"${COMPACT_RESUME}"
+  fi
+fi
+
 # ─── Instinct injection (continuous learning, ECC-adoption Batch 1) ─────────
 # Bounded re-injection of confidence-scored learnings: top 6 with confidence
 # ≥0.7, project scope before global, hard budget 1200 chars. Opt-out:
@@ -718,6 +743,6 @@ cat <<EOF
 <<EXTREMELY_IMPORTANT>>
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${INSTINCT_BLOCK}
+${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${COMPACT_RESUME}${INSTINCT_BLOCK}
 <</EXTREMELY_IMPORTANT>>
 EOF

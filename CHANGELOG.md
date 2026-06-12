@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.27.0] - 2026-06-12
+
+### Added — ECC-adoption Batch 2: phase-aware compaction advisor + PreCompact state snapshot
+
+Long mega-sdd chains (the clinic sync ran 26 min) have two compaction failure modes — compacting mid-bolt loses the controller's whitelist/dispatch context, and harness auto-compaction loses which phase/unit was in flight. Adopted from ECC's strategic-compact + memory-persistence (spec `docs/superpowers/specs/2026-06-12-compaction-advisor-design.md`).
+
+- **Compaction advisor** (Stop hook, advisory): sums the transcript's true context size (`input + cache_read + cache_creation`, reusing the existing usage extractor), window-scaled (200k, or 1M on the `[1m]` marker). Over 80% AND a mega-sdd chain active → one line: "context ~Nk of ~Wk — a phase boundary is the safe place to /compact." Silent under threshold / for non-mega-sdd projects. Opt-out `compaction_notice: false`.
+- **PreCompact snapshot** (new `hooks/pre-compact` on the PreCompact event): before the harness compacts, writes `.mega-sdd/.compaction-snapshot.json` — HEAD, trigger, in-flight phase guess (newest vault: units total, bolts done, last bolt unit), open PENDING-SYNC count. Pure reads, exit 0 always (never blocks compaction). SessionStart then surfaces one "resumed after a compaction at phase [X] — N units, M bolts done" line so the next window re-orients instead of re-deriving. Shares the `telemetry: false` opt-out.
+- Both are advisory context, not gates (compaction is the user's call; the snapshot is insurance). `tests/compaction/` — snapshot phase-guess + degenerate-vault-still-exits-0 + advisor over/under threshold + opt-out + resume line.
+
 ## [4.26.0] - 2026-06-12
 
 ### Fixed/Added — floor-vs-ceiling: live-app design judgment (UI was "basic", not "kuno")
