@@ -35,6 +35,10 @@ DISPATCH mega-sdd:bolt-implementer        (Agent tool)
 implementer reports  DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
    ├─ BLOCKED / NEEDS_CONTEXT → controller supplies context or halts — never silent-skip
    ▼ DONE
+RUN L0 code gates                         (references/code-gates.md)
+   repo-own format(-fix)/lint/typecheck → secret scan → SAST → new-dep existence
+   ├─ secret_in_code / sast_critical_finding / dep_not_found → HALT (no panel, no commit)
+   ▼ pass (findings + skips recorded, injected into lens prompts)
 SELECT panel tier (risk-based)            (references/review-panel.md)
    minimal = spec · standard = spec+quality · full = +security +standards
    ▼

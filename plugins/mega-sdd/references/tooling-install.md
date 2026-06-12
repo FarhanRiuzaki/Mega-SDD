@@ -39,6 +39,9 @@ Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6
 | `jd` | diff-vault v1.1+ (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd@latest` |
 | `markdownlint-cli2` | lint-units (Iter 14+; vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
 | `gh` (GitHub CLI) | execute-bolts post-bolt PR pattern (optional) | Manual PR creation by user | macOS: `brew install gh` · Linux: package manager · win: `scoop install gh` |
+| `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
+| `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
+| `osv-scanner` | execute-bolts L0 code gates (known-CVE lockfile audit, advisory) | Ecosystem-native audit (npm/pip/cargo/composer audit) or skipped | macOS: `brew install osv-scanner` · any: `go install github.com/google/osv-scanner/cmd/osv-scanner@v1` |
 | `superpowers` plugin | execute-bolts (TDD bridge) | Vendored fallback at `plugins/mega-sdd/skills/_vendored/` | `/plugin install superpowers` |
 
 ## One-command install (recommended setup)
