@@ -35,7 +35,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | `/mega-sdd:extract-intelligence <legacy>` | Legacy codebase → knowledge base (the rebuild lane) |
 | `/mega-sdd:emit-fsd` | Confluence-style FSD (PDF) generated from the vault |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
-| `/mega-sdd:update-plugin` | Pull the latest plugin version |
+| `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 | `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
 
 Full set: **26 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.

@@ -40,6 +40,8 @@ Thresholds higher than 5 hits = conservative; lower thresholds = aggressive lear
 
 **When thresholds are evaluated (owned step — not implied):** orchestrate-flow runs the threshold pass ONCE at chain end (Step 7.6 extract-learnings) over the rows touched this chain, appending threshold-crossing candidates to `## Pending suggestions` with `status: pending`. `/mega-sdd:memory review` also evaluates on demand. No skill evaluates thresholds mid-chain.
 
+**Instinct emission (same owned pass — see `references/instincts.md`):** the Step 7.6 pass ALSO writes/updates instinct files for the ATOMIC threshold-crossers (one trigger → one action): birth at 0.5 (user corrections at 0.6), +0.1 reconfirmation (cap 0.9), −0.2 on correction, −0.1 staleness >30 days, retire <0.3; and appends the `_seen.jsonl` promotion line per active instinct (same key from ≥2 projects at avg ≥0.8 → copy to global scope). Instincts re-enter context via the SessionStart `<learned-instincts>` block (top 6, conf ≥0.7, 1200-char budget) and the bolt T2 historical-memory slice — the half of the loop `## Pending suggestions` alone never closed.
+
 ## 2. Observation patterns mega-sdd tracks
 
 ### 2.1 Classifier override pattern
