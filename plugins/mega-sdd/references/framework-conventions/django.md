@@ -138,6 +138,23 @@ HARD_RULE: INSTALLED_APPS MUST list every app whose models, signals, or manageme
   rationale: Apps omitted from INSTALLED_APPS have their models invisible to the ORM and their migrations unapplied
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Django forms (`forms.Form`/`ModelForm`) and DRF serializers (`serializer.is_valid(raise_exception=True)`) are the boundary; reading `request.POST`/`request.data` directly into the ORM skips validation entirely.
+- **SQL injection** — the ORM parameterizes QuerySets automatically; `Manager.raw()`, `QuerySet.extra()`, and `cursor.execute()` with f-string/`%`-interpolated values reintroduce SQLi — pass `params` as a separate argument or stay in the ORM.
+- **XSS / output escaping** — templates autoescape by default; `|safe`, `mark_safe()`, and `{% autoescape off %}` are the bypasses — only for server-sanitized content, never user input.
+- **CSRF** — `CsrfViewMiddleware` is global and every POST form carries `{% csrf_token %}`; `@csrf_exempt` is the bypass and each use needs a documented reason (e.g. a webhook verified by signature instead).
+- **AuthN/AuthZ enforcement point** — `LoginRequiredMixin`/`@login_required` on views, DRF `permission_classes` per view/viewset; a DRF project leaving the default `AllowAny` (no `DEFAULT_PERMISSION_CLASSES` configured) is the open-door smell.
+- **Password hashing** — `user.set_password()`/`make_password()` (PBKDF2 by default via `PASSWORD_HASHERS`); assigning `user.password = raw` or hand-rolled `hashlib` is the defect.
+- **Mass assignment** — `fields = "__all__"` on a ModelForm/ModelSerializer binds every column to request input (including privilege flags like `is_staff`); declare an explicit `fields` whitelist.
+- **Secrets / config** — `SECRET_KEY`, DB credentials, and `DEBUG` come from the environment (django-environ/`os.environ`); hardcoded values committed in settings.py are the leak, and `DEBUG=True` in production exposes stack traces and settings.
+- **File uploads** — `FileField`/`ImageField` with `upload_to` + validators (extension/content-type/size), `MEDIA_ROOT` outside the code tree; trusting `file.name` for paths or serving uploads from executable locations is the risk.
+- **Session/cookie posture** — production sets `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SESSION_COOKIE_HTTPONLY` and `SECURE_HSTS_SECONDS`; the defaults are dev-grade until configured.
+
 ## Testing conventions
 
 - **Test runner**: `pytest` with `pytest-django` (preferred) or Django's built-in `manage.py test` (uses `unittest`-compatible runner)

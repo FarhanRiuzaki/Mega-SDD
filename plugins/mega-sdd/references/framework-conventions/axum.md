@@ -97,6 +97,22 @@ HARD_RULE: A custom error type implementing IntoResponse MUST be defined and use
   rationale: Consistent error responses require a single AppError type; returning heterogeneous errors or unwrapping in handlers produces unstructured 500s
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `Json<T>` / `Query<T>` extractors deserialize via serde, but type-checking is not validation: pair with the `validator` crate (`#[derive(Validate)]` + a `ValidatedJson`-style wrapper extractor that calls `.validate()` in `FromRequest`); the bypass is treating a successful deserialize as "validated", or reading raw request bytes that skip extractors entirely.
+- **SQL injection** — sqlx's compile-time-checked `query!`/`query_as!` macros and `.bind()` placeholders parameterize by construction (likewise Diesel's typed DSL); `format!`-built SQL strings handed to `sqlx::query(&s)` reintroduce SQLi — bind parameters or stay in the macro/DSL.
+- **XSS / output escaping** — askama (compile-time) and tera (runtime, rendered into `axum::response::Html`) auto-escape template output; tera's `| safe` filter and askama's escape opt-outs mark input as raw — that is the bypass — as is returning `Html(format!(...))` built from user input.
+- **CSRF** — no built-in; bearer-token-only APIs are CSRF-immune by design, but apps on `tower-sessions`/`axum-login` cookies need a double-submit or synchronizer-token layer on state-changing routes plus `SameSite` on the session cookie — a cookie-auth POST without a token check is the hole.
+- **AuthN/AuthZ enforcement point** — auth is a Tower layer (`route_layer(middleware::from_fn_with_state(state, auth))`) on the protected sub-router, or a `FromRequestParts` guard extractor (`AuthUser`, `RequireRole`) in the handler signature; two bypasses: `.layer()`/`.route_layer()` only cover routes added BEFORE the call — a route added after is unprotected — and a handler that omits the guard parameter compiles clean and ships open.
+- **Password hashing** — the `argon2` crate (argon2id) or `bcrypt` crate via `PasswordHasher`/`verify_password`; hashing a password with `sha2` or comparing digests with `==` is the bypass — fast hashes are brute-forceable and naive comparison leaks timing.
+- **Mass assignment** — serde fills every named field, so deriving `Deserialize` on the sqlx row / DB model exposes `role`/`is_admin`/`id` to over-posting; use dedicated request structs with only the intended fields and add `#[serde(deny_unknown_fields)]` so unexpected keys are rejected rather than silently ignored.
+- **Secrets / config** — `dotenvy` for local `.env` loading plus a typed config layer (`envy`/`config` crate) read into `AppState` at startup; the bypass is a hardcoded JWT secret or database URL literal in `src/`, or a committed `.env` — keep it gitignored and fail at startup on missing secrets.
+- **File uploads** — `axum::extract::Multipart` behind the default 2 MB request cap, raised deliberately with `DefaultBodyLimit::max(n)` — calling `DefaultBodyLimit::disable()` without a replacement limit is the bypass; allowlist extension + sniffed content type, and persist under a server-generated name outside any `ServeDir`-mounted directory (client filenames invite traversal; the static mount makes uploads retrievable).
+
 ## Testing conventions
 
 - **Test runner**: `cargo test` — standard Cargo test harness; no additional framework required

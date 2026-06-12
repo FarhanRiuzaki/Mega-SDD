@@ -108,6 +108,23 @@ HARD_RULE: `halt` MUST be used for early response termination inside a route blo
   rationale: Sinatra processes the return value of the route block, not a `return` inside a helper called from the block; using `return` silently produces incorrect behavior when called from a nested method context
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Sinatra validates nothing; `params` is raw user input — validate through dry-validation/dry-schema contracts (or explicit guard clauses that `halt 400`) before anything touches the data layer.
+- **SQL injection** — depends on the data layer the app chose: Sequel datasets parameterize (`where(name: v)`); interpolated strings (`DB["... #{v}"]`, `db.execute("... #{v}")`) are the bypass — use placeholders (`where("name = ?", v)`) or bound variables.
+- **XSS / output escaping** — ERB via Tilt does NOT autoescape by default; the idiom is `set :erb, escape_html: true`, after which `<%== %>` is the explicit unsafe bypass — without that setting, every `<%= %>` of user data is an XSS.
+- **CSRF** — supplied by Rack::Protection (ships with the sinatra gem), but `Rack::Protection::AuthenticityToken` is NOT in the default set — enable it explicitly (`use Rack::Protection::AuthenticityToken`, requires sessions) and embed the token in forms.
+- **AuthN/AuthZ enforcement point** — no framework auth; the idiom is a `before` filter or shared helper (`authorize!`) that `halt 401/403`, or Warden mounted as Rack middleware — per-route ad-hoc session checks that drift out of sync are the smell.
+- **Password hashing** — `BCrypt::Password.create` / `==` from the bcrypt gem; never `Digest::MD5`/`SHA1` or manual salting.
+- **Mass assignment** — exposure depends on the ORM: `Model.create(params)` with Sequel-style models writes whatever columns were posted — use field allowlists (`set_fields(params, [:name, :email])`) or build the attribute hash explicitly.
+- **Secrets / config** — ENV (dotenv gem in dev), especially `session_secret`, which must be a stable random value of at least 64 bytes from the environment — an unset or committed secret lets attackers forge session cookies.
+- **File uploads** — `params[:file][:tempfile]` plus `[:filename]` are fully attacker-controlled; generate your own stored name, enforce size/type allowlists, and keep uploads out of `public/`.
+- **Session/cookie posture** — `enable :sessions` is a signed (not encrypted) cookie; set `httponly`/`secure`/`same_site` session options in production and keep nothing sensitive in the cookie itself.
+
 ## Testing conventions
 
 - **Test runners**: RSpec (most common; add `rspec` to `Gemfile`'s test group) or Minitest (`minitest`)

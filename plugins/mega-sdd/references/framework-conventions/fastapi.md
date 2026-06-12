@@ -95,6 +95,23 @@ HARD_RULE: Router modules MUST be in app/routers/ or app/api/ and declare a modu
   rationale: Consistent instance naming enables include_router() to import `from .routers.items import router` across all modules without structural exceptions
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Pydantic models on body/query/path params validate at the boundary automatically; taking `request: Request` and reading `await request.json()` into a raw dict bypasses all of it.
+- **SQL injection** — SQLAlchemy Core/ORM expressions parameterize; `text()` with f-string interpolation is the escape hatch that reintroduces SQLi — use `text("... :v").bindparams(v=v)` or stay in the expression language.
+- **XSS / output escaping** — no server templates by default (JSON responses); if `Jinja2Templates` is added, autoescape is on and `|safe` is the bypass — for pure-JSON APIs the adjacent risk is reflecting unsanitized HTML strings that browser clients render.
+- **CSRF** — not built in, and not an exposure for pure `Authorization`-header bearer-token APIs; the moment auth moves into cookies (session or cookie-stored JWT) CSRF middleware (e.g. starlette-csrf) becomes mandatory — cookie auth without it is the gap.
+- **AuthN/AuthZ enforcement point** — `Depends()` security dependencies (`OAuth2PasswordBearer`, `Security()` with scopes) on the route or `APIRouter(dependencies=[...])`; an `include_router()` that forgets the auth dependency is the silent bypass.
+- **Password hashing** — passlib `CryptContext(schemes=["bcrypt"])` (or argon2) for hash/verify next to `OAuth2PasswordBearer` login flows; never plaintext comparison or bare `hashlib`.
+- **Mass assignment** — separate Create/Update/Read Pydantic schemas plus `response_model=` on routes; reusing one schema everywhere (or returning ORM objects directly) both leaks columns like `hashed_password` and lets clients set server-owned fields.
+- **Secrets / config** — pydantic-settings `BaseSettings` reads env/`.env` into typed config; secrets as module-level constants or committed defaults are the leak.
+- **File uploads** — `UploadFile` streams to a spooled temp file; enforce a size limit, validate the real content (magic bytes), and never trust `.filename` or the client `content_type` for storage decisions.
+- **CORS / token posture** — `CORSMiddleware` with an explicit `allow_origins` list; `allow_origins=["*"]` combined with `allow_credentials=True` is the misconfiguration that hands credentials to any origin.
+
 ## Testing conventions
 
 - Test runner: `pytest` (via `pytest` CLI or `python -m pytest`)

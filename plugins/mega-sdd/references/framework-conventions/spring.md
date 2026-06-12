@@ -131,6 +131,23 @@ HARD_RULE: Multi-step write operations MUST be wrapped in a `@Transactional` ser
 - `System.out.println()` for logging (use SLF4J `LoggerFactory.getLogger()` / `@Slf4j` Lombok)
 - Hardcoded credentials or secrets in source code (use `application.yml` + environment variables or Spring Vault)
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Bean Validation (`@Valid`/`@Validated`) on `@RequestBody` DTOs carrying constraint annotations; a controller binding to an unannotated DTO — or omitting `@Valid` — gets zero validation.
+- **SQL injection** — Spring Data JPA derived queries and `@Query` with named/positional parameters are parameterized; JPQL or native SQL built by string concatenation (`em.createQuery("..." + input)`) is the bypass — always bind parameters.
+- **XSS / output escaping** — Thymeleaf `th:text` escapes by default; `th:utext` (and unescaped inlining `[(${...})]`) is the unsafe bypass, valid only for sanitized content — for REST endpoints the adjacent risk is reflecting unsanitized HTML to browser clients.
+- **CSRF** — Spring Security enables CSRF protection by default for browser/session flows; `http.csrf(csrf -> csrf.disable())` is the smell — legitimate only for purely stateless token APIs, and deserves an explanatory comment.
+- **AuthN/AuthZ enforcement point** — a `SecurityFilterChain` bean with `authorizeHttpRequests` matchers for URL rules plus `@EnableMethodSecurity`/`@PreAuthorize` for method-level checks; broad `permitAll()` patterns or hand-rolled role checks inside controllers are the bypass smells.
+- **Password hashing** — `BCryptPasswordEncoder` via `PasswordEncoderFactories.createDelegatingPasswordEncoder()` (`{bcrypt}`-prefixed hashes); `NoOpPasswordEncoder` or plain string comparison is the defect.
+- **Mass assignment** — binding request data directly to JPA entities (`@ModelAttribute` on an entity, or one class doubling as DTO and entity) lets clients set server-owned fields; use dedicated request DTOs, and `@InitBinder` `setDisallowedFields` for legacy form binding.
+- **Secrets / config** — externalize via environment variables / Spring Cloud Config / Vault resolved into application.properties / `application.yml` placeholders; literal credentials committed in those files are the leak.
+- **File uploads** — `MultipartFile` bounded by `spring.servlet.multipart.max-file-size` plus server-side content sniffing; `getOriginalFilename()` is attacker-controlled — never use it to build storage paths.
+- **Session/cookie posture** — Spring Security applies session-fixation protection and `HttpOnly` by default; production additionally sets `server.servlet.session.cookie.secure=true` (+ SameSite), and APIs prefer stateless tokens over sessions.
+
 ## ERD additions (Spring / JPA)
 
 - **`@GeneratedValue(strategy = GenerationType.IDENTITY)`** is the standard auto-increment strategy; `SEQUENCE` for databases that prefer sequences (PostgreSQL).

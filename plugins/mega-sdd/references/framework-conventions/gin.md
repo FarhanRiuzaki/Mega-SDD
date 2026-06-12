@@ -99,6 +99,22 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
   rationale: Mixing public library code in internal/ makes reuse impossible; pkg/ signals intentional external API
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `c.ShouldBindJSON(&req)` into a request struct carrying `binding:"required"` / validator tags is the enforcement point; raw `c.Query()`/`c.PostForm()` reads skip every tag and hand unvalidated strings to the service layer — if it wasn't bound through a tagged struct, it was never validated.
+- **SQL injection** — `database/sql` placeholders (`db.QueryContext(ctx, "... WHERE id = ?", id)`) and GORM's method chains parameterize automatically; `fmt.Sprintf("... WHERE id = %s", id)` fed into `db.Query` or `gorm.Raw` is the classic Go SQLi escape hatch — bind params or stay in the builder.
+- **XSS / output escaping** — `html/template` (what `c.HTML` uses via `LoadHTMLGlob`) contextually auto-escapes; switching to `text/template` for HTML output, or casting user input to `template.HTML(...)`, disables escaping entirely — that cast is the XSS bypass; reserve it for sanitized, trusted fragments only.
+- **CSRF** — no built-in protection; cookie/session-authenticated apps need a CSRF middleware (gin-csrf or a double-submit token check) on every state-changing route; pure bearer-token APIs are CSRF-immune by design, but the moment an auth cookie appears, `SameSite` plus a token check are mandatory — a cookie-auth POST route without the middleware is the hole.
+- **AuthN/AuthZ enforcement point** — auth is middleware on router groups (`admin := r.Group("/admin", middleware.RequireAuth(), middleware.RequireRole("admin"))`); the bypass is a handler registered directly on `r` beside the protected group instead of inside it — group membership IS the protection, so audit every route registration site.
+- **Password hashing** — `golang.org/x/crypto/bcrypt` (`bcrypt.GenerateFromPassword`) or argon2id (`golang.org/x/crypto/argon2`); a fast hash (`crypto/sha256`, md5) over a password is the bypass — brute-forceable by design — and a hand-rolled `==` compare leaks timing where `bcrypt.CompareHashAndPassword` does not.
+- **Mass assignment** — binding straight into the persistence/GORM model makes every struct field client-settable (`role`, `isAdmin`, `id`); use a dedicated request struct with only the intended fields, then map explicitly to the model — `c.ShouldBindJSON(&user)` on the DB model is the over-posting bypass.
+- **Secrets / config** — `os.Getenv` or viper-loaded config in `internal/config/`; the bypass is a hardcoded JWT secret or DSN literal in source, or a committed `.env` — keep `.env` gitignored and fail fast at startup when a required secret is empty.
+- **File uploads** — cap size via `r.MaxMultipartMemory` plus `http.MaxBytesReader`, allowlist both extension AND sniffed content type (`http.DetectContentType`), and store under a server-generated name outside any statically served directory; trusting the client filename or saving into the `r.Static`-mounted `static/` dir makes the upload path-traversable or directly retrievable — that is the bypass.
+
 ## Testing conventions
 
 - **Test runner**: standard `go test ./...` — no test framework required; run from the module root
