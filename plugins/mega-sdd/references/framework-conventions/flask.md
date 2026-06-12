@@ -115,6 +115,23 @@ HARD_RULE: Config MUST load secrets and credentials from environment variables, 
   rationale: Hard-coded secrets leak in version control; environment variables support 12-factor app deployment and CI override
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Flask validates nothing by itself; the boundary is Flask-WTF/WTForms (`form.validate_on_submit()`) or marshmallow schemas — passing `request.form`/`request.get_json()` straight into queries or model constructors is unvalidated input.
+- **SQL injection** — SQLAlchemy (Flask-SQLAlchemy) parameterizes; `db.session.execute(text(f"... {v}"))` or string-built SQL through the raw driver is the bypass — use bound parameters (`text("... :v"), {"v": v}`) or stay in the ORM.
+- **XSS / output escaping** — Jinja2 autoescapes `.html` templates; `|safe`, `Markup()`, and `render_template_string()` fed user input are the bypasses (the last one also opens SSTI, which is RCE-grade in Jinja2).
+- **CSRF** — not built in; the idiom is `flask_wtf.CSRFProtect(app)` app-wide plus the form/header token; `@csrf.exempt` is the bypass and needs a documented reason.
+- **AuthN/AuthZ enforcement point** — Flask-Login `@login_required` (with a configured `login_manager`) or a token check in a `before_request` hook/decorator; ad-hoc `if 'user_id' in session` checks scattered per route are the drift-prone smell.
+- **Password hashing** — `werkzeug.security.generate_password_hash()`/`check_password_hash()` (or passlib bcrypt/argon2); never `hashlib` md5/sha1 or manual salts.
+- **Mass assignment** — no automatic model binding in this stack, so the exposure is hand-rolled hydration: `User(**request.get_json())` writes whatever columns the client sends — construct from an explicit per-field allowlist.
+- **Secrets / config** — `SECRET_KEY` and credentials load from env (python-dotenv) into `app.config`; a hardcoded/committed `SECRET_KEY` lets attackers forge sessions, because Flask's default cookie session is signed, not encrypted.
+- **File uploads** — `werkzeug.utils.secure_filename()` + extension/size allowlist, saved outside statically-served directories; trusting `file.filename` for paths enables traversal and overwrite.
+- **Session/cookie posture** — production config sets `SESSION_COOKIE_SECURE`, `SESSION_COOKIE_HTTPONLY`, `SESSION_COOKIE_SAMESITE`; the default client-side session is readable by the user (only tamper-proof), so never store secrets in it.
+
 ## Testing conventions
 
 - Test runner: `pytest` (via `pytest` CLI or `python -m pytest`)

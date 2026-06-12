@@ -116,6 +116,22 @@ HARD_RULE: process.env MUST NOT be accessed in components, composables, or pages
   rationale: process.env is not available in the browser bundle; useRuntimeConfig() is the Nuxt-safe isomorphic accessor
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Nitro server routes validate with `readValidatedBody(event, schema.parse)` / `getValidatedQuery(event, …)` backed by `zod`; the bypass is plain `readBody(event)` with the shape trusted as-is — `server/api/` routes are directly callable regardless of what the UI sends.
+- **SQL injection** — Prisma/Drizzle in `server/` parameterize; raw SQL with interpolated request values (`$queryRawUnsafe`, string-built `sql` fragments) reintroduces SQLi — use bindings/tagged templates or stay in the ORM query API.
+- **XSS / output escaping** — Vue template interpolation (`{{ }}`) auto-escapes; `v-html` is the bypass and is only valid for content sanitized server-side — never for user input.
+- **CSRF** — nothing built into Nitro routes; cookie-session apps need an origin check or token module (e.g. `nuxt-csurf`) plus `SameSite` cookies — bearer-token APIs are not exposed. The bypass is a state-changing `server/api/*.post.ts` route that trusts the session cookie with no origin/token check.
+- **AuthN/AuthZ enforcement point** — the session check inside each Nitro handler or in `server/middleware/` (e.g. `requireUserSession` from the session util); `defineNuxtRouteMiddleware` route middleware is UX-only navigation guarding — the bypass is protecting only the page middleware while the `server/api/` route underneath stays open to direct requests.
+- **Password hashing** — `bcrypt`/`argon2` in `server/utils/`; never `node:crypto` plain hashes, never imported into components (pack hard rule blocks server-only imports client-side).
+- **Mass assignment** — the validated-body schema is the field allowlist; the bypass is spreading the raw `readBody` result straight into an ORM write (`{ ...body }`), letting an extra `role`/`isAdmin` field ride along.
+- **Secrets / config** — `runtimeConfig` (server-private) vs `runtimeConfig.public` split: everything under `public` is embedded in the client bundle. The bypass is parking a secret under `public` / `NUXT_PUBLIC_*` to make it reachable in a component (pack hard rule); read config via `useRuntimeConfig()`, never `process.env`.
+- **File uploads** — `readMultipartFormData(event)` in a Nitro route with size caps and a mimetype allowlist, stored outside `public/`; never trust the client filename — generate your own.
+
 ## Testing conventions
 
 - **Unit / integration runner**: Vitest — configured via `vitest.config.ts`; use `defineVitestConfig` from `@nuxt/test-utils/config` to wire up the Nuxt environment

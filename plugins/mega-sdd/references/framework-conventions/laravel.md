@@ -177,6 +177,23 @@ HARD_RULE: Routes file MUST NOT contain business logic
 - `env()` calls outside `config/*.php` files (cached config breaks env access at runtime)
 - Storing files via `move_uploaded_file()` (use `Storage::disk()->putFile()` for testability + cloud-storage abstraction)
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — every input-accepting endpoint validates through a Form Request (`app/Http/Requests/`); `$request->all()` passed onward unvalidated is a defect.
+- **SQL injection** — Eloquent/Query Builder parameterize automatically; `DB::raw()` / `whereRaw()` with interpolated variables is the escape hatch that reintroduces SQLi — bind params (`whereRaw('x = ?', [$v])`) or stay in the builder.
+- **XSS / output escaping** — `{{ }}` auto-escapes; `{!! !!}` is the unsafe bypass and is only valid for content sanitized server-side (never for user input).
+- **CSRF** — `VerifyCsrfToken` middleware is on for the `web` group; every Blade form carries `@csrf`; routes added to `$except` need a documented reason.
+- **AuthN/AuthZ enforcement point** — authentication via the `auth` middleware on the route/group; authorization via Policies (`$this->authorize()` / `@can`) — an inline `$user->role === 'admin'` check is the bypass smell.
+- **Password hashing** — `Hash::make()` / `Hash::check()` (bcrypt/argon2 per `config/hashing.php`); never `md5`/`sha1`/manual salts.
+- **Mass assignment** — every Model declares `$fillable` (whitelist); `$guarded = []` is the bypass that turns request payloads into column writes.
+- **Secrets / config** — secrets live in `.env` (never committed), read via `config()` only; an `env()` call outside `config/` silently returns null under config cache.
+- **File uploads** — `$request->file()->store()` on a non-public disk; validate `mimes:`/`max:`; never trust the client filename or store under `public/` directly.
+- **Session/cookie posture** — production: `SESSION_SECURE_COOKIE=true`, `http_only` on, sensible `SESSION_LIFETIME`; remember-me tokens rotate on login.
+
 ## ERD additions (Laravel-specific extensions to `_universal.md`)
 
 - **Polymorphic relations**: `morphable_id BIGINT` + `morphable_type VARCHAR` columns (e.g., `commentable_id` + `commentable_type` on `comments`)

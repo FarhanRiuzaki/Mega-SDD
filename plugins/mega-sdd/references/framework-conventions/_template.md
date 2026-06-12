@@ -78,6 +78,26 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 - <Anti-pattern 2 — e.g., "Business logic in `routes/*.php` (use Controllers or Actions)">
 - <Anti-pattern 3 — e.g., "Direct `$_POST` / `$_GET` access (use Request object)">
 
+## Security idioms
+
+> Consumed by the execute-bolts review panel: the controller passes this section to the
+> `security-reviewer` lens as the pack security slice, and `bolt-implementer` receives it
+> through the T2 framework-pack rules — so generated code is born with the stack's
+> security idioms, not retrofitted. Keep bullets PROJECT-ACTIONABLE and stack-correct:
+> name the mechanism and the dangerous bypass, not generic advice the model already knows.
+> An idiom that is mechanically expressible ALSO gets a HARD_RULE row in
+> `## Hard Rules emitted` (the existing merge machinery — never a parallel rules channel).
+
+- **Input validation** — <the stack's validation idiom + where it lives>
+- **SQL injection** — <the ORM/parameterized idiom + the raw-query escape hatch to avoid>
+- **XSS / output escaping** — <the template auto-escape default + the unsafe bypass to avoid>
+- **CSRF** — <the mechanism + when it must be enabled/excluded>
+- **AuthN/AuthZ enforcement point** — <where checks belong so routes can't skip them>
+- **Password hashing** — <the canonical helper; never roll crypto>
+- **Mass assignment** — <protection idiom, if the ORM is exposed to it>
+- **Secrets / config** — <env handling idiom + what must never be committed>
+- **File uploads** — <safe handling idiom, if the stack has one>
+
 ## ERD additions (when this pack applies)
 
 Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:

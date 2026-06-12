@@ -102,6 +102,22 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
   rationale: Mixing public library code in internal/ makes reuse impossible; pkg/ signals intentional external API
 ```
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — `c.BodyParser(&req)` (v2) / `c.Bind().Body(&req)` (v3) into a struct with `validate:"..."` tags, then run the validator — or configure `fiber.Config{StructValidator: ...}` so validation fires on bind; the bypass is BodyParser alone (it only decodes, never validates) or raw `c.Query()`/`c.FormValue()` reads that no tag ever sees.
+- **SQL injection** — `database/sql` placeholders (`db.QueryContext(ctx, "... WHERE id = ?", id)`), sqlx, or GORM method chains parameterize automatically; `fmt.Sprintf`-interpolated SQL passed to `db.Query` or `gorm.Raw` is the classic Go SQLi escape hatch — bind params or stay in the builder.
+- **XSS / output escaping** — the `gofiber/template/html` Views engine (backed by `html/template`) contextually auto-escapes in `c.Render`; casting user input to `template.HTML(...)`, using a `text/template`-style engine for HTML, or sending user input via `c.SendString` with an HTML content type emits it unescaped — those are the XSS bypasses.
+- **CSRF** — Fiber ships built-in `middleware/csrf` (`app.Use(csrf.New())`); apply it to cookie/session-authenticated apps — a state-changing cookie-auth route served without it is the hole; pure bearer-token APIs are CSRF-immune but pair the built-in `helmet` and `limiter` middlewares for header hardening and abuse control.
+- **AuthN/AuthZ enforcement point** — auth middleware on groups (`app.Group("/admin", middleware.RequireAuth(), requireRole("admin"))`) or path-scoped `app.Use("/api", ...)`; two bypasses: a route registered on `app` outside the protected group, and Fiber's registration-order matching — a route registered BEFORE the `app.Use` line is matched without ever passing through that middleware.
+- **Password hashing** — `golang.org/x/crypto/bcrypt` (`bcrypt.GenerateFromPassword`) or argon2id; a fast hash (`crypto/sha256`, md5) over a password is the brute-forceable bypass, and hand-rolled `==` comparison leaks timing where `bcrypt.CompareHashAndPassword` does not.
+- **Mass assignment** — `c.BodyParser` into the persistence/GORM model makes every field client-settable (`role`, `isAdmin`, `id`); parse into a dedicated request struct with only the intended fields and map explicitly to the model — parsing the DB model is the over-posting bypass.
+- **Secrets / config** — `os.Getenv` or viper-loaded config in `internal/config/`; the bypass is a hardcoded JWT secret or DSN literal in source, or a committed `.env` — keep `.env` gitignored and fail fast at startup when a required secret is empty.
+- **File uploads** — cap size via `fiber.Config{BodyLimit: ...}`, allowlist both extension AND sniffed content type on the `c.FormFile` result, and persist with `c.SaveFile` under a server-generated name outside any `app.Static`-mounted directory; passing the client filename into the save path invites traversal, and saving into `static/` makes the upload directly retrievable — those are the bypasses.
+
 ## Testing conventions
 
 - **Test runner**: standard `go test ./...` — no test framework required; run from the module root

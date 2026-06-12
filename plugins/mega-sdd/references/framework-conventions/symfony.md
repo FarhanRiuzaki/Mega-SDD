@@ -146,6 +146,23 @@ HARD_RULE: Business logic MUST NOT live in controllers; delegate to services in 
 - Hard-coded credentials or env values — use `.env` files and `%env(KEY)%` parameters
 - Using `@Route(...)` annotation syntax (Doctrine-style docblock) — prefer PHP 8 `#[Route(...)]` attribute syntax in Symfony 6.4+
 
+## Security idioms
+
+> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
+> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> the dangerous bypass is spelled out next to each idiom.
+
+- **Input validation** — Validator component with `#[Assert\...]` constraints on DTOs, enforced via `#[MapRequestPayload]` or an explicit `$validator->validate()`; reading `$request->request->all()` into entities without constraints is the defect.
+- **SQL injection** — Doctrine DQL/QueryBuilder bind values via `setParameter()`; native SQL (`$conn->executeQuery()`) or DQL assembled by string concatenation with user values is the bypass — bind, never interpolate.
+- **XSS / output escaping** — Twig autoescapes; `|raw` (and `{% autoescape false %}`) is the bypass — only for server-sanitized markup, never request data.
+- **CSRF** — the Form component injects and checks `_token` automatically; hand-built forms use `csrf_token('intent')` + `isCsrfTokenValid()`; a state-changing route with neither is the gap (login/logout are covered by the security config's csrf settings).
+- **AuthN/AuthZ enforcement point** — `security.yaml` firewalls + `access_control` for coarse URL rules, `#[IsGranted]`/`denyAccessUnlessGranted()` backed by voters for object-level decisions; inline role-string comparisons in controllers are the bypass smell.
+- **Password hashing** — `UserPasswordHasherInterface` with `password_hashers: ... 'auto'` (bcrypt/sodium chosen per platform); hashing inside the entity or with `md5`/`sha1` is the defect.
+- **Mass assignment** — hydrate through the Form component or `#[MapRequestPayload]` DTOs with explicit properties; deserializing the raw request body straight onto a Doctrine entity lets the client set any mapped column, including ownership and role fields.
+- **Secrets / config** — the secrets vault (`bin/console secrets:set`) plus `%env()%` processors; real values committed to `.env` (instead of `.env.local` or the vault) are the leak.
+- **File uploads** — `UploadedFile` constrained by `#[Assert\File]`/`#[Assert\Image]` (mimeTypes, maxSize), stored under a generated name via `move()`; `getClientOriginalName()` is attacker-controlled and never becomes a path.
+- **Session/cookie posture** — `framework.session` with `cookie_secure: auto`, `cookie_httponly: true`, `cookie_samesite: lax`; the security component migrates the session on login (fixation protection) — do not disable it.
+
 ## ERD additions (Symfony/Doctrine-specific extensions to `_universal.md`)
 
 - **Doctrine association columns**: `#[ORM\ManyToOne(targetEntity: User::class)]` + `#[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]` — FK column is `user_id` in the DB
