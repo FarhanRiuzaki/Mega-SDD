@@ -31,6 +31,9 @@ test-output/
 **/.mega-sdd/memory/hook-debug.log
 **/.mega-sdd/memory/telemetry.jsonl
 
+# Internal training material (not for the public repo)
+training/
+
 # Env
 .env
 .env.local
