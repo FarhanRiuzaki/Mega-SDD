@@ -76,8 +76,10 @@ plugins/mega-sdd/
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/
 │   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
-├── agents/                       # 5 first-class subagents
-│   ├── bolt-implementer.md, spec-reviewer.md, code-quality-reviewer.md   # execute-bolts two-stage review
+├── agents/                       # 7 first-class subagents
+│   ├── bolt-implementer.md       # execute-bolts implementer
+│   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md
+│   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
 │   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
 ├── commands/                     # 26 slash commands — your manual /mega-sdd: CLI entry points

@@ -13,14 +13,14 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 
 1. Topologically sort units by `depends_on`.
 2. Execute in order (default sequential).
-3. On `--parallel`: the **main-thread controller** groups units with no shared dependency and dispatches them **concurrently** — multiple `bolt-implementer` Agent calls in one message — each unit still running the full two-stage review (`bolt-implementer` → `spec-reviewer` → `code-quality-reviewer`). This is **depth-1** (the controller stays in the main thread; it never forks a sub-controller that would then need to dispatch the bolt agents — that would be depth-2, which the runtime forbids). `subagent-driven-development` is an optional *technique* hint, not a nested dispatch.
+3. On `--parallel`: the **main-thread controller** groups units with no shared dependency and dispatches them **concurrently** — multiple `bolt-implementer` Agent calls in one message — each unit still running the full review panel (`bolt-implementer` → the parallel blind lenses per `review-panel.md`). This is **depth-1** (the controller stays in the main thread; it never forks a sub-controller that would then need to dispatch the bolt agents — that would be depth-2, which the runtime forbids). `subagent-driven-development` is an optional *technique* hint, not a nested dispatch.
 4. On any failure: halt the entire `--all` run (no skip-ahead).
 
 ## `--per-squad`
 
 1. **Load `_meta/squads.yaml`.** If absent or single-squad → halt with an informative message: "`--per-squad` requires ≥2 squads declared in `_meta/squads.yaml`. Run `/mega-sdd:generate-intent` to add squad config, or use plain `/mega-sdd:execute-bolts --all` for single-squad."
 2. **Read the squad list.** Build a list of declared squad IDs.
-3. **Main-thread squad loop (NOT a squad subagent).** The controller stays in the main thread and runs each squad's units through the per-unit two-stage flow directly (depth-1) — see `squad-subagent.md`. A forked squad subagent would have to dispatch the three bolt agents = depth-2 (forbidden) and would silently lose the two-stage review.
+3. **Main-thread squad loop (NOT a squad subagent).** The controller stays in the main thread and runs each squad's units through the per-unit panel flow directly (depth-1) — see `squad-subagent.md`. A forked squad subagent would have to dispatch the bolt agents = depth-2 (forbidden) and would silently lose the review panel.
 4. **Parallelize across squads.** Independent units — including units from different squads — are dispatched **concurrently** (multiple `bolt-implementer` Agent calls in one message), bounded by an in-flight cap. Same mechanism as `--all --parallel`; `--per-squad` only changes the filter + the consolidation.
 5. **Consolidate the report.** Aggregate per-squad summaries into a single chat message: N squads, M units total, K commits, list of halts (with squad attribution).
 
