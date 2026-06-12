@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.24.0] - 2026-06-12
+
+### Fixed/Added — UI/UX awareness: the greenfield design pipe + a design lens
+
+Field finding (clinic-project, greenfield): generated UI was default-browser "kuno" DESPITE generate-intent having written a full `vault.json design_system` (medical-clinic profile from `design-intelligence/product-style-map.yaml`). Root cause: the ONLY injection path for design context lived inside the starterkit branch of `context-enrichment.md` — no starterkit-context.yaml (every greenfield) → UI bolts received zero design guidance.
+
+- **Design slice (the pipe fix)**: built INDEPENDENTLY of starterkit for any UI-bearing unit (target_files match pack `view_glob` or universal frontend shapes). Greenfield: vault `design_system` + the matching `style-principles[style]` slice + ux-rules floor + the new modern-baseline digest. Starterkit template remains AUTHORITATIVE when present (unchanged precedence). New T2 dispatch-prompt section `## Design system (UI-bearing unit)` with palette/typography anti-halu rails ("never invent a second palette").
+- **`design-intelligence/modern-baseline.md`** (new): the injectable modern-UI floor — 10 non-negotiables (token layer, 4/8px spacing, type scale, page shell, interactive states, loading/empty/error states, designed forms, WCAG AA, styled data tables, distinctive-not-generic) + the anti-kuno tells list. Distilled from the existing ui-ux-pro-max distillation + Anthropic frontend-design philosophy.
+- **`design-reviewer` agent (new, sonnet)**: 5th review-panel lens — judges UI code against the SAME design slice the implementer received (one contract, two sides): token discipline, layout composition, states, a11y, style conformance. ADDITIVE join: any tier, only when the unit is UI-bearing — pure-backend bolts never pay for it.
+- `tests/design-aware/` pins the pipe end-to-end (baseline digests → context-enrichment slice → dispatch section → lens wiring → model-tiers row 21).
+
 ## [4.23.1] - 2026-06-12
 
 ### Fixed — field-audit of a real intent→bolts run (clinic-project): 3 enforcement gaps closed
