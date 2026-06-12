@@ -34,6 +34,8 @@ Resolve the tier BEFORE dispatch, once per unit:
 
 **Additive design lens:** `design-reviewer` JOINS the selected tier (any tier) whenever the unit is UI-bearing per `context-enrichment.md §Design slice` (target_files match the pack `view_glob` or the universal frontend shapes). It receives the SAME design slice injected into the implementer's prompt as its rubric — one contract, two sides. Pure-backend units never pay for it.
 
+**Live-app capture (the ceiling lens).** The design slice carries `modern-baseline.md §Ceiling moves` — the floor (tokens/states/a11y, provable from code) is not a passing grade; the ceiling (composition, hierarchy, distinctiveness) usually needs the render. Before dispatching the design lens, the controller MAY run `scripts/capture-views.sh --url=<dev-server> --routes=<unit's routes> --out=<bolt-dir>/views` when a dev-server URL is known (unit frontmatter `preview_url`, `.mega-sdd/config.yaml` `preview_url:`, or the operator supplies one); captured screenshots are passed to the design lens, which judges the actual render. **Stack-agnostic** — capture hits URLs, so it works for any stack (Laravel/Blade, Django, Rails, a Node SPA); the driver tries a system Chrome/Chromium first (no Node) then npx playwright. Every failure mode (server down, no headless browser, no URL) is a graceful SKIP — the lens then judges the ceiling from code and SAYS it saw no render. Capture is never a gate; an un-captured render is never reported as fine.
+
 **Risk signals** (evaluate against the unit + active framework pack):
 1. Any `target_files` path matches the pack's `auth_hints` or `authz_hints` globs.
 2. A dependency manifest (package.json, composer.json, requirements/pyproject, go.mod, Cargo.toml, Gemfile) is in `target_files`.
