@@ -36,14 +36,20 @@ fi
 [ -n "${TRANSCRIPT:-}" ] && [ -f "$TRANSCRIPT" ] || exit 0
 
 # Sum the latest transcript usage (input + cache_read + cache_creation) = true
-# context size; window from the [1m] marker if present in the model id.
+# context size. The real window is NOT the [1m] display marker — that alias
+# never reaches the transcript's message.model (it records the wire id, e.g.
+# claude-opus-4-8 / claude-fable-5), so the old substring test always fell back
+# to 200k and over-reported every 1M session ~5x. Resolve it conservatively.
 TRANSCRIPT="$TRANSCRIPT" PROOT="$PROJECT_ROOT" python3 <<'PYEOF' 2>/dev/null || true
 import glob, json, os
 
 path = os.environ["TRANSCRIPT"]
 proot = os.environ["PROOT"]
 
-last_usage, model = None, ""
+def usage_ctx(u):
+    return (u.get("input_tokens", 0) or 0) + (u.get("cache_read_input_tokens", 0) or 0) + (u.get("cache_creation_input_tokens", 0) or 0)
+
+last_usage, model, peak_ctx = None, "", 0
 try:
     with open(path) as f:
         for line in f:
@@ -54,16 +60,30 @@ try:
             msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
             if msg and isinstance(msg.get("usage"), dict):
                 last_usage = msg["usage"]
-                model = msg.get("model", model) or model
+                peak_ctx = max(peak_ctx, usage_ctx(last_usage))
+                mm = msg.get("model")
+                if mm and mm != "<synthetic>":  # synthetic turns carry no real model id
+                    model = mm
 except Exception:
     raise SystemExit(0)
 if not last_usage:
     raise SystemExit(0)
 
-ctx = (last_usage.get("input_tokens", 0) or 0) + (last_usage.get("cache_read_input_tokens", 0) or 0) + (last_usage.get("cache_creation_input_tokens", 0) or 0)
+ctx = usage_ctx(last_usage)
 if ctx <= 0:
     raise SystemExit(0)
-window = 1_000_000 if "[1m]" in model else 200_000
+
+# Resolve the real window from three signals, biased to the LARGER window (a
+# false silence is harmless — PreCompact still snapshots; a false /compact nag
+# burns the user's real context). 1M when: the [1m] marker is present; OR the
+# model is a current 1M-context family; OR the context PHYSICALLY exceeded 200k
+# at any point (a true 200k session would have auto-compacted first — proof the
+# window is >200k). Else the 200k default.
+mlow = model.lower()
+is_1m = ("[1m]" in mlow
+         or mlow.startswith(("claude-opus-4", "claude-sonnet-4", "claude-fable"))
+         or peak_ctx > 200_000)
+window = 1_000_000 if is_1m else 200_000
 if ctx < int(window * 0.80):
     raise SystemExit(0)
 # only when a mega-sdd chain is in flight (a vault with units exists)

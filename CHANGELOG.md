@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.28.1] - 2026-06-13
+
+### Fixed — compaction advisor over-reported every 1M-context session ~5× (false `/compact` nag)
+
+The phase-aware compaction advisor (`hooks/user-prompt-submit`, added 4.27.0 / relocated 4.27.1) detected the context window with `"[1m]" in model`. But `[1m]` is a Claude Code **display alias** — it never reaches the transcript's `message.model`, which records the wire id (`claude-opus-4-8`, `claude-fable-5`). So the window always fell back to the 200k default and every 1M-context session was scored ~5× too high — surfaced live in the clinic runtime test: a Fable-5 bolt session at a healthy 254k (25% of 1M) was reported as **127% of 200k**, triggering a `/compact` recommendation at ~16% of the real window → premature compaction, real context lost.
+
+- **Window now resolved from three signals, biased to the larger window** (a false silence is harmless — PreCompact still snapshots; a false `/compact` nag burns real context): the `[1m]` marker if present; OR a current 1M-context model family (`claude-opus-4*` / `claude-sonnet-4*` / `claude-fable*`); OR an **empirical** override — a context that physically exceeded 200k proves a >200k window (a true 200k session would have auto-compacted first). The empirical signal is model-agnostic, so future 1M model ids need no allowlist edit.
+- `<synthetic>` turns are skipped when capturing the model id (they carry no real model).
+- Verified end-to-end: both real clinic transcripts (Opus @143k, Fable @254k) now stay silent; the 200k path still fires at 85% (`170k of 200k`); the 1M path fires at 85% (`850k of 1000k`); an unknown model with >200k observed context resolves to the 1M window. Single-site fix; no other hook does window detection.
+
 ## [4.28.0] - 2026-06-12
 
 ### Added — multi-PRD lifecycle: project index + shared constitution + explicit router
