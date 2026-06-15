@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.10.0
+version: 1.11.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -194,18 +194,21 @@ A workflow that collects its inputs across MORE THAN ONE step / page / role is *
 
 > Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
 
-### Deep extraction disciplines (P1–P4)
+### Deep extraction disciplines (P1–P4 + P6)
 
-Five extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `references/wave-dispatch-templates.md` §generic-agent-prompt-structure → DEEP DISCIPLINES** — that is the block injected into every wave subagent prompt, so the deeper reasoning fires *automatically* every run (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
+Six extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `references/wave-dispatch-templates.md` §generic-agent-prompt-structure → DEEP DISCIPLINES** — that is the block injected into every wave subagent prompt, so the deeper reasoning fires *automatically* every run (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
 
-- **P1 — State & data provenance.** For every state *writer*, locate the *reader*; for every clone copy (`INSERT … SELECT`, snapshot), trace the implicitly-inherited fields and who reads them downstream. Writer with no reader → `write-only / vestigial`; reader with no in-scope writer → `inherited / cross-domain seam`. Anti-halu: an unpaired side is `[OPEN]`, never invented.
-- **P2 — Enumerate ALL sites of a rule or flow.** Document every site of a repeated rule (diff them, mark `[OPEN]` on disagreement — never average); treat each entry-point dispatcher branch as a distinct flow with its own initial state.
-- **P3 — Behaviour-as-EXECUTED.** Unconditional halts (`die()`/`exit()`) as `[ARTIFACT: debug-code-as-feature]`; full transaction-rollback policy; hardcoded test flags; silent-success paths — what an operator OBSERVES.
+**Tech-agnostic by construction (per user directive 2026-06-15 — "EI ini harus support tech agnostic ga hanya PHP… php just example"):** the principles are stack-NEUTRAL. The agent-facing copy carries a **STACK IDIOM TABLE** mapping each principle to the concrete idiom per stack (PHP / JS-TS / Python / C#-.NET / Java / Go / Ruby / Rust), so the reasoning fires on whatever the legacy is written in — not just PHP. Never read "not present" from "I didn't see the PHP idiom"; reason from the matching stack row.
+
+- **P1 — State & data provenance.** For every state *writer*, locate the *reader*; for every clone copy (bulk row-copy, snapshot, object/struct copy — per the idiom table), trace the implicitly-inherited fields and who reads them downstream. Writer with no reader → `write-only / vestigial`; reader with no in-scope writer → `inherited / cross-domain seam`. Anti-halu: an unpaired side is `[OPEN]`, never invented.
+- **P2 — Enumerate ALL sites of a rule or flow.** Document every site of a repeated rule (diff them, mark `[OPEN]` on disagreement — never average); treat each entry-point dispatcher branch (action/mode/HTTP-verb/route discriminator) as a distinct flow with its own initial state.
+- **P3 — Behaviour-as-EXECUTED.** Unconditional halts / hard-exits (per the idiom table) as `[ARTIFACT: debug-code-as-feature]`; full transaction-rollback policy; hardcoded test flags; silent-success paths — what an operator OBSERVES.
 - **P4 — Classify files by structure, not naming.** Role from template-ratio / form-tags / early-return gates (view / action_handler / dual_purpose / dispatcher / service); document filename-vs-structure mismatches in §9.
+- **P6 — Dynamic dispatch & runtime wiring.** For every *dynamic seam* — a call site whose concrete target is resolved at RUNTIME, not lexically (DI-container resolution, reflection / `dynamic` / duck-typing, attribute/annotation/convention routing & validation, interface → implementation dispatch, event/delegate/middleware wiring — per the idiom table) — locate the real target(s) and document the observed behaviour, citing BOTH the seam and each target. The inverse of P2 (one call site, N runtime targets); the dominant silent-miss on DI/reflection-heavy stacks (C#/.NET, Java/Spring, Go, modern TS). Anti-halu: an unresolvable seam is `[OPEN]`, never an invented target.
 
-**Framing (per user directive 2026-06-02):** the KB captures **business intent + flow**; the rebuild owns **implementation cleanliness**. So P1 captures coupling as a *business outcome* ("the amendment must still trigger downstream dispatch + facility re-balance"), NOT the legacy implementation accident, and **status-naming drift between legacy and rebuild is NOT a gap** (legacy `flag_amend='4'` normalizing to a clean `workflow_state` is a cleanup, not drift). The disciplines surface coupling and distinct operating models so the rebuild can preserve the *outcome* while redesigning the *encoding*.
+**Framing (per user directive 2026-06-02):** the KB captures **business intent + flow**; the rebuild owns **implementation cleanliness**. So P1 captures coupling as a *business outcome* ("the amendment must still trigger downstream dispatch + facility re-balance"), NOT the legacy implementation accident, and **status-naming drift between legacy and rebuild is NOT a gap** (a legacy status flag normalizing to a clean `workflow_state` is a cleanup, not drift). The disciplines surface coupling and distinct operating models so the rebuild can preserve the *outcome* while redesigning the *encoding*.
 
-These four are reasoning disciplines (P5 FE-completeness is covered by the staged-input mechanism above; its progressive-disclosure delta enrichment lives in `references/knowledge-base-schema.md §3a`). Completeness across the five principles is summarized end-of-extraction by an **Extraction Completeness Contract** scorecard.
+These five are reasoning disciplines (P5 FE-completeness is covered by the staged-input mechanism above; its progressive-disclosure delta enrichment lives in `references/knowledge-base-schema.md §3a`). Completeness across the six principles is summarized end-of-extraction by an **Extraction Completeness Contract** scorecard.
 
 ## Quality gates between waves
 
@@ -214,7 +217,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - `^## 3\. Flow` exists in every new domain file
 - `^## 10\. Open Questions` exists in every new domain file
 - `^## 11\. Source References` exists in every new domain file
-- Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections
+- Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections — run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-leak-scan.sh" --kb-dir=<kb> --stack=auto` (per-stack, tech-agnostic; detects C#/Java/Go/Rust leaks the old PHP/SQL grep missed; advisory)
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
 - **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
@@ -261,7 +264,7 @@ If write fails: log warning + continue (snapshot is freshness check optimization
 
 ## Step 5.6 — Emit Extraction Completeness Contract scorecard
 
-The contract makes extraction *falsifiable*: it summarizes how well each of the five Deep extraction disciplines (P1–P4 above + P5 staged inputs) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
+The contract makes extraction *falsifiable*: it summarizes how well each of the six Deep extraction disciplines (P1–P4 above + P5 staged inputs + P6 dynamic dispatch) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
 
 - `.extraction-scorecard.json` (machine-readable — validated by `scripts/validate-extraction-scorecard.sh`)
 - `EXTRACTION-SCORECARD.md` (human-readable companion)
@@ -275,23 +278,25 @@ The contract makes extraction *falsifiable*: it summarizes how well each of the 
 | `P3_behavior_executed` | unconditional halts / rollback policy / test flags / silent-success paths documented as observed | a transaction wrapper in scope with no documented rollback policy |
 | `P4_structural_classification` | in-scope files classified by structure; filename-vs-structure mismatches noted | files left role-ambiguous with no `[OPEN]` |
 | `P5_staged_inputs` | every multi-step `classification: workflow` carries a `## 3a` `stages:` block | a multi-step workflow with no stages block (see `kb_flow_staging_missing`) |
+| `P6_dynamic_dispatch` | every dynamic seam found (`dynamic_seams_found`) is resolved to ≥1 cited target OR carries an `[OPEN]` (`dynamic_seams_resolved + dynamic_seams_open == dynamic_seams_found`) | a seam found but neither resolved nor marked `[OPEN]` (a hidden runtime path) |
 
-**`overall_status`:** `PASS` = all five COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
+**`overall_status`:** `PASS` = all six COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
 
 **Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure.
 
 ```json
 {
-  "version": "1.0",
+  "version": "1.1",
   "extracted_at": "<ISO8601>",
-  "extractor_version": "extract-intelligence@1.8.0",
+  "extractor_version": "extract-intelligence@1.11.0",
   "scope": { "legacy_root": "<path>", "files_in_scope": 0, "files_read_fully": 0 },
   "principles": {
     "P1_state_provenance":        { "status": "COVERED|PARTIAL|MISSING", "anomalies_count": 0, "anomalies": [] },
     "P2_rule_enumeration":        { "status": "COVERED|PARTIAL|MISSING", "rules_documented": 0, "conflicts_open": 0 },
     "P3_behavior_executed":       { "status": "COVERED|PARTIAL|MISSING", "artifact_markers": 0 },
     "P4_structural_classification":{ "status": "COVERED|PARTIAL|MISSING", "files_classified": 0, "naming_structure_drift_count": 0 },
-    "P5_staged_inputs":           { "status": "COVERED|PARTIAL|MISSING", "workflows_audited": 0, "workflows_with_stages": 0 }
+    "P5_staged_inputs":           { "status": "COVERED|PARTIAL|MISSING", "workflows_audited": 0, "workflows_with_stages": 0 },
+    "P6_dynamic_dispatch":        { "status": "COVERED|PARTIAL|MISSING", "seams_found": 0, "seams_resolved": 0, "seams_open": 0 }
   },
   "overall_status": "PASS|PARTIAL|FAIL",
   "open_markers_present": true
@@ -401,3 +406,5 @@ Bank Mega Trade Finance legacy (~600 PHP files; MySQL + MSSQL + LDAP + SWIFT FTP
 - `superpowers:subagent-driven-development` — pattern for the parallel agent dispatch this skill uses
 - `superpowers:verification-before-completion` — pattern for the quality-gate grep checks
 - `docs/superpowers/specs/2026-05-20-extract-intelligence-skill-design.md` — design spec this skill implements
+- `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` — tech-agnostic hardening (concept-first disciplines + STACK IDIOM TABLE + P6 dynamic dispatch + per-stack `kb-leak-scan.sh`)
+- `plugins/mega-sdd/scripts/kb-leak-scan.sh` — per-stack KB tech-leak detector (replaces the hardcoded PHP/SQL grep)

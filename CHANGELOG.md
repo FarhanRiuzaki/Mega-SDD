@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.29.0] - 2026-06-15
+
+### Added / Changed — extract-intelligence is now genuinely tech-agnostic (not PHP-tuned) + P6 dynamic-dispatch
+
+extract-intelligence (EI) is the front gate for reverse-engineering legacy. Its reasoning *structure* was already stack-agnostic, but the agent-facing implementation carried PHP-only illustrative vocabulary and a PHP/SQL-only tech-leak gate — biasing extraction toward PHP idioms and silently missing C#/Java/Go/Rust cases, especially **dynamic** ones (DI, reflection, attribute-routing). This aligns EI with the long-standing plugin contract: *"the pipeline must work for ANY supported stack, not just PHP/JS."* Spec: `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md`.
+
+- **Concept-first disciplines + STACK IDIOM TABLE.** DEEP DISCIPLINES P1–P3 (`skills/extract-intelligence/references/wave-dispatch-templates.md`) rewritten stack-neutral, backed by a new per-stack idiom table (PHP / JS-TS / Python / C#-.NET / Java / Go / Ruby / Rust) so every wave subagent gets concrete anchors for whatever the legacy is written in. SKILL.md §Deep disciplines vocabulary kept in sync.
+- **P6 — Dynamic dispatch & runtime wiring (new falsifiable principle).** Captures call sites resolved at runtime (DI-container resolution, reflection/`dynamic`, attribute/annotation/convention routing, interface → implementation dispatch, event/delegate/middleware wiring) — the inverse of P2 and the dominant silent-miss on DI/reflection-heavy stacks. New REPORT BACK fields `dynamic_seams_found/resolved/open` + self-check rail; unresolvable seam → `[OPEN]`, never an invented target.
+- **Extraction Completeness Contract grows to six principles.** `P6_dynamic_dispatch` added to `scripts/validate-extraction-scorecard.sh` REQUIRED_PRINCIPLES, scorecard JSON (schema 1.1), and the SKILL.md §Step 5.6 derivation table. **Version-gated back-compat:** a scorecard from a pre-1.11.0 extractor (no P6) is NOT failed for missing P6 — it degrades to an advisory; P6 is required only from 1.11.0+.
+- **Per-stack tech-leak gate — `scripts/kb-leak-scan.sh` (new).** Replaces the hardcoded `grep 'varchar\|int(11)\|MySQL\|MSSQL\|composer'` inline gate. Detects the legacy stack from `.scan-meta.json` (or `--stack=`), else applies the union of every stack's leak tokens; section-aware (skips `## 11.` bodies) and dir-aware (skips `50-integrations/`). Advisory by default (preserves the old non-blocking contract); `--strict` exits 1 on hits. Catches C#/Java/Go/Rust leaks the old grep let through.
+- **Skill version:** `extract-intelligence` 1.10.0 → 1.11.0. No new runtime dependency; existing five-principle verdict logic and the scorecard SKIP-on-absent contract unchanged. scan-codebase/bind-codebase C# first-class support (tree-sitter grammar, `.csproj` detection, ASP.NET pack) is explicitly out of scope — a separate deterministic-engine effort.
+
 ## [4.28.1] - 2026-06-13
 
 ### Fixed — compaction advisor over-reported every 1M-context session ~5× (false `/compact` nag)

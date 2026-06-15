@@ -75,8 +75,20 @@ REQUIRED_PRINCIPLES = [
     "P4_structural_classification",
     "P5_staged_inputs",
 ]
+# P6 added in extract-intelligence 1.11.0. Version-gated for back-compat: a scorecard
+# emitted by a PRE-1.11.0 extractor (no P6) is NOT marked FAIL for missing P6 — its
+# absence degrades to an advisory. From 1.11.0+ P6 is a required principle.
+P6_PRINCIPLE = "P6_dynamic_dispatch"
+P6_MIN_VERSION = (1, 11, 0)
 VALID_PRINCIPLE_STATUS = {"COVERED", "PARTIAL", "MISSING"}
 VALID_OVERALL = {"PASS", "PARTIAL", "FAIL"}
+
+def parse_extractor_version(sc):
+    """Extract a (major, minor, patch) tuple from `extractor_version`
+    (e.g. 'extract-intelligence@1.11.0') — returns None if unparseable."""
+    raw = str(sc.get("extractor_version", ""))
+    m = re.search(r"(\d+)\.(\d+)\.(\d+)", raw)
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
 
 def emit(d):
     print(json.dumps(d))
@@ -124,6 +136,25 @@ for key in REQUIRED_PRINCIPLES:
         continue
     present_status[key] = st
 
+# P6 — version-gated. Present → validate + fold into consistency rules. Absent →
+# FAIL only if the extractor is 1.11.0+; older extractors get a non-fatal advisory.
+p6_advisory = None
+ext_ver = parse_extractor_version(sc)
+p6 = principles.get(P6_PRINCIPLE)
+if isinstance(p6, dict) and "status" in p6:
+    st6 = p6.get("status")
+    if st6 not in VALID_PRINCIPLE_STATUS:
+        issues.append({"type": "principle_status_invalid", "principle": P6_PRINCIPLE, "detail": f"status={st6!r}"})
+    else:
+        present_status[P6_PRINCIPLE] = st6
+else:
+    if ext_ver is not None and ext_ver >= P6_MIN_VERSION:
+        issues.append({"type": "principle_absent", "principle": P6_PRINCIPLE,
+                       "detail": f"{P6_PRINCIPLE} required from extract-intelligence 1.11.0+ (scorecard reports {ext_ver[0]}.{ext_ver[1]}.{ext_ver[2]})"})
+    else:
+        p6_advisory = ("scorecard predates P6 (dynamic-dispatch) — emitted by a pre-1.11.0 extractor; "
+                       "re-run extract-intelligence to add the P6_dynamic_dispatch dimension")
+
 overall = sc.get("overall_status")
 if overall not in VALID_OVERALL:
     issues.append({"type": "overall_status_invalid", "detail": f"overall_status={overall!r}"})
@@ -156,6 +187,8 @@ if not_covered and open_marker_count == 0:
                              f"gaps must be surfaced as [OPEN] in the KB, not hidden"})
 
 advisories = []
+if p6_advisory:
+    advisories.append(p6_advisory)
 # overall=FAIL is the scorecard honestly self-reporting a gap — that's an advisory to
 # re-run the failing principle, NOT a validator FAIL (the scorecard did its job).
 if overall == "FAIL" and not issues:
