@@ -264,8 +264,9 @@ Depth expectations:
   - Boundary values (0, max, null, empty string)
   - Race conditions (concurrent users updating same record)
   - Timezone / date-boundary issues (midnight, DST, fiscal year boundary)
-  - Silent error swallowing (empty catch blocks, `|| true`, error suppression)
+  - Silent error swallowing (empty catch blocks, swallowed errors, error suppression)
   - .bak vs live file discrepancies
+  - **Dynamic dispatch seams (P6)** — behaviour reached via DI-container resolution, reflection / `dynamic`, attribute/annotation/convention routing, interface → implementation dispatch, or event/delegate/middleware wiring. Document the resolved target(s) as a business outcome (cite BOTH the seam site and each target); an unresolvable seam is an `[OPEN]` here, never an invented target. See `references/wave-dispatch-templates.md` DEEP DISCIPLINES P6 + STACK IDIOM TABLE for the per-stack idiom to look for.
 - Each entry MUST have: description + source file:line + rebuild guidance (replicate/don't/open).
 
 ## 10. Open Questions

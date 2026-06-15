@@ -127,10 +127,25 @@ EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
 - **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
 
 DEEP DISCIPLINES (catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
-- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set by UPDATE/INSERT/assignment), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (`INSERT … SELECT`, snapshot, record-duplicate), list the fields carried over IMPLICITLY (the bareword / non-overwritten columns) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
-- **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the TOP of every controller / form file for entry-point dispatchers (`mode == …`, `sendingpage == …`, `request.method == …`, `$_GET['action']`): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
-- **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional `die()` / `exit()` / early-return halts on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]`); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (`if (true)`, `$debug = 1`, `// delete after testing`); and silent-success paths (empty catch, `|| true`, "expected failure → return success").
-- **P4 — Classify files by structure, not naming**: a file's role comes from its shape, not its filename prefix. Inspect template/output ratio, form-tag presence, and early-return action gates to classify each in-scope file as view / action_handler / dual_purpose / dispatcher / service. When the structural fingerprint contradicts the filename hint (a file named `act_*` that ALSO renders a full view → `dual_purpose`), document the mismatch in §9 — downstream rebuild planning depends on the real role.
+- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set via the stack's persistence or assignment idiom — see the STACK IDIOM TABLE below), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (a bulk row-copy, snapshot, record-duplicate, or object/struct copy — table row P1), list the fields carried over IMPLICITLY (the non-overwritten columns/fields) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
+- **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the entry point of every controller / handler / form file for **entry-point dispatchers** — a branch on an action/mode/HTTP-verb/route discriminator (table row P2): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
+- **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional halt / hard-exit / early-return on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]` — table row P3); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (an always-true gate, a `debug = 1`, a `// delete after testing`); and silent-success paths (empty catch / swallowed error / "expected failure → return success" — table row P3).
+- **P4 — Classify files by structure, not naming**: a file's role comes from its shape, not its filename prefix. Inspect template/output ratio, form-tag/markup presence, and early-return action gates to classify each in-scope file as view / action_handler / dual_purpose / dispatcher / service. When the structural fingerprint contradicts the filename hint (a file named like an action-only handler that ALSO renders a full view → `dual_purpose`), document the mismatch in §9 — downstream rebuild planning depends on the real role.
+- **P6 — Dynamic dispatch & runtime wiring**: a call site whose concrete target is decided at RUNTIME, not lexically, is a **dynamic seam** — a write-side-only read sees the seam but not what it actually does. For every dynamic seam (table row P6 — DI-container resolution, reflection / `dynamic` / duck-typed dispatch, attribute/annotation/convention-based routing & validation, interface → implementation dispatch, event/delegate/middleware/observer wiring), locate the real target(s) the runtime would bind and document the OBSERVED behaviour as a business outcome, citing BOTH the seam site and each resolved target. A seam you can resolve to one or more concrete targets → confirmed; a seam whose target genuinely cannot be determined from the code (e.g. a container registration scanned by convention with no enumerable consumer in scope) → `[OPEN]`, never an invented target. This is the inverse of P2 (one call site, N runtime targets) and the most common silent-miss on DI/reflection-heavy stacks (C#/.NET, Java/Spring, Go, modern TS) — do NOT skip a seam just because the target is not in the same file.
+
+**STACK IDIOM TABLE** — the disciplines above are stack-neutral; this table gives the concrete idiom to grep/read for, per detected legacy stack. Match the row to the principle; if your stack is not listed, reason by analogy from the closest row (never assume "not present" — confirm by reading):
+
+| Principle | PHP | JS / TS | Python | C# / .NET | Java | Go | Ruby | Rust |
+|---|---|---|---|---|---|---|---|---|
+| **P1** state write | `UPDATE`/`INSERT`/`$x =` | assignment / ORM `.save()` | assignment / ORM `.save()` | EF `SaveChanges` / property set | JPA `persist`/`merge` / setter | struct field set / `db.Save` | AR `update`/`save` / `attr=` | field set / `diesel update` |
+| **P1** clone copy | `INSERT … SELECT` | object spread `{...x}` | `dict(**x)` / `copy()` | `INSERT … SELECT` / object init | `INSERT … SELECT` / copy ctor | struct copy `b := a` | `dup`/`clone`/`attributes` | `.clone()` / struct update |
+| **P2** entry dispatcher | `$_GET['action']` / `mode==` | `req.method` / route switch | `request.method` / view dispatch | attribute route / `switch(action)` | `@RequestMapping` / servlet `switch` | `switch r.Method` / mux | `params[:action]` / routes | match on path / router |
+| **P3** hard halt | `die()`/`exit()` | `process.exit()`/`throw` | `sys.exit()`/`raise` | `Environment.Exit`/`throw` | `System.exit`/`throw` | `os.Exit`/`panic`/`log.Fatal` | `exit`/`abort`/`raise` | `std::process::exit`/`panic!` |
+| **P3** silent-success | empty `catch`/`@` | empty `catch`/`?? true` | bare `except: pass` | empty `catch`/swallow | empty `catch` | ignored `err` (`_ =`) | bare `rescue`/`rescue nil` | `let _ =`/`.ok()` discard |
+| **P6** DI / IoC | service locator / container | DI token / factory inject | constructor inject / `Depends()` | `IServiceCollection` / ctor inject | `@Autowired`/`@Inject` | wire / provider func | initializer / `.new` inject | trait object / builder |
+| **P6** reflection | `call_user_func`/`$$var` | `obj[name]()` / proxy | `getattr`/`__getattr__` | reflection / `dynamic` | reflection / proxy | `reflect` / interface assert | `send`/`method_missing` | trait dynamic / `Any` |
+| **P6** route/validate by attr | annotation `@Route` | decorator route | decorator route | `[HttpGet]`/`[Authorize]`/`[Required]` | `@GetMapping`/`@Valid` | tag-based bind | DSL macro | attribute macro |
+| **P6** event / wiring | observer / hook | `emitter.on` / callback | signal / observer | event/delegate / `+=` / middleware | listener / `@EventListener` | channel / callback | callback / ActiveSupport notif | channel / trait callback |
 
 REPORT BACK (last line of your response, exact format):
 - path: <absolute output path>
@@ -144,10 +159,15 @@ REPORT BACK (last line of your response, exact format):
 - provenance_pairs_checked: <int>      # P1: state values where BOTH writer + reader were located
 - provenance_anomalies: <int>          # P1: write-only OR read-only-cross-domain values flagged (each MUST carry an [OPEN] or seam annotation)
 - rule_sites_multi: <int>              # P2: rules found in >1 site (each documented separately)
+- dynamic_seams_found: <int>           # P6: runtime-resolved dispatch sites located (DI / reflection / attr-route / interface / event)
+- dynamic_seams_resolved: <int>        # P6: seams resolved to ≥1 concrete target, both sides cited
+- dynamic_seams_open: <int>            # P6: seams whose target could not be resolved from code (each MUST carry an [OPEN])
 - gate_self_check: pass | fail (<reason if fail>)
 ```
 
 > **P1 self-check rail:** if you report `provenance_anomalies > 0`, every anomaly MUST appear in the output as a `write-only` / `inherited / cross-domain seam` note WITH an `[OPEN]` marker (or a cited seam). An anomaly count with no matching annotation in the file is a `fail` on `gate_self_check`.
+>
+> **P6 self-check rail:** `dynamic_seams_found` MUST equal `dynamic_seams_resolved + dynamic_seams_open`. Every seam counted in `dynamic_seams_open` MUST appear in the output with an `[OPEN]` marker; every resolved seam MUST cite both the seam site and at least one target. A `dynamic_seams_open > 0` with fewer matching `[OPEN]` markers is a `fail` on `gate_self_check`.
 
 ---
 
@@ -224,8 +244,11 @@ for f in 00-overview/*.md 30-data-model/*.md 20-workflows/*.md; do
 done
 # Glossary completeness check
 grep -c '^## ' 00-overview/glossary.md  # ≥40 entries expected
-# Forbidden patterns in non-allowed sections
-grep -n 'varchar\|int(11)\|MySQL\|MSSQL\|composer' 10-domains/*.md 20-workflows/*.md 30-data-model/*.md 2>/dev/null | grep -v 'Source References' | head -10
+# Tech-leak scan (per-stack, advisory) — replaces the old hardcoded PHP/SQL grep.
+# Detects the legacy stack from .scan-meta.json (or pass --stack=<x>) and flags any
+# stack-specific token leaking into a tech-agnostic domain body. Advisory: prints +
+# counts, never fails the gate. Derive <plugin-root> from this reference file's path.
+bash "<plugin-root>/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
 [[ $GATE -eq 0 ]] && echo "GATE 1 PASS" || echo "GATE 1 FAIL"
 ```
 
@@ -323,7 +346,7 @@ Produce in order:
 4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 + per-module acceptance criteria.
 5. **`99-rebuild-architecture/data-mutation-policy.md`** — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
 6. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
-7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the five principle statuses (P1–P4 + P5 staged inputs) from the Wave REPORT BACK self-checks + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
+7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the six principle statuses (P1–P4 + P5 staged inputs + P6 dynamic dispatch) from the Wave REPORT BACK self-checks (incl. `dynamic_seams_found/resolved/open`) + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
 
 README MUST surface REENGINEERING OPPORTUNITIES + Critical findings BEFORE TOC + before stats. Format:
 
@@ -389,9 +412,11 @@ for f in 10-domains/*.md; do
   done
 done
 
-# 4. Forbidden patterns absent from domain bodies (allowed in §11 + 50-integrations/)
-grep -rn 'varchar\|int(11)\|MySQL\|MSSQL\|composer\|namespace ' 10-domains/ 20-workflows/ 30-data-model/ 2>/dev/null | grep -v 'Source References' | head -10
-# Expect: no output (or only matches inside §11)
+# 4. Tech-leak scan (per-stack, advisory) — allowed in §11 + 50-integrations/.
+# Replaces the old hardcoded PHP/SQL grep so C#/Java/Go/Rust leaks are caught too.
+# Derive <plugin-root> from this reference file's own path (see item 7 note below).
+bash "<plugin-root>/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
+# Expect: no leak hits (matches inside §11 / 50-integrations/ are auto-excluded)
 
 # 5. Rebuild architecture all 5 files present
 for f in suggested-erd suggested-system-flow module-dependency-graph suggested-phasing data-mutation-policy; do
