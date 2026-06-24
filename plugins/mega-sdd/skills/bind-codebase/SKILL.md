@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.5.0
+version: 2.5.1
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -64,6 +64,17 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 **3. Aggregate counts.** `claims_total`, `confirmed`, `conflict`, `oq`.
 
 **4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs).
+
+**4.5. Emit `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
+Write `<vault>/binding.json` from the SAME claim data you just rendered into the
+State Map — one `claims[]` entry per State Map row (`id`, `verdict`, `state`,
+`anchor`, `confidence`, `field_diff`, and `vault_source` from the Confirmed
+Claims list `vault file:line`). Set `codebase_map_provenance` from
+`binding_metadata`, `head` to the current `git rev-parse HEAD` (or null outside
+git). This is part of the binding write — emit it whether the bind is clean or
+blocked. Then **Run** `scripts/validate-binding-json.sh --vault <vault>`; a
+non-zero exit means `binding.md` and `binding.json` disagree — fix the write
+before proceeding (do NOT emit a halt YAML for this; it is an authoring bug).
 
 **5. Decision gate — non-negotiable:**
 
