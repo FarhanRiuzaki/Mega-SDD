@@ -79,6 +79,7 @@ Probe in order (record ALL hits — multi-language projects are normal):
 - `requirements.txt` / `pyproject.toml` / `Pipfile` → python
 - `Gemfile` → ruby/bundler
 - `pom.xml` / `build.gradle` / `build.gradle.kts` → java/kotlin (jvm)
+- `*.csproj` / `*.sln` / `*.fsproj` → csharp/fsharp (.NET; nuget) — `Directory.Packages.props` for central package mgmt
 - Multiple → multi-language project; record all.
 
 ## Step 3 — Detect test framework
@@ -91,6 +92,7 @@ Grep for known imports/configs (per detected ecosystem; record all):
 - **go:** `*_test.go` files (built-in `go test`); `testify` in go.mod
 - **ruby:** `.rspec` / `spec/spec_helper.rb` (rspec); `test/test_helper.rb` (minitest)
 - **jvm:** `junit`/`junit-jupiter` in pom.xml/build.gradle deps; `src/test/java/`
+- **.NET:** `xunit` / `nunit` / `MSTest.TestFramework` PackageReference in `*.csproj`; `*Tests.csproj` / `*.Tests/` projects (built-in `dotnet test`)
 
 ## Step 4 — Build tree (depth-limited)
 
@@ -241,6 +243,8 @@ Parse package manifest for framework dependency fingerprints; write to `codebase
 | `Cargo.toml` | `axum` | axum |
 | `Cargo.toml` | `rocket` | rocket |
 | `pom.xml`/`build.gradle` | `spring-boot-starter` | spring |
+| `*.csproj` | `Microsoft.AspNetCore.` (or `<Project Sdk="Microsoft.NET.Sdk.Web">`) | aspnetcore |
+| `*.csproj` | `Microsoft.EntityFrameworkCore` (no web SDK) | dotnet |
 
 Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to `codebase-map.md`.
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.33.0] - 2026-06-24
+
+### Added — .NET recognized by scanner (gap audit #1, partial)
+
+- `scan-codebase` now detects .NET: `*.csproj`/`*.sln`/`*.fsproj` manifests, `dotnet test` (xunit/nunit/MSTest) test framework, and ASP.NET Core / EF Core framework fingerprints. A .NET repo is no longer invisible (was falling through to `_universal`). Regex-tier extraction; AST query (`tags-csharp.scm`) + a .NET framework-conventions pack remain (tracked in `research/2026-06-24-skills-gap-audit.md` #1).
+
 ## [4.32.0] - 2026-06-24
 
 ### Changed — router NL-routing for diagnostic/output skills (gap audit #3)
