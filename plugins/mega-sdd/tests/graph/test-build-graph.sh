@@ -17,7 +17,11 @@ git -C "$TMP" config user.name "test"
 git -C "$TMP" add -A
 git -C "$TMP" commit -q -m "fixture" >/dev/null 2>&1
 
-bash "$BUILD" --root "$TMP" >/dev/null 2>&1 || { echo "FAIL: builder errored"; rc=1; }
+# Force the hand-rolled YAML fallback (even if PyYAML is installed) so the
+# block-style regression guard below exercises the fallback parser on EVERY
+# runner — otherwise PyYAML would silently handle the block-style YAML and the
+# guard would no-op, re-masking the parser bug on PyYAML-equipped machines.
+MEGA_SDD_FORCE_YAML_FALLBACK=1 bash "$BUILD" --root "$TMP" >/dev/null 2>&1 || { echo "FAIL: builder errored"; rc=1; }
 G="$TMP/.mega-sdd/graph.json"
 [ -f "$G" ] || { echo "FAIL: graph.json not written"; rc=1; exit $rc; }
 
