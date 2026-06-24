@@ -34,5 +34,7 @@ never parse the markdown table.
 For every row in the `binding.md` Implementation State Map there MUST be exactly
 one `claims[]` entry with the same `id`, `verdict`, and `state`, and vice-versa.
 Anchor and field_diff are NOT compared by the validator (the gate is the source
-of truth: it enforces id/verdict/state only). A mismatch is a FAIL — the binding
-write is inconsistent and the graph would inherit the error.
+of truth: it enforces id/verdict/state only). This does not mean anchor mismatches
+are acceptable — anchor accuracy is enforced at bind time by bind-codebase, not by
+this read-time parity validator. A mismatch is a FAIL — the binding write is
+inconsistent and the graph would inherit the error.
