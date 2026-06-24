@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "generated_by": "bind-codebase@test",
+  "generated_at": "2026-06-24T00:00:00Z",
+  "vault": "fixtures/binding-ok",
+  "codebase_map_provenance": "snapshot-verified",
+  "head": "abc123",
+  "claims": [
+    {"id": "C-001", "verdict": "CONFIRMED", "state": "IMPLEMENTED", "anchor": "UserController.php:45", "confidence": "high", "field_diff": "(exact match)", "vault_source": "03-data-model.md:42"},
+    {"id": "C-012", "verdict": "OQ", "state": "NEW", "anchor": "—", "confidence": "n/a", "field_diff": "n/a", "vault_source": null}
+  ]
+}
