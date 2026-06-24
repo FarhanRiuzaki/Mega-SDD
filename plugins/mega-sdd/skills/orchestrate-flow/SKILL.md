@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.8.0
+version: 2.9.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -122,6 +122,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--greenfield` / `--brownfield`: override starterkit/mode inference
 - `--with-fsd` / `--no-fsd`, `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`, `--no-drift-check`, `--no-enrich-staging`: diagnostic opt-outs (see `references/chain-execution.md`)
 - `--sync`: force the Mode D maintenance chain (incremental scan → drift → re-bind → unit reconcile) regardless of other inference — the `/mega-sdd:sync` front-door (per `references/routing-rules.md` §Mode D)
+- `--factory` — enable state-driven factory routing: read the whole checkpoint ledger and route forward OR backward to re-run an unresolved phase, looping to convergence under the retry cap (`references/factory-routing.md`). Implied by `--deep`.
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
 - `--no-telemetry`: disable telemetry event emission for this chain
 - Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
@@ -157,6 +158,8 @@ When memory is enabled (default; opt-out `--memory-off`), the orchestrator is th
 
 ## Specialist references (load on demand)
 
+- `references/factory-ledger-contract.md` — the derived checkpoint ledger schema each phase appends to.
+- `references/factory-routing.md` — read-whole-ledger forward/backward routing + convergence/cap termination (`--factory` / `--deep`).
 - **`references/routing-rules.md`** — CWD inspection order, the default + `--deep` decision matrices, starterkit-first ordering, multi-squad detection, greenfield/brownfield detection, `--from`/`--to`/`--resume` mechanics.
 - **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, memory-informed routing, model-tier resolution, iter-classifier EP1/EP2, Plan/Act gating, chain optimization), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, end-of-chain memory write, final-summary appendix.
 - **`references/predictive-checks.md`** — per-skill preflight check catalog consulted before chain start.
