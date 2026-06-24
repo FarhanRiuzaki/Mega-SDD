@@ -1,0 +1,10 @@
+{
+  "vault_version": "1.0",
+  "flows": [
+    {
+      "id": "F-U-001",
+      "doc": "04-flows.md",
+      "_kb_source": ["10-domains/cif-customer.md"]
+    }
+  ]
+}

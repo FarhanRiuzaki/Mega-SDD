@@ -1,0 +1,5 @@
+modules:
+  - id: M-auth
+    blocks: [M-orders]
+  - id: M-orders
+    blocked_by: [M-auth]
