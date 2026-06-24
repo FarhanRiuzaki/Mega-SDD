@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.34.0] - 2026-06-24
+
+### Added — CI + C# AST extraction (gap audit #2 + #1 cont.)
+
+- **CI** (`.github/workflows/tests.yml`): runs every `tests/**/test-*.sh` (moat, graph, design-intelligence) and validates all framework-convention packs on push/PR to main. Closes gap #2 (no automated test runs).
+- **C# AST query** (`scan-codebase/queries/tags-csharp.scm`): .NET repos now get AST-level symbol extraction (class/interface/struct/enum/record/method/constructor/**property**) instead of regex-only — properties captured as field definitions so .NET DTOs/entities get field-level binding. Upgrades gap #1 from "recognized" to "AST-extracted".
+- Remaining for gap #1: a `.NET` framework-conventions pack (convention idioms) — deferred; `_universal` applies until then.
+
 ## [4.33.0] - 2026-06-24
 
 ### Added — .NET recognized by scanner (gap audit #1, partial)
