@@ -16,7 +16,7 @@ Inspect the actual change (`git diff <base>..<head>`) and read the files it touc
 
 - **Duplication / failure-to-reuse** — the signature AI defect. Did the change re-implement logic that already exists (check the reuse-index and grep for analogous helpers/services)? Copy-paste blocks instead of extraction?
 - **Tests that don't test** — tautological assertions, mock-only verification, missing failure paths. Tests must verify real behavior and be comprehensive for the change.
-- **Over-engineering** — abstractions, options, or dependencies the unit didn't ask for; dead code; speculative generality.
+- **Over-engineering** — abstractions, options, or dependencies the unit didn't ask for; dead code; speculative generality. Tag each such finding so the fix is unambiguous: `delete:` (dead/speculative — nothing replaces it), `stdlib:` (hand-rolled what the standard library ships — name it), `native:` (a dep or code doing what the platform/framework already does — name the feature), `yagni:` (abstraction with one caller — inline it), `shrink:` (same logic, fewer lines — show the shorter form).
 - Clear, readable code; names match what things *do*, not how they work.
 - Proper error handling; no swallowed failures.
 - Performance is reasonable for the context (no obvious N+1s, no needless work in hot paths).
@@ -41,4 +41,5 @@ Be specific: every issue gets a `file:line` reference and a concrete suggestion 
 
 - **Strengths** — what's genuinely well done.
 - **Issues** — grouped Critical / Important / Minor, each with `file:line` + a fix.
+- For duplication / over-engineering findings, lead the line with its tag: `file:line: <tag> <what>. <replacement>.` When the change could be meaningfully shorter, close the Assessment with `net: −N lines possible.`
 - **Assessment** — one paragraph: is this mergeable as-is, mergeable after the Important fixes, or blocked on Criticals?
