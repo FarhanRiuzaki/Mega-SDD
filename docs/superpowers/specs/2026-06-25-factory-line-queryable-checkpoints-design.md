@@ -54,8 +54,9 @@ The genuinely new surface is narrow: (a) an **introspectable checkpoint schema**
 ### 4.1 Storage — `.mega-sdd/factory-ledger.json`
 
 - **Project-scope** (alongside `project.md`), append-only array of checkpoint records (one per phase-attempt).
-- **Derived** — rebuildable from per-phase handoffs/artifacts. Git-ignored as runtime state (matches `**/.mega-sdd/.*-state.json` pattern; add an explicit ignore entry).
+- **Derived** — rebuildable from per-phase handoffs/artifacts. Git-ignored as runtime state via an **explicit** entry `**/.mega-sdd/factory-ledger.json` (the name has no leading dot, so it does NOT ride the existing `.*-state.json` glob).
 - Never authored by hand; never a source of truth.
+- **Two distinct files** (do not conflate): `factory-ledger.json` is the *ledger data* (the checkpoint records, written by phases); `.factory-ledger-state.json` is the *validator verdict* (PASS/FAIL, written by `validate-factory-ledger.sh`, read by the gate). The latter rides the existing `.*-state.json` glob automatically.
 
 ### 4.2 Checkpoint record schema
 
