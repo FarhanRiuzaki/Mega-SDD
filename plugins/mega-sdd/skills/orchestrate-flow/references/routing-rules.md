@@ -65,6 +65,11 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 
 **Mode D autonomous policy (`--sync --auto`):** one upfront confirmation covers the whole chain; mid-chain decisions are DEFERRED, never asked — drift direction calls + write-back drafts + re-bind CONFLICTs queue into `<vault>/PENDING-SYNC.md` (mode note: `DRIFT-ACTIONS.md` is the INTERACTIVE walkthrough's artifact and is correctly absent under `--auto` — PENDING-SYNC.md is its autonomous counterpart, not a missing file); the chain executes everything the gates allow and ends by writing `<vault>/SYNC-REPORT.md` (applied vs queued, conflicts, reconcile outcomes, closing staleness verification via `scripts/compute-unit-staleness.sh`). A queued CONFLICT yields handoff `status: paused` with the digest path in `next_action` — never `completed`-with-silence.
 
+- **Cache-warm the graph (non-blocking).** After `SYNC-REPORT.md` is written,
+  `Run: scripts/build-graph.sh --root <project>` to refresh `.mega-sdd/graph.json`.
+  This is cache-warming only — a failure here NEVER blocks sync and emits no halt
+  YAML (the graph is rebuilt lazily on next `/mega-sdd:graph` query regardless).
+
 **Mode D change-signal inspection (cheap, two probes):** `grep -c . .mega-sdd/codebase/.dirty-paths.jsonl` and compare `git rev-parse HEAD` to the map frontmatter's `last_scanned_commit`. Either positive → Mode D candidate. Mode D NEVER fires on a repo without an existing map+binding (that's a normal brownfield first-run, rows above). Precedence: the P0/P1 OQ intent gate still runs first; a new PRD revision (diff-vault row) outranks sync.
 
 **OQ counting note:** When inspecting vault for P0/P1 OQ counts, distinguish:
