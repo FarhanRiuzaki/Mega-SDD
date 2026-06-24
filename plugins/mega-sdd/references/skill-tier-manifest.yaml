@@ -63,6 +63,9 @@ skills:
     references/adversarial-test-prompt.md: SPECIALIST
     references/binding-contract.md: SPECIALIST
 
+  graph:
+    references/graph-schema.md: HOT
+
   install-deps:
     references/os-detection.md: SPECIALIST
     references/tool-matrix.yaml: SPECIALIST
