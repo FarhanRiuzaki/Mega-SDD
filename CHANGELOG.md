@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.35.0] - 2026-06-24
+
+### Added — .NET framework-convention packs (gap audit #1 complete)
+
+- **`dotnet.md`** (base, `extends: _universal`, `pack_tier: full`): general .NET / C# conventions for console apps, worker services, class libraries, and EF Core data layers — PascalCase methods, `I`-prefixed interfaces, `Async` suffix, `_camelCase` private fields, constructor DI, options pattern, `ILogger<T>`, nullable reference types. EF Core specifics are quarantined to the data-access section so a non-EF project still matches cleanly.
+- **`aspnetcore.md`** (web, `extends: dotnet`, `pack_tier: full`): the web layer on top of `dotnet` — `[ApiController]` attribute routing / Minimal APIs, DTO boundaries, `ActionResult<T>`/`TypedResults`, the load-bearing `UseAuthentication` → `UseAuthorization` pipeline order, policy-based authz, Razor/Blazor UI detection, and `WebApplicationFactory` integration tests. Populated Deep-scan hints, Authz mapping, and UI detection.
+- Both packs lint clean (`validate-pack.sh`), carry no cross-framework leak tokens, and are registered in `_registry.md`. **Closes gap #1** — a .NET repo now resolves to idiomatic .NET conventions instead of falling through to `_universal`.
+
+### Fixed — CI was broken from birth (never green since 4.34.0)
+
+- The 4.34.0 pack-validation CI step looped every pack through `validate-pack.sh` in **single (strict) mode**, which fails on the intentionally-incomplete untiered overlay `laravel-base-26.md` (it `extends: laravel` and omits 5 sections by design). CI exited 1 on its very first run. Switched the step to the script's documented tier-aware aggregate gate `validate-pack.sh --all` (full-tier packs still block on any violation; thin/untiered overlays block only on structural errors — invalid YAML / cross-framework leak).
+- Added a `--check-registry` CI step so a stale `_registry.md` is caught in CI, not just by reviewers.
+
 ## [4.34.0] - 2026-06-24
 
 ### Added — CI + C# AST extraction (gap audit #2 + #1 cont.)
