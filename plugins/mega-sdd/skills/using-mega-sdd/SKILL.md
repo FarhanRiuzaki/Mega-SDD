@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 2.2.0
+version: 2.3.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, open questions, knowledge-base, extract intelligence, reverse engineer, rebuild, or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next, sync, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -46,6 +46,8 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 ```
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
+
+Diagnostic & output lanes (route these on natural language, not just `/command`): `analyze` ("check consistency", "cek konsistensi", "consistency report"); `graph` ("impact", "blast radius", "what breaks if I change X", "apa yang kena kalau ubah ini", "what depends on this"); `memory` ("show memory", "what did mega-sdd learn", "review patterns", "lihat memory"); `emit-fsd` ("generate FSD", "buat FSD"); `emit-agents-md` ("emit AGENTS.md", "tool-agnostic interop"); `install-deps` ("install deps", "pasang tools").
 
 Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
 

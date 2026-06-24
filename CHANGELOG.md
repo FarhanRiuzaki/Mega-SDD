@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.32.0] - 2026-06-24
+
+### Changed — router NL-routing for diagnostic/output skills (gap audit #3)
+
+- `using-mega-sdd` now routes `analyze`, `graph`, `memory`, `emit-fsd`, `emit-agents-md`, `install-deps` on natural language (EN+ID triggers), not just explicit `/command`. Closes the 6-skill router-orphan gap surfaced by the 2026-06-24 skills gap audit (`research/2026-06-24-skills-gap-audit.md`).
+- Added the gap audit itself as a durable artifact under `research/`.
+
 ## [4.31.0] - 2026-06-24
 
 ### Changed — anti-over-engineering discipline (ponytail-inspired), shift-left into the bolt panel
