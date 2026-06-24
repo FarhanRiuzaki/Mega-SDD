@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "generated_by": "bind-codebase@test",
+  "generated_at": "2026-06-24T00:00:00Z",
+  "vault": "sample-vault",
+  "codebase_map_provenance": "snapshot-verified",
+  "head": "abc123fixture",
+  "claims": [
+    {
+      "id": "C-001",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "UserController.php:45",
+      "confidence": "high",
+      "field_diff": "(exact match)",
+      "vault_source": "04-flows.md:12"
+    },
+    {
+      "id": "C-002",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "OrderController.php:88",
+      "confidence": "high",
+      "field_diff": "(exact match)",
+      "vault_source": null
+    }
+  ]
+}
