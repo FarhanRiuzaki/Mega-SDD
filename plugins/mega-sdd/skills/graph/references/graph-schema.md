@@ -71,7 +71,12 @@ normalized to its file when minting/matching.
 | blocks | module → module | modules.yaml `blocks`/`blocked_by` |
 | kb_source | flow → kb_domain | vault flow `_kb_source` |
 | domain_dep | kb_domain → kb_domain | KB frontmatter `depends_on` |
-| covers | claim → flow/vault-section | binding.json `claims[].vault_source` |
+| covers | claim → flow | binding.json `claims[].vault_source` |
+
+`covers` targets a `flow` only in v1: the builder emits it only when `vault_source`
+resolves to a known flow node, and omits it otherwise. A `vault-section` node type
+(covering a claim to a non-flow vault section) is deferred — there is no such node
+type in v1.
 
 ## Confidence derivation (honest-confidence rule)
 
