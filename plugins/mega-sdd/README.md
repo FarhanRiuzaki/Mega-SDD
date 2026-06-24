@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 4.20.1 · **License:** MIT
+**Version:** 4.35.0 · **License:** MIT
 
 > **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
@@ -68,7 +68,7 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v4.20.1)
+├── .claude-plugin/plugin.json    # plugin manifest (v4.35.0)
 ├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
@@ -158,9 +158,9 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
-**v4.20.1** — *Adversarial bug-hunt patch:* fresh-surface hunt with verified repros — the handoff YAML parser now handles 2-level block nesting, memory-write's stale-lock steal is atomic, `secret-scan --redact` preserves file permission bits, staleness compute tolerates unreadable paths.
-**v4.20.0** — *Platform-truth sweep:* every assumption about Claude Code itself verified against current docs — the moat's PreToolUse block format modernized, the `/command` bypass path gated, pandoc failures rewired, a state-corrupting stop-hook fossil removed. 15 new platform pins.
-**v4.19.0** — *Future-ready, eyes open:* worktree-proof git probes, the official AGENTS.md↔CLAUDE.md interop pair, a headless/CI recipe, an optional EARS criteria tier — and two capabilities deliberately NOT adopted yet, with the evidence recorded.
+**v4.35.0** — *.NET conventions land:* `dotnet.md` + `aspnetcore.md` framework-convention packs (PascalCase/`Async`/DI idioms, the `UseAuthentication`→`UseAuthorization` pipeline order) close gap #1 — a .NET repo now resolves to idiomatic conventions instead of `_universal`. CI fixed to the tier-aware aggregate gate + a registry-staleness check.
+**v4.34.0** — *CI + C# AST:* a GitHub Actions workflow runs every test suite and validates all packs on push/PR; a `tags-csharp.scm` query gives .NET repos AST-level symbol extraction (incl. properties as fields) instead of regex-only.
+**v4.33.0** — *.NET recognized by the scanner:* `scan-codebase` now detects `*.csproj`/`*.sln`/`*.fsproj`, `dotnet test` (xunit/nunit/MSTest), and ASP.NET Core / EF Core fingerprints — a .NET repo is no longer invisible.
 
 Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single source of release history).
 

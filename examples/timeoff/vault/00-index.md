@@ -99,8 +99,8 @@ This document is the **single source of truth for requirements**. When working f
 
 ### Companion skills for vault evolution
 
-- **Stakeholder OQ resolution round** → `/grand-design-spec:resolve-oq`. Most useful AFTER PRD sign-off arrives and the team has stakeholder answers to capture.
-- **PRD revises** → `/grand-design-spec:vault-diff`. Use when PRD goes from v1.0 → v1.1 (e.g., after Q1–Q5 from PRD §L are answered and a new PRD is published).
+- **Stakeholder OQ resolution round** → `/mega-sdd:resolve-oq`. Most useful AFTER PRD sign-off arrives and the team has stakeholder answers to capture.
+- **PRD revises** → `/mega-sdd:diff-vault`. Use when PRD goes from v1.0 → v1.1 (e.g., after Q1–Q5 from PRD §L are answered and a new PRD is published).
 - **Codebase reconciliation** → NOT applicable here. Vault is `mode=new`; there's no existing codebase yet. Once development starts and code lands, this vault could be re-positioned to `mode=existing` for ongoing drift detection.
 
 ### During implementation
