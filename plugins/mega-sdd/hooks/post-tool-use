@@ -451,6 +451,16 @@ except Exception:
         ;;
     esac
 
+    # ─── Factory Line: validate the checkpoint ledger on write ────────────────
+    case "$FILE_PATH" in
+      */.mega-sdd/factory-ledger.json)
+        VALIDATOR_FL="${SCRIPT_DIR}/../scripts/validate-factory-ledger.sh"
+        if [ -x "$VALIDATOR_FL" ]; then
+          bash "$VALIDATOR_FL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+
     # ── Code-delivery slice E: UI scaffold-tells quality gate ───────────────
     # Style-A dispatch on Write|Edit of a VIEW file (generated UI source — NOT a
     # mega-sdd artifact). The trigger glob is deliberately GENEROUS (common view
