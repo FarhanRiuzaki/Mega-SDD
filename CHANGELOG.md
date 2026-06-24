@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.31.0] - 2026-06-24
+
+### Changed — anti-over-engineering discipline (ponytail-inspired), shift-left into the bolt panel
+
+- `bolt-implementer` now climbs an explicit **build ladder** before writing (reuse → stdlib → native platform/framework → already-installed dep → minimum code) — over-engineering is avoided pre-write, not just caught in review (fewer reject loops). The ladder shortens the solution, never the reading.
+- `code-quality-reviewer` over-engineering findings now carry a terse, actionable tag taxonomy (`delete:`/`stdlib:`/`native:`/`yagni:`/`shrink:`), one line per finding, with an optional `net: −N lines possible` on the Assessment. Severity grading and the panel contract are unchanged.
+- No new agents, no per-pack duplication: mega-sdd already enforced reuse-first (Iron Rule #4) and YAGNI; this sharpens *when* (shift-left) and *how legibly* over-engineering is surfaced.
+
 ## [4.30.0] - 2026-06-24
 
 ### Added — derived graph layer (`mega-sdd:graph`)
