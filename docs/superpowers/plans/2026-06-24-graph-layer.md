@@ -513,7 +513,7 @@ def relp(p): return os.path.relpath(p, root)
 def add_node(nid, ntype, label, attrs, artifact, field):
     if nid in node_ids:
         if attrs: nodes[nid]["attrs"].update(attrs)
-        nodes[nid].pop("attrs", None) or None
+        nodes[nid]["attrs"].pop("pending", None)  # a real definition clears any prior [Pending] mark
         return
     node_ids.add(nid)
     nodes[nid] = {"id": nid, "type": ntype, "label": label or nid,
