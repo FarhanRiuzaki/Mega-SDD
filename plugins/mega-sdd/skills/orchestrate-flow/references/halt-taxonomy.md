@@ -65,6 +65,8 @@ These ALWAYS stop the chain; no auto-loop:
 - `interface_ref_missing` — generate-units / bind-codebase: a unit declares `consumes_interface: <ref>` but the referenced interface is not declared by any other unit. ALWAYS STOP; user fixes ref OR creates producer unit.
 - `pbt_citation_invalid` — execute-bolts: PBT property block `Cites: §Decision-D-NNN` points to a non-existent ADR. ALWAYS STOP.
 - `convergence_max_reached` — orchestrate-flow: convergence loop hit `--max-cycles`. User reviews cycle history (envelope in the convergence-loops reference).
+- `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default 3); the loop stops and a human must resolve the underlying blocker before re-running. (Auto-looped while cycle-eligible up to the cap; becomes always-stop at the cap.)
+- `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop stops to avoid spinning, human resolution required.
 
 ## Soft (warn-only, chain continues)
 

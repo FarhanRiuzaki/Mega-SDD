@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`validate-factory-ledger.sh`** (new deterministic validator): ledger schema check (every `unresolved` must be anchored — `CONFLICT-N`/`OQ-N`/`file:line`), anti-spin retry cap (default 3 → `phase_stuck`), no-progress idempotency check (identical unresolved recurs → `anti_spin`), and convergence computation. Writes `.factory-ledger-state.json`.
 - **State-driven router extension to `orchestrate-flow` (2.8.0 → 2.9.0):** reads the whole `.mega-sdd/factory-ledger.json` (derived, rebuildable) and routes forward OR backward to re-run an unresolved phase, looping to convergence or halting on the cap. New `--factory` flag (implied by `--deep`). References `factory-ledger-contract.md` + `factory-routing.md`.
-- **Wiring (no new hook):** PostToolUse runs the validator on ledger write; the existing PreToolUse execute-bolts gate aggregator blocks on a ledger FAIL.
+- **Wiring (no new hook):** PostToolUse runs the validator on ledger write; the existing PreToolUse execute-bolts gate aggregator blocks on a ledger FAIL (a terminal backstop — the per-iteration loop is router-governed).
 - **Vertical-only** — the blind reviewer panel is untouched. Fixtures + CI test under `tests/fixtures/factory-line/` + `plugins/mega-sdd/tests/factory-line/`.
 
 ## [4.35.0] - 2026-06-24

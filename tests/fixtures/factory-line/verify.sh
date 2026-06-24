@@ -42,6 +42,9 @@ GOOD_CONV=$(read_state "$HERE/good/.mega-sdd/.factory-ledger-state.json" "d.get(
 note "=== schema-bad (expect FAIL, exit 1) ===";  check schema-bad FAIL 1 ledger_schema
 note "=== cap-bad (expect FAIL, exit 1) ===";     check cap-bad    FAIL 1 phase_stuck
 note "=== spin-bad (expect FAIL, exit 1) ===";    check spin-bad   FAIL 1 anti_spin
+note "=== spin-recover (stall then recover; expect PASS, exit 0, converged) ==="; check spin-recover PASS 0 ""
+SR_CONV=$(read_state "$HERE/spin-recover/.mega-sdd/.factory-ledger-state.json" "d.get('convergence_status')")
+[ "$SR_CONV" = "done" ] || fail "spin-recover: convergence_status expected done, got '$SR_CONV'"
 
 note ""
 [ "$FAILED" -eq 0 ] && { note "ALL ASSERTIONS PASS"; exit 0; } || { note "VERIFY FAILED — see FAIL lines"; exit 1; }

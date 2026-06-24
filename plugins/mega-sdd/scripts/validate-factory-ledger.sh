@@ -105,11 +105,13 @@ try:
         max_attempt = max(a.get("attempt", 0) for a in attempts)
         if max_attempt >= cap and latest.get("status") != "completed":
             cap_breaches.append({"phase": phase, "attempts": max_attempt, "status": latest.get("status")})
-        for j in range(1, len(attempts)):
-            cur = idset(attempts[j])
-            if cur and cur == idset(attempts[j-1]):
-                spin_breaches.append({"phase": phase, "attempt": attempts[j].get("attempt"), "unresolved": list(cur)})
-                break
+        # anti-spin: only the LATEST re-run with no progress counts. The ledger is
+        # append-only, so a historical stall must NOT latch FAIL after a later
+        # attempt recovers (mirrors the cap check, which inspects `latest`).
+        if len(attempts) >= 2 and latest.get("status") != "completed":
+            cur = idset(latest)
+            if cur and cur == idset(attempts[-2]):
+                spin_breaches.append({"phase": phase, "attempt": latest.get("attempt"), "unresolved": list(cur)})
 
     all_green = all(
         atts[-1].get("status") == "completed" and not (atts[-1].get("unresolved") or [])
