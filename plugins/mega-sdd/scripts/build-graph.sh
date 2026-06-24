@@ -20,7 +20,15 @@ root = os.environ["ROOT"]; out = os.environ["OUT"]
 head = os.environ["HEAD"]; head = None if head == "null" else head
 mega = os.path.join(root, ".mega-sdd")
 
+# When MEGA_SDD_FORCE_YAML_FALLBACK=1, skip PyYAML and use the hand-rolled
+# parser even if PyYAML is importable. The test suite sets this so the
+# block-style regression guard exercises the fallback on ANY runner (with or
+# without PyYAML). Unset → normal PyYAML-preferred behavior.
+_FORCE_FALLBACK = os.environ.get("MEGA_SDD_FORCE_YAML_FALLBACK") == "1"
+
 try:
+    if _FORCE_FALLBACK:
+        raise ImportError  # force the except branch (the hand-rolled parser)
     import yaml
     def load_yaml(s):
         return yaml.safe_load(s) or {}
