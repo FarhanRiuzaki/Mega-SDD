@@ -53,6 +53,19 @@ chk(all("evidence" in e for e in edges), "edge without evidence")
 chk("source_hashes" in g["_meta"] and "source_glob" in g["_meta"], "missing freshness meta")
 chk("binding_stamps" in g["_meta"], "missing binding_stamps")
 
+# Freshness hashing is decoupled from node contribution: EVERY globbed file must
+# be hashed, even one that contributes no node. The fixture ships a domain-less KB
+# file (knowledge-base/00-overview/system-purpose.md, no `domain:` key -> no node)
+# that nonetheless matches knowledge-base/**/*.md. The buggy builder hashed only
+# node-contributing files, so the query's all-globbed-files pre-check saw a set
+# mismatch and force-rebuilt on every call. This assertion fails pre-fix.
+sh = g["_meta"]["source_hashes"]
+chk(".mega-sdd/knowledge-base/00-overview/system-purpose.md" in sh,
+    "domain-less KB file not hashed (freshness cache would be defeated -> rebuild every query)")
+# And it must NOT have produced a kb_domain node (sanity: counts unaffected).
+chk(not any(n["type"] == "kb_domain" and n["label"].startswith("system-purpose") for n in g["nodes"]),
+    "domain-less KB file unexpectedly produced a node")
+
 # --- Block-style parsing: edges from block-style YAML sequences MUST appear ---
 # U-002 uses block-style depends_on/binding_refs; modules.yaml uses block-style
 # blocks/blocked_by; cif-customer uses block-style depends_on.

@@ -59,18 +59,40 @@ if not start:
           + ", ".join(n['id'] for n in g['nodes'] if n['type']=='code_anchor')[:400])
     raise SystemExit(0)
 
-# adjacency (downstream = follow reverse of authored edges: who depends on me)
-fwd=defaultdict(list); rev=defaultdict(list)
+# Traversal is per-relation directional.
+#   DOWNSTREAM ("what is impacted by X"):
+#     - DEPENDENCY relations {implements, honors, depends_on} are followed in
+#       REVERSE (target->source) -> finds "what depends on me".
+#     - STRUCTURAL relations {in_module, covers, kb_source, blocks, domain_dep}
+#       are followed FORWARD (source->target) -> ENRICHES each reached node with
+#       the module / flow / kb_domain / blocked-module it attaches to.
+#     BFS runs over the UNION so e.g. a reached unit follows in_module forward to
+#     its module, a reached claim follows covers forward to its flow, and that
+#     flow follows kb_source forward to its kb_domain.
+#   UPSTREAM ("what X depends on / traces to"): all-forward, unchanged.
+DEP_RELS = {"implements", "honors", "depends_on"}
+STRUCT_RELS = {"in_module", "covers", "kb_source", "blocks", "domain_dep"}
+
+fwd=defaultdict(list); dep_rev=defaultdict(list); struct_fwd=defaultdict(list)
 for e in g["edges"]:
-    fwd[e["source"]].append(e); rev[e["target"]].append(e)
-adj = rev if direction=="downstream" else fwd
-key = (lambda e: e["source"]) if direction=="downstream" else (lambda e: e["target"])
+    fwd[e["source"]].append(e)
+    if e["relation"] in DEP_RELS:
+        dep_rev[e["target"]].append(e)
+    if e["relation"] in STRUCT_RELS:
+        struct_fwd[e["source"]].append(e)
+
+def neighbors(cur):
+    """Return [(edge, next_node)] for the current node, honoring direction.
+    Chain strings always print authored direction (source -[rel]-> target)."""
+    if direction == "downstream":
+        return ([(e, e["source"]) for e in dep_rev[cur]]
+                + [(e, e["target"]) for e in struct_fwd[cur]])
+    return [(e, e["target"]) for e in fwd[cur]]
 
 seen={start}; q=deque([start]); hits=defaultdict(list)
 while q:
     cur=q.popleft()
-    for e in adj[cur]:
-        nxt=key(e)
+    for e, nxt in neighbors(cur):
         chain=f"{e['source']} -[{e['relation']}]-> {e['target']}  ({e['evidence']['artifact']}:{e['evidence']['field']})"
         t=nodes.get(nxt,{}).get("type","?")
         hits[t].append(chain)

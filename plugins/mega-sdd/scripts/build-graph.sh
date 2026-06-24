@@ -149,6 +149,16 @@ GLOBS = [".mega-sdd/vaults/*/vault.json", ".mega-sdd/vaults/*/binding.json",
 
 def relp(p): return os.path.relpath(p, root)
 
+# Freshness hashing is decoupled from node contribution: hash EVERY file matching
+# a source glob, mirroring query-graph.sh's pre-check exactly (same GLOBS, same
+# recursive flag, same relpath). This guarantees the builder's source_hashes
+# key-set == the query's hashed key-set, so a domain-less KB file, an overview/
+# index file, or a `_`-prefixed unit (none of which contribute a node) no longer
+# makes set(cur) != set(old) and force a rebuild on every query.
+for pat in GLOBS:
+    for p in glob.glob(os.path.join(root, pat), recursive=True):
+        src_hashes[relp(p)] = sha256(p)
+
 def add_node(nid, ntype, label, attrs, artifact, field):
     if nid in node_ids:
         if attrs: nodes[nid]["attrs"].update(attrs)
@@ -177,7 +187,6 @@ binding_stamps = {}
 for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json"))):
     vdir = os.path.dirname(vault_json)
     vid = os.path.basename(vdir)
-    src_hashes[relp(vault_json)] = sha256(vault_json)
 
     # vault node: bare slug per schema ("vault (slug) stays bare")
     add_node(vid, "vault", vid, {}, relp(vault_json), "vault.json")
@@ -203,7 +212,6 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
     # binding.json -> claims + implements + covers
     bj_path = os.path.join(vdir, "binding.json")
     if os.path.exists(bj_path):
-        src_hashes[relp(bj_path)] = sha256(bj_path)
         bj = json.load(open(bj_path, encoding="utf-8"))
         binding_stamps[vid] = {
             "provenance": bj.get("codebase_map_provenance"),
@@ -251,7 +259,6 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
     # Resolution 2: module id is used bare, verbatim (e.g. M-auth), no namespacing
     mpath = os.path.join(vdir, "_meta", "modules.yaml")
     if os.path.exists(mpath):
-        src_hashes[relp(mpath)] = sha256(mpath)
         my = load_yaml(open(mpath, encoding="utf-8").read())
         for mod in (my.get("modules") or []):
             mid = mod.get("id")
@@ -266,7 +273,6 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
     for upath in sorted(glob.glob(os.path.join(vdir, "units", "*.md"))):
         if os.path.basename(upath).startswith("_"):
             continue
-        src_hashes[relp(upath)] = sha256(upath)
         fm, _ = frontmatter(upath)
         uid_local = os.path.splitext(os.path.basename(upath))[0]
         uid = f"{vid}:{uid_local}"
@@ -293,7 +299,6 @@ for kbpath in sorted(glob.glob(os.path.join(mega, "knowledge-base", "**", "*.md"
     dom = fm.get("domain")
     if not dom:
         continue
-    src_hashes[relp(kbpath)] = sha256(kbpath)
     add_node(dom, "kb_domain", dom,
              {"classification": fm.get("classification")},
              relp(kbpath), "frontmatter")
