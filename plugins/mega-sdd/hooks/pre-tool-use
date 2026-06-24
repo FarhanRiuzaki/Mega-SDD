@@ -369,6 +369,13 @@ if d and d.get("status") == "FAIL":
     n = len(d.get("missing_registration", []))
     fails.append(("cross-cutting", "cross-cutting-registration validator found %s generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it. State: %s/.cross-cutting-state.json" % (n, md)))
 
+# factory-ledger — anti-spin cap / phase_stuck / schema (Factory Line)
+d = L(".factory-ledger-state.json")
+if d and d.get("status") == "FAIL":
+    ht = d.get("halt_type") or "ledger_error"
+    msg = (d.get("details", {}) or {}).get("message") or "factory-ledger validation failed"
+    fails.append(("factory-ledger", "%s — %s" % (ht, msg)))
+
 if fails:
     prefix = ""
     if len(fails) > 1:
