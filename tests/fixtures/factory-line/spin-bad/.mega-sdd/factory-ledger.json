@@ -1,0 +1,4 @@
+[
+  {"phase":"bind-codebase","attempt":1,"emitted_at":"2026-06-25T10:00:00Z","status":"unresolved","confidence":0.5,"did":["try 1"],"unresolved":[{"id":"CONFLICT-1","kind":"conflict","blocks":["generate-units"],"note":"auth"}],"artifacts":[],"consumed":[]},
+  {"phase":"bind-codebase","attempt":2,"emitted_at":"2026-06-25T10:10:00Z","status":"unresolved","confidence":0.5,"did":["try 2 — no progress"],"unresolved":[{"id":"CONFLICT-1","kind":"conflict","blocks":["generate-units"],"note":"auth"}],"artifacts":[],"consumed":[]}
+]

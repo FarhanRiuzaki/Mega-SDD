@@ -1,0 +1,3 @@
+[
+  {"phase":"bind-codebase","attempt":1,"emitted_at":"2026-06-25T10:05:00Z","status":"unresolved","confidence":0.6,"did":["partial bind"],"unresolved":[{"id":"the auth thing","kind":"conflict","blocks":["generate-units"],"note":"no anchor"}],"artifacts":[".mega-sdd/vaults/v1/binding.md"],"consumed":["scan-codebase@1"]}
+]

@@ -1,0 +1,4 @@
+[
+  {"phase":"scan-codebase","attempt":1,"emitted_at":"2026-06-25T10:00:00Z","status":"completed","confidence":0.95,"did":["mapped 42 entities"],"unresolved":[],"artifacts":[".mega-sdd/codebase/codebase-map.md"],"consumed":[]},
+  {"phase":"bind-codebase","attempt":1,"emitted_at":"2026-06-25T10:05:00Z","status":"completed","confidence":0.9,"did":["14 claims CONFIRMED"],"unresolved":[],"artifacts":[".mega-sdd/vaults/v1/binding.md"],"consumed":["scan-codebase@1"]}
+]
