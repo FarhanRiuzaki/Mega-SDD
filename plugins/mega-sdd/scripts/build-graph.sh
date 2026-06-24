@@ -25,75 +25,101 @@ try:
     def load_yaml(s):
         return yaml.safe_load(s) or {}
 except ImportError:
+    # PyYAML is frequently absent (e.g. system python3). This fallback is then
+    # the LIVE parser, not a backstop — it must handle every artifact form the
+    # mega-sdd pipeline actually emits: scalars (quoted/with comments), inline
+    # lists, block-style scalar sequences, and a top-level list-of-dicts
+    # (modules.yaml) with nested block sequences one level deep.
+    def _scalar(v):
+        """Normalize a scalar: strip matched surrounding quotes; strip an
+        unquoted trailing comment. A quoted value keeps any '#' inside it."""
+        v = v.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+            return v[1:-1]
+        v = re.sub(r'\s+#.*$', '', v).strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+            return v[1:-1]
+        return v
+
+    def _inline_list(v):
+        return [_scalar(x) for x in v[1:-1].split(',') if x.strip()]
+
+    def _parse_dict_item(item_lines):
+        """Parse the lines of one '- ' list item into a dict. Supports nested
+        block-style scalar sequences one level deep (e.g. a module's blocks:)."""
+        item_d = {}
+        li, m = 0, len(item_lines)
+        while li < m:
+            lm = re.match(r'^\s*([A-Za-z0-9_]+):\s*(.*)$', item_lines[li])
+            if not lm:
+                li += 1
+                continue
+            lk, lv = lm.group(1), lm.group(2).strip()
+            if lv == '[]':
+                item_d[lk] = []; li += 1; continue
+            if lv.startswith('[') and lv.endswith(']'):
+                item_d[lk] = _inline_list(lv); li += 1; continue
+            if lv != '':
+                item_d[lk] = _scalar(lv); li += 1; continue
+            # Empty value -> nested block scalar sequence
+            sub, lj = [], li + 1
+            while lj < m and re.match(r'^\s*-\s', item_lines[lj]):
+                sub.append(_scalar(re.match(r'^\s*-\s*(.*)$', item_lines[lj]).group(1)))
+                lj += 1
+            item_d[lk] = sub
+            li = lj
+        return item_d
+
     def load_yaml(s):
-        """Minimal YAML parser: handles scalar values, inline lists, and
-        top-level list-of-dicts (the modules.yaml pattern). No PyYAML needed."""
         d = {}
         lines = s.splitlines()
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            m = re.match(r'^([A-Za-z0-9_]+):\s*(.*)$', line)
-            if m:
-                k, v = m.group(1), m.group(2).strip()
-                # Inline empty list
-                if v == '[]':
-                    d[k] = []
-                    i += 1
-                    continue
-                # Inline list
-                if v.startswith('[') and v.endswith(']'):
-                    d[k] = [x.strip() for x in v[1:-1].split(',') if x.strip()]
-                    i += 1
-                    continue
-                # Non-empty scalar
-                if v != '':
-                    d[k] = v
-                    i += 1
-                    continue
-                # Empty value: collect indented block
-                j = i + 1
-                sub_lines = []
-                while j < len(lines) and (lines[j].startswith(' ') or
-                                           lines[j].startswith('\t') or
-                                           lines[j].strip() == ''):
-                    sub_lines.append(lines[j])
-                    j += 1
-                sub_text = '\n'.join(sub_lines)
-                # List of dicts pattern (modules.yaml)
-                if re.search(r'^\s+-\s+', sub_text, re.M):
-                    items = []
-                    cur = None
-                    for l in sub_lines:
-                        item_m = re.match(r'^(\s+)-\s+(.*)', l)
-                        if item_m:
-                            if cur is not None:
-                                items.append(cur)
-                            rest = item_m.group(2).strip()
-                            cur = [rest] if rest else []
-                        elif cur is not None:
-                            cur.append(l)
-                    if cur is not None:
-                        items.append(cur)
-                    parsed = []
-                    for item_lines in items:
-                        item_d = {}
-                        for l in item_lines:
-                            lm = re.match(r'^\s*([A-Za-z0-9_]+):\s*(.*)$', l)
-                            if lm:
-                                lk, lv = lm.group(1), lm.group(2).strip()
-                                if lv == '[]':
-                                    item_d[lk] = []
-                                elif lv.startswith('[') and lv.endswith(']'):
-                                    item_d[lk] = [x.strip() for x in lv[1:-1].split(',') if x.strip()]
-                                elif lv:
-                                    item_d[lk] = lv
-                        if item_d:
-                            parsed.append(item_d)
-                    d[k] = parsed
-                i = j
-            else:
+        i, n = 0, len(lines)
+        while i < n:
+            m = re.match(r'^([A-Za-z0-9_]+):\s*(.*)$', lines[i])
+            if not m:
                 i += 1
+                continue
+            k, v = m.group(1), m.group(2).strip()
+            if v == '[]':
+                d[k] = []; i += 1; continue
+            if v.startswith('[') and v.endswith(']'):
+                d[k] = _inline_list(v); i += 1; continue
+            if v != '':
+                d[k] = _scalar(v); i += 1; continue
+            # Empty value: collect the indented block that follows
+            j = i + 1
+            sub_lines = []
+            while j < n and (lines[j].startswith(' ') or lines[j].startswith('\t')
+                             or lines[j].strip() == ''):
+                sub_lines.append(lines[j])
+                j += 1
+            marker_lines = [l for l in sub_lines if re.match(r'^(\s*)-(\s|$)', l)]
+            if marker_lines:
+                # Item-level indent = indentation of the FIRST '- ' marker.
+                # Deeper markers belong to a nested block inside the current item.
+                item_indent = len(re.match(r'^(\s*)-', marker_lines[0]).group(1))
+                items, cur = [], None
+                for l in sub_lines:
+                    im = re.match(r'^(\s*)-\s*(.*)$', l)
+                    if im and len(im.group(1)) == item_indent:
+                        if cur is not None:
+                            items.append(cur)
+                        rest = im.group(2)
+                        cur = [rest] if rest.strip() else []
+                    elif cur is not None:
+                        cur.append(l)
+                if cur is not None:
+                    items.append(cur)
+                # list-of-dicts iff any item line is a "key:" mapping
+                is_dict_list = any(
+                    re.match(r'^\s*[A-Za-z0-9_]+:(\s|$)', il)
+                    for it in items for il in it)
+                if is_dict_list:
+                    d[k] = [di for it in items if (di := _parse_dict_item(it))]
+                else:
+                    d[k] = [_scalar(it[0]) for it in items if it and it[0].strip()]
+            # else: nested mapping under an empty key — not used by current artifacts
+            i = j
         return d
 
 def frontmatter(path):
