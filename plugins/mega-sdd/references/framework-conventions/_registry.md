@@ -15,8 +15,10 @@ Auto-generated readiness table. Frameworks enumerated from §8.5 of
 | framework | pack file | tier | status | lints_clean |
 |---|---|---|---|---|
 | actix | actix.md | full | ready | yes |
+| aspnetcore | aspnetcore.md | full | ready | yes |
 | axum | axum.md | full | ready | yes |
 | django | django.md | full | ready | yes |
+| dotnet | dotnet.md | full | ready | yes |
 | echo | echo.md | full | ready | yes |
 | express | express.md | full | ready | yes |
 | fastapi | fastapi.md | full | ready | yes |
