@@ -39,23 +39,29 @@ Therefore the freshness risk is **not** "graph vs artifacts" (trivially fresh on
 
 Nodes:
 ```jsonc
-{ "id": "U-007", "type": "unit", "label": "...",
+{ "id": "vaultA:U-007", "type": "unit", "label": "...",
   "attrs": { "module": "M-auth", "task_type": "create", "squad": "squad-backend" },
   "source": { "artifact": "<vault>/units/U-007.md", "field": "frontmatter" } }
 ```
 Edges — `source`/`target`/`relation` + mandatory citation:
 ```jsonc
-{ "source": "C-031", "target": "LoginController.php:45", "relation": "implements",
-  "confidence": "VERIFIED",
-  "evidence": { "artifact": "binding.md", "field": "Implementation State Map row C-031" } }
+{ "source": "vaultA:C-031", "target": "app/Http/Controllers/LoginController.php",
+  "relation": "implements", "confidence": "VERIFIED",
+  "evidence": { "artifact": "binding.json", "field": "state_map[C-031].anchor" } }
 ```
 
-**Node types (v1):** `code_anchor`, `claim` (`C-*`), `unit` (`U-*`), `module` (`M-*`), `flow` (`F-*`), `kb_domain`, `oq` (`OQ-*`), `interface`, `vault`.
+**Node ID namespacing (design rule).** Vault-scoped IDs collide across a multi-PRD project (`C-NNN` is sequential *per vault*; `OQ-{DOC}-{N}` per doc; `U-NNN` per vault). Since the graph is project-scope, **every vault-scoped node ID is namespaced `<vault-id>:<local-id>`** (`vaultA:U-007`, `vaultA:C-031`). The two project-*global* node types stay bare: `code_anchor` (a file is shared across vaults) and `module`/`vault` where the id is already project-unique. Two vaults with the same local `C-007` MUST become two distinct nodes — this is a tested invariant (§8.7).
+
+**`code_anchor` identity.** Keyed by **file path** (project-global), with line as an attribute (`attrs.line`), not part of the id. Keying by `file:line` would mint a new node every time code shifts a line; file-granularity is stable and is the matching unit for the impact query (§4).
+
+**Edge `confidence` derivation (honest-confidence rule).** Where a binding verdict exists, the edge inherits it (`implements` → the claim's `CONFIRMED`/`VERIFIED`/etc.). Structurally-declared edges (`depends_on`, `in_module`, `honors`, `consumes`/`produces`) are `VERIFIED` — they come verbatim from an authored frontmatter field, not inference. No edge is ever `INFERRED` in v1 (that tier is reserved for the graphify v2 seam, §6).
+
+**Node types (v1):** `code_anchor`, `claim` (`C-*`), `unit` (`U-*`), `module` (`M-*`), `flow` (`F-*`), `kb_domain`, `oq` (`OQ-*`), `vault`. **`interface` deferred** to the multi-squad case (see §9).
 
 **Edge relations (v1):**
 | relation | from → to | source field |
 |---|---|---|
-| `implements` | claim → code_anchor | binding State Map anchor |
+| `implements` | claim → code_anchor | `binding.json` `state_map[].anchor` |
 | `honors` | unit → claim / oq | unit `binding_refs` |
 | `depends_on` | unit → unit | unit `depends_on` |
 | `in_module` | unit → module | `modules.yaml` vault_sections match |
@@ -63,9 +69,15 @@ Edges — `source`/`target`/`relation` + mandatory citation:
 | `kb_source` | flow → kb_domain | vault flow `_kb_source` |
 | `domain_dep` | kb_domain → kb_domain | KB frontmatter `depends_on` |
 | `covers` | claim → flow / vault-section | claim source location |
-| `consumes` / `produces` | unit → interface | unit `consumes_/produces_interfaces` |
+| `consumes` / `produces` | unit → interface | unit `consumes_/produces_interfaces` *(deferred with `interface` node, §9)* |
 
 **Hard rule (anti-hallucination):** an edge exists **only** when a cited artifact field produces it. No inferred edges. Every edge carries `evidence: {artifact, field}`. A missing artifact yields a `[Pending]` node, never a fabricated edge.
+
+### 3.3.1 Structured binding source (de-risks v1's core)
+
+The most load-bearing v1 edges (`implements`) and the `claim` nodes themselves currently live **only in `binding.md`'s Implementation State Map — a markdown table.** There is no `binding.json` today. Parsing a loose markdown table for the graph's core would be fragile and drift-prone, contradicting the "derive from structured artifacts" principle.
+
+**Decision:** `bind-codebase` emits a structured sidecar **`binding.json`** (the State Map as JSON: `claim_id`, `verdict`, `state`, `anchor`, `confidence`, `field_diff`, `vault_source`) alongside `binding.md`. This is in-pattern with the plugin's existing JSON sidecars (`codebase-map.snapshot.json`, `.validation-blockers.json`). The graph builder consumes `binding.json`, never the markdown table. This adds a small, contained change to `bind-codebase` (added to footprint, §5).
 
 ### 3.4 Freshness gate (the spine — *gates > rules*)
 
@@ -75,22 +87,26 @@ Edges — `source`/`target`/`relation` + mandatory citation:
   "derived": true,
   "built_at": "<ISO8601>",
   "head": "<git HEAD sha at build>",
+  "source_glob": [ "<glob patterns the build walked>" ],
   "source_hashes": { "<artifact path>": "sha256", ... },
   "binding_stamps": { "<vault-id>": { "map_stamp": "<sha>", "stale_vs_head": true } }
 }
 ```
 
 On every query:
-1. If any `source_hash` differs from the on-disk artifact → **transparently rebuild** (artifacts are the truth; cache caught up).
+1. Recompute the expected artifact **path-set** from `source_glob`. If the set differs from the keys of `source_hashes` (a new vault/PRD added files, or files removed) **OR** any surviving `source_hash` differs from the on-disk artifact → **transparently rebuild**. Tracking the path-set (not just hashes of *known* files) is what makes a brand-new PRD N visible — a hash-only check would never notice files that aren't yet keys.
 2. **Always** compute `stale_vs_head` per binding (`map_stamp != HEAD`). If any is stale → **prepend a banner** to the answer:
    > ⚠ Blast-radius computed from a binding stamped `abc123`; HEAD is `def456`. Code may have moved since the last bind — anchors and impact may be incomplete. Run `/mega-sdd:sync`.
 
 The graph never claims authority over code it has not re-bound. This is the property that makes a derived graph *safe* rather than a confident lie about traceability.
 
+**Lazy-on-query rebuild is the correctness mechanism; `sync`-rebuild is only cache-warming.** Because step 1 catches *every* mutation (any writer, manual edit, git pull) via path-set + source-hash, no individual writer owes the graph a rebuild hook. `sync` regenerating `graph.json` at end-of-run is a convenience so the first later query is already warm — not a correctness dependency.
+
 ## 4. First lens — impact / blast-radius
 
 Command: `/mega-sdd:graph --impact <anchor | U-NNN | C-NNN | domain-id> [--upstream | --downstream]`
 
+- **Anchor matching:** a code-path input matches `code_anchor` nodes at **file granularity** (the node key is the file path; `attrs.line` is a hint, not part of identity). A bare file path matches its node; a `file:line` input is normalized to its file. This keeps matches stable as code shifts lines.
 - Typed BFS over the edges. Example downstream from a code path: `code_anchor → implements⁻¹ → claim → honors⁻¹ → unit → (depends_on⁻¹)* → unit → in_module → module`, plus `covers` / `kb_source` out to flows + KB domains.
 - **Downstream** = "what breaks if I touch this." **Upstream** = "what this rests on."
 - Output = blast radius grouped by node type, **each hit annotated with its cited edge chain**, plus the staleness banner when applicable.
@@ -107,7 +123,7 @@ Command: `/mega-sdd:graph --impact <anchor | U-NNN | C-NNN | domain-id> [--upstr
 | Lean skills + progressive disclosure | New lean skill `mega-sdd:graph` (SKILL.md ≤ 500 lines); schema + build algo in `references/` |
 | Commands as entry points | `/mega-sdd:graph` |
 
-**Footprint:** one lean skill + one command + one builder script + one schema reference. The only change to the existing pipeline is `sync` gaining an end-of-run `graph.json` regenerate. No new runtime dependencies.
+**Footprint:** one lean skill (`mega-sdd:graph`) + one command (`/mega-sdd:graph`) + one builder script (**Python, stdlib-only** — see §9) + one schema reference. Two contained changes to the existing pipeline: (a) `bind-codebase` emits the `binding.json` sidecar (§3.3.1); (b) `sync` gains an end-of-run `graph.json` regenerate (cache-warming only, §3.4). No new runtime dependencies.
 
 ## 6. Relationship to graphify (safishamsi/graphify) — v2 seam only
 
@@ -135,8 +151,11 @@ Fixture `.mega-sdd/` (mini KB + 2 vaults + units + binding) asserts:
 4. Missing artifact → `[Pending]` node and **no** fabricated edge.
 5. Deleting `graph.json` triggers a correct lazy rebuild on next query.
 6. Source-hash change triggers transparent rebuild; unchanged hashes reuse the cache.
+7. **ID-collision invariant:** two vaults each with a local `C-007` (and `U-001`) produce two distinct namespaced nodes (`vaultA:C-007`, `vaultB:C-007`); a cross-vault impact query does not conflate them.
+8. **Path-set rebuild:** adding a new vault's files (new keys, no existing hash changed) triggers a rebuild and the new nodes appear; removing files prunes them.
+9. **Anchor file-granularity:** `file:line` and bare `file` inputs resolve to the same `code_anchor` node.
 
-## 9. Open questions for planning
+## 9. Resolved planning decisions
 
-- v1 node scope: ship impact analysis with the full node set above, or the lean core (`code_anchor → claim → unit → module`) and add `flow`/`kb_domain`/`interface` with the coverage-gap lens? (Lean recommended; spec-side nodes carry their weight mainly for the coverage lens.)
-- Builder language: shell + `jq`/`yq` vs a small Python script, matching how existing mega-sdd reference scripts are implemented.
+- **v1 node scope — lean-ish (resolved).** Keep `flow` + `kb_domain` (the §4 impact pitch explicitly reaches out to flows + KB domains via `kb_source`/`covers`; cutting them would cut the advertised value, and both are structured-sourced — `vault.json` flows, KB frontmatter). **Defer only `interface`** (and its `consumes`/`produces` edges) — it matters only for the multi-squad case and adds draft/locked-status handling not needed for v1 impact.
+- **Builder language — Python, stdlib-only (resolved).** The plugin has no script convention to honor (1 shell script, 0 Python; skills are agent-instruction-driven). Graph BFS + JSON emit + sidecar parsing favor Python decisively over shell+`jq`/`yq`. Constraint: **stdlib only** (`json`, `hashlib`, `pathlib`, `glob`) — no third-party deps, preserving the zero-dependency footprint. This sets the plugin's first real script precedent.
