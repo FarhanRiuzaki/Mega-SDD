@@ -1,0 +1,5 @@
+[
+  {"phase":"bind-codebase","attempt":1,"emitted_at":"2026-06-25T10:00:00Z","status":"unresolved","confidence":0.5,"did":["try 1"],"unresolved":[{"id":"CONFLICT-1","kind":"conflict","blocks":["generate-units"],"note":"auth"}],"artifacts":[],"consumed":[]},
+  {"phase":"bind-codebase","attempt":2,"emitted_at":"2026-06-25T10:10:00Z","status":"unresolved","confidence":0.5,"did":["try 2"],"unresolved":[{"id":"CONFLICT-2","kind":"conflict","blocks":["generate-units"],"note":"role"}],"artifacts":[],"consumed":[]},
+  {"phase":"bind-codebase","attempt":3,"emitted_at":"2026-06-25T10:20:00Z","status":"unresolved","confidence":0.5,"did":["try 3"],"unresolved":[{"id":"CONFLICT-3","kind":"conflict","blocks":["generate-units"],"note":"tenancy"}],"artifacts":[],"consumed":[]}
+]
