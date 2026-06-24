@@ -1,5 +1,8 @@
+mega_sdd_schema: 1
 modules:
-  - id: M-auth
-    blocks: [M-orders]
+  - id: M-auth                 # auth module
+    blocks:
+      - M-orders
   - id: M-orders
-    blocked_by: [M-auth]
+    blocked_by:
+      - M-auth
