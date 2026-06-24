@@ -49,6 +49,18 @@
 - **State:** vault says greenfield, CWD has .git + package.json
 - **Expect:** Halt with mode-migration prompt
 
+### R-FACTORY-1: Backward re-run on unresolved
+- **State:** vault + binding + units + bolts present; `factory-ledger.json` has a downstream checkpoint whose `unresolved[].blocks` names an earlier phase
+- **Expect:** Router proposes a BACKWARD re-run of the OWNING upstream phase, not a forward step
+
+### R-FACTORY-2: Convergence stops the loop
+- **State:** `factory-ledger.json` with every latest checkpoint `completed` + `unresolved: []`
+- **Expect:** `status: done`, zero excess re-runs
+
+### R-FACTORY-3: Cap halts, does not spin
+- **State:** a phase at attempt 3 still `unresolved`
+- **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
+
 ## Pre-flight
 
 ### PF1: Chain includes execute-bolts, no superpowers, no vendored
