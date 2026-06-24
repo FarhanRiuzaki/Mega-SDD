@@ -1,0 +1,41 @@
+name: mega-sdd tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validator deps
+        run: pip install pyyaml
+
+      - name: Run shell test suites (moat, graph, design-intelligence)
+        run: |
+          rc=0
+          while IFS= read -r t; do
+            echo "== $t =="
+            bash "$t" || { echo "FAILED: $t"; rc=1; }
+          done < <(find plugins/mega-sdd/tests -name 'test-*.sh' | sort)
+          exit $rc
+
+      - name: Validate framework-convention packs
+        run: |
+          rc=0
+          for p in plugins/mega-sdd/references/framework-conventions/*.md; do
+            base="$(basename "$p")"
+            case "$base" in _*.md|README.md) continue;; esac
+            echo "== validate-pack $base =="
+            bash plugins/mega-sdd/scripts/validate-pack.sh "$p" || { echo "PACK FAIL: $p"; rc=1; }
+          done
+          exit $rc
