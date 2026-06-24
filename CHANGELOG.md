@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.27.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** on 2026-05-26. Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.30.0] - 2026-06-24
+
+### Added — derived graph layer (`mega-sdd:graph`)
+
+- New project-scope derived graph `.mega-sdd/graph.json` over existing artifacts (vault.json, binding.json, units, modules.yaml, KB) — no code re-scan.
+- New `/mega-sdd:graph --impact <id|file[:line]> [--upstream|--downstream]` blast-radius query, every edge citing its source artifact + field.
+- `bind-codebase` now emits a structured `binding.json` sidecar (Step 4.5) guarded by `validate-binding-json.sh` parity gate.
+- Freshness gate: lazy rebuild on source-glob path-set / hash change; binding-vs-HEAD staleness banner pointing to `/mega-sdd:sync`. Graph stays out of every chain; `sync` cache-warms it (non-blocking).
+- Anti-hallucination preserved: no inferred edges; unresolved references become `[Pending]` nodes.
+
 ## [4.29.0] - 2026-06-15
 
 ### Added / Changed — extract-intelligence is now genuinely tech-agnostic (not PHP-tuned) + P6 dynamic-dispatch
