@@ -9,6 +9,8 @@ while [ $# -gt 0 ]; do case "$1" in --vault) VAULT="$2"; shift 2;; --vault=*) VA
 V_VAULT="$VAULT" python3 <<'PYEOF'
 import json, os, sys
 vault = os.environ.get("V_VAULT") or ""
+if not vault:
+    print("FAIL: V_VAULT not set", file=sys.stderr); sys.exit(3)
 md_path = os.path.join(vault, "binding.md")
 js_path = os.path.join(vault, "binding.json")
 errors = []
