@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.37.0] - 2026-06-25
+
+### Fixed — Windows hook dispatch (`'#!' is not recognized as an internal or external command`)
+
+- **`run-hook.cmd` → `run-hook.sh`; `hooks.json` now invokes `bash "…/run-hook.sh" <name>`.** The dispatcher was a bash script wearing a `.cmd` extension: on macOS/Linux the shebang was honored, but on Windows cmd.exe ran the `.cmd` as a batch file and choked on line 1 (`#!/usr/bin/env bash`). Routing through `bash` means cmd.exe launches `bash.exe` (Git Bash) with the script as an *argument* — it never parses the file itself. **Consequence: the deterministic enforcement hooks (PreToolUse gate, journal, staleness) now actually run on Windows + Git Bash; previously the entire hook chain failed non-blocking there.**
+- **Backslash-path hardening in the dispatcher:** `${CLAUDE_PLUGIN_ROOT}` can arrive with `\` separators on Windows; Git Bash's `dirname` only splits on `/`, which would collapse `SCRIPT_DIR` to the CWD and make every hook resolve as "not found". The dispatcher now normalizes `$0` (`${0//\\//}`) before resolving its directory.
+- **Requires `bash` on PATH** (Git for Windows). WSL is not required and not assumed. Docs: `references/tooling-install.md` platform matrix updated.
+
 ## [4.36.0] - 2026-06-25
 
 ### Added — Factory Line: queryable checkpoint ledger + state-driven routing
