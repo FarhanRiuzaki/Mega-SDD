@@ -158,9 +158,9 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
-**v4.35.0** — *.NET conventions land:* `dotnet.md` + `aspnetcore.md` framework-convention packs (PascalCase/`Async`/DI idioms, the `UseAuthentication`→`UseAuthorization` pipeline order) close gap #1 — a .NET repo now resolves to idiomatic conventions instead of `_universal`. CI fixed to the tier-aware aggregate gate + a registry-staleness check.
-**v4.34.0** — *CI + C# AST:* a GitHub Actions workflow runs every test suite and validates all packs on push/PR; a `tags-csharp.scm` query gives .NET repos AST-level symbol extraction (incl. properties as fields) instead of regex-only.
-**v4.33.0** — *.NET recognized by the scanner:* `scan-codebase` now detects `*.csproj`/`*.sln`/`*.fsproj`, `dotnet test` (xunit/nunit/MSTest), and ASP.NET Core / EF Core fingerprints — a .NET repo is no longer invisible.
+**v4.38.0** — *Pipeline reads the latest plugin version:* skills resolve `$PLUGIN_ROOT` to the highest cached version (Claude Code keeps every version side-by-side and never GCs them), so a stale-version path can't make a subagent read outdated templates or scripts; `session-start`'s version pick is now SemVer-correct.
+**v4.37.0** — *Windows hooks fire again:* the hook dispatcher is invoked via `bash run-hook.sh`, so `cmd.exe` stops choking on the `#!` shebang (`'#!' is not recognized…`) — the enforcement gates now actually run on Windows + Git Bash.
+**v4.36.0** — *Factory Line:* a derived checkpoint ledger + state-driven router let `orchestrate-flow` loop backward to re-run an unresolved phase to convergence, under a deterministic anti-spin retry cap.
 
 Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single source of release history).
 
