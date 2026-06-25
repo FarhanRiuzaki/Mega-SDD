@@ -23,7 +23,16 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | curl to the official registry | offline → `unverified` WARNING |
 
-Scripts live at `<plugin-root>/scripts/` (derive the root from this file's path — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files). All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean".
+Scripts live at `$PLUGIN_ROOT/scripts/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale). Resolve it once with one Bash call, then prefix every `scripts/<name>.sh` above with `$PLUGIN_ROOT/` (full rationale: `plugins/mega-sdd/references/plugin-root-resolution.md`):
+
+```bash
+DERIVED="<this reference file's absolute path, truncated before /skills/>"
+RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+```
+
+All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean".
 
 ## Toolchain detection (detect, never impose)
 

@@ -289,8 +289,15 @@ Write per the codebase-map schema. Include all sections; mark genuinely empty se
 The map can be committed or shared; symbol/route extraction can capture a hardcoded credential from a signature line. Before writing `codebase-map.md` (and before Step 10.5.3 writes `starterkit-context.yaml`), **run the deterministic redactor against the assembled artifact** (write to a temp file first, scrub, then rename into place):
 
 ```bash
-bash "<plugin-root>/scripts/secret-scan.sh" --redact <assembled-artifact-tmp-file>
-# (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read)
+# Resolve $PLUGIN_ROOT to the LATEST cached version (defeats stale-version anchoring;
+# see plugins/mega-sdd/references/plugin-root-resolution.md). DERIVED = this reference
+# file's own absolute path truncated before /skills/.
+DERIVED="<this reference file's absolute path, truncated before /skills/>"
+RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+
+bash "$PLUGIN_ROOT/scripts/secret-scan.sh" --redact <assembled-artifact-tmp-file>
 ```
 
 - The script detects AWS keys, private-key blocks, GitHub/Slack/OpenAI-style tokens, JWT-shaped strings, and `password|secret|api_key|token = "…"` assignments; it replaces each matched VALUE with `[REDACTED-SECRET]` in place (the symbol/route row survives) and prints a JSON report of `{pattern, line, excerpt}` findings.

@@ -247,8 +247,15 @@ grep -c '^## ' 00-overview/glossary.md  # ≥40 entries expected
 # Tech-leak scan (per-stack, advisory) — replaces the old hardcoded PHP/SQL grep.
 # Detects the legacy stack from .scan-meta.json (or pass --stack=<x>) and flags any
 # stack-specific token leaking into a tech-agnostic domain body. Advisory: prints +
-# counts, never fails the gate. Derive <plugin-root> from this reference file's path.
-bash "<plugin-root>/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
+# counts, never fails the gate.
+# Resolve $PLUGIN_ROOT to the LATEST cached version (defeats stale-version anchoring;
+# see plugins/mega-sdd/references/plugin-root-resolution.md). DERIVED = this reference
+# file's own absolute path truncated before /skills/.
+DERIVED="<this reference file's absolute path, truncated before /skills/>"
+RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
 [[ $GATE -eq 0 ]] && echo "GATE 1 PASS" || echo "GATE 1 FAIL"
 ```
 
@@ -414,8 +421,14 @@ done
 
 # 4. Tech-leak scan (per-stack, advisory) — allowed in §11 + 50-integrations/.
 # Replaces the old hardcoded PHP/SQL grep so C#/Java/Go/Rust leaks are caught too.
-# Derive <plugin-root> from this reference file's own path (see item 7 note below).
-bash "<plugin-root>/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
+# Resolve $PLUGIN_ROOT to the LATEST cached version once (reused by item 7 below;
+# defeats stale-version anchoring — see plugins/mega-sdd/references/plugin-root-resolution.md).
+# DERIVED = this reference file's own absolute path truncated before /skills/.
+DERIVED="<this reference file's absolute path, truncated before /skills/>"
+RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
 # Expect: no leak hits (matches inside §11 / 50-integrations/ are auto-excluded)
 
 # 5. Rebuild architecture all 5 files present
@@ -432,8 +445,7 @@ fi
 
 # 7. Extraction Completeness Contract scorecard present + self-consistent (advisory)
 [[ -f ".extraction-scorecard.json" ]] || echo "ADVISORY: .extraction-scorecard.json not emitted (see SKILL.md §Step 5.6)"
-bash "<plugin-root>/scripts/validate-extraction-scorecard.sh" --cwd="$(pwd)" --quiet \
-# (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read) — the old `:-../..` fallback was CWD-relative and wrong \
+bash "$PLUGIN_ROOT/scripts/validate-extraction-scorecard.sh" --cwd="$(pwd)" --quiet \
   && echo "SCORECARD: consistent (or absent → SKIP)" \
   || echo "ADVISORY: scorecard integrity FAIL — re-check §Step 5.6 (a PARTIAL/MISSING principle must carry [OPEN] markers)"
 ```
