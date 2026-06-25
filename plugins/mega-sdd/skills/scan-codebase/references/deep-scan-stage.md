@@ -36,8 +36,14 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
 1.+2. Compute per-ecosystem lock digests + digest groups — RUN the deterministic script
    (do not hand-compute hashes):
 
-     bash "<plugin-root>/scripts/compute-lock-digests.sh" \
-     # (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read) \
+     # Resolve $PLUGIN_ROOT to the LATEST cached version (defeats stale-version anchoring;
+     # see plugins/mega-sdd/references/plugin-root-resolution.md). DERIVED = this reference
+     # file's own absolute path truncated before /skills/.
+     DERIVED="<this reference file's absolute path, truncated before /skills/>"
+     RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+     PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+     [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+     bash "$PLUGIN_ROOT/scripts/compute-lock-digests.sh" \
        --project=<project-root> --app-ecosystem=<ecosystem of §7 Framework>
 
    It probes EVERY supported ecosystem's lock (php composer.lock; js package-lock/yarn/pnpm/bun;

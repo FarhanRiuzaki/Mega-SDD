@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 4.37.0 · **License:** MIT
+**Version:** 4.38.0 · **License:** MIT
 
 > **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
@@ -68,7 +68,7 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v4.37.0)
+├── .claude-plugin/plugin.json    # plugin manifest (v4.38.0)
 ├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/

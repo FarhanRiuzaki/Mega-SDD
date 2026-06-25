@@ -16,7 +16,13 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 
 1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A unit's optional `superpowers_skills` frontmatter is treated as a technique hint.
 
-2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `<plugin-root>/skills/_vendored/` (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read).
+2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `$PLUGIN_ROOT/skills/_vendored/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale; see `plugins/mega-sdd/references/plugin-root-resolution.md`):
+   ```bash
+   DERIVED="<this reference file's absolute path, truncated before /skills/>"
+   RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+   PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+   [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+   ```
 
 3. **Legacy path.** If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before.
 

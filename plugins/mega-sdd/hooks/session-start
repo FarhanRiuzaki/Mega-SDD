@@ -514,10 +514,17 @@ plugin_root_env = os.environ.get("PLUGIN_ROOT_HINT", "") or _plugin_root_derived
 catalog_candidates = [
     os.path.join(plugin_root_env, "references", "model-tiers.md") if plugin_root_env else None,
 ]
-# Fallback: walk cache directory for any version
+# Fallback: walk cache directory, picking the LATEST version by SemVer (NOT a
+# lexical string sort — "4.9.0" > "4.36.0" lexically; mirrors scripts/resolve-plugin-root.sh).
 import glob as _glob_mt
+def _semver_key_mt(_p):
+    try:
+        _ver = _p.split("/mega-sdd/mega-sdd/")[1].split("/")[0]
+        return [int(_x) for _x in _ver.split(".")]
+    except Exception:
+        return [-1]
 for cached in sorted(_glob_mt.glob(os.path.expanduser(
-        "~/.claude/plugins/cache/mega-sdd/mega-sdd/*/references/model-tiers.md")), reverse=True):
+        "~/.claude/plugins/cache/mega-sdd/mega-sdd/*/references/model-tiers.md")), key=_semver_key_mt, reverse=True):
     catalog_candidates.append(cached)
     break  # newest version first
 for c in catalog_candidates:

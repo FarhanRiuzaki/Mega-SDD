@@ -13,8 +13,15 @@
 When a KB is present (legacy-rebuild lane), run the Extraction Completeness Contract check BEFORE processing KB claims so binding builds on extraction whose gaps are visible:
 
 ```bash
-bash "<plugin-root>/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
-# (`<plugin-root>` = this reference file's own absolute path truncated before `/skills/` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted inside reference files and is NOT exported to the Bash tool, so derive the root from the path you just Read)
+# Resolve $PLUGIN_ROOT to the LATEST cached version (defeats stale-version anchoring;
+# see plugins/mega-sdd/references/plugin-root-resolution.md). DERIVED = this reference
+# file's own absolute path truncated before /skills/.
+DERIVED="<this reference file's absolute path, truncated before /skills/>"
+RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
+PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
+[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
+
+bash "$PLUGIN_ROOT/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
 ```
 
 Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.38.0] - 2026-06-25
+
+### Fixed — pipeline skills now resolve `$PLUGIN_ROOT` to the LATEST cached version
+
+- **Root cause:** Claude Code keeps every downloaded plugin version side-by-side under `~/.claude/plugins/cache/mega-sdd/mega-sdd/<version>/` and never garbage-collects them. `${CLAUDE_PLUGIN_ROOT}` is not substituted inside reference files nor exported to Bash, so skills derive a root from a path already in context — which, in a long session or a dispatched subagent, can point at a **stale** version dir whose files still exist (observed: a `generate-intent` subagent read `…/4.31.0/…/templates/04-flows.md` while the session was on 4.36.0). Silent stale read of templates AND bundled scripts.
+- **`scripts/resolve-plugin-root.sh`** (new, deterministic): prints the highest-SemVer cached plugin root, with a fallback root for non-cache installs (manual / project-scoped / claude.ai / repo-dev). Portable numeric field sort (`sort -t. -k1,1n -k2,2n -k3,3n` — **not** `sort -V`, which macOS/BSD `sort` lacks); works on macOS, Linux, Git Bash.
+- **All 7 pipeline path-resolution blocks** (across `scan-codebase`, `bind-codebase`, `extract-intelligence`, `generate-intent`, `execute-bolts`) now resolve `$PLUGIN_ROOT` via a **glob-anchored** invocation — keyed to the version-independent cache glob, never to the possibly-stale derived root — so a resolver from any cached version re-anchors to the true latest. Degrades to the derived root only when no cached resolver exists (never worse than before). Canonical rationale: `references/plugin-root-resolution.md`.
+- **`session-start`** latest-version pick changed from a lexical `sorted(reverse=True)` (wrong for SemVer — `4.9.0` > `4.36.0` lexically) to a numeric SemVer key, matching the script.
+- Tests: `tests/plugin-root/test-resolve-plugin-root.sh` (6 cases incl. the stale-anchor-defeat path). Skill patch bumps: scan-codebase 2.15.1, bind-codebase 2.5.2, extract-intelligence 1.11.1, generate-intent 2.7.1, execute-bolts 2.13.1.
+
 ## [4.37.0] - 2026-06-25
 
 ### Fixed — Windows hook dispatch (`'#!' is not recognized as an internal or external command`)
