@@ -199,6 +199,62 @@ except Exception:
         ;;
     esac
 
+    # Branch 0-pre: Factory Line backward-dispatch halt (R3-1). When the factory
+    # ledger shows a phase has breached its retry cap (phase_stuck) or re-ran with
+    # no progress (anti_spin), re-dispatching THAT SAME upstream phase will only spin
+    # — block it. The forward execute-bolts aggregator already covers the downstream
+    # side; this closes the backward side (factory-routing.md step-4 safety checks).
+    # RECOMPUTE first (like preflight/scope-flag below) so a ledger reset SELF-CLEARS:
+    # the validator with no raw ledger writes SKIP → no block (no stale-state deadlock).
+    # Per-phase precision: ONLY the stuck phase is blocked — a sibling phase (e.g. a
+    # re-scan to FIX the stuck bind) stays allowed. orchestrate-flow / auto are NOT
+    # gated: they own the --resume recovery route. Placed BEFORE preflight so a stuck
+    # preflight-gated phase reports the more-specific Factory halt.
+    case "${SKILL_NAME:-}" in
+      mega-sdd:extract-intelligence|mega-sdd:generate-intent|mega-sdd:scan-codebase|mega-sdd:bind-codebase|mega-sdd:generate-units)
+        FACTORY_VALIDATOR="${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh"
+        if [ -x "$FACTORY_VALIDATOR" ]; then
+          bash "$FACTORY_VALIDATOR" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          FL_STATE="${PROJECT_ROOT}/.mega-sdd/.factory-ledger-state.json"
+          if [ -f "$FL_STATE" ]; then
+            FL_REASON=$(SKILL_NAME="$SKILL_NAME" FL_STATE="$FL_STATE" PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
+import json, os
+d_state = os.environ["FL_STATE"]
+skill = os.environ["SKILL_NAME"]
+md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
+phase = skill.split(":")[-1]
+try:
+    d = json.load(open(d_state))
+except Exception:
+    raise SystemExit(0)
+if not d or d.get("status") != "FAIL":
+    raise SystemExit(0)
+# Map each breached phase to its halt class. A schema/unparseable FAIL has no
+# cap/spin breaches → no phase match → never blocks (the forward gate handles those).
+stuck = {}
+for b in (d.get("cap_breaches") or []):
+    stuck[b.get("phase")] = "phase_stuck"
+for b in (d.get("spin_breaches") or []):
+    stuck.setdefault(b.get("phase"), "anti_spin")
+if phase not in stuck:
+    raise SystemExit(0)
+halt = stuck[phase]
+msg = (d.get("details", {}) or {}).get("message") or "factory halt"
+print(
+    "%s is blocked by the Factory Line — phase %s is HALTED (%s): %s. Re-dispatching the "
+    "same stuck phase will only spin. RECOVERY: resolve the underlying OQ/CONFLICT for this "
+    "phase, then RESET the rebuildable ledger (rm %s/factory-ledger.json — it rebuilds from "
+    "phase handoffs, clearing the stale attempt history; it is NOT anti-self-bypass protected) "
+    "and re-run via /mega-sdd:auto --resume. State: %s"
+    % (skill, phase, halt, msg, md, d_state)
+)
+' 2>/dev/null)
+            if [ -n "$FL_REASON" ]; then emit_block "$FL_REASON"; fi
+          fi
+        fi
+        ;;
+    esac
+
     # Branch 0: predictive preflight — fatal INPUT-precondition check for the skill
     # about to run, BEFORE it burns minutes and halts mid-way. Conservative: only
     # GENUINELY-FATAL preconditions block (a skill that cannot do anything useful
@@ -540,7 +596,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
     fi
 
     if [ -n "$BYPASS_DETECTED" ]; then
-      REASON="Blocked: $BYPASS_DETECTED. Guard state files (.validation-blockers.json, .plan-pending, .replan-budget, .iter-classifier.json) are managed by hooks/skill chain — direct agent modification bypasses the guard. To clear a blocker, fix the underlying issue (e.g., add missing OQ-IDs to unit frontmatter) and let PostToolUse re-validate, OR use the appropriate slash command (/mega-sdd:validate-handoff, /mega-sdd:act, etc.). Human user can still modify these files via shell outside the agent."
+      REASON="Blocked: $BYPASS_DETECTED. Guard state files (.validation-blockers.json, .plan-pending, .replan-budget, .iter-classifier.json) are managed by hooks/skill chain — direct agent modification bypasses the guard. To clear a blocker, fix the underlying issue (e.g., add missing OQ-IDs to unit frontmatter) and let PostToolUse re-validate, OR use the appropriate slash command (/mega-sdd:validate-handoff, /mega-sdd:auto --act, etc.). Human user can still modify these files via shell outside the agent."
       emit_block "$REASON"
     fi
     ;;

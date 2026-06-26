@@ -18,11 +18,15 @@ Extends the `orchestrate-flow` execution loop so routing reads the WHOLE factory
         If a needed upstream checkpoint is ambiguous/missing → bounded LIVE-ESCALATION:
         re-dispatch that one upstream phase, at most 1× per (phase, attempt); still ambiguous → HALT.
    c. else (all phases completed & all unresolved empty) → CONVERGED → done; emit summary.
-4. safety checks BEFORE dispatching target — these are also enforced deterministically by
-   validate-factory-ledger.sh / the PreToolUse gate, so the loop cannot run hot even if prose is skipped:
-   - attempt(target) >= cap (default 3) and not completed → HALT phase_stuck → escalate to human.
-   - identical unresolved id-set recurred with no progress → HALT anti_spin.
-   - item is an always-stop / human-only class (business OQ P1, constitution drift; see halt-taxonomy.md)
+4. safety checks BEFORE dispatching target. The first two are ENFORCED deterministically by
+   the PreToolUse backward-dispatch gate: it recomputes `validate-factory-ledger.sh` on every
+   re-dispatch of an upstream phase and BLOCKS the dispatch when THAT phase is already in
+   cap-breach / spin-breach — so the loop cannot run hot even if this prose is skipped
+   (resetting the rebuildable ledger self-clears the gate; see Rebuild below). The third check
+   is prose-only — a human-judgment class the hook cannot adjudicate:
+   - [hook-enforced] attempt(target) >= cap (default 3) and not completed → HALT phase_stuck → escalate to human.
+   - [hook-enforced] identical unresolved id-set recurred with no progress → HALT anti_spin.
+   - [prose-only] item is an always-stop / human-only class (business OQ P1, constitution drift; see halt-taxonomy.md)
      → PAUSE; never force-loop.
 5. dispatch target → phase appends a new checkpoint (attempt+1) → goto 1.
 ```
@@ -34,7 +38,7 @@ If `factory-ledger.json` is absent or `validate-factory-ledger.sh` reports `ledg
 ## Termination (three ways)
 
 - **Converged** — all latest records `completed` + `unresolved: []` → `status: done`.
-- **Cap hit** — a phase fails to go green within `cap` attempts → `phase_stuck` halt + a concrete human question; resume `--resume`.
+- **Cap hit** — a phase fails to go green within `cap` attempts → `phase_stuck` halt + a concrete human question. The PreToolUse backward-dispatch gate then BLOCKS re-running that capped phase (so the loop can't spin). **Recovery:** resolve the underlying blocker, then RESET the rebuildable ledger (`rm .mega-sdd/factory-ledger.json` — it rebuilds from phase handoffs, which clears the stale per-phase attempt history) before `--resume`. The reset is what lets the recovered phase re-run; a bare `--resume` against the still-capped ledger is intentionally blocked.
 - **Always-pause** — human-only decisions pause; not force-looped.
 
 ## Boundaries

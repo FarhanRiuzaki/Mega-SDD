@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# test-moat-gates-wired.sh — Round-3 audit gaps R3-3, R3-4, R3-14.
+#
+# The PreToolUse hook wires several BLOCKING gates that had no regression pin, so an
+# accidental edit could silently un-wire one and the moat would erode unnoticed:
+#   R3-3  scope-flag gate           (validate-scope-flag.sh + .scope-flag-state.json)
+#   R3-4  the 5 kept code-delivery gates (flow-coverage, render-test, sibling-consistency,
+#         ui-quality, cross-cutting) listed as enforced in plugins/mega-sdd/CLAUDE.md
+#   R3-14 anti-self-bypass deny     (rm/overwrite of protected guard state files)
+# plus factory-ledger + predictive preflight (both also hard-block here).
+#
+# PART A pins the wiring statically (grep + bash -n) — mirrors bolt-orphans/test-gates-wired.sh.
+# PART B proves the behavior end-to-end by driving the hook with real tool-call JSON.
+#
+# CI-safe: bash + python3 only.
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+HOOK="$PLUGIN_ROOT/hooks/pre-tool-use"
+
+[ -f "$HOOK" ] || { echo "FAIL: hook not found at $HOOK"; exit 1; }
+
+fails=0
+pass() { echo "  PASS: $1"; }
+fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
+
+# Static wiring assertion: the hook must mention $1 (else a gate was un-wired).
+wired() { grep -qF "$1" "$HOOK" && pass "wired: $2" || fail "NOT wired: $2 (missing '$1')"; }
+
+echo "── PART A: static wiring pins ──"
+# R3-3 scope-flag
+wired "validate-scope-flag.sh"            "scope-flag validator invoked"
+wired ".scope-flag-state.json"            "scope-flag state file read"
+# R3-4 the 5 kept code-delivery gates (state file + label both present)
+wired ".flow-coverage-state.json"         "flow-coverage gate state"
+wired "flow-coverage"                     "flow-coverage gate label"
+wired ".unit-spec-state.json"             "render-test gate state (unit-spec)"
+wired "render_test_missing"               "render-test halt_type"
+wired ".sibling-consistency-state.json"   "sibling-consistency gate state"
+wired ".ui-quality-blockers.json"         "ui-quality gate state"
+wired ".cross-cutting-state.json"         "cross-cutting-registration gate state"
+# factory-ledger + preflight (also hard-block)
+wired ".factory-ledger-state.json"        "factory-ledger gate state"
+wired "validate-preflight.sh"             "predictive preflight invoked"
+# R3-14 anti-self-bypass protected list (all four guard files)
+wired '\.validation-blockers\.json'       "protected: validation-blockers"
+wired '\.plan-pending'                    "protected: plan-pending"
+wired '\.replan-budget'                   "protected: replan-budget"
+wired '\.iter-classifier\.json'           "protected: iter-classifier"
+# Syntax of the edited surface
+bash -n "$HOOK" && pass "pre-tool-use: bash -n clean" || fail "pre-tool-use: syntax error"
+
+echo "── PART B: behavioral deny/allow ──"
+ROOT="$(mktemp -d)"
+trap 'rm -rf "$ROOT"' EXIT
+# A unit must exist or predictive-preflight (Branch 0) blocks execute-bolts first,
+# before the gate aggregator is reached. Preflight only globs for U-*.md presence.
+mkdir -p "$ROOT/.mega-sdd/vaults/v1/units"
+printf -- '---\nid: U-001\n---\n# U-001\n' > "$ROOT/.mega-sdd/vaults/v1/units/U-001.md"
+
+run_bolts() {
+  printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-sdd:execute-bolts"}}' "$ROOT" \
+    | bash "$HOOK" 2>/dev/null
+}
+run_bash() {
+  # $1 = command string (must be JSON-safe; mktemp paths are)
+  printf '{"cwd": "%s", "tool_name": "Bash", "tool_input": {"command": "%s"}}' "$ROOT" "$1" \
+    | bash "$HOOK" 2>/dev/null
+}
+denied() { printf '%s' "$1" | grep -q '"permissionDecision": "deny"'; }
+
+# B1 — clean tree (units present, no failing gate) => execute-bolts ALLOWED.
+out=$(run_bolts)
+denied "$out" && fail "B1: clean tree blocked execute-bolts (false positive)" \
+  || pass "B1: clean tree allows execute-bolts"
+
+# B2 — a kept code-delivery gate FAILing => execute-bolts BLOCKED, reason names the gate.
+printf '{"status":"FAIL","missing_artifacts":[{"shortfall":2}],"dead_scaffold":[]}' \
+  > "$ROOT/.mega-sdd/.flow-coverage-state.json"
+out=$(run_bolts)
+if denied "$out" && printf '%s' "$out" | grep -q 'flow-coverage'; then
+  pass "B2: flow-coverage FAIL blocks execute-bolts and names the gate"
+else
+  fail "B2: flow-coverage FAIL did not block (R3-4 gate not enforced)"; echo "    out=[$out]"
+fi
+rm -f "$ROOT/.mega-sdd/.flow-coverage-state.json"
+
+# B3 — anti-self-bypass: rm of a protected guard state file => BLOCKED (R3-14).
+out=$(run_bash "rm $ROOT/.mega-sdd/.validation-blockers.json")
+denied "$out" && pass "B3: rm of protected .validation-blockers.json is blocked" \
+  || { fail "B3: anti-self-bypass did NOT block rm of protected file"; echo "    out=[$out]"; }
+
+# B4 — anti-self-bypass precision: rm of a NON-protected file => ALLOWED.
+out=$(run_bash "rm $ROOT/scratch-notes.txt")
+denied "$out" && { fail "B4: anti-self-bypass blocked a benign rm (over-broad)"; echo "    out=[$out]"; } \
+  || pass "B4: rm of a non-protected file is allowed (guard is precise)"
+
+echo
+if [ "$fails" -eq 0 ]; then
+  echo "test-moat-gates-wired: ALL PASS"
+  exit 0
+else
+  echo "test-moat-gates-wired: $fails FAILURE(S)"
+  exit 1
+fi

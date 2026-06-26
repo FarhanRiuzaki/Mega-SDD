@@ -114,12 +114,12 @@ Read the EP1 classifier output. Branch:
 - **iter_type=MINOR** → Act mode default. If `--plan` → Plan mode first; else continue in Act.
 - **iter_type=MAJOR** → **Plan mode FIRST mandatory.**
   - Check for `<project>/.mega-sdd/.plan-pending` (JSON from prior Plan-mode invocation matching current task_id + session_id).
-  - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd:act` (or `--act` flag) to transition.
+  - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd:auto --act` (the `--act` flag) to transition.
   - If `.plan-pending` present + fresh + matches current task: read it; continue in Act mode. Delete `.plan-pending` on Act completion.
 - **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion ("MAJOR iter without Plan phase — proceed?") before continuing.
 - **Explicit Plan force:** `--plan-then-act` flag forces two-phase regardless of classifier.
 
-Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd:plan` or delete `.plan-pending`".
+Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd:auto --plan` or delete `.plan-pending`".
 
 ## Chain optimization via binding provenance
 

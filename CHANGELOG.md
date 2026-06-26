@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.39.0] - 2026-06-26
+
+Round-3 systematic gap audit — fixes for all 14 confirmed findings (0 S1, 7 S2, 7 S3). The plugin was structurally healthy (no moat bypass, no broken primary path); these close enforcement-vs-doc divergences, add regression pins to gates that worked but were untested, and broaden CI to the suites that pin them. Spec amendment: `docs/superpowers/specs/2026-06-25-factory-line-queryable-checkpoints-design.md` §11.
+
+### Added — Factory Line backward-dispatch enforcement gate (R3-1, the one true enforcement gap)
+
+- New PreToolUse gate (`hooks/pre-tool-use`, Branch 0-pre) on the upstream phase skills `extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units`. When the factory ledger shows a phase in `phase_stuck` (cap breach) or `anti_spin`, re-dispatching **that** phase is blocked — closing the *backward* side of the "never loop forever" guarantee (the forward `execute-bolts` side was already enforced; the backward side was prose-only, contradicting `factory-routing.md`'s own claim).
+- **Recompute-don't-trust-stale-state:** the gate runs `validate-factory-ledger.sh` fresh, then reads the derived state — so resetting the rebuildable `factory-ledger.json` self-clears the gate (no deadlock). **Per-phase precision:** a sibling phase (e.g. a re-`scan` to fix a stuck `bind`) stays allowed.
+- **Recovery (documented behavior change):** a `phase_stuck`/`anti_spin` halt is cleared by resolving the underlying blocker, then RESETTING the rebuildable ledger (`rm .mega-sdd/factory-ledger.json` — it rebuilds from phase handoffs, clearing the stale attempt history) before `--resume`. The gate is breach-scoped, not a permanent ban — it releases once the phase's latest attempt is `completed`. Documented in the deny message, `factory-routing.md` §Termination, and spec §11.
+- Tests: `tests/round3/test-factory-backward-gate.sh` (8 cases incl. recovery self-clear + before-preflight ordering).
+
+### Fixed — enforcement / consistency
+
+- **R3-11** — `run-analyze.sh` aggregate-only mode now mirrors FULL mode's discovery-gated SKIP (unit-spec, bolt-artifacts, fsd-slots, KB validators): a STALE `FAIL` left by a prior chain whose source files are gone is no longer reported as a live FAIL. The two modes now produce the same overall verdict on the same tree. Report-only path — the moat reads `.validation-blockers.json` directly, so this cannot weaken any gate. Test: `tests/round3/test-analyze-aggregate-parity.sh`.
+- **R3-12** — `validate-fsd-slots.sh` no longer false-FAILs the plugin's own authoring files: the path filter dropped the over-broad `*fsd*.md` arm (which matched `emit-fsd/SKILL.md`) for `*FSD.md|*/fsd/*.md`, and now honors the code-fence exclusion its comment long promised. Test: `tests/round3/test-fsd-slots-glob.sh`.
+- **R3-2** — dead recovery routes to the non-existent `/mega-sdd:act` / `/mega-sdd:plan` commands replaced with the working `--act` / `--plan` flag form (`/mega-sdd:auto --act`) at all four live sites (the PreToolUse guard recovery string, `commands/auto.md`, `orchestrate-flow/references/chain-execution.md`).
+
+### Added — regression pins for gates that worked but were untested
+
+- **R3-3 / R3-4 / R3-14** — `tests/round3/test-moat-gates-wired.sh`: static wiring pins for scope-flag, the 5 kept code-delivery gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting), factory-ledger + preflight, and the anti-self-bypass protected-file list; plus behavioral deny/allow tests (a code-delivery gate FAIL blocks `execute-bolts`; `rm` of a protected guard state file is blocked while a benign `rm` is allowed).
+- **R3-13** — CI now runs BOTH suite trees (`plugins/mega-sdd/tests/` and repo-root `tests/`) and both naming conventions (`test-*.sh`, `*.test.sh`) — ~50 enforcement-pinning suites were previously never run. Two genuine reds fixed: `aspnetcore.md` Security idioms gained the missing **SQL injection** + **Secrets** class bullets; the compaction advisor test's over-threshold fixture was re-calibrated for `claude-fable-5`'s 1M context window (a stale fixture, not a hook bug). Three redundant pack suites are quarantined (already covered by the dedicated `validate-pack.sh` CI steps).
+
+### Fixed — documentation / contract drift (S3)
+
+- **R3-5** — both READMEs corrected to 8 subagents (naming the review panel), 17 skills, 27 commands.
+- **R3-6** — `plugins/mega-sdd/CLAUDE.md` enforced-hard-block list now names the Factory Line ledger gate in both directions (forward `execute-bolts` + backward re-dispatch).
+- **R3-7** — `migrate-paths` dropped the unimplemented `--to=legacy` from its argument-hint (the reverse migration is explicitly marked not-yet-implemented).
+- **R3-8 / R3-9** — non-canonical cross-skill / plugin-root refs fixed (`routing-rules.md` → `execute-bolts/references/squad-subagent.md`; `bind-codebase` + `emit-fsd` SKILL.md → `plugins/mega-sdd/references/paths.md`).
+- **R3-10** — `execute-bolts/references/superpowers-bridge.md` (115 lines) gained the required `## Contents` ToC.
+
 ## [4.38.0] - 2026-06-25
 
 ### Fixed — pipeline skills now resolve `$PLUGIN_ROOT` to the LATEST cached version
