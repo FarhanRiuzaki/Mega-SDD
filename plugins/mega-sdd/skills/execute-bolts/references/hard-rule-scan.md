@@ -111,7 +111,21 @@ Parse the JSON output. Match found → VIOLATED with `file:line` + matched text 
 | `SIGNATURE_RULE function <name>` | Re-extract current signature from codebase. Compare to preflight. Differs → VIOLATED. |
 | `FILE_PRESENCE_RULE file <path>` | Probe `<path>` exists. Absent → VIOLATED. |
 
-Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-rule pass/fail + evidence).
+Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-rule pass/fail + evidence):
+
+```json
+{
+  "unit_id": "U-001",
+  "scanned_at": "2026-05-20T10:05:00Z",
+  "status": "pass",
+  "rules": [
+    {"type": "DO_NOT_MODIFY", "path": "src/Models/User.php", "verdict": "pass", "evidence": "sha256 unchanged"},
+    {"type": "SIGNATURE_RULE", "function": "authenticateUser", "verdict": "pass", "evidence": "signature preserved"}
+  ]
+}
+```
+
+**Mandatory evidence (B1 — enforced, not prose).** For a committed `create`/`extend`/`modify` bolt whose unit has a **non-empty `## Hard rules`** section, this `postflight.json` MUST exist with `status: pass` and every `rules[].verdict: pass`. The Stop hook runs `validate-bolt-artifacts.sh --postflight-scan` each turn end; the PreToolUse aggregator **blocks the next `execute-bolts`** with **`postflight_evidence_missing`** when a Hard-rule bolt committed with no passing `postflight.json` — the post-flight scan can no longer be silently skipped. Verify units skip post-flight (no changes to validate), so they are exempt. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1`.
 
 > `--force-skip-postflight` skips the ast-grep step for ONE run only and is logged per the SKILL.md anti-bypass policy (handoff `notes.postflight_skipped: true` + `_summary.md`). It does NOT downgrade the rail; a follow-up re-run without the flag is required before drift-detect / merge.
 

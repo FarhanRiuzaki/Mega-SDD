@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.13.2
+version: 2.14.0
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the commit on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -31,6 +31,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--per-squad` — fan out across all squads in `_meta/squads.yaml`. The main-thread controller runs each squad's units (filtered by its `squad:` field) through the per-unit panel flow, parallelizing independent units across squads via concurrent `bolt-implementer` dispatch (depth-1; NO squad subagent — see `references/squad-subagent.md`).
   - `--review-panel=minimal|standard|full|auto` — force the review-panel tier; default `auto` (risk-based selection per `references/review-panel.md`). Forcing `minimal` on a unit with risk signals logs a warning in the bolt-report — never silent.
   - `--no-code-gates` — skip the L0 toolchain + SAST gates for this run (logged in the bolt-report). The secret scan and new-dep existence check ALWAYS run — no flag disables them (per `references/code-gates.md`).
+  - `--no-full-suite` — **DISCOURAGED** escape hatch that skips the batch-completion full-suite gate for THIS run (broken/absent project test command only). Logged in `_summary.md` + handoff `notes.full_suite_skipped: true`; the PreToolUse gate still blocks the next run until a green `_batch-suite.json` covers the newest code commit — never silent.
   - `--squad=<id>` — filter units to one squad (human-team handoff). Halts on `cross_squad_interface_draft` if a consumed interface is still draft.
   - `--module=<id>` — filter units to one module (per `generate-units/references/modules-schema.md`); topo-sort within module. Halts on `module_blocked_by` if a prerequisite module is incomplete.
   - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar; default `auto` (detect from YAML presence under `## Hard rules`).
@@ -89,6 +90,8 @@ After the post-flight scan passes (or a confirmed fix is applied), and **before 
 
 Every `bolt-report.md` MUST carry a `bolt_self_report` YAML block (numeric `confidence`, certain/uncertain decisions, retry history) → missing → **halt `self_assessment_missing`**. Post-flight also verifies the provenance trailer in every modified file → missing → **halt `provenance_missing`**. `bolt_self_report` and the trailer format → `references/halts-and-handoff.md`.
 
+**Post-flight evidence is enforced, not prose (B1).** A committed `create`/`extend`/`modify` bolt whose unit has a non-empty `## Hard rules` MUST write `<vault>/bolts/U-XXX/postflight.json` (`status: pass`, every `rules[].verdict: pass`). The Stop-hook `validate-bolt-artifacts.sh --postflight-scan` writes the state each turn end; the PreToolUse aggregator blocks the next `execute-bolts` with **`postflight_evidence_missing`** if a Hard-rule bolt committed with no passing postflight evidence — the scan can no longer be silently skipped. (Verify units are exempt — they skip post-flight.)
+
 ### verify-unit special path
 
 `task_type: verify` units run a simplified flow: pre-flight asserts `target_files` is empty / all `operation: none` (else **halt `verify_unit_writable`**); skip `executing-plans`; run acceptance tests; skip the post-flight Hard-rule scan (no changes to validate); commit only the bolt-report (or skip the commit on `--no-empty-commits`).
@@ -97,13 +100,22 @@ Every `bolt-report.md` MUST carry a `bolt_self_report` YAML block (numeric `conf
 
 `--all` (topo-sort by `depends_on`; sequential, or `--parallel` groups independent units; **any failure halts the whole run, no skip-ahead**), `--per-squad`, `--squad=<id>`, and `--module=<id>` each have a procedure, plus the per-bolt drift check. Squad fan-out, module gating, the `cross_squad_interface_draft` / `module_blocked_by` halts, and the parallel parent-thread post-flight re-scan → `references/batch-and-fanout.md`.
 
+### Batch completion — final full-suite gate (the safety net for cross-bolt regressions)
+
+**After the last committed code-bearing bolt of the invocation** (single OR batch — a lone bolt can break a sibling), run the project's **FULL** test suite — the runner detected at pre-flight check 3.5, **with NO per-unit scope filter** — exactly once, and write `<vault>/bolts/_batch-suite.json` (`status: green|red`, counts, `head_sha`, `units[]`, `bypass_commits[]`). This is the safety net the scoped per-bolt acceptance tests cannot provide: a later bolt (or an out-of-band edit) silently breaking an earlier bolt's contract only shows up when the *whole* suite runs.
+
+- **RED → halt `batch_suite_red`**: the batch is NOT complete; emit the blocker with the failing test names; leave the tree for review (do not auto-revert); do not emit a `status: completed` handoff.
+- **Out-of-band bypass guard:** before the verdict, scan commits in the **batch window only** (from the invocation's base SHA — recorded at batch start — to HEAD, **excluding** this run's own bolt commits) for any commit that touched a unit's `target_files` yet carries no `SDD-PROVENANCE` trailer; record them in `_batch-suite.json.bypass_commits[]` and surface in `_summary.md`. A non-empty list forces the suite to run even on an otherwise-skippable invocation. Bound to the window — an unscoped `git log` would flag every pre-SDD commit.
+- **Skipped only for:** `--dry-run`, a run that committed zero code (verify-only / all-skipped → no gate required), or `--no-full-suite` (DISCOURAGED escape hatch — logged in `_summary.md` + handoff `notes.full_suite_skipped: true`, never silent).
+- **Enforcement (not prose):** the Stop hook runs `validate-bolt-artifacts.sh --batch-suite-gate` each turn end; the PreToolUse aggregator **blocks the next `execute-bolts`** when no green `_batch-suite.json` covers the newest code commit — a bolt OR an out-of-band edit (`batch_suite_gate_missing`) — or the recorded suite is RED (`batch_suite_red`). The hook VERIFIES the artifact; it never runs the suite. Procedure detail → `references/batch-and-fanout.md`; design → `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
+
 ## Partial-state, resume + saga rollback
 
 A crashed bolt writes `<vault>/bolts/U-XXX/partial-state.json` (v2.0 schema: `current_step`, `files_modified[]`, `rollback_hints[]`). `--resume` re-executes forward-only from `current_step` (3 partial attempts → **halt `bolt_repeated_partial_failure`**); a corrupt or malformed-hints file → **halt `partial_state_corrupt`** (rename aside, then re-run). `--rollback` replays `rollback_hints[]` in reverse with per-action confirmation (default safe for non-idempotent ops). Schema, step-type taxonomy, resume integrity checks, and the rollback flow → `references/partial-state-and-saga.md`.
 
 ## Halt protocol + propose-and-confirm
 
-Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a stale consumed interface → `cross_squad_interface_draft`. Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halts-and-handoff.md`.
+Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a stale consumed interface → `cross_squad_interface_draft`; the batch-completion full suite ends RED → `batch_suite_red` (and the PreToolUse gate blocks the next run with `batch_suite_red` / `batch_suite_gate_missing` until a green `_batch-suite.json` covers the newest code commit). Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halts-and-handoff.md`.
 
 ## Anti-hallucination rails
 
@@ -116,7 +128,7 @@ Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhauste
 
 ## Outputs
 
-Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure Step 0 — MANDATORY, one per executed unit); code commit(s) on the current branch (skipped for `task_type: verify` with no changes); `bolt-report.md` (MANDATORY); `preflight.json` + `postflight.json` (Hard-rule snapshots/results for audit, when `## Hard rules` is non-empty). Global: a `bolt_completed` entry appended to `<vault>/vault.json` changelog. When `vault.json` carries a `scope`, the bolt-report header includes `scope` / `scope_name` for multi-squad traceability. Compact streaming progress + the aggregate `<vault>/bolts/_summary.md` format → `references/halts-and-handoff.md`.
+Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure Step 0 — MANDATORY, one per executed unit); code commit(s) on the current branch (skipped for `task_type: verify` with no changes); `bolt-report.md` (MANDATORY); `preflight.json` + `postflight.json` (Hard-rule snapshots/results for audit, when `## Hard rules` is non-empty). Per batch: a single `<vault>/bolts/_batch-suite.json` (full-suite gate result — written once after the last code-bearing bolt). Global: a `bolt_completed` entry appended to `<vault>/vault.json` changelog. When `vault.json` carries a `scope`, the bolt-report header includes `scope` / `scope_name` for multi-squad traceability. Compact streaming progress + the aggregate `<vault>/bolts/_summary.md` format → `references/halts-and-handoff.md`.
 
 ## Hand-off
 

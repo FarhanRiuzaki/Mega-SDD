@@ -220,6 +220,14 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
   VALIDATOR_OS="${SCRIPT_DIR_OS}/../scripts/validate-bolt-artifacts.sh"
   if [ -f "$VALIDATOR_OS" ]; then
     bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
+    # B2 batch-suite gate: after a code-bearing bolt run, a green full-suite result
+    # must cover the newest CODE commit (a bolt OR an out-of-band edit). Detection-only
+    # here (Stop never blocks); the PreToolUse execute-bolts aggregator blocks the NEXT run on FAIL.
+    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
+    # B1 postflight evidence: a committed Hard-rule create/extend/modify bolt must carry
+    # a passing postflight.json (the post-flight scan was prose-only). Same detect-and-
+    # block-next contract — the PreToolUse aggregator blocks the NEXT run on FAIL.
+    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --postflight-scan --quiet >/dev/null 2>&1 || true
   fi
 fi
 

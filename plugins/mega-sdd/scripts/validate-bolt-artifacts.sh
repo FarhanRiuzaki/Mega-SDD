@@ -30,11 +30,15 @@ CWD=""
 FILE_PATH=""
 QUIET=0
 ORPHAN_SCAN=0
+BATCH_SUITE_GATE=0
+POSTFLIGHT_SCAN=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) FILE_PATH="${arg#*=}" ;;
     --orphan-scan) ORPHAN_SCAN=1 ;;
+    --batch-suite-gate) BATCH_SUITE_GATE=1 ;;
+    --postflight-scan) POSTFLIGHT_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -121,6 +125,280 @@ os.replace(tmp, state_file)
 if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if orphans else 0)
+PYEOF
+  exit $?
+fi
+
+# ─── BATCH-SUITE-GATE mode (B2) ──────────────────────────────────────────────
+# After a code-bearing bolt run, a green full-suite result must exist at HEAD
+# covering the newest code-bearing bolt commit. Otherwise the NEXT execute-bolts
+# is halted. The validator VERIFIES the artifact; it NEVER runs the suite itself
+# (running 200s+ suites in a hook is exactly the inflation to avoid). Design:
+# docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md
+if [ "$BATCH_SUITE_GATE" = "1" ]; then
+  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  BSG_STATE="${CWD}/.mega-sdd/.batch-suite-gate-state.json"
+  CWD="$CWD" BSG_STATE="$BSG_STATE" QUIET="$QUIET" python3 <<'PYEOF'
+import glob, json, os, re, subprocess, sys
+from datetime import datetime, timezone
+
+cwd = os.environ["CWD"]
+state_file = os.environ["BSG_STATE"]
+quiet = os.environ.get("QUIET", "0") == "1"
+ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def git(*a):
+    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+
+# A "code" file = OUTSIDE .mega-sdd/ AND not a pure-docs file (a docs/markdown commit
+# cannot break a test suite, so it must not force a re-run). Universal, not stack-specific.
+_DOC_EXT = (".md", ".markdown", ".rst", ".adoc")
+def code_files(names):
+    out = []
+    for n in names:
+        n = n.strip()
+        if not n or n.startswith(".mega-sdd/"):
+            continue
+        if os.path.splitext(n)[1].lower() in _DOC_EXT:
+            continue
+        out.append(n)
+    return out
+
+# Two anchors over the newest-first log:
+#   newest_bolt  — newest `(bolt): U-XXX` commit touching code → ACTIVATES the gate
+#                  (no code-bearing bolt yet ⇒ nothing to gate) + labels the failure.
+#   newest_code  — newest commit touching code REGARDLESS of subject → the freshness
+#                  anchor. Tracking only bolt commits left the OUT-OF-BAND half of the
+#                  incident open: a hotfix / manual edit / git pull after a green suite
+#                  still "covered" the (older) newest bolt and shipped green.
+r = git("log", "--format=%H\t%s", "-300")
+newest_bolt = None
+newest_bolt_unit = None
+newest_code = None
+newest_code_is_bolt = False
+for line in r.stdout.splitlines():
+    sha, _, subj = line.partition("\t")
+    is_bolt = bool(re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj))
+    names = git("show", "--name-only", "--format=", sha).stdout.splitlines()
+    code = code_files(names)
+    if code and newest_code is None:
+        newest_code = sha
+        newest_code_is_bolt = is_bolt
+    if is_bolt and code and newest_bolt is None:
+        newest_bolt = sha
+        m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
+        newest_bolt_unit = m.group(1) if m else None
+    if newest_code is not None and newest_bolt is not None:
+        break  # log is newest-first
+
+def emit(status, halt_type=None, detail=None, extra=None):
+    state = {"ts": ts, "mode": "batch-suite-gate", "status": status,
+             "newest_bolt_commit": newest_bolt, "newest_bolt_unit": newest_bolt_unit}
+    if halt_type:
+        state["halt_type"] = halt_type
+        state["detail"] = detail
+        state["next_action"] = (
+            "Run the project's FULL test suite (no per-unit scope filter) at HEAD and write "
+            "<vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}; execute-bolts is "
+            "gated until a green full-suite result covers the newest bolt commit." )
+    if extra:
+        state.update(extra)
+    try:
+        tmp = state_file + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(state, f, indent=1)
+        os.replace(tmp, state_file)
+    except OSError:
+        pass
+    if not quiet:
+        print(json.dumps(state, indent=1))
+    sys.exit(1 if halt_type else 0)
+
+# No code-bearing bolt commit → nothing to gate.
+if not newest_bolt:
+    emit("PASS")
+
+# Collect all batch-suite gate artifacts across vaults.
+gates = []
+for p in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", "_batch-suite.json")):
+    try:
+        with open(p) as f:
+            g = json.load(f)
+        g["_path"] = os.path.relpath(p, cwd)
+        gates.append(g)
+    except (OSError, ValueError):
+        continue
+
+# A known-RED suite blocks outright.
+reds = [g for g in gates if str(g.get("status", "")).lower() == "red"]
+if reds:
+    emit("FAIL", "batch_suite_red",
+         "the recorded full-suite result is RED (%s) — a cross-bolt/out-of-band regression is live; "
+         "fix the failing tests and re-run the gate before any further bolt." % reds[0].get("_path", "?"),
+         {"red_gate": reds[0].get("_path")})
+
+# A green gate "covers" the tree iff the NEWEST CODE commit (bolt OR out-of-band) is an
+# ancestor of (or equal to) the gate's head_sha — i.e., the suite ran at or after the
+# last code change landed. Anchoring on newest_code (not newest_bolt) closes the
+# out-of-band half: a non-bolt code commit after a green suite is no longer covered.
+def covers(head_sha):
+    if not head_sha:
+        return False
+    return git("merge-base", "--is-ancestor", newest_code, head_sha).returncode == 0
+
+green_cover = [g for g in gates
+               if str(g.get("status", "")).lower() == "green" and covers(g.get("head_sha"))]
+if green_cover:
+    emit("PASS", extra={"covered_by": green_cover[0].get("_path"),
+                        "newest_code_commit": newest_code})
+
+# Gate missing or stale (green but does not cover the newest code commit).
+stale = any(str(g.get("status", "")).lower() == "green" for g in gates)
+oob = not newest_code_is_bolt  # the uncovered change came in WITHOUT a bolt (out-of-band)
+who = ("an OUT-OF-BAND code commit %s (no bolt provenance)" % newest_code[:9]) if oob \
+      else ("bolt commit %s (%s)" % (newest_code[:9], newest_bolt_unit))
+emit("FAIL", "batch_suite_gate_missing",
+     ("a green full-suite result exists but is STALE — it does not cover %s; a code change "
+      "landed after the last full-suite run." % who) if stale else
+     ("no <vault>/bolts/_batch-suite.json records a full-suite run; %s shipped without a "
+      "final full-suite gate." % who),
+     {"stale": stale, "out_of_band": oob, "newest_code_commit": newest_code})
+PYEOF
+  exit $?
+fi
+
+# ─── POSTFLIGHT-SCAN mode (B1) ───────────────────────────────────────────────
+# A committed create/extend/modify bolt whose unit has a non-empty ## Hard rules
+# section must carry <vault>/bolts/U-XXX/postflight.json with all verdicts pass.
+# The post-flight Hard-rule scan was prose-only ("HALT" that enforced nothing);
+# this moves it to a hook gate. Verify units skip post-flight (no changes to validate).
+# Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md (§B1)
+if [ "$POSTFLIGHT_SCAN" = "1" ]; then
+  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  PF_STATE="${CWD}/.mega-sdd/.bolt-postflight-state.json"
+  CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" python3 <<'PYEOF'
+import glob, json, os, re, subprocess, sys
+from datetime import datetime, timezone
+
+cwd = os.environ["CWD"]
+state_file = os.environ["PF_STATE"]
+quiet = os.environ.get("QUIET", "0") == "1"
+ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+r = subprocess.run(["git", "-C", cwd, "log", "--format=%H\t%s", "-300"],
+                   capture_output=True, text=True)
+bolted = {}  # unit_id -> newest commit sha
+for line in r.stdout.splitlines():
+    sha, _, subj = line.partition("\t")
+    m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
+    if m:
+        bolted.setdefault(m.group(1), sha)
+
+def unit_file(uid):
+    for p in [os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid + ".md"),
+              os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid, "unit.md")]:
+        g = glob.glob(p)
+        if g:
+            return g[0]
+    return None
+
+def task_type(text):
+    fm = text.split("---", 2)
+    front = fm[1] if len(fm) >= 3 else text
+    m = re.search(r"(?m)^\s*task_type:\s*([A-Za-z_]+)", front)
+    return (m.group(1).lower() if m else "")
+
+def has_hard_rules(text):
+    # body of the `## Hard rules` section (until the next `## ` heading).
+    # Case-INSENSITIVE heading + tolerate trailing text on the heading line — the
+    # canonical unit template emits `## Hard rules  (validated at bolt time ...)`
+    # (unit-schema.md), and units may use `## Hard Rules`. Matching only the bare
+    # `## Hard rules` left the B1 gate INERT on template-conformant units.
+    m = re.search(r"(?ims)^##[ \t]+Hard[ \t]+rules\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", text)
+    if not m:
+        return False
+    # A line is "empty" (no real rule) if, after stripping markdown decoration, it
+    # is blank or a recognised no-op phrasing. Curated set (NOT a wildcard) so a real
+    # rule phrased oddly is never silently exempted (that would fail OPEN).
+    empties = {"none", "na", "n/a", "none.", "n/a.", "tbd", "todo", "nonfor",
+               "nohardrules", "nohardrulesforthisunit", "nohardrulesapply",
+               "notapplicable", "nonerequired", "noneapplicable", "nonefornow"}
+    for ln in m.group(1).splitlines():
+        s = re.sub(r"[`*_>\-\s]", "", ln).strip().lower()
+        if s and s not in empties:
+            return True
+    return False
+
+def postflight_ok(uid):
+    """(found, ok) — found=postflight.json exists; ok=all verdicts pass."""
+    g = glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", uid, "postflight.json"))
+    if not g:
+        return (False, False)
+    try:
+        d = json.load(open(g[0]))
+    except (OSError, ValueError):
+        return (True, False)  # present but unreadable = not valid evidence
+    # Require POSITIVE evidence, never permissive defaults — an empty {} or an empty
+    # rules[] must NOT pass (the constrained agent could satisfy the gate without ever
+    # running the post-flight scan). status must be present + passing; rules must be
+    # non-empty; every rule must carry a passing verdict (a missing verdict is NOT pass).
+    if str(d.get("status", "")).lower() not in ("pass", "passed", "ok", "green"):
+        return (True, False)
+    rules = d.get("rules")
+    if not isinstance(rules, list) or not rules:
+        return (True, False)  # vacuous — no per-rule evidence
+    for rule in rules:
+        if str((rule or {}).get("verdict", "")).lower() not in ("pass", "passed", "ok"):
+            return (True, False)
+    return (True, True)
+
+issues = []
+for uid in sorted(bolted):
+    uf = unit_file(uid)
+    if not uf:
+        continue
+    try:
+        text = open(uf).read()
+    except OSError:
+        continue
+    if task_type(text) == "verify":
+        continue  # verify units skip post-flight (no changes to validate)
+    if not has_hard_rules(text):
+        continue  # no Hard rules → nothing to post-validate
+    found, ok = postflight_ok(uid)
+    if not ok:
+        issues.append({
+            "halt_type": "postflight_evidence_missing",
+            "unit_id": uid,
+            "commit": bolted[uid],
+            "detail": ("no <vault>/bolts/%s/postflight.json — the post-flight Hard-rule scan never ran "
+                       "(prose-only gate skipped)" % uid) if not found else
+                      ("<vault>/bolts/%s/postflight.json records a non-pass verdict — a Hard-rule "
+                       "violation was committed" % uid),
+        })
+
+state = {
+    "ts": ts, "mode": "postflight-scan",
+    "status": "FAIL" if issues else "PASS",
+    "bolt_commits_seen": len(bolted),
+    "issues_count": len(issues), "issues": issues,
+    "next_action": ("%d Hard-rule bolt(s) committed with no passing postflight.json — the post-flight "
+                    "safety net was skipped. Re-run each unit (or write the postflight.json evidence) so "
+                    "the Hard rules are validated; execute-bolts is gated until resolved." % len(issues))
+                   if issues else "Every Hard-rule bolt has a passing postflight.json.",
+}
+try:
+    tmp = state_file + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=1)
+    os.replace(tmp, state_file)
+except OSError:
+    pass
+if not quiet:
+    print(json.dumps(state, indent=1))
+sys.exit(1 if issues else 0)
 PYEOF
   exit $?
 fi

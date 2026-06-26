@@ -141,6 +141,20 @@ grounding_evidence:
 | **MEDIUM** | binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex |
 | **LOW** | no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors |
 
+### verify + HIGH: per-acceptance-criterion source grounding (A1)
+
+`anchors_verified: N/M` proves the unit's `## Anchors` *symbols* exist (file exists + line valid). It does **not** prove each acceptance criterion's *behavior* exists — a verify unit could cite one real anchor (e.g. a `MIN_GRAM` constant) yet carry five LOCKED criteria whose behavior lives only in a test stub or the PRD, and still be stamped HIGH. That certifies UNBUILT behavior green. The defect is **partial** grounding, so "are all anchors test files?" misses it — the unit of measure is the **criterion**.
+
+For a `task_type: verify` unit you intend to stamp `grounding_confidence: HIGH`, ground each acceptance criterion individually before writing:
+
+1. For each criterion, locate the **non-test** source that already implements the asserted behavior (grep the codebase-map / binding anchors, not the test files). A test asserting the behavior is NOT proof the behavior exists.
+2. Found → prefix the criterion `- [grounded: <non-test path>:<line>] <criterion>`.
+3. Not found (behavior only in a test stub, the PRD, or nowhere) → `- [ungrounded] <criterion>`, and the unit is **not** verify+HIGH:
+   - downgrade `grounding_confidence` (MEDIUM/LOW — honest), OR
+   - **split**: a `verify` unit over the grounded criteria (built) + a `create`/`extend` unit over the ungrounded ones (unbuilt). This is the correct fix — it stops the bolt from skipping code for behavior that was never implemented.
+
+Once any criterion carries a marker the unit opts in and **every** criterion must be `[grounded: …]`; a HIGH verify unit with an `[ungrounded]` (or test-only, or non-resolving) criterion is blocked by `validate-unit-spec.sh` → `verify_grounding_untrusted` (the next `execute-bolts` halts). Legacy verify units with no markers at all are tolerated (treated as the old symbol-existence semantics) — only newly stamped HIGH verify units are held to per-AC grounding. Grammar + examples: `generate-units/references/unit-schema.md` § Acceptance criteria.
+
 ### Chat output enhancement
 
 After each unit written, emit one summary line:

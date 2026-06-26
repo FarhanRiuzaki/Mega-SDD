@@ -40,6 +40,13 @@ wired "render_test_missing"               "render-test halt_type"
 wired ".sibling-consistency-state.json"   "sibling-consistency gate state"
 wired ".ui-quality-blockers.json"         "ui-quality gate state"
 wired ".cross-cutting-state.json"         "cross-cutting-registration gate state"
+# Batch-3 gates (B2 full-suite, B1 post-flight evidence, A1 per-AC grounding) —
+# new PreToolUse hard-blocks that need their own un-wire pins.
+wired ".batch-suite-gate-state.json"      "batch-suite-gate state (B2)"
+wired "batch_suite_red"                    "batch-suite-gate halt (B2)"
+wired ".bolt-postflight-state.json"       "postflight-evidence state (B1)"
+wired "postflight-evidence"                "postflight-evidence label (B1)"
+wired "verify_grounding_untrusted"         "verify-grounding halt (A1)"
 # factory-ledger + preflight (also hard-block)
 wired ".factory-ledger-state.json"        "factory-ledger gate state"
 wired "validate-preflight.sh"             "predictive preflight invoked"
@@ -85,6 +92,39 @@ else
   fail "B2: flow-coverage FAIL did not block (R3-4 gate not enforced)"; echo "    out=[$out]"
 fi
 rm -f "$ROOT/.mega-sdd/.flow-coverage-state.json"
+
+# B2a — batch-suite-gate RED (B2) => execute-bolts BLOCKED, reason names the gate.
+printf '{"status":"FAIL","halt_type":"batch_suite_red","detail":"suite RED"}' \
+  > "$ROOT/.mega-sdd/.batch-suite-gate-state.json"
+out=$(run_bolts)
+if denied "$out" && printf '%s' "$out" | grep -q 'batch-suite-gate'; then
+  pass "B2a: batch-suite-gate RED blocks execute-bolts and names the gate"
+else
+  fail "B2a: batch-suite-gate FAIL did not block (B2 gate not enforced)"; echo "    out=[$out]"
+fi
+rm -f "$ROOT/.mega-sdd/.batch-suite-gate-state.json"
+
+# B2b — postflight-evidence FAIL (B1) => execute-bolts BLOCKED, reason names the gate.
+printf '{"status":"FAIL","issues_count":1,"issues":[{"halt_type":"postflight_evidence_missing","unit_id":"U-001"}]}' \
+  > "$ROOT/.mega-sdd/.bolt-postflight-state.json"
+out=$(run_bolts)
+if denied "$out" && printf '%s' "$out" | grep -q 'no passing postflight.json'; then
+  pass "B2b: postflight-evidence FAIL blocks execute-bolts and names the gate"
+else
+  fail "B2b: postflight-evidence FAIL did not block (B1 gate not enforced)"; echo "    out=[$out]"
+fi
+rm -f "$ROOT/.mega-sdd/.bolt-postflight-state.json"
+
+# B2c — verify-grounding (A1): a verify+HIGH unit flagged => execute-bolts BLOCKED.
+printf '{"status":"FAIL","issues":[{"halt_type":"verify_grounding_untrusted","unit_id":"U-001"}]}' \
+  > "$ROOT/.mega-sdd/.unit-spec-state.json"
+out=$(run_bolts)
+if denied "$out" && printf '%s' "$out" | grep -q 'grounding_confidence: HIGH'; then
+  pass "B2c: verify-grounding FAIL blocks execute-bolts and names the gate"
+else
+  fail "B2c: verify-grounding FAIL did not block (A1 gate not enforced)"; echo "    out=[$out]"
+fi
+rm -f "$ROOT/.mega-sdd/.unit-spec-state.json"
 
 # B3 — anti-self-bypass: rm of a protected guard state file => BLOCKED (R3-14).
 out=$(run_bash "rm $ROOT/.mega-sdd/.validation-blockers.json")

@@ -39,6 +39,7 @@ Consumers: the session-start staleness notice points HERE (instead of suggesting
 | bind --paths | C claims re-verdicted, R carried forward; conflicts: N (queued) |
 | generate-units --reconcile | T task_type flips; S → stale; P → superseded; W new units |
 | execute-bolts | B stale/new units executed; superseded skipped: V |
+| full-suite gate (B2) | green\|red (P passed / F failed); bolts/_batch-suite.json (source: sync) |
 
 ## Applied patches (provenance)
 - 03-data-model.md §Account — name-drift (synced from code: a1b2c3 "…" — author, date)
@@ -48,9 +49,12 @@ Consumers: the session-start staleness notice points HERE (instead of suggesting
 
 ## Closing staleness verification
 `compute-unit-staleness.sh`: stale=0 ✅ | stale=N — explained: <e.g., U-004 blocked by CONFLICT-7>
+
+## Closing full-suite gate (B2)
+`<full-suite command>` @ HEAD: green ✅ (P passed / F failed) → bolts/_batch-suite.json (source: sync)
 ```
 
-**Rails:** the report never claims `completed` while PENDING-SYNC.md gained a CONFLICT (handoff `status: paused`, digest path in `next_action`). The closing staleness line is MANDATORY — a sync that cannot verify its own result says so explicitly.
+**Rails:** the report never claims `completed` while PENDING-SYNC.md gained a CONFLICT (handoff `status: paused`, digest path in `next_action`). The closing staleness line is MANDATORY — a sync that cannot verify its own result says so explicitly. **Closing full-suite gate (B2):** when the sync reconciled ANY code change (an out-of-band edit, a re-bind that touched code, or a re-executed unit), it MUST re-run the project's FULL test suite at HEAD and write `<vault>/bolts/_batch-suite.json` (`source: sync`) — this is the catch for the *post*-batch out-of-band edit the within-`execute-bolts` gate has already passed. RED → the report states it and the handoff is `status: paused` (the same PreToolUse `batch_suite_red` gate then blocks the next bolt). The `SYNC-REPORT.md` emission consumes this artifact; it does not re-run the suite itself.
 
 ## Lifecycle (the queue must not rot)
 

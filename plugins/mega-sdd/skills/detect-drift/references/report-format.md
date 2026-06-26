@@ -6,7 +6,7 @@
 - DRIFT-ACTIONS.md structure
 - Vault write-back protocol (Step 5.5)
 
-Loaded by `detect-drift` Steps 4–6. The report IS the artifact; Step 5 walks it interactively to capture decisions.
+Loaded by `detect-drift` Steps 4–6. The report IS the artifact. Since v3.0.0 detect-drift is forked + non-interactive: Step 5 **queues** direction calls to `PENDING-SYNC.md` (no walkthrough); only the `--auto-apply=safe` class is written back. `DRIFT-ACTIONS.md` and the batch-confirm ACCEPT UX below are **deprecated (v3.0.0)** — retained for reference / historical artifacts only.
 
 ## DRIFT-REPORT.md structure
 
