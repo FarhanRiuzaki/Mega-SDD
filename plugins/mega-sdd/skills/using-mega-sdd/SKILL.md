@@ -1,12 +1,12 @@
 ---
 name: using-mega-sdd
-version: 2.3.0
+version: 2.4.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, open questions, knowledge-base, extract intelligence, reverse engineer, rebuild, or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next, sync, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
 # Using Mega-SDD
 
-Route SDD work through mega-sdd phases instead of answering inline. This anchor decides *whether* a mega-sdd skill applies and *which* one; the skills own the work.
+Route SDD work through mega-sdd phases instead of answering inline. This anchor decides *whether* a mega-sdd skill applies and *which* one; the skills own the work. (Session-start injects only the routing core below; invoke the `using-mega-sdd` skill for the pipeline map, phase-ownership, multi-PRD lifecycle, and red-flags detail.)
 
 ## When this applies
 
@@ -23,9 +23,26 @@ When the CWD signal is strong AND the prompt carries SDD intent (or is an empty/
 
 Strong CWD = one of: legacy code + no PRD + no vault; a PRD file present + no vault; vault present + no units; units present + no bolts; **map+binding present + change signal** (dirty journal non-empty OR HEAD ≠ map stamp) → propose `/mega-sdd:sync --auto` instead of the full pipeline.
 
-General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005") do NOT auto-trigger even on a strong CWD signal — the prompt must carry mega-sdd intent.
+General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005") do NOT auto-trigger even on a strong CWD signal — the prompt must carry mega-sdd intent. Do NOT trigger on casual conversation, debugging/refactoring unrelated to a vault, or architecture talk not anchored to a PRD/vault. If the user says "skip binding" / "just write the code" / "ignore SDD", follow them — they are in control.
 
-Do NOT trigger on casual conversation, debugging/refactoring unrelated to a vault, or architecture talk not anchored to a PRD/vault. If the user says "skip binding" / "just write the code" / "ignore SDD", follow them — they are in control.
+## Natural-language lanes
+
+Route these on phrasing, not just `/command`:
+
+- `analyze` — "check consistency", "cek konsistensi", "consistency report".
+- `graph` — "impact", "blast radius", "what breaks if I change X", "apa yang kena kalau ubah ini", "what depends on this".
+- `memory` — "show memory", "what did mega-sdd learn", "review patterns", "lihat memory".
+- `emit-fsd` — "generate FSD", "buat FSD". `emit-agents-md` — "emit AGENTS.md", "tool-agnostic interop". `install-deps` — "install deps", "pasang tools".
+- `sync` (→ `orchestrate-flow --sync`) — after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull): "kode berubah", "lanjutin dari kode sekarang".
+- A NEW PRD/BRD/Figma/brief on a project → multi-PRD routing (revise-in-place vs new epic); **when unsure, ASK**.
+
+## Hard rule
+
+For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing.
+
+**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
+
+<!-- ANCHOR-CORE ends here — everything below is loadable detail (invoke the `using-mega-sdd` skill for it). session-start injects only the routing core above, to keep the per-session / per-compaction footprint small. Do not move a trigger keyword or the hard rule below this line. -->
 
 ## Priority order
 
@@ -67,12 +84,6 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 | Validation gate | bind-codebase | read-only |
 | Vault → units | generate-units | read-only |
 | Unit → code | execute-bolts | write |
-
-## Hard rule
-
-For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing.
-
-**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 
 ## Red flags (STOP — rationalizations)
 

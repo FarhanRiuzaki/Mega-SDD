@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Pin test for the lean-anchor session-start diet.
+#
+# session-start injects the using-mega-sdd anchor on EVERY session + EVERY
+# compaction. The diet trims the injected payload to the routing-critical CORE
+# (triggers + auto-trigger logic + the hard rule), dropping pure explanation
+# (pipeline diagram, phase-ownership table, red-flags, priority-order) which
+# stays loadable via the Skill tool. The danger of a diet is silently dropping
+# a trigger keyword -> a routing regression on a cold (post-compaction) start.
+# This test is the guard: every load-bearing ID/EN + natural-language trigger
+# MUST survive in the core, the hard rule MUST survive, and the dropped detail
+# MUST NOT appear in the injected core (proving the diet actually happened).
+
+set -u
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SKILL="$ROOT/plugins/mega-sdd/skills/using-mega-sdd/SKILL.md"
+HOOK="$ROOT/plugins/mega-sdd/hooks/session-start"
+MARKER='ANCHOR-CORE ends'
+
+fail=0
+note() { printf '  %s\n' "$1"; }
+ok()   { printf 'ok   %s\n' "$1"; }
+bad()  { printf 'FAIL %s\n' "$1"; fail=1; }
+
+[ -f "$SKILL" ] || { echo "FAIL anchor SKILL.md missing: $SKILL"; exit 1; }
+[ -f "$HOOK" ]  || { echo "FAIL session-start hook missing: $HOOK"; exit 1; }
+
+# The SAME extraction session-start uses: strip YAML frontmatter, print body
+# up to the ANCHOR-CORE marker.
+extract_core() {
+  awk 'BEGIN{dash=0;body=0}
+       /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
+       body==0{next}
+       /ANCHOR-CORE ends/{exit}
+       {print}' "$1"
+}
+
+# ---- 1) marker exists -------------------------------------------------------
+if grep -q "$MARKER" "$SKILL"; then ok "core-end marker present in SKILL.md"
+else bad "core-end marker ('$MARKER') missing from SKILL.md"; fi
+
+CORE="$(extract_core "$SKILL")"
+if [ -z "$CORE" ]; then bad "extracted core is EMPTY (frontmatter/marker drift)"; fi
+
+# ---- 2) frontmatter stripped from the injected core -------------------------
+if printf '%s' "$CORE" | grep -qE '^name:[[:space:]]*using-mega-sdd|^description:'; then
+  bad "injected core still contains YAML frontmatter (name:/description:) — wasted duplication"
+else ok "frontmatter stripped from injected core"; fi
+
+# ---- 3) the hard rule survives ---------------------------------------------
+core_has() { printf '%s' "$CORE" | grep -qiF "$1"; }
+for needle in "STOP" "Skill" "orchestrate-flow"; do
+  if core_has "$needle"; then ok "hard rule keeps: $needle"; else bad "hard rule LOST: $needle"; fi
+done
+# the bind CONFLICT gate line
+if core_has "bind-codebase" && core_has "CONFLICT"; then ok "bind CONFLICT gate kept in core"
+else bad "bind CONFLICT gate dropped from core"; fi
+
+# ---- 4) EVERY load-bearing trigger keyword survives -------------------------
+# Dropping any of these regresses routing on a cold start. Curated, not exhaustive.
+TRIGGERS=(
+  # EN pipeline keywords
+  "intent" "unit" "bolt" "vault" "PRD" "BRD" "binding" "knowledge-base"
+  "extract intelligence" "reverse engineer" "rebuild" "sync" "auto"
+  # ID variants
+  "pecah PRD" "buat dev" "lanjut" "next" "jalankan otomatis"
+  "siapkan context" "rebuild di stack baru"
+  # natural-language diagnostic/output lanes
+  "cek konsistensi" "blast radius" "apa yang kena kalau ubah ini"
+  "lihat memory" "buat FSD" "pasang tools"
+  # CWD signal
+  ".mega-sdd/"
+)
+for t in "${TRIGGERS[@]}"; do
+  if core_has "$t"; then ok "trigger kept: $t"; else bad "TRIGGER DROPPED from core: '$t'"; fi
+done
+
+# ---- 5) the diet actually happened: dropped detail NOT in the core ----------
+# These headings are explanation, loadable on demand — they must be BELOW the
+# marker, i.e. absent from the injected core.
+for dropped in "## Phase ownership" "## Red flags" "## Priority order"; do
+  if printf '%s' "$CORE" | grep -qF "$dropped"; then
+    bad "detail not trimmed — '$dropped' still in injected core"
+  else ok "detail trimmed from core: $dropped"; fi
+done
+
+# ---- 6) the dropped detail is still LOADABLE (present below the marker) ------
+for keep in "## Phase ownership" "## Red flags" "## The pipeline" "## Priority order"; do
+  if grep -qF "$keep" "$SKILL"; then ok "detail still loadable in full SKILL.md: $keep"
+  else bad "detail LOST entirely from SKILL.md (not just trimmed): $keep"; fi
+done
+
+# ---- 7) session-start uses marker extraction + fail-open fallback ------------
+if grep -q "ANCHOR-CORE ends" "$HOOK"; then ok "session-start extracts at the marker"
+else bad "session-start does not reference the ANCHOR-CORE marker (still cat's whole file?)"; fi
+# fail-open: empty extraction must fall back to full cat, never inject nothing
+if grep -qE 'if \[ -z "\$ANCHOR_CONTENT" \]' "$HOOK"; then ok "session-start has empty-extraction fail-open fallback"
+else bad "session-start missing fail-open fallback (empty core would inject NOTHING -> routing breaks)"; fi
+
+echo
+if [ "$fail" -eq 0 ]; then echo "PASS lean-anchor pins"; exit 0
+else echo "lean-anchor pins FAILED"; exit 1; fi

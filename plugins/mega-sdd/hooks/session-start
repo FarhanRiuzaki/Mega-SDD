@@ -82,7 +82,20 @@ if [ ! -f "$ANCHOR_SKILL" ]; then
   exit 0
 fi
 
-ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"
+# Inject only the routing CORE of the anchor, not the whole skill. The anchor is
+# re-injected on every session AND every compaction; the pipeline map / phase
+# tables / red-flags below the marker are loadable on demand (Skill tool), so the
+# per-injection footprint is the routing-critical core only. Strip YAML frontmatter
+# (its triggers are duplicated by the harness's own description load) and stop at
+# the ANCHOR-CORE marker.
+ANCHOR_CONTENT="$(awk 'BEGIN{dash=0;body=0}
+  /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
+  body==0{next}
+  /ANCHOR-CORE ends/{exit}
+  {print}' "$ANCHOR_SKILL")"
+# Fail-open: if the lean extraction yields nothing (frontmatter/marker drift),
+# inject the full skill rather than nothing — never break routing to save tokens.
+if [ -z "$ANCHOR_CONTENT" ]; then ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"; fi
 
 # Check superpowers presence
 sp_cache="${HOME}/.claude/plugins/cache"
