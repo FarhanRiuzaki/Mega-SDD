@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.2.0
+version: 1.2.1
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -17,7 +17,7 @@ description: Generate a Hybrid Confluence-format FSD (Functional Specification D
 
 ## Inputs
 
-- `<vault-path>` (positional, optional — defaults to first vault detected via `references/paths.md` priority order)
+- `<vault-path>` (positional, optional — defaults to first vault detected via `plugins/mega-sdd/references/paths.md` priority order)
 - `--mode={pre-dev|post-dev|auto}` (default: `auto` — detect from CWD state)
 - `--no-pdf` (markdown-only; useful when pandoc/LaTeX absent)
 - `--styling=<path-to-yaml>` (override default `FSD.styling.yaml`)

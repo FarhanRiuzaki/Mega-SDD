@@ -38,7 +38,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 | `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
 
-Full set: **26 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.
+Full set: **27 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.
 
 ## First time? Start with a scenario
 
@@ -69,11 +69,11 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 ```
 plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest (v4.38.0)
-├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
+├── skills/                       # 17 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
 │   ├── generate-units/  execute-bolts/          # the core pipeline
-│   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/
+│   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
 │   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
 ├── agents/                       # 8 first-class subagents
@@ -82,7 +82,7 @@ plugins/mega-sdd/
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
 │   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
-├── commands/                     # 26 slash commands — your manual /mega-sdd: CLI entry points
+├── commands/                     # 27 slash commands — your manual /mega-sdd: CLI entry points
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts

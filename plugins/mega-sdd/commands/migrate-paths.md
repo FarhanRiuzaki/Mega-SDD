@@ -1,6 +1,6 @@
 ---
 description: Migrate mega-sdd outputs from the legacy scattered layout to the canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows preview, asks confirm, moves via git mv when in git repo (preserves history), updates internal references in vault.json + binding.md + per-file frontmatter. Idempotent; safe to re-run.
-argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new|legacy] [--auto-confirm]"
+argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new] [--auto-confirm]"
 ---
 
 Migrate mega-sdd outputs to the canonical layout per `plugins/mega-sdd/references/paths.md`.
@@ -10,7 +10,7 @@ User arguments: $ARGUMENTS
 Flag parsing:
 - `--dry-run` — Preview moves without writing
 - `--from=auto|legacy|mixed` — Source layout (default: auto-detect)
-- `--to=new|legacy` — Target layout (default: new; canonical `.mega-sdd/` consolidation)
+- `--to=new` — Target layout (default: new; canonical `.mega-sdd/` consolidation). The reverse `--to=legacy` rollback is **NOT YET IMPLEMENTED** (manual file moves required — see the rollback note below); it is intentionally omitted from the argument-hint until the reverse direction ships.
 - `--auto-confirm` — Skip per-move AskUserQuestion (DANGEROUS without --dry-run first)
 
 ## Procedure
