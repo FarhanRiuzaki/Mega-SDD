@@ -1,7 +1,7 @@
 ---
 name: analyze
-version: 2.0.0
-description: Unified cross-artifact consistency analysis. Orchestrates all validators + vault internal checks. Produces CONSISTENCY-REPORT.md with PASS/FAIL per boundary. [VERIFY-STEP] surface — user-invoked, deterministic, report-only. Triggers — "analyze", "consistency check", "run all validators", "cek konsistensi", or paraphrases.
+version: 2.1.0
+description: Unified cross-artifact consistency analysis. Orchestrates all validators + vault internal checks. Produces CONSISTENCY-REPORT.md with PASS/FAIL per boundary, plus a cost-weighted TOKEN-COST-REPORT.md (cache_read bills ~0.1x so raw token counts overstate real cost). [VERIFY-STEP] surface — user-invoked, deterministic, report-only. Triggers — "analyze", "consistency check", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
 ---
 
 # mega-sdd:analyze — Unified Consistency Analyzer
@@ -29,7 +29,7 @@ Parse the JSON output:
 
 ### Step 3: Read and present the report
 
-Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat.
+Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat. It ends with a **Token Cost (cost-weighted)** section; the full per-skill breakdown is in `<cwd>/.mega-sdd/TOKEN-COST-REPORT.md`. When the user asks about token usage / cost, present the **cost-weighted** number, not the raw count — raw overstates real cost ~5–8x because cache_read bills ~0.1x (input ×1, cache_creation ×1.25, cache_read ×0.1, output ×5). If `turns == 0`, telemetry captured no usage-bearing turns (the subagent blind-spot) — say so rather than implying zero cost.
 
 ### Step 4: Interpret results
 
@@ -69,6 +69,7 @@ handoff:
   artifacts:
     - <cwd>/.mega-sdd/CONSISTENCY-REPORT.md
     - <cwd>/.mega-sdd/.analyze-state.json
+    - <cwd>/.mega-sdd/TOKEN-COST-REPORT.md
   next_action:
     suggested_skill: null
     suggested_args: []

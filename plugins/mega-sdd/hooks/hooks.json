@@ -48,6 +48,18 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" subagent-stop",
+            "async": true
+          }
+        ]
+      }
+    ],
     "UserPromptExpansion": [
       {
         "matcher": "execute-bolts|mega-sdd:execute-bolts",

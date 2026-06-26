@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.40.0] - 2026-06-26
+
+Token batch 1 — observability & honest cost (field-audit follow-up). Raw token counts overstate real cost ~5–8× because cache_read bills ~0.1× (a full-pipeline field audit measured 176M raw ≈ ~37M cost-equivalent), and the entire bolt phase was invisible to telemetry (SubagentStop never fires the Stop hook). This batch makes spend **visible and price-faithful** — the measurement foundation for the structural token-reduction work that follows. No gate touched; report-only. Decision record: `research/2026-06-26-context-reset-fork-feasibility.md`.
+
+### Added — cost-weighted token reporting (S4)
+
+- New `scripts/report-token-cost.sh`: rolls up `telemetry.jsonl` `turn_end_marker` + `subagent_end_marker` usage into a **cost-weighted** total (input ×1, cache_creation ×1.25, cache_read ×0.1, output ×5 — Opus price ratios) with the raw/cost overstatement ratio and per-skill attribution. Writes `TOKEN-COST-REPORT.md` + `.token-cost-state.json`. Report-only; exit 0 always (a report can never block a chain).
+- `/mega-sdd:analyze` (`run-analyze.sh`) now runs it and appends a **Token Cost (cost-weighted)** section to `CONSISTENCY-REPORT.md` — it can never flip the overall PASS/FAIL. `analyze` skill `v2.1.0`: adds token triggers ("token cost", "token usage", "berapa cost token") + guidance to present the cost-weighted number, not the raw count.
+- **Attribution fix:** `turn_end_marker` carries a hardcoded emitter `"skill":"orchestrate-flow"`; cost is now attributed via the `skill_invoked` bracket (`payload.skill_full_name`), not the emitter field, so it lands on the real phase (a `subagent_end_marker` keeps its own agent identity).
+
+### Added — subagent telemetry capture (S3)
+
+- New `SubagentStop` hook (`hooks/subagent-stop`, registered in `hooks.json` with matcher `.*`): on subagent finish, reads the subagent's OWN transcript (stdin `agent_transcript_path`) and emits a `subagent_end_marker` with usage **summed across the subagent's turns**. SubagentStop fires once at the end, but the last message's usage is only the FINAL turn's context size (empirically ~7× under the cumulative cost), so every turn's usage is summed. Closes the field-audit blind spot where the bolt phase (bolt-implementer + the blind review panel) emitted ZERO telemetry.
+- Observe-only (exit 0 — never blocks a subagent from stopping); mirrors the Stop hook's opt-out (`config.yaml telemetry:false`) + project-root resolution + telemetry-exists gate. No double-count — subagent turns live in a nested transcript disjoint from the main-session transcript the Stop hook reads.
+
+### Tests
+
+- `tests/token-cost/test-token-cost-report.sh` (13 assertions — cost-weighted math, per-skill bracketing, emitter-field regression guard, no-telemetry graceful path).
+- `tests/token-cost/test-subagent-stop-telemetry.sh` (10 assertions — summed-not-last usage, agent_type attribution, telemetry-exists gate, observe-only exit, report-token-cost integration).
+
 ## [4.39.0] - 2026-06-26
 
 Round-3 systematic gap audit — fixes for all 14 confirmed findings (0 S1, 7 S2, 7 S3). The plugin was structurally healthy (no moat bypass, no broken primary path); these close enforcement-vs-doc divergences, add regression pins to gates that worked but were untested, and broaden CI to the suites that pin them. Spec amendment: `docs/superpowers/specs/2026-06-25-factory-line-queryable-checkpoints-design.md` §11.
