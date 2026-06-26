@@ -390,6 +390,30 @@ if d and d.get("status") == "FAIL":
     units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
     fails.append(("bolt-orphans", "orphan-bolt scan found %s bolt commit(s) with NO <vault>/bolts/U-XXX/bolt-report.md (%s%s) — code shipped but the audit trail was never written (Procedure Step 0/5 skipped). Backfill a bolt-report (mark retroactive: true) for each listed unit, or re-run those units; then the scan re-passes on the next turn end. State: %s/.bolt-orphans-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
+# batch-suite-gate (status==FAIL) — B2: a code-bearing bolt run must leave a green
+# full-suite result (<vault>/bolts/_batch-suite.json) covering the newest CODE commit
+# (a bolt OR an out-of-band edit). The Stop hook writes this state each turn end; blocking
+# the NEXT execute-bolts is what makes the final full-suite gate un-skippable (the scoped
+# per-bolt tests cannot catch a later bolt or an out-of-band edit breaking an earlier
+# bolt contract — the freshness anchor is the newest code commit, not the newest bolt).
+d = L(".batch-suite-gate-state.json")
+if d and d.get("status") == "FAIL":
+    ht = d.get("halt_type", "batch_suite_gate_missing")
+    if ht == "batch_suite_red":
+        fails.append(("batch-suite-gate", "the recorded full-suite result is RED — a cross-bolt or out-of-band regression is live (%s). Fix the failing tests, re-run the full project suite, and overwrite <vault>/bolts/_batch-suite.json with {status:green, head_sha:<HEAD>} before any further bolt. State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
+    else:
+        _who = "an OUT-OF-BAND code commit (hotfix/manual edit, no bolt provenance)" if d.get("out_of_band") else ("the newest bolt commit (%s)" % d.get("newest_bolt_unit", "?"))
+        fails.append(("batch-suite-gate", "no green full-suite result covers %s — the final full-suite gate was skipped or is stale, so a cross-bolt or out-of-band regression could ship undetected. Run the full project test suite (no per-unit scope filter) at HEAD and write <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}. State: %s/.batch-suite-gate-state.json" % (_who, md)))
+
+# postflight-evidence (status==FAIL) — B1: a committed Hard-rule create/extend/modify
+# bolt with no passing <vault>/bolts/U-XXX/postflight.json. The post-flight Hard-rule
+# scan was prose-only; blocking the NEXT execute-bolts makes the safety net real.
+d = L(".bolt-postflight-state.json")
+if d and d.get("status") == "FAIL":
+    n = d.get("issues_count", len(d.get("issues", [])))
+    units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
+    fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s) — the Hard-rule post-flight safety net never ran (it was prose-only). Re-run each listed unit so the post-flight scan validates its ## Hard rules, or write the postflight.json evidence; then the scan re-passes on the next turn end. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
+
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
 if d and d.get("status") == "FAIL":
@@ -403,6 +427,10 @@ if d:
     n = len([i for i in d.get("issues", []) if i.get("halt_type") == "render_test_missing"])
     if n:
         fails.append(("render-test", "unit-spec validator flagged %s unit(s) shipping a detail/show view with no acceptance_test of type render (render_test_missing). A route-200 smoke test misses empty-model / null-field render crashes. Add a structured acceptance_test entry with type: render to each view-bearing unit, then re-save the unit. State: %s/.unit-spec-state.json" % (n, md)))
+    # verify-grounding (A1 — per-AC source grounding; block-on-HIGH enforced in validator)
+    g = len([i for i in d.get("issues", []) if i.get("halt_type") == "verify_grounding_untrusted"])
+    if g:
+        fails.append(("verify-grounding", "unit-spec validator flagged %s verify unit(s) stamped grounding_confidence: HIGH whose acceptance criteria lack a resolvable NON-TEST source anchor (verify_grounding_untrusted). A verify unit certifies EXISTING behavior — a HIGH stamp with ungrounded criteria green-lights UNBUILT behavior. Per criterion, cite a non-test implementation anchor [grounded: path:line], OR downgrade grounding_confidence, OR split verify[built]+create[unbuilt]; then re-save the unit. State: %s/.unit-spec-state.json" % (g, md)))
 
 # sibling-consistency (status==FAIL)
 d = L(".sibling-consistency-state.json")

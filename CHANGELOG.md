@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.42.0] - 2026-06-26
+
+Audit batch 3 — **correctness** (field-audit follow-up, the contained anti-hallucination fixes). Where batches 1–2 made cost visible and forked the diagnostic lane, this batch closes three enforcement gaps the field run exposed, each as a deterministic validator wired to a hook (never prose): **B2** a final full-suite gate so a cross-bolt or out-of-band regression can no longer ship green; **B1** the post-flight Hard-rule scan promoted from prose to an enforced evidence gate; **A1** per-acceptance-criterion source grounding so a `verify` unit can no longer be stamped HIGH over behavior that lives only in test stubs. Designs: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md` (B2+B1) · `docs/superpowers/specs/2026-06-26-per-ac-grounding-verify-units.md` (A1).
+
+### Added — final full-suite gate at batch completion (B2; execute-bolts `v2.14.0`, orchestrate-flow `v2.11.0`)
+
+- Every bolt's acceptance command is **scoped** to its unit and nothing re-runs the whole project suite — so a later bolt, or an out-of-band edit that bypassed the bolt flow, could silently break an earlier bolt's contract and the batch still reported `completed` (the field pipeline shipped a RED suite this way). `execute-bolts` now runs the project's **FULL** suite (runner from pre-flight 3.5, no per-unit scope filter) once after the last code-bearing bolt and writes `<vault>/bolts/_batch-suite.json`; RED → **halt `batch_suite_red`**.
+- **Enforcement is a gate, not prose:** `scripts/validate-bolt-artifacts.sh --batch-suite-gate` (new 4th mode) checks that a green `_batch-suite.json` covers the newest code-bearing bolt commit (`git merge-base --is-ancestor` — a non-bolt commit never trips it, a bolt landing after the last gate does). The Stop hook writes the state each turn end; the PreToolUse execute-bolts aggregator **blocks the next run** on `batch_suite_gate_missing` (missing/stale) or `batch_suite_red`. The hook verifies the artifact; it never runs the suite (200s+ suites in a hook would cripple every turn).
+- **Out-of-band bypass guard:** commits in the batch window (base SHA → HEAD, excluding this run's bolt commits) that touch a unit's `target_files` without an `SDD-PROVENANCE` trailer are recorded in `_batch-suite.json.bypass_commits[]` and force the suite to run. Bounded to the window so it never flags pre-SDD history.
+- **Sync lane re-run:** `orchestrate-flow --sync` re-runs the full suite at HEAD after reconciling any code change and writes `_batch-suite.json` (`source: sync`) — the catch for the *post*-batch out-of-band edit the within-batch gate has already passed. SYNC-REPORT.md consumes the artifact; it does not re-run the suite.
+- `--no-full-suite` DISCOURAGED escape hatch (broken/absent test command) — logged in `_summary.md` + handoff `notes.full_suite_skipped: true`; the next-run gate still applies. Never silent.
+
+### Tests (B2)
+
+- `tests/batch-suite-gate/test-batch-suite-gate.sh` — **behavioral** (exercises the validator, not prose): missing gate → `batch_suite_gate_missing`; red gate → `batch_suite_red`; green@HEAD → PASS; a non-bolt commit after a green gate stays PASS (not over-aggressive); a new bolt after a green gate → stale FAIL; no bolt commits → PASS; non-git dir → no-op.
+- `tests/batch-suite-gate/test-gate-wired.sh` — pins the Stop-hook scan + PreToolUse aggregator wiring + validator arg + shell syntax of every edited surface.
+
+### Added — post-flight Hard-rule evidence gate (B1; execute-bolts `v2.14.0`)
+
+- The post-flight Hard-rule scan was **prose-only** — a committed `extend` bolt with non-empty `## Hard rules` shipped with no `postflight.json` and nothing caught it (the Stop hook checked bolt-report presence, never the post-flight evidence). Now `scripts/validate-bolt-artifacts.sh --postflight-scan` (new 5th mode) requires a committed `create`/`extend`/`modify` Hard-rule bolt to carry `<vault>/bolts/U-XXX/postflight.json` with `status: pass` + every `rules[].verdict: pass`; missing or non-passing → **`postflight_evidence_missing`**. Verify units are exempt (they skip post-flight).
+- Same enforcement pattern as orphan-scan/batch-suite: Stop hook writes `.bolt-postflight-state.json` each turn end; the PreToolUse execute-bolts aggregator blocks the next run on FAIL. The `postflight.json` schema (previously prose-only) is now formalized in `execute-bolts/references/hard-rule-scan.md`.
+- Tests: `tests/postflight-evidence/test-postflight-scan.sh` (behavioral — missing/violated/verify-exempt/empty-rules-exempt) + `test-postflight-wired.sh` (wiring).
+
+### Added — per-acceptance-criterion source grounding for verify units (A1; generate-units `v2.9.0`)
+
+- `grounding_confidence: HIGH` proved only that anchors *exist* (file + line valid), never that each acceptance criterion's *behavior* exists. A `task_type: verify` unit (the bolt skips code, runs only the acceptance tests) was stamped HIGH while several LOCKED criteria lived **only in test stubs / the PRD** — a green verify over **unbuilt** behavior. The defect is *partial* grounding, so an "are all anchors test files?" check structurally misses it (the field unit cited one real source anchor plus N ungrounded criteria). The unit of measurement is the **criterion**, not the anchor-set. Design: `docs/superpowers/specs/2026-06-26-per-ac-grounding-verify-units.md`.
+- **Schema:** a verify unit's `## Acceptance criteria` may mark each criterion `- [grounded: <non-test path>:<line>] …` (behavior exists in source) or `- [ungrounded] …`. A test-file path is not grounding. Once any criterion is marked the unit opts in and every criterion must be `[grounded: …]`.
+- **Enforcement is a gate, not prose:** `scripts/validate-unit-spec.sh` (PostToolUse on unit writes → `.unit-spec-state.json`) gains check 1b — a `verify` + `HIGH` opted-in unit with any `[ungrounded]`, test-path, or non-resolving criterion → **halt `verify_grounding_untrusted`**; the PreToolUse aggregator blocks the next `execute-bolts` (alongside `render_test_missing`). Remedy: ground each criterion, downgrade `grounding_confidence`, or split verify[built]+create[unbuilt]. **Block-on-HIGH only** (MEDIUM/LOW verify units are honest, not blocked); **legacy-tolerant** (units with no markers keep the old symbol-existence semantics, never retro-blocked).
+- Tests: `tests/verify-grounding/test-verify-grounding.sh` — the discriminator is the **partial-grounding** case (one grounded + one ungrounded criterion → MUST flag), plus all-grounded→clean, test-only-anchor→flag, legacy→clean, MEDIUM→clean, non-resolving/out-of-range→flag. Wiring: `test-verify-grounding-wired.sh`.
+- **Deferred (tracked, not dropped):** the post-bolt `it.todo()`/pending-test scan — the *test-time* backstop to this *unit-spec-time* gate (it empirically caught the field incident via 66 todo stubs). Lives in the audit backlog.
+
+### Hardening — adversarial self-review of the B2/B1/A1 gates (before ship)
+
+A 6-lens adversarial review of the three gates (each finding independently verified) surfaced **13 real defects in the gates' own implementation**, all fixed here — the gates now close their own incidents:
+- **B1 critical — gate went inert on the canonical heading.** `has_hard_rules()` matched only the exact `## Hard rules`; the unit template emits `## Hard rules  (validated at bolt time …)` and units may use `## Hard Rules`, so a template-conformant Hard-rule bolt slipped through with no `postflight.json`. Now case-insensitive + tolerates trailing heading text. **B1 vacuous evidence** — an empty `{}` or empty `rules[]` no longer passes (positive evidence required). **B1 over-flag** — a wider curated "no rules" exempt set.
+- **A1 fail-open → fail-closed.** A `verify`+HIGH unit with criteria as prose, under a drifted heading (`## Acceptance criteria:`, `### Acceptance tests`), or with no recognised heading at all used to pass CLEAN — the exact field-incident shape. Adoption is now detected body-wide; the heading match tolerates h2–h4 / synonyms / trailing colon; prose criteria are checked; an adopting unit with no parseable section fails closed. **A1 false-positive** — sub-bullets are detail of their parent criterion, not separate criteria. **A1** — PascalCase test classes (`UserTest.php`, `FooSpec.rb`) now classified as test paths.
+- **B2 out-of-band half closed.** The freshness anchor tracked only `(bolt):` commits, so an out-of-band code commit (hotfix / manual edit / `git pull`) after a green suite still "covered" the older bolt and shipped green. The anchor is now the newest commit touching a code file (excluding pure-docs), regardless of subject.
+- **Enforcement now behaviorally pinned.** The `*-wired` tests were grep-only; `test-moat-gates-wired.sh` now drives the PreToolUse hook with a FAIL state for all three gates and asserts it actually returns `deny` (this caught — and the fix verified — that postflight/verify-grounding genuinely block, not just appear wired). Spec §Enforcement reworded to match the commit-keyed validator; `plugins/mega-sdd/CLAUDE.md` "what is actually enforced" now lists all three gates.
+
+## [4.41.0] - 2026-06-26
+
+Token batch 2 — the first **structural** reduction: a `context: fork` pilot on detect-drift, plus the resolve-oq OQ-pass collapse. Forking is the contract's own re-evaluation trigger (`CLAUDE.md:69`); detect-drift is the one clean candidate (side-lane, non-moat). **Pilot status:** the deterministic fork-safety contract is pinned by tests; the live fork-firing + measured token reduction is validated on a real run. Decision record: `research/2026-06-26-context-reset-fork-feasibility.md`.
+
+### Changed — detect-drift is a forked, non-interactive diagnostic (fork pilot, v3.0.0)
+
+- Added `context: fork` frontmatter: detect-drift's body runs as a forked subagent (fresh context, no history), so a sync/drift scan no longer accumulates into the main-thread standing context (the field audit's token driver: 16.5K→325K × cache_read each turn).
+- `context: fork` is unconditional, so detect-drift is now **non-interactive on every path** — it NEVER calls `AskUserQuestion`. Step 0 resolves inputs deterministically from `$ARGUMENTS`/CWD (unresolvable → new `drift_inputs_missing` blocker, never a prompt); Step 1.5 uses the detected framework (no confirm); Step 5 ALWAYS queues direction calls to `PENDING-SYNC.md`; Step 5.5 write-back is `--auto-apply=safe`-only.
+- drift-history persists via a direct on-disk Bash append even when forked (a fork's `metadata.memory_writes` would land in invisible subagent chat and be lost).
+- Blast radius verified: execute-bolts' per-bolt `bolt_introduces_locked_drift` gate is INLINE controller logic (not a detect-drift Skill invocation), so the fork leaves it untouched.
+- **BREAKING (skill behavior):** standalone `/mega-sdd:detect-drift` no longer offers the interactive walkthrough / `DRIFT-ACTIONS.md` — it detects + reports + queues; resolution moves to `resolve-oq` / `sync`.
+
+### Changed — resolve-oq OQ-pass collapse (S2, v2.2.0)
+
+- Step 0.6 now recommends `all-priorities` (one ordered P1→P2→P3 walk) instead of `p1-only`, so the vault is read ONCE rather than re-entered for a separate P2 pass (the field audit's "Land OQ" + "Land P2 OQ" two-pass). P1 stays interactive — the collapse only saves the second vault read, never auto-resolves (no-fabrication rail intact). Both phase-advisor passes untouched (different axis).
+
+### Contract / docs
+
+- `plugins/mega-sdd/CLAUDE.md` capability-adoption ledger updated: `context: fork` is no longer "PILOT-GATED, not yet applied" — it records detect-drift as the **live pilot (v3.0.0)** with the non-interactivity constraint (no `AskUserQuestion`, no handoff-`metadata.memory_context` dependence), notes PreToolUse gates are preserved under fork (Skill call gated BEFORE the body forks) and that this is NOT Agent-tool offload (which bypasses the gates), and keeps the other chain skills as non-candidates. This keeps the contract from contradicting the shipped code.
+- Behavior-faithful in-environment validation of the forked detect-drift (happy path + unresolvable-`--code` blocker) recorded in `research/2026-06-26-context-reset-fork-feasibility.md` — both graded on-disk; the live fork-firing + before/after token delta still validated on a real pipeline run.
+
+### Tests
+
+- `tests/drift/test-detect-drift-fork.sh` (10 assertions — context:fork, non-interactivity, drift_inputs_missing, drift-history disk-persist, deprecations).
+- `tests/oq/test-oq-collapse.sh` (4 assertions — all-priorities recommended, no-fabrication preserved, p1-only retained, version bumped).
+- `tests/roadmap/test-roadmap-pins.sh` pin updated: the `context: fork` capability decision in CLAUDE.md flipped from "PILOT-GATED" to "PILOT LIVE on detect-drift", so the pin grep was moved in lockstep (the decision is still recorded — the test's intent — just no longer gated).
+- Full executable suite (71 suites, CI-faithful glob minus the 3 quarantined pack suites): **71/71 green** after the pin update (the contract flip was the one expected failure on the first complete run).
+
 ## [4.40.0] - 2026-06-26
 
 Token batch 1 — observability & honest cost (field-audit follow-up). Raw token counts overstate real cost ~5–8× because cache_read bills ~0.1× (a full-pipeline field audit measured 176M raw ≈ ~37M cost-equivalent), and the entire bolt phase was invisible to telemetry (SubagentStop never fires the Stop hook). This batch makes spend **visible and price-faithful** — the measurement foundation for the structural token-reduction work that follows. No gate touched; report-only. Decision record: `research/2026-06-26-context-reset-fork-feasibility.md`.

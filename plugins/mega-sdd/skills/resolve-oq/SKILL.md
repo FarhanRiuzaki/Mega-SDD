@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.1.0
+version: 2.2.0
 description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, and bumps version + Changelog. Also resolves CONFLICT entries from a binding.md (`--binding`). Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -43,7 +43,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 
 **Step 0.5 — Resume detection (MANDATORY).** Parse `00-index.md` `## Changelog` for prior `resolve-oq` rounds. If found → show current version + last-round stats, ask continue / fresh / cancel. If none → first pass.
 
-**Step 0.6 — Resolution scope (MANDATORY).** Ask which OQs to walk: `p1-only` (recommended first pass) | `p1-then-p2` | `all-priorities` | `by-category` | `single-oq <tag>`. Persist `RESOLUTION_SCOPE`; echo it back.
+**Step 0.6 — Resolution scope (MANDATORY).** Ask which OQs to walk: `all-priorities` (**recommended — ONE walk, P1→P2→P3 in order so the blocking tier is still resolved first; avoids re-entering and re-reading the whole vault for a separate P2 pass**) | `p1-only` (unblock-the-chain-fast — only when you will defer P2/P3 to a later session) | `p1-then-p2` | `by-category` | `single-oq <tag>`. Persist `RESOLUTION_SCOPE`; echo it back. **The walk stays interactive on EVERY OQ regardless of scope** — `all-priorities` does NOT auto-resolve P1 (the no-fabrication rule in "Hard rules" still holds; collapsing the passes only saves the second vault read, never the stakeholder input).
 
 **Step 1 — Parse OQ list.** Read all 7 files; from each numbered doc (01–06) extract still-`[ ]` entries (skip `[x]` / `[~]`). Per OQ capture tag, priority, doc origin, question text, generator resolution hint. Cross-reference `00-index.md` roll-up for the **category**. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
 

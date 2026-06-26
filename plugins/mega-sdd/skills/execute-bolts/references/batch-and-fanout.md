@@ -8,6 +8,7 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 - `--module=<id>` + `module_blocked_by` halt
 - `--squad=<id>` + `cross_squad_interface_draft` halt
 - Per-bolt lightweight drift check
+- Batch completion — final full-suite gate (B2)
 
 ## `--all`
 
@@ -93,3 +94,28 @@ OR (drift detected):
 ```
 └─ Post-flight: Hard Rules ✓ | PBT ✓ | ⚠️ Drift: order.amount type changed (LOCKED — will halt at gate)
 ```
+
+## Batch completion — final full-suite gate (B2)
+
+The per-bolt acceptance command is **scoped** to that unit; nothing re-runs the *whole* project suite. A later bolt — or an out-of-band edit that bypassed the bolt flow — can silently break an earlier bolt's contract and the batch still reports `completed`. The batch-completion gate closes that hole. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
+
+**When:** once, after the **last committed code-bearing bolt** of the invocation (single bolt or `--all`/`--parallel`/`--per-squad`/`--module` batch). Skipped only for `--dry-run`, a zero-code-commit run (verify-only / all-skipped), or `--no-full-suite` (logged, never silent).
+
+**Run the FULL suite, unscoped.** Use the test runner detected at pre-flight check 3.5 with **no per-unit filter** — e.g. `yarn test` / `pytest` / `go test ./...` / `cargo test`, NOT `yarn test <one-file>`. Capture pass/fail/todo counts.
+
+**Out-of-band bypass guard (before the verdict).** Record the invocation's base SHA at batch start. Scan `git log <base>..HEAD` **excluding this run's own bolt commits**; for each commit, `git show --name-only` and flag any that touched a file listed in some unit's `target_files` yet whose message carries no `SDD-PROVENANCE` trailer. List them in `bypass_commits[]`. Bounding to the batch window is mandatory — an unscoped scan flags every pre-SDD commit in history. A non-empty list does not by itself halt (the full-suite run is the real gate) but forces the suite to run even on an otherwise-skippable invocation, and is surfaced in `_summary.md`.
+
+**Write `<vault>/bolts/_batch-suite.json`:**
+
+```json
+{ "command": "<full-suite command>", "status": "green|red",
+  "passed": N, "failed": N, "todo": N,
+  "head_sha": "<git HEAD at run>", "ran_at": "<iso8601>",
+  "units": ["U-001", "U-002"], "bypass_commits": [], "source": "execute-bolts" }
+```
+
+**Verdict.** `status: red` → **halt `batch_suite_red`**: emit the blocker with the failing test names, leave the tree for review (do not auto-revert), do not emit a `status: completed` handoff. `status: green` → the batch is complete.
+
+**Enforcement (the gate is real, not prose).** The Stop hook runs `validate-bolt-artifacts.sh --batch-suite-gate` every turn end (detection-only). The PreToolUse aggregator blocks the **next** `execute-bolts` when no green `_batch-suite.json` covers the newest **code commit** (`batch_suite_gate_missing` — missing or stale: a code change landed after the last full-suite run, decided via `git merge-base --is-ancestor <newest-code-commit> <gate.head_sha>`) or the recorded suite is RED (`batch_suite_red`). The hook **verifies the artifact; it never runs the suite** (200s+ suites in a hook would cripple every turn). The freshness anchor is the newest commit touching a **code file** (outside `.mega-sdd/`, excluding pure-docs `.md`/`.rst`) **regardless of subject** — so an out-of-band edit (a hotfix, a manual change, a `git pull`) that touches source after a green suite DOES trip the gate (`out_of_band: true`); a docs/markdown-only commit does not. The gate *activates* only once a code-bearing `(bolt): U-XXX` commit exists (no bolting yet ⇒ nothing to gate).
+
+**Sync lane.** After `orchestrate-flow --sync` reconciles an out-of-band edit, it re-runs the full suite and writes `_batch-suite.json` with `source: sync` — this is the catch for the *post*-batch out-of-band edit the within-batch gate has already passed. (The `SYNC-REPORT.md` terminal emission is owned separately by the sync-report work; it *consumes* this artifact, it does not re-run the suite.)

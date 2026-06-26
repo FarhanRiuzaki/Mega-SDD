@@ -21,8 +21,8 @@ grep -q 'test `-e` not `-d`' "$P/skills/scan-codebase/references/scan-procedure.
   && pass "A3: scan walk-up handles .git-as-file" || fail "A3: walk-up still -d only"
 
 # B/F — capability decisions recorded (do not silently re-propose)
-grep -q 'context: fork.*PILOT-GATED' "$P/CLAUDE.md" \
-  && pass "B: context:fork decision recorded (pilot-gated, evidence cited)" \
+grep -q 'context: fork.*PILOT LIVE' "$P/CLAUDE.md" \
+  && pass "B: context:fork decision recorded (pilot live on detect-drift v3.0.0, evidence cited)" \
   || fail "B: fork decision missing from CLAUDE.md"
 grep -q 'Skill-scoped `hooks:` frontmatter — NOT adopted for the moat' "$P/CLAUDE.md" \
   && pass "F: skill-scoped-hooks decision recorded (moat stays global)" \

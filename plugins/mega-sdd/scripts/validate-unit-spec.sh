@@ -187,6 +187,139 @@ if task_type == "extend":
             "missing_sections": ["Migration notes"],
         })
 
+# ─── Check 1b (A1): verify_grounding_untrusted — per-AC source grounding ─────
+# Root cause: grounding_confidence: HIGH meant only "anchors verified = file
+# exists + line valid" (symbol existence), NEVER per-acceptance-criterion source
+# grounding. A verify unit could be stamped HIGH while its LOCKED acceptance
+# criteria lived only in test stubs / the PRD — certifying UNBUILT behavior green.
+# The defect is PARTIAL grounding (one real source anchor + N ungrounded criteria),
+# so an "all anchors are test files" check structurally misses it. The unit of
+# measurement is the acceptance CRITERION: each criterion of a verify+HIGH unit
+# must carry a resolvable NON-TEST source anchor `[grounded: path:line]`.
+# Scope: enforced ONLY when grounding_confidence: HIGH (a MEDIUM/LOW verify unit
+# anchored thinly is honest, not blocked) AND the unit ADOPTS per-AC markers
+# (>=1 criterion carries `[grounded:]`/`[ungrounded]`). Legacy units with no
+# markers at all are tolerated/treated-as-MEDIUM, never retro-blocked.
+gc_match = re.search(r"^grounding_confidence:\s*([A-Za-z]+)", fm, re.MULTILINE)
+grounding_conf = gc_match.group(1).upper() if gc_match else None
+if task_type == "verify" and grounding_conf == "HIGH":
+    # Adoption is detected from the WHOLE body, not from a pre-located section — so
+    # heading drift (`## Acceptance criteria:`, `### Acceptance tests`, a renamed
+    # heading) and prose criteria cannot hide the opt-in. A verify+HIGH unit with NO
+    # grounding markers anywhere is legacy (old symbol-existence semantics), tolerated.
+    adopts = re.search(r"\[grounded:|\[ungrounded\]", body_after_fm, re.IGNORECASE) is not None
+    if adopts:
+        def _is_test_path(p):
+            pl = p.lower()
+            if re.search(r"(^|/)(tests?|specs?|__tests__|__mocks__|fixtures?)/", pl):
+                return True
+            base = pl.rsplit("/", 1)[-1]
+            if re.search(r"[._](test|spec)s?\.[a-z0-9]+$", base):   # foo.test.ts, foo_spec.rb
+                return True
+            if re.match(r"^test_.*\.[a-z0-9]+$", base):             # test_foo.py
+                return True
+            base_orig = p.rsplit("/", 1)[-1]
+            if re.search(r"(?:Test|Spec)s?\.[A-Za-z0-9]+$", base_orig):  # PascalCase: UserTest.php, FooSpec.rb
+                return True
+            return False
+
+        def _anchor_resolves(spec):
+            m = re.match(r"^(.+?):(\d+)$", spec)
+            if m:
+                path, ln = m.group(1), int(m.group(2))
+            else:
+                path, ln = spec, None
+            full = os.path.join(cwd, path)
+            if not os.path.isfile(full):
+                return False
+            if ln is not None:
+                try:
+                    with open(full, errors="replace") as fh:
+                        n = sum(1 for _ in fh)
+                except Exception:
+                    return False
+                if ln < 1 or ln > n:
+                    return False
+            return True
+
+        def _grounded_ok(line):
+            m = re.search(r"\[grounded:\s*([^\]\s]+)\s*\]", line, re.IGNORECASE)
+            if not m:
+                return False
+            spec = m.group(1)
+            path = spec.split(":")[0]
+            if _is_test_path(path):
+                return False
+            return _anchor_resolves(spec)
+
+        # Locate the acceptance-criteria section: tolerate h2-h4, the
+        # criteria/criterion/test(s) synonyms, and a trailing colon.
+        ac_match = re.search(
+            r"(?im)^#{2,4}[ \t]+Acceptance[ \t]+(?:criteri(?:a|on)|tests?)\b[^\n]*\n(.*?)(?=^#{2,4}[ \t]|\Z)",
+            body_after_fm, re.S,
+        )
+        ungrounded = None
+        if not ac_match:
+            # Fail CLOSED: the unit opted into per-AC grounding but no recognised
+            # acceptance-criteria section parses — the criteria cannot be checked, so a
+            # false-green verify unit must NOT slip through on a renamed/absent heading.
+            ungrounded = ["<no parseable `## Acceptance criteria` section to ground>"]
+        else:
+            lines = ac_match.group(1).splitlines()
+
+            def _indent(s):
+                return len(s) - len(s.lstrip(" \t"))
+
+            item_re = re.compile(r"^\s*(?:[-*]|\d+[.)])\s+\S")
+            item_indents = [_indent(l) for l in lines if item_re.match(l)]
+            min_ind = min(item_indents) if item_indents else 0
+            # Group lines into criteria. A criterion HEAD is a top-level list item OR a
+            # top-level prose assertion. A top-level prose line ending ':' is a lead-in
+            # (not a criterion). Deeper-indented lines are detail of the current head —
+            # so sub-bullets are NOT over-counted as separate criteria.
+            criteria = []
+            cur = None
+            for l in lines:
+                if not l.strip():
+                    continue
+                top = _indent(l) <= min_ind
+                is_item = item_re.match(l) is not None
+                if top and is_item:
+                    cur = [l]; criteria.append(cur)
+                elif top and not is_item:
+                    if l.rstrip().endswith(":"):
+                        cur = None            # intro / lead-in header
+                    else:
+                        cur = [l]; criteria.append(cur)   # prose criterion
+                else:
+                    if cur is not None:
+                        cur.append(l)         # detail of the current criterion
+                    else:
+                        criteria.append([l])  # orphan detail with no head
+            if not criteria:
+                ungrounded = ["<acceptance criteria section is empty>"]
+            else:
+                # a criterion is grounded if its head OR any detail line carries a marker
+                offending = [c[0].strip()[:120] for c in criteria
+                             if not any(_grounded_ok(x) for x in c)]
+                ungrounded = offending or None
+
+        if ungrounded:
+            issues.append({
+                "halt_type": "verify_grounding_untrusted",
+                "detail": (
+                    f"unit {unit_id} is task_type=verify grounding_confidence=HIGH but "
+                    f"{len(ungrounded)} acceptance criteri(on/a) lack a resolvable NON-TEST "
+                    f"source anchor. A verify unit certifies EXISTING behavior — each criterion "
+                    f"must cite a non-test implementation anchor `[grounded: path:line]`. "
+                    f"Downgrade grounding_confidence, or split verify[built]+create[unbuilt]."
+                ),
+                "unit_id": unit_id,
+                "task_type": task_type,
+                "grounding_confidence": grounding_conf,
+                "ungrounded_criteria": ungrounded[:10],
+            })
+
 # ─── Check 2: hard_rule_unparseable (v1 grammar — 5-types) ───────────────────
 # Extract `## Hard rules` section
 hr_match = re.search(r"^##\s+Hard\s+rules?\s*\n(.*?)(?=\n##\s|\Z)", body_after_fm, re.MULTILINE | re.IGNORECASE | re.DOTALL)

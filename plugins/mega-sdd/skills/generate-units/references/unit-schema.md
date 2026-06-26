@@ -39,6 +39,11 @@ status: implemented                # OPTIONAL (living-vault lifecycle; absence =
                                    #     execute-bolts SKIPS superseded units with a warning
 grounding_confidence: HIGH | MEDIUM | LOW   # — reflects defensive generation checks
                                    # HIGH = binding present + all anchors verified + no target collisions + binding state all HIGH-conf
+                                   #   AND (verify units only, A1) every acceptance criterion grounded in a NON-TEST source
+                                   #   anchor `[grounded: path:line]` — see ## Acceptance criteria. A verify unit certifies
+                                   #   EXISTING behavior; a criterion present only in a test stub / the PRD is NOT grounding.
+                                   #   Any ungrounded criterion → NOT HIGH (downgrade, or split verify[built]+create[unbuilt]).
+                                   #   Enforced: validate-unit-spec.sh halt verify_grounding_untrusted (HIGH verify units only).
                                    # MEDIUM = binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex
                                    # LOW = no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors
                                    # Required on newly generated units; may be absent on legacy units.
@@ -174,6 +179,17 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
 ## Acceptance criteria
 <expanded form of frontmatter acceptance_test — exactly what passing means>
 <For task_type=verify: ALL acceptance criteria must assert behavior of existing implementation — not new behavior.>
+<For task_type=verify with grounding_confidence: HIGH (A1 — per-AC source grounding): prefix EACH criterion
+ with a grounding marker that proves the asserted behavior already exists in NON-TEST source:
+   - [grounded: src/Services/Purchase.php:142] the 4th daily purchase is rejected
+   - [grounded: app/config/limits.php:8] minimum purchase is enforced at Rp 10.000
+ A criterion you cannot ground — its behavior lives only in a test stub, the PRD, or nowhere yet — is marked
+   - [ungrounded] source-of-fund validation
+ and means the unit is NOT verify+HIGH: downgrade grounding_confidence, OR split a verify[built] unit (the
+ grounded criteria) from a create[unbuilt] unit (the ungrounded ones). A test-file path is NOT grounding
+ (tests can assert behavior that does not exist). Once ANY criterion carries a marker the unit opts in and
+ EVERY criterion must be `[grounded: <non-test path>:<line>]`; legacy units with no markers are tolerated.
+ Enforced by validate-unit-spec.sh → verify_grounding_untrusted (blocks the next execute-bolts).>
 
 ## Out of scope (for this unit)
 <explicit list — prevents scope creep into adjacent units>

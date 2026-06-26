@@ -13,20 +13,37 @@ Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain pha
 
 ## `--auto` behavior
 
-Passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logistical prompts and the optional Step 5 walkthrough.
+Since v3.0.0 detect-drift is **forked + non-interactive by default** (`context: fork`) — there is no interactive mode, so this table describes the *only* (deterministic) behavior; `--auto` is implied. Upstream callers (typically `/mega-sdd:orchestrate-flow`) pass `--vault=…` / `--code=…` / `--scope=…` so Step 0 resolves without guessing.
 
-| Step | Interactive | `--auto` |
-|---|---|---|
-| Step 0 (vault path) | Ask | Auto-detect from CWD if exactly 1 |
-| Step 0 (codebase path) | Ask | Use CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml`); otherwise REQUIRE an explicit arg — never guess |
-| Step 0 (mode=new) | Surface migration trigger | Emit `drift_framework_mismatch` if the trigger isn't detectable, or refuse cleanly with a structured message |
-| Step 0.5 (scope) | Ask | Default `full` |
-| Step 1.5 (framework) | Detect, propose, confirm | Auto-confirm if a single signature is found; multi/ambiguous → emit `drift_framework_mismatch` |
-| Step 5 (walkthrough) | Ask | **Skip.** Write `DRIFT-REPORT.md`, surface top 3 PRIORITY-1 findings in chat. Do NOT generate `DRIFT-ACTIONS.md` (a deliberate human decision) |
+| Step | Deterministic behavior (forked — never prompts) |
+|---|---|
+| Step 0 (vault path) | `--vault=<path>` arg, else auto-detect the CWD vault dir; unresolvable → `drift_inputs_missing` (vault) |
+| Step 0 (codebase path) | `--code=<path>` arg, else CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / `requirements.txt`\|`pyproject.toml`); otherwise **never guess** → `drift_inputs_missing` (code) |
+| Step 0 (mode=new) | STOP — surface `mode_migrate_after` (a hard rule) |
+| Step 0.5 (scope) | `--scope=<…>` arg / sync changed-paths, else `full` |
+| Step 1.5 (framework) | Auto-detect; single signature → use it; multi/ambiguous → `drift_framework_mismatch` |
+| Step 5 (direction calls) | Queue every finding to `PENDING-SYNC.md`; `--auto-apply=safe` writes back ONLY the narrow safe class. Never `DRIFT-ACTIONS.md`, never a walkthrough |
 
-**Stays interactive even under `--auto`:** a major framework mismatch (vault implies one stack, code is another → emit blocker, never assume the vault is wrong) and the `mode=new` bail-out (a hard rule `--auto` doesn't change).
+**No interactive path:** a major framework mismatch (vault implies one stack, code is another) emits `drift_framework_mismatch`; `mode=new` bails with `mode_migrate_after` — both as blockers, never prompts.
 
-**`--auto` never:** generates `DRIFT-ACTIONS.md`; modifies vault content (read-only by design); opens PRs or runs code changes.
+**Never:** generates `DRIFT-ACTIONS.md`; calls `AskUserQuestion`; modifies vault content outside the `--auto-apply=safe` class; opens PRs or runs code changes.
+
+## `drift_inputs_missing` blocker
+
+Emitted when a required Step-0 input can't be resolved from `$ARGUMENTS` or the CWD (a fork cannot ask). After emit, the skill stops; no report is generated.
+
+```yaml
+blocker:
+  type: drift_inputs_missing
+  tag: n/a
+  priority: n/a
+  context: "<e.g. 'Step 0: CODE_DIR unresolved — CWD is not a recognizable repo and no --code arg was passed'>"
+  resolver_owner: null
+  resolver_route: "re-invoke with --code=<repo-root> (and/or --vault=<vault-dir>)"
+  vault_version: "<current or n/a>"
+  source_skill: detect-drift
+  missing: "<code | vault>"
+```
 
 ## `drift_framework_mismatch` blocker
 
@@ -57,6 +74,7 @@ handoff:
   status: completed | halted
   artifacts:
     - <absolute path to <vault>/DRIFT-REPORT.md>
+    - <absolute path to <vault>/PENDING-SYNC.md>   # queued direction calls (when findings need triage)
   next_action:
     suggested_skill: mega-sdd:resolve-oq   # if findings need triage; else null
     suggested_args: ["--auto"]
