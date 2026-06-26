@@ -160,3 +160,22 @@ LOOP:
 ## 10. Versioning & release
 
 Minor bump (new feature, additive): `plugin.json` + `marketplace.json` in sync; `orchestrate-flow` SKILL.md version bump; `CHANGELOG.md` entry. No breaking changes to existing handoff consumers (ledger is additive; forward-only chains still work).
+
+---
+
+## 11. Amendment (2026-06-26, v4.39.0) — backward-dispatch enforcement gate (Round-3 audit R3-1)
+
+**Status:** Approved — implemented.
+
+**Gap found.** §4.3 step 4 designs the loop to HALT re-dispatch of a phase already in `phase_stuck` / `anti_spin`, and §5 states the anti-spin cap is "wired to the EXISTING PreToolUse aggregator." But that aggregator gates **only `execute-bolts`** — the *forward / downstream* side. Nothing read the ledger when an upstream phase (`extract → intent → scan → bind → units`) was **re-dispatched backward**. So the §4.3 cap was, for the backward direction, **prose-only** — the router could re-run a stuck phase indefinitely if the prose loop was skipped. `factory-routing.md` even asserted the PreToolUse gate enforced this; it did not. This violates the enforcement doctrine ("prose that says HALT enforces nothing").
+
+**Fix.** A second, narrow PreToolUse gate (Branch 0-pre in `hooks/pre-tool-use`) on the upstream phase skills `mega-sdd:{extract-intelligence,generate-intent,scan-codebase,bind-codebase,generate-units}`:
+
+1. **Recompute, don't trust derived state.** The gate runs `validate-factory-ledger.sh --cwd --quiet` fresh (mirroring the preflight + scope-flag gates), then reads the just-written `.factory-ledger-state.json`. This is the critical correctness property: resetting the *rebuildable* raw `factory-ledger.json` (the documented recovery) makes the validator emit `SKIP` → the gate self-clears. Reading the derived file blindly would deadlock (a ledger reset would leave a stale `FAIL`).
+2. **Per-phase precision.** Block **only** when the dispatched skill's short-name is in `cap_breaches[].phase` or `spin_breaches[].phase`. A sibling phase (e.g. a re-`scan` to FIX a stuck `bind`) stays allowed. A schema/unparseable `FAIL` carries no phase breaches → never matches → never blocks here (the forward gate still handles those for `execute-bolts`).
+3. **Recovery = resolve + RESET the rebuildable ledger, then `--resume`.** This is a deliberate, documented change to the `phase_stuck` recovery UX. Because the validator's cap test inspects the *latest* attempt and the per-phase attempt count, a bare `--resume` that re-dispatches the still-capped phase is (correctly) blocked — otherwise the gate would be trivially bypassable. The recovery is to reset the **rebuildable** `factory-ledger.json` (`rm` it; the router rebuilds it from phase handoffs, which clears the stale attempt history → `max_attempt < cap` → no breach → the recovered phase runs). `orchestrate-flow` / `auto` themselves are NOT gated, and `factory-ledger.json` is NOT in the anti-self-bypass protected set, so the reset is permitted. The block's deny message states this recovery verbatim; `factory-routing.md` §Termination documents it. The gate is **breach-scoped, not a permanent phase ban**: the moment the ledger shows the phase's latest attempt `completed` (or attempt count below cap), the gate releases.
+4. **Placed before preflight** so a stuck preflight-gated phase reports the more-specific Factory halt.
+
+**Enforcement-table correction to §5:** the row "Anti-spin cap … wired to the EXISTING PreToolUse aggregator" covers the **forward** block (`execute-bolts`) only. Backward re-dispatch of a stuck upstream phase is enforced by **this** dedicated gate. The "always-pause / human-only" class (business OQ P1, constitution drift) remains prose-only — a human-judgment class the hook cannot adjudicate (now labelled as such in `factory-routing.md`).
+
+**Tests:** `tests/round3/test-factory-backward-gate.sh` — phase_stuck blocks; anti_spin blocks; per-phase precision (sibling allowed); PASS/absent never block; **recovery self-clear after ledger reset (the deadlock guard)**; ordering (Factory halt before preflight). The forward aggregator + moat suites remain green (the change is additive).

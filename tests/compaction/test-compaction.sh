@@ -46,7 +46,10 @@ T3=$(mktemp -d)
 mkdir -p "$T3/.mega-sdd/vaults/v/units"
 printf -- '---\nid: U-001\n---\n' > "$T3/.mega-sdd/vaults/v/units/U-001.md"
 TRANS=$(mktemp)
-printf '%s\n' '{"message":{"usage":{"input_tokens":10000,"cache_read_input_tokens":160000,"cache_creation_input_tokens":5000,"output_tokens":2000},"model":"claude-fable-5"}}' > "$TRANS"
+# Over-threshold fixture: claude-fable-5 is a 1M-context family (user-prompt-submit
+# resolves its window to 1,000,000), so the advisor fires at >80% = >800k tokens.
+# 905k context (900k cache_read + 10k input + 5k cache_creation = 915k) clears the bar.
+printf '%s\n' '{"message":{"usage":{"input_tokens":10000,"cache_read_input_tokens":900000,"cache_creation_input_tokens":5000,"output_tokens":2000},"model":"claude-fable-5"}}' > "$TRANS"
 out=$(printf '{"cwd":"%s","transcript_path":"%s"}' "$T3" "$TRANS" | bash "$UPS")
 echo "$out" | grep -qi 'safe place to /compact' || { echo "advisor did not fire over threshold"; err=1; }
 # opt-out

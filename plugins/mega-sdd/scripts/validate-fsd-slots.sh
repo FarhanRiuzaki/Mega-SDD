@@ -41,9 +41,13 @@ fi
 [ -z "$CWD" ] && exit 2
 [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ] && exit 0
 
-# Only check FSD output files (and related template outputs)
+# Only check FSD *output* files. emit-fsd writes <vault>/fsd/FSD.md, so match
+# either a file named *FSD.md or any .md inside an fsd/ directory. The old
+# `*fsd*.md` arm matched the plugin's OWN authoring files (skills/emit-fsd/SKILL.md,
+# emit-fsd/references/*.md) whose `{{slot}}` examples are documentation, not unfilled
+# output — a false FAIL. Those are excluded now (R3-12).
 case "$FILE_PATH" in
-  *FSD*.md|*fsd*.md|*/fsd/*.md) ;;
+  *FSD.md|*/fsd/*.md) ;;
   *) exit 0 ;;
 esac
 
@@ -66,10 +70,14 @@ try:
 except Exception:
     sys.exit(0)
 
-# Find unfilled template slots: pattern `{{slot_name}}` (mustache-style)
-# Don't match valid markdown {{} sequences inside code fences (where they may be examples).
+# Find unfilled template slots: pattern `{{slot_name}}` (mustache-style).
+# Strip fenced code blocks first (``` or ~~~): a generated FSD may legitimately
+# document the template syntax inside a fence, and those `{{slot}}` examples are
+# not unfilled output (R3-12 — implements the exclusion the comment long promised).
+scan = re.sub(r"```.*?```", "", content, flags=re.DOTALL)
+scan = re.sub(r"~~~.*?~~~", "", scan, flags=re.DOTALL)
 slot_pattern = re.compile(r"\{\{\s*([\w_-]+)\s*\}\}")
-matches = slot_pattern.findall(content)
+matches = slot_pattern.findall(scan)
 unique_slots = sorted(set(matches))
 
 issues = []

@@ -53,15 +53,45 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   # ─── AGGREGATE-ONLY MODE ──────────────────────────────────────────────
   # Skip Phase 1 (validator invocation) and Phase 2 (vault internal checks).
   # Read existing state files written by PostToolUse validators during chain.
-  # Jump to Phase 3 aggregation with all V*_RC set to "STATE_FILE" sentinel
-  # (aggregator reads state file status directly instead of exit code).
+  # Jump to Phase 3 aggregation. Each V*_RC defaults to the "STATE_FILE" sentinel
+  # (aggregator reads the state file status directly instead of an exit code).
+  #
+  # R3-11: the discovery-gated validators (unit_spec, bolt_artifacts, fsd_slots, the KB
+  # validators) are reported SKIP by FULL mode when no in-scope files exist. Reading their
+  # state file blindly here would surface a STALE FAIL — left by a prior chain whose source
+  # files are now gone/archived — as a live FAIL, contradicting what FULL reports (SKIP) on
+  # the SAME tree. So we replicate FULL's existence check and force SKIP when there are no
+  # files; the on-disk status is trusted only when files actually exist. This path is
+  # REPORT-ONLY (the moat reads .validation-blockers.json directly, never this aggregate),
+  # so computing SKIP here cannot weaken any gate. vault_oqs (V4) has NO existence-SKIP in
+  # FULL — it defaults to PASS — so it stays STATE_FILE here too; do NOT add a SKIP for it.
 
-  # Sentinel values — aggregator interprets "STATE_FILE" as "read from disk"
-  V1_RC="STATE_FILE"; V2_RC="STATE_FILE"; V3_RC="STATE_FILE"; V4_RC="STATE_FILE"
-  V5_RC="STATE_FILE"; V6_RC="STATE_FILE"; V7_RC="STATE_FILE"; V7M_RC="STATE_FILE"
-  V7F_RC="STATE_FILE"; V7S_RC="STATE_FILE"; V7C_RC="STATE_FILE"
-  V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
-  V11_RC="STATE_FILE"; V12_RC="STATE_FILE"; V3B_RC="STATE_FILE"
+  # find-any helper: 0 if at least one path matches, 1 otherwise (missing dir => no match).
+  _has() { find "$@" 2>/dev/null | grep -q .; }
+
+  # Validators FULL runs unconditionally (no file-existence SKIP) → always read from disk.
+  V1_RC="STATE_FILE"; V4_RC="STATE_FILE"; V6_RC="STATE_FILE"; V3B_RC="STATE_FILE"
+  V7S_RC="STATE_FILE"; V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
+  V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
+
+  # Discovery-gated validators — mirror FULL's SKIP-when-no-files (globs match FULL exactly).
+  _has "${CWD}/.mega-sdd/vaults" -path "*/units/U-*.md" -not -path "*/.archived/*" \
+    && V2_RC="STATE_FILE" || V2_RC="SKIP"
+  _has "${CWD}/.mega-sdd/vaults" -path "*/bolts/U-*/bolt-report.md" -not -path "*/.archived/*" \
+    && V3_RC="STATE_FILE" || V3_RC="SKIP"
+  _has "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" \
+    && V5_RC="STATE_FILE" || V5_RC="SKIP"
+  { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/40-business-rules" -name "*.md" -not -path "*/.archived/*"; } \
+    && V7_RC="STATE_FILE" || V7_RC="SKIP"
+  _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    && V7M_RC="STATE_FILE" || V7M_RC="SKIP"
+  { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*"; } \
+    && V7F_RC="STATE_FILE" || V7F_RC="SKIP"
+  _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    && V7C_RC="STATE_FILE" || V7C_RC="SKIP"
 
   # Advisory checks not re-run in aggregate-only mode
   REUSE_DUP_OUTPUT=""
