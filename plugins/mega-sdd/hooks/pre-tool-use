@@ -375,10 +375,10 @@ if os.path.exists(moat_path):
         d = json.load(open(moat_path))
     except Exception as e:
         d = None
-        fails.append(("binding->units", "the binding->units moat state file .validation-blockers.json is PRESENT but UNPARSEABLE (%s) — failing CLOSED: a corrupt moat state must not silently open the gate (invariant #2). Re-run /mega-sdd:validate-handoff (or bind-codebase) to rewrite a clean state; or delete the file if you are certain no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
+        fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run /mega-sdd:validate-handoff (or bind-codebase) to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
     if d and d.get("status") == "FAIL":
         n = len(d.get("drops", []))
-        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) at the binding->units boundary. Run /mega-sdd:validate-handoff to see the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs lists. State: %s/.validation-blockers.json" % (n, md)))
+        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units). Run /mega-sdd:validate-handoff for the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs. State: %s/.validation-blockers.json" % (n, md)))
 
 # bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run
 # gap, clinic-project audit 2026-06-12). The Stop hook writes this state on every
@@ -388,7 +388,7 @@ d = L(".bolt-orphans-state.json")
 if d and d.get("status") == "FAIL":
     n = d.get("issues_count", len(d.get("issues", [])))
     units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
-    fails.append(("bolt-orphans", "orphan-bolt scan found %s bolt commit(s) with NO <vault>/bolts/U-XXX/bolt-report.md (%s%s) — code shipped but the audit trail was never written (Procedure Step 0/5 skipped). Backfill a bolt-report (mark retroactive: true) for each listed unit, or re-run those units; then the scan re-passes on the next turn end. State: %s/.bolt-orphans-state.json" % (n, units, ", …" if n > 8 else "", md)))
+    fails.append(("bolt-orphans", "orphan-bolt scan found %s bolt commit(s) with NO <vault>/bolts/U-XXX/bolt-report.md (%s%s). Backfill a bolt-report (retroactive: true) for each listed unit, or re-run those units. State: %s/.bolt-orphans-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
 # batch-suite-gate (status==FAIL) — B2: a code-bearing bolt run must leave a green
 # full-suite result (<vault>/bolts/_batch-suite.json) covering the newest CODE commit
@@ -400,10 +400,10 @@ d = L(".batch-suite-gate-state.json")
 if d and d.get("status") == "FAIL":
     ht = d.get("halt_type", "batch_suite_gate_missing")
     if ht == "batch_suite_red":
-        fails.append(("batch-suite-gate", "the recorded full-suite result is RED — a cross-bolt or out-of-band regression is live (%s). Fix the failing tests, re-run the full project suite, and overwrite <vault>/bolts/_batch-suite.json with {status:green, head_sha:<HEAD>} before any further bolt. State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
+        fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, re-run the full project suite, and overwrite <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>} before any further bolt. State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
     else:
         _who = "an OUT-OF-BAND code commit (hotfix/manual edit, no bolt provenance)" if d.get("out_of_band") else ("the newest bolt commit (%s)" % d.get("newest_bolt_unit", "?"))
-        fails.append(("batch-suite-gate", "no green full-suite result covers %s — the final full-suite gate was skipped or is stale, so a cross-bolt or out-of-band regression could ship undetected. Run the full project test suite (no per-unit scope filter) at HEAD and write <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}. State: %s/.batch-suite-gate-state.json" % (_who, md)))
+        fails.append(("batch-suite-gate", "no green full-suite result covers %s. Run the full project test suite (no per-unit scope filter) at HEAD and write <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}. State: %s/.batch-suite-gate-state.json" % (_who, md)))
 
 # postflight-evidence (status==FAIL) — B1: a committed Hard-rule create/extend/modify
 # bolt with no passing <vault>/bolts/U-XXX/postflight.json. The post-flight Hard-rule
@@ -412,7 +412,7 @@ d = L(".bolt-postflight-state.json")
 if d and d.get("status") == "FAIL":
     n = d.get("issues_count", len(d.get("issues", [])))
     units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
-    fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s) — the Hard-rule post-flight safety net never ran (it was prose-only). Re-run each listed unit so the post-flight scan validates its ## Hard rules, or write the postflight.json evidence; then the scan re-passes on the next turn end. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
+    fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s). Re-run each listed unit so the post-flight scan validates its ## Hard rules, or write the postflight.json evidence. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
@@ -426,18 +426,18 @@ d = L(".unit-spec-state.json")
 if d:
     n = len([i for i in d.get("issues", []) if i.get("halt_type") == "render_test_missing"])
     if n:
-        fails.append(("render-test", "unit-spec validator flagged %s unit(s) shipping a detail/show view with no acceptance_test of type render (render_test_missing). A route-200 smoke test misses empty-model / null-field render crashes. Add a structured acceptance_test entry with type: render to each view-bearing unit, then re-save the unit. State: %s/.unit-spec-state.json" % (n, md)))
+        fails.append(("render-test", "unit-spec validator flagged %s unit(s) shipping a detail/show view with no acceptance_test of type render (render_test_missing). Add a structured acceptance_test entry with type: render to each view-bearing unit, then re-save. State: %s/.unit-spec-state.json" % (n, md)))
     # verify-grounding (A1 — per-AC source grounding; block-on-HIGH enforced in validator)
     g = len([i for i in d.get("issues", []) if i.get("halt_type") == "verify_grounding_untrusted"])
     if g:
-        fails.append(("verify-grounding", "unit-spec validator flagged %s verify unit(s) stamped grounding_confidence: HIGH whose acceptance criteria lack a resolvable NON-TEST source anchor (verify_grounding_untrusted). A verify unit certifies EXISTING behavior — a HIGH stamp with ungrounded criteria green-lights UNBUILT behavior. Per criterion, cite a non-test implementation anchor [grounded: path:line], OR downgrade grounding_confidence, OR split verify[built]+create[unbuilt]; then re-save the unit. State: %s/.unit-spec-state.json" % (g, md)))
+        fails.append(("verify-grounding", "unit-spec validator flagged %s verify unit(s) stamped grounding_confidence: HIGH whose acceptance criteria lack a resolvable NON-TEST source anchor (verify_grounding_untrusted). Per criterion, cite a non-test implementation anchor [grounded: path:line], OR downgrade grounding_confidence, OR split verify[built]+create[unbuilt]; then re-save. State: %s/.unit-spec-state.json" % (g, md)))
 
 # sibling-consistency (status==FAIL)
 d = L(".sibling-consistency-state.json")
 if d and d.get("status") == "FAIL":
     incon = len(d.get("inconsistent", []))
     rel = len(d.get("missing_relations", []))
-    fails.append(("sibling-consistency", "sibling-consistency validator found %s cross-cutting concern divergence(s) across sibling units (a shared concern such as branch-scoping implemented differently in one sibling than the others) and %s FK column(s) with no derived relation accessor. Make every sibling sharing a concern declare the same mechanism, and declare the relation accessor for each FK column, then re-save the unit. State: %s/.sibling-consistency-state.json" % (incon, rel, md)))
+    fails.append(("sibling-consistency", "sibling-consistency validator found %s cross-cutting divergence(s) across sibling units and %s FK column(s) with no derived relation accessor. Make every sibling sharing a concern declare the same mechanism, and declare the relation accessor for each FK column, then re-save. State: %s/.sibling-consistency-state.json" % (incon, rel, md)))
 
 # ui-quality (status==FAIL)
 d = L(".ui-quality-blockers.json")
@@ -451,7 +451,7 @@ if d and d.get("status") == "FAIL":
 d = L(".cross-cutting-state.json")
 if d and d.get("status") == "FAIL":
     n = len(d.get("missing_registration", []))
-    fails.append(("cross-cutting", "cross-cutting-registration validator found %s generated source file(s) that declare a cross-cutting concern (e.g. the BranchScoped global scope) but never register it (e.g. the addGlobalScope(new BranchScoped) call is missing from the model booted()) — a silent cross-branch/tenant leak. Add the registration call to each flagged file, then re-save it. State: %s/.cross-cutting-state.json" % (n, md)))
+    fails.append(("cross-cutting", "cross-cutting-registration validator found %s source file(s) that declare a cross-cutting concern (e.g. BranchScoped global scope) but never register it (e.g. addGlobalScope(new BranchScoped) missing from the model booted()). Add the registration call to each flagged file, then re-save. State: %s/.cross-cutting-state.json" % (n, md)))
 
 # factory-ledger — anti-spin cap / phase_stuck / schema (Factory Line)
 d = L(".factory-ledger-state.json")

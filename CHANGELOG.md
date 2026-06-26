@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.43.0] - 2026-06-26
+
+Audit batch 4 — **token efficiency** (the "boros" follow-up). A measured sweep of what is *always-loaded* vs *per-run*, then three sharp cuts that do **not** dull the moat (the review-panel tiering, blind per-lens context, lean skill bodies, and trigger descriptions were measured and deliberately **kept** — they are already optimal). Audit + rationale: `research/2026-06-26-token-efficiency-audit.md`.
+
+### Lean anchor injection (session-start diet)
+`session-start` re-injects the `using-mega-sdd` anchor on **every session AND every compaction**. It now injects only the routing **core** (triggers + auto-trigger logic + the hard rule) — the pipeline diagram, phase-ownership table, multi-PRD lifecycle and red-flags moved below a `<!-- ANCHOR-CORE ends -->` marker and stay loadable on demand via the Skill tool. The YAML frontmatter (duplicated by the harness's own description load) is stripped. **~57% smaller per injection** (7839 → 3330 chars). **Fail-open:** an empty extraction (marker/frontmatter drift) falls back to the full skill, so a diet bug can never inject an empty anchor and break routing. Pin test `tests/anchor-diet/test-lean-anchor.sh` guards that every ID/EN + natural-language trigger and the hard rule survive in the core. `using-mega-sdd` 2.3.0 → 2.4.0.
+
+### Deny-message diet (PreToolUse)
+The 13 PreToolUse deny reasons were written for a human terminal; the model is the consumer. Trimmed the "why-it-matters" exposition from 10 of them, keeping the actionable fix recipe + state path + every `%s` placeholder (**~26% lighter per trip** across the trimmed set). The four phrases the wired tests assert (`flow-coverage`, `.batch-suite-gate-state.json`, `no passing postflight.json`, `grounding_confidence: HIGH`) are preserved.
+
+### Fork token-measurement scaffold
+The precondition for extending `context: fork` to `scan-codebase` / `bind-codebase` (CLAUDE.md + `moat-token-tradeoff` memory) is now runnable: comparator `scripts/measure-fork-tokens.sh` (A/B diff of two `report-token-cost.sh` snapshots — reuses existing telemetry, does not re-instrument) + procedure `research/2026-06-26-fork-token-measurement-procedure.md` + a results template. Contract test `tests/fork-measurement/test-measure-fork-tokens.sh`. The live run is on a real machine; until it lands, the extension stays in the backlog.
+
 ## [4.42.0] - 2026-06-26
 
 Audit batch 3 — **correctness** (field-audit follow-up, the contained anti-hallucination fixes). Where batches 1–2 made cost visible and forked the diagnostic lane, this batch closes three enforcement gaps the field run exposed, each as a deterministic validator wired to a hook (never prose): **B2** a final full-suite gate so a cross-bolt or out-of-band regression can no longer ship green; **B1** the post-flight Hard-rule scan promoted from prose to an enforced evidence gate; **A1** per-acceptance-criterion source grounding so a `verify` unit can no longer be stamped HIGH over behavior that lives only in test stubs. Designs: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md` (B2+B1) · `docs/superpowers/specs/2026-06-26-per-ac-grounding-verify-units.md` (A1).
