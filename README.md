@@ -264,7 +264,7 @@ All phases auto-chain via `/mega-sdd:auto`. Each phase emits typed handoff YAML 
 
 `/mega-sdd:auto` is the only command most users type. `/mega-sdd:sync` is the second — run it after any out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`). Everything else is either a manual phase entry point or auto-invoked by `auto`.
 
-**Full per-command reference (all 26): [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
+**Full per-command reference (all 27): [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
 <details>
 <summary><b>📝 Procedure cheat-sheet</b></summary>
@@ -305,7 +305,7 @@ All phases auto-chain via `/mega-sdd:auto`. Each phase emits typed handoff YAML 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **16 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **5 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, domain-extractor, phase-advisor) + **26 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **17 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + **27 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -394,9 +394,9 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
-│   ├── skills/                             # 16 skills (lean routers + progressive disclosure) + _vendored/
-│   ├── agents/                             # 5 first-class subagents
-│   ├── commands/                           # 26 slash commands (manual /mega-sdd: CLI entry points)
+│   ├── skills/                             # 17 skills (lean routers + progressive disclosure) + _vendored/
+│   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
+│   ├── commands/                           # 27 slash commands (manual /mega-sdd: CLI entry points)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (22 packs)
 │   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations + validators

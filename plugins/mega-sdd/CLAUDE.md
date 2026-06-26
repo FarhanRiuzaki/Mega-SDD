@@ -28,7 +28,7 @@ These are the reason Mega-SDD exists. Preserve their behavior exactly.
 
 Skill bodies shape behavior but cannot *enforce* it — the model may or may not comply. Anything that must hold deterministically lives in a hook + validator, not in prose. Conversely, do not over-build hooks: prefer a self-checked **gate** in prose, and reserve real hooks for the few invariants that are both critical and un-promptable. The hierarchy is **rule → gate → hook**, escalating only when needed.
 
-**What is actually enforced (PreToolUse, hard-block):** the binding→units gate, predictive preflight, scope-flag, anti-self-bypass, and the kept code-delivery quality gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration). **Advisory (surfaced via `/mega-sdd:analyze`, non-blocking):** dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging. Everything else in skill bodies is design vocabulary + AI-coding-prompt scaffolding — best-effort, not enforced.
+**What is actually enforced (PreToolUse, hard-block):** the binding→units gate, predictive preflight, scope-flag, anti-self-bypass, the kept code-delivery quality gates (flow-coverage, render-test, sibling-consistency, ui-quality, cross-cutting-registration), and the Factory Line ledger gate in **both directions** — forward (blocks `execute-bolts` while the ledger is FAIL) and backward (blocks re-dispatch of an upstream phase already in `phase_stuck`/`anti_spin` cap-/spin-breach). **Advisory (surfaced via `/mega-sdd:analyze`, non-blocking):** dispatch-prompt, operator-UX, fan-out-parity, ui-deferral, vault-flow-staging. Everything else in skill bodies is design vocabulary + AI-coding-prompt scaffolding — best-effort, not enforced.
 
 ## Architecture (v4 lean-core)
 

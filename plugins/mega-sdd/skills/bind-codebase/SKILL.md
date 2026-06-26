@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.5.2
+version: 2.5.3
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -26,7 +26,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 ## Outputs
 
 - `binding.md` — always written, even when blocking.
-- `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/` per `references/paths.md`) — written ONLY when no CONFLICTs (or `--strict` and no OQs).
+- `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/` per `plugins/mega-sdd/references/paths.md`) — written ONLY when no CONFLICTs (or `--strict` and no OQs).
 
 ## Procedure
 

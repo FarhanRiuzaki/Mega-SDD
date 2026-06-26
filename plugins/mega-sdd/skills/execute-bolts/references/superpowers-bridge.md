@@ -2,6 +2,18 @@
 
 How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by default**, with superpowers (or its vendored copy) as optional technique skills + a legacy fallback.
 
+## Contents
+
+- [Dispatch order](#dispatch-order)
+- [Per-unit flow (review panel)](#per-unit-flow-review-panel)
+- [Halt protocol](#halt-protocol)
+- [Whitelist enforcement](#whitelist-enforcement)
+- [bolt-report.md schema](#bolt-reportmd-schema)
+- [Summary](#summary)
+- [Acceptance criteria status](#acceptance-criteria-status)
+- [Failures (if any)](#failures-if-any)
+- [Squad-level fan-out](#squad-level-fan-out)
+
 ## Dispatch order
 
 0. **First-class mega-sdd agents (default).** The plugin ships its own subagents in `agents/`:

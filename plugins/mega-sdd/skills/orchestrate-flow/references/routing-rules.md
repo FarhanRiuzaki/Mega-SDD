@@ -83,7 +83,7 @@ When CWD inspection finds `<vault>/_meta/squads.yaml` with ≥2 squads:
 - Set `squad_count` in state snapshot to the count
 - Read declared squad IDs to validate any `--squad=<id>` user input
 - Adjust execute-bolts proposal:
-  - Default to `--per-squad` (main-thread squad loop; concurrent depth-1 bolt-agent dispatch — see execute-bolts `references/squad-subagent.md`)
+  - Default to `--per-squad` (main-thread squad loop; concurrent depth-1 bolt-agent dispatch — see `execute-bolts/references/squad-subagent.md`)
   - If user is running in a context that suggests single-squad focus
     (e.g., explicit `--squad=<id>` arg passed to orchestrate-flow, or
     a hint like "I'm on the FE team"), use `--squad=<id>` instead
