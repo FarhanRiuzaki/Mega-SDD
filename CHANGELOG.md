@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.44.0] - 2026-06-27
+
+Fork-measurement hardening — the live `detect-drift` `context: fork` token measurement was attempted in-session and **could not be completed faithfully here**, for two independent reasons (each forces the A/B onto a representative session on a real machine): (1) the no-fork baseline runs inline and inherits the measurement session's full context (~1M tokens), inflating the baseline; (2) `SubagentStop` did not fire for the harness `Agent`-tool dispatch — confirmed by an unconditional pre-bail probe in the hook that never ran, so a fork's entire cost (a `subagent_end_marker`) was uncapturable. The hook code is correct (pinned by `tests/token-cost/test-subagent-stop-telemetry.sh`); the gap is upstream event delivery. The decision to extend `context: fork` to `scan-codebase` / `bind-codebase` therefore **stays gated** on the live measurement — deciding it on the structural argument alone would override a written measurement gate with prose. This release turns the measurement kit's silent footgun into a hard, self-checking guard.
+
+### `subagent_turns` capture signal (`report-token-cost.sh`)
+The state JSON now carries `subagent_turns` — the count of `subagent_end_marker` events with usage. `0` means `SubagentStop` never captured subagent telemetry, so any fork-cost figure is invisible. Pinned by `tests/token-cost/test-token-cost-report.sh`.
+
+### `--require-subagent` integrity guard (`measure-fork-tokens.sh`)
+A real A/B must pass `--require-subagent`: the comparator **refuses a verdict** (exit 2, with remediation) when the **fork** snapshot has `subagent_turns == 0` — you can no longer read a WIN/NO-WIN off a run whose cost was never captured. Fails closed on legacy snapshots that predate the field. The no-fork baseline is exempt (it runs inline, so its `subagent_turns` may legitimately be 0). Contract `tests/fork-measurement/test-measure-fork-tokens.sh` (8 cases).
+
+### Procedure precondition + diagnosis table
+`research/2026-06-26-fork-token-measurement-procedure.md` gained a **SubagentStop precondition**: before trusting any A/B, read the hook-debug diagnostic count and the telemetry marker count *together* — a 3-case table distinguishes "never fired" (harness) from "fired but bailed" (a hook-side issue) from "healthy". Results log records the two blockers and the session-dependent magnitude (marginal → 50%+ at cache-read 0.1×), kept `_pending_` a representative-session run.
+
 ## [4.43.0] - 2026-06-26
 
 Audit batch 4 — **token efficiency** (the "boros" follow-up). A measured sweep of what is *always-loaded* vs *per-run*, then three sharp cuts that do **not** dull the moat (the review-panel tiering, blind per-lens context, lean skill bodies, and trigger descriptions were measured and deliberately **kept** — they are already optimal). Audit + rationale: `research/2026-06-26-token-efficiency-audit.md`.

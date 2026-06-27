@@ -81,6 +81,7 @@ raw_total = 0
 cost_total = 0.0
 type_totals = {k: 0 for k in TOKKEYS}
 turns = 0
+subagent_turns = 0        # subagent_end_marker events with usage — fork cost lives here
 per_skill = {}            # skill -> {turns, raw, cost, **type_totals}
 current_skill = None
 have_telemetry = os.path.isfile(telemetry)
@@ -119,6 +120,7 @@ if have_telemetry:
                 # SubagentStop emits the subagent's OWN identity — attribute to it.
                 sk = (payload.get("skill_name") or payload.get("agent_type")
                       or rec.get("agent_type") or current_skill or "(subagent)")
+                subagent_turns += 1
             else:
                 # turn_end_marker's top-level "skill" is the HARDCODED emitter
                 # ("orchestrate-flow"), NOT the active phase. Attribute via the
@@ -157,6 +159,7 @@ state = {
     "status": "PASS",   # report-only; always PASS so the analyze aggregate never trips
     "have_telemetry": have_telemetry,
     "turns": turns,
+    "subagent_turns": subagent_turns,   # 0 ⇒ no SubagentStop telemetry captured (fork cost invisible)
     "raw_total": raw_total,
     "cost_weighted_total": cost_total_i,
     "overstatement_ratio": ratio,
