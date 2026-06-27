@@ -57,6 +57,11 @@ if [ -f "$STATE" ]; then
   [ "$CW" = "27500" ]  && pass "cost-weighted total = 27500" || fail "cost-weighted total = $CW (want 27500)"
   [ "$RAW" = "155200" ] && pass "raw total = 155200" || fail "raw total = $RAW (want 155200)"
   [ "$TURNS" = "3" ]   && pass "turns = 3 (incl. subagent marker)" || fail "turns = $TURNS (want 3)"
+  # subagent_turns pins the fork-measurement integrity signal: exactly the count of
+  # subagent_end_markers (here 1). measure-fork-tokens.sh --require-subagent reads this;
+  # 0 ⇒ SubagentStop never fired ⇒ fork cost uncapturable ⇒ verdict refused.
+  SUBT="$(_field "$STATE" "['subagent_turns']")"
+  [ "$SUBT" = "1" ]    && pass "subagent_turns = 1 (one subagent_end_marker)" || fail "subagent_turns = $SUBT (want 1)"
   [ "$RATIO" = "5.64" ] && pass "overstatement ratio = 5.64x" || fail "ratio = $RATIO (want 5.64)"
 
   # Per-skill attribution: find each skill's cost in by_skill.
