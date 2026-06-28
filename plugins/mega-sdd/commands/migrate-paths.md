@@ -1,5 +1,5 @@
 ---
-description: Migrate mega-sdd outputs from the legacy scattered layout to the canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows preview, asks confirm, moves via git mv when in git repo (preserves history), updates internal references in vault.json + binding.md + per-file frontmatter. Idempotent; safe to re-run.
+description: Migrate mega-sdd outputs from the legacy scattered layout to the canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows a dry-run preview, asks confirm, then runs the vetted migrate-paths.sh script — moves via git mv when in a git repo (preserves history) and rewrites internal references in vault.json + binding.md. Idempotent; safe to re-run.
 argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new] [--auto-confirm]"
 ---
 
@@ -7,225 +7,73 @@ Migrate mega-sdd outputs to the canonical layout per `plugins/mega-sdd/reference
 
 User arguments: $ARGUMENTS
 
+The destructive core — path moves (`git mv` / `mv`), the per-vault `<vault>/.mega-sdd/` → `<vault>/.internal/` rename, and the `sed` reference rewrites in `vault.json` / `binding.md` — is a single **vetted script**: `plugins/mega-sdd/scripts/migrate-paths.sh`. This command owns the **interactive confirm gate** and surfaces the **dirty-tree HALT**; the script self-guards (idempotent no-op, dirty-tree refusal, target-exists conflict) so it stays safe even under `--auto-confirm`.
+
 Flag parsing:
-- `--dry-run` — Preview moves without writing
-- `--from=auto|legacy|mixed` — Source layout (default: auto-detect)
+- `--dry-run` — Preview moves without writing (forwarded to the script)
+- `--from=auto|legacy|mixed` — Source layout (default: auto-detect). `--from=legacy` confirms intent to migrate into a pre-existing, non-empty `.mega-sdd/vaults/`.
 - `--to=new` — Target layout (default: new; canonical `.mega-sdd/` consolidation). The reverse `--to=legacy` rollback is **NOT YET IMPLEMENTED** (manual file moves required — see the rollback note below); it is intentionally omitted from the argument-hint until the reverse direction ships.
-- `--auto-confirm` — Skip per-move AskUserQuestion (DANGEROUS without --dry-run first)
+- `--auto-confirm` — Skip the per-move AskUserQuestion (DANGEROUS without `--dry-run` first). The script's dirty-tree guard remains the backstop.
 
 ## Procedure
 
-### Step 1 — Detect current layout
+### Step 1 — Pre-flight: dirty-tree HALT
 
-Probe for legacy paths:
+If the working tree has uncommitted changes (`git status --porcelain` non-empty), HALT and ask the user to commit or stash first. The script enforces the same refusal (exit 2), but surface it here so the user resolves it before reaching the confirm gate.
+
+### Step 2 — Preview (dry-run)
+
+Run the script in preview mode to produce the migration plan (this mutates nothing):
 
 ```bash
-LEGACY_VAULTS_DIR=""
-[ -d "./docs/mega-sdd/vaults" ] && LEGACY_VAULTS_DIR="./docs/mega-sdd/vaults"
-
-LEGACY_KB_DIR=""
-for candidate in ./docs/knowledge-base ./old-reference/knowledge-base; do
-  [ -d "$candidate" ] && LEGACY_KB_DIR="$candidate" && break
-done
-
-LEGACY_CODEBASE_MAP=""
-[ -f "./codebase-map.md" ] && LEGACY_CODEBASE_MAP="./codebase-map.md"
-
-LEGACY_MEMORY_DIR=""
-[ -d "./.mega-sdd-memory" ] && LEGACY_MEMORY_DIR="./.mega-sdd-memory"
-
-# Detect if .mega-sdd/ already exists (partial migration or fresh v3.4 project)
-TARGET_ROOT="./.mega-sdd"
-TARGET_EXISTS=false
-[ -d "$TARGET_ROOT" ] && TARGET_EXISTS=true
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-paths.sh" --dry-run --from=<from> --cwd="$(pwd)"
 ```
 
-### Step 2 — Build migration plan
+Show its output (the per-artifact `FROM → TO` plan, reference rewrites, config creation) in chat. If the user passed `--dry-run` explicitly → STOP here (preview only).
 
-Generate per-artifact moves:
+### Step 3 — Confirm (AskUserQuestion)
 
-```
-Migration plan:
-
-Vaults:
-  FROM: ./docs/mega-sdd/vaults/<slug>/
-  TO:   ./.mega-sdd/vaults/<slug>/
-  Count: N vaults detected
-
-Knowledge base:
-  FROM: ./docs/knowledge-base/
-  TO:   ./.mega-sdd/knowledge-base/
-
-Codebase map:
-  FROM: ./codebase-map.md
-  TO:   ./.mega-sdd/codebase/codebase-map.md
-
-Project memory:
-  FROM: ./.mega-sdd-memory/
-  TO:   ./.mega-sdd/memory/
-
-Per-vault internal state (checkpoints + symbol-graph cache):
-  FROM: <vault>/.mega-sdd/  →  <vault>/.internal/  (rename to avoid nesting under top-level .mega-sdd/)
-
-Configuration:
-  CREATE: ./.mega-sdd/config.yaml (v3.4 default)
-```
-
-### Step 3 — Show preview + confirm
-
-Display the plan in chat. Total file count, total size moved, expected operations. Then `AskUserQuestion`:
+Unless `--auto-confirm` is set, ask via AskUserQuestion:
 
 ```
-Proposed migration: <N> directories + <M> files moved to ./.mega-sdd/
+Proposed migration: <N> vaults + KB / memory / codebase-map moved to ./.mega-sdd/
 
 Options:
-  1. Proceed (use git mv where in git; otherwise mv)
-  2. Dry-run preview only (show what would happen; no changes)
+  1. Proceed (git mv where in git; otherwise mv)
+  2. Dry-run preview only (no changes)
   3. Cancel
 ```
 
-Skip if `--auto-confirm` set. Halt if `--dry-run` set (just print plan).
+### Step 4 — Execute
 
-### Step 4 — Execute moves
-
-For each source path, target path pair:
+On **Proceed** (or when `--auto-confirm` is set), run the script for real:
 
 ```bash
-# Pre-flight: ensure target parent exists
-mkdir -p "$(dirname "$TARGET")"
-
-# In git repo: use git mv to preserve history
-if [ -d ".git" ] && git ls-files --error-unmatch "$SOURCE" &>/dev/null; then
-  git mv "$SOURCE" "$TARGET"
-else
-  mv "$SOURCE" "$TARGET"
-fi
-
-# Log to migration-log.md
-echo "  - ✓ $SOURCE → $TARGET" >> ./.mega-sdd/migration-log.md
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-paths.sh" --from=<from> --cwd="$(pwd)"
 ```
 
-Per-vault internal rename:
+The script performs, in order: per-vault moves (`git mv` → history preserved; empty legacy parents tidied), the `<vault>/.mega-sdd/` → `<vault>/.internal/` rename on the post-move location, `vault.json` / `binding.md` reference rewrites (`.bak` backups cleaned on success), `config.yaml` creation (clobber-guarded), verification, and a `migration-log.md` append. Relay the script's summary to the user.
 
-```bash
-# For each vault that has <vault>/.mega-sdd/ subdir, rename to <vault>/.internal/
-# (avoids confusion with top-level .mega-sdd/)
-for vault in .mega-sdd/vaults/*/; do
-  if [ -d "$vault/.mega-sdd" ]; then
-    git mv "$vault/.mega-sdd" "$vault/.internal" 2>/dev/null || mv "$vault/.mega-sdd" "$vault/.internal"
-  fi
-done
-```
+### Rollback
 
-### Step 5 — Update internal references
+If the migration was committed to git: `git revert HEAD`. The forward script does not implement `--to=legacy`; a manual reverse move is required until that direction ships.
 
-Files that reference paths need updates:
+## Hard rails (anti-data-loss) — enforced by the script
 
-```bash
-# Update vault.json files
-for vjson in .mega-sdd/vaults/*/vault.json; do
-  # Replace any legacy path references in JSON
-  sed -i.bak 's|docs/mega-sdd/vaults/|.mega-sdd/vaults/|g' "$vjson"
-  sed -i.bak 's|docs/knowledge-base/|.mega-sdd/knowledge-base/|g' "$vjson"
-  sed -i.bak 's|/\.mega-sdd-memory/|/.mega-sdd/memory/|g' "$vjson"
-  sed -i.bak "s|<vault>/.mega-sdd/|<vault>/.internal/|g" "$vjson"
-  rm "${vjson}.bak"
-done
-
-# Update binding.md files (HTML comment binding annotations)
-for bmd in .mega-sdd/vaults/*/binding.md .mega-sdd/vaults/*/bound/*.md; do
-  [ -f "$bmd" ] && sed -i.bak \
-    -e 's|docs/mega-sdd/vaults/|.mega-sdd/vaults/|g' \
-    -e 's|docs/knowledge-base/|.mega-sdd/knowledge-base/|g' \
-    -e 's|/\.mega-sdd-memory/|/.mega-sdd/memory/|g' \
-    -e "s|<vault>/.mega-sdd/checkpoints|<vault>/.internal/checkpoints|g" \
-    "$bmd" && rm "${bmd}.bak"
-done
-
-# Update memory file frontmatter source_run citations
-# (Lower priority; old citations remain valid as historical record)
-```
-
-### Step 6 — Create config.yaml
-
-If not already present, write `<project>/.mega-sdd/config.yaml` per `references/paths.md` §Config file format:
-
-```yaml
-mega_sdd_schema: 1
-output_root: .mega-sdd/
-layout: new
-defaults:
-  memory_enabled: true
-  emit_agents_md: true
-  defensive_generation: true
-probe_paths:
-  vault_candidates:
-    - .mega-sdd/vaults/
-    - docs/mega-sdd/vaults/    # legacy fallback
-  knowledge_base_candidates:
-    - .mega-sdd/knowledge-base/
-    - docs/knowledge-base/
-    - old-reference/knowledge-base/
-```
-
-### Step 7 — Final verification + report
-
-```bash
-# Verify expected paths exist
-for expected in .mega-sdd/vaults .mega-sdd/codebase .mega-sdd/memory .mega-sdd/config.yaml; do
-  [ -e "$expected" ] && echo "  ✓ $expected" || echo "  ⚠️ $expected MISSING"
-done
-
-# Verify legacy paths cleared (where moves happened)
-for legacy in docs/mega-sdd/vaults codebase-map.md .mega-sdd-memory; do
-  [ -e "$legacy" ] && echo "  ⚠️ $legacy still exists (not moved)" || echo "  ✓ $legacy cleared"
-done
-
-# Print final structure tree
-echo ""
-echo "New layout:"
-find .mega-sdd -maxdepth 3 -type d | sort
-```
-
-### Step 8 — Append summary to migration-log.md
-
-```markdown
-# Mega-SDD Path Migration Log
-
-## Migration <ISO8601 timestamp>
-
-- Source layout: legacy (scattered paths)
-- Target layout: new (canonical `.mega-sdd/`)
-- Total files moved: <N>
-- Vaults migrated: <list>
-- KB migrated: yes | no | n/a
-- Codebase map migrated: yes | no | n/a
-- Memory migrated: yes | no | n/a
-- Tool used: git mv (history preserved) | mv (fallback)
-- Errors: <list or "none">
-
-To rollback: git revert HEAD (if migration in git) OR run /mega-sdd:migrate-paths --to=legacy (NOT YET IMPLEMENTED — manual file moves required).
-```
-
-## Hard rails (anti-data-loss)
-
-- **Idempotent**: re-running on already-migrated project is no-op (detects new layout already present)
-- **git mv used in git repos** — file history preserved across migration
-- **Backups created via .bak suffix** for sed in-place edits; cleaned up after success
-- **Dry-run mandatory** for first-time users — preview before commit
-- **AskUserQuestion confirm** unless `--auto-confirm` explicit
-- **Pre-flight check**: target parent exists OR mkdir -p before move
-- **Reference update** is critical — without it, vault.json citations break
+- **Idempotent**: re-running on an already-migrated project is a no-op — the script detects the canonical layout and exits 0 **before** the dirty-tree guard (so a post-migration, pre-commit re-run does not falsely trip on the staged renames).
+- **git mv in git repos** — file history preserved (staged `R old -> new`); plain `mv` fallback outside git.
+- **`.bak` backups** for every `sed` in-place edit, removed after success.
+- **Dirty-tree refusal**: the script refuses to mutate an uncommitted tree unless `--dry-run` (exit 2) — the safety backstop for `--auto-confirm`.
+- **Target-exists conflict**: a non-empty `.mega-sdd/vaults/` under `--from=auto` is refused (exit 1); pass `--from=legacy` to confirm overwrite intent.
+- **config.yaml clobber-guard**: an existing user `config.yaml` is never overwritten.
 
 ## Halt conditions
 
-- Working tree dirty (uncommitted changes) → halt; ask user to commit/stash first
-- Target path exists AND non-empty AND `--from=auto` → halt; ask explicit `--from=legacy` to confirm overwrite intent
-- git mv fails (e.g., target outside git tree) → fall back to plain `mv` with warning
-- Reference update sed fails → halt with file path; user resolves manually
+- Working tree dirty (uncommitted changes) → command HALTs (Step 1); the script also refuses (exit 2).
+- Target path exists AND non-empty AND `--from=auto` → script exits 1; re-run with explicit `--from=legacy`.
+- Reference-update or move failure → the script aborts via `set -e` (non-zero exit); resolve the named file manually.
 
 ## See also
 
+- `plugins/mega-sdd/scripts/migrate-paths.sh` — the vetted destructive core (covered by `tests/migrate-paths/test-migrate-paths.sh`)
 - `plugins/mega-sdd/references/paths.md` — canonical layout definition
-- Iter 10 spec (this iter) — folder consolidation rationale
-- Iter 9 audit — Gap E2E-6 (archive `.mega-sdd/` on vault delete) — naturally fixed by v3.4 consolidation

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.46.0] - 2026-06-28
+
+Audit batch C6 — `migrate-paths` destructive-core extraction. The `migrate-paths` command inlined ~160 lines of destructive bash (`git mv` / `mv` move loops, the per-vault `.mega-sdd/`→`.internal/` rename, and `sed -i` reference rewrites) as prose the model re-improvised on every run. Per the plugin doctrine *"deterministic logic belongs in `scripts/`"*, that core is now a single **vetted** `scripts/migrate-paths.sh`; the command keeps the interactive confirm gate + the dirty-tree HALT and delegates execution to the script via the `${CLAUDE_PLUGIN_ROOT}/scripts/…  --cwd="$(pwd)"` idiom. **Behavior-preserving** (same canonical-layout outcome) **and hardened** — the script self-guards so it is safe even under `--auto-confirm`. Full suite 81/81 (the new fixture suite included).
+
+### Extraction + safety hardening (`scripts/migrate-paths.sh`, new)
+- **Idempotency guard precedes the dirty-tree guard** — a completed `git mv` migration leaves the tree dirty (staged renames + new `config.yaml`/`migration-log.md`), so a clean re-run detects "no legacy paths" and exits 0 **before** the dirty guard can falsely fire (the empty legacy vault parent is `rmdir`-tidied + detection ignores an empty leftover).
+- **Dirty-tree refusal** (exit 2 unless `--dry-run`) — the script-level backstop that makes `--auto-confirm` / direct invocation safe.
+- **Target-exists conflict** (exit 1 under `--from=auto`; `--from=legacy` confirms intent) and a **config.yaml clobber-guard** (an existing user config is never overwritten), both ported from the command's halt-conditions.
+- **`--dry-run`** routes every mutation through a `run()` wrapper that echoes instead of executing; `git mv` preserves history (staged `R old -> new`), plain `mv` fallback outside git; `.bak` backups cleaned on success.
+- New fixture suite `tests/migrate-paths/test-migrate-paths.sh` — a multi-vault legacy git repo whose `vault.json` carries every rewritten path pattern, asserting all five behaviors (dry-run no-op, full migration with the rename marker, idempotent re-run, dirty-tree refusal, target-exists conflict).
+
 ## [4.45.0] - 2026-06-27
 
 Architecture audit follow-through — the conceptual audit + adversarially-verified breadth census (`research/2026-06-27-architecture-audit-and-breadth-census.md`: 77 verified findings, 12 refuted) surfaced live defects, a hot-path latency lever, and dead scaffold. This release ships the three lowest-risk batches; each fix was re-read against source and the full suite (80/80) is green. The heavy-skill token dedup + command shadow-logic extraction (Batches D/E) and the `migrate-paths` script extraction (C6) remain staged.
