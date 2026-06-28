@@ -3,190 +3,87 @@ description: ADVANCED / AUTO-INVOKED — Static analysis of vault units for qual
 argument-hint: "[vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]"
 ---
 
-Static lint of vault units. Read-only diagnostic; surfaces issues BEFORE bolts run so user can fix vault/binding/units instead of debugging failed bolts.
+Static lint of vault units. Read-only diagnostic; surfaces issues BEFORE bolts run so the user can fix vault/binding/units instead of debugging failed bolts.
 
 User arguments: $ARGUMENTS
 
+The unit-spec integrity checks that gate at edit time are owned by a single hook-wired validator: `plugins/mega-sdd/scripts/validate-unit-spec.sh`. This command **re-runs that validator** for a pre-bolt sweep and **adds** the cross-unit checks the validator does not perform (dependency/binding/module/squad resolution, codebase-map anchor verification, prose quality). It does NOT re-narrate the validator's checks — that would be the shadow-logic the audit removed.
+
 ## Procedure
 
-### Step 1 — Resolve vault path
+### Step 1 — Resolve vault + load context
 
-Probe both canonical (`.mega-sdd/vaults/*/`) and legacy (`docs/mega-sdd/vaults/*/`) locations. Use positional arg if given. Halt if no vault found.
+Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the codebase map (probe both new + legacy paths), and `.memory/bolt-outcomes.json` (for context).
 
-### Step 2 — Load context
+### Step 2 — Per-unit spec integrity (delegated to the validator)
 
-For each lint check, load:
-- `<vault>/vault.json` — manifest
-- `<vault>/units/U-*.md` — all units with frontmatter + body
-- `<vault>/binding.md` (if exists) — Implementation State Map + field_diff
-- `<vault>/_meta/modules.yaml` (if exists) — module definitions
-- `<vault>/_meta/squads.yaml` (if exists) — squad partition
-- `<repo>/codebase-map.md` (probe both new + legacy paths) — for anchor verification
-- `<vault>/.memory/bolt-outcomes.json` (if exists) — past bolt results for context
-
-### Step 3 — Per-unit lint checks
-
-For each unit, run these checks:
-
-#### Frontmatter checks (HARD — failures = unit invalid)
-- [ ] `id` present + matches U-XXX pattern + zero-padded
-- [ ] `title` non-empty
-- [ ] `vault_source` present + format valid (file#anchor or file:section)
-- [ ] `task_type` is one of `create | extend | verify`
-- [ ] `target_files` non-empty (UNLESS `task_type: verify` — then must be empty or operation:none)
-- [ ] `acceptance_test` has ≥1 entry with `type: test`
-- [ ] `depends_on` references resolve (no dangling unit IDs)
-- [ ] `binding_refs` if present, references resolve to claims in binding.md
-
-#### Defensive-grounding checks
-- [ ] `grounding_confidence` present (HIGH | MEDIUM | LOW)
-- [ ] `grounding_evidence.anchors_verified` reasonable for task_type
-- [ ] `grounding_evidence.binding_state_summary` consistent with task_type
-- [ ] If LOW confidence → flag for review
-
-#### Module checks
-- [ ] `module: <id>` present (M-XXX or M-default)
-- [ ] Module ID resolves to entry in `_meta/modules.yaml` (or M-default fallback)
-- [ ] If `M-unassigned` → flag for module assignment review
-
-#### Squad checks (only if `_meta/squads.yaml` declares ≥2 squads)
-- [ ] `squad: <id>` present
-- [ ] Squad ID resolves to entry in squads.yaml
-- [ ] Cross-squad `depends_on` routed via `consumes_interfaces`
-
-#### Body checks (SOFT — warnings)
-- [ ] `## Goal` present and 1-2 sentences
-- [ ] `## Context (read first)` present with vault_source citation
-- [ ] `## Anchors` per task_type mandatory rules
-- [ ] `## Implementation steps` has ≥1 sentence >15 words (directive prose check)
-- [ ] `## Migration notes` MANDATORY for extend, ABSENT for create/verify
-- [ ] `## Hard rules` parseable per grammar v1 OR v2
-- [ ] `## Anti-patterns` populated (informational; not enforced)
-- [ ] `## Acceptance criteria` non-empty
-- [ ] `## Out of scope` populated
-
-#### Anchor verification (Step 12.3)
-- [ ] For each Anchor `<file>:<line>` — probe file exists in codebase-map OR fs
-- [ ] If file missing AND task_type: verify or extend → WARNING (anchor likely aspirational; review)
-- [ ] If file missing AND task_type: create → OK (greenfield anchors acceptable)
-- [ ] If file exists AND line out of range → WARNING (anchor may have drifted)
-
-#### Hard Rule validation
-- [ ] If v1 grammar: parse each line against 5 closed types
-- [ ] If v2 grammar: validate YAML via ast-grep parse-via-scan
-- [ ] Mixed grammar in single unit → halt-equivalent warning
-- [ ] `SIGNATURE_RULE function <name>` references symbol in codebase-map (else `hard_rule_unanchored` warning)
-
-#### Binding consistency (when binding.md exists)
-- [ ] `task_type` matches binding's Implementation State Map per state→task_type mapping (incl. PARTIAL_FIELDS_*)
-- [ ] If binding state PARTIAL_FIELDS_MISSING/SURPLUS → unit's Migration notes match field_diff ADD/KEEP/REMOVE
-- [ ] If binding state IMPLEMENTED → task_type=verify (not create)
-
-### Step 4 — Compute summary metrics
-
-```
-Total units: N
-By task_type: create=N1, extend=N2, verify=N3
-By grounding_confidence: HIGH=H, MEDIUM=M, LOW=L
-Anchors total / verified: T / V (V/T %)
-Hard Rules: units with ≥1 rule = K / N
-Module assignment: assigned / unassigned
-Squad assignment (if multi-squad): per-squad count
-Cross-module depends_on edges: count
-Average target_files per unit: AVG
-LOC estimate (sum of unit estimates): EST
-```
-
-### Step 5 — Render output
-
-Default `--format=table`:
-
-```
-Vault: leave-management v3 | Units: 13 | Modules: 4 | Squads: 2
-
-PER-UNIT:
-ID      Module      Squad     task    Ground   Anchors  Hard      Issues
-U-001   M-auth      squad-be  create  HIGH     -        2 rules   ✓
-U-002   M-auth      squad-be  create  HIGH     -        1 rule    ✓
-U-003   M-auth      squad-be  create  HIGH     -        0 rules   ⚠️ no Hard Rules
-U-007   M-auth      squad-be  extend  HIGH     3/3 ✓    2 rules   ✓
-U-008   M-auth      squad-be  create  MEDIUM   -        0 rules   ⚠️ no Hard Rules
-U-010   M-leave     squad-be  create  HIGH     -        1 rule    ✓
-U-013   M-leave     squad-be  create  LOW      0/2 ✗    0 rules   ⚠️ LOW grounding + missing anchors
-U-FE-01 M-auth      squad-fe  create  HIGH     1/1 ✓    0 rules   ✓
-...
-
-SUMMARY:
-  Quality: 11 HIGH | 1 MEDIUM | 1 LOW
-  Anchors: 6/6 verified (100%)
-  Hard Rules: 9/13 units have ≥1 rule (4 units bare)
-  Module coverage: 13/13 assigned (no M-unassigned)
-  Cross-module deps: 0 (clean)
-  Frontmatter issues: 0
-
-RECOMMENDATIONS (prioritized):
-  ⚠️ U-013 LOW grounding + 0/2 anchors verified
-     → Review binding state for this claim; consider re-running bind-codebase
-     → If unavoidable LOW (greenfield deep dive), accept + monitor bolt outcome
-
-  ⚠️ 4 units have no Hard Rules (U-003, U-008, U-FE-02, U-INT-01)
-     → If touching shared/existing code, consider adding DO_NOT_MODIFY rules
-     → Not mandatory; just risk-reduction
-
-  ✓ All other units pass lint cleanly. Safe to proceed with /mega-sdd:execute-bolts.
-```
-
-For `--format=json`: structured JSON output for tooling integration.
-
-### Step 6 — Filter flags
-
-- `--module=<id>` — lint only units in module M-X
-- `--squad=<id>` — lint only units in squad S-X
-- `--strict` — promote SOFT warnings to halt-equivalent failures (CI mode)
-
-### Step 6.5 — Optional markdownlint-cli2 prose pass
-
-If `markdownlint-cli2` available (`command -v markdownlint-cli2`), run prose quality check on vault + units:
+For each unit file, run the hook-wired validator and fold its verdict into the report — do not duplicate its logic:
 
 ```bash
-markdownlint-cli2 --config plugins/mega-sdd/references/markdownlint-config.jsonc \
-  '<vault>/*.md' '<vault>/units/*.md'
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-unit-spec.sh" --cwd="$(pwd)" --file-path="<unit-file>"
 ```
 
-Suggested rule overrides for mega-sdd (in markdownlint-config.jsonc; mega-sdd-friendly defaults):
-- MD013 (line-length): off — citations + Anchors can be long
-- MD041 (first-line-h1): off — vault files lead with frontmatter
-- MD033 (inline-HTML): off — generation markers + binding annotations use HTML comments
+It returns a JSON report (and writes `.mega-sdd/.unit-spec-state.json`), exit `0`=PASS / `1`=FAIL / `2`=error. It is the **single source of truth** for these checks (so lint-units and the PostToolUse hook never drift):
 
-Output: SARIF or JSON; integrated into lint-units summary as additional warnings (not halts). Skipped when markdownlint-cli2 absent.
+- required frontmatter (`id`/`unit_id`, `title`, `task_type`, `target_files`, `vault_source`/`vault_anchors`) — `unit_underspecified`;
+- `## Anchors` present for `verify`/`extend`; `## Migration notes` present for `extend`;
+- per-acceptance-criterion source grounding for `verify` + `grounding_confidence: HIGH` units — `verify_grounding_untrusted` (the A1 gate);
+- `## Hard rules` v1-grammar parseability — `hard_rule_unparseable`;
+- starterkit-derived rules carry a `Citation: starterkit-context` — `starterkit_rule_citation_missing`.
 
-Install: see `plugins/mega-sdd/references/tooling-install.md`.
+Surface any FAIL with the validator's evidence string. Under `--strict`, a FAIL is a halt-equivalent exit.
 
-### Step 7 — Hand-off
+> **Legacy-layout limitation (be honest about it).** The validator only matches canonical `.mega-sdd/vaults/*/units/` and `*-bound/units/` paths — same scope as the PostToolUse hook it shares. On a **legacy** `docs/mega-sdd/vaults/*/units/` vault it no-ops (exit 0), so this Step 2 per-unit integrity sweep is **skipped** there (the Step 3 cross-unit checks below still run, since lint-units performs those itself). If a legacy vault is detected, say so and suggest `/mega-sdd:migrate-paths` to move it to the canonical layout for full per-unit coverage — never report a legacy vault as "0 integrity issues" when the checks did not run.
 
-After display:
-- If 0 LOW + 0 frontmatter issues → suggest `/mega-sdd:execute-bolts` or `/mega-sdd:list-modules` to start
-- If LOW units exist → suggest review specific units before bolt; OR proceed with `--force` accepting risk
-- If frontmatter issues → suggest `/mega-sdd:generate-units --refresh` to regenerate problematic units
+### Step 3 — Cross-unit + grounding checks (lint-units' own value-add)
+
+These are NOT in the validator — run them here, per unit, from the loaded context. All are deterministic (field presence, ID resolution, file/line probe — never LLM judgment):
+
+- **Dependency resolution** — every `depends_on` resolves to a real unit ID (no dangling); every `binding_refs` resolves to a claim in `binding.md`.
+- **Module assignment** — `module:` present and resolves to `_meta/modules.yaml` (or `M-default`); flag `M-unassigned` for review.
+- **Squad assignment** (only if `_meta/squads.yaml` declares ≥2 squads) — `squad:` present + resolves; any cross-squad `depends_on` is routed via `consumes_interfaces`.
+- **Codebase-map anchor verification** — for each `## Anchors` `<file>:<line>`: file exists in the codebase map OR on disk; line in range. Missing file on `verify`/`extend` → WARNING (likely aspirational); on `create` → OK (greenfield); existing file + out-of-range line → WARNING (drifted).
+- **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED → verify`, not `create`; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
+- **Signature-rule anchoring** — a `SIGNATURE_RULE function <name>` references a symbol present in the codebase map (else `hard_rule_unanchored` warning).
+- **Body/prose quality (SOFT)** — `## Goal`, `## Context (read first)` with a `vault_source` citation, `## Implementation steps` with directive prose, `## Anti-patterns`, `## Out of scope` present; `## Migration notes` ABSENT for `create`/`verify`.
+
+### Step 4 — Summary metrics + recommendations
+
+Aggregate: total units; by `task_type`; by `grounding_confidence` (HIGH/MEDIUM/LOW); anchors verified / total; units with ≥1 Hard Rule; module + squad coverage; cross-module `depends_on` edge count; average `target_files`/unit. Emit a per-unit table (`--format=table`, default) or structured JSON (`--format=json`), then **prioritized** recommendations that cite the specific unit + the specific check that failed (LOW grounding, missing anchors, bare Hard Rules, etc.).
+
+`--module=<id>` / `--squad=<id>` scope the sweep; `--strict` promotes SOFT warnings to a halt-equivalent exit (CI mode).
+
+### Step 5 — Optional markdownlint-cli2 prose pass
+
+If `markdownlint-cli2` is available (`command -v markdownlint-cli2`), run a prose pass and fold its findings in as warnings (not halts); skip silently when absent:
+
+```bash
+markdownlint-cli2 '<vault>/*.md' '<vault>/units/*.md'
+```
+
+This relies on markdownlint-cli2's own config discovery (`.markdownlint-cli2.{jsonc,yaml}` / `.markdownlint.{jsonc,json,yaml}` at the repo root). mega-sdd-friendly overrides to put in that config: MD013 (line-length) off, MD041 (first-line-h1) off, MD033 (inline-HTML) off — vault files lead with frontmatter and use long citations + HTML-comment markers. Install: `plugins/mega-sdd/references/tooling-install.md`.
+
+### Step 6 — Hand-off
+
+- 0 LOW + 0 frontmatter issues → suggest `/mega-sdd:execute-bolts` or `/mega-sdd:list-modules` to start.
+- LOW units exist → suggest reviewing those specific units before bolting, OR proceeding while accepting the risk.
+- Validator FAILs / frontmatter issues → suggest `/mega-sdd:generate-units --refresh` to regenerate the problem units.
 
 ## Anti-halu rails
 
-- Lint is READ-ONLY — never modifies vault, units, binding, memory
-- All checks based on DETERMINISTIC signals (file presence, frontmatter field presence, regex matches)
-- Anchor verification via Bash file probe or codebase-map lookup (not LLM judgment)
-- Hard Rule validation via ast-grep parse (when v2 installed) or grammar regex (v1)
-- Recommendations cite specific units + specific check that failed (no vague suggestions)
+- Lint is READ-ONLY — never modifies vault, units, binding, or memory.
+- The unit-spec integrity verdicts come from `validate-unit-spec.sh` (the same validator the PostToolUse hook runs) — lint-units does not reimplement them, so the two can never disagree.
+- The cross-unit checks are DETERMINISTIC (field presence, ID resolution, file/line probe) — recommendations cite the specific unit + the specific check that failed, never a vague suggestion.
 
 ## Halt conditions
 
-- Vault not found → halt with helpful error
-- Vault.json corrupt / missing → halt
-- `--strict` flag + any SOFT warning → halt-equivalent exit (CI integration)
+- Vault not found / `vault.json` corrupt → halt with a helpful error.
+- `--strict` + any validator FAIL or SOFT warning → halt-equivalent exit (CI integration).
 
 ## References
 
+- `plugins/mega-sdd/scripts/validate-unit-spec.sh` — the hook-wired unit-spec integrity validator (the overlap's single source of truth)
 - `plugins/mega-sdd/skills/generate-units/references/unit-schema.md` — unit frontmatter + body schema
 - `plugins/mega-sdd/skills/generate-units/references/defensive-generation.md` — grounding_confidence + anchor verification
 - `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — module assignment
 - `plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md` — binding state → task_type mapping
-- `plugins/mega-sdd/skills/execute-bolts/references/hard-rule-grammar-v2.md` — Hard Rule grammar
