@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.3.0
+version: 1.3.1
 description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/scoop/cargo/npm/go) and install missing native deps mega-sdd can leverage (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh). Single explicit batch confirmation; never auto-sudo; never curl|bash; mandatory post-install verify; memory-cached outcomes. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -46,7 +46,7 @@ Plus chat-only output: detected OS, tool inventory, install plan, per-tool verif
 Run the canonical detection algorithm per `references/os-detection.md`. Emit chat output:
 
 ```
-Step 1: Detecting environment...
+Detecting environment...
   OS: <macos|linux|wsl|windows-bash> <version> [<distro>]
   Package manager: <brew|apt|dnf|...> [v<version>]
   Fallbacks available: <cargo|npm|go>
@@ -69,7 +69,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 Emit chat output:
 
 ```
-Step 2: Auditing tool inventory...
+Auditing tool inventory...
   ✓ <tool> <version>             # present
   ⊘ <tool>                       # cached-installed (skipped audit)
   ✗ <tool> (missing — <fallback_behavior>)
@@ -100,7 +100,7 @@ If `--manual` flag passed → print all install commands as instructions + exit 
 Otherwise emit chat plan:
 
 ```
-Step 3: Building install plan...
+Building install plan...
 
 <N> tools to install via <pkg_mgr> (total ~<size>MB download):
   1. <tool_1>      <size>MB    <install_cmd>
@@ -120,7 +120,7 @@ Use AskUserQuestion with 3 options. On `Pick subset` → secondary AskUserQuesti
 For each tool in approved plan:
 
 ```
-Step 4: Installing (estimated <minutes> min)...
+Installing (estimated <minutes> min)...
   [<i>/<N>] <install_cmd> ...
 ```
 
@@ -142,7 +142,7 @@ For each successfully-installed tool:
 Emit chat output:
 
 ```
-Step 5: Verifying...
+Verifying...
   ✓ <tool> v<version>
   ✗ <tool> (install ran but verify failed — try `hash -r` and re-run; OR check PATH)
 ```

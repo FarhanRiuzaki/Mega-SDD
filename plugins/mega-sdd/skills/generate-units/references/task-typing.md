@@ -28,7 +28,7 @@ If bound-vault has `binding.md` with an Implementation State Map, assign `task_t
 
 > The `Mix of CONFIRMED + CONFLICT` row is a backstop. The primary defense is the SKILL.md hard gate: unresolved CONFLICT entries in binding.md BLOCK unit generation outright (invariant #2). If a CONFLICT reaches this table, the gate was bypassed — halt and report the inconsistency rather than generating.
 
-The full five-state model + `field_diff` mechanics are specified in the defensive-generation reference (§Five-state Implementation State Map) listed in the skill router.
+The full six-state model + `field_diff` mechanics are specified in the defensive-generation reference (§Six-state Implementation State Map) listed in the skill router.
 
 ## `verify` unit specifics
 

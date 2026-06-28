@@ -11,13 +11,13 @@ This contract is required ONLY when `--auto` is in effect. Standalone skill invo
 ## Contents
 
 - [Handoff YAML schema](#handoff-yaml-schema)
-- [Field-level schema annotations](#field-level-schema-annotations-v300-iter-33--f3-machine-readable-constraints)
+- [Field-level schema annotations](#field-level-schema-annotations)
 - [Per-skill expected emissions](#per-skill-expected-emissions)
-- [Memory layer integration](#memory-layer-integration-v21-iter-5)
+- [Memory layer integration](#memory-layer-integration)
 - [Orchestrator consumption logic](#orchestrator-consumption-logic)
 - [Anti-halu invariants for handoff YAML](#anti-halu-invariants-for-handoff-yaml)
 - [Backward compatibility](#backward-compatibility)
-- [Slash-command flag surface](#slash-command-flag-surface-v20)
+- [Slash-command flag surface](#slash-command-flag-surface)
 
 ---
 

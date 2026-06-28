@@ -29,6 +29,30 @@ set -uo pipefail
 
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
+# ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ────────
+# Speed: the matcher is global (Skill|Bash|Edit|Write), so EVERY such tool call in
+# EVERY project hits this blocking hook — including non-mega-sdd projects, where the
+# .mega-sdd gate below simply no-ops. Resolve cwd + project root in pure shell here
+# and exit 0 BEFORE paying a python3 cold-start (~30-150ms) when there is no
+# .mega-sdd ancestor. This is MOAT-NEUTRAL by construction: it fires ONLY when no
+# .mega-sdd exists — mutually exclusive with the fall-through path that reaches the
+# gates, so it can never bypass invariant #2 or any other gate. It uses the SAME
+# pure-sed cwd extraction (cf. the python-absent fallback below) and the SAME
+# resolve_project_root walk-up as the authoritative gate, so its .mega-sdd decision
+# is byte-identical. When the cwd can't be extracted OR the resolver helper is
+# absent, it does NOT short-circuit — it falls through to the authoritative path.
+SC_CWD=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+if [ -n "$SC_CWD" ]; then
+  SC_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+  SC_RPR="${SC_SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
+  if [ -f "$SC_RPR" ]; then
+    # shellcheck disable=SC1090
+    . "$SC_RPR"
+    SC_ROOT=$(resolve_project_root "$SC_CWD")
+    if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+  fi
+fi
+
 # Parse via python3 — assign to local vars first (no backslash in f-string)
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json

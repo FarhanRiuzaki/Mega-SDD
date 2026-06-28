@@ -140,13 +140,13 @@ After subagent returns:
    [1] Apply proposed fix + re-execute (recommended if confidence ≥0.75)
    [2] Show alternative fix options (if alternative_fixes present)
    [3] Reject — I'll fix manually then /mega-sdd:auto --resume
-   [4] Cancel chain — pause everything for review
-   [5] Override halt — accept current state as "good enough" (logs to memory)
+   [4] Override halt — accept current state as "good enough" (logs to memory)
+   (Cancel chain — pause everything for review — rides the built-in "Other"/Esc escape; the platform caps AskUserQuestion at 4 options, per halts-and-handoff.md §Propose-and-confirm)
 ```
 
 3. On user accept (option 1): apply diff to file → re-execute single bolt → continue batch
 4. On user reject (option 3): write proposed_fix to `<vault>/bolts/U-XXX/proposed-fix.md` (preserved for next session) → continue chain pause
-5. On user override (option 5): record decision to `<project>/.mega-sdd/memory/decisions.md` "Override accepted halt <halt_type> on <unit_id>" → mark unit as `status: forced_pass` → continue batch (high-risk; audit log mandatory)
+5. On user override (option 4): record decision to `<project>/.mega-sdd/memory/decisions.md` "Override accepted halt <halt_type> on <unit_id>" → mark unit as `status: forced_pass` → continue batch (high-risk; audit log mandatory)
 
 ## Confidence-driven defaults
 

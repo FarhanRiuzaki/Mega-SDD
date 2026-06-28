@@ -34,7 +34,7 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.2.4 -->
+<!-- generated_by: mega-sdd:emit-agents-md {{generator_version}} -->
 <!-- vault_source: {{vault_path}}/vault.json -->
 <!-- scope_id: <scope_metadata.id> --> (omit line when vault has no scope)
 <!-- scope_name: <scope_metadata.name> --> (omit line when vault has no scope)
@@ -284,7 +284,7 @@ When `--mode=append` AND existing AGENTS.md detected:
 <!-- Regenerate via /mega-sdd:emit-agents-md                          -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.0.0 -->
+<!-- generated_by: mega-sdd:emit-agents-md {{generator_version}} -->
 <!-- ... rest of mega-sdd output ... -->
 ```
 
