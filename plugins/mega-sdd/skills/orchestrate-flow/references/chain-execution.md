@@ -102,13 +102,15 @@ h. **No file writes** — purely resolution; resolved tiers live in handoff meta
 
 ## Iter classifier hooks (EP1 / EP2)
 
-**EP1 (before chain build):** invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 [--explicit-flag=<patch|minor|major> if user passed --iter-type=<>] --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Output JSON parsed for `iter_type` (PATCH | MINOR | MAJOR). Used by downstream skills as input to complexity-gated decisions (Plan/Act gating; budget enforcement). Telemetry event `iter_classifier_output` emitted with EP=EP1.
+> **STATUS — PARKED (not wired into the live chain).** `classify-iter.sh` exists as a hand-run advisory tool but **no skill body Bash-invokes it** and it is **not wired into any chain** (see `plugins/mega-sdd/references/telemetry-schema.md` + `plugins/mega-sdd/references/fork-a-recovery-map.md` §EP2 — "Not implemented; deferred"). The EP1/EP2 mechanism below documents the *intended* design for a future Fork-B; it is **not executed in the current pipeline**. Until it lands, the effective iter_type defaults to **PATCH** (the documented default branch in §Plan/Act gating below) and is steerable only by the explicit `--plan` / `--act` / `--plan-then-act` flags that §Plan/Act gating consumes directly.
+
+**EP1 (before chain build):** *(parked — see status above)* invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 [--explicit-flag=<patch|minor|major> if user passed --iter-type=<>] --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Output JSON parsed for `iter_type` (PATCH | MINOR | MAJOR). Used by downstream skills as input to complexity-gated decisions (Plan/Act gating; budget enforcement). Telemetry event `iter_classifier_output` emitted with EP=EP1.
 
 **EP2 (after chain completes, before final summary):** invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP2 --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Compare EP2 vs EP1 — if mismatch, emit telemetry event `iter_classifier_drift` with both outputs + drift reason. If EP1=PATCH but EP2=MAJOR (scope grew), surface drift to user in final summary so future iter-ceremony decisions can adjust.
 
 ## Plan/Act gating
 
-Read the EP1 classifier output. Branch:
+Read the EP1 classifier output (when present — see the PARKED status above). When absent (the current parked default), treat iter_type as **PATCH**, which routes to the PATCH branch below (Direct Act, overridable by `--plan`). Branch:
 
 - **iter_type=PATCH** → Direct Act mode. Continue. (Default; overridable by `--plan` → Plan mode first.)
 - **iter_type=MINOR** → Act mode default. If `--plan` → Plan mode first; else continue in Act.

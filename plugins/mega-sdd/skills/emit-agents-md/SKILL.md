@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.4.0
+version: 1.5.0
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -37,12 +37,12 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 
 `AGENTS.md` at `<repo-root>/` (or specified path). Format per [agents.md spec](https://agents.md/).
 
-The output template is a LITERAL emission target — every line below is written verbatim to AGENTS.md EXCEPT (a) `{{var}}` template tokens replaced by procedure step 5, and (b) conditional lines omitted entirely when their source data is absent per `references/agents-md-schema.md` §Conditional header field presence (`constitution_hash`, `properties_validated`, `replay_snapshot_count`, `convergence_cycle_count`).
+The block below is an ILLUSTRATIVE SKELETON for orientation only. The COMPLETE, authoritative emission template lives in `references/agents-md-schema.md` and is what procedure step 5 renders — the schema additionally carries the `## Constitution` section (flattened from `<vault>/constitution.md` when present; **moat invariant #4**) and the `framework` / `framework_pack_path` / `mutability_summary` header fields, both of which this skeleton omits. **Render from the schema, never from this skeleton.** In the rendered output, `{{var}}` tokens are replaced by step 5, and conditional lines/sections are omitted entirely when their source data is absent (per the schema's §Conditional header field presence + §Section 7.5 Conditional rendering tables).
 
 ```markdown
 # AGENTS.md
 
-<!-- generated_by: mega-sdd:emit-agents-md v1.2.4 -->
+<!-- generated_by: mega-sdd:emit-agents-md {{generator_version}} -->
 <!-- vault_source: {{vault_path}}/vault.json -->
 <!-- scope_id: {{scope_id}} -->
 <!-- scope_name: {{scope_name}} -->
@@ -115,6 +115,7 @@ Per `plugins/mega-sdd/references/paths.md`:
    - Preserve user-authored sections (anything before mega-sdd generation marker)
    - Append mega-sdd section after marker
 5. **Render per template** in `references/agents-md-schema.md`. Cite vault file:section for every claim (anti-halu rail: AGENTS.md is a flattened view, must cite source). **Variable substitution:**
+   - `{{generator_version}}` → the plugin's own version, read from `plugin.json` `version` at the resolved plugin root (per `plugins/mega-sdd/references/plugin-root-resolution.md`). If the plugin root cannot be resolved, OMIT the token entirely so the marker renders `<!-- generated_by: mega-sdd:emit-agents-md -->` (still valid — idempotent re-emission detects the marker via the `generated_by: mega-sdd:emit-agents-md` substring, NEVER the version). NEVER hard-code a literal version.
    - `{{vault_path}}` → actual detected vault directory relative to repo root. canonical → `.mega-sdd/vaults/<slug>`; legacy → `docs/mega-sdd/vaults/<slug>`. NEVER hard-code either path.
    - `{{scope_id}}` → vault.json `scope_metadata.id` (only when vault has scope field; OMIT entire header line otherwise)
    - `{{scope_name}}` → vault.json `scope_metadata.name`; OMIT line otherwise
@@ -137,7 +138,7 @@ Per `plugins/mega-sdd/references/paths.md`:
 ## Anti-hallucination rails
 
 - AGENTS.md is a FLATTENED VIEW of vault. Never adds info not in vault.
-- Generation marker (`<!-- generated_by: mega-sdd:emit-agents-md v1.0 -->`) MANDATORY for safe re-generation detection
+- Generation marker (`<!-- generated_by: mega-sdd:emit-agents-md {{generator_version}} -->`) MANDATORY for safe re-generation detection (detection keys on the `generated_by: mega-sdd:emit-agents-md` substring, never the version)
 - Sections that have no source content in vault → OMITTED (not faked with placeholders)
 - User-authored AGENTS.md preserved when `--mode=append`; mega-sdd appends below a clear marker
 - `--mode=sibling` writes `AGENTS.mega-sdd.md` instead of overwriting (safe default when existing AGENTS.md detected)

@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.9.0
+version: 2.9.1
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -150,7 +150,7 @@ Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), e
 - **`references/validation-passes.md`** — the Step 12.x post-write passes in order (per-anchor verification, constitution inject, framework-pack citation, polished-prompt render pass a–g, dedup, sibling-consistency).
 - **`references/halt-protocol.md`** — every blocker's emitted YAML + recovery action, with a "which step fires which halt" index.
 - **`references/starterkit-derivation.md`** — Step 7.7 in full: relevance computation, starterkit Anchors + Hard Rules (with the mandatory citation), and frontmatter updates.
-- **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels, the five-state Implementation State Map + `field_diff` mechanics, and the halt-vs-warning matrix.
+- **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels, the six-state Implementation State Map + `field_diff` mechanics, and the halt-vs-warning matrix.
 - **`references/auto-and-memory.md`** — scope propagation into unit frontmatter, `_index.md` contents, the `--auto` handoff YAML, and the memory layer (reads / writes / anti-halu).
 - **`references/pagerank-targeting.md`** — the PageRank symbol-graph algorithm + detection prerequisites for Step 7.5.
 - **`references/modules-schema.md`** — the modules layer schema (why modules ≠ bigger units, auto-derivation, modules.yaml format) for Step 4.5.

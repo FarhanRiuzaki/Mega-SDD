@@ -17,7 +17,7 @@ Mitigates "ngawang" (floating/disconnected) units. User UX request:
 - Backward compatibility
 - Examples
 - Field-level diff detection (the "ngawang" mitigation)
-- Five-state Implementation State Map + field_diff mechanics
+- Six-state Implementation State Map + field_diff mechanics
 - References
 
 ## Design principle

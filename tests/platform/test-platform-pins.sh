@@ -53,6 +53,14 @@ grep -q 'permissionDecision: "deny"' "$P/references/fork-a-recovery-map.md" \
   && pass "P7: fork-map block format corrected" || fail "P7: fork-map stale"
 grep -q '4 options — the platform caps options at 4' "$P/skills/execute-bolts/references/halts-and-handoff.md" \
   && pass "P7b: AskUserQuestion ≤4 options" || fail "P7b: 5-option dispatch remains"
+# P7b2 — the propose-and-confirm menu template ALSO respects the 4-option cap
+# (regression guard: Override must be [4], Cancel rides Other/Esc, no [5] dispatch)
+if ! grep -q '\[5\] Override halt' "$P/skills/execute-bolts/references/propose-and-confirm-prompt.md" \
+   && grep -q '\[4\] Override halt' "$P/skills/execute-bolts/references/propose-and-confirm-prompt.md"; then
+  pass "P7b2: propose-and-confirm menu ≤4 options (Override=[4], Cancel via Other/Esc)"
+else
+  fail "P7b2: propose-and-confirm 5-option menu remains"
+fi
 grep -q 'https://aaif.io' "$P/skills/emit-agents-md/SKILL.md" \
   && pass "P7c: AAIF live URL" || fail "P7c: dead AAIF URL"
 grep -q '/reload-plugins' "$P/README.md" \
