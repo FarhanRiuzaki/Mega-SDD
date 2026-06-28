@@ -1,208 +1,60 @@
 ---
 description: ADVANCED / AUTO-INVOKED — DAG analysis of vault units. Auto-invoked by `/mega-sdd:auto` before execute-bolts when --parallel set. Run standalone for inspection / debugging / mermaid visual export. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
-argument-hint: "[vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--depth-only]"
+argument-hint: "[vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--module=<id>] [--squad=<id>] [--depth-only]"
 ---
 
-Analyze unit dependency graph for parallelism opportunities and bottlenecks. Read-only.
+Analyze the unit dependency graph for parallelism opportunities and bottlenecks. Read-only.
 
 User arguments: $ARGUMENTS
 
+The deterministic DAG math — depth, max width, topological waves, critical path, forks/joins, per-squad + per-module sub-DAGs, cross-module/squad edge counts, and the over-coupling **candidate** basis — is a single script: `plugins/mega-sdd/scripts/analyze-parallelism.sh`. It reads each unit's frontmatter directly (it is NOT the canonical graph — `graph.json` is — it computes a different thing: topological layering, not blast-radius reachability). This command runs the script and turns its FACTS into the over-coupling and hand-off **suggestions** (human judgment the script never makes).
+
 ## Procedure
 
-### Step 1 — Resolve vault path
+### Step 1 — Run the analysis
 
-Same as lint-units: probe canonical then legacy paths.
-
-### Step 2 — Build DAG
-
-For each unit:
-- Node = unit ID
-- Edge = entry in `depends_on` (unit-level dep)
-- Cross-module edge = `depends_on` where target is in different `module:` than source
-- Cross-squad edge = `depends_on` where target is in different `squad:` (should not exist per squad-partition rules; via interfaces only)
-
-Graph properties to compute:
-- Depth (longest path)
-- Width (max parallel batch size — units at same topological level)
-- Forks (units with high out-degree — many things depend on them)
-- Joins (units with high in-degree — many deps converging)
-
-### Step 3 — Per-grouping analysis
-
-#### Per-squad (--per=squad)
-
-For each squad declared in `_meta/squads.yaml`:
-
-```
-squad-be:
-  units: 6
-  depth: 3
-  max parallel width: 4
-  topological waves:
-    Wave 1: U-001, U-010, U-020, U-030  (4 parallel)
-    Wave 2: U-002, U-007, U-011         (3 parallel)
-    Wave 3: U-008                        (1 sequential)
-  forks: U-001 (5 dependents)
-  cross-squad edges (should be 0; via interfaces): 0
-  estimated wall-clock (if --parallel + 1bolt/min): ~3 min
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/analyze-parallelism.sh" $ARGUMENTS --cwd="$(pwd)"
 ```
 
-#### Per-module (--per=module)
+The script resolves the vault (positional `[vault-path]`, else auto-probe `.mega-sdd/vaults/` then legacy `docs/mega-sdd/vaults/`), parses the DAG, and emits the chosen `--format`:
 
-Same structure per module:
+- `table` (default) — Overall DAG (depth / max width / total waves), the topological waves, critical chain, forks, joins, cross-module/squad edge counts, wall-clock estimate + speedup, per-squad and per-module breakdowns, and the suspected over-coupling candidates.
+- `json` — the same as a machine-parseable object (keys: `depth`, `max_width`, `total_waves`, `waves`, `critical_path`, `forks`, `joins`, `cross_module_edges`, `parallelism_speedup`, `per_squad`, `per_module`, `suspected_over_coupling`, `bottlenecks`, …).
+- `mermaid` — `graph LR` with per-squad subgraphs to paste into mermaid.live / Obsidian.
 
-```
-M-auth:
-  units: 5
-  depth: 2
-  max parallel width: 3
-  topological waves:
-    Wave 1: U-001, U-008                 (2 parallel)
-    Wave 2: U-002, U-003, U-007          (3 parallel)
-  cross-module edges (require blocked_by): 0
-  module DoD ready when: all 5 units complete
-```
+Relay the script output to the user. If `--depth-only` was passed, the script emits depth + width only — STOP after relaying.
 
-#### Whole-vault overview (--per=all)
+### Step 2 — Interpret over-coupling candidates (judgment)
 
-```
-Vault: leave-management v3
-Total units: 13 | Modules: 4 | Squads: 2
+The script lists each `depends_on` edge whose endpoints **share zero `target_files`** (and flags those that are also **cross-module**). These are deterministic *candidates*, never auto-removed. For each, add a review suggestion:
 
-Overall DAG:
-  Depth: 4 (longest chain)
-  Max parallel width: 7 (Wave 1)
-  Total waves: 4
+- **Zero target-files overlap** → "review: if U-X doesn't actually consume U-Y's output, removing the dep widens this wave by 1." (Optionally eyeball the unit bodies for a symbol reference the script can't see — that heuristic is yours, not the script's.)
+- **Cross-module edge** → "this unit-level `depends_on` crosses a module boundary; prefer a module-level `blocked_by` declaration per `modules-schema.md`."
 
-Execution plan (--per-squad --parallel):
+The user always holds control — they remove a dep only if they confirm it's unnecessary.
 
-Wave 1 (start parallel):
-  squad-be:    U-001 U-010 U-020 U-030
-  squad-fe:    U-FE-01 U-FE-02
-  squad-int:   U-INT-01
-  → 7 bolts parallel
+### Step 3 — Hand-off (judgment, keyed on the script's numbers)
 
-Wave 2:
-  squad-be:    U-002 U-007 U-011
-  squad-fe:    U-FE-03
-  → 4 bolts parallel
-
-Wave 3:
-  squad-be:    U-008
-  squad-int:   U-INT-02 (waits for U-INT-01)
-  → 2 bolts parallel
-
-Wave 4:
-  squad-be:    U-FINAL
-  → 1 bolt (longest chain endpoint)
-
-Total estimated wall-clock (1bolt/min average): ~4 min
-Sequential equivalent (no parallel): ~13 min
-Parallelism speedup: 3.25x
-```
-
-### Step 4 — Bottleneck + over-coupling analysis
-
-Surface units that block parallelism:
-
-```
-Bottlenecks (units in critical path):
-  U-001 — forks to 5 dependents; deep dependency tree
-    → Suggestion: scope-down U-001 if possible; or accept as keystone
-
-Suspected over-coupling (depends_on edges that might be unnecessary):
-  ⚠️ U-002 depends_on U-001 — share zero target_files; no symbol cross-reference
-     Suggestion: review; if independent, remove dep for +1 parallelism width
-
-  ⚠️ U-005 depends_on U-003 — different modules (M-leave vs M-auth); should be blocked_by
-     Suggestion: move dep from unit-level depends_on to module-level blocked_by
-
-Critical chain (longest path):
-  U-001 → U-002 → U-007 → U-FINAL (4 hops)
-```
-
-### Step 5 — Output formats
-
-#### `--format=table` (default)
-
-Per-section markdown table per spec above.
-
-#### `--format=json`
-
-Machine-parseable:
-
-```json
-{
-  "vault": "leave-management",
-  "total_units": 13,
-  "depth": 4,
-  "max_width": 7,
-  "parallelism_speedup": 3.25,
-  "squads": {
-    "squad-be": { "units": 6, "depth": 3, "max_width": 4, "waves": [...] },
-    ...
-  },
-  "modules": { ... },
-  "bottlenecks": [...],
-  "suspected_over_coupling": [...]
-}
-```
-
-#### `--format=mermaid`
-
-Mermaid graphviz for visual inspection:
-
-```mermaid
-graph LR
-  subgraph squad-be
-    U001[U-001 keystone]
-    U002[U-002]
-    U007[U-007]
-    U008[U-008]
-  end
-  subgraph squad-fe
-    UFE01[U-FE-01]
-    UFE02[U-FE-02]
-  end
-  U001 --> U002
-  U001 --> U007
-  U001 --> U008
-  UFE01 --> UFE02
-```
-
-User can paste into mermaid.live or Obsidian for visual analysis.
-
-### Step 6 — Filter flags
-
-- `--per=squad|module|all` — analysis grouping level (default: all)
-- `--module=<id>` — analyze only specific module
-- `--squad=<id>` — analyze only specific squad
-- `--depth-only` — skip suggestion output; just show depth + width metrics
-
-### Step 7 — Hand-off
-
-After display:
-- If `parallelism_speedup` ≥ 2 → suggest `/mega-sdd:execute-bolts --per-squad --parallel`
-- If `parallelism_speedup` < 1.5 → suggest reviewing `depends_on` over-coupling list
-- If bottlenecks exist → suggest scope-down OR accept as keystone
-- Always link to `/mega-sdd:lint-units` for quality check before execution
+- `parallelism_speedup` ≥ 2 → suggest `/mega-sdd:execute-bolts --per-squad --parallel`.
+- `parallelism_speedup` < 1.5 → suggest reviewing the over-coupling candidates above before executing.
+- Bottlenecks present (high-fork keystone units on the critical path) → suggest scope-down OR explicitly accept the keystone.
+- Always link `/mega-sdd:lint-units` for a quality pass before execution.
 
 ## Anti-halu rails
 
-- DAG analysis is DETERMINISTIC (graph algorithms on parsed frontmatter)
-- Over-coupling SUGGESTIONS are heuristic (compare target_files overlap + body symbol references) — surfaced as SUGGESTIONS for user review, NEVER auto-removed
-- User SELALU pegang control: removes deps manually if confirmed unnecessary
-- Speedup estimate uses simple "1 bolt = 1 min" assumption — labeled as estimate, not promise
+- The DAG math is **DETERMINISTIC** (graph algorithms on parsed frontmatter) — owned entirely by the script; this command does not re-derive any of it.
+- Over-coupling is surfaced as **candidates on a deterministic basis only**: zero `target_files` overlap and/or a cross-module edge. The script does **not** scan unit bodies for symbol references — any "no symbol cross-reference" judgment is an optional human review step, never a computed claim.
+- Suggestions are SUGGESTIONS — deps are **never** auto-removed; the user decides.
+- The speedup estimate uses a simple "1 bolt = 1 min, unlimited parallel" model — an estimate, not a promise (the script labels it as such).
 
-## Halt conditions
+## Halt conditions (the script's exit codes)
 
-- Vault not found → halt
-- Vault.json corrupt → halt
-- DAG has cycle (should have been caught by generate-units; halt-equivalent here for safety)
+- Vault not found / `vault.json` corrupt / DAG has a cycle (should have been caught by generate-units; failed-safe here) → script exits **1**; relay the error and stop.
+- Unknown flag / bad `--per` or `--format` value / `--cwd` not a directory → script exits **2** (usage); fix the invocation.
 
 ## References
 
-- `plugins/mega-sdd/skills/generate-units/SKILL.md` — DAG construction logic (Step 4)
-- `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — cross-module blocked_by
+- `plugins/mega-sdd/scripts/analyze-parallelism.sh` — the deterministic DAG core (covered by `tests/parallelism/test-analyze-parallelism.sh`)
+- `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — cross-module `blocked_by`
 - `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--per-squad --parallel` execution
-- Squad-partition rules spec

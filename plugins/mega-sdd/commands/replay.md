@@ -1,167 +1,96 @@
 ---
-description: Replay a bolt's execution + detect divergence vs prior runs. Read-only diagnostic. Captures bolt-state snapshot (preflight + postflight + bolt-report + git refs); diffs current run vs latest prior. Useful for regression detection after code changes OR debugging non-deterministic bolt behavior. Pure bash + jq; zero new runtime deps.
+description: Replay a bolt's execution + detect divergence vs prior runs. Read-only diagnostic. Captures a bolt-state snapshot (bolt-report status + target-file live sha256 + preflight/postflight rule verdicts); diffs the current run vs the latest prior snapshot. Useful for regression detection after code changes OR debugging non-deterministic bolt behavior. bash + python3; optional jd for a canonical patch; zero required new deps.
 argument-hint: <unit-id> [--vault=<path>] [--capture-only] [--diff-against=<replay-id>] [--format=table|json]
 ---
 
-Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel validate replay as missing primitive for agentic-dev debugging.
+Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel, which validate replay as a missing primitive for agentic-dev debugging.
 
 User arguments: $ARGUMENTS
 
+The whole deterministic loop — capture a snapshot, select the latest prior, diff, classify by the fixed severity table, render — is a single script: `plugins/mega-sdd/scripts/replay.sh`. This command runs it and turns the verdict into the hand-off recommendation.
+
 ## Procedure
 
-### Step 1 — Resolve vault + unit
-
-- Probe `<project>/.mega-sdd/vaults/*/vault.json` (canonical) OR `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy)
-- Required positional: `<unit-id>` (e.g., U-001)
-- Validate unit exists in vault; halt with helpful error if not
-
-### Step 2 — Capture current bolt state (replay artifact)
-
-Read existing bolt artifacts:
-- `<vault>/bolts/<unit-id>/bolt-report.md` 
-- `<vault>/bolts/<unit-id>/preflight.json` (Hard Rule snapshots)
-- `<vault>/bolts/<unit-id>/postflight.json` (Hard Rule validation results)
-- Unit's `target_files` after-state (file checksums via `sha256sum`)
-
-Build snapshot:
-
-```json
-{
-  "replay_schema": 1,
-  "unit_id": "U-001",
-  "captured_at": "2026-05-21T16:30:00Z",
-  "vault_version": "1.1",
-  "git_sha_before": "<commit before bolt>",
-  "git_sha_after": "<commit after bolt>",
-  "test_command": "./vendor/bin/phpunit --filter=LoginExtensionTest",
-  "test_exit_code": 0,
-  "test_duration_ms": 1240,
-  "target_files": [
-    {
-      "path": "app/Http/Controllers/Api/LoginController.php",
-      "operation": "modify",
-      "sha256_after": "abc123...",
-      "lines_changed": "+12 -2",
-      "before_sha256": "def456...",
-      "after_sha256": "abc123..."
-    }
-  ],
-  "preflight": { /* from preflight.json */ },
-  "postflight": { /* from postflight.json */ },
-  "hard_rules_validated": [
-    {"rule_id": "do-not-modify-token-gen", "status": "PASS"},
-    {"rule_id": "response-shape-locked", "status": "PASS"}
-  ],
-  "halt": null,
-  "duration_total_ms": 14500
-}
-```
-
-Persist to `<vault>/.internal/replays/<unit-id>-<timestamp>.json`. JSONL append pattern (race-tolerant per the memory convention).
-
-### Step 3 — Diff against prior runs (if any)
-
-If prior replay snapshots exist for same `unit-id`:
+### Step 1 — Run replay
 
 ```bash
-# Latest prior:
-PRIOR=$(ls -t <vault>/.internal/replays/<unit-id>-*.json | sed -n '2p')
-CURRENT=<vault>/.internal/replays/<unit-id>-<latest>.json
-
-# Field-level diff using jd
-jd "$PRIOR" "$CURRENT" > <vault>/.internal/replays/<unit-id>-divergence.patch
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/replay.sh" $ARGUMENTS --cwd="$(pwd)"
 ```
 
-If `jd` available, use it for canonical JSON diff. Fall back to manual field-by-field comparison.
+`<unit-id>` is the required positional (e.g. `U-001`). The script resolves the vault (`--vault=<path>`, else auto-probe `.mega-sdd/vaults/` then legacy), validates the unit, captures the snapshot, and (unless `--capture-only`) diffs against the latest prior. Relay its output.
 
-### Step 4 — Classify divergence
+### Step 2 — What the snapshot actually records (grounding — moat invariant #5)
 
-For each diff entry:
+The script sources snapshot fields **only** from artifacts `execute-bolts` actually writes — it never fabricates:
 
-| Divergence type | Severity | Auto-action |
+- `<vault>/bolts/<unit>/bolt-report.md` frontmatter → `status:` + `target_hashes:` (the recorded per-file sha256).
+- the **live** sha256 of each `target_hashes` path, recomputed every run (this is the primary regression signal).
+- `<vault>/bolts/<unit>/postflight.json` → `status` + `rules[].{type,path,verdict,evidence}`.
+- `<vault>/bolts/<unit>/preflight.json` → `rules[]`.
+- `halt` (populated iff the bolt-report shows a `halted_*` status).
+
+Fields a richer execute-bolts *could* record but **no current artifact does** — `test_exit_code`, `test_duration_ms`, `git_sha_before/after`, `lines_changed` — are **not** invented. They are captured **if present** and compared **only when present on both** snapshots. Cosmetic keys (`captured_at` timestamps) are excluded from the diff entirely.
+
+Each run persists one snapshot to `<vault>/.internal/replays/<unit>-<timestamp>Z-<pid>.json` — a **per-run file** (the timestamp+PID stem makes concurrent runs collision-free). It is **not** a JSON-Lines append log; "latest prior" is the newest such snapshot file, excluding the `<unit>-divergence.json` diff artifact.
+
+### Step 3 — Severity table (what the script classifies on)
+
+The classification is deterministic — a fixed table, no LLM judgment. The signals are the fields that **exist**:
+
+| Divergence | Severity | Exit |
 |---|---|---|
-| `test_exit_code` changed (0 → non-0 OR vice-versa) | 🔴 HIGH | Halt — regression |
-| `test_duration_ms` change > 50% | 🟡 MEDIUM | Warning — perf shift |
-| `target_files.sha256_after` mismatch on same target | 🔴 HIGH | Halt — code differs |
-| `target_files.lines_changed` differs > 20% | 🟡 MEDIUM | Warning — scope drift |
-| `hard_rules_validated[].status` changed | 🔴 HIGH | Halt — rail change |
-| `halt` field differs (null vs populated) | 🔴 HIGH | Halt — pipeline behavior changed |
-| Cosmetic differences (timestamps only) | 🟢 LOW | Ignore |
+| A `target_files.<path>` live sha differs on the same path (or the target set changes) | 🔴 HIGH | 1 — regression: code differs |
+| `postflight_status` changed (e.g. `pass -> fail`) | 🔴 HIGH | 1 — rail outcome changed |
+| A `hard_rule[<path>].verdict` changed (e.g. `pass -> fail`) | 🔴 HIGH | 1 — rail change |
+| `halt` flips null ↔ populated | 🔴 HIGH | 1 — pipeline behavior changed |
+| Prior snapshot unreadable/corrupt | 🔴 HIGH | 1 — cannot confirm reproducibility |
+| `test_exit_code` / `test_duration_ms` change **(only when present on both)** | 🔴 HIGH / 🟡 MED | 1 / 0 |
+| Cosmetic (timestamps only) | 🟢 LOW | 0 — ignored |
 
-### Step 5 — Render output
+Any HIGH → exit **1** (serves the CI use-case). Otherwise exit **0**.
 
-Default `--format=table`:
+### Step 4 — Render (what the script prints)
+
+`--format=table` (default), e.g. a clean re-run:
 
 ```
 Replay analysis: U-001
-Current run:  2026-05-21T16:30:00Z (replay-3)
-Prior run:    2026-05-21T11:45:00Z (replay-2)
+  [no divergence]
+     - target_files.src/Thing.php (sha unchanged)
+     - postflight_status (pass)
+     - hard_rules_validated (1 rule(s) unchanged)
+  [HIGH] none.
 
-Diff summary:
-  🟢 No divergence in:
-     - test_exit_code (0)
-     - target_files set (1 file: LoginController.php)
-     - hard_rules_validated count (2/2 PASS)
-
-  🟡 Minor divergence:
-     - test_duration_ms: 1240ms → 1180ms (-5%; within normal range)
-     - lines_changed: +12 -2 → +13 -2 (1 line added)
-
-  🔴 No high-severity divergence detected.
-
-Verdict: BOLT IS REPRODUCIBLE. Minor variance within tolerance.
+Verdict: REPRODUCIBLE
 ```
 
-For `--format=json`: machine-parseable structured output.
+…and a regression cites the exact fields under `[HIGH]` and prints `Verdict: REGRESSION`. `--format=json` emits the same as a structured object.
 
-### Step 6 — Hand-off
+### Step 5 — Hand-off
 
 | Outcome | Suggested action |
 |---|---|
-| Zero divergence | "Bolt fully deterministic — no action needed" |
-| Cosmetic-only (timestamps) | "Run reproducible; ignore" |
-| Minor (perf shift, line count) | "Acceptable variance; document if performance budget tight" |
-| High-severity | "REGRESSION detected — review `.internal/replays/<unit-id>-divergence.patch`; revert OR re-investigate unit" |
+| Baseline (no prior) | "Snapshot captured — re-run after the next bolt to compare." |
+| REPRODUCIBLE (no/low divergence) | "Bolt reproducible — no action needed." |
+| HIGH (REGRESSION) | "Regression detected — inspect `<vault>/.internal/replays/<unit>-divergence.json` (the always-written diff record; a `<unit>-divergence.patch` is also written when `jd` is installed), then revert OR re-investigate the unit." |
 
 ## Common pitfalls
 
-### No prior replay snapshots exist
-
-First time running replay → no diff possible. Skill captures current state for future comparison. Re-run after next bolt invocation to see divergence.
-
-### `--capture-only` flag
-
-Skip diff step; only capture current state. Useful for establishing baseline before refactor.
-
-### `--diff-against=<replay-id>` flag
-
-Compare against specific historical replay (not just latest prior). Useful for "compare to known-good run from 2 weeks ago".
-
-### Stale snapshots
-
-Replays older than 180d → auto-prune in `mega-sdd:memory prune` operation. Configurable per `~/.mega-sdd/memory/config.yaml`.
-
-### Bolt halted (no successful state to replay)
-
-If bolt-report.md shows `status: halted_*`, replay capture proceeds but classifies as "partial snapshot". Diff against prior successful run still useful for "what went wrong".
+- **No prior snapshot** — first run is a baseline (exit 0); re-run after the next bolt to diff.
+- **`--capture-only`** — snapshot only, diff skipped (exit 0). Useful to establish a baseline before a refactor.
+- **`--diff-against=<stem>`** — diff against a specific historical snapshot basename stem (not just the latest prior).
+- **Halted bolt** — if `bolt-report.md` shows `status: halted_*`, the snapshot still captures (with `halt` populated); diffing against a prior successful run still pinpoints what changed.
 
 ## Anti-halu rails
 
-- Replay is READ-ONLY — never modifies code, vault, or memory
-- Diff classification is DETERMINISTIC (rule table; no LLM judgment)
-- Snapshots stored as JSON Lines (race-tolerant append per the paths convention)
-- Cosmetic-only divergence (timestamps) explicitly excluded from halt classification
-- All halt classifications cite specific fields + values that differ
-
-## Use cases
-
-1. **Regression detection** — re-run bolt after code refactor; replay confirms no behavior drift
-2. **Non-determinism debugging** — same unit produces different outputs across runs → divergence pinpoints which fields differ
-3. **CI/CD integration** — run replay in CI; halt PR on high-severity divergence
-4. **Audit trail** — historical replays show bolt evolution per unit across vault lifecycle
+- Replay is **READ-ONLY** — it never modifies code, vault, or memory (it only writes snapshot/divergence artifacts under `<vault>/.internal/replays/`).
+- Diff classification is **DETERMINISTIC** (the fixed table above; no LLM judgment).
+- Snapshots are **per-run JSON files** (timestamp+PID stem), not a JSON-Lines append log.
+- Snapshot fields come **only** from real artifacts; aspirational fields are compared only when present on both runs — never fabricated (moat invariant #5).
+- Cosmetic-only divergence (timestamps) is excluded from classification; every HIGH cites the specific field(s) + values that differ.
 
 ## References
 
-- jd (used for canonical JSON diff)
-- Checkpoint protocol (related but distinct — checkpoints are mid-skill state, replays are bolt outcomes)
-- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — bolt-report.md + preflight.json + postflight.json producers
+- `plugins/mega-sdd/scripts/replay.sh` — the deterministic capture+diff core (covered by `tests/replay/test-replay.sh`)
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — the `bolt-report.md` + `preflight.json` + `postflight.json` producers
+- `jd` — optional; used for the canonical `<unit>-divergence.patch` when installed
