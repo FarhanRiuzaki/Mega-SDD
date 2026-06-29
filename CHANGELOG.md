@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.51.0] - 2026-06-29
+
+Feature — **runtime output defaults to Indonesian + English technical terms** (extensible to any language, zero new code). An Indonesian team gets native-language narration out of the box without each member relying on a personal `CLAUDE.md`; non-Indonesian users stay fully served. Batch **L1 (spine) + L2 (control seam)** of the output-language feature — shipped as one atomic unit (the default is not "live" until both land). Spec: `docs/superpowers/specs/2026-06-29-output-language-default-id.md`.
+
+### Model — 3 tiers + strict precedence
+- **Tier 1 (Frozen)** — structural/machine-parsed tokens stay **English always** (`CONFIRMED`/`CONFLICT`/`OQ`, enums, IDs, field names, paths, commands). **Tier 2 (Narration)** — chat/halts/recommendations default Indonesian-mix. **Tier 3 (Artifact)** — per-audience (FSD prose ID; `AGENTS.md`/`vault.json`/binding structure EN; **cited source content keeps its source language** — citation discipline).
+- **Precedence (serves non-ID users by rule):** explicit request this session > the language the user writes in > Indonesian for short/ambiguous input (`gas`/`go`/`lanjut`). An English-writing user gets English by rule (2), never a wall of Indonesian.
+
+### Added
+- **`plugins/mega-sdd/references/output-language.md`** — the policy + precedence + the full Tier-1 do-not-translate census + the Tier-3 per-artifact table. Loaded on demand; itself an English directive doc.
+- **`tests/output-language/test-output-language.sh`** (REQUIRED per the behavior-change contract) — pins (a) the anchor names Indonesian + the precedence order and lives in the injected core, (b) the census carries every Tier-1 enum family (drift = silent gate-break risk), (c) the canonical default+precedence+pointer is present in all seven carrier files (the 3 generate-intent output-clause files + the 4 greenfield entry-point skills: orchestrate-flow, extract-intelligence, scan-codebase, install-deps).
+
+### Changed
+- **`using-mega-sdd` anchor (`SKILL.md`, 2.4.0 → 2.5.0):** new terse `## Output language` block **above** the `ANCHOR-CORE` marker, so it re-injects on every session start + compaction (~82 tok on the hot path; the census stays on-demand).
+- **L2 control seam — the 3 chat-output clauses flipped** from "adapt to the user's language" to the new default: `generate-intent/SKILL.md` (2.7.2 → 2.8.0) + its `references/{from-prompt-mode,vault-contract}.md`. "Reasons in English" and "generated docs match the input language" are unchanged.
+- **Greenfield entry-point directives added** to the four skills that can be the *first* mega-sdd skill in a repo with no `.mega-sdd/` signal (no anchor → must carry the policy themselves): `orchestrate-flow/SKILL.md` (2.11.2 → 2.12.0), `extract-intelligence/SKILL.md` (1.11.2 → 1.12.0), `scan-codebase/SKILL.md` (2.15.1 → 2.16.0), `install-deps/SKILL.md` (1.3.3 → 1.4.0). `scan-codebase` + `install-deps` were caught in adversarial review — `scan-codebase` *creates* `codebase-map.md`, so on direct invocation (`scan codebase ini`, `init mega-sdd`) it runs anchorless, and `install-deps` (`pasang tools`) is the same anchorless class.
+- **Census hardened (review finding):** the Tier-1 do-not-translate list now also covers **model-authored** enums that read like prose but are validator-pinned — extraction scorecard `COVERED|PARTIAL|MISSING` + `overall_status`, handoff `status`, and the lowercase bolt verdicts `pass|passed|ok`. The "script-emitted stays English" carve-out does not protect these (the model writes them), and the scorecard is authored by `extract-intelligence` — the skill this feature tells to narrate in Indonesian.
+- **Deliberately NOT changed:** the bound-session artifact-content clauses (`bind-codebase`, `generate-units`, `execute-bolts`, `detect-drift`, `resolve-oq`, `diff-vault`) — "recorded in the vault's existing language" is the correct Tier-3 behavior, and these run only after a vault exists (anchor present). Adding pointers there would spend hot-path tokens for no gain.
+
+### Safety
+- Over-translating an enum **fails closed, loudly** — verified read-only that the artifact validators assert the English literals (`validate-unit-spec.sh:169` `task_type in ("verify","extend")`; `validate-conflict-classification.sh` `CONFLICT-N`/`C-NNN`; `validate-kb-markers.sh` `[VERIFIED]`/`[INFERRED]`). The validators are the real Tier-1 backstop; the only un-gated surface is Tier-2 chat, where a mistranslation is cosmetic. No CI-hard `.sh` pin asserts a localizable string (all assert Tier-1 tokens or script-emitted output, which stay English).
+
+`plugin` == `marketplace` 4.51.0.
+
 ## [4.50.0] - 2026-06-29
 
 Fix — SubagentStop hook never fired (candidate fix, pending live restart verification). Root-cause investigation of why the `SubagentStop` telemetry hook (the per-subagent token-cost capture that the fork-token measurement depends on, and that the bolt phase needs to escape its telemetry blind spot) had **never** emitted a single `subagent_end_marker` on any machine.

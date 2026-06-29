@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.7.2
+version: 2.8.0
 description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a 
 
 Converts a PRD/BRD (+ Figma), a free-text brief, or a knowledge base into 7 markdown files inside a user-specified folder, optimized for **anti-hallucination dev handoff** — a downstream dev (human or AI) can implement from these docs without inventing requirements.
 
-> **Skill instruction language:** this skill reasons in English. **Generated docs match the input language** — Indonesian PRD → Indonesian vault; English PRD → English vault. Chat prompts to the user adapt to the user's language at runtime.
+> **Skill instruction language:** this skill reasons in English. **Generated docs match the input language** — Indonesian PRD → Indonesian vault; English PRD → English vault. Chat prompts default to **Indonesian + English technical terms**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (full rules → `plugins/mega-sdd/references/output-language.md`).
 
 ## Anti-hallucination rails (THE MOAT — never relax)
 

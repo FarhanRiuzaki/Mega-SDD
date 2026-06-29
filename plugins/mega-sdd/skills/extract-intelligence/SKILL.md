@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.11.2
+version: 1.12.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -9,6 +9,8 @@ description: Tech-agnostic domain extractor for legacy codebases targeted for re
 Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowledge base organized by **business domain**, not by code structure. Output describes WHAT the system does in tech-agnostic terms, not HOW the legacy stack implements it. Source-of-truth for rebuild planning on a different stack.
 
 **Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase."
+
+> **Skill instruction language:** this skill reasons in English; KB content stays tech-agnostic per the `[VERIFIED]`/`[INFERRED]`/`[OPEN]` schema. Narrate (the announce, wave progress, summaries) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens (markers, citations, `sha256:`) stay English (→ `plugins/mega-sdd/references/output-language.md`).
 
 **Core principle:** Domain-first, not code-first. Tech-agnostic vocabulary. Citation-disciplined extraction. Wave-based parallel agents to manage token budget. Ambiguous → `[OPEN]`, never silent default.
 

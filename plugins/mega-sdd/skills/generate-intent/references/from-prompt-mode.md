@@ -8,7 +8,7 @@ This was previously a standalone skill `from-prompt`; it is now absorbed as a mo
 
 Converts a free-text user brief into a structured `seed-PRD.md` ready for `/mega-sdd:generate-intent` to consume. Runs an adaptive Q&A elaboration loop (≤10 questions) to fill gaps the brief leaves open. Captures everything verbatim — no paraphrasing, no auto-fills.
 
-> **Skill instruction language**: this skill is written in English for reasoning quality. Chat prompts (Q&A questions, summary) adapt to the user's language at runtime. Per `./vault-contract.md` §boilerplate.
+> **Skill instruction language**: this skill is written in English for reasoning quality. Chat prompts (Q&A questions, summary) default to **Indonesian + English technical terms**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 tokens stay English (→ `plugins/mega-sdd/references/output-language.md`). Per `./vault-contract.md` §boilerplate.
 
 ## Contents
 
