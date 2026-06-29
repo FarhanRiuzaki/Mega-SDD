@@ -65,8 +65,13 @@ Insert a `## Output language` block at `using-mega-sdd/SKILL.md:44` — **above*
 ### 3. New reference `plugins/mega-sdd/references/output-language.md` (EN, structural)
 Houses the exhaustive Tier-1 do-not-translate list + the Tier-3 per-artifact table. Loaded on demand; itself an English directive doc (it mandates Indonesian but is not itself translated). Gets a `## Contents` ToC (>100 lines likely).
 
-### 4. Tier-3 pointers (one line each)
-Add a pointer to `output-language.md` only in the prose-artifact emitters: `emit-fsd`, `analyze`, `lint-units`, `detect-drift`, `resolve-oq`, `bind-codebase` (recommendation section). **Not** `generate-units` (machine unit specs; its chat is covered by the anchor) and **not** `emit-agents-md` (AGENTS.md stays EN).
+### 4. Tier-3 pointers (collapsed in L3 implementation — see note)
+**Discriminating test (sharper than the original skill list): does the skill author *new prose into a plugin-owned standalone artifact*, or write into vault content / machine structure?** Only the former gets a Tier-3 pointer.
+- **IN — `emit-fsd`** (FSD body prose; *the* core of L3 — it also flattens PRD/constitution excerpts, so it carries the **quoted-content fidelity note**: never translate a flattened source excerpt or a `[Source: sha256:…]` citation — reinforces invariant #3) and **`analyze`** (`CONSISTENCY-REPORT.md` analysis/recommendation prose).
+- **OUT (corrected from the original list) — `detect-drift`, `resolve-oq`, `bind-codebase`:** they record into **vault content** (drift rationale, OQ resolution answers, verbatim-from-vault `binding.md` claims) → stays the vault's language; what they *say to the user* is Tier-2 chat, already governed by the anchor. Adding an artifact-language directive would brush the "don't translate vault docs" scope boundary.
+- **OUT — `lint-units`:** not a prose-emitting skill (it is `commands/lint-units.md` + a framework-pack `_lint.md`), so it has no artifact prose to localize. Removed from the list (the original spec's "lint" reference was inaccurate).
+- **Still OUT — `generate-units`** (machine unit specs; chat covered by the anchor) and **`emit-agents-md`** (AGENTS.md stays EN).
+- **Census correction (mandatory, part of L3):** the shipped `output-language.md` Tier-3 row that read *"Recommendations / analysis prose (analyze, lint, drift, bind recs) → Indonesian"* is reworded to the surface split above — otherwise it is "prose that lies" (claims drift/bind artifact recs are ID while those skills are deliberately left vault-language, and names a non-existent `lint` emitter).
 
 ### 5. FSD nuance
 FSD **body prose + headings the plugin authors** → Indonesian; **quoted/flattened source content** (PRD excerpts, constitution clauses, binding quotes) → **source language** (citation discipline — never translate a cited quote); the structural spine (`§` headers parsed by `section-mapping.md`, `[Source: sha256:…]`) → English.
@@ -86,7 +91,7 @@ FSD **body prose + headings the plugin authors** → Indonesian; **quoted/flatte
 ## Implementation batches (each: verify → apply → adversarial review → full CI → present)
 - **L1 — Spine:** new `references/output-language.md` (DNT list + artifact table) + anchor `## Output language` block (with precedence) + `test-lean-anchor.sh` update + the new REQUIRED pin test. *(Carries warm/bound sessions; NOT sufficient alone — greenfield has no anchor.)*
 - **L2 — Control seam:** rewrite the **3** generate-intent output clauses + add a policy sentence to the **2** anchorless greenfield entry points (orchestrate-flow, extract-intelligence); leave the 6 artifact clauses. *(Carries direct/greenfield invocation. **L1+L2 together = the atomic "default ships" unit;** ship them as a pair, not L1-then-maybe-L2.)*
-- **L3 — Tier-3 pointers:** emit-fsd / analyze / lint-units / detect-drift / resolve-oq / bind-codebase one-line pointers + FSD quoted-content-fidelity note.
+- **L3 — Tier-3 pointers (shipped collapsed):** `emit-fsd` (the spine — FSD prose + quoted-content fidelity note) + `analyze` (report prose) one-line pointers, **plus the mandatory census correction**. `detect-drift` / `resolve-oq` / `bind-codebase` / `lint-units` were dropped from the original list after the discriminating test (above) showed they write vault content / are not prose emitters.
 
 ## Non-goals
 - No persistent per-project language config (chat override only — user's choice).

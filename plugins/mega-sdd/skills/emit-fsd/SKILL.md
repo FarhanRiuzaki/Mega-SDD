@@ -1,12 +1,14 @@
 ---
 name: emit-fsd
-version: 1.2.2
+version: 1.3.0
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
 # Emit-FSD — Functional Specification Document Generator
 
 **Announce at start:** "I'm using the emit-fsd skill to generate the FSD from the current vault."
+
+> **Output language (Tier-3 artifact):** FSD body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **But quoted / flattened source content — PRD excerpts, constitution clauses, binding quotes copied into a slot — and every `[Source: sha256:…]` citation are reproduced in their source language, never translated** (citation discipline, moat invariant #3). Tier-1 structural tokens stay English. Full rules → `plugins/mega-sdd/references/output-language.md`.
 
 ## When to use
 

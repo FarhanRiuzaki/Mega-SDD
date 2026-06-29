@@ -92,6 +92,25 @@ for c in "${CARRIERS[@]}"; do
   fi
 done
 
+# ---- (d) L3 Tier-3 pointers: plugin-authored report emitters ----------------
+# Only emit-fsd + analyze author standalone plugin-owned artifacts, so they (and
+# ONLY they) carry an artifact-language pointer. emit-fsd additionally carries
+# the quoted-content fidelity note — the moat-critical guard that a flattened
+# source excerpt / [Source: …] citation is NEVER translated (invariant #3). If
+# that note regresses, FSDs could silently mistranslate a cited PRD clause.
+FSD="$SKILLS/emit-fsd/SKILL.md"
+if has "$FSD" "output-language.md" && has "$FSD" "never translated" && has "$FSD" "[Source:"; then
+  ok "emit-fsd carries Tier-3 pointer + quoted-content fidelity note"
+else
+  bad "emit-fsd missing Tier-3 pointer or the never-translate-citation fidelity note"
+fi
+ANALYZE="$SKILLS/analyze/SKILL.md"
+if has "$ANALYZE" "output-language.md" && has "$ANALYZE" "CONSISTENCY-REPORT"; then
+  ok "analyze carries Tier-3 report-prose pointer"
+else
+  bad "analyze missing Tier-3 report-prose pointer"
+fi
+
 # ---- guard: the bound-session artifact-content skills are deliberately NOT touched ----
 # These run only AFTER a vault exists (.mega-sdd/ present → anchor injected), and
 # their "recorded in the vault's existing language" clause is the correct Tier-3
