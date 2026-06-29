@@ -18,14 +18,7 @@
 
 `--auto` (set by `orchestrate-flow` / `/mega-sdd:auto`) skips logistical prompts in these steps. The full table + anti-halu carve-outs are routed from the SKILL router's "Specialist references" (the `--auto`/handoff ref); the setup-specific defaults:
 
-| Step | Interactive | `--auto` |
-|------|-------------|----------|
-| Step 0 output path | Ask via `AskUserQuestion` | Default `.mega-sdd/vaults/<slug>/` (canonical per `plugins/mega-sdd/references/paths.md`), slug from PRD project name. If the folder exists & is non-empty, **STILL ASK** (destructive — never auto-overwrite). Legacy `docs/mega-sdd/vaults/<slug>/` only when legacy layout already on disk. |
-| Step 0.5 mode | Ask | Infer from codebase signals (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / …) in CWD or vault parent → `existing`; else `new`. |
-| Step 0.5 `mode_migrate_after` (mode=new) | Ask | Default `"first commit on main"`. |
-| Step 0.6 PRD_STATUS | Ask | Default `draft` (safe — more OQs, less assertion). |
-| Step 0.7 OUTPUT_MODE | Ask | Default `compact`. |
-| Step 2 gap-count pause (draft) | Pause if gaps > 10 | Skip the pause; dump all gaps to OQs (matches `final` behavior). |
+The per-step `--auto` defaults (Step 0 output-path, 0.5 IMPLEMENTATION_MODE, `mode_migrate_after`, 0.6 PRD_STATUS, 0.7 OUTPUT_MODE, Step 2 gap-count pause) are the canonical table in `generate-intent/references/auto-and-handoff.md` §`--auto` flag behavior — setup-flow does not restate them.
 
 Stays interactive even with `--auto`: the Figma "do you have screenshots?" prompt (must not invent UI); destructive overwrite confirmations; `PROJECT_SHAPE` confirmation when inference confidence is low (otherwise auto-confirm). When invoked via the `Skill` tool without an explicit `--auto`, default to interactive.
 

@@ -61,7 +61,7 @@ Regenerable — never edited manually. To revise: edit the source legacy code OR
     │   ├── regulatory-rules.md
     │   ├── operational-rules.md
     │   └── hidden-gotchas.md
-    ├── 50-integrations/           # 1 file per external system
+    ├── 50-integrations/           # 1 file per external system (external contracts, conceptual, not protocol)
     └── 99-rebuild-architecture/
         ├── suggested-erd.md
         ├── suggested-system-flow.md

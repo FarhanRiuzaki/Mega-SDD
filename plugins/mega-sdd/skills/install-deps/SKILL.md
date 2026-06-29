@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.3.1
+version: 1.3.2
 description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/scoop/cargo/npm/go) and install missing native deps mega-sdd can leverage (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh). Single explicit batch confirmation; never auto-sudo; never curl|bash; mandatory post-install verify; memory-cached outcomes. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -81,7 +81,7 @@ For each `missing` tool:
 
 1. Look up matrix entry matching detected (OS, PKG_MGR).
 2. If entry exists with `install_cmd` → add to install plan.
-3. If no matching entry → try fallback managers per `os-detection.md §Fallback chain`: on Windows, first a secondary native manager that's installed but not primary (scoop → winget → choco — `tree-sitter`/`ast-grep`/`tectonic`/`jd` are scoop-native, no winget pkg), then cargo / npm / go. On a tool skipped purely for lack of a manager, surface the concrete remedy (install scoop or a runtime), never a bare skip.
+3. If no matching entry → try fallback managers per `os-detection.md §Fallback chain` (the Windows secondary-native order + cargo / npm / go runtimes live there). On a tool skipped purely for lack of a manager, surface the concrete remedy (install a manager or runtime), never a bare skip.
 4. If `--pkg-mgr=<name>` flag passed → force that manager for ALL tools (override matrix lookup).
 5. If `--tools=<csv>` flag passed → filter plan to listed tools only.
 

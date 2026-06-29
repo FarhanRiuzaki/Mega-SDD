@@ -33,8 +33,8 @@
 ## Mode determination (Step 0 in SKILL.md)
 
 ```
-IF bolts/ directory exists AND has ≥1 bolt-report.md → mode = post-dev
-ELIF units/ directory exists AND has ≥1 U-*.md → mode = pre-dev (with breakdown)
+IF <vault>/bolts/ exists AND has ≥1 U-*/bolt-report.md → mode = post-dev
+ELIF <vault>/units/ exists AND has ≥1 U-*.md → mode = pre-dev (with breakdown)
 ELSE → mode = pre-dev (vault-only)
 ```
 

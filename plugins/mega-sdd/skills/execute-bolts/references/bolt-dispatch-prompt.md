@@ -23,10 +23,9 @@ Canonical prompt template for dispatching bolt subagent via superpowers `executi
 - T2.3 — Starterkit context (relevant slice)
 - Confidence labels per claim
 - Validation hints (specific, not vague)
-- Tier-loading algorithm (running budget tracker + progressive truncation)
+- Tier-loading algorithm
 - Anti-halu rails
 - Logging
-- Backward compatibility
 
 ## Template structure
 
@@ -356,108 +355,9 @@ GENERATE CODE THAT:
 - Self-reports via bolt_self_report YAML at end of bolt-report.md (Tier 1 §Self-assessment vocabulary)
 ```
 
-## Tier-loading algorithm (running budget tracker + progressive truncation)
+## Tier-loading algorithm
 
-Per execute-bolts SKILL.md Step 4.5. Replaces an aspirational 5KB T2 soft cap + single 10KB halt with a running byte tracker + per-section truncation cascade.
-
-**v1.0 algorithm — DEPRECATED, kept here as historical reference at bottom — encoded single-halt-at-10KB semantics. The v2.0 algorithm below supersedes it and is the canonical contract.**
-
-```
-ASSEMBLE_DISPATCH_PROMPT(unit, vault, codebase_map):
-  prompt = ""
-
-  # ─── Step a: Load TIER 1 (always; target ≤2KB) ───
-  prompt += load_t1(unit)  # unit body + halt vocab + self-assess + atomic + anti-context + provenance
-  consumed_t1 = size(load_t1.output)
-
-  # ─── Step a.5: Initialize running budget tracker ───
-  budget = {
-    cap_hard:     12_288,    # 12KB hard cap (canonical — matches context-enrichment.md)
-    cap_target:    9_216,    # 9KB total target
-    cap_t1:        2_048,    # 2KB T1
-    cap_t2:       10_240,    # 10KB T2 (walking-skeleton: context reach over a tight cap)
-    consumed_t1:   consumed_t1,
-    consumed_t2:   0,
-    remaining_t2: 10_240,
-    warnings:      []
-  }
-
-  # ─── Step b: Load TIER 2 in PRIORITY ORDER (most-critical LAST so they survive truncation) ───
-  # Priority ordering per SKILL.md Step 4.5 §T2 Section Priority + Truncation:
-  # We load HIGH-priority sections FIRST so they always make it in; truncate
-  # LOW-priority sections progressively as remaining_t2 depletes.
-  #
-  # Load order (priority 8 → priority 1):
-  #   8. constitution_clauses (NEVER drop — LOCKED)
-  #   7. starterkit_slice (truncation cascade)
-  #   6. framework_pack_rules
-  #   5. depends_on_summaries
-  #   4. confidence_labels
-  #   3. kb_anti_patterns
-  #   2. historical_memory
-  #   1. validation_hints
-  #
-  # For each section in priority order:
-  #   1. Build the section's default content
-  #   2. IF size(section) <= remaining_t2 → append full section; update budget
-  #   3. ELSE → apply per-section truncation cascade (per SKILL.md table) until
-  #      section fits remaining_t2 OR cascade exhausts (section drops to floor):
-  #         e.g., validation_hints: full → commands_only → drop
-  #         e.g., historical_memory: 5 → 3 → 1 → drop
-  #         e.g., framework_pack_rules: full → top 5 → top 3 → top 1 (NEVER drop)
-  #   4. Append truncated section; log {section, rule_applied, bytes_saved} to budget.warnings
-  #   5. Update consumed_t2 + remaining_t2
-
-  for section in T2_SECTIONS_PRIORITY_DESC:
-    content = build_section(section, unit, vault, codebase_map)
-    if size(content) <= budget.remaining_t2:
-      prompt += content
-      budget.consumed_t2 += size(content)
-    else:
-      truncated, bytes_saved, rule = apply_truncation_cascade(section, content, budget.remaining_t2)
-      prompt += truncated
-      budget.consumed_t2 += size(truncated)
-      budget.warnings.append({section, rule_applied: rule, bytes_saved})
-    budget.remaining_t2 = budget.cap_t2 - budget.consumed_t2
-
-  # ─── Step c: T3 reference-only paths (negligible bytes) ───
-  prompt += t3_references_list(vault, project)
-
-  # ─── Step d: Size check + budget tracker injection ───
-  total = budget.consumed_t1 + budget.consumed_t2
-
-  # Hard halt only when constitution_clauses alone exceeds budget after all
-  # disposable sections truncated to drop floor (true config issue):
-  if total > budget.cap_hard AND ALL_DISPOSABLE_SECTIONS_AT_DROP_FLOOR:
-    halt("dispatch_prompt_too_large", {
-      "unit_id": unit.id,
-      "current_size_bytes": total,
-      "cap_bytes": budget.cap_hard,
-      "warnings": budget.warnings,
-      "truncation_exhausted": true,
-      "next_action": "Constitution clauses alone exceed budget. Spec-level fix needed: split unit OR reduce constitution clause references in unit's vault_source."
-    })
-
-  # Soft-budget warning (NOT halt) — log when T2 exceeded 5KB target
-  if budget.consumed_t2 > budget.cap_t2:
-    log_warning(f"T2 exceeded soft cap: target=5KB, actual={budget.consumed_t2}B — truncation applied per priority order")
-
-  # Inject ### T2 budget tracker section (provenance to bolt subagent)
-  prompt += render_budget_tracker_section(budget)
-
-  return prompt
-```
-
-**Key invariants:**
-- `cap_hard` halt fires ONLY when constitution_clauses alone overflows
-- T2 sections load in PRIORITY ORDER (priority 8 first, priority 1 last) so HIGH-priority items always survive
-- Per-section truncation cascade applied PER SECTION as it loads (not on final assembled prompt)
-- Soft warning when T2 > 5KB but < 10KB total; truncation absorbs overage
-- `### T2 budget tracker` section ALWAYS injected so bolt subagent sees provenance
-
-### Deprecated v1.0 algorithm — historical reference
-
-The v1.0 algorithm did NOT track running budget or apply per-section truncation. It assembled all T2 sections in fixed order then halted if total > 10KB. That made the 5KB T2 soft cap aspirational — no running budget enforced — leading to either trip-the-hard-halt or oversize-but-under-halt unit dispatches. Superseded by the algorithm above.
+The budget dict, the priority-ordered T2 section list, the per-section truncation cascade, and the `dispatch_prompt_too_large` halt condition are defined ONCE in `context-enrichment.md` (§T2 budget tracker, §T2 section priority + truncation cascade, §Halt path + soft-budget warnings, §Size check). This template MUST NOT restate them — the canonical budget figures already live there (see the Token budget note at the top of this file). Load order is HIGH-priority sections first (constitution_clauses NEVER dropped) so they survive truncation as `remaining_t2` depletes.
 
 ## Anti-halu rails
 
@@ -470,9 +370,3 @@ The v1.0 algorithm did NOT track running budget or apply per-section truncation.
 ## Logging
 
 Per execute-bolts SKILL.md Step 4.5e: log final assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance + auditability.
-
-## Backward compatibility
-
-Pre-v2.6.0 execute-bolts dispatched bolt subagent with raw unit body + general project context (no tiered enrichment). v2.6.0 introduces this template; opt-out NOT available (the principles are the contract for AI-executor sharpness).
-
-Pre-existing bolts (already-committed) are not re-dispatched; this template applies only to new bolt runs.

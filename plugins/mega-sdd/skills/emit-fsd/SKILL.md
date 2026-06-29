@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.2.1
+version: 1.2.2
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -46,13 +46,7 @@ Full preflight catalog: `mega-sdd:orchestrate-flow/references/predictive-checks.
 
 ### Step 0: Mode detection
 
-Inspect CWD state per `references/section-mapping.md §Mode determination`:
-
-```
-IF <vault>/bolts/ exists AND has ≥1 U-*/bolt-report.md → mode = post-dev
-ELIF <vault>/units/ exists AND has ≥1 U-*.md → mode = pre-dev (with breakdown)
-ELSE → mode = pre-dev (vault-only)
-```
+Inspect CWD state per `references/section-mapping.md §Mode determination` (`<vault>/bolts/` with a `U-*/bolt-report.md` → post-dev; `<vault>/units/` with a `U-*.md` → pre-dev with breakdown; else vault-only pre-dev).
 
 User flag `--mode={pre-dev|post-dev|auto}` overrides detection. `auto` (default) uses detection result.
 
