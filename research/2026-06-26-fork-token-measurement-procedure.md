@@ -1,6 +1,6 @@
 # Fork token measurement — detect-drift live before/after (the scan/bind precondition)
 
-**Status:** scaffold ready · awaiting one live run on a real machine
+**Status:** scaffold ready + machinery confirmed live (2026-06-29) · awaiting one baseline run in a *representative* (non-measurement) session — see "Why still pending" (now ONE blocker, not two)
 **Gates:** `plugins/mega-sdd/CLAUDE.md` (Capability-adoption: *"Re-evaluate fork for scan-codebase / bind-codebase only after the live token before/after on detect-drift confirms the win"*) and the `moat-token-tradeoff` memory.
 **Comparator:** `plugins/mega-sdd/scripts/measure-fork-tokens.sh` · contract test `tests/fork-measurement/test-measure-fork-tokens.sh`
 **Design context:** `research/2026-06-26-context-reset-fork-feasibility.md`
@@ -42,6 +42,8 @@ echo "diagnostic=$DIAG marker=$MARK"
 | `> 0` | `> 0` | healthy — fork cost is captured | proceed |
 
 Only the third row is safe to measure on. The comparator's `--require-subagent` flag (below) enforces this at compare time regardless: it refuses a verdict when the fork snapshot has `subagent_turns == 0`.
+
+> **✅ CONFIRMED RESOLVED in-environment (2026-06-29).** The 2026-06-27 "SubagentStop never fired" finding was root-caused to the hook matcher (`".*"` → `""`, commit `52c7fb4`, v4.50.0; the event matcher is treated as an exact/alternation token, so `.*` matched nothing and the hook never registered). After `/plugin marketplace update mega-sdd` → 4.52.0 + `/reload-plugins` (a reload re-snapshots the hook config — no full restart needed), a **controlled probe subagent** fired `SubagentStop` end-to-end: `hook-debug.log` recorded the invocation (`hook_source=SubagentStop`, real `agent_id` + `agent_transcript_path`) **and** `telemetry.jsonl` got a `subagent_end_marker` with real summed usage; `report-token-cost.sh` now reports `subagent_turns: 1` (was `0`). The third row ("healthy — fork cost is captured") is now the live state. **This blocker is closed.**
 
 ## Procedure (run on a real machine — fork needs live agent dispatch)
 
@@ -95,12 +97,12 @@ A single run is suggestive, not conclusive — repeat 2–3× and use the median
 
 > Until this table has real numbers, the scan/bind fork extension stays in the backlog (task #18), not in flight.
 
-### Why this is still `_pending_` (two independent blockers, both → the user's machine)
+### Why this is still `_pending_` (ONE blocker remaining, as of 2026-06-29)
 
-A faithful A/B was attempted in-session on 2026-06-27 and could **not** be completed from here for two reasons, either of which alone forces a representative-session run on a real project:
+A faithful A/B was attempted in-session on 2026-06-27 and was blocked by two reasons. **One is now resolved:**
 
-1. **Baseline confound.** The no-fork arm runs detect-drift *inline*, inheriting the current session's full context. This session is ~1M tokens deep and unrepresentative, which would inflate the no-fork baseline by a large multiple and overstate the "win." A faithful baseline must come from a representative mid-pipeline session, not a measurement session.
-2. **SubagentStop did not fire** (see the Precondition section). The fork arm's cost is entirely a `subagent_end_marker`; in this config none was emitted (`subagent_turns: 0`), so the fork cost is uncapturable here regardless of the baseline.
+1. **Baseline confound — STILL OPEN (the gating blocker).** The no-fork arm runs detect-drift *inline*, inheriting the current session's full context. The session this was attempted in is ~1M+ tokens deep and unrepresentative, which would inflate the no-fork baseline by a large multiple and overstate the "win." A faithful baseline must come from a representative mid-pipeline session, not a long measurement/working session. This is a **methodology constraint, not a tooling gap** — it cannot be satisfied from a deep session no matter what; it needs a fresh, representative pipeline session on a real `mode=existing` vault + codebase.
+2. ~~**SubagentStop did not fire.**~~ **RESOLVED 2026-06-29** (matcher fix `52c7fb4`, confirmed live — see the ✅ note in the Precondition section). The fork-cost-capture machinery is now proven end-to-end (`subagent_turns: 1`, marker emitted, comparator contract test green). The fork arm is capturable.
 
 What is settled without the number:
 - **Correctness gate: satisfied** — detect-drift is non-interactive, gates fire on the Skill call before the body forks, no `memory_context` dependence (`moat-token-tradeoff` memory; `research/2026-06-26-context-reset-fork-feasibility.md`).
