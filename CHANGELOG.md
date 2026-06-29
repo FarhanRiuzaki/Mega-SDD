@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.49.0] - 2026-06-29
+
+Audit batch A — correctness (C1–C7), closeout. A skeptical per-finding re-verification against **current** source (not the audit's snapshot) found **C1–C6 already remediated** by prior commits `28d497e` (v4.45.0 "reconcile prose-that-lies", which also shipped the audit doc itself + Batch B's PreToolUse hook fast-path + Batch C's dead-scaffold deletion) and `f547a54` (v4.46.0 "extract destructive core"). No fabricated rework — those findings get **no new edit**. The audit's **C7 was mischaracterized** (it claimed off-by-one numeric "Step N" mockup labels; the mockups carry no numeric labels, and the second cited location already matched its header). The one real residual:
+
+### Fixed
+- **`install-deps/SKILL.md` Step-4 mockup gerund.** The Step-4 ("Propose + confirm") chat mockup opened with `Building install plan…` — a verb that belongs to the preceding silent Step-3 ("Build install plan"). Relabeled to `Proposing install plan…` so the displayed action matches the step the user is in. Pure cosmetic chat-output wording; no behavior, no moat, no pinned test touched. `install-deps` 1.3.2 → 1.3.3.
+
+### Audit status (2026-06-27 architecture audit — full closeout)
+- **Batch A (C1–C7):** C1–C6 already shipped (v4.45.0/v4.46.0); C7 cosmetic relabel here. **Done.**
+- **Batch B (F1 hook fast-path):** shipped in `28d497e` v4.45.0 (`hooks/pre-tool-use` negative-only short-circuit + `tests/round3/test-pretooluse-shortcircuit.sh`). **Done.**
+- **Batch C (dead-scaffold cut):** shipped in `28d497e` v4.45.0 (deleted `references/3-tier-context-model.md` + `references/skill-tier-manifest.yaml`). **Done.**
+- **Batch D (heavy-skill token dedup):** v4.48.0. **Done.**
+- **Batch E (command shadow-logic extraction):** v4.47.0. **Done.**
+
 ## [4.48.0] - 2026-06-28
 
 Audit batch D — heavy-skill token dedup (per `research/2026-06-27-architecture-audit-and-breadth-census.md` §Batch D). Deterministic duplication that lived in two places — most damagingly in always-loaded SKILL.md bodies — collapsed to **one source + a one-level-deep pointer**, per the authoring standard (progressive disclosure; SKILL.md is the router). **Behavior-preserving relocations, not deletions**: every candidate was adversarially verified against source, the destination ref enriched to a superset *before* the body was trimmed (the `(pointer + dest) ⊇ old body` invariant), and every applied change re-reviewed against source for info-drop / dropped rail / dangling pointer. Net **−195 lines** across 16 files; full suite 81/81 green; per-skill versions bumped (execute-bolts 2.14.2, extract-intelligence 1.11.2, orchestrate-flow 2.11.2, memory 1.5.1, install-deps 1.3.2, emit-fsd 1.2.2, generate-intent 2.7.2, generate-units 2.9.2).
