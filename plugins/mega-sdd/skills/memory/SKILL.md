@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.5.0
+version: 1.5.1
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -95,13 +95,7 @@ User-scope per-role model tier override. Format: markdown list with `- <role>: <
 
 After N consistent observations (thresholds configurable per `~/.mega-sdd/config.yaml`), pending suggestions accumulate in `~/.mega-sdd/memory/patterns.md` under `## Pending suggestions`. Default thresholds in `references/learning-rules.md`.
 
-**Review flow** (`/mega-sdd:memory review`):
-1. Read patterns.md pending section
-2. For each pending suggestion, present to user via `AskUserQuestion`:
-   - **ACCEPT** — applies the learning; writes to `learning-log.md` with rollback path
-   - **REJECT** — clears the suggestion; logs as "user rejected" in learning-log
-   - **DEFER** — re-asks next session
-3. Accepted learnings update the relevant heuristic / default / convention by writing to the appropriate config files
+**Review flow** (`/mega-sdd:memory review`): an ACCEPT / REJECT / DEFER walk-through per pending suggestion — full procedure (ACCEPT writes `learning-log.md` + updates the target heuristic; REJECT filters re-triggers; DEFER auto-prunes after 3) in `references/learning-rules.md` §3 (Suggestion review flow).
 
 **Anti-halu rails** (non-negotiable):
 - NEVER auto-apply learning. Every change requires explicit user ACCEPT via `review`.

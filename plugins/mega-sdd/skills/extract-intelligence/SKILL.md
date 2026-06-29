@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.11.1
+version: 1.11.2
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -52,21 +52,7 @@ Naming: this is the mega-sdd-flavored take on the legacy reverse-engineering pat
 
 **Secret-scan gate (mirrors scan-codebase Step 10a):** before EACH KB file is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact <assembled-file>` — legacy code routinely hardcodes credentials, and KB citations would otherwise carry them verbatim. Findings → value replaced with `[REDACTED-SECRET]` in the KB artifact (the legacy SOURCE is never edited) + one chat warning citing source file:line.
 
-Per `references/knowledge-base-schema.md` (read this file before generating any wave output):
-
-```
-{out}/
-├── _source/                       # forensic seed cross-reference (optional)
-└── knowledge-base/                # default; --out can override the parent path
-    ├── README.md                  # nav + critical findings + OQ roll-up + stats
-    ├── 00-overview/               # system-purpose, glossary, classification, actors-and-roles
-    ├── 10-domains/                # 1 file per business domain (11-section template)
-    ├── 20-workflows/              # cross-cutting workflows (state machines)
-    ├── 30-data-model/             # conceptual ERD + entities
-    ├── 40-business-rules/         # regulatory + operational + hidden gotchas
-    ├── 50-integrations/           # external contracts (conceptual, not protocol)
-    └── 99-rebuild-architecture/   # suggested-erd / system-flow / dependency-graph / phasing
-```
+Per `references/knowledge-base-schema.md` (read this file before generating any wave output) — see its **§Directory layout** for the full `{out}/` tree: the optional `_source/` seed, the `knowledge-base/` numbered tree (`00-overview` … `99-rebuild-architecture`) with each directory's sub-files, the `50-integrations` external-contract (conceptual, not protocol) convention, and the legacy `--out` probe order.
 
 Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intelligence`, classification, criticality, verified/inferred/open counts, citation count). Consumed by `bind-codebase` as secondary ground truth.
 
@@ -83,12 +69,7 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 | **4 — Integrations** | External system contracts, reporting/monitoring | 3 parallel | Wraps domain coverage |
 | **5 — Synthesis** | ERD, system-flow, dependency-graph, phasing, README | Main thread | Needs holistic view across all wave outputs |
 
-**Model tier per wave:** Model resolved from `references/model-tiers.md` per role (override via handoff metadata.model_tiers if invoked through orchestrate-flow):
-- Wave 1: `(model: per references/model-tiers.md §extract-intelligence-wave-1, default sonnet)`
-- Wave 2: `(model: per references/model-tiers.md §extract-intelligence-wave-2, default sonnet)`
-- Wave 3: `(model: per references/model-tiers.md §extract-intelligence-wave-3, default sonnet)`
-- Wave 4: `(model: per references/model-tiers.md §extract-intelligence-wave-4, default sonnet)`
-- Wave 5: `(model: per references/model-tiers.md §extract-intelligence-wave-5, default opus — synthesis needs holistic context)`
+**Model tier per wave:** resolved per role from `references/model-tiers.md` — waves 1–4 default sonnet, wave 5 defaults opus (synthesis needs holistic context). The per-wave catalog lives in `references/wave-dispatch-templates.md` §Model tier per wave; override via handoff `metadata.model_tiers` when invoked through orchestrate-flow.
 
 **Why wave-based:**
 - Token budget control — never more than `--max-parallel` subagents in flight.
@@ -98,21 +79,7 @@ Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intellig
 
 **Common timeout pitfall:** subagents reading >40 KB single files hit stream timeout. Mitigation: tighten Read scope with line ranges, prefer `Grep` for targeted patterns, fall back to synthesis-from-siblings (read other KB files instead of legacy source) for late waves.
 
-**Glossary pre-parse:**
-
-Wave 1 writes `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction). Without an index, every wave 2/3/4 subagent would independently re-read the full glossary file when cross-referencing terms — ~96 KB redundant I/O per wave subagent (15% of 535K wave token budget).
-
-Mitigation: between Wave 1 completion and Wave 2 dispatch, the main thread parses glossary.md ONCE and builds a compact `glossary_index` (term → 1-line definition + line number in glossary.md). Inject `glossary_index` into each wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder (per `references/wave-dispatch-templates.md` contract).
-
-Subagent prompts updated to instruct: "Reference glossary terms via `<GLOSSARY_INDEX>` — it's the authoritative compact index. ONLY read `glossary.md` directly when you need full prose context for a specific term (with `offset/limit` line range from the index). Do NOT re-read the entire glossary file."
-
-**Net savings:** ~96KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
-
-**Reference offset hints:**
-
-Section citations in wave outputs (e.g., `glossary.md §customer-onboarding`) now include line range hints when known. Format: `glossary.md §customer-onboarding:42-58` instead of bare `glossary.md §customer-onboarding`. Downstream consumers (other waves, generate-intent --kb) can use the line range with Read tool's `offset/limit` parameters for targeted reads (30-60% I/O reduction per reference read).
-
-Subagents instructed: "When citing a glossary/reference section, include the line range from `<GLOSSARY_INDEX>` so downstream readers can spot-read instead of full-document read."
+**Glossary pre-parse + reference offset hints:** between Wave 1 completion and Wave 2 dispatch the main thread parses `glossary.md` ONCE into a compact `glossary_index` (term → 1-line def + line range) injected as the `<GLOSSARY_INDEX>` placeholder, and wave-output citations carry `§section:line-range` hints so downstream readers spot-read instead of full-document read. Full procedure + the verbatim subagent instructions: `references/wave-dispatch-templates.md` §`<GLOSSARY_INDEX>` placeholder + §Reference offset hints.
 
 ## Extraction discipline (non-negotiable)
 
@@ -231,12 +198,7 @@ If the same gate fails twice for the same agent → halt with the gate output. U
 
 Wave 5 MUST be main thread, not a subagent — it needs holistic context across every wave's output:
 
-1. **`suggested-erd.md`** — clean ERD (Mermaid). Document DEPARTURES from legacy (normalize denormalized tables, event-source mutable counters, fix typo bugs structurally). Apply Normalization Checklist (see `references/knowledge-base-schema.md` §ERD Quality Rails).
-2. **`suggested-system-flow.md`** — service boundaries (logical, not framework-mandate). Anti-corruption layer pattern for integrations. Idempotency requirements. No framework prescription.
-3. **`module-dependency-graph.md`** — DAG (Mermaid). Leaf-vs-trunk analysis. Critical-path estimate.
-4. **`suggested-phasing.md`** — Phase 1/2/3 sprint plan with acceptance criteria per phase. Pre-milestone blocker list. Per-module acceptance template.
-5. **`data-mutation-policy.md`** — entity-by-entity table listing which tables/fields are `[LOCKED]` vs `[INTENT]` vs `[ARTIFACT]`. Drives ERD freedom in `generate-intent --kb` — without this file the consumer doesn't know what it's allowed to redesign.
-6. **`README.md`** roll-up — navigation, **reengineering opportunities + critical findings surfaced first**, mutability tier distribution table, OQ roll-up grouped by phase blocker, stats, next steps.
+The six synthesis outputs, in order — `suggested-erd.md`, `suggested-system-flow.md`, `module-dependency-graph.md`, `suggested-phasing.md`, `data-mutation-policy.md`, and the `README.md` roll-up — are specified with their per-output schema (ERD Quality Rails; the `data-mutation-policy.md` `[LOCKED]/[INTENT]/[ARTIFACT]` table that drives `generate-intent --kb` freedom; README reengineering-opportunities-first ordering) in `references/wave-dispatch-templates.md` §Wave 5 — Synthesis and `references/knowledge-base-schema.md` §99-rebuild-architecture templates.
 
 ## Step 5.5 — Emit extracted-kb shared snapshot
 
@@ -346,56 +308,13 @@ On completion, announce:
 
 When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`. The orchestrator parses this to decide auto-continue.
 
-```yaml
-handoff:
-  emitted_by: extract-intelligence
-  emitted_at: <ISO8601 timestamp>
-  status: completed | halted
-  artifacts:
-    - <absolute path to .mega-sdd/knowledge-base/>
-    - <absolute path to .mega-sdd/knowledge-base/README.md>
-  next_action:
-    suggested_skill: mega-sdd:generate-intent
-    suggested_args: ["--kb=<absolute path to knowledge-base>", "--auto"]
-    rationale: "Knowledge base extracted; generate vault using KB as Mode B brief."
-  blockers: []
-  metrics:
-    items_processed: <N MD files written>
-    items_blocked: 0
-  scope:                                  # when target vault will have scope_metadata
-    id: <scope id>
-    name: <scope name>
-    sibling_scopes: []
-    prd_sha256: <sha256 from PRD if available>
-  mutability:                             # extract-intelligence is PRIMARY tier producer
-    tier_distribution: { LOCKED: <N>, INTENT: <N>, ARTIFACT: <N> }
-    locked_claims_touched: []
-    artifact_discards_proposed: <N>
-```
+The canonical `extract-intelligence` handoff record — full schema including the `scope:` and `mutability:` blocks (extract-intelligence is the PRIMARY mutability-tier producer: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`) — lives in `mega-sdd:orchestrate-flow/references/handoff-contract.md` §`extract-intelligence`. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution).
 
 Status `halted` when quality gate fails twice (per `references/wave-dispatch-templates.md` §gate-checks). Required ONLY under `--auto`; standalone invocations may emit informationally.
 
 ## Real-world validation
 
-Bank Mega Trade Finance legacy (~600 PHP files; MySQL + MSSQL + LDAP + SWIFT FTP):
-- Input: 63.9 KB forensic seed doc
-- Output: 35 MD files, ~968 KB, 13 business domains
-- Findings beyond seed: actor-order error corrected, 41 hidden gotchas catalogued, 430 OQs surfaced, 4 critical do-not-replicate bugs, hidden MySQL UDF dependency, OFAC compliance gap
-- Time: ~3 hours wall-clock for 15 agent dispatches across 5 waves
-- Output usable immediately as Phase 1 acceptance criteria + per-module reference
-
-## Common mistakes
-
-| Mistake | Symptom | Fix |
-|---|---|---|
-| Single mega-doc dump | 1000+ line monolith, unsearchable | Multi-file by domain — this skill's output shape |
-| Code-organized output | Files named after legacy folders | Reorganize by business domain |
-| Tech-leaking | "Customer is a `cifmast` row" in a domain file | Use conceptual types; relegate physical to `## 11. Source References` |
-| No citations | Claims with no `file:line` | Re-dispatch with discipline |
-| Fabricated regulations | Invented POJK/PBI numbers | Mark `[INFERRED]` or `[OPEN]` |
-| Skip `.bak` compare | Miss removed-then-needed logic | Diff against `.bak`/dated copies, document in Edge Cases |
-| Wave 5 as subagent | Synthesis lacks holistic view | Always main-thread synthesis |
-| No quality gate | Template drift propagates downstream | Grep gates after every wave |
+Validated on the Bank Mega Trade Finance legacy rebuild (~600 PHP files; MySQL + MSSQL + LDAP + SWIFT FTP). Full metrics — forensic-seed size, MD/KB/domain counts, findings beyond seed (gotchas, OQs, do-not-replicate bugs, hidden UDF, OFAC gap), wall-clock and dispatch counts — in `docs/superpowers/specs/2026-05-20-extract-intelligence-skill-design.md` §13.
 
 ## Cross-references
 

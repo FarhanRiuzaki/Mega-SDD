@@ -250,7 +250,7 @@ Bank Mega Trade Finance legacy:
   - Hidden MySQL UDF dependency (`BizDaysInclusive`)
   - Compliance gap: no OFAC sanctions screening (must add)
 - Time: ~3 hours wall-clock for 15 agent dispatches across 5 waves
-- Output usable immediately as Phase 1 acceptance criteria
+- Output usable immediately as Phase 1 acceptance criteria + per-module reference
 
 This validates the wave-based parallel-subagent approach + the marker discipline as the right cost/quality trade-off for legacy-rebuild planning.
 

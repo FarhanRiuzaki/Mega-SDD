@@ -38,7 +38,7 @@ Override per role via CLI flag / project config / user preference (see `plugins/
 
 ## `<GLOSSARY_INDEX>` placeholder
 
-Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
+Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction) ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
 
 **Index format:**
 
@@ -348,9 +348,9 @@ NEVER dispatch as a subagent. Wave 5 needs the holistic view across all prior wa
 Produce in order:
 
 1. `99-rebuild-architecture/suggested-erd.md` — clean ERD documenting DEPARTURES from legacy. MUST satisfy `references/knowledge-base-schema.md` §ERD Quality Rails (universal defaults + Normalization checklist + Departures section).
-2. `99-rebuild-architecture/suggested-system-flow.md` — logical service boundaries.
+2. `99-rebuild-architecture/suggested-system-flow.md` — logical service boundaries (not framework-mandate); anti-corruption layer pattern for integrations; idempotency requirements per flow; no framework prescription.
 3. `99-rebuild-architecture/module-dependency-graph.md` — DAG + leaf-vs-trunk + critical path.
-4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 + per-module acceptance criteria.
+4. `99-rebuild-architecture/suggested-phasing.md` — Phase 1/2/3 sprint plan with per-phase acceptance criteria, a per-module acceptance template, and a pre-milestone (pre-phase) blocker list (resolved OQs required before phase start).
 5. **`99-rebuild-architecture/data-mutation-policy.md`** — entity-level mutability summary table per `references/knowledge-base-schema.md` §data-mutation-policy.md template. Aggregate `[LOCKED]/[INTENT]/[ARTIFACT]` counts per entity from wave 2-4 outputs. Drives ERD freedom in `generate-intent --kb`.
 6. `README.md` — master roll-up per `knowledge-base-schema.md` §README-roll-up-structure.
 7. **`.extraction-scorecard.json` + `EXTRACTION-SCORECARD.md`** — the Extraction Completeness Contract per `SKILL.md` §Step 5.6. Derive each of the six principle statuses (P1–P4 + P5 staged inputs + P6 dynamic dispatch) from the Wave REPORT BACK self-checks (incl. `dynamic_seams_found/resolved/open`) + a holistic KB scan; `overall_status` PASS/PARTIAL/FAIL per the §Step 5.6 rules. Anti-halu: an honest `PARTIAL` with `[OPEN]` markers is the passing state — never up-rank to green to hide a gap.
