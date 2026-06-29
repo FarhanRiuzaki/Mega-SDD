@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.3.2
+version: 1.3.3
 description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/scoop/cargo/npm/go) and install missing native deps mega-sdd can leverage (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh). Single explicit batch confirmation; never auto-sudo; never curl|bash; mandatory post-install verify; memory-cached outcomes. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -100,7 +100,7 @@ If `--manual` flag passed → print all install commands as instructions + exit 
 Otherwise emit chat plan:
 
 ```
-Building install plan...
+Proposing install plan...
 
 <N> tools to install via <pkg_mgr> (total ~<size>MB download):
   1. <tool_1>      <size>MB    <install_cmd>
