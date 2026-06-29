@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 2.4.0
+version: 2.5.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, open questions, knowledge-base, extract intelligence, reverse engineer, rebuild, or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, jalankan otomatis, lanjut, next, sync, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -41,6 +41,10 @@ Route these on phrasing, not just `/command`:
 For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing.
 
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
+
+## Output language
+
+Narrate (chat, halts, recommendations) in **Indonesian + English technical terms by default**. Precedence: explicit request this session (e.g. "use English", "pakai bahasa X") > the language the user is writing in > Indonesian for short/ambiguous input (`gas`, `go`, `lanjut`). **Tier-1 structural tokens stay English always** (`CONFIRMED`/`CONFLICT`/`OQ`, enums, IDs, field names, paths, commands) — full census + per-artifact rules in `plugins/mega-sdd/references/output-language.md`. Reasoning stays English; only output changes.
 
 <!-- ANCHOR-CORE ends here — everything below is loadable detail (invoke the `using-mega-sdd` skill for it). session-start injects only the routing core above, to keep the per-session / per-compaction footprint small. Do not move a trigger keyword or the hard rule below this line. -->
 

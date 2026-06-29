@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.11.2
+version: 2.12.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -10,7 +10,7 @@ description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, prop
 
 The orchestrator inspects the working directory, infers where you are in the mega-sdd pipeline, proposes a chain of sub-skills, confirms once, then dispatches them with `--auto`. It generates no content itself — it routes. Heavy detail (decision matrices, preflight catalogs, handoff validation, convergence, halt taxonomy) lives in the references below; this file is the router.
 
-> **Instruction language:** this skill reasons in English. User triggers may be Indonesian ("lanjut", "lanjutkan", "next").
+> **Instruction language:** this skill reasons in English. User triggers may be Indonesian ("lanjut", "lanjutkan", "next"). Narrate (the announce, proposed-chain prose, confirmations) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`).
 
 ## When to use
 

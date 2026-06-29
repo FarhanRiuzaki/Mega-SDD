@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.15.1
+version: 2.16.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -10,7 +10,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 **Announce at start:** "I'm using the scan-codebase skill to map the repository."
 
-> **Instruction language:** this skill reasons in English. Detected symbols, paths, and line numbers are recorded verbatim from the codebase.
+> **Instruction language:** this skill reasons in English. Detected symbols, paths, and line numbers are recorded verbatim from the codebase. Narrate (the announce, progress, summary) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`). *(This skill is greenfield-reachable — direct invocation on a raw brownfield repo runs before any `.mega-sdd/` signal exists, so it carries the policy itself rather than relying on the anchor.)*
 
 ## When to use
 
