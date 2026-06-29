@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.52.0] - 2026-06-29
+
+Feature — **output-language L3 (Tier-3 artifact pointers)**, the final batch of the output-language feature (L1+L2 shipped in 4.51.0). **Collapsed from the scouted 6 skills to 2 + a doc-honesty fix** after a discriminating-test pass — this batch is intentionally small, not truncated.
+
+### The discriminating test
+*Does the skill author new prose into a plugin-owned standalone artifact, or write into vault content / machine structure?* Only the former gets a Tier-3 language pointer.
+
+### Added (the 2 that pass the test)
+- **`emit-fsd` (1.2.2 → 1.3.0) — the spine.** FSD body prose → Indonesian by default, **but quoted/flattened source excerpts (PRD, constitution, binding quotes) and every `[Source: sha256:…]` citation are reproduced in their source language, never translated.** This directly reinforces moat invariant #3 (citation discipline) and is now pinned by the test.
+- **`analyze` (2.1.0 → 2.2.0).** `CONSISTENCY-REPORT.md` analysis/recommendation prose → Indonesian; boundary verdicts `PASS`/`FAIL`, validator IDs, paths stay English.
+
+### Fixed (mandatory — "prose that lies" in the shipped census)
+- **`references/output-language.md` Tier-3 row corrected.** The 4.51.0 row read *"Recommendations / analysis prose (analyze, lint, drift, bind recs) → Indonesian"* — which (a) claimed `detect-drift`/`bind-codebase` artifact recs are Indonesian while those skills are deliberately left vault-language, and (b) named `lint`, which is a command (`commands/lint-units.md`), not a prose-emitting skill. Reworded to a **surface split**: what these skills *say to the user* is Tier-2 chat (Indonesian via the anchor); what they *record into a vault artifact* (drift rationale, OQ resolution answers, verbatim `binding.md` claims) stays the vault's language.
+
+### Deliberately NOT given a pointer
+- `detect-drift`, `resolve-oq`, `bind-codebase` (write vault content — the "don't translate vault docs" boundary), `lint-units` (not a prose emitter), `generate-units` (machine specs; chat covered by anchor), `emit-agents-md` (AGENTS.md stays English).
+
+Suite green + pack gates; `plugin` == `marketplace` 4.52.0.
+
 ## [4.51.0] - 2026-06-29
 
 Feature — **runtime output defaults to Indonesian + English technical terms** (extensible to any language, zero new code). An Indonesian team gets native-language narration out of the box without each member relying on a personal `CLAUDE.md`; non-Indonesian users stay fully served. Batch **L1 (spine) + L2 (control seam)** of the output-language feature — shipped as one atomic unit (the default is not "live" until both land). Spec: `docs/superpowers/specs/2026-06-29-output-language-default-id.md`.

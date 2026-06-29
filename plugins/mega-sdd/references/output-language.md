@@ -40,12 +40,13 @@ These are English words sitting in machine-parsed positions; every one is parser
 
 | Artifact | Language |
 |---|---|
-| FSD body prose + headings the plugin authors | Indonesian (per precedence) |
-| Vault docs (PRD / BRD / brief → markdown) | the **input doc's** language (existing behavior — unchanged) |
-| Recommendations / analysis prose (analyze, lint, drift, bind recs) | Indonesian (per precedence) |
+| Plugin-authored report prose (FSD body + headings; `CONSISTENCY-REPORT.md` analysis/recommendations) | Indonesian (per precedence) |
+| Vault docs (PRD / BRD / brief → markdown) **and content recorded INTO the vault** (OQ resolution answers, drift rationale, `binding.md` claim text) | the **vault's / input doc's** language (existing behavior — unchanged) |
 | `AGENTS.md`, `vault.json`, `binding.md` **structure** | **English** (machine-interop) |
 | **Quoted / cited source content** (PRD excerpts, constitution clauses, binding quotes) | **source language — never translate a citation** (citation discipline) |
 | Doc structural spine (`§` headers parsed by validators, `[Source: sha256:…]`) | **English** |
+
+**Surface split for `analyze` / `detect-drift` / `bind-codebase` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, `binding.md` claim text) is vault content → stays the vault's language. Only `emit-fsd` and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
 
 ## Switching & extensibility
 
