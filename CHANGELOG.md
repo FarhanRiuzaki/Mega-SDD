@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [4.49.0] - 2026-06-29
+## [4.50.0] - 2026-06-29
+
+Fix — SubagentStop hook never fired (candidate fix, pending live restart verification). Root-cause investigation of why the `SubagentStop` telemetry hook (the per-subagent token-cost capture that the fork-token measurement depends on, and that the bolt phase needs to escape its telemetry blind spot) had **never** emitted a single `subagent_end_marker` on any machine.
+
+### Diagnosis (systematic, evidence-led)
+- **The body and dispatcher are sound.** `run-hook.sh` routes `subagent-stop` correctly; the hook body reads the subagent transcript and sums per-turn usage; `tests/token-cost/test-subagent-stop-telemetry.sh` (which invokes the body directly) is green. So the gap is **upstream of the body** — the hook was never invoked.
+- **Correlation isolates the matcher.** Every hook that *does* fire uses `matcher: ""` (`Stop`, 238× this session) or exact alternation tokens (`SessionStart` `startup|resume|…`, 47×; Pre/PostToolUse). The **only** hook configured with a regex wildcard `matcher: ".*"` was `SubagentStop` — the **only** one that was dark (0×). The plausible mechanism: the matcher for these events is treated as an exact/alternation token, not a full regex, so `".*"` only matches an agent type *literally* equal to `.*` → never matches → the hook entry never registers → `run-hook.sh subagent-stop` is never invoked → the body never runs (exactly the earlier "unconditional probe never wrote a line" finding).
+
+### Fixed
+- **`hooks/hooks.json`: `SubagentStop` matcher `".*"` → `""`** — mirrors the working `Stop` sibling (which the hook's own header comment pairs it with) and the repo's matcher convention. One-line, config-only; full suite 81/81 + pack gates green; no test pins the matcher value, so nothing regresses.
+
+> **Verification is pending a restart.** `hooks.json` is snapshotted at session start, so this fix cannot be confirmed in the session that made it. After updating, restart, dispatch any subagent (e.g. a small `execute-bolts`), then `grep -c '"hook":"subagent-stop"' .mega-sdd/memory/hook-debug.log` — `> 0` confirms the fix. If it fires but `subagent_end_marker` stays 0, the secondary suspect is the payload field name (the hook reads `agent_transcript_path`; confirm against the real delivered payload — do not guess). Until the live grep is `> 0`, the fork-token measurement (task #18) stays blocked.
+
+
 
 Audit batch A — correctness (C1–C7), closeout. A skeptical per-finding re-verification against **current** source (not the audit's snapshot) found **C1–C6 already remediated** by prior commits `28d497e` (v4.45.0 "reconcile prose-that-lies", which also shipped the audit doc itself + Batch B's PreToolUse hook fast-path + Batch C's dead-scaffold deletion) and `f547a54` (v4.46.0 "extract destructive core"). No fabricated rework — those findings get **no new edit**. The audit's **C7 was mischaracterized** (it claimed off-by-one numeric "Step N" mockup labels; the mockups carry no numeric labels, and the second cited location already matched its header). The one real residual:
 
