@@ -52,13 +52,22 @@ if [ ! -f "$FILE_PATH" ]; then echo '{"status":"ERROR","detail":"file not found"
 STATE_FILE="${CWD}/.mega-sdd/.kb-flows-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || true
 
-# Run validator as a standalone Python script to avoid heredoc backtick issues
-RESULT=$(python3 -W ignore::DeprecationWarning - "$CWD" "$FILE_PATH" <<'PYEOF'
+# Run validator as a standalone Python script to avoid heredoc backtick issues.
+# The Mermaid Rule 1-3 syntax tokenizer lives in _lib/mermaid_syntax.py — the
+# single source of truth shared with validate-vault-flows.sh (never fork it).
+_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib"
+RESULT=$(python3 -W ignore::DeprecationWarning - "$CWD" "$FILE_PATH" "$_LIB_DIR" <<'PYEOF'
 import json, os, re, sys
 
 cwd = sys.argv[1]
 file_path = sys.argv[2]
-FENCE = chr(96) * 3  # triple backtick — avoid literal in bash $() heredoc
+sys.path.insert(0, sys.argv[3])
+try:
+    from mermaid_syntax import (FENCE, extract_mermaid_blocks,
+                                check_mermaid_syntax, check_diagram_type)
+except Exception as e:
+    print(json.dumps({"status": "ERROR", "detail": "cannot load mermaid_syntax lib: " + str(e)}))
+    sys.exit(0)
 
 try:
     content = open(file_path, encoding="utf-8").read()
@@ -70,212 +79,6 @@ checks = []
 issues = []
 advisories = []   # v3.71.0+ semantic-depth: non-blocking signals (never flip status)
 lines = content.split("\n")
-
-# ──────────────────────────────────────────────────────────────────────────
-# Helper: extract all ```mermaid ... ``` blocks with their starting line numbers
-# ──────────────────────────────────────────────────────────────────────────
-def extract_mermaid_blocks(text):
-    """Returns list of (start_line_1based, end_line_1based, body_lines)."""
-    blocks = []
-    in_block = False
-    block_start = None
-    block_lines = []
-    for i, line in enumerate(text.split("\n"), start=1):
-        stripped = line.strip()
-        if not in_block:
-            # Match ```mermaid (with possible leading whitespace), case-insensitive
-            if re.match(r"^" + re.escape(FENCE) + r"\s*mermaid\s*$", stripped, re.IGNORECASE):
-                in_block = True
-                block_start = i
-                block_lines = []
-        else:
-            if stripped.startswith(FENCE):
-                blocks.append((block_start, i, block_lines))
-                in_block = False
-                block_start = None
-                block_lines = []
-            else:
-                block_lines.append((i, line))
-    return blocks
-
-# ──────────────────────────────────────────────────────────────────────────
-# Heuristic Mermaid syntax checker (v2 — Iter 72+)
-# Returns list of issue dicts.
-#
-# Strategy: stateful tokenizer that respects quoted strings — naive regex
-# fails on cases like PRE(["text with (parens, commas)"]) because the
-# inner ) terminates a `[^)]*` content class. Tokenizer walks each line
-# char-by-char, tracks in-quote state, only matches shape-close when not
-# in a quote.
-# ──────────────────────────────────────────────────────────────────────────
-def check_mermaid_syntax(blocks, section):
-    section_issues = []
-
-    # Lines we IGNORE inside mermaid blocks (declarations, styling, control)
-    SKIP_LINE_PREFIXES = (
-        "flowchart", "graph", "stateDiagram", "sequenceDiagram",
-        "classDiagram", "erDiagram", "gantt", "journey", "pie", "gitGraph",
-        "style ", "classDef ", "linkStyle ", "subgraph ", "end",
-        "direction ", "%%",  # comment
-    )
-
-    # Shape pairs — two-char tried before one-char (longest-first)
-    TWO_CHAR_SHAPES = [
-        ("[(", ")]"),    # cylinder
-        ("([", "])"),    # stadium
-        ("((", "))"),    # circle
-        ("[[", "]]"),    # subroutine
-        ("{{", "}}"),    # hexagon
-        ("[/", "/]"),    # parallelogram
-        ("[\\", "\\]"),  # parallelogram_alt
-    ]
-    ONE_CHAR_SHAPES = [
-        ("(", ")"),
-        ("[", "]"),
-        ("{", "}"),
-        (">", "]"),      # flag — asymmetric: open `>`, close `]`
-    ]
-    ALL_SHAPES = TWO_CHAR_SHAPES + ONE_CHAR_SHAPES
-
-    DANGEROUS_CHARS = set(",():|")  # require quoting inside node text
-
-    def is_quoted_strictly(s):
-        s = s.strip()
-        return len(s) >= 2 and s.startswith('"') and s.endswith('"')
-
-    def is_simple_identifier(s):
-        """No special chars beyond letters/digits/space/dash/underscore."""
-        return bool(re.match(r"^[A-Za-z0-9_\-\s]+$", s.strip()))
-
-    def find_node_specs(line):
-        """Walk the line, return list of (node_id, shape_open, content_raw,
-        shape_close, span_start, span_end) tuples — respects quoted strings."""
-        results = []
-        i = 0
-        n = len(line)
-        while i < n:
-            # Find next identifier candidate
-            m = re.match(r"[A-Za-z][A-Za-z0-9_]*", line[i:])
-            if not m:
-                i += 1
-                continue
-            node_id = m.group(0)
-            id_end = i + len(node_id)
-            # Identifier must be followed by a shape-open. Try longest first.
-            rest = line[id_end:]
-            shape_open = None
-            shape_close = None
-            for so, sc in ALL_SHAPES:
-                if rest.startswith(so):
-                    shape_open = so
-                    shape_close = sc
-                    break
-            if not shape_open:
-                i = id_end
-                continue
-            content_start = id_end + len(shape_open)
-            # Walk content respecting quoted strings until we hit shape_close
-            j = content_start
-            in_quote = False
-            content_end = -1
-            while j < n:
-                c = line[j]
-                if c == "\\" and j + 1 < n:
-                    j += 2
-                    continue
-                if c == '"':
-                    in_quote = not in_quote
-                    j += 1
-                    continue
-                if not in_quote and line[j:j + len(shape_close)] == shape_close:
-                    content_end = j
-                    break
-                j += 1
-            if content_end < 0:
-                # No matching close on this line — skip this candidate
-                i = id_end
-                continue
-            content_raw = line[content_start:content_end]
-            span_end = content_end + len(shape_close)
-            results.append((node_id, shape_open, content_raw, shape_close,
-                            i, span_end))
-            i = span_end
-        return results
-
-    for block_start, block_end, body in blocks:
-        for line_num, line in body:
-            stripped = line.strip()
-            if not stripped:
-                continue
-            if any(stripped.lower().startswith(p.lower()) for p in SKIP_LINE_PREFIXES):
-                continue
-
-            # Rule 2: literal \n inside any quoted segment on the line
-            # Find all `"..."` segments and check each for backslash-n.
-            for qm in re.finditer(r'"([^"\\]|\\.)*"', line):
-                segment = qm.group(0)
-                if "\\n" in segment:
-                    section_issues.append({
-                        "halt_type": "mermaid_syntax_invalid",
-                        "section": section,
-                        "line_number": line_num,
-                        "rule_violated": "Rule 2 — literal \\n in node text",
-                        "excerpt": stripped[:120],
-                        "suggested_fix": "replace literal `\\n` with `<br/>` (HTML line break)",
-                    })
-
-            # Rule 1+2+3: walk node specs found on this line
-            for node_id, so, content_raw, sc, _, _ in find_node_specs(line):
-                content = content_raw
-                if not content.strip():
-                    continue
-                # Fully quoted → producer-compliant; skip Rule 1 check
-                # (still check Rule 2 inside the quoted segment loop above)
-                if is_quoted_strictly(content):
-                    continue
-                # Simple identifier → Mermaid accepts without quoting (Rule 1
-                # recommends quoting always, but we don't fail on plain words)
-                if is_simple_identifier(content):
-                    continue
-                # Rule 2 in unquoted content: literal `\n` anywhere
-                if "\\n" in content:
-                    suggested_2 = f'{node_id}{so}"{content.replace(chr(92) + "n", "<br/>").strip()}"{sc}'
-                    section_issues.append({
-                        "halt_type": "mermaid_syntax_invalid",
-                        "section": section,
-                        "line_number": line_num,
-                        "node_id": node_id,
-                        "rule_violated": "Rule 2 — literal \\n in unquoted node text",
-                        "excerpt": stripped[:120],
-                        "suggested_fix": f"replace `\\n` with `<br/>` and wrap in quotes: {suggested_2[:150]}",
-                    })
-                # Rule 1: has dangerous chars in unquoted text → FAIL
-                hits = sorted(set(c for c in content if c in DANGEROUS_CHARS))
-                if hits:
-                    suggested = f'{node_id}{so}"{content.strip()}"{sc}'
-                    section_issues.append({
-                        "halt_type": "mermaid_syntax_invalid",
-                        "section": section,
-                        "line_number": line_num,
-                        "node_id": node_id,
-                        "rule_violated": "Rule 1 — unquoted text with special chars (" + "".join(hits) + ")",
-                        "excerpt": stripped[:120],
-                        "suggested_fix": f"wrap node text in double quotes: {suggested[:150]}",
-                    })
-                # Rule 3: embedded unescaped " (when not fully quoted)
-                inner_quotes = [k for k, ch in enumerate(content) if ch == '"']
-                if len(inner_quotes) >= 2 and not is_quoted_strictly(content):
-                    section_issues.append({
-                        "halt_type": "mermaid_syntax_invalid",
-                        "section": section,
-                        "line_number": line_num,
-                        "node_id": node_id,
-                        "rule_violated": "Rule 3 — multiple unescaped \" in node text",
-                        "excerpt": stripped[:120],
-                        "suggested_fix": 'escape embedded quotes with &quot; or #quot;',
-                    })
-
-    return section_issues
 
 # ──────────────────────────────────────────────────────────────────────────
 # §3 Flow section
@@ -300,7 +103,8 @@ if sec3_match:
         for bs, be, body in sec3_blocks_local:
             adj_body = [(ln + sec3_line_offset, line) for ln, line in body]
             sec3_blocks.append((bs + sec3_line_offset, be + sec3_line_offset, adj_body))
-        sec3_syntax_issues = check_mermaid_syntax(sec3_blocks, "3")
+        sec3_syntax_issues = (check_diagram_type(sec3_blocks, "3")
+                              + check_mermaid_syntax(sec3_blocks, "3"))
         if sec3_syntax_issues:
             checks.append({"check": "sec3_mermaid_syntax", "status": "FAIL",
                           "detail": f"{len(sec3_syntax_issues)} heuristic syntax issue(s) per mermaid-emission-rules.md"})
@@ -338,16 +142,18 @@ if sec8_match:
     has_mermaid = mermaid_fence.lower() in sec8_text.lower()
     has_transitions = bool(re.search(r"--.*-->|--.*->", sec8_text))
 
-    if has_na:
-        checks.append({"check": "sec8_state_machine_fence", "status": "SKIP", "detail": "N/A"})
-    elif has_mermaid:
+    # Check has_mermaid FIRST (mirror §3): a valid mermaid stateDiagram whose node
+    # text happens to contain an "N/A" / "not a workflow" token must be syntax-checked,
+    # not SKIP'd. Only fall to the N/A SKIP when there is no fence.
+    if has_mermaid:
         checks.append({"check": "sec8_state_machine_fence", "status": "PASS", "detail": "has Mermaid state diagram"})
         sec8_blocks_local = extract_mermaid_blocks(sec8_text)
         sec8_blocks = []
         for bs, be, body in sec8_blocks_local:
             adj_body = [(ln + sec8_line_offset, line) for ln, line in body]
             sec8_blocks.append((bs + sec8_line_offset, be + sec8_line_offset, adj_body))
-        sec8_syntax_issues = check_mermaid_syntax(sec8_blocks, "8")
+        sec8_syntax_issues = (check_diagram_type(sec8_blocks, "8")
+                              + check_mermaid_syntax(sec8_blocks, "8"))
         if sec8_syntax_issues:
             checks.append({"check": "sec8_mermaid_syntax", "status": "FAIL",
                           "detail": f"{len(sec8_syntax_issues)} heuristic syntax issue(s) per mermaid-emission-rules.md"})
@@ -355,9 +161,16 @@ if sec8_match:
         else:
             checks.append({"check": "sec8_mermaid_syntax", "status": "PASS",
                           "detail": "no heuristic syntax issues detected"})
+    elif has_na:
+        checks.append({"check": "sec8_state_machine_fence", "status": "SKIP", "detail": "N/A"})
     elif has_transitions:
-        checks.append({"check": "sec8_state_machine_fence", "status": "PASS",
-                       "detail": "has state transitions (consider mermaid fence for consistency)"})
+        # Mermaid-flows hard rule (2026-07-01 spec; subsumes god-review L7):
+        # a non-N/A §8 with transition arrows but no ```mermaid fence is a
+        # prose/ASCII flow — FAIL like §3, not the old silent "consider a fence" PASS.
+        issues.append({"halt_type": "kb_flow_not_mermaid", "section": "8",
+                       "detail": "state transitions not in " + FENCE + "mermaid fence"})
+        checks.append({"check": "sec8_state_machine_fence", "status": "FAIL",
+                       "detail": "has state transitions but not in mermaid fence"})
     else:
         issues.append({"halt_type": "kb_state_machine_missing", "section": "8",
                        "detail": "non-N/A but no state diagram"})

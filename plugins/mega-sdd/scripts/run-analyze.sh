@@ -90,6 +90,8 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*"; } \
     && V7F_RC="STATE_FILE" || V7F_RC="SKIP"
+  _has "${CWD}/.mega-sdd/vaults" -name "04-flows.md" -not -path "*/.archived/*" \
+    && V7VF_RC="STATE_FILE" || V7VF_RC="SKIP"
   _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     && V7C_RC="STATE_FILE" || V7C_RC="SKIP"
 
@@ -208,6 +210,16 @@ for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not 
   [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V7F_WORST" ] && V7F_WORST=$rc
 done
 V7F_RC=$( [ "$V7F_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7F_WORST" )
+
+# 1f3b. Per-vault-flows Mermaid mandate (04-flows.md flow bodies must be Mermaid)
+V7VF_WORST=0
+V7VF_HAS_FILES=0
+for vf in $(find "${CWD}/.mega-sdd/vaults" -name "04-flows.md" -not -path "*/.archived/*" 2>/dev/null); do
+  V7VF_HAS_FILES=1
+  rc=$(run_validator "validate-vault-flows.sh" --cwd="$CWD" --file-path="$vf" --quiet)
+  [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V7VF_WORST" ] && V7VF_WORST=$rc
+done
+V7VF_RC=$( [ "$V7VF_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7VF_WORST" )
 
 # 1f4. Starterkit pattern conformance validator
 V7S_RC=$(run_validator "validate-starterkit-conformance.sh" --cwd="$CWD" --quiet)
@@ -355,7 +367,7 @@ fi  # end of FULL vs AGGREGATE_ONLY branch
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
-  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
+  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   python3 <<'PYEOF'
 import json
 import os
@@ -383,6 +395,7 @@ validator_results = {
     "kb_output": {"rc": os.environ["V7_RC"], "state_file": ".kb-output-state.json"},
     "kb_markers": {"rc": os.environ["V7M_RC"], "state_file": ".kb-markers-state.json"},
     "kb_flows": {"rc": os.environ["V7F_RC"], "state_file": ".kb-flows-state.json"},
+    "vault_flows": {"rc": os.environ["V7VF_RC"], "state_file": ".vault-flows-state.json"},
     "starterkit_conformance": {"rc": os.environ["V7S_RC"], "state_file": ".starterkit-conformance-state.json"},
     "kb_citations": {"rc": os.environ["V7C_RC"], "state_file": ".kb-citations-state.json"},
     "conflict_classification": {"rc": os.environ["V8_RC"], "state_file": ".conflict-classification-state.json"},

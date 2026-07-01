@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.53.0] - 2026-07-01
+
+Feature — **Mermaid-flows hard rule + render-correctness.** Every flow mega-sdd generates is a Mermaid diagram (never a prose Steps list or ASCII arrows), and — new — that diagram must actually **render**. Spec: `docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md`. All checks are advisory (never a hard block), consistent with every existing flow gate.
+
+### The render-correctness gap (user-reported: "some generated Mermaid doesn't render")
+A field scan against the real `mermaid.parse()` proved the Rule 1–3 quoting heuristic was only a *subset* of what renders. The #1 miss: a ` ```mermaid ` block with **no diagram-type header** (a header-less edge fragment or a `[placeholder]`) passes the quoting checks yet fails with mermaid's "No diagram type detected". Closed by two layers.
+
+### Added
+- **Shared tokenizer `scripts/_lib/mermaid_syntax.py`.** The Rule 1–3 syntax checker was extracted from `validate-kb-flows.sh` into one module both KB and vault flow gates import — never fork the checker per surface. Byte-behavior locked by `tests/mermaid-flows/test-kb-flows-syntax-lock.sh`.
+- **Rule 0 — diagram-type required (`check_diagram_type`).** Every mermaid block must open with a recognized diagram type (`flowchart`/`stateDiagram-v2`/…), else `mermaid_no_diagram_type`; empty block → `mermaid_empty_block`. Ground-truthed against `mermaid.parse()`: catches the header-less class with **zero** false positives on 36 valid diagrams. Wired into `validate-kb-flows.sh` (§3+§8).
+- **`validate-vault-flows.sh` (new) + hook wire.** Each `### F-<prefix>-NNN` flow in a vault `04-flows.md` must carry a Mermaid diagram; a prose-only flow → `vault_flow_not_mermaid`. Fires from PostToolUse on `04-flows.md` writes (advisory), reusing the shared tokenizer.
+- **Opt-in real-parser ground truth `scripts/verify-mermaid.sh` + `_lib/mermaid_parse_oracle.mjs`.** Runs the actual mermaid grammar (`mermaid.parse()`, **headless — no Chromium**) over every block; catches reserved-word `end` nodes, unterminated shapes, bad transition labels — whatever the heuristic can't. Best-effort: SKIPs cleanly when Node/mermaid are absent. For CI / on-demand, not the per-write hook.
+
+### Changed
+- **`validate-kb-flows.sh` §8 State Machine — L7 fixed.** A non-N/A §8 with transition arrows but no ` ```mermaid ` fence now **FAILs** (`kb_flow_not_mermaid`), mirroring §3 — previously a silent PASS ("consider a fence"). Subsumes god-review finding L7 (`research/2026-07-01-god-review-extract-intelligence.md`). extract-intelligence 1.12.0 → 1.13.0.
+- **Vault flow template + producer guidance = Mermaid.** `generate-intent`'s `templates/04-flows.md` replaces prose numbered `Steps:` with a mandatory `flowchart` per flow (metadata — Actor/DoD/Source, staged `stages:` block — untouched); `generation-guide.md` + `vault-contract.md` reworded so the flow body is a diagram, not a Steps list. generate-intent 2.8.0 → 2.9.0.
+- **`references/mermaid-emission-rules.md`** widened to every flow surface + Rule 0, present-tense (dropped version-archaeology from the scope statement).
+- **`detect-drift` (3.0.0 → 3.1.0) + `diff-vault` (2.0.0 → 2.1.0)** report-format notes: a flow written into `04-flows.md` is authored as Mermaid (inherited surfaces — LLM-read, no script parser to change).
+
+Suite green (`tests/mermaid-flows/` — 4 new tests); no regression (shared-lib refactor byte-locked; hook wiring verified, 0 golden-fixture breakage); `plugin` == `marketplace` 4.53.0.
+
 ## [4.52.0] - 2026-06-29
 
 Feature — **output-language L3 (Tier-3 artifact pointers)**, the final batch of the output-language feature (L1+L2 shipped in 4.51.0). **Collapsed from the scouted 6 skills to 2 + a doc-honesty fix** after a discriminating-test pass — this batch is intentionally small, not truncated.

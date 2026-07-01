@@ -661,6 +661,20 @@ except Exception:
       "${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json" \
       "PostToolUse-Write-validate-vault-flow-staging"
 
+    # ── Validator 6c: vault flow Mermaid mandate (Mermaid-flows hard rule) ──
+    # Fires on a vault 04-flows.md write. Each F-<prefix>-NNN flow body must be a
+    # Mermaid diagram (not a prose Steps list); reuses the shared
+    # _lib/mermaid_syntax.py tokenizer. Advisory (detection-only at hook layer).
+    # See docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md.
+    case "$FILE_PATH" in
+      *04-flows.md)
+        run_validator_and_emit \
+          "${SCRIPT_DIR}/../scripts/validate-vault-flows.sh" \
+          "${PROJECT_ROOT}/.mega-sdd/.vault-flows-state.json" \
+          "PostToolUse-Write-validate-vault-flows"
+        ;;
+    esac
+
     # ── Validator 7 (R2): KB output validation ────────────────────────────
     # Fires when KB domain/workflow/business-rules files are saved.
     case "$FILE_PATH" in

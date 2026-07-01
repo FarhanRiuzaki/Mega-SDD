@@ -45,10 +45,14 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 **Preconditions**: <state required before flow starts>
 <!-- /full-only -->
 
-**Steps**:
-1. <action>
-2. <action>
-3. <action>
+**Flow** — the flow body is a Mermaid diagram, never a prose numbered list (Mermaid-flows hard rule; quote every node text per `references/mermaid-emission-rules.md`):
+```mermaid
+flowchart TD
+    S1["<action>"] --> S2["<action>"]
+    S2 --> Decision{"<branch condition?>"}
+    Decision -- "yes" --> S3["<action>"]
+    Decision -- "no" --> Alt(["<alternate outcome>"])
+```
 
 <!-- staged-only: present ONLY when this flow collects inputs across multiple steps/pages/roles
      (wizard, maker→checker). Copy the `stages:` block from the source KB workflow §3a VERBATIM —
@@ -110,9 +114,14 @@ stateDiagram-v2
 
 **Trigger**: <cron / event / manual>
 **Inputs**: <what data the system reads>
-**Steps**:
-1. <action>
-2. <action>
+
+**Flow** — Mermaid diagram (not a prose list):
+```mermaid
+flowchart TD
+    T(["<trigger>"]) --> R["<read inputs>"]
+    R --> P["<process>"]
+    P --> W[("<write / emit outputs>")]
+```
 
 **Outputs**: <what data is written / emitted>
 <!-- full-only -->
@@ -136,12 +145,18 @@ stateDiagram-v2
 **Actor**: <persona>
 **Layers involved**: <list layers per PROJECT_SHAPE>
 
-**Steps with handoff points**:
-1. **[Layer A]** <action>
-2. **[Layer A → Layer B]** <data passed, protocol, what's expected>
-3. **[Layer B]** <action>
-4. **[Layer B → Layer A]** <response>
-5. **[Layer A]** <render / final action>
+**Flow with handoff points** — Mermaid diagram; group each layer in a `subgraph`, handoffs are edges labelled with the data/protocol passed:
+```mermaid
+flowchart TD
+    subgraph LA["Layer A"]
+        A1["<action>"] --> A2["<render / final action>"]
+    end
+    subgraph LB["Layer B"]
+        B1["<action>"]
+    end
+    A1 -- "<data passed, protocol>" --> B1
+    B1 -- "<response>" --> A2
+```
 
 **Definition of Done**:
 - [ ] All handoff points succeed under happy path

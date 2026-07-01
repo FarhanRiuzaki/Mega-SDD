@@ -1,14 +1,15 @@
-# Mermaid Emission Rules — KB Flow + State-Machine
+# Mermaid Emission Rules — every generated flow / state diagram
 
-> Anti-hallucination + parser-safety contract for any skill that emits Mermaid diagrams into KB output (`extract-intelligence` §3 Flow / §8 State Machine, `generate-intent` vault §3 Flow, any future flow-emitting skill).
+> Anti-hallucination + parser-safety contract for **every** skill that emits a process/flow or state diagram. Under the Mermaid-flows hard rule, any generated flow IS a Mermaid diagram (never a prose step list or ASCII arrows), and that diagram must actually render. Surfaces: `extract-intelligence` KB §3 Flow + §8 State Machine; `generate-intent` vault `04-flows.md` flows; any flow `detect-drift` / `diff-vault` write into a vault; and any future flow-emitting skill.
 >
-> **Introduced:** v3.64.0 (Iter 72) — driven by TF Import production run that emitted parser-failing Mermaid (`PRE([LC has flag_amend IN (2.2, 4)])` — unquoted `(2.2, 4)` broke node spec).
+> A model writing a diagram from natural-language node text (often verbatim from legacy code) tends to leave an unquoted comma / parenthesis / colon inside a shape, or omit the diagram-type header — producing a fenced ` ```mermaid ` block that LOOKS valid but renders as an error. These rules prevent that at the producer side.
 
 ---
 
 ## Contents
 
 - Why this exists
+- Rule 0 — Declare a diagram type (else it does not render)
 - Rule 1 — Always wrap node text in double quotes
 - Rule 2 — Newline in node text = `<br/>`, NEVER a literal line break
 - Rule 3 — Escape special characters inside quoted text
@@ -18,15 +19,24 @@
 - Reference patterns — known-good examples
 - Anti-pattern catalog (validator-detected)
 - Cross-references
-- Deferred to Iter 73+ (Fork-B-future candidates)
+- Not done (candidates)
 
 ## Why this exists
 
-Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. `validate-kb-flows.sh` v1 (pre-Iter 72) only checked fence presence; it did not parse syntax.
+Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. A fence-presence check alone does not catch this; the validators parse the block's syntax.
 
-This document is the producer-side contract. `validate-kb-flows.sh` v2 enforces a subset of these rules at the validator layer.
+This document is the producer-side contract. `validate-kb-flows.sh` (KB §3/§8) and `validate-vault-flows.sh` (vault `04-flows.md` flows) enforce a heuristic subset at the always-on hook layer, sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). For ground truth — "does this actually render?" — the opt-in `scripts/verify-mermaid.sh` runs the real mermaid grammar (`mermaid.parse()`, headless, no browser) and catches whatever the heuristic cannot; it SKIPs cleanly when Node/mermaid are unavailable.
 
 ---
+
+## Rule 0 — Declare a diagram type (else it does not render)
+
+The first non-comment line of every ` ```mermaid ` block MUST be a diagram-type declaration — `flowchart TD`, `graph LR`, `stateDiagram-v2`, `sequenceDiagram`, `erDiagram`, etc. A block that jumps straight into edges (a header-less fragment) or holds a `[placeholder]` fails to render with mermaid's "No diagram type detected" — the single most common real render-breaker, and one the quoting rules below do NOT catch.
+
+| ❌ Wrong | ✅ Right |
+|---|---|
+| ` ```mermaid `<br/>`A --> B` | ` ```mermaid `<br/>`flowchart TD`<br/>`  A --> B` |
+| ` ```mermaid `<br/>`[actor flow only]` | author a real diagram, or omit the block |
 
 ## Rule 1 — Always wrap node text in double quotes
 
@@ -143,7 +153,7 @@ flowchart LR
 
 ## Anti-pattern catalog (validator-detected)
 
-`validate-kb-flows.sh` v2 (Iter 72+) detects these heuristic anti-patterns:
+The shared tokenizer (`_lib/mermaid_syntax.py`, used by both flow validators) detects these heuristic anti-patterns:
 
 | Anti-pattern | Detection regex (approximate) | Failure mode |
 |---|---|---|
@@ -167,11 +177,14 @@ Tier classification: **C2** (producer must fix). NOT C1 — auto-rewriting Merma
 ## Cross-references
 
 - Producer skills: `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` §3 Flow + §8 State Machine emission steps
-- Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` §Flow vault file emission
-- Validator: `plugins/mega-sdd/scripts/validate-kb-flows.sh` (Iter 72+ heuristic syntax checks)
+- Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` (vault `04-flows.md` flow emission)
+- Shared tokenizer: `plugins/mega-sdd/scripts/_lib/mermaid_syntax.py` (Rule 0 + Rule 1-3 heuristics)
+- Heuristic gates (always-on hook): `validate-kb-flows.sh` (KB §3/§8), `validate-vault-flows.sh` (vault flows)
+- Ground-truth (opt-in): `plugins/mega-sdd/scripts/verify-mermaid.sh` + `_lib/mermaid_parse_oracle.mjs` — real `mermaid.parse()`, headless
 - KB schema: `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §3 Flow + §8 State Machine
+- Spec: `docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md`
 
-## Deferred to Iter 73+ (Fork-B-future candidates)
+## Not done (candidates)
 
-- **v2 full-parser via `mmdc`**: invoke `npx -y @mermaid-js/mermaid-cli` to render each block to `/tmp/`, capture stderr for ground-truth syntax errors. Tradeoff vs heuristic: catches all real issues but adds npx/node dependency, slow first-invocation, offline-flaky. Decision: defer unless heuristic v1 misses ≥3 real failures in soak window.
-- **Auto-fix for the most common pattern** (unquoted shape text): risk-graded fix tool that adds quotes only when text is unambiguous (no nested quotes, no HTML entities). Opt-in via `--auto-fix` flag.
+- **Full-render via `mmdc`**: `npx @mermaid-js/mermaid-cli` renders each block to SVG for pixel-level ground truth. Rejected for any gate: needs Chromium, slow, offline-flaky. `verify-mermaid.sh`'s headless `mermaid.parse()` gives grammar-level ground truth without a browser — sufficient for "does it render".
+- **Auto-fix for unquoted shape text**: risk-graded tool that adds quotes only when unambiguous (no nested quotes / HTML entities). Opt-in; producer-side responsibility means it stays off by default.

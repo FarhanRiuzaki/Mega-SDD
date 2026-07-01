@@ -76,6 +76,8 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 
 ## Added entities / flows / decisions
 
+> A flow added or changed in `04-flows.md` is authored as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — `validate-vault-flows.sh` gates it.
+
 ### Entity (added): `redemption_request`
 
 **Source**: new PRD §G AC18-2.
@@ -93,16 +95,16 @@ Table redemption_request {
 
 ## Changed entities / flows / decisions
 
-### Flow F-U-001 — changed step 5
+### Flow F-U-001 — changed (KYC freshness inserted)
 
-**Old (vault v1.1)**:
-> 5. Sistem call BE → BE call Host buka rekening + debit setoran awal.
+**Old (vault v1.1)** — the flow's Mermaid diagram:
+> `BE["BE entry"] --> Host["Host: buka rekening + debit setoran awal"]`
 
-**New (PRD v1.1 §G AC5-2 revised)**:
-> 5. Sistem call BE → BE validate KYC freshness → BE call Host buka rekening + debit setoran awal.
+**New (PRD v1.1 §G AC5-2 revised)** — a node inserted on that edge:
+> `BE["BE entry"] --> KYC["BE: validate KYC freshness"]` <br/> `KYC --> Host["Host: buka rekening + debit setoran awal"]`
 
-**Diff**: KYC freshness check inserted between BE entry and Host call.
-**Action on apply**: update step 5 in `04-flows.md`. Optionally surface as new OQ if KYC freshness logic isn't specified elsewhere.
+**Diff**: a `validate KYC freshness` node inserted between the BE-entry and Host-call nodes.
+**Action on apply**: update the corresponding node/edge in the flow's Mermaid diagram in `04-flows.md` (the flow body is a Mermaid diagram, never a prose Steps list — `validate-vault-flows.sh` gates it). Optionally surface as a new OQ if KYC freshness logic isn't specified elsewhere.
 
 <...>
 
