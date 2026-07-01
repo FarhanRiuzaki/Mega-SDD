@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.0.0
+version: 2.1.0
 description: Evolves an existing mega-sdd vault when the PRD/BRD/Figma source changes. Computes a structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes — without erasing history. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 

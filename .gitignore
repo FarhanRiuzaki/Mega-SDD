@@ -36,6 +36,10 @@ test-output/
 # Internal training material (not for the public repo)
 training/
 
+# Python bytecode cache (scripts/_lib import cache)
+__pycache__/
+*.pyc
+
 # Env
 .env
 .env.local
