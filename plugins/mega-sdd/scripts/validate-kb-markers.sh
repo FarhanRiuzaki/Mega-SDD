@@ -46,10 +46,19 @@ if [ ! -f "$FILE_PATH" ]; then echo '{"status":"ERROR","detail":"file not found"
 STATE_FILE="${CWD}/.mega-sdd/.kb-markers-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || true
 
-RESULT=$(CWD="$CWD" FILE_PATH="$FILE_PATH" python3 -W ignore::DeprecationWarning <<'PYEOF'
+_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib"
+RESULT=$(CWD="$CWD" FILE_PATH="$FILE_PATH" _LIB_DIR="$_LIB_DIR" python3 -W ignore::DeprecationWarning <<'PYEOF'
 import json
 import os
 import re
+import sys
+
+sys.path.insert(0, os.environ["_LIB_DIR"])
+try:
+    from citation_pattern import PATH_LINE_RE, PATH_REF_RE
+except Exception as e:
+    print(json.dumps({"status": "ERROR", "detail": "cannot load citation_pattern lib: " + str(e)}))
+    raise SystemExit(0)
 
 file_path = os.environ["FILE_PATH"]
 cwd = os.environ["CWD"]
@@ -60,13 +69,12 @@ except Exception as e:
     print(json.dumps({"status": "ERROR", "detail": str(e)}))
     raise SystemExit(0)
 
-# Generic path:line pattern — matches any path with an extension followed by :digits
-# Examples: src/models/user.ts:12, foo/bar.php:45-67, config.yaml:3, app.blade.php:100
-# Deliberately broad: avoids hardcoded extension list (was missing .xml/.ini/.sh/.twig etc.)
-PATH_LINE_RE = re.compile(r"[\w/.:-]+\.\w+:\d+")
-
-# Broader file-ref pattern (path with extension, no line number required)
-FILE_REF_RE = re.compile(r"[\w/.:-]+\.\w{1,10}")
+# Source-citation grammar (PATH_LINE_RE for path.ext:line, PATH_REF_RE for a
+# file ref with optional line) is shared with validate-kb-citations.sh via
+# _lib/citation_pattern.py so the two grounding validators cannot drift. The ext
+# is LETTER-led (M7): a [VERIFIED] line citing ONLY a regulation/version/time token
+# (23.2:2021, 1.5:1, 09.30:00) no longer counts as an inline anchor.
+FILE_REF_RE = PATH_REF_RE   # path.ext[:line] — line not required
 
 # Split into body (before §11) and §11 Source References
 sec11_match = re.search(r"^## 11\.\s", content, re.MULTILINE)
@@ -110,14 +118,12 @@ for i, line in enumerate(lines, 1):
                 line_files.add(os.path.basename(ref.split(":")[0]))
         has_sec11_match = bool(line_files & sec11_basenames)
 
-    # Check 3: parenthetical citation pattern — e.g., "(`filename:line`)" or "(filename:line)"
-    # Some KB files use backtick-wrapped citations
-    BT = chr(96)
-    has_backtick_cite = bool(re.search(
-        BT + r"[\w/.:-]+\.\w+:\d+" + BT, line
-    ))
-
-    cited = has_inline or has_sec11_match or has_backtick_cite
+    # (Removed the old hand-rolled backtick check — its digit-permissive `\w+:\d+`
+    # re-admitted the exact reg/version/time tokens M7 rejects, and on the DOMINANT
+    # backtick-wrapped path. It added zero true positives: PATH_LINE_RE (Check 1)
+    # already matches a real citation whether or not it is backtick-wrapped, since
+    # the backticks sit outside the path token.)
+    cited = has_inline or has_sec11_match
 
     claim_text = line.strip()
     if len(claim_text) > 120:
@@ -128,7 +134,6 @@ for i, line in enumerate(lines, 1):
         "claim_text": claim_text,
         "has_inline_citation": has_inline,
         "has_sec11_match": has_sec11_match,
-        "has_backtick_cite": has_backtick_cite,
         "cited": cited,
     })
 

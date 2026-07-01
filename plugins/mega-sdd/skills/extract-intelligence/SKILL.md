@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.13.0
+version: 1.14.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -186,7 +186,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - `^## 3\. Flow` exists in every new domain file
 - `^## 10\. Open Questions` exists in every new domain file
 - `^## 11\. Source References` exists in every new domain file
-- Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections — run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-leak-scan.sh" --kb-dir=<kb> --stack=auto` (per-stack, tech-agnostic; detects C#/Java/Go/Rust leaks the old PHP/SQL grep missed; advisory)
+- Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections — run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-leak-scan.sh" --kb-dir=<kb> --stack=all` (unions every stack's tokens — a tech-agnostic KB must be neutral to BOTH the legacy AND the target stack, so `all` beats auto-detecting only the legacy language; detects C#/Java/Go/Rust leaks the old PHP/SQL grep missed; advisory)
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
 - **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`

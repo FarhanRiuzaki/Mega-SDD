@@ -67,11 +67,25 @@ if not rule_files:
 # Extract regulatory rule entries from KB
 # Strategy: find section headers (## N.) and [VERIFIED] lines with rule descriptions
 kb_rules = []
+saw_reg_content = False
 for rf in rule_files:
     try:
         content = open(rf).read()
     except Exception:
         continue
+
+    # Regulatory signal must come from RULE CONTENT, not the file's own heading
+    # ("# Regulatory Rules" is the always-emitted stub title) nor an N/A placeholder.
+    _reg_re = re.compile(r"\bregulat|\bcompliance\b|mandated by|\bstatutory\b|\bHIPAA\b|"
+                         r"\bGDPR\b|\bPCI(?:[- ]?DSS)?\b|\bSOX\b|\bBasel\b|\bMiFID\b|"
+                         r"\bFERPA\b|\bCCPA\b|\bAML\b|\bKYC\b", re.IGNORECASE)
+    for _ln in content.split("\n"):
+        _s = _ln.strip()
+        if not _s or _s.startswith("#") or _s.startswith("_None") or _s.startswith("_N/A"):
+            continue
+        if _reg_re.search(_ln):
+            saw_reg_content = True
+            break
 
     rf_name = os.path.basename(rf)
 
@@ -115,6 +129,29 @@ for r in kb_rules:
     if rid not in seen_reg_ids:
         seen_reg_ids.add(rid)
         unique_rules.append(r)
+
+# Honesty-fix (M5): the built-in reg_patterns are ID-banking-specific (PBI/POJK/
+# OJK/UCP/…). If they parse 0 rules from a KB that plainly carries regulatory
+# content, do NOT emit a green PASS — that is false compliance assurance for every
+# non-ID-banking domain (GDPR/HIPAA/PCI/…). Emit WARN and point at supplying a
+# regulatory pack. WARN, not FAIL: nothing is proven missing; the detector simply
+# does not cover this domain.
+# Gate on regulatory CONTENT, not the FILENAME: `regulatory-rules.md` is emitted as
+# a stub for every KB, so keying on its presence cry-wolf WARNs on non-regulatory
+# domains. saw_reg_content requires an actual regulatory signal in the rule text.
+if not unique_rules and saw_reg_content:
+    print(json.dumps({
+        "status": "WARN",
+        "rules_checked": 0,
+        "rules_covered": 0,
+        "rules_gap": 0,
+        "gaps": [],
+        "detail": ("0 regulatory rules parsed, but the KB carries regulatory content — the "
+                   "built-in acronym set (PBI/POJK/OJK/UCP/…) is ID-banking-specific; supply a "
+                   "regulatory pack for this domain"),
+        "summary": "0 rules parsed from a KB with regulatory content — acronym set is domain-specific; no false 'all clear'",
+    }))
+    raise SystemExit(0)
 
 # Read ALL vault content (not just 06-constraints — R4 hardening)
 # Regulatory terms may be addressed in decisions (05), architecture (02),
@@ -229,7 +266,7 @@ if [ "$QUIET" -eq 0 ]; then echo "$RESULT"; fi
 
 STATUS=$(echo "$RESULT" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('status','ERROR'))" 2>/dev/null)
 case "$STATUS" in
-  PASS|SKIP) exit 0 ;;
+  PASS|SKIP|WARN) exit 0 ;;
   FAIL) exit 1 ;;
   *) exit 2 ;;
 esac
