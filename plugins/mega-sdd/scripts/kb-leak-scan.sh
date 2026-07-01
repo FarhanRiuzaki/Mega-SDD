@@ -58,6 +58,11 @@ stack_arg = sys.argv[2].lower()
 UNIVERSAL = [  # SQL/DB engine + physical-type leaks — apply to every stack
     "varchar", "nvarchar", "int(11)", "tinyint", "bigint", "AUTO_INCREMENT",
     "MySQL", "MSSQL", "PostgreSQL", "Postgres", "MongoDB", "SQLite",
+    # Oracle / DB2 / MariaDB physical-type + engine leaks. Kept DISTINCTIVE — bare
+    # "Oracle" (price oracle) and "NUMBER(" (ACCOUNT_NUMBER() substring-match business
+    # content, so they are intentionally excluded; VARCHAR2/NCLOB/DB2 are Oracle/DB2-
+    # exclusive and unambiguous.
+    "VARCHAR2", "NCLOB", "DB2", "MariaDB",
 ]
 STACKS = {
     "php":    ["composer", "$_GET", "$_POST", "<?php", "namespace ", "Eloquent", "Laravel", "Symfony"],
@@ -121,19 +126,57 @@ for s in stacks:
 # de-dup, longest-first so the reported token is the most specific match
 tokens = sorted(set(tokens), key=len, reverse=True)
 
-SCAN_DIRS = ["10-domains", "20-workflows", "30-data-model"]
+# M6: the whole KB body is in scope EXCEPT §11 and 50-integrations/ — so scan
+# 00-overview, 40-business-rules, and 99-rebuild-architecture too (a DbContext /
+# @Entity / Eloquent / gorm leak in a business-rule or rebuild-architecture file
+# used to pass clean). The additions are SECTION-AWARE to avoid the legitimate
+# framework names in `## Departures from Legacy` and the legacy PATHS cited in a
+# table's Source / Mandated-by column.
+SCAN_DIRS = ["00-overview", "10-domains", "20-workflows", "30-data-model",
+             "40-business-rules", "99-rebuild-architecture"]
 
-def section11_lines(text):
-    """Return a set of 0-based line indices that fall inside a `## 11.` (Source
-    References) section — those are allowed to carry physical names."""
-    skip = set()
-    in11 = False
-    for i, line in enumerate(text.splitlines()):
+_SRC_COL_RE = re.compile(r"\bsource\b|\bmandated by\b|\bcitation\b", re.IGNORECASE)
+_TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
+
+def scannable_lines(text):
+    """Yield (0-based line index, text-to-scan) for lines that carry tech-agnostic
+    KB prose. Skips whole `## 11.` (Source References) and `## Departures from
+    Legacy` sections (both legitimately name legacy tech), and blanks a markdown
+    table's Source / Mandated-by / Citation column cell (it cites legacy PATHS)."""
+    lines = text.splitlines()
+    skip_section = False
+    source_col = None
+    for i, line in enumerate(lines):
         if re.match(r"^##\s", line):
-            in11 = bool(re.match(r"^##\s*11[\.\s]", line)) or ("source reference" in line.lower())
-        if in11:
-            skip.add(i)
-    return skip
+            low = line.lower()
+            skip_section = (bool(re.match(r"^##\s*11[\.\s]", line))
+                            or ("source reference" in low)
+                            or ("departures from legacy" in low))
+            source_col = None
+        if skip_section:
+            continue
+        if not line.strip():
+            source_col = None
+        # Learn the Source column index ONLY from a GENUINE header row: it names a
+        # Source-like column AND the NEXT line is the table separator (`|---|---|`).
+        # A DATA row that merely contains "source of funds" / "source system" (common
+        # in banking content) is NOT a header — without the separator check it would
+        # hijack source_col and blank a CONTENT column in later rows, hiding real leaks.
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if ("|" in line and _SRC_COL_RE.search(line)
+                and not _TABLE_SEP_RE.match(line) and _TABLE_SEP_RE.match(nxt)):
+            cells = line.split("|")
+            for ci, h in enumerate(cells):
+                if _SRC_COL_RE.search(h):
+                    source_col = ci
+                    break
+        scan = line
+        if source_col is not None and "|" in line and not _TABLE_SEP_RE.match(line):
+            cells = line.split("|")
+            if source_col < len(cells):
+                cells[source_col] = ""   # blank the Source cell (legacy paths, not leaks)
+                scan = "|".join(cells)
+        yield i, scan
 
 hits = []
 files_scanned = 0
@@ -153,15 +196,13 @@ if os.path.isdir(kb_dir):
                         text = fh.read()
                 except Exception:
                     continue
-                skip = section11_lines(text)
                 rel = os.path.relpath(fp, kb_dir)
-                for i, line in enumerate(text.splitlines()):
-                    if i in skip:
-                        continue
+                orig = text.splitlines()
+                for i, scan in scannable_lines(text):
                     for tok in tokens:
-                        if tok in line:
+                        if tok in scan:
                             hits.append({"file": rel, "line": i + 1, "token": tok,
-                                         "text": line.strip()[:120]})
+                                         "text": orig[i].strip()[:120]})
                             break  # one hit per line is enough
 
 print(json.dumps({

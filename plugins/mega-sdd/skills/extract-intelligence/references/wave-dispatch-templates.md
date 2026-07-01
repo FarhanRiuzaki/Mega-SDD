@@ -255,7 +255,7 @@ DERIVED="<this reference file's absolute path, truncated before /skills/>"
 RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
 PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
-bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
+bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=all || true
 [[ $GATE -eq 0 ]] && echo "GATE 1 PASS" || echo "GATE 1 FAIL"
 ```
 
@@ -428,7 +428,7 @@ DERIVED="<this reference file's absolute path, truncated before /skills/>"
 RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
 PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
-bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=auto || true
+bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=all || true
 # Expect: no leak hits (matches inside §11 / 50-integrations/ are auto-excluded)
 
 # 5. Rebuild architecture all 5 files present

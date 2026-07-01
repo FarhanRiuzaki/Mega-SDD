@@ -227,17 +227,12 @@ V7S_RC=$(run_validator "validate-starterkit-conformance.sh" --cwd="$CWD" --quiet
 # 1f5. Per-KB-domain-file citation resolution validator (Track 1 expansion)
 V7C_WORST=0
 V7C_HAS_FILES=0
-# Auto-detect legacy root
-LEGACY_ROOT=""
-for candidate in "${CWD}" "$(dirname "$CWD")/$(basename "$CWD" | sed 's/-import$//' | sed 's/-rebuild$//')"; do
-  if [ -d "$candidate" ] && { [ -f "$candidate/index.php" ] || [ -f "$candidate/composer.json" ] || [ -f "$candidate/package.json" ]; }; then
-    LEGACY_ROOT="$candidate"
-    break
-  fi
-done
+# Legacy-root detection is DELEGATED to the validator: it carries the richer M4
+# auto-detect (every §8.5 manifest + _source/ / legacy/ probes). Passing an empty
+# --legacy-root lets that run instead of a narrower duplicate here shadowing it.
 for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null); do
   V7C_HAS_FILES=1
-  rc=$(run_validator "validate-kb-citations.sh" --cwd="$CWD" --file-path="$kf" --legacy-root="${LEGACY_ROOT:-$CWD}" --quiet)
+  rc=$(run_validator "validate-kb-citations.sh" --cwd="$CWD" --file-path="$kf" --legacy-root="" --quiet)
   [ "$rc" != "SKIP" ] && [ "$rc" -gt "$V7C_WORST" ] && V7C_WORST=$rc
 done
 V7C_RC=$( [ "$V7C_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7C_WORST" )
@@ -483,7 +478,11 @@ for vc in vault_consistency:
             vault_statuses.append(chk["status"])
 
 has_fail = "FAIL" in all_statuses or "FAIL" in vault_statuses
-has_warn = ("WARN" in vault_statuses) or ("FAIL" in advisory_statuses) or ("WARN" in advisory_statuses)
+# `or "WARN" in all_statuses` so a KB-grounding WARN (validate-kb-citations 0-cites,
+# audit-domain-rules 0-rules-parsed) also flips the overall banner to WARN — it was
+# only rendered in the per-boundary row, not the summary. Never escalates a FAIL.
+has_warn = ("WARN" in vault_statuses) or ("FAIL" in advisory_statuses) \
+    or ("WARN" in advisory_statuses) or ("WARN" in all_statuses)
 overall = "FAIL" if has_fail else ("WARN" if has_warn else "PASS")
 
 # Write .analyze-state.json
