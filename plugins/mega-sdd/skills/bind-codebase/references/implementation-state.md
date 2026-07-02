@@ -10,17 +10,23 @@ For each claim marked CONFIRMED, classify implementation readiness per `binding-
 
 ## Per-claim-type rules
 
+> **Truncation exception (all claim types):** when the map frontmatter lists the claim's
+> section in `truncated_sections` (the 200-per-category extraction cap fired there),
+> absence in that section is NOT evidence — classify `UNKNOWN`, never `NEW` (a
+> truncated-away implemented element must not become a duplicate-implementation
+> `create` task). Per `scan-codebase/references/codebase-map-schema.md`.
+
 **Endpoint claims** (`POST /api/foo`):
-- Route in codebase-map §4 AND handler symbol in §2 with matching signature → `IMPLEMENTED` (high).
+- Route in codebase-map §3 AND handler symbol in §2 with matching signature → `IMPLEMENTED` (high).
 - Route found, handler present but signature field-set mismatches claim → `PARTIAL_FIELDS_MISSING` / `PARTIAL_FIELDS_SURPLUS` (see field-level diff).
 - Route found, handler symbol absent in §2 → `UNKNOWN` (low).
-- Route not found AND handler absent → `NEW`.
+- Route not found AND handler absent → `NEW` (unless §3 is truncated → `UNKNOWN`).
 
 **Entity claims** (`User has email + role`):
-- Entity in §3 AND all claimed fields detected (V == C) → `IMPLEMENTED` (high).
+- Entity in §4 AND all claimed fields detected (V == C) → `IMPLEMENTED` (high).
 - Entity found but field-set diff (V ⊂ C or C ⊂ V) → `PARTIAL_FIELDS_MISSING` (code missing some claim fields) / `PARTIAL_FIELDS_SURPLUS` (code has fields not in claim).
 - Entity found, disjoint field sets → `UNKNOWN`.
-- Entity not in §3 → `NEW`.
+- Entity not in §4 → `NEW` (unless §4 is truncated → `UNKNOWN`).
 
 **Method/handler claims** (`sendEmail()`):
 - Symbol in §2 with matching signature (param names + types) → `IMPLEMENTED` (high).
@@ -44,7 +50,7 @@ For each CONFIRMED claim that specifies fields/params explicitly:
 
 ```
 Vault claim C-LOGIN-1: POST /api/login accepts { nip, nama, password }
-Codebase-map §4: POST /api/login → LoginController@store
+Codebase-map §3: POST /api/login → LoginController@store
 Codebase-map §2: LoginController@store(nip: string, password: string)
 
 V = { nip, nama, password }

@@ -33,7 +33,9 @@ git status --porcelain                              # uncommitted working-tree c
 
 Apply the default exclusion globs to the union (a journaled `node_modules/` write is still noise). The journal is a HINT — paths that no longer exist are treated as deletions, never errors.
 
-**2. Fallback to FULL scan (one-line chat note, no halt) when ANY of:** no prior `codebase-map.md`; prior map lacks `last_scanned_commit` AND the journal is empty; not a git repo AND the journal is empty; `changed_paths` exceeds 40% of the prior map's file census (a rebase/refactor — merge math costs more than a re-walk).
+**2. Fallback to FULL scan (one-line chat note, no halt) when ANY of:** no prior `codebase-map.md`; **in a git repo, the git delta channel is unavailable — regardless of journal state** (prior map lacks `last_scanned_commit`, the stamp is the literal string `HEAD` (zero-commit-era stamp, see Step 10), or `git rev-parse --verify '<stamp>^{commit}'` fails): the journal only sees in-session AI writes, so manual edits/pulls since the prior scan would be invisible AND then laundered permanently by the step-3 restamp; `changed_paths` exceeds 40% of the prior map's file census (a rebase/refactor — merge math costs more than a re-walk).
+
+**Not-a-git-repo exception:** journal-only incremental is allowed (Channel B never existed) ONLY when the journal is non-empty, with an explicit one-line stale-risk warning: "⚠️ no git history — incremental merge covers in-session writes only; edits made outside this session are not detected. Run a full scan periodically." **Not-a-git-repo AND empty journal → full scan** (there is nothing to merge; a vacuous incremental would just refresh `generated_at` and relabel a possibly-stale map as fresh).
 
 **3. Merge semantics (per map section):**
 - §2 public interfaces / §3 routes / §4 data models: re-extract entries ONLY for files in `changed_paths` (Steps 5–7 logic, scoped); carry forward all other rows byte-identical; DROP rows whose file vanished.
@@ -58,7 +60,7 @@ command -v tree-sitter || command -v tree-sitter-cli
 - `tree-sitter-cli` — typically when installed via `npm install -g tree-sitter-cli` (binary may keep the package name).
 
 Resolution:
-- Found (either) → `engine: tree-sitter` (AST-precise extraction; full tree-sitter engine detail is a separate reference); stash the actual binary name found for subsequent invocations.
+- Found (either) → run the **grammar smoke test** BEFORE claiming the engine (binary presence ≠ working grammars — a default `brew install tree-sitter` ships the CLI with ZERO grammars configured, and every query would fail "No language found"): for each detected language with a `queries/tags-<lang>.scm` AND at least one source file, invoke the Step 5 query once against one real source file. A language with zero source files yet (scaffold-only repo — a first-class scan-first mode) is SKIPPED, not counted as failed. A language whose invocation errors falls back to regex FOR THAT LANGUAGE and is excluded from `grammars_used`. At least one language passes → `engine: tree-sitter` (precision_tier `ast`); `grammars_used` lists exactly the languages that passed. ALL testable languages fail → downgrade to `engine: regex` with the same chat warning as the not-found path plus the grammar-install pointer (`queries/VERSIONS.md §Installation`). NO language was testable (scaffold-only) → keep `engine: tree-sitter` per binary presence with `grammars_used: []` (nothing was extracted either way). Stash the actual binary name found for subsequent invocations.
 - Not found AND `--engine=tree-sitter` flag set → halt `dep_missing` with install commands.
 - Not found AND no flag → fall back to `engine: regex`; emit chat warning: "⚠️ tree-sitter not found (probed: tree-sitter, tree-sitter-cli); using regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli".
 - Override via `--engine=tree-sitter|regex` flag.
@@ -118,7 +120,7 @@ For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate; full re-
 - For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue.
 - Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file.
 - Parse capture output (line + col + capture name + symbol text) into the interface table.
-- Capture names map: `name.definition.<kind>` → §2 (public interfaces); `name.reference.<kind>` → symbol graph (used by generate-units PageRank).
+- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them) — `generate-units` re-runs the same queries itself to build its file-level symbol graph (pagerank-targeting §Build), cached at `<vault>/.internal/symbol-graph.json`.
 - Languages without `.scm` file → fall back to regex (graceful per-language degradation).
 
 ### If `engine: regex` (fallback)
@@ -126,29 +128,33 @@ For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate; full re-
 Uses ripgrep when available for structured JSON output, falls back to GNU grep:
 
 ```bash
-# Prefer ripgrep --json when installed for structured matches
+# Prefer ripgrep --json when installed for structured matches.
+# rg ships built-in file types for ts/php/py/go/rust/ruby/java/csharp/kotlin —
+# no custom type definitions needed. Invocation shape (one call per language,
+# pattern from the per-language list below):
 if command -v rg >/dev/null; then
-  RG_OPTS="--json --type-add 'php:*.php' --type-add 'ts:*.ts'"
-  # Per-language patterns:
-  #   TS/JS: rg --type ts $RG_OPTS '^export (default |async )?(function|class|const|interface|type)' <paths>
-  #   PHP:   rg --type php $RG_OPTS '^(class|interface|trait|function) |public function ' <paths>
-  #   Python: rg --type py $RG_OPTS '^(class|def) ' <paths>
-  #   Go:    rg --type go $RG_OPTS '^func [A-Z]' <paths>
-  #   Rust:  rg --type rust $RG_OPTS '^pub (fn|struct|enum|trait)' <paths>
+  rg --type ts --json -e '<TS/JS pattern below>' <paths>
 else
-  # Fallback to GNU grep when ripgrep absent
-  # ... per-language patterns above without --json structure
+  # GNU grep fallback: same patterns via grep -E (no --json structure)
+  grep -RnE '<pattern below>' --include='*.ts' <paths>
 fi
 ```
 
-Per-language patterns (engine: regex):
-- **TypeScript/JS:** `^export (default |async )?(function|class|const|interface|type)` in `--include` files
-- **PHP:** `^(class|interface|trait|function) ` and `public function `
-- **Python:** `^(class|def) ` (exclude `_private`)
-- **Go:** `^func [A-Z]` (exported)
-- **Rust:** `^pub (fn|struct|enum|trait)`
-- **Ruby:** `^\s*(class|module) [A-Z]` and `^\s*def (self\.)?\w+`
-- **Java:** `(class|interface|enum|record) [A-Z]` and `^\s*(public|protected) [\w<>\[\], ]+ \w+\(`
+Per-language patterns (engine: regex). Modifier prefixes are REPEATABLE optional
+groups — `export default async function`, `final readonly class`, `async def`, Go
+receiver methods, `pub async fn`, `override fun`, `record struct` are all in-scope
+(the dominant real-world forms). Patterns are **POSIX-ERE-safe** (no `\w` — the
+GNU/BSD `grep -E` fallback treats it as a literal; spelled classes work on rg AND grep):
+- **TypeScript/JS:** `^export (default )?(async )?(abstract )?(function|class|const|let|var|interface|type|enum)` in `--include` files
+- **PHP:** `^[[:space:]]*(final |abstract |readonly )*(class|interface|trait|enum|function) ` and `^[[:space:]]*(public|protected) (static |abstract |final )*function `
+- **Python:** `^(class|(async )?def) ` (exclude `_private`)
+- **Go:** `^func (\([^)]*\) )?[A-Z]` (exported, incl. receiver methods)
+- **Rust:** `^pub(\([A-Za-z0-9_:, ]*\))? (async |unsafe |const )*(fn|struct|enum|trait|type|mod)` (covers `pub(crate)` / `pub(in crate::my_mod)`)
+- **Ruby:** `^[[:space:]]*(class|module) [A-Z]` and `^[[:space:]]*def (self\.)?[A-Za-z_]`
+- **Java:** `(class|interface|enum|record) [A-Z]` and `^[[:space:]]*(public|protected) [A-Za-z0-9_<>\[\], ]+ [A-Za-z0-9_]+\(`
+- **C#:** `^[[:space:]]*(public|internal) (static |sealed |abstract |partial |readonly )*(class|interface|record( struct)?|struct|enum) [A-Z]` and `^[[:space:]]*(public|protected) (static |async |virtual |override |sealed )*[A-Za-z0-9_<>\[\],? ]+ [A-Za-z0-9_]+\(`
+- **Kotlin:** `^[[:space:]]*(open |data |sealed |abstract |enum |annotation |inner |value )*(class|interface|object) [A-Z]` and `^[[:space:]]*(override |open |internal |public |protected |suspend |operator |infix |inline |tailrec )*fun (<[^>]+> )?[A-Za-z_]`
+- **F#:** `^[[:space:]]*(type|module) [A-Z]` and `^let (rec )?[A-Za-z_]` (top-level `let` only — an indented `let` is a function-local binding, not a public symbol)
 
 Ripgrep `--json` output is structured: emit `begin`/`match`/`end`/`summary` records; skill parses these into the interface table (faster + more reliable than text grep). See `plugins/mega-sdd/references/tooling-install.md` for ripgrep install (`brew install ripgrep` etc.); install is OPTIONAL — GNU grep fallback always works.
 
@@ -180,8 +186,10 @@ Per framework signatures — one row per framework in the Step 8.5 detection tab
 | rust | Axum | `Router::new()` + `.route("...", (get\|post\|...)(` |
 | rust | Rocket | `#[(get\|post\|...)("` attributes + `routes![` |
 | jvm | Spring | `@(Get\|Post\|Put\|Delete\|Patch)Mapping` / `@RequestMapping` |
+| .NET | ASP.NET Core (attribute) | `[Http(Get\|Post\|Put\|Delete\|Patch)` + `[Route(` attributes on controller actions |
+| .NET | ASP.NET Core (minimal API) | `app.Map(Get\|Post\|Put\|Delete\|Patch)(` / `group.Map(Get\|...)(` |
 
-No framework match (`_universal`) → grep generic markers (`route`, `handler`, HTTP verb + path-literal pairs) best-effort; mark §3 confidence low.
+No framework match (`_universal`) — **or a matched framework with no signature row in this table** (parity rail: Step 8.5 detection MUST NOT outrun extraction) → grep generic markers (`route`, `handler`, HTTP verb + path-literal pairs) best-effort; mark §3 confidence low.
 
 ## Step 7 — Extract data models
 
@@ -204,6 +212,9 @@ Per ORM/persistence-pattern signatures — covering every ecosystem in the detec
 | rust | Diesel | `#[derive(Queryable` / `table! {` macro |
 | rust | SeaORM | `#[derive(DeriveEntityModel` |
 | jvm | JPA/Hibernate | `@Entity` (jakarta.persistence / javax.persistence) |
+| .NET | EF Core | `: DbContext` class + `DbSet<` properties; `[Table(` / `[Key]` attributes on entities |
+
+No ORM signature match for a detected ecosystem (same parity rail as Step 6) → grep generic persistence markers (entity/model class + field blocks near persistence imports) best-effort; mark §4 confidence low.
 
 Field extraction per entity follows the same per-language tree-sitter/regex ladder as Step 5.
 
@@ -227,10 +238,10 @@ Parse package manifest for framework dependency fingerprints; write to `codebase
 | `package.json` | `"next"` (dependencies) | next |
 | `package.json` | `"nuxt"` (dependencies) | nuxt |
 | `package.json` | `"@nestjs/core"` | nestjs |
-| `package.json` | `"express"` | express |
-| `package.json` | `"fastify"` | fastify |
 | `package.json` | `"@remix-run/"` | remix |
 | `package.json` | `"@sveltejs/kit"` | sveltekit |
+| `package.json` | `"express"` | express |
+| `package.json` | `"fastify"` | fastify |
 | `Gemfile` | `gem ['"]rails['"]` | rails |
 | `Gemfile` | `gem ['"]sinatra['"]` | sinatra |
 | `pyproject.toml`/`requirements.txt` | `django` | django |
@@ -248,7 +259,7 @@ Parse package manifest for framework dependency fingerprints; write to `codebase
 
 Extract version where regex available (e.g., `"laravel/framework": "^11.0"` → `version: "11.x"`). Output to `codebase-map.md`.
 
-**First-match-wins ordering:** more specific starterkit packs take precedence over generic framework packs.
+**First-match-wins ordering:** more specific starterkit packs take precedence over generic framework packs, and **meta-frameworks precede the server substrates they ship with** (a Remix express-adapter app carries both `@remix-run/` and `"express"` — matching express first would grep `app.(get|…)` and miss every file-based route).
 
 YAML for plain Laravel detection:
 ```yaml
@@ -282,7 +293,7 @@ Heuristic grep for indicators:
 
 ## Step 10 — Write codebase-map.md
 
-Write per the codebase-map schema. Include all sections; mark genuinely empty sections as "None detected" not omitted. Frontmatter stamps `engine: tree-sitter | regex` + `precision_tier: ast | regex` so downstream `bind-codebase` knows the confidence level, plus `last_scanned_commit: $(git rev-parse HEAD)` as the staleness stamp (omit when the repo has no `.git` — Step 1 already detected this).
+Write per the codebase-map schema. Include all sections; mark genuinely empty sections as "None detected" not omitted. Frontmatter stamps `engine: tree-sitter | regex` + `precision_tier: ast | regex` so downstream `bind-codebase` knows the confidence level, plus the staleness stamp: `last_scanned_commit: $(git rev-parse --verify 'HEAD^{commit}' 2>/dev/null)` — **omit the field when the command fails** (no `.git` per Step 1, OR a fresh zero-commit repo where bare `git rev-parse HEAD` would emit the literal string "HEAD" and poison the stamp). Consumers treat a stamp equal to the literal `HEAD` as missing.
 
 ### Step 10a — Secret-scan gate (BEFORE the write)
 
@@ -304,3 +315,4 @@ bash "$PLUGIN_ROOT/scripts/secret-scan.sh" --redact <assembled-artifact-tmp-file
 - Findings present → emit one chat warning listing the affected source `file:line` rows from the report so the user can rotate/relocate the credential.
 - This gate redacts the ARTIFACT — it never edits repo source files.
 - Empty `findings` (the normal case) → write as-is, no chat output.
+- **After the rename into place, refresh the map-validator state:** `bash "$PLUGIN_ROOT/scripts/validate-codebase-map.sh" --cwd=<project-root> --quiet`. The temp-file + `mv` write does not fire the PostToolUse `Write|Edit` dispatch, so this keeps `.codebase-map-state.json` fresh for `/mega-sdd:analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state).

@@ -102,7 +102,7 @@ Every writer skill resolves output paths via this protocol:
 | `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
-| `execute-bolts` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
+| `generate-units` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
 | `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat) |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |

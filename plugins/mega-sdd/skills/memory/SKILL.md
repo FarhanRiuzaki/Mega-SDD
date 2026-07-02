@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.5.1
+version: 1.5.2
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -90,6 +90,10 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 ### preferences.md `## Model tiers` section
 
 User-scope per-role model tier override. Format: markdown list with `- <role>: <tier>` per line. Schema: see `references/memory-schema.md §Model tiers`. Consumed by orchestrate-flow Step 2.8 override-chain resolution.
+
+### file-lock
+
+The canonical mega-sdd concurrent-write lock, cited across the plugin as "memory SKILL.md §file-lock". Semantics: acquire an exclusive advisory lock (`<target>.lock`, atomic create — `mkdir`/`O_EXCL`) BEFORE writing; on contention back off and retry 3×; all retries fail → `memory_in_use` blocker; a lock older than 30s is presumed crashed and stolen; release in a trap so a crashed writer never wedges the next one. Deterministic implementation (incl. the 30s stale-steal + trap-release): `scripts/memory-write.sh`. Field-level spec for lock path + backoff schedule: `generate-intent/references/vault-contract.md §Concurrency contract` (note: that section halts `memory_in_use` and defers a >30s orphan to the USER; the auto-steal + trap semantics live in the script) — the vault.json writers and the deep-scan Step 10.5.4 guard reuse the same lock-file pattern.
 
 ## Self-learning mechanism (suggestion-only)
 

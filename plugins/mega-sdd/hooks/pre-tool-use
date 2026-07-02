@@ -501,6 +501,23 @@ if fails:
     # the map validator attests the map is structurally degenerate; a partial
     # map (some sections present) is NOT blocked — only the empty-shell shape.
     if [ "${SKILL_NAME:-}" = "mega-sdd:bind-codebase" ]; then
+      # ── INT-1 self-heal (god-review S3): the scan procedure's mandated write
+      # path is temp-file + mv (Step 10a scrub), which never fires the PostToolUse
+      # Write|Edit dispatch — so .codebase-map-state.json can be stale in BOTH
+      # directions (fail-open on a fresh degenerate map; permanent false-block
+      # after a valid re-scan). Re-validate lazily when the map is newer than its
+      # state (GateGuard lazy-rebuild pattern). Probe order mirrors bind-codebase.
+      CM_STATE="${PROJECT_ROOT}/.mega-sdd/.codebase-map-state.json"
+      CM_MAP="${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md"
+      [ -f "$CM_MAP" ] || CM_MAP="${PROJECT_ROOT}/codebase-map.md"
+      if [ -f "$CM_MAP" ]; then
+        # Tie-loses hazard: bash-3.2 -nt compares whole seconds, and mv/cp -p can
+        # preserve an OLDER mtime — so trust the state only when it is STRICTLY
+        # newer than the map; any tie or inversion re-validates (cheap, bind-only path).
+        if [ ! -f "$CM_STATE" ] || [ ! "$CM_STATE" -nt "$CM_MAP" ]; then
+          bash "${SCRIPT_DIR_RPR}/../scripts/validate-codebase-map.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+      fi
       MAP_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
 p = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd", ".codebase-map-state.json")

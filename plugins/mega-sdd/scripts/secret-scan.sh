@@ -30,9 +30,20 @@ import json, os, stat, re, sys
 
 mode, target = sys.argv[1], sys.argv[2]
 
+# S3 AH-1: the private-key pattern must span the WHOLE block — the previous
+# header-shaped regex ([^-]* self-terminates at the header's own dashes) redacted
+# only the BEGIN line and shipped the base64 key body while reporting
+# redacted:true. Whole-block first: the END kind must MATCH the BEGIN kind (\1)
+# and the body may not cross into another BEGIN (a truncated block followed by a
+# complete one must not swallow the innocent text between them). The header
+# fallback catches a truncated block AND consumes its contiguous base64 body
+# lines — a truncated key must not ship its body either.
+_PK_KINDS = r"(?:RSA |EC |DSA |ED25519 |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?"
+_PK_BODY_RUN = r"(?:\n[ \t\"',\\]*[A-Za-z0-9+/=]{16,}[ \t\"',\\]*)*"
 PATTERNS = [
     ("aws-access-key",      re.compile(r"AKIA[0-9A-Z]{16}")),
-    ("private-key-block",   re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY[^-]*-----")),
+    ("private-key-block",   re.compile(r"-----BEGIN (" + _PK_KINDS + r")-----(?:(?!-----BEGIN)[\s\S])*?-----END \1-----")),
+    ("private-key-header",  re.compile(r"-----BEGIN " + _PK_KINDS + r"-----" + _PK_BODY_RUN)),
     ("github-token",        re.compile(r"gh[pousr]_[A-Za-z0-9]{36,}")),
     ("openai-style-key",    re.compile(r"sk-[A-Za-z0-9_-]{20,}")),
     ("slack-token",         re.compile(r"xox[bpoas]-[0-9A-Za-z-]{10,}")),
@@ -42,9 +53,14 @@ PATTERNS = [
 
 text = open(target, encoding="utf-8", errors="replace").read()
 findings, redacted = [], text
+_pk_spans = []  # whole-block spans; a header inside one is already covered
 
 for name, rx in PATTERNS:
     for m in rx.finditer(text):
+        if name == "private-key-header" and any(s <= m.start() < e for s, e in _pk_spans):
+            continue
+        if name == "private-key-block":
+            _pk_spans.append((m.start(), m.end()))
         line_no = text.count("\n", 0, m.start()) + 1
         secret = m.group(2) if name == "generic-assignment" and m.lastindex and m.lastindex >= 2 else m.group(0)
         findings.append({

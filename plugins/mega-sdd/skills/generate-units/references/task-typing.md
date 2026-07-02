@@ -73,7 +73,7 @@ When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan):
 - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
 - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
 
-Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to binding-only target_files. Symbol graph cached at `<vault>/.internal/symbol-graph.json` per scan-codebase run; reused across all units.
+Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to binding-only target_files. Symbol graph cached at `<vault>/.internal/symbol-graph.json`, built by generate-units on first use (pagerank-targeting §Build — scan-codebase does NOT persist reference captures); reused across all units, invalidated when `codebase-map.md` is regenerated.
 
 ## Step 7.6 — Per-unit target_files collision check
 

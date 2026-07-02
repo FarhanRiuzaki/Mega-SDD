@@ -79,7 +79,7 @@ For very large repos (>50k files), `--skip-pagerank` flag disables the suggestio
 
 ## Caching
 
-Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (canonical per paths.md) per `scan-codebase` run. Re-used across all units in the same vault. Invalidated when `codebase-map.md` is regenerated.
+Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (canonical per paths.md), built by `generate-units` itself on first use (§Build steps above — scan-codebase does NOT persist reference captures). Re-used across all units in the same vault. Invalidated when `codebase-map.md` is regenerated.
 
 ## Anti-hallucination rails
 
