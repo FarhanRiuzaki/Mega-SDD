@@ -7,7 +7,7 @@ The binding contract specifies how vault claims are validated against `codebase-
 - Claim categories (validated)
 - Verdicts
 - Implementation-State Classification
-- Implementation State Map (field_diff column when precision_tier: ast)
+- Implementation State Map (6 columns always; Field diff cell = n/a unless precision_tier: ast)
 - Blocking rules
 - Tech-OQ Auto-Resolution
 - Claim-scoped re-bind (`--paths` — living-vault sync lane)
@@ -63,14 +63,19 @@ When in doubt → `UNKNOWN` with low confidence. Never silently claim `IMPLEMENT
 ### Recorded in binding.md
 
 ```yaml
-## Implementation State Map (field_diff column when precision_tier: ast)
+## Implementation State Map (N — ALWAYS 6 columns; the Field diff cell is `n/a` unless precision_tier: ast)
 | Claim ID | Verdict | State | Anchor | Confidence | Field diff |
 |---|---|---|---|---|---|
 | C-007 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high | (exact match) |
 | C-012 | OQ | NEW | — | n/a | n/a |
 | C-019 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic can't classify | low | n/a |
+| C-044 | CONFIRMED | UNKNOWN | truncated §4 — absence is not evidence (map capped) | low | n/a |
 | C-031 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
 ```
+
+A truncation-sourced `UNKNOWN` row MUST cite the truncation in its Anchor cell (and
+set `state_reason: truncated_section` in `binding.json`) — `generate-units` keys its
+direct-probe sub-rule on this signal (per the truncation exception above).
 
 ## Blocking rules
 
@@ -88,7 +93,12 @@ Implementation-State Classification does NOT change blocking rules. It is an ann
 Every CONFLICT in `binding.md` is written as a markdown detail heading plus a
 `## Conflicts (N)` summary row. Each ACTIVE (unresolved) CONFLICT detail heading
 MUST carry two enrichment fields so downstream review can triage by kind and
-effort. A resolved conflict (marked `✅` / `RESOLVED`) is exempt.
+effort. A resolved conflict is exempt — resolved means the heading carries `✅` or
+the word `RESOLVED` immediately AFTER the conflict ID, or a dedicated
+`- **Resolution**:` line whose VALUE starts with the marker (written by
+`/mega-sdd:resolve-oq --binding`); the word "resolved" in a TITLE or in prose, and a
+negated `Status: NOT RESOLVED` line, do NOT count (S4 — the validators key on the
+structural marker only).
 
 ```markdown
 ### CONFLICT-1 — `App\Models\Product` name collision
@@ -132,10 +142,12 @@ For each OQ in the vault tagged `category: tech` AND `classification_confidence:
 
 ### Confidence gate
 
-ONLY `classification_confidence: high` tech OQs are processed by `bind-codebase`'s scan/recommend logic. `medium` and `low` confidence:
-- Skip auto-resolution
-- Pass through unchanged
-- Already listed in `00-index.md` "## Auto-Classification Review" for manual user attention before binding runs
+Per mode (S4 — aligned with generate-intent's shipped heuristics, whose recommend
+rows emit `classification_confidence: medium`):
+- **Scan mode**: ONLY `classification_confidence: high` auto-resolves. `medium`/`low` → skip auto-resolution, pass through unchanged.
+- **Recommend mode**: surfaced at `high` AND `medium` (surfacing is advisory and never blocks — restricting to `high` made the entire Recommendations feature dead code). `low` → skip surfacing, pass through unchanged.
+- In BOTH modes, a skipped OQ's `resolution_mode` is NEVER mutated (no flip to `blocking` on confidence grounds — only a failed scan flips to blocking, per §Scan mode).
+- Medium/low OQs are already listed in `00-index.md` "## Auto-Classification Review" for manual user attention before binding runs.
 
 ### Anti-halu enforcement
 
@@ -170,9 +182,10 @@ Invoked by `orchestrate-flow --sync` (spec `2026-06-10-living-vault-continuous-s
 
 When binding blocks:
 
-1. User runs `/mega-sdd:resolve-oq --binding ./binding.md` — interactive walker; updates vault with resolutions
-2. Re-run `/mega-sdd:bind-codebase` — if all CONFLICTs now CONFIRMED or downgraded to OQ, bound-vault produced
-3. Alternative: user edits vault manually + re-runs binding
+1. User runs `/mega-sdd:resolve-oq --binding ./binding.md` — interactive walker; writes structural ✅ RESOLVED markers into binding.md (+ binding.json `resolution:`), patches the vault for KEEP_CODE/SPLIT
+2. KEEP_CODE / SPLIT chosen → re-run `/mega-sdd:bind-codebase` — the edited claims re-bind cleanly; conflicts=0 produces the bound-vault
+3. KEEP_VAULT / DEFER only → NO re-bind (it re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — bind never consumes a prior resolution as evidence). The resolved-marked binding.md passes the handoff validator → proceed to generate-units; bound/ arrives via a re-bind AFTER the code change lands
+4. Alternative: user edits vault manually + re-runs binding
 
 ## binding.md output structure
 

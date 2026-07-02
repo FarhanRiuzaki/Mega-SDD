@@ -27,12 +27,13 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 ## Confirmed Claims (N)
 - C-001 | <vault file:line> | <codebase evidence> | <claim text>
 
-## Implementation State Map (N; field_diff column when precision_tier: ast)
+## Implementation State Map (N — ALWAYS 6 columns; the Field diff cell is `n/a` unless precision_tier: ast)
 | Claim ID | Verdict | State | Anchor | Confidence | Field diff |
 |---|---|---|---|---|---|
 | C-001 | CONFIRMED | IMPLEMENTED | UserController.php:45 + routes/api.php:12 | high | (exact match) |
 | C-LOGIN-1 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
 | C-007 | CONFIRMED | UNKNOWN | dynamic route detected; heuristic cannot classify | low | n/a |
+| C-044 | CONFIRMED | UNKNOWN | truncated §4 — absence is not evidence (map capped) | low | n/a |
 | C-012 | OQ | NEW | — | n/a | n/a |
 | C-023 | CONFIRMED | PARTIAL_FIELDS_SURPLUS | OrderController.php:88 | medium | ADD: [] · KEEP: [order_id, items] · REMOVE: [legacy_ref] (CAUTION: code has fields vault doesn't mention) |
 
@@ -65,7 +66,14 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 > form is the token the Step 5 gate, `validate-handoff-binding-units.sh`, and
 > `validate-conflict-classification.sh` read — a conflict recorded ONLY in a table is invisible
 > to the validators. IDs use the canonical `CONFLICT-N` form (advisor-sourced ones may use
-> `CONFLICT-ADV-N`).
+> `CONFLICT-ADV-N` — both are read by the validators).
+> **Resolution markers are STRUCTURAL** (S4): a conflict counts as resolved ONLY when the
+> heading carries ✅ or the word `RESOLVED` immediately AFTER the conflict ID
+> (`### ✅ CONFLICT-1 RESOLVED (KEEP_CODE) — …`), or a dedicated
+> `- **Resolution**: ✅ RESOLVED (<action>) <date>` line whose VALUE STARTS with the marker —
+> written by `/mega-sdd:resolve-oq --binding`. Prose containing the word "resolved" elsewhere
+> (a TITLE like "tickets are auto-resolved", a `Status: NOT RESOLVED` line, Suggested-action
+> text) does NOT count (and must not — business vocabulary would silently open the gate).
 
 | ID | Vault Claim | Codebase Reality | Resolution Needed |
 |---|---|---|---|

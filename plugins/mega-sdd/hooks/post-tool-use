@@ -549,7 +549,7 @@ except Exception:
     # Constitution clause propagation re-runs when binding clauses change
     # (mirror of the unit-write trigger above, but at producer side).
     case "$FILE_PATH" in
-      *-bound/binding*.md|*.mega-sdd/vaults/*-bound/binding*.md|*/binding.md)
+      *-bound/binding*.md|*.mega-sdd/vaults/*-bound/binding*.md|*.mega-sdd/vaults/*/binding-*.md|*/binding.md)
         VALIDATOR_CP2="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
         if [ -x "$VALIDATOR_CP2" ]; then
           bash "$VALIDATOR_CP2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -566,6 +566,17 @@ except Exception:
         VALIDATOR_CCL="${SCRIPT_DIR}/../scripts/validate-conflict-classification.sh"
         if [ -x "$VALIDATOR_CCL" ]; then
           bash "$VALIDATOR_CCL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        # S4 BC-GATE-1: refresh the MOAT state on the PRODUCER side too. The
+        # moat-state writer (validate-handoff-binding-units.sh) was keyed to
+        # unit writes only, so a re-bind/sync writing binding.md with fresh
+        # active CONFLICTs left .validation-blockers.json at a stale PASS and
+        # execute-bolts sailed through an unresolved CONFLICT (invariant #2).
+        # Binding writes now re-derive the moat state; the PreToolUse gate also
+        # self-heals lazily (mtime), so BOTH write paths converge on current truth.
+        VALIDATOR_BU2="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
+        if [ -x "$VALIDATOR_BU2" ]; then
+          bash "$VALIDATOR_BU2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
         ;;
     esac

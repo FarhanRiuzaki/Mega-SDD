@@ -19,7 +19,7 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 
 | Halt type | Auto-loop action | Safety condition |
 |---|---|---|
-| `bind_conflict` | Auto-invoke `resolve-oq --binding` with memory-pre-filled recommendations → re-run `bind-codebase` | Recommendation confidence ≥ 0.80; else stop |
+| `bind_conflict` | Auto-invoke `resolve-oq --binding` with memory-pre-filled recommendations → next step is ACTION-MIX dependent (S4): KEEP_CODE/SPLIT resolutions → re-run `bind-codebase`; KEEP_VAULT/DEFER-only → proceed to `generate-units` (a re-bind re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — looping it burns every cycle; per `resolve-oq/references/binding-mode.md` Step 5) | Recommendation confidence ≥ 0.80; else stop |
 | `module_blocked_by` | Auto-run prerequisite module first → resume requested module | All prerequisites identifiable + non-circular |
 | `cross_squad_interface_draft` | Wait (with backoff: 30s, 60s, 120s) for producer to lock interface; retry up to 3 times | Producer squad has lock-in-progress signal in memory |
 | `oq_recommend_underspecified` | Auto-regenerate recommendation fields from binding context → re-run generate-intent | Memory has fallback rationale template |

@@ -92,7 +92,14 @@ def has_units():
 
 
 def has_codebase_map():
-    return os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md"))
+    # S4 BC-PREFLIGHT-LEGACY: probe the SAME order bind-codebase does
+    # (SKILL.md §Inputs + paths.md back-compat) — canonical nested path, then the
+    # legacy repo-root map. Probing only the canonical path FATAL-blocked every
+    # bind on a pre-migration project whose map bind would happily consume.
+    return (
+        os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md"))
+        or os.path.isfile(os.path.join(cwd, "codebase-map.md"))
+    )
 
 
 fatal = None          # {check_id, on_fail}

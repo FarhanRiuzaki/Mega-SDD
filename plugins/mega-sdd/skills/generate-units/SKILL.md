@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.9.3
+version: 2.10.0
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -54,10 +54,10 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **2.5. Determine `task_type` per candidate (MOAT-CRITICAL — read binding's Implementation State Map).** If the bound-vault's `binding.md` has an Implementation State Map, assign `task_type` by aggregating the binding-claim states each candidate derives from. If no State Map (greenfield OR pre-State-Map binding) → every candidate is `create`. Core assignment:
    - All NEW / no binding → `create`
-   - All IMPLEMENTED (`confidence: high`) → `verify`
+   - All IMPLEMENTED (`confidence: high`) → `verify` (medium/low confidence → treat as UNKNOWN — a fuzzy anchor must not mint a verify)
    - `PARTIAL_FIELDS_*` → `extend` with Migration notes auto-populated from binding's `field_diff` (SURPLUS/BOTH fire a HUMAN REVIEW prompt)
    - Mix of NEW + IMPLEMENTED → SPLIT (one `create`, one `verify`; chain so verify runs first)
-   - Any UNKNOWN → `create` (conservative default) + note in body
+   - Any UNKNOWN → truncation-sourced UNKNOWN goes through the direct-probe sub-rule FIRST (never `create` straight off a truncated map section); other UNKNOWN → `create` (conservative default) + note in body. Precedence + sub-rule → `references/task-typing.md`
    - **Mix of CONFIRMED + CONFLICT → HALT** (the hard gate should already have blocked; report the inconsistency)
 
    `verify` units carry empty/`none` target_files, a MANDATORY `## Anchors` entry citing the binding `anchor`, a one-line Implementation-steps body, and assertions that prove existing code still works. A `verify` unit whose binding `anchor` is empty → halt (binding gap); never silently downgrade. Full state matrix, `extend` Migration-notes population, and `verify`/target_files mechanics: `references/task-typing.md`.

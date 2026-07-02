@@ -113,7 +113,9 @@ citation_pattern = re.compile(
     r"(?:Citation|citation|cite|cites)s?:\s*(?:-\s*)?[\"']?(knowledge-base/[^\s\"'\]\,]+)[\"']?",
     re.IGNORECASE,
 )
-oq_pattern = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
+# S4 BC-HANDOFF-1 (mirror of validate-handoff-binding-units.sh): also match
+# bind's numeric fresh-OQ form (OQ-001 / OQ-12), not just lettered vault IDs.
+oq_pattern = re.compile(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b")
 
 # Iter-79 U-GI: independently re-apply the deterministic Auto-classifier heuristic
 # text-pattern table (vault-contract.md §Auto-classifier heuristics) to detect an OQ

@@ -27,7 +27,7 @@ e. **Medium/low confidence** tech-scan OQs → skip auto-resolution; pass throug
 
 ## 2.7 Tech-OQ recommendation surfacing
 
-For each OQ with `category: tech` AND `resolution_mode: recommend` AND `classification_confidence: high`:
+For each OQ with `category: tech` AND `resolution_mode: recommend` AND `classification_confidence: high` OR `medium` (S4 — generate-intent's shipped heuristics emit recommend at `medium`; restricting to `high` made this step dead code; surfacing is advisory and never blocks):
 
 a. **Validate required fields:** `recommendation`, `rationale`, `scan_citations` (≥1), `fallback_if_wrong`. Missing any → halt `oq_recommend_underspecified` (should have been caught at generate-intent; fix the vault upstream).
 b. **Verify `scan_citations` exist** in the codebase-map / KB — each MUST resolve to a real entry. Citations that don't resolve indicate fabrication → halt `oq_recommend_citation_invalid`.
@@ -41,8 +41,8 @@ c. **Surface in `binding.md`** under `## Tech-OQ Recommendations (review require
    **Fallback if wrong**: If RFC 7807 doesn't fit, consider JSON:API error format.
    **User actions**: [ACCEPT] flip to resolved · [OVERRIDE] own resolution · [REJECT] flip to blocking
    ```
-d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via `resolve-oq --binding --accept-recommendations`.
-e. **Medium/low confidence** tech-recommend OQs → skip surfacing; flow through as blocking (already in "## Auto-Classification Review").
+d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via the standard `/mega-sdd:resolve-oq` walk — the OQ stays `pending` in `vault.json` until then.
+e. **Low confidence** tech-recommend OQs → skip surfacing; pass through UNCHANGED (`resolution_mode` is never mutated on confidence grounds — per `binding-contract.md` §Confidence gate; they are already in "## Auto-Classification Review").
 
 **Anti-halu rails:** NEVER auto-accept a recommendation (always user-in-the-loop for `recommend` mode). NEVER pass a recommendation with unverifiable citations downstream (citation verification is mandatory). `rationale` + `fallback_if_wrong` are the audit trail — if either is missing, the recommendation can't be trusted → halt.
 

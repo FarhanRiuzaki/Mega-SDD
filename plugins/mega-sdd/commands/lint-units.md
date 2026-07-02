@@ -43,7 +43,7 @@ These are NOT in the validator — run them here, per unit, from the loaded cont
 - **Module assignment** — `module:` present and resolves to `_meta/modules.yaml` (or `M-default`); flag `M-unassigned` for review.
 - **Squad assignment** (only if `_meta/squads.yaml` declares ≥2 squads) — `squad:` present + resolves; any cross-squad `depends_on` is routed via `consumes_interfaces`.
 - **Codebase-map anchor verification** — for each `## Anchors` `<file>:<line>`: file exists in the codebase map OR on disk; line in range. Missing file on `verify`/`extend` → WARNING (likely aspirational); on `create` → OK (greenfield); existing file + out-of-range line → WARNING (drifted).
-- **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED → verify`, not `create`; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
+- **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED` at `confidence: high` → `verify`, not `create`; IMPLEMENTED at medium/low is treated as UNKNOWN per task-typing — do NOT flag its `create`/probe-derived type; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
 - **Signature-rule anchoring** — a `SIGNATURE_RULE function <name>` references a symbol present in the codebase map (else `hard_rule_unanchored` warning).
 - **Body/prose quality (SOFT)** — `## Goal`, `## Context (read first)` with a `vault_source` citation, `## Implementation steps` with directive prose, `## Anti-patterns`, `## Out of scope` present; `## Migration notes` ABSENT for `create`/`verify`.
 

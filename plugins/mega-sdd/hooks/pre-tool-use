@@ -76,6 +76,9 @@ print(f"TRANSCRIPT_PATH={transcript_path}")
 if tool_name == "Skill":
     skill_name = tool_input.get("skill", "")
     print(f"SKILL_NAME={skill_name}")
+    args = tool_input.get("args", "") or ""
+    args_b64 = base64.b64encode(str(args).encode()).decode()
+    print(f"SKILL_ARGS_B64={args_b64}")
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     cmd_b64 = base64.b64encode(cmd.encode()).decode()
@@ -377,6 +380,19 @@ except Exception as e:
     # DEMOTED to /mega-sdd:analyze advisory (NOT blocking here): dispatch-prompt,
     # operator-UX (vault-oqs), fan-out-parity, ui-deferral, vault-flow-staging.
     if [ "${SKILL_NAME:-}" = "mega-sdd:execute-bolts" ]; then
+      # ── S4 BC-GATE-1 self-heal: the moat-state writer used to fire on UNIT
+      # writes only, so a re-bind/sync that wrote binding.md with fresh active
+      # CONFLICTs left .validation-blockers.json at a stale PASS (or absent)
+      # and this gate opened over an unresolved CONFLICT (invariant #2). Same
+      # class as INT-1: enforcement keyed to the wrong write path.
+      # S4 round-2: re-validate UNCONDITIONALLY whenever a vaults dir exists —
+      # an mtime heuristic here was defeated by (a) the nested units/U-*/unit.md
+      # layout the ls globs cannot reach and (b) backdated mtimes (cp -p /
+      # rsync -a restores). The validator is sub-second python and this is the
+      # execute-bolts-only path; current truth beats a stale cache at a gate.
+      if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ]; then
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+      fi
       GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
 md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
@@ -401,8 +417,17 @@ if os.path.exists(moat_path):
         d = None
         fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run /mega-sdd:validate-handoff (or bind-codebase) to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
     if d and d.get("status") == "FAIL":
-        n = len(d.get("drops", []))
-        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units). Run /mega-sdd:validate-handoff for the drop list, then add the missing OQ-IDs to the relevant unit frontmatter binding_refs. State: %s/.validation-blockers.json" % (n, md)))
+        drops = d.get("drops", [])
+        n = len(drops)
+        types = sorted({dd.get("type", "?") for dd in drops})
+        # S4 BC-MSG-1: the remediation differs per drop type — a conflict drop
+        # can NEVER be cleared by adding OQ-IDs to frontmatter.
+        rem = []
+        if any(t in ("conflict_unresolved", "binding_missing") for t in types):
+            rem.append("conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding <binding.md> (human-in-the-loop), or re-run /mega-sdd:bind-codebase until conflicts=0")
+        if any(t in ("oq_id_dropped", "conflict_id_dropped") for t in types):
+            rem.append("propagation drops: add the missing OQ-/CONFLICT-IDs to the relevant unit frontmatter binding_refs")
+        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run /mega-sdd:validate-handoff for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run
 # gap, clinic-project audit 2026-06-12). The Stop hook writes this state on every
@@ -508,9 +533,57 @@ if fails:
       # after a valid re-scan). Re-validate lazily when the map is newer than its
       # state (GateGuard lazy-rebuild pattern). Probe order mirrors bind-codebase.
       CM_STATE="${PROJECT_ROOT}/.mega-sdd/.codebase-map-state.json"
-      CM_MAP="${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md"
-      [ -f "$CM_MAP" ] || CM_MAP="${PROJECT_ROOT}/codebase-map.md"
-      if [ -f "$CM_MAP" ]; then
+      # S4 BC-MAPARG-1: bind-codebase accepts an explicit second-positional map
+      # path — a custom-path map used to escape this gate entirely (degenerate
+      # custom map bound ungated; valid custom map falsely blocked on a stale
+      # canonical shell). When the Skill args name an existing *.md that is not
+      # a vault doc, validate THAT file (--file-path mode) instead of the probe.
+      # S4 round-2 hardening: shlex tokenizing (quoted paths with spaces),
+      # vault-doc paths are never map candidates (a vault .md named positionally
+      # must not be validated as the map), LAST candidate wins (vault positional
+      # comes first; the map is the later positional).
+      CM_MAP=""
+      CM_ARG=$(printf '%s' "${SKILL_ARGS_B64:-}" | PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
+import base64, os, shlex, sys
+root = os.environ.get("PROJECT_ROOT", "")
+try:
+    args = base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace")
+except Exception:
+    raise SystemExit(0)
+try:
+    toks = shlex.split(args)
+except Exception:
+    toks = args.split()
+cand = None
+for tok in toks:
+    if not tok.endswith(".md") or tok.startswith("--"):
+        continue
+    if "/vaults/" in tok or tok.startswith("vaults/") or "/.mega-sdd/vaults/" in tok:
+        continue  # vault docs are never codebase maps
+    p = tok if os.path.isabs(tok) else os.path.join(root, tok)
+    if os.path.isfile(p):
+        cand = p
+if cand:
+    print(cand)
+' 2>/dev/null)
+      if [ -n "$CM_ARG" ]; then
+        CM_MAP="$CM_ARG"
+      else
+        CM_MAP="${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md"
+        [ -f "$CM_MAP" ] || CM_MAP="${PROJECT_ROOT}/codebase-map.md"
+      fi
+      if [ -n "$CM_ARG" ]; then
+        # Custom-path map: validate the actual bind input (--file-path).
+        # S4 round-2 (state-poisoning fix): the shared .codebase-map-state.json
+        # must keep describing the CANONICAL map — a custom-map verdict left in
+        # it either opened the NEXT plain bind over a degenerate canonical map
+        # (PASS poisoning) or false-blocked it (FAIL poisoning). Snapshot the
+        # state, evaluate, then restore before acting on the verdict.
+        CM_BAK="$(mktemp 2>/dev/null || mktemp -t cmbak)"
+        CM_HAD_STATE=0
+        [ -f "$CM_STATE" ] && { cp "$CM_STATE" "$CM_BAK" 2>/dev/null; CM_HAD_STATE=1; }
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-codebase-map.sh" --cwd="$PROJECT_ROOT" --file-path="$CM_MAP" --quiet >/dev/null 2>&1 || true
+      elif [ -f "$CM_MAP" ]; then
         # Tie-loses hazard: bash-3.2 -nt compares whole seconds, and mv/cp -p can
         # preserve an OLDER mtime — so trust the state only when it is STRICTLY
         # newer than the map; any tie or inversion re-validates (cheap, bind-only path).
@@ -531,6 +604,16 @@ if d and d.get("status") == "FAIL":
     if sec and "7 sections" in (sec.get("detail") or "") or (sec and len(sec.get("missing", [])) >= 7):
         print("mega-sdd:bind-codebase is blocked — codebase-map.md is structurally DEGENERATE (all content sections missing per the map validator). Binding against an empty map produces false CONFIRMED/CONFLICT verdicts (invariant #1: spec-to-code grounding). Re-run /mega-sdd:scan-codebase to produce a real map, then bind. State: %s" % p)
 ' 2>/dev/null)
+      # S4 round-2: restore the canonical-map state BEFORE acting on the custom
+      # verdict — the shared state must never carry a custom-file verdict.
+      if [ -n "$CM_ARG" ]; then
+        if [ "${CM_HAD_STATE:-0}" -eq 1 ]; then
+          cp "$CM_BAK" "$CM_STATE" 2>/dev/null || true
+        else
+          rm -f "$CM_STATE" 2>/dev/null || true
+        fi
+        rm -f "${CM_BAK:-}" 2>/dev/null || true
+      fi
       if [ -n "$MAP_REASON" ]; then emit_block "$MAP_REASON"; fi
     fi
     ;;
@@ -543,6 +626,40 @@ if d and d.get("status") == "FAIL":
     # 30-min expiry). Empty/absent index (greenfield, no LOCKED markers) = inert.
     # Fast path: two stat-class checks before any python.
     [ -z "${FILE_PATH_B64:-}" ] && exit 0
+
+    # ── S4 BC-BYPASS-1: anti-self-bypass must cover the sibling write tools. ──
+    # The PROTECTED guard-state check existed only on the Bash branch, so a
+    # Write/Edit call could overwrite .validation-blockers.json with a forged
+    # PASS and open the CONFLICT gate (PostToolUse never re-derives moat state
+    # for .mega-sdd/ paths). S4 round-2 scoping:
+    #  - ONLY the moat state is Write/Edit-denied — .plan-pending and
+    #    .iter-classifier.json have DOCUMENTED skill-body Write paths
+    #    (orchestrate-flow Plan mode / iteration classifier), so denying the
+    #    tool write would break Plan→Act; their tamper protection stays on the
+    #    Bash branch (rm/redirect/sed).
+    #  - the tests/examples/fixtures exemption is evaluated on the path
+    #    RELATIVE to PROJECT_ROOT — a real project living under a path segment
+    #    named examples/ must not silently lose the guard.
+    if [ ! -d "${CWD}/plugins/mega-sdd/hooks" ]; then
+      FP_GUARD=$(printf '%s' "$FILE_PATH_B64" | PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
+import base64, os, re, sys
+try:
+    fp = base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace")
+except Exception:
+    raise SystemExit(0)
+root = os.environ.get("PROJECT_ROOT", "")
+p = os.path.abspath(fp) if os.path.isabs(fp) else os.path.abspath(os.path.join(root, fp))
+rel = os.path.relpath(p, root) if root else p
+if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
+    raise SystemExit(0)
+if rel.endswith(".mega-sdd/.validation-blockers.json") or rel == ".mega-sdd/.validation-blockers.json":
+    print("protected")
+' 2>/dev/null)
+      if [ "$FP_GUARD" = "protected" ]; then
+        emit_block "Blocked: direct Write/Edit of .validation-blockers.json (the binding->units moat state). It is written exclusively by validate-handoff-binding-units.sh — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let PostToolUse re-validate (or run /mega-sdd:validate-handoff). Human user can still modify the file via shell outside the agent."
+      fi
+    fi
+
     if grep -qE "^[[:space:]]*gateguard:[[:space:]]*false" "$CONFIG_FILE" 2>/dev/null; then exit 0; fi
     GG_IDX="${PROJECT_ROOT}/.mega-sdd/.locked-files-index.json"
     # Lazy rebuild: index absent or older than the newest binding.md
@@ -636,10 +753,31 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
     [ -z "$BASH_CMD" ] && exit 0
 
     # ── Scope exclusion: skip guard for test/fixture/plugin-dev paths ──────
-    GUARD_SKIP=0
-    if echo "$BASH_CMD" | grep -qE "tests/|examples/|fixtures/"; then
-      GUARD_SKIP=1
-    fi
+    # S4 BC-BYPASS-2: the old check skipped the guard when "tests/" (etc.)
+    # appeared ANYWHERE in the command — so `rm .mega-sdd/.validation-blockers.json
+    # # cleanup for tests/` sailed through on a comment token. The exemption now
+    # applies only when every PROTECTED-file reference in the command is ITSELF
+    # inside a tests/examples/fixtures path — evaluated RELATIVE to PROJECT_ROOT
+    # (S4 round-2: a project living under an examples/ path segment must not
+    # silently lose the guard).
+    GUARD_SKIP=$(printf '%s' "$BASH_CMD" | PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
+import os, re, sys
+cmd = sys.stdin.read()
+root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+def rel(t):
+    if root and t.startswith(root + "/"):
+        return t[len(root) + 1:]
+    return t
+toks = prot.findall(cmd)
+if not toks:
+    print(1)  # no protected-file reference at all — nothing to guard
+elif all(re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel(t)) for t in toks):
+    print(1)  # every reference is a test/fixture path — dev workflow, skip
+else:
+    print(0)
+' 2>/dev/null)
+    [ -z "$GUARD_SKIP" ] && GUARD_SKIP=0  # python3 hiccup → guard stays on (fail-closed)
     # Plugin-dev-mode: CWD is the plugin source repo, not a target project.
     if [ -d "${CWD}/plugins/mega-sdd/hooks" ]; then
       GUARD_SKIP=1
@@ -650,10 +788,18 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 
     # Protected state files
     PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json'
+    # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
+    # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
+    # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
+    # The deterministic backstop lives in validate-handoff-binding-units.sh
+    # (binding_missing drop when units cite conflicts and no binding doc exists).
+    PROTECTED_RM_ONLY='\.mega-sdd/vaults/[^[:space:]]*binding[^[:space:]]*\.md'
 
     BYPASS_DETECTED=""
     if echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="rm/unlink of protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED_RM_ONLY)"; then
+      BYPASS_DETECTED="rm/unlink of a binding doc (deleting binding.md erases active CONFLICTs and orphans unit citations — invariant #2/#3)"
     elif echo "$BASH_CMD" | grep -qE ">[[:space:]]*[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="shell redirect (>) overwriting protected state file"
     elif echo "$BASH_CMD" | grep -qE "\bsed\s+(-[^[:space:]]*i[^[:space:]]*)\s+[^|;&]*($PROTECTED)"; then

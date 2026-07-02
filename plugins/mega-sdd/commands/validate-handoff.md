@@ -59,11 +59,15 @@ No arguments. The current project root (CWD) is auto-detected.
       ...
     }
   ],
-  "next_action": "Append the listed OQ-IDs to the relevant unit's frontmatter binding_refs..."
+  "next_action": "propagation drops: append the listed OQ-/CONFLICT-IDs to the relevant unit's frontmatter binding_refs; conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding ..."
 }
 ```
 
-## How to resolve drops
+## How to resolve drops (per drop type — S4)
+
+- `oq_id_dropped` / `conflict_id_dropped` (propagation): add the missing ID to the relevant unit's frontmatter `binding_refs:` (below).
+- `conflict_unresolved` (the moat's invariant #2): frontmatter edits can NEVER clear this — resolve the CONFLICT via `/mega-sdd:resolve-oq --binding <binding.md>` (writes the structural ✅ RESOLVED marker the validator reads), or re-run `/mega-sdd:bind-codebase` until conflicts=0.
+- `binding_missing` (units cite CONFLICT-IDs but no binding doc exists): restore the deleted/moved binding.md or re-run `/mega-sdd:bind-codebase`.
 
 For each `oq_id_dropped` entry: open the unit(s) that implement the OQ's resolution (use the binding doc's Resolution Table to find which unit consumes the decision), and add the OQ-ID to its frontmatter `binding_refs:` list:
 
@@ -83,12 +87,11 @@ Save the file. `PostToolUse` will auto-re-validate; the state file updates autom
 
 This command invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`. The script is deterministic bash + python, no LLM judgment. Same script runs from the `PostToolUse` hook when units are saved.
 
-## Scope (slice 1 only)
+## Scope
 
-- ✅ Binding → units OQ-ID propagation
-- ❌ Binding → units CONFLICT-ID propagation (slice 2 — same pattern)
+- ✅ Binding → units OQ-ID propagation (slice 1; LIVE-section IDs only — auto-resolved/recommendation OQs AND pending `## Open Questions` OQs are advisory extras: no resolution ⇒ nothing to cite)
+- ✅ Binding → units CONFLICT-ID propagation + CONFLICT *resolution* gate (slice 2 — shipped; unresolved conflict blocks, structural ✅/RESOLVED markers clear)
+- ✅ Binding-doc presence backstop (`binding_missing` — units citing conflicts with zero binding docs fail closed)
 - ❌ Binding → units Hard Rule propagation (slice 3)
-- ❌ Vault → binding coverage (slice 4)
-- ❌ Units → bolts traceability (slice 5)
-
-If slice 1 proves out via real-run evidence (PostToolUse fires + PreToolUse blocks bolt-gen + clean-up clears state), slices 2-5 follow the identical pattern with different field-sets.
+- ➡ Vault → binding coverage lives in its own validator (`validate-vault-binding-coverage.sh`, dispatched on binding writes)
+- ❌ Units → bolts traceability (slice 5; partially covered by the bolt-orphans/postflight gates)

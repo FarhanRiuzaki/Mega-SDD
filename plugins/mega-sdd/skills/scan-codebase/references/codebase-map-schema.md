@@ -84,7 +84,8 @@ framework:
 
 `last_scanned_commit` records `git rev-parse HEAD` at scan time. Consumers use it to detect a stale map cheaply:
 
-- `detect-drift` / `bind-codebase` compare it to current HEAD; if it differs, `git diff --name-only <last_scanned_commit>..HEAD` yields exactly the paths that changed since the scan — a scoped re-scan signal far cheaper than re-walking the repo.
+- `detect-drift` compares it to current HEAD; if it differs, `git diff --name-only <last_scanned_commit>..HEAD` yields exactly the paths that changed since the scan — a scoped re-scan signal far cheaper than re-walking the repo.
+- `bind-codebase` Step 1 (S4) reads the stamp for its currency check: `snapshot-verified` provenance requires BOTH the shared-snapshot sha256 match AND stamp == current HEAD (or not-a-git); a HEAD mismatch downgrades provenance to `snapshot-stale` with a re-scan recommendation — the sha256 alone only proves the map FILE is unchanged, not that the CODE hasn't moved since the scan.
 - The field is OPTIONAL: maps scanned outside a git repo omit it, and consumers fall back to full-content comparison. Older maps that lack the field are treated the same way.
 
 ## How `bind-codebase` uses this

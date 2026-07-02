@@ -15,6 +15,12 @@ For each claim marked CONFIRMED, classify implementation readiness per `binding-
 > absence in that section is NOT evidence — classify `UNKNOWN`, never `NEW` (a
 > truncated-away implemented element must not become a duplicate-implementation
 > `create` task). Per `scan-codebase/references/codebase-map-schema.md`.
+> **Carry the reason onto the binding surface** (S4): the State Map row's Anchor
+> cell MUST cite the truncation (`truncated §N — absence is not evidence`) and the
+> `binding.json` claim MUST set `state_reason: truncated_section` — downstream
+> `generate-units` keys its direct-probe sub-rule (probe the repo, never `create`
+> straight off the capped map) on exactly this signal; an unmarked truncation-UNKNOWN
+> is indistinguishable from a dynamic-route UNKNOWN and defeats the protection.
 
 **Endpoint claims** (`POST /api/foo`):
 - Route in codebase-map §3 AND handler symbol in §2 with matching signature → `IMPLEMENTED` (high).

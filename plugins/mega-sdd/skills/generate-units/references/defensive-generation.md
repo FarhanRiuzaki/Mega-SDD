@@ -322,11 +322,11 @@ Implementation State Map row gains `field_diff` column:
 
 | Implementation State | Unit task_type | Migration notes auto-populated |
 |---|---|---|
-| `IMPLEMENTED` (V == C) | `verify` | (none; no code changes) |
+| `IMPLEMENTED` (V == C) | `verify` — ONLY at `confidence: high`; medium/low → treat as UNKNOWN (a fuzzy anchor must not mint a verify) | (none; no code changes) |
 | `PARTIAL_FIELDS_MISSING` (C ⊂ V) | `extend` | **ADD**: missing fields from V \ C · **KEEP**: shared fields V ∩ C · **REMOVE**: (none) |
 | `PARTIAL_FIELDS_SURPLUS` (V ⊂ C) | `extend` with HUMAN REVIEW | **ADD**: (none) · **KEEP**: V ∩ C · **REMOVE**: C \ V (CAUTION — code has fields vault doesn't mention; could be feature drift OR vault gap; user reviews via interactive prompt) |
 | `NEW` | `create` | (omitted; create task) |
-| `UNKNOWN` | `create` (conservative default) with note | (omitted; warning in body) |
+| `UNKNOWN` | truncation-sourced → direct-probe sub-rule (task-typing.md §Full task_type table); otherwise `create` (conservative default) with note | (omitted; warning in body) |
 
 For PARTIAL_FIELDS_SURPLUS specifically, generate-units fires INTERACTIVE prompt because surplus fields could indicate:
 - Feature drift (code has logic not in spec — vault should be updated)

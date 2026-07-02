@@ -6,7 +6,7 @@ a. **Read `constitution.md`** at the start of Step 2 (binding); cache for cross-
 b. **For each CONFLICT detected**, scan constitution §A–F clauses for relevant rules.
 c. **Cite constitution clauses** in `binding.md` CONFLICT entries when applicable:
    ```
-   | C-007 | Auth uses Bearer | Code uses session | Constitution §B-001 mandates Sanctum auth on /api/* (clause precedence) | KEEP_VAULT |
+   | CONFLICT-7 | Auth uses Bearer | Code uses session | Constitution §B-001 mandates Sanctum auth on /api/* (clause precedence) | KEEP_VAULT |
    ```
 d. **Constitution-violation as halt:** if existing code is in CONFLICT with the constitution AND the user passed `--strict-constitution`, surface `bind_conflict_constitution_violation`; the user resolves before the vault locks.
 e. **Constitution hash persistence:** write `constitution_hash` (sha256 of `constitution.md` content) to `binding.md` frontmatter for later drift detection by `detect-drift`.
@@ -19,7 +19,7 @@ blocker:
   emitted_at: <ISO8601>
   emitted_by: bind-codebase
   details:
-    conflict_id: C-007
+    conflict_id: CONFLICT-7
     vault_claim: "<verbatim from vault>"
     codebase_reality: "<verbatim from codebase-map>"
     constitution_clause: "§B-001 — All API endpoints MUST use Sanctum auth middleware"
