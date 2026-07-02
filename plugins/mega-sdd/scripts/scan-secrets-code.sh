@@ -51,7 +51,7 @@ import json, re, sys
 
 PATTERNS = [
     ("aws-access-key",      re.compile(r"AKIA[0-9A-Z]{16}")),
-    ("private-key-block",   re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY[^-]*-----")),
+    ("private-key-block",   re.compile(r"-----BEGIN (?:RSA |EC |DSA |ED25519 |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----")),  # detection-only: header presence blocks; kind list matches secret-scan.sh
     ("github-token",        re.compile(r"gh[pousr]_[A-Za-z0-9]{36,}")),
     ("openai-style-key",    re.compile(r"sk-[A-Za-z0-9_-]{20,}")),
     ("slack-token",         re.compile(r"xox[bpoas]-[0-9A-Za-z-]{10,}")),

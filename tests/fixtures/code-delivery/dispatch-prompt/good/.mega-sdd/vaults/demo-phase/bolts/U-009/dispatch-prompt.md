@@ -39,6 +39,7 @@ TIER 2 — Relevant slice (target ≤5KB)
 
 UI/UX: extends=layouts.app, notification=sweetalert2, idioms=[responsive mobile-first (sm/md/lg); blade-components]
 Design tokens: colors={primary: #3b82f6, secondary: #64748b}; spacing=default; fonts=[Inter]
+Design system: modern-minimal (palette: blue-slate) — per vault design_system resolution
 
 ### Starterkit code patterns (follow these conventions)
 

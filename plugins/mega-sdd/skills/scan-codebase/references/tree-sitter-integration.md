@@ -20,9 +20,11 @@ At skill startup, probe for tree-sitter via BOTH binary names (package managers 
 command -v tree-sitter || command -v tree-sitter-cli
 ```
 
-- Found (either) → use tree-sitter engine (precision tier: `ast`)
+- Found (either) → run the per-language **grammar smoke test** (SKILL.md Step 0): one Step-5 query against one real source file per detected language. Binary presence alone proves nothing — the CLI installs with zero grammars configured. Only languages that pass extract via tree-sitter and appear in `grammars_used`; a failing language falls back to regex; ALL failing → engine downgrades to `regex` with the grammar-install pointer.
 - Not found → fall back to regex engine (precision tier: `regex`); emit one-line warning in chat
 - User can force engine via `--engine=tree-sitter` (halts if absent) or `--engine=regex` (skip detection)
+
+`precision_tier: ast` is therefore a **verified** claim: it is stamped only when at least one language actually extracted through a working grammar, never from binary presence alone.
 
 ## Installation guidance
 
@@ -55,7 +57,7 @@ Each query file targets entity extraction:
 - `@name.definition.<kind>` — symbol definition (function, class, method, etc.)
 - `@name.reference.<kind>` — symbol reference (call site, import, etc.)
 
-Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public interfaces) + §3 (data models) + §4 (routes).
+Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public interfaces) + §3 (routes) + §4 (data models).
 
 ### Per-language coverage (shipped query files)
 
@@ -67,6 +69,7 @@ Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public 
 - `tags-go.scm` — Go func, type, method
 - `tags-ruby.scm` — Ruby classes, modules, methods
 - `tags-java.scm` — Java classes, interfaces, enums, records, methods
+- `tags-csharp.scm` — C# classes, interfaces, records, structs, methods
 
 Languages without `.scm` file → fall back to regex (graceful degradation).
 

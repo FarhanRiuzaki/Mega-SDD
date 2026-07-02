@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.16.0
+version: 2.17.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -34,7 +34,7 @@ When invoked as the FIRST phase (`orchestrate-flow` decision matrix Mode A/B):
 - `--include=<glob>` (repeatable; default infers from package manager)
 - `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
 
-The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**. Incremental mode (`--changed-only` — re-extract only changed paths from the dirty journal ∪ git delta, merge into the prior map, truncate the journal) is specified at the top of **`references/scan-procedure.md`**.
+The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**. Incremental mode (`--changed-only` — re-extract only changed paths from the dirty journal ∪ git delta, merge into the prior map, consume the journal via rotate-and-delete, never truncate-in-place) is specified at the top of **`references/scan-procedure.md`**.
 
 ## Output
 
@@ -44,12 +44,12 @@ The full default exclusion list, the override flags, and the anti-bias rationale
 
 Detailed per-step logic — including the tree-sitter multi-binary probe, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. Tree-sitter query usage, precision tiers, and graceful regex fallback are in **`references/tree-sitter-integration.md`**.
 
-0. **Engine detection.** Probe tree-sitter via TWO binary names (`command -v tree-sitter || command -v tree-sitter-cli`). Found → `engine: tree-sitter` (precision_tier `ast`). Not found + `--engine=tree-sitter` → halt `dep_missing`. Not found + no flag → fall back to `engine: regex` (precision_tier `regex`) with a one-line chat warning. Override via `--engine=`.
+0. **Engine detection.** Probe tree-sitter via TWO binary names (`command -v tree-sitter || command -v tree-sitter-cli`). Found → run the per-language grammar smoke test (binary presence ≠ working grammars), then `engine: tree-sitter` (precision_tier `ast`) with `grammars_used` = the languages that passed; all fail → downgrade to regex. Not found + `--engine=tree-sitter` → halt `dep_missing`. Not found + no flag → fall back to `engine: regex` (precision_tier `regex`) with a one-line chat warning. Override via `--engine=`.
 1. **Detect repo root.** Walk up to `.git`; else treat CWD as root and warn.
 2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle` (full per-ecosystem table: `references/scan-procedure.md §Step 2`). Multiple → record all.
 3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
 4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respecting `--exclude` (defaults in `references/exclusions.md`).
-5. **Extract public interfaces.** Run the per-file invalidation gate first (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` → symbol graph) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
+5. **Extract public interfaces.** Run the per-file invalidation gate first (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` not persisted — generate-units builds its own symbol graph from the same queries) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
 6. **Extract routes.** Per-framework signatures covering EVERY framework in the Step 8.5 detection table (Express/Laravel/Rails/Django/Gin/Axum/Spring/…) — full table in `references/scan-procedure.md` Step 6.
 7. **Extract data models.** Per-ORM signatures across all ecosystems (Prisma/Eloquent/ActiveRecord/Django ORM/GORM/Diesel/JPA/…) — full table in `references/scan-procedure.md` Step 7.
 8. **Detect naming conventions.** Sample 20+ files/language: file case, symbol case, test-file suffix.
@@ -61,13 +61,13 @@ Detailed per-step logic — including the tree-sitter multi-binary probe, the pe
 
 After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / authz / ui_ux / libs slices + a pack-driven `patterns:` block; plus a separate `reuse-index.yaml`). Full algorithm — trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, the framework-agnostic deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, and the concurrency guard — is in **`references/deep-scan-stage.md`**. Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
 
-- **Trigger:** framework confidence ≥ 0.5 (HIGH/MEDIUM) → run; LOW → skip (override with `--force-deep`).
+- **Trigger:** framework confidence `high`/`medium` (the §7 string enum) → run; `low`/`fallback` → skip (override with `--force-deep`).
 - **Cache:** per-slice signature diff; full hit short-circuits; `--no-cache` forces full re-dispatch.
 - **Dispatch:** only stale slices, in a single parallel message (read-only subagents). Missing `lib-patterns/<framework>/` → generic extraction, no halt.
 - **Failure:** one slice fails → `partial: true` + `partial_slices`; all fail → halt `deep_scan_subagent_all_failed` (preserve prior YAML).
-- **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can skip re-tokenization (per `references/deep-scan-stage.md`).
+- **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can cheaply attest map freshness — one sha compare, a freshness attestation NOT a parsing shortcut (per `references/deep-scan-stage.md`).
 
-11. **Suggest next step:** `/mega-sdd:bind-codebase <vault-path>` to validate a vault against this map.
+11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `/mega-sdd:bind-codebase <vault-path>`; no vault yet (starterkit-first) → `/mega-sdd:generate-intent --scan=<map>`; sync lane (`--changed-only`) → `/mega-sdd:detect-drift`.
 
 ## Mandatory rails
 
@@ -78,7 +78,7 @@ After Step 10 populates §7 Framework, run the deep-scan stage automatically (op
 
 ## Hand-off
 
-On completion, announce: "Codebase map written to `<path>`. Run `/mega-sdd:bind-codebase <vault>` to validate your vault against it."
+On completion, announce: "Codebase map written to `<path>`." + the CWD-conditional next step (vault exists → `/mega-sdd:bind-codebase <vault>`; none yet → `/mega-sdd:generate-intent --scan=<map>`).
 
 Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record per `mega-sdd:orchestrate-flow/references/handoff-contract.md` — the record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`**.
 
@@ -95,7 +95,7 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 - **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.
 - **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.
 - **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, the `--auto` handoff YAML, and the memory layer.
-- **`queries/`** — tree-sitter `tags-<lang>.scm` capture queries (TS/PHP/Python) consumed by Step 5; tested grammar versions in `queries/VERSIONS.md`.
+- **`queries/`** — tree-sitter `tags-<lang>.scm` capture queries (9 languages: TS/JS/PHP/Python/Go/Rust/Ruby/Java/C#) consumed by Step 5; tested grammar versions in `queries/VERSIONS.md`.
 
 ## Related skills
 

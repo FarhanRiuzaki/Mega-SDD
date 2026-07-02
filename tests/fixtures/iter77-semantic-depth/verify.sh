@@ -144,21 +144,33 @@ bash "$SCRIPTS/validate-kb-flows.sh" --cwd="$WORK/enrich" --file-path="$ENR_KB" 
 ENR_ADV=$(jget "$WORK/enrich/.mega-sdd/.kb-flows-state.json" "len(d.get('advisories',[]))")
 [ "$ENR_ADV" = "0" ] && ok "advisory clears after --apply (loop closed)" || fail "advisory should clear post-apply, got '$ENR_ADV'"
 
-# ── 4. PreToolUse Branch 14 actually FIRES (Fork-A — the non-negotiable gate) ──
+# ── 4. vault-flow-staging is ADVISORY at the hook (demoted per plugins/mega-sdd/CLAUDE.md
+#       enforcement list — surfaced via /mega-sdd:analyze, NOT a PreToolUse block; the old
+#       "Branch 14" blocking arm was removed deliberately). The gate value lives in the
+#       advisory state asserted in §1-3; the hook must fall through on BOTH fixtures. ──
 note ""
-note "=== 4. PreToolUse Branch 14 hook-fire — Fork-A (the 4x-failure-prevention gate) ==="
-# state files written above; pipe a real execute-bolts Skill payload through the hook.
+note "=== 4. PreToolUse — vault-flow-staging stays ADVISORY (no execute-bolts block) ==="
 mkpayload() { python3 -c "import json;print(json.dumps({'cwd':'$1','tool_name':'Skill','tool_input':{'skill':'mega-sdd:execute-bolts'}}))"; }
 OUT_BAD=$(mkpayload "$WORK/vault-bad" | bash "$HOOK" 2>/dev/null)
-echo "$OUT_BAD" | grep -q "vault-flow-staging validator found" \
-  && ok "Branch 14 FIRES on vault-bad (blocks execute-bolts with staging reason)" \
-  || { fail "Branch 14 did NOT fire on vault-bad"; note "    got: $OUT_BAD"; }
-BLOCKED=$(echo "$OUT_BAD" | python3 -c "import json,sys;print(json.load(sys.stdin).get('continue'))" 2>/dev/null)
-[ "$BLOCKED" = "False" ] && ok "emits continue:false (block)" || fail "expected continue:false, got '$BLOCKED'"
+if echo "$OUT_BAD" | grep -qi "staging"; then
+  fail "hook emitted a STAGING block — vault-flow-staging must stay advisory (CLAUDE.md enforcement list)"
+  note "    got: $OUT_BAD"
+else
+  ok "no staging-keyed PreToolUse block on vault-bad (advisory-by-design)"
+fi
+STG_STATUS=$(python3 -c "
+import json
+try: d=json.load(open('$WORK/vault-bad/.mega-sdd/.vault-flow-staging-state.json')); print(d.get('status'))
+except Exception: print('ERR')")
+[ "$STG_STATUS" = "FAIL" ] && ok "staging FAIL state present for analyze to surface (detection intact, enforcement advisory)" \
+  || fail "staging state missing/unexpected on vault-bad: '$STG_STATUS'"
 
 OUT_GOOD=$(mkpayload "$WORK/vault-good" | bash "$HOOK" 2>/dev/null)
-[ -z "$OUT_GOOD" ] && ok "falls through on vault-good (no block when staging preserved)" \
-  || { fail "vault-good unexpectedly blocked"; note "    got: $OUT_GOOD"; }
+if echo "$OUT_GOOD" | grep -qi "staging"; then
+  fail "vault-good unexpectedly staging-blocked"; note "    got: $OUT_GOOD"
+else
+  ok "falls through on vault-good (no staging block)"
+fi
 
 note ""
 note "── Fork-B (NOT asserted here — real-run-only): extract-intelligence authoring §3a stages:,"

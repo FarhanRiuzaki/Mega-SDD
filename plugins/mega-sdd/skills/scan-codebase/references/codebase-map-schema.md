@@ -20,8 +20,14 @@ engine: tree-sitter | regex
 precision_tier: ast | regex
 tree_sitter_version: <version-string>          # only when engine=tree-sitter
 grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
-# staleness stamp — git HEAD at scan time (omit when repo has no .git)
-last_scanned_commit: <git rev-parse HEAD>
+# staleness stamp — verified git HEAD at scan time (omit when the repo has no .git OR
+# `git rev-parse --verify 'HEAD^{commit}'` fails, e.g. a fresh zero-commit repo; consumers
+# treat a stamp equal to the literal string "HEAD" as missing)
+last_scanned_commit: <git rev-parse --verify HEAD^{commit}>
+# truncation marker — present ONLY when a 200-per-category extraction cap fired (anti-halu
+# rail). Lists the section numbers whose content is INCOMPLETE; binding treats absence in a
+# truncated section as UNKNOWN, never as evidence-of-absence (NEW / OQ-create).
+truncated_sections: ["2"]
 ---
 
 # Codebase Map
@@ -83,7 +89,7 @@ framework:
 
 ## How `bind-codebase` uses this
 
-For each vault claim referencing code (endpoint, field, file path), `bind-codebase` greps codebase-map sections 2-4 and naming conventions. Match → CONFIRMED. Mismatch → CONFLICT. Absent → OQ.
+For each vault claim referencing code (endpoint, field, file path), `bind-codebase` greps codebase-map sections 2-4 and naming conventions. Match → CONFIRMED. Mismatch → CONFLICT. Absent → OQ — **except** when the claim's section is listed in `truncated_sections`: absence there is NOT evidence (the element may be beyond the extraction cap) → classify UNKNOWN, and never emit a `create`-type task from it.
 
 ## Detection precision
 

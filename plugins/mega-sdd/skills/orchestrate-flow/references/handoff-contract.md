@@ -323,10 +323,13 @@ handoff:
   status: completed
   artifacts:
     - /path/to/codebase-map.md
+    # conditional (deep-scan ran): starterkit-context.yaml, reuse-index.yaml,
+    # .shared-snapshots/codebase-map.snapshot.json — per the operative copy
   next_action:
     # CWD-conditional (mirrors scan-codebase/references/halts-flags-handoff.md — the operative copy):
-    #   no vault yet (starterkit-first default) → mega-sdd:generate-intent --scan=<map> --auto
-    #   vault already present                  → mega-sdd:bind-codebase <vault> --auto
+    #   no vault yet (starterkit-first default)          → mega-sdd:generate-intent --scan=<map> --auto
+    #   vault already present                            → mega-sdd:bind-codebase <vault> --auto
+    #   sync lane (--changed-only under Mode D)          → mega-sdd:detect-drift --auto
     suggested_skill: mega-sdd:generate-intent
     suggested_args: ["--scan=/path/to/.mega-sdd/codebase/codebase-map.md", "--auto"]
     rationale: "Codebase mapped; starterkit-first — draft the vault scan-aware (bind-codebase next when a vault already exists)."

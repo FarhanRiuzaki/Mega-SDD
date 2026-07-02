@@ -2,7 +2,7 @@
 
 Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. **v1.1 extension (Iter 46)** broadens scope from the original Iter 30 `execute-bolts ↔ detect-drift` hop to additionally cover `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Each extension preserves Iter 30 backward compatibility — v1.0 readers simply skip unfamiliar snapshot_type values.
 
-Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Iter 30 baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); Iter 46 extension adds 30-50% re-run I/O savings on incremental dev cycles (scan→bind hop) + KB freshness check (extract→intent hop).
+Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Iter 30 baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); Iter 46 extension adds a one-sha freshness attestation on the scan→bind hop (NOT a parsing shortcut — binding correctness is unchanged either way) + the KB freshness check (extract→intent hop).
 
 ## Contents
 
@@ -63,7 +63,7 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 
 **v1.1 fields (Iter 46 — OPTIONAL):**
 - `codebase_map_sha256` — populated when `snapshot_type == codebase-map`. Allows downstream `bind-codebase` to detect codebase-map.md staleness in one check vs N source-file checks.
-- `source_files_sha256_map` — populated for `codebase-map` AND `extracted-kb` types. Maps repo-relative source file paths → content sha256 at snapshot generation time. Downstream consumers verify all listed files unchanged → snapshot reusable.
+- `source_files_sha256_map` — populated for the `extracted-kb` type ONLY (its generate-intent freshness check reads it, path-by-path). For `codebase-map` it is written EMPTY `{}` — no consumer reads it (bind-codebase compares `codebase_map_sha256` only) and per-file hashes already live in the map's §2 `Last_Scanned_Sha256` column.
 
 ## Producer responsibilities
 
@@ -102,8 +102,8 @@ Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.j
 - `snapshot_type: "codebase-map"`
 - `generated_by: "scan-codebase@<version>"`
 - `codebase_map_sha256: "<sha256 of just-written codebase-map.md>"`
-- `source_files_sha256_map: {<repo-relative-path>: <sha256>, ...}` — every source file scanned (cached for downstream reuse check)
-- `files[]: []` (empty; downstream consumers use `source_files_sha256_map` instead)
+- `source_files_sha256_map: {}` — EMPTY for this type (no consumer; §2's `Last_Scanned_Sha256` column already carries per-file hashes)
+- `files[]: []` (empty)
 
 ### extract-intelligence (extracted-kb snapshot — v1.6+, Iter 46)
 
@@ -136,10 +136,10 @@ Before Step 3 (claim-vs-code matching):
 
 1. Check if `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` exists
 2. Read its `codebase_map_sha256` field; compare to current `codebase-map.md` sha256
-3. If MATCH → snapshot is fresh; reuse parsed §2 symbol data from codebase-map.md directly (no per-source-file re-tokenize)
-4. If MISMATCH OR snapshot absent → fall back to current per-file re-read behavior (no regression)
+3. If MATCH → map freshness attested (one sha compare); binding proceeds against codebase-map.md as usual
+4. If MISMATCH OR snapshot absent → same binding behavior, minus the attestation (no regression)
 
-Performance: ~30-50% I/O reduction on iterative dev when source files haven't changed between scan-codebase and bind-codebase invocations.
+This hop is a **freshness attestation, NOT a parsing shortcut** (bind-codebase `auto-memory-handoff.md` is the consumer-side contract) — binding correctness and its read path are unchanged whether the attestation confirms or rejects.
 
 ### generate-intent --kb (extracted-kb snapshot consumer — v1.15+, Iter 46)
 

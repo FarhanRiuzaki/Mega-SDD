@@ -15,10 +15,11 @@ Loaded by `scan-codebase` after Step 10 writes `codebase-map.md`. DEFAULT-ON whe
 ## Step 10.5.0 — Trigger check
 
 ```
-IF framework.confidence == HIGH or MEDIUM (≥ 0.5):
+IF framework.confidence in {high, medium}:      # string enum — the ONLY grammar Step 8.5 emits
+                                                # (codebase-map §7: high | medium | low | fallback)
   → proceed to Step 10.5.1 (cache check)
-ELSE:
-  → log "framework confidence LOW (X.XX); deep-scan skipped — install ambiguous, run /mega-sdd:scan-codebase --force-deep to override"
+ELSE (low OR fallback):
+  → log "framework confidence <low|fallback>; deep-scan skipped — detection ambiguous, run /mega-sdd:scan-codebase --force-deep to override"
   → skip Step 10.5 entirely; proceed to Step 11
 ```
 
@@ -48,7 +49,8 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
 
    It probes EVERY supported ecosystem's lock (php composer.lock; js package-lock/yarn/pnpm/bun;
    rust Cargo.lock; go go.sum; ruby Gemfile.lock; python poetry/uv/Pipfile/requirements;
-   jvm gradle.lockfile/pom/gradle) and prints JSON:
+   jvm gradle.lockfile/pom/gradle; dotnet packages.lock.json/Directory.Packages.props/*.csproj
+   folded) and prints JSON:
    - locks_sha256: {<ecosystem>: <hex>}   (only ecosystems present; + lock_files provenance)
    - app_locks_digest      — locks of the APP ecosystem (ruby for Rails, go for Gin, js for Next.js)
    - frontend_locks_digest — js lock when APP ecosystem ≠ js AND a js lock exists
@@ -56,11 +58,24 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
                              else = app_locks_digest
    - all_locks_digest      — every detected ecosystem folded together
 3. Compute per-slice signatures:
-   - auth_sig_input = app_locks_digest + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md)
-   - authz_sig_input = app_locks_digest + framework_pack §authz section content + sha256(lib-patterns/<fw>/rbac-libs.md)
-   - ui_ux_sig_input = frontend_locks_digest + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md)
-   - libs_sig_input = all_locks_digest + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md)
-   - reuse_sig_input = sha256(listing+mtimes of the hinted first-party source dirs) + framework_pack §Reuse discovery section content
+   - src_component(<domain>) = sha256 of the RECURSIVE listing of the pack's <domain> FILE-HINT
+     dirs (the same dirs/globs the subagent prompt's INPUTS-TO-READ names): one line per file,
+     `<repo-relative-path>\t<mtime-epoch-seconds>`, sorted, newline-joined. Recursive so nested
+     edits invalidate; listing+mtime (not content hashes) so it stays cheap; same mechanism the
+     reuse slice already uses. S3 DS-1: slice OUTPUTS are source-derived (auth entrypoints,
+     authz declarations with file:line, ui tokens/config, libs usage_hint grep results), so a
+     source-only edit (a controller, a policy, tailwind.config) MUST invalidate the slice —
+     lock digests alone served stale slices as FULL CACHE HIT forever.
+   - detector = scan-codebase <skill version from SKILL.md frontmatter> (a detector upgrade
+     invalidates all slices — mirrors the memory-layer detector-versioning rail)
+   - auth_sig_input = app_locks_digest + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md) + src_component(auth) + detector
+   - authz_sig_input = app_locks_digest + framework_pack §authz section content + sha256(lib-patterns/<fw>/rbac-libs.md) + src_component(authz) + detector
+   - ui_ux_sig_input = frontend_locks_digest + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md) + src_component(ui_ux) + detector
+   - libs_sig_input = all_locks_digest + framework_pack §libs section + sha256(lib-patterns/<fw>/generic-libs.md) + src_component(libs) + detector
+     (src_component(libs) = the reuse slice's first-party-source listing, reused as-is — the
+     libs usage_hint entries are greps of that same source tree, so a source move/rename must
+     invalidate them; no extra listing is computed)
+   - reuse_sig_input = sha256(listing+mtimes of the hinted first-party source dirs) + framework_pack §Reuse discovery section content + detector
      (NOT lock files — reuse tracks first-party source, not deps; output written to reuse-index.yaml, separate from starterkit-context.yaml)
    - auth_signature = sha256(auth_sig_input); similarly for authz/ui_ux/libs/reuse
 4. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
@@ -72,6 +87,12 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
         - For each slice in [auth, authz, ui_ux, libs, reuse]:
             IF prior.cache_signatures.per_slice[<slice>].signature_sha256 != current_<slice>_signature:
               stale_slices.append(<slice>)
+            IF prior has NO per_slice entry for <slice> (incl. a domain listed in prior
+              partial_slices — failed slices get no per_slice entry, see Step 10.5.3 step 5):
+              stale_slices.append(<slice>)
+        - stale_slices ∪= prior.partial_slices   # S3 DS-2: a slice that failed last run must
+          # re-dispatch — otherwise `partial: true` never self-heals (the prior signature was
+          # written fresh while the OUTPUT is missing).
         - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3; reuse existing starterkit-context.yaml AND existing reuse-index.yaml; set handoff_reused_flag = true; proceed to Step 11.
         - IF stale_slices is non-empty → PARTIAL CACHE HIT: proceed to Step 10.5.1.5; dispatch only stale_slices subagents in Step 10.5.2; consolidator merges fresh slices with cached slices in Step 10.5.3.
 5. ELSE (file not present) → FULL CACHE MISS: stale_slices = [auth, authz, ui_ux, libs, reuse]; proceed to Step 10.5.1.5.
@@ -96,7 +117,10 @@ Main thread reads + parses manifest files ONCE, builds `manifest_facts` struct, 
      - pyproject.toml → [project.dependencies] / [project.optional-dependencies]
                         (else requirements.txt lines; else Pipfile [packages])
      - pom.xml / build.gradle(.kts) → dependency coordinates (groupId:artifactId:version)
-2. Build manifest_facts YAML struct — one block PER detected ecosystem; omit absent ones:
+     - *.csproj / Directory.Packages.props → PackageReference items (Include + Version); TargetFramework
+2. Build manifest_facts YAML struct — one block PER detected ecosystem; omit absent ones.
+   The dispatcher emits the struct with the DATA-FENCE comment (deep-scan-prompts §injection
+   format) so every subagent receives repo-derived content explicitly marked as data:
 
      manifest_facts:
        composer:                     # php
@@ -126,9 +150,13 @@ Main thread reads + parses manifest files ONCE, builds `manifest_facts` struct, 
        jvm:                          # java/kotlin
          dependencies: {"<groupId>:<artifactId>": <version>, ...}
          build_tool: maven | gradle
+       dotnet:                       # csharp/fsharp (.NET)
+         dependencies: {<PackageReference Include>: <Version>, ...}
+         target_framework: <TargetFramework value>
+         central_package_management: true | false   # Directory.Packages.props present
 
 3. Embed manifest_facts struct into the <MANIFEST_FACTS> placeholder of each subagent prompt (templates in the deep-scan subagent prompts reference).
-4. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read ANY manifest or lock file (composer.json / package.json / Cargo.toml / go.mod / Gemfile / pyproject.toml / pom.xml / their locks). Spend your context budget on framework-specific source files per the pack's file hints — see INPUTS TO READ for the per-domain list."
+4. Subagent prompts INSTRUCT: "manifest_facts is authoritative; do NOT re-read ANY manifest or lock file (composer.json / package.json / Cargo.toml / go.mod / Gemfile / pyproject.toml / pom.xml / *.csproj / their locks). Spend your context budget on framework-specific source files per the pack's file hints — see INPUTS TO READ for the per-domain list."
 ```
 
 **Net savings:** ~9-24KB per scan (4 manifest-consuming subagents × ~2-6KB saved per subagent; reuse-extractor reads first-party source dirs directly, not manifests).
@@ -242,8 +270,9 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
    - If validation passes: include slice in merged output
    - EXCEPTION — reuse slice: do NOT merge into starterkit-context.yaml. Write it atomically to
      <project>/.mega-sdd/codebase/reuse-index.yaml per `plugins/mega-sdd/references/reuse-index-schema.md` (same
-     temp-file+rename pattern as starterkit-context write). The handoff carries:
-     `reuse_index: { path: .mega-sdd/codebase/reuse-index.yaml, counts: {helpers, model_api, services, commands}, truncated }`.
+     temp-file+rename pattern as starterkit-context write, INCLUDING the step-6 secret-scrub of the
+     temp file before its mv — first-party signature lines are the likeliest to embed a default credential).
+     List reuse-index.yaml in the handoff `artifacts:` (per halts-flags-handoff.md §Handoff YAML emission).
 4. Merge fresh slices (from dispatched subagents) with cached slices (from prior YAML).
    NOTE: only auth/authz/ui_ux/libs slices are merged into starterkit-context.yaml; the reuse slice is consolidated separately (see step 3 EXCEPTION above).
    - Conflict resolution: fresh always wins over cached for same domain (cached is the fallback for non-stale domains).
@@ -325,7 +354,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
            extras: {}
        cache_signatures:                            # v2.1 schema (per-ecosystem locks; replaces v2.0 php/js-only + v1.0 cache_key:)
          locks_sha256:                              # one entry per detected ecosystem (Step 10.5.1.1)
-           <ecosystem>: <hex>                       # php | js | rust | go | ruby | python | jvm
+           <ecosystem>: <hex>                       # php | js | rust | go | ruby | python | jvm | dotnet
          app_ecosystem: <ecosystem of §7 Framework> # which ecosystem drove app_locks_digest
          framework_pack: <pack basename>
          per_slice:
@@ -335,6 +364,10 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
            libs: { signature_sha256: <hex>, generated_at: <ISO8601> }
            reuse: { signature_sha256: <hex>, generated_at: <ISO8601> }
        # NOTE: cached slices keep their original generated_at; fresh slices get current ISO8601.
+       # NOTE (S3 DS-2 — failed slices): do NOT write a per_slice entry for a domain listed in
+       #   partial_slices. A failed slice has no output to cache; writing its (fresh) signature
+       #   anyway made the next run diff it as unchanged → FULL CACHE HIT serving the partial
+       #   YAML forever. No entry → Step 10.5.1.4c marks it stale → it re-dispatches and heals.
        # NOTE (v2.0 → v2.1): signature INPUTS changed (per-ecosystem digests), so v2.0-era cached
        #   signatures mismatch on the first v2.1 scan → all slices re-dispatch once, then the new
        #   schema is written. Self-healing; no special migration branch needed.
@@ -344,8 +377,12 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
        #   reuse_sig_input = sha256(listing+mtimes of the hinted first-party source dirs) +
        #     framework_pack ## Reuse discovery section content (NOT lock files — reuse tracks
        #     first-party source, not deps).
-6. Write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
-   (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, then mv)
+6. Secret-scrub, then write atomically to <project>/.mega-sdd/codebase/starterkit-context.yaml
+   (Step 10a gate, second write site: run `bash "$PLUGIN_ROOT/scripts/secret-scan.sh" --redact
+   .starterkit-context.yaml.tmp` on the assembled temp file BEFORE the mv — deep-read slices quote
+   real config/source lines, so a hardcoded credential must not ship in the artifact. Same scrub
+   applies to .reuse-index.yaml.tmp in the step-3 EXCEPTION write.)
+   (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, scrub, then mv)
 7. Validate the written file is parseable:
    - If parse fails: emit halt deep_scan_cache_corrupt (soft); delete file; retry write once
    - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
@@ -362,16 +399,11 @@ Use the existing memory file-lock pattern (per `mega-sdd:memory` SKILL.md §file
 
 ## Step 10.6 — Emit codebase-map shared snapshot
 
-After Step 10 codebase-map.md write completes, additionally write a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §scan-codebase (codebase-map snapshot)`. Enables downstream `bind-codebase` to skip per-source-file re-tokenization when codebase-map.md is fresh.
+After Step 10 codebase-map.md write completes, additionally write a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §scan-codebase (codebase-map snapshot)`. Enables downstream `bind-codebase` to attest map freshness with ONE sha compare — a freshness attestation, NOT a parsing shortcut (the consumer's own words: bind-codebase `auto-memory-handoff.md`); binding correctness is unchanged either way.
 
 ```
 1. Compute codebase_map_sha256 = sha256(<just-written codebase-map.md>)
-2. Build source_files_sha256_map from the files enumerated during Step 10 symbol extraction:
-   {
-     "<repo-relative-path>": "<sha256-hex>",
-     ...
-   }
-3. Write atomically to <project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json:
+2. Write atomically to <project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json:
    {
      "snapshot_schema_version": "1.1",
      "snapshot_type": "codebase-map",
@@ -380,9 +412,13 @@ After Step 10 codebase-map.md write completes, additionally write a shared-snaps
      "scope": null,
      "files": [],
      "codebase_map_sha256": "<from step 1>",
-     "source_files_sha256_map": { ... }
+     "source_files_sha256_map": {}
    }
-4. Use temp-file + rename for atomicity (same pattern as Step 10.5.3 starterkit-context write).
+   (source_files_sha256_map stays EMPTY for the codebase-map snapshot type — no consumer reads
+   it, and per-file hashes already live in §2's Last_Scanned_Sha256 column; hashing every source
+   file again here was write-only cost. The extracted-kb snapshot type still populates it — its
+   generate-intent freshness check is a real consumer.)
+3. Use temp-file + rename for atomicity (same pattern as Step 10.5.3 starterkit-context write).
 ```
 
 If write fails (disk full / permissions): log warning + continue (snapshot is optimization, not correctness — bind-codebase falls back gracefully per shared-snapshot-schema.md §bind-codebase consumer).

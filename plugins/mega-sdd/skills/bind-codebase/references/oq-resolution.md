@@ -51,12 +51,12 @@ e. **Medium/low confidence** tech-recommend OQs → skip surfacing; flow through
 Logical position: after Hard Rules emission, since it processes user-deferred OQs against the now-augmented codebase-map. For each vault OQ with `status: deferred` AND `defer_to: binding`:
 
 a. **Extract** the OQ text + section context.
-b. **Search the codebase-map for evidence:** entity name → §3 (data models); endpoint path → §4 (routes); file/symbol → §2 (public interfaces); otherwise string-search all sections with a conservative fuzzy threshold.
+b. **Search the codebase-map for evidence:** entity name → §4 (data models); endpoint path → §3 (routes); file/symbol → §2 (public interfaces); otherwise string-search all sections with a conservative fuzzy threshold.
 c. **High-confidence match** (single unambiguous hit): set `status: resolved`, `resolved_at: <now>`, `resolution: "Auto-resolved by bind-codebase. Evidence: <codebase-map citation>"`. Append to `binding.md` `## Auto-Resolved Deferred OQs`:
    ```markdown
    | OQ-ID | Question | Evidence (codebase-map) | Status |
    |---|---|---|---|
-   | OQ-DATA-001 | ... | §3 entry: User table line 42 | auto-resolved |
+   | OQ-DATA-001 | ... | §4 entry: User table line 42 | auto-resolved |
    ```
 d. **No match / ambiguous** (multiple hits or low confidence): do NOT modify status (stays `deferred`); propagate to `binding.md` `## Open Questions` with `Auto-resolve attempted: no match found`. The user walks these via `/mega-sdd:resolve-oq --binding <binding.md>`.
 e. **Conservative threshold:** when in doubt, fall back to manual resolution (d). Never silently auto-resolve a deferred OQ that could be wrong; never write an evidence string that doesn't exist in the codebase-map.

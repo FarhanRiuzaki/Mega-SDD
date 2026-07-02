@@ -283,7 +283,7 @@ For each CONFIRMED claim that specifies fields/params explicitly:
 
 ```
 vault claim: "POST /api/login accepts { nip, nama, password }"
-codebase-map §4 (routes) + §2 (handler signature): login(nip, password)
+codebase-map §3 (routes) + §2 (handler signature): login(nip, password)
 
 Set V = { nip, nama, password }  (vault claim fields)
 Set C = { nip, password }         (code field set from tree-sitter signature extraction)

@@ -14,6 +14,7 @@ The query files in this directory are tested against these tree-sitter grammar v
 | Go | tree-sitter/tree-sitter-go | v0.21.x | `tags-go.scm` | Covers .go |
 | Ruby | tree-sitter/tree-sitter-ruby | v0.21.x | `tags-ruby.scm` | Covers .rb (not .erb templates) |
 | Java | tree-sitter/tree-sitter-java | v0.21.x | `tags-java.scm` | Covers .java (not Kotlin) |
+| C# | tree-sitter/tree-sitter-c-sharp | v0.21.x | `tags-csharp.scm` | Covers .cs (not .fsx/.fs — F# extracts via regex) |
 
 ## Installation
 
@@ -35,7 +36,7 @@ If a needed grammar is not installed, that language falls back to regex extracti
 
 These inputs fall back to regex extraction regardless of grammar availability:
 - Blade templates (.blade.php), ERB templates (.erb)
-- Kotlin (.kt — Spring/Gradle Kotlin projects extract via regex)
+- Kotlin (.kt) and F# (.fs) — extract via the dedicated Kotlin/F# regex rows in `references/scan-procedure.md` Step 5
 - Vue / Svelte single-file components
 - Bleeding-edge TypeScript syntax (when the grammar lags the language)
 - Configuration files (YAML / TOML — parsed as text)

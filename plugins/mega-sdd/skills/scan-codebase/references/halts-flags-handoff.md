@@ -15,12 +15,12 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memor
 ## Anti-hallucination rails
 
 - If a section has no detection: write "None detected" — do NOT invent.
-- Limit symbol extraction to **first 200 per category** (prevents giant maps). Note "truncated at 200, see file scan log for full list."
+- Limit symbol extraction to **first 200 per category** (prevents giant maps). When a cap fires, stamp `truncated_sections: ["<section numbers>"]` in the map frontmatter — binding MUST treat absence-in-a-truncated-section as UNKNOWN, never as NEW/absent evidence (a truncated-away implemented element must not become a duplicate-implementation `create` task).
 - Cite line numbers for routes/models (`src/foo.ts:42`) so binding can verify.
-- Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. Schema-validation drops slices that violate.
-- Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field. Schema-validation drops slices without `_source`.
-- Deep-scan read-only: subagents have NO Edit/Write/mutating-Bash tool access. Read-only enforced at dispatch.
-- Secret-scan gate: assembled `codebase-map.md` / `starterkit-context.yaml` content is scrubbed BEFORE write by running `scripts/secret-scan.sh --redact` (deterministic; matched values become `[REDACTED-SECRET]`) + one chat warning citing the source `file:line` (per `references/scan-procedure.md` Step 10a). The gate redacts scan outputs only — it never edits repo source.
+- Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. The consolidator self-validates each slice against starterkit-context-schema.md before write and drops violators (a rules-tier LLM check, not a hook).
+- Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field (libs slice: `_source` names the producing manifest). Slices without `_source` are dropped by the consolidator self-validation.
+- Deep-scan read-only: every extractor prompt template carries the READ-ONLY rail (no Edit/Write/mutating Bash). This is a **prompt-level rule (rules tier), not a dispatch-level tool restriction** — the extractors are prompt-template dispatches, not plugin agents with a `tools:` allowlist. A slice whose output evidences a rail violation is dropped at consolidation.
+- Secret-scan gate: assembled `codebase-map.md` / `starterkit-context.yaml` / `reuse-index.yaml` content is scrubbed BEFORE write by running `scripts/secret-scan.sh --redact` (deterministic; matched values become `[REDACTED-SECRET]`; a private-key match redacts the WHOLE block, header through END marker) + one chat warning citing the source `file:line` (per `references/scan-procedure.md` Step 10a; the deep-scan write sites are Step 10.5.3 steps 3+6). The gate redacts scan outputs only — it never edits repo source.
 
 ## Halt conditions
 
@@ -82,15 +82,15 @@ Recovery: user re-runs scan-codebase later. Chain halts.
 - `--auto`: skip confirmation prompts
 - `--force-large`: proceed on >100k file repos
 - `--engine=tree-sitter|regex`: force engine; default auto-detect via `command -v tree-sitter`
-- `--shallow-scan`: skip Step 10.5 deep-scan stage; emit only surface codebase-map.md (opt-out for deep-scan)
+- `--shallow-scan`: two coupled fast-path semantics — (a) skip the Step 10.5 deep-scan stage (emit only the surface codebase-map.md), and (b) enable the Step 5 per-file invalidation gate (reuse prior §2 rows whose `Last_Scanned_Sha256` matches the file's current hash; only changed files re-extract — per `references/scan-procedure.md` §Step 5)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
 - `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
-- `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, truncate the journal; auto-falls back to full scan when preconditions absent (per `references/scan-procedure.md` §Incremental mode)
+- `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, consume the journal (rotate-and-delete per `references/scan-procedure.md` §Incremental step 4 — never truncate-in-place, which loses concurrent-session appends); auto-falls back to full scan when preconditions absent (per §Incremental mode)
 - `--memory-off`: disable memory-layer reads and writes
 
 ## Hand-off announcement
 
-On completion, announce: "Codebase map written to `<path>`. Run `/mega-sdd:bind-codebase <vault>` to validate your vault against it."
+On completion, announce: "Codebase map written to `<path>`." followed by the CWD-conditional next step (a vault exists → `/mega-sdd:bind-codebase <vault>`; none yet → `/mega-sdd:generate-intent --scan=<map>`).
 
 ## Handoff YAML emission
 
@@ -104,6 +104,8 @@ handoff:
   artifacts:
     - <absolute path to .mega-sdd/codebase/codebase-map.md>
     - <absolute path to .mega-sdd/codebase/starterkit-context.yaml>  # only when deep-scan ran
+    - <absolute path to .mega-sdd/codebase/reuse-index.yaml>          # only when deep-scan ran (reuse slice)
+    - <absolute path to .mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json>  # only when Step 10.6 wrote it
   starterkit_context:                                                  # block only when deep-scan ran
     reused: false                                                       # true if cache hit
     framework: laravel
@@ -112,11 +114,15 @@ handoff:
     ui_stack: "alpine + tailwind + sweetalert2"
     libs_count: 47
   next_action:
+    # CWD-CONDITIONAL — resolve at emission time (the example below is the no-vault branch):
+    #   no vault yet (starterkit-first Mode A/B default) → mega-sdd:generate-intent --scan=<map> --auto
+    #   a vault already exists                           → mega-sdd:bind-codebase <vault> --auto
+    #   invoked with --changed-only by the sync lane (Mode D) → mega-sdd:detect-drift --auto
     suggested_skill: mega-sdd:generate-intent
     suggested_args:
       - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
       - "--auto"
-    rationale: "Scan complete; starterkit-first ordering — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation."
+    rationale: "Scan complete; starterkit-first ordering — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation (bind-codebase when a vault already exists; detect-drift on the sync lane)."
   blockers: []                                          # populated when status: halted
   metrics:
     files_scanned: <int>

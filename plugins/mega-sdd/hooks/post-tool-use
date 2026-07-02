@@ -513,11 +513,21 @@ except Exception:
 
     # ── Iter 68 path-scoped dispatch: codebase-map.md write ─────────────────
     # Triggers validate-codebase-map (frontmatter + 7-section schema integrity).
+    # S3 V7: also fires for the legacy <project-root>/codebase-map.md location —
+    # bind-codebase probes and binds against it, so it must be validated too.
     case "$FILE_PATH" in
       *.mega-sdd/codebase/codebase-map.md)
         VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
         if [ -x "$VALIDATOR_CM" ]; then
           bash "$VALIDATOR_CM" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        fi
+        ;;
+      */codebase-map.md|codebase-map.md)
+        if [ "$FILE_PATH" = "${PROJECT_ROOT}/codebase-map.md" ] || [ "$FILE_PATH" = "codebase-map.md" ]; then
+          VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
+          if [ -x "$VALIDATOR_CM" ]; then
+            bash "$VALIDATOR_CM" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+          fi
         fi
         ;;
     esac

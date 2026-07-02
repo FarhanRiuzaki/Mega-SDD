@@ -44,8 +44,8 @@ For each CONFIRMED claim, additionally classify implementation readiness. This s
 | `PARTIAL_FIELDS_MISSING` | Entity/handler exists but code lacks some claimed fields (C ⊂ V) | field-level set diff at `precision_tier: ast` |
 | `PARTIAL_FIELDS_SURPLUS` | Entity/handler exists but code has fields the claim doesn't mention (V ⊂ C) | field-level set diff at `precision_tier: ast` |
 | `PARTIAL_FIELDS_BOTH` | Shared fields exist but both sides also diverge (rare; bidirectional drift) | field-level set diff at `precision_tier: ast` |
-| `NEW` | No matching evidence (verdict downgraded from CONFIRMED to OQ when no anchor at all) | not in any codebase-map section |
-| `UNKNOWN` | Codebase-map silent on this claim type (e.g., dynamic routes, magic methods) OR ambiguous/disjoint match OR `precision_tier: regex` (PARTIAL collapses to UNKNOWN) | heuristic detection limit reached |
+| `NEW` | No matching evidence (verdict downgraded from CONFIRMED to OQ when no anchor at all) — UNLESS the claim's map section is listed in the map frontmatter's `truncated_sections` (a 200-per-category extraction cap fired there; absence is NOT evidence) → `UNKNOWN` instead, and never a `create`-type task | not in any codebase-map section |
+| `UNKNOWN` | Codebase-map silent on this claim type (e.g., dynamic routes, magic methods) OR ambiguous/disjoint match OR the claim's section is in `truncated_sections` OR `precision_tier: regex` (PARTIAL collapses to UNKNOWN) | heuristic detection limit reached |
 
 The per-claim-type probe rules, the deterministic field-level diff (ADD/KEEP/REMOVE set ops), the disjoint-set check, and the worked example live in the implementation-state reference listed in `bind-codebase/SKILL.md` §Specialist references.
 

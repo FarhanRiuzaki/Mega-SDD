@@ -3,6 +3,7 @@ generated_by: scan-codebase
 generated_at: 2026-06-02T00:00:00Z
 repo_root: .
 languages_detected: [php]
+engine: tree-sitter
 precision_tier: ast
 ---
 

@@ -30,5 +30,5 @@ Autonomous behavior (`--auto` — decision deferral, per spec §3.7):
 Hard rails:
 - Git state first: repo mid-rebase/merge (probe `git rev-parse --git-path rebase-merge` / `--git-path MERGE_HEAD` — worktree-safe; never the literal `.git/...` path) → STOP with "resolve the git state, then re-run sync" (a map scanned mid-conflict is garbage).
 - The binding CONFLICT gate applies unchanged — sync never bypasses the moat.
-- The dirty journal is a HINT; git is always consulted too. Journal truncated only after a successful map write.
+- The dirty journal is a HINT; git is always consulted too. Journal consumed via rotate-and-delete (per scan-procedure §Incremental step 4): rotated before processing, consumed file deleted only after a successful map write — never truncated in place (concurrent-session appends land in the fresh journal).
 - No change signal detected → report "in sync" and stop (no vacuous re-runs).

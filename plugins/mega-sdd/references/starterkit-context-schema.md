@@ -350,6 +350,7 @@ libs:
     version: "4.0"
     category: auth                 # enum: auth | rbac | ui | queue | cache | log | test | http | misc
     usage_hint: ["app/Http/Kernel.php", "routes/api.php"]  # files where lib is imported/used
+    _source: ["composer.json"]     # manifest whose ecosystem block produced the entry (citation rail)
   # ... (repeat per lib in manifests)
 ```
 
@@ -362,45 +363,55 @@ cache_signatures:
     js: "def456..."                     #   e.g., sha256(yarn.lock) for its asset layer
   app_ecosystem: ruby                   # ecosystem of §7 Framework
   framework_pack: "rails"               # retained
-  per_slice:
+  per_slice:                            # 5 slices — the reuse signature is stored here for
+                                        # bookkeeping even though its OUTPUT lives in the
+                                        # sibling reuse-index.yaml (deep-scan-stage Step 10.5.3)
     auth:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md + src_component(auth) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     authz:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + authz-libs.md)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + authz-libs.md + src_component(authz) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     ui_ux:
-      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + ui-libs.md)
+      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + ui-libs.md + src_component(ui_ux) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     libs:
-      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + generic-libs.md)
+      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + generic-libs.md + src_component(libs) + detector version)
+      generated_at: "2026-05-25T10:00:00Z"
+    reuse:
+      signature_sha256: <hex>           # sha256(listing+mtimes of hinted first-party dirs + framework_pack §Reuse discovery + detector version)
       generated_at: "2026-05-25T10:00:00Z"
 ```
 
-**Cache reuse rule (v2.0+, per-slice):** on re-scan, scan-codebase computes the current signature for each of 4 slices independently. For each slice:
+> `src_component(<domain>)` = sha256 of listing+mtimes of the pack's domain file-hint dirs — slice outputs are source-derived, so a source-only edit invalidates the slice (deep-scan-stage Step 10.5.1.3). A domain listed in `partial_slices` gets NO per_slice entry (its next run must re-dispatch).
+
+**Cache reuse rule (v2.0+, per-slice):** on re-scan, scan-codebase computes the current signature for each of the 5 slices independently. For each slice:
 - IF prior.per_slice[<slice>].signature_sha256 == current_<slice>_signature → slice reused (no subagent dispatch for that slice)
-- ELSE → that slice's subagent re-dispatched; consolidator merges fresh slice with other cached slices
+- ELSE (or no per_slice entry, or slice listed in prior partial_slices) → that slice's subagent re-dispatched; consolidator merges fresh slice with other cached slices
 
 **Cache invalidation matrix (v2.1, ecosystem-relative — examples for a non-JS app with a JS asset layer, e.g., Rails+esbuild or Laravel+Vite):**
 
 | Input changed | Slices invalidated | Subagent dispatches needed |
 |---|---|---|
-| app-ecosystem lock only (Gemfile.lock / composer.lock / go.sum / Cargo.lock / …) | auth, authz, libs (3/4) | 3 |
-| js asset-layer lock only | ui_ux, libs (2/4) | 2 |
-| Both | auth, authz, ui_ux, libs (4/4) | 4 (worst case) |
-| framework_pack §auth section | auth (1/4) | 1 |
-| framework_pack §authz section | authz (1/4) | 1 |
-| framework_pack §ui section | ui_ux (1/4) | 1 |
-| framework_pack §libs section | libs (1/4) | 1 |
-| lib-patterns/<fw>/auth-libs.md | auth (1/4) | 1 (best case — 75% saving) |
+| app-ecosystem lock only (Gemfile.lock / composer.lock / go.sum / Cargo.lock / …) | auth, authz, libs (3/5) | 3 |
+| js asset-layer lock only | ui_ux, libs (2/5) | 2 |
+| Both | auth, authz, ui_ux, libs (4/5) | 4 |
+| framework_pack §auth section | auth (1/5) | 1 |
+| framework_pack §authz section | authz (1/5) | 1 |
+| framework_pack §ui section | ui_ux (1/5) | 1 |
+| framework_pack §libs section | libs (1/5) | 1 |
+| lib-patterns/<fw>/auth-libs.md | auth (1/5) | 1 (best case — 80% saving) |
+| domain-hinted source dirs (controllers / policies / views…) | the domains whose src_component covers them | 1–3 |
+| first-party source dirs (reuse hints) | reuse (1/5) | 1 |
+| skill (detector) version bump | all (5/5) | 5 |
 
-For a single-ecosystem app (pure Go API, pure Next.js), `app_locks_digest == frontend_locks_digest == all_locks_digest`, so any lock change re-dispatches all 4 — correctness preserved, granularity simply has nothing to split.
+For a single-ecosystem app (pure Go API, pure Next.js), `app_locks_digest == frontend_locks_digest == all_locks_digest`, so any lock change re-dispatches the 4 manifest-fed slices — correctness preserved, granularity simply has nothing to split.
 
-**Typical savings:** app-dep edit ≈ 25% (3 of 4 dispatched). Asset-layer dep edit ≈ 50% (2 of 4). Single lib-pattern edit ≈ 75% (1 of 4). Framework pack rewrite or initial scan ≈ 0% (all 4 dispatched).
+**Typical savings:** app-dep edit ≈ 40% (3 of 5 dispatched). Asset-layer dep edit ≈ 60% (2 of 5). Single lib-pattern edit ≈ 80% (1 of 5). Framework pack rewrite, detector bump, or initial scan ≈ 0% (all 5 dispatched).
 
 ### Legacy v1.0 `cache_key:` block (deprecated — backward-compat read)
 
-Oldest starterkit-context.yaml files have a `cache_key:` block in place of `cache_signatures:`. Producers treat any prior v1.0 file as fully-stale on read (forces all 4 subagent re-dispatches) and write the current `cache_signatures:` schema. One-time migration cost per project; zero breaking change. (v2.0 php/js-only signature files self-heal the same way — changed signature inputs mismatch once, then v2.1 is written.)
+Oldest starterkit-context.yaml files have a `cache_key:` block in place of `cache_signatures:`. Producers treat any prior v1.0 file as fully-stale on read (forces all 5 subagent re-dispatches) and write the current `cache_signatures:` schema. One-time migration cost per project; zero breaking change. (v2.0 php/js-only signature files self-heal the same way — changed signature inputs mismatch once, then v2.1 is written.)
 
 ---
 
@@ -424,7 +435,7 @@ Downstream consumers MUST handle `partial: true` gracefully: if a slice they nee
 ## Anti-halu rails
 
 1. **No-fabrication rail**: every `lib:` field MAY be `not_detected`. Subagents MUST mark absence rather than guess presence.
-2. **Citation rail**: every block MUST include `_source: [<file>, ...]` companion field listing files used to derive it.
+2. **Citation rail**: every block MUST include `_source: [<file>, ...]` companion field listing files used to derive it. For the libs slice, `_source` names the MANIFEST whose ecosystem block produced the entry (e.g. `composer.json`) — libs entries derive from manifests, not source reads, and the drop rule applies to them under that grammar.
 3. **Schema validation**: consolidator validates output against this schema before writing; malformed slices are dropped (with `partial_slices:` updated) rather than written.
 
 ---

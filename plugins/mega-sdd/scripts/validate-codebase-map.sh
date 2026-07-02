@@ -2,19 +2,24 @@
 # validate-codebase-map.sh — R6: codebase-map schema validation.
 #
 # Checks codebase-map.md has all 7 required sections and valid frontmatter.
+# Probes the same locations bind-codebase binds against (canonical
+# .mega-sdd/codebase/codebase-map.md, then legacy <root>/codebase-map.md),
+# or validates an explicit --file-path.
 #
-# Inputs: --cwd=<project> [--quiet]
+# Inputs: --cwd=<project> [--file-path=<map>] [--quiet]
 # Outputs: <cwd>/.mega-sdd/.codebase-map-state.json
-# Exit: 0=PASS/SKIP, 1=FAIL, 2=error
+# Exit: 0=PASS/SKIP/WARN, 1=FAIL, 2=error
 
 set -uo pipefail
 
 CWD=""
+FILE_PATH=""
 QUIET=0
 
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#--cwd=}" ;;
+    --file-path=*) FILE_PATH="${arg#--file-path=}" ;;
     --quiet) QUIET=1 ;;
   esac
 done
@@ -32,9 +37,28 @@ fi
 if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
 
 STATE_FILE="${CWD}/.mega-sdd/.codebase-map-state.json"
-MAP_PATH="${CWD}/.mega-sdd/codebase/codebase-map.md"
+# A true legacy-layout project (<root>/codebase-map.md, no .mega-sdd/ yet) has no
+# state dir — without this the state write fails silently and the DEGENERATE gate
+# reads nothing (fail-open on the exact layout the legacy probe exists for).
+mkdir -p "${CWD}/.mega-sdd" 2>/dev/null
+# S3 V7: probe order mirrors bind-codebase SKILL.md (canonical → legacy root) so
+# the map the binder actually binds against is the map that gets validated.
+# An EXPLICIT --file-path that doesn't exist is a usage error (exit 2, state
+# untouched) — never silently substitute a probed map for the asked-for file.
+MAP_PATH=""
+if [ -n "$FILE_PATH" ] && [ ! -f "$FILE_PATH" ]; then
+  echo "validate-codebase-map: --file-path not found: $FILE_PATH" >&2
+  exit 2
+fi
+if [ -n "$FILE_PATH" ]; then
+  MAP_PATH="$FILE_PATH"
+elif [ -f "${CWD}/.mega-sdd/codebase/codebase-map.md" ]; then
+  MAP_PATH="${CWD}/.mega-sdd/codebase/codebase-map.md"
+elif [ -f "${CWD}/codebase-map.md" ]; then
+  MAP_PATH="${CWD}/codebase-map.md"
+fi
 
-if [ ! -f "$MAP_PATH" ]; then
+if [ -z "$MAP_PATH" ]; then
   echo '{"status":"SKIP","detail":"no codebase-map.md found"}' > "$STATE_FILE" 2>/dev/null
   [ "$QUIET" -eq 0 ] && echo '{"status":"SKIP","detail":"no codebase-map.md found"}'
   exit 0
@@ -56,7 +80,29 @@ except Exception as e:
     print(json.dumps({"status": "FAIL", "checks": [], "issues": [{"halt_type": "codebase_map_unreadable", "detail": str(e)}]}))
     raise SystemExit(0)
 
-# Check 1: frontmatter present
+# S3 V5: a heading (or frontmatter field) quoted inside a fenced code block is
+# NOT a section — a degenerate map echoing the schema's own fenced skeleton must
+# not satisfy the presence checks. Strip fenced blocks before structural checks.
+BACKTICK_FENCE = "\x60\x60\x60"  # three backticks, \x60-escaped: a literal odd-count backtick run breaks bash-3.2 $() heredoc parsing
+
+
+def strip_fenced(text):
+    out, in_fence, fence_tok = [], False, ""
+    for line in text.split("\n"):
+        stripped = line.lstrip()
+        if not in_fence and (stripped.startswith(BACKTICK_FENCE) or stripped.startswith("~~~")):
+            in_fence, fence_tok = True, stripped[:3]
+            continue
+        if in_fence and stripped.startswith(fence_tok):
+            in_fence = False
+            continue
+        if not in_fence:
+            out.append(line)
+    return "\n".join(out)
+
+body = strip_fenced(content)
+
+# Check 1: frontmatter present (must open the file; fields are line-anchored keys)
 fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
 if not fm_match:
     issues.append({"halt_type": "codebase_map_no_frontmatter", "detail": "missing YAML frontmatter"})
@@ -64,15 +110,46 @@ if not fm_match:
 else:
     checks.append({"check": "frontmatter_present", "status": "PASS"})
     fm = fm_match.group(1)
-    required_fm = ["generated_by", "generated_at", "repo_root", "languages_detected"]
+    # S3 V6: `engine` is schema-required (bind-codebase keys precision behavior
+    # off it); a map without it predates the precision contract → re-scan.
+    required_fm = ["generated_by", "generated_at", "repo_root", "languages_detected", "engine"]
     for field in required_fm:
-        if field + ":" not in fm:
+        if not re.search(r"^\s*" + re.escape(field) + r"\s*:", fm, re.MULTILINE):
             issues.append({"halt_type": "codebase_map_fm_missing", "detail": f"frontmatter missing: {field}"})
             checks.append({"check": f"fm_{field}", "status": "FAIL"})
         else:
             checks.append({"check": f"fm_{field}", "status": "PASS"})
+    # S3 V6: staleness stamp — the whole incremental/sync lane keys off
+    # last_scanned_commit; in a git repo its absence silently disables that lane.
+    # WARN (advisory): non-git repos legitimately omit it (schema: OPTIONAL), and a
+    # zero-commit repo (no resolvable HEAD) legitimately omits it too. A stamp whose
+    # VALUE is the literal string "HEAD" is the zero-commit-era poison shape the
+    # procedure defines as missing (scan-procedure §Step 10) — WARN, not PASS.
+    if os.path.exists(os.path.join(cwd, ".git")):
+        import subprocess
+        try:
+            _head_ok = subprocess.run(
+                ["git", "-C", cwd, "rev-parse", "--verify", "HEAD^{commit}"],
+                capture_output=True, timeout=10).returncode == 0
+        except Exception:
+            _head_ok = True  # can't probe → keep the check active
+        stamp_m = re.search(r"^\s*last_scanned_commit\s*:\s*(\S+)", fm, re.MULTILINE)
+        stamp_val = stamp_m.group(1).strip("'\"") if stamp_m else None
+        if stamp_val == "HEAD":
+            issues.append({"halt_type": "codebase_map_staleness_stamp_missing",
+                           "detail": "last_scanned_commit is the literal string 'HEAD' (zero-commit-era "
+                                     "poisoned stamp) — consumers treat it as missing; a re-scan restamps."})
+            checks.append({"check": "fm_last_scanned_commit", "status": "WARN"})
+        elif stamp_val is None and _head_ok:
+            issues.append({"halt_type": "codebase_map_staleness_stamp_missing",
+                           "detail": "repo has .git but frontmatter lacks last_scanned_commit — "
+                                     "incremental sync (--changed-only) and drift staleness checks "
+                                     "degrade to full comparison until the next full scan restamps."})
+            checks.append({"check": "fm_last_scanned_commit", "status": "WARN"})
+        else:
+            checks.append({"check": "fm_last_scanned_commit", "status": "PASS"})
 
-# Check 2: 7 required sections present
+# Check 2: 7 required sections present — line-anchored headings on fence-stripped body
 required_sections = [
     ("## 1", "Top-level structure"),
     ("## 2", "Public interfaces"),
@@ -84,7 +161,8 @@ required_sections = [
 ]
 missing_sections = []
 for prefix, name in required_sections:
-    if prefix + "." not in content and prefix + " " not in content:
+    num = prefix.split()[1]
+    if not re.search(r"^##\s*" + re.escape(num) + r"[.\s]", body, re.MULTILINE):
         missing_sections.append(f"{prefix}. {name}")
 
 if missing_sections:
@@ -100,12 +178,36 @@ else:
                    "detail": "all 7 sections present"})
 
 # Check 3: §2 has at least 1 row (non-empty public interfaces)
-sec2_match = re.search(r"## 2[.\s].*?\n(.*?)(?=\n## 3|\Z)", content, re.DOTALL)
+# S3 V5: sliced from the fence-stripped body, heading line-anchored.
+sec2_match = re.search(r"^## 2[.\s].*?\n(.*?)(?=\n## 3|\Z)", body, re.DOTALL | re.MULTILINE)
+
+
+SEC2_HEADER_TOKENS = {"file", "type", "symbol", "signature", "kind", "last_scanned_sha256"}
+
+
+def parse_sec2(sec2_body):
+    """Parsed §2 table → (header_cells_or_None, data_rows). Header-aware: real
+    maps vary column order, so the Signature column is located by name."""
+    all_rows = []
+    for line in sec2_body.split("\n"):
+        line = line.strip()
+        if not (line.startswith("|") and line.endswith("|") and line.count("|") >= 3):
+            continue
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+        if all(re.fullmatch(r":?-{2,}:?", c or "--") for c in cells):
+            continue  # separator row
+        all_rows.append(cells)
+    header = None
+    if all_rows and any(c.lower() in SEC2_HEADER_TOKENS for c in all_rows[0]):
+        header = all_rows[0]
+        all_rows = all_rows[1:]
+    return header, all_rows
+
+
 if sec2_match:
     sec2 = sec2_match.group(1)
-    pipe_rows = len(re.findall(r"^\|[^|]+\|", sec2, re.MULTILINE))
-    header_rows = 2  # table header + separator
-    data_rows = max(0, pipe_rows - header_rows)
+    _, rows = parse_sec2(sec2)
+    data_rows = len(rows)
     if data_rows == 0:
         checks.append({"check": "interfaces_populated", "status": "WARN",
                        "detail": "§2 Public interfaces has 0 data rows"})
@@ -126,12 +228,23 @@ if fm_match:
     precision_tier = pt.group(1).lower() if pt else None
 
 if sec2_match:
-    sec2_body = sec2_match.group(1)
-    # a signature-bearing row carries a param list `(...)` or a typed field `name: Type`
+    # S3 V1: heuristics run on the Signature CELL only — scanning the whole row
+    # let the `:42` in the mandated File-column `path.ts:42` citation satisfy
+    # the typed-field pattern, making every conformant map count as
+    # signature-bearing (dead detection). The cell is located by header name
+    # (schema position 4 when the table has no header); a table with NO
+    # Signature column carries no signatures by construction.
+    sec2_header, sec2_rows = parse_sec2(sec2_match.group(1))
+    if sec2_header is not None:
+        sig_idx = next((i for i, c in enumerate(sec2_header) if c.lower() == "signature"), None)
+    else:
+        sig_idx = 3
     sig_rows = 0
-    for row in re.findall(r"^\|.*\|\s*$", sec2_body, re.MULTILINE):
-        if re.search(r"\([^)]*\)", row) or re.search(r"\w+\s*:\s*\w+", row):
-            sig_rows += 1
+    if sig_idx is not None:
+        for cells in sec2_rows:
+            sig_cell = cells[sig_idx] if len(cells) > sig_idx else ""
+            if re.search(r"\([^)]*\)", sig_cell) or re.search(r"\w+\s*:\s*\w+", sig_cell):
+                sig_rows += 1
     if precision_tier == "ast":
         if sig_rows == 0:
             issues.append({
