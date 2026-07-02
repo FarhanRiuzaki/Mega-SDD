@@ -70,8 +70,11 @@ binding_files = sorted(
 #   ### CONFLICT-1 — App\Models\Product name collision
 #   ### ✅ CONFLICT-1 RESOLVED — 2026-05-29...
 #   ### C-004 (Phase 1 surface): ConsumptionReason enum cases — CONFLICT (NON-BLOCKING)
+# S4 BC-ADV-ID: advisor-sourced conflicts use the template-blessed
+# `CONFLICT-ADV-N` form — previously invisible here (SKIP on an all-advisor
+# binding, so the classification WARN never fired).
 HEADING_RE = re.compile(
-    r"^#{2,4}\s+(?:[✅❌⚠️]\s*)*((?:CONFLICT-\d+)|(?:C-\d{2,}))\b(.*)$",
+    r"^#{2,4}\s+(?:[✅❌⚠️]\s*)*((?:CONFLICT-(?:ADV-)?\d+)|(?:C-\d{2,}))\b(.*)$",
     re.MULTILINE,
 )
 # Forward-compat: structured ```yaml ... binding_conflict: ... id: CONFLICT-N``` blocks.
@@ -79,6 +82,17 @@ YAML_BLOCK_RE = re.compile(r"```ya?ml\s*\n(.*?)```", re.DOTALL)
 CLASS_RE = re.compile(r"(?:^|\n)\s*[-*]?\s*\*{0,2}conflict_class\*{0,2}\s*[:=]\s*\S", re.IGNORECASE)
 COMPLEXITY_RE = re.compile(r"(?:^|\n)\s*[-*]?\s*\*{0,2}resolution_complexity\*{0,2}\s*[:=]\s*\S", re.IGNORECASE)
 RESOLVED_RE = re.compile(r"✅|\bRESOLVED\b", re.IGNORECASE)
+# S4 BC-GATE-2 + round-2 BC-S4-1/2 (mirror of validate-handoff-binding-units.sh):
+# resolution is STRUCTURAL — the heading carries ✅ or RESOLVED immediately after
+# the conflict ID, or a dedicated Resolution/Status line whose VALUE STARTS with
+# ✅/RESOLVED. Title prose ("tickets are auto-resolved") and negated status lines
+# ("Status: NOT RESOLVED") must not exempt an active conflict.
+HEAD_RESOLVED_RE = re.compile(
+    r"✅|(?:\b(?:CONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+|C-\d+)\s+RESOLVED\b)", re.IGNORECASE
+)
+RESOLUTION_LINE_RE = re.compile(
+    r"(?mi)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:Resolution|Status)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:✅\s*)*(?:RESOLVED\b|✅)"
+)
 
 
 def section_block(content, start_idx):
@@ -109,7 +123,7 @@ for bf in binding_files:
         cid = m.group(1)
         block = section_block(content, m.start())
         st = per_id.setdefault(cid, {"classified": False, "resolved": False})
-        if RESOLVED_RE.search(m.group(0)) or RESOLVED_RE.search(block):
+        if HEAD_RESOLVED_RE.search(m.group(0)) or RESOLUTION_LINE_RE.search(block):
             st["resolved"] = True
         if CLASS_RE.search(block) and COMPLEXITY_RE.search(block):
             st["classified"] = True

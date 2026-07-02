@@ -15,7 +15,7 @@ md_path = os.path.join(vault, "binding.md")
 js_path = os.path.join(vault, "binding.json")
 errors = []
 
-def parse_state_map(md):
+def parse_state_map(md, errors):
     rows = {}
     in_tbl = False
     for line in md.splitlines():
@@ -27,7 +27,18 @@ def parse_state_map(md):
             if not line.strip().startswith("|"):
                 continue
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) < 6 or cells[0] in ("Claim ID", "---") or set(cells[0]) <= {"-"}:
+            # S4 BC-PARITY-5COL: aligned separators (|:---:|) are separator rows,
+            # not claim rows (they used to phantom-FAIL as ':---' claims).
+            if cells[0] in ("Claim ID", "---") or (cells[0] and set(cells[0]) <= set("-:")):
+                continue
+            if len(cells) < 6:
+                # S4 BC-PARITY-5COL: a short row inside the table region is a
+                # MALFORMED row — silently skipping it let a divergent md/json
+                # pair pass parity cleanly. Template pins 6 columns always
+                # (Field diff cell = n/a at non-ast tiers).
+                errors.append(
+                    f"malformed State Map row ({len(cells)} cells, need 6): {line.strip()[:120]}"
+                )
                 continue
             rows[cells[0]] = {"id": cells[0], "verdict": cells[1], "state": cells[2]}
     return rows
@@ -38,8 +49,16 @@ try:
 except Exception as e:
     print(f"FAIL: cannot read binding pair: {e}"); sys.exit(2)
 
-md_rows = parse_state_map(md)
-js_rows = {c["id"]: c for c in js.get("claims", [])}
+md_rows = parse_state_map(md, errors)
+# S4 BC-PARITY-5COL: a claims[] entry with no "id" used to raise an uncaught
+# KeyError (exit 1, outside the documented 0/2/3 contract, stale state file).
+js_rows = {}
+for c in js.get("claims", []):
+    cid = c.get("id") if isinstance(c, dict) else None
+    if not cid:
+        errors.append(f"binding.json claims[] entry missing 'id': {str(c)[:120]}")
+        continue
+    js_rows[cid] = c
 
 for cid, mr in md_rows.items():
     jr = js_rows.get(cid)

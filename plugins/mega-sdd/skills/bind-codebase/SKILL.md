@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.5.4
+version: 2.6.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -30,7 +30,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 ## Procedure
 
-**1. Load inputs.** Read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, instruct the user to run `scan-codebase` first. Reuse the codebase-map shared snapshot as a freshness attestation, and propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
+**1. Load inputs.** Read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, instruct the user to run `scan-codebase` first. Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first. Propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
 
 **2. Per claim, produce a verdict** (per `references/binding-contract.md`). **This is the moat:**
 
@@ -50,13 +50,13 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 **2.5–2.11 — per-claim enrichment.** Each step annotates verdicts; **none relaxes the gate** (CONFLICT still blocks). Full procedures, examples, anti-hallucination rails, and halt YAMLs live in the referenced files:
 
 - **2.5 Implementation-state classification** → `IMPLEMENTED / NEW / UNKNOWN / PARTIAL_FIELDS_*` via deterministic field-level diff (vault field-set V vs code field-set C; requires `precision_tier: ast`, regex falls back to binary). Defaults to `UNKNOWN`/low when undecidable; never marks `IMPLEMENTED` without a concrete anchor. → `references/implementation-state.md`.
-- **2.6 Tech-OQ auto-resolution (scan)** + **2.7 recommendation surfacing** → fire only for `classification_confidence: high`; a scan with no match or multiple matches flips the OQ to `blocking` (never guesses); recommendations never auto-accept and require citations that resolve in the codebase-map/KB. → `references/oq-resolution.md`.
+- **2.6 Tech-OQ auto-resolution (scan)** + **2.7 recommendation surfacing** → scan auto-resolves only at `classification_confidence: high`; recommendation surfacing fires at `high`/`medium` (advisory, never blocks); skipped OQs pass through UNCHANGED (`resolution_mode` never mutated on confidence grounds); a scan with no match or multiple matches flips the OQ to `blocking` (never guesses); recommendations never auto-accept and require citations that resolve in the codebase-map/KB. → `references/oq-resolution.md`.
 - **2.8 Framework-convention pack load** + **2.9 Suggested Unit Hard Rules** → packs from `plugins/mega-sdd/references/framework-conventions/`; a rule is promoted to a machine-validated Hard Rule ONLY when its KB marker is `[VERIFIED]` and it is mechanically detectable + anchored in the codebase-map, otherwise it becomes an informational Anti-pattern. → `references/hard-rules-and-packs.md`.
 - **2.10 Constitution-aware CONFLICT surfacing** → cite constitution §A–F clauses on relevant conflicts; `--strict-constitution` raises `bind_conflict_constitution_violation`; persist `constitution_hash` for `detect-drift`. → `references/constitution-and-oq.md`.
 - **2.11 Deferred-OQ auto-resolution** → high-confidence codebase-map evidence resolves `defer_to: binding` OQs; ambiguous/no match → stays `deferred`; never write an evidence string that is not actually in the codebase-map. → `references/oq-resolution.md`.
 
 **2.12 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus), the draft verdicts, `codebase-map.md`, the vault, and the KB. Materialize its findings INTO the verdict set BEFORE Step 3 so they are counted + written as canonical `### CONFLICT-NNN` headings in Step 4 (the exact token the Step 5 gate AND `validate-handoff-binding-units.sh` → `.validation-blockers.json` read):
-- `false_confirmed`/`missed_match` confidence HIGH → add a real CONFLICT verdict (canonical `CONFLICT-NNN`, tagged `source: advisor`). This is fail-safe blocking — a suspected hole in the moat closes the gate until a human clears it via `resolve-oq`.
+- `false_confirmed`/`missed_match` confidence HIGH → add a real CONFLICT verdict (canonical `CONFLICT-NNN`, or the template-blessed `CONFLICT-ADV-N` advisor form — both are read by the gate + validators; tagged `source: advisor`). This is fail-safe blocking — a suspected hole in the moat closes the gate until a human clears it via `resolve-oq`.
 - same, confidence MED/LOW → add an OQ (non-blocking, surfaced).
 - `false_conflict`/`state_map_error` → FLAG ONLY in `binding.md`; the advisor may ADD a blocker autonomously but may NEVER auto-remove or auto-downgrade a CONFLICT (downgrade is human-only — invariant #2).
 - Evidenceless findings are dropped. Record the pass in the Step 6 audit log: `advisor: {model, findings: {high,med,low}}` OR `advisor: skipped` (`--no-advisor`) OR `advisor: unavailable` (agent error — NEVER reported as clean). Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`.
@@ -68,7 +68,9 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 **4.5. Emit `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
 Write `<vault>/binding.json` from the SAME claim data you just rendered into the
 State Map — one `claims[]` entry per State Map row (`id`, `verdict`, `state`,
-`anchor`, `confidence`, `field_diff`, and `vault_source` from the Confirmed
+`state_reason` (S4 — `truncated_section` is mandatory when the truncation
+exception fired; generate-units keys its direct-probe rule on it), `anchor`,
+`confidence`, `field_diff`, and `vault_source` from the Confirmed
 Claims list `vault file:line`). Set `codebase_map_provenance` from
 `binding_metadata`, `head` to the current `git rev-parse HEAD` (or null outside
 git). This is part of the binding write — emit it whether the bind is clean or
@@ -90,7 +92,7 @@ blocker:
     vault: <vault path>
     conflict_count: N
     conflicts:
-      - id: C-001
+      - id: CONFLICT-1   # canonical conflict-ID form (the token the gate + validators read); C-NNN is the CLAIM-ID namespace
         vault_claim: <verbatim from binding.md>
         codebase_reality: <verbatim from binding.md>
         suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT

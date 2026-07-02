@@ -4,12 +4,20 @@
 # Per plugins/mega-sdd/CLAUDE.md §Fork A scope. Audit response 2026-05-27 §F.
 #
 # Validates the binding → units handoff boundary on two axes:
-#   1. OQ-ID + CONFLICT-ID *propagation* — every ID declared in the binding doc must be
-#      cited in some unit's frontmatter binding_refs (uncited => a "drop").
-#   2. CONFLICT *resolution* (the moat's invariant #2) — every ACTIVE `### CONFLICT-<id>`
-#      detail heading in the binding doc must be resolved (re-bound to conflicts=0, or
-#      marked ✅ / RESOLVED) before units/bolts proceed. An unresolved heading is a drop
-#      even if its ID is cited — closing the "cited-but-unresolved" gap.
+#   1. OQ-ID + CONFLICT-ID *propagation* — every LIVE ID declared in the binding doc must
+#      be cited in some unit's frontmatter binding_refs (uncited => a "drop"). S4: OQ
+#      harvesting is section-aware — IDs only in the resolved sections (Tech-OQ
+#      Auto-Resolved / Auto-Resolved Deferred / Recommendations) or the PENDING
+#      section (## Open Questions — no resolution exists yet, so there is nothing
+#      to cite) are advisory extras, never blocking drops. LIVE = an OQ-ID woven
+#      into claims/State Map/Suggested Hard Rules (its resolution shaped evidence).
+#   2. CONFLICT *resolution* (the moat's invariant #2) — every ACTIVE conflict block
+#      (`### CONFLICT-<id>` heading, or a `### C-NNN …` claim heading whose block carries
+#      `CONFLICT (BLOCKING)`) must be resolved before units/bolts proceed. Resolution
+#      markers are STRUCTURAL: ✅/RESOLVED in the heading line or on a dedicated
+#      Resolution/Status line — prose containing the word "resolved" does NOT count.
+#      An unresolved block is a drop even if its ID is cited. Deleting the binding doc
+#      while units cite CONFLICT-IDs is itself a drop (binding_missing, fail-closed).
 # Drops are reported as structured blockers; the result file is OVERWRITE-NOT-APPEND
 # (current truth) and is read by the execute-bolts PreToolUse gate (status==FAIL blocks).
 #
@@ -111,16 +119,53 @@ units_paths = sorted(
     glob.glob(os.path.join(vault_dir, "*", "units", "U-*", "unit.md"))
 )
 
-# OQ-ID regex: starts with OQ-, alphanumerics+hyphens, ends with -digit
-OQ_RE = re.compile(r"\bOQ-[A-Z]+(?:-[A-Z0-9]+)*-\d+\b")
+# OQ-ID regex (S4 BC-HANDOFF-1): lettered vault forms (OQ-AR-1, OQ-DM-P2-1) AND
+# bind's own numeric fresh-OQ form (OQ-001 / OQ-12 per binding-md-template.md
+# §Open Questions) — the numeric form used to pass the gate silently.
+OQ_RE = re.compile(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b")
 # CONFLICT-ID regex (slice 2 v3.58.0+): only canonical `CONFLICT-NNN` form.
 # C-NNN short-form is ambiguous (version refs, code IDs, etc.) — false-positive risk too high.
 # Per canonical TF Import binding format: `CONFLICT-1: vault says X ↔ code says Y`
 CONFLICT_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b")
 
-# --- Pass 1: collect all OQ-IDs AND CONFLICT-IDs declared in any binding doc ---
-binding_oqs = {}  # oq_id → binding_file_path
-binding_conflicts = {}  # conflict_id → binding_file_path
+# --- Pass 1: collect OQ-IDs AND CONFLICT-IDs declared in any binding doc ---
+# S4 BC-HANDOFF-2 + round-2 BC-HANDOFF-1-FRESH-OQ: OQ harvesting is SECTION-AWARE.
+#  - RESOLVED sections (Tech-OQ Auto-Resolved / Auto-Resolved Deferred OQs /
+#    Tech-OQ Recommendations): NO propagation obligation — a resolved OQ
+#    influenced the bind, not necessarily any single unit. Advisory extras.
+#  - PENDING section (## Open Questions): fresh/deferred OQs with NO resolution
+#    yet — per the generate-units contract (SKILL.md Step 12.5.g) an OQ is cited
+#    only when its RESOLUTION is implemented in a unit, so an unresolved OQ has
+#    nothing to cite and MUST NOT hard-block execute-bolts (requiring a citation
+#    deterministically false-blocked every bind that surfaced one fresh OQ).
+#    Advisory extras (oq_id_pending_uncited) — resolve via resolve-oq.
+#  - LIVE (everything else — an OQ-ID woven into claims / State Map / Suggested
+#    Hard Rules means its resolution shaped binding evidence): keeps the
+#    blocking drop.
+RESOLVED_OQ_SECTIONS = ("tech-oq auto-resolved", "auto-resolved deferred", "tech-oq recommendations")
+PENDING_OQ_SECTIONS = ("open questions",)
+
+def sec_class(heading):
+    if any(k in heading for k in RESOLVED_OQ_SECTIONS):
+        return "resolved"
+    if any(k in heading for k in PENDING_OQ_SECTIONS):
+        return "pending"
+    return "live"
+
+def split_h2_sections(content):
+    """Yield (h2_heading_lowercased, section_text). Preamble has heading ''."""
+    parts = re.split(r"(?m)^(##\s+.*)$", content)
+    yield ("", parts[0])
+    for i in range(1, len(parts) - 1, 2):
+        yield (parts[i].lower(), parts[i + 1])
+    if len(parts) > 1 and len(parts) % 2 == 0:
+        yield (parts[-1].lower(), "")
+
+binding_oqs = {}           # live oq_id → binding_file_path (propagation required)
+binding_oqs_pending = {}   # pending-section oq_id → binding_file_path (advisory)
+binding_oqs_resolved = {}  # resolved-section oq_id → binding_file_path (advisory)
+_BUCKET = {"live": binding_oqs, "pending": binding_oqs_pending, "resolved": binding_oqs_resolved}
+binding_conflicts = {}     # conflict_id → binding_file_path
 for bp in binding_paths:
     try:
         with open(bp) as f:
@@ -129,11 +174,21 @@ for bp in binding_paths:
         if not quiet:
             print(f"WARN: cannot read {bp}: {e}", file=sys.stderr)
         continue
-    for o in OQ_RE.findall(content):
-        binding_oqs.setdefault(o, bp)
+    for heading, text in split_h2_sections(content):
+        bucket = _BUCKET[sec_class(heading)]
+        for o in OQ_RE.findall(text):
+            bucket.setdefault(o, bp)
     # Canonical CONFLICT-NNN form is unambiguous — no scoping needed
     for c in CONFLICT_RE.findall(content):
         binding_conflicts.setdefault(c, bp)
+# Precedence: LIVE > PENDING > RESOLVED (an ID in a live section is fail-closed
+# blocking regardless of where else it appears; pending beats resolved).
+for o in list(binding_oqs_pending):
+    if o in binding_oqs:
+        del binding_oqs_pending[o]
+for o in list(binding_oqs_resolved):
+    if o in binding_oqs or o in binding_oqs_pending:
+        del binding_oqs_resolved[o]
 
 # --- Pass 2: for each unit, parse FRONTMATTER ONLY and collect citations ---
 unit_oq_citations = {}      # oq_id → [unit_file_paths]
@@ -159,6 +214,21 @@ for up in units_paths:
 
 # --- Pass 3: compute drops (OQs + CONFLICTs in binding but no unit cites them) ---
 drops = []
+# S4 BC-BINDING-DELETE (fail-closed backstop): units citing CONFLICT-IDs while
+# ZERO binding docs exist means the binding surface was deleted out from under
+# the units — the old behavior demoted the orphan citations to warnings and
+# re-validated to PASS, erasing active CONFLICTs without resolution.
+if units_paths and unit_conflict_citations and not binding_paths:
+    drops.append({
+        "type": "binding_missing",
+        "conflict_ids_cited": sorted(unit_conflict_citations.keys()),
+        "expected": (
+            "units cite CONFLICT-IDs but no binding doc exists under .mega-sdd/vaults/ — "
+            "deleting/moving binding.md erases active CONFLICTs without resolution "
+            "(invariant #2) and breaks unit citation resolution (invariant #3). "
+            "Restore the binding doc or re-run /mega-sdd:bind-codebase."
+        ),
+    })
 for oq_id in sorted(binding_oqs.keys()):
     cites = unit_oq_citations.get(oq_id, [])
     if not cites:
@@ -190,8 +260,36 @@ for conflict_id in sorted(binding_conflicts.keys()):
 # is exempt. We scan the structured detail headings (not every CONFLICT-ID mention) and
 # fail-closed: a heading with no resolution marker is treated as ACTIVE → blocking.
 HEADING_RE = re.compile(r"^#{1,3}\s")
-CONFLICT_HEADING_RE = re.compile(r"^###\s+CONFLICT-", re.IGNORECASE)
-RESOLVED_RE = re.compile(r"✅|\bRESOLVED\b", re.IGNORECASE)
+CONFLICT_HEADING_RE = re.compile(r"^#{2,3}\s+(?:[✅❌⚠️]\s*)*CONFLICT-", re.IGNORECASE)
+# S4 BC-VAL-6: historical/phase-lane bindings record active conflicts under a
+# CLAIM-ID heading (`### C-004 … — CONFLICT (BLOCKING)`) — the same signal the
+# advisory classification validator counts. A C-NNN heading is an active
+# conflict ONLY when its block carries the BLOCKING verdict text (bare C-NNN
+# headings are claim details, not conflicts — matching them unconditionally
+# would false-positive on every State Map claim ID).
+CLAIMID_HEADING_RE = re.compile(r"^#{2,3}\s+(?:[✅❌⚠️]\s*)*C-\d+\b")
+# S4 round-2 (BC-S4-3): a claim-ID heading is an active conflict only on a
+# STRUCTURAL blocking signal — the heading's own trailing `— CONFLICT (BLOCKING)`
+# or a dedicated Verdict line — never a mid-prose mention of the phrase
+# ("…superseded the earlier CONFLICT (BLOCKING) once code aligned" is history,
+# not a verdict).
+HEAD_BLOCKING_RE = re.compile(r"[—–-]\s*CONFLICT\s*\(\s*BLOCKING\s*\)\s*$", re.IGNORECASE)
+VERDICT_BLOCKING_LINE_RE = re.compile(
+    r"(?mi)^\s*(?:[-*>]\s*)?(?:\*\*)?Verdict(?:\*\*)?\s*:\s*[^\n]*CONFLICT\s*\(\s*BLOCKING\s*\)"
+)
+# S4 BC-GATE-2 (+ round-2 BC-S4-1/BC-S4-2): resolution markers are STRUCTURAL,
+# not substring. A block is resolved ONLY when:
+#  - the HEADING carries ✅, or the word RESOLVED immediately AFTER the conflict
+#    ID (`### ✅ CONFLICT-1 RESOLVED (KEEP_CODE) — …`) — a domain word inside the
+#    TITLE ("vault says tickets are auto-resolved") must not count; or
+#  - a dedicated Resolution/Status line whose VALUE STARTS with ✅/RESOLVED —
+#    `- **Status**: NOT RESOLVED` must not count.
+HEAD_RESOLVED_RE = re.compile(
+    r"✅|(?:\b(?:CONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+|C-\d+)\s+RESOLVED\b)", re.IGNORECASE
+)
+RESOLUTION_LINE_RE = re.compile(
+    r"(?mi)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:Resolution|Status)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:✅\s*)*(?:RESOLVED\b|✅)"
+)
 for bp in binding_paths:
     try:
         with open(bp) as f:
@@ -201,22 +299,39 @@ for bp in binding_paths:
     i = 0
     n_lines = len(blines)
     while i < n_lines:
-        if CONFLICT_HEADING_RE.match(blines[i]):
+        is_conflict_head = bool(CONFLICT_HEADING_RE.match(blines[i]))
+        is_claimid_head = (not is_conflict_head) and bool(CLAIMID_HEADING_RE.match(blines[i]))
+        if is_conflict_head or is_claimid_head:
             head = blines[i]
             j = i + 1
             # Block spans from the heading to the next h1–h3 heading (exclusive) or EOF.
             while j < n_lines and not HEADING_RE.match(blines[j]):
                 j += 1
             block = "\n".join(blines[i:j])
+            # Canonical CONFLICT-N headings are active fail-closed; C-NNN claim
+            # headings are active only with a STRUCTURAL blocking verdict signal
+            # (heading-trailing or a Verdict line — never mid-prose mentions).
+            active = is_conflict_head or bool(
+                HEAD_BLOCKING_RE.search(head) or VERDICT_BLOCKING_LINE_RE.search(block)
+            )
             cm = CONFLICT_RE.search(head)
+            if not cm and is_claimid_head:
+                cm = re.search(r"\bC-\d+\b", head)
             cid = cm.group(0) if cm else "CONFLICT-?"
-            if not RESOLVED_RE.search(block):
+            resolved = bool(HEAD_RESOLVED_RE.search(head) or RESOLUTION_LINE_RE.search(block))
+            if active and not resolved:
                 drops.append({
                     "type": "conflict_unresolved",
                     "conflict_id": cid,
                     "source_binding": os.path.relpath(bp, cwd),
                     "heading": head.lstrip("# ").strip(),
-                    "expected": "resolve the CONFLICT (re-run /mega-sdd:bind-codebase until conflicts=0, or mark the entry ✅ / RESOLVED) before generating units or running bolts",
+                    "expected": (
+                        "resolve the CONFLICT via /mega-sdd:resolve-oq --binding (writes the "
+                        "✅/RESOLVED marker into the heading or a `- **Resolution**:` line — "
+                        "prose mentions of the word elsewhere in the block do NOT count), "
+                        "or re-run /mega-sdd:bind-codebase until conflicts=0, before "
+                        "generating units or running bolts"
+                    ),
                 })
             i = j
         else:
@@ -240,8 +355,53 @@ for conflict_id, cites in sorted(unit_conflict_citations.items()):
             "cited_in": [os.path.relpath(p, cwd) for p in cites],
             "warning": "CONFLICT-ID cited in unit frontmatter but not declared in any binding doc",
         })
+# S4 BC-HANDOFF-2: resolved-section OQs carry no propagation obligation — an
+# uncited one is surfaced as advisory context, never a blocking drop.
+for oq_id in sorted(binding_oqs_resolved.keys()):
+    if oq_id not in unit_oq_citations:
+        extras.append({
+            "type": "oq_id_resolved_uncited",
+            "oq_id": oq_id,
+            "source_binding": os.path.relpath(binding_oqs_resolved[oq_id], cwd),
+            "warning": (
+                "auto-resolved/recommendation OQ not cited by any unit — advisory only "
+                "(resolved OQs influenced the bind, not necessarily any single unit)"
+            ),
+        })
+# S4 round-2 (BC-HANDOFF-1-FRESH-OQ): pending Open-Questions OQs have no
+# resolution to implement — nothing to cite. Advisory, never a blocking drop.
+for oq_id in sorted(binding_oqs_pending.keys()):
+    if oq_id not in unit_oq_citations:
+        extras.append({
+            "type": "oq_id_pending_uncited",
+            "oq_id": oq_id,
+            "source_binding": os.path.relpath(binding_oqs_pending[oq_id], cwd),
+            "warning": (
+                "pending Open-Questions OQ not cited by any unit — advisory only "
+                "(an unresolved OQ has no resolution to trace; resolve it via "
+                "/mega-sdd:resolve-oq, after which affected units must cite it)"
+            ),
+        })
 
 # --- Report ---
+def _next_action(drops):
+    if not drops:
+        return "No action needed — handoff trace is clean."
+    types = {d.get("type", "?") for d in drops}
+    parts = []
+    if types & {"conflict_unresolved", "binding_missing"}:
+        parts.append(
+            "conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding <binding.md> "
+            "(human-in-the-loop) or re-run /mega-sdd:bind-codebase until conflicts=0"
+        )
+    if types & {"oq_id_dropped", "conflict_id_dropped"}:
+        parts.append(
+            "propagation drops: append the listed OQ-/CONFLICT-IDs to the relevant unit's "
+            "frontmatter `binding_refs:` list"
+        )
+    parts.append("then re-run validator (or save the unit — PostToolUse auto-re-validates)")
+    return "; ".join(parts) + "."
+
 status = "PASS" if not drops else "FAIL"
 report = {
     "status": status,
@@ -261,10 +421,9 @@ report = {
     },
     "drops": drops,
     "extras": extras,
-    "next_action": (
-        "Append the listed OQ-IDs to the relevant unit's frontmatter `binding_refs:` "
-        "list, then re-run validator (or save the unit — PostToolUse will auto-re-validate)."
-    ) if drops else "No action needed — handoff trace is clean.",
+    # S4 BC-MSG-1: remediation is drop-type aware — the OQ-frontmatter fix can
+    # never clear a conflict_unresolved / binding_missing drop.
+    "next_action": _next_action(drops),
 }
 
 # Write CURRENT-truth blocker file (overwrite, not append).

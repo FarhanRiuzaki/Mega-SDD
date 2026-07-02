@@ -24,19 +24,23 @@ User chooses resolution path:
    └─ Path 2: Manual vault edit + re-run bind-codebase
    │
    ▼
-Re-run /mega-sdd:bind-codebase <vault> <codebase-map>
+KEEP_CODE / SPLIT (vault edited) → re-run /mega-sdd:bind-codebase <vault> <codebase-map>
+   │        → conflicts = 0: bound-vault produced; pipeline unblocks
+   │        → conflicts > 0: repeat
    │
-   ▼
-If conflicts = 0: bound-vault produced; pipeline unblocks
-If conflicts > 0: repeat
+KEEP_VAULT / DEFER (vault + code unchanged) → NO re-bind (it would re-raise the
+   same CONFLICT — bind re-derives verdicts from the unchanged contradiction).
+   The resolved-marked binding.md passes the handoff validator → proceed to
+   /mega-sdd:generate-units; bound/ arrives via a re-bind AFTER the code change lands.
 ```
 
 ## Resolution actions (per conflict)
 
 ### a. KEEP_VAULT — vault is correct, code must change
-- Action: vault unchanged; binding marks claim as `CONFIRMED_PENDING_CODE_UPDATE`
-- Effect: generated units include "update code to match" task as a prerequisite
+- Action: vault unchanged; resolve-oq marks the CONFLICT-N detail heading `✅ RESOLVED (KEEP_VAULT — code update pending)` (the structural marker the gate reads; per `resolve-oq/references/binding-mode.md` write-back grammar)
+- Effect: the code-update obligation stays traceable via the CONFLICT-N reference — the affected units MUST carry it in `binding_refs` (the handoff validator's propagation drop enforces the citation), and their unit bodies cite the KEEP_VAULT resolution so the bolt implements toward the VAULT's claim, not current code
 - Use when: architect decision overrides current implementation (refactor/migration)
+- NOTE: a re-bind BEFORE the code change re-raises this CONFLICT (bind re-derives from the unchanged contradiction; prior calls surface from decisions.md as suggestions only) — proceed to generate-units instead; re-bind after the code lands
 
 ### b. KEEP_CODE — code is correct, vault must update
 - Action: bind-codebase prompts user to confirm; vault is patched in place; resolve-oq logs the patch in vault.json changelog
@@ -62,5 +66,5 @@ Never auto-resolve. `bind-codebase` MUST NOT silently downgrade CONFLICT to OQ o
 `/mega-sdd:resolve-oq --binding <path>` switches resolve-oq into binding mode:
 - Items walked: CONFLICT entries from binding.md (in addition to/before regular OQs)
 - Each item shows: vault claim + codebase evidence + action menu (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT)
-- Resolutions written back to binding.md AND vault.json changelog
-- After resolution loop: prompt user to re-run `bind-codebase`
+- Resolutions written back to binding.md (structural ✅ RESOLVED markers), binding.json (`resolution:` field), vault.json changelog, and decisions.md (durable across re-binds)
+- After resolution loop: hand-off is action-mix dependent (KEEP_CODE/SPLIT → re-bind; KEEP_VAULT/DEFER-only → generate-units) per `resolve-oq/references/binding-mode.md` Step 5

@@ -349,10 +349,11 @@ Status `halted` on `deep_scan_subagent_all_failed` / `dep_missing` / `memory_in_
 ```yaml
 handoff:
   emitted_by: bind-codebase
+  emitted_at: <ISO8601>
   status: completed | paused | halted
   artifacts:
-    - /path/to/binding.md
-    - /path/to/vault-bound/    # only if no CONFLICTs
+    - /path/to/<vault>/binding.md
+    - /path/to/<vault>/bound/    # only if no CONFLICTs (canonical nested path per references/paths.md; never the legacy <vault>-bound/ sibling)
   next_action:
     suggested_skill: mega-sdd:generate-units    # status=completed
     # OR

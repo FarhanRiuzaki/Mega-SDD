@@ -19,14 +19,21 @@ If bound-vault has `binding.md` with an Implementation State Map, assign `task_t
 |---|---|
 | All NEW, or no binding | `create` |
 | All IMPLEMENTED with `confidence: high` | `verify` |
+| All IMPLEMENTED with `confidence: medium` or `low` | treat as UNKNOWN (apply the UNKNOWN row incl. the direct-probe rule) — a fuzzy anchor must NOT mint a `verify` unit (false "already built", invariant #1 adjacent) |
 | **PARTIAL_FIELDS_MISSING** — code missing fields from claim | `extend` with Migration notes auto-populated from binding's `field_diff`: ADD/KEEP/REMOVE lists |
 | **PARTIAL_FIELDS_SURPLUS** — code has fields not in claim | `extend` with HUMAN REVIEW interactive prompt (could be feature drift, vault gap, legacy deprecation, or rename) |
-| **PARTIAL_FIELDS_BOTH** — both directions diff | strong warning; surface interactive prompt; usually signals semantic mismatch needing vault update OR code triage |
+| **PARTIAL_FIELDS_BOTH** — both directions diff | `extend` with HUMAN REVIEW mandatory before bolt + strong warning in unit body (usually signals semantic mismatch needing vault update OR code triage) |
 | Mix of NEW + IMPLEMENTED | SPLIT — emit one `create` unit for NEW claims, one `verify` unit for IMPLEMENTED claims; chain via `depends_on` so verify runs first |
-| Any UNKNOWN (regardless of confidence) | `create` (conservative default per DESIGN-OQ-1) — surface a note in unit body: "Binding marked one or more claims as UNKNOWN (anchor: ...). Verify manually whether this work is needed." |
+| Any UNKNOWN (regardless of confidence) | see **UNKNOWN sub-rule** below — `create` is the default ONLY after the truncation check + direct probe |
 | Mix of CONFIRMED + CONFLICT | Halt — binding gate should have blocked already; report inconsistency |
 
 > The `Mix of CONFIRMED + CONFLICT` row is a backstop. The primary defense is the SKILL.md hard gate: unresolved CONFLICT entries in binding.md BLOCK unit generation outright (invariant #2). If a CONFLICT reaches this table, the gate was bypassed — halt and report the inconsistency rather than generating.
+
+**Row precedence** (when a claim-set matches multiple rows): (1) Mix of CONFIRMED + CONFLICT halt; (2) Any UNKNOWN — resolve each UNKNOWN claim per the sub-rule below FIRST, then re-aggregate the set and re-apply this table; (3) any `PARTIAL_FIELDS_*`; (4) SPLIT (NEW + IMPLEMENTED); (5) all-NEW / all-IMPLEMENTED.
+
+**UNKNOWN sub-rule (S4 — closes the truncation hole):**
+- **Truncation-sourced UNKNOWN** — the binding row's Anchor/reason cell (or `binding.json` `state_reason`) cites `truncated_sections`: the map was CAPPED there, so absence is NOT evidence of absence. Do NOT type `create` from the map. **Probe the repo directly** (grep the claimed entity/route/symbol in the codebase — same fs-probe idiom as Step 7.6): found → treat as IMPLEMENTED-equivalent, type `verify` citing the probed `file:line` as the anchor; not found → `create` (absence now verified against the repo itself, not the truncated map). This delivers the producer contract's "never a create-type task from a truncated section" (codebase-map-schema.md / binding-contract.md).
+- **All other UNKNOWN** (dynamic route, ambiguous match, regex tier, KB-confirmed) → `create` (conservative default per DESIGN-OQ-1) — surface a note in unit body: "Binding marked one or more claims as UNKNOWN (anchor: ...). Verify manually whether this work is needed."
 
 The full six-state model + `field_diff` mechanics are specified in the defensive-generation reference (§Six-state Implementation State Map) listed in the skill router.
 
@@ -41,7 +48,7 @@ Enforced by the per-task_type contracts in the unit-schema reference (listed in 
 
 ## `extend` activation + Migration-notes auto-population
 
-`extend` was forward-compat-only in the initial schema (deferred PARTIAL state). It is now auto-emitted for `PARTIAL_FIELDS_*` states with Migration notes populated from binding's `field_diff` column. UNKNOWN states still default to `create` (conservative — no field-diff signal available).
+`extend` was forward-compat-only in the initial schema (deferred PARTIAL state). It is now auto-emitted for `PARTIAL_FIELDS_*` states with Migration notes populated from binding's `field_diff` column. Non-truncation UNKNOWN states still default to `create` (conservative — no field-diff signal available); truncation-sourced UNKNOWN goes through the direct-probe sub-rule first (see the task_type table).
 
 When binding state is **PARTIAL_FIELDS_MISSING**:
 - **ADD** sub-list = `field_diff.ADD` from binding (missing fields to add)
