@@ -27,7 +27,7 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 
 ## `--module=<id>` + `module_blocked_by` halt
 
-1. **Load `_meta/modules.yaml`.** If absent → halt: "`--module=` requires `_meta/modules.yaml`. Auto-derive via `/mega-sdd:generate-units --derive-modules` first."
+1. **Load `_meta/modules.yaml`.** If absent BUT `_meta/modules.yaml.auto` exists → instruct: "review `_meta/modules.yaml.auto` and promote it: `mv _meta/modules.yaml.auto _meta/modules.yaml`". If neither exists → halt: "`--module=` requires `_meta/modules.yaml`. Run `/mega-sdd:generate-units` (Step 4.5 auto-derives `modules.yaml.auto`), review, then promote it."
 2. **Validate `<id>` exists** in declared modules.
 3. **Check blocked_by**: for each `blocked_by` entry, verify that module is `status: completed` (per memory). Incomplete → halt `module_blocked_by` listing pending prerequisites.
 4. **Filter units**: working set = units where `module: <id>` AND not yet completed.

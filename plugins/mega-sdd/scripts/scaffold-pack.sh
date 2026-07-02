@@ -229,7 +229,10 @@ for line in lines:
     out.append(line)
 
 with open(dest_path, 'w', encoding='utf-8') as f:
-    f.writelines(out)
+    # S5 round-2 (S5R-2): the skeleton must pass its own lint — Check 3c flags an
+    # unrewritten '<other-pack-or-null>' placeholder. Default to _universal.
+    final = "".join(out).replace("extends: <other-pack-or-null>", "extends: _universal")
+    f.write(final)
 
 print(f"Scaffolded: {dest_path}")
 PYEOF

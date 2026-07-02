@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.14.2
+version: 2.14.3
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the commit on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -119,7 +119,7 @@ Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhauste
 
 ## Anti-hallucination rails
 
-- `target_files` whitelist enforced at every step; existing interfaces preserved (verified by tests).
+- `target_files` whitelist honored at every step (a prompt-level rule (rules tier): the dispatch prompt forbids out-of-whitelist writes and the review panel checks scope — no deterministic post-hoc observer yet); existing interfaces preserved (verified by tests).
 - No auto-bypass of pre-commit hooks; no `--force` commits or pushes to remote.
 - An OQ in a unit body → prompt the user before the bolt finalizes.
 - The **Hard Rule pre-flight snapshot is mandatory** when `## Hard rules` is non-empty — NEVER skip it to save time. **Post-flight validation runs BEFORE commit; violations halt with code still in the working tree** (not auto-reverted; the user decides). Unparseable rules halt at pre-flight — NEVER silently skip a rule whose grammar isn't recognized.

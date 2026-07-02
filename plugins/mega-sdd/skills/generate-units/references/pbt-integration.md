@@ -57,7 +57,7 @@ properties:
 | `id` | yes | PROP-NNN sequential within unit |
 | `description` | yes | 1-sentence prose |
 | `invariant` | yes | Pseudo-code or formal statement of what holds true for ALL valid inputs |
-| `cites` | yes (anti-halu rail) | Vault file:section OR entity reference; properties without citations rejected |
+| `cites` | yes (anti-halu rail) | Vault file:section OR entity reference; properties without citations rejected (render-pass 12.5.h, model-executed) |
 | `severity` | yes | `error` (PBT failure halts bolt) or `warning` (failure logged, bolt continues) |
 
 ## Framework detection (auto)
@@ -197,7 +197,7 @@ Anti-halu: when emission isn't supported for language, properties stay in unit b
 
 ## Anti-halu rails (mandatory)
 
-- **Citations enforced**: every property MUST `cites` vault section / entity / constitution clause. Properties without citations REJECTED at generate-units render pass.
+- **Citations enforced**: every property MUST `cites` vault section / entity / constitution clause. Properties without citations are REJECTED by render-pass check 12.5.h (model-executed rule, per validation-passes.md — no deterministic validator; the B1 postflight cite-check is the bolt-side backstop).
 - **No framework auto-install**: skill never modifies `composer.json` / `package.json` / etc. Framework presence is user's responsibility.
 - **Counterexamples preserved**: PBT failures emit counterexample JSON in halt YAML for user debugging.
 - **Severity is binary**: `error` halts; `warning` doesn't. No nuanced levels (avoid analysis paralysis).

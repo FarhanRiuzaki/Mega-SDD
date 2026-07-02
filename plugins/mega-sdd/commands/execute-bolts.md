@@ -1,5 +1,5 @@
 ---
-description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist enforced.
+description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist honored (prompt-level rule + review-panel scope check).
 argument-hint: "<unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>] [--hard-rule-grammar=v1|v2] [--no-pbt] [--resume] [--rollback <unit-id>] [--memory-off] [--force-skip-postflight]"
 ---
 
@@ -24,7 +24,7 @@ Follow `skills/execute-bolts/SKILL.md` procedure. Pre-flight checks MUST pass be
 
 Hard rails:
 - Superpowers detection per superpowers-bridge.md (real install > vendored > halt).
-- target_files whitelist enforced — no out-of-bounds writes.
+- target_files whitelist honored — a prompt-level rule (rules tier) + review-panel scope check; no deterministic post-hoc observer yet.
 - No --no-verify on commits.
 - Halt + blocker YAML on test failure after max retries.
 

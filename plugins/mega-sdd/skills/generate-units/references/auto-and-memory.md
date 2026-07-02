@@ -39,8 +39,8 @@ handoff:
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
   artifacts:                                       # MUST be plain filesystem paths — NO annotations like "(N files)", "(latest)", or comments
-    - <absolute path to units/ directory>          # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units (or <vault>/units when --no-bind)
-    - <absolute path to units/_index.md>           # e.g., /Users/.../.mega-sdd/vaults/<vault>-bound/units/_index.md
+    - <absolute path to units/ directory>          # e.g., /Users/.../.mega-sdd/vaults/<vault>/units — canonical NESTED path per paths.md (never the legacy <vault>-bound/ sibling)
+    - <absolute path to units/_index.md>           # e.g., /Users/.../.mega-sdd/vaults/<vault>/units/_index.md
     # WRONG: "/Users/.../units/ (18 files)"        ← validator strips trailing " (...)" defensively, but producers SHOULD emit clean paths
     # WRONG: "/Users/.../units/ # latest"          ← inline comments invalid in YAML scalars
     # Each path MUST be a thing validate-handoff-yaml.sh can os.path.exists() against.
@@ -74,7 +74,7 @@ handoff:
     # (rules pulled from incomplete framework slice — may cite missing conventions).
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing`. Required ONLY under `--auto`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing` / `memory_in_use`. Required ONLY under `--auto`.
 
 The `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md`. Omit the entire `scope:` block when vault is legacy single-scope.
 

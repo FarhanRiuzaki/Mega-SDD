@@ -183,20 +183,29 @@ if not os.path.isdir(vault_root):
     skip("no_vault (.mega-sdd/vaults/ absent)")
 
 
-# ── Locate the active vault (most units); support <vault>/units and -bound ──
+# ── Locate units in ALL vaults (S5 GU-HOOK-5: the most-units heuristic silently
+# un-gated every smaller vault); support <vault>/units and -bound. Units are
+# vault-tagged so sibling groups never span vaults. ──
 def find_units():
-    best = []
+    tagged = []
+    seen = set()
     for d in sorted(glob.glob(os.path.join(vault_root, "*"))):
         if not os.path.isdir(d):
             continue
         base = os.path.basename(d)
+        # S5 round-2: a legacy `<vault>-bound/` sibling belongs to its base vault —
+        # the base probe below absorbs its units; a standalone -bound candidate
+        # double-tagged every unit (duplicated groups + inflated issue counts).
+        if base.endswith("-bound") and os.path.isdir(os.path.join(vault_root, base[:-6])):
+            continue
         unit_dirs = [os.path.join(d, "units"), os.path.join(vault_root, base + "-bound", "units")]
-        units = []
         for ud in unit_dirs:
-            units += sorted(glob.glob(os.path.join(ud, "U-*.md")) + glob.glob(os.path.join(ud, "U-*", "unit.md")))
-        if units:
-            best.append(units)
-    return max(best, key=len) if best else []
+            for u in sorted(glob.glob(os.path.join(ud, "U-*.md")) + glob.glob(os.path.join(ud, "U-*", "unit.md"))):
+                rp = os.path.realpath(u)
+                if rp not in seen:
+                    seen.add(rp)
+                    tagged.append((base, u))
+    return tagged
 
 
 unit_paths = find_units()
@@ -262,15 +271,16 @@ def accessor_declared(body, accessor, form="any"):
 
 
 units = []
-for p in unit_paths:
+for vname, p in unit_paths:
     uid, fm, text = parse_unit(p)
-    units.append({"uid": uid, "fm": fm, "body": text})
+    units.append({"vault": vname, "uid": uid, "fm": fm, "body": text})
 
-# ── Group siblings by module+scope (absent => single "_all" group) ──
+# ── Group siblings by vault+module+scope (absent => single "_all" group per
+# vault — S5: sibling groups never span vaults) ──
 from collections import defaultdict
 groups = defaultdict(list)
 for u in units:
-    key = (u["fm"].get("module", "_all"), u["fm"].get("scope", "_all"))
+    key = (u["vault"], u["fm"].get("module", "_all"), u["fm"].get("scope", "_all"))
     groups[key].append(u)
 
 # ── applies_when operators (Iter-79 N-1) ──
@@ -319,7 +329,7 @@ for concern in concerns:
                 inconsistent.append({
                     "unit": u["uid"],
                     "concern": concern.get("concern", "?"),
-                    "module": gkey[0], "scope": gkey[1],
+                    "vault": gkey[0], "module": gkey[1], "scope": gkey[2],
                     "applies_when": aw,
                     "expected": f"declare {concern['spec_obligation']} (sibling(s) {sorted(s['uid'] for s in satisfying)} do)",
                     "reason": "cross-cutting concern applies (sibling group shares it) but this unit declares a different/no mechanism — fan-out divergence",
@@ -349,7 +359,7 @@ if rel_on:
                     missing_relations.append({
                         "unit": u["uid"],
                         "fk_column": col,
-                        "module": gkey[0], "scope": gkey[1],
+                        "vault": gkey[0], "module": gkey[1], "scope": gkey[2],
                         "expected_accessor": accessor,
                         "reason": f"sibling(s) {sorted(d['uid'] for d in declarers)} declare the `{accessor}` relation for FK `{col}` but this unit does not — fan-out divergence (relation under-specified relative to siblings)",
                     })

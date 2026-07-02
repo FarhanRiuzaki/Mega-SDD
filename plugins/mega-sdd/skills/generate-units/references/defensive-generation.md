@@ -177,7 +177,7 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 | Per-unit: file exists + task_type=create + UNKNOWN state | INTERACTIVE prompt | Soft halt |
 | Per-anchor: file missing | WARNING in unit body | Soft (proceeds) |
 | Per-anchor: line-range out of bounds | WARNING in unit body | Soft (proceeds) |
-| All target_files collision + no path to resolve | HALT `target_files_collision` | Hard halt |
+| All target_files collision + no path to resolve | HALT `dedup_ambiguous` (Step 12.6 — canonical name; there is no separate target_files_collision halt) | Hard halt |
 | Force-create on existing file via option 4 | WARNING + proceed (user accepted risk) | Soft (proceeds) |
 
 ## Anti-halu rails preserved
@@ -185,7 +185,7 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 - Pre-flight auto-route uses existing scan-codebase + bind-codebase (no new code paths)
 - Per-unit cross-check NEVER silent-rewrites task_type — always user confirms via prompt
 - Anchor warnings DON'T fabricate citations; flag missing references for user review
-- `grounding_confidence` is descriptive (frontmatter metadata), not prescriptive (doesn't gate downstream)
+- `grounding_confidence` is descriptive for `create`/`extend` and for MEDIUM/LOW values; for `verify`+HIGH it is PRESCRIPTIVE — the A1 rail (`verify_grounding_untrusted`, this file §verify-grounding) hard-blocks execute-bolts on ungrounded criteria. (The purely-descriptive field is `grounding_evidence`.)
 - `--auto` mode picks safest defaults (extend over create on collision; never force overwrite)
 
 ## Backward compatibility

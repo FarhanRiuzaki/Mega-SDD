@@ -17,6 +17,6 @@ Hard rails:
 - One unit = one PR-sized bolt (300 LOC max).
 - Every unit cites vault source.
 - Reject dependency cycles.
-- target_files whitelist enforced downstream.
+- target_files whitelist honored downstream (prompt-level rule + review-panel scope check).
 
 On completion: suggest `/mega-sdd:execute-bolts --all`.

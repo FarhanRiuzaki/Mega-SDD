@@ -37,7 +37,8 @@ status: implemented                # OPTIONAL (living-vault lifecycle; absence =
                                    # superseded: the claim this unit derives from vanished from the (re-)bound vault
                                    #   - assigned ONLY by generate-units --reconcile; unit kept (audit trail), never deleted;
                                    #     execute-bolts SKIPS superseded units with a warning
-grounding_confidence: HIGH | MEDIUM | LOW   # — reflects defensive generation checks
+grounding_confidence: HIGH | MEDIUM | LOW
+risk: low | medium | high | critical   # OPTIONAL — written by generate-units Step 2.5 from the risk signals in references/adversarial-test-prompt.md (auth/payment/PII/regulatory-touching targets, LOCKED-claim refs); consumed by Step 9.5 (risk: high|critical auto-escalates to a separate adversarial-review subagent; critical bumps the review model). Absent = low.   # — reflects defensive generation checks
                                    # HIGH = binding present + all anchors verified + no target collisions + binding state all HIGH-conf
                                    #   AND (verify units only, A1) every acceptance criterion grounded in a NON-TEST source
                                    #   anchor `[grounded: path:line]` — see ## Acceptance criteria. A verify unit certifies
@@ -253,8 +254,8 @@ Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip
 
 ## Atomicity rules
 
-- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into U-001, U-001.1, U-001.2.
-- `target_files` whitelist is enforced by `execute-bolts` — bolt may not touch files outside this list.
+- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--refresh`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it).
+- `target_files` whitelist is honored by `execute-bolts` as a prompt-level rule (rules tier): the dispatch prompt forbids out-of-whitelist writes and the review panel checks scope. No deterministic post-hoc observer exists yet — do not read "enforced" as a machine gate.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
 - `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
 - `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight (before commit) validates. Violations halt with `hard_rule_violated`.
@@ -264,7 +265,7 @@ Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip
 
 Applies only when `_meta/squads.yaml` exists with ≥2 squads. Single-squad / no-squad-config vaults skip these rules.
 
-- `squad:` field is REQUIRED on every unit. `generate-units` assigns based on `squad-partition.md` routing rules.
+- `squad:` field is REQUIRED on every unit. `generate-units` assigns based on the routing rules in `generate-intent/references/squad-partition.md` (cross-skill ref — the layer-hint table, hybrid feature>layer priority, and squads.yaml validation live there).
 - `depends_on` MUST reference units with the SAME `squad:`. Cross-squad direct deps are rejected with `cross_squad_dep_invalid` halt.
 - Cross-squad coupling MUST go through interface notes:
   - Producer side: declare `produces_interfaces: [<id>, ...]` listing every interface this unit creates/implements.

@@ -1,5 +1,14 @@
 # Spec — Sharpen Code Delivery: Decomposition Reasoning + UI/UX Quality (tech-agnostic)
 
+> **Amendment (2026-07-02, god-review stage 5 — grounding: `research/2026-07-02-god-review-generate-units.md`):** the unit-stage gate mechanics are hardened so the blocking claims hold deterministically:
+> (1) **Project-wide unit-spec state** — `.unit-spec-state.json` was a single slot overwritten per unit write (last-writer-wins: only the LAST-written unit was ever gated; a verify+HIGH false-green unit sailed through whenever a clean sibling saved after it). `validate-unit-spec.sh` now merges EVERY unit into the state on every run; `--file-path` selects the focal unit for stdout/exit only.
+> (2) **Gate-time re-derivation** — the execute-bolts PreToolUse gate re-runs validate-unit-spec (project mode) + validate-flow-coverage + validate-sibling-consistency before reading their states, closing the Bash-written-unit stale-PASS hole and the async-PostToolUse TOCTOU.
+> (3) **State protection** — all quality-gate state files join the anti-self-bypass PROTECTED list (Bash) and the Write/Edit deny (a single `rm`/forged-PASS Write used to clear any gate except the moat).
+> (4) **All-vault scanning** — flow-coverage + sibling-consistency analyze EVERY vault (vault-scoped matching), not just the one with the most units.
+> (5) **Mermaid-first flow derivation** — flow-coverage derives input-accepting steps from the ```mermaid fence when its edges carry signals (the v4.53.0 mandate made the DoD-bullet path shadow the mermaid branch: DoD prose was reported as "steps"); the DoD/numbered fallback remains for signal-free labels and legacy flows. parse_unit also unions FRONTMATTER target_files (the canonical schema location) with the body block.
+> (6) **Closed grammars** — task_type is a closed, case-normalized, quote-tolerant enum; the Hard-rule grammar's undocumented catch-alls are replaced by an honest machine-checkable/directive-prose split + bullet-evasion detection; A1 rejects doc/vault anchors and line-less anchors; per-task_type section contracts check CONTENT (empty Anchors/Migration notes; Migration notes forbidden on create/verify); acceptance_test presence is machine-checked.
+
+
 **Date:** 2026-06-01
 **Status:** Approved (design); implementation in progress on `feat/sharpen-code-delivery-uiux`
 **Traces to:** `docs/superpowers/audits/2026-06-01-code-delivery-uiux-deep-audit.md` (structural audit) + the `new-tradefinance-import` Phase-2 real-run evidence (fixture).

@@ -25,7 +25,7 @@ a. **Framework pack rules** — Hard Rules from the loaded pack's `## Hard Rules
 
 b. **Binding state-derived** (per claim with `state: IMPLEMENTED` or `UNKNOWN`): anchor file exists + claim CONFIRMED → suggest `DO NOT modify <anchor-file>` for any unit whose `vault_source` overlaps the claim, UNLESS the claim is an extend candidate. Conservative — defaults to "don't touch what's working."
 
-c. **CONFLICT-derived** (per CONFLICT after user resolution via resolve-oq): resolved `KEEP_CODE` → suggest `DO NOT modify <conflicting-file>` for downstream units that might touch it; `KEEP_VAULT` → no Hard rule (intentional rewrite); `DEFER` → no Hard rule (OQ propagates).
+c. **CONFLICT-derived** (per CONFLICT after user resolution via resolve-oq): resolved `KEEP_CODE` → suggest `DO NOT modify <conflicting-file>` for downstream units that might touch it; `KEEP_VAULT` → no Hard rule (intentional rewrite — the code-update obligation is carried by generate-units' task_type route instead: the claim types `extend`-toward-vault per `generate-units/references/task-typing.md`, never a no-code `verify`); `DEFER` → no Hard rule (OQ propagates).
 
 d. **KB-derived hard rules** (only when KB present AND marker `[VERIFIED]`): a `## 9. Edge Cases & Gotchas` entry `[VERIFIED]` AND mechanically detectable → `DO NOT modify <gotcha-anchor-file>`; a `## 8. State Machine` entry `[VERIFIED]` for a function with stable signature → `function <name> MUST preserve signature: <sig>`. `[INFERRED]`/`[OPEN]` → NOT promoted (Anti-patterns instead).
 

@@ -231,9 +231,9 @@ After each unit completes:
 
 Existing v3.4 vaults can opt into modules by:
 
-1. Adding `_meta/modules.yaml` (manual or via auto-derivation: `/mega-sdd:generate-units --derive-modules`)
-2. Running `/mega-sdd:generate-units --refresh-modules` (NEW flag) — re-runs Step 5 module assignment without regenerating units
-3. Optional: edit `modules.yaml` to refine grouping; re-run `--refresh-modules`
+1. Adding `_meta/modules.yaml` — manually, OR by promoting the auto-derivation output: any `/mega-sdd:generate-units` run's Step 4.5 writes `_meta/modules.yaml.auto`; review it, then `mv _meta/modules.yaml.auto _meta/modules.yaml` (execute-bolts' `--module=` halt accepts only the promoted name)
+2. Re-running `/mega-sdd:generate-units --reconcile` — refreshes Step 5 module assignment against the existing unit set without regenerating unit bodies
+3. Optional: edit `modules.yaml` to refine grouping; re-run `--reconcile`
 
 ## References
 

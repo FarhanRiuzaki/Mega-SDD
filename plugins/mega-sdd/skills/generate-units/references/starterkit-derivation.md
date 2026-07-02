@@ -89,10 +89,11 @@ For each unit with `starterkit_relevance` non-empty, append starterkit-specific 
 **Template format for each rule:**
 
 ```
-- text: "<rule text>"
-  citation: "starterkit-context.yaml §<path>"
-  source: starterkit-context.yaml
+- <rule text — MUST mention "starterkit" when the convention is starterkit-specific (the machine check keys on the token)>
+  Citation: starterkit-context.yaml §<path>
 ```
+
+> **Rendered form is load-bearing:** in the unit's `## Hard rules` section each rule renders as a `- ` line followed by a `Citation: starterkit-context.yaml §<path>` sub-line within 5 lines — the EXACT shape `validate-unit-spec.sh` Check 3 reads (it also accepts lowercase `citation:`). A yaml-style nested block inside the section is NOT read by the checker.
 
 **UI/UX-relevant unit examples (when "ui_ux" in starterkit_relevance):**
 
@@ -101,8 +102,8 @@ For each unit with `starterkit_relevance` non-empty, append starterkit-specific 
   citation: "starterkit-context.yaml §ui_ux.layout_extends"
 
 - IF starterkit_context.ui_ux.notification_lib == "sweetalert2":
-    - text: "MUST use SweetAlert2 for confirmations and notifications (NEVER native alert() or window.confirm())"
-      citation: "starterkit-context.yaml §ui_ux.notification_lib"
+    - text: "MUST use SweetAlert2 for confirmations and notifications (NEVER native alert() or window.confirm()) — starterkit convention"
+      Citation: starterkit-context.yaml §ui_ux.notification_lib
 
 - FOR EACH idiom in starterkit_context.ui_ux.idioms:
     - text: "MUST follow starterkit idiom: <idiom>"
@@ -182,6 +183,6 @@ IF reuse-index.yaml absent:
 ## Anti-halu rails
 
 - `starterkit_context:` YAML file consumed read-only here; NEVER modified by generate-units. `starterkit_context_consumed` frontmatter flag set based on file presence only — never inferred.
-- Starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` explicitly. Citation is machine-checked in Step 12.5.f. Missing citation → halt `starterkit_rule_citation_missing` (ALWAYS STOP — not a soft warning; the emitted blocker YAML is in the halt-protocol reference listed in the skill router).
+- Starterkit-derived Hard Rules MUST cite `starterkit-context.yaml §<path>` explicitly. Citation is machine-checked in Step 12.5.f — HONEST SCOPE: the deterministic checker (validate-unit-spec.sh Check 3) detects a starterkit rule by the "starterkit" token in the rule line, so rules MUST carry the token (or the Citation line, which itself satisfies the check); a starterkit-derived rule with neither is invisible to the machine layer and covered only by this rules-tier mandate. Missing citation → halt `starterkit_rule_citation_missing` (ALWAYS STOP — not a soft warning; the emitted blocker YAML is in the halt-protocol reference listed in the skill router).
 - Starterkit relevance computed from `unit.target_files` paths + unit body text only. NEVER fabricate relevance for domains not matched by the rules in 7.7.b.
 - When `starterkit_context.partial == true`, skip Anchors + Hard Rules for slices listed in `partial_slices:`. Degrade to framework-pack-only for missing slices; do NOT guess absent slice content.

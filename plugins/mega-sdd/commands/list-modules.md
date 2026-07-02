@@ -19,7 +19,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/list-modules.sh" $ARGUMENTS --cwd="$(pwd)"
 
 The script resolves the vault (positional `[vault-path]`, else auto-probe `.mega-sdd/vaults/` then legacy `docs/mega-sdd/vaults/`), reads `_meta/modules.yaml` (or `modules.yaml.auto`, or falls back to a single implicit `M-default`), and emits per module: ID, name, status (`not-started` / `in-progress` / `units-complete` / `completed`), units `completed/total`, DoD `done/total`, priority, and `blocked_by` resolution — plus an `M-unassigned` warning for units whose `module:` matches no defined module, and the deterministic `Unblocked & actionable:` set. `--format=json` emits the same structured. Relay the output.
 
-> When `modules.yaml` is absent but `modules.yaml.auto` exists, suggest the user rename it to lock the grouping in (`/mega-sdd:generate-units --derive-modules` produced it).
+> When `modules.yaml` is absent but `modules.yaml.auto` exists, suggest the user rename it to lock the grouping in (`mv _meta/modules.yaml.auto _meta/modules.yaml` — generate-units Step 4.5 auto-derivation produced it).
 
 ### Step 2 — `--mark-dod=<module-id>` interactive flow (this command's job)
 
