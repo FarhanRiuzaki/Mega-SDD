@@ -220,9 +220,15 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
         }
         for c in bj.get("claims", []):
             cid = f"{vid}:{c['id']}"
-            add_node(cid, "claim", c["id"],
-                     {"verdict": c.get("verdict"), "state": c.get("state")},
-                     relp(bj_path), "claims[]")
+            # S5 GU-GRAPH-CONFLICT-1: carry the v4.57.0 sidecar fields — the
+            # impact lens must distinguish a resolved-KEEP_VAULT conflict from a
+            # live one, and a truncation-UNKNOWN from a dynamic-route UNKNOWN.
+            _attrs = {"verdict": c.get("verdict"), "state": c.get("state")}
+            if c.get("state_reason"):
+                _attrs["state_reason"] = c.get("state_reason")
+            if c.get("resolution"):
+                _attrs["resolution"] = c.get("resolution")
+            add_node(cid, "claim", c["id"], _attrs, relp(bj_path), "claims[]")
 
             # implements: claim -> code_anchor (file path only, line in attrs)
             anc = c.get("anchor")
@@ -285,7 +291,11 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
             add_edge(uid, tid, "depends_on", "VERIFIED", relp(upath), "frontmatter.depends_on")
         for ref in fm.get("binding_refs", []) or []:
             tid = f"{vid}:{ref}"
-            pending(tid, "oq" if ref.startswith("OQ") else "claim", relp(upath), "binding_refs")
+            # S5 GU-GRAPH-CONFLICT-1: the CONFLICT-NNN refs the moat REQUIRES
+            # units to carry were typed "claim" — permanently-pending mislabeled
+            # nodes on the impact lens. Type them by their real namespace.
+            _rt = "oq" if ref.startswith("OQ") else ("conflict" if ref.startswith("CONFLICT") else "claim")
+            pending(tid, _rt, relp(upath), "binding_refs")
             add_edge(uid, tid, "honors", "VERIFIED", relp(upath), "frontmatter.binding_refs")
         # Resolution 2: module id bare
         mod = fm.get("module")

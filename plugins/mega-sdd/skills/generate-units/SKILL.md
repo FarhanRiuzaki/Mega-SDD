@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.10.0
+version: 2.11.0
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -22,7 +22,7 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 
 - Vault path (positional, required) — the vault dir; brownfield runs carry `<vault>/binding.md` + `<vault>/bound/` (units are written to `<vault>/units/`, beside `bound/` and `bolts/`)
 - `--refresh` (re-number IDs from scratch) · `--max-complexity=small|medium` (split anything bigger) · `--auto`
-- `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`)
+- `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`/`critical` — the `risk:` frontmatter field is WRITTEN by Step 2.5 per the risk signals in `references/adversarial-test-prompt.md`, defined in `references/unit-schema.md`; absent = low)
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
 - `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass`
@@ -58,7 +58,8 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
    - `PARTIAL_FIELDS_*` → `extend` with Migration notes auto-populated from binding's `field_diff` (SURPLUS/BOTH fire a HUMAN REVIEW prompt)
    - Mix of NEW + IMPLEMENTED → SPLIT (one `create`, one `verify`; chain so verify runs first)
    - Any UNKNOWN → truncation-sourced UNKNOWN goes through the direct-probe sub-rule FIRST (never `create` straight off a truncated map section); other UNKNOWN → `create` (conservative default) + note in body. Precedence + sub-rule → `references/task-typing.md`
-   - **Mix of CONFIRMED + CONFLICT → HALT** (the hard gate should already have blocked; report the inconsistency)
+   - Resolved-**KEEP_VAULT** CONFLICT on a claim → `extend` TOWARD THE VAULT CLAIM (the code must change; never `verify`, never dischargeable by a no-code unit) — Migration notes from the conflict delta, body cites CONFLICT-N + the resolution. → `references/task-typing.md`
+   - **Mix of CONFIRMED + unresolved CONFLICT → HALT** (the hard gate should already have blocked; report the inconsistency; RESOLVED conflicts do not trigger this)
 
    `verify` units carry empty/`none` target_files, a MANDATORY `## Anchors` entry citing the binding `anchor`, a one-line Implementation-steps body, and assertions that prove existing code still works. A `verify` unit whose binding `anchor` is empty → halt (binding gap); never silently downgrade. Full state matrix, `extend` Migration-notes population, and `verify`/target_files mechanics: `references/task-typing.md`.
 
@@ -116,9 +117,9 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 ## Anti-hallucination rails
 
-- Every unit MUST cite its vault source (file:section); no unit may invent functionality absent from the vault; no unit may touch files outside `target_files` (enforced at bolt time); no unit may have an empty `acceptance_test`.
+- Every unit MUST cite its vault source (file:section); no unit may invent functionality absent from the vault; no unit may touch files outside `target_files` (a prompt-level rule (rules tier) at bolt time — the dispatch prompt forbids it and the review panel checks scope; no deterministic post-hoc observer exists yet); no unit may have an empty `acceptance_test` (presence machine-checked by `validate-unit-spec.sh`).
 - OQs surface explicitly as "TBD" — never silently fabricated. OQ-IDs propagate from the binding Resolution Table into `binding_refs:` when their resolution is implemented in the unit (Step 12.5.g halts `unit_oq_trace_missing` otherwise). CONFLICTs propagate the same way.
-- `task_type` is assigned ONLY from the binding's Implementation State Map — never inferred from vague heuristics; UNKNOWN → conservative `create`. `verify` units MUST have a concrete binding `anchor` (missing → downgrade-to-create only if no anchor exists; a `verify` with intent but no anchor halts as a binding gap). The dedup check halts (`dedup_ambiguous`) — NEVER silent-rewrites a task_type.
+- `task_type` is assigned ONLY from the binding's Implementation State Map — never inferred from vague heuristics; UNKNOWN → conservative `create`. `verify` units MUST have a concrete anchor — from the binding State Map OR the Step 2.5 direct-probe result recorded in `## Anchors` (per `references/task-typing.md` UNKNOWN sub-rule). A claim with NO anchor from any source types as `create` AT TYPING TIME (that is the probe rule, not a downgrade); a unit ALREADY assigned verify whose anchor is empty halts as a binding gap (`unit_underspecified`, YAML in halt-protocol). The dedup check halts (`dedup_ambiguous`) — NEVER silent-rewrites a task_type.
 - Anchors are MANDATORY when binding evidence exists (per task_type); missing → halt `unit_underspecified`. Hard rules grammar is a closed 5-type set; unparseable → halt `hard_rule_unparseable`. Anti-patterns are drawn from binding CONFLICTs + KB gotchas (suggestion only, not a halt condition).
 - `depends_on` is intra-squad only (cross-squad coupling routes through interface notes); interface references must resolve to existing files. `--strict-deps` (default) emits deps only on concrete coupling evidence.
 - PageRank suggestions are informational, never auto-added to target_files. Anchor warnings are SOFT (visible, non-halting; anchors can be aspirational for new files). Per-unit collision prompts fire only on genuine collision.

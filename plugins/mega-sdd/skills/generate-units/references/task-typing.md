@@ -25,7 +25,8 @@ If bound-vault has `binding.md` with an Implementation State Map, assign `task_t
 | **PARTIAL_FIELDS_BOTH** — both directions diff | `extend` with HUMAN REVIEW mandatory before bolt + strong warning in unit body (usually signals semantic mismatch needing vault update OR code triage) |
 | Mix of NEW + IMPLEMENTED | SPLIT — emit one `create` unit for NEW claims, one `verify` unit for IMPLEMENTED claims; chain via `depends_on` so verify runs first |
 | Any UNKNOWN (regardless of confidence) | see **UNKNOWN sub-rule** below — `create` is the default ONLY after the truncation check + direct probe |
-| Mix of CONFIRMED + CONFLICT | Halt — binding gate should have blocked already; report inconsistency |
+| Claim carries a **resolved-KEEP_VAULT CONFLICT** (binding.md `✅ RESOLVED (KEEP_VAULT …)` / binding.json `resolution: KEEP_VAULT`) | `extend` **toward the VAULT claim** — the architect ruled the vault correct and the CODE must change (S5). NEVER `verify` (that would certify the vault-DIVERGING code as correct — the exact inversion) and never dischargeable by a no-code unit. Migration notes = the vault-vs-code delta from the CONFLICT entry; unit body cites `CONFLICT-N` + the KEEP_VAULT resolution and instructs "implement toward the VAULT's claim, not current code"; `binding_refs` carries the CONFLICT-N (the propagation drop keeps it un-droppable) |
+| Mix of CONFIRMED + **unresolved** CONFLICT | Halt — binding gate should have blocked already; report inconsistency. (A RESOLVED conflict does NOT trigger this halt — KEEP_VAULT routes to the row above; KEEP_CODE/SPLIT re-bound to CONFIRMED; DEFER became an OQ) |
 
 > The `Mix of CONFIRMED + CONFLICT` row is a backstop. The primary defense is the SKILL.md hard gate: unresolved CONFLICT entries in binding.md BLOCK unit generation outright (invariant #2). If a CONFLICT reaches this table, the gate was bypassed — halt and report the inconsistency rather than generating.
 
@@ -110,7 +111,7 @@ Per the §Step 7.6 cross-check in the defensive-generation reference (listed in 
 
 Invoked by `orchestrate-flow --sync` after a re-bind (spec `2026-06-10-living-vault-continuous-sync-design.md` S6). Updates the EXISTING unit set against the refreshed `binding.md` — id-stability is the contract: a unit ID never changes meaning, and the pass never creates a duplicate for a claim that already has a unit (the `dedup_ambiguous` gate still applies).
 
-Per existing unit (matched by `vault_source` → claim):
+Per existing unit (matched by `binding_refs` → claim as the PRIMARY key — survives SPLIT pairs sharing one vault_source; `vault_source` is the fallback for units with no binding refs):
 
 1. **task_type re-derivation** — re-read the claim's NEW Implementation State Map row and re-apply the standard table:
    - was `create`, claim now `IMPLEMENTED` → flip to `verify` (code landed out-of-pipeline; verify it, don't rewrite it)

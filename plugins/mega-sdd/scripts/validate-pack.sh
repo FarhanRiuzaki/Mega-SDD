@@ -161,6 +161,34 @@ _validate_pack() {
     fi
   done
 
+  # ---- Check 3b (S5 GU-PACKLINT-GATES): gate-driving header typo lint -----
+  # flow-coverage / sibling-consistency / unit-spec / fanout-parity resolve pack
+  # sections by EXACT prefix match; a typo'd gate header silently falls back to
+  # _universal's principle-only prose and downgrades a BLOCKING gate to SKIP with
+  # no diagnostic. Any `## ` header in the pack that is not in the recognized set
+  # but is a near-miss of a gate-driving header is a violation.
+  local _known_headers="File location standards|Naming standards|Idioms|Hard Rules emitted|Testing conventions|Deep-scan file hints|Authz mapping|UI detection|Reuse discovery|Flow-artifact derivation|Conditional scaffold artifacts|Cross-cutting concerns|Relation derivation|UI quality signatures|Entity source globs|Entity matching tokens|Test patterns|Contents"
+  local _gate_stems="Flow.artifact|Cross.cutting|Relation deriv|UI quality|Entity source|Entity match|Test pattern|Scaffold|Deep.scan|Authz|Reuse"
+  local _hdr _hname
+  while IFS= read -r _hdr; do
+    _hname=$(printf '%s' "$_hdr" | sed 's/^##[[:space:]]*//')
+    if printf '%s' "$_hname" | grep -qE "^(${_known_headers})([[:space:]]|$)"; then
+      continue
+    fi
+    if printf '%s' "$_hname" | grep -qiE "(${_gate_stems})"; then
+      echo "VIOLATION: unrecognized gate-like section header — '## ${_hname}' (near-miss of a gate-driving header; the resolver matches EXACT names, so a typo silently downgrades a blocking gate to SKIP. Recognized: Flow-artifact derivation / Cross-cutting concerns / Relation derivation / UI quality signatures / Conditional scaffold artifacts / Entity source globs / Entity matching tokens / Test patterns)"
+      violations=$((violations + 1))
+    fi
+  done <<EOF_HDRS
+$(printf '%s\n' "$content" | grep -E '^## ' || true)
+EOF_HDRS
+
+  # ---- Check 3c (S5): unresolved extends placeholder breaks the chain walk ─
+  if printf '%s\n' "$frontmatter" | grep -qE '^extends:.*<[^>]*>'; then
+    echo "VIOLATION: extends carries an unrewritten template placeholder (e.g. '<other-pack-or-null>') — the resolver chain walk breaks and every section falls back to nothing. Set extends to a real pack name or null."
+    violations=$((violations + 1))
+  fi
+
   # ---- Check 4: YAML validity in hint-section fenced blocks ---------------
   # We extract yaml fenced blocks that appear under the four conditional sections.
   # Strategy: scan line by line; track which conditional section we're in;

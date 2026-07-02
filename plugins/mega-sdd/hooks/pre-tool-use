@@ -390,8 +390,22 @@ except Exception as e:
       # layout the ls globs cannot reach and (b) backdated mtimes (cp -p /
       # rsync -a restores). The validator is sub-second python and this is the
       # execute-bolts-only path; current truth beats a stale cache at a gate.
-      if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ]; then
+      # Round-2 (ATK-6): no vaults-dir condition — the legacy root *-bound layout
+      # has units the validators see but no .mega-sdd/vaults/; every validator
+      # handles the empty case gracefully (PASS/SKIP), so run unconditionally
+      # (the hook already exited for non-mega-sdd projects).
+      if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        # ── S5 GU-HOOK-1/3/4: re-derive the three unit-stage gate states at gate
+        # time too. Their PostToolUse dispatch is (a) keyed to the Write|Edit tool
+        # path only (a unit written via Bash heredoc never re-validates — stale
+        # PASS), and (b) async (TOCTOU: execute-bolts dispatched right after the
+        # last unit write can read one-write-stale state). validate-unit-spec in
+        # project mode + the two project-wide scanners are sub-second; current
+        # truth beats a stale cache at the gate that launches a multi-minute run.
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-unit-spec.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-flow-coverage.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
       fi
       GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
@@ -652,11 +666,22 @@ p = os.path.abspath(fp) if os.path.isabs(fp) else os.path.abspath(os.path.join(r
 rel = os.path.relpath(p, root) if root else p
 if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
     raise SystemExit(0)
-if rel.endswith(".mega-sdd/.validation-blockers.json") or rel == ".mega-sdd/.validation-blockers.json":
+# S5 GU-HOOK-2: the quality-gate states join the moat state — every one of
+# these is validator/hook-written ONLY (no documented skill Write path), and a
+# forged PASS in any of them opened its execute-bolts hard block. .plan-pending /
+# .iter-classifier.json stay OUT (documented orchestrate-flow write paths).
+_GUARDED = (
+    ".validation-blockers.json", ".unit-spec-state.json", ".flow-coverage-state.json",
+    ".sibling-consistency-state.json", ".ui-quality-blockers.json",
+    ".cross-cutting-state.json", ".bolt-orphans-state.json",
+    ".batch-suite-gate-state.json", ".bolt-postflight-state.json",
+    ".factory-ledger-state.json",
+)
+if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUARDED):
     print("protected")
 ' 2>/dev/null)
       if [ "$FP_GUARD" = "protected" ]; then
-        emit_block "Blocked: direct Write/Edit of .validation-blockers.json (the binding->units moat state). It is written exclusively by validate-handoff-binding-units.sh — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let PostToolUse re-validate (or run /mega-sdd:validate-handoff). Human user can still modify the file via shell outside the agent."
+        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, factory-ledger) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
       fi
     fi
 
@@ -764,7 +789,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -786,8 +811,9 @@ else:
       exit 0
     fi
 
-    # Protected state files
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json'
+    # Protected state files (S5 GU-HOOK-2: quality-gate states added — a single
+    # `rm` cleared any execute-bolts hard block except the moat; absent = allow)
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
@@ -798,6 +824,12 @@ else:
     BYPASS_DETECTED=""
     if echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="rm/unlink of protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\b(truncate|shred)\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="truncate/shred of protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\bfind\s+[^|;&]*($PROTECTED)[^|;&]*-delete" || echo "$BASH_CMD" | grep -qE "\bfind\s+[^|;&]*-delete[^|;&]*($PROTECTED)" || { echo "$BASH_CMD" | grep -qE "\bfind\b.*-delete" && echo "$BASH_CMD" | grep -qE "($PROTECTED)"; }; then
+      BYPASS_DETECTED="find -delete targeting protected state file"
+    elif echo "$BASH_CMD" | grep -qE "os\.(remove|unlink)|pathlib[^|;&]*unlink|Path\([^)]*($PROTECTED)" && echo "$BASH_CMD" | grep -qE "($PROTECTED)"; then
+      BYPASS_DETECTED="python file removal targeting protected state file"
     elif echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED_RM_ONLY)"; then
       BYPASS_DETECTED="rm/unlink of a binding doc (deleting binding.md erases active CONFLICTs and orphans unit citations — invariant #2/#3)"
     elif echo "$BASH_CMD" | grep -qE ">[[:space:]]*[^|;&]*($PROTECTED)"; then

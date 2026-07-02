@@ -35,6 +35,7 @@ b. **Symbol cross-reference**: dependent unit's body Anchors cite a symbol plann
 c. **Migration Notes reference**: extend unit's Migration notes ADD/KEEP/REMOVE explicitly references a symbol another unit creates
 d. **Vault dependency declaration**: vault section explicitly orders flows (e.g., `04-flows.md §F-U-002` says "after F-U-001 complete")
 e. **Module-level blocked_by**: unit's module has explicit `blocked_by: [<other-module>]` AND other module has units that target same files
+f. **SPLIT chain edge (Step 2.5 mandate)**: the verify/create pair emitted by a NEW+IMPLEMENTED SPLIT — the `create` half MUST depend_on the `verify` half so the existing implementation is certified BEFORE new code can perturb it. This edge is evidence class (f) by construction (same source claim-set), even though the pair's target_files are disjoint — without it the pair parallelizes and the verify assertions race the new code.
 
 **DO NOT emit** `depends_on` for:
 - Same vault section / same module — implicit ordering not guaranteed
@@ -77,7 +78,7 @@ Load `_meta/squads.yaml` if present.
 - Skip all multi-squad validations
 
 **If ≥2 squads declared:**
-- Per `squad-partition.md` routing rules, assign `squad:` to each unit based on its `vault_source` and the relevant layer/feature tags.
+- Per `generate-intent/references/squad-partition.md` routing rules (cross-skill ref), assign `squad:` to each unit based on its `vault_source` and the relevant layer/feature tags.
 - For each candidate unit:
   - Determine primary layer from its `vault_source` (e.g., a unit derived from `02-architecture.md#backend` → layer `backend`)
   - Match against squad ownership rules with precedence: `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`

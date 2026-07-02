@@ -15,9 +15,17 @@
 #
 # Detection-only at hook layer; auto-fix is generate-units's responsibility.
 #
-# Inputs: --cwd=<project> --file-path=<unit-file>
-# Outputs: JSON report stdout; writes .mega-sdd/.unit-spec-state.json
-# Exit: 0=PASS, 1=FAIL, 2=error.
+# S5 GU-HOOK-1: the state file reflects ALL units PROJECT-WIDE on every run —
+# it was a single slot overwritten per unit write, so only the LAST-written
+# unit was ever gated (last-writer-wins masked verify_grounding_untrusted and
+# render_test_missing for N-1 units of every multi-unit run). --file-path now
+# selects the FOCAL unit for stdout/exit-code purposes only; the state always
+# merges every unit. Without --file-path the validator scans all units (the
+# execute-bolts PreToolUse gate uses this as its re-derive entry point).
+#
+# Inputs: --cwd=<project> [--file-path=<unit-file>]
+# Outputs: JSON report stdout; writes .mega-sdd/.unit-spec-state.json (merged)
+# Exit: 0=PASS, 1=FAIL (focal file when --file-path given, else merged), 2=error.
 
 set -uo pipefail
 
@@ -46,19 +54,20 @@ fi
 if [ -z "$CWD" ] || [ ! -d "$CWD" ]; then
   echo "ERROR: --cwd required" >&2; exit 2
 fi
-if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
-  exit 0
+if [ -n "$FILE_PATH" ]; then
+  if [ ! -f "$FILE_PATH" ]; then
+    exit 0
+  fi
+  # Quick path filter: only validate unit files. Accept the bound layout
+  # (*-bound/units/...) AND the plain vault layout (*/vaults/*/units/U-*.md) so the
+  # render-test check (slice D) reaches non-bound vaults too — consistent with the
+  # PostToolUse dispatch broadening in commit e945991 (Task A).
+  case "$FILE_PATH" in
+    *-bound/units/U-*.md|*-bound/units/U-*/unit.md) ;;
+    *.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/U-*/unit.md) ;;
+    *) exit 0 ;;
+  esac
 fi
-
-# Quick path filter: only validate unit files. Accept the bound layout
-# (*-bound/units/...) AND the plain vault layout (*/vaults/*/units/U-*.md) so the
-# render-test check (slice D) reaches non-bound vaults too — consistent with the
-# PostToolUse dispatch broadening in commit e945991 (Task A).
-case "$FILE_PATH" in
-  *-bound/units/U-*.md|*-bound/units/U-*/unit.md) ;;
-  *.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/U-*/unit.md) ;;
-  *) exit 0 ;;
-esac
 
 STATE_FILE="${CWD}/.mega-sdd/.unit-spec-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: state dir" >&2; exit 2; }
@@ -77,6 +86,7 @@ fi
 
 CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" \
 TEST_PATTERNS_SECTION="$TEST_PATTERNS_SECTION" python3 <<'PYEOF'
+import glob
 import json
 import os
 import re
@@ -84,131 +94,198 @@ import sys
 from datetime import datetime, timezone
 
 cwd = os.environ["CWD"]
-file_path = os.environ["FILE_PATH"]
+focal_path = os.environ.get("FILE_PATH", "")
 state_file = os.environ["STATE_FILE"]
 quiet = os.environ.get("QUIET", "0") == "1"
 test_patterns_section = os.environ.get("TEST_PATTERNS_SECTION", "")
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-rel_path = os.path.relpath(file_path, cwd)
 
-try:
-    body = open(file_path, errors="replace").read()
-except Exception as e:
-    print(f"ERROR: cannot read {file_path}: {e}", file=sys.stderr)
-    sys.exit(2)
+# S5 GU-TASKTYPE-ENUM-1: closed enum + normalization. 'Verify', '"verify"' and
+# 'modify' all silently disarmed the A1/per-type rails before.
+VALID_TASK_TYPES = {"create", "verify", "extend"}
 
-issues = []
 
-# Extract frontmatter
-fm_match = re.match(r"^---\n(.*?)\n---\n?", body, re.DOTALL)
-if not fm_match:
-    issues.append({
-        "halt_type": "unit_underspecified",
-        "detail": "unit has no frontmatter YAML block (--- ... ---)",
-        "missing_fields": ["entire_frontmatter"],
-    })
-    state = {
-        "ts": ts, "checked_file": rel_path, "status": "FAIL",
-        "issues_count": len(issues), "issues": issues,
-    }
-    _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
-        json.dump(state, f, indent=2)
-    os.replace(_tmp, state_file)
-    if not quiet:
-        print(json.dumps(state, indent=2))
-    sys.exit(1)
+def _section_body(heading_pat, text):
+    """Body of a `## <heading>` section up to the next h2, or None when absent.
+    Round-2 (ATK-3): tolerate a decorated heading (`## Anchors (from binding)`) —
+    HEAD accepted the suffix shape, so requiring end-of-line false-flagged
+    existing vaults on every project-wide run."""
+    m = re.search(rf"^##\s+{heading_pat}\b[^\n]*\n(.*?)(?=^##\s|\Z)",
+                  text, re.MULTILINE | re.IGNORECASE | re.DOTALL)
+    return m.group(1) if m else None
 
-fm = fm_match.group(1)
-body_after_fm = body[fm_match.end():]
 
-# ─── Check 1: unit_underspecified — required frontmatter fields ──────────────
-# Accept either Layout A (unit_id) or Layout B (id) for unit identifier.
-field_present = {}
-for f in ["unit_id", "id", "title", "task_type", "target_files", "vault_source", "vault_anchors"]:
-    if re.search(rf"^{f}:", fm, re.MULTILINE):
-        field_present[f] = True
+def validate_unit(file_path):
+    """All unit-spec checks for ONE unit file. Returns the issue list (each issue
+    tagged with the unit's repo-relative path)."""
+    issues = []
+    rel_path = os.path.relpath(file_path, cwd)
+    try:
+        body = open(file_path, errors="replace").read()
+    except Exception as e:
+        return [{"halt_type": "unit_underspecified", "file": rel_path,
+                 "detail": f"cannot read unit file: {e}"}]
 
-unit_id = None
-m = re.search(r"^(?:unit_id|id):\s*(\S+)", fm, re.MULTILINE)
-if m: unit_id = m.group(1)
-if not unit_id:
-    if os.path.basename(file_path) == "unit.md":
-        unit_id = os.path.basename(os.path.dirname(file_path))
+    # Extract frontmatter
+    fm_match = re.match(r"^---\n(.*?)\n---\n?", body, re.DOTALL)
+    if not fm_match:
+        return [{"halt_type": "unit_underspecified", "file": rel_path,
+                 "detail": "unit has no frontmatter YAML block (--- ... ---)",
+                 "missing_fields": ["entire_frontmatter"]}]
+
+    fm = fm_match.group(1)
+    body_after_fm = body[fm_match.end():]
+
+    # ─── Check 1: unit_underspecified — required frontmatter fields ──────────
+    # Accept either Layout A (unit_id) or Layout B (id) for unit identifier.
+    field_present = {}
+    for f in ["unit_id", "id", "title", "task_type", "target_files", "vault_source", "vault_anchors"]:
+        if re.search(rf"^{f}:", fm, re.MULTILINE):
+            field_present[f] = True
+
+    unit_id = None
+    m = re.search(r"^(?:unit_id|id):\s*(\S+)", fm, re.MULTILINE)
+    if m: unit_id = m.group(1)
+    if not unit_id:
+        if os.path.basename(file_path) == "unit.md":
+            unit_id = os.path.basename(os.path.dirname(file_path))
+        else:
+            unit_id = os.path.basename(file_path).replace(".md", "")
+
+    # S5 GU-TASKTYPE-ENUM-1: tolerate quoted scalars + normalize case, then
+    # validate against the CLOSED enum — an unknown value is flagged, never
+    # silently skipped past every per-type rail.
+    task_type_match = re.search(r"^task_type:\s*[\"']?([A-Za-z_-]+)[\"']?", fm, re.MULTILINE)
+    task_type_raw = task_type_match.group(1) if task_type_match else None
+    task_type = task_type_raw.strip().lower() if task_type_raw else None
+    if task_type is not None and task_type not in VALID_TASK_TYPES:
+        issues.append({
+            "halt_type": "unit_underspecified",
+            "detail": (f"unit {unit_id} has invalid task_type '{task_type_raw}' — "
+                       f"must be one of create|verify|extend (closed enum)"),
+            "unit_id": unit_id,
+            "task_type": task_type_raw,
+            "invalid_fields": ["task_type"],
+        })
+
+    # Required fields (lenient: accept unit_id OR id)
+    missing_fields = []
+    if "unit_id" not in field_present and "id" not in field_present:
+        missing_fields.append("unit_id|id")
+    if "title" not in field_present:
+        missing_fields.append("title")
+    if "task_type" not in field_present:
+        missing_fields.append("task_type")
+    # vault_source OR vault_anchors (layout B uses vault_anchors)
+    if "vault_source" not in field_present and "vault_anchors" not in field_present:
+        missing_fields.append("vault_source|vault_anchors")
+    # target_files presence (for verify, may be empty list; for create/extend, must have entries)
+    if "target_files" not in field_present:
+        missing_fields.append("target_files")
+
+    if missing_fields:
+        issues.append({
+            "halt_type": "unit_underspecified",
+            "detail": f"unit {unit_id} frontmatter missing required field(s): {missing_fields}",
+            "unit_id": unit_id,
+            "task_type": task_type,
+            "missing_fields": missing_fields,
+        })
+
+    # S5 GU-VUS-AT-PRESENCE-1: acceptance_test presence (schema rail: every unit
+    # MUST carry one — "No exceptions"). Structured key in frontmatter or body;
+    # an empty list does not count. Detection-layer (not a PreToolUse gate read).
+    at_m = re.search(r"^acceptance_test\s*:\s*(.*?)(?=^\S|\Z)", body, re.DOTALL | re.MULTILINE)
+    at_region = at_m.group(1).strip() if at_m else ""
+    if not at_m or not at_region or at_region in ("[]", "[ ]", "null", "~"):
+        issues.append({
+            "halt_type": "unit_underspecified",
+            "detail": (f"unit {unit_id} has no non-empty `acceptance_test:` entry — every unit "
+                       f"MUST carry one (unit-schema §acceptance_test, no exceptions)"),
+            "unit_id": unit_id,
+            "task_type": task_type,
+            "missing_fields": ["acceptance_test"],
+        })
+
+    # ─── Per-task_type section contracts (S5 GU-TTCONTRACT-1: content, not just
+    # heading presence — an empty `## Anchors`/`## Migration notes` carried no
+    # payload for the bolt; a create unit WITH Migration notes signals a
+    # mis-assigned task_type per 12.5.d) ───────────────────────────────────────
+    if task_type in ("verify", "extend"):
+        anch = _section_body(r"Anchors?", body_after_fm)
+        if anch is None:
+            issues.append({
+                "halt_type": "unit_underspecified",
+                "detail": f"unit {unit_id} task_type={task_type} requires `## Anchors` section",
+                "unit_id": unit_id, "task_type": task_type,
+                "missing_sections": ["Anchors"],
+            })
+        elif not anch.strip():
+            issues.append({
+                "halt_type": "unit_underspecified",
+                "detail": f"unit {unit_id} `## Anchors` section is EMPTY — {task_type} requires >=1 anchor entry (12.5.a)",
+                "unit_id": unit_id, "task_type": task_type,
+                "empty_sections": ["Anchors"],
+            })
+
+    mig = _section_body(r"Migration\s+notes?", body_after_fm)
+    if task_type == "extend":
+        if mig is None:
+            issues.append({
+                "halt_type": "unit_underspecified",
+                "detail": f"unit {unit_id} task_type=extend requires `## Migration notes` section",
+                "unit_id": unit_id, "task_type": task_type,
+                "missing_sections": ["Migration notes"],
+            })
+        elif not mig.strip():
+            issues.append({
+                "halt_type": "unit_underspecified",
+                "detail": f"unit {unit_id} `## Migration notes` section is EMPTY — extend requires the ADD/KEEP/REMOVE field plan (12.5.d)",
+                "unit_id": unit_id, "task_type": task_type,
+                "empty_sections": ["Migration notes"],
+            })
+        else:
+            missing_sub = [t for t in ("ADD", "KEEP", "REMOVE") if not re.search(rf"\b{t}\b", mig)]
+            if missing_sub:
+                issues.append({
+                    "halt_type": "unit_underspecified",
+                    "detail": f"unit {unit_id} `## Migration notes` missing sub-list(s) {missing_sub} — all three of ADD/KEEP/REMOVE must be present (12.5.d)",
+                    "unit_id": unit_id, "task_type": task_type,
+                    "missing_sublists": missing_sub,
+                })
+    elif task_type in ("create", "verify") and mig is not None:
+        issues.append({
+            "halt_type": "unit_underspecified",
+            "detail": f"unit {unit_id} task_type={task_type} MUST NOT have a `## Migration notes` section (12.5.d — Migration notes are extend-only; its presence signals a mis-assigned task_type)",
+            "unit_id": unit_id, "task_type": task_type,
+            "forbidden_sections": ["Migration notes"],
+        })
+
+    # ─── Check 1b (A1): verify_grounding_untrusted — per-AC source grounding ─
+    # Root cause: grounding_confidence: HIGH meant only "anchors verified = file
+    # exists + line valid" (symbol existence), NEVER per-acceptance-criterion source
+    # grounding. A verify unit could be stamped HIGH while its LOCKED acceptance
+    # criteria lived only in test stubs / the PRD — certifying UNBUILT behavior green.
+    # The defect is PARTIAL grounding (one real source anchor + N ungrounded criteria),
+    # so an "all anchors are test files" check structurally misses it. The unit of
+    # measurement is the acceptance CRITERION: each criterion of a verify+HIGH unit
+    # must carry a resolvable NON-TEST source anchor `[grounded: path:line]`.
+    # Scope: enforced ONLY when grounding_confidence: HIGH (a MEDIUM/LOW verify unit
+    # anchored thinly is honest, not blocked) AND the unit ADOPTS per-AC markers
+    # (>=1 criterion carries `[grounded:]`/`[ungrounded]`). Legacy units with no
+    # markers at all are tolerated/treated-as-MEDIUM, never retro-blocked.
+    # S5 GU-TASKTYPE-ENUM-1: tolerate quoted scalars here too.
+    gc_match = re.search(r"^grounding_confidence:\s*[\"']?([A-Za-z]+)[\"']?", fm, re.MULTILINE)
+    grounding_conf = gc_match.group(1).upper() if gc_match else None
+    if task_type == "verify" and grounding_conf == "HIGH":
+        # Adoption is detected from the WHOLE body, not from a pre-located section — so
+        # heading drift (`## Acceptance criteria:`, `### Acceptance tests`, a renamed
+        # heading) and prose criteria cannot hide the opt-in. A verify+HIGH unit with NO
+        # grounding markers anywhere is legacy (old symbol-existence semantics), tolerated.
+        adopts = re.search(r"\[grounded:|\[ungrounded\]", body_after_fm, re.IGNORECASE) is not None
     else:
-        unit_id = os.path.basename(file_path).replace(".md", "")
-
-task_type_match = re.search(r"^task_type:\s*(\w+)", fm, re.MULTILINE)
-task_type = task_type_match.group(1) if task_type_match else None
-
-# Required fields (lenient: accept unit_id OR id)
-missing_fields = []
-if "unit_id" not in field_present and "id" not in field_present:
-    missing_fields.append("unit_id|id")
-if "title" not in field_present:
-    missing_fields.append("title")
-if "task_type" not in field_present:
-    missing_fields.append("task_type")
-# vault_source OR vault_anchors (layout B uses vault_anchors)
-if "vault_source" not in field_present and "vault_anchors" not in field_present:
-    missing_fields.append("vault_source|vault_anchors")
-# target_files presence (for verify, may be empty list; for create/extend, must have entries)
-if "target_files" not in field_present:
-    missing_fields.append("target_files")
-
-if missing_fields:
-    issues.append({
-        "halt_type": "unit_underspecified",
-        "detail": f"unit {unit_id} frontmatter missing required field(s): {missing_fields}",
-        "unit_id": unit_id,
-        "task_type": task_type,
-        "missing_fields": missing_fields,
-    })
-
-# Anchors check per task_type (only when task_type known + body has frontmatter)
-if task_type in ("verify", "extend"):
-    if not re.search(r"^##\s+Anchors?", body_after_fm, re.MULTILINE | re.IGNORECASE):
-        issues.append({
-            "halt_type": "unit_underspecified",
-            "detail": f"unit {unit_id} task_type={task_type} requires `## Anchors` section",
-            "unit_id": unit_id,
-            "task_type": task_type,
-            "missing_sections": ["Anchors"],
-        })
-
-# Migration notes check for extend
-if task_type == "extend":
-    if not re.search(r"^##\s+Migration\s+notes?", body_after_fm, re.MULTILINE | re.IGNORECASE):
-        issues.append({
-            "halt_type": "unit_underspecified",
-            "detail": f"unit {unit_id} task_type=extend requires `## Migration notes` section",
-            "unit_id": unit_id,
-            "task_type": task_type,
-            "missing_sections": ["Migration notes"],
-        })
-
-# ─── Check 1b (A1): verify_grounding_untrusted — per-AC source grounding ─────
-# Root cause: grounding_confidence: HIGH meant only "anchors verified = file
-# exists + line valid" (symbol existence), NEVER per-acceptance-criterion source
-# grounding. A verify unit could be stamped HIGH while its LOCKED acceptance
-# criteria lived only in test stubs / the PRD — certifying UNBUILT behavior green.
-# The defect is PARTIAL grounding (one real source anchor + N ungrounded criteria),
-# so an "all anchors are test files" check structurally misses it. The unit of
-# measurement is the acceptance CRITERION: each criterion of a verify+HIGH unit
-# must carry a resolvable NON-TEST source anchor `[grounded: path:line]`.
-# Scope: enforced ONLY when grounding_confidence: HIGH (a MEDIUM/LOW verify unit
-# anchored thinly is honest, not blocked) AND the unit ADOPTS per-AC markers
-# (>=1 criterion carries `[grounded:]`/`[ungrounded]`). Legacy units with no
-# markers at all are tolerated/treated-as-MEDIUM, never retro-blocked.
-gc_match = re.search(r"^grounding_confidence:\s*([A-Za-z]+)", fm, re.MULTILINE)
-grounding_conf = gc_match.group(1).upper() if gc_match else None
-if task_type == "verify" and grounding_conf == "HIGH":
-    # Adoption is detected from the WHOLE body, not from a pre-located section — so
-    # heading drift (`## Acceptance criteria:`, `### Acceptance tests`, a renamed
-    # heading) and prose criteria cannot hide the opt-in. A verify+HIGH unit with NO
-    # grounding markers anywhere is legacy (old symbol-existence semantics), tolerated.
-    adopts = re.search(r"\[grounded:|\[ungrounded\]", body_after_fm, re.IGNORECASE) is not None
-    if adopts:
+        adopts = False
+    if task_type == "verify" and grounding_conf == "HIGH" and adopts:
         def _is_test_path(p):
             pl = p.lower()
             if re.search(r"(^|/)(tests?|specs?|__tests__|__mocks__|fixtures?)/", pl):
@@ -223,23 +300,46 @@ if task_type == "verify" and grounding_conf == "HIGH":
                 return True
             return False
 
+        def _is_doc_path(p):
+            # S5 GU-VUS-A1-DOC-ANCHOR-1: the vault/PRD markdown itself is NOT
+            # implementation evidence — "criteria live only in the PRD" is the
+            # exact class A1 was built to block, yet a vault-doc anchor passed.
+            # Round-2: lstrip("./") mangled the leading dot of ".mega-sdd/..."
+            # (char-set strip), letting relative .mega-sdd anchors through —
+            # strip a "./" PREFIX only. And the blanket *.md rejection is scoped:
+            # spec/doc LOCATIONS (mega-sdd artifacts, docs/, specs/) and spec-doc
+            # NAMES are rejected; other .md stays groundable (a docs-site's
+            # implementation IS markdown).
+            pl = p.lower()
+            while pl.startswith("./"):
+                pl = pl[2:]
+            if pl.startswith(".mega-sdd/") or "/.mega-sdd/" in pl:
+                return True
+            if re.match(r"^(docs?|specs?|rfcs?)/", pl) or re.search(r"/(docs?|specs?|rfcs?)/", pl):
+                if re.search(r"\.(md|markdown|rst|txt)$", pl):
+                    return True
+            base = pl.rsplit("/", 1)[-1]
+            if re.match(r"^(readme|changelog|prd|brd|contributing|license)\b", base) and re.search(r"\.(md|markdown|rst|txt)$", base):
+                return True
+            return False
+
         def _anchor_resolves(spec):
             m = re.match(r"^(.+?):(\d+)$", spec)
-            if m:
-                path, ln = m.group(1), int(m.group(2))
-            else:
-                path, ln = spec, None
+            if not m:
+                # S5 GU-VUS-A1-DOC-ANCHOR-1: a line-less anchor is not a
+                # verifiable grounding — the line number IS the evidence pointer.
+                return False
+            path, ln = m.group(1), int(m.group(2))
             full = os.path.join(cwd, path)
             if not os.path.isfile(full):
                 return False
-            if ln is not None:
-                try:
-                    with open(full, errors="replace") as fh:
-                        n = sum(1 for _ in fh)
-                except Exception:
-                    return False
-                if ln < 1 or ln > n:
-                    return False
+            try:
+                with open(full, errors="replace") as fh:
+                    n = sum(1 for _ in fh)
+            except Exception:
+                return False
+            if ln < 1 or ln > n:
+                return False
             return True
 
         def _grounded_ok(line):
@@ -248,7 +348,7 @@ if task_type == "verify" and grounding_conf == "HIGH":
                 return False
             spec = m.group(1)
             path = spec.split(":")[0]
-            if _is_test_path(path):
+            if _is_test_path(path) or _is_doc_path(path):
                 return False
             return _anchor_resolves(spec)
 
@@ -320,119 +420,187 @@ if task_type == "verify" and grounding_conf == "HIGH":
                 "ungrounded_criteria": ungrounded[:10],
             })
 
-# ─── Check 2: hard_rule_unparseable (v1 grammar — 5-types) ───────────────────
-# Extract `## Hard rules` section
-hr_match = re.search(r"^##\s+Hard\s+rules?\s*\n(.*?)(?=\n##\s|\Z)", body_after_fm, re.MULTILINE | re.IGNORECASE | re.DOTALL)
-if hr_match:
-    hr_block = hr_match.group(1)
-    # v1 grammar: each non-blank, non-comment line MUST match one of 5 productions:
+    # ─── Check 2: hard_rule_unparseable (v1 grammar) — S5 GU-HR-GRAMMAR-1 ────
+    # The 5 MACHINE-CHECKABLE productions:
     #   1. "DO NOT modify <path>"
     #   2. "DO NOT add new <manifest> dependencies"
     #   3. "<path-glob> MUST follow <case-style> naming"
     #   4. "function <name> MUST preserve signature: <type-sig>"
     #   5. "file <path> MUST exist after bolt"
-    grammar_patterns = [
-        re.compile(r"^-\s*DO NOT modify\s+\S+"),
-        re.compile(r"^-\s*DO NOT add new\s+\S+\s+dependencies"),
-        re.compile(r"^-\s*\S+\s+MUST follow\s+(?:kebab-case|camelCase|snake_case|PascalCase)\s+naming"),
-        re.compile(r"^-\s*function\s+\S+\s+MUST preserve signature:\s+.*"),
-        re.compile(r"^-\s*file\s+\S+\s+MUST exist after bolt"),
-        re.compile(r"^-\s*MUST\b.*"),  # Looser fallback for general MUST-style rules (Iter 1+)
-        re.compile(r"^-\s*MUST NOT\b.*"),
-        re.compile(r"^-\s*DO NOT\b.*"),  # Generic DO NOT (anti-pattern style)
-    ]
-    unparseable_lines = []
-    for ln in hr_block.split("\n"):
-        s = ln.strip()
-        if not s:
-            continue
-        if s.startswith("#") or s.startswith("```") or s.startswith("<"):
-            continue  # comment / code-fence / HTML marker — skip
-        if not s.startswith("- "):
-            continue  # not a rule item (could be prose)
-        # Try each grammar pattern
-        if not any(p.match(s) for p in grammar_patterns):
-            # Check if it's ast-grep YAML (multi-line block; can't parse fully here)
-            # For walking-skeleton: any line starting with `- ` that doesn't match v1 OR
-            # contain ast-grep YAML keywords (rule:, language:) is unparseable.
-            if not re.search(r"(rule|language|pattern):", s):
-                unparseable_lines.append(s)
-    if unparseable_lines:
-        issues.append({
-            "halt_type": "hard_rule_unparseable",
-            "detail": f"unit {unit_id} has {len(unparseable_lines)} unparseable Hard Rule line(s)",
-            "unit_id": unit_id,
-            "unparseable_lines": unparseable_lines[:5],  # cap at 5 for readability
-        })
+    # Generic `- MUST/MUST NOT/DO NOT …` directives are ACCEPTED as rules but are
+    # NOT machine-checkable at bolt time — they are now counted honestly
+    # (hard_rules_directive_prose in the state summary) instead of being
+    # laundered through undocumented catch-alls as "parseable". Rule-like lines
+    # in NON-dash shapes (asterisk/numbered bullets, bare directive prose) were
+    # silently skipped — invisible to the bolt-time snapshot — and are now
+    # unparseable. Annotation sub-lines (Citation:/Source:/…), fenced ast-grep
+    # YAML content, and indented continuations stay whitelisted.
+    hr_match = re.search(r"^##\s+Hard\s+rules?\s*\n(.*?)(?=\n##\s|\Z)", body_after_fm, re.MULTILINE | re.IGNORECASE | re.DOTALL)
+    n_machine = 0
+    n_directive = 0
+    if hr_match:
+        hr_block = hr_match.group(1)
+        strict_productions = [
+            re.compile(r"^-\s*DO NOT modify\s+\S+"),
+            re.compile(r"^-\s*DO NOT add new\s+\S+\s+dependencies"),
+            re.compile(r"^-\s*\S+\s+MUST follow\s+(?:kebab-case|camelCase|snake_case|PascalCase)\s+naming"),
+            re.compile(r"^-\s*function\s+\S+\s+MUST preserve signature:\s+.*"),
+            re.compile(r"^-\s*file\s+\S+\s+MUST exist after bolt"),
+        ]
+        generic_directive = re.compile(r"^-\s*(?:MUST NOT|MUST|DO NOT|NEVER|ALWAYS)\b")
+        unparseable_lines = []
+        in_fence = False
+        rule_open = False   # round-2 (ATK-2): a `- ` rule head is "open" until the
+                            # next non-indented line — only THEN is an indented line
+                            # a legitimate continuation. A leading space used to skip
+                            # every check outright (one char defeated the grammar AND
+                            # the evasion net; also a strictness regression vs HEAD,
+                            # which validated stripped dash lines at any indent).
+        for ln in hr_block.split("\n"):
+            s = ln.strip()
+            if not s:
+                continue
+            if s.startswith("```"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue  # ast-grep YAML block content
+            if s.startswith("#") or s.startswith("<"):
+                continue  # comment / HTML marker
+            if re.match(r"^(?:Citation|Source|Ref(?:erence)?|From)\s*:", s, re.IGNORECASE):
+                continue  # annotation sub-line of the preceding rule
+            indented = bool(re.match(r"^\s", ln))
+            if indented and not s.startswith("- ") and rule_open:
+                continue  # true continuation/detail of the open rule
+            if not s.startswith("- "):
+                rule_open = False
+                # S5: bullet-evasion shapes — a rule-like line the snapshot never sees
+                # (round-2: checked on the STRIPPED line, so indenting doesn't hide it)
+                if (re.match(r"^(?:[*+]\s+|\d+[.)]\s+)", s) and re.search(r"\b(?:MUST|DO NOT|NEVER|ALWAYS)\b", s)) \
+                        or re.match(r"^(?:MUST NOT|MUST|DO NOT|NEVER|ALWAYS)\b", s, re.IGNORECASE):
+                    unparseable_lines.append(s)
+                continue  # other non-dash prose stays tolerated
+            # a dash line (any indent) is a rule head — validate its stripped form
+            rule_open = True
+            if any(p.match(s) for p in strict_productions):
+                n_machine += 1
+                continue
+            if re.search(r"(rule|language|pattern):", s):
+                n_machine += 1  # ast-grep v2 inline head
+                continue
+            if generic_directive.match(s):
+                n_directive += 1  # accepted, snapshot-able, NOT machine-checked
+                continue
+            unparseable_lines.append(s)
+        if unparseable_lines:
+            issues.append({
+                "halt_type": "hard_rule_unparseable",
+                "detail": f"unit {unit_id} has {len(unparseable_lines)} unparseable Hard Rule line(s)",
+                "unit_id": unit_id,
+                "unparseable_lines": unparseable_lines[:5],  # cap at 5 for readability
+            })
+        # round-2 (ATK-4): the machine-checkable/directive split is an OBSERVABLE —
+        # accumulate for the state summary (consumed by lint-units / analyze).
+        hr_counts[0] += n_machine
+        hr_counts[1] += n_directive
 
-# ─── Check 3: starterkit_rule_citation_missing ──────────────────────────────
-# A Hard Rule line referencing starterkit-context.yaml MUST have a "Citation:" sub-line.
-# Pattern: rule mentions "starterkit" or references starterkit_relevance fields.
-sk_consumed_match = re.search(r"^starterkit_context_consumed:\s*(true|false)", fm, re.MULTILINE | re.IGNORECASE)
-if sk_consumed_match and sk_consumed_match.group(1).lower() == "true" and hr_match:
-    hr_block = hr_match.group(1)
-    # Look for any rule line, then check if next non-blank lines contain Citation: starterkit-context
-    # Walking-skeleton heuristic: any rule with "starterkit" hint should have "Citation: starterkit-context.yaml"
-    # following within 5 lines.
-    lines = hr_block.split("\n")
-    missing_citations = []
-    i = 0
-    while i < len(lines):
-        ln = lines[i].strip()
-        if ln.startswith("- ") and "starterkit" in ln.lower():
-            # Check next 5 lines for Citation: starterkit-context
-            found_citation = False
-            for j in range(i, min(i + 6, len(lines))):
-                if "Citation: starterkit-context" in lines[j]:
-                    found_citation = True
-                    break
-            if not found_citation:
-                missing_citations.append(ln[:100])
-        i += 1
-    if missing_citations:
-        issues.append({
-            "halt_type": "starterkit_rule_citation_missing",
-            "detail": f"unit {unit_id} has starterkit-derived Hard Rule(s) without `Citation: starterkit-context.yaml §<path>` annotation",
-            "unit_id": unit_id,
-            "missing_citations_excerpts": missing_citations[:5],
-        })
+    # ─── Check 3: starterkit_rule_citation_missing ────────────────────────────
+    # A Hard Rule line referencing starterkit-context.yaml MUST have a "Citation:" sub-line.
+    # Pattern: rule mentions "starterkit" or references starterkit_relevance fields.
+    # (Detection scope is honest: a starterkit-DERIVED rule whose text carries no
+    # "starterkit" token is not machine-attributable — the derivation reference
+    # mandates the Citation line as the attribution carrier.)
+    sk_consumed_match = re.search(r"^starterkit_context_consumed:\s*(true|false)", fm, re.MULTILINE | re.IGNORECASE)
+    if sk_consumed_match and sk_consumed_match.group(1).lower() == "true" and hr_match:
+        hr_block = hr_match.group(1)
+        lines = hr_block.split("\n")
+        missing_citations = []
+        # S5 GU-SK-CITE-2: accept BOTH documented citation shapes — `Citation:` and
+        # the lowercase yaml-style `citation:` (the derivation template's own shape
+        # was flagged missing-citation before).
+        cite_re = re.compile(r"(?i)citation\s*:\s*[\"']?starterkit-context")
+        i = 0
+        while i < len(lines):
+            ln = lines[i].strip()
+            if ln.startswith("- ") and "starterkit" in ln.lower():
+                found_citation = False
+                for j in range(i, min(i + 6, len(lines))):
+                    if cite_re.search(lines[j]):
+                        found_citation = True
+                        break
+                if not found_citation:
+                    missing_citations.append(ln[:100])
+            i += 1
+        if missing_citations:
+            issues.append({
+                "halt_type": "starterkit_rule_citation_missing",
+                "detail": f"unit {unit_id} has starterkit-derived Hard Rule(s) without `Citation: starterkit-context.yaml §<path>` annotation",
+                "unit_id": unit_id,
+                "missing_citations_excerpts": missing_citations[:5],
+            })
 
-# ─── Check 4 (slice 3 v3.58.0+): Hard Rule citation trace ────────────────────
-# Every Hard Rule SHOULD have a traceable source: starterkit-context.yaml (already
-# checked above), OR binding.md "## Suggested Unit Hard Rules" section, OR KB
-# anti-pattern reference. This check is advisory — Hard Rules without citation
-# get a "trace_missing" flag for review.
-if hr_match:
-    hr_block = hr_match.group(1)
-    untraced_rules = []
-    lines = hr_block.split("\n")
-    i = 0
-    while i < len(lines):
-        ln = lines[i].strip()
-        if ln.startswith("- ") and not ln.startswith("- #"):
-            # Check next 5 lines for ANY Citation: or Source: or Ref: annotation
-            found_trace = False
-            for j in range(i, min(i + 6, len(lines))):
-                ck = lines[j]
-                if re.search(r"(?:Citation|Source|Ref(?:erence)?|From):", ck, re.IGNORECASE):
-                    found_trace = True
-                    break
-                # Inline mention of binding/KB/starterkit/constitution = also count as trace
-                if re.search(r"\b(?:binding\.md|knowledge-base|starterkit-context|constitution\.md|D-\d+|C-\d+|CONFLICT-)", ck, re.IGNORECASE):
-                    found_trace = True
-                    break
-            if not found_trace:
-                untraced_rules.append(ln[:120])
-        i += 1
-    if untraced_rules:
-        # Advisory-level — NOT a hard halt. Flag with low severity.
-        issues.append({
-            "halt_type": "hard_rule_trace_missing",
-            "detail": f"unit {unit_id} has {len(untraced_rules)} Hard Rule(s) without traceable source (advisory; rules should cite binding/KB/starterkit/constitution)",
-            "unit_id": unit_id,
-            "untraced_rules": untraced_rules[:5],
-            "severity": "advisory",
-        })
+    # ─── Check 4 (slice 3 v3.58.0+): Hard Rule citation trace ────────────────
+    # Every Hard Rule SHOULD have a traceable source: starterkit-context.yaml (already
+    # checked above), OR binding.md "## Suggested Unit Hard Rules" section, OR KB
+    # anti-pattern reference. This check is advisory — Hard Rules without citation
+    # get a "trace_missing" flag for review.
+    if hr_match:
+        hr_block = hr_match.group(1)
+        untraced_rules = []
+        lines = hr_block.split("\n")
+        i = 0
+        while i < len(lines):
+            ln = lines[i].strip()
+            if ln.startswith("- ") and not ln.startswith("- #"):
+                # Check next 5 lines for ANY Citation: or Source: or Ref: annotation
+                found_trace = False
+                for j in range(i, min(i + 6, len(lines))):
+                    ck = lines[j]
+                    if re.search(r"(?:Citation|Source|Ref(?:erence)?|From):", ck, re.IGNORECASE):
+                        found_trace = True
+                        break
+                    # Inline mention of binding/KB/starterkit/constitution = also count as trace
+                    if re.search(r"\b(?:binding\.md|knowledge-base|starterkit-context|constitution\.md|D-\d+|C-\d+|CONFLICT-)", ck, re.IGNORECASE):
+                        found_trace = True
+                        break
+                if not found_trace:
+                    untraced_rules.append(ln[:120])
+            i += 1
+        if untraced_rules:
+            # Advisory-level — NOT a hard halt. Flag with low severity.
+            issues.append({
+                "halt_type": "hard_rule_trace_missing",
+                "detail": f"unit {unit_id} has {len(untraced_rules)} Hard Rule(s) without traceable source (advisory; rules should cite binding/KB/starterkit/constitution)",
+                "unit_id": unit_id,
+                "untraced_rules": untraced_rules[:5],
+                "severity": "advisory",
+            })
+
+    # ─── Check 5 (code-delivery slice D): render_test_missing ────────────────
+    # Any unit whose target_files include a DETAIL/SHOW view (matching the active
+    # framework pack `## Test patterns` -> detail_view_glob) MUST carry a structured
+    # acceptance_test entry of type/kind `render`.
+    if detail_glob:
+        targets = _collect_target_files(fm, body_after_fm)
+        rx = _glob_to_regex(detail_glob)
+        detail_views = [t for t in targets if _glob_match(t, rx)]
+        if detail_views and not _has_render_acceptance_test(body):
+            issues.append({
+                "halt_type": "render_test_missing",
+                "detail": (
+                    f"unit {unit_id} ships detail view(s) {detail_views[:3]} but has no "
+                    f"acceptance_test of type `render` (pack detail_view_glob={detail_glob}). "
+                    f"A route-200 smoke test misses empty-model / null-field render crashes."
+                ),
+                "unit_id": unit_id,
+                "detail_views": detail_views[:5],
+                "detail_view_glob": detail_glob,
+                "expected": "one acceptance_test entry with `type: render` (or `kind: render`), per pack `## Test patterns` -> detail_view_render template",
+            })
+
+    for i in issues:
+        i.setdefault("file", rel_path)
+    return issues
 
 # ─── Check 5 (code-delivery slice D): render_test_missing ────────────────────
 # Any unit whose target_files include a DETAIL/SHOW view (matching the active
@@ -506,7 +674,10 @@ def _collect_target_files(frontmatter, body_text):
     (with ` (edit)`/` (new)` annotations), so reading frontmatter alone misses them."""
     paths = []
     # (a) frontmatter list: `target_files:` followed by `- path` items, or inline []
-    fm_tf = re.search(r"^target_files\s*:\s*(.*)$", frontmatter, re.MULTILINE)
+    # S5 GU-VUS-TF-SWALLOW-1: [ \t]* (NOT \s*) — \s* matched the NEWLINE, so the
+    # first block-list item landed in group(1) and was silently discarded; a unit
+    # whose detail view was the FIRST/only target file never fired render_test_missing.
+    fm_tf = re.search(r"^target_files[ \t]*:[ \t]*(.*)$", frontmatter, re.MULTILINE)
     if fm_tf:
         inline = fm_tf.group(1).strip()
         if inline.startswith("["):
@@ -560,36 +731,60 @@ def _has_render_acceptance_test(full_text):
 
 
 detail_glob = _parse_detail_view_glob(test_patterns_section)
-if detail_glob:
-    targets = _collect_target_files(fm, body_after_fm)
-    rx = _glob_to_regex(detail_glob)
-    detail_views = [t for t in targets if _glob_match(t, rx)]
-    if detail_views and not _has_render_acceptance_test(body):
-        issues.append({
-            "halt_type": "render_test_missing",
-            "detail": (
-                f"unit {unit_id} ships detail view(s) {detail_views[:3]} but has no "
-                f"acceptance_test of type `render` (pack detail_view_glob={detail_glob}). "
-                f"A route-200 smoke test misses empty-model / null-field render crashes."
-            ),
-            "unit_id": unit_id,
-            "detail_views": detail_views[:5],
-            "detail_view_glob": detail_glob,
-            "expected": "one acceptance_test entry with `type: render` (or `kind: render`), per pack `## Test patterns` -> detail_view_render template",
-        })
 
-# ─── Build state file ───────────────────────────────────────────────────────
-status = "PASS" if not issues else "FAIL"
+
+# ─── Main (S5 GU-HOOK-1): validate ALL units, merge into ONE project-wide state ─
+def discover_units():
+    # Round-2 (S5R-3): the project sweep must cover every layout the focal
+    # path-filter accepts — the legacy docs/mega-sdd/vaults/** tree and nested
+    # *-bound dirs were focal-validated but invisible to the project scan, so a
+    # project-mode re-derive ERASED their recorded FAILs.
+    got = []
+    for pat in (
+        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*.md"),
+        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*", "unit.md"),
+        os.path.join(cwd, "docs", "mega-sdd", "vaults", "*", "units", "U-*.md"),
+        os.path.join(cwd, "docs", "mega-sdd", "vaults", "*", "units", "U-*", "unit.md"),
+        os.path.join(cwd, "*-bound", "units", "U-*.md"),
+        os.path.join(cwd, "*-bound", "units", "U-*", "unit.md"),
+        os.path.join(cwd, "*", "*-bound", "units", "U-*.md"),
+        os.path.join(cwd, "*", "*-bound", "units", "U-*", "unit.md"),
+        os.path.join(cwd, "docs", "mega-sdd", "vaults", "*-bound", "units", "U-*.md"),
+        os.path.join(cwd, "docs", "mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"),
+    ):
+        got.extend(glob.glob(pat))
+    return sorted({os.path.realpath(p) for p in got})
+
+
+all_units = discover_units()
+if focal_path:
+    known = {os.path.abspath(p) for p in all_units}
+    if os.path.abspath(focal_path) not in known:
+        all_units.append(focal_path)  # unusual layout — still validate the focal file
+
+merged = []
+checked_files = []
+hr_counts = [0, 0]  # [machine_checkable, directive_prose] across all units (ATK-4)
+for up in sorted(all_units):
+    checked_files.append(os.path.relpath(up, cwd))
+    merged.extend(validate_unit(up))
+
+status = "PASS" if not merged else "FAIL"
+focal_rel = os.path.relpath(focal_path, cwd) if focal_path else None
 state = {
     "ts": ts,
-    "checked_file": rel_path,
+    "mode": "single" if focal_path else "project",
+    "checked_file": focal_rel,        # back-compat: the focal unit on single dispatch
+    "checked_files": checked_files,   # S5: the state ALWAYS covers every unit
     "status": status,
-    "issues_count": len(issues),
-    "issues": issues,
+    "issues_count": len(merged),
+    "hard_rules_machine_checkable": hr_counts[0],
+    "hard_rules_directive_prose": hr_counts[1],
+    "issues": merged,
     "next_action": (
         "Unit spec passes integrity checks."
         if status == "PASS"
-        else f"{len(issues)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via /mega-sdd:generate-units --regenerate or amend manually."
+        else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via /mega-sdd:generate-units --regenerate or amend manually."
     ),
 }
 
@@ -605,6 +800,10 @@ except Exception as e:
 if not quiet:
     print(json.dumps(state, indent=2))
 
+# Exit code: focal file's verdict on single dispatch (PostToolUse semantics);
+# merged verdict in project mode (the gate's re-derive entry point).
+if focal_rel is not None:
+    sys.exit(1 if any(i.get("file") == focal_rel for i in merged) else 0)
 sys.exit(0 if status == "PASS" else 1)
 PYEOF
 

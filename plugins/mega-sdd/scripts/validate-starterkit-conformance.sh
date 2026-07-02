@@ -65,35 +65,66 @@ except Exception as e:
     print(json.dumps({"status": "ERROR", "detail": f"cannot read {sk_file}: {e}"}))
     raise SystemExit(0)
 
-# Extract patterns block
+# Extract patterns block. S5 GU-SKC-INDENT: the parser was locked to EXACTLY
+# 4-space categories / 6-space fields under a 2-space-indented `patterns:` — any
+# other valid-YAML indentation (the schema doc example itself uses patterns: at
+# col 0) parsed to ZERO patterns and silently SKIPped every conformance check.
+# Now indentation-RELATIVE: `patterns:` at any indent; categories = first deeper
+# indent level; fields = deeper than the category. And "patterns:" present but
+# zero parsed => ERROR (fail-loud), never a silent SKIP.
+# Round-2 (S5R-1/S5R-5): the parser locked onto the FIRST patterns:-shaped line
+# anywhere in the file — a nested `patterns:` sub-key in an earlier slice
+# shadowed the canonical block. Now EVERY patterns: line is a candidate; the
+# first candidate that yields >=1 category with fields wins. Fields lock to the
+# FIRST field indent (deeper sub-blocks like extras: children no longer clobber
+# the category's real location/naming).
+lines = sk_content.split("\n")
+cand_idx = [i for i, ln in enumerate(lines) if re.match(r"^[ \t]*patterns:\s*$", ln)]
+saw_patterns_key = bool(cand_idx)
 patterns = {}
-in_patterns = False
-current_pattern = None
-for line in sk_content.split("\n"):
-    stripped = line.strip()
-    if stripped == "patterns:":
-        in_patterns = True
-        continue
-    if in_patterns:
-        # End of patterns block: next top-level key
-        if line and line[0] not in " \t" and ":" in line:
-            in_patterns = False
+for ci in cand_idx:
+    trial = {}
+    pat_indent = len(lines[ci]) - len(lines[ci].lstrip(" \t"))
+    cat_indent = None
+    field_indent = None
+    current_pattern = None
+    for line in lines[ci + 1:]:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
             continue
-        # Pattern category (e.g., "controller:", "model:")
-        m = re.match(r"^    (\w+):\s*$", line)
-        if m:
+        indent = len(line) - len(line.lstrip(" \t"))
+        if indent <= pat_indent:
+            break  # end of the patterns block (sibling/parent key)
+        m = re.match(r"^[ \t]*(\w+):\s*$", line)
+        if m and (cat_indent is None or indent == cat_indent):
+            cat_indent = indent if cat_indent is None else cat_indent
             current_pattern = m.group(1)
-            patterns[current_pattern] = {}
+            trial[current_pattern] = {}
+            field_indent = None
             continue
-        # Pattern field (e.g., "location: app/Http/Controllers/")
-        if current_pattern:
-            fm = re.match(r"^\s{6}(\w+):\s*(.+)", line)
-            if fm:
-                key = fm.group(1)
-                val = fm.group(2).strip().strip('"').strip("'")
-                patterns[current_pattern][key] = val
+        fm = re.match(r"^[ \t]*(\w+):\s*(.+)$", line)
+        if fm and current_pattern and cat_indent is not None and indent > cat_indent:
+            if field_indent is None:
+                field_indent = indent
+            if indent != field_indent:
+                continue  # deeper sub-block (extras: children) — never a category field
+            key = fm.group(1)
+            val = fm.group(2).strip().strip('"').strip("'")
+            trial[current_pattern][key] = val
+    if any(v for v in trial.values()):
+        patterns = trial
+        break
 
 if not patterns:
+    if saw_patterns_key:
+        # fail-loud: the block exists but nothing parsed — writer drift must be
+        # visible on the analyze surface, not silently disable conformance.
+        print(json.dumps({
+            "status": "ERROR",
+            "detail": "starterkit-context.yaml HAS a patterns: block but zero patterns parsed — indentation/shape drift; conformance checks cannot run",
+            "violations": [], "checks": [],
+        }))
+        raise SystemExit(0)
     print(json.dumps({
         "status": "SKIP",
         "detail": "starterkit-context.yaml has no patterns: block",
@@ -245,11 +276,13 @@ PYEOF
 )
 
 echo "$RESULT" | python3 -c "
-import json, sys
+import json, os, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+_tmp = '$STATE_FILE' + '.tmp.%d' % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace)
+with open(_tmp, 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
+os.replace(_tmp, '$STATE_FILE')
 " 2>/dev/null
 
 if [ "$QUIET" -eq 0 ]; then echo "$RESULT"; fi
@@ -258,5 +291,6 @@ STATUS=$(echo "$RESULT" | python3 -c "import json,sys; print(json.loads(sys.stdi
 case "$STATUS" in
   PASS|SKIP) exit 0 ;;
   FAIL) exit 1 ;;
+  ERROR) exit 2 ;;
   *) exit 2 ;;
 esac

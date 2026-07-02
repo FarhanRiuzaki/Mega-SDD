@@ -62,7 +62,7 @@ Edges — `source`/`target`/`relation` + mandatory citation:
 | relation | from → to | source field |
 |---|---|---|
 | `implements` | claim → code_anchor | `binding.json` `state_map[].anchor` |
-| `honors` | unit → claim / oq | unit `binding_refs` |
+| `honors` | unit → claim / oq / conflict (S5: CONFLICT-NNN binding_refs type as `conflict` nodes; claim nodes carry `state_reason`/`resolution` when the binding.json sidecar has them) | unit `binding_refs` |
 | `depends_on` | unit → unit | unit `depends_on` |
 | `in_module` | unit → module | `modules.yaml` vault_sections match |
 | `blocks` | module → module | `modules.yaml` `blocks`/`blocked_by` |

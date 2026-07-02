@@ -157,13 +157,18 @@ g. **OQ-ID propagation check** (audit response 2026-05-27 §F):
 
    **Why this rail exists:** audit 2026-05-27 §F traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). CONFLICTs already propagate via this same mechanism; this rail extends the discipline to OQs.
 
+### h. PBT properties citation check (when `properties:` present)
+
+Every entry in a unit's `properties:` array MUST carry a non-empty `cites:` field resolving to a vault section / binding claim / KB rule (per `references/pbt-integration.md` §citation). A property with no citation is an INVENTED invariant — reject the unit write and re-derive or drop the property (no-fabrication rail). Model-executed check (no deterministic validator; the bolt-side B1 postflight cite-check is the backstop).
+
 ## 12.6 — Deduplication check
 
 After all units written, sanity-check `task_type: create` units against the Implementation State Map:
 
-- For each `task_type: create` unit where EVERY `target_files` entry's path is already present in codebase-map §1 (Top-level structure / file tree) AND its operation is `create`:
+- For each `task_type: create` unit where EVERY `target_files` entry's path already exists — probe the FILESYSTEM first, codebase-map §1 as corroboration only (§1 is depth-limited; a truncated map must not silently pass a real collision) — AND its operation is `create`:
   - This signals a likely mistake — the unit wants to create a file that already exists.
-  - Halt with structured `dedup_ambiguous` blocker (per DESIGN-OQ-2). NEVER silent-rewrite. (YAML in the halt-protocol reference listed in the skill router.)
+  - **Exception (7.6 reconciliation):** a collision the user ALREADY accepted at Step 7.6 (option 4 force-create, recorded in the unit body's collision note) does NOT re-halt here — 12.6 is the backstop for collisions that never got a 7.6 decision, not a second vote on one the user made.
+  - Otherwise halt with structured `dedup_ambiguous` blocker (per DESIGN-OQ-2). NEVER silent-rewrite. (YAML in the halt-protocol reference listed in the skill router.)
 
 ## 12.7 — Sibling-consistency sweep (code-delivery slice B, defense-in-depth)
 

@@ -372,10 +372,11 @@ Status `halted` on `bind_conflict` / `bind_conflict_constitution_violation` / `f
 ```yaml
 handoff:
   emitted_by: generate-units
+  emitted_at: <ISO8601>
   status: completed | halted
   artifacts:
-    - /path/to/vault/units/
-    - /path/to/vault/units/_index.md
+    - /path/to/<vault>/units/            # canonical nested path (never the legacy <vault>-bound/ sibling)
+    - /path/to/<vault>/units/_index.md
   next_action:
     suggested_skill: mega-sdd:execute-bolts
     suggested_args: ["--all", "--auto"]
@@ -394,7 +395,7 @@ handoff:
     units_with_starterkit_rules: 8
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `memory_in_use`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing` (the Step 12.5.g MOAT-CRITICAL OQ-propagation halt) / `memory_in_use`.
 
 ### `execute-bolts`
 

@@ -320,6 +320,15 @@ def find_flows_and_units():
     for d in sorted(glob.glob(os.path.join(vault_root, "*"))):
         if not os.path.isdir(d):
             continue
+        # S5 round-2 (ATK-1): a legacy `<vault>-bound/` sibling is an AMENDED COPY
+        # of its base vault (own 04-flows.md + units/). Treating it as its own
+        # candidate while the base ALSO absorbs its units via the sibling probe
+        # double-counted every artifact and mis-tagged the vault — flipping a real
+        # shortfall to PASS at the execute-bolts gate. The base candidate owns the
+        # pair; skip the sibling as a standalone candidate.
+        base_name = os.path.basename(d)
+        if base_name.endswith("-bound") and os.path.isdir(os.path.join(vault_root, base_name[:-6])):
+            continue
         flows = os.path.join(d, "04-flows.md")
         if not os.path.isfile(flows):
             continue
@@ -342,8 +351,21 @@ candidates = find_flows_and_units()
 if not candidates:
     skip("no active vault with both 04-flows.md and units/U-*.md found")
 
-# Use the candidate with the most units (the active phase under development).
-flows_path, unit_paths, vault_name = max(candidates, key=lambda c: len(c[1]))
+# S5 GU-HOOK-5: analyze ALL vaults — the old most-units heuristic silently
+# un-gated every smaller vault (a phased rebuild's vault-B violations were
+# invisible to the execute-bolts block). Flows and units are vault-tagged and
+# matching is vault-scoped, so cross-vault token collisions cannot pair them.
+all_candidates = sorted(candidates, key=lambda c: -len(c[1]))
+vault_name = ", ".join(c[2] for c in all_candidates)
+flows_path = all_candidates[0][0]           # primary (most units) — report label
+_seen_up = set()
+unit_paths = []
+for c in all_candidates:
+    for p in c[1]:
+        rp = os.path.realpath(p)
+        if rp not in _seen_up:
+            _seen_up.add(rp)
+            unit_paths.append(p)
 
 
 # ── Module derivation (load-bearing; TF units lack `module:` frontmatter) ─────
@@ -547,14 +569,35 @@ def parse_unit(path):
     with open(path, errors="replace") as f:
         text = f.read()
     fm = {}
+    fm_text = ""
     m = FRONTMATTER_RE.match(text)
     if m:
-        for line in m.group(1).splitlines():
+        fm_text = m.group(1)
+        for line in fm_text.splitlines():
             mm = re.match(r"^([a-zA-Z_]+)\s*:\s*(.*)$", line)
             if mm:
                 fm[mm.group(1)] = mm.group(2).strip().strip('"').strip("'")
-    # ## Target files fenced block
     target_files = []
+    # S5 GU-FC-FRONTMATTER: the canonical schema puts target_files in FRONTMATTER
+    # (`- path:` items) — reading only the body block false-FAILed every
+    # schema-conformant unit (artifacts_listed always 0 → permanent block).
+    # Union BOTH sources, mirroring validate-unit-spec.sh's _collect_target_files.
+    fm_tf = re.search(r"^target_files[ \t]*:[ \t]*(.*)$", fm_text, re.MULTILINE)
+    if fm_tf:
+        inline = fm_tf.group(1).strip()
+        if inline.startswith("["):
+            for item in re.findall(r"[^\[\],\s'\"][^\[\],]*", inline):
+                target_files.append(item.strip().strip('"').strip("'"))
+        after = fm_text[fm_tf.end():]
+        for ln in after.splitlines():
+            if re.match(r"^[A-Za-z_]", ln):  # next top-level key ends the list
+                break
+            mm = re.match(r"^\s*-\s*(?:path\s*:\s*)?(.+?)\s*$", ln)
+            if mm:
+                val = mm.group(1).strip().strip('"').strip("'")
+                if val and not re.match(r"^(?:operation|op|kind)\s*:", val):
+                    target_files.append(val)
+    # ## Target files fenced block
     tm = re.search(r"^##\s+Target files\s*\n(.*?)(?:\n##\s|\Z)", text, re.DOTALL | re.MULTILINE)
     if tm:
         block = tm.group(1)
@@ -569,7 +612,7 @@ def parse_unit(path):
             path_only = re.split(r"\s+\(", line, maxsplit=1)[0].strip()
             if path_only:
                 target_files.append(path_only)
-    return fm, target_files, text
+    return fm, sorted(set(target_files)), text
 
 
 def expand_braces(p):
@@ -622,20 +665,23 @@ def unit_entity_tokens(fm, target_files):
     return toks
 
 
-# ── Parse 04-flows.md into per-flow, per-step blocks ─────────────────────────
-with open(flows_path, errors="replace") as f:
-    flows_text = f.read()
-
-# Split into flow sections by '### ' headers (flow id + title line).
-flow_sections = []  # (header_text, body_text)
-parts = re.split(r"^(###\s+.*)$", flows_text, flags=re.MULTILINE)
-# parts: [pre, header1, body1, header2, body2, ...]
-i = 1
-while i < len(parts):
-    header = parts[i].strip()
-    body = parts[i + 1] if i + 1 < len(parts) else ""
-    flow_sections.append((header, body))
-    i += 2
+# ── Parse EVERY vault's 04-flows.md into per-flow, per-step blocks (S5: all
+# vaults, vault-tagged) ───────────────────────────────────────────────────────
+flow_sections = []  # (vault, header_text, body_text)
+for _fpath, _upaths, _vname in all_candidates:
+    try:
+        with open(_fpath, errors="replace") as f:
+            flows_text = f.read()
+    except Exception:
+        continue
+    parts = re.split(r"^(###\s+.*)$", flows_text, flags=re.MULTILINE)
+    # parts: [pre, header1, body1, header2, body2, ...]
+    i = 1
+    while i < len(parts):
+        header = parts[i].strip()
+        body = parts[i + 1] if i + 1 < len(parts) else ""
+        flow_sections.append((_vname, header, body))
+        i += 2
 
 
 NUMBERED_STEP_RE = re.compile(r"^\s*\d+[.)]\s+\S")                 # N. | N) (any indent)
@@ -643,16 +689,50 @@ TOPLEVEL_BULLET_RE = re.compile(r"^[-*+]\s+\S")                    # top-level b
 MERMAID_EDGE_RE = re.compile(r"--+>|==+>|-\.->|→")                 # mermaid/flowchart edges
 
 
+def _mermaid_fence_lines(body):
+    """Edge lines INSIDE ```mermaid fences (the canonical v4.53.0+ flow body)."""
+    out = []
+    for fence in re.findall(r"```mermaid[^\n]*\n(.*?)```", body, re.DOTALL | re.IGNORECASE):
+        out.extend(ln for ln in fence.splitlines() if MERMAID_EDGE_RE.search(ln))
+    return out
+
+
 def split_step_blocks(body):
     """Split a flow body into per-step blocks, FORMAT-AWARE (ADV-02). A flow uses ONE primary
-    step format; we detect it and never mix:
-      - numbered `N.`/`N)` present  -> numbered steps only (top-level bullets are then
-        post-conditions / sub-notes, NOT steps — they stay continuations);
-      - else top-level `-`/`*`/`+` bullets -> bullet steps (a bullet-format flow);
-      - else mermaid/flowchart edges -> each edge line is a step.
-    A numbered-only parser silently PASSed bullet + mermaid flows (one of the two real
-    production formats) with false confidence — strictly worse than a SKIP."""
+    step format; we detect it and never mix.
+    S5 GU-FLOWCOV-1 — MERMAID FIRST: since the v4.53.0 mermaid mandate, the flow's
+    transitions live in the ```mermaid fence while the mandated col-0 `- [ ]` DoD
+    checklist ALSO matches TOPLEVEL_BULLET_RE — so the old bullet-first order made
+    the mermaid branch dead code on every canonical vault (DoD prose reported as
+    "steps": false-FAILs on per-transition units, false-PASSes on signal-free DoD).
+    A mermaid fence whose edges carry input signals is now authoritative; when the
+    fence yields ZERO signal edges the legacy detection still runs (belt-and-braces
+    for sloppy edge labels — the DoD checklist keeps its fallback duty).
+      - mermaid fence edges (signal-bearing) -> each edge line is a step;
+      - else numbered `N.`/`N)` -> numbered steps (top-level bullets stay continuations);
+      - else top-level `-`/`*`/`+` bullets -> bullet steps;
+      - else bare mermaid/flowchart edge lines -> each edge line is a step."""
     lines = body.splitlines()
+    fence_edges = _mermaid_fence_lines(body)
+    if fence_edges and any(k["_re"].search(ln) for k in endpoint_kinds for ln in fence_edges):
+        # S5 round-2 (ATK-FC-2): "any signal edge => authoritative" let ONE
+        # coarse summary edge suppress 5 signal-bearing NUMBERED steps. Numbered
+        # steps are an explicit transition enumeration — when they carry MORE
+        # signals than the mermaid fence, they win (the gate must never
+        # under-count). The DoD `- [ ]` checklist does NOT override mermaid:
+        # checkboxes are outcomes, not transitions (they naturally outnumber
+        # real input steps — that over-count was the original false-FAIL).
+        mer_n = sum(1 for ln in fence_edges if any(k["_re"].search(ln) for k in endpoint_kinds))
+        if any(NUMBERED_STEP_RE.match(ln) for ln in lines):
+            legacy_blocks = _legacy_step_blocks(lines)
+            leg_n = sum(1 for b in legacy_blocks if any(k["_re"].search(b) for k in endpoint_kinds))
+            if leg_n > mer_n:
+                return legacy_blocks
+        return fence_edges
+    return _legacy_step_blocks(lines)
+
+
+def _legacy_step_blocks(lines):
     if any(NUMBERED_STEP_RE.match(ln) for ln in lines):
         step_re = NUMBERED_STEP_RE
     elif any(TOPLEVEL_BULLET_RE.match(ln) for ln in lines):
@@ -711,8 +791,8 @@ from collections import defaultdict
 # checked — missing a real defect is worse than a rare false positive).
 SYSTEM_FLOW_RE = re.compile(r"\bF-[SCX]-?\d+\b", re.IGNORECASE)
 
-flows = []  # list of dicts: {header, tokens, n_input_steps, step_detail[], body}
-for header, body in flow_sections:
+flows = []  # list of dicts: {vault, header, tokens, n_input_steps, step_detail[], body}
+for fvault, header, body in flow_sections:
     if SYSTEM_FLOW_RE.search(header):
         continue  # system / cross-cutting / custom flow — no external input boundary
     tokens = flow_entity_tokens(header)
@@ -728,12 +808,17 @@ for header, body in flow_sections:
             first_line = block.strip().splitlines()[0].strip() if block.strip() else ""
             detail.append(f"{hdr1} step {bi}: {first_line[:80]}")
     flows.append({
-        "header": hdr1, "tokens": tokens, "n_input_steps": n_input,
+        "vault": fvault, "header": hdr1, "tokens": tokens, "n_input_steps": n_input,
         "step_detail": detail, "body": body,
     })
 
-# ── Parse units: tokens, artifact count, target list ──────────────────────────
-units = []  # list of dicts: {uid, tokens, n_artifacts, targets[]}
+# ── Parse units: tokens, artifact count, target list (vault-tagged) ──────────
+_unit_vault = {}
+for _fp, _ups, _vn in all_candidates:
+    for _u in _ups:
+        _unit_vault.setdefault(_u, _vn)  # S5 round-2: first (base-vault) tag wins
+
+units = []  # list of dicts: {vault, uid, tokens, n_artifacts, targets[]}
 for up in unit_paths:
     fm, target_files, text = parse_unit(up)
     tokens = unit_entity_tokens(fm, target_files)
@@ -745,13 +830,20 @@ for up in unit_paths:
     for tf in expanded:
         if any(glob_match(tf, k["path_glob"]) for k in endpoint_kinds):
             n_art += 1
-    units.append({"uid": uid, "tokens": tokens, "n_artifacts": n_art, "targets": expanded})
+    units.append({"vault": _unit_vault.get(up, ""), "uid": uid, "tokens": tokens,
+                  "n_artifacts": n_art, "targets": expanded})
 
 
 def tokens_match(a, b):
     """A flow and a unit are the same module iff their entity token sets share at
     least one significant token."""
     return bool(a & b)
+
+
+def same_scope(fl, u):
+    """S5 GU-HOOK-5: flow<->unit pairing is vault-scoped — cross-vault token
+    collisions must never satisfy (or pollute) another vault's coverage."""
+    return fl["vault"] == u["vault"] and tokens_match(fl["tokens"], u["tokens"])
 
 
 # ── Coverage misses: per flow that some unit builds, sum its module's artifacts ─
@@ -762,13 +854,14 @@ missing_artifacts = []
 for fl in flows:
     if fl["n_input_steps"] == 0:
         continue
-    matched = [u for u in units if tokens_match(fl["tokens"], u["tokens"])]
+    matched = [u for u in units if same_scope(fl, u)]
     if not matched:
         # flow has no implementing unit in this set => out-of-scope flow, not a miss
         continue
     n_art = sum(u["n_artifacts"] for u in matched)
     if fl["n_input_steps"] > n_art:
         missing_artifacts.append({
+            "vault": fl["vault"],
             "module": "".join(sorted(fl["tokens"])),
             "flow": fl["header"],
             "flow_steps_accepting_input": fl["n_input_steps"],
@@ -784,7 +877,7 @@ for fl in flows:
 dead_seen = set()
 dead_scaffold = []
 for u in units:
-    matched_flow_text = "\n".join(fl["body"] for fl in flows if tokens_match(u["tokens"], fl["tokens"]))
+    matched_flow_text = "\n".join(fl["body"] for fl in flows if same_scope(fl, u))
     for tf in u["targets"]:
         for e in scaffold_entries:
             if glob_match(tf, e["artifact_glob"]):
@@ -810,7 +903,7 @@ altitude_concentration = []
 for fl in flows:
     if fl["n_input_steps"] < ALTITUDE_K:
         continue
-    matched = [u for u in units if tokens_match(fl["tokens"], u["tokens"])]
+    matched = [u for u in units if same_scope(fl, u)]
     if len(matched) == 1:
         altitude_concentration.append({
             "halt_type": "decomposition_altitude_high",
@@ -834,6 +927,7 @@ report = {
     "ts": ts,
     "vault": vault_name,
     "flows_file": os.path.relpath(flows_path, cwd),
+    "vaults_checked": [c[2] for c in all_candidates],
     "summary": {
         "units_checked": len(unit_paths),
         "flows_with_input_steps": sum(1 for fl in flows if fl["n_input_steps"] > 0),
