@@ -178,10 +178,16 @@ for oq, window in oq_blocks:
             continue
         processed_oqs.add(oq)
 
-        # ─── B.4-followup: detect OQ category + mode for schema checks ───────
-        # Category indicator: `[tech]` or `[business]` in OQ line, OR `category: tech` field
-        has_tech_category = bool(re.search(r"\[tech\]|category:\s*tech", window, re.IGNORECASE))
-        has_business_category = bool(re.search(r"\[business\]|category:\s*business", window, re.IGNORECASE))
+        # ─── B.4-followup: detect OQ category for the advisory mis-tag check ──
+        # Category indicator keyed on the EMITTED grammar (vault-contract.md
+        # §Updated OQ schema): markdown inline bracket `[tech / scan]` / `[business]`,
+        # or a quoted `"category": "tech"` when the window is vault.json. The pre-fix
+        # regex required a bare `[tech]` / `category: tech` the vault NEVER emits, so
+        # it read False on every real OQ → the mis-tag check cry-wolfed on a correctly
+        # tagged `[tech / scan]` OQ. The resolution_mode-dependent halts moved to the
+        # structured vault.json pass below (their fields are JSON-only).
+        has_tech_category = bool(re.search(r'\[\s*tech\b|"category"\s*:\s*"tech"', window, re.IGNORECASE))
+        has_business_category = bool(re.search(r'\[\s*business\b|"category"\s*:\s*"business"', window, re.IGNORECASE))
 
         # ─── Iter-79 U-GI: oq_misclassified_tech (advisory) ──────────────────
         # OQ text reads tech (matches the heuristic table) but is NOT tagged tech —
@@ -201,52 +207,66 @@ for oq, window in oq_blocks:
                 "current_tag": "business" if has_business_category else "untagged",
             })
 
-        # mode: line in window
-        mode_match = re.search(r"^\s*[-*]?\s*mode:\s*(\w+)", window, re.MULTILINE)
-        mode_value = mode_match.group(1).lower() if mode_match else None
-
-        # ─── Check oq_tech_missing_mode ──────────────────────────────────────
-        # Tech-categorized OQ without mode: field
-        if has_tech_category and not mode_value:
+# ─── Structured OQ authority: co-located vault.json open_questions[] ──────────
+# The resolution_mode-dependent invariants (§Validation rules, vault-contract.md)
+# live in vault.json — the markdown carries the mode inline in the `[tech / scan]`
+# bracket, and scan_query / scan_citations / fallback_if_wrong are JSON-only. Read
+# the vault.json co-located with the written file as the structured authority, using
+# the field grammar the skill actually emits (resolution_mode / scan_query /
+# scan_citations / fallback_if_wrong — English schema keys, language-invariant).
+# Absent → skip these checks (advisory, graceful). This replaces the pre-fix markdown
+# `mode:` / `scan_target:` line regexes, which matched a grammar the vault never wrote
+# (dead detection + false-positive on every real vault).
+vjson_path = os.path.join(os.path.dirname(file_path), "vault.json")
+vj_oqs = []
+if os.path.isfile(vjson_path):
+    try:
+        vj = json.load(open(vjson_path, errors="replace"))
+        vj_oqs = vj.get("open_questions") or []
+    except Exception:
+        vj_oqs = []
+for oqe in vj_oqs:
+    if not isinstance(oqe, dict):
+        continue
+    tag = str(oqe.get("tag") or oqe.get("id") or "OQ-?")
+    # startswith("tech") tolerates a roll-up-header form (e.g. "Technical") that a vault
+    # may mirror into vault.json — a `tech`/`Tech`/`technical` category still gets checked;
+    # `business` never starts with "tech" so it is untouched.
+    category = str(oqe.get("category") or "").strip().lower()
+    rmode = str(oqe.get("resolution_mode") or "").strip().lower()
+    # tech OQ MUST declare a resolution_mode.
+    if category.startswith("tech") and not rmode:
+        issues.append({
+            "halt_type": "oq_tech_missing_mode",
+            "detail": f"OQ {tag} has category: tech but no resolution_mode (expected scan / recommend / hard_rule / blocking)",
+            "oq_id": tag,
+            "category": "tech",
+        })
+        continue
+    # resolution_mode: scan MUST populate scan_query.
+    if rmode == "scan" and not str(oqe.get("scan_query") or "").strip():
+        issues.append({
+            "halt_type": "oq_scan_missing_query",
+            "detail": f"OQ {tag} has resolution_mode: scan but scan_query is empty",
+            "oq_id": tag,
+            "resolution_mode": "scan",
+        })
+    # resolution_mode: recommend MUST carry recommendation + rationale + >=1
+    # scan_citations + fallback_if_wrong (vault-contract.md §Validation rules).
+    if rmode == "recommend":
+        missing_fields = [f for f in ("recommendation", "rationale", "fallback_if_wrong")
+                          if not str(oqe.get(f) or "").strip()]
+        cites = oqe.get("scan_citations")
+        if not (isinstance(cites, list) and len(cites) >= 1):
+            missing_fields.append("scan_citations")
+        if missing_fields:
             issues.append({
-                "halt_type": "oq_tech_missing_mode",
-                "detail": f"OQ {oq} categorized [tech] but missing `mode:` field (expected `mode: scan` or `mode: recommend`)",
-                "oq_id": oq,
-                "category": "tech",
+                "halt_type": "oq_recommend_underspecified",
+                "detail": f"OQ {tag} has resolution_mode: recommend but missing required field(s): {missing_fields}",
+                "oq_id": tag,
+                "resolution_mode": "recommend",
+                "missing_fields": missing_fields,
             })
-
-        # ─── Check oq_scan_missing_query ─────────────────────────────────────
-        # mode=scan OQ requires `scan_target:` field within window
-        if mode_value == "scan":
-            scan_target_match = re.search(r"^\s*[-*]?\s*scan_target:\s*\S+", window, re.MULTILINE)
-            if not scan_target_match:
-                issues.append({
-                    "halt_type": "oq_scan_missing_query",
-                    "detail": f"OQ {oq} has `mode: scan` but missing `scan_target:` field",
-                    "oq_id": oq,
-                    "mode": "scan",
-                })
-
-        # ─── Check oq_recommend_underspecified ───────────────────────────────
-        # mode=recommend OQ requires recommendation, rationale, citations fields
-        if mode_value == "recommend":
-            required_fields = ["recommendation", "rationale"]
-            # Citations are loose — accept either Citation: or citations: or cites:
-            has_citation = bool(re.search(r"^\s*[-*]?\s*(?:Citation|citation|cite|cites|citations):", window, re.MULTILINE))
-            missing_fields = []
-            for f in required_fields:
-                if not re.search(rf"^\s*[-*]?\s*{f}:", window, re.MULTILINE | re.IGNORECASE):
-                    missing_fields.append(f)
-            if not has_citation:
-                missing_fields.append("citation|citations")
-            if missing_fields:
-                issues.append({
-                    "halt_type": "oq_recommend_underspecified",
-                    "detail": f"OQ {oq} has `mode: recommend` but missing required field(s): {missing_fields}",
-                    "oq_id": oq,
-                    "mode": "recommend",
-                    "missing_fields": missing_fields,
-                })
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Task G — Operator-workflow-UX capture + Design-Source OQ (two vault-WIDE rails)
@@ -332,26 +352,59 @@ def _split_flow_steps(body):
     return blocks
 
 
-def vault_has_workflow_flow(flows_text):
-    """True iff 04-flows declares >= 1 user-facing multi-stage approval flow."""
+# ── Language-invariant multi-stage markers (vault-contract.md §stages-propagation) ──
+# A maker→checker / multi-step-APPROVAL flow is emitted with a `stages:` YAML block whose
+# per-stage `actor_role:` keys name the acting role, a Mermaid `stateDiagram`, and a
+# `_kb_source` stamp. The keys + diagram-type name are Tier-1 frozen (output-language.md
+# §do-not-translate) — English regardless of the vault's prose language. The target is a
+# MULTI-ACTOR approval (≥2 distinct actor_role values = maker + checker), NOT any staged
+# flow: a single-actor wizard has a stages: block too but needs no operator worklist, so
+# a bare stages: block is NOT sufficient — count DISTINCT actor_role values.
+ACTOR_ROLE_RE    = re.compile(r"\bactor_role\s*:\s*[\"']?([^\"'\n]+)", re.IGNORECASE)
+STATE_DIAGRAM_RE = re.compile(r"\bstateDiagram(?:-v2)?\b")
+
+
+def _flow_workflow_verdict(header, fbody):
+    """Per-flow tristate: 'yes' (a user-facing multi-ACTOR approval workflow),
+    'unverifiable' (a Mermaid stateDiagram whose approval-ness cannot be judged because
+    its labels are non-English — escalate to an advisory, NEVER silent-PASS), or 'no'."""
+    if SYSTEM_FLOW_RE.search(header):
+        return "no"  # system / cross-cutting / custom — no operator boundary
+    # ── Language-invariant structural signal: ≥2 DISTINCT actor_role values ──
+    roles = set(m.group(1).strip().lower() for m in ACTOR_ROLE_RE.finditer(fbody))
+    if len(roles) >= 2:
+        return "yes"
+    # ── English prose signals (backward-compat for non-staged English flows) ──
+    hdr_line = header.splitlines()[0] if header else ""
+    head_window = hdr_line + "\n" + "\n".join(fbody.splitlines()[:6])
+    if MAKER_CHECKER_CHAIN_RE.search(head_window) and STAGE_ARROW_RE.search(head_window):
+        return "yes"
+    if sum(1 for blk in _split_flow_steps(fbody) if DECISION_STEP_RE.search(blk)) >= 2:
+        return "yes"
+    # ── Residual: a stateDiagram whose approval-ness can't be judged BECAUSE the labels are
+    # non-English (the English decision heuristic can't run). An ENGLISH state machine with
+    # no approval signal is NOT an approval workflow → 'no' (avoids crying wolf on benign
+    # session/order/payment lifecycle flows). Only non-English → 'unverifiable' advisory.
+    if STATE_DIAGRAM_RE.search(fbody) and not vault_looks_english(fbody):
+        return "unverifiable"
+    return "no"
+
+
+def vault_workflow_verdict(flows_text):
+    """Vault-level rollup of per-flow verdicts: 'yes' > 'unverifiable' > 'no'."""
     parts = re.split(r"^(###\s+.*)$", flows_text, flags=re.MULTILINE)
+    verdicts = []
     i = 1
     while i < len(parts):
         header = parts[i].strip()
         fbody = parts[i + 1] if i + 1 < len(parts) else ""
         i += 2
-        if SYSTEM_FLOW_RE.search(header):
-            continue  # system / cross-cutting / custom — no operator boundary
-        hdr_line = header.splitlines()[0] if header else ""
-        # Signal 1: maker->checker hand-off chain in the header/first lines.
-        head_window = hdr_line + "\n" + "\n".join(fbody.splitlines()[:6])
-        if MAKER_CHECKER_CHAIN_RE.search(head_window) and STAGE_ARROW_RE.search(head_window):
-            return True
-        # Signal 2: >= 2 distinct decision transition steps in the body.
-        decision_steps = sum(1 for blk in _split_flow_steps(fbody) if DECISION_STEP_RE.search(blk))
-        if decision_steps >= 2:
-            return True
-    return False
+        verdicts.append(_flow_workflow_verdict(header, fbody))
+    if "yes" in verdicts:
+        return "yes"
+    if "unverifiable" in verdicts:
+        return "unverifiable"
+    return "no"
 
 
 # Operator-facing surface vocabulary (stack-neutral VAULT-FORMAT tells). Presence
@@ -386,6 +439,31 @@ def _read(path):
         return ""
 
 
+# PURE English function words only — deliberately NO tech nouns (user/system/service/…):
+# those survive as loanwords in an Indonesian-mix vault and would falsely inflate the
+# ratio (an ID-mix vault crossing the bar then cry-wolfs operator_surface_missing).
+# Pure function words (the/and/is/to/…) are near-absent in Indonesian prose (dan/adalah/
+# ke/untuk/…), so they cleanly separate an English vault (~15-40%) from ID / ID-mix (~0-3%).
+_EN_FUNC_RE = re.compile(
+    r"\b(the|and|is|are|a|an|to|of|for|with|in|on|by|as|at|from|when|then|if|this|that|"
+    r"all|be|been|being|has|have|had|via|not|no|but|or|which|must|should|will|can|each|any)\b",
+    re.IGNORECASE,
+)
+
+
+def vault_looks_english(text):
+    """Cheap heuristic gating the operator-surface PRESENCE check (an English prose
+    regex, OPERATOR_SURFACE_RE). Enough common English function words → the check is
+    reliable; almost none (an Indonesian / other-language / bilingual vault) → it is NOT,
+    so the caller escalates to an advisory 'uncheckable' rather than a FALSE
+    'operator_surface_missing'. Defaults to True (run the check) on sparse text so terse
+    English vaults stay backward-compatible."""
+    words = re.findall(r"[A-Za-z]{2,}", text)
+    if len(words) < 25:
+        return True
+    return (len(_EN_FUNC_RE.findall(text)) / len(words)) >= 0.08
+
+
 # Locate the active vault under --cwd that holds 04-flows.md (the workflow source).
 vault_root = os.path.join(cwd, ".mega-sdd", "vaults")
 active_vault_dir = None
@@ -409,44 +487,33 @@ if os.path.isdir(vault_root):
 
 if active_vault_dir:
     flows_text = _read(os.path.join(active_vault_dir, "04-flows.md"))
-    if flows_text and vault_has_workflow_flow(flows_text):
-        # Gather the surfaces-evidence corpus: prose docs + vault.json.
+    if flows_text:
+        # Gather the surfaces-evidence corpus + design_system_flags ONCE. Rail 2
+        # (design_source) reads only language-invariant inputs (design_system_flags JSON
+        # + frozen OQ-DESIGN tokens), so it runs unconditionally (H4 — it was wrongly
+        # gated behind the English workflow detector, so an Indonesian vault could never
+        # reach it). Rail 1 (operator_surface) needs the workflow verdict.
         prose_corpus = flows_text
         for fn in ("02-architecture.md", "01-overview.md", "03-data-model.md"):
             prose_corpus += "\n" + _read(os.path.join(active_vault_dir, fn))
         vault_json_text = _read(os.path.join(active_vault_dir, "vault.json"))
-        full_corpus = prose_corpus + "\n" + vault_json_text
-
-        has_operator_surface = bool(OPERATOR_SURFACE_RE.search(prose_corpus))
+        # H2 (defaulted-standard scan) + the Design-Source-OQ escape hatch must ALSO see
+        # 05-decisions.md (design-system ADOPTION decisions) and 06-constraints.md (the
+        # canonical a11y / NFR home) — the natural place a WCAG/Material/token value lands.
+        # prose_corpus stays 04/02/01/03 (Rail 1 operator-surface + vault_looks_english keep
+        # their original scope, unperturbed); design_corpus adds 05/06 for H2 + escape hatch.
+        design_corpus = (prose_corpus
+                         + "\n" + _read(os.path.join(active_vault_dir, "05-decisions.md"))
+                         + "\n" + _read(os.path.join(active_vault_dir, "06-constraints.md")))
+        full_corpus = design_corpus + "\n" + vault_json_text
+        vault_name = os.path.basename(active_vault_dir)
         has_design_source_oq = bool(DESIGN_SOURCE_OQ_RE.search(full_corpus))
 
-        # ── Rail 1: operator_surface_missing ────────────────────────────────
-        # Workflow flow present AND no operator-surface requirement AND no
-        # Design-Source OQ (an OQ is the accepted "captured the miss" escape hatch).
-        if not has_operator_surface and not has_design_source_oq:
-            issues.append({
-                "halt_type": "operator_surface_missing",
-                "detail": (
-                    "04-flows declares a multi-stage approval (maker-checker) "
-                    "workflow but the vault models NO operator-facing surface "
-                    "(worklist/inbox, decision affordance, human-readable state "
-                    "labels, audit timeline) and carries NO Design-Source OQ. The "
-                    "operators have nowhere to act on items awaiting their decision."
-                ),
-                "vault": os.path.basename(active_vault_dir),
-                "remedy": (
-                    "In generate-intent, model the operator surface as FIRST-CLASS "
-                    "requirements GROUNDED in the flows (never invented), OR emit a "
-                    "high-priority Design-Source Open Question if the surface design "
-                    "is genuinely undecided."
-                ),
-            })
-
-        # ── Rail 2: design_source_oq_missing ────────────────────────────────
-        # UI components exist (HAS_UI_COMPONENTS true / a component surface present)
-        # but HAS_TOKENS & HAS_A11Y & HAS_VOICE_BRAND are ALL false AND there is no
-        # Design-Source OQ. Anti-hallucination: the fix is an OQ, never a defaulted
-        # WCAG/Material/token value. (This is the real captured tradefinance miss.)
+        # ── Rail 2: design_source_oq_missing (language-invariant — UNCONDITIONAL) ──
+        # UI components exist but HAS_TOKENS & HAS_A11Y & HAS_VOICE_BRAND are ALL false
+        # AND no Design-Source OQ. Anti-hallucination: the fix is an OQ, never a defaulted
+        # WCAG/Material/token value. Inputs (design_system_flags + OQ-DESIGN tokens) are
+        # language-invariant, so this holds on any-language vault.
         dsf = {}
         m_dsf = re.search(r'"design_system_flags"\s*:\s*\{(.*?)\}', vault_json_text, re.DOTALL)
         if m_dsf:
@@ -468,7 +535,7 @@ if active_vault_dir:
                     "Design-Source Open Question was emitted. UI exists with no "
                     "design-system source captured."
                 ),
-                "vault": os.path.basename(active_vault_dir),
+                "vault": vault_name,
                 "remedy": (
                     "Emit a high-priority Design-Source OQ requesting the design "
                     "tokens / accessibility target / voice-brand source. DO NOT "
@@ -476,7 +543,119 @@ if active_vault_dir:
                 ),
             })
 
-status = "PASS" if not issues else "FAIL"
+        # ── Rail 1: operator_surface_missing (needs the workflow verdict) ──
+        # tristate: 'yes' run the check; 'unverifiable' escalate to an advisory (a
+        # stateDiagram workflow whose stage/role labels could not be parsed — likely
+        # non-English); 'no' skip. When a workflow IS present but the operator-surface
+        # PRESENCE regex (English prose) is unreliable (non-English vault), emit the
+        # SKIP-advisory 'operator_surface_uncheckable' instead of a FALSE
+        # operator_surface_missing — never silent-PASS, never cry-wolf.
+        _uncheckable = {
+            "halt_type": "operator_surface_uncheckable",
+            "detail": (
+                "04-flows declares a workflow-shaped flow (Mermaid stateDiagram / "
+                "multi-stage) but its operator surface could not be verified — the "
+                "surface-presence check is English-prose and the vault reads non-English "
+                "(or the stage/role labels are non-English). The operator-surface rail "
+                "was SKIPPED, not passed."
+            ),
+            "vault": vault_name,
+            "severity": "advisory",
+            "remedy": (
+                "Add a `stages:` block (`stage_id` + `actor_role`) to the flow so the "
+                "maker→checker surface can be verified, OR confirm an operator surface "
+                "(worklist/inbox, decision affordance, state labels, audit timeline) or a "
+                "Design-Source OQ exists."
+            ),
+        }
+        wf_verdict = vault_workflow_verdict(flows_text)
+        if wf_verdict == "yes":
+            has_operator_surface = bool(OPERATOR_SURFACE_RE.search(prose_corpus))
+            if has_operator_surface or has_design_source_oq:
+                pass  # operator surface modeled (or Design-Source OQ escape hatch) — captured
+            elif vault_looks_english(prose_corpus):
+                issues.append({
+                    "halt_type": "operator_surface_missing",
+                    "detail": (
+                        "04-flows declares a multi-stage approval (maker-checker) "
+                        "workflow but the vault models NO operator-facing surface "
+                        "(worklist/inbox, decision affordance, human-readable state "
+                        "labels, audit timeline) and carries NO Design-Source OQ. The "
+                        "operators have nowhere to act on items awaiting their decision."
+                    ),
+                    "vault": vault_name,
+                    "remedy": (
+                        "In generate-intent, model the operator surface as FIRST-CLASS "
+                        "requirements GROUNDED in the flows (never invented), OR emit a "
+                        "high-priority Design-Source Open Question if the surface design "
+                        "is genuinely undecided."
+                    ),
+                })
+            else:
+                issues.append(_uncheckable)
+        elif wf_verdict == "unverifiable":
+            issues.append(_uncheckable)
+
+        # ── H2: no-defaulted-standards positive detection (advisory) ──────────
+        # The moat forbids a DEFAULTED design standard: a WCAG level / Material design
+        # system / specific palette-token value may appear ONLY if a source supplies it
+        # (SKILL.md §No defaulted standards). Rail 2 checks only the INVERSE (a
+        # Design-Source OQ present) — it never catches a branded standard VALUE shipped
+        # with no citation. A defaulted-standard token whose own line carries no source
+        # anchor, in a vault with no Design-Source OQ, is likely fabricated → advisory.
+        # Brand/token names are language-neutral, so this holds on any-language vault.
+        DEFAULTED_STD_RE = re.compile(
+            # WCAG: version OPTIONAL — the canonical phrasing is the bare level "WCAG AA"
+            # (the plugin's own product-style-map emits `a11y_baseline: "WCAG AA"`); longest
+            # level first. "WCAG accessibility"/"WCAG conformance" do NOT match (word boundary).
+            r"\bWCAG\s*(?:[\d.]+\s*)?(?:AAA|AA|A)\b|"
+            # Material DESIGN system only — NOT a bare "Material 3" (which collides with
+            # ERP/warehouse material-numbering; domain-agnosticism). Requires the design word.
+            r"\bMaterial\s*Design(?:\s*3)?\b|\bMaterial\s*You\b|\bMD3\b|"
+            # full Tailwind palette scale (the half-list let bg-purple-600/text-teal-600 slip);
+            # a semantic token like bg-primary-600 is NOT a defaulted palette color → excluded.
+            r"\b(?:bg|text|border|ring)-(?:gray|slate|zinc|neutral|stone|red|orange|amber|"
+            r"yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|"
+            r"pink|rose)-\d{2,3}\b",
+            re.IGNORECASE,
+        )
+        _SRC_ON_LINE = re.compile(
+            r"§|\(\s*(?:source|see|per|ref|from)\b|\bhttps?://|\[\[|\bPRD\b|\bBRD\b|"
+            r"\bKB\b|knowledge-base|codebase-map|binding|figma",
+            re.IGNORECASE,
+        )
+        uncited_std = []
+        for ln in design_corpus.splitlines():
+            mm = DEFAULTED_STD_RE.search(ln)
+            if mm and not _SRC_ON_LINE.search(ln):
+                uncited_std.append(mm.group(0).strip())
+        if uncited_std and not has_design_source_oq:
+            issues.append({
+                "halt_type": "defaulted_standard_uncited",
+                "detail": (
+                    "a branded design standard (" + ", ".join(sorted(set(uncited_std))[:5]) +
+                    ") appears with no source citation on its line and the vault carries no "
+                    "Design-Source OQ — a defaulted / fabricated standard the anti-halu rail "
+                    "forbids."
+                ),
+                "vault": vault_name,
+                "severity": "advisory",
+                "remedy": (
+                    "Cite the source that supplied the value (PRD §, Figma frame, "
+                    "codebase-map, KB), or capture the gap as a Design-Source OQ — never "
+                    "default a WCAG/Material/token value."
+                ),
+            })
+
+# Soft advisories (a "couldn't verify" or low-confidence signal) surface as WARN, not
+# FAIL, so they contribute WARN-at-most to the /mega-sdd:analyze rollup — vault_oqs sits
+# in the non-advisory bucket, where a FAIL flips the overall report status. Hard issues
+# (missing mode/query, an unmodeled operator surface, a mis-tagged OQ, a bad citation)
+# stay FAIL. This keeps an Indonesian "uncheckable" or a lone defaulted-standard hint
+# from reading as loud as a real gap.
+_SOFT_ADVISORY = {"operator_surface_uncheckable", "defaulted_standard_uncited"}
+_hard_issues = [i for i in issues if i.get("halt_type") not in _SOFT_ADVISORY]
+status = "FAIL" if _hard_issues else ("WARN" if issues else "PASS")
 state = {
     "ts": ts,
     "checked_file": rel,
@@ -506,7 +685,7 @@ except Exception:
 if not quiet:
     print(json.dumps(state, indent=2))
 
-sys.exit(0 if status == "PASS" else 1)
+sys.exit(0 if status in ("PASS", "WARN") else 1)
 PYEOF
 
 exit $?

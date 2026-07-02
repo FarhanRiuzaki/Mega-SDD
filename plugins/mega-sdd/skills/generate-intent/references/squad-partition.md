@@ -53,7 +53,7 @@ If `squads.yaml` declares exactly one squad, or the file is absent:
 - All units get `squad: default` (or omit the field)
 - No interface notes required
 - `generate-units` skips all cross-squad validations
-- Plugin behavior matches v1.2
+- Behaves as the single-squad default — no cross-squad machinery engages
 
 ## Validation (performed by generate-units)
 

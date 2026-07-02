@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.9.0
+version: 2.10.0
 description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -64,7 +64,7 @@ When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules **in ord
 | 6 | No positional arg AND CWD has a KB README (priority: `.mega-sdd/knowledge-base/README.md` → `docs/knowledge-base/README.md` → `docs/mega-sdd/knowledge-base/README.md` → `old-reference/knowledge-base/README.md`) | **B (KB sub-mode)** — auto-detect, confirm with user |
 | 7 | No positional arg AND no KB | CWD scan for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
 
-`--from-prompt` remains supported for explicit invocation; new users typically won't need it. When detection is ambiguous (Rule 3 with a missing file, Rule 6 with multiple candidates), **always confirm with the user**; detect silently only when high-confidence. Edge cases (quoted single word, looks-like-path-but-missing, bare single word, flag+positional conflict) → `references/detection-and-shapes.md`.
+`--from-prompt` remains supported for explicit invocation; new users typically won't need it. When detection is ambiguous (Rule 3 with a missing file, Rule 6 with multiple candidates), **always confirm with the user**; detect silently only when high-confidence. **Announce any suppressed input:** whenever a higher-priority rule discards a lower-priority flag or positional (Rule 0 suppressing a co-present `--from-prompt`/positional; Rule 1 suppressing the positional), say so — "ignoring X because Y took precedence" — never drop a user's steering input silently. Edge cases (quoted single word, looks-like-path-but-missing, bare single word, flag+positional conflict) → `references/detection-and-shapes.md`.
 
 ## Flags
 

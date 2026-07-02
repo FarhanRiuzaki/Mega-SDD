@@ -43,6 +43,7 @@ Verify every doc has:
 - [ ] Every OQ carries `category` + (if tech) `resolution_mode` + `classification_confidence`.
 - [ ] Every `recommend`-mode OQ has at least one `scan_citations` entry; no fabricated citations.
 - [ ] `00-index.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
+- [ ] **`constitution.md`** (the 8th file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
 
 **Each doc must be readable in <10 minutes by an architect (BOTH modes).**
 

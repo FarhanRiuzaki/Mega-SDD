@@ -16,7 +16,7 @@
 #
 # Inputs: --cwd
 # Outputs: writes .mega-sdd/.vault-binding-coverage-state.json
-# Exit: 0=PASS (advisory only), 1=FAIL (drops found), 2=error
+# Exit: 0=PASS or WARN (all findings are advisory), 2=error
 
 set -uo pipefail
 
@@ -182,7 +182,12 @@ for bound_dir in slice5_dirs:
             "severity": "advisory",
         })
 
-status = "PASS" if not issues else "FAIL"
+# Every issue this validator raises is tagged severity:advisory (a vault section
+# lacking a binding entry, or a unit lacking a bolt-report pre-execution, are expected
+# transient states — not failures). So advisory issues surface as WARN (exit 0), never
+# FAIL (exit 1) — aligning with the sibling advisory validators' PASS|SKIP|WARN)exit 0
+# contract instead of worsening the /mega-sdd:analyze rollup with a hard FAIL.
+status = "PASS" if not issues else "WARN"
 report = {
     "ts": ts,
     "status": status,
@@ -207,6 +212,6 @@ except Exception:
 if not quiet:
     print(json.dumps(report, indent=2))
 
-sys.exit(0 if status == "PASS" else 1)
+sys.exit(0 if status in ("PASS", "WARN") else 1)
 PYEOF
 exit $?

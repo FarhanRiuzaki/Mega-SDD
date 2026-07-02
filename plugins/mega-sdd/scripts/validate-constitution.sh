@@ -38,17 +38,47 @@ if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
 if [ ! -d "${CWD}/.mega-sdd" ]; then exit 2; fi
 
 STATE_FILE="${CWD}/.mega-sdd/.constitution-state.json"
+_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib"
 
-RESULT=$(CWD="$CWD" python3 <<'PYEOF'
+RESULT=$(CWD="$CWD" _LIB_DIR="$_LIB_DIR" python3 <<'PYEOF'
 import json
 import os
 import re
 import glob
 import hashlib
+import sys
 
 cwd = os.environ["CWD"]
 checks = []
 issues = []
+
+# Shared Batch-B citation grammar for the file:line arm of the per-clause source
+# check (graceful fallback if the lib is absent — never crash the validator).
+sys.path.insert(0, os.environ.get("_LIB_DIR", ""))
+try:
+    from citation_pattern import PATH_LINE_RE
+    _FILELINE = PATH_LINE_RE.pattern
+except Exception:
+    _FILELINE = r"[\w./-]+\.[A-Za-z][A-Za-z0-9]{0,9}:\d+"
+
+# A clause counts as "source-cited" if its block carries a source ANCHOR. Primary anchors
+# are LANGUAGE-INVARIANT (they hold on an Indonesian constitution): a § section anchor,
+# the schema-taught `(source: …)` marker, an http(s) link, a [[wikilink]], a file:line
+# citation. Plus concrete source NOUNS (PRD/BRD/KB/binding/codebase-map/figma/regulation/
+# decision) for English vaults, and `mandated by`. A bare `(see …)`/`(per …)` parenthetical
+# is deliberately NOT accepted alone — it matched a casual "(see the login flow)", letting
+# an uncited clause pass (the flagship invented-NFR case). The legit citation forms in the
+# schema example all carry a § or a source noun, so tightening loses no real citation.
+SOURCE_TOKEN_RE = re.compile(
+    r"§"
+    r"|\(\s*source\s*:"
+    r"|\bhttps?://"
+    r"|\[\[[^\]\n]+\]\]"
+    r"|\bmandated\s+by\b"
+    r"|\b(?:PRD|BRD|KB|knowledge[- ]?base|codebase[- ]?map|binding|figma|regulat\w*|decision)\b"
+    r"|" + _FILELINE,
+    re.IGNORECASE,
+)
 
 # Find constitution.md files in active (non-archived) vaults
 const_files = sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md")))
@@ -87,6 +117,59 @@ for const_path in const_files:
                        "detail": "constitution.md has no parseable clause IDs (expected pattern: X-NNN)"})
         checks.append({"check": f"{vault_name}/clause_coverage", "status": "WARN"})
         continue
+
+    # ─── Per-clause source-citation check (anti-fabrication rail) ─────────────
+    # vault-contract.md §constitution: "Constitution clauses MUST cite source". A
+    # clause is injected into each unit's `## Hard rules` at execute-bolts as a
+    # severity:error BLOCKING gate, so an uncited/defaulted clause (e.g. an invented
+    # NFR "median < 200ms") would enforce fabrication as ground truth — the moat
+    # inverts. FAIL (advisory-surfaced via /mega-sdd:analyze, never a hot-path block)
+    # any clause whose block carries no source token. Clause-ID + source-token are
+    # language-invariant, so this holds on an Indonesian constitution too.
+    const_lines = const_content.split("\n")
+    # Clause line: a leading bullet / heading / table-cell / blockquote marker, an optional
+    # bold/emphasis wrapper, then the clause ID. Handles `- A-001:`, bold `- **A-001**:`,
+    # heading `### A-001`, table `| A-001 |`, and blockquote `> A-001` — so a non-bullet
+    # clause format can't fail-open the check (which then vacuously PASSes "0 clauses").
+    clause_anchor_re = re.compile(r"^\s*(?:[-*>|]+\s*|#{1,6}\s*)?(?:\*\*|__|\*|_)?\s*([A-Z]-\d{3})\b")
+    clause_anchors = []
+    for _i, _ln in enumerate(const_lines):
+        _m = clause_anchor_re.match(_ln)
+        if _m:
+            clause_anchors.append((_i, _m.group(1)))
+    if not clause_anchors:
+        # clause IDs exist but NO line matched a clause-definition shape — do NOT vacuously
+        # PASS. WARN that the per-clause source check could not run on this format.
+        checks.append({"check": f"{vault_name}/clause_source_cited", "status": "WARN",
+                       "detail": (f"{len(clause_ids)} clause ID(s) present but no clause line matched a "
+                                  "known definition format (`- X-NNN:` / `### X-NNN` / `| X-NNN |`) — "
+                                  "per-clause source check skipped, not passed")})
+    else:
+        uncited_clauses = []
+        for _idx, (_li, _cid) in enumerate(clause_anchors):
+            _end = clause_anchors[_idx + 1][0] if _idx + 1 < len(clause_anchors) else len(const_lines)
+            _block = []
+            for _j in range(_li, _end):
+                if _j > _li and const_lines[_j].lstrip().startswith("#"):
+                    break  # next section heading bounds the clause block
+                _block.append(const_lines[_j])
+            if not SOURCE_TOKEN_RE.search("\n".join(_block)):
+                uncited_clauses.append(_cid)
+        if uncited_clauses:
+            issues.append({
+                "halt_type": "constitution_clause_uncited",
+                "vault": vault_name,
+                "detail": (f"{len(uncited_clauses)}/{len(clause_ids)} constitution clause(s) cite NO source "
+                           "(§ / (source:…) / KB/PRD anchor / file:line / link). Uncited clauses become "
+                           "BLOCKING Hard rules at execute-bolts — a defaulted or invented clause would "
+                           "enforce fabrication as ground truth. Add a source citation or demote to an Open Question."),
+                "sample_uncited": sorted(uncited_clauses)[:8],
+            })
+            checks.append({"check": f"{vault_name}/clause_source_cited", "status": "FAIL",
+                           "detail": f"{len(clause_ids) - len(uncited_clauses)}/{len(clause_ids)} clauses cite a source"})
+        else:
+            checks.append({"check": f"{vault_name}/clause_source_cited", "status": "PASS",
+                           "detail": f"all {len(clause_ids)} clauses cite a source"})
 
     # Check: do units reference constitution clauses?
     bound_dir = vault_dir.rstrip("/") + "-bound" if not vault_dir.endswith("-bound") else vault_dir
