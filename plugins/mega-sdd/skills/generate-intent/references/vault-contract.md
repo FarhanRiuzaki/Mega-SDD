@@ -376,43 +376,46 @@ Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing
 
 ## §A. Coding standards (Non-negotiable)
 
-- A-001: All API endpoints MUST use Sanctum auth middleware (see binding §scan_results)
-- A-002: Naming: PascalCase for classes; kebab-case for routes; camelCase for JS identifiers
-- A-003: Test files MUST be co-located in tests/ matching app/ structure
-- A-004: No `dd()` / `var_dump()` / `console.log()` in committed code
+- A-001: <auth rule — e.g. all endpoints require the project's auth middleware> (source: PRD §<security> / binding §scan_results)
+- A-002: <naming convention — case styles for the stack's identifiers/routes/files> (source: <team decision> / codebase-map §conventions)
+- A-003: <test-file organization rule> (source: codebase-map §test_conventions)
 
 ## §B. Security baselines
 
-- B-001: All user input passes through Form Request validators (no inline validation in controllers)
-- B-002: Database queries via Eloquent ORM; raw SQL only in clearly-flagged repositories
-- B-003: No secrets in code; use config('app.key') / env() abstraction
-- B-004: PII fields encrypted at rest (per regulatory mandate; see 06-constraints.md §regulatory)
+- B-001: <input-validation rule — where/how untrusted input is validated> (source: PRD §<security>)
+- B-002: <data-access rule — ORM/query-layer boundary> (source: binding §scan_results)
+- B-003: <secret-handling rule — no secrets in code; config/env abstraction> (source: PRD §<security>)
+- B-004: <PII-at-rest rule> (source: 06-constraints.md §regulatory — mandated by <regulation>)
 
 ## §C. Architecture invariants
 
-- C-001: Controllers MUST NOT call other Controllers; use Services
-- C-002: Models MUST NOT have side effects (events emit via Observer pattern only)
-- C-003: Mailables MUST be queued (not sync)
-- C-004: Background jobs MUST be idempotent
+- C-001: <layering rule — e.g. controllers must not call controllers> (source: D-<NNN> / KB §architecture)
+- C-002: <side-effect / event-emission rule> (source: KB §critical-findings)
 
 ## §D. Anti-patterns (from legacy / past projects)
 
-- D-001: NEVER replicate the cfkdhl→CFKDDL silent typo from legacy customer-edit flow (per knowledge-base §critical-findings)
-- D-002: NEVER add new package.json dependencies without team review
-- D-003: NEVER bypass middleware via direct request manipulation
+- D-001: NEVER replicate <specific named legacy gotcha> (source: knowledge-base §critical-findings)
+- D-002: <dependency-review rule — no new deps without review> (source: <team decision>)
 
 ## §E. Performance constraints
+<!-- NFR numbers are NOT defaults — every target MUST trace to a source (PRD SLA, KB perf finding).
+     If no source states a number, the target is an Open Question, never an invented value. -->
 
-- E-001: API response time median < 200ms
-- E-002: Database queries within request handler < 5 (use eager loading)
-- E-003: Background job execution < 30s; longer = split into smaller jobs
+- E-001: <latency target — value FROM a source, e.g. "median < NNNms per PRD SLA"> (source: PRD §<nfr>)
+- E-002: <query-budget / N+1 rule — value from a source> (source: PRD §<nfr> / KB §performance)
 
 ## §F. Compliance
 
-- F-001: All financial transactions logged to audit_log table with user_id, timestamp, action, before/after JSON
-- F-002: PII access logged separately to security_audit table
-- F-003: Data retention per regulatory: 7 years for transactions, 90 days for access logs
+- F-001: <audit-logging rule — what is logged, where> (source: 06-constraints.md §regulatory)
+- F-002: <PII-access-logging rule> (source: PRD §<compliance>)
+- F-003: <data-retention rule — period FROM a source> (source: 06-constraints.md §regulatory — mandated by <regulation>)
 ```
+
+> **Every clause carries an inline `(source: …)`.** This is not decoration — `validate-constitution.sh`
+> deterministically FAILs any clause whose block has no source token (`§` / `(source:…)` / a KB/PRD anchor /
+> a `file:line` citation / a link). A clause with no source is a defaulted or invented rule; because clauses
+> become BLOCKING Hard rules at `execute-bolts`, an uncited clause would enforce fabrication as ground truth.
+> If a rule (especially an NFR number) is not stated by a source, it is an Open Question — never an invented value.
 
 ### How constitution drives bolts
 
@@ -436,7 +439,7 @@ Constitution version pinned to vault:
 
 ### Anti-halu rails
 
-- Constitution clauses MUST cite source (PRD §, KB section, past project decision, regulatory link)
+- Constitution clauses MUST cite source (PRD §, KB section, past project decision, regulatory link) — enforced deterministically by `validate-constitution.sh` (per-clause source-token check; uncited clause → FAIL), re-asserted in the generate-intent Step 4 self-check
 - Constitution updates require explicit user action; never auto-edited
 - `generate-intent` extracts INITIAL constitution from PRD/KB; user MUST review + sign before vault locks
 - Constitution overrides codebase reality: if existing code violates constitution, bolt FAILS pre-flight (intentional rail strengthening)
@@ -800,11 +803,11 @@ Consumer dispatch (orchestrate-flow halt displayer):
 
 These halt types are emitted by producers as `→ halt <name>` or `type: <name>` in skill bodies and are part of the canonical enum (orchestrate-flow schema validation rejects undeclared types as `invalid_handoff`).
 
-- `oq_tech_missing_mode` — generate-intent: PRD declares technical OQ but `mode` field missing on the OQ entry (can't classify as `tech / scan` vs `tech / recommend`). ALWAYS STOP. Resolution: user adds `mode: scan` or `mode: recommend` to the OQ frontmatter; re-run generate-intent. Source skill: `generate-intent`.
+- `oq_tech_missing_mode` — generate-intent: PRD declares technical OQ but `resolution_mode` field missing on the OQ entry (can't classify as `tech / scan` vs `tech / recommend`). ALWAYS STOP. Resolution: user adds `resolution_mode: scan` or `resolution_mode: recommend` to the OQ entry; re-run generate-intent. Source skill: `generate-intent`. *(Field grammar is the §Updated OQ schema — `resolution_mode`, not the pre-v-fix `mode`.)*
 
-- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `citations`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
+- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `scan_citations` ≥1, `fallback_if_wrong`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
 
-- `oq_scan_missing_query` — generate-intent: an OQ marked `mode: scan` lacks the `scan_target` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_target: codebase-map §<section>` or `scan_target: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
+- `oq_scan_missing_query` — generate-intent: an OQ marked `resolution_mode: scan` lacks the `scan_query` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_query: codebase-map §<section>` or `scan_query: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
 
 - `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `/mega-sdd:resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
 

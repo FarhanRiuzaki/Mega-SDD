@@ -160,7 +160,13 @@ for vault_dir in vault_dirs:
         # (no workflow signal) never trip it, so no false-stop.
         if not kb_tokens:
             _decisions = len(_DECISION_RE.findall(seg))
-            if (_decisions >= 2 or bool(_MAKER_CHECKER_RE.search(seg))) and not vault_flow_has_stages:
+            # Language-invariant signal: a Mermaid stateDiagram IS a multi-step state
+            # machine. The English _DECISION_RE / _MAKER_CHECKER_RE arms miss an
+            # Indonesian workflow entirely (menyetujui/menolak, pembuat→pemeriksa), so a
+            # flattened non-English workflow drawn as a stateDiagram would slip past —
+            # keying on the frozen diagram-type name catches it regardless of language.
+            _has_state_diagram = bool(re.search(r"\bstateDiagram(?:-v2)?\b", seg))
+            if (_decisions >= 2 or bool(_MAKER_CHECKER_RE.search(seg)) or _has_state_diagram) and not vault_flow_has_stages:
                 advisories.append({
                     "halt_type": "vault_flow_staging_missing",
                     "vault": vault_name, "flow_id": flow_id, "severity": "advisory",

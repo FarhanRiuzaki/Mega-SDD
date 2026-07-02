@@ -63,14 +63,35 @@ lines = content.split("\n")
 checks = []
 issues = []
 
-# Locate each flow entry: a `### F-<prefix>-NNN` heading.
-FLOW_HEAD = re.compile(r"^###\s+(F-[A-Za-z]+-\d+)\b", re.MULTILINE)
-heads = [(m.group(1), m.start(), content[:m.start()].count("\n") + 1)
-         for m in FLOW_HEAD.finditer(content)]
+# Locate each flow entry. Canonical headings are `### F-<prefix>-NNN`, but a flow
+# heading that OMITS the F-prefix (`### User Login`) must NOT escape the Mermaid
+# mandate — the pre-fix F-prefix-only regex silently skipped it, and a 04-flows.md
+# whose headings ALL lack the prefix SKIP-PASSed wholesale (every flow escaped). In a
+# 04-flows.md, EVERY level-3 `###` heading is a flow entry (structural sections are
+# level-2 `##`), minus a small denylist. Non-flows files keep the strict F-prefix rule
+# (defensive — callers only ever pass 04-flows.md).
+_NON_FLOW_HEAD = re.compile(
+    r"^(sources?|out[\s-]of[\s-]scope|open\s+questions?|notes?|legend|glossary|"
+    r"definition\s+of\s+done|dod|changelog|references?|see\s+also|assumptions?|"
+    r"non[\s-]goals?)\b", re.IGNORECASE)
+if os.path.basename(file_path).endswith("04-flows.md"):
+    _HEAD_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
+    heads = []
+    for m in _HEAD_RE.finditer(content):
+        label = m.group(1).strip()
+        if _NON_FLOW_HEAD.match(label):
+            continue
+        fm = re.match(r"(F-[A-Za-z]+-\d+)\b", label)
+        heads.append((fm.group(1) if fm else label[:48],
+                      m.start(), content[:m.start()].count("\n") + 1))
+else:
+    FLOW_HEAD = re.compile(r"^###\s+(F-[A-Za-z]+-\d+)\b", re.MULTILINE)
+    heads = [(m.group(1), m.start(), content[:m.start()].count("\n") + 1)
+             for m in FLOW_HEAD.finditer(content)]
 
 if not heads:
     checks.append({"check": "vault_flow_entries", "status": "SKIP",
-                   "detail": "no F-<prefix>-NNN flow entries found"})
+                   "detail": "no flow entries found"})
     result = {"status": "PASS", "checked_file": os.path.relpath(file_path, cwd),
               "checks": checks, "issues": issues,
               "summary": "no vault flow entries to check"}
