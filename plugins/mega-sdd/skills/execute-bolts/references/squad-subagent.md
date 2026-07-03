@@ -40,9 +40,12 @@ units — depth-1 AND parallel, no tradeoff. This is the same mechanism as
 4. **Dispatch the per-unit panel flow from the MAIN THREAD** (the per-unit flow
    in `superpowers-bridge.md`). Parallelize by dispatching **independent units —
    including units from different squads — concurrently** (multiple `bolt-implementer`
-   Agent calls in one message), bounded by a sensible in-flight cap. Every unit still
-   goes `bolt-implementer` → the review panel (per `review-panel.md`). **Never skip
-   the review on a parallel unit.**
+   Agent calls in one message), bounded by a sensible in-flight cap. **Independent =
+   no `depends_on` edge AND pairwise-disjoint `target_files`** — cross-squad units
+   have no dependency edges by design (step 3), so the whitelist-overlap check is the
+   only rail against two squads clobbering a shared file; intersecting units serialize.
+   Every unit still goes `bolt-implementer` → the review panel (per `review-panel.md`).
+   **Never skip the review on a parallel unit.**
 5. **Re-scan after each batch.** Run the project-wide quality validators against
    `$PROJECT_ROOT` (defense-in-depth, per `hard-rule-scan.md` §Parent-thread re-scan)
    so gate state is deterministic regardless of concurrent write ordering.

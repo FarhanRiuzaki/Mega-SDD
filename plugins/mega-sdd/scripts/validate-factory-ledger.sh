@@ -22,13 +22,17 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 _RPR="${SCRIPT_DIR}/_lib/resolve-project-root.sh"
-# resolve_project_root returns the NEAREST ancestor containing .mega-sdd/; callers/tests must pass a --cwd whose own .mega-sdd/ exists (the validator's mkdir creates the state-file dir AFTER this).
+# resolve_project_root returns the nearest SUBSTANTIVE .mega-sdd/ ancestor (S6 EB-GATE-6).
 if [ -f "$_RPR" ] && [ -n "${CWD:-}" ]; then . "$_RPR"; CWD=$(resolve_project_root "$CWD"); fi
 [ -n "$CWD" ] || { echo "ERROR: --cwd required" >&2; exit 2; }
 
+# S6 EB-GATE-6: never MINT a project root — no .mega-sdd/ at the resolved root
+# means the Factory Line is not in use here; SKIP without writing anything
+# (the old unconditional mkdir created phantom .mega-sdd/ state litter).
+[ -d "${CWD}/.mega-sdd" ] || exit 0
+
 LEDGER="${CWD}/.mega-sdd/factory-ledger.json"
 STATE_FILE="${CWD}/.mega-sdd/.factory-ledger-state.json"
-mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: cannot create $(dirname "$STATE_FILE")" >&2; exit 2; }
 
 LEDGER="$LEDGER" STATE_FILE="$STATE_FILE" CAP="$CAP" QUIET="$QUIET" python3 <<'PYEOF'
 import json, os, re, sys
@@ -43,8 +47,10 @@ STATUSES = {"completed", "unresolved", "halted"}
 
 def write_and_exit(report, code):
     try:
-        with open(state_file, "w") as f:
+        _tmp = state_file + ".tmp.%d" % os.getpid()  # S6 EB-VAL-3: atomic — no torn read
+        with open(_tmp, "w") as f:
             json.dump(report, f, indent=2)
+        os.replace(_tmp, state_file)
     except Exception as e:
         sys.stderr.write("ERROR: cannot write state: %s\n" % e); sys.exit(2)
     if not quiet:
@@ -78,6 +84,16 @@ try:
         for fld in ("phase", "attempt", "status", "emitted_at"):
             if fld not in r:
                 schema_errors.append("record %d missing required field '%s'" % (i, fld))
+        # S6 EB-VAL-3: TYPE-validate attempt, don't just check presence — a
+        # model-emitted stringified number ("3") raised TypeError in the cap
+        # compare below, which exited WITHOUT rewriting state: the stale PASS
+        # persisted and both Factory Line gate directions failed open.
+        if "attempt" in r:
+            try:
+                r["attempt"] = int(r["attempt"])
+            except (TypeError, ValueError):
+                schema_errors.append("record %d attempt '%s' is not an integer" % (i, r.get("attempt")))
+                r["attempt"] = 0
         if r.get("status") not in STATUSES:
             schema_errors.append("record %d status '%s' not in %s" % (i, r.get("status"), sorted(STATUSES)))
         for u in (r.get("unresolved") or []):
@@ -137,6 +153,12 @@ try:
 except SystemExit:
     raise
 except Exception as e:
-    sys.stderr.write("ERROR: %s\n" % e); sys.exit(2)
+    # S6 EB-VAL-3: NEVER die leaving a stale (possibly PASS) state on disk —
+    # the consumers trust whatever state file exists. An unexpected exception
+    # is recorded as a FAIL state (halt_type: ledger_error) so the gate closes.
+    sys.stderr.write("ERROR: %s\n" % e)
+    write_and_exit({"status": "FAIL", "halt_type": "ledger_error",
+                    "convergence_status": "in_progress",
+                    "details": {"message": "validator raised %s: %s" % (type(e).__name__, e)}}, 2)
 PYEOF
 exit $?

@@ -406,6 +406,21 @@ except Exception as e:
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-unit-spec.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-flow-coverage.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        # ── S6 EB-GATE-1: re-derive the SIX bolt-stage/quality states at gate
+        # time too. Their producers are Stop-hook keyed (orphans/batch-suite/
+        # postflight: one-turn lag, and NONE exist on a fresh session/clone) or
+        # Write|Edit-glob keyed (ui-quality/cross-cutting: a heredoc-written
+        # view keeps a stale PASS), and factory-ledger previously ran only in
+        # its own branch. Same doctrine as the moat: a stale, absent, or forged
+        # state is overwritten with current truth BEFORE the aggregator reads
+        # it (this also neutralizes any Bash-forged PASS — EB-GATE-5).
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --postflight-scan --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-cross-cutting-registration.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
       fi
       GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
@@ -463,10 +478,10 @@ d = L(".batch-suite-gate-state.json")
 if d and d.get("status") == "FAIL":
     ht = d.get("halt_type", "batch_suite_gate_missing")
     if ht == "batch_suite_red":
-        fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, re-run the full project suite, and overwrite <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>} before any further bolt. State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
+        fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, then run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>` — it re-runs the FULL suite and records <vault>/bolts/_batch-suite.json itself (the artifact is hook-guarded; direct writes are denied). State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
     else:
         _who = "an OUT-OF-BAND code commit (hotfix/manual edit, no bolt provenance)" if d.get("out_of_band") else ("the newest bolt commit (%s)" % d.get("newest_bolt_unit", "?"))
-        fails.append(("batch-suite-gate", "no green full-suite result covers %s. Run the full project test suite (no per-unit scope filter) at HEAD and write <vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}. State: %s/.batch-suite-gate-state.json" % (_who, md)))
+        fails.append(("batch-suite-gate", "no green full-suite result covers %s. Run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>` — it runs the FULL project suite (no per-unit scope filter) and records <vault>/bolts/_batch-suite.json with the pinned HEAD sha itself (the artifact is hook-guarded; direct writes are denied). State: %s/.batch-suite-gate-state.json" % (_who, md)))
 
 # postflight-evidence (status==FAIL) — B1: a committed Hard-rule create/extend/modify
 # bolt with no passing <vault>/bolts/U-XXX/postflight.json. The post-flight Hard-rule
@@ -475,7 +490,15 @@ d = L(".bolt-postflight-state.json")
 if d and d.get("status") == "FAIL":
     n = d.get("issues_count", len(d.get("issues", [])))
     units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
-    fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s). Re-run each listed unit so the post-flight scan validates its ## Hard rules, or write the postflight.json evidence. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
+    fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s). Run `bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX` for each listed unit — it executes that unit Hard rules against real git/filesystem state and records the evidence itself (the artifact is hook-guarded; direct writes are denied). A recorded VIOLATION means the committed code must be fixed first. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
+
+# whitelist-observer (status==FAIL) — B3 (S6 EB-GATE-11): bolt commits must stay
+# inside their unit target_files whitelist (∪ vault artifacts, .mega-sdd, tests).
+d = L(".bolt-whitelist-state.json")
+if d and d.get("status") == "FAIL":
+    n = d.get("issues_count", len(d.get("issues", [])))
+    units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
+    fails.append(("whitelist-observer", "whitelist scan found %s unit(s) whose bolt commits touched files OUTSIDE their target_files whitelist (%s%s). Either revert the escaped paths or add them to the unit target_files (with the right operation) and re-save; execute-bolts is gated until resolved. State: %s/.bolt-whitelist-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
@@ -675,13 +698,27 @@ _GUARDED = (
     ".sibling-consistency-state.json", ".ui-quality-blockers.json",
     ".cross-cutting-state.json", ".bolt-orphans-state.json",
     ".batch-suite-gate-state.json", ".bolt-postflight-state.json",
-    ".factory-ledger-state.json",
+    ".factory-ledger-state.json", ".bolt-whitelist-state.json",
 )
 if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUARDED):
     print("protected")
+# S6 EB-GATE-4: the two B1/B2 EVIDENCE artifacts join the guard — they were
+# agent-writable while the gates trusted their self-reported status, so one
+# plain Write of {status:green} cleared a documented hard block (and the deny
+# text itself coached that write). The deterministic writers
+# (scripts/run-full-suite.sh / run-postflight-scan.sh) are the only sanctioned
+# write path; they run via Bash so this Write/Edit guard never blocks them.
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/postflight\.json|_batch-suite\.json)$", rel):
+    # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
+    # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
+    # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
+    print("evidence")
 ' 2>/dev/null)
       if [ "$FP_GUARD" = "protected" ]; then
         emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, factory-ledger) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
+      fi
+      if [ "$FP_GUARD" = "evidence" ]; then
+        emit_block "Blocked: direct Write/Edit of a B1/B2 evidence artifact (postflight.json / _batch-suite.json). These are produced ONLY by their deterministic writers — run \`bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (executes the unit's Hard rules and records verdicts) or \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` (runs the FULL suite and records the result at the pinned HEAD). A hand-written artifact is a forged gate verdict. Human user can still modify these files via shell outside the agent."
       fi
     fi
 
@@ -789,7 +826,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|bolts/[^\s\"'"'"';|&<>]*postflight\.json|bolts/_batch-suite\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -812,8 +849,11 @@ else:
     fi
 
     # Protected state files (S5 GU-HOOK-2: quality-gate states added — a single
-    # `rm` cleared any execute-bolts hard block except the moat; absent = allow)
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json'
+    # `rm` cleared any execute-bolts hard block except the moat; absent = allow.
+    # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
+    # writers run as `bash <script>` commands that never NAME the artifact, so
+    # the guard only ever fires on direct forging/tampering verbs.)
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|bolts/[^[:space:]]*postflight\.json|bolts/_batch-suite\.json'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
@@ -830,6 +870,24 @@ else:
       BYPASS_DETECTED="find -delete targeting protected state file"
     elif echo "$BASH_CMD" | grep -qE "os\.(remove|unlink)|pathlib[^|;&]*unlink|Path\([^)]*($PROTECTED)" && echo "$BASH_CMD" | grep -qE "($PROTECTED)"; then
       BYPASS_DETECTED="python file removal targeting protected state file"
+    # S6 EB-GATE-5: python file WRITE verbs — the guard enumerated removal/
+    # redirect shapes but not open(...,'w'), so a one-liner forged a PASS state
+    # the (pre-S6) gate then trusted. open() in READ mode stays allowed (the
+    # mode letter must appear in the SAME call as the protected path).
+    # [[:space:]] not \s — this runs under BSD grep on macOS where \s is literal.
+    # [^;|&]* (not [^)]*) so a nested call like open(os.path.join(root,PROTECTED),'w')
+    # is still caught (the join'"'"'s ) no longer terminates the scan). Layered defense —
+    # a variable-indirected target (f=…; open(f,'w')) is NOT caught here; for the six
+    # gate STATES that is covered by gate-time re-derivation, and for the two evidence
+    # artifacts it is the documented best-effort residual (see CLAUDE.md inventory).
+    elif echo "$BASH_CMD" | grep -qE "open[[:space:]]*\([^;|&]*($PROTECTED)[^;|&]*,[[:space:]]*[\"'][wax]" ; then
+      BYPASS_DETECTED="python open-for-write targeting protected state file"
+    elif echo "$BASH_CMD" | grep -qE "($PROTECTED)[\"']?[[:space:]]*\)?[[:space:]]*\.write_(text|bytes)[[:space:]]*\("; then
+      BYPASS_DETECTED="python write_text/write_bytes targeting protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\bdd\b[^|;&]*\bof=[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="dd of= overwriting protected state file"
+    elif echo "$BASH_CMD" | grep -qE "\binstall\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="install(1) replacing protected state file"
     elif echo "$BASH_CMD" | grep -qE "\b(rm|unlink)\s+[^|;&]*($PROTECTED_RM_ONLY)"; then
       BYPASS_DETECTED="rm/unlink of a binding doc (deleting binding.md erases active CONFLICTs and orphans unit citations — invariant #2/#3)"
     elif echo "$BASH_CMD" | grep -qE ">[[:space:]]*[^|;&]*($PROTECTED)"; then
@@ -843,7 +901,7 @@ else:
     fi
 
     if [ -n "$BYPASS_DETECTED" ]; then
-      REASON="Blocked: $BYPASS_DETECTED. Guard state files (.validation-blockers.json, .plan-pending, .replan-budget, .iter-classifier.json) are managed by hooks/skill chain — direct agent modification bypasses the guard. To clear a blocker, fix the underlying issue (e.g., add missing OQ-IDs to unit frontmatter) and let PostToolUse re-validate, OR use the appropriate slash command (/mega-sdd:validate-handoff, /mega-sdd:auto --act, etc.). Human user can still modify these files via shell outside the agent."
+      REASON="Blocked: $BYPASS_DETECTED. Guard state files (moat + quality-gate states under .mega-sdd/) and the B1/B2 evidence artifacts (postflight.json, _batch-suite.json) are managed by hooks/validators/deterministic writers — direct agent modification is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run at the execute-bolts gate), or run the sanctioned writer (scripts/run-postflight-scan.sh / scripts/run-full-suite.sh). Human user can still modify these files via shell outside the agent."
       emit_block "$REASON"
     fi
     ;;

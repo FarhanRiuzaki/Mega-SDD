@@ -20,6 +20,10 @@ A "bolt" is the code artifact produced from executing one unit. The contract spe
 
 ## Commit message format
 
+The CANONICAL bolt commit identity (every producer emits this; the gate validators
+accept `<type>(U-XXX):` scopes, the legacy `(bolt): U-XXX` subject, or the `Unit:`
+trailer — but new commits use this format):
+
 ```
 feat(U-XXX): <unit title>
 
@@ -28,7 +32,15 @@ feat(U-XXX): <unit title>
 Refs: <vault-source citation>
 Binding: <binding refs if brownfield>
 Tests: <test pass count> passing
+Unit: U-XXX
+SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX
 ```
+
+`<type>` is the conventional-commit type that fits the unit (`feat`/`fix`/`refactor`…);
+the SCOPE is always the unit ID. The `Unit:` git trailer is the machine identity
+channel (survives subject rewording); the `SDD-PROVENANCE:` trailer is what the B2
+out-of-band bypass guard keys on — a code commit touching a unit's `target_files`
+WITHOUT it is flagged in `_batch-suite.json.bypass_commits[]`.
 
 ## Failure modes (and bolt behavior)
 

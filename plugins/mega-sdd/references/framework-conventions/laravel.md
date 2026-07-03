@@ -386,6 +386,8 @@ cross_cutting_concerns:
     registration_target_glob: 'app/Models/**/*.php'
     registration_source_glob: 'database/migrations/**/*.php'
     registration_exempt_glob: 'app/Models/User.php'
+    source_decl_regex: 'Schema::(?:create|table)\(\s*[''"]([^''"]+)[''"]'
+    target_decl_regex: '\$table\s*=\s*[''"]([^''"]+)[''"]'
   - concern: inbox-surfacing
     applies_when: 'flow_step:workflow_assignments'
     spec_obligation: '\badvanceAssignments\b|WorkflowEngine::transition'
@@ -393,6 +395,13 @@ cross_cutting_concerns:
     registration_target_glob: 'app/Http/Controllers/**/*.php'
     registration_source_glob: 'app/**/WorkflowEngine.php'
 ```
+
+`source_decl_regex` / `target_decl_regex` (S6 EB-VAL-4) carry the stack's container-discovery
+signatures INTO the pack — capture group 1 of `source_decl_regex` extracts the table a migration
+declares (with the `applies_when` column), capture group 1 of `target_decl_regex` extracts the
+table a model binds to (`protected $table = '…'`). `validate-cross-cutting-registration.sh`
+hardcodes NO stack signature: a `has_column` concern missing these keys is reported
+`not_evaluable` (never silently PASSed). Add a stack = add the two regexes to its pack.
 
 `registration_exempt_glob` (FPP-3) lists models that carry the column but MUST NOT register the
 concern — the SCOPE SOURCE. `User.php` holds `branch_id` as the authenticated user's home branch:

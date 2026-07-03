@@ -80,7 +80,7 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 - KB anti-patterns: filter the KB by this unit's domain tags.
 - Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for bolts touching similar files OR pattern — last 5 only. Active instincts (`memory/instincts/*.yaml`, confidence ≥0.7) whose `domain` matches the unit (ui → UI-bearing, security → risk-signal units, conventions/testing → all) join this slice as one line each — same budget, same truncation tier (per `memory/references/instincts.md`).
 - **Starterkit context slice:** see the slice sub-sections below.
-- Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale).
+- Confidence labels per claim (HIGH from binding C-NNN, MEDIUM from KB inference, LOW from heuristic with rationale). **Anchor freshness (assembly-time):** before stamping a label on an `## Anchors` entry, probe it — path exists; when the binding recorded an excerpt/sha, the region still matches. A failed probe injects `ANCHOR STALE (verify before use)` in place of the label (never a bind-era HIGH re-stamped mid-batch); the streaming `Anchors verified N/N` line reflects the probe result.
 - Validation hints (specific test commands + expected-output patterns).
 
 ## Reuse slice: build
@@ -149,9 +149,10 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   # design_tokens (colors/spacing/fonts) is INCLUDED in the ui_ux slice. A UI bolt that never
   # sees the project's colors/spacing/fonts re-invents generic defaults; injecting the actual
   # tokens anchors the view to the design system. design_tokens is MID-priority in the
-  # truncation cascade (truncated before code_examples, NOT first-dropped). The deterministic
-  # validate-dispatch-prompt.sh asserts the emitted prompt carries a `Design tokens:` line for
-  # ui_ux units (non-no-op-able); this prose is defense-in-depth.
+  # truncation cascade (truncated before code_examples, NOT first-dropped). validate-dispatch-prompt.sh
+  # asserts the emitted prompt carries a `Design tokens:` line for ui_ux units — ADVISORY:
+  # its state is surfaced via /mega-sdd:analyze, nothing in PreToolUse reads it (per the
+  # demotion list); this prose is the operative rail.
 
 IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
   slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
@@ -181,7 +182,9 @@ IF starterkit_context absent AND codebase-map.md §6 (Pattern signatures) presen
 ui_bearing = any target_files path matches the active pack `## UI quality signatures`
              view_glob, OR matches the universal frontend shapes:
              *.blade.php, *.html.erb, *.twig, *.jsx, *.tsx, *.vue, *.svelte,
-             *.html, *.css, components/**, pages/**, views/**, templates/**
+             *.html, *.css, *.scss, *.less, *.cshtml, *.razor,
+             components/**, pages/**, views/**, templates/**, Views/**,
+             **/components/**, **/views/**, **/templates/**
 
 IF NOT ui_bearing → skip (no design slice for pure-backend bolts)
 IF slice.ui_ux already built above (starterkit path) → skip (template is AUTHORITATIVE;
@@ -302,7 +305,7 @@ FOR each (category, source_list) in [
     log "starterkit.<category>._source not found on disk: <full_example_path>"
 ```
 
-**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. The deterministic `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise); this prose is defense-in-depth. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
+**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via /mega-sdd:analyze, not a PreToolUse block; this prose is the operative rail. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
 
 **Anti-halu rail:** `slice.code_examples.<category>.path` MUST equal the file actually read (provenance); never invent or substitute. The chosen exemplar must be a real `_source` entry — selecting by linter-clean re-ORDERS the real candidates, it never fabricates one.
 

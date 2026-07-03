@@ -156,7 +156,10 @@ def glob_match(path, pattern):
         _GLOB_CACHE[pattern] = rx
     if rx.match(path):
         return True
-    # also try suffix match (path may carry leading dirs the glob omits)
+    # also try suffix match (path may carry leading dirs the glob omits).
+    # S6 EB-VAL-6 audit: SAFE here (unlike the ui-quality walker) — `path` is a
+    # DECLARED unit target_files entry, never a filesystem walk result, so a
+    # backup/… wrapper dir can never reach this matcher.
     return rx.match(path.split("/", 1)[-1]) is not None if "/" in path else False
 
 

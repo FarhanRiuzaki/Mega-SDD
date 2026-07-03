@@ -249,7 +249,7 @@ After resolution: `/mega-sdd:auto --resume`.
 
 ### Phase 5 halts on hard_rule_violated
 
-A bolt tried to modify a locked file. Code stays in working tree (not committed).
+A bolt modified a locked file. Detect-after: the bolt commit already landed; the post-flight scan halts the run and the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
 
 ```yaml
 blocker:

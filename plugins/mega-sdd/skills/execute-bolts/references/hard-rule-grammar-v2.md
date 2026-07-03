@@ -49,7 +49,7 @@ blocker:
       linux: "cargo install ast-grep"
       windows: "scoop install ast-grep"
       universal: "npm install -g @ast-grep/cli"
-  next_action: "Install ast-grep then re-run, OR migrate this unit's Hard Rules to v1 grammar via /mega-sdd:migrate-rules --to=v1"
+  next_action: "Install ast-grep (see install_commands) then re-run, OR author this unit's Hard Rules in v1 (bulleted) grammar by hand — reverse migration via --to=v1 is NOT implemented (v1 grammar is still executed natively at pre/post-flight)"
 ```
 
 ## v2 rule file format
@@ -141,7 +141,7 @@ For each rule:
 
 ### Halt on violation
 
-Same as grammar v1 — `hard_rule_violated` blocker; code stays in working tree; user reviews.
+Same as grammar v1 — `hard_rule_violated` blocker; detect-after (the bolt commit already landed): remediation is fix-forward or `git revert` of the flagged commit, and the B1 gate blocks every further `execute-bolts` until a passing `postflight.json` is recorded.
 
 ## Migration command (per ITER6-OQ-2 resolved explicit)
 

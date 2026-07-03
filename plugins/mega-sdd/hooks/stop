@@ -224,10 +224,13 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
     # must cover the newest CODE commit (a bolt OR an out-of-band edit). Detection-only
     # here (Stop never blocks); the PreToolUse execute-bolts aggregator blocks the NEXT run on FAIL.
     bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
-    # B1 postflight evidence: a committed Hard-rule create/extend/modify bolt must carry
+    # B1 postflight evidence: a committed Hard-rule create/extend bolt must carry
     # a passing postflight.json (the post-flight scan was prose-only). Same detect-and-
     # block-next contract — the PreToolUse aggregator blocks the NEXT run on FAIL.
     bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --postflight-scan --quiet >/dev/null 2>&1 || true
+    # B3 whitelist observer (S6 EB-GATE-11): bolt commits must stay inside their
+    # unit's target_files whitelist (∪ sanctioned extras). Detect-and-block-next.
+    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
   fi
 fi
 

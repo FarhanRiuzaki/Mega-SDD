@@ -65,6 +65,8 @@ Format:
 
 When `binding.md` §Suggested Unit Hard Rules contains rules sourced from framework pack (introduced by bind-codebase Step 2.8), emit each pack-derived Hard Rule into the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
 
+**One grammar per unit (S6 EB-GATE-7).** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9a`: when the unit's other rules are v1 (binding-suggested `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules.
+
 Format inside unit's `## Hard rules` section:
 
 ```yaml
@@ -105,7 +107,7 @@ a. **Anchors presence rule**:
    - `task_type: create` AND ≥1 `binding_refs` entry pointing to a related pattern → `## Anchors` MUST have ≥1 entry citing the closest pattern. Missing → halt `unit_underspecified`.
    - `task_type: create` AND fully greenfield (no binding) → Anchors section optional.
 
-b. **Hard rules grammar parse**: each line under `## Hard rules` MUST match one of the 5 grammar productions in the unit-schema reference's Hard-rule grammar (listed in the skill router). Unparseable line → halt `hard_rule_unparseable` with the offending line + which production failed.
+b. **Hard rules grammar parse**: each DASH line under `## Hard rules` MUST match one of the 5 strict v1 productions OR the generic-directive tier (`MUST/MUST NOT/DO NOT/NEVER/ALWAYS …` — accepted but counted `hard_rules_directive_prose`; not machine-checkable at bolt time, so post-flight records it `directive_unverified` unless attested). Fenced ```yaml blocks are v2 ast-grep rules (validated by parse-via-scan at bolt pre-flight). A line matching neither → halt `hard_rule_unparseable` with the offending line. Mixing v1 dash rules and v2 fenced blocks in ONE unit → the bolt-time `hard_rule_mixed_grammar` halt — emit one grammar per unit (12.4.5).
 
 c. **Directive prose check on Implementation steps**:
    - Extract the body of `## Implementation steps`

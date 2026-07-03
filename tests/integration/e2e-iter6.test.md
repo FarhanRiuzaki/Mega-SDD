@@ -124,7 +124,7 @@ rule:
 
 ### V2: Anti-halu rails preserved
 - ✅ No silent rewrites (PageRank suggestions never auto-added)
-- ✅ Hard Rule violations halt pre-commit (existing Iter 3 invariant)
+- ✅ Hard Rule violations halt the run detect-after (bolt commit already landed; every further `execute-bolts` blocked until fixed-forward or reverted)
 - ✅ AGENTS.md does NOT invent info absent from vault
 - ✅ Tree-sitter parses are deterministic (re-run same scan → same output)
 - ✅ Checkpoint replay is deterministic (same cursor state → same skill output)

@@ -14,7 +14,7 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 
 1. Topologically sort units by `depends_on`.
 2. Execute in order (default sequential).
-3. On `--parallel`: the **main-thread controller** groups units with no shared dependency and dispatches them **concurrently** — multiple `bolt-implementer` Agent calls in one message — each unit still running the full review panel (`bolt-implementer` → the parallel blind lenses per `review-panel.md`). This is **depth-1** (the controller stays in the main thread; it never forks a sub-controller that would then need to dispatch the bolt agents — that would be depth-2, which the runtime forbids). `subagent-driven-development` is an optional *technique* hint, not a nested dispatch.
+3. On `--parallel`: the **main-thread controller** groups units with no shared dependency and dispatches them **concurrently** — multiple `bolt-implementer` Agent calls in one message — each unit still running the full review panel (`bolt-implementer` → the parallel blind lenses per `review-panel.md`). **Overlap rail (independence = BOTH conditions):** no `depends_on` edge between them AND pairwise-disjoint `target_files` — units whose whitelists intersect are never in the same wave; they serialize (a silent data race on a shared file is worse than slower execution). This is **depth-1** (the controller stays in the main thread; it never forks a sub-controller that would then need to dispatch the bolt agents — that would be depth-2, which the runtime forbids). `subagent-driven-development` is an optional *technique* hint, not a nested dispatch.
 4. On any failure: halt the entire `--all` run (no skip-ahead).
 
 ## `--per-squad`
@@ -22,7 +22,7 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 1. **Load `_meta/squads.yaml`.** If absent or single-squad → halt with an informative message: "`--per-squad` requires ≥2 squads declared in `_meta/squads.yaml`. Run `/mega-sdd:generate-intent` to add squad config, or use plain `/mega-sdd:execute-bolts --all` for single-squad."
 2. **Read the squad list.** Build a list of declared squad IDs.
 3. **Main-thread squad loop (NOT a squad subagent).** The controller stays in the main thread and runs each squad's units through the per-unit panel flow directly (depth-1) — see `squad-subagent.md`. A forked squad subagent would have to dispatch the bolt agents = depth-2 (forbidden) and would silently lose the review panel.
-4. **Parallelize across squads.** Independent units — including units from different squads — are dispatched **concurrently** (multiple `bolt-implementer` Agent calls in one message), bounded by an in-flight cap. Same mechanism as `--all --parallel`; `--per-squad` only changes the filter + the consolidation.
+4. **Parallelize across squads.** Independent units — including units from different squads — are dispatched **concurrently** (multiple `bolt-implementer` Agent calls in one message), bounded by an in-flight cap. **Independent = no `depends_on` edge AND pairwise-disjoint `target_files`** — cross-squad units carry no dependency edges by design, so the whitelist-overlap check is the ONLY thing standing between two squads and a silent clobber of a shared file (routes, config). Same mechanism as `--all --parallel`; `--per-squad` only changes the filter + the consolidation.
 5. **Consolidate the report.** Aggregate per-squad summaries into a single chat message: N squads, M units total, K commits, list of halts (with squad attribution).
 
 ## `--module=<id>` + `module_blocked_by` halt
@@ -73,13 +73,13 @@ blocker:
 
 ## Per-bolt lightweight drift check
 
-After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix is applied), AND BEFORE commit, run a quick scope-filtered drift scan vs the vault:
+After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix is applied), AND BEFORE the unit is accepted as done (the implementer's commit has already landed — detect-after topology per SKILL.md), run a quick scope-filtered drift scan vs the vault:
 
 a. Read `vault.json` scope (if a multi-scope vault) OR skip the scope filter.
 b. For each file in the unit's `target_files` modified this bolt:
    - Compare current state vs the vault's expected state (from `binding.md` anchors when present).
    - Detect name drift, type drift, behavior drift (per detect-drift categories).
-c. If drift is detected on a LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (eligible for propose-and-confirm OR override).
+c. If drift is detected on a LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (pure-pause; override-only — never propose-and-confirm).
 d. If drift is detected on an INTENT/ARTIFACT entity → log to `bolt-report.md` `## Drift introduced` + continue (will surface at the batch-end detect-drift gate).
 e. If no drift → log "✓ Drift check: clean" to `bolt-report.md`.
 
@@ -116,6 +116,6 @@ The per-bolt acceptance command is **scoped** to that unit; nothing re-runs the 
 
 **Verdict.** `status: red` → **halt `batch_suite_red`**: emit the blocker with the failing test names, leave the tree for review (do not auto-revert), do not emit a `status: completed` handoff. `status: green` → the batch is complete.
 
-**Enforcement (the gate is real, not prose).** The Stop hook runs `validate-bolt-artifacts.sh --batch-suite-gate` every turn end (detection-only). The PreToolUse aggregator blocks the **next** `execute-bolts` when no green `_batch-suite.json` covers the newest **code commit** (`batch_suite_gate_missing` — missing or stale: a code change landed after the last full-suite run, decided via `git merge-base --is-ancestor <newest-code-commit> <gate.head_sha>`) or the recorded suite is RED (`batch_suite_red`). The hook **verifies the artifact; it never runs the suite** (200s+ suites in a hook would cripple every turn). The freshness anchor is the newest commit touching a **code file** (outside `.mega-sdd/`, excluding pure-docs `.md`/`.rst`) **regardless of subject** — so an out-of-band edit (a hotfix, a manual change, a `git pull`) that touches source after a green suite DOES trip the gate (`out_of_band: true`); a docs/markdown-only commit does not. The gate *activates* only once a code-bearing `(bolt): U-XXX` commit exists (no bolting yet ⇒ nothing to gate).
+**Enforcement (the gate is real, not prose).** The Stop hook AND the execute-bolts gate itself run `validate-bolt-artifacts.sh --batch-suite-gate` (detection at turn end + re-derivation at gate time). The PreToolUse aggregator blocks the **next** `execute-bolts` when no green `_batch-suite.json` covers the newest **code commit** (`batch_suite_gate_missing` — missing or stale: a code change landed after the last full-suite run, decided via `git merge-base --is-ancestor <newest-code-commit> <gate.head_sha>`; a symbolic `head_sha` like `"HEAD"` is REJECTED — the artifact must pin the 40-hex sha) or the recorded suite is RED (`batch_suite_red`). The artifact is written ONLY by `scripts/run-full-suite.sh` (hook-guarded; the wrapper runs the suite and pins HEAD itself). The hook **verifies the artifact; it never runs the suite** (200s+ suites in a hook would cripple every turn). The freshness anchor is the newest commit touching a **code file** (outside `.mega-sdd/` and the legacy vault trees, excluding pure-docs `.md`/`.rst`) **regardless of subject** — so an out-of-band edit (a hotfix, a manual change, a `git pull`) that touches source after a green suite DOES trip the gate (`out_of_band: true`); a docs/markdown-only commit does not. The gate *activates* only once a code-bearing bolt commit exists — recognized by the canonical identity (`<type>(U-XXX):` scope, legacy `(bolt): U-XXX` subject, or `Unit:` trailer; `bolt-contract.md §Commit message format`). No bolting yet ⇒ nothing to gate.
 
 **Sync lane.** After `orchestrate-flow --sync` reconciles an out-of-band edit, it re-runs the full suite and writes `_batch-suite.json` with `source: sync` — this is the catch for the *post*-batch out-of-band edit the within-batch gate has already passed. (The `SYNC-REPORT.md` terminal emission is owned separately by the sync-report work; it *consumes* this artifact, it does not re-run the suite.)

@@ -47,6 +47,24 @@ blocker:
   next_action: "Review bolt-report.md; edit unit acceptance criteria, fix code manually, or skip via --force"
 ```
 
+When the review panel's retry budget exhausts with a **Critical** finding still open (per `review-panel.md §Merge + severity gate`), emit the terminal halt — the run STOPS; never proceed to the next bolt over an open Critical:
+
+```yaml
+blocker:
+  type: review_critical_unresolved
+  emitted_at: <ISO8601 timestamp>
+  emitted_by: execute-bolts
+  details:
+    unit_id: U-XXX
+    retries_attempted: <N>
+    tier: <minimal|standard|full>
+    open_criticals:
+      - lens: <spec|quality|security|standards|design>
+        finding: <one-line>
+        anchor: <file:line>
+  next_action: "Review the open Critical(s) in bolt-report.md ## Review panel; fix the committed code (or revert the bolt commit) and re-run the unit. The finding survived the shared --max-retries budget — do not raise the cap to outlast it."
+```
+
 ## Propose-and-confirm halt UX
 
 Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt halts with an eligible halt type, dispatch an AI fix-proposer subagent → render the proposal via `AskUserQuestion` → on accept, apply the fix + re-execute → on reject, the chain pauses.
@@ -64,9 +82,13 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `bolt_repeated_partial_failure` — structural problem; a fix won't help.
 - `provenance_missing` — user must add the trailer.
 - `dispatch_prompt_too_large` — config issue, not bolt-fixable.
-- `dep_missing` — environment setup needed.
+- `dep_missing` — environment setup needed. (The dispatch-prompt halt vocabulary emits this same type; the legacy alias `missing_dependency` is retired.)
 - `hard_rule_unparseable` — config issue.
 - `hard_rule_unanchored` — config issue.
+- `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
+- `scope_creep_detected` — the unit's scope is wrong or the plan drifted; human restructures.
+- `review_critical_unresolved` — a Critical survived the retry budget; human reviews the code.
+- `bolt_introduces_locked_drift` — LOCKED behavior is a human decision by definition; override-only (the fix-proposer template refuses LOCKED files).
 - `verify_unit_writable` — config issue.
 
 **Dispatch contract:**
@@ -101,7 +123,7 @@ Beyond the existing halts, this skill adds:
 | `dispatch_prompt_too_large` | Step 4.5 tiered prompt exceeds the hard cap | NO (config/spec issue) |
 | `bolt_repeated_partial_failure` | 3+ partial-state attempts on the same bolt OR propose-and-confirm cycled with different fixes | NO (structural) |
 | `provenance_missing` | Post-flight detects a missing provenance trailer in a modified file | NO (user adds the trailer) |
-| `bolt_introduces_locked_drift` | The per-bolt drift check detects drift on a LOCKED entity | YES (propose-and-confirm OR override) |
+| `bolt_introduces_locked_drift` | The per-bolt drift check detects drift on a LOCKED entity | NO (override-only — LOCKED behavior is a human decision; the fix-proposer template refuses LOCKED files) |
 | `self_assessment_missing` | `bolt-report.md` lacks the `bolt_self_report` YAML block | NO (bolt must self-report) |
 | `commit_rejected_by_hook` | The repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt's commit. Hook output verbatim in details. NEVER retried with `--no-verify` (forbidden plugin-wide). | NO (user fixes the hook finding or environment) |
 | `bolt_artifacts_missing` | An `emitted_by: execute-bolts` `status: completed` handoff that executed units (`metrics.items_processed > 0`) lists no `<vault>/bolts/U-XXX/` artifact — the bolt folder was never generated. Detected by the Stop-hook handoff validator (`validate-handoff-yaml.sh`); exempts dry-run/no-op (`items_processed == 0`). | NO (controller must create the dir at Procedure Step 0 + write `bolt-report.md`, then re-emit) |
@@ -217,6 +239,13 @@ Per-bolt status emitted as a compact streaming format (chat-friendly, updated in
   └─ Commit: 8a3f2e1 "feat(U-007): create User model"
 ✓ Bolt 7/20: U-007 → done in 1m23s, 0 retries, confidence 0.92
 ```
+
+> **"Anchors verified N/N" honesty:** print that line ONLY after actually probing each
+> `## Anchors` path at prompt-assembly time (path exists; when the binding recorded an
+> excerpt/sha, the region still matches). A stale anchor is NOT a halt — inject
+> `ANCHOR STALE (verify before use)` in place of its confidence label in the dispatch
+> prompt and print `Anchors: N-1/N ✓, 1 stale` here. Never print a verified count no
+> check produced.
 
 After the batch (printed at the end of an `--all` run):
 
@@ -368,7 +397,11 @@ handoff:
 
 > **Scope propagation to detect-drift (AUDIT L9).** When this handoff carries a `scope:` block, `next_action.suggested_args` MUST include `--scope=<scope.id>` — `detect-drift` accepts `--scope`, and the orchestrator's consumption loop passes `suggested_args` straight through. Deterministically enforced: the Stop-hook handoff validator FAILs `scope_args_missing` when a scoped execute-bolts handoff routes to detect-drift without `--scope=` in `suggested_args`. Without it, a scope-filtered bolt batch hands off to a **full-scan** drift check (the seam asymmetry: detect-drift propagates scope to ITS downstream, but nothing seeded scope into detect-drift). For a single-scope vault there is no `scope:` block and `suggested_args` stays `[]`.
 
-Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `verify_unit_writable`. Required ONLY under `--auto`.
+Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s per-skill blocks are regenerated verbatim from this list, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
+
+`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `partial_state_corrupt` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use`
+
+Required ONLY under `--auto`.
 
 ## Memory layer
 

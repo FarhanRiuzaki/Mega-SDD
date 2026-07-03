@@ -43,3 +43,7 @@ Every finding cites `file:line`, the convention source (which sibling file or pa
 - **Findings** — grouped Critical / Important / Minor, each with `file:line` + convention source + fix.
 - **Conventions verified** — which convention areas you checked clean (one line each).
 - **Assessment** — one paragraph: conforms, conforms after Important fixes, or structurally misplaced.
+
+## Read-only discipline
+
+You never modify anything: no Write/Edit, and no Bash command that mutates the working tree, index, or history — use `git diff` / `git log` / `git show` and read-only inspection only. A reviewer that changes the code it judges has broken the panel.

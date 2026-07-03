@@ -1,6 +1,6 @@
 # execute-bolts — Hard Rule pre/post-flight scan
 
-The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight diff); any post-flight violation **HALTS BEFORE COMMIT** with the bolt's changes left uncommitted in the working tree for human review. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
+The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the `bolt-implementer` commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
 
 ## Contents
 - Pre-flight: grammar detection
@@ -24,15 +24,17 @@ For each unit with a non-empty `## Hard rules` body section:
 - Mixed (both forms in one unit) → halt `hard_rule_mixed_grammar` (user migrates via `/mega-sdd:migrate-rules`).
 - Override via `--hard-rule-grammar=v1|v2`.
 
-**For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via `ast-grep test --validate`. Unparseable → halt `hard_rule_unparseable`.
+**For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via parse-via-scan (`ast-grep test --validate` does NOT exist in the CLI — the snippet is in `hard-rule-grammar-v2.md` §Pre-flight, the single owner of the parse-check mechanics). Unparseable → halt `hard_rule_unparseable`.
 
-**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `generate-units/references/unit-schema.md` §Hard rule grammar. NEVER silently skip an unrecognized line — unparseable → halt `hard_rule_unparseable`:
+**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `generate-units/references/unit-schema.md` §Hard rule grammar (plus the directive tier — see §Directive rules below, which is ACCEPTED, not unparseable). NEVER silently skip a line that matches neither — unparseable → halt `hard_rule_unparseable`:
 
 - `DO NOT modify <path>`
 - `DO NOT add new <manifest> dependencies`
 - `<path-glob> MUST follow <case-style> naming`
 - `function <name> MUST preserve signature: <type-sig>`
 - `file <path> MUST exist after bolt`
+
+**Directive rules (third category — honest tier).** A generic `- MUST/MUST NOT/DO NOT/NEVER/ALWAYS …` prose line is ACCEPTED by the unit-stage validator (counted `hard_rules_directive_prose`) but is not machine-checkable by construction. At post-flight, `run-postflight-scan.sh` records such a rule as `type: directive` with verdict `directive_unverified` (non-pass) unless the run passes `--attest-directives="<who/why>"` after controller/panel review — then the verdict is `attested`, which `postflight_ok` accepts for directive-typed rules ONLY. A fabricated `pass` verdict on a directive line does not exist in the sanctioned writer's vocabulary.
 
 ## Pre-flight: v2 (ast-grep) snapshot
 
@@ -90,7 +92,7 @@ blocker:
 
 ## Post-flight: per-rule re-validation
 
-After `executing-plans` completes and acceptance tests pass, run the post-flight scan **BEFORE committing**. This is the safety net.
+After the implementer reports DONE (its commit already landed), run the post-flight scan via `scripts/run-postflight-scan.sh --cwd=<root> --unit=U-XXX` — the deterministic writer (the postflight.json artifact is hook-guarded; direct writes are denied). This is the safety net.
 
 **v2 grammar (ast-grep):**
 
@@ -125,13 +127,13 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 }
 ```
 
-**Mandatory evidence (B1 — enforced, not prose).** For a committed `create`/`extend`/`modify` bolt whose unit has a **non-empty `## Hard rules`** section, this `postflight.json` MUST exist with `status: pass` and every `rules[].verdict: pass`. The Stop hook runs `validate-bolt-artifacts.sh --postflight-scan` each turn end; the PreToolUse aggregator **blocks the next `execute-bolts`** with **`postflight_evidence_missing`** when a Hard-rule bolt committed with no passing `postflight.json` — the post-flight scan can no longer be silently skipped. Verify units skip post-flight (no changes to validate), so they are exempt. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1`.
+**Mandatory evidence (B1 — enforced, not prose).** For a committed `create`/`extend` bolt whose unit has a **non-empty `## Hard rules`** section, this `postflight.json` MUST exist with `status: pass` and every `rules[].verdict: pass` (or `attested` on `directive`-typed rules) — and it is written by `run-postflight-scan.sh` and hook-guarded against direct writes plus the common programmatic write paths (best-effort deny, not cryptographically unforgeable — the gate reads the recorded status rather than recomputing the scan; recompute-at-gate is the durable follow-up, backlog). The Stop hook AND the execute-bolts gate re-run `validate-bolt-artifacts.sh --postflight-scan`; the PreToolUse aggregator **blocks the next `execute-bolts`** with **`postflight_evidence_missing`** when a Hard-rule bolt committed with no passing `postflight.json` — the post-flight scan can no longer be silently skipped or satisfied by a naive hand-written artifact. The validator reads the unit's content at the bolt commit (`git show`), so a retroactive unit edit cannot erase the obligation. Verify units skip post-flight (no changes to validate), so they are exempt. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1`.
 
 > `--force-skip-postflight` skips the ast-grep step for ONE run only and is logged per the SKILL.md anti-bypass policy (handoff `notes.postflight_skipped: true` + `_summary.md`). It does NOT downgrade the rail; a follow-up re-run without the flag is required before drift-detect / merge.
 
 ## Framework-pack rule provenance
 
-Framework-pack rules (pulled into a unit's Hard Rules by `generate-units` Step 12.4.5) are validated identically to other Hard Rules — the ast-grep `rule:` block from the pack runs against the codebase post-bolt. The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
+Framework-pack rules (pulled into a unit's Hard Rules by `generate-units` Step 12.4.5) are validated identically to other Hard Rules — Step 12.4.5 emits them **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the translation happens at emission time per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9a` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
 
 ## Per-sibling cross-cutting registration scan (defense-in-depth)
 
@@ -145,7 +147,7 @@ The project-wide quality validators that scan GENERATED SOURCE/VIEWS — `valida
 
 ## Violation handling + `hard_rule_violated` halt YAML
 
-- **ANY rule violated → HALT BEFORE COMMIT.** The bolt's code changes remain in the working tree (uncommitted). The user reviews + reverts / edits.
+- **ANY rule violated → HALT the run (detect-after).** The violating code is already committed (the implementer commits before the scan). The user reviews + fixes forward or `git revert`s the bolt commit; the B1 gate blocks every further `execute-bolts` until a passing `postflight.json` is recorded by `run-postflight-scan.sh`.
 - Emit the `hard_rule_violated` blocker YAML with `violated_rule` + evidence.
 - `bolt-report.md` MUST be written with `status: halted_postflight` and list the violations.
 
@@ -156,12 +158,14 @@ blocker:
   emitted_by: execute-bolts
   details:
     unit_id: U-XXX
+    committed: true          # detect-after — the bolt commit already landed
+    commit: <bolt commit sha>
     violations:
       - rule: "DO NOT modify src/Models/User.php"
         evidence: "sha256 mismatch — preflight: abc123..., postflight: def456..."
       - rule: "function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>"
         evidence: "Signature changed; postflight: (email: string, password: string, twoFactor?: string) => Promise<User>"
-  next_action: "Review changes in working tree; revert the offending modification OR edit the unit's Hard rules + re-run execute-bolts."
+  next_action: "The violation is in commit <sha>: fix the code forward (or git revert the bolt commit), then re-run run-postflight-scan.sh; execute-bolts stays gated until a passing postflight.json is recorded. If the RULE is wrong, edit the unit's Hard rules first."
 ```
 
 ## verify-unit special path

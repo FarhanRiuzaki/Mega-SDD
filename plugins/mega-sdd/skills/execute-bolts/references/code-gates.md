@@ -1,6 +1,6 @@
 # L0 Code Gates — the deterministic floor under the review panel
 
-Machine checks the controller runs on a bolt's diff BEFORE dispatching the review panel and BEFORE commit. Deterministic first, LLM second: an LLM lens must never burn context on what a linter, SAST rule, or registry lookup decides for free. Design: `docs/superpowers/specs/2026-06-12-review-panel-design.md` (Phase 2).
+Machine checks the controller runs on a bolt's `<base>..<head>` diff BEFORE dispatching the review panel. Commit topology (detect-after, per SKILL.md): the implementer's commit has already landed when these gates run — a BLOCKING finding halts the run and gates further bolts; it does not (cannot) prevent the commit that carries it. Deterministic first, LLM second: an LLM lens must never burn context on what a linter, SAST rule, or registry lookup decides for free. Design: `docs/superpowers/specs/2026-06-12-review-panel-design.md` (Phase 2).
 
 ## Contents
 
@@ -44,14 +44,14 @@ Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is 
 
 Per the gates-doctrine (blocking only for critical + un-promptable):
 
-- **BLOCKING (halt before panel, code left in working tree):**
+- **BLOCKING (halt before the panel dispatches — the bolt commit already landed):**
   - a secret in the diff (`scan-secrets-code.sh` exit 1) → halt `secret_in_code`
   - an ERROR-severity SAST finding (`run-code-scan.sh` exit 2) → halt `sast_critical_finding`
   - a new dependency the registry definitively 404s (`validate-new-deps.sh` exit 2) → halt `dep_not_found` (hallucinated/slopsquat package — never install)
 - **FINDINGS (non-blocking, fed to the panel + bolt-report):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline).
 - **SKIPs** are recorded in the bolt-report `## Review panel` section so a "clean" run that scanned nothing is never mistaken for a clean scan.
 
-These halts follow the same shape and discipline as `hard_rule_violated`: blocker YAML + `bolt-report.md` with the findings + working tree left dirty (NOT auto-reverted). There is no `--force` path around the secret gate; `--no-code-gates` (below) skips gates 1–2 and 4 only — secrets and dep-existence always run.
+These halts follow the same shape and discipline as `hard_rule_violated` (detect-after): blocker YAML + `bolt-report.md` with the findings; the flagged code sits in an already-landed commit, and the remediation acts on that commit. There is no `--force` path around the secret gate; `--no-code-gates` (below) skips gates 1–2 and 4 only — secrets and dep-existence always run.
 
 ## Halt YAMLs
 
@@ -59,8 +59,8 @@ These halts follow the same shape and discipline as `hard_rule_violated`: blocke
 halt:
   type: secret_in_code
   unit: U-XXX
-  details: {engine: gitleaks|fallback-regex, findings: [{rule, file, line}]}   # values never echoed
-  next_action: "Remove the secret, rotate it if it was ever real, then re-run. Secrets never ship — no override."
+  details: {engine: gitleaks|fallback-regex, findings: [{rule, file, line}], commit: <bolt sha>}   # values never echoed
+  next_action: "The secret is in COMMITTED history (detect-after): rotate it NOW (assume compromised), remove it from the code, and purge it from history BEFORE any push (git revert is not enough — rewrite with e.g. git reset/rebase or git-filter-repo while the branch is local). Secrets never ship — no override."
 ```
 
 ```yaml

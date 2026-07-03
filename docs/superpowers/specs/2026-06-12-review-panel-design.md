@@ -48,7 +48,7 @@ Full panel ≈ 15× single-agent token class — tiering is what makes always-on
 | `full` | spec + quality + security + standards | ANY risk signal: target_files overlap pack `auth_hints`/`authz_hints` globs · a dependency manifest in target_files · ≥4 target files · unit body touches auth/session/crypto/payment/upload · binding_refs cite constitution §B |
 
 Override chain: `--review-panel=<tier|auto>` CLI flag > `.mega-sdd/config.yaml` `review_panel:` > `auto`.
-Models per `references/model-tiers.md` (new catalog rows §security-reviewer, §standards-reviewer) — never hardcoded.
+Models per `references/model-tiers.md` (new catalog rows §security-reviewer, §standards-reviewer). *S6 amendment (EB-PHANTOM-1):* plugin agents read the `model:` in their own frontmatter — that pin is what the runtime uses; the catalog documents the intended tier and catalog↔frontmatter parity is a release-time obligation (panel pin test). `model_tiers:` config does NOT override panel-lens models at dispatch.
 
 ### Doctrine compliance
 

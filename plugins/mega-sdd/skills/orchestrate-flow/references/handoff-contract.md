@@ -430,7 +430,7 @@ handoff:
     slice_avg_size_kb: 1.6
 ```
 
-Status `halted` on `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `cross_squad_interface_draft` / `dispatch_prompt_too_large` / `bolt_repeated_partial_failure` / `provenance_missing` / `bolt_introduces_locked_drift` / `self_assessment_missing` / `bolt_artifacts_missing` / `memory_in_use`.
+Status `halted` on any entry of the canonical bolt-halt enum (owner: `execute-bolts/references/halts-and-handoff.md §Handoff emission` — this block is regenerated from it): `test_fail` / `hard_rule_violated` / `hard_rule_unparseable` / `hard_rule_unanchored` / `hard_rule_mixed_grammar` / `verify_unit_writable` / `cross_squad_interface_draft` / `module_blocked_by` / `dep_missing` / `secret_in_code` / `sast_critical_finding` / `dep_not_found` / `review_critical_unresolved` / `pbt_citation_invalid` / `pbt_property_violated` / `batch_suite_red` / `batch_suite_gate_missing` / `postflight_evidence_missing` / `whitelist_violation` / `commit_rejected_by_hook` / `bolt_repeated_partial_failure` / `partial_state_corrupt` / `dispatch_prompt_too_large` / `bolt_introduces_locked_drift` / `scope_creep_detected` / `provenance_missing` / `self_assessment_missing` / `bolt_artifacts_missing` / `memory_in_use`.
 
 ### `diff-vault`
 
@@ -621,7 +621,7 @@ metrics:
       concern: "..."                              # Empty array when no bolts flagged concerns. Consumed by orchestrate-flow Step 7 final summary diagnostics surface.
 ```
 
-Status `halted` enumeration extended (+ 59): full list now `test_fail | hard_rule_violated | hard_rule_unparseable | hard_rule_unanchored | cross_squad_interface_draft | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | module_blocked_by | verify_unit_writable | partial_state_corrupt | memory_in_use`.
+Status `halted` enumeration: full list now `test_fail | hard_rule_violated | hard_rule_unparseable | hard_rule_unanchored | hard_rule_mixed_grammar | verify_unit_writable | cross_squad_interface_draft | module_blocked_by | dep_missing | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | pbt_citation_invalid | pbt_property_violated | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | whitelist_violation | commit_rejected_by_hook | bolt_repeated_partial_failure | partial_state_corrupt | dispatch_prompt_too_large | bolt_introduces_locked_drift | scope_creep_detected | provenance_missing | self_assessment_missing | bolt_artifacts_missing | memory_in_use` (canonical owner: `execute-bolts/references/halts-and-handoff.md §Handoff emission`; regenerate here on change — never let the two drift).
 
 ---
 

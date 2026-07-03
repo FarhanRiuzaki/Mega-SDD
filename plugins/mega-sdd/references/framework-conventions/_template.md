@@ -297,6 +297,14 @@ cross_cutting_concerns:
                              tables (or whose class tokens match) but lacks registration_signature
                              is flagged. Both globs required for slice C; absent => slice C skips
                              this concern's runtime scan.>
+    source_decl_regex: <regex with ONE capture group extracting the container (table)
+                        name a source file declares alongside the applies_when column —
+                        e.g. Laravel: Schema::(?:create|table)\(\s*['"]([^'"]+)['"].
+                        REQUIRED for the runtime scan (S6 EB-VAL-4): a has_column concern
+                        without it is reported `not_evaluable` (never silently PASSed).>
+    target_decl_regex: <regex with ONE capture group extracting the container a MODEL
+                        binds to — e.g. Laravel: \$table\s*=\s*['"]([^'"]+)['"].
+                        Same requirement as source_decl_regex.>
 ```
 
 The sibling-consistency validator groups units by `module` + `scope` frontmatter (when

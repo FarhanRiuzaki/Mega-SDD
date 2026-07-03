@@ -341,7 +341,12 @@ for r in required_elements:
 # ── Discover view files under --cwd matching view_glob ────────────────────────
 # Walk the tree once; match each project-relative path against view_glob. Exclude
 # anything under .mega-sdd/ (our own artifacts), .git/, node_modules/, vendor/.
-SKIP_DIRS = {".git", ".mega-sdd", "node_modules", "vendor", "storage", ".idea", "__pycache__", "dist", "build", "target", ".next", ".venv", "coverage"}  # aligned with scan-codebase references/exclusions.md
+# S6 EB-VAL-6: also prune non-shipping WRAPPER dirs (backup/, old/, tmp/, archives)
+# ONLY — the one-segment-strip retry in glob_match let a scaffold tell inside
+# backup/resources/views/… hard-block execute-bolts even though that
+# tree never ships.
+SKIP_DIRS = {".git", ".mega-sdd", "node_modules", "vendor", "storage", ".idea", "__pycache__", "dist", "build", "target", ".next", ".venv", "coverage",
+             "backup", "backups", "old", "tmp", "temp", "archive", "_archive"}  # non-shipping WRAPPER dirs only. NOT docs/samples/examples/fixtures — a real app can ship views under those, and skipping them silently exempts them from the blocking gate (S6 EB-VAL-9 regression fix).
 view_files = []
 for root, dirs, files in os.walk(cwd):
     dirs[:] = [d for d in dirs if d not in SKIP_DIRS]

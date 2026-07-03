@@ -14,8 +14,10 @@
 # SIGNATURE (deterministic): for each committed bolt-report, if (a) the unit it implements
 # carries a `## UI contract` AND (b) the bolt-report contains a UI-deferral tell co-occurring
 # with a view reference → `ui_obligation_deferred`. A bolt with NO UI contract, or one whose
-# report simply describes finished work, is never flagged. Honest Fork-A detect-and-block-next:
-# cannot un-commit, but blocks the NEXT execute-bolts until the deferred UI is realized.
+# report simply describes finished work, is never flagged.
+# ADVISORY, NOT BLOCKING (S6 EB-HONEST-2): ui-deferral is on the demoted-to-advisory
+# list (plugins/mega-sdd/CLAUDE.md enforcement inventory) — no PreToolUse branch reads
+# .ui-deferral-state.json; findings surface as WARN via /mega-sdd:analyze.
 #
 # TECH-AGNOSTIC: view reference uses the pack §UI quality signatures view_glob; absent => the
 # view-coupling check falls back to generic view words (view/template/component) so the gate
@@ -218,9 +220,9 @@ report = {
     },
     "deferrals": deferrals,
     "next_action": (
-        "Realize each flagged unit's `## UI contract` required_states in the committed view "
-        "instead of deferring to a future polish unit, then re-run the bolt (PostToolUse "
-        "re-validates)."
+        "ADVISORY (surfaced via /mega-sdd:analyze; does NOT block execute-bolts): realize each "
+        "flagged unit's `## UI contract` required_states in the committed view instead of "
+        "deferring to a future polish unit, then re-run the bolt (PostToolUse re-validates)."
         if deferrals else "No action — no UI obligation was deferred."
     ),
 }

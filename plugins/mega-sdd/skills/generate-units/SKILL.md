@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.11.0
+version: 2.11.1
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -104,7 +104,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
    - **12.4.5 Framework pack provenance citation.** Emit each pack-derived Hard Rule (from binding §Suggested Unit Hard Rules) WITH an explicit `source:` citation to the specific pack file; rules whose `path_glob` doesn't match the unit's target_files are skipped.
    - **12.5 Polished-prompt render pass.** Validate the prompt-shape contract per `references/unit-schema.md`:
      - **(a) Anchors presence — MANDATORY when binding evidence exists:** `verify`/`extend` MUST have ≥1 `## Anchors` entry; `create` with a `binding_refs` entry pointing to a related pattern MUST cite the closest pattern; fully-greenfield `create` → optional. Missing → halt `unit_underspecified`.
-     - **(b) Hard rules grammar parse:** every `## Hard rules` line MUST match one of the 5 grammar productions (`references/unit-schema.md §Hard rule grammar`); unparseable → halt `hard_rule_unparseable` (NEVER silently skip).
+     - **(b) Hard rules grammar parse:** every `## Hard rules` line MUST match one of the 5 mechanical grammar productions OR the directive tier (generic `MUST/MUST NOT/DO NOT/NEVER/ALWAYS` prose — accepted, but non-mechanically-checkable) per `references/unit-schema.md §Hard rule grammar`; a line matching NEITHER → halt `hard_rule_unparseable` (NEVER silently skip).
      - **(c)** Implementation-steps directive-prose check → bullet-only emits a WARNING (not halt).
      - **(d)** `extend` MUST have `## Migration notes` (REMOVE/KEEP/ADD all present); `create`/`verify` MUST NOT → else halt `unit_underspecified`.
      - **(e) Anti-patterns harvesting (suggestion):** auto-populate `## Anti-patterns` from binding CONFLICTs + KB `Edge Cases & Gotchas` for domains the unit covers — guidance only, no halt.
@@ -117,10 +117,10 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 ## Anti-hallucination rails
 
-- Every unit MUST cite its vault source (file:section); no unit may invent functionality absent from the vault; no unit may touch files outside `target_files` (a prompt-level rule (rules tier) at bolt time — the dispatch prompt forbids it and the review panel checks scope; no deterministic post-hoc observer exists yet); no unit may have an empty `acceptance_test` (presence machine-checked by `validate-unit-spec.sh`).
+- Every unit MUST cite its vault source (file:section); no unit may invent functionality absent from the vault; no unit may touch files outside `target_files` (enforced at bolt time across three tiers: the dispatch prompt forbids it (rules), the review panel checks scope (judgment), and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths — escaped paths block the next `execute-bolts` with `whitelist_violation`); no unit may have an empty `acceptance_test` (presence machine-checked by `validate-unit-spec.sh`).
 - OQs surface explicitly as "TBD" — never silently fabricated. OQ-IDs propagate from the binding Resolution Table into `binding_refs:` when their resolution is implemented in the unit (Step 12.5.g halts `unit_oq_trace_missing` otherwise). CONFLICTs propagate the same way.
 - `task_type` is assigned ONLY from the binding's Implementation State Map — never inferred from vague heuristics; UNKNOWN → conservative `create`. `verify` units MUST have a concrete anchor — from the binding State Map OR the Step 2.5 direct-probe result recorded in `## Anchors` (per `references/task-typing.md` UNKNOWN sub-rule). A claim with NO anchor from any source types as `create` AT TYPING TIME (that is the probe rule, not a downgrade); a unit ALREADY assigned verify whose anchor is empty halts as a binding gap (`unit_underspecified`, YAML in halt-protocol). The dedup check halts (`dedup_ambiguous`) — NEVER silent-rewrites a task_type.
-- Anchors are MANDATORY when binding evidence exists (per task_type); missing → halt `unit_underspecified`. Hard rules grammar is a closed 5-type set; unparseable → halt `hard_rule_unparseable`. Anti-patterns are drawn from binding CONFLICTs + KB gotchas (suggestion only, not a halt condition).
+- Anchors are MANDATORY when binding evidence exists (per task_type); missing → halt `unit_underspecified`. Hard rules grammar is a closed set — 5 mechanical types + a directive tier (`MUST/DO NOT/NEVER/ALWAYS` prose, accepted, recorded `attested`/`directive_unverified` at post-flight); a line matching neither → halt `hard_rule_unparseable`. Anti-patterns are drawn from binding CONFLICTs + KB gotchas (suggestion only, not a halt condition).
 - `depends_on` is intra-squad only (cross-squad coupling routes through interface notes); interface references must resolve to existing files. `--strict-deps` (default) emits deps only on concrete coupling evidence.
 - PageRank suggestions are informational, never auto-added to target_files. Anchor warnings are SOFT (visible, non-halting; anchors can be aspirational for new files). Per-unit collision prompts fire only on genuine collision.
 - `PARTIAL_FIELDS_*` Migration notes are populated from binding's `field_diff` so the bolt knows EXACTLY which fields to add/keep/remove. `grounding_confidence: HIGH|MEDIUM|LOW` reflects upstream + anchor + collision verification.

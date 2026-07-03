@@ -198,7 +198,7 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
 
 ## Hard rule grammar (closed v1)
 
-Five rule types supported. Unsupported grammar → halt at bolt time with `hard_rule_unparseable`.
+Five mechanical rule types + a directive tier (generic `MUST/MUST NOT/DO NOT/NEVER/ALWAYS` prose — accepted but not machine-checkable; recorded `attested` with `--attest-directives` else `directive_unverified` at post-flight). A line matching neither a mechanical type nor the directive tier → halt at bolt time with `hard_rule_unparseable`.
 
 ```ebnf
 RULE := DO_NOT_MODIFY | DO_NOT_ADD_DEPS | NAMING_RULE | SIGNATURE_RULE | FILE_PRESENCE_RULE
@@ -238,7 +238,7 @@ file src/Models/AuditLog.php MUST exist after bolt
 | `SIGNATURE_RULE` | Snapshot function signature via codebase-map symbol lookup | Re-extract signature; differs → violated |
 | `FILE_PRESENCE_RULE` | (none) | Probe path exists in repo; missing → violated |
 
-Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip.
+A line matching neither a mechanical type nor the directive tier is unparseable → halt with `hard_rule_unparseable` blocker. NEVER silently skip.
 
 ### Per-task_type contracts
 
@@ -255,10 +255,10 @@ Unparseable rules halt with `hard_rule_unparseable` blocker. NEVER silently skip
 ## Atomicity rules
 
 - One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--refresh`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it).
-- `target_files` whitelist is honored by `execute-bolts` as a prompt-level rule (rules tier): the dispatch prompt forbids out-of-whitelist writes and the review panel checks scope. No deterministic post-hoc observer exists yet — do not read "enforced" as a machine gate.
+- `target_files` whitelist is enforced by `execute-bolts` at three layers: the dispatch prompt forbids out-of-whitelist writes (rules tier), the review panel checks scope (judgment tier), and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files) — escaped paths block the next `execute-bolts` with `whitelist_violation`.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
 - `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
-- `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight (before commit) validates. Violations halt with `hard_rule_violated`.
+- `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight validates against the implementer's landed commit (detect-after topology per execute-bolts SKILL.md). Violations halt with `hard_rule_violated` and gate further bolts until fixed.
 - `## Implementation steps` MUST contain at least one sentence >15 words (directive prose check). Pure bullet checklists trigger render-pass warning.
 
 ## Multi-squad rules
