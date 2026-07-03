@@ -42,6 +42,7 @@ ORPHAN_SCAN=0
 BATCH_SUITE_GATE=0
 POSTFLIGHT_SCAN=0
 WHITELIST_SCAN=0
+RECOMPUTE=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
@@ -49,6 +50,7 @@ for arg in "$@"; do
     --orphan-scan) ORPHAN_SCAN=1 ;;
     --batch-suite-gate) BATCH_SUITE_GATE=1 ;;
     --postflight-scan) POSTFLIGHT_SCAN=1 ;;
+    --recompute) RECOMPUTE=1 ;;
     --whitelist-scan) WHITELIST_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
@@ -380,14 +382,32 @@ if [ "$POSTFLIGHT_SCAN" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
   [ -d "${CWD}/.mega-sdd" ] || exit 0
   PF_STATE="${CWD}/.mega-sdd/.bolt-postflight-state.json"
-  CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" python3 <<PYEOF
+  CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" RECOMPUTE="$RECOMPUTE" python3 <<PYEOF
 $PY_COMMON
+import postflight_rules
 state_file = os.environ["PF_STATE"]
+recompute = os.environ.get("RECOMPUTE", "0") == "1"
 
-bolted = {}  # unit_id -> newest commit sha
-for sha, subj, uid, _files in walk_log(300):
-    if uid:
-        bolted.setdefault(uid, sha)
+# RECOMPUTE (B1 recompute-at-gate): reuse ONE --name-status walk for BOTH the bolted
+# enumeration and per-unit Hard-rule re-execution. A forged/stale postflight.json is
+# OVERWRITTEN with ground truth BEFORE postflight_ok reads it — the same "re-derive
+# from ground truth at the gate" doctrine as the six state files, now extended to the
+# evidence ARTIFACT itself (the gate used to trust its recorded status). Mechanical
+# rules recompute fresh; directives carry their prior --attest-directives forward
+# (an attacker cannot relabel a mechanical rule as a directive — scan_unit reclassifies
+# from the rule TEXT). B2 (full suite, ~minutes) is NOT recomputed here — too expensive
+# for the hot path — so it stays evidence-based. Design + measurement + honest ceiling:
+# docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1 amendment.
+all_commits = postflight_rules.walk_unit_commits(git, PREFIX, 300) if recompute else None
+_HEAD = git("rev-parse", "HEAD").stdout.strip() if recompute else ""
+
+if recompute:
+    bolted = {uid: cl[0][0] for uid, cl in all_commits.items() if cl}
+else:
+    bolted = {}  # unit_id -> newest commit sha
+    for sha, subj, uid, _files in walk_log(300):
+        if uid:
+            bolted.setdefault(uid, sha)
 
 def unit_text(uid, sha):
     """The unit's text — preferring its content AT the bolt commit (S6 EB-GATE-8:
@@ -469,6 +489,52 @@ def postflight_ok(uid):
         return (True, False)
     return (True, True)
 
+def _bolt_dir(uid):
+    """<vault>/bolts/<uid> — same derivation as run-postflight-scan.sh (writer)."""
+    uf = vault_layouts.find_unit_file(cwd, uid)
+    if not uf:
+        return None
+    d = os.path.dirname(uf)
+    vr = os.path.dirname(d) if os.path.basename(d) == "units" else os.path.dirname(os.path.dirname(d))
+    return os.path.join(vr, "bolts", uid)
+
+def recompute_unit(uid, text):
+    """Re-execute uid's Hard rules from ground truth and OVERWRITE its postflight.json.
+    Uses the unit text AT THE BOLT COMMIT (the text the gate already resolved — obligation
+    stickiness EB-GATE-8: a retroactive unit edit that blanks the Hard rules must not erase
+    the incurred obligation, nor let a recompute find no-rules and pass). Scans with the
+    SHARED engine (scan_unit) so the verdict is byte-identical to what the writer would produce;
+    passes the prior artifact so a human --attest-directives review is carried forward."""
+    bd = _bolt_dir(uid)
+    if bd is None:
+        return
+    preflight = {}
+    pf = os.path.join(bd, "preflight.json")
+    if os.path.isfile(pf):
+        try:
+            preflight = json.load(open(pf))
+        except (OSError, ValueError):
+            preflight = {}
+    target = os.path.join(bd, "postflight.json")
+    prior = None
+    if os.path.isfile(target):
+        try:
+            prior = json.load(open(target))
+        except (OSError, ValueError):
+            prior = None
+    results, ok_all = postflight_rules.scan_unit(
+        cwd, git, uid, text, all_commits.get(uid, []), preflight, "", prior_artifact=prior)
+    artifact = {
+        "unit_id": uid, "scanned_at": ts, "status": "pass" if ok_all else "fail",
+        "head_sha": _HEAD, "written_by": "validate-bolt-artifacts.sh --recompute",
+        "rules": results,
+    }
+    os.makedirs(bd, exist_ok=True)
+    tmp = target + ".tmp.%d" % os.getpid()
+    with open(tmp, "w") as f:
+        json.dump(artifact, f, indent=1)
+    os.replace(tmp, target)
+
 issues = []
 for uid in sorted(bolted):
     text = unit_text(uid, bolted[uid])
@@ -478,6 +544,8 @@ for uid in sorted(bolted):
         continue  # verify units skip post-flight (no changes to validate)
     if not has_hard_rules(text):
         continue  # no Hard rules → nothing to post-validate
+    if recompute:
+        recompute_unit(uid, text)  # overwrite forged/stale evidence with ground truth
     found, ok = postflight_ok(uid)
     if not ok:
         issues.append({

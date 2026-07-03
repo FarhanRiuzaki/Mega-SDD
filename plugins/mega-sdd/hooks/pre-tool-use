@@ -416,7 +416,11 @@ except Exception as e:
         # it (this also neutralizes any Bash-forged PASS — EB-GATE-5).
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --postflight-scan --quiet >/dev/null 2>&1 || true
+        # B1 recompute-at-gate: --recompute re-executes each committed Hard-rule bolt's
+        # mechanical rules from git/fs ground truth and OVERWRITES its postflight.json
+        # before the state is derived — a forged/stale evidence artifact cannot open the
+        # gate. (The 6 state files are already re-derived; this extends it to B1's artifact.)
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --postflight-scan --recompute --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-cross-cutting-registration.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true

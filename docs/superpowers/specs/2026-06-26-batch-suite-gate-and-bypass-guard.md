@@ -85,3 +85,41 @@ The stage-6 god-review found the B1/B2 gates dormant-or-forgeable in practice. T
 7. **Layout + monorepo coverage (EB-VAL-2/5).** Unit/report/postflight/_batch-suite lookups go through `scripts/_lib/vault_layouts.py` (mirrors validate-unit-spec discover_units; pinned by test); git walks are pathspec-scoped to `git rev-parse --show-prefix` and the code-file filter excludes the legacy vault trees.
 8. **Root resolution (EB-GATE-6).** `resolve_project_root` returns the nearest SUBSTANTIVE `.mega-sdd/` ancestor (vaults/ | knowledge-base/ | codebase/ | config.yaml); pure state-litter roots never shadow the true root; read-side validators SKIP (never mkdir) when no `.mega-sdd/` exists at the resolved root.
 9. **Commit topology (EB-GATE-3).** One truth, everywhere: the implementer commits after tests pass; L0 gates / panel / post-flight are detect-after. All halt texts (incl. `secret_in_code`) describe committed-state remediation.
+
+---
+
+## Amendment — B1 recompute-at-gate (2026-07-03, v4.61.0)
+
+S6 point 4 (EB-GATE-1/5) closed forgery for the SIX *derived* bolt-stage states (re-derived from ground truth before the read). B1 was the one hold-out: the execute-bolts gate re-ran `--postflight-scan`, but that mode only **re-read** the recorded `status`/`verdict` in the `postflight.json` **artifact** — it never re-executed the rules. So the artifact's status was trust-based; only the Write/Edit + Bash write-guards (verb enumeration) protected it — "a best-effort deny, not a cryptographic guarantee." This amendment makes the gate recompute B1's mechanical evidence from git/fs ground truth, closing the artifact-trust vector to parity with the other six states.
+
+### Contract
+
+- **`--postflight-scan --recompute` (gate mode, NEW).** For each committed Hard-rule bolt, re-execute the unit's rules from ground truth (the mechanical v1 productions + v2 ast-grep) and **OVERWRITE** `postflight.json` before `.bolt-postflight-state.json` is derived. A forged/stale/absent artifact cannot open the gate — it is regenerated, exactly like the six derived states. Under `--recompute`, an **absent** `postflight.json` is **produced** from ground truth, not flagged `evidence_missing`; `postflight_evidence_missing` under recompute now means a **recomputed non-pass verdict** (a rule genuinely failed), not "the agent skipped the scan."
+- **`--postflight-scan` (read-only, UNCHANGED).** Retains the evidence-present contract: an absent/non-passing artifact for a Hard-rule bolt is `evidence_missing`. This is the mode the Stop hook and `run-postflight-scan.sh`'s self-refresh use, and the `run-postflight-scan.sh` wrapper is the sanctioned single-unit writer. **Two modes, two contracts for the same artifact — deliberate.**
+- **Authority.** The gate (recompute) is authoritative: its overwrite lands before the aggregator's read (pre-tool-use line ~419 recompute → line ~493 read, same invocation — verified as the *sole* blocking reader of `.bolt-postflight-state.json`). A transient between-turns `evidence_missing` written by the read-only Stop hook self-heals at the next gate. Keeping the Stop hook read-only is the right call — a recompute on every turn-end (seconds) vs once before a multi-minute run.
+
+### Why this is a strengthening, not a weakening (reviewer-ack)
+
+The "force the agent to run the post-flight scan" obligation is **preserved exactly where it matters**:
+- A unit with a **directive** Hard rule still blocks under recompute — no prior artifact ⇒ no attestation carry-forward ⇒ `directive_unverified` ⇒ FAIL, so the agent is still forced to run `run-postflight-scan.sh --attest-directives=<who/why>` after human review.
+- A unit with only **mechanical** rules is now verified directly by the gate from ground truth, so separately requiring the agent to run the scan was redundant paperwork. Nothing real is lost; failing rules block *more precisely*, and the gate re-verifies against current HEAD every time — catching a FILE_PRESENCE/SIGNATURE regression a stale-but-honest artifact would have hidden. This is a genuine gain.
+
+**Security of the mechanical/directive split (load-bearing).** `scan_unit` reclassifies every rule by its **text** (the STRICT v1 regexes are tried first), so an attacker CANNOT relabel a mechanical rule as a directive to dodge recompute. Directive attestation is carried forward from the prior artifact (`verdict==attested`, `type∈{directive,directive_prose}`) — no weaker than before, because directives were always trust-based (they require an explicit human `--attest-directives`). Obligation stickiness (EB-GATE-8) is unchanged: the rules are read from the unit text AT the bolt commit, so a retroactive Hard-rules-blanking edit cannot erase an incurred obligation.
+
+### Cost bound
+
+The gate does **one** `git log -N --name-status -- .` walk (N=300) shared across all units, then one `scan_unit` per Hard-rule unit — **no cache** (a cache file is itself a forge vector) and **no parallelism** (fan-out adds overhead + is fragile on Windows Git Bash). Measured on a pessimal 300-commit / 50-Hard-rule-unit fixture with a SIGNATURE git-grep per unit: **~7.3s @ 50 units (0.146s/unit) → ~15s @ 100 units**, within the hot-path budget. It fires ONLY on `Skill(mega-sdd:execute-bolts)`, once per invocation, immediately before a multi-minute bolt run — not on every tool call.
+
+### Engine factoring + incidental fix
+
+The rule engine is factored into **`scripts/_lib/postflight_rules.py`** (`walk_unit_commits` + `scan_unit`), imported by BOTH `run-postflight-scan.sh` (byte-identical to the pre-refactor inline engine — proven 0 diffs across 11 rule shapes) AND `validate-bolt-artifacts.sh --postflight-scan --recompute`. A single shared engine is a hard requirement: if the gate's recompute diverged from the writer's logic, an honest artifact would false-block on engine drift. **Incidental fix:** the shared walk uses the `-- .` pathspec (EB-VAL-5 form), which also *corrects* `run-postflight-scan.sh`'s previous `-- <PREFIX>` pathspec (which matched nothing when the vault lived under a monorepo subproject).
+
+### Honest ceiling
+
+B1's **mechanical** rules recompute at the gate; **directives** stay `attested` via carry-forward (unchanged trust model); **B2** (the full suite, ~387s) stays evidence-based — re-running a suite inside a PreToolUse hook is exactly the inflation the doctrine forbids, so B2 remains a verified artifact (writer `run-full-suite.sh` + write-guard), not a recompute.
+
+### Tests
+
+- `tests/postflight-evidence/test-postflight-recompute.sh` (behavioral): forged-pass→recomputed-fail overwrite, honest-pass kept, directive attestation carry-forward, obligation stickiness.
+- `tests/postflight-evidence/test-postflight-scan.sh` (unchanged) pins the read-only evidence-present contract.
+- `tests/god-review-s6/test-6a-gate-hooks.sh` (updated): the forged-PASS-overwritten assertion now plants a forged `postflight.json` PASS for a unit whose Hard rule GENUINELY fails on recompute (FILE_PRESENCE for a file the bolt never creates), asserting the gate overwrites both the artifact and the state to a real FAIL.

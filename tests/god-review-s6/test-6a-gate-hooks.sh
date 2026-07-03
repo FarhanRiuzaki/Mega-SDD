@@ -3,6 +3,13 @@
 # Pins against the REAL hooks:
 #   EB-GATE-1  the six bolt-stage states are re-derived at the execute-bolts gate —
 #              a forged PASS is overwritten with current truth before the read.
+#   B1 recompute  the postflight-evidence gate no longer trusts the recorded
+#              postflight.json status: --recompute re-executes each committed
+#              Hard-rule bolt from git/fs ground truth and OVERWRITES the artifact
+#              before the state is derived. Here U-001's Hard rule GENUINELY FAILS
+#              on recompute (a file it must produce is absent), so a forged
+#              postflight PASS is overwritten to a real FAIL — the gate blocks on
+#              ground truth, not on the (forgeable) recorded verdict.
 #   EB-GATE-4  the B1/B2 evidence artifacts are Write/Edit-denied + Bash-tamper-guarded.
 #   EB-GATE-5  python open-for-write / dd of= / install(1) on a protected state are
 #              denied; python READ of the same state stays allowed.
@@ -37,23 +44,33 @@ print(r.stdout, end="")
 
 mk_fixture() { # $1=dir — git project with one doc-format Hard-rule bolt commit (B1 obligation)
   local d="$1"
+  # U-001's Hard rule REQUIRES src/needed.php to exist after the bolt, but the bolt
+  # commit only creates app.php — so the rule GENUINELY FAILS on recompute (FILE_PRESENCE
+  # missing). target_files lists only app.php and the bolt touches only app.php, so there
+  # is no B3 whitelist violation to muddy the B1 assertion. A forged postflight PASS is
+  # therefore overwritten to a real FAIL by --recompute at the gate.
   mkdir -p "$d/.mega-sdd/vaults/app/units" "$d/.mega-sdd/vaults/app/bolts"
   ( cd "$d" && git init -q . \
-    && printf -- '---\nunit_id: U-001\ntask_type: create\ntarget_files:\n  - path: app.php\n    operation: create\n---\n## Hard rules\n- DO NOT modify src/locked.php\n' > .mega-sdd/vaults/app/units/U-001.md \
+    && printf -- '---\nunit_id: U-001\ntask_type: create\ntarget_files:\n  - path: app.php\n    operation: create\n---\n## Hard rules\n- file src/needed.php MUST exist after bolt\n' > .mega-sdd/vaults/app/units/U-001.md \
     && echo "code" > app.php \
     && git add -A \
     && git -c user.email=t@t -c user.name=t commit -q -m "feat(U-001): implement thing" )
 }
 
-echo "── EB-GATE-1/5: forged PASS is overwritten at gate time ──"
+echo "── EB-GATE-1/5 + B1 recompute: forged PASS is overwritten by ground truth at gate time ──"
 F1="$WORK/f1"; mk_fixture "$F1"
-# hand-place forged PASS states (simulating a vector the Bash guard missed)
+# hand-place forged PASS states (simulating a vector the Bash guard missed). The B1
+# postflight state is forged PASS AND a forged postflight.json PASS artifact is planted —
+# --recompute must re-execute U-001's Hard rule (FILE_PRESENCE src/needed.php, which is
+# absent) and overwrite BOTH the artifact and the state to a genuine FAIL.
 for st in .bolt-postflight-state.json .bolt-orphans-state.json .batch-suite-gate-state.json; do
   python3 -c "import json; json.dump({'status':'PASS','issues':[],'issues_count':0}, open('$F1/.mega-sdd/$st','w'))"
 done
+mkdir -p "$F1/.mega-sdd/vaults/app/bolts/U-001"
+python3 -c "import json; json.dump({'unit_id':'U-001','status':'pass','head_sha':'x','written_by':'forged','rules':[{'type':'file_presence','verdict':'pass'}]}, open('$F1/.mega-sdd/vaults/app/bolts/U-001/postflight.json','w'))"
 OUT=$(drive "$F1" "Skill" '{"skill":"mega-sdd:execute-bolts"}')
 if printf '%s' "$OUT" | grep -q '"deny"' && printf '%s' "$OUT" | grep -q "postflight-evidence"; then
-  ok "gate re-derives: forged PASS states overwritten, execute-bolts DENIED (B1 among the fails)"
+  ok "gate recomputes B1 from ground truth: forged postflight PASS overwritten, execute-bolts DENIED (B1 among the fails)"
 else
   fail "forged PASS opened the gate (or B1 missing): $(printf '%s' "$OUT" | head -c 300)"
 fi
@@ -61,6 +78,12 @@ if python3 -c "import json,sys; d=json.load(open('$F1/.mega-sdd/.bolt-postflight
   ok "forged B1 state now records current truth (FAIL)"
 else
   fail "B1 state still forged PASS after gate"
+fi
+# and the on-disk evidence artifact itself was overwritten from the forged PASS to a real fail
+if python3 -c "import json,sys; d=json.load(open('$F1/.mega-sdd/vaults/app/bolts/U-001/postflight.json')); sys.exit(0 if d['status']=='fail' and d['written_by']!='forged' else 1)"; then
+  ok "forged postflight.json artifact overwritten by the sanctioned recompute (status:fail)"
+else
+  fail "forged postflight.json artifact survived the gate recompute"
 fi
 
 echo "── EB-GATE-4: evidence artifacts guarded (Write + Bash) ──"
