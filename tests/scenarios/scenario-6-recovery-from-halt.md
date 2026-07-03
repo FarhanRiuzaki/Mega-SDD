@@ -84,13 +84,13 @@ blocker:
     unit_id: U-001
     violated_rule: "response-shape-strict — ALL response() calls are locked"
     evidence: "Pattern `return response()->json($$$)` added at line 21"
-    files_modified_uncommitted:
+    files_modified:
       - app/Http/Controllers/Api/LoginController.php
-  next_action: "Review changes in working tree; revert offending change OR
+  next_action: "Review the flagged bolt commit; `git revert` it OR
                 edit unit's Hard rules + re-run /mega-sdd:execute-bolts U-001"
 ```
 
-Code changes are in working tree (NOT committed). User reviews + decides.
+Detect-after: the bolt commit already landed; the post-flight scan halted the run and the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or `git revert`ed. User reviews + decides.
 
 ## Recovery options
 
@@ -905,7 +905,7 @@ cat <vault>/bolts/U-009/bolt-report.md
 - Halts are SAFETY NET, not bugs — they fire on real issues mega-sdd's rails caught
 - Each halt's `next_action` field tells you exactly what to do
 - `--resume` is universal recovery (CWD-driven + checkpoint-aware)
-- Code changes from failed bolts STAY in working tree (not committed) — user reviews
+- A failed bolt's commit already landed (detect-after); the gate blocks further bolts until the user fixes forward or `git revert`s it
 - Multiple recovery paths per halt type; choose based on context
 - Memory captures recovery decisions for future similar halts
 

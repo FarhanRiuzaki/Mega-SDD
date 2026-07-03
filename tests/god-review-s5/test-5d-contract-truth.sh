@@ -10,7 +10,10 @@
 #                      named producer.
 #   GU-PBT-REJECT-5    the properties-citation check exists as 12.5.h; pbt
 #                      prose names it (no phantom render-pass claim).
-#   GU-WHITELIST-6     target_files whitelist claims state the honest tier.
+#   GU-WHITELIST-6     target_files whitelist claims state the honest tier — since
+#                      stage 6 the B3 observer SHIPPED, so every surface names
+#                      `--whitelist-scan` AND encodes detect-after (blocks the
+#                      NEXT execute-bolts, never the offending commit).
 #   GU-HANDOFF-DRIFT-1 handoff blocks carry emitted_at + unit_oq_trace_missing
 #                      and no legacy -bound example.
 #   GU-MODFLAG-1       recovery routes use real surfaces (no --derive-modules /
@@ -76,9 +79,24 @@ grep -qF '### h. PBT properties citation check' "$VP" && ok "PBT: 12.5.h exists 
 grep -qF 'render-pass check 12.5.h (model-executed rule' "$PBT" && ok "PBT: pbt-integration names the real check + tier" || fail "PBT: phantom render-pass claim survives"
 
 # ── GU-WHITELIST-6 ──
-grep -qF 'no deterministic post-hoc observer' "$SK" && ok "WHITELIST: SKILL states the honest tier" || fail "WHITELIST: SKILL still claims enforcement"
-grep -qF 'do not read "enforced" as a machine gate' "$US" && ok "WHITELIST: unit-schema states the honest tier" || fail "WHITELIST: unit-schema still claims enforcement"
-grep -qF 'no deterministic post-hoc observer yet' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md" && ok "WHITELIST: execute-bolts SKILL honest" || fail "WHITELIST: execute-bolts stale"
+# Stage 6 shipped the deterministic B3 whitelist observer. The honest tier is no
+# longer "no observer exists" — it is "the observer is detect-after": it blocks the
+# NEXT execute-bolts, it does NOT prevent the offending commit. Each surface must
+# name the observer AND carry that detect-after phrasing (guards against a regression
+# back to the stage-5 over-claim of prevent-the-write / block-the-commit).
+EBS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
+WL_DETECT_AFTER='block the next `execute-bolts` with `whitelist_violation`'
+for pair in "generate-units SKILL:$SK" "unit-schema:$US" "execute-bolts SKILL:$EBS"; do
+  wl_name="${pair%%:*}"; wl_f="${pair#*:}"
+  if grep -qF -- '--whitelist-scan' "$wl_f" && grep -qF -- "$WL_DETECT_AFTER" "$wl_f"; then
+    ok "WHITELIST: $wl_name names the B3 observer with detect-after honesty"
+  else
+    fail "WHITELIST: $wl_name stale — must name --whitelist-scan AND encode detect-after"
+  fi
+  if grep -qiE 'prevents the (out-of-whitelist )?write|blocks the (offending )?commit' "$wl_f"; then
+    fail "WHITELIST: $wl_name re-introduces the stage-5 over-claim (B3 is detect-after, not prevent)"
+  fi
+done
 
 # ── GU-HANDOFF-DRIFT-1 ──
 python3 - "$HC" <<'PY' && ok "HANDOFF: generate-units block has emitted_at + unit_oq_trace_missing + canonical paths" || fail "HANDOFF: contract block stale"

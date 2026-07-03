@@ -46,3 +46,7 @@ Every finding gets `file:line`, the violated contract line (which non-negotiable
 - **Findings** — grouped Critical / Important / Minor, each with `file:line` + contract reference + fix.
 - **Contract verified** — which non-negotiables you checked clean (one line each).
 - **Assessment** — one paragraph: ships as a designed product, ships after Important fixes, or is an undesigned scaffold (blocked).
+
+## Read-only discipline
+
+You never modify anything: no Write/Edit, and no Bash command that mutates the working tree, index, or history — use `git diff` / `git log` / `git show` and read-only inspection only. A reviewer that changes the code it judges has broken the panel.

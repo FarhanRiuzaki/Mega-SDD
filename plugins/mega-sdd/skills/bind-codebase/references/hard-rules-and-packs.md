@@ -23,6 +23,20 @@ Bind-codebase suggests Hard Rules that `generate-units` pulls into per-unit `## 
 
 a. **Framework pack rules** — Hard Rules from the loaded pack's `## Hard Rules emitted`. Universal-pack rules are the baseline; framework-pack rules overlay (override on `path_glob` conflict). Apply project-wide regardless of unit-specific signals.
 
+   **Pack→bolt translation table (S6 EB-GATE-7 — packs ship `rule_type` inventories, NOT ready-made ast-grep blocks; a pack rule reaches a unit's `## Hard rules` ONLY through one of these productions, so the bolt-stage scan can always execute what the unit carries):**
+
+   | Pack `rule_type` | Emitted into the unit as | Bolt-time check |
+   |---|---|---|
+   | `NAMING_RULE` (has `path_glob` + case style) | v1 `<path-glob> MUST follow <case-style> naming` | deterministic (filename regex) |
+   | `LOCATION_RULE` (files-belong-here) | v1 `<path-glob> MUST follow …` when expressible; else Anti-pattern | deterministic / advisory |
+   | `DEP_RULE` (no new deps / pinned manifest) | v1 `DO NOT add new <manifest> dependencies` | deterministic (manifest diff) |
+   | `LOCK_RULE` (do-not-touch file) | v1 `DO NOT modify <path>` | deterministic (commit-touch / sha) |
+   | `SIGNATURE_RULE` | v1 `function <name> MUST preserve signature: <sig>` | deterministic (decl compare) |
+   | rule carrying a real ast-grep `rule:` body | v2 fenced YAML block (verbatim) | deterministic (`ast-grep scan`) |
+   | `CUSTOM` / `SECURITY` / `PERFORMANCE` prose | `## Anti-patterns` (informational) by default; a generic `MUST/DO NOT` directive line ONLY when the obligation is genuinely load-bearing (honest tier — post-flight records it `directive_unverified` unless attested) | advisory / attested |
+
+   A pack rule that fits NO row is an Anti-pattern, never a Hard rule — emitting prose the scan cannot execute breaks the chain of custody (`unit-spec` counts it, the bolt scan can't check it, B1 then demands a verdict nothing can produce).
+
 b. **Binding state-derived** (per claim with `state: IMPLEMENTED` or `UNKNOWN`): anchor file exists + claim CONFIRMED → suggest `DO NOT modify <anchor-file>` for any unit whose `vault_source` overlaps the claim, UNLESS the claim is an extend candidate. Conservative — defaults to "don't touch what's working."
 
 c. **CONFLICT-derived** (per CONFLICT after user resolution via resolve-oq): resolved `KEEP_CODE` → suggest `DO NOT modify <conflicting-file>` for downstream units that might touch it; `KEEP_VAULT` → no Hard rule (intentional rewrite — the code-update obligation is carried by generate-units' task_type route instead: the claim types `extend`-toward-vault per `generate-units/references/task-typing.md`, never a no-code `verify`); `DEFER` → no Hard rule (OQ propagates).

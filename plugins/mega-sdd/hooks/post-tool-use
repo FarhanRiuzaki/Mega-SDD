@@ -494,14 +494,14 @@ except Exception:
         ;;
     esac
 
-    # ── Code-delivery slice F: UI dispatch-prompt enrichment gate ───────────
+    # ── Code-delivery slice F: UI dispatch-prompt enrichment check ──────────
     # Style-A dispatch on Write|Edit of an emitted bolt dispatch prompt
     # (<vault>/bolts/U-XXX/dispatch-prompt.md — written by execute-bolts). The
     # validator asserts a ui_ux unit's prompt actually carries injected design tokens
-    # + a view/component exemplar (makes the execute-bolts UI enrichment non-no-op-able);
-    # it self-SKIPs when the pack omits `## UI quality signatures` (no view_glob) or no
-    # ui_ux prompt exists. Writes .dispatch-prompt-state.json; PreToolUse Branch 9 reads
-    # its status. Scan is project-wide / current-truth.
+    # + a view/component exemplar; it self-SKIPs when the pack omits `## UI quality
+    # signatures` (no view_glob) or no ui_ux prompt exists. Writes
+    # .dispatch-prompt-state.json. ADVISORY (S6 EB-HONEST-3): nothing in PreToolUse
+    # reads this state — it is surfaced via /mega-sdd:analyze, per the demotion list.
     case "$FILE_PATH" in
       *.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md)
         VALIDATOR_DP="${SCRIPT_DIR}/../scripts/validate-dispatch-prompt.sh"
@@ -640,7 +640,8 @@ except Exception:
 
     # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
     # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
-    # bolt-reports / no pack UI signatures. PreToolUse Branch 13 gates on status==FAIL.
+    # bolt-reports / no pack UI signatures. ADVISORY (S6 EB-HONEST-2): nothing in
+    # PreToolUse reads .ui-deferral-state.json — it is surfaced via /mega-sdd:analyze.
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \

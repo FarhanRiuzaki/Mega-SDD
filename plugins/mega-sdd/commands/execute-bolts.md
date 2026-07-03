@@ -1,6 +1,6 @@
 ---
-description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist honored (prompt-level rule + review-panel scope check).
-argument-hint: "<unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>] [--hard-rule-grammar=v1|v2] [--no-pbt] [--resume] [--rollback <unit-id>] [--memory-off] [--force-skip-postflight]"
+description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist enforced (prompt rule + review-panel scope check + deterministic B3 whitelist observer).
+argument-hint: "<unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>] [--review-panel=minimal|standard|full|auto] [--no-code-gates] [--no-full-suite] [--hard-rule-grammar=v1|v2] [--no-pbt] [--no-empty-commits] [--no-drift-check] [--resume] [--rollback <unit-id>] [--memory-off] [--force-skip-postflight]"
 ---
 
 Invoke `mega-sdd:execute-bolts` via the Skill tool.
@@ -10,7 +10,7 @@ User arguments: $ARGUMENTS
 Argument parsing:
 - First positional: unit ID (U-XXX), unit file path, or `--all`.
 - Flags:
-  - `--parallel` — execute eligible units concurrently (per dependency graph)
+  - `--parallel` — execute eligible units concurrently (no `depends_on` edge AND pairwise-disjoint `target_files`)
   - `--worktree` — isolate execution in git worktree
   - `--max-retries=N` — retry test-fail before halt (default N=3)
   - `--dry-run` — print plan without committing
@@ -19,12 +19,22 @@ Argument parsing:
   - `--per-squad` — execute one squad/module at a time; useful for multi-team coordination
   - `--squad=<id>` — execute only units in the named squad
   - `--module=<id>` — execute only units in the named module
+  - `--review-panel=minimal|standard|full|auto` — force the review-panel tier (default auto, risk-based)
+  - `--no-code-gates` — skip L0 toolchain + SAST gates for this run (secrets + dep-existence ALWAYS run)
+  - `--no-full-suite` — DISCOURAGED: skip the batch-completion full-suite gate this run (logged; the gate still blocks the next run)
+  - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar (default auto)
+  - `--no-pbt` — skip Property-Based Testing validation
+  - `--no-empty-commits` — skip the bolt-report-only commit for verify units with no changes
+  - `--no-drift-check` — opt out of the end-of-chain detect-drift auto-gate
+  - `--resume` / `--rollback <unit-id>` — partial-state forward resume / saga rollback
+  - `--memory-off` — disable memory reads + writes
+  - `--force-skip-postflight` — DISCOURAGED: skip the ast-grep postflight step this run only (logged; anti-bypass policy applies)
 
 Follow `skills/execute-bolts/SKILL.md` procedure. Pre-flight checks MUST pass before any execution.
 
 Hard rails:
 - Superpowers detection per superpowers-bridge.md (real install > vendored > halt).
-- target_files whitelist honored — a prompt-level rule (rules tier) + review-panel scope check; no deterministic post-hoc observer yet.
+- target_files whitelist enforced at three layers — dispatch-prompt rule + review-panel scope check + the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`; escaped committed paths block the next run with `whitelist_violation`).
 - No --no-verify on commits.
 - Halt + blocker YAML on test failure after max retries.
 

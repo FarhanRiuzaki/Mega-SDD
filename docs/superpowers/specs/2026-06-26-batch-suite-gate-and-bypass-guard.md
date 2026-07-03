@@ -69,3 +69,19 @@ The same field audit found the post-flight Hard-rule scan was **prose-only**: on
 
 - Choosing the full-suite command for exotic monorepos with multiple runners (the gate uses the single runner from pre-flight 3.5; multi-runner projects get a follow-up).
 - The provenance trailer *format* is unchanged (defined in `execute-bolts/references/halts-and-handoff.md`).
+
+---
+
+## Amendment — S6 god-review hardening (2026-07-03, v4.59.0)
+
+The stage-6 god-review found the B1/B2 gates dormant-or-forgeable in practice. This amendment is the new contract:
+
+1. **Commit identity (EB-GATE-2).** A bolt commit is recognized by ANY of: the canonical conventional-commit scope `<type>(U-XXX):` (bolt-contract §Commit message format), the legacy `(bolt): U-XXX` subject, or the `Unit: U-XXX` git trailer. All validator modes (orphan / B2 / B1 / B3) share this identity. Producers additionally emit the `SDD-PROVENANCE:` trailer (the bypass-guard key).
+2. **Evidence artifacts are writer-only (EB-GATE-4).** `postflight.json` and `_batch-suite.json` are Write/Edit-denied and Bash-tamper-guarded; they are produced ONLY by `scripts/run-postflight-scan.sh` (executes the unit's Hard rules: v1 productions deterministically, v2 via ast-grep, directives via explicit `--attest-directives`) and `scripts/run-full-suite.sh` (runs the detected full suite, pins `head_sha` via `git rev-parse HEAD`). No remediation text may instruct hand-writing either artifact.
+3. **`head_sha` must be 40-hex (EB-VAL-1).** `covers()` rejects symbolic revs; a green artifact with `head_sha: "HEAD"` never covers anything.
+4. **Gate-time re-derivation (EB-GATE-1/5).** The execute-bolts PreToolUse gate re-runs all six bolt-stage/quality validators (orphans, B2, B1, B3 whitelist, ui-quality, cross-cutting, factory-ledger) before the aggregator reads their states — a forged, stale, or absent state is overwritten with current truth.
+5. **Obligation stickiness (EB-GATE-8).** B1 reads the unit's `task_type`/`## Hard rules` from the BOLT COMMIT (`git show`), falling back to the working tree only for untracked vaults.
+6. **B3 whitelist observer (EB-GATE-11).** `--whitelist-scan` diffs each bolted unit's committed paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, `docs/mega-sdd/`, `*-bound/`, test-file shapes); escapes block the next run with `whitelist_violation` (state `.bolt-whitelist-state.json`, guarded like its siblings).
+7. **Layout + monorepo coverage (EB-VAL-2/5).** Unit/report/postflight/_batch-suite lookups go through `scripts/_lib/vault_layouts.py` (mirrors validate-unit-spec discover_units; pinned by test); git walks are pathspec-scoped to `git rev-parse --show-prefix` and the code-file filter excludes the legacy vault trees.
+8. **Root resolution (EB-GATE-6).** `resolve_project_root` returns the nearest SUBSTANTIVE `.mega-sdd/` ancestor (vaults/ | knowledge-base/ | codebase/ | config.yaml); pure state-litter roots never shadow the true root; read-side validators SKIP (never mkdir) when no `.mega-sdd/` exists at the resolved root.
+9. **Commit topology (EB-GATE-3).** One truth, everywhere: the implementer commits after tests pass; L0 gates / panel / post-flight are detect-after. All halt texts (incl. `secret_in_code`) describe committed-state remediation.

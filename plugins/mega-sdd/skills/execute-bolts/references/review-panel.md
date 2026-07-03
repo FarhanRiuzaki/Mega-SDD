@@ -20,7 +20,7 @@ How the execute-bolts controller reviews a bolt after `bolt-implementer` reports
 | standards | `mega-sdd:standards-reviewer` | §standards-reviewer | naming/location/idiom conformance vs pack + surrounding code |
 | design | `mega-sdd:design-reviewer` | §design-reviewer | modern UI quality vs the vault design_system + modern-baseline (UI-bearing units only) |
 
-Models are NEVER hardcoded — cite `plugins/mega-sdd/references/model-tiers.md` rows; the override chain (CLI > project config > user preference > catalog) applies per lens.
+Panel lens models are pinned in each agent's frontmatter (`agents/*-reviewer.md` `model:`) — that is the value the runtime actually uses; the `model-tiers.md` catalog rows document the intended tier, and catalog↔frontmatter parity is a release-time obligation (checked by the panel pin test), not a runtime override. The `model_tiers:` config override chain applies to skill-level model picks, NOT to the panel lenses — a `model_tiers: {security-reviewer: …}` entry is silently ignored at panel dispatch (plugin agents read their own frontmatter).
 
 ## Tier selection (risk-based)
 
@@ -42,6 +42,7 @@ Resolve the tier BEFORE dispatch, once per unit:
 3. `target_files` count ≥ 4.
 4. The unit body mentions auth, session, token, crypto, password, payment, or upload (case-insensitive).
 5. `binding_refs` cite a constitution §B (Security) clause.
+6. The unit frontmatter carries `risk: high` or `risk: critical` (the producer-stamped field per `generate-units/references/unit-schema.md`) — this signal ALONE forces `full`; when it disagrees with signals 1–5 (e.g. `risk: critical` on a unit no other signal fires for), log the disagreement in the bolt-report.
 
 **Override chain:** `--review-panel=minimal|standard|full|auto` CLI flag > `.mega-sdd/config.yaml` `review_panel:` > `auto` (the table above). A forced tier is logged in the bolt-report; forcing `minimal` on a unit with risk signals adds a one-line warning (never silent).
 
@@ -62,11 +63,12 @@ The controller (main thread) merges the lens reports:
 3. **Consensus** — a finding reported by ≥2 lenses is marked `confidence: high` in the merged list.
 4. **Gate:**
    - spec lens ❌ OR any **Critical** (any lens) → re-dispatch `bolt-implementer` with the merged issue list (the SHARED `--max-retries` cap — panel retries and spec retries draw from the same budget).
+   - Retries EXHAUSTED with a Critical still open → **halt `review_critical_unresolved`** (terminal — the run stops; never proceed to the next bolt over an open Critical). The halt YAML lives in `references/halts-and-handoff.md`; the unresolved finding is recorded in `bolt-report.md` `## Review panel`.
    - **Important** findings → recorded in `bolt-report.md` under `## Review panel`; the bolt is mergeable.
    - **Minor** → logged in the same section, no action required.
-5. The merged findings are written into `bolt-report.md` `## Review panel` (lens list, tier used, finding table, dropped-no-evidence count). No separate artifact file.
+5. The merged findings are written into `bolt-report.md` `## Review panel` (lens list, tier used, finding table, dropped-no-evidence count) — a MANDATORY section of the canonical schema (`superpowers-bridge.md §bolt-report.md schema`). No separate artifact file.
 
-The deterministic post-flight Hard-rule scan still runs AFTER the panel passes and BEFORE commit — the panel is judgment, the scan is the contract. Neither replaces the other.
+The deterministic post-flight Hard-rule scan still runs AFTER the panel passes (both run against the implementer's already-landed commit — detect-after topology per SKILL.md) — the panel is judgment, the scan is the contract. Neither replaces the other.
 
 ## Cost notes
 

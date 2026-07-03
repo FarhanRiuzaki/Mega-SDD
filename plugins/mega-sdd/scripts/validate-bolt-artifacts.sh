@@ -16,13 +16,22 @@
 #
 # ORPHAN-SCAN mode (--orphan-scan, no --file-path): repo-wide deterministic check
 # for the interactive-run gap (clinic-project audit 2026-06-12): bolt COMMITS
-# exist (subject `*(bolt): U-XXX*`) but the unit's <vault>/bolts/U-XXX/
-# bolt-report.md was never written — the prose-only Step-0/Step-5 obligation
-# was skipped by a terse controller and no file-scoped validator ever fired
-# (absence of an artifact is invisible to a written-file validator). Flags a
-# unit ONLY when it still exists under some vault's units/ (no false positives
-# from retired vaults). Writes .mega-sdd/.bolt-orphans-state.json; the
-# PreToolUse gate blocks the NEXT execute-bolts on FAIL.
+# exist but the unit's <vault>/bolts/U-XXX/bolt-report.md was never written — the
+# prose-only Step-0/Step-5 obligation was skipped by a terse controller and no
+# file-scoped validator ever fired (absence of an artifact is invisible to a
+# written-file validator). Flags a unit ONLY when it still exists under some
+# vault's units/ (no false positives from retired vaults). Writes
+# .mega-sdd/.bolt-orphans-state.json; the PreToolUse gate blocks the NEXT
+# execute-bolts on FAIL.
+#
+# COMMIT IDENTITY (S6 EB-GATE-2): a bolt commit is recognized by ANY of —
+#   1. conventional-commit scope   `<type>(U-XXX): …`   (the canonical contract
+#      format per execute-bolts/references/bolt-contract.md §Commit message format)
+#   2. legacy subject grammar      `… (bolt): U-XXX …`
+#   3. git trailer                 `Unit: U-XXX`         (bolt-implementer.md step 6)
+# The old validators keyed ONLY on shape 2, which no producer contract ever
+# emitted — every doc-conformant bolt run shipped with the B1/B2/orphan gates
+# silently dormant (bolt_commits_seen: 0 → PASS).
 
 set -uo pipefail
 
@@ -32,6 +41,7 @@ QUIET=0
 ORPHAN_SCAN=0
 BATCH_SUITE_GATE=0
 POSTFLIGHT_SCAN=0
+WHITELIST_SCAN=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
@@ -39,19 +49,22 @@ for arg in "$@"; do
     --orphan-scan) ORPHAN_SCAN=1 ;;
     --batch-suite-gate) BATCH_SUITE_GATE=1 ;;
     --postflight-scan) POSTFLIGHT_SCAN=1 ;;
+    --whitelist-scan) WHITELIST_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
-# Resolve project root (Iter 71 — class-bug fix: if invoked from a sub-folder
-# like .mega-sdd/knowledge-base/, walk UP to the outermost .mega-sdd/ parent
-# so state files land in the canonical location, not nested .mega-sdd/.mega-sdd/).
-_RPR_HELPER="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib/resolve-project-root.sh"
+# Resolve project root (Iter 71; S6 EB-GATE-6: nearest SUBSTANTIVE root — a
+# litter .mega-sdd/ minted by a past misdirected state write never shadows the
+# true project root above it).
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+_RPR_HELPER="${SCRIPT_DIR}/_lib/resolve-project-root.sh"
 if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then
   # shellcheck disable=SC1090
   . "$_RPR_HELPER"
   CWD=$(resolve_project_root "$CWD")
 fi
+export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
 
 if [ -z "$CWD" ] || [ ! -d "$CWD" ]; then
@@ -59,46 +72,147 @@ if [ -z "$CWD" ] || [ ! -d "$CWD" ]; then
   exit 2
 fi
 
+# ─── Shared python prologue (commit identity + layout discovery) ─────────────
+# Injected at the top of each mode's heredoc via $PY_COMMON. One git call
+# (`log --name-only`, pathspec-scoped to the project prefix in a monorepo —
+# S6 EB-VAL-5) replaces the per-commit `git show` loop (300 subprocesses at
+# gate time). Layout lookups come from _lib/vault_layouts.py (S6 EB-VAL-2).
+PY_COMMON='
+import glob, json, os, re, subprocess, sys
+from datetime import datetime, timezone
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_layouts
+
+cwd = os.environ["CWD"]
+quiet = os.environ.get("QUIET", "0") == "1"
+ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def git(*a):
+    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+
+# Monorepo scoping (S6 EB-VAL-5): git names are repo-root-relative; the project
+# may live at a prefix. All log walks are pathspec-scoped to the prefix so
+# sibling projects never activate/starve this project'"'"'s gates.
+PREFIX = git("rev-parse", "--show-prefix").stdout.strip()
+
+UNIT_LEGACY = re.compile(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)")
+UNIT_SCOPE = re.compile(r"^[A-Za-z]+!?\((U-[A-Za-z0-9_-]+)\)!?:")
+UNIT_ANY = re.compile(r"(U-[A-Za-z0-9_-]+)")
+
+def unit_of(subj, trailers):
+    m = UNIT_LEGACY.search(subj) or UNIT_SCOPE.match(subj)
+    if m:
+        return m.group(1)
+    if trailers:
+        m = UNIT_ANY.search(trailers)
+        if m:
+            return m.group(1)
+    return None
+
+# Trailers atom (%(trailers:key=...)) needs git >= 2.23; on older git the whole log
+# errors -> empty walk -> every gate fails OPEN. Probe once and fall back to a
+# portable subject-only format (canonical scoped commits type(U-XXX): and legacy
+# (bolt): U-XXX stay identified by subject).
+def _git_ge(major, minor):
+    try:
+        p = git("--version").stdout.split()[2].split(".")
+        return (int(p[0]), int(p[1])) >= (major, minor)
+    except Exception:
+        return False
+_HAS_TRAILER_ATOM = _git_ge(2, 23)
+WALK_FMT = ("%x01%H%x02%s%x02%(trailers:key=Unit,valueonly,separator=%x2C)"
+            if _HAS_TRAILER_ATOM else "%x01%H%x02%s%x02")
+
+def walk_args(n=300):
+    # A git pathspec is relative to git cwd (the -C dir = the resolved project root),
+    # so "-- ." scopes the walk to THIS project subtree AND still emits repo-root-
+    # relative names. S6 EB-VAL-5 regression fix: a repo-root-relative PREFIX pathspec
+    # (from --show-prefix) was resolved as PREFIX/PREFIX under the subproject and
+    # matched nothing, silently disabling B1/B2/B3/orphan for every monorepo project.
+    a = ["log", "--format=" + WALK_FMT, "--name-only", "-%d" % n]
+    if PREFIX:
+        a += ["--", "."]
+    return a
+
+# Real legacy *-bound vault roots (dirs that ACTUALLY hold units/ or bolts/). A code
+# dir merely NAMED *-bound (io-bound, data-bound, cpu-bound) is NOT a vault. S6 fix:
+# the old blanket (?:^|/)[^/]+-bound/ regex dropped such code dirs from the code set
+# (B2 dormant) and sanctioned scope-escapes there (B3 blind).
+def _bound_vault_roots():
+    roots = set()
+    for pat in (os.path.join(cwd, "*-bound"),
+                os.path.join(cwd, "*", "*-bound"),
+                os.path.join(cwd, "docs", "mega-sdd", "vaults", "*-bound")):
+        for d in glob.glob(pat):
+            if os.path.isdir(d) and (os.path.isdir(os.path.join(d, "units"))
+                                     or os.path.isdir(os.path.join(d, "bolts"))):
+                roots.add(os.path.relpath(d, cwd).replace(os.sep, "/").rstrip("/") + "/")
+    return roots
+_BOUND_ROOTS = _bound_vault_roots()
+def _in_bound_vault(n):
+    return any(n == r.rstrip("/") or n.startswith(r) for r in _BOUND_ROOTS)
+
+def walk_log(n=300):
+    """Newest-first [(sha, subject, unit_id_or_None, [repo-rel files])] in ONE git
+    call. files lists are pathspec-scoped to THIS project subtree in a monorepo."""
+    args = walk_args(n)
+    r = git(*args)
+    out = []
+    for chunk in r.stdout.split("\x01"):
+        if not chunk.strip():
+            continue
+        head, _, tail = chunk.partition("\n")
+        parts = head.split("\x02")
+        sha = parts[0].strip()
+        subj = parts[1] if len(parts) > 1 else ""
+        trailers = parts[2] if len(parts) > 2 else ""
+        files = [l.strip() for l in tail.splitlines() if l.strip()]
+        out.append((sha, subj, unit_of(subj, trailers), files))
+    return out
+
+# A "code" file = inside the project prefix, OUTSIDE .mega-sdd/ and the legacy
+# vault trees (docs/mega-sdd/**, *-bound/** carry specs + bolt artifacts, not
+# runnable code), and not a pure-docs file.
+_DOC_EXT = (".md", ".markdown", ".rst", ".adoc")
+def code_files(names):
+    out = []
+    for n in names:
+        n = n.strip()
+        if not n:
+            continue
+        if PREFIX:
+            if not n.startswith(PREFIX):
+                continue
+            n = n[len(PREFIX):]
+        if n.startswith(".mega-sdd/") or n.startswith("docs/mega-sdd/"):
+            continue
+        if _in_bound_vault(n):
+            continue
+        if os.path.splitext(n)[1].lower() in _DOC_EXT:
+            continue
+        out.append(n)
+    return out
+'
+
 # ─── ORPHAN-SCAN mode ────────────────────────────────────────────────────────
 if [ "$ORPHAN_SCAN" = "1" ]; then
   # Not a git repo (or no .mega-sdd) → nothing to scan; no state written.
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
   [ -d "${CWD}/.mega-sdd" ] || exit 0
   ORPHAN_STATE="${CWD}/.mega-sdd/.bolt-orphans-state.json"
-  CWD="$CWD" ORPHAN_STATE="$ORPHAN_STATE" QUIET="$QUIET" python3 <<'PYEOF'
-import glob, json, os, re, subprocess, sys
-from datetime import datetime, timezone
-
-cwd = os.environ["CWD"]
+  CWD="$CWD" ORPHAN_STATE="$ORPHAN_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
 state_file = os.environ["ORPHAN_STATE"]
-quiet = os.environ.get("QUIET", "0") == "1"
-ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-# Bounded history walk: bolt commits carry `(bolt): U-XXX` in the subject
-# (per the execute-bolts commit discipline).
-r = subprocess.run(["git", "-C", cwd, "log", "--format=%H\t%s", "-200"],
-                   capture_output=True, text=True)
 bolted = {}  # unit_id -> first (newest) commit sha
-for line in r.stdout.splitlines():
-    sha, _, subj = line.partition("\t")
-    m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
-    if m:
-        bolted.setdefault(m.group(1), sha)
-
-# A unit is in scope only if it still exists under some vault's units/.
-def unit_exists(uid):
-    pats = [
-        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid + ".md"),
-        os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid, "unit.md"),
-    ]
-    return any(glob.glob(p) for p in pats)
-
-def report_exists(uid):
-    return bool(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", uid, "bolt-report.md")))
+for sha, subj, uid, _files in walk_log(200):
+    if uid:
+        bolted.setdefault(uid, sha)
 
 orphans = []
 for uid in sorted(bolted):
-    if unit_exists(uid) and not report_exists(uid):
+    if vault_layouts.find_unit_file(cwd, uid) and not vault_layouts.find_bolt_artifact(cwd, uid, "bolt-report.md"):
         orphans.append({
             "halt_type": "bolt_artifacts_missing",
             "unit_id": uid,
@@ -133,64 +247,44 @@ fi
 # After a code-bearing bolt run, a green full-suite result must exist at HEAD
 # covering the newest code-bearing bolt commit. Otherwise the NEXT execute-bolts
 # is halted. The validator VERIFIES the artifact; it NEVER runs the suite itself
-# (running 200s+ suites in a hook is exactly the inflation to avoid). Design:
-# docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md
+# (running 200s+ suites in a hook is exactly the inflation to avoid). The
+# artifact is produced by scripts/run-full-suite.sh (S6 EB-GATE-4: the wrapper
+# is the ONLY sanctioned write path — the artifact is Write/Edit-guarded).
+# Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md
 if [ "$BATCH_SUITE_GATE" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
   [ -d "${CWD}/.mega-sdd" ] || exit 0
   BSG_STATE="${CWD}/.mega-sdd/.batch-suite-gate-state.json"
-  CWD="$CWD" BSG_STATE="$BSG_STATE" QUIET="$QUIET" python3 <<'PYEOF'
-import glob, json, os, re, subprocess, sys
-from datetime import datetime, timezone
-
-cwd = os.environ["CWD"]
+  CWD="$CWD" BSG_STATE="$BSG_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
 state_file = os.environ["BSG_STATE"]
-quiet = os.environ.get("QUIET", "0") == "1"
-ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
-
-# A "code" file = OUTSIDE .mega-sdd/ AND not a pure-docs file (a docs/markdown commit
-# cannot break a test suite, so it must not force a re-run). Universal, not stack-specific.
-_DOC_EXT = (".md", ".markdown", ".rst", ".adoc")
-def code_files(names):
-    out = []
-    for n in names:
-        n = n.strip()
-        if not n or n.startswith(".mega-sdd/"):
-            continue
-        if os.path.splitext(n)[1].lower() in _DOC_EXT:
-            continue
-        out.append(n)
-    return out
 
 # Two anchors over the newest-first log:
-#   newest_bolt  — newest `(bolt): U-XXX` commit touching code → ACTIVATES the gate
+#   newest_bolt  — newest bolt commit touching code → ACTIVATES the gate
 #                  (no code-bearing bolt yet ⇒ nothing to gate) + labels the failure.
 #   newest_code  — newest commit touching code REGARDLESS of subject → the freshness
 #                  anchor. Tracking only bolt commits left the OUT-OF-BAND half of the
 #                  incident open: a hotfix / manual edit / git pull after a green suite
 #                  still "covered" the (older) newest bolt and shipped green.
-r = git("log", "--format=%H\t%s", "-300")
 newest_bolt = None
 newest_bolt_unit = None
 newest_code = None
 newest_code_is_bolt = False
-for line in r.stdout.splitlines():
-    sha, _, subj = line.partition("\t")
-    is_bolt = bool(re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj))
-    names = git("show", "--name-only", "--format=", sha).stdout.splitlines()
-    code = code_files(names)
+for sha, subj, uid, files in walk_log(300):
+    code = code_files(files)
     if code and newest_code is None:
         newest_code = sha
-        newest_code_is_bolt = is_bolt
-    if is_bolt and code and newest_bolt is None:
+        newest_code_is_bolt = bool(uid)
+    if uid and code and newest_bolt is None:
         newest_bolt = sha
-        m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
-        newest_bolt_unit = m.group(1) if m else None
+        newest_bolt_unit = uid
     if newest_code is not None and newest_bolt is not None:
         break  # log is newest-first
+
+RUN_HINT = ("Run \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` — it runs the "
+            "project's FULL test suite (no per-unit scope filter) and records "
+            "<vault>/bolts/_batch-suite.json with the pinned HEAD sha itself. The artifact is "
+            "hook-guarded; direct writes are denied.")
 
 def emit(status, halt_type=None, detail=None, extra=None):
     state = {"ts": ts, "mode": "batch-suite-gate", "status": status,
@@ -198,10 +292,7 @@ def emit(status, halt_type=None, detail=None, extra=None):
     if halt_type:
         state["halt_type"] = halt_type
         state["detail"] = detail
-        state["next_action"] = (
-            "Run the project's FULL test suite (no per-unit scope filter) at HEAD and write "
-            "<vault>/bolts/_batch-suite.json {status:green, head_sha:<HEAD>}; execute-bolts is "
-            "gated until a green full-suite result covers the newest bolt commit." )
+        state["next_action"] = RUN_HINT + " execute-bolts is gated until a green full-suite result covers the newest code commit."
     if extra:
         state.update(extra)
     try:
@@ -219,9 +310,9 @@ def emit(status, halt_type=None, detail=None, extra=None):
 if not newest_bolt:
     emit("PASS")
 
-# Collect all batch-suite gate artifacts across vaults.
+# Collect all batch-suite gate artifacts across vaults (all layouts — EB-VAL-2).
 gates = []
-for p in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", "_batch-suite.json")):
+for p in vault_layouts.batch_suite_files(cwd):
     try:
         with open(p) as f:
             g = json.load(f)
@@ -242,10 +333,13 @@ if reds:
 # ancestor of (or equal to) the gate's head_sha — i.e., the suite ran at or after the
 # last code change landed. Anchoring on newest_code (not newest_bolt) closes the
 # out-of-band half: a non-bolt code commit after a green suite is no longer covered.
+# S6 EB-VAL-1: head_sha MUST be a full 40-hex sha. A symbolic rev ("HEAD", a branch
+# name, "@") resolves at VALIDATION time — one artifact would cover every future
+# commit forever, structurally voiding the freshness anchor.
 def covers(head_sha):
-    if not head_sha:
+    if not head_sha or not re.fullmatch(r"[0-9a-f]{40}", str(head_sha).lower()):
         return False
-    return git("merge-base", "--is-ancestor", newest_code, head_sha).returncode == 0
+    return git("merge-base", "--is-ancestor", newest_code, str(head_sha)).returncode == 0
 
 green_cover = [g for g in gates
                if str(g.get("status", "")).lower() == "green" and covers(g.get("head_sha"))]
@@ -255,54 +349,63 @@ if green_cover:
 
 # Gate missing or stale (green but does not cover the newest code commit).
 stale = any(str(g.get("status", "")).lower() == "green" for g in gates)
+symbolic = [g.get("_path") for g in gates
+            if str(g.get("status", "")).lower() == "green"
+            and g.get("head_sha") and not re.fullmatch(r"[0-9a-f]{40}", str(g.get("head_sha")).lower())]
 oob = not newest_code_is_bolt  # the uncovered change came in WITHOUT a bolt (out-of-band)
 who = ("an OUT-OF-BAND code commit %s (no bolt provenance)" % newest_code[:9]) if oob \
       else ("bolt commit %s (%s)" % (newest_code[:9], newest_bolt_unit))
-emit("FAIL", "batch_suite_gate_missing",
-     ("a green full-suite result exists but is STALE — it does not cover %s; a code change "
-      "landed after the last full-suite run." % who) if stale else
-     ("no <vault>/bolts/_batch-suite.json records a full-suite run; %s shipped without a "
-      "final full-suite gate." % who),
+detail = ("a green full-suite result exists but is STALE — it does not cover %s; a code change "
+          "landed after the last full-suite run." % who) if stale else \
+         ("no <vault>/bolts/_batch-suite.json records a full-suite run; %s shipped without a "
+          "final full-suite gate." % who)
+if symbolic:
+    detail += (" NOTE: %s carries a symbolic head_sha (e.g. \"HEAD\") — rejected; the artifact "
+               "must pin the full 40-hex sha (run-full-suite.sh records it correctly)." % symbolic[0])
+emit("FAIL", "batch_suite_gate_missing", detail,
      {"stale": stale, "out_of_band": oob, "newest_code_commit": newest_code})
 PYEOF
   exit $?
 fi
 
 # ─── POSTFLIGHT-SCAN mode (B1) ───────────────────────────────────────────────
-# A committed create/extend/modify bolt whose unit has a non-empty ## Hard rules
+# A committed create/extend bolt whose unit has a non-empty ## Hard rules
 # section must carry <vault>/bolts/U-XXX/postflight.json with all verdicts pass.
 # The post-flight Hard-rule scan was prose-only ("HALT" that enforced nothing);
 # this moves it to a hook gate. Verify units skip post-flight (no changes to validate).
+# The evidence artifact is produced by scripts/run-postflight-scan.sh (S6
+# EB-GATE-4: the wrapper is the ONLY sanctioned write path — Write/Edit-guarded).
 # Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md (§B1)
 if [ "$POSTFLIGHT_SCAN" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
   [ -d "${CWD}/.mega-sdd" ] || exit 0
   PF_STATE="${CWD}/.mega-sdd/.bolt-postflight-state.json"
-  CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" python3 <<'PYEOF'
-import glob, json, os, re, subprocess, sys
-from datetime import datetime, timezone
-
-cwd = os.environ["CWD"]
+  CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
 state_file = os.environ["PF_STATE"]
-quiet = os.environ.get("QUIET", "0") == "1"
-ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-r = subprocess.run(["git", "-C", cwd, "log", "--format=%H\t%s", "-300"],
-                   capture_output=True, text=True)
 bolted = {}  # unit_id -> newest commit sha
-for line in r.stdout.splitlines():
-    sha, _, subj = line.partition("\t")
-    m = re.search(r"\(bolt\):\s*(U-[A-Za-z0-9_-]+)", subj)
-    if m:
-        bolted.setdefault(m.group(1), sha)
+for sha, subj, uid, _files in walk_log(300):
+    if uid:
+        bolted.setdefault(uid, sha)
 
-def unit_file(uid):
-    for p in [os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid + ".md"),
-              os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", uid, "unit.md")]:
-        g = glob.glob(p)
-        if g:
-            return g[0]
-    return None
+def unit_text(uid, sha):
+    """The unit's text — preferring its content AT the bolt commit (S6 EB-GATE-8:
+    a retroactive unit edit — task_type flipped to verify, ## Hard rules blanked —
+    must not erase an already-incurred B1 obligation). Falls back to the working
+    tree when the vault is untracked or the unit is absent at that sha."""
+    uf = vault_layouts.find_unit_file(cwd, uid)
+    if not uf:
+        return None
+    rel = os.path.relpath(uf, cwd)
+    if not rel.startswith(".."):
+        r = git("show", "%s:%s" % (sha, (PREFIX + rel) if PREFIX else rel))
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout
+    try:
+        return open(uf).read()
+    except OSError:
+        return None
 
 def task_type(text):
     fm = text.split("---", 2)
@@ -311,57 +414,65 @@ def task_type(text):
     return (m.group(1).lower() if m else "")
 
 def has_hard_rules(text):
-    # body of the `## Hard rules` section (until the next `## ` heading).
+    # body of the \`## Hard rules\` section (until the next \`## \` heading).
     # Case-INSENSITIVE heading + tolerate trailing text on the heading line — the
-    # canonical unit template emits `## Hard rules  (validated at bolt time ...)`
-    # (unit-schema.md), and units may use `## Hard Rules`. Matching only the bare
-    # `## Hard rules` left the B1 gate INERT on template-conformant units.
+    # canonical unit template emits \`## Hard rules  (validated at bolt time ...)\`
+    # (unit-schema.md), and units may use \`## Hard Rules\`. Matching only the bare
+    # \`## Hard rules\` left the B1 gate INERT on template-conformant units.
     m = re.search(r"(?ims)^##[ \t]+Hard[ \t]+rules\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", text)
     if not m:
         return False
     # A line is "empty" (no real rule) if, after stripping markdown decoration, it
     # is blank or a recognised no-op phrasing. Curated set (NOT a wildcard) so a real
     # rule phrased oddly is never silently exempted (that would fail OPEN).
+    # S6 EB-VAL-8: skip \`<\`-prefixed lines (HTML comments / placeholders) — the
+    # unit-stage lexer (validate-unit-spec.sh) skips them, so counting them here
+    # made a schema-conformant no-rules unit FAIL B1 with nothing to scan.
     empties = {"none", "na", "n/a", "none.", "n/a.", "tbd", "todo", "nonfor",
                "nohardrules", "nohardrulesforthisunit", "nohardrulesapply",
                "notapplicable", "nonerequired", "noneapplicable", "nonefornow"}
     for ln in m.group(1).splitlines():
-        s = re.sub(r"[`*_>\-\s]", "", ln).strip().lower()
+        if ln.strip().startswith("<"):
+            continue
+        s = re.sub(r"[\`*_>\-\s]", "", ln).strip().lower()
         if s and s not in empties:
             return True
     return False
 
 def postflight_ok(uid):
     """(found, ok) — found=postflight.json exists; ok=all verdicts pass."""
-    g = glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "bolts", uid, "postflight.json"))
-    if not g:
+    p = vault_layouts.find_bolt_artifact(cwd, uid, "postflight.json")
+    if not p:
         return (False, False)
     try:
-        d = json.load(open(g[0]))
+        d = json.load(open(p))
     except (OSError, ValueError):
         return (True, False)  # present but unreadable = not valid evidence
     # Require POSITIVE evidence, never permissive defaults — an empty {} or an empty
     # rules[] must NOT pass (the constrained agent could satisfy the gate without ever
     # running the post-flight scan). status must be present + passing; rules must be
     # non-empty; every rule must carry a passing verdict (a missing verdict is NOT pass).
+    # S6 EB-GATE-12: a \`directive\`-typed rule (generic MUST/DO NOT prose — not
+    # machine-checkable by construction) may carry verdict "attested" (recorded by
+    # run-postflight-scan.sh --attest-directives after controller/panel review).
     if str(d.get("status", "")).lower() not in ("pass", "passed", "ok", "green"):
         return (True, False)
     rules = d.get("rules")
     if not isinstance(rules, list) or not rules:
         return (True, False)  # vacuous — no per-rule evidence
     for rule in rules:
-        if str((rule or {}).get("verdict", "")).lower() not in ("pass", "passed", "ok"):
-            return (True, False)
+        v = str((rule or {}).get("verdict", "")).lower()
+        if v in ("pass", "passed", "ok"):
+            continue
+        if v == "attested" and str((rule or {}).get("type", "")).lower() in ("directive", "directive_prose"):
+            continue
+        return (True, False)
     return (True, True)
 
 issues = []
 for uid in sorted(bolted):
-    uf = unit_file(uid)
-    if not uf:
-        continue
-    try:
-        text = open(uf).read()
-    except OSError:
+    text = unit_text(uid, bolted[uid])
+    if text is None:
         continue
     if task_type(text) == "verify":
         continue  # verify units skip post-flight (no changes to validate)
@@ -385,8 +496,11 @@ state = {
     "bolt_commits_seen": len(bolted),
     "issues_count": len(issues), "issues": issues,
     "next_action": ("%d Hard-rule bolt(s) committed with no passing postflight.json — the post-flight "
-                    "safety net was skipped. Re-run each unit (or write the postflight.json evidence) so "
-                    "the Hard rules are validated; execute-bolts is gated until resolved." % len(issues))
+                    "safety net was skipped. Run \`bash <plugin>/scripts/run-postflight-scan.sh "
+                    "--cwd=<project-root> --unit=U-XXX\` for each listed unit (it executes the unit's "
+                    "Hard rules deterministically and records the evidence itself; direct writes to "
+                    "postflight.json are hook-denied). A recorded VIOLATION means the committed code "
+                    "must be fixed first; execute-bolts is gated until resolved." % len(issues))
                    if issues else "Every Hard-rule bolt has a passing postflight.json.",
 }
 try:
@@ -403,6 +517,137 @@ PYEOF
   exit $?
 fi
 
+# ─── WHITELIST-SCAN mode (B3 — S6 EB-GATE-11) ────────────────────────────────
+# The target_files whitelist was prompt-tier only ("honored", honestly worded in
+# v4.58) — a scope-escaping bolt write shipped undetected: post-flight is
+# path-scoped to the unit's own rules and no observer ever diffed the COMMITTED
+# paths against the whitelist. This mode closes the invited gap: for each bolted
+# unit, the union of paths its bolt commits touched must be ⊆ target_files ∪
+# sanctioned extras (vault/bolt artifacts, .mega-sdd state, and test files —
+# the implementer writes the acceptance test, which units often do not list).
+# Writes .mega-sdd/.bolt-whitelist-state.json; the PreToolUse aggregator blocks
+# the NEXT execute-bolts on FAIL.
+if [ "$WHITELIST_SCAN" = "1" ]; then
+  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  WL_STATE="${CWD}/.mega-sdd/.bolt-whitelist-state.json"
+  CWD="$CWD" WL_STATE="$WL_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
+import fnmatch
+state_file = os.environ["WL_STATE"]
+
+# unit -> union of files its bolt commits touched (newest 300, subtree-scoped)
+r = git(*walk_args(300))
+per_unit = {}
+for chunk in r.stdout.split("\x01"):
+    if not chunk.strip():
+        continue
+    head, _, tail = chunk.partition("\n")
+    parts = head.split("\x02")
+    subj = parts[1] if len(parts) > 1 else ""
+    trailers = parts[2] if len(parts) > 2 else ""
+    uid = unit_of(subj, trailers)
+    if not uid:
+        continue
+    files = []
+    for l in tail.splitlines():
+        l = l.strip()
+        if not l:
+            continue
+        if PREFIX and l.startswith(PREFIX):
+            l = l[len(PREFIX):]
+        files.append(l)
+    per_unit.setdefault(uid, {"sha": parts[0].strip(), "files": set()})["files"] |= set(files)
+
+# Sanctioned extras: mega-sdd state/artifacts, vault trees, and test files.
+_TEST_PAT = re.compile(
+    r"(?:^|/)(?:tests?|spec|specs|__tests__)/|_test\.go$|Test\.php$|(?:^|/)test_[^/]+\.py$|\.(?:spec|test)\.[jt]sx?$")
+def sanctioned(p):
+    if p.startswith(".mega-sdd/") or p.startswith("docs/mega-sdd/"):
+        return True
+    if _in_bound_vault(p):
+        return True
+    if _TEST_PAT.search(p):
+        return True
+    return False
+
+def targets_of(uid):
+    uf = vault_layouts.find_unit_file(cwd, uid)
+    if not uf:
+        return None
+    try:
+        body = open(uf).read()
+    except OSError:
+        return None
+    m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
+    if not m:
+        return []
+    out = []
+    in_block = False
+    for ln in m.group(1).split("\n"):
+        if re.match(r"^target_files[ \t]*:", ln):
+            in_block = True
+            continue
+        if in_block:
+            if ln and ln[0] not in " \t":
+                break
+            pm = re.search(r"path:\s*(\S+)", ln)
+            if pm:
+                out.append(pm.group(1).strip().strip("'\""))
+            elif re.match(r"^\s*-\s+[^:\s]+\s*$", ln):
+                out.append(ln.strip().lstrip("-").strip().strip("'\""))
+    return out
+
+issues = []
+units_checked = 0
+for uid, info in sorted(per_unit.items()):
+    targets = targets_of(uid)
+    if targets is None:
+        continue  # unit retired/not locatable — orphan-scan owns that case
+    units_checked += 1
+    escaped = []
+    for p in sorted(info["files"]):
+        if sanctioned(p):
+            continue
+        ok = any(
+            p == t or fnmatch.fnmatch(p, t) or p.endswith("/" + t) or t.endswith("/" + p)
+            for t in targets
+        )
+        if not ok:
+            escaped.append(p)
+    if escaped:
+        issues.append({
+            "halt_type": "whitelist_violation",
+            "unit_id": uid,
+            "commit": info["sha"],
+            "escaped_files": escaped[:10],
+            "detail": "bolt commit(s) for %s touched %d file(s) outside target_files: %s" % (
+                uid, len(escaped), ", ".join(escaped[:5])),
+        })
+
+state = {
+    "ts": ts, "mode": "whitelist-scan",
+    "status": "FAIL" if issues else "PASS",
+    "bolt_units_seen": len(per_unit),
+    "units_checked": units_checked,
+    "issues_count": len(issues), "issues": issues,
+    "next_action": ("%d unit(s) committed files OUTSIDE their target_files whitelist. Either the "
+                    "change is wrong (revert the escaped paths) or the unit under-declares its "
+                    "scope (add the paths to target_files with the right operation and re-save); "
+                    "execute-bolts is gated until resolved." % len(issues))
+                   if issues else "Every bolt commit stayed inside its unit's target_files whitelist.",
+}
+tmp = state_file + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(state, f, indent=1)
+os.replace(tmp, state_file)
+if not quiet:
+    print(json.dumps(state, indent=1))
+sys.exit(1 if issues else 0)
+PYEOF
+  exit $?
+fi
+
 # FILE_PATH is the written file. May or may not exist (Edit happens, then validator
 # reads it). If missing → skip (write must have failed).
 if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
@@ -410,8 +655,12 @@ if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
   exit 0
 fi
 
+# S6 EB-GATE-6: never MINT a project root — this mode fires on EVERY Write via
+# PostToolUse, and an unconditional mkdir created phantom .mega-sdd/ dirs under
+# whatever cwd the session happened to resolve (state litter that then forked
+# gate truth). No .mega-sdd/ at the resolved root → nothing to validate against.
+[ -d "${CWD}/.mega-sdd" ] || exit 0
 STATE_FILE="${CWD}/.mega-sdd/.bolt-artifacts-state.json"
-mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: cannot create state dir" >&2; exit 2; }
 
 CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" python3 <<'PYEOF'
 import json
@@ -420,6 +669,9 @@ import re
 import sys
 import glob
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_layouts
 
 cwd = os.environ["CWD"]
 file_path = os.environ["FILE_PATH"]
@@ -449,17 +701,13 @@ def find_unit_for_target(target_path):
     """
     Find any unit file whose target_files list contains target_path.
     Returns (unit_file_path, unit_id) or (None, None).
-    Walks both unit layouts.
+    Walks every vault layout (S6 EB-VAL-2: shared discovery via vault_layouts).
     """
     abs_target = os.path.abspath(target_path)
     # Make target_path relative variants (units may declare relative paths)
     rel_target_from_cwd = os.path.relpath(abs_target, cwd) if abs_target.startswith(cwd) else None
 
-    unit_paths = sorted(
-        # Widened *-bound → * — covers canonical <vault>/units AND legacy <vault>-bound/units.
-        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*.md")) +
-        glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "units", "U-*", "unit.md"))
-    )
+    unit_paths = vault_layouts.unit_files(cwd)
     for up in unit_paths:
         try:
             body = open(up).read()
@@ -543,8 +791,7 @@ if is_bolt_report(file_path):
 # ─── Check 3: pbt_citation_invalid ──────────────────────────────────────────
 # Triggers when written file is a unit (PBT properties live in unit body).
 # Format: `Cites: §Decision-D-NNN` or `Cites: §D-NNN`.
-# Validates each cited D-NNN exists in <cwd>/.mega-sdd/vaults/*/decisions/<D-NNN>.md
-# OR <cwd>/.mega-sdd/vaults/*-bound/decisions/<D-NNN>.md.
+# Validates each cited D-NNN exists in some vault's decisions/ dir (all layouts).
 if is_unit_path(file_path):
     try:
         body = open(file_path).read()
@@ -552,17 +799,19 @@ if is_unit_path(file_path):
         body = ""
     # Find Cites references — match Cites: §Decision-D-NNN, Cites: §D-NNN, Cites: D-NNN
     cite_pattern = re.compile(r"Cites:\s*§?(?:Decision-)?(D-[A-Z0-9-]*\d+)", re.IGNORECASE)
-    cited = set(cite_pattern.findall(body))
+    # S6 EB-VAL-9: the finder is IGNORECASE but the compare was case-sensitive —
+    # a lowercase cite (`§d-001`) matched the finder yet could never match the
+    # filename inventory. Normalize BOTH sides to upper.
+    cited = {c.upper() for c in cite_pattern.findall(body)}
     if cited:
-        # Build inventory of available decision IDs from vault decisions/
+        # Build inventory of available decision IDs from vault decisions/ (all layouts)
         available = set()
-        for dec_dir in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "decisions")) + \
-                       glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "*", "decisions")):
+        for dec_dir in vault_layouts.decision_dirs(cwd):
             for f in glob.glob(os.path.join(dec_dir, "*.md")):
                 # Filename pattern: D-NNN.md or D-P2-NNN.md etc.
                 fname = os.path.basename(f).replace(".md", "")
                 if fname.startswith("D-"):
-                    available.add(fname)
+                    available.add(fname.upper())
         # Cross-check
         missing = sorted([c for c in cited if c not in available])
         if missing:
@@ -587,14 +836,17 @@ state = {
     "issues": issues,
     "next_action": (
         "Bolt artifacts pass integrity checks." if status == "PASS"
-        else f"{len(issues)} integrity issue(s) detected. Each is detection-only (no auto-fix at hook layer); review listed issues and amend unit/bolt-report manually OR re-run execute-bolts with --strict-provenance flag."
+        else f"{len(issues)} integrity issue(s) detected. Each is detection-only (no auto-fix at hook layer); review listed issues and amend the unit / bolt-report manually, then re-save (PostToolUse re-validates)."
     ),
 }
 
-# Read prior state to track retry/persistence (current-truth overwrite)
+# Telemetry-only single-slot state (the PreToolUse aggregator never reads it —
+# /mega-sdd:analyze surfaces it); current-truth overwrite per written file.
 try:
-    with open(state_file, "w") as f:
+    _tmp = state_file + ".tmp.%d" % os.getpid()
+    with open(_tmp, "w") as f:
         json.dump(state, f, indent=2)
+    os.replace(_tmp, state_file)
 except Exception as e:
     print(f"ERROR: cannot write state file: {e}", file=sys.stderr)
     sys.exit(2)

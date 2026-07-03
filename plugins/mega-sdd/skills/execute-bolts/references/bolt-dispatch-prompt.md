@@ -13,6 +13,7 @@ Canonical prompt template for dispatching bolt subagent via superpowers `executi
 - Acceptance-test provenance NOTE
 - Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section)
 - Atomic discipline (scaffolded, not assumed)
+- Reuse index (PRIMARY reuse lookup surface — T1 line + T2 slice)
 - Anti-context (negative space = freedom + protection)
 - Provenance trailer (MANDATORY in every modified file)
 - Upstream bolts (depends_on chain — 1-line summary each)
@@ -50,8 +51,15 @@ IF YOU CAN'T PROCEED, HALT WITH ONE OF:
   type: test_fail              (after 3 retries; include test name + output)
   type: hard_rule_violated     (cite rule + file:line evidence)
   type: ambiguous_spec         (cite ambiguity + 2 interpretations + your default)
-  type: missing_dependency     (cite what's missing + where you looked)
+  type: dep_missing            (cite what's missing + where you looked)
   type: scope_creep_detected   (asked to touch files outside target_files)
+
+These typed blockers COMPLEMENT your report status enum (DONE / DONE_WITH_CONCERNS /
+BLOCKED / NEEDS_CONTEXT): report BLOCKED or NEEDS_CONTEXT AND attach the matching
+blocker YAML. Mapping the controller applies — test_fail / hard_rule_violated route
+to the propose-and-confirm eligibility table; ambiguous_spec / dep_missing /
+scope_creep_detected are always pure-pause (human decision). An untyped BLOCKED is
+treated as pure-pause by default.
 
 Halt YAML template (fill placeholders):
 ```yaml
@@ -147,9 +155,30 @@ If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omi
 
 - THIS BOLT = ONE COMMIT
 - target_files whitelist: <list from unit frontmatter> — DO NOT touch outside
-- Commit message format: "feat(U-XXX): <imperative phrase from unit title>"
+  (a deterministic post-hoc observer diffs your COMMITTED paths against this list —
+  an escaped path blocks the pipeline with `whitelist_violation`)
+- Commit message format: "<type>(U-XXX): <imperative phrase from unit title>"
+  PLUS both trailers on the commit body (the gates key on them):
+      Unit: U-XXX
+      SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX
 - DO NOT bundle unrelated concerns
 - If you find yourself wanting to modify unrelated file → halt `scope_creep_detected`
+
+## Reuse index (PRIMARY reuse lookup surface — T1 line + T2 slice)
+
+T1 (always, one line):
+
+```
+Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup
+surface (Iron Rule 4): scan the FULL index with Read/Grep before writing any
+new capability; reuse_candidates below is only a hint.
+```
+
+T2 (`### Reuse index (filtered slice)` — never dropped by the truncation cascade
+below `constitution_clauses`): the entries whose tags/paths overlap this unit's
+domain + target_files, each as `name — one-line what it does — _source: path:line`.
+The implementer must read the actual `_source` before deciding reuse vs fresh, and
+record every fresh-instead-of-reuse decision in `reuse_decisions` with a reason.
 
 ## Anti-context (negative space = freedom + protection)
 

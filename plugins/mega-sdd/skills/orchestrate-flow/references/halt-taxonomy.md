@@ -23,7 +23,7 @@ Bolt halts bridged via propose-and-confirm (also in convergence-loops.md): `test
 
 These ALWAYS stop the chain; no auto-loop:
 
-- `hard_rule_violated` — code in working tree; user reviews + decides revert vs edit
+- `hard_rule_violated` — detect-after: the bolt commit already landed; user fixes forward or `git revert`s it (the B1 gate blocks further bolts until a passing postflight.json is recorded)
 - `dedup_ambiguous` — multi-path resolution; user picks intent
 - `quality_gate_failed` — extract-intelligence; user reviews wave output
 - `oq_business_p1_unresolved` — stakeholder decision required
@@ -67,6 +67,19 @@ These ALWAYS stop the chain; no auto-loop:
 - `convergence_max_reached` — orchestrate-flow: convergence loop hit `--max-cycles`. User reviews cycle history (envelope in the convergence-loops reference).
 - `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default 3); the loop stops and a human must resolve the underlying blocker before re-running. (Auto-looped while cycle-eligible up to the cap; becomes always-stop at the cap.)
 - `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop stops to avoid spinning, human resolution required.
+- `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user picks one grammar.
+- `verify_unit_writable` — execute-bolts: a `verify` unit declares writable `target_files`; user fixes the unit (verify units make no changes).
+- `secret_in_code` — execute-bolts (L0 gate): a committed secret was detected; user rotates it + purges it from history.
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel.
+- `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest.
+- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings survived the retry cap; user resolves them.
+- `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s) then re-runs the suite.
+- `batch_suite_gate_missing` — execute-bolts: no green `_batch-suite.json` covers the newest code commit (a bolt OR an out-of-band edit); user runs the suite via `run-full-suite.sh`.
+- `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`.
+- `whitelist_violation` — execute-bolts: a bolt commit touched files outside the unit's `target_files` ∪ sanctioned extras; user reverts/fixes the scope escape.
+- `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`).
+- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation.
+- `bolt_artifacts_missing` — execute-bolts: a `completed` unit emitted no `bolts/U-XXX/bolt-report.md`; structural silent-failure closure, user re-runs.
 
 ## Soft (warn-only, chain continues)
 

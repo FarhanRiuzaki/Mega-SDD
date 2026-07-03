@@ -435,7 +435,11 @@ def validate_unit(file_path):
     # silently skipped — invisible to the bolt-time snapshot — and are now
     # unparseable. Annotation sub-lines (Citation:/Source:/…), fenced ast-grep
     # YAML content, and indented continuations stay whitelisted.
-    hr_match = re.search(r"^##\s+Hard\s+rules?\s*\n(.*?)(?=\n##\s|\Z)", body_after_fm, re.MULTILINE | re.IGNORECASE | re.DOTALL)
+    # S6 EB-GATE-12 (incidental): tolerate trailing text on the heading line —
+    # the canonical template emits `## Hard rules  (validated at bolt time …)`;
+    # requiring whitespace-only after "rules" silently skipped the WHOLE grammar
+    # check on template-conformant units.
+    hr_match = re.search(r"^##\s+Hard\s+rules?\b[^\n]*\n(.*?)(?=\n##\s|\Z)", body_after_fm, re.MULTILINE | re.IGNORECASE | re.DOTALL)
     n_machine = 0
     n_directive = 0
     if hr_match:

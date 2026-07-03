@@ -88,7 +88,7 @@
   - acceptance tests pass
   - Post-flight: new sha256 ≠ snapshot
   - HALT with `hard_rule_violated` blocker YAML
-  - Code changes remain in working tree (NOT committed)
+  - Detect-after: the bolt commit already landed; the B1 gate blocks every further `execute-bolts` until fixed-forward or reverted (code is NOT left uncommitted)
   - bolt-report.md has `status: halted_postflight` with violation list
 
 ### HR3: Hard rule violated — DO_NOT_ADD_DEPS
@@ -140,7 +140,7 @@
 
 ## Pass criteria
 
-All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — always halt before commit with code changes preserved in working tree for user review.
+All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
 
 ---
 

@@ -75,10 +75,10 @@ The Iter 4 one-shot autonomous pipeline entrypoint. Tests input shape detection 
 - **Prompt:** `/mega-sdd:auto ./prd.md`
 - **Expect:** chain runs through `generate-intent → scan-codebase`; bind-codebase emits `status: halted` with `bind_conflict` blocker; chain STOPS at bind phase; user resolves via resolve-oq; runs `/mega-sdd:auto --resume`
 
-### HP2: hard_rule_violated still halts pre-commit
+### HP2: hard_rule_violated halts the chain (detect-after)
 - **Setup:** unit U-002 has `DO NOT modify src/Models/User.php`; bolt's code modifies it
 - **Prompt:** `/mega-sdd:auto ./vault/` running in --deep
-- **Expect:** chain reaches execute-bolts; bolt halts post-flight with `hard_rule_violated`; code stays in working tree; chain STOPS; user reviews/reverts
+- **Expect:** chain reaches execute-bolts; bolt halts post-flight with `hard_rule_violated` (detect-after — the bolt commit already landed); chain STOPS; user fixes-forward or reverts the flagged commit
 
 ### HP3: Business OQ P1 pauses chain (when --strict)
 - **Setup:** PRD produces P1 business OQs requiring stakeholder; `bind-codebase --strict`

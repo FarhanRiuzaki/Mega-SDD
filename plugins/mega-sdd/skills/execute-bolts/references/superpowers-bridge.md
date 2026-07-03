@@ -49,14 +49,18 @@ DISPATCH mega-sdd:bolt-implementer        (Agent tool)
    pass: the full unit body + frontmatter (target_files, acceptance_test,
    ## Hard rules, ## Anchors, ## Anti-patterns, binding_refs) + context.
    The implementer writes the failing acceptance test first (TDD), implements,
-   runs the tests, commits with a provenance trailer.
+   runs the tests, COMMITS with the canonical message + trailers
+   (bolt-contract.md §Commit message format) — the commit topology is
+   detect-after: everything below runs against this landed commit.
    ▼
 implementer reports  DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
    ├─ BLOCKED / NEEDS_CONTEXT → controller supplies context or halts — never silent-skip
    ▼ DONE
 RUN L0 code gates                         (references/code-gates.md)
    repo-own format(-fix)/lint/typecheck → secret scan → SAST → new-dep existence
-   ├─ secret_in_code / sast_critical_finding / dep_not_found → HALT (no panel, no commit)
+   ├─ secret_in_code / sast_critical_finding / dep_not_found → HALT
+   │  (no panel; the flagged code is in the already-landed commit — remediation
+   │  acts on that commit per code-gates.md)
    ▼ pass (findings + skips recorded, injected into lens prompts)
 SELECT panel tier (risk-based)            (references/review-panel.md)
    minimal = spec · standard = spec+quality · full = +security +standards
@@ -68,9 +72,10 @@ DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-o
 MERGE in the controller (main thread)
    evidence-or-drop (no file:line → discarded) → dedup, max severity → consensus marks
    ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer with the merged
-   │  issue list (shared cap: --max-retries, default 3); re-review stays blind
+   │  issue list (shared cap: --max-retries, default 3); re-review stays blind.
+   │  Retries EXHAUSTED with a Critical still open → halt review_critical_unresolved
    ▼ clean (only Minor/Important remain — recorded in bolt-report ## Review panel)
-write bolt-report.md, commit, mark unit DONE
+run post-flight scan (run-postflight-scan.sh), write bolt-report.md, mark unit DONE
    └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
 ```
 
@@ -92,21 +97,32 @@ Before each implementation step, verify the step only touches files in the unit'
 - Halt.
 - Surface: "Unit U-XXX wants to modify <file> but it's not in target_files. Edit the unit or restructure."
 
+Backstop (B3 — deterministic): `validate-bolt-artifacts.sh --whitelist-scan` (Stop-hook +
+execute-bolts gate-time) diffs each bolted unit's COMMITTED paths against `target_files`
+∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files); an escaped path
+blocks the next `execute-bolts` with `whitelist_violation`. The prose rule above is the
+first line; the observer is the contract.
+
 ## bolt-report.md schema
 
-Per unit, after execution:
+Per unit, after execution. This is the CANONICAL schema (single owner — other refs
+describe pieces of it; on conflict this block wins):
 
 ```yaml
 ---
 unit: U-XXX
-status: success | failed | partial
+status: success | failed | partial | halted_postflight | forced_pass
 attempted_at: <timestamp>
 duration_seconds: N
-commits: [<sha1>, <sha2>]
+commits: [<sha1>]              # ONE commit per bolt (bolt-contract discipline);
+                               # >1 only for sanctioned retry amend-chains
 files_touched: [...]
 tests_run: [...]
 test_results: passed/failed counts
 retries: N
+target_hashes:                 # MANDATORY — sha256 of each target_files entry
+  <repo-relative-path>: <sha256-hex>   # AT COMMIT TIME (living-vault staleness anchor)
+scope: <scope-id>              # only when vault.json carries scope_metadata
 ---
 
 # Bolt Report — U-XXX
@@ -118,9 +134,20 @@ retries: N
 - [ ] / [x] criterion 1
 - [ ] / [x] criterion 2
 
+## Review panel
+<MANDATORY when a panel ran: tier used, lens list, finding table
+(severity, file:line, lens), dropped-no-evidence count, and — if the bolt
+proceeded with an unresolved Critical — the review_critical_unresolved halt ref.
+Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.>
+
 ## Failures (if any)
 <test output, error messages, hypothesis>
 ```
+
+Statuses `halted_postflight` (post-flight Hard-rule violation recorded — see
+hard-rule-scan.md) and `forced_pass` (`--force-skip-postflight` used — anti-bypass
+policy applies) are first-class: consumers (compute-unit-staleness, the sync lane,
+`_summary.md`) must not treat them as schema errors.
 
 ## Squad-level fan-out
 
