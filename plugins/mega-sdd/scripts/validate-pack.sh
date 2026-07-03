@@ -193,6 +193,12 @@ EOF_HDRS
   # We extract yaml fenced blocks that appear under the four conditional sections.
   # Strategy: scan line by line; track which conditional section we're in;
   # collect yaml fenced blocks; validate each one.
+  # Per-line matching uses bash builtins ([[ ]]) — the former per-line
+  # `printf | grep` pipeline forked ~10 subshells PER LINE and was the dominant
+  # lint cost (~7s of ~7.6s on a 170-line pack). Builtins are fork-free; the
+  # match semantics are identical: substring (grep -F), '^## ' / '^```yaml'
+  # prefix (grep -E), and the fence-end '^```[[:space:]]*$' (== grep -E
+  # '^```\s*$' on this platform, verified).
   local hint_sections=("## Deep-scan file hints" "## Authz mapping" "## UI detection" "## Reuse discovery")
   local in_hint_section=0
   local in_yaml_fence=0
@@ -207,16 +213,16 @@ EOF_HDRS
     # Check if we're entering a conditional hint section
     local hs
     for hs in "${hint_sections[@]}"; do
-      if printf '%s\n' "$line" | grep -qF "$hs"; then
+      if [[ $line == *"$hs"* ]]; then
         in_hint_section=1
         break
       fi
     done
     # Check if we've left the hint section (new ## heading, not a hint section)
-    if printf '%s\n' "$line" | grep -qE '^## ' && [ "$in_hint_section" -eq 1 ]; then
+    if [[ $line == "## "* ]] && [ "$in_hint_section" -eq 1 ]; then
       local is_hint=0
       for hs in "${hint_sections[@]}"; do
-        if printf '%s\n' "$line" | grep -qF "$hs"; then
+        if [[ $line == *"$hs"* ]]; then
           is_hint=1
           break
         fi
@@ -228,14 +234,14 @@ EOF_HDRS
 
     if [ "$in_hint_section" -eq 1 ]; then
       # Start of a yaml fenced block
-      if printf '%s\n' "$line" | grep -qE '^```yaml'; then
+      if [[ $line == '```yaml'* ]]; then
         in_yaml_fence=1
         yaml_block=""
         hint_block_count=$((hint_block_count + 1))
         continue
       fi
       # End of a yaml fenced block
-      if [ "$in_yaml_fence" -eq 1 ] && printf '%s\n' "$line" | grep -qE '^```\s*$'; then
+      if [ "$in_yaml_fence" -eq 1 ] && [[ $line =~ ^'```'[[:space:]]*$ ]]; then
         in_yaml_fence=0
         # Validate the collected yaml block
         if ! _yaml_valid "$yaml_block"; then

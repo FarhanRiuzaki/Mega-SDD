@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.60.0] - 2026-07-03
+
+Perf — **framework-pack linter ~12× faster** (`scripts/validate-pack.sh`), no behavior change. Root cause: Check 4 (the hint-section YAML-fence validator) ran a per-line `printf | grep` pipeline — ~10 subshell forks **per line** of the pack — so a single 170-line pack lint forked ~1,700 processes and took ~7.6s (of which Check 4 alone was ~7.0s). The per-line matching was rewritten to fork-free bash builtins (`[[ == ]]` substring/prefix, `[[ =~ ^```[[:space:]]*$ ]]` for the fence-end — verified byte-for-byte equivalent to the former `grep -E '^```\s*$'` on macOS/BSD grep). Output is **byte-identical** (rc + every line) across all 26 packs incl. the violation-producing `_template.md` — verified by diffing old-vs-new on the full pack set; `_registry.md` is unchanged.
+
+### Fixed
+- **Pack lint ~7.6s → ~0.6s per pack** (11.8× measured across laravel/django/axum/gin/rails/express/spring-boot + `_template`). `validate-pack.sh --check-registry`: ~200s → ~24s. The full test suite (137 tests): **~2189s → 387s (5.7×)** — and `tests/per-stack-packs/run-all.sh` no longer exceeds the 600s per-test budget, so the suite goes **136/137 → 137/137** (the prior lone "failure" was that aggregator timing out, never a real assertion failure). No new state/cache surface added — the fix is the algorithmic root cause, not memoization.
+
+Versions: plugin/marketplace 4.60.0.
+
 ## [4.59.0] - 2026-07-03
 
 Fix — **execute-bolts hardening** (god-review of `execute-bolts`, stage 6 — the FINAL pipeline stage: bolt dispatch, TDD discipline, review panel, Hard-rule pre/post-flight, B1/B2 artifact gates). 37 verified findings (10 High / 19 Medium / 8 Low after refute-by-default verification; 3 refuted of 40; 50 agents), headline class: **the bolt stage's own "enforced, not prose" gates were prose in practice** — all three deterministic bolt-commit discoveries keyed on a `(bolt): U-XXX` grammar no producer contract ever emitted (every doc-conformant `feat(U-XXX):` bolt ran with B1/B2/orphan silently dormant, `bolt_commits_seen: 0` → PASS), the B1/B2 evidence artifacts were agent-writable while the gates trusted their self-reported status (and the deny texts literally coached writing `{status:green}`), a symbolic `head_sha: "HEAD"` voided the B2 freshness anchor forever, a python `open(...,'w')` slipped the anti-self-bypass verb net, and a state-litter `.mega-sdd/` under a sub-cwd forked gate truth entirely. Grounding doc: `research/2026-07-02-god-review-execute-bolts.md`. Spec amendment: `2026-06-26-batch-suite-gate-and-bypass-guard.md §S6` + review-panel design §models.
