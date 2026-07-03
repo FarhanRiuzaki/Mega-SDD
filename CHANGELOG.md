@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.63.0] - 2026-07-03
+
+Tooling — **fork-measurement driver (`measure-fork-ab.sh`)**, the friction-guarded scaffold for the detect-drift `context: fork` A/B (backlog #18; the precondition, per `plugins/mega-sdd/CLAUDE.md` + the `moat-token-tradeoff` memory, before extending fork to `scan-codebase`/`bind-codebase`). The A/B is two **manual** `/mega-sdd:detect-drift` runs and no script can automate them or close the real open blocker (the baseline confound is a *methodology* constraint, not a tooling gap). What the driver removes are the two **silent footguns** that would let a fresh operator record a phantom verdict.
+
+### Added
+
+- `scripts/measure-fork-ab.sh` — thin `capture <baseline|fork>` / `compare` / `status` / `reset` wrapper around `report-token-cost.sh` + `measure-fork-tokens.sh`, with:
+  - **Arm-aware `subagent_turns` guard (the new catch).** A fork's cost is a `subagent_end_marker` (`subagent_turns>0`); an inline run has none. `capture baseline` REFUSES if a fork ran (`subagent_turns>0`) — the signature of the **wrong-plugin-instance** footgun (you stripped `context: fork` from the dev checkout but the session loaded the marketplace **cache**, so the "baseline" still forked → baseline==fork → phantom NO-WIN). `capture fork` REFUSES if `subagent_turns==0` (SubagentStop didn't fire, or the loaded instance lacks the fork). This verifies which instance the harness *actually loaded* by runtime behaviour, not a file checksum.
+  - **Baseline-confound recorded, never judged.** Capture/compare surface the inline baseline's accumulated-context proxy (`cache_read` tokens) as raw numbers and write them to `.mega-sdd/.fork-ab/result.json` with `confound.judged: false` — the tool records so a future reader can trust-or-reject the delta; it never fabricates a representativeness verdict.
+  - `compare` always passes `--require-subagent`; drops to `measure-fork-tokens.sh` as the documented escape hatch.
+- `tests/fork-measurement/test-measure-fork-ab.sh` — 28-assertion contract test pinning both guards (wrong-instance refuse, uncaptured-fork refuse), the confound record, and `compare`/`status`/`reset` wiring, all from seeded telemetry (no live harness run).
+
+### Changed
+
+- `research/2026-06-26-fork-token-measurement-procedure.md` — added **Precondition 2** (the SKILL.md you edit must be the plugin the session loads; cache-vs-dev-checkout, verified on-machine 2026-07-03) and a **guarded fast-path runbook**. The one open blocker is unchanged (the baseline confound — a representative-session run).
+
 ## [4.62.0] - 2026-07-03
 
 Moat hardening — **B1 recompute-at-gate** (closes the last artifact-trust gap in the execute-bolts moat). The v4.59.0 S6 amendment re-derived the SIX *derived* bolt-stage states from ground truth before the gate reads them, but B1's `postflight.json` was still the hold-out: the gate re-ran `--postflight-scan` in read-only mode, which only re-**read** the recorded `status`/`verdict` in the artifact — it never re-executed the rules. So B1's status was trust-based, protected only by the Write/Edit + Bash write-guards (a best-effort verb-enumeration deny, not a cryptographic guarantee). The gate now RECOMPUTES B1's mechanical evidence from git/fs ground truth, at parity with the other six states. Spec amendment: `2026-06-26-batch-suite-gate-and-bypass-guard.md § B1 recompute-at-gate`.
