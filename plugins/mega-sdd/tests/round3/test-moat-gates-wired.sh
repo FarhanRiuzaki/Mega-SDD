@@ -83,15 +83,25 @@ denied "$out" && fail "B1: clean tree blocked execute-bolts (false positive)" \
   || pass "B1: clean tree allows execute-bolts"
 
 # B2 — a kept code-delivery gate FAILing => execute-bolts BLOCKED, reason names the gate.
-printf '{"status":"FAIL","missing_artifacts":[{"shortfall":2}],"dead_scaffold":[]}' \
-  > "$ROOT/.mega-sdd/.flow-coverage-state.json"
-out=$(run_bolts)
+# Uses an ISOLATED fixture with a REAL flow-coverage shortfall (a Laravel flow whose 2
+# input steps have zero matching Form-Request artifacts in the unit's target_files) so the
+# FAIL SURVIVES the gate's unconditional re-derivation (pre-tool-use ~line 407). A
+# hand-planted .flow-coverage-state.json would be overwritten before the aggregator reads
+# it — which is exactly why the old planted-state form of this assertion went stale.
+FC="$(mktemp -d)"
+mkdir -p "$FC/.mega-sdd/codebase" "$FC/.mega-sdd/vaults/v1/units"
+printf -- '---\nframework: laravel\n---\n# Codebase Map\n' > "$FC/.mega-sdd/codebase/codebase-map.md"
+printf '# Flows\n\n### F-U-001 - Widget Approval (Maker -> Checker)\n\n1. Maker submits the widget for review\n2. Checker approves the widget\n' \
+  > "$FC/.mega-sdd/vaults/v1/04-flows.md"
+printf -- '---\nid: U-001\ntitle: Widget approval controller\ntask_type: create\ntarget_files:\n  - app/Http/Controllers/WidgetController.php\n---\n# U-001\n\n## Target files\n- app/Http/Controllers/WidgetController.php (edit)\n' \
+  > "$FC/.mega-sdd/vaults/v1/units/U-001.md"
+out=$(printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-sdd:execute-bolts"}}' "$FC" | bash "$HOOK" 2>/dev/null)
 if denied "$out" && printf '%s' "$out" | grep -q 'flow-coverage'; then
-  pass "B2: flow-coverage FAIL blocks execute-bolts and names the gate"
+  pass "B2: real flow-coverage shortfall blocks execute-bolts and names the gate"
 else
-  fail "B2: flow-coverage FAIL did not block (R3-4 gate not enforced)"; echo "    out=[$out]"
+  fail "B2: flow-coverage shortfall did not block (R3-4 gate not enforced)"; echo "    out=[$out]"
 fi
-rm -f "$ROOT/.mega-sdd/.flow-coverage-state.json"
+rm -rf "$FC"
 
 # B2a — batch-suite-gate RED (B2) => execute-bolts BLOCKED, reason names the gate.
 printf '{"status":"FAIL","halt_type":"batch_suite_red","detail":"suite RED"}' \
@@ -115,16 +125,20 @@ else
 fi
 rm -f "$ROOT/.mega-sdd/.bolt-postflight-state.json"
 
-# B2c — verify-grounding (A1): a verify+HIGH unit flagged => execute-bolts BLOCKED.
-printf '{"status":"FAIL","issues":[{"halt_type":"verify_grounding_untrusted","unit_id":"U-001"}]}' \
-  > "$ROOT/.mega-sdd/.unit-spec-state.json"
-out=$(run_bolts)
+# B2c — verify-grounding (A1): a REAL verify+HIGH unit with an ungrounded acceptance
+# criterion => execute-bolts BLOCKED. Isolated fixture; the FAIL is re-derived from the
+# unit text (validate-unit-spec at the gate), so it survives re-derivation.
+VG="$(mktemp -d)"
+mkdir -p "$VG/.mega-sdd/vaults/v1/units"
+printf -- '---\nid: U-001\ntitle: Verify widget index renders\ntask_type: verify\ngrounding_confidence: HIGH\nvault_source: 01-entities.md\ntarget_files: []\nacceptance_test: "GET /widgets returns 200"\n---\n# U-001\n\n## Anchors\n- app/Http/Controllers/WidgetController.php:1 - from binding\n\n## Acceptance criteria\n- The widget index lists every active widget [ungrounded]\n' \
+  > "$VG/.mega-sdd/vaults/v1/units/U-001.md"
+out=$(printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-sdd:execute-bolts"}}' "$VG" | bash "$HOOK" 2>/dev/null)
 if denied "$out" && printf '%s' "$out" | grep -q 'grounding_confidence: HIGH'; then
-  pass "B2c: verify-grounding FAIL blocks execute-bolts and names the gate"
+  pass "B2c: real verify+HIGH ungrounded unit blocks execute-bolts and names the gate"
 else
   fail "B2c: verify-grounding FAIL did not block (A1 gate not enforced)"; echo "    out=[$out]"
 fi
-rm -f "$ROOT/.mega-sdd/.unit-spec-state.json"
+rm -rf "$VG"
 
 # B3 — anti-self-bypass: rm of a protected guard state file => BLOCKED (R3-14).
 out=$(run_bash "rm $ROOT/.mega-sdd/.validation-blockers.json")

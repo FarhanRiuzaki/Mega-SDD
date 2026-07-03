@@ -52,18 +52,21 @@ out=$(printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-
 [ -z "$out" ] && pass "SC1: non-mega-sdd project → hook allows (empty output, no block)" \
   || { fail "SC1: unexpected output in a non-SDD project"; echo "    out=[$out]"; }
 
-# SC2 — MOAT-BREACH GUARD. cwd is a SUBFOLDER deep under a real mega-sdd project that
-# has a FAILing gate. The short-circuit must NOT exit early; the walk-up must find the
-# ancestor .mega-sdd and let the gate BLOCK execute-bolts.
+# SC2 — MOAT-BREACH GUARD. cwd is a real SUBFOLDER (src/module) under a mega-sdd project
+# whose gate FAILs on a REAL violation: a verify+HIGH unit with an ungrounded acceptance
+# criterion (A1 / verify_grounding_untrusted). This survives the execute-bolts gate's
+# UNCONDITIONAL re-derivation (hook lines ~398-427) — a hand-planted state file would be
+# overwritten by that re-derivation before the aggregator reads it, so it can no longer
+# prove anything. The short-circuit must NOT exit early; the walk-up must find the ancestor
+# .mega-sdd and let the gate BLOCK execute-bolts.
 ROOT="$(mktemp -d)"
-mkdir -p "$ROOT/.mega-sdd/vaults/v1/units"
-printf -- '---\nid: U-001\n---\n# U-001\n' > "$ROOT/.mega-sdd/vaults/v1/units/U-001.md"
-printf '{"status":"FAIL","missing_artifacts":[{"shortfall":2}],"dead_scaffold":[]}' \
-  > "$ROOT/.mega-sdd/.flow-coverage-state.json"
-SUB="$ROOT/.mega-sdd/vaults/v1/units"
+mkdir -p "$ROOT/.mega-sdd/vaults/v1/units" "$ROOT/src/module"
+printf -- '---\nid: U-001\ntitle: Verify widget index renders\ntask_type: verify\ngrounding_confidence: HIGH\nvault_source: 01-entities.md\ntarget_files: []\nacceptance_test: "GET /widgets returns 200"\n---\n# U-001\n\n## Anchors\n- app/Http/Controllers/WidgetController.php:1 - from binding\n\n## Acceptance criteria\n- The widget index lists every active widget [ungrounded]\n' \
+  > "$ROOT/.mega-sdd/vaults/v1/units/U-001.md"
+SUB="$ROOT/src/module"
 out=$(printf '{"cwd": "%s", "tool_name": "Skill", "tool_input": {"skill": "mega-sdd:execute-bolts"}}' "$SUB" \
         | bash "$HOOK" 2>/dev/null)
-if denied "$out" && printf '%s' "$out" | grep -q 'flow-coverage'; then
+if denied "$out" && printf '%s' "$out" | grep -q 'grounding_confidence: HIGH'; then
   pass "SC2: nested cwd under .mega-sdd does NOT short-circuit — gate still fires"
 else
   fail "SC2: short-circuit WRONGLY bypassed the gate for a nested cwd (moat breach)"; echo "    out=[$out]"
