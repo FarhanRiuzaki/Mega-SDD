@@ -85,7 +85,7 @@ handoff:
     clauses_referenced: []
 ```
 
-The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid`; `paused` when tech-OQ recommendations need review (informational; downstream still runs). Required ONLY under `--auto`.
+The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid`. Tech-OQ recommendations do NOT change the status: they are surfaced in binding.md ("## Tech-OQ Recommendations (review required)") for post-binding review, the OQ stays `pending` in vault.json (carried into generate-units as an ungrounded OQ, never a baked-in decision), and bind emits `status: completed` so the chain proceeds to generate-units — recommendations are advisory and never block (see `bind-codebase/references/oq-resolution.md` §2.7). Required ONLY under `--auto`.
 
 ## Memory layer
 

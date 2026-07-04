@@ -656,6 +656,16 @@ End-to-end on the Bank Mega Trade Finance fixture (using `extract-intelligence` 
 
 ---
 
+## 11.5 Amendment (2026-07-03): handoff-status mapping for surfaced recommendations
+
+This spec (Iter 1, approved 2026-05-20) established that recommend-mode tech-OQ recommendations are **advisory and non-blocking** — the OQ stays `pending`, the user reviews the recommendation *after* binding via ACCEPT/OVERRIDE/REJECT (§9c, `2026-05-20`), and "Binding still BLOCKS on `conflict > 0`" only (§80). It did **not** state the `--auto` handoff **status** value, because the handoff-status contract (`orchestrate-flow/references/handoff-contract.md`) postdated this design.
+
+That gap was later mis-wired: `bind-codebase/references/auto-memory-handoff.md` and the handoff-contract index mapped "tech-OQ recommendations need review" to `status: paused`. But `paused` is a **stop-and-wait** status in the orchestrator loop (handoff-contract.md §"Orchestrator MUST NOT invoke `next_action.suggested_skill` if `paused`/`halted`") — so under `/mega-sdd:auto --deep` the chain **stalled** before `generate-units`, demanding a manual `--resume` for a recommendation this spec defines as non-blocking (directly contradicting §324 "Eliminate tech-OQ noise from human review channel — they should not block humans", §65).
+
+**Corrected mapping (this amendment):** surfacing a tech-OQ recommendation does NOT change the bind handoff status. Bind emits **`status: completed`** and the chain auto-continues to `generate-units`. The recommendation is surfaced in binding.md "## Tech-OQ Recommendations (review required)"; the OQ stays `pending` in vault.json and carries into `generate-units` as an ungrounded OQ (never a baked-in decision — the user can still ACCEPT/OVERRIDE/REJECT it at any time). `paused`/`halted` remain reserved for genuinely blocking cases: CONFLICT and `oq_recommend_underspecified`/`oq_recommend_citation_invalid` (→ `halted`), and business-OQ blocking under `--strict` (→ its own status, tracked separately; see the pre-existing `paused`-vs-`halted` reconciliation for `--strict` business OQs — `auto.test.md` HP3 vs `bind SKILL.md` §gate — deferred to a follow-up). Fixtures: `bind-codebase.test.md` TQ5 (producer status) + `orchestrate-flow.test.md` DC7 (consumer non-pause).
+
+---
+
 ## 12. References
 
 - `2026-05-20-extract-intelligence-skill-design.md` — KB integration prior spec
