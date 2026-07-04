@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.64.0] - 2026-07-03
+
+Handoff-seam fix — **bind's advisory tech-OQ recommendations no longer stall the `--deep` chain** (cross-stage consistency sweep, Batch 1; the one survivor that broke a *live* pipeline). bind mapped "tech-OQ recommendations need review" to handoff `status: paused`, calling it "informational; downstream still runs" — but `paused` is **stop-and-wait** in the orchestrator loop (handoff-contract.md §"Orchestrator MUST NOT invoke `next_action.suggested_skill` if `paused`/`halted`"). So under `/mega-sdd:auto --deep` a brownfield bind that surfaced a recommendation **stalled before `generate-units`**, demanding a manual `--resume` the producer docs themselves said was unnecessary — directly contradicting the tech-OQ-autoresolve spec (recommendations are advisory, reviewed *post*-binding, "should not block humans").
+
+### Fixed
+
+- `skills/bind-codebase/references/auto-memory-handoff.md` + `skills/orchestrate-flow/references/handoff-contract.md` (bind index §) — a surfaced tech-OQ recommendation now keeps `status: completed`; bind auto-continues to `generate-units`. The recommendation stays in binding.md "## Tech-OQ Recommendations (review required)" and the OQ carries into `generate-units` as a **pending, ungrounded** OQ (never a baked-in decision — ACCEPT/OVERRIDE/REJECT still available anytime). `paused`/`halted` are reserved for genuinely blocking cases (CONFLICT, `oq_recommend_underspecified`/`_citation_invalid`, and business-OQ under `--strict`).
+- `skills/orchestrate-flow/references/handoff-contract.md:248` — the generic `paused` definition dropped "tech-OQ recommendations needing review" from its example (kept "business OQs needing resolution", which stays live for generate-intent DC5).
+
+### Changed
+
+- `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` — **§11.5 amendment** records the corrected handoff-status mapping and *why* the `paused` mis-wire happened (the handoff-status contract postdated the Iter-1 design, so the status value was under-specified and later filled in wrong).
+- Fixtures: `tests/skill-triggering/bind-codebase.test.md` TQ5 now pins the producer status (`completed`, not `paused`); new `orchestrate-flow.test.md` DC7 pins the consumer side (chain does NOT pause on an advisory recommendation).
+
+> **Flagged for follow-up (not this fix):** `auto.test.md` HP3 expects bind to emit `status: paused` for business OQs under `--strict`, but `bind SKILL.md` §gate says `--strict AND oq>0` → `halted`. That `paused`-vs-`halted` reconciliation is a *separate* OQ class from tech-OQ recommendations and is deferred to the round-2 seam audit.
+
 ## [4.63.0] - 2026-07-03
 
 Tooling — **fork-measurement driver (`measure-fork-ab.sh`)**, the friction-guarded scaffold for the detect-drift `context: fork` A/B (backlog #18; the precondition, per `plugins/mega-sdd/CLAUDE.md` + the `moat-token-tradeoff` memory, before extending fork to `scan-codebase`/`bind-codebase`). The A/B is two **manual** `/mega-sdd:detect-drift` runs and no script can automate them or close the real open blocker (the baseline confound is a *methodology* constraint, not a tooling gap). What the driver removes are the two **silent footguns** that would let a fresh operator record a phantom verdict.

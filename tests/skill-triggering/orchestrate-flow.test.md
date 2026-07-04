@@ -123,6 +123,10 @@ All routing rules per routing-rules.md fire deterministically. Pre-flight gates 
 - **Setup:** `--deep` chain; bind-codebase emits `status: halted` with `bind_conflict` blocker
 - **Expect:** chain STOPS; blocker YAML surfaced verbatim; user resolves via resolve-oq
 
+### DC7: Tech-OQ recommendations do NOT pause the chain
+- **Setup:** `--deep` chain; bind-codebase surfaces one or more tech-OQ recommendations (recommend-mode, all fields valid — per bind-codebase.test.md TQ5) but has zero CONFLICTs and no `--strict` business OQs
+- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; recommendations remain in binding.md "## Tech-OQ Recommendations (review required)" for post-binding review and the OQ carries into generate-units as a pending ungrounded OQ — the chain never stalls awaiting `--resume` for an advisory recommendation
+
 ## Resume mechanics (v1.3+, Iter 4)
 
 ### RES1: --resume re-enters paused chain

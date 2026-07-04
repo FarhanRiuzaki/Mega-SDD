@@ -245,7 +245,7 @@ starterkit_context:
 ### Status values
 
 - **`completed`** — skill ran successfully end-to-end. Orchestrator auto-continues to `next_action.suggested_skill` if `--deep` mode active.
-- **`paused`** — skill completed its work BUT something downstream needs user attention (e.g., business OQs needing resolution, tech-OQ recommendations needing review). Chain pauses; user reviews surfaced items; resumes via `/mega-sdd:auto --resume` or `/mega-sdd:orchestrate-flow --deep --resume`.
+- **`paused`** — skill completed its work BUT something downstream needs user attention (e.g., business OQs needing resolution). Chain pauses; user reviews surfaced items; resumes via `/mega-sdd:auto --resume` or `/mega-sdd:orchestrate-flow --deep --resume`.
 - **`halted`** — hard blocker fired (CONFLICT, hard_rule_violated, dedup_ambiguous, etc.). `blockers` populated with one or more entries per halt-protocol. Chain stops. User resolves manually.
 
 ### Block of artifacts
@@ -365,7 +365,7 @@ handoff:
     items_blocked: 0       # CONFLICTs
 ```
 
-Status `halted` on `bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use` (per existing halt-protocol). Status `paused` when tech-OQ recommendations need user review (informational pause; downstream still runs).
+Status `halted` on `bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use` (per existing halt-protocol). Tech-OQ recommendations do NOT pause the chain — they are surfaced in binding.md for post-binding review and bind emits `status: completed` (advisory, never block; see `bind-codebase` §2.7).
 
 ### `generate-units`
 
