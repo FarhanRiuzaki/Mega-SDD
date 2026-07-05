@@ -36,8 +36,9 @@ handoff:
     suggested_skill: mega-sdd:<next-skill>     # e.g., mega-sdd:scan-codebase
     suggested_args: ["--flag=value", "positional"]  # exact CLI args to invoke
     rationale: "<1-sentence why this is the right next step>"
-  blockers: []                          # empty when status=completed
-                                        # populated when status=paused/halted (per halt-protocol §blocker envelope)
+  blockers: []                          # non-empty (>=1 entry) REQUIRED when status=halted per halt-protocol §blocker envelope
+                                        # (validate-handoff-yaml.sh FAILs invalid_handoff on an empty/absent envelope on a halt);
+                                        # MAY be empty on status=completed or status=paused
   metrics:                              # optional but encouraged
     duration_ms: <int>
     items_processed: <int>              # OQs / claims / units / etc — context-dependent
@@ -160,7 +161,7 @@ TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rati
 
 ### `blockers:` (REQUIRED)
 
-TYPE: array\<object\> — empty array when `status==completed`; non-empty per halt-protocol `§blocker envelope` when `status==paused|halted`.
+TYPE: array\<object\> — non-empty per halt-protocol `§blocker envelope` when `status==halted` (`validate-handoff-yaml.sh` FAILs `invalid_handoff` on an empty/absent blocker envelope on a halt). MAY be empty when `status==completed` or `status==paused` — a paused skill legitimately carries `blockers: []` and surfaces triage via `metrics.items_blocked` (e.g. generate-intent's P1-OQ pause; per §Precedence :7 the skill's own reference is operative). This narrows :40/:163 to agree with `§Status values` :249, the halted-specific source.
 
 ### `metrics:` (OPTIONAL but encouraged)
 
@@ -453,15 +454,15 @@ scope:                                  # when vault has scope_metadata
   prd_sha256: <sha256>
 next_action:
   type: invoke_skill | user_review
-  suggested_skill: mega-sdd:bind-codebase | mega-sdd:resolve-oq
-  suggested_args: ["--auto"]
+  suggested_skill: mega-sdd:diff-vault | mega-sdd:bind-codebase | mega-sdd:resolve-oq
+  suggested_args: ["--auto"]   # does NOT apply to the interactive mega-sdd:diff-vault branch — a halted diff_conflict re-invokes diff-vault WITHOUT --auto (interactive Step 5); see diff-vault/references/auto-and-chain.md
 blockers: []
 metrics:
   decisions_appended: <N>
   conflicts_detected: <N>
 ```
 
-Status `halted` on: `diff_conflict` / `memory_in_use`
+Status `halted` on: `diff_conflict` / `memory_in_use`. A halted `diff_conflict` resolves by re-invoking `mega-sdd:diff-vault` WITHOUT `--auto` (interactive Step 5) — NOT `resolve-oq`, which cannot read a `VAULT-DIFF.md` conflict (its OQ is `[x]` resolved and lives only in `VAULT-DIFF.md`; per §Precedence :7 the skill's own `diff-vault/references/auto-and-chain.md` is operative, and :748 requires the halted `next_action` to point at the true resolution path). `mega-sdd:resolve-oq` stays scoped to the SEPARATE `completed` + new-`[ ]`-OQ outcome (diff-vault materializes `OQ-{CODE}-{N+1}` rows the `[ ]`-walk can consume).
 
 ### `emit-agents-md`
 

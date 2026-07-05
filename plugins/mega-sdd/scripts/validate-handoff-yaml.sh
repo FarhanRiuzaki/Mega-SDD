@@ -5,7 +5,8 @@
 # schema. Covers four C1 halts that historically required orchestrate-flow body
 # prose to detect (= 4× audit-failure pattern; this script eliminates prose path):
 #   - handoff_missing       (no `handoff:` block found)
-#   - invalid_handoff       (required field missing OR YAML parse error)
+#   - invalid_handoff       (required field missing OR YAML parse error OR
+#                            status=halted with an empty/absent blockers envelope)
 #   - handoff_type_mismatch (field type doesn't match annotation)
 #   - artifact_missing      (artifacts: paths don't exist on disk)
 #   - bolt_artifacts_missing (execute-bolts completed but produced no bolts/ dir)
@@ -301,6 +302,35 @@ else:
                 except (TypeError, ValueError):
                     type_errors.append(f"next_action.confidence must be a number or null, got {c!r}")
 
+            # ─── Halt-envelope check: status==halted REQUIRES a non-empty blockers array ──
+            # handoff-contract.md §Status values (:249) — "halted ... blockers
+            # populated with one or more entries per halt-protocol" — + §blockers
+            # (:163). A halt with an empty/absent blocker envelope hollows moat
+            # invariant #4 (halt taxonomy): the recorded verdict shows a clean halt
+            # with no diagnosis / routed resolution. Reuses halt_type invalid_handoff
+            # (a halt with no blockers IS a schema-invalid envelope) — details.reason
+            # carries the specific diagnosis; no new halt_type registration needed.
+            #
+            # Scoped to status==halted ONLY. A `paused` handoff with blockers: []
+            # is VALID and common (e.g. generate-intent surfaces P1-OQ triage via
+            # metrics.items_blocked with blockers: []; handoff-contract.md:7 skill-ref
+            # precedence). Do NOT catch paused/completed.
+            #
+            # Parser-tolerant emptiness: the no-deps parser builds a REAL list for
+            # inline `[]` and block-style, and leaves blockers absent as None (never
+            # the string "[]"); the str("[]"/"") arm is defense-in-depth.
+            def _blockers_empty(v):
+                if v is None:
+                    return True
+                if isinstance(v, list):
+                    return len(v) == 0
+                if isinstance(v, str):
+                    return v.strip() in ("", "[]")
+                return False
+            halt_envelope_empty = (
+                h.get("status") == "halted" and _blockers_empty(h.get("blockers"))
+            )
+
             if type_errors:
                 result = {
                     "status": "FAIL",
@@ -308,6 +338,16 @@ else:
                     "details": {
                         "reason": "field type(s) mismatch handoff-contract.md annotations",
                         "type_errors": type_errors,
+                    },
+                }
+            elif halt_envelope_empty:
+                result = {
+                    "status": "FAIL",
+                    "halt_type": "invalid_handoff",
+                    "details": {
+                        "reason": "status=halted requires a non-empty blockers array (handoff-contract.md §Status values :249 + §blockers :163: a halt MUST carry >=1 blocker per halt-protocol §blocker envelope); an empty/absent blocker envelope on a halt hollows the halt taxonomy (moat invariant #4) — the recorded verdict shows a clean halt with no diagnosis or routed resolution",
+                        "status": h.get("status"),
+                        "blockers": h.get("blockers"),
                     },
                 }
             else:

@@ -331,22 +331,29 @@ The handoff YAML may include a `scope:` block per `orchestrate-flow/references/h
 
 After the last unit: suggest `/mega-sdd:detect-drift` to verify all bolts honored the vault; show a summary (N units done, M failed, P skipped).
 
-**End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`:
+**End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`.
+
+**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (:377-381) and the contract §`execute-bolts` (`orchestrate-flow/references/handoff-contract.md`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Phase context` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §To start the next phase`; `chain-execution.md §Phase context`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
 
 IF `vault.phase < vault.phase_total`:
 ```yaml
 next_action:
-  suggested_skill: mega-sdd:generate-intent
-  suggested_args: ["--kb=<KB-path-from-vault.json.kb_source>", "--phase=<phase+1>"]
-  rationale: "Phase <N> complete; continue to Phase <N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
+  suggested_skill: mega-sdd:detect-drift
+  suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata (mirror §Handoff emission :379 + contract §execute-bolts)
+  rationale: "All bolts executed; recommend a periodic drift check."
+  hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): /mega-sdd:generate-intent --kb=<KB-path-from-vault.json.kb_source> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
 ```
 
 IF `vault.phase == vault.phase_total` (final phase) OR `phase_total == 1`:
 ```yaml
-next_action: "All phases complete (Phase <N> of <M>). Pipeline finished — no further skill to invoke."
+next_action:
+  suggested_skill: mega-sdd:detect-drift
+  suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata
+  rationale: "All bolts executed; recommend a periodic drift check."
+  hint: "Phase <N> of <M> complete — all phases finished."
 ```
 
-IF `phase` is absent (older vault): default to `phase: 1, phase_total: 1` → chain-complete hint.
+IF `phase` is absent (older vault): default to `phase: 1, phase_total: 1` → use the final-phase (all-finished hint) form above.
 
 ## Handoff emission (`--auto`)
 
