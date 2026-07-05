@@ -80,9 +80,9 @@ The Iter 4 one-shot autonomous pipeline entrypoint. Tests input shape detection 
 - **Prompt:** `/mega-sdd:auto ./vault/` running in --deep
 - **Expect:** chain reaches execute-bolts; bolt halts post-flight with `hard_rule_violated` (detect-after — the bolt commit already landed); chain STOPS; user fixes-forward or reverts the flagged commit
 
-### HP3: Business OQ P1 pauses chain (when --strict)
+### HP3: Business OQ P1 blocks chain (when --strict)
 - **Setup:** PRD produces P1 business OQs requiring stakeholder; `bind-codebase --strict`
-- **Expect:** chain pauses after bind-codebase emits `status: paused`; chat shows paused-item summary; user triages OQs offline; runs `--resume`
+- **Expect:** chain HALTS after bind-codebase emits `status: halted` with a `bind_conflict` blocker (per bind SKILL.md §5 decision gate: `conflict>0 OR (--strict AND oq>0)` → emit the halt YAML, route to resolve-oq — the same envelope as a CONFLICT halt, cf. HP1); chat surfaces the blocker; user resolves OQs via resolve-oq; runs `--resume`
 
 ## Pass criteria
 

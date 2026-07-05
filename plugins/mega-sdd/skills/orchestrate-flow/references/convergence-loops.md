@@ -51,9 +51,19 @@ loop until clean OR max-cycles reached:
       - resolver returns success or "needs manual"
 
     if resolver success:
-      re-run halted skill from checkpoint
-      check if halt clears → loop continues
-      if halt persists → escalate (treat as manual)
+      # The resolver's emitted next_action decides the next hop (round-2 Batch A2) — a
+      # resolver may route BACK to the halted skill (retry model) or FORWARD past it:
+      if resolver's next_action routes BACK to the halted skill
+         (e.g. bind_conflict resolved via KEEP_CODE/SPLIT → re-run bind-codebase):
+        re-run halted skill from checkpoint
+        check if halt clears → loop continues
+        if halt persists → escalate (treat as manual)
+      else (resolver returns status:completed with a FORWARD next_action —
+            e.g. bind_conflict resolved KEEP_VAULT/DEFER-only → generate-units, per the
+            Cycle-eligible table above + binding-mode.md Step 5):
+        EXIT the convergence loop for this halt; rejoin the normal --deep chain at
+        next_action.suggested_skill. There is NO "halt to clear" — do NOT re-run the
+        halted skill (a re-bind would re-raise the same CONFLICT and burn every cycle).
 
     if resolver needs-manual:
       escalate: stop chain, surface blocker, user resolves

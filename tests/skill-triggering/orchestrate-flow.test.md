@@ -61,6 +61,10 @@
 - **State:** a phase at attempt 3 still `unresolved`
 - **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
 
+### R-FACTORY-4: bind_conflict KEEP_VAULT/DEFER resolution forward-exits convergence (no re-bind loop)
+- **State:** `--deep`/`--converge`; bind halted `bind_conflict`; resolve-oq --binding resolved every conflict via ONLY KEEP_VAULT/DEFER (vault + code unchanged) and emitted `status: completed`, `next_action.suggested_skill: mega-sdd:generate-units`
+- **Expect:** the convergence loop FOLLOWS the resolver's forward `next_action` — it EXITS the loop for this halt and rejoins the chain at `generate-units`; it does NOT "re-run the halted skill" (a re-bind would re-derive the unchanged vault-vs-code contradiction and re-raise the identical CONFLICT, burning every cycle). Retry + check-clear stays bound to the BACK-edge case only (KEEP_CODE/SPLIT → re-run bind-codebase). Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5.
+
 ## Pre-flight
 
 ### PF1: Chain includes execute-bolts, no superpowers, no vendored
@@ -71,7 +75,7 @@
 
 ## Pass criteria
 
-All routing rules per routing-rules.md fire deterministically. Pre-flight gates correctly.
+All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4 — a KEEP_VAULT/DEFER conflict resolution forward-exits convergence to generate-units, never a re-bind loop). Pre-flight gates correctly.
 
 ## Multi-squad routing (v1.1+)
 
@@ -143,6 +147,16 @@ All routing rules per routing-rules.md fire deterministically. Pre-flight gates 
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
 - **Expect:** chain re-runs bind-codebase; same halt fires; user gets identical blocker (correct safety behavior)
 
+### RES4: --resume after a KEEP_VAULT/DEFER resolution routes to generate-units (not a bind loop)
+- **Setup:** previous run halted on bind_conflict; user resolved every conflict via `/mega-sdd:resolve-oq --binding` using ONLY KEEP_VAULT/DEFER (so `bound/` is intentionally absent but `binding.md` is fully resolution-marked — `validate-handoff-binding-units.sh` green)
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
+- **Expect:** CWD inspection sees a resolution-marked binding.md with no ACTIVE conflict and routes to `generate-units` (per `references/routing-rules.md` — the resolved-binding row ABOVE the bare "no bound-vault → bind-codebase" row); it does NOT route back to bind-codebase (which would re-raise the identical CONFLICT and infinite-loop). Contrast RES2 (UNRESOLVED → correctly re-runs bind and re-halts).
+
+### RES5: --resume after a MIXED (or KEEP_CODE/SPLIT) resolution routes to bind-codebase (re-bind)
+- **Setup:** previous run halted on bind_conflict; user resolved via `/mega-sdd:resolve-oq --binding` with at least one KEEP_CODE or SPLIT (the vault WAS edited); `bound/` absent, every conflict resolution-marked, no ACTIVE conflict block
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
+- **Expect:** routes to `bind-codebase` (re-bind — the edited claims now match code and bind cleanly), NOT generate-units. The resolved-binding→generate-units row (RES4) applies ONLY when EVERY resolution action is KEEP_VAULT/DEFER (zero KEEP_CODE/SPLIT); a MIXED resolution falls through to the bind row. This keeps `--resume` (surface 3) action-mix-consistent with the resolve-oq handoff (BM4) and the convergence branch (R-FACTORY-4) — routing is NOT keyed on "validator green" (RED by design for KEEP_VAULT-only) nor bare `binding.md` existence.
+
 ### RES3: --from override skips earlier completed phases
 - **Setup:** all 6 phases completed; user wants to re-run only `generate-units` + `execute-bolts`
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --from=generate-units`
@@ -150,7 +164,7 @@ All routing rules per routing-rules.md fire deterministically. Pre-flight gates 
 
 ## Pass criteria (Iter 4)
 
-All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain decision matrix + `references/handoff-contract.md` §Orchestrator consumption logic. All resume mechanics (RES1-RES3) follow §Resume mechanics. Halt-protocol behavior unchanged in `--deep` mode vs cap-3 mode. No persisted state file.
+All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain decision matrix + `references/handoff-contract.md` §Orchestrator consumption logic. All resume mechanics (RES1-RES5) follow §Resume mechanics — incl. RES4 (KEEP_VAULT/DEFER-only, bound/ absent → generate-units, not a bind re-halt loop) and RES5 (MIXED/KEEP_CODE/SPLIT → bind-codebase re-bind), keeping the stateless resume routing action-mix-consistent with the resolve-oq handoff + convergence surfaces. Halt-protocol behavior unchanged in `--deep` mode vs cap-3 mode. No persisted state file.
 
 ---
 
