@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.68.0] - 2026-07-05
+
+Handoff `next_action` shapes — **three off-shape handoff routes corrected** (round-2 seam audit, Theme 3). One was a LIVE auto-routing bug; the other two are latent-verdict/dead-end fixes. All grounded in the handoff contract + chain-execution surfaces, adversarially reviewed (3 blind lenses, all CLEAN).
+
+### Fixed
+
+- `skills/execute-bolts/references/halts-and-handoff.md` (bolts-onward, **LIVE**) — the §"Hand-off + end-of-chain phasing" block emitted two off-shape `next_action` forms: (a) for `phase < phase_total` it emitted `suggested_skill: mega-sdd:generate-intent --phase=<N+1>`, which the orchestrator consumption loop auto-consumes under `--deep`/`--auto` — **auto-advancing to the next KB-rebuild phase and bypassing the deliberate MANUAL phase checkpoint** (generation-guide.md:197-201 + chain-execution.md:256 present next-phase as a user-run command); (b) for the final phase it emitted a **bare-string** `next_action` ("All phases complete…"), but execute-bolts is never terminal (detect-drift is the DEFAULT-ON auto-gate after every batch, chain-execution.md:190). Both branches now emit the canonical `suggested_skill: mega-sdd:detect-drift` dict, carrying phase-advance / all-phases-done as an informational `next_action.hint` (grounded in chain-execution.md:260). No validator change (already permissive).
+- `scripts/validate-handoff-yaml.sh` + `skills/orchestrate-flow/references/handoff-contract.md` (halt-envelope, MED) — the halt taxonomy mandates a non-empty `blockers[]` envelope on `status: halted`, but nothing enforced it. Added a deterministic status-conditional gate: `halted` + empty/absent `blockers` → FAIL `invalid_handoff`. **Subsumes the planned Batch 8** (blockers-non-empty-on-halt). Failing-first proven (two halted-with-empty-blockers cases wrongly PASSed pre-fix).
+- `skills/diff-vault/references/auto-and-chain.md` (diff-vault, LOW) — the halted `diff_conflict` `next_action` routed to `mega-sdd:resolve-oq`, which cannot consume a VAULT-DIFF.md diff (resolve-oq walks vault-doc OQs / a binding.md, never VAULT-DIFF.md) — a dead-end. Redirected to an interactive `mega-sdd:diff-vault` re-invoke.
+
+### Changed
+
+- Fixtures: three new CI-discovered guards under `tests/handoff/` — `test-bolts-phasing-nextaction-shape.sh` (detect-drift dict + hint, no auto cross-phase advance), `test-handoff-blockers-nonempty-on-halt.sh` (halted requires blockers), `test-diff-vault-conflict-route.sh` (diff_conflict routes to diff-vault, not resolve-oq). All failing-first (RED pre-fix → GREEN post-fix); no regression across both test trees.
+
+Built + adversarially reviewed via a 7-agent investigate/build/review workflow: each finding was independently confirmed against the authoritative contract (the bolts-onward triage proposal was known-INVERTED — the correct non-inverting direction was derived from chain-execution.md), and all three fix directions returned CLEAN under adversarial review.
+
 ## [4.67.0] - 2026-07-05
 
 Handoff-YAML validator shape fix — **`validate-handoff-yaml.sh` no longer spuriously fails a conformant `checkpoints`/`cycles` handoff block** (round-2 seam audit, Batch 2 — MEDIUM/CONFIRMED/latent). The validator classified `checkpoints` and `cycles` as list fields, but the handoff contract types BOTH as objects (template §schema + machine-readable `TYPE: object` annotations; only their nested `halts_auto_resolved`/`halts_escalated_to_user` subfields are arrays). The no-deps parser builds a real dict for the canonical block-mapping producer shape, so `is_listish(dict)` was False and the validator returned a spurious `FAIL` / `handoff_type_mismatch` against any conformant output. Latent today (no in-tree producer emits the block yet, and the Stop-hook check is detection-only), but the verdict was wrong.

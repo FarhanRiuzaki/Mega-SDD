@@ -105,15 +105,26 @@ handoff:
     sibling_scopes: []
     prd_sha256: <CURRENT_SHA>  # the new hash, not the recorded one
   next_action:
-    suggested_skill: mega-sdd:resolve-oq        # if Resolved-OQ vs new PRD CONFLICTs surfaced
-    # OR
-    suggested_skill: mega-sdd:orchestrate-flow  # if diff clean; chain may resume to bind/units/bolts
+    # THREE guarded branches — emit exactly ONE per outcome; suggested_args differs per branch.
+    # (a) status halted on diff_conflict (a Resolved-OQ [x] vs new PRD contradiction whose
+    #     content lives ONLY in VAULT-DIFF.md): re-invoke diff-vault WITHOUT --auto so Step 5
+    #     resolves it interactively. resolve-oq CANNOT consume this — it walks only [ ] OQ
+    #     entries and reads vault docs 00-06, never VAULT-DIFF.md; keeping --auto here would
+    #     re-hit the same contradiction and re-halt (an operator loop).
+    suggested_skill: mega-sdd:diff-vault        # interactive re-invoke
+    suggested_args: []                          # NO --auto — interactive Step 5 walkthrough
+    # (b) status completed AND new [ ] OQs were materialized into the vault (New-OQ rows,
+    #     OQ-{CODE}-{N+1}): those [ ] entries ARE consumable by resolve-oq's [ ]-walk.
+    suggested_skill: mega-sdd:resolve-oq        # new open questions to walk
     suggested_args: ["--auto"]
-    rationale: "<1-sentence — e.g., 'N CONFLICTs surfaced from diff; resolve-oq walks them' OR 'Diff clean; vault updated; binding may need re-run'>"
+    # (c) status completed AND diff clean: chain may resume to bind/units/bolts.
+    suggested_skill: mega-sdd:orchestrate-flow  # diff clean
+    suggested_args: ["--auto"]
+    rationale: "<1-sentence — e.g., 'diff_conflict surfaced; re-run diff-vault interactively (no --auto) to resolve' OR 'N new OQs materialized; resolve-oq walks them' OR 'Diff clean; vault updated; binding may need re-run'>"
   blockers: []
   metrics:
     items_processed: <N changes detected: added + removed + modified>
     items_blocked: <N CONFLICTs requiring resolution>
 ```
 
-Omit the `scope:` block when the vault is legacy (no `scope_metadata` in vault.json). Status `halted` on `diff_conflict` (Resolved-OQ vs new PRD contradiction). Standalone invocation emits an informational chat hint only.
+Omit the `scope:` block when the vault is legacy (no `scope_metadata` in vault.json). Status `halted` on `diff_conflict` (Resolved-OQ `[x]` vs new PRD contradiction) — resolve it by re-invoking `diff-vault` WITHOUT `--auto` (the interactive Step 5 walkthrough; see the blocker-envelope resolution note above), NOT via `resolve-oq`, which cannot read a `VAULT-DIFF.md` conflict (`handoff-contract.md §next_action` :748 — a halted `next_action` must point to the true resolution path). Standalone invocation emits an informational chat hint only.
