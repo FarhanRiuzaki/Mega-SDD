@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.69.0] - 2026-07-05
+
+Brownfield generate-intent handoff — **the `--auto` `next_action` no longer re-suggests a redundant scan when the codebase map already exists** (round-2 seam audit, #11 — LOW/self-healing). generate-intent's `--auto` handoff conditioned its `next_action.suggested_skill` only on IMPLEMENTATION_MODE (brownfield → `scan-codebase` unconditionally), but under the live scan-first brownfield reorder scan always runs before generate-intent (which is even invoked with `--scan=<map>`), so the map already exists at completion and the correct next hop is `bind-codebase`. Self-healing today (the resume-skip drops the re-suggested scan because the map exists), but the handoff advertised the wrong hop.
+
+### Fixed
+
+- `skills/generate-intent/references/auto-and-handoff.md` + `skills/orchestrate-flow/references/handoff-contract.md` — generate-intent's `--auto` `next_action` is now CWD-conditional on codebase-map presence, mirroring scan-codebase's already-correct pattern and the authoritative decision matrix (`routing-rules.md:53` vs `:55`): mode=existing + map ABSENT → `scan-codebase`; mode=existing + map PRESENT → `bind-codebase`; mode=new → `generate-units`. The operative emission spec + the contract mirror are kept consistent (identical 3-branch structure).
+
+### Changed
+
+- Fixtures: new CI-discovered guard `tests/handoff/test-generate-intent-map-present-route.sh` — pins the map-conditioned `bind-codebase` branch on BOTH surfaces with negative twins (map-absent → scan, greenfield → units) guarding against over-correction. Failing-first (RED pre-fix → GREEN post-fix).
+
+Built + adversarially reviewed via workflow (2 blind lenses, both CLEAN — the routing exactly matches the matrix, no stale-map/greenfield mis-route, no skipped-required-scan, operative+contract consistent). Two cosmetic doc-comment imprecisions (a `<vault>` positional omission in a shared args template and a line-number citation off by a few) noted non-blocking for a future sweep. Closes the round-2 seam-audit backlog.
+
 ## [4.68.0] - 2026-07-05
 
 Handoff `next_action` shapes — **three off-shape handoff routes corrected** (round-2 seam audit, Theme 3). One was a LIVE auto-routing bug; the other two are latent-verdict/dead-end fixes. All grounded in the handoff contract + chain-execution surfaces, adversarially reviewed (3 blind lenses, all CLEAN).

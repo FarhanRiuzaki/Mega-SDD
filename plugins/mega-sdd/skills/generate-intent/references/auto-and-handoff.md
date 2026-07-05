@@ -50,9 +50,18 @@ handoff:
     - <absolute path to vault directory>
     - <absolute path to vault.json>
   next_action:
-    suggested_skill: mega-sdd:scan-codebase     # if mode=existing (brownfield)
+    # CWD-conditional on codebase-map presence — resolve at emission time (mirrors
+    # scan-codebase's own handoff, scan-codebase/references/halts-flags-handoff.md
+    # §next_action; grounded in routing-rules.md Decision matrix :53/:55). Under the
+    # scan-first brownfield reorder (routing-rules.md :110/:115) scan-codebase runs
+    # BEFORE generate-intent (invoked WITH --scan=<map>), so the codebase-map is
+    # ALMOST ALWAYS already present here — bind-codebase is the common brownfield hop;
+    # the scan-codebase branch fires only when no map exists on disk yet.
+    suggested_skill: mega-sdd:bind-codebase     # mode=existing (brownfield) + codebase-map PRESENT (args: <vault> --auto — the norm under scan-first)
     # OR
-    suggested_skill: mega-sdd:generate-units    # if mode=new (greenfield)
+    suggested_skill: mega-sdd:scan-codebase     # mode=existing (brownfield) + NO codebase-map on disk yet
+    # OR
+    suggested_skill: mega-sdd:generate-units    # mode=new (greenfield)
     suggested_args: ["--auto"]
     rationale: "<1-sentence why this is next>"
   blockers: []   # populated on halt

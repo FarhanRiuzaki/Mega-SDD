@@ -301,9 +301,14 @@ handoff:
     - /path/to/.mega-sdd/vaults/<slug>/
     - /path/to/.mega-sdd/vaults/<slug>/vault.json
   next_action:
-    suggested_skill: mega-sdd:scan-codebase  # if brownfield
+    # CWD-conditional on codebase-map presence (mirrors §scan-codebase's next_action
+    # :330-332; per §Precedence :7 the OPERATIVE spec is generate-intent/references/
+    # auto-and-handoff.md — kept in sync here; grounded in routing-rules.md :53/:55):
+    suggested_skill: mega-sdd:bind-codebase  # brownfield + codebase-map PRESENT (the norm under the scan-first reorder)
     # OR
-    suggested_skill: mega-sdd:generate-units  # if greenfield
+    suggested_skill: mega-sdd:scan-codebase  # brownfield + NO codebase-map on disk yet
+    # OR
+    suggested_skill: mega-sdd:generate-units  # greenfield
     suggested_args: ["--auto"]
     rationale: "..."
   metrics:
