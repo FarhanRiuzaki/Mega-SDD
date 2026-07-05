@@ -302,7 +302,7 @@ handoff:
     - /path/to/.mega-sdd/vaults/<slug>/vault.json
   next_action:
     # CWD-conditional on codebase-map presence (mirrors §scan-codebase's next_action
-    # :330-332; per §Precedence :7 the OPERATIVE spec is generate-intent/references/
+    # :335-339; per §Precedence :7 the OPERATIVE spec is generate-intent/references/
     # auto-and-handoff.md — kept in sync here; grounded in routing-rules.md :53/:55):
     suggested_skill: mega-sdd:bind-codebase  # brownfield + codebase-map PRESENT (the norm under the scan-first reorder)
     # OR
@@ -459,7 +459,7 @@ scope:                                  # when vault has scope_metadata
   prd_sha256: <sha256>
 next_action:
   type: invoke_skill | user_review
-  suggested_skill: mega-sdd:diff-vault | mega-sdd:bind-codebase | mega-sdd:resolve-oq
+  suggested_skill: mega-sdd:diff-vault | mega-sdd:resolve-oq | mega-sdd:orchestrate-flow
   suggested_args: ["--auto"]   # does NOT apply to the interactive mega-sdd:diff-vault branch — a halted diff_conflict re-invokes diff-vault WITHOUT --auto (interactive Step 5); see diff-vault/references/auto-and-chain.md
 blockers: []
 metrics:

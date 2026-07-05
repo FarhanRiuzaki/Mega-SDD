@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 4.38.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 4.70.0 · **License:** MIT
 
 </div>
 
