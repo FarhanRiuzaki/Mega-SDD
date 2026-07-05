@@ -106,14 +106,17 @@ if grep -qF 'flow through as blocking' "$OQR"; then fail "RECOMMEND-CONF: contra
 grep -qF '**Recommend mode**: surfaced at `high` AND `medium`' "$BC" && ok "RECOMMEND-CONF: binding-contract confidence gate split per mode" || fail "RECOMMEND-CONF: binding-contract gate stale"
 if grep -qF -- '--accept-recommendations' "$OQR"; then fail "RECOMMEND-CONF: unimplemented --accept-recommendations flag survives"; else ok "RECOMMEND-CONF: unimplemented flag prose removed"; fi
 
-# ── BC-HANDOFF-3 ──
-python3 - "$HC" <<'PY' && ok "HANDOFF-3: bind block uses <vault>/bound/ + emitted_at (no legacy vault-bound/)" || fail "HANDOFF-3: bind index block stale"
+# ── BC-HANDOFF-3 ── (M-02 ownership flip: the OPERATIVE bind handoff template is the
+# skill's own auto-memory-handoff.md; handoff-contract's per-skill section is now a
+# routing index with no YAML blocks. Pin the operative template — same assertions.)
+AMH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md"
+python3 - "$AMH" <<'PY' && ok "HANDOFF-3: operative bind template uses <vault>/bound/ + emitted_at (no legacy vault-bound/)" || fail "HANDOFF-3: operative bind handoff template stale"
 import re, sys
 doc = open(sys.argv[1]).read()
-m = re.search(r"### `bind-codebase`\n\n```yaml\n(.*?)```", doc, re.S)
-assert m, "bind block not found"
+m = re.search(r"## Handoff emission \(--auto\).*?```yaml\n(.*?)```", doc, re.S)
+assert m, "bind handoff template not found"
 b = m.group(1)
-sys.exit(0 if ("emitted_at:" in b and "<vault>/bound/" in b and "vault-bound/    # only" not in b) else 1)
+sys.exit(0 if ("emitted_at:" in b and "<vault>/bound/" in b and "vault-bound/" not in b) else 1)
 PY
 
 # ── BC-VAL-6 (docs): canonical conflict-ID examples ──

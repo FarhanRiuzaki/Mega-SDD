@@ -93,7 +93,7 @@ Resuming chain from Phase 3 of 5 (bind-codebase re-runs to produce bound-vault).
 - No silent code changes were committed (chain halted at binding phase before any code-write phases ran)
 
 ### V2: Blocker surfaced verbatim
-- Blocker YAML in chat matches the structure in `references/handoff-contract.md` §halt-protocol
+- Blocker YAML in chat matches the structure in `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol
 - `next_action` field gives concrete resolution path
 
 ### V3: --resume skips upfront confirmation

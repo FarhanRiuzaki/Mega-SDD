@@ -1,6 +1,6 @@
 # Halt Taxonomy — Orchestrator Halt Classification
 
-Every blocker a sub-skill can emit falls into one of three classes for the orchestrator: **always-stop** (human required), **cycle-eligible** (auto-loop in `--deep`; see the convergence-loops reference indexed in SKILL.md §Specialist references), or **soft** (warn-only, chain continues). Canonical halt envelope shapes live in `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md §halt-protocol`.
+Every blocker a sub-skill can emit falls into one of three classes for the orchestrator: **always-stop** (human required), **cycle-eligible** (auto-loop in `--deep`; see the convergence-loops reference indexed in SKILL.md §Specialist references), or **soft** (warn-only, chain continues). Canonical halt envelope shapes live in `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`.
 
 ## Contents
 

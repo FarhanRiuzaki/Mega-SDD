@@ -87,7 +87,7 @@ See `plugins/mega-sdd/references/tooling-install.md` §jd for install commands p
 
 ## Handoff YAML emission
 
-When invoked with `--auto`, emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto`, emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:
@@ -127,4 +127,4 @@ handoff:
     items_blocked: <N CONFLICTs requiring resolution>
 ```
 
-Omit the `scope:` block when the vault is legacy (no `scope_metadata` in vault.json). Status `halted` on `diff_conflict` (Resolved-OQ `[x]` vs new PRD contradiction) — resolve it by re-invoking `diff-vault` WITHOUT `--auto` (the interactive Step 5 walkthrough; see the blocker-envelope resolution note above), NOT via `resolve-oq`, which cannot read a `VAULT-DIFF.md` conflict (`handoff-contract.md §next_action` :748 — a halted `next_action` must point to the true resolution path). Standalone invocation emits an informational chat hint only.
+Omit the `scope:` block when the vault is legacy (no `scope_metadata` in vault.json). Status `halted` on `diff_conflict` (Resolved-OQ `[x]` vs new PRD contradiction) — resolve it by re-invoking `diff-vault` WITHOUT `--auto` (the interactive Step 5 walkthrough; see the blocker-envelope resolution note above), NOT via `resolve-oq`, which cannot read a `VAULT-DIFF.md` conflict (`handoff-contract.md §Anti-halu invariants` — a halted `next_action` must point to the true resolution path). Standalone invocation emits an informational chat hint only.

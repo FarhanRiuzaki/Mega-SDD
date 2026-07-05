@@ -103,7 +103,7 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 - `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-contract.md §schema`. Acquire the `<vault>/vault.json.lock` advisory lock before writing it (backoff + retry 3×, else `memory_in_use` halt) per `vault-contract.md §Concurrency contract`.
 - An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-contract.md §constitution`.
 - Multi-squad mode (≥2 squads) additionally emits `_meta/squads.yaml`, `interfaces/_index.md`, and `.obsidian/graph.json` → `references/setup-flow.md`.
-- Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/vault-contract.md §Multi-scope vault`.
+- Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/multi-scope.md`.
 
 The per-file content guide (output-mode policy, readability standards, the `00-index.md` section order + Phase-context block, the mandatory `Sources` / `Out of Scope` / `Open Questions` template, and the operator-surface capture rules) lives in `references/generation-guide.md`.
 
@@ -153,7 +153,7 @@ Push-back is **conditional on `PRD_STATUS`** (full matrix → `references/self-c
 
 ## Halt conditions
 
-All halts emit the unified `blocker` envelope (`references/vault-contract.md §halt-protocol`); under `--auto`, P1 business-blocking OQs additionally emit a blocker the orchestrator surfaces.
+All halts emit the unified `blocker` envelope (`plugins/mega-sdd/references/halt-protocol.md §halt-protocol`); under `--auto`, P1 business-blocking OQs additionally emit a blocker the orchestrator surfaces.
 
 - **OQ classification (Step 3.5):** `oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`. (See `references/generation-guide.md` for the halt YAML.)
 - **Scope detection (Step 0.9):** `scope_not_declared_in_prd`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence` — all ALWAYS STOP CHAIN. (See `references/setup-flow.md` for the halt YAMLs.)
@@ -165,7 +165,8 @@ Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over
 
 ## Specialist references (load on demand)
 
-- **`references/vault-contract.md`** — the shared contract: `vault.json` §schema, §OQ-conventions, §Auto-classifier heuristics, §constitution, §Starterkit-binding, §Multi-scope vault, §stages-propagation, §Concurrency contract, §halt-protocol (the full `blocker` envelope + halt-type roster).
+- **`references/vault-contract.md`** — the shared contract: `vault.json` §schema, §OQ-conventions, §Auto-classifier heuristics, §constitution, §Starterkit-binding, §stages-propagation, §Concurrency contract. The halt machinery (§halt-protocol — the full `blocker` envelope + halt-type roster — and §halt-escalation-discipline) lives in `plugins/mega-sdd/references/halt-protocol.md`.
+- **`references/multi-scope.md`** — §Multi-scope vault scope-tagging schema (load when the PRD declares a `scopes:` block or `--scope=<id>` is passed).
 - **`references/setup-flow.md`** — Steps 0–0.9: output-path resolution + environment checks, `IMPLEMENTATION_MODE` / `PRD_STATUS` / `OUTPUT_MODE` flags, squad partition + multi-squad emission, Step 0.8 scan-aware loading, Step 0.9 scope picker + retrofit bridge + the three scope halt YAMLs, and the `--scan` / `--greenfield` / `--scope` / `--no-pre-scan` / `--no-constitution` flag mechanics.
 - **`references/kb-submode.md`** — Mode B KB sub-mode: freshness-snapshot preflight, the tier-aware routing table (`[VERIFIED]/[INFERRED]/[OPEN]` × `[LOCKED]/[INTENT]/[ARTIFACT]`), `--phase=N` parsing + phasing, ERD freedom, and the KB Q&A loop.
 - **`references/from-prompt-mode.md`** — Mode B free-text: the adaptive ≤10-question walk and seed-PRD synthesis.

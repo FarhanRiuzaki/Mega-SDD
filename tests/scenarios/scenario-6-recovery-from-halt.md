@@ -342,7 +342,7 @@ Disables memory layer for this run. Chain proceeds. Migrate later via `mega-sdd:
 
 # Additional halt walkthroughs (v3.33.0+, Iter 49 — closes audit D3-006)
 
-Iter 49 added 10 high-frequency halt walkthroughs to cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+Iter 49 added 10 high-frequency halt walkthroughs to cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
 
 ## Scenario walkthrough — `handoff_missing` (Iter 40 + 43 fix-forward)
 
@@ -364,7 +364,7 @@ next_action:
 
 **Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`/mega-sdd:bind-codebase <vault-path>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
 
-Cross-refs: `vault-contract.md §halt-protocol §handoff_missing`; `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
+Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §handoff_missing`; `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
 
 ## Scenario walkthrough — `artifact_missing` (Iter 40)
 
@@ -405,7 +405,7 @@ mv <vault>/bolts/U-007/partial-state.json <vault>/bolts/U-007/partial-state.json
 /mega-sdd:execute-bolts U-007              # fresh re-run from clean slate
 ```
 
-Cross-refs: `vault-contract.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Saga compensating actions`.
+Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Saga compensating actions`.
 
 ## Scenario walkthrough — `oq_blocker`
 

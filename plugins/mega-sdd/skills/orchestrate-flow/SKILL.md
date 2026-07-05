@@ -77,7 +77,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
    ```
    Confirmation is ONE-TIME for the chain proposal; halts are NOT additional confirmations — they're interventions on real issues.
 
-7. **Execute chain.** Dispatch sub-skills with the `--auto` flag. Pause on blocker artifacts (any type) per `vault-contract.md §halt-protocol`. `resolve-oq` is always interactive on per-OQ choices.
+7. **Execute chain.** Dispatch sub-skills with the `--auto` flag. Pause on blocker artifacts (any type) per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. `resolve-oq` is always interactive on per-OQ choices.
 
    **Per sub-skill in chain (loop):**
    a. **Dispatch** with assembled flags + memory slice via `metadata.memory_context`. Propagate canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) from the previous handoff.
@@ -150,7 +150,7 @@ blocker:
 
 ## Halt protocol
 
-Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop in `--deep`), **always-stop** (human required), or **soft** (warn-only, chain continues). The full classification of every halt type is in `references/halt-taxonomy.md`. Canonical envelope shapes: `vault-contract.md §halt-protocol`.
+Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop in `--deep`), **always-stop** (human required), or **soft** (warn-only, chain continues). The full classification of every halt type is in `references/halt-taxonomy.md`. Canonical envelope shapes: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`.
 
 ## Memory layer
 
@@ -173,4 +173,4 @@ When memory is enabled (default; opt-out `--memory-off`), the orchestrator is th
 
 ## Related skills
 
-Sub-skills orchestrated: `extract-intelligence`, `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault` — plus the auto-integrated diagnostics `enrich-semantics`, `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd` (opt-in), and `install-deps` (each also emits a handoff YAML). Each emits a handoff YAML the orchestrator consumes (`../generate-intent/references/vault-contract.md §halt-protocol` for canonical blocker envelopes).
+Sub-skills orchestrated: `extract-intelligence`, `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault` — plus the auto-integrated diagnostics `enrich-semantics`, `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`, `emit-fsd` (opt-in), and `install-deps` (each also emits a handoff YAML). Each emits a handoff YAML the orchestrator consumes (`plugins/mega-sdd/references/halt-protocol.md §halt-protocol` for canonical blocker envelopes).

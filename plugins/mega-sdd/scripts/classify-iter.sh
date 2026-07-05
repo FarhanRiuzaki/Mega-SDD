@@ -45,12 +45,15 @@ fi
 # --- Classifier criteria (per CLAUDE.md §Classifier criteria) ---
 
 VAULT_CONTRACT_PATH="plugins/mega-sdd/skills/generate-intent/references/vault-contract.md"
+# Canonical halt registry relocated to plugins/mega-sdd/references/halt-protocol.md
+# (legacy vault-contract.md path stays watched for stale/tombstone edits).
+HALT_PROTOCOL_PATH="plugins/mega-sdd/references/halt-protocol.md"
 HANDOFF_CONTRACT_PATH="plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
 
 if [[ "$EP" == "EP1" ]]; then
   # Pre-work: working-tree diff vs HEAD
   EST_FILES_CHANGED=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
-  EST_HALT_ENUM_DIFF=$(git diff HEAD -- "$VAULT_CONTRACT_PATH" 2>/dev/null | grep -cE "^[+-].*type:.*\|" || true)
+  EST_HALT_ENUM_DIFF=$(git diff HEAD -- "$VAULT_CONTRACT_PATH" "$HALT_PROTOCOL_PATH" 2>/dev/null | grep -cE "^[+-].*type:.*\|" || true)
   EST_NEW_SKILL_DIR=$(git diff --name-status HEAD 2>/dev/null | grep -cE "^A.*plugins/mega-sdd/skills/.*/SKILL\.md$" || true)
   EST_HANDOFF_DIFF=$(git diff HEAD -- "$HANDOFF_CONTRACT_PATH" 2>/dev/null | grep -cE "^[+-].*TYPE:" || true)
   EST_SKILL_BODY_MODIFIED=$(git diff --name-only HEAD 2>/dev/null | grep -cE "plugins/mega-sdd/skills/.*/SKILL\.md$" || true)
@@ -58,7 +61,7 @@ if [[ "$EP" == "EP1" ]]; then
 else
   # Post-work: last commit diff
   FILES_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | wc -l | tr -d ' ')
-  HALT_ENUM_DIFF=$(git diff HEAD~1 HEAD -- "$VAULT_CONTRACT_PATH" 2>/dev/null | grep -cE "^[+-].*type:.*\|" || true)
+  HALT_ENUM_DIFF=$(git diff HEAD~1 HEAD -- "$VAULT_CONTRACT_PATH" "$HALT_PROTOCOL_PATH" 2>/dev/null | grep -cE "^[+-].*type:.*\|" || true)
   NEW_SKILL_DIR=$(git diff --name-status HEAD~1 HEAD 2>/dev/null | grep -cE "^A.*plugins/mega-sdd/skills/.*/SKILL\.md$" || true)
   HANDOFF_DIFF=$(git diff HEAD~1 HEAD -- "$HANDOFF_CONTRACT_PATH" 2>/dev/null | grep -cE "^[+-].*TYPE:" || true)
   SKILL_BODY_MODIFIED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -cE "plugins/mega-sdd/skills/.*/SKILL\.md$" || true)

@@ -141,7 +141,7 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 
 "Generated N units. Suggested next: `/mega-sdd:execute-bolts --all` to execute in order, or `/mega-sdd:execute-bolts U-001` to start with the first."
 
-Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit the handoff YAML record per `../orchestrate-flow/references/handoff-contract.md` — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
 
 ## Specialist references (load on demand)
 
@@ -161,4 +161,4 @@ Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), e
 
 ## Related skills
 
-Upstream: `bind-codebase` (produces the binding manifest + Implementation State Map this skill reads). OQ conventions + `vault.json` field rules + the halt-protocol contract: `../generate-intent/references/vault-contract.md`. Downstream: `execute-bolts` (consumes units; enforces `target_files`, Hard rules, render tests, sibling-consistency). Orchestration: `orchestrate-flow` (auto-routes here and consumes the handoff YAML).
+Upstream: `bind-codebase` (produces the binding manifest + Implementation State Map this skill reads). OQ conventions + `vault.json` field rules: `../generate-intent/references/vault-contract.md`. The halt-protocol contract: `plugins/mega-sdd/references/halt-protocol.md`. Downstream: `execute-bolts` (consumes units; enforces `target_files`, Hard rules, render tests, sibling-consistency). Orchestration: `orchestrate-flow` (auto-routes here and consumes the handoff YAML).

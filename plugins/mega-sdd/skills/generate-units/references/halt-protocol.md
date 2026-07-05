@@ -14,7 +14,7 @@
 - `starterkit_rule_citation_missing` (ALWAYS STOP)
 - Halt-vs-warning summary
 
-Every structured halt conforms to `generate-intent/references/vault-contract.md §halt-protocol`. The SKILL.md step skeleton names the trigger for each; this file carries the emitted YAML and recovery action. All halts STOP generation unless noted; under `--auto` they set handoff `status: halted`.
+Every structured halt conforms to `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. The SKILL.md step skeleton names the trigger for each; this file carries the emitted YAML and recovery action. All halts STOP generation unless noted; under `--auto` they set handoff `status: halted`.
 
 ## When each halt fires (index)
 

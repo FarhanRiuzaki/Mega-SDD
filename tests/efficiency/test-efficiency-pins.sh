@@ -47,9 +47,9 @@ grep -q 'docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/' "$P/
   && pass "E7: paths.md KB read-side has all 4 paths" \
   || fail "E7: paths.md KB path order still drifted"
 
-# E8 — handoff-contract precedence rule + scan block fixed
+# E8 — handoff-contract precedence rule + scan routing row matches skill side
 grep -q 'Precedence (anti-drift rule)' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
-  && grep -A8 '### `scan-codebase`' "$P/skills/orchestrate-flow/references/handoff-contract.md" | grep -q . \
+  && grep -qE '^\| `scan-codebase` \|' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
   && grep -q 'starterkit-first — draft the vault scan-aware' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
   && pass "E8: handoff precedence rule + scan block matches skill side" \
   || fail "E8: handoff-contract drift not fixed"

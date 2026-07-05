@@ -179,7 +179,7 @@ If `--auto` flag → emit handoff YAML per §Handoff emission.
 
 ## Halt protocol
 
-Per `mega-sdd:generate-intent/references/vault-contract.md §halt-protocol`. install-deps emits these halts:
+Per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. install-deps emits these halts:
 
 - **`pkg_mgr_not_found`**: no compatible package manager detected for OS. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt-on-PATH (Linux) / install WSL Ubuntu (Windows native) → re-run.
 - **`install_failed`**: install command exited non-zero OR verify_cmd failed post-install. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail, subtype: <install_command_failed | verify_after_install_failed>}`. Resolution: inspect stderr_tail, fix root cause (PATH / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool.
@@ -187,7 +187,7 @@ Per `mega-sdd:generate-intent/references/vault-contract.md §halt-protocol`. ins
 
 ## Handoff emission
 
-When invoked with `--auto` flag, emit handoff YAML at end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` flag, emit handoff YAML at end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

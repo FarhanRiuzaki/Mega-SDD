@@ -29,7 +29,7 @@ blocker:
   next_action: <retry | edit unit | manual fix>
 ```
 
-When retries exhaust for a unit's acceptance test, emit the structured halt (per `vault-contract.md §halt-protocol`):
+When retries exhaust for a unit's acceptance test, emit the structured halt (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`):
 
 ```yaml
 blocker:
@@ -333,13 +333,13 @@ After the last unit: suggest `/mega-sdd:detect-drift` to verify all bolts honore
 
 **End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`.
 
-**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (:377-381) and the contract §`execute-bolts` (`orchestrate-flow/references/handoff-contract.md`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Phase context` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §To start the next phase`; `chain-execution.md §Phase context`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
+**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (:377-381) and the contract's execute-bolts routing row (`orchestrate-flow/references/handoff-contract.md §Per-skill expected emissions`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Phase context` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §To start the next phase`; `chain-execution.md §Phase context`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
 
 IF `vault.phase < vault.phase_total`:
 ```yaml
 next_action:
   suggested_skill: mega-sdd:detect-drift
-  suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata (mirror §Handoff emission :379 + contract §execute-bolts)
+  suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata (mirror §Handoff emission :379 + the contract execute-bolts routing row)
   rationale: "All bolts executed; recommend a periodic drift check."
   hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): /mega-sdd:generate-intent --kb=<KB-path-from-vault.json.kb_source> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
 ```
@@ -357,7 +357,7 @@ IF `phase` is absent (older vault): default to `phase: 1, phase_total: 1` → us
 
 ## Handoff emission (`--auto`)
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:
@@ -404,7 +404,7 @@ handoff:
 
 > **Scope propagation to detect-drift (AUDIT L9).** When this handoff carries a `scope:` block, `next_action.suggested_args` MUST include `--scope=<scope.id>` — `detect-drift` accepts `--scope`, and the orchestrator's consumption loop passes `suggested_args` straight through. Deterministically enforced: the Stop-hook handoff validator FAILs `scope_args_missing` when a scoped execute-bolts handoff routes to detect-drift without `--scope=` in `suggested_args`. Without it, a scope-filtered bolt batch hands off to a **full-scan** drift check (the seam asymmetry: detect-drift propagates scope to ITS downstream, but nothing seeded scope into detect-drift). For a single-scope vault there is no `scope:` block and `suggested_args` stays `[]`.
 
-Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s per-skill blocks are regenerated verbatim from this list, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
+Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s routing index carries NO copy, only a pointer here, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
 
 `test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `partial_state_corrupt` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use`
 

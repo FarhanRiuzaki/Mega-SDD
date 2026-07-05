@@ -65,7 +65,7 @@ blocker:
 
 ## Handoff YAML
 
-Under `--auto`, emit at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+Under `--auto`, emit at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

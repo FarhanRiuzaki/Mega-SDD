@@ -149,7 +149,7 @@
   - Recommendation displays with all 4 fields + ACCEPT/OVERRIDE/REJECT user actions
   - OQ stays `pending` (NOT auto-resolved) — user reviews after binding completes
   - Pipeline continues (recommendation doesn't block)
-  - Under `--auto`, the handoff emits `status: completed` (NOT `paused`) with `next_action.suggested_skill: mega-sdd:generate-units` — recommendations are advisory and never pause the chain; the pending OQ carries forward into generate-units as ungrounded (per `orchestrate-flow/references/handoff-contract.md` §bind-codebase)
+  - Under `--auto`, the handoff emits `status: completed` (NOT `paused`) with `next_action.suggested_skill: mega-sdd:generate-units` — recommendations are advisory and never pause the chain; the pending OQ carries forward into generate-units as ungrounded (per `bind-codebase/references/auto-memory-handoff.md` §Handoff emission; routing indexed in `orchestrate-flow/references/handoff-contract.md`)
 
 ### TQ6: Recommend-mode underspecified — halt
 - **Setup:** OQ-AR-8 `resolution_mode: recommend`, `confidence: high`, but `fallback_if_wrong` is missing

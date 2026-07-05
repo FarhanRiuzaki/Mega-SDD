@@ -363,7 +363,7 @@ Future iters that touch a skill MUST update this catalog if introducing new prec
 
 1. Add new `### <skill> preflight checks` section if skill not present
 2. Add new `- **check_id:**` entry with all 5 fields
-3. Use canonical halt type names from vault-contract.md `§halt-protocol type enum`
+3. Use canonical halt type names from `plugins/mega-sdd/references/halt-protocol.md` `§halt-protocol type enum`
 4. Verify check command is portable (works on macOS + Linux; if not, document platform)
 5. Cite in skill's SKILL.md halt section: "Step 3.5 preflight check `<check_id>` anticipates this halt"
 
@@ -372,4 +372,4 @@ Future iters that touch a skill MUST update this catalog if introducing new prec
 ## See also
 
 - `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` §Step 3.5 (consumer)
-- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` §halt-protocol (canonical halt envelope for `predictive_check_failed`)
+- `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol (canonical halt envelope for `predictive_check_failed`)

@@ -7,8 +7,8 @@
 # `suggested_skill: mega-sdd:detect-drift` — the DEFAULT-ON auto-gate that runs
 # after every execute-bolts batch (orchestrate-flow/references/chain-execution.md
 # §Hybrid drift gate phase :190), so execute-bolts is NEVER terminal — matching
-# §Handoff emission (--auto) :377-381 and handoff-contract.md §execute-bolts
-# (:411-413). Phase advance / all-phases-done is carried as an informational
+# §Handoff emission (--auto) :377-381 and the handoff-contract.md
+# execute-bolts routing row. Phase advance / all-phases-done is carried as an informational
 # next_action.hint (chain-execution.md §Phase context :260 — "This complements the
 # execute-bolts handoff next_action.hint"), NEVER as suggested_skill: cross-phase
 # advance is a MANUAL user checkpoint (generation-guide.md §To start the next phase
