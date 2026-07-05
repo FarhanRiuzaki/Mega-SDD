@@ -239,17 +239,19 @@ for oq_id in sorted(binding_oqs.keys()):
             "expected_in": "any unit's frontmatter binding_refs (or any field within `---...---`)",
             "found_in_units": [],
         })
-# Slice 2: CONFLICT-ID drops
-for conflict_id in sorted(binding_conflicts.keys()):
-    cites = unit_conflict_citations.get(conflict_id, [])
-    if not cites:
-        drops.append({
-            "type": "conflict_id_dropped",
-            "conflict_id": conflict_id,
-            "source_binding": os.path.relpath(binding_conflicts[conflict_id], cwd),
-            "expected_in": "any unit's frontmatter binding_refs (or decisions: frontmatter when CONFLICT was resolved with option A/B)",
-            "found_in_units": [],
-        })
+# Slice 2: CONFLICT-ID drops — DEFER-resolution-aware (round-2 Batch A1).
+# A DEFER-resolved conflict downgrades to an OQ (resolve-oq/references/binding-mode.md:45)
+# and has NO citing unit by design (task-typing.md:29 "DEFER became an OQ"); the
+# documented DEFER-only path proceeds to generate-units with NO re-bind
+# (binding-mode.md:58). So an uncited DEFER'd CONFLICT-N is advisory, NOT a blocking
+# drop. Collect the uncited candidates here; the DEFER verdict is read per-ID in the
+# Pass 3b walk below (from the resolved heading OR the `- **Resolution**:` line), and
+# the candidates are classified after that walk. KEEP_VAULT keeps its un-droppable
+# citation obligation (task-typing.md:28); any other/unknown resolution is fail-closed.
+conflict_drop_candidates = [
+    cid for cid in sorted(binding_conflicts.keys())
+    if not unit_conflict_citations.get(cid, [])
+]
 
 # --- Pass 3b: unresolved-CONFLICT block (the moat's literal invariant #2) ---
 # Invariant #2 promises "unresolved CONFLICTs block downstream unit/bolt generation."
@@ -290,6 +292,17 @@ HEAD_RESOLVED_RE = re.compile(
 RESOLUTION_LINE_RE = re.compile(
     r"(?mi)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:Resolution|Status)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:✅\s*)*(?:RESOLVED\b|✅)"
 )
+# Resolution ACTION extraction (round-2 Batch A1): the write-back grammar records the
+# action as `RESOLVED (<ACTION>)` in BOTH the heading and the `- **Resolution**:` line
+# (resolve-oq/references/binding-mode.md:29-31). Read it from the whole block so a DEFER
+# recorded only on the line (heading carries a bare ✅) is still recognized — mirroring
+# the two surfaces RESOLUTION marker detection already reads. A bare menu like
+# `Suggested action: KEEP_VAULT | DEFER | …` does NOT match (no `RESOLVED (` prefix).
+RESOLVED_ACTION_RE = re.compile(
+    r"RESOLVED\s*\(\s*(KEEP_VAULT|KEEP_CODE|DEFER|SPLIT)\b", re.IGNORECASE
+)
+# Per-conflict-ID resolution action (None = resolved but no recognized action → fail-closed).
+conflict_resolution_action = {}
 for bp in binding_paths:
     try:
         with open(bp) as f:
@@ -319,6 +332,28 @@ for bp in binding_paths:
                 cm = re.search(r"\bC-\d+\b", head)
             cid = cm.group(0) if cm else "CONFLICT-?"
             resolved = bool(HEAD_RESOLVED_RE.search(head) or RESOLUTION_LINE_RE.search(block))
+            if resolved:
+                # Anchor the resolution ACTION to the SAME surface that established `resolved`
+                # — the heading, else the dedicated `- **Resolution**:`/`- **Status**:` line —
+                # NEVER a free block scan: a stray "RESOLVED (DEFER)" in a rationale bullet or a
+                # sibling-conflict cross-reference must not demote a KEEP_VAULT conflict's
+                # un-droppable citation obligation (invariant #2).
+                _hm = RESOLVED_ACTION_RE.search(head)
+                if _hm:
+                    _action = _hm.group(1).upper()
+                else:
+                    _action = None
+                    for _ln in block.splitlines():
+                        if RESOLUTION_LINE_RE.search(_ln):
+                            _lm = RESOLVED_ACTION_RE.search(_ln)
+                            _action = _lm.group(1).upper() if _lm else None
+                            break
+                # Multi-block / multi-file fail-closed: a DEFER elsewhere must never override a
+                # non-DEFER (or unknown) resolution already recorded for the same conflict-ID.
+                if cid not in conflict_resolution_action:
+                    conflict_resolution_action[cid] = _action
+                elif conflict_resolution_action[cid] == "DEFER" and _action != "DEFER":
+                    conflict_resolution_action[cid] = _action
             if active and not resolved:
                 drops.append({
                     "type": "conflict_unresolved",
@@ -381,6 +416,31 @@ for oq_id in sorted(binding_oqs_pending.keys()):
                 "(an unresolved OQ has no resolution to trace; resolve it via "
                 "/mega-sdd:resolve-oq, after which affected units must cite it)"
             ),
+        })
+
+# --- Classify the CONFLICT-ID drop candidates now that per-ID resolution actions are
+# known (round-2 Batch A1). DEFER → advisory extra (downgraded to an OQ; no citing unit
+# expected). KEEP_VAULT / unknown / absent action → blocking drop (fail-closed). ---
+for cid in conflict_drop_candidates:
+    if conflict_resolution_action.get(cid) == "DEFER":
+        extras.append({
+            "type": "conflict_id_deferred_uncited",
+            "conflict_id": cid,
+            "source_binding": os.path.relpath(binding_conflicts[cid], cwd),
+            "warning": (
+                "CONFLICT resolved via DEFER (downgraded to an OQ) and not cited by any "
+                "unit — advisory only. The DEFER-only path proceeds to generate-units with "
+                "no re-bind (resolve-oq/references/binding-mode.md:58); the deferred OQ "
+                "carries traceability via the standard OQ machinery."
+            ),
+        })
+    else:
+        drops.append({
+            "type": "conflict_id_dropped",
+            "conflict_id": cid,
+            "source_binding": os.path.relpath(binding_conflicts[cid], cwd),
+            "expected_in": "any unit's frontmatter binding_refs (or decisions: frontmatter when CONFLICT was resolved with option A/B)",
+            "found_in_units": [],
         })
 
 # --- Report ---

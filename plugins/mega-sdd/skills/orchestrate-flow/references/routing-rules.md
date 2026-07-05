@@ -51,6 +51,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 | PRD exists, no vault, starterkit absent + `--greenfield` | `generate-intent <prd> --greenfield` |
 | Vault exists, mode=greenfield, no units | `generate-units` |
 | Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` |
+| Vault exists, codebase-map exists, no bound-vault, BUT `binding.md` has NO ACTIVE (unresolved) conflict block AND every resolution action is KEEP_VAULT or DEFER (ZERO KEEP_CODE/SPLIT — those edited the vault and still need a re-bind) — a KEEP_VAULT/DEFER-only resolution leaves `bound/` absent by design | `generate-units` (the resolution-marked binding.md needs no re-bind; routing to `bind-codebase` would re-derive the unchanged vault-vs-code contradiction, re-raise the SAME CONFLICT and infinite-loop — per `resolve-oq/references/binding-mode.md` Step 5 + `convergence-loops.md`). NOTE: a MIXED / KEEP_CODE / SPLIT resolution ALSO leaves `bound/` absent but the vault WAS edited — it falls through to the `bind-codebase` row below (re-bind), matching the resolve-oq handoff + convergence surfaces |
 | Vault exists, codebase-map exists, no bound-vault | `bind-codebase` (alone if blocking; chain if clean) |
 | Bound-vault exists, no units | `generate-units` |
 | Units exist, some not in bolts | `execute-bolts --all` |

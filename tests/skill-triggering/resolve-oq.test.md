@@ -70,8 +70,17 @@ Manual-run fixture for the `resolve-oq` skill.
 ### BM3: Resolutions persist
 - **After resolving 1 conflict + 1 OQ:** binding.md updated, vault.json changelog entry added
 
-### BM4: Hand-off after binding mode
-- **After loop:** suggests `/mega-sdd:bind-codebase` re-run (since conflicts now resolved)
+### BM4: Hand-off after binding mode — ACTION-MIX (not a blanket re-bind)
+- **Setup:** at least one CONFLICT resolved via KEEP_CODE or SPLIT (the vault was edited)
+- **Expect:** handoff `next_action.suggested_skill: mega-sdd:bind-codebase` — the edited claims now match code and re-bind cleanly (per `references/binding-mode.md` Step 5)
+
+### BM5: Hand-off KEEP_VAULT/DEFER-only → generate-units (no re-bind loop)
+- **Setup:** all CONFLICTs resolved via ONLY KEEP_VAULT and/or DEFER (vault + code unchanged); zero KEEP_CODE/SPLIT
+- **Expect:** handoff `status: completed`, `next_action.suggested_skill: mega-sdd:generate-units` (NOT bind-codebase) — the resolution-marked binding.md already passes `validate-handoff-binding-units.sh`; a re-bind would re-derive the unchanged vault-vs-code contradiction and RE-RAISE the identical CONFLICT (infinite loop). Under `--deep`/`--resume` the chain proceeds to generate-units; it does NOT route back to bind.
+
+### BM6: DEFER-resolved CONFLICT is advisory at the binding→units gate (not a hard block)
+- **Setup:** a CONFLICT resolved via DEFER (downgraded to an OQ per `references/binding-mode.md:45`); no unit cites CONFLICT-N (the deferred OQ carries the trace instead)
+- **Expect:** `validate-handoff-binding-units.sh` emits an advisory `conflict_id_deferred_uncited` extra, NOT a blocking `conflict_id_dropped` drop → the execute-bolts PreToolUse gate does NOT hard-block the DEFER→generate-units→execute-bolts path. KEEP_VAULT keeps its un-droppable citation obligation; an unknown/absent resolution action stays fail-closed (blocking).
 
 ## Context-aware recommendations (v0.6+, Iter 7)
 
@@ -120,4 +129,4 @@ Manual-run fixture for the `resolve-oq` skill.
 
 ## Pass criteria
 
-All R1-R7 invoke skill correctly. 4-action menu obeys brownfield/greenfield/repo-signal conditions. State transitions match B4. Binding mode walks conflicts and OQs per BM1-BM3. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.
+All R1-R7 invoke skill correctly. 4-action menu obeys brownfield/greenfield/repo-signal conditions. State transitions match B4. Binding mode walks conflicts and OQs per BM1-BM3; hand-off is ACTION-MIX per BM4-BM5 (KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units — never a blanket re-bind that loops); DEFER-resolved uncited CONFLICTs are advisory at the binding→units gate per BM6. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.

@@ -134,11 +134,15 @@ handoff:
     - <absolute path to vault.json (updated)>
     - <absolute path to binding.md (when --binding mode)>
   next_action:
-    suggested_skill: mega-sdd:bind-codebase    # if --binding mode (re-bind after conflict resolution)
-    # OR
-    suggested_skill: mega-sdd:orchestrate-flow  # if intent mode (resume chain)
+    # --binding mode — the next hop is ACTION-MIX dependent (binding-mode.md Step 5). A
+    # blanket re-bind LOOPS on KEEP_VAULT/DEFER: bind re-derives the SAME CONFLICT from the
+    # unchanged vault-vs-code contradiction (it never consumes a prior resolution as evidence).
+    #   • any KEEP_CODE or SPLIT chosen (vault was edited)  → mega-sdd:bind-codebase   (re-bind is clean)
+    #   • ONLY KEEP_VAULT / DEFER (vault + code unchanged)  → mega-sdd:generate-units  (the resolution-marked binding.md already passes validate-handoff-binding-units.sh; proceed)
+    # intent mode (non-binding OQ walk) → mega-sdd:orchestrate-flow (resume chain)
+    suggested_skill: mega-sdd:bind-codebase    # OR mega-sdd:generate-units (KEEP_VAULT/DEFER-only) OR mega-sdd:orchestrate-flow (intent mode)
     suggested_args: ["--auto"]
-    rationale: "<1-sentence — e.g., 'CONFLICTs resolved; re-run binding gate' OR 'P1 OQs answered; chain resumable'>"
+    rationale: "<1-sentence — e.g., 'KEEP_CODE/SPLIT resolutions; re-run binding gate' / 'KEEP_VAULT/DEFER only; binding resolved, proceed to units' / 'P1 OQs answered; chain resumable'>"
   blockers: []
   metrics:
     items_processed: <N OQs/CONFLICTs walked>

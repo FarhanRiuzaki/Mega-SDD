@@ -506,7 +506,7 @@ scope:                                  # when vault has scope_metadata
   prd_sha256: <sha256>
 next_action:
   type: invoke_skill | user_review
-  suggested_skill: mega-sdd:generate-units | mega-sdd:execute-bolts
+  suggested_skill: mega-sdd:bind-codebase | mega-sdd:generate-units | mega-sdd:orchestrate-flow  # --binding action-mix: KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units (binding-mode.md Step 5); intent mode→orchestrate-flow
   suggested_args: ["--auto"]
 blockers: []
 metrics:
