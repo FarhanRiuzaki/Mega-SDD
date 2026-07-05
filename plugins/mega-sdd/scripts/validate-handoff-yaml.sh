@@ -275,9 +275,15 @@ else:
                 return isinstance(v, list) or (isinstance(v, str) and v.strip().startswith("["))
             def is_dictish(v):
                 return isinstance(v, dict) or (isinstance(v, str) and v.strip().startswith("{"))
-            LIST_FIELDS = ["blockers", "checkpoints", "cycles"]
+            # checkpoints/cycles are OBJECTS per handoff-contract.md (§schema :45-48,
+            # :62-65 block mappings; machine-readable TYPE: object annotations :169-171,
+            # :189-191). Their halts_auto_resolved/halts_escalated_to_user subfields are
+            # the only arrays, nested INSIDE the dict — so they belong in DICT_FIELDS,
+            # not LIST_FIELDS. blockers is the sole top-level list field.
+            LIST_FIELDS = ["blockers"]
             DICT_FIELDS = ["metrics", "constitution", "pbt", "mutability", "scope",
-                           "replay", "starterkit_context", "metadata"]
+                           "replay", "checkpoints", "cycles", "starterkit_context",
+                           "metadata"]
             for f in LIST_FIELDS:
                 if f in h and h[f] is not None and not is_listish(h[f]):
                     type_errors.append(f"{f} must be a list when present, got scalar {h[f]!r}")
