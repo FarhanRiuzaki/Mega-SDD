@@ -124,45 +124,24 @@ For EACH significant step you perform (file write, dep add, migration, etc.), ap
   idempotent: false
 ```
 
-**Canonical step_type taxonomy (use these EXACT values — execute-bolts §Partial-state contract table):**
+**Canonical step_type enum (use these EXACT values — full taxonomy + compensating-action templates in `partial-state-and-saga.md`; `*` = idempotent: false):**
 
-| step_type | When to use | Idempotent? |
-|---|---|---|
-| `file_created` | created a new file | ✓ |
-| `file_modified` | edited an existing file | ✓ |
-| `file_partially_written` | started writing but did not finish (crash mid-write) | ✓ |
-| `file_deleted` | rm'd a file | ✓ |
-| `composer_dep_added` | added a require/require-dev to composer.json + ran composer | ✗ |
-| `composer_dep_removed` | removed a composer dep | ✗ |
-| `npm_dep_added` | added a dep to package.json | ✗ |
-| `npm_dep_removed` | removed an npm dep | ✗ |
-| `migration_created` | wrote a new migration file | ✓ |
-| `migration_executed` | ran `php artisan migrate` or equivalent | ✗ (DB state) |
-| `external_api_call` | hit an external API with side effect | ✗ |
-| `test_command_run` | ran a test command (read-only side-effects only) | ✓ |
-| `git_commit` | created a git commit | ✗ |
-| `git_branch_created` | created a git branch | ✓ |
+`file_created` · `file_modified` · `file_partially_written` · `file_deleted` · `composer_dep_added`* · `composer_dep_removed`* · `npm_dep_added`* · `npm_dep_removed`* · `migration_created` · `migration_executed`* · `external_api_call`* · `test_command_run` · `git_commit`* · `git_branch_created`
 
-If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger the `partial_state_corrupt` halt.
-
-**Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times. FALSE if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
-
-**Compensating_action:** literal shell command (NOT a description). Empty string `""` only when no rollback is possible (e.g., `external_api_call` to a non-idempotent endpoint); use `"(none — manual review required)"` for that case.
+- If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger the `partial_state_corrupt` halt.
+- **Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times; FALSE (`*` above) if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
+- **Compensating_action:** literal shell command (NOT a description). Empty string `""` only when no rollback is possible (e.g., `external_api_call` to a non-idempotent endpoint); use `"(none — manual review required)"` for that case.
 
 **If the bolt completes successfully:** the `## Rollback hints` section is INFORMATIONAL only — no rollback needed; the commit landed cleanly. Hints persist in bolt-report.md for audit trail.
 
 ## Atomic discipline (scaffolded, not assumed)
 
-- THIS BOLT = ONE COMMIT
-- target_files whitelist: <list from unit frontmatter> — DO NOT touch outside
-  (a deterministic post-hoc observer diffs your COMMITTED paths against this list —
-  an escaped path blocks the pipeline with `whitelist_violation`)
-- Commit message format: "<type>(U-XXX): <imperative phrase from unit title>"
-  PLUS both trailers on the commit body (the gates key on them):
-      Unit: U-XXX
-      SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX
-- DO NOT bundle unrelated concerns
-- If you find yourself wanting to modify unrelated file → halt `scope_creep_detected`
+- THIS BOLT = ONE COMMIT — message format + BOTH commit trailers (`Unit:` + `SDD-PROVENANCE:`)
+  per your agent contract (your system prompt carries the canonical format; the gates key on
+  those trailers — a dispatch whose system prompt lacks it consults `agents/bolt-implementer.md` :25)
+- DO NOT touch files outside the unit's `target_files` — a deterministic post-hoc
+  observer (B3) diffs your COMMITTED paths against the whitelist; an escaped path
+  blocks the pipeline with `whitelist_violation`
 
 ## Reuse index (PRIMARY reuse lookup surface — T1 line + T2 slice)
 
@@ -174,11 +153,8 @@ surface (Iron Rule 4): scan the FULL index with Read/Grep before writing any
 new capability; reuse_candidates below is only a hint.
 ```
 
-T2 (`### Reuse index (filtered slice)` — never dropped by the truncation cascade
-below `constitution_clauses`): the entries whose tags/paths overlap this unit's
-domain + target_files, each as `name — one-line what it does — _source: path:line`.
-The implementer must read the actual `_source` before deciding reuse vs fresh, and
-record every fresh-instead-of-reuse decision in `reuse_decisions` with a reason.
+T2 (`### Reuse index (filtered slice)`): assembled + truncated per
+`context-enrichment.md §Reuse slice: build` (cascade priority 3 — never fully dropped).
 
 ## Anti-context (negative space = freedom + protection)
 
@@ -238,60 +214,12 @@ Pattern: <pattern-description> → <past resolution>
 
 ## T2.3 — Starterkit context (relevant slice)
 
-This section is populated by execute-bolts Step 4.5.b-starterkit when:
-1. `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists (deep-scan was run)
-2. EITHER `unit.starterkit_relevance` is non-empty (auth/rbac/ui_ux/libs slices) OR `starterkit_context.patterns` exists AND `unit.target_files` matches a pack-discovered location (§patterns slice — independent of starterkit_relevance)
+This slot is populated by execute-bolts Step 4.5.b-starterkit ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists. The read/build/§patterns/code-slice/inject machinery, the emitted slice sections and their marker lines (`Auth:` / `Authz:` / `UI/UX:` / `Design tokens:` / `Design system:` / `Libs in scope:`, `### Starterkit code patterns`, `### Reference code example` with its `Pattern:` + `File:` lines), the slice budget, and the slice truncation cascade are defined ONCE in `starterkit-enrichment.md` (routed from SKILL.md; overall budgets + the T2 cascade stay in `context-enrichment.md`). This template MUST NOT restate them.
 
-The dispatcher injects relevant slices (≤8KB total under v3.67.0 caps). Non-matching domains are OMITTED.
-
-**Slice template (sections appear only when relevant):**
-
-```
-### Starterkit context (relevant to this unit)
-
-Auth: lib=<auth.lib>, mechanism=<auth.mechanism>, user_model=<auth.user_model>
-Authz: lib=<authz.lib>, mechanism=<authz.mechanism>, declarations=<authz.declarations[].name joined by ", ">
-UI/UX: extends=<ui_ux.layout_extends>, notification=<ui_ux.notification_lib>, idioms=[<idioms joined by "; ">]
-Libs in scope: <lib.name>@<lib.version> (used in: <usage_hint joined by ", ">), ...
-
-### Starterkit code patterns (follow these conventions)
-
-- controller:
-    location:  app/Http/Controllers/
-    naming:    {Model}Controller<ext>
-    extension: .php
-    extras:    {base_class: "Controller", methods: ["index","show","store","update","destroy"]}
-    _source:   app/Http/Controllers/ExampleController.php:1-30
-- data_model: (... same shape for each matched category ...)
-- ...
-
-### Reference code example (from starterkit — walking-skeleton: controller only)
-
-Pattern: controller
-File:    app/Http/Controllers/ExampleController.php
-
-```php
-<?php
-namespace App\Http\Controllers;
-// ... full file content (or first 100 lines + truncation marker) ...
-```
-
-Follow this style for new controller files. Do not deviate from the import order, base class, method shape, or response idiom shown above unless the unit explicitly requires it.
-```
-
-**Budget:** total slice content target ≤4KB. Hard cap rolls up to overall T2 budget (cap_t2=10240) — see SKILL.md §T2 Section Priority + Truncation.
-
-Truncation order:
-1. `libs[]` — keep top 10 by relevance score
-2. `code_examples.controller.content` — truncate from 100 → 50 lines
-3. `ui_ux.idioms[]` — keep top 3
-4. Drop `code_examples` entirely (patterns metadata preserved)
-5. Halt `dispatch_prompt_too_large` if still over hard cap
-
-**Anti-halu rails:**
-- When auth/rbac/ui_ux/libs sections present, bolt subagent MUST honor the constraints listed. Do NOT invent libs not listed; do NOT use a different layout; do NOT use a different notification lib.
-- When `### Starterkit code patterns` present, bolt subagent MUST match `location` + `naming` + `extension` for new files in that category. Path conventions are non-negotiable.
-- When `### Reference code example` present, bolt subagent MUST follow the structural idioms (import order, base class, method shape, response pattern) shown — provenance citation `path:` is the source of truth.
+**Anti-halu rails (binding on the bolt subagent when the slice is present):**
+- Honor the listed auth/authz/ui_ux/libs constraints. Do NOT invent libs not listed; do NOT use a different layout; do NOT use a different notification lib.
+- When `### Starterkit code patterns` present, match `location` + `naming` + `extension` for new files in that category. Path conventions are non-negotiable.
+- When `### Reference code example` present, follow the structural idioms (import order, base class, method shape, response pattern) shown — the provenance citation (`File:` path) is the source of truth.
 
 **Absence is valid:** if this section is absent, no starterkit context is available — the bolt should produce code following framework defaults (per the framework pack T1 section).
 
@@ -370,18 +298,6 @@ TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 - Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`
 - Full memory tables: `<project>/.mega-sdd/memory/`
 - Full framework pack: `plugins/mega-sdd/references/framework-conventions/<pack>.md`
-
-═══════════════════════════════════════════
-GENERATE CODE THAT:
-═══════════════════════════════════════════
-
-- Uses target framework conventions per pack (Tier 2 §Framework pack rules)
-- Respects all [HIGH] claims 1:1 (Tier 2 §Confidence labels)
-- Cites anchors when extending existing patterns
-- NEVER replicates anti-patterns (Tier 2 §KB anti-patterns + Tier 1 §Anti-context)
-- Emits provenance trailer in every modified file (Tier 1 §Provenance trailer)
-- Halts cleanly per halt vocabulary if stuck (Tier 1 §Halt vocabulary)
-- Self-reports via bolt_self_report YAML at end of bolt-report.md (Tier 1 §Self-assessment vocabulary)
 ```
 
 ## Tier-loading algorithm

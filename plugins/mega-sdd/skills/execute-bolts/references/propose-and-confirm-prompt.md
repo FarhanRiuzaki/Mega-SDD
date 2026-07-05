@@ -141,7 +141,7 @@ After subagent returns:
    [2] Show alternative fix options (if alternative_fixes present)
    [3] Reject — I'll fix manually then /mega-sdd:auto --resume
    [4] Override halt — accept current state as "good enough" (logs to memory)
-   (Cancel chain — pause everything for review — rides the built-in "Other"/Esc escape; the platform caps AskUserQuestion at 4 options, per halts-and-handoff.md §Propose-and-confirm)
+   (Cancel chain — pause everything for review — rides the built-in "Other"/Esc escape; the platform caps AskUserQuestion at 4 options, per halt-recovery.md §Propose-and-confirm)
 ```
 
 3. On user accept (option 1): apply diff to file → re-execute single bolt → continue batch

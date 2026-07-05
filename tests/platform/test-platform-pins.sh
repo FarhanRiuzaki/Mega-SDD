@@ -51,7 +51,7 @@ grep -q 'startup|resume|clear|compact' "$P/hooks/hooks.json" \
 # P7 — prose corrections hold
 grep -q 'permissionDecision: "deny"' "$P/references/fork-a-recovery-map.md" \
   && pass "P7: fork-map block format corrected" || fail "P7: fork-map stale"
-grep -q '4 options — the platform caps options at 4' "$P/skills/execute-bolts/references/halts-and-handoff.md" \
+grep -q '4 options — the platform caps options at 4' "$P/skills/execute-bolts/references/halt-recovery.md" \
   && pass "P7b: AskUserQuestion ≤4 options" || fail "P7b: 5-option dispatch remains"
 # P7b2 — the propose-and-confirm menu template ALSO respects the 4-option cap
 # (regression guard: Override must be [4], Cancel rides Other/Esc, no [5] dispatch)
