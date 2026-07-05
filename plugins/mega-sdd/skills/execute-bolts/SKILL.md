@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.15.0
+version: 2.16.0
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the run on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -56,7 +56,7 @@ Each check below can HALT before any code is written. Snapshot formats, grammar 
 3.5. **Test framework present.** Probe the manifest/lockfile for the project's test runner (phpunit/pest, jest/vitest, pytest, go test, cargo test, rspec/minitest — per the detected ecosystem). Absent → **halt `dep_missing`** naming the runner + install command. NEVER proceed by fabricating "green" tests against a runner that doesn't exist — TDD without a runner is fiction.
 3.6. **Commit-path expectations.** If the repo has client-side commit hooks (probe `$(git rev-parse --git-path hooks)/pre-commit` — worktree-safe — plus husky/lefthook config) note it; when a bolt's commit is REJECTED by such a hook → **halt `commit_rejected_by_hook`** with the hook output verbatim — never retry with `--no-verify` (forbidden plugin-wide). `commit.gpgsign=true` and signing fails → same halt shape, cause `commit_signing_unavailable`.
 4. **Hard Rule pre-flight scan.** For each unit with a non-empty `## Hard rules` section, detect grammar (YAML blocks → v2 ast-grep; bulleted lines → v1; **mixed → halt `hard_rule_mixed_grammar`**), validate each rule (**unparseable → halt `hard_rule_unparseable`**, NEVER silently skip a rule), and capture a deterministic pre-flight snapshot to `<vault>/bolts/U-XXX/preflight.json` for the post-flight diff. v2 grammar with no ast-grep on PATH → **halt `dep_missing`**; a `SIGNATURE_RULE` referencing a symbol absent from the codebase-map → **halt `hard_rule_unanchored`** (cannot validate what doesn't exist). Grammar table, snapshot JSON, and halt YAMLs → `references/hard-rule-scan.md`.
-5. **PBT citation pre-flight.** When a unit has a non-empty `properties:` field, each `properties[].cites` must resolve to a real vault section / entity / constitution clause → else **halt `pbt_citation_invalid`**. Full PBT flow → `references/halts-and-handoff.md`.
+5. **PBT citation pre-flight.** When a unit has a non-empty `properties:` field, each `properties[].cites` must resolve to a real vault section / entity / constitution clause → else **halt `pbt_citation_invalid`**. Full PBT flow → `references/halt-recovery.md` (load only when a halt fires or a `properties:` unit is batched).
 
 ## Procedure (per unit)
 
@@ -76,7 +76,7 @@ Follows `references/superpowers-bridge.md` per-unit flow — the default executo
 Per `references/bolt-dispatch-prompt.md` (template) + `references/context-enrichment.md` (assembly logic). Total dispatch prompt budget ≤9KB target, **hard cap 12KB → halt `dispatch_prompt_too_large`** (a progressive T2 budget tracker truncates disposable sections first; the halt fires only when non-truncatable `constitution_clauses` alone exceed budget).
 
 - **TIER 1 (always, ≤2KB):** unit body, halt vocabulary, self-assessment template, **atomic commit discipline reminder, anti-context block, provenance trailer template**, and an acceptance-test-provenance NOTE when the test was weakly authored, the reuse-index path (always) + reuse_candidates hint.
-- **TIER 2 (conditional, ≤10KB, budget-tracked):** depends_on summaries, framework pack rules (glob-filtered), constitution clauses, KB anti-patterns, historical memory, the **starterkit context slice** + §patterns + reference code exemplar (auto-injected per unit per `starterkit_relevance`; emits `deep_scan_cache_corrupt` soft halt on a corrupt cache), confidence labels, validation hints, the reuse slice (filtered reuse-index entries). Section-priority truncation cascade (constitution clauses NEVER dropped) → `references/context-enrichment.md`.
+- **TIER 2 (conditional, ≤10KB, budget-tracked):** depends_on summaries, framework pack rules (glob-filtered), constitution clauses, KB anti-patterns, historical memory, the **starterkit context slice** + §patterns + reference code exemplar (auto-injected per unit per `starterkit_relevance`; emits `deep_scan_cache_corrupt` soft halt on a corrupt cache; machinery → `references/starterkit-enrichment.md`, loaded ONLY when `.mega-sdd/codebase/starterkit-context.yaml` exists), confidence labels, validation hints, the reuse slice (filtered reuse-index entries). Section-priority truncation cascade (constitution clauses NEVER dropped) → `references/context-enrichment.md`.
 - **TIER 3 (reference-only):** full upstream reports, constitution, KB files, memory, framework pack — read on demand, never embedded.
 - The assembled prompt is written to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance. **Anti-halu rails:** every T2 inclusion cites its source; the anti-context block is populated from real data (never invented); self-assessment confidence is numeric `0.0–1.0`; a provenance trailer is MANDATORY in every modified file (post-flight verifies it — missing → **halt `provenance_missing`**).
 
@@ -117,7 +117,7 @@ A crashed bolt writes `<vault>/bolts/U-XXX/partial-state.json` (v2.0 schema: `cu
 
 ## Halt protocol + propose-and-confirm
 
-Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a stale consumed interface → `cross_squad_interface_draft`; the batch-completion full suite ends RED → `batch_suite_red` (and the PreToolUse gate blocks the next run with `batch_suite_red` / `batch_suite_gate_missing` until a green `_batch-suite.json` covers the newest code commit). Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halts-and-handoff.md`.
+Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a stale consumed interface → `cross_squad_interface_draft`; the batch-completion full suite ends RED → `batch_suite_red` (and the PreToolUse gate blocks the next run with `batch_suite_red` / `batch_suite_gate_missing` until a green `_batch-suite.json` covers the newest code commit). Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halt-recovery.md` — load it ONLY when a halt actually fires (or a `properties:` unit is in the batch); the blocker envelope + the canonical bolt-halt enum stay in `references/halts-and-handoff.md`.
 
 ## Anti-hallucination rails
 
@@ -143,13 +143,15 @@ After the last unit: suggest `/mega-sdd:detect-drift` to verify the bolts honore
 - `references/code-gates.md` — L0 deterministic floor: toolchain detection (detect-never-impose), secret/SAST/new-dep gates + their halt YAMLs, blocking-vs-advisory split, panel injection, `code_gates:` config.
 - `references/hard-rule-scan.md` — Hard Rule pre/post-flight: grammar detection (v1/v2), snapshot + `preflight.json` formats, per-rule post-flight checks, cross-cutting-registration + parent-thread re-scan, and the `hard_rule_*` / `verify_unit_writable` halt YAMLs.
 - `references/hard-rule-grammar-v2.md` — the v2 (ast-grep YAML) Hard-rule grammar + installation guidance.
-- `references/context-enrichment.md` — Step 4.5 tiered prompt assembly: T1/T2/T3 contents, the T2 budget tracker + truncation cascade, and the full starterkit-slice read/build/§patterns/code-slice/inject logic.
+- `references/context-enrichment.md` — Step 4.5 tiered prompt assembly: T1/T2/T3 contents, the T2 budget tracker + truncation cascade, the reuse slice, the Map §6 fallback, and the Design slice (greenfield pipe).
+- `references/starterkit-enrichment.md` — the starterkit-slice read/build/§patterns/code-slice/inject machinery + slice truncation order; load ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists (absent → skip; the Map §6 fallback in `context-enrichment.md` applies).
 - `references/bolt-dispatch-prompt.md` — the canonical bolt-subagent dispatch prompt template (T1/T2/T3 sections the assembly populates).
 - `references/partial-state-and-saga.md` — partial-state v2.0 schema, step-type taxonomy, `--resume` integrity checks, `partial_state_corrupt` halt, and the `--rollback` saga flow.
 - `references/batch-and-fanout.md` — `--all` / `--per-squad` / `--squad` / `--module` procedures, per-bolt drift check, and the `cross_squad_interface_draft` / `module_blocked_by` halts.
 - `references/squad-subagent.md` — per-squad main-thread fan-out protocol (filter + consolidation; depth-1, no squad subagent).
 - `references/propose-and-confirm-prompt.md` — the AI fix-proposer subagent prompt template.
-- `references/halts-and-handoff.md` — halt protocol + YAMLs, propose-and-confirm UX + config, new-halt-types table, Property-Based Testing flow, streaming + `_summary.md` formats, outputs detail, handoff YAML + end-of-chain phasing, and the memory layer.
+- `references/halts-and-handoff.md` — halt protocol (blocker envelope), streaming + `_summary.md` formats, outputs detail, handoff YAML + the canonical bolt-halt enum + end-of-chain phasing, and the memory layer.
+- `references/halt-recovery.md` — full halt YAMLs (`test_fail`, `review_critical_unresolved`), propose-and-confirm UX + config, new-halt-types table, and the Property-Based Testing flow; load ONLY when a halt fires or a `properties:` unit is batched.
 - `references/bolt-contract.md` — bolt failure modes + the canonical blocker YAML envelope.
 
 ## Related skills

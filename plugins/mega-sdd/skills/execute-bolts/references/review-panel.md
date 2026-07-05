@@ -63,7 +63,7 @@ The controller (main thread) merges the lens reports:
 3. **Consensus** — a finding reported by ≥2 lenses is marked `confidence: high` in the merged list.
 4. **Gate:**
    - spec lens ❌ OR any **Critical** (any lens) → re-dispatch `bolt-implementer` with the merged issue list (the SHARED `--max-retries` cap — panel retries and spec retries draw from the same budget).
-   - Retries EXHAUSTED with a Critical still open → **halt `review_critical_unresolved`** (terminal — the run stops; never proceed to the next bolt over an open Critical). The halt YAML lives in `references/halts-and-handoff.md`; the unresolved finding is recorded in `bolt-report.md` `## Review panel`.
+   - Retries EXHAUSTED with a Critical still open → **halt `review_critical_unresolved`** (terminal — the run stops; never proceed to the next bolt over an open Critical). The halt YAML lives in `references/halt-recovery.md`; the unresolved finding is recorded in `bolt-report.md` `## Review panel`.
    - **Important** findings → recorded in `bolt-report.md` under `## Review panel`; the bolt is mergeable.
    - **Minor** → logged in the same section, no action required.
 5. The merged findings are written into `bolt-report.md` `## Review panel` (lens list, tier used, finding table, dropped-no-evidence count) — a MANDATORY section of the canonical schema (`superpowers-bridge.md §bolt-report.md schema`). No separate artifact file.

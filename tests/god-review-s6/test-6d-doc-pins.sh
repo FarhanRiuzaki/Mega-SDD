@@ -66,8 +66,8 @@ grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts" "$EB/references/bolt-contract.m
   && grep -q "Unit: U-XXX" "$EB/references/bolt-contract.md" \
   && ok "bolt-contract carries both trailers" || fail "bolt-contract trailers missing"
 grep -q "SDD-PROVENANCE" "$P/agents/bolt-implementer.md" && ok "bolt-implementer instructs the trailers" || fail "bolt-implementer trailer instruction missing"
-grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts" "$EB/references/bolt-dispatch-prompt.md" \
-  && ok "dispatch prompt scaffolds the trailers" || fail "dispatch prompt trailer scaffold missing"
+grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX" "$P/agents/bolt-implementer.md" \
+  && ok "bolt-implementer (the dispatch system prompt) scaffolds the full trailer — sole prompt-side copy (M-09)" || fail "bolt-implementer full trailer scaffold missing"
 grep -q 'UNIT_SCOPE' "$P/scripts/validate-bolt-artifacts.sh" && grep -q 'trailers:key=Unit' "$P/scripts/validate-bolt-artifacts.sh" \
   && ok "validator accepts scope + trailer identity channels" || fail "validator identity channels missing"
 

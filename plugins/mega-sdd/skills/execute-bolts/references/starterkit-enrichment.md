@@ -1,0 +1,250 @@
+# execute-bolts — Starterkit slice enrichment (Step 4.5.b-starterkit)
+
+The starterkit read/build/§patterns/code-slice/inject machinery for the T2.3 "Starterkit context (relevant slice)" section of the bolt dispatch prompt. **Load this file ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists** (same trigger as generate-units' `starterkit-derivation.md`) — when the file is absent, skip this entire reference; the Map §6 fallback and the Design slice in `context-enrichment.md` (which also owns the budgets + T2 truncation cascade) still apply.
+
+## Contents
+- Starterkit slice: read
+- Starterkit slice: build
+- Starterkit slice: §patterns wiring
+- Starterkit slice: code-slice (reference exemplar)
+- Slice truncation order
+- Starterkit slice: inject
+
+## Starterkit slice: read
+
+```
+Path: <project>/.mega-sdd/codebase/starterkit-context.yaml
+
+IF file absent → skip build + inject; do not inject the starterkit slice into T2
+                 (the DESIGN slice in context-enrichment.md still applies — it is
+                 independent of starterkit)
+IF file present → parse YAML
+  IF parse fails → log warning; emit `deep_scan_cache_corrupt` soft halt; skip
+  IF starterkit_context.partial == true → note partial_slices for slice availability
+Read unit.frontmatter.starterkit_relevance array (from generate-units Step 7.7.e)
+IF unit.starterkit_relevance is missing OR empty → skip build + inject
+```
+
+## Starterkit slice: build
+
+For each relevance flag in `unit.starterkit_relevance`, include ONLY that slice from `starterkit-context.yaml`:
+
+```
+slice = {}
+
+IF "auth" in unit.starterkit_relevance AND starterkit_context.auth exists:
+  slice.auth = starterkit_context.auth (lib, mechanism, user_model only — exclude routes, _source)
+
+IF "authz" in unit.starterkit_relevance AND starterkit_context.authz exists:
+  slice.authz = starterkit_context.authz (lib, mechanism, role_source, declarations — exclude _source)
+
+IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
+  slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
+  # TEMPLATE FLOW IS AUTHORITATIVE: the starterkit design_tokens/layout/idioms above WIN. Anything
+  # from design_system only SUPPLEMENTS them — it must never override the scanned template.
+  IF vault.design_system present (vault-contract.md §design_system):
+    slice.design_system = vault.design_system (style, palette, typography, a11y_level, source — exclude provenance, which is audit-only)
+    IF design_system.source == "scanned-template":
+      # the `Design system:` line restates the TEMPLATE's own style/tokens; the design-intelligence
+      # slice (style-principles/ux-rules) is injected ONLY as gap-fill, explicitly subordinate to the
+      # starterkit tokens already in the prompt — the bolt follows the repo's existing flow.
+    ELSE:  # source == design-intelligence-recommend or prd (greenfield / explicit source)
+      # pull the matching slice of references/design-intelligence: style-principles[style]
+      # (traits + CSS keywords + anti-patterns) and the a11y rows of ux-rules.md, as injected text
+      # so the bolt renders ON the chosen style.
+    # ALL of this is INJECTED TEXT — never a Skill-invoke.
+  # design_tokens (colors/spacing/fonts) is INCLUDED in the ui_ux slice. A UI bolt that never
+  # sees the project's colors/spacing/fonts re-invents generic defaults; injecting the actual
+  # tokens anchors the view to the design system. design_tokens is MID-priority in the
+  # truncation cascade (truncated before code_examples, NOT first-dropped). validate-dispatch-prompt.sh
+  # asserts the emitted prompt carries a `Design tokens:` line for ui_ux units — ADVISORY:
+  # its state is surfaced via /mega-sdd:analyze, nothing in PreToolUse reads it (per the
+  # demotion list); this prose is the operative rail.
+
+IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
+  slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
+  (NOT the full inventory — only libs whose usage_hint contains any of unit.target_files paths/prefixes)
+```
+
+The starterkit-ABSENT fallback (codebase-map.md §6 pattern signatures → the `Codebase patterns:` dispatch line) stays hot in `context-enrichment.md §Map §6 fallback` — it applies exactly when this file's trigger file is absent.
+
+## Starterkit slice: §patterns wiring
+
+The §patterns block is wired independently of `starterkit_relevance` — it triggers on `target_files` match against pack-discovered locations. (Closes the regression where the §patterns block was built but never injected, so the bolt was told "follow starterkit conventions" without being told what they ARE.)
+
+```
+IF starterkit_context.patterns exists AND unit.target_files is non-empty:
+  slice.patterns = {}
+
+  # component is listed BEFORE view so the more-specific component subdir
+  # (e.g. resources/views/components/) location-matches first.
+  FOR each pattern_category in [controller, data_model, request_validator, business_logic, test, schema_migration, route, component, view]:
+    pattern = starterkit_context.patterns[pattern_category]
+    IF pattern is None:
+      CONTINUE
+
+    has_location = pattern.location is not None
+    matched = False
+
+    FOR each target_file in unit.target_files:
+      # PRIMARY: location prefix match (most discriminating)
+      IF has_location:
+        location_norm = pattern.location.rstrip("/") + "/"
+        IF target_file.startswith(location_norm):
+          slice.patterns[pattern_category] = pattern
+          matched = True
+          BREAK
+
+      # FALLBACK: naming-pattern match against basename — ONLY when pattern.location is null
+      # (e.g. file-based-routing frameworks where the convention is naming, not directory).
+      # Generic patterns like "{Model}<ext>" match ANY PascalCase basename including controllers —
+      # false-positive across categories. Location-primary avoids this.
+      IF (not has_location) AND pattern.naming is not None:
+        naming_regex = compile_pattern_to_regex(pattern.naming, pattern.extension)
+        basename = path.basename(target_file)
+        IF naming_regex AND naming_regex.search(basename):
+          slice.patterns[pattern_category] = pattern
+          matched = True
+          BREAK
+```
+
+**Matching semantics:** location is the primary discriminator. Naming-fallback fires only when `pattern.location is null` (= the framework genuinely has no directory convention for that category — e.g. Next.js file-based routing, Express where handlers live anywhere). Location-primary is conservative and avoids crowding T2 with false-positive categories.
+
+`compile_pattern_to_regex` converts a pack naming pattern (e.g. `{Model}Controller<ext>` or `{Model}.handler.ts`) by replacing `{Model}` → `[A-Z]\w+`, `{model}` → `[a-z_]+`, `<ext>` → `re.escape(extension)`, anchored with `$`. On compile failure → log + skip the naming-regex fallback (location match still applies if available).
+
+Matching is conservative: ONE target_file match per category sets the slice; absence of any match means the unit doesn't touch that category and it's omitted (no false-positive injection).
+
+## Starterkit slice: code-slice (reference exemplar)
+
+Few-shot anchoring: when a pattern category matches, embed an actual code sample from the starterkit so the bolt subagent has a concrete reference to follow (not just a location/naming hint).
+
+```
+slice.code_examples = {}
+
+# Categories that get a code exemplar. controller is the original walking skeleton;
+# view/component give a ui_ux unit a REAL rendered-view few-shot, not a controller-only skeleton.
+FOR each (category, source_list) in [
+    ("controller", starterkit_context.patterns.controller._source),
+    ("view",       starterkit_context.patterns.view._source),
+    ("component",  starterkit_context.patterns.component._source),
+]:
+  IF slice.patterns.<category> does NOT exist:   # unit doesn't touch this category
+    CONTINUE
+  IF source_list is empty:
+    CONTINUE
+
+  # EXEMPLAR SELECTION: choose by exemplar_selection: linter-clean — the cleanest/most-idiomatic
+  # sample, NOT source_list[0]. scan-codebase tags each pattern category with `exemplar_selection`
+  # + orders `_source` best-first (cleanest first). Pick the FIRST entry whose file lints clean /
+  # carries no scaffold tells; fall back to source_list[0] only if none is tagged. NEVER blindly
+  # take [0] for view/component — a raw-scaffold view would anchor the bolt to exactly the tells
+  # the UI-quality gate flags.
+  chosen_source = first(source_list where exemplar_is_linter_clean) OR source_list[0]
+  example_path = chosen_source.split(":")[0]   # strip line-range suffix
+  full_example_path = <project_root> / example_path
+
+  IF full_example_path exists AND is a regular file:
+    file_size = stat(full_example_path).st_size
+
+    IF file_size < 3072:   # <3KB → include full
+      slice.code_examples.<category> = {path: example_path, content: read_text(full_example_path), truncated: false}
+    ELSE:                  # ≥3KB → truncate to first 100 lines + marker
+      lines = read_text(full_example_path).splitlines()[:100]
+      slice.code_examples.<category> = {
+        path: example_path,
+        content: "\n".join(lines) + "\n# ... (truncated at 100 lines — see full file via Read tool)",
+        truncated: true,
+      }
+  ELSE:
+    # _source path absent on disk → skip the code example, NOT a halt (pattern still injected without code)
+    log "starterkit.<category>._source not found on disk: <full_example_path>"
+```
+
+**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via /mega-sdd:analyze, not a PreToolUse block; this prose is the operative rail. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
+
+**Anti-halu rail:** `slice.code_examples.<category>.path` MUST equal the file actually read (provenance); never invent or substitute. The chosen exemplar must be a real `_source` entry — selecting by linter-clean re-ORDERS the real candidates, it never fabricates one.
+
+## Slice truncation order
+
+If the slice exceeds the T2 budget (design_tokens is MID-priority):
+1. Truncate `slice.libs[]` — keep top 10 by relevance score (overlap count with target_files).
+2. If still over → truncate `slice.code_examples.<category>.content` to first 50 lines; mark `truncated: true` (controller/view/component alike).
+3. If still over → truncate `slice.ui_ux.idioms[]` to top 3.
+4. If still over → compact `slice.ui_ux.design_tokens` — keep `colors` + `fonts`, drop `spacing` detail to `spacing=<scale-name|default>`. **design_tokens is MID-priority: compacted/dropped only AFTER libs + idioms, and BEFORE code_examples (step 5). NEVER first-dropped.** (The `Design tokens:` line is retained as long as any token survives, so validate-dispatch-prompt.sh still sees it.)
+5. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved).
+6. If still over → drop the remaining `slice.ui_ux.design_tokens` line.
+7. If still over → emit halt `dispatch_prompt_too_large` (chain stops).
+
+## Starterkit slice: inject
+
+Populate the T2.3 "Starterkit context (relevant slice)" section in the bolt-subagent dispatch-prompt template (listed in SKILL.md) with the built slice:
+
+```
+### Starterkit context (relevant to this unit)
+
+<IF slice.auth present:>
+Auth: lib=<slice.auth.lib>, mechanism=<slice.auth.mechanism>, user_model=<slice.auth.user_model>
+</IF>
+
+<IF slice.authz present:>
+Authz: lib=<slice.authz.lib>, mechanism=<slice.authz.mechanism>, declarations=<slice.authz.declarations[].name joined by ", ">
+</IF>
+
+<IF slice.ui_ux present:>
+UI/UX: extends=<slice.ui_ux.layout_extends>, notification=<slice.ui_ux.notification_lib>, idioms=[<slice.ui_ux.idioms joined by "; ">]
+<IF slice.ui_ux.design_tokens present:>     # emit the literal `Design tokens:` marker line
+Design tokens: colors=<design_tokens.colors as compact map>; spacing=<design_tokens.spacing>; fonts=[<design_tokens.fonts joined by ", ">]
+</IF>
+<IF slice.design_system present:>           # emit the literal `Design system:` marker line (validate-dispatch-prompt.sh asserts it)
+Design system: <design_system.style>/<design_system.palette> (type <design_system.typography>, a11y <design_system.a11y_level>, source <design_system.source>) — render on this style; see injected style-principles + ux-rules. When source=scanned-template, the starterkit tokens above are authoritative.
+</IF>
+</IF>
+
+<IF slice.libs present AND non-empty:>
+Libs in scope: <for each lib in slice.libs: <lib.name>@<lib.version> (used in: <lib.usage_hint joined by ", ">)>
+</IF>
+
+<IF slice.patterns present AND non-empty:>
+### Starterkit code patterns (follow these conventions)
+
+<for each category in slice.patterns:>
+- <category>:
+    location:  <pattern.location>
+    naming:    <pattern.naming>
+    extension: <pattern.extension>
+    <IF pattern.extras is non-empty object:>
+    extras:    <yaml-flow-style representation of pattern.extras>
+    </IF>
+    _source:   <pattern._source[0] (single citation; first entry only — anti-halu)>
+</for>
+</IF>
+
+<IF slice.code_examples present AND non-empty:>
+### Reference code example (from starterkit)
+
+<for each category in slice.code_examples (controller, view, component):>     # emit the literal `Pattern:`/`File:` marker lines
+Pattern: <category>
+File:    <slice.code_examples.<category>.path>
+<IF slice.code_examples.<category>.truncated:>(truncated — full file available via Read tool)</IF>
+
+```<file-extension>
+<slice.code_examples.<category>.content>
+```
+
+Follow this style for new <category> files. Do not deviate from the conventions shown above (for a view/component: the layout extend, responsive grid, relation-resolved human labels, and notification idiom) unless the unit explicitly requires it.
+</for>
+</IF>
+
+<IF unit.starterkit_relevance contains "ui_ux":>     # frontend-design heuristics as INJECTED CONTEXT (NOT a Skill-invoke)
+### UI design quality heuristics
+
+Inject the body of `plugins/mega-sdd/references/ui-design-heuristics.md` here (stack-agnostic
+design-quality guidance — visual hierarchy, every state shown, value formatting, accessibility,
+consistency). This is HOOK/DISPATCH-INJECTED TEXT the bolt subagent reads inline — it is NOT a
+prose instruction to invoke the `frontend-design` skill (prose-only Skill-invoke wire-ups
+historically no-op'd). The deterministic validate-dispatch-prompt.sh asserts the design tokens +
+view exemplar above actually landed.
+</IF>
+```
+
+Sections for absent relevance flags / unmatched categories are OMITTED entirely (not emitted as empty headers). Wall-clock cost: 0s when `starterkit-context.yaml` is absent (read exits early); ≤500ms when present (parse + filter + format).
