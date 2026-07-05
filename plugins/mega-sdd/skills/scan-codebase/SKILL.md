@@ -67,7 +67,7 @@ After Step 10 populates §7 Framework, run the deep-scan stage automatically (op
 - **Failure:** one slice fails → `partial: true` + `partial_slices`; all fail → halt `deep_scan_subagent_all_failed` (preserve prior YAML).
 - **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can cheaply attest map freshness — one sha compare, a freshness attestation NOT a parsing shortcut (per `references/deep-scan-stage.md`).
 
-11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `/mega-sdd:bind-codebase <vault-path>`; no vault yet (starterkit-first) → `/mega-sdd:generate-intent --scan=<map>`; sync lane (`--changed-only`) → `/mega-sdd:detect-drift`.
+11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `/mega-sdd:bind-codebase <vault-path>`; no vault yet (starterkit-first) → `/mega-sdd:generate-intent --scan=<map>`; sync lane (`--changed-only`, incremental merge ran) → `/mega-sdd:detect-drift --scope=@<vault>/.sync-changed-paths.txt` (the durable changed set — the forked detect-drift can't re-resolve it once the journal is consumed); sync lane on the step-2 full-scan fallback (no changed set to scope) → SKIP detect-drift, `/mega-sdd:bind-codebase <vault-path> --auto` (a FULL re-bind — a scope-less detect-drift self-classifies STANDALONE and null-terminates the Mode D chain before the re-bind; §3.8(b)(1)).
 
 ## Mandatory rails
 

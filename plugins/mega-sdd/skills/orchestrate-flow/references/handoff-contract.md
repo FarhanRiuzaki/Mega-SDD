@@ -329,7 +329,8 @@ handoff:
     # CWD-conditional (mirrors scan-codebase/references/halts-flags-handoff.md — the operative copy):
     #   no vault yet (starterkit-first default)          → mega-sdd:generate-intent --scan=<map> --auto
     #   vault already present                            → mega-sdd:bind-codebase <vault> --auto
-    #   sync lane (--changed-only under Mode D)          → mega-sdd:detect-drift --auto
+    #   sync lane (--changed-only under Mode D), incremental ran → mega-sdd:detect-drift --vault=<vault> --scope=@<vault>/.sync-changed-paths.txt --auto
+    #   sync lane full-scan fallback → SKIP detect-drift, hand off mega-sdd:bind-codebase <vault> --auto  (no changed set to scope; continue Mode D straight to a FULL re-bind per §3.8(b)(1) — a scope-less detect-drift null-terminates the chain before the re-bind)
     suggested_skill: mega-sdd:generate-intent
     suggested_args: ["--scan=/path/to/.mega-sdd/codebase/codebase-map.md", "--auto"]
     rationale: "Codebase mapped; starterkit-first — draft the vault scan-aware (bind-codebase next when a vault already exists)."
@@ -358,7 +359,7 @@ handoff:
     suggested_skill: mega-sdd:generate-units    # status=completed
     # OR
     suggested_skill: mega-sdd:resolve-oq        # status=halted on conflict
-    suggested_args: ["--auto"]
+    suggested_args: ["--auto"]                  # STATE-based, keyed on what this bind actually did (not the --paths flag): completed + full re-bind — a plain --auto run OR a --paths run that fell back to a full re-bind (binding-contract.md "Fallback to full re-bind") — emits ["--auto"]; ["--reconcile", "--auto"] ONLY when a claim-scoped re-bind actually executed (no fallback fired; S4 living-vault sync lane §3.3/§3.6) so generate-units reconciles in place; resolve-oq (halted) branch args unchanged. Operative spec: bind-codebase/references/auto-memory-handoff.md
   blockers: []  # OR populated on halt
   metrics:
     items_processed: 87    # claims
@@ -533,9 +534,14 @@ scope:                                  # when vault has scope_metadata
   sibling_scopes: []
   prd_sha256: <sha256>
 next_action:
-  type: invoke_skill | user_review
-  suggested_skill: mega-sdd:resolve-oq | mega-sdd:emit-agents-md
-  suggested_args: ["--auto", "--scope=<id>"]  # propagate scope when detect-drift ran in scope-filtered mode
+  # CWD-conditional (mirrors detect-drift/references/auto-and-chain.md — the operative copy):
+  #   sync lane (SCOPE_DIRS resolved from --scope=@<vault>/.sync-changed-paths.txt, passed by orchestrate-flow --sync)
+  #                                                                      → mega-sdd:bind-codebase --paths=@<vault>/.sync-changed-paths.txt --auto  (CONTINUE Mode D → claim-scoped re-bind, §3.3/§3.8)
+  #   standalone / post-bolt auto-gate (drift-axis --scope, bare --scope=<id>, or no scope) → next_action: null  (DRIFT-REPORT.md + PENDING-SYNC.md ARE the deliverable; the severity→action map governs the post-bolt gate; emit-agents-md is chained as a terminal step by chain-execution.md, not from here)
+  #   NEVER resolve-oq: it has no drift-consumption mode — a drift-CREATED OQ-DC-N stub resolves in resolve-oq's ordinary intent mode, never by routing drift findings here (§3.8)
+  suggested_skill: mega-sdd:bind-codebase   # sync lane; null when standalone
+  suggested_args: ["--paths=@<vault>/.sync-changed-paths.txt", "--auto"]   # sync lane; [] when null
+  rationale: "<sync lane: continue Mode D into claim-scoped re-bind (§3.3); standalone: DRIFT-REPORT.md is the terminal deliverable>"
 blockers: []
 metrics:
   findings_critical: <N>

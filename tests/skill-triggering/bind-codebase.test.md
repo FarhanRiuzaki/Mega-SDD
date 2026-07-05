@@ -209,9 +209,33 @@
 ### Canonical CONFLICT heading emission
 - On a blocking run: every ACTIVE conflict in `binding.md` is written as a canonical `### CONFLICT-N` detail heading (with `conflict_class` + `resolution_complexity`), not table-only — the heading form is the token `validate-handoff-binding-units.sh` and `validate-conflict-classification.sh` read.
 
+## Sync-lane handoff — claim-scoped re-bind routes generate-units through reconcile
+
+Living-vault continuous-sync design `2026-06-10-living-vault-continuous-sync-design.md` §3.3 (Mode D chain: `bind-codebase --paths` → `generate-units (S6 reconcile)`) + §3.6 (reconcile = re-read the refreshed binding, UPDATE existing unit IDs in place for id-stability, recompute `status`/stale/superseded). The completed→generate-units handoff `suggested_args` MUST be state-aware — keyed on WHAT BIND ACTUALLY DID (a claim-scoped re-bind that actually executed vs a full re-bind, including a `--paths` run that fell back), not on whether the `--paths` flag was passed; the operative emission spec is `bind-codebase/references/auto-memory-handoff.md §Handoff emission`.
+
+### SY1: `--paths` re-bind (clean) → generate-units `--reconcile`
+- **Setup:** vault + prior `binding.md` already exist; bind invoked as `/mega-sdd:bind-codebase ./vault --paths=@<vault>/.sync-changed-paths.txt --auto` (S4 claim-scoped re-bind, the living-vault sync lane per §3.4). Re-verdict is clean (no CONFLICTs).
+- **Expect:**
+  - `bound/` produced (no CONFLICT)
+  - handoff `status: completed`; `next_action.suggested_skill: mega-sdd:generate-units`
+  - handoff `next_action.suggested_args: ["--reconcile", "--auto"]` — the sync lane MUST route generate-units through the S6 reconcile (in-place id-stable UPDATE + `status`/stale/superseded recompute per §3.3/§3.6), NOT a fresh generation
+  - a bare `["--auto"]` here is a **FAIL** — dropping `--reconcile` makes generate-units regenerate from scratch, breaking unit id-stability + stale/superseded handling in the sync lane
+
+### SY2: full re-bind (no `--paths`) → `--auto` only
+- **Setup:** bind invoked as `/mega-sdd:bind-codebase ./vault --auto` (full re-bind; no `--paths`), clean re-verdict
+- **Expect:**
+  - handoff `next_action.suggested_args: ["--auto"]` — NO `--reconcile` (a full re-bind drives a fresh generate-units generation, not an in-place reconcile)
+  - non-regression guard: `--reconcile` is emitted ONLY when a claim-scoped re-bind actually executed (the `--paths` sync lane with no fallback), never on a full re-bind (including a `--paths` run that fell back to a full re-bind — see SY3), and never on the halted→`resolve-oq` branch
+
+### SY3: `--paths` passed BUT fell back to full re-bind → `--auto` only (state-based discriminator)
+- **Setup:** vault + prior `binding.md` exist; bind invoked as `/mega-sdd:bind-codebase ./vault --paths=@<vault>/.sync-changed-paths.txt --auto`, but a fallback trigger fires — per binding-contract.md "Fallback to full re-bind" (prior `binding.md` unparseable / vault regenerated since last bind / changed paths >40% of anchored files / a carried-forward anchor file vanished) — so bind DEGRADES to a full re-bind and rewrites `binding.md` whole. Clean re-verdict.
+- **Expect:**
+  - handoff `next_action.suggested_args: ["--auto"]` — NO `--reconcile`, IDENTICAL to a plain full re-bind (SY2). The discriminator is WHAT BIND ACTUALLY DID (claim-scoped re-bind executed vs full re-bind), NOT whether the `--paths` flag was passed
+  - emitting `["--reconcile", "--auto"]` here is a **FAIL** — a fallback run regenerated the whole binding exactly like a full re-bind, so reconciling in place would mis-key off the flag and contradict the full-re-bind handoff rule (and SY2's "never on a full re-bind" guard)
+
 ## Pass criteria
 
-All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 — `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
+All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 — `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. Sync-lane handoff (SY1-SY3): the completed→generate-units `--reconcile` discriminator is STATE-based — it keys on WHAT BIND ACTUALLY DID, not on whether the `--paths` flag was passed. A claim-scoped re-bind that actually executed (living-vault §3.3/§3.6, no fallback) emits the handoff with `["--reconcile", "--auto"]` (in-place id-stable reconcile + status/stale/superseded recompute); a full re-bind — whether a plain `--auto` run (SY2) OR a `--paths` run that fell back to a full re-bind (SY3, per binding-contract.md "Fallback to full re-bind") — keeps `["--auto"]` (fresh generation); `--reconcile` never leaks to a full re-bind or to the halted→resolve-oq branch. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
 
 ---
 

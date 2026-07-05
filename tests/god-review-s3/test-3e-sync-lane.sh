@@ -27,7 +27,10 @@ SK="${ROOT}/plugins/mega-sdd/skills/scan-codebase/SKILL.md"
 HFH="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md"
 TSI="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/tree-sitter-integration.md"
 SY="${ROOT}/plugins/mega-sdd/commands/sync.md"
-for f in "$SP" "$SK" "$HFH" "$TSI" "$SY"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
+RR="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md"
+SPEC="${ROOT}/docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md"
+for f in "$SP" "$SK" "$HFH" "$TSI" "$SY" "$HC" "$RR" "$SPEC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -83,6 +86,32 @@ grep -qF 'rotate-and-delete' "$SK" && grep -qF 'rotate-and-delete' "$HFH" && gre
 # ── SP-9 ──
 grep -qF 'two coupled fast-path semantics' "$HFH" && grep -qF 'per-file invalidation gate' "$HFH" \
   && ok "SP-9: flag catalog documents both --shallow-scan semantics" || fail "SP-9: catalog still one-semantic"
+
+# ── B6 (confirmed bug): sync-lane full-scan fallback must continue Mode D to a FULL
+#   re-bind, not hand off a scope-less detect-drift. detect-drift infers sync-lane
+#   membership ONLY from a --scope=@file, so with no scope it self-classifies as
+#   STANDALONE, emits next_action: null, and the chain truncates BEFORE the re-bind —
+#   leaving binding/units/bolts stale in exactly the highest-divergence case. ──
+note "-- B6: full-scan fallback continues to a full re-bind (no truncation) --"
+if grep -qF 'so downstream full-scans consistently' "$SP"; then
+  fail "B6: SP fallback still hands off a scope-less detect-drift (chain null-terminates before re-bind)"
+else
+  ok "B6: buggy scope-less-detect-drift fallback wording removed from scan-procedure"
+fi
+grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SP" \
+  && grep -qF 'next_action: mega-sdd:bind-codebase --auto' "$SP" \
+  && ok "B6: SP fallback hands off bind-codebase --auto (full re-bind)" || fail "B6: SP fallback missing bind-codebase --auto continuation"
+grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HFH" \
+  && ok "B6: HFH handoff comment names the bind-codebase fallback continuation" || fail "B6: HFH fallback comment not updated"
+grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HC" \
+  && ok "B6: handoff-contract mirror names the bind-codebase fallback continuation" || fail "B6: HC mirror fallback branch not updated"
+grep -qF 'on the full-scan fallback' "$RR" && grep -qF 'hands off `bind-codebase --auto` DIRECTLY' "$RR" \
+  && ok "B6: routing-rules Mode D row carries the fallback sub-branch" || fail "B6: routing-rules Mode D row missing fallback sub-branch"
+grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SPEC" \
+  && ok "B6: spec §3.8(b)(1) amended off the buggy 'drop --scope' call" || fail "B6: spec §3.8(b)(1) still says drop --scope"
+# secondary cleanup: generate-units --reconcile is NOT a scope-channel consumer
+grep -qF 'takes NO path arg' "$SP" \
+  && ok "B6: SP no longer overclaims generate-units --reconcile as a scope-channel consumer" || fail "B6: generate-units --reconcile scope-channel overclaim survives"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 3E OK"; else note "3E had failures"; fi
 exit $FAILED

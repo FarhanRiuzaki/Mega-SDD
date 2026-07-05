@@ -20,7 +20,7 @@ Since v3.0.0 detect-drift is **forked + non-interactive by default** (`context: 
 | Step 0 (vault path) | `--vault=<path>` arg, else auto-detect the CWD vault dir; unresolvable → `drift_inputs_missing` (vault) |
 | Step 0 (codebase path) | `--code=<path>` arg, else CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / `requirements.txt`\|`pyproject.toml`); otherwise **never guess** → `drift_inputs_missing` (code) |
 | Step 0 (mode=new) | STOP — surface `mode_migrate_after` (a hard rule) |
-| Step 0.5 (scope) | `--scope=<…>` arg / sync changed-paths, else `full` |
+| Step 0 (scope dirs) | `--scope=<dirs\|@file>` arg — sync lane passes `--scope=@<vault>/.sync-changed-paths.txt` (scan's resolved changed set); else full scan. Never self-resolves journal/git post-scan (both consumed by scan-codebase); `@`-prefixed → path-list file |
 | Step 1.5 (framework) | Auto-detect; single signature → use it; multi/ambiguous → `drift_framework_mismatch` |
 | Step 5 (direction calls) | Queue every finding to `PENDING-SYNC.md`; `--auto-apply=safe` writes back ONLY the narrow safe class. Never `DRIFT-ACTIONS.md`, never a walkthrough |
 
@@ -76,9 +76,18 @@ handoff:
     - <absolute path to <vault>/DRIFT-REPORT.md>
     - <absolute path to <vault>/PENDING-SYNC.md>   # queued direction calls (when findings need triage)
   next_action:
-    suggested_skill: mega-sdd:resolve-oq   # if findings need triage; else null
-    suggested_args: ["--auto"]
-    rationale: "<e.g. 'N drift findings; route via resolve-oq' OR 'Zero drift; vault + code aligned'>"
+    # Branch on invocation mode (see "Sync-lane vs standalone detection" below).
+    # SYNC LANE  ⟺  the resolved --scope is an @file whose basename == `.sync-changed-paths.txt`
+    #   → CONTINUE the Mode D chain into claim-scoped re-bind (spec §3.3).
+    #   `--paths` echoes the ACTUAL resolved SCOPE_DIRS @-path detect-drift scanned (NOT a hardcoded literal):
+    suggested_skill: mega-sdd:bind-codebase
+    suggested_args: ["--paths=@<resolved SCOPE_DIRS @-path, e.g. <vault>/.sync-changed-paths.txt>", "--auto"]
+    rationale: "<e.g. 'Sync lane: N drift finding(s) queued to PENDING-SYNC.md; continue Mode D → claim-scoped re-bind (§3.3)' OR 'Zero drift; vault + code aligned'>"
+    # STANDALONE (any other --scope: a non-sync @file whose basename ≠ .sync-changed-paths.txt, a drift-axis
+    #   --scope, a bare scope-id, or no scope) → emit `next_action: null` instead. The DRIFT-REPORT.md +
+    #   PENDING-SYNC.md ARE the deliverable; a human triages the queue later via `/mega-sdd:sync` or `resolve-oq`.
+    # NEVER route drift to resolve-oq: resolve-oq has NO drift-consumption mode — it resolves normal vault OQs only
+    #   (including any drift-CREATED `OQ-DC-N` stub in its ordinary intent mode), it does not consume drift findings.
   blockers: []                              # populated on drift_framework_mismatch
   metrics:
     items_processed: <N claims compared>
@@ -91,6 +100,8 @@ handoff:
 ```
 
 Status `halted` on `drift_framework_mismatch`. Standalone invocation emits an informational chat hint only.
+
+**Sync-lane vs standalone detection (drives `next_action`).** detect-drift has NO dedicated sync flag (unlike bind's `--paths` / scan's `--changed-only`), so sync mode is inferred from the SCOPE_DIRS source (a convention, not a guaranteed flag). The discriminator is a **deterministic basename check**, NOT "any `@file`" (an `@file` scope is a general STANDALONE input per SKILL.md Step 0). **Sync lane** ⟺ the resolved `--scope` is an `@file` whose **basename == `.sync-changed-paths.txt`** — the canonical cross-skill scope artifact scan-codebase `--changed-only` writes, and the ONLY `--scope` the Mode D orchestrator (`orchestrate-flow --sync`) passes. On the sync lane emit `next_action.suggested_skill: mega-sdd:bind-codebase` with `--paths=@<the EXACT resolved SCOPE_DIRS @-path detect-drift read>` (echo the actual scoped file — e.g. `@<vault>/.sync-changed-paths.txt` — NEVER a hardcoded literal, so even a misclassification can only point `--paths` at a file that provably exists and was actually scanned) to CONTINUE the chain (§3.3): scan `--changed-only` → detect-drift (scoped) → claim-scoped re-bind → reconcile → execute. Everything else is **standalone** → `next_action: null`: a **non-sync `@file`** (`--scope=@<other>.txt`, basename ≠ `.sync-changed-paths.txt` — a documented-valid standalone input, e.g. a hand-authored path list), a drift-axis `--scope` (`schema-only` / `flows-only` / …), a bare scope-id `--scope=<id>` (the post-bolt auto-gate — governed by the severity→chain-action map above, which emits halt/pause/log, NOT a bind hand-off), or no scope (full scan). Queued drift stays in `PENDING-SYNC.md` awaiting human triage; the chain does not stall on it, but the moat still blocks downstream units/bolts if the re-bind re-surfaces a CONFLICT (§3.4 / §3.7, invariant #2). Never emit `resolve-oq` for drift routing.
 
 ## Auto-trigger as a chain phase
 

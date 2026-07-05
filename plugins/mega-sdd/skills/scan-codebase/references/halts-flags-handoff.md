@@ -85,7 +85,7 @@ Recovery: user re-runs scan-codebase later. Chain halts.
 - `--shallow-scan`: two coupled fast-path semantics — (a) skip the Step 10.5 deep-scan stage (emit only the surface codebase-map.md), and (b) enable the Step 5 per-file invalidation gate (reuse prior §2 rows whose `Last_Scanned_Sha256` matches the file's current hash; only changed files re-extract — per `references/scan-procedure.md` §Step 5)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
 - `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
-- `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, consume the journal (rotate-and-delete per `references/scan-procedure.md` §Incremental step 4 — never truncate-in-place, which loses concurrent-session appends); auto-falls back to full scan when preconditions absent (per §Incremental mode)
+- `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, consume the journal (rotate-and-delete per `references/scan-procedure.md` §Incremental step 4 — never truncate-in-place, which loses concurrent-session appends); auto-falls back to full scan when preconditions absent (per §Incremental mode). On incremental success with a vault present (sync lane) it ALSO writes the resolved changed set to `<vault>/.sync-changed-paths.txt` (one path per line, overwrite) — the durable scope channel for the two forked downstream phases that accept a path scope (`detect-drift --scope=@…` / `bind-codebase --paths=@…`; `generate-units --reconcile` reconciles from the refreshed `binding.md`, not this file), which can't self-resolve because the journal is already consumed and the stamp advanced by the time they run (§Incremental step 5); the full-scan fallback writes no such file, deletes any stale one, and continues Mode D straight to a FULL re-bind (`bind-codebase --auto`) — detect-drift is skipped on that branch (§Hand-off; spec §3.8(b)(1))
 - `--memory-off`: disable memory-layer reads and writes
 
 ## Hand-off announcement
@@ -106,6 +106,7 @@ handoff:
     - <absolute path to .mega-sdd/codebase/starterkit-context.yaml>  # only when deep-scan ran
     - <absolute path to .mega-sdd/codebase/reuse-index.yaml>          # only when deep-scan ran (reuse slice)
     - <absolute path to .mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json>  # only when Step 10.6 wrote it
+    - <absolute path to <vault>/.sync-changed-paths.txt>  # only on --changed-only incremental success with a vault present (sync-lane scope channel)
   starterkit_context:                                                  # block only when deep-scan ran
     reused: false                                                       # true if cache hit
     framework: laravel
@@ -117,7 +118,8 @@ handoff:
     # CWD-CONDITIONAL — resolve at emission time (the example below is the no-vault branch):
     #   no vault yet (starterkit-first Mode A/B default) → mega-sdd:generate-intent --scan=<map> --auto
     #   a vault already exists                           → mega-sdd:bind-codebase <vault> --auto
-    #   invoked with --changed-only by the sync lane (Mode D) → mega-sdd:detect-drift --auto
+    #   invoked with --changed-only by the sync lane (Mode D), incremental ran → mega-sdd:detect-drift --vault=<vault> --scope=@<vault>/.sync-changed-paths.txt --auto
+    #   full-scan fallback → SKIP detect-drift, hand off mega-sdd:bind-codebase <vault> --auto  (no changed set to scope; continue Mode D straight to a FULL re-bind per spec §3.8(b)(1) — a scope-less detect-drift would self-classify STANDALONE and null-terminate the chain before the re-bind)
     suggested_skill: mega-sdd:generate-intent
     suggested_args:
       - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
