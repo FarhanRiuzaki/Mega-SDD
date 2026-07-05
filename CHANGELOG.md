@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.67.0] - 2026-07-05
+
+Handoff-YAML validator shape fix — **`validate-handoff-yaml.sh` no longer spuriously fails a conformant `checkpoints`/`cycles` handoff block** (round-2 seam audit, Batch 2 — MEDIUM/CONFIRMED/latent). The validator classified `checkpoints` and `cycles` as list fields, but the handoff contract types BOTH as objects (template §schema + machine-readable `TYPE: object` annotations; only their nested `halts_auto_resolved`/`halts_escalated_to_user` subfields are arrays). The no-deps parser builds a real dict for the canonical block-mapping producer shape, so `is_listish(dict)` was False and the validator returned a spurious `FAIL` / `handoff_type_mismatch` against any conformant output. Latent today (no in-tree producer emits the block yet, and the Stop-hook check is detection-only), but the verdict was wrong.
+
+### Fixed
+
+- `scripts/validate-handoff-yaml.sh` — moved `checkpoints`/`cycles` from `LIST_FIELDS` to `DICT_FIELDS` so they validate against the authoritative object shape via `is_dictish` (preserving the type-only, never-required-on-absence property). All other field validation, the exit-code contract (0/1/2), and the JSON state-file shape are untouched.
+- `skills/orchestrate-flow/references/handoff-contract.md` — the lone self-contradicting "Validator coverage" note (which listed checkpoints/cycles as list fields, contradicting its own template + `TYPE: object` annotations) reconciled to the authoritative shape.
+
+### Changed
+
+- Fixtures: new CI-discovered guard `tests/handoff/test-handoff-checkpoints-cycles-dict.sh` — GOOD canonical block-mapping checkpoints/cycles → PASS; BAD inline-list → FAIL `handoff_type_mismatch`. Failing-first proven (the canonical dict is rejected pre-fix, accepted post-fix; the inline-list flips accepted→rejected across the fix).
+
+Built + adversarially reviewed via a 4-agent investigate/build/review workflow (both skeptic lenses returned CLEAN — no over-tightening, under-fixing, or regression; the code-delivery handoff-types suite stays green). Coordination: compatible with a future Batch 8 (blockers-non-empty-on-halt) that edits the same `LIST_FIELDS`/`DICT_FIELDS` region — land together if concurrent.
+
 ## [4.66.0] - 2026-07-05
 
 Sync-lane (Mode D) handoff routing — **the living-vault continuous-sync chain now threads correctly per-hop** (round-2 seam audit, Theme 2 — 2× HIGH + 1× MED, one CONFIRMED chain-truncation bug caught + repaired before ship). Mode D advancement is handoff-driven (each producer's `next_action` picks the next hop), but three sync producers emitted mode-agnostic handoffs, so the chain `scan --changed-only → detect-drift → bind --paths → generate-units --reconcile → execute-bolts` silently lost its sync-specific args. New spec **§3.8** documents the per-hop routing contract.
