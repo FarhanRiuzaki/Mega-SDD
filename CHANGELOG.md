@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.70.0] - 2026-07-05
+
+Cleanup sweep — a doc-truth alignment + cosmetic polish closing the loose ends the round-2 seam audit opened (one corrected handoff-index route; no other runtime behavior change).
+
+### Fixed
+
+- `skills/orchestrate-flow/references/handoff-contract.md` — the §diff-vault cross-skill index enum named `mega-sdd:bind-codebase` for the completed+clean vault-diff hop, but diff-vault's own operative reference (`auto-and-chain.md` branch (c), which wins per the §Precedence rule) emits `mega-sdd:orchestrate-flow` — correct, because after a clean diff-apply the next hop must re-inspect CWD (`bind-codebase` hardcodes a brownfield assumption and is wrong for a greenfield vault). Aligned the index enum to `orchestrate-flow`.
+
+### Changed
+
+- `skills/generate-intent/references/auto-and-handoff.md` — cosmetic: the shared `suggested_args` note now records that the `bind-codebase` branch prepends a `<vault>` positional (orchestrator-reconstructed; the args value is unchanged); a stale `handoff-contract.md:330-332` citation corrected to `:335-339`.
+- Fixtures: `tests/handoff/test-diff-vault-conflict-route.sh` gains assertions D/E pinning the §diff-vault enum to `orchestrate-flow` (and asserting `bind-codebase` is dropped) — failing-first (RED pre-fix → GREEN post-fix).
+- `README.md` — version badge refreshed to 4.70.0 (mirrors `plugin.json`).
+
+Investigated a sibling `artifacts`-non-empty-on-`completed` gate (parity with the Theme-3 halt-envelope) but **deliberately did NOT add it** — legitimate zero-artifact completed handoffs exist (execute-bolts `--dry-run`/no-op, memory read-only lanes), no clean discriminator separates them from a hollow completion, and the existing `bolt_artifacts_missing` gate already covers the real harm; adding it would false-block valid lanes (no-gimmick). Adversarially reviewed (CLEAN).
+
 ## [4.69.0] - 2026-07-05
 
 Brownfield generate-intent handoff — **the `--auto` `next_action` no longer re-suggests a redundant scan when the codebase map already exists** (round-2 seam audit, #11 — LOW/self-healing). generate-intent's `--auto` handoff conditioned its `next_action.suggested_skill` only on IMPLEMENTATION_MODE (brownfield → `scan-codebase` unconditionally), but under the live scan-first brownfield reorder scan always runs before generate-intent (which is even invoked with `--scan=<map>`), so the map already exists at completion and the correct next hop is `bind-codebase`. Self-healing today (the resume-skip drops the re-suggested scan because the map exists), but the handoff advertised the wrong hop.

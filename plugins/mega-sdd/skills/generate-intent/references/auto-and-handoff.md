@@ -62,7 +62,7 @@ handoff:
     suggested_skill: mega-sdd:scan-codebase     # mode=existing (brownfield) + NO codebase-map on disk yet
     # OR
     suggested_skill: mega-sdd:generate-units    # mode=new (greenfield)
-    suggested_args: ["--auto"]
+    suggested_args: ["--auto"]                  # bind-codebase branch prepends a leading <vault>: ["<vault>", "--auto"] (orchestrator reconstructs <vault> from CWD/artifacts); scan-codebase/generate-units take ["--auto"] as-is
     rationale: "<1-sentence why this is next>"
   blockers: []   # populated on halt
   metrics:

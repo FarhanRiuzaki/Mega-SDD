@@ -62,6 +62,28 @@ else
   fail "C: handoff-contract §diff-vault enum omits mega-sdd:diff-vault"
 fi
 
+# ── Assertion D (handoff-contract): diff-vault enum names orchestrate-flow (clean) ──
+# Parity with auto-and-chain branch (c): after a CLEAN vault-diff apply the enum's
+# clean-apply slot must name mega-sdd:orchestrate-flow (it re-inspects CWD + re-plans —
+# subsuming bind-codebase for brownfield and the ONLY valid hop for a greenfield vault
+# where bind-codebase is inapplicable), NOT bind-codebase. auto-and-chain.md is
+# diff-vault's OWN handoff reference → operative per §Precedence :7; this INDEX mirrors it.
+if printf '%s\n' "$DV_BLOCK" | grep -q 'mega-sdd:orchestrate-flow'; then
+  pass "D: handoff-contract §diff-vault enum names mega-sdd:orchestrate-flow for the clean-apply route (parity with auto-and-chain branch (c))"
+else
+  fail "D: handoff-contract §diff-vault enum omits mega-sdd:orchestrate-flow — clean-apply route must mirror auto-and-chain branch (c), not bind-codebase"
+fi
+
+# ── Assertion E (handoff-contract): diff-vault enum drops the stale bind-codebase ───
+# bind-codebase hardcodes a brownfield assumption (wrong for a greenfield vault);
+# orchestrate-flow subsumes it. The §diff-vault prose carries NO bind-codebase reference,
+# so its absence from the whole block is unambiguous drift removal.
+if printf '%s\n' "$DV_BLOCK" | grep -q 'mega-sdd:bind-codebase'; then
+  fail "E: handoff-contract §diff-vault enum still names mega-sdd:bind-codebase — clean-apply route drifted from auto-and-chain (orchestrate-flow)"
+else
+  pass "E: handoff-contract §diff-vault enum no longer names mega-sdd:bind-codebase (drift removed)"
+fi
+
 echo
 if [ "$fails" -eq 0 ]; then
   echo "test-diff-vault-conflict-route: ALL PASS"
