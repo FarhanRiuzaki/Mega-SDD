@@ -184,7 +184,7 @@ After N consistent observations (thresholds configurable per `~/.mega-sdd/config
 
 ## Handoff emission (when --auto)
 
-This skill emits a handoff YAML when invoked under `--auto` per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+This skill emits a handoff YAML when invoked under `--auto` per the local template below (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

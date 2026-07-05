@@ -98,12 +98,14 @@ for pair in "generate-units SKILL:$SK" "unit-schema:$US" "execute-bolts SKILL:$E
   fi
 done
 
-# ── GU-HANDOFF-DRIFT-1 ──
-python3 - "$HC" <<'PY' && ok "HANDOFF: generate-units block has emitted_at + unit_oq_trace_missing + canonical paths" || fail "HANDOFF: contract block stale"
+# ── GU-HANDOFF-DRIFT-1 ── (M-02 ownership flip: the OPERATIVE generate-units handoff
+# template is auto-and-memory.md; handoff-contract's per-skill section is now a routing
+# index with no YAML blocks. Pin the operative template — same assertions.)
+python3 - "$AAM" <<'PY' && ok "HANDOFF: operative generate-units template has emitted_at + unit_oq_trace_missing + canonical paths" || fail "HANDOFF: operative generate-units template stale"
 import re, sys
 doc = open(sys.argv[1]).read()
-m = re.search(r"### `generate-units`\n\n```yaml\n(.*?)```.*?Status `halted` on ([^\n]+)", doc, re.S)
-assert m, "generate-units block not found"
+m = re.search(r"## Handoff emission \(--auto\).*?```yaml\n(.*?)```.*?Status `halted` on ([^\n]+)", doc, re.S)
+assert m, "generate-units handoff template not found"
 block, halted = m.group(1), m.group(2)
 ok = ("emitted_at:" in block and "<vault>/units/" in block
       and "unit_oq_trace_missing" in halted and "cross_module_dep_invalid" in halted)

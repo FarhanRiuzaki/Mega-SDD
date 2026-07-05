@@ -6,8 +6,8 @@
 # lives ONLY in VAULT-DIFF.md) is resolved by RE-INVOKING diff-vault WITHOUT --auto
 # (interactive Step 5 walkthrough — diff-vault/references/auto-and-chain.md, the
 # blocker-envelope resolution note; handoff-contract.md:7 skill-ref precedence +
-# :748 "Skills MUST emit next_action even on halted — it should point to the
-# resolution path"). resolve-oq CANNOT consume it: resolve-oq walks only [ ] OQ
+# §Anti-halu invariants "Skills MUST emit next_action even on halted — it should
+# point to the resolution path"). resolve-oq CANNOT consume it: resolve-oq walks only [ ] OQ
 # entries (SKILL.md) and reads vault docs 00-06, never VAULT-DIFF.md. resolve-oq
 # stays the correct route for the SEPARATE completed + NEW-[ ]-OQ outcome
 # (diff-vault materializes OQ-{CODE}-{N+1} rows the [ ]-walk can consume).
@@ -47,19 +47,16 @@ else
   pass "B: resolve-oq route is scoped to the new-OQ/completed case, not the conflict"
 fi
 
-# ── Assertion C (handoff-contract): diff-vault block enum includes diff-vault ───
-# Extract the ### `diff-vault` block; assert its suggested_skill enum offers
-# mega-sdd:diff-vault. (emitted_by: diff-vault has no mega-sdd: prefix → no false match.)
-DV_BLOCK="$(awk '
-  /^### `diff-vault`/ {inblk=1; next}
-  /^### / {if (inblk) inblk=0}
-  inblk {print}
-' "$CONTRACT")"
-[ -n "$DV_BLOCK" ] || { echo "FAIL: could not extract §diff-vault block from $CONTRACT"; exit 1; }
+# ── Assertion C (handoff-contract): diff-vault routing row includes diff-vault ──
+# handoff-contract's per-skill section is a one-row-per-producer routing table
+# (M-02 ownership flip); extract the diff-vault ROW and assert its route enum
+# offers mega-sdd:diff-vault (the halted diff_conflict re-invoke).
+DV_BLOCK="$(grep -E '^\| `diff-vault` \|' "$CONTRACT")"
+[ -n "$DV_BLOCK" ] || { echo "FAIL: could not extract the diff-vault routing row from $CONTRACT"; exit 1; }
 if printf '%s\n' "$DV_BLOCK" | grep -q 'mega-sdd:diff-vault'; then
-  pass "C: handoff-contract §diff-vault enum includes mega-sdd:diff-vault (halted diff_conflict route)"
+  pass "C: handoff-contract diff-vault row includes mega-sdd:diff-vault (halted diff_conflict route)"
 else
-  fail "C: handoff-contract §diff-vault enum omits mega-sdd:diff-vault"
+  fail "C: handoff-contract diff-vault row omits mega-sdd:diff-vault"
 fi
 
 # ── Assertion D (handoff-contract): diff-vault enum names orchestrate-flow (clean) ──
@@ -69,19 +66,19 @@ fi
 # where bind-codebase is inapplicable), NOT bind-codebase. auto-and-chain.md is
 # diff-vault's OWN handoff reference → operative per §Precedence :7; this INDEX mirrors it.
 if printf '%s\n' "$DV_BLOCK" | grep -q 'mega-sdd:orchestrate-flow'; then
-  pass "D: handoff-contract §diff-vault enum names mega-sdd:orchestrate-flow for the clean-apply route (parity with auto-and-chain branch (c))"
+  pass "D: handoff-contract diff-vault row names mega-sdd:orchestrate-flow for the clean-apply route (parity with auto-and-chain branch (c))"
 else
-  fail "D: handoff-contract §diff-vault enum omits mega-sdd:orchestrate-flow — clean-apply route must mirror auto-and-chain branch (c), not bind-codebase"
+  fail "D: handoff-contract diff-vault row omits mega-sdd:orchestrate-flow — clean-apply route must mirror auto-and-chain branch (c), not bind-codebase"
 fi
 
 # ── Assertion E (handoff-contract): diff-vault enum drops the stale bind-codebase ───
 # bind-codebase hardcodes a brownfield assumption (wrong for a greenfield vault);
-# orchestrate-flow subsumes it. The §diff-vault prose carries NO bind-codebase reference,
-# so its absence from the whole block is unambiguous drift removal.
+# orchestrate-flow subsumes it. The diff-vault row carries NO bind-codebase reference,
+# so its absence from the whole row is unambiguous drift removal.
 if printf '%s\n' "$DV_BLOCK" | grep -q 'mega-sdd:bind-codebase'; then
-  fail "E: handoff-contract §diff-vault enum still names mega-sdd:bind-codebase — clean-apply route drifted from auto-and-chain (orchestrate-flow)"
+  fail "E: handoff-contract diff-vault row still names mega-sdd:bind-codebase — clean-apply route drifted from auto-and-chain (orchestrate-flow)"
 else
-  pass "E: handoff-contract §diff-vault enum no longer names mega-sdd:bind-codebase (drift removed)"
+  pass "E: handoff-contract diff-vault row no longer names mega-sdd:bind-codebase (drift removed)"
 fi
 
 echo

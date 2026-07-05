@@ -219,7 +219,7 @@ for vj in vault_jsons:
 # ─── Guard 2: partial_state_corrupt (Iter 67.7.2 — v3.51.1+) ───────────────
 # Scan <cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json
 # If file fails JSON parse → rename to partial-state.json.corrupt-<ISO8601>
-# (forensics preserved; --resume restarts fresh per vault-contract.md).
+# (forensics preserved; --resume restarts fresh per plugins/mega-sdd/references/halt-protocol.md).
 # NEVER halts. Honors same opt-out as mode_migrate (handled by GUARD_ENABLED above).
 ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601
 for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "bolts", "U-*", "partial-state.json"))):

@@ -51,7 +51,7 @@ Before appending the `bind` event to `vault.json`, acquire an exclusive lock on 
 
 ## Handoff emission (--auto)
 
-When invoked with `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd:auto`), emit a handoff YAML at the end of output per `orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd:auto`), emit a handoff YAML at the end of output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

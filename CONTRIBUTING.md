@@ -107,7 +107,7 @@ When adding a new skill to the plugin:
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
 3. Add a corresponding command at `plugins/mega-sdd/commands/<skill-name>.md` so it appears in slash autocomplete.
 4. Reference `references/vault-contract.md` for shared definitions instead of duplicating.
-5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `vault-contract.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
+5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.
 
 ## Audit + spec workflow

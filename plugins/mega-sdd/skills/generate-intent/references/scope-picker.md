@@ -1,6 +1,6 @@
 # Scope Picker Algorithm
 
-Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion to `vault-contract.md` §Multi-scope vault.
+Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion to `multi-scope.md` (this directory; the §Multi-scope vault scope-tagging schema).
 
 > **Step numbering note**: Step 0.9 (not 0.6) because Step 0.6 is taken by the PRD_STATUS flag. Scope detection runs AFTER all Step 0.x metadata config and BEFORE Step 1 Load PRD.
 

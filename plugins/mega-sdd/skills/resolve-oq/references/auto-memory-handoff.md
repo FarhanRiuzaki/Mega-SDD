@@ -123,7 +123,7 @@ This helps multi-architect scenarios where one OQ might involve cross-scope depe
 
 ## Handoff emission
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per `orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

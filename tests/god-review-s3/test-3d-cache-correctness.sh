@@ -22,7 +22,10 @@ CLD="${ROOT}/plugins/mega-sdd/scripts/compute-lock-digests.sh"
 DSS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-stage.md"
 SCS="${ROOT}/plugins/mega-sdd/references/starterkit-context-schema.md"
 VC="${ROOT}/plugins/mega-sdd/skills/generate-intent/references/vault-contract.md"
-for f in "$CLD" "$DSS" "$SCS" "$VC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+# starterkit_metrics_inconsistent remediation text relocated (verbatim) from
+# vault-contract.md §halt-protocol to the plugin-root canonical halt registry:
+HPR="${ROOT}/plugins/mega-sdd/references/halt-protocol.md"
+for f in "$CLD" "$DSS" "$SCS" "$VC" "$HPR"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -90,9 +93,9 @@ grep -qF 'src_component(auth)' "$SCS" && ok "DS-1: schema comments mirror the ne
 # ── DS-2: failed slices re-dispatch; remediation corrected ──
 grep -qF 'stale_slices ∪= prior.partial_slices' "$DSS" && ok "DS-2: staleness diff unions prior partial_slices" || fail "DS-2: partial_slices not unioned"
 grep -qF 'do NOT write a per_slice entry for a domain listed in' "$DSS" && ok "DS-2: failed domains get no per_slice entry" || fail "DS-2: per_slice failed-domain rule missing"
-grep -qF 'belt-and-braces option' "$VC" && grep -qF 'failed slices — they carry no per_slice cache signature' "$VC" \
+grep -qF 'belt-and-braces option' "$HPR" && grep -qF 'failed slices — they carry no per_slice cache signature' "$HPR" \
   && ok "DS-2: remediation states the post-fix truth (plain re-run heals; --no-cache = belt-and-braces)" || fail "DS-2: remediation wording stale"
-if grep -qF 're-run `scan-codebase --force-deep`' "$VC"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
+if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
 
 # ── DS-6: canonical schema documents 5 slices incl. reuse ──
 python3 - "$SCS" <<'PY' && ok "DS-6: schema per_slice block lists all 5 domains (incl. reuse)" || fail "DS-6: schema per_slice incomplete"

@@ -308,9 +308,9 @@ On completion, announce:
 
 ## Handoff emission
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`. The orchestrator parses this to decide auto-continue.
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per your local template in `references/handoff.md` — the OPERATIVE emission spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
 
-The canonical `extract-intelligence` handoff record — full schema including the `scope:` and `mutability:` blocks (extract-intelligence is the PRIMARY mutability-tier producer: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`) — lives in `mega-sdd:orchestrate-flow/references/handoff-contract.md` §`extract-intelligence`. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution).
+The canonical `extract-intelligence` handoff record — full schema including the `scope:` and `mutability:` blocks (extract-intelligence is the PRIMARY mutability-tier producer: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`) — lives in `references/handoff.md`. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution).
 
 Status `halted` when quality gate fails twice (per `references/wave-dispatch-templates.md` §gate-checks). Required ONLY under `--auto`; standalone invocations may emit informationally.
 
@@ -322,6 +322,7 @@ Validated on the Bank Mega Trade Finance legacy rebuild (~600 PHP files; MySQL +
 
 - `references/knowledge-base-schema.md` — output directory structure + per-domain 11-section template + frontmatter contract
 - `references/wave-dispatch-templates.md` — per-wave subagent prompts + quality-gate grep commands
+- `references/handoff.md` — the operative `--auto` handoff YAML template (scope + mutability blocks)
 - `mega-sdd:generate-intent` — consumes KB via `--kb=<path>` as Mode B brief
 - `mega-sdd:bind-codebase` — consults KB as secondary ground truth when codebase-map is silent
 - `superpowers:subagent-driven-development` — pattern for the parallel agent dispatch this skill uses

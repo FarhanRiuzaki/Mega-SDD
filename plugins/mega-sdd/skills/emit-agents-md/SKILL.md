@@ -149,19 +149,25 @@ Per `plugins/mega-sdd/references/paths.md`:
 handoff:
   emitted_by: emit-agents-md
   emitted_at: <ISO8601>
-  status: completed
+  status: completed | halted
   artifacts:
     - <absolute path to AGENTS.md or AGENTS.mega-sdd.md>
   next_action:
     suggested_skill: null    # terminal skill; no pipeline continuation
+    type: chain_complete     # AGENTS.md is the pipeline terminal output for AI agent consumers
     rationale: "AGENTS.md emitted; pipeline already complete."
-  blockers: []
+  blockers: []               # populated on halt — envelope per plugins/mega-sdd/references/halt-protocol.md
+  metrics:
+    agents_md_lines: <N>
+    rules_emitted: <N>
   scope:                                       # omit block when vault has no scope field
     id: <vault.scope_metadata.id>
     name: <vault.scope_metadata.name>
     sibling_scopes: <vault.scope_metadata.sibling_scopes_in_prd>
     prd_sha256: <vault.prd_sha256>
 ```
+
+Status `halted` on: `user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context | memory_in_use` — the §Halt conditions above; under `--auto` there is no user to ask, so emit the blocker envelope instead of prompting.
 
 When vault has `scope` field, handoff YAML MUST include scope: block per `orchestrate-flow/references/handoff-contract.md` (scope block). Omit when vault is legacy single-scope.
 

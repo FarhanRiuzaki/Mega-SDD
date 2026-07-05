@@ -264,7 +264,7 @@ blocker:
   source_skill: from-prompt
 ```
 
-Per `./vault-contract.md` §halt-protocol. Caller (orchestrator) catches and surfaces to user.
+Per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol. Caller (orchestrator) catches and surfaces to user.
 
 ## Quality bar
 
@@ -298,7 +298,7 @@ Per `./vault-contract.md` §halt-protocol. Caller (orchestrator) catches and sur
 
 ## References
 
-- Schema, OQ conventions, halt protocol, citation conventions: `./vault-contract.md` (§schema, §OQ-conventions, §halt-protocol, §boilerplate).
+- Schema, OQ conventions, citation conventions: `./vault-contract.md` (§schema, §OQ-conventions, §boilerplate). Halt protocol: `plugins/mega-sdd/references/halt-protocol.md` (§halt-protocol).
 - Downstream consumer: `../SKILL.md` (generate-intent) consumes the seed-PRD as a normal source. PRD_STATUS auto-set to `draft` based on the seed-PRD's `Status: DRAFT` metadata.
 - Orchestrator: `orchestrate-flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
 - For `vault.json.source_documents[].type = "seed-PRD"` is the recommended value when this skill's output is consumed; vault-contract.md §schema treats `type` as a free-form string.

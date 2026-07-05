@@ -185,4 +185,4 @@ Anti-halu invariants (consumer side):
 ## See also
 
 - The handoff-contract reference (indexed in SKILL.md §Specialist references) — producer schema, field TYPE annotations, per-skill expected emissions, memory layer integration.
-- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md §halt-protocol` — canonical blocker envelope.
+- `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` — canonical blocker envelope.

@@ -14,7 +14,7 @@
 #
 # Correct routing (grounded in the AUTHORITATIVE matrix routing-rules.md :53/:55 +
 # scan-codebase's already-correct CWD-conditional mirror, halts-flags-handoff.md
-# :117-122 / handoff-contract.md §scan-codebase :330-332):
+# :117-122 / handoff-contract.md scan-codebase routing row):
 #   mode=existing + NO codebase-map on disk → mega-sdd:scan-codebase
 #   mode=existing + codebase-map PRESENT     → mega-sdd:bind-codebase   (the norm under scan-first)
 #   mode=new (greenfield)                    → mega-sdd:generate-units
@@ -22,7 +22,7 @@
 # Both surfaces MUST carry the map-present→bind branch in sync or surface-drift
 # reopens the gap: the OPERATIVE emission spec
 # (generate-intent/references/auto-and-handoff.md §Handoff emission) AND the
-# authoritative cross-skill index (handoff-contract.md §generate-intent).
+# cross-skill routing index (handoff-contract.md generate-intent row).
 #
 # Static doc-parity grep test (mirrors test-diff-vault-conflict-route.sh). This is
 # NOT a validator invocation — a handoff emitting EITHER route parses fine; only
@@ -54,15 +54,12 @@ GI_BLOCK="$(awk '
 ' "$AUTOHANDOFF")"
 [ -n "$GI_BLOCK" ] || { echo "FAIL: could not extract §Handoff emission block from $AUTOHANDOFF"; exit 1; }
 
-# Extract the ### `generate-intent` per-skill block from handoff-contract.md
-# (between its header and the next "### " header). emitted_by: generate-intent has
-# no mega-sdd: prefix, so it never false-matches a suggested_skill: assertion.
-GI_CONTRACT_BLOCK="$(awk '
-  /^### `generate-intent`/ {inblk=1; next}
-  /^### / {if (inblk) inblk=0}
-  inblk {print}
-' "$CONTRACT")"
-[ -n "$GI_CONTRACT_BLOCK" ] || { echo "FAIL: could not extract §generate-intent block from $CONTRACT"; exit 1; }
+# handoff-contract.md's §Per-skill expected emissions is a one-row-per-producer
+# ROUTING TABLE (M-02 ownership flip — the operative emission spec is the skill's
+# own reference; the contract row is the consumer-side index). Extract the
+# generate-intent row.
+GI_CONTRACT_BLOCK="$(grep -E '^\| `generate-intent` \|' "$CONTRACT")"
+[ -n "$GI_CONTRACT_BLOCK" ] || { echo "FAIL: could not extract the generate-intent routing row from $CONTRACT"; exit 1; }
 
 # ── Assertion A (RED pre-fix): auto-and-handoff routes map-present → bind ────────
 if printf '%s\n' "$GI_BLOCK" | grep -q 'suggested_skill: mega-sdd:bind-codebase'; then
@@ -72,10 +69,10 @@ else
 fi
 
 # ── Assertion B (RED pre-fix): handoff-contract §generate-intent routes to bind ─
-if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'suggested_skill: mega-sdd:bind-codebase'; then
-  pass "B: handoff-contract §generate-intent carries 'suggested_skill: mega-sdd:bind-codebase' (surface parity with auto-and-handoff)"
+if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'mega-sdd:bind-codebase'; then
+  pass "B: handoff-contract generate-intent row carries the 'mega-sdd:bind-codebase' route (surface parity with auto-and-handoff)"
 else
-  fail "B: handoff-contract §generate-intent has NO 'suggested_skill: mega-sdd:bind-codebase' — authoritative index still stale; surface-drift vs auto-and-handoff"
+  fail "B: handoff-contract generate-intent row has NO 'mega-sdd:bind-codebase' route — routing index stale; surface-drift vs auto-and-handoff"
 fi
 
 # ── Assertion C (map-present branch is codebase-map-conditioned, not unconditional)
@@ -88,9 +85,9 @@ else
   fail "C1: auto-and-handoff §Handoff emission bind route is not conditioned on codebase-map presence"
 fi
 if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -qi 'codebase-map'; then
-  pass "C2: handoff-contract §generate-intent names the codebase-map presence condition"
+  pass "C2: handoff-contract generate-intent row names the codebase-map presence condition"
 else
-  fail "C2: handoff-contract §generate-intent bind route is not conditioned on codebase-map presence"
+  fail "C2: handoff-contract generate-intent row bind route is not conditioned on codebase-map presence"
 fi
 
 # ── Assertion D (negative twin, GREEN both pre+post): map-ABSENT still → scan ────
@@ -101,10 +98,10 @@ if printf '%s\n' "$GI_BLOCK" | grep -q 'suggested_skill: mega-sdd:scan-codebase'
 else
   fail "D1: auto-and-handoff §Handoff emission lost the map-absent → scan-codebase branch (over-correction)"
 fi
-if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'suggested_skill: mega-sdd:scan-codebase'; then
-  pass "D2: handoff-contract §generate-intent still routes map-absent brownfield to 'suggested_skill: mega-sdd:scan-codebase'"
+if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'mega-sdd:scan-codebase'; then
+  pass "D2: handoff-contract generate-intent row still routes map-absent brownfield to 'mega-sdd:scan-codebase'"
 else
-  fail "D2: handoff-contract §generate-intent lost the map-absent → scan-codebase branch (over-correction)"
+  fail "D2: handoff-contract generate-intent row lost the map-absent → scan-codebase branch (over-correction)"
 fi
 
 # ── Assertion E (regression guard, GREEN both pre+post): greenfield → units ─────
@@ -113,10 +110,10 @@ if printf '%s\n' "$GI_BLOCK" | grep -q 'suggested_skill: mega-sdd:generate-units
 else
   fail "E1: auto-and-handoff §Handoff emission lost the greenfield → generate-units branch"
 fi
-if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'suggested_skill: mega-sdd:generate-units'; then
-  pass "E2: handoff-contract §generate-intent keeps the greenfield → generate-units branch"
+if printf '%s\n' "$GI_CONTRACT_BLOCK" | grep -q 'mega-sdd:generate-units'; then
+  pass "E2: handoff-contract generate-intent row keeps the greenfield → generate-units branch"
 else
-  fail "E2: handoff-contract §generate-intent lost the greenfield → generate-units branch"
+  fail "E2: handoff-contract generate-intent row lost the greenfield → generate-units branch"
 fi
 
 echo

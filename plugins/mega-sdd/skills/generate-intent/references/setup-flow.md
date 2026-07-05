@@ -175,7 +175,7 @@ b. **Canonical scope handling:**
      - Else if `<project>/.mega-sdd/memory/decisions.md` has a prior choice for this PRD sha256 + same cwd basename → silent default with confirm-once UX (5s timeout).
      - Else → `AskUserQuestion`: one option per declared scope (smart-default flagged per cwd heuristic) + "All scopes (single combined vault — legacy behavior)" + "Cancel".
      - If the user chose `--scope=all` (legacy) → emit a warning, proceed with all content.
-   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/vault-contract.md §Multi-scope vault`; render sibling-scope informational notes in `00-index.md`.
+   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `00-index.md`.
 
 c. **Legacy PRD retrofit bridge:**
    - `AskUserQuestion`: "Yes, propose retrofit (recommended)" (dispatches an AI subagent per the legacy-retrofit-prompt ref, routed from the SKILL router) / "Treat as single-scope PRD" (legacy single-vault) / "Cancel — manual fix first" (**halt `prd_no_scopes_block_user_rejected_retrofit`**).

@@ -3,8 +3,8 @@
 #   EB-GATE-3   ONE commit topology: no execute-bolts surface claims the post-flight
 #               scan halts BEFORE commit / leaves the violation uncommitted.
 #   EB-GATE-2   the canonical commit identity + trailers appear on every producer surface.
-#   EB-DOC-5    the canonical bolt-halt enum is a superset of handoff-contract's blocks
-#               (whitelist_violation + review_critical_unresolved present in both).
+#   EB-DOC-5    the canonical bolt-halt enum has ONE home (halts-and-handoff.md);
+#               handoff-contract points at it and carries NO inline copy (M-02).
 #   PHANTOMS    --strict-provenance gone; `ast-grep test --validate` only ever mentioned
 #               as NOT existing; missing_dependency retired from the dispatch vocabulary.
 #   EB-DOC-4/HONEST-4  spec-reviewer body is blind-era (no implementer-report trust);
@@ -46,6 +46,7 @@ for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
          "${ROOT}/tests/integration/e2e-iter6.test.md" \
          "${P}/skills/generate-intent/references/vault-contract.md" \
+         "${P}/references/halt-protocol.md" \
          "${P}/skills/orchestrate-flow/references/halt-taxonomy.md"; do
   [ -f "$f" ] || { fail "EB-GATE-3 scan target missing: $f"; BAD=1; continue; }
   if grep -qiE "$TOPO_BAD" "$f"; then
@@ -81,22 +82,20 @@ for required in ("whitelist_violation", "review_critical_unresolved", "batch_sui
                  "postflight_evidence_missing", "hard_rule_mixed_grammar", "commit_rejected_by_hook",
                  "memory_in_use"):
     assert required in canon, "canonical enum missing %s" % required
-# each regenerated block is ONE paragraph whose marker names the canonical owner; scan the
-# whole paragraph for the enum tokens. NO exemptions — every canonical token must appear
-# (a prior memory_in_use crutch hid a real drift; do not reintroduce a subtraction here).
-paras = [p for p in hc.split("\n\n")
-         if "canonical bolt-halt enum" in p or "full list now" in p]
-assert len(paras) >= 2, "expected both regenerated handoff-contract blocks, found %d" % len(paras)
-for blk in paras:
-    hc_set = set(re.findall(r"([a-z_]{4,})", blk))
-    missing = canon - hc_set
-    assert not missing, "handoff-contract block missing: %s" % sorted(missing)
+# M-02 ownership flip: handoff-contract carries NO inline copy of the enum any more —
+# a single pointer names the canonical owner (halts-and-handoff.md), so copy-drift is
+# impossible by construction. Assert BOTH directions: the pointer exists AND no inline
+# copy survives (enum-only tokens must not appear anywhere in the contract).
+assert "halts-and-handoff.md" in hc, "handoff-contract must point at the canonical enum owner halts-and-handoff.md"
+for tok in ("hard_rule_unanchored", "bolt_repeated_partial_failure", "pbt_property_violated",
+            "partial_state_corrupt", "self_assessment_missing"):
+    assert tok not in hc, "handoff-contract still carries an inline enum copy (%s found)" % tok
 # halt-taxonomy.md must classify EVERY canonical bolt-halt (makes the halts-and-handoff
 # line-400 "halt-taxonomy classifies every entry" claim enforceable — no silent gap).
 ht_set = set(re.findall(r"`([a-z_]+)`", ht))
 tax_missing = canon - ht_set
 assert not tax_missing, "halt-taxonomy.md missing classification for: %s" % sorted(tax_missing)
-print("  ✓ canonical enum complete (incl. memory_in_use); handoff-contract blocks + halt-taxonomy carry every entry, no exemptions")
+print("  ✓ canonical enum complete (incl. memory_in_use); handoff-contract carries the owner pointer + NO inline copy; halt-taxonomy classifies every entry")
 PYEOF
 [ $? -eq 0 ] || fail "halt-enum sync"
 

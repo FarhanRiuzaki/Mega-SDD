@@ -35,11 +35,11 @@ The `--auto` flag is set by upstream callers — typically `/mega-sdd:orchestrat
 
 When the skill is invoked via the `Skill` tool without an explicit `--auto` argument, default to interactive. Only enter `--auto` mode when the caller explicitly passes it.
 
-When `--auto` is active and the skill produces a P1 Open Question that would block downstream work, additionally emit a `blocker` artifact per `generate-intent/references/vault-contract.md §halt-protocol`. The orchestrator (or other autonomous caller) catches this and surfaces it to the human.
+When `--auto` is active and the skill produces a P1 Open Question that would block downstream work, additionally emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. The orchestrator (or other autonomous caller) catches this and surfaces it to the human.
 
 ## Handoff emission (`--auto`)
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`. The orchestrator parses this to decide auto-continue.
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
 
 ```yaml
 handoff:
@@ -68,6 +68,7 @@ handoff:
   metrics:
     items_processed: <N OQs generated>
     items_blocked: <N business-blocking OQs requiring stakeholder input>
+    flows_with_stages: <N>              # OPTIONAL — staged-input flows carried into the vault (generation-guide.md §staged inputs); type-checked when present, never required on absence; a staged-input drop surfaces as ADVISORY vault_flow_staging_drop, not a halt
   scope:                                  # when vault has scope_metadata
     id: <scope id>
     name: <scope name>

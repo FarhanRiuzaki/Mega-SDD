@@ -98,7 +98,7 @@ After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...
 grep -oE '\{\{[a-z0-9_-]+\}\}' <vault>/fsd/FSD.md
 ```
 
-If ANY match found → emit halt `quality_gate_failed` with `subtype: template_slot_unfilled` per vault-contract.md §quality_gate_failed subtypes:
+If ANY match found → emit halt `quality_gate_failed` with `subtype: template_slot_unfilled` per `plugins/mega-sdd/references/halt-protocol.md` §quality_gate_failed subtypes:
 
 ```yaml
 type: quality_gate_failed
@@ -162,7 +162,7 @@ Write `<vault>/fsd/.citation-map.json` with `citation_map` assembled in Step 3, 
 
 ### Step 7: Emit handoff (when --auto flag)
 
-Per `mega-sdd:orchestrate-flow/references/handoff-contract.md`, emit handoff YAML in chat (NOT to file — chat-block semantics).
+Emit handoff YAML in chat (NOT to file — chat-block semantics), per the local template in §Handoff emission below (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
 
 See §Handoff emission below for template.
 
@@ -181,7 +181,7 @@ FSD generated (<mode>):
 
 ## Halt protocol
 
-Per `mega-sdd:generate-intent/references/vault-contract.md §halt-protocol`. emit-fsd emits these halts:
+Per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. emit-fsd emits these halts:
 
 - `dep_missing` — `vault_present_for_fsd` predictive check fails (no vault.json found)
 - `quality_gate_failed` with subtype `pdf_render_failed` — pandoc exits non-zero in Step 5.3
@@ -191,7 +191,7 @@ No new halt types added by emit-fsd; all halts reuse existing taxonomy.
 
 ## Handoff emission
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit handoff YAML at end of skill output per `mega-sdd:orchestrate-flow/references/handoff-contract.md`:
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit handoff YAML at end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:
@@ -209,10 +209,10 @@ handoff:
     rationale: "FSD emitted; upload <vault>/fsd/FSD.pdf to Confluence per corporate workflow."
   blockers: []   # populated on quality_gate_failed
   metrics:
-    sections_emitted: <int>          #
-    sections_excluded: <int>         # per --sections / include_sections filter
-    citations_count: <int>           # total citations in .citation-map.json
-    drift_callouts_count: <int>      # sections changed since last emit; 0 on first emit
+    sections_emitted: <int>          # ≥0, ≤10 — count of FSD sections rendered
+    sections_excluded: <int>         # ≥0, ≤10 — per --sections / include_sections filter
+    citations_count: <int>           # ≥0 — total citations in .citation-map.json
+    drift_callouts_count: <int>      # ≥0 — sections changed since last emit; 0 on first emit
     mode: <"pre-dev" | "post-dev">   #
     pdf_emitted: <true | false>      #
     fallback_format: <null | "html" | "markdown">  # when pandoc/LaTeX absent
