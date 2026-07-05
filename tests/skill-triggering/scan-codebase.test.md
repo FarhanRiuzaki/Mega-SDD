@@ -32,7 +32,7 @@
 
 ## Pass criteria
 
-All triggers fire. Output exists, schema-compliant, no hallucinations.
+All triggers fire. Output exists, schema-compliant, no hallucinations. Incremental sync-lane hand-off (SC-INC1/2): on `--changed-only` incremental success with a vault present, scan writes `<vault>/.sync-changed-paths.txt` (the resolved changed set, one path per line) and its handoff scopes detect-drift via `--scope=@<vault>/.sync-changed-paths.txt`; the full-scan fallback writes no scope file, deletes any stale one, and drops the `--scope` flag.
 
 ---
 
@@ -138,6 +138,36 @@ All triggers fire. Output exists, schema-compliant, no hallucinations.
 - Status: halted; chain STOPS (orchestrator does not auto-route to generate-intent)
 - Handoff YAML: `status: halted`, `blockers: [{ type: deep_scan_subagent_all_failed, ... }]`
 - User-facing message: "All 4 deep-scan subagents failed (likely API outage). Re-run /mega-sdd:scan-codebase later."
+
+---
+
+## Incremental / sync-lane scope hand-off (Mode D, spec §3.2/§3.3/§3.7)
+
+### SC-INC1 — `--changed-only` writes the durable changed set + scopes detect-drift
+
+**Setup:**
+- Prior `codebase-map.md` exists with a `last_scanned_commit` stamp that is an ancestor of HEAD
+- A vault exists (`mode=existing`) — this is the Mode D sync lane
+- Two source files changed since the stamp (git delta) and/or appear in `.mega-sdd/codebase/.dirty-paths.jsonl`; churn < 40% (incremental, NOT the full-scan fallback)
+
+**Trigger:** `/mega-sdd:scan-codebase --changed-only`
+
+**Expected (FAILS pre-fix on BOTH assertions):**
+- `<vault>/.sync-changed-paths.txt` is written, containing EXACTLY the resolved changed paths (post-exclusion), one repo-relative path per line — the same set scan re-extracted (per `scan-procedure.md §Incremental step 5`). Pre-fix: no such file is ever written.
+- Handoff `next_action.suggested_skill == mega-sdd:detect-drift` AND `suggested_args` CONTAINS `--scope=@<vault>/.sync-changed-paths.txt` (plus `--auto`). Pre-fix: `suggested_args` was bare `--auto`, so the forked detect-drift would full-scan — the journal is already consumed and the stamp advanced, so it cannot self-resolve the changed set.
+- `artifacts[]` includes `<vault>/.sync-changed-paths.txt`.
+
+### SC-INC2 — full-scan fallback SKIPS scoped drift and continues Mode D to a FULL re-bind
+
+**Setup:** `--changed-only` invoked but a step-2 fallback precondition holds (no `last_scanned_commit` stamp / git delta channel unavailable / churn > 40%); a stale `<vault>/.sync-changed-paths.txt` from a prior run is present; a vault + prior `binding.md` exist (this is the Mode D sync lane — `orchestrate-flow --sync` forces the chain).
+
+**Trigger:** `/mega-sdd:scan-codebase --changed-only`
+
+**Expected (FAILS pre-fix on the `next_action` assertion):**
+- Scan falls back to a full scan (one-line note).
+- The stale `<vault>/.sync-changed-paths.txt` is DELETED (`rm -f`) — a full scan has no changed set; a leftover file must not wrongly scope a downstream `--scope=@file`.
+- Handoff `next_action.suggested_skill == mega-sdd:bind-codebase` with `suggested_args` containing `--auto` (a FULL re-bind — no `--paths`, no changed set to scope). detect-drift is SKIPPED on this branch, exactly as the cold brownfield path (`scan → bind`) skips it on a from-scratch map.
+- **Pre-fix (the confirmed B6 bug):** `next_action` handed off `mega-sdd:detect-drift --auto` with `--scope` dropped. But detect-drift infers sync-lane membership ONLY from a `--scope=@file`, so with no scope it self-classified as STANDALONE, emitted `next_action: null`, and the orchestrator treated null as terminal — truncating the forced Mode D chain BEFORE the re-bind and leaving `binding.md`/units/bolts stale vs the freshly re-scanned code (the highest-divergence case). Grounding: spec §3.8(b)(1); `scan-procedure.md §Incremental step 5`; `halts-flags-handoff.md §Hand-off`.
 
 ---
 

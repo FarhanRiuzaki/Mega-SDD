@@ -65,7 +65,26 @@ handoff:
   next_action:
     suggested_skill: mega-sdd:generate-units   # completed
     # OR mega-sdd:resolve-oq                    # halted on conflict
-    suggested_args: ["--auto"]
+    # suggested_args for the completed → generate-units path are STATE-AWARE —
+    # they key on WHAT THIS BIND ACTUALLY DID, not on whether --paths was passed:
+    #   full re-bind                         → ["--auto"]
+    #     (a plain --auto run, OR a --paths run that DEGRADED to the full re-bind
+    #      fallback per binding-contract.md "Fallback to full re-bind": prior
+    #      binding.md unparseable / vault regenerated since last bind / changed
+    #      paths >40% of anchored files / a carried-forward anchor file vanished —
+    #      each rewrites binding.md WHOLE, identical to a plain full re-bind)
+    #   claim-scoped re-bind executed (no fallback fired; S4 living-vault sync lane
+    #     per 2026-06-10-living-vault-continuous-sync-design.md §3.3/§3.6)
+    #                                        → ["--reconcile", "--auto"]
+    # In the sync lane (a claim-scoped re-bind that actually ran) generate-units
+    # MUST reconcile — UPDATE existing unit IDs in place (id-stability) + recompute
+    # status/stale/superseded — never a fresh generation (a bare ["--auto"] there
+    # breaks id-stability + stale/superseded handling). Conversely a --paths run
+    # that fell back MUST emit bare ["--auto"]: keying off the flag alone would
+    # wrongly reconcile a fresh full re-bind. The halted → resolve-oq branch is
+    # unaffected: its args do NOT gain --reconcile regardless of whether this bind
+    # ran with --paths.
+    suggested_args: ["--auto"]                 # full re-bind (incl. --paths fallback); ["--reconcile", "--auto"] only when a claim-scoped re-bind actually executed
     rationale: "<1-sentence>"
   blockers: []                                  # populated on bind_conflict
   metrics:

@@ -35,7 +35,7 @@ Expected chain (Mode D):
 |---|---|
 | Change summary | journal rows ∪ git delta, deduped (e.g., "3 changed paths") — shown BEFORE the confirm |
 | `scan-codebase --changed-only` | only the 3 paths re-extracted; untouched map rows byte-identical; journal rotated (`.consumed-<ts>`), deleted after the write |
-| `detect-drift` (scoped) | finds the rename as `name drift [HIGH]`; under `--auto` it does NOT ask — queues the direction call |
+| `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (scoped to scan's changed set — the forked skill can't re-resolve the now-consumed journal) | finds the rename as `name drift [HIGH]`; under `--auto` it does NOT ask — queues the direction call |
 | `bind-codebase --paths=@…` | only affected claims re-verdicted; everything else `provenance: carried_forward`; any prior ACTIVE CONFLICT re-validated regardless |
 | `generate-units --reconcile` | the price-calc unit flips per the new state (e.g., `create → verify`); `status:` recomputed from `compute-unit-staleness.sh`; nothing duplicated |
 | `execute-bolts` | only stale/new units re-run; `superseded` skipped with a warning |

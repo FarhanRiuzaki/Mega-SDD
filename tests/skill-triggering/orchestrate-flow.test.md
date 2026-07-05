@@ -65,6 +65,15 @@
 - **State:** `--deep`/`--converge`; bind halted `bind_conflict`; resolve-oq --binding resolved every conflict via ONLY KEEP_VAULT/DEFER (vault + code unchanged) and emitted `status: completed`, `next_action.suggested_skill: mega-sdd:generate-units`
 - **Expect:** the convergence loop FOLLOWS the resolver's forward `next_action` — it EXITS the loop for this halt and rejoins the chain at `generate-units`; it does NOT "re-run the halted skill" (a re-bind would re-derive the unchanged vault-vs-code contradiction and re-raise the identical CONFLICT, burning every cycle). Retry + check-clear stays bound to the BACK-edge case only (KEEP_CODE/SPLIT → re-run bind-codebase). Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5.
 
+### R-SYNC-1: Mode D maintenance/sync chain threads the corrected per-hop handoffs
+- **State:** map + binding + units + bolts present; change signal present (`.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the map's `last_scanned_commit`). Invoked `/mega-sdd:sync` (or `orchestrate-flow --sync`).
+- **Expect:** Router proposes the Mode D chain per `references/routing-rules.md` (per-hop handoff semantics per spec §3.8), and each producer's handoff threads the sync-aware `next_action` end-to-end:
+  - `scan-codebase --changed-only` writes `<vault>/.sync-changed-paths.txt` and hands off `mega-sdd:detect-drift` with `suggested_args` containing `--scope=@<vault>/.sync-changed-paths.txt` (NOT a bare `--auto`).
+  - `detect-drift` (sync lane) hands off `mega-sdd:bind-codebase` with `suggested_args` containing `--paths=@<vault>/.sync-changed-paths.txt` — it MUST NOT route to `mega-sdd:resolve-oq` (resolve-oq has no drift-consumption mode).
+  - `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` hands off `mega-sdd:generate-units` with `suggested_args` `["--reconcile", "--auto"]` (NOT a bare `["--auto"]`).
+  - The `[resolve-oq]` slot in the §3.3 chain fires ONLY when the drift walkthrough CREATED an `OQ-DC-N` stub (resolve-oq's ordinary intent mode), never as a drift-finding consumer.
+- **Failing-first:** against the pre-B4/B5/B6 handoffs this FAILS — scan emitted a bare `--auto`, detect-drift routed sync → `resolve-oq`, and bind emitted a bare `["--auto"]`; only the corrected per-hop handoffs (`detect-drift/references/auto-and-chain.md`, `scan-codebase/references/halts-flags-handoff.md`, `bind-codebase/references/auto-memory-handoff.md`) satisfy it.
+
 ## Pre-flight
 
 ### PF1: Chain includes execute-bolts, no superpowers, no vendored
@@ -75,7 +84,7 @@
 
 ## Pass criteria
 
-All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4 — a KEEP_VAULT/DEFER conflict resolution forward-exits convergence to generate-units, never a re-bind loop). Pre-flight gates correctly.
+All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4 — a KEEP_VAULT/DEFER conflict resolution forward-exits convergence to generate-units, never a re-bind loop; and R-SYNC-1 — the Mode D chain threads the corrected per-hop handoffs: scan → `detect-drift --scope=@<vault>/.sync-changed-paths.txt`, detect-drift sync → `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` and NEVER resolve-oq, bind `--paths` → `generate-units --reconcile`; the `[resolve-oq]` slot covers drift-CREATED `OQ-DC-N` stubs only, per spec §3.8). Pre-flight gates correctly.
 
 ## Multi-squad routing (v1.1+)
 

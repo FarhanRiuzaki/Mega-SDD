@@ -53,11 +53,14 @@ fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 
 note "== 3F: contract & prose-truth =="
 
-# ── INT-3 ──
-grep -qF 'CWD-CONDITIONAL' "$HFH" && grep -qF 'mega-sdd:detect-drift --auto' "$HFH" \
-  && ok "INT-3: operative handoff next_action is CWD-conditional incl. Mode D branch" || fail "INT-3: operative copy still unconditional"
+# ── INT-3 ── (Mode D detect-drift handoff is now the canonical SCOPED branch —
+#   scan hands off `detect-drift ... --scope=@<vault>/.sync-changed-paths.txt --auto`;
+#   the pre-sync-lane bare `mega-sdd:detect-drift --auto` was superseded by B4/B5/B6.)
+grep -qF 'CWD-CONDITIONAL' "$HFH" && grep -qF 'mega-sdd:detect-drift' "$HFH" && grep -qF '.sync-changed-paths.txt' "$HFH" \
+  && ok "INT-3: operative handoff next_action is CWD-conditional incl. scoped Mode D detect-drift branch" || fail "INT-3: operative copy still unconditional / missing scoped Mode D branch"
 grep -qF 'CWD-conditional' "$SK" && ok "INT-3: SKILL.md next-step suggestion aligned" || fail "INT-3: SKILL.md still unconditional"
-grep -qF 'mega-sdd:detect-drift --auto' "$HC" && ok "INT-3: handoff-contract mirror carries the Mode D branch" || fail "INT-3: contract mirror missing Mode D"
+grep -qF 'mega-sdd:detect-drift' "$HC" && grep -qF '.sync-changed-paths.txt' "$HC" \
+  && ok "INT-3: handoff-contract mirror carries the scoped Mode D detect-drift branch" || fail "INT-3: contract mirror missing scoped Mode D branch"
 
 # ── INT-4 ──
 grep -qF 'reuse-index.yaml>          # only when deep-scan ran' "$HFH" \
