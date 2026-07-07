@@ -40,26 +40,20 @@ Override per role via CLI flag / project config / user preference (see `plugins/
 
 Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction) ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
 
-**Index format:**
+**Index format (one line per term — spec amendment 2026-07-06; the old per-term YAML triple cost ~40% more across an 80–120 KB glossary):**
 
-```yaml
-glossary_index:
-  - term: "customer-onboarding"
-    short_def: "End-to-end signup flow including KYC, tier assignment, and document upload"
-    location: "glossary.md:42-58"
-  - term: "trade-finance-letter-of-credit"
-    short_def: "Bank-issued commitment to pay seller upon shipment evidence per UCP 600"
-    location: "glossary.md:128-148"
-  # ... per glossary entry
+```
+glossary_index (term: short_def (L<start>-<end>)):
+- customer-onboarding: End-to-end signup flow incl. KYC, tier assignment, document upload (L42-58)
+- trade-finance-letter-of-credit: Bank commitment to pay seller upon shipment evidence per UCP 600 (L128-148)
+# ... one line per glossary entry
 ```
 
-**Subagent instruction (appended to Wave 2/3/4 prompts):**
+- `short_def` cap: **~80 chars** — truncate at a word boundary with `…`; the full prose stays spot-readable via the line range. The cap applies to the INDEX only; glossary.md itself is untouched.
+- `(L42-58)` = the term's line range in `glossary.md` (same semantics as the old `location:` field; used with `Read offset/limit` for spot-reads).
+- The subagent-facing usage instruction lives ONCE, inside the generic skeleton's `GLOSSARY INDEX` comment block below (it used to be stated twice per prompt — here AND in the skeleton). Citation format in outputs is unchanged: `glossary.md §customer-onboarding:42-58`, never the bare form.
 
-> When you need to reference a glossary term, FIRST consult `<GLOSSARY_INDEX>` above — it's the authoritative compact index for ALL terms in this KB. The `short_def` is usually sufficient for cross-reference citations. ONLY read `glossary.md` directly when you need full prose context for a specific term, AND when doing so use the line range from `location:` field (e.g., `Read glossary.md offset:42 limit:17`) — do NOT load the entire glossary file.
->
-> When citing a glossary entry in your output, include the line range: write `glossary.md §customer-onboarding:42-58` (NOT bare `glossary.md §customer-onboarding`). Downstream readers can then spot-read instead of full-document read.
-
-**Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction.
+**Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction; the one-line index form saves a further ~40% of the injected index itself.
 
 ## Reference offset hints
 
@@ -108,16 +102,13 @@ OUTPUT TO: <absolute path to MD file>
 
 USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-template.
 
-DISCIPLINE (non-negotiable):
-- Citation required: file:line for every non-trivial claim ON THE SAME LINE as the marker, AND listed in §11. A claim without inline citation is UNCITED — downstream validators flag it for downgrade.
-- Confidence marker: [VERIFIED] / [INFERRED] / [OPEN] on every non-trivial claim.
-- Mutability tier: [LOCKED] / [INTENT] / [ARTIFACT] paired with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
-  - Default tier when uncertain: [INTENT] (NEVER auto-default to [LOCKED] or [ARTIFACT] — both need positive evidence)
-  - [LOCKED]: regulatory citation, contract spec, audit trail, external FK
-  - [ARTIFACT]: zero-caller code, legacy stack workaround, dead branch
-- Tech-agnostic vocabulary outside §11 and 50-integrations/.
+DISCIPLINE DELTAS (non-negotiable; your agent body already carries the core rails —
+cite-every-claim, [VERIFIED]/[INFERRED]/[OPEN] on every non-trivial claim, mutability
+tier definitions, no-fabrication/ambiguity→[OPEN], tech-agnostic vocabulary — these
+are the ADDITIONS this dispatch requires):
+- Citation placement: file:line ON THE SAME LINE as the marker, AND listed in §11. A claim without inline citation is UNCITED — downstream validators flag it for downgrade.
+- Mutability default: uncertain → [INTENT]. NEVER auto-default to [LOCKED] (needs positive evidence: regulatory citation, contract spec, audit trail, external FK) or [ARTIFACT] (needs positive evidence: zero-caller code, legacy stack workaround, dead branch). Pair the tier with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
 - Compare .bak / dated files vs live versions; document discrepancies in §9.
-- NO fabrication. Ambiguous confidence → [OPEN]. Ambiguous mutability → [INTENT] default.
 
 EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
 - **Business logic extraction**: don't just describe WHAT the code does — infer the business RULE behind it. E.g., if code checks `amount > 100000`, don't write "checks if amount exceeds threshold" — write "transaction amounts above 100,000 require additional approval [INFERRED] (`src/workflow/approval.ts:45`)" with the business rule made explicit.
@@ -127,25 +118,15 @@ EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
 - **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
 
 DEEP DISCIPLINES (catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
-- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set via the stack's persistence or assignment idiom — see the STACK IDIOM TABLE below), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (a bulk row-copy, snapshot, record-duplicate, or object/struct copy — table row P1), list the fields carried over IMPLICITLY (the non-overwritten columns/fields) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
+- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set via the stack's persistence or assignment idiom — see the STACK IDIOMS rows below), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (a bulk row-copy, snapshot, record-duplicate, or object/struct copy — table row P1), list the fields carried over IMPLICITLY (the non-overwritten columns/fields) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
 - **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the entry point of every controller / handler / form file for **entry-point dispatchers** — a branch on an action/mode/HTTP-verb/route discriminator (table row P2): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
 - **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional halt / hard-exit / early-return on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]` — table row P3); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (an always-true gate, a `debug = 1`, a `// delete after testing`); and silent-success paths (empty catch / swallowed error / "expected failure → return success" — table row P3).
 - **P4 — Classify files by structure, not naming**: a file's role comes from its shape, not its filename prefix. Inspect template/output ratio, form-tag/markup presence, and early-return action gates to classify each in-scope file as view / action_handler / dual_purpose / dispatcher / service. When the structural fingerprint contradicts the filename hint (a file named like an action-only handler that ALSO renders a full view → `dual_purpose`), document the mismatch in §9 — downstream rebuild planning depends on the real role.
 - **P6 — Dynamic dispatch & runtime wiring**: a call site whose concrete target is decided at RUNTIME, not lexically, is a **dynamic seam** — a write-side-only read sees the seam but not what it actually does. For every dynamic seam (table row P6 — DI-container resolution, reflection / `dynamic` / duck-typed dispatch, attribute/annotation/convention-based routing & validation, interface → implementation dispatch, event/delegate/middleware/observer wiring), locate the real target(s) the runtime would bind and document the OBSERVED behaviour as a business outcome, citing BOTH the seam site and each resolved target. A seam you can resolve to one or more concrete targets → confirmed; a seam whose target genuinely cannot be determined from the code (e.g. a container registration scanned by convention with no enumerable consumer in scope) → `[OPEN]`, never an invented target. This is the inverse of P2 (one call site, N runtime targets) and the most common silent-miss on DI/reflection-heavy stacks (C#/.NET, Java/Spring, Go, modern TS) — do NOT skip a seam just because the target is not in the same file.
 
-**STACK IDIOM TABLE** — the disciplines above are stack-neutral; this table gives the concrete idiom to grep/read for, per detected legacy stack. Match the row to the principle; if your stack is not listed, reason by analogy from the closest row (never assume "not present" — confirm by reading):
+**STACK IDIOMS (auto-injected)** — the disciplines above are stack-neutral; the rows below give the concrete idiom to grep/read for, sliced by the dispatcher to this project's detected legacy stack(s). If a file you read is in a stack not covered by the rows, reason by analogy from the closest idiom (never assume "not present" — confirm by reading):
 
-| Principle | PHP | JS / TS | Python | C# / .NET | Java | Go | Ruby | Rust |
-|---|---|---|---|---|---|---|---|---|
-| **P1** state write | `UPDATE`/`INSERT`/`$x =` | assignment / ORM `.save()` | assignment / ORM `.save()` | EF `SaveChanges` / property set | JPA `persist`/`merge` / setter | struct field set / `db.Save` | AR `update`/`save` / `attr=` | field set / `diesel update` |
-| **P1** clone copy | `INSERT … SELECT` | object spread `{...x}` | `dict(**x)` / `copy()` | `INSERT … SELECT` / object init | `INSERT … SELECT` / copy ctor | struct copy `b := a` | `dup`/`clone`/`attributes` | `.clone()` / struct update |
-| **P2** entry dispatcher | `$_GET['action']` / `mode==` | `req.method` / route switch | `request.method` / view dispatch | attribute route / `switch(action)` | `@RequestMapping` / servlet `switch` | `switch r.Method` / mux | `params[:action]` / routes | match on path / router |
-| **P3** hard halt | `die()`/`exit()` | `process.exit()`/`throw` | `sys.exit()`/`raise` | `Environment.Exit`/`throw` | `System.exit`/`throw` | `os.Exit`/`panic`/`log.Fatal` | `exit`/`abort`/`raise` | `std::process::exit`/`panic!` |
-| **P3** silent-success | empty `catch`/`@` | empty `catch`/`?? true` | bare `except: pass` | empty `catch`/swallow | empty `catch` | ignored `err` (`_ =`) | bare `rescue`/`rescue nil` | `let _ =`/`.ok()` discard |
-| **P6** DI / IoC | service locator / container | DI token / factory inject | constructor inject / `Depends()` | `IServiceCollection` / ctor inject | `@Autowired`/`@Inject` | wire / provider func | initializer / `.new` inject | trait object / builder |
-| **P6** reflection | `call_user_func`/`$$var` | `obj[name]()` / proxy | `getattr`/`__getattr__` | reflection / `dynamic` | reflection / proxy | `reflect` / interface assert | `send`/`method_missing` | trait dynamic / `Any` |
-| **P6** route/validate by attr | annotation `@Route` | decorator route | decorator route | `[HttpGet]`/`[Authorize]`/`[Required]` | `@GetMapping`/`@Valid` | tag-based bind | DSL macro | attribute macro |
-| **P6** event / wiring | observer / hook | `emitter.on` / callback | signal / observer | event/delegate / `+=` / middleware | listener / `@EventListener` | channel / callback | callback / ActiveSupport notif | channel / trait callback |
+<STACK_IDIOM_ROWS>
 
 REPORT BACK (last line of your response, exact format):
 - path: <absolute output path>
@@ -168,6 +149,31 @@ REPORT BACK (last line of your response, exact format):
 > **P1 self-check rail:** if you report `provenance_anomalies > 0`, every anomaly MUST appear in the output as a `write-only` / `inherited / cross-domain seam` note WITH an `[OPEN]` marker (or a cited seam). An anomaly count with no matching annotation in the file is a `fail` on `gate_self_check`.
 >
 > **P6 self-check rail:** `dynamic_seams_found` MUST equal `dynamic_seams_resolved + dynamic_seams_open`. Every seam counted in `dynamic_seams_open` MUST appear in the output with an `[OPEN]` marker; every resolved seam MUST cite both the seam site and at least one target. A `dynamic_seams_open > 0` with fewer matching `[OPEN]` markers is a `fail` on `gate_self_check`.
+
+---
+
+## `<STACK_IDIOM_ROWS>` placeholder (dispatcher-side slicing)
+
+The MASTER STACK IDIOM TABLE below lives HERE (dispatcher-side, the single authoritative copy — never inject it whole when detection succeeds). Before dispatching each wave subagent, the main thread substitutes `<STACK_IDIOM_ROWS>` with a SLICE of this table (spec amendment 2026-07-06 in `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` — the full 8-stack table cost ~2.5 KB × 12–15 dispatches while the prompt's own CONTEXT block already names the legacy stack):
+
+1. **Detected stacks** = the UNION of languages in the Wave 0 enumeration (`.scan-meta.json` language breakdown — every language present, not just the dominant one; a PHP+JS legacy gets BOTH columns). Language → column mapping follows the SAME alias convention as `scripts/kb-leak-scan.sh` `LANG_MAP` (the canonical `.scan-meta.json` language-name mapper — the two consumers must not drift): javascript/js/node/nodejs/typescript/ts → `JS / TS`; c#/csharp/cs/.net/dotnet/vb/vb.net → `C# / .NET`; kotlin → `Java`; golang → `Go`; py → `Python`; rb → `Ruby`; rs → `Rust`; match case-insensitively. Markup/data-only languages in the breakdown (HTML, CSS, SQL, YAML, …) map to no column and are ignored for slicing.
+2. **Injected slice** = the `Principle` column + one column per detected stack, ALL 9 rows, rendered as a markdown table (2..N+1 columns). The substitution target is the STANDALONE `<STACK_IDIOM_ROWS>` line inside the skeleton fence — it is the token's only in-skeleton occurrence; replace exactly that line.
+3. **Fallback — inject the FULL table** when: the enumeration is missing/empty, NO detected language maps to a column, or the run predates `.scan-meta.json`. Never dispatch with an empty `<STACK_IDIOM_ROWS>` — a subagent must always have concrete idiom anchors (the skeleton's reason-by-analogy line covers stacks beyond the injected slice either way).
+4. Mixed case — SOME detected languages map, others don't: inject the mapped columns (the analogy line covers the rest); do NOT fall back to the full table for that.
+
+**MASTER STACK IDIOM TABLE** (dispatcher-side; match the row to the principle):
+
+| Principle | PHP | JS / TS | Python | C# / .NET | Java | Go | Ruby | Rust |
+|---|---|---|---|---|---|---|---|---|
+| **P1** state write | `UPDATE`/`INSERT`/`$x =` | assignment / ORM `.save()` | assignment / ORM `.save()` | EF `SaveChanges` / property set | JPA `persist`/`merge` / setter | struct field set / `db.Save` | AR `update`/`save` / `attr=` | field set / `diesel update` |
+| **P1** clone copy | `INSERT … SELECT` | object spread `{...x}` | `dict(**x)` / `copy()` | `INSERT … SELECT` / object init | `INSERT … SELECT` / copy ctor | struct copy `b := a` | `dup`/`clone`/`attributes` | `.clone()` / struct update |
+| **P2** entry dispatcher | `$_GET['action']` / `mode==` | `req.method` / route switch | `request.method` / view dispatch | attribute route / `switch(action)` | `@RequestMapping` / servlet `switch` | `switch r.Method` / mux | `params[:action]` / routes | match on path / router |
+| **P3** hard halt | `die()`/`exit()` | `process.exit()`/`throw` | `sys.exit()`/`raise` | `Environment.Exit`/`throw` | `System.exit`/`throw` | `os.Exit`/`panic`/`log.Fatal` | `exit`/`abort`/`raise` | `std::process::exit`/`panic!` |
+| **P3** silent-success | empty `catch`/`@` | empty `catch`/`?? true` | bare `except: pass` | empty `catch`/swallow | empty `catch` | ignored `err` (`_ =`) | bare `rescue`/`rescue nil` | `let _ =`/`.ok()` discard |
+| **P6** DI / IoC | service locator / container | DI token / factory inject | constructor inject / `Depends()` | `IServiceCollection` / ctor inject | `@Autowired`/`@Inject` | wire / provider func | initializer / `.new` inject | trait object / builder |
+| **P6** reflection | `call_user_func`/`$$var` | `obj[name]()` / proxy | `getattr`/`__getattr__` | reflection / `dynamic` | reflection / proxy | `reflect` / interface assert | `send`/`method_missing` | trait dynamic / `Any` |
+| **P6** route/validate by attr | annotation `@Route` | decorator route | decorator route | `[HttpGet]`/`[Authorize]`/`[Required]` | `@GetMapping`/`@Valid` | tag-based bind | DSL macro | attribute macro |
+| **P6** event / wiring | observer / hook | `emitter.on` / callback | signal / observer | event/delegate / `+=` / middleware | listener / `@EventListener` | channel / callback | callback / ActiveSupport notif | channel / trait callback |
 
 ---
 
