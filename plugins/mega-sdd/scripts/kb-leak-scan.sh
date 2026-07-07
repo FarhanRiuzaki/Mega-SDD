@@ -85,6 +85,7 @@ LANG_MAP = {
     "typescript": "ts", "ts": "ts",
     "python": "python", "py": "python",
     "c#": "csharp", "csharp": "csharp", "cs": "csharp", ".net": "csharp", "dotnet": "csharp",
+    "vb": "csharp", "vb.net": "csharp", "vbnet": "csharp",
     "java": "java", "kotlin": "java",
     "go": "go", "golang": "go",
     "ruby": "ruby", "rb": "ruby",
