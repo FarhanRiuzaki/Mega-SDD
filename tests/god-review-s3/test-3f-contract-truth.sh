@@ -30,7 +30,8 @@ P="${ROOT}/plugins/mega-sdd"
 SK="$P/skills/scan-codebase/SKILL.md"
 SP="$P/skills/scan-codebase/references/scan-procedure.md"
 HFH="$P/skills/scan-codebase/references/halts-flags-handoff.md"
-DSS="$P/skills/scan-codebase/references/deep-scan-stage.md"
+DSG="$P/skills/scan-codebase/references/deep-scan-gate.md"
+DSD="$P/skills/scan-codebase/references/deep-scan-dispatch.md"
 DSP="$P/skills/scan-codebase/references/deep-scan-prompts.md"
 CMS="$P/skills/scan-codebase/references/codebase-map-schema.md"
 TSI="$P/skills/scan-codebase/references/tree-sitter-integration.md"
@@ -42,7 +43,7 @@ SCS="$P/references/starterkit-context-schema.md"
 PTH="$P/references/paths.md"
 PRT="$P/skills/generate-units/references/pagerank-targeting.md"
 MEM="$P/skills/memory/SKILL.md"
-for f in "$SK" "$SP" "$HFH" "$DSS" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$PRT" "$MEM"; do
+for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$PRT" "$MEM"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -66,7 +67,7 @@ grep -qF 'mega-sdd:detect-drift' "$HC" && grep -qF '.sync-changed-paths.txt' "$H
 grep -qF 'reuse-index.yaml>          # only when deep-scan ran' "$HFH" \
   && grep -qF 'codebase-map.snapshot.json>  # only when Step 10.6 wrote it' "$HFH" \
   && ok "INT-4: reuse-index + snapshot listed in handoff artifacts (conditional)" || fail "INT-4: artifacts list incomplete"
-if grep -qF 'reuse_index: { path:' "$DSS"; then fail "INT-4: phantom reuse_index handoff field survives"; else ok "INT-4: phantom reuse_index handoff field removed"; fi
+if grep -qF 'reuse_index: { path:' "$DSG" "$DSD"; then fail "INT-4: phantom reuse_index handoff field survives"; else ok "INT-4: phantom reuse_index handoff field removed"; fi
 
 # ── INT-6 ──
 grep -qF 'NOT persisted by scan-codebase' "$SP" && ok "INT-6: scan-procedure — reference captures not persisted" || fail "INT-6: scan-procedure still claims a symbol-graph channel"
@@ -128,23 +129,23 @@ grep -qF 'DATA FENCE' "$DSP" && ok "DS-4: MANIFEST_FACTS injection block is data
 FENCE_N=$(grep -cF 'UNTRUSTED-DATA FENCE' "$DSP")
 [ "$FENCE_N" -ge 5 ] && ok "r2: fence line present in all 5 templates ($FENCE_N occurrences)" \
   || fail "r2: fence in only $FENCE_N template(s) — '4 rails verbatim' is false again"
-grep -qF 'DATA-FENCE comment' "$DSS" && ok "r2: dispatcher-side build step emits the fence with manifest_facts" || fail "r2: dispatcher build step not fenced"
+grep -qF 'DATA-FENCE comment' "$DSD" && ok "r2: dispatcher-side build step emits the fence with manifest_facts" || fail "r2: dispatcher build step not fenced"
 
 # ── DS-5 ──
-for f in "$SK" "$DSS" "$SSS"; do
+for f in "$SK" "$DSG" "$DSD" "$SSS"; do
   if grep -q '30-50%' "$f"; then fail "DS-5: fabricated ~30-50% figure survives in $(basename "$f")"; fi
 done
-grep -q '30-50%' "$SK" "$DSS" "$SSS" || ok "DS-5: fabricated perf figure removed from all 3 surfaces"
+grep -q '30-50%' "$SK" "$DSG" "$DSD" "$SSS" || ok "DS-5: fabricated perf figure removed from all surfaces"
 if grep -qF 'skip re-tokenization' "$SK"; then fail "DS-5: SKILL.md still claims the re-tokenization skip"; else ok "DS-5: SKILL.md snapshot claim is freshness-attestation"; fi
-grep -qF '"source_files_sha256_map": {}' "$DSS" && ok "DS-5: codebase-map snapshot writes source_files_sha256_map EMPTY" || fail "DS-5: write-only sha map still built"
+grep -qF '"source_files_sha256_map": {}' "$DSG" && ok "DS-5: codebase-map snapshot writes source_files_sha256_map EMPTY" || fail "DS-5: write-only sha map still built"
 grep -qF 'EMPTY for this type' "$SSS" && ok "DS-5: schema documents the empty map for codebase-map type" || fail "DS-5: schema field doc stale"
 
 # ── DS-7 ──
 if grep -qE '<FILE_HINTS>' "$DSP"; then fail "DS-7: bare <FILE_HINTS> ghost variable survives"; else ok "DS-7: no bare <FILE_HINTS> token (only domain-prefixed hint vars)"; fi
 
 # ── DS-8 ──
-if grep -qF '≥ 0.5' "$DSS" || grep -qF '≥ 0.5' "$SK"; then fail "DS-8: numeric ≥0.5 trigger grammar survives"; else ok "DS-8: numeric trigger grammar removed"; fi
-grep -qF 'in {high, medium}' "$DSS" && grep -qF 'low OR fallback' "$DSS" && ok "DS-8: trigger in the string-enum domain, fallback named" || fail "DS-8: enum trigger incomplete"
+if grep -qF '≥ 0.5' "$DSG" "$DSD" || grep -qF '≥ 0.5' "$SK"; then fail "DS-8: numeric ≥0.5 trigger grammar survives"; else ok "DS-8: numeric trigger grammar removed"; fi
+grep -qF 'in {high, medium}' "$DSG" && grep -qF 'low OR fallback' "$DSG" && ok "DS-8: trigger in the string-enum domain, fallback named" || fail "DS-8: enum trigger incomplete"
 grep -qF '`low`/`fallback` → skip' "$SK" && ok "DS-8: SKILL.md trigger line enum-domain" || fail "DS-8: SKILL.md trigger stale"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 3F OK"; else note "3F had failures"; fi

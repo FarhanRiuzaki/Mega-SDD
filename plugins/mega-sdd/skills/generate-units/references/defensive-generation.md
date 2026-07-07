@@ -9,15 +9,12 @@ Mitigates "ngawang" (floating/disconnected) units. User UX request:
 ## Contents
 - Design principle
 - Step 0.5 — Pre-flight upstream check
-- Step 7.6 — Per-unit target_files cross-check
+- Step 7.6 — pointer to task-typing.md (single owner)
 - Step 12.3 — Per-anchor verification
 - Grounding confidence labels
 - Halt vs warning matrix
 - Anti-halu rails preserved
 - Backward compatibility
-- Examples
-- Field-level diff detection (the "ngawang" mitigation)
-- Six-state Implementation State Map + field_diff mechanics
 - References
 
 ## Design principle
@@ -61,41 +58,9 @@ If user picks "auto-run upstream":
 
 Both routes can short-circuit on halt (CONFLICT in binding, etc.) — same protocol as orchestrate-flow.
 
-## Step 7.6 — Per-unit target_files cross-check (NEW)
+## Step 7.6 — Per-unit target_files cross-check
 
-After `target_files` populated (Step 7), BEFORE writing unit to disk:
-
-For EACH `target_files` entry where `operation: create`:
-
-```
-1. Probe path existence (fs OR codebase-map §1)
-2. If file does NOT exist → proceed normally (true create scenario)
-3. If file EXISTS:
-   a. Check if unit's binding_refs include a claim about this file's symbols
-   b. If binding has IMPLEMENTED state for related claim → INTERACTIVE prompt:
-      "Target file `<path>` already exists. Binding marked related claim IMPLEMENTED.
-       Options for unit U-XXX:
-         1. Convert to `verify` (no code change; assertion-only) (recommended)
-         2. Convert to `extend` (modify file; fill Migration notes)
-         3. Rename target file (provide new path)
-         4. Force `create` anyway (overwrite — DANGEROUS)
-         5. Skip this unit"
-   c. If binding has NEW or UNKNOWN state (or no binding) → INTERACTIVE prompt:
-      "Target file `<path>` exists but binding state is unclear.
-       Options for unit U-XXX:
-         1. Convert to `extend` (recommended for unclear state)
-         2. Convert to `verify`
-         3. Rename target file
-         4. Force `create` (overwrite)
-         5. Skip this unit"
-```
-
-### Prompt frequency control
-
-- Prompts fire ONLY when there's a genuine collision (file exists + task_type=create)
-- Same-session memory: if user picks "convert to extend" for unit U-007, similar collisions in U-008/U-009 surface same prompt with previous choice as default
-- `--auto` flag suppresses interactive — defaults to safest option (convert to extend; user reviews later)
-- `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
+Single owner: `references/task-typing.md §Step 7.6` — full probe logic, BOTH prompt branches (IMPLEMENTED→verify recommended; PARTIAL/NEW/UNKNOWN→extend recommended), prompt-frequency control, and the `--auto` / `--collision-policy` semantics live there.
 
 ## Step 12.3 — Per-anchor verification (precondition check)
 
@@ -195,181 +160,11 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 - `--no-defensive` flag disables Steps 0.5 + 7.6 + 12.3 entirely (back to v3.1 behavior)
 - `--auto` flag in chain mode (orchestrate-flow --deep) → defaults safest (no death by prompts in autonomous chains)
 
-## Examples
+## Moved content (pointers)
 
-### Example 1 — Pre-flight auto-route
-
-```
-$ /mega-sdd:generate-units ./vault/
-
-⚠️ Defensive pre-flight check:
-  - codebase-map.md: absent
-  - binding.md: absent
-  - vault mode: existing (brownfield)
-
-This is a brownfield vault but upstream artifacts are missing. Options:
-  1. Auto-run scan-codebase + bind-codebase first (recommended)
-  2. Proceed with reduced precision (LOW grounding confidence)
-  3. Cancel
-
-> 1
-
-Running mega-sdd:scan-codebase...
-[scan-codebase output]
-
-Running mega-sdd:bind-codebase ./vault/...
-[bind-codebase output]
-
-Resuming generate-units with HIGH confidence...
-```
-
-### Example 2 — Per-unit collision prompt
-
-```
-Generating U-007: Build user CRUD endpoints...
-
-⚠️ Target file `app/Http/Controllers/UserController.php` already exists.
-Binding marked claim C-007 (POST /api/users) as IMPLEMENTED with high confidence.
-
-Options for U-007:
-  1. Convert to `verify` (no code change; assertion-only) (recommended)
-  2. Convert to `extend` (modify file; fill Migration notes)
-  3. Rename target file (provide new path)
-  4. Force `create` (overwrite — DANGEROUS)
-  5. Skip this unit
-
-> 1
-
-✓ U-007 converted to task_type: verify; target_files cleared; acceptance_test added against UserController@store
-```
-
-### Example 3 — Anchor warning (non-halting)
-
-```
-Generating U-013: Add audit-log endpoint...
-
-⚠️ Anchor warning in U-013:
-  - app/Http/Controllers/AuditLogController.php:1 — file does not exist yet (aspirational anchor for new file; acceptable for create task)
-  - app/Models/AuditLog.php:1 — file does not exist yet (aspirational)
-
-Unit written with anchor warnings preserved as HTML comment in body footer.
-
-✓ U-013 generated (task_type: create, grounding: MEDIUM, anchors: 0/2 verified — both aspirational for greenfield code, target_files: 3 create)
-```
-
-### Example 4 — Standalone generate-units LOW confidence
-
-```
-$ /mega-sdd:generate-units ./vault/ --no-defensive
-
-⚠️ Defensive checks disabled. Generated units will have grounding_confidence: LOW unless binding exists.
-
-[generates all units with LOW confidence labels]
-
-Summary:
-  ✓ 7 units generated, all LOW confidence (no upstream artifacts consulted)
-  ⚠️ Recommend running scan-codebase + bind-codebase + re-generating for HIGH confidence
-```
-
-## Field-level diff detection (addresses "ngawang" at field granularity)
-
-User example: PRD says login accepts (nip, nama, password). Codebase has only (nip, password). Under a binary IMPLEMENTED/NEW classification the vault claim would be CONFIRMED with state IMPLEMENTED → generate-units assigns `task_type: verify` → bolt skips code generation → **the missing `nama` field never gets added**. That's ngawang.
-
-The PARTIAL_FIELDS_* states exist precisely to close this hole.
-
-### bind-codebase enhancement (PARTIAL_FIELDS state)
-
-For each CONFIRMED claim that specifies fields/params explicitly:
-
-```
-vault claim: "POST /api/login accepts { nip, nama, password }"
-codebase-map §3 (routes) + §2 (handler signature): login(nip, password)
-
-Set V = { nip, nama, password }  (vault claim fields)
-Set C = { nip, password }         (code field set from tree-sitter signature extraction)
-
-Diff:
-- V ∩ C  = { nip, password }      (shared / KEEP)
-- V \ C  = { nama }                (missing in code / ADD)
-- C \ V  = { }                     (surplus in code / REMOVE or vault gap)
-```
-
-### Six-state Implementation State Map
-
-| State | Definition | Code Signal |
-|---|---|---|
-| `IMPLEMENTED` | V == C (field sets match exactly) | tree-sitter signature == vault claim signature |
-| `PARTIAL_FIELDS_MISSING` | C ⊂ V (code missing fields from claim) | extracted signature missing fields V \ C |
-| `PARTIAL_FIELDS_SURPLUS` | V ⊂ C (code has extra fields not in claim) | extracted signature has extras C \ V; vault may need update |
-| `PARTIAL_FIELDS_BOTH` | shared fields exist but both V\C and C\V non-empty (rare; bidirectional drift) | field-level set diff at precision_tier ast |
-| `NEW` | C absent (symbol missing) | not in codebase-map |
-| `UNKNOWN` | V ∩ C empty but symbol exists | semantic mismatch needs human review |
-
-### binding.md output extension
-
-Implementation State Map row gains `field_diff` column:
-
-```yaml
-## Implementation State Map
-| Claim ID | Verdict | State | Anchor | Confidence | Field diff |
-|---|---|---|---|---|---|
-| C-007 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:45 | high | ADD: [nama] · KEEP: [nip, password] · REMOVE: [] |
-| C-019 | CONFIRMED | IMPLEMENTED | UserController.php:23 | high | (none — exact match) |
-| C-023 | CONFIRMED | PARTIAL_FIELDS_SURPLUS | OrderController.php:88 | medium | ADD: [] · KEEP: [order_id, items] · REMOVE: [legacy_ref] · VAULT_REVIEW: code has fields not in vault claim |
-```
-
-### generate-units task_type for new states
-
-| Implementation State | Unit task_type | Migration notes auto-populated |
-|---|---|---|
-| `IMPLEMENTED` (V == C) | `verify` — ONLY at `confidence: high`; medium/low → treat as UNKNOWN (a fuzzy anchor must not mint a verify) | (none; no code changes) |
-| `PARTIAL_FIELDS_MISSING` (C ⊂ V) | `extend` | **ADD**: missing fields from V \ C · **KEEP**: shared fields V ∩ C · **REMOVE**: (none) |
-| `PARTIAL_FIELDS_SURPLUS` (V ⊂ C) | `extend` with HUMAN REVIEW | **ADD**: (none) · **KEEP**: V ∩ C · **REMOVE**: C \ V (CAUTION — code has fields vault doesn't mention; could be feature drift OR vault gap; user reviews via interactive prompt) |
-| `NEW` | `create` | (omitted; create task) |
-| `UNKNOWN` | truncation-sourced → direct-probe sub-rule (task-typing.md §Full task_type table); otherwise `create` (conservative default) with note | (omitted; warning in body) |
-
-For PARTIAL_FIELDS_SURPLUS specifically, generate-units fires INTERACTIVE prompt because surplus fields could indicate:
-- Feature drift (code has logic not in spec — vault should be updated)
-- Vault gap (spec is incomplete)
-- Legacy fields to deprecate (REMOVE is correct)
-- Field renaming (e.g., `legacy_ref` was renamed to something already in V)
-
-### Example with user's login scenario
-
-```
-$ /mega-sdd:bind-codebase ./vault/
-
-[binding output...]
-
-## Implementation State Map
-| Claim | Verdict | State | Anchor | Field diff |
-|---|---|---|---|---|
-| C-LOGIN-1 | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController@store:45 | ADD: [nama] · KEEP: [nip, password] |
-
-$ /mega-sdd:generate-units ./vault-bound/
-
-Generating U-001 from C-LOGIN-1...
-
-⚠️ Claim has PARTIAL_FIELDS_MISSING — code missing field 'nama' from PRD spec.
-  task_type: extend (recommended)
-  Migration notes auto-populated:
-    ADD: nama field — new validated input on POST /api/login
-    KEEP: nip, password (existing logic intact)
-    REMOVE: (none)
-  Hard rule pre-fill suggestions:
-    - DO NOT modify signature of `authenticate(nip, password)` private method (existing behavior preserved)
-    - file:app/Http/Requests/LoginRequest.php MUST exist after bolt (validation request class for new field)
-
-Proceed with extend? [Y/n/customize]
-```
-
-Unit content is now **field-aware**: bolt knows exactly which field to add, where existing fields are, and what NOT to touch.
-
-### Cost / benefit
-
-**Cost**: tree-sitter must extract signature details (parameter names) — already covered by the shipped .scm queries. bind-codebase needs field-comparison logic — ~50 lines new code per claim type.
-
-**Benefit**: eliminates the #1 source of "ngawang" — implementations that LOOK complete but are missing specific fields the spec requires.
+- The chat-transcript Examples walkthrough (pre-flight auto-route, collision prompt, anchor warning, LOW-confidence run) was cut — the operative behavior each example illustrated lives in §Step 0.5 (decision matrix + auto-route), `task-typing.md §Step 7.6` (collision prompt text), §Step 12.3 (anchor warnings), and §Grounding confidence labels (chat output lines).
+- The Six-state Implementation State Map + the new-state task_type mapping moved to `references/task-typing.md` (§Six-state Implementation State Map / §task_type for the six states) — task-typing is the single owner of task_type assignment.
+- The bind-codebase field-diff narration (PARTIAL_FIELDS derivation, binding.md `Field diff` column, the login worked example) is owned by `bind-codebase/references/binding-contract.md §Implementation-State Classification` + its implementation-state reference.
 
 ## References
 

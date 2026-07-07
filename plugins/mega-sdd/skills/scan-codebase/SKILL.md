@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.17.1
+version: 2.18.0
 description: Heuristic codebase scanner for brownfield SDD projects. Produces `codebase-map.md` cataloging entities, modules, conventions, public interfaces, naming patterns, and test conventions. Consumed by `bind-codebase` as ground truth for vault validation. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -59,13 +59,13 @@ Detailed per-step logic — including the tree-sitter multi-binary probe, the pe
 
 ### Step 10.5 — Deep-scan stage (DEFAULT-ON when framework detected)
 
-After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / authz / ui_ux / libs slices + a pack-driven `patterns:` block; plus a separate `reuse-index.yaml`). Full algorithm — trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, the framework-agnostic deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, and the concurrency guard — is in **`references/deep-scan-stage.md`**. Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
+After Step 10 populates §7 Framework, run the deep-scan stage automatically (opt-out: `--shallow-scan`). It produces `.mega-sdd/codebase/starterkit-context.yaml` (auth / authz / ui_ux / libs slices + a pack-driven `patterns:` block; plus a separate `reuse-index.yaml`). The stage is split hot/cold: **`references/deep-scan-gate.md`** (always load first — trigger check, per-slice cache check, concurrency guard, shared snapshot) and **`references/deep-scan-dispatch.md`** (load ONLY when the gate's cache check yields non-empty `stale_slices` — manifest pre-parse, parallel selective subagent dispatch, framework-agnostic deep-read, consolidation + the complete `starterkit-context.yaml` schema). Subagent prompt templates are in **`references/deep-scan-prompts.md`**.
 
 - **Trigger:** framework confidence `high`/`medium` (the §7 string enum) → run; `low`/`fallback` → skip (override with `--force-deep`).
 - **Cache:** per-slice signature diff; full hit short-circuits; `--no-cache` forces full re-dispatch.
 - **Dispatch:** only stale slices, in a single parallel message (read-only subagents). Missing `lib-patterns/<framework>/` → generic extraction, no halt.
 - **Failure:** one slice fails → `partial: true` + `partial_slices`; all fail → halt `deep_scan_subagent_all_failed` (preserve prior YAML).
-- **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can cheaply attest map freshness — one sha compare, a freshness attestation NOT a parsing shortcut (per `references/deep-scan-stage.md`).
+- **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can cheaply attest map freshness — one sha compare, a freshness attestation NOT a parsing shortcut (per `references/deep-scan-gate.md`).
 
 11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `/mega-sdd:bind-codebase <vault-path>`; no vault yet (starterkit-first) → `/mega-sdd:generate-intent --scan=<map>`; sync lane (`--changed-only`, incremental merge ran) → `/mega-sdd:detect-drift --scope=@<vault>/.sync-changed-paths.txt` (the durable changed set — the forked detect-drift can't re-resolve it once the journal is consumed); sync lane on the step-2 full-scan fallback (no changed set to scope) → SKIP detect-drift, `/mega-sdd:bind-codebase <vault-path> --auto` (a FULL re-bind — a scope-less detect-drift self-classifies STANDALONE and null-terminates the Mode D chain before the re-bind; §3.8(b)(1)).
 
@@ -89,7 +89,8 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 ## Specialist references (load on demand)
 
 - **`references/scan-procedure.md`** — full surface scan (Steps 0–10): engine multi-binary probe, per-file invalidation gate, tree-sitter + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
-- **`references/deep-scan-stage.md`** — the deep-scan stage (Steps 10.5.x + 10.6): trigger check, per-slice cache, manifest pre-parse, parallel selective subagent dispatch, pack-driven deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema, concurrency guard, shared snapshot.
+- **`references/deep-scan-gate.md`** — deep-scan hot side (Steps 10.5.0, 10.5.1, 10.5.4, 10.6): trigger check, per-slice cache check, concurrency guard, shared snapshot. Always loaded when Step 10.5 runs.
+- **`references/deep-scan-dispatch.md`** — deep-scan cold side (Steps 10.5.1.5 → 10.5.3): manifest pre-parse, parallel selective subagent dispatch, pack-driven deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema. Load ONLY on non-empty `stale_slices`.
 - **`references/deep-scan-prompts.md`** — the five deep-scan subagent prompt templates (auth / authz / ui-ux / libs / reuse), variable substitution, `<MANIFEST_FACTS>` injection, and cross-cutting anti-halu rails.
 - **`references/codebase-map-schema.md`** — the full `codebase-map.md` output schema (frontmatter + §1–§7), how `bind-codebase` consumes it, and detection-precision caveats.
 - **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.

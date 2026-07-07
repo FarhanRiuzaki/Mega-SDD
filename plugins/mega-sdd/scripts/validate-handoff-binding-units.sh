@@ -241,13 +241,13 @@ for oq_id in sorted(binding_oqs.keys()):
         })
 # Slice 2: CONFLICT-ID drops — DEFER-resolution-aware (round-2 Batch A1).
 # A DEFER-resolved conflict downgrades to an OQ (resolve-oq/references/binding-mode.md:45)
-# and has NO citing unit by design (task-typing.md:29 "DEFER became an OQ"); the
+# and has NO citing unit by design (task-typing.md:31 "DEFER became an OQ"); the
 # documented DEFER-only path proceeds to generate-units with NO re-bind
 # (binding-mode.md:58). So an uncited DEFER'd CONFLICT-N is advisory, NOT a blocking
 # drop. Collect the uncited candidates here; the DEFER verdict is read per-ID in the
 # Pass 3b walk below (from the resolved heading OR the `- **Resolution**:` line), and
 # the candidates are classified after that walk. KEEP_VAULT keeps its un-droppable
-# citation obligation (task-typing.md:28); any other/unknown resolution is fail-closed.
+# citation obligation (task-typing.md:30); any other/unknown resolution is fail-closed.
 conflict_drop_candidates = [
     cid for cid in sorted(binding_conflicts.keys())
     if not unit_conflict_citations.get(cid, [])

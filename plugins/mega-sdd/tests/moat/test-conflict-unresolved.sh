@@ -80,10 +80,10 @@ echo "PASS (clean binding — no false positive)"
 # ============================================================================
 # DEFER resolution-awareness (round-2 Batch A1): a DEFER-resolved CONFLICT
 # downgrades to an OQ (resolve-oq/references/binding-mode.md:45) — NO unit cites
-# CONFLICT-N (task-typing.md:29 "DEFER became an OQ"), and the documented path is
+# CONFLICT-N (task-typing.md:31 "DEFER became an OQ"), and the documented path is
 # DEFER-only → generate-units with NO re-bind (binding-mode.md:58). The validator
 # must NOT hard-block that path via conflict_id_dropped. KEEP_VAULT keeps its
-# un-droppable citation obligation (task-typing.md:28); unknown action fail-closed.
+# un-droppable citation obligation (task-typing.md:30); unknown action fail-closed.
 # ============================================================================
 
 # From here on CONFLICT-1 is NOT cited by any unit (the DEFER→OQ reality).
@@ -125,7 +125,7 @@ cat > "${VAULT}/binding.md" <<'EOF'
 - **Resolution**: ✅ RESOLVED (KEEP_VAULT — code update pending) 2026-07-05 — vault is correct
 EOF
 bash "$VALIDATOR" --cwd="$ROOT" --quiet >/dev/null 2>&1; code=$?
-grep -q '"type": "conflict_id_dropped"' "$STATE" || { echo "FAIL: a KEEP_VAULT-resolved uncited CONFLICT MUST still drop (un-droppable citation obligation, task-typing.md:28)"; cat "$STATE"; exit 1; }
+grep -q '"type": "conflict_id_dropped"' "$STATE" || { echo "FAIL: a KEEP_VAULT-resolved uncited CONFLICT MUST still drop (un-droppable citation obligation, task-typing.md:30)"; cat "$STATE"; exit 1; }
 [ "$code" = "1" ] || { echo "FAIL: KEEP_VAULT uncited conflict must FAIL (exit 1), got $code"; cat "$STATE"; exit 1; }
 echo "PASS (KEEP_VAULT uncited conflict still blocks — obligation preserved)"
 

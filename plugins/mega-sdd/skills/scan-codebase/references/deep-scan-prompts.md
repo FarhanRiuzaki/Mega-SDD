@@ -13,7 +13,7 @@
 
 > Prompt templates for the 5 parallel subagents dispatched by `scan-codebase` in the deep-scan stage.
 
-**Consumed by:** the deep-scan stage Step 10.5.2 (subagent dispatch; see `references/deep-scan-stage.md`)
+**Consumed by:** the deep-scan stage Step 10.5.2 (subagent dispatch; see `references/deep-scan-dispatch.md`)
 **Schema:** `plugins/mega-sdd/references/starterkit-context-schema.md` (target output structure)
 **Catalogs:** `plugins/mega-sdd/references/lib-patterns/<framework>/*.md` (detection patterns)
 
@@ -46,7 +46,7 @@ Each prompt template uses placeholders the dispatcher substitutes:
 
 ## `<MANIFEST_FACTS>` injection format
 
-Main thread parses ALL detected manifest files ONCE before dispatch (tech-agnostic — one block per ecosystem present; full per-ecosystem field list in `references/deep-scan-stage.md` Step 10.5.1.5) and injects this YAML block into each subagent prompt:
+Main thread parses ALL detected manifest files ONCE before dispatch (tech-agnostic — one block per ecosystem present; full per-ecosystem field list in `references/deep-scan-dispatch.md` Step 10.5.1.5) and injects this YAML block into each subagent prompt:
 
 ```yaml
 manifest_facts:
