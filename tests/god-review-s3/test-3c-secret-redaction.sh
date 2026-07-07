@@ -8,7 +8,7 @@
 #         stripped while the report said redacted:true, exit 0 — making the
 #         residue LESS detectable to downstream scanners).
 #         A truncated block (no END marker) still gets its header redacted.
-#   AH-6  deep-scan-stage.md Step 10.5.3 runs the scrub before BOTH mv sites
+#   AH-6  deep-scan-dispatch.md Step 10.5.3 runs the scrub before BOTH mv sites
 #         (starterkit-context.yaml + reuse-index.yaml); the gate prose names
 #         reuse-index.yaml.
 #
@@ -18,7 +18,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SS="${ROOT}/plugins/mega-sdd/scripts/secret-scan.sh"
-DSS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-stage.md"
+DSS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md"
 HFH="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md"
 for f in "$SS" "$DSS" "$HFH"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 

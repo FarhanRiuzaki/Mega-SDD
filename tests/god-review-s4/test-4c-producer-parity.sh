@@ -207,7 +207,12 @@ grep -qF 'truncation-sourced UNKNOWN goes through the direct-probe sub-rule FIRS
 grep -qF 'All IMPLEMENTED with `confidence: medium` or `low`' "$TT" && ok "BC-STATE-2: IMPLEMENTED medium/low row exists (treated as UNKNOWN)" || fail "BC-STATE-2: medium/low IMPLEMENTED unmapped"
 grep -qF '**Row precedence**' "$TT" && ok "BC-STATE-2: row precedence defined" || fail "BC-STATE-2: precedence rule missing"
 grep -qE '\*\*PARTIAL_FIELDS_BOTH\*\*[^|]*\| `extend` with HUMAN REVIEW' "$TT" && ok "BC-STATE-2: PARTIAL_FIELDS_BOTH row assigns extend explicitly" || fail "BC-STATE-2: BOTH row still assigns no task_type"
-grep -qF 'ONLY at `confidence: high`; medium/low' "$DG" && ok "BC-STATE-2: defensive-generation IMPLEMENTED row carries the high-only qualifier" || fail "BC-STATE-2: defensive-generation contradiction survives"
+# v4.73.0 (Batch A3): task-typing.md became the SINGLE OWNER of task_type assignment —
+# the defensive-generation copy of the table (the contradiction's host) was deleted.
+# Pin the guarantee at its operative home + pin that no contradicting unconditional
+# IMPLEMENTED→verify table row re-grows in defensive-generation.
+grep -qF 'ONLY at `confidence: high`; medium/low' "$TT" && ok "BC-STATE-2: single-owner IMPLEMENTED row carries the high-only qualifier (task-typing.md)" || fail "BC-STATE-2: high-only qualifier lost from the single owner"
+if grep -qE '^\| *`?IMPLEMENTED`? *(\(V == C\))? *\| *`verify`' "$DG"; then fail "BC-STATE-2: defensive-generation re-grew a contradicting IMPLEMENTED→verify table row"; else ok "BC-STATE-2: defensive-generation carries no competing task_type row (single-owner holds)"; fi
 
 # ── BC-STALE-1: doc pins (staleness truth) ──
 grep -qF 'REGARDLESS of the sha256 match' "$AMH" && ok "BC-STALE-1: bind Step 1 currency check (stamp vs HEAD) specified" || fail "BC-STALE-1: currency check missing from auto-memory-handoff"

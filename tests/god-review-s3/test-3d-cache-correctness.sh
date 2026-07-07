@@ -7,7 +7,7 @@
 #          empty → the deep-scan cache never invalidated on NuGet changes), and
 #          the digest CHANGES when a dependency edit lands in a csproj.
 #   DS-1   slice signatures include a source component + detector version
-#          (doc-pinned: deep-scan-stage.md Step 10.5.1.3 + schema comments).
+#          (doc-pinned: deep-scan-gate.md Step 10.5.1.3 + schema comments).
 #   DS-2   failed slices re-dispatch (stale_slices ∪= prior.partial_slices; no
 #          per_slice entry for failed domains) and the remediation for
 #          starterkit_metrics_inconsistent is --no-cache (not --force-deep).
@@ -19,13 +19,14 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 CLD="${ROOT}/plugins/mega-sdd/scripts/compute-lock-digests.sh"
-DSS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-stage.md"
+DSG="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md"
+DSD="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md"
 SCS="${ROOT}/plugins/mega-sdd/references/starterkit-context-schema.md"
 VC="${ROOT}/plugins/mega-sdd/skills/generate-intent/references/vault-contract.md"
 # starterkit_metrics_inconsistent remediation text relocated (verbatim) from
 # vault-contract.md §halt-protocol to the plugin-root canonical halt registry:
 HPR="${ROOT}/plugins/mega-sdd/references/halt-protocol.md"
-for f in "$CLD" "$DSS" "$SCS" "$VC" "$HPR"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$CLD" "$DSG" "$DSD" "$SCS" "$VC" "$HPR"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -85,14 +86,14 @@ D6="$(OUT="$J6" python3 -c "import json,os;print(json.loads(os.environ['OUT'])['
 [ "$D6" = "$D5" ] && ok "r2: node_modules csproj pollution EXCLUDED (third-party churn decoupled)" || fail "r2: vendored csproj polluted the digest"
 
 # ── DS-1: signatures carry src_component + detector version (doc-pinned) ──
-grep -qF 'src_component(auth)' "$DSS" && grep -qF 'src_component(authz)' "$DSS" && grep -qF 'src_component(ui_ux)' "$DSS" \
+grep -qF 'src_component(auth)' "$DSG" && grep -qF 'src_component(authz)' "$DSG" && grep -qF 'src_component(ui_ux)' "$DSG" \
   && ok "DS-1: auth/authz/ui_ux signature inputs include src_component" || fail "DS-1: src_component missing from signature inputs"
-grep -qF '+ detector' "$DSS" && ok "DS-1: signature inputs include the detector (skill) version" || fail "DS-1: detector version missing"
+grep -qF '+ detector' "$DSG" && ok "DS-1: signature inputs include the detector (skill) version" || fail "DS-1: detector version missing"
 grep -qF 'src_component(auth)' "$SCS" && ok "DS-1: schema comments mirror the new signature inputs" || fail "DS-1: schema comments stale"
 
 # ── DS-2: failed slices re-dispatch; remediation corrected ──
-grep -qF 'stale_slices ∪= prior.partial_slices' "$DSS" && ok "DS-2: staleness diff unions prior partial_slices" || fail "DS-2: partial_slices not unioned"
-grep -qF 'do NOT write a per_slice entry for a domain listed in' "$DSS" && ok "DS-2: failed domains get no per_slice entry" || fail "DS-2: per_slice failed-domain rule missing"
+grep -qF 'stale_slices ∪= prior.partial_slices' "$DSG" && ok "DS-2: staleness diff unions prior partial_slices" || fail "DS-2: partial_slices not unioned"
+grep -qF 'do NOT write a per_slice entry for a domain listed in' "$DSD" && ok "DS-2: failed domains get no per_slice entry" || fail "DS-2: per_slice failed-domain rule missing"
 grep -qF 'belt-and-braces option' "$HPR" && grep -qF 'failed slices — they carry no per_slice cache signature' "$HPR" \
   && ok "DS-2: remediation states the post-fix truth (plain re-run heals; --no-cache = belt-and-braces)" || fail "DS-2: remediation wording stale"
 if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi

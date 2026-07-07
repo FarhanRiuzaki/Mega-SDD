@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -u
-f="plugins/mega-sdd/skills/scan-codebase/references/deep-scan-stage.md"
+f="plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md"
 err=0
 grep -q 'reuse-extractor' "$f" || { echo "stage does not list reuse-extractor"; err=1; }
 grep -qE 'reuse-index\.yaml' "$f" || { echo "stage does not emit reuse-index.yaml"; err=1; }

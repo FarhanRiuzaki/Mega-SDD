@@ -2,6 +2,8 @@
 
 ## Contents
 - Full task_type table (binding state → task_type)
+- Six-state Implementation State Map + field_diff mechanics
+- task_type for the six states
 - `verify` unit specifics
 - `extend` activation + Migration-notes auto-population
 - Reconcile pass (`--reconcile` — living-vault sync lane)
@@ -36,7 +38,38 @@ If bound-vault has `binding.md` with an Implementation State Map, assign `task_t
 - **Truncation-sourced UNKNOWN** — the binding row's Anchor/reason cell (or `binding.json` `state_reason`) cites `truncated_sections`: the map was CAPPED there, so absence is NOT evidence of absence. Do NOT type `create` from the map. **Probe the repo directly** (grep the claimed entity/route/symbol in the codebase — same fs-probe idiom as Step 7.6): found → treat as IMPLEMENTED-equivalent, type `verify` citing the probed `file:line` as the anchor; not found → `create` (absence now verified against the repo itself, not the truncated map). This delivers the producer contract's "never a create-type task from a truncated section" (codebase-map-schema.md / binding-contract.md).
 - **All other UNKNOWN** (dynamic route, ambiguous match, regex tier, KB-confirmed) → `create` (conservative default per DESIGN-OQ-1) — surface a note in unit body: "Binding marked one or more claims as UNKNOWN (anchor: ...). Verify manually whether this work is needed."
 
-The full six-state model + `field_diff` mechanics are specified in the defensive-generation reference (§Six-state Implementation State Map) listed in the skill router.
+The full six-state model + `field_diff` mechanics are specified below (§Six-state Implementation State Map + field_diff mechanics) — this file is the single owner of task_type assignment.
+
+## Six-state Implementation State Map + field_diff mechanics
+
+Produced by `bind-codebase`. The classification rules, the deterministic ADD/KEEP/REMOVE field-diff set ops, the binding.md `Field diff` column format, and the worked login example are owned by `bind-codebase/references/binding-contract.md §Implementation-State Classification` (per-claim probe rules in its implementation-state reference). Consumer-side summary of the states this file's tables key on:
+
+| State | Definition | Code Signal |
+|---|---|---|
+| `IMPLEMENTED` | V == C (field sets match exactly) | tree-sitter signature == vault claim signature |
+| `PARTIAL_FIELDS_MISSING` | C ⊂ V (code missing fields from claim) | extracted signature missing fields V \ C |
+| `PARTIAL_FIELDS_SURPLUS` | V ⊂ C (code has extra fields not in claim) | extracted signature has extras C \ V; vault may need update |
+| `PARTIAL_FIELDS_BOTH` | shared fields exist but both V\C and C\V non-empty (rare; bidirectional drift) | field-level set diff at precision_tier ast |
+| `NEW` | C absent (symbol missing) | not in codebase-map |
+| `UNKNOWN` | V ∩ C empty but symbol exists | semantic mismatch needs human review |
+
+(V = vault claim field set; C = code field set from tree-sitter signature extraction.)
+
+## task_type for the six states
+
+| Implementation State | Unit task_type | Migration notes auto-populated |
+|---|---|---|
+| `IMPLEMENTED` (V == C) | `verify` — ONLY at `confidence: high`; medium/low → treat as UNKNOWN (a fuzzy anchor must not mint a verify) | (none; no code changes) |
+| `PARTIAL_FIELDS_MISSING` (C ⊂ V) | `extend` | **ADD**: missing fields from V \ C · **KEEP**: shared fields V ∩ C · **REMOVE**: (none) |
+| `PARTIAL_FIELDS_SURPLUS` (V ⊂ C) | `extend` with HUMAN REVIEW | **ADD**: (none) · **KEEP**: V ∩ C · **REMOVE**: C \ V (CAUTION — code has fields vault doesn't mention; could be feature drift OR vault gap; user reviews via interactive prompt) |
+| `NEW` | `create` | (omitted; create task) |
+| `UNKNOWN` | truncation-sourced → direct-probe sub-rule (§Full task_type table above); otherwise `create` (conservative default) with note | (omitted; warning in body) |
+
+For PARTIAL_FIELDS_SURPLUS specifically, generate-units fires INTERACTIVE prompt because surplus fields could indicate:
+- Feature drift (code has logic not in spec — vault should be updated)
+- Vault gap (spec is incomplete)
+- Legacy fields to deprecate (REMOVE is correct)
+- Field renaming (e.g., `legacy_ref` was renamed to something already in V)
 
 ## `verify` unit specifics
 
@@ -85,26 +118,38 @@ Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back t
 
 ## Step 7.6 — Per-unit target_files collision check
 
-Per the §Step 7.6 cross-check in the defensive-generation reference (listed in the skill router). Before writing each unit, for EACH `target_files` entry where `operation: create`:
-1. Probe path existence (fs check OR codebase-map §1)
-2. If file does NOT exist → proceed normally (true create)
-3. If file EXISTS:
-   - If binding has IMPLEMENTED state for related claim → INTERACTIVE prompt:
-     ```
-     "Target `<path>` already exists. Binding state: IMPLEMENTED.
-      Options for unit U-XXX:
-        1. Convert to `verify` (no code change) (recommended)
-        2. Convert to `extend` (modify; fill Migration notes)
-        3. Rename target file
-        4. Force `create` (overwrite — DANGEROUS)
-        5. Skip this unit"
-     ```
-   - If binding state PARTIAL_FIELDS_* or NEW or UNKNOWN → INTERACTIVE prompt with `extend` as recommended default
+After `target_files` populated (Step 7), BEFORE writing unit to disk:
 
-**Prompt frequency control:**
-- Prompts fire ONLY on genuine collision (file exists + task_type=create)
-- Same-session memory: previous picks default future similar collisions
-- `--auto` flag suppresses interactive — picks safest default (`extend`)
+For EACH `target_files` entry where `operation: create`:
+
+```
+1. Probe path existence (fs OR codebase-map §1)
+2. If file does NOT exist → proceed normally (true create scenario)
+3. If file EXISTS:
+   a. Check if unit's binding_refs include a claim about this file's symbols
+   b. If binding has IMPLEMENTED state for related claim → INTERACTIVE prompt:
+      "Target file `<path>` already exists. Binding marked related claim IMPLEMENTED.
+       Options for unit U-XXX:
+         1. Convert to `verify` (no code change; assertion-only) (recommended)
+         2. Convert to `extend` (modify file; fill Migration notes)
+         3. Rename target file (provide new path)
+         4. Force `create` anyway (overwrite — DANGEROUS)
+         5. Skip this unit"
+   c. If binding has PARTIAL_FIELDS_* or NEW or UNKNOWN state (or no binding) → INTERACTIVE prompt:
+      "Target file `<path>` exists but binding state is unclear.
+       Options for unit U-XXX:
+         1. Convert to `extend` (recommended for unclear state)
+         2. Convert to `verify`
+         3. Rename target file
+         4. Force `create` (overwrite)
+         5. Skip this unit"
+```
+
+### Prompt frequency control
+
+- Prompts fire ONLY when there's a genuine collision (file exists + task_type=create)
+- Same-session memory: if user picks "convert to extend" for unit U-007, similar collisions in U-008/U-009 surface same prompt with previous choice as default
+- `--auto` flag suppresses interactive — defaults to safest option (convert to extend; user reviews later)
 - `--collision-policy=<extend|verify|skip|prompt>` flag overrides for batch behavior
 
 ## Reconcile pass (`--reconcile` — living-vault sync lane)

@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.11.1
+version: 2.12.0
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -82,7 +82,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **7.5. PageRank target_files suggestions.** When `codebase-map.md` is `precision_tier: ast`, surface top-K symbol-graph file suggestions in the unit's `## PageRank suggestions` section — informational, NEVER auto-added to target_files (user promotes manually). Skipped on regex tier / `--skip-pagerank`. Detail: `references/task-typing.md §Step 7.5` + `references/pagerank-targeting.md`.
 
-**7.6. Per-unit target_files collision check.** Before writing each unit, for each `operation: create` entry that already exists on disk → INTERACTIVE prompt (convert to `verify`/`extend`, rename, force-create, or skip). Fires ONLY on genuine collision; `--auto` picks the safest default; `--collision-policy` overrides. Detail: `references/task-typing.md §Step 7.6` + `references/defensive-generation.md §Step 7.6`.
+**7.6. Per-unit target_files collision check.** Before writing each unit, for each `operation: create` entry that already exists on disk → INTERACTIVE prompt (convert to `verify`/`extend`, rename, force-create, or skip). Fires ONLY on genuine collision; `--auto` picks the safest default; `--collision-policy` overrides. Detail: `references/task-typing.md §Step 7.6` (single owner).
 
 **7.7. Derive starterkit Anchors + Hard Rules per unit.** After target_files are final and before Step 8: if `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists, compute per-unit starterkit relevance (ui_ux / auth / rbac / libs), append starterkit-specific Anchors + Hard Rules, and set `starterkit_context_consumed` / `starterkit_relevance` frontmatter. EVERY starterkit-derived Hard Rule MUST carry a `Citation: starterkit-context.yaml §<path>` (machine-checked in Step 12.5.f → halt `starterkit_rule_citation_missing` if missing). Absent file → `starterkit_context_consumed: false`, skip. Full derivation: `references/starterkit-derivation.md`.
 
@@ -146,12 +146,12 @@ Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), e
 ## Specialist references (load on demand)
 
 - **`references/unit-schema.md`** — the full unit frontmatter + body section schema, the 5-type Hard rule grammar (EBNF + validation table), per-task_type contracts, atomicity / multi-squad / interface-resolution / scope-field rules.
-- **`references/task-typing.md`** — the full binding-state → task_type table, `verify` specifics, `extend` Migration-notes auto-population, and Step 7 / 7.5 / 7.6 target_files mechanics (whitelist, PageRank, collision check).
+- **`references/task-typing.md`** — SINGLE OWNER of task_type assignment: the full binding-state → task_type table, the six-state Implementation State Map + `field_diff` consumption, `verify` specifics, `extend` Migration-notes auto-population, and Step 7 / 7.5 / 7.6 target_files mechanics (whitelist, PageRank, collision check + prompts).
 - **`references/decomposition-rails.md`** — flow-step → artifact derivation, the `depends_on` emission rules + cycle/cross-squad rejection, module + squad assignment, ID allocation, render test + UI contract for view-bearing units, and the adversarial test review pass.
 - **`references/validation-passes.md`** — the Step 12.x post-write passes in order (per-anchor verification, constitution inject, framework-pack citation, polished-prompt render pass a–g, dedup, sibling-consistency).
 - **`references/halt-protocol.md`** — every blocker's emitted YAML + recovery action, with a "which step fires which halt" index.
 - **`references/starterkit-derivation.md`** — Step 7.7 in full: relevance computation, starterkit Anchors + Hard Rules (with the mandatory citation), and frontmatter updates.
-- **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels, the six-state Implementation State Map + `field_diff` mechanics, and the halt-vs-warning matrix.
+- **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels (incl. the verify+HIGH per-AC grounding rail), per-anchor verification, and the halt-vs-warning matrix.
 - **`references/auto-and-memory.md`** — scope propagation into unit frontmatter, `_index.md` contents, the `--auto` handoff YAML, and the memory layer (reads / writes / anti-halu).
 - **`references/pagerank-targeting.md`** — the PageRank symbol-graph algorithm + detection prerequisites for Step 7.5.
 - **`references/modules-schema.md`** — the modules layer schema (why modules ≠ bigger units, auto-derivation, modules.yaml format) for Step 4.5.

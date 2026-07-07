@@ -5,7 +5,7 @@
 **Version:** 3.1 — supersedes 3.0, 2.0, 1.0 (schema lineage: 1.0 initial; 2.0 added per-slice cache; 3.0 added `patterns:`; 3.1 neutral auth/authz reshape — rbac→authz, auth.routes→entrypoints, auth.guard→mechanism)
 **Produced by:** `mega-sdd:scan-codebase` Step 10.5 deep-scan stage + Step 10.5.2.5 pattern extraction
 **Consumed by:** `mega-sdd:generate-units` (Step 4.7), `mega-sdd:execute-bolts` (Step 1.5.f-h), `mega-sdd:orchestrate-flow` (handoff metadata propagation), `validate-starterkit-conformance.sh` (`patterns:` block consumer)
-**Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.0+ writers MUST emit `patterns:`. v3.1 reshapes auth/authz (breaking format change — see cache migration note in deep-scan-stage.md). Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.1.
+**Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.0+ writers MUST emit `patterns:`. v3.1 reshapes auth/authz (breaking format change — see cache migration note in skills/scan-codebase/references/deep-scan-gate.md Step 10.5.1). Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.1.
 
 ---
 
@@ -365,7 +365,7 @@ cache_signatures:
   framework_pack: "rails"               # retained
   per_slice:                            # 5 slices — the reuse signature is stored here for
                                         # bookkeeping even though its OUTPUT lives in the
-                                        # sibling reuse-index.yaml (deep-scan-stage Step 10.5.3)
+                                        # sibling reuse-index.yaml (deep-scan-dispatch Step 10.5.3)
     auth:
       signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md + src_component(auth) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
@@ -383,7 +383,7 @@ cache_signatures:
       generated_at: "2026-05-25T10:00:00Z"
 ```
 
-> `src_component(<domain>)` = sha256 of listing+mtimes of the pack's domain file-hint dirs — slice outputs are source-derived, so a source-only edit invalidates the slice (deep-scan-stage Step 10.5.1.3). A domain listed in `partial_slices` gets NO per_slice entry (its next run must re-dispatch).
+> `src_component(<domain>)` = sha256 of listing+mtimes of the pack's domain file-hint dirs — slice outputs are source-derived, so a source-only edit invalidates the slice (deep-scan-gate Step 10.5.1.3). A domain listed in `partial_slices` gets NO per_slice entry (its next run must re-dispatch).
 
 **Cache reuse rule (v2.0+, per-slice):** on re-scan, scan-codebase computes the current signature for each of the 5 slices independently. For each slice:
 - IF prior.per_slice[<slice>].signature_sha256 == current_<slice>_signature → slice reused (no subagent dispatch for that slice)

@@ -212,6 +212,24 @@ These halt types are emitted by producers as `→ halt <name>` or `type: <name>`
 
 - `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (HOOK-LAYER DETECTION via SessionStart, DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in anchor injection. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at SessionStart means the warning re-fires on every session until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
 
+The following one-liners were absorbed (verbatim) from `skills/orchestrate-flow/references/halt-taxonomy.md`, which now carries classification names only:
+
+- `secret_in_code` — execute-bolts (L0 gate): a committed secret was detected; user rotates it + purges it from history. ALWAYS STOP.
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS STOP.
+- `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest. ALWAYS STOP.
+- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings survived the retry cap; user resolves them. ALWAYS STOP.
+- `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s) then re-runs the suite. ALWAYS STOP.
+- `batch_suite_gate_missing` — execute-bolts: no green `_batch-suite.json` covers the newest code commit (a bolt OR an out-of-band edit); user runs the suite via `run-full-suite.sh`. ALWAYS STOP.
+- `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.
+- `whitelist_violation` — execute-bolts: a bolt commit touched files outside the unit's `target_files` ∪ sanctioned extras; user reverts/fixes the scope escape. ALWAYS STOP.
+- `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`). ALWAYS STOP.
+- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS STOP.
+- `bolt_artifacts_missing` — execute-bolts: a `completed` unit emitted no `bolts/U-XXX/bolt-report.md`; structural silent-failure closure, user re-runs. ALWAYS STOP.
+- `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user picks one grammar. ALWAYS STOP.
+- `convergence_max_reached` — orchestrate-flow: convergence loop hit `--max-cycles`. User reviews cycle history (envelope in the convergence-loops reference). ALWAYS STOP.
+- `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default 3); the loop stops and a human must resolve the underlying blocker before re-running. (Auto-looped while cycle-eligible up to the cap; becomes always-stop at the cap.)
+- `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop stops to avoid spinning, human resolution required. ALWAYS STOP.
+
 #### `quality_gate_failed` subtypes
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum:

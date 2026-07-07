@@ -1,93 +1,32 @@
 # Halt Taxonomy — Orchestrator Halt Classification
 
-Every blocker a sub-skill can emit falls into one of three classes for the orchestrator: **always-stop** (human required), **cycle-eligible** (auto-loop in `--deep`; see the convergence-loops reference indexed in SKILL.md §Specialist references), or **soft** (warn-only, chain continues). Canonical halt envelope shapes live in `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`.
-
-## Contents
-
-- [Cycle-eligible (auto-loop)](#cycle-eligible-auto-loop)
-- [Always-stop (human required)](#always-stop-human-required)
-- [Soft (warn-only, chain continues)](#soft-warn-only-chain-continues)
+Every blocker a sub-skill can emit falls into one of three classes for the orchestrator: **always-stop** (human required), **cycle-eligible** (auto-loop in `--deep`; see the convergence-loops reference indexed in SKILL.md §Specialist references), or **soft** (warn-only, chain continues). This file is names-only — the per-halt one-liners, resolutions, envelope shapes, and C1/C2/C3 categories live in the canonical registry `plugins/mega-sdd/references/halt-protocol.md` (§halt-protocol + §halt-escalation-discipline).
 
 ## Cycle-eligible (auto-loop)
 
-Auto-resolved in `--deep` mode when the safety condition holds; otherwise escalate. Full action + safety table in the convergence-loops reference (`§Cycle-eligible halt types`, indexed in SKILL.md §Specialist references):
+Auto-resolved in `--deep` when the safety condition holds; otherwise escalate. Full action + safety table in convergence-loops.md `§Cycle-eligible halt types`:
 
-- `bind_conflict`
-- `module_blocked_by`
-- `cross_squad_interface_draft`
-- `oq_recommend_underspecified`
-
-Bolt halts bridged via propose-and-confirm (also in convergence-loops.md): `test_fail`, `hard_rule_violated`, `pbt_property_violated`.
+- `bind_conflict` · `module_blocked_by` · `cross_squad_interface_draft` · `oq_recommend_underspecified`
+- Bolt halts bridged via propose-and-confirm (also in convergence-loops.md): `test_fail`, `hard_rule_violated`, `pbt_property_violated`
 
 ## Always-stop (human required)
 
-These ALWAYS stop the chain; no auto-loop:
-
-- `hard_rule_violated` — detect-after: the bolt commit already landed; user fixes forward or `git revert`s it (the B1 gate blocks further bolts until a passing postflight.json is recorded)
-- `dedup_ambiguous` — multi-path resolution; user picks intent
-- `quality_gate_failed` — extract-intelligence; user reviews wave output
-- `oq_business_p1_unresolved` — stakeholder decision required
-- `test_fail` after 3 retries — manual investigation needed
-- `hard_rule_unparseable` / `hard_rule_unanchored` — config error; user fixes
-- `cross_squad_dep_invalid` — explicit blocked_by needed; user configures (canonical name per `handoff-contract.md`)
-- `memory_schema_mismatch` — migration prompt; user opts in
-- `mode_migrate` — vault/code mode contradiction; user decides
-- `scope_not_declared_in_prd` — generate-intent: `--scope=<id>` flag mismatches PRD scopes block. ALWAYS STOP (user must pick valid scope from PRD declared list or cancel).
-- `prd_no_scopes_block_user_rejected_retrofit` — generate-intent: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chose cancel. ALWAYS STOP (user manually retrofits PRD or chooses single-scope fallback).
-- `prd_retrofit_low_confidence` — generate-intent: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP (user reviews/accepts anyway / single-scope fallback / cancel).
-- `prd_path_missing` — diff-vault: vault.json.prd_path_at_generation points to non-existent file. ALWAYS STOP (user must restore PRD or regenerate vault).
-- `deep_scan_subagent_all_failed` — scan-codebase: all 4 deep-scan subagents failed. User re-runs later.
-- `starterkit_rule_citation_missing` — generate-units: starterkit-derived Hard Rule lacks citation. User edits unit.
-- `bind_conflict_constitution_violation` — bind-codebase: claim conflicts with constitution security clause.
-- `framework_pack_missing` — bind-codebase: pack referenced but file absent.
-- `framework_pack_cycle` — bind-codebase: pack inheritance has cycle.
-- `framework_pack_unparseable` — bind-codebase: pack file YAML/markdown parse failed.
-- `constitution_drift_detected` — detect-drift: security/compliance clause drift in code.
-- `drift_framework_mismatch` — detect-drift: scanned framework differs from vault.
-- `diff_conflict` — diff-vault: Resolved-OQ/Decision conflict needs stakeholder.
-- `memory_in_use` — memory: concurrent writer holds lock.
-- `dispatch_prompt_too_large` — execute-bolts: bolt prompt > 10KB cap.
-- `bolt_repeated_partial_failure` — execute-bolts: 3 partial-state cycles failed.
-- `provenance_missing` — execute-bolts: modified file lacks provenance trailer.
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift on LOCKED entity.
-- `self_assessment_missing` — execute-bolts: bolt-report lacks self-assessment.
-- `dep_missing` — scan-codebase: required binary missing.
-- `oq_recommend_citation_invalid` — generate-intent: OQ recommendation cites missing KB section.
-- `predictive_check_failed` — orchestrate-flow: fatal preflight check failed; chain blocked.
-- `invalid_handoff` — orchestrate-flow: handoff schema validation failed; producer-side error.
-- `handoff_type_mismatch` — orchestrate-flow: handoff field type mismatch with schema annotation.
-- `handoff_missing` — orchestrate-flow: sub-skill exited but no handoff YAML in chat output (silent-failure path closure).
-- `artifact_missing` — orchestrate-flow: handoff YAML lists artifact paths that don't exist on disk (silent-failure path closure).
-- `partial_state_corrupt` — execute-bolts `--resume`: partial-state.json fails JSON parse (silent-failure path closure).
-- `oq_blocker` — generate-intent / AI consumers reading vault non-interactively: P1 OQ blocks downstream work. Canonical envelope per `vault-contract.md §oq_blocker`. (Coexists with `oq_business_p1_unresolved`, the orch-level alias for business-classified P1s.)
-- `cross_squad_ambiguous` — generate-units: multi-squad code where the producer squad cannot be determined unambiguously. ALWAYS STOP; user picks the canonical squad.
-- `cycle_detected` — generate-units / orchestrator: dependency cycle detected in unit graph (module_depends_on / blocked_by chain). ALWAYS STOP; user resolves cycle by re-tiering.
-- `interface_ref_missing` — generate-units / bind-codebase: a unit declares `consumes_interface: <ref>` but the referenced interface is not declared by any other unit. ALWAYS STOP; user fixes ref OR creates producer unit.
-- `pbt_citation_invalid` — execute-bolts: PBT property block `Cites: §Decision-D-NNN` points to a non-existent ADR. ALWAYS STOP.
-- `convergence_max_reached` — orchestrate-flow: convergence loop hit `--max-cycles`. User reviews cycle history (envelope in the convergence-loops reference).
-- `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default 3); the loop stops and a human must resolve the underlying blocker before re-running. (Auto-looped while cycle-eligible up to the cap; becomes always-stop at the cap.)
-- `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop stops to avoid spinning, human resolution required.
-- `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user picks one grammar.
-- `verify_unit_writable` — execute-bolts: a `verify` unit declares writable `target_files`; user fixes the unit (verify units make no changes).
-- `secret_in_code` — execute-bolts (L0 gate): a committed secret was detected; user rotates it + purges it from history.
-- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel.
-- `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest.
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings survived the retry cap; user resolves them.
-- `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s) then re-runs the suite.
-- `batch_suite_gate_missing` — execute-bolts: no green `_batch-suite.json` covers the newest code commit (a bolt OR an out-of-band edit); user runs the suite via `run-full-suite.sh`.
-- `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`.
-- `whitelist_violation` — execute-bolts: a bolt commit touched files outside the unit's `target_files` ∪ sanctioned extras; user reverts/fixes the scope escape.
-- `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`).
-- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation.
-- `bolt_artifacts_missing` — execute-bolts: a `completed` unit emitted no `bolts/U-XXX/bolt-report.md`; structural silent-failure closure, user re-runs.
+- `hard_rule_violated` — dual-classified: cycle-eligible only via the propose-and-confirm bridge above; always-stop as detect-after (the bolt commit already landed)
+- `test_fail` after 3 retries
+- `oq_business_p1_unresolved` / `oq_blocker` — coexisting names: `oq_blocker` is the vault-consumer envelope (per `vault-contract.md §oq_blocker`); `oq_business_p1_unresolved` is the orch-level alias for business-classified P1s
+- `phase_stuck` — auto-looped while cycle-eligible up to the retry cap; becomes always-stop at the cap
+- `anti_spin` — no-progress loop breaker; always-stop once tripped
+- `memory_in_use` ⚠ classification conflict — always-stop here vs C1 NEVER-halt (retry+skip) in halt-protocol.md
+- `mode_migrate` ⚠ classification conflict — always-stop here vs C1 self-resolve in halt-protocol.md
+- `invalid_handoff` ⚠ classification conflict — always-stop here vs C1 hook-enforced self-resolve in halt-protocol.md
+- `partial_state_corrupt` ⚠ classification conflict — always-stop here vs C1 hook-enforced self-resolve in halt-protocol.md
+- `verify_unit_writable` ⚠ classification conflict — always-stop here vs C1 detection-only NEVER-halt in halt-protocol.md
+- `dedup_ambiguous` · `quality_gate_failed` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `cross_squad_dep_invalid` · `memory_schema_mismatch` · `scope_not_declared_in_prd` · `prd_no_scopes_block_user_rejected_retrofit` · `prd_retrofit_low_confidence` · `prd_path_missing` · `deep_scan_subagent_all_failed` · `starterkit_rule_citation_missing` · `bind_conflict_constitution_violation` · `framework_pack_missing` · `framework_pack_cycle` · `framework_pack_unparseable` · `constitution_drift_detected` · `drift_framework_mismatch` · `diff_conflict` · `dispatch_prompt_too_large` · `bolt_repeated_partial_failure` · `provenance_missing` · `bolt_introduces_locked_drift` · `self_assessment_missing` · `dep_missing` · `oq_recommend_citation_invalid` · `predictive_check_failed` · `handoff_type_mismatch` · `handoff_missing` · `artifact_missing` · `cross_squad_ambiguous` · `cycle_detected` · `interface_ref_missing` · `pbt_citation_invalid` · `convergence_max_reached` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `scope_creep_detected` · `bolt_artifacts_missing`
 
 ## Soft (warn-only, chain continues)
 
-- `deep_scan_subagent_failed` — scan-codebase: single deep-scan subagent failed. Auto-retried; partial output on second failure.
-- `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml YAML parse failed. Cache auto-invalidated; subagents re-dispatched. Transparent.
-- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md parse failure. Auto-invalidate + log; chain proceeds.
-- `model_tier_unknown` — orchestrate-flow: override source references a role not in model-tiers.md catalog. Auto-ignore + log; chain proceeds with catalog default. Forward-compat.
+- `deep_scan_subagent_failed` · `deep_scan_cache_corrupt` · `routing_outcome_corrupt` · `model_tier_unknown`
 
 ## See also
 
-SKILL.md §Specialist references indexes the related orchestrate-flow references: convergence-loops (auto-recovery cycling for cycle-eligible halts + bolt bridge), handoff-consumption (orchestrator-side halt envelopes — `handoff_missing`, `artifact_missing`, type/schema mismatches), and predictive-checks (preflight checks that anticipate many of these halts before chain start).
+SKILL.md §Specialist references indexes the related orchestrate-flow references: convergence-loops (auto-recovery cycling + bolt bridge), handoff-consumption (orchestrator-side halt envelopes), predictive-checks (preflight anticipation).
