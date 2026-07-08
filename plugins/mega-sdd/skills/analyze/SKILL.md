@@ -1,7 +1,7 @@
 ---
 name: analyze
-version: 2.2.0
-description: Unified cross-artifact consistency analysis. Orchestrates all validators + vault internal checks. Produces CONSISTENCY-REPORT.md with PASS/FAIL per boundary, plus a cost-weighted TOKEN-COST-REPORT.md (cache_read bills ~0.1x so raw token counts overstate real cost). [VERIFY-STEP] surface — user-invoked, deterministic, report-only. Triggers — "analyze", "consistency check", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
+version: 2.2.1
+description: Unified cross-artifact consistency analysis. Orchestrates all validators + vault internal checks. Produces CONSISTENCY-REPORT.md with PASS/FAIL per boundary, plus a cost-weighted TOKEN-COST-REPORT.md (cache_read bills ~0.1x so raw token counts overstate real cost). [VERIFY-STEP] surface — user-invoked, deterministic, report-only. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
 ---
 
 # mega-sdd:analyze — Unified Consistency Analyzer

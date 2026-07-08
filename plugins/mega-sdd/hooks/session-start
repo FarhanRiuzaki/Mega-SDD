@@ -8,6 +8,27 @@ set -euo pipefail
 # source, transcript_path, hook_event_name. We capture session_id for the diagnostic.
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
+# ─── Source-aware anchor injection (M-13 token-efficiency B3) ────────────────
+# The anchor is re-injected on EVERY SessionStart (startup|resume|clear|compact).
+# resume: the reloaded transcript still contains a prior full injection → the
+#   anchor is already in context; re-injecting is pure duplication. Skip it
+#   (dynamic state notices below still fire).
+# compact: compaction REPLACES context with a summary, so the anchor is gone —
+#   but the harness re-lists every skill's frontmatter description (the keyword
+#   census) and PreCompact wrote COMPACT_RESUME. Inject only the SLIM core
+#   (Hard rule + Output language — the two things NOT in any description).
+# startup|clear: fresh/empty context → inject the FULL routing core.
+# Unparseable/absent source → FAIL OPEN to the full core (never break routing to
+#   save tokens).
+HOOK_SOURCE=$(printf '%s' "$STDIN_JSON" | python3 -c '
+import json, sys
+try:
+    s = json.loads(sys.stdin.read()).get("source", "")
+    print(s if s in ("startup", "resume", "clear", "compact") else "unknown")
+except Exception:
+    print("unknown")
+' 2>/dev/null || echo "unknown")
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
@@ -88,14 +109,34 @@ fi
 # per-injection footprint is the routing-critical core only. Strip YAML frontmatter
 # (its triggers are duplicated by the harness's own description load) and stop at
 # the ANCHOR-CORE marker.
-ANCHOR_CONTENT="$(awk 'BEGIN{dash=0;body=0}
-  /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
-  body==0{next}
-  /ANCHOR-CORE ends/{exit}
-  {print}' "$ANCHOR_SKILL")"
-# Fail-open: if the lean extraction yields nothing (frontmatter/marker drift),
-# inject the full skill rather than nothing — never break routing to save tokens.
-if [ -z "$ANCHOR_CONTENT" ]; then ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"; fi
+#
+# M-13: what we inject depends on HOOK_SOURCE (computed above).
+if [ "$HOOK_SOURCE" = "resume" ]; then
+  # Anchor is already in the reloaded transcript — do not re-inject it.
+  ANCHOR_CONTENT=""
+elif [ "$HOOK_SOURCE" = "compact" ]; then
+  # SLIM core: only the sections NOT reloadable from skill descriptions — the
+  # Hard rule (STOP + invoke + the bind→units gate) and Output language — plus a
+  # one-line pointer to load the rest on demand.
+  ANCHOR_CONTENT="$(awk 'BEGIN{take=0}
+    /^## Hard rule/{take=1}
+    /ANCHOR-CORE ends/{exit}
+    take==1{print}' "$ANCHOR_SKILL")"
+  if [ -n "$ANCHOR_CONTENT" ]; then
+    ANCHOR_CONTENT="Post-compaction routing anchor (slim). Full router: invoke the \`using-mega-sdd\` skill; the keyword census is in every mega-sdd skill's description."$'\n\n'"${ANCHOR_CONTENT}"
+  fi
+else
+  # startup | clear | unknown (fail-open) → FULL routing core.
+  ANCHOR_CONTENT="$(awk 'BEGIN{dash=0;body=0}
+    /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
+    body==0{next}
+    /ANCHOR-CORE ends/{exit}
+    {print}' "$ANCHOR_SKILL")"
+fi
+# Fail-open: if the source-selected extraction yields nothing (frontmatter/marker
+# drift on a NON-resume source), inject the full skill rather than nothing — never
+# break routing to save tokens. (resume legitimately yields empty; leave it empty.)
+if [ -z "$ANCHOR_CONTENT" ] && [ "$HOOK_SOURCE" != "resume" ]; then ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"; fi
 
 # Check superpowers presence
 sp_cache="${HOME}/.claude/plugins/cache"

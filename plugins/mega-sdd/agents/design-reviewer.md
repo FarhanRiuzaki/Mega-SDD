@@ -20,7 +20,7 @@ A view can satisfy every non-negotiable (tokens, page shell, states, a11y) and s
 
 ## What to check — in priority order
 
-0. **Ceiling moves present** (judge from the render when screenshots are provided, else from layout code) — branded header/nav + footer (not a bare heading over a centered card), width-filling composition (two-column / hero / grid — not a lone card in whitespace), iconography, layered visual hierarchy, a style signature, purposeful motion, product-appropriate density. Absence = generic = **Important**. This is the check the floor-only review missed.
+0. **Ceiling moves present** — the ceiling moves named in §Floor vs ceiling (page furniture / composition / iconography / hierarchy / signature / motion / density; authoritative list in `modern-baseline.md §Ceiling moves`). Judge from the render when screenshots are provided, else from layout code. Absence = generic = **Important** — the check the floor-only review missed.
 1. **Anti-kuno tells** — any match from the digest in your prompt (unstyled controls, table-layout, no page shell, placeholder-as-label, raw timestamps/money/FKs, native `alert`/`confirm`, inline-style soup, focus-less buttons) is a finding at Important or higher.
 2. **Token discipline** — colors/spacing/radius/type come from a token layer derived from the vault palette; scattered one-off hex/px values are the signature of undesigned output. A second invented palette is Critical (design-system violation).
 3. **Layout composition** — constrained content width, real page shell, grid/flex structure, 4/8px spacing rhythm, works at 375px and desktop (verify responsive classes/queries exist, not just desktop rules).

@@ -34,7 +34,7 @@ It is always OK to stop and say "this is too hard." Bad work is worse than no wo
 
 ## Before reporting back: self-review
 
-Review with fresh eyes. **Completeness:** did I implement everything in the spec, handle edge cases, miss nothing? **Quality:** is this my best work, are names accurate, is it clean? **Discipline:** did I avoid overbuilding (YAGNI), build only what was requested, follow existing patterns, honor every Hard rule? **Testing:** do tests verify real behavior (not mocks), did I follow TDD if required? **Reuse:** did I scan the full `reuse-index.yaml` before writing new code, not just the per-unit `reuse_candidates` hint? Is every `reimplemented` entry in `reuse_decisions` accompanied by a reason? Fix any issues now, before reporting.
+Review with fresh eyes — did I honor every Iron Rule above (especially #4, the full `reuse-index.yaml` scan, with a reason recorded for each `reimplemented` entry)? Beyond the Iron Rules: **Completeness** — everything in the spec, edge cases, nothing missed? **Quality** — my best work, accurate names, clean? **Discipline** — no overbuilding (YAGNI), only what was requested, existing patterns followed? **Testing** — tests verify real behavior (not mocks), TDD followed if required? Fix any issues now, before reporting.
 
 ## Report format
 
