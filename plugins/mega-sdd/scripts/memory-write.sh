@@ -70,6 +70,61 @@ if [ -z "$CONTENT" ]; then
   exit 2
 fi
 
+# ─── Unified cleanup (registered BEFORE the scan scratch exists) ────────────
+# An interrupt during the scan must not leave the PRE-redaction row in TMPDIR;
+# the write temp is covered too; the lock is released ONLY if we acquired it
+# (rmdir'ing a contender's fresh lock would double-release). NOTE: a later
+# `trap ... EXIT` would REPLACE this one — keep the single cleanup().
+_SCAN_TMP=""
+TEMP_FILE=""
+LOCK_FILE=""
+ACQUIRED=0
+cleanup() {
+  [ -n "${_SCAN_TMP:-}" ] && rm -f "$_SCAN_TMP" 2>/dev/null
+  [ -n "${TEMP_FILE:-}" ] && rm -f "$TEMP_FILE" 2>/dev/null
+  if [ "${ACQUIRED:-0}" -eq 1 ] && [ -n "${LOCK_FILE:-}" ]; then
+    rmdir "$LOCK_FILE" 2>/dev/null || true
+  fi
+  return 0
+}
+trap cleanup EXIT INT TERM
+
+# Secret-scan the incoming content BEFORE it touches the memory file (M-16:
+# appends moved from the orchestrator's single batch point to per-skill
+# emission-time writes, so the redaction rail moves INTO the writer — one
+# deterministic place instead of N prose sites; memory files can be
+# git-tracked, a leaked credential here ships). Scans ONLY the new content,
+# not the whole target file, and runs BEFORE the lock is held. Redaction
+# keeps the row shape ([REDACTED-SECRET] replaces the value).
+# Fail-open BUT NEVER SILENT: a missing scanner / unwritable scratch / failed
+# scan keeps the ORIGINAL content and the write proceeds (memory is optional;
+# graceful degradation), with one WARN on stderr so a disabled rail is
+# observable in chain logs. The scratch write is GUARDED: a partial write
+# (ENOSPC) must not replace CONTENT with a truncated prefix — on write
+# failure we skip the scan and keep the original bytes.
+# Content normalization: exactly ONE trailing newline is guaranteed on the
+# appended block (extra trailing newlines are stripped by the scan
+# round-trip — same normalization the stdin path always had).
+_SCAN="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/secret-scan.sh"
+if [ -f "$_SCAN" ]; then
+  _SCAN_TMP=$(mktemp "${TMPDIR:-/tmp}/mw-scan.XXXXXX" 2>/dev/null || echo "")
+  if [ -n "$_SCAN_TMP" ] && printf '%s\n' "$CONTENT" > "$_SCAN_TMP" 2>/dev/null; then
+    if bash "$_SCAN" --redact "$_SCAN_TMP" >/dev/null 2>&1; then
+      # Trust the scratch ONLY on scan success — a scanner dying mid-rewrite
+      # could leave it truncated; on failure keep the original bytes.
+      CONTENT=$(cat "$_SCAN_TMP" 2>/dev/null || printf '%s' "$CONTENT")
+    else
+      echo "WARN: secret-scan failed; content written unredacted" >&2
+    fi
+  else
+    echo "WARN: secret-scan skipped (scratch file unavailable); content written unredacted" >&2
+  fi
+  rm -f "${_SCAN_TMP:-}" 2>/dev/null
+  _SCAN_TMP=""
+else
+  echo "WARN: secret-scan.sh not found; content written unredacted" >&2
+fi
+
 # Ensure target directory exists
 TARGET_DIR=$(dirname "$FILE")
 mkdir -p "$TARGET_DIR" 2>/dev/null || { echo "ERROR: cannot create $TARGET_DIR" >&2; exit 2; }
@@ -118,14 +173,10 @@ if [ "$ACQUIRED" -eq 0 ]; then
   exit 1
 fi
 
-# Atomic write: temp file → rename
+# Atomic write: temp file → rename. Cleanup (temp removal + lock release) is
+# owned by the single trap registered above — do NOT add a second `trap` here,
+# it would REPLACE the first and orphan the scan scratch on interrupt.
 TEMP_FILE="${FILE}.tmp.$$"
-
-cleanup() {
-  rm -f "$TEMP_FILE" 2>/dev/null
-  rmdir "$LOCK_FILE" 2>/dev/null || true
-}
-trap cleanup EXIT
 
 if [ "$MODE" = "append" ] && [ -f "$FILE" ]; then
   cp "$FILE" "$TEMP_FILE" 2>/dev/null || true

@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.13.0
+version: 2.14.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -80,7 +80,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 7. **Execute chain.** Dispatch sub-skills with the `--auto` flag. Pause on blocker artifacts (any type) per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. `resolve-oq` is always interactive on per-OQ choices.
 
    **Per sub-skill in chain (loop):**
-   a. **Dispatch** with assembled flags + memory slice via `metadata.memory_context`. Propagate canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) from the previous handoff.
+   a. **Dispatch** with assembled flags + memory POINTER slice (file path + row keys + one-line digest, never row text) via `metadata.memory_context`. Propagate canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) from the previous handoff.
    b. **Validation gate** — validate the received handoff against the schema (presence → type-check → schema → artifact existence → cross-metric consistency). Full gate ordering + halt envelopes (`handoff_missing`, `handoff_type_mismatch`, `invalid_handoff`, `artifact_missing`) in `references/handoff-consumption.md`.
    c. **Propagate** validated handoff metadata to the next skill.
    d. **Progress indicators** — before each invocation: `▶ Phase {current} of {total}: invoking {skill} ({args})`; after completion: `{✓|⏸|⛔} Phase {current} of {total}: {skill} → status: {status}, items: {n}, blocked: {n}`.
@@ -154,7 +154,7 @@ Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop i
 
 ## Memory layer
 
-When memory is enabled (default; opt-out `--memory-off`), the orchestrator is the SINGLE memory I/O point for the chain: one read at chain start (index-first, just-in-time), per-skill slices passed via handoff, batched writes per phase (secret-scanned before append), the owned extract-learnings threshold pass + `_index.md` regeneration at chain end. Schema mismatch halts the chain; I/O failures degrade gracefully. Suggestions are NEVER auto-applied. Full read/write protocol in `references/memory-layer.md`.
+When memory is enabled (default; opt-out `--memory-off`), the orchestrator does the chain's ONE memory read at chain start (index-first, just-in-time; rows enter session context there); handoffs carry POINTER slices, skills append their own rows via `scripts/memory-write.sh` at emission time (the script secret-scans at write time), handoffs return a write receipt (`files_written` paths + `rows_appended`), and the owned extract-learnings threshold pass + `_index.md` regeneration run at chain end via targeted reads of the receipt paths. Schema mismatch halts the chain; I/O failures degrade gracefully. Suggestions are NEVER auto-applied. Full read/write protocol in `references/memory-layer.md`.
 
 ## Specialist references (load on demand)
 

@@ -86,7 +86,7 @@ When memory enabled (default; opt-out via `--memory-off`), participates in mega-
 
 | What | Source | How used |
 |---|---|---|
-| Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` (passed via handoff `metadata.memory_context.vault_outcomes_relevant`) | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
+| Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` — the handoff passes a POINTER slice `metadata.memory_context.vault_outcomes_relevant` (`{file, rows: [unit/rule ids], digest}`). Consult the rows already in session context from the chain-start read; when NOT in context, **do a targeted Read of the pointed JSON — the ≥3 threshold needs the actual per-rule violated+reverted counts, never the digest alone** | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
 | Project decision history | `<project>/.mega-sdd/memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
 | Classifier override patterns | `<vault>/.memory/classifier-accuracy.json` | When unit derives from a vault OQ that was overridden by user, surface in unit's `## Context` as note: "this OQ was reclassified manually; original heuristic may not match" |
 

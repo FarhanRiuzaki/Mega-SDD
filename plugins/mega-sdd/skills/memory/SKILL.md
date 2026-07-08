@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.5.2
+version: 1.6.0
 description: Memory + self-learning layer for mega-sdd pipeline. Three scopes (user / project / vault) of markdown + JSON memory files persist context across sessions. Self-learning via threshold-based SUGGESTION-ONLY (never enforcement). Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -83,8 +83,8 @@ Three scopes — see `references/memory-schema.md` §3 Architecture for full det
 **Consumer:** `mega-sdd:orchestrate-flow` Step 2.7
 **Format:** Markdown with append-only Entries section
 **Schema:** see `references/routing-outcomes.md`
-**Append mechanism:** Bash `>>` heredoc (per §6 POSIX append)
-**Lock:** standard memory file-lock pattern (backoff + retry 3x; fail with `memory_in_use`)
+**Append mechanism:** `scripts/memory-write.sh` at emission time (per §6 canonical writer — scan + lock + atomic append inside the script)
+**Lock:** owned by the script (backoff + retry 3x; exhaustion → `memory_in_use` telemetry, log-and-continue — never a chain halt)
 **Soft halt:** `routing_outcome_corrupt` on parse failure (auto-invalidate; chain proceeds)
 
 ### preferences.md `## Model tiers` section

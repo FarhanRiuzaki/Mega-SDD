@@ -63,9 +63,13 @@ grep -q '_index.md' "$P/skills/memory/references/memory-schema.md" \
   || fail "L6: _index.md contract missing"
 
 # L7 — hygiene: secret-scan on write + size suggestion + detector versioning
-grep -q 'secret-scan.sh --check' "$P/skills/orchestrate-flow/references/memory-layer.md" \
-  && pass "L7: secret-scan on memory write (orchestrator)" \
-  || fail "L7: secret-scan-on-write missing from memory-layer.md"
+# M-16 (v4.77.0) moved the scan from orchestrator prose INTO the writer script —
+# pin the new enforcement site: the doc states the writer-side redaction AND the
+# script deterministically contains the scan call.
+grep -qi 'secret-scan' "$P/skills/orchestrate-flow/references/memory-layer.md" \
+  && grep -q 'secret-scan.sh' "$P/scripts/memory-write.sh" \
+  && pass "L7: secret-scan on memory write (inside memory-write.sh, stated in memory-layer.md)" \
+  || fail "L7: secret-scan-on-write missing (doc mention or script wiring)"
 
 grep -q 'NEVER auto-prune' "$P/skills/memory/references/memory-schema.md" \
   && pass "L7: size threshold is a suggestion, never auto-prune" \

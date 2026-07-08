@@ -151,6 +151,8 @@ When memory enabled (default; opt-out via `--memory-off`), participates in the m
 |---|---|---|
 | After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (threshold per `mega-sdd:memory/references/learning-rules.md`) |
 
+Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=project --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue.
+
 ### Reads
 
 | What | Source | How used |

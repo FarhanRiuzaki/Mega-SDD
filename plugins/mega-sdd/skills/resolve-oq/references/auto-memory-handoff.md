@@ -43,13 +43,15 @@ When memory is enabled (default; opt-out via `--memory-off`), this skill partici
 | After each CONFLICT resolved (--binding mode) | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## CONFLICT resolutions` table: date, conflict-id, claim, KEEP_CODE/KEEP_VAULT/DEFER/SPLIT, user-rationale, source-run |
 | After each recommend-mode OQ ACCEPT/OVERRIDE/REJECT | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## Recommendation outcomes` table |
 
+Each row is appended **at emission time via `bash <plugin>/scripts/memory-write.sh --file=<project>/.mega-sdd/memory/decisions.md --scope=project --cwd=<project-root>`** (the script secret-scans, locks, and appends atomically). The handoff carries only the write receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}` — never row content. Write failure (exit ≠ 0) → log and continue; never a halt.
+
 The `## OQ resolutions` table gains an optional `scope` column when the vault has a `scope` field.
 
 ### Reads
 
 | What | Source | How used |
 |---|---|---|
-| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` (passed via handoff `metadata.memory_context.project_decisions_relevant` when under --auto) | SUGGEST a pre-filled action in `AskUserQuestion` (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` — under --auto the handoff passes a POINTER slice `metadata.memory_context.project_decisions_relevant` (`{file, rows: [date+conflict-id, …], digest}`). Consult the rows already in session context from the chain-start read; when they are NOT in context (typical for `/mega-sdd:auto --resume` in a fresh session) **do a targeted Read of the pointed file's `## CONFLICT resolutions` table — the suggestion needs the actual resolution values + occurrence counts, never the digest alone** | SUGGEST a pre-filled action in `AskUserQuestion` (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
 | Cross-project patterns (when project memory has no match) | `~/.mega-sdd/memory/patterns.md` | SUGGEST a per-pattern action with confidence + source observation count |
 
 ### Anti-halu rails

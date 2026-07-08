@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.4.0
+version: 1.4.1
 description: Auto-detect OS + package manager (brew/apt/dnf/pacman/apk/winget/scoop/cargo/npm/go) and install missing native deps mega-sdd can leverage (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh). Single explicit batch confirmation; never auto-sudo; never curl|bash; mandatory post-install verify; memory-cached outcomes. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -155,11 +155,9 @@ If ANY unverified → halt `install_failed` with subtype `verify_after_install_f
 
 After all installs + verifies complete:
 
-1. Acquire memory file lock per the memory file-lock pattern (`<project>/.mega-sdd/memory/install-outcomes.md.lock` — backoff + retry 3x; fail with `memory_in_use` if all retries fail).
-2. Append run record to `<project>/.mega-sdd/memory/install-outcomes.md` per schema in spec §9.
-3. Release lock.
+1. Append the run record to `<project>/.mega-sdd/memory/install-outcomes.md` (schema in spec §9) via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/memory-write.sh" --file=<resolved-path> --scope=project --cwd=<project-root>` — the script owns the secret scan, the file lock (backoff + retry 3x; exhaustion → `memory_in_use` telemetry), and the atomic append.
 
-If memory write fails (disk full / permissions) → log warning to chat; don't halt (memory is convenience, not correctness).
+If the write fails (exit ≠ 0 — lock contention, disk full, permissions) → log warning to chat; don't halt (memory is convenience, not correctness).
 
 ### Step 8: Summary + handoff
 
