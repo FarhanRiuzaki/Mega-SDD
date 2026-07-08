@@ -121,11 +121,11 @@ TYPE: enum — one of `completed | paused | halted`. Drives orchestrator control
 
 TYPE: array\<string\> — absolute file paths. Non-empty when `status==completed`; may be empty when `status==halted` (skill may not have written output). Every file/dir the skill wrote must be listed; orchestrator uses to verify output and locate downstream input.
 
-> **Existence-checked at orchestrator boundary.** Orchestrate-flow Step `b.vii` verifies every listed path with `test -f` (files) or `test -d` (dirs) after schema validation passes. Missing path → halt `artifact_missing`. Closes finding D3-002 (silent-failure path closure). Skill authors: any path you list here MUST exist on disk at handoff emission time, or orchestrator will block the chain. Do not list speculative/future paths.
+> **Existence-checked at orchestrator boundary.** The per-hop gate (`validate-handoff-yaml.sh`) existence-checks every listed path (`os.path.exists` — file or dir) after schema validation passes. Missing path → halt `artifact_missing`. Closes finding D3-002 (silent-failure path closure). Skill authors: any path you list here MUST exist on disk at handoff emission time, or orchestrator will block the chain. Do not list speculative/future paths.
 
 ### Pre-validation: handoff block presence in chat output (orchestrator-side)
 
-Before any schema check, orchestrate-flow Step `b.0` scans the sub-skill's chat output (last assistant message) for a YAML code fence containing a top-level `handoff:` key. Skills emit handoff YAML **inline in chat output** (see "Emission contract" below) — NOT to a file on disk. If no block can be located, OR if multiple conflicting `handoff:` blocks are present → halt `handoff_missing` with `chat_tail_excerpt` field (last 500 chars of sub-skill chat) for diagnosis. Closes finding D3-001 (silent-failure path closure).
+Before any schema check, the per-hop gate (`validate-handoff-yaml.sh` per `handoff-consumption.md §b.script`) scans the sub-skill's chat output (last assistant message) for a `handoff:` block (fenced yaml or inline). Skills emit handoff YAML **inline in chat output** (see "Emission contract" below) — NOT to a file on disk. No block, OR multiple blocks with CONFLICTING `emitted_by` values → FAIL `handoff_missing` with a 300-char `response_tail` for diagnosis (same-emitter duplicates validate the LAST block — the producer's own emission). Closes finding D3-001 (silent-failure path closure).
 
 **Design note:** the original design used `test -f <path>` against a path convention that no skill implemented. Skills always emit handoff in chat; the file-check would have produced spurious `handoff_missing` halts on every run. Corrected to chat-block detection.
 
@@ -327,35 +327,7 @@ If orchestrator detects memory schema version mismatch during chain-start read:
 
 ## Orchestrator consumption logic
 
-`orchestrate-flow --deep` (or `/mega-sdd:auto`) implements this control loop:
-
-```
-loop:
-  invoke current skill with --auto
-  parse handoff YAML from skill output
-  if handoff.status == completed:
-    log: "✓ Phase {N} of {M} completed: {skill}"
-    if --deep AND no --stop-after match:
-      current = handoff.next_action.suggested_skill
-      args = handoff.next_action.suggested_args
-      continue loop
-    else:
-      exit loop with summary
-  if handoff.status == paused:
-    log: "⏸ Phase {N} paused: {skill}. Items needing review: {items_blocked}"
-    surface paused-item summary in chat
-    exit loop awaiting user review
-  if handoff.status == halted:
-    log: "⛔ Phase {N} halted: {skill}. Blockers: {blockers list}"
-    surface verbatim blocker YAMLs in chat
-    exit loop awaiting user resolution
-
-emit final summary:
-  - Phases completed: {count} of {total proposed}
-  - Phases paused: {count} (list)
-  - Phases halted: {count} (list)
-  - Artifacts produced: {flat list of all artifacts paths}
-```
+The operative control loop (incl. the confidence-aware auto-continue floor) lives ONCE in `references/handoff-consumption.md §Orchestrator consumption loop` — the duplicate copy that used to sit here is gone (M-04); this section keeps only the pieces that are NOT in the consumption reference:
 
 ### Progress indication (AUTONOMY-OQ-4 resolved)
 

@@ -21,7 +21,8 @@ RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-pl
 PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
 
-bash "$PLUGIN_ROOT/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>"
+bash "$PLUGIN_ROOT/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>" --quiet
+# M-05: branch on the exit code; read .mega-sdd/.extraction-scorecard-state.json ONLY on non-zero
 ```
 
 Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):
