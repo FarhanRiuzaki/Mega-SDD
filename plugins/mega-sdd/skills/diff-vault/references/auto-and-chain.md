@@ -48,8 +48,12 @@ blocker:
   source_skill: diff-vault
   conflict_old: "<vault state, verbatim from VAULT-DIFF.md>"
   conflict_new: "<new PRD state, verbatim from VAULT-DIFF.md>"
-  options: ["supersede", "keep_vault", "capture_both"]
-  # propose-and-confirm discipline:
+  options:                             # {code, keterangan} pairs per halt-protocol §Field rules —
+    - {code: supersede, keterangan: "keputusan baru menggantikan yang di vault"}
+    - {code: keep_vault, keterangan: "tolak perubahan PRD; vault tetap"}
+    - {code: capture_both, keterangan: "catat keduanya sebagai OQ untuk stakeholder"}
+  # propose-and-confirm discipline (this block IS the `recommended:` carrier — richer form,
+  # same contract slot; the displayer renders proposed_action as the recommended default):
   recommendation:
     proposed_action: "supersede"
     rationale: "PRD revision is the newer source-of-truth; vault should follow unless the change is destructive (e.g., dropping a field the vault references elsewhere). Capture-both used only when both old and new are valid interpretations."

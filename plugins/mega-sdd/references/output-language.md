@@ -48,6 +48,17 @@ These are English words sitting in machine-parsed positions; every one is parser
 
 **Surface split for `analyze` / `detect-drift` / `bind-codebase` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, `binding.md` claim text) is vault content → stays the vault's language. Only `emit-fsd` and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
 
+## Prompt surfaces (AskUserQuestion / halt menus) — the keterangan contract
+
+A human-facing question the human cannot answer from the prompt alone is a defect (user-mandated, 2026-07-08 — a live run was blocked by a code-only prompt). EVERY interactive surface (AskUserQuestion, halt re-engagement, propose-and-confirm menu) MUST carry:
+
+1. **The actual question/claim text** — quote the OQ question, CONFLICT claim pair, or decision at stake verbatim; an ID/tag (`OQ-AR-1`, `CONFLICT-2`) alone is never a question.
+2. **Context** — source citation (doc §/anchor or file:line) + one line of why this is being asked now.
+3. **Per-option keterangan** — a Tier-1 enum code (`KEEP_CODE`, `DEFER`, `ACCEPT`, `P1`…) stays English as the LABEL, but every option carries a MANDATORY Tier-2 description of what choosing it DOES and its consequence (e.g. `DEFER — jadi OQ; gate binding terbuka, unit digenerate membawa OQ-nya`). The description must state the mechanic the plugin ACTUALLY implements — a keterangan asserting behavior that does not exist is fabricated UX, worse than a bare code. An option rendered as a bare code is a violation; a literal placeholder (`description: ...`) is a violation.
+4. **Recommended default** — stated with a one-line reason whenever one exists; exactly ONE option is marked recommended (two templates disagreeing on the default is a defect).
+
+Descriptions follow the standing Tier-2 language precedence (Indonesian-mix by default). This contract binds the halt displayer (`plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` renders a keterangan block BEFORE the envelope YAML) and every skill prompt template; pinned by `tests/interaction-keterangan/`.
+
 ## Switching & extensibility
 
 - Default `id` (carried by the anchor + the greenfield entry-point directives). The user says "use English" / "pakai bahasa Inggris" / "pakai bahasa Jawa" → the model mirrors.

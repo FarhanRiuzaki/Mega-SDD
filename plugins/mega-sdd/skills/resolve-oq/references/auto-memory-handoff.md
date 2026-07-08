@@ -18,7 +18,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrat
 | Step 0 (vault location) | Ask via `AskUserQuestion` | If exactly 1 vault detected in CWD, use it without prompting. If 0 or >1, ask (or fail loudly if called with `--auto` from a non-orchestrator context). |
 | Step 0 (lock check, if `Status: 🔒 LOCKED`) | Ask user to confirm unlock | Default to "proceed if DRAFT" (no unlock implied). If LOCKED, **STILL ASK** — unlocking has audit consequences. |
 | Step 0.5 (resume detection) | Ask continue / fresh / cancel | Default to "continue from current state". |
-| Step 0.6 (resolution scope) | Ask scope | Default to `p1-only`. |
+| Step 0.6 (resolution scope) | Ask scope | Default to `p1-only` — DELIBERATE chain-context divergence from the interactive default (`all-priorities`): a chain only needs the P1 blocking tier resolved to resume; P2/P3 stay for a later interactive session. |
 | Step 2 (per-OQ Resolve/OOS/Defer/Skip) | **Always ask** | **Always ask** (substance prompt — no override) |
 | Step 2c (cross-cutting multi-doc landing) | Ask user to confirm primary doc | Always ask (substance prompt — landing affects content placement) |
 

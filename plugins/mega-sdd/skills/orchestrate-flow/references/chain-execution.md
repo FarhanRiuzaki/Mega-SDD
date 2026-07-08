@@ -118,7 +118,7 @@ Read the EP1 classifier output (when present — see the PARKED status above). W
   - Check for `<project>/.mega-sdd/.plan-pending` (JSON from prior Plan-mode invocation matching current task_id + session_id).
   - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd:auto --act` (the `--act` flag) to transition.
   - If `.plan-pending` present + fresh + matches current task: read it; continue in Act mode. Delete `.plan-pending` on Act completion.
-- **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion ("MAJOR iter without Plan phase — proceed?") before continuing.
+- **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion — question carries the risk context ("MAJOR = perubahan besar; tanpa Plan phase tidak ada review rencana sebelum eksekusi. Proceed?"); options: `Plan first` **(recommended)** — tulis rencana + STOP untuk review, lanjut via `--act`; `Proceed without plan` — langsung eksekusi tanpa rencana tertulis.
 - **Explicit Plan force:** `--plan-then-act` flag forces two-phase regardless of classifier.
 
 Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd:auto --plan` or delete `.plan-pending`".
@@ -209,6 +209,8 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 | HIGH | Drift on CONFIRMED claim with no mutability source OR INTENT outcome change | PAUSE; user can override with audit-significant decision |
 | MEDIUM | Drift on INTENT claim implementation change | LOG + continue; surface in batch summary |
 | LOW | Drift on ARTIFACT cleanup OR style only | LOG only; no chain interruption |
+
+**Keterangan on CRITICAL/HIGH (mandatory — never surface counts alone).** Per finding, render: the entity/claim name, its mutability tier + source citation, one line of *vault-said vs code-is*, and the `DRIFT-REPORT.md` path. The HIGH-pause override is an explicit `AskUserQuestion`: `Resolve first` **(recommended)** — chain tetap pause sampai drift-nya dibereskan (via sync/resolve-oq); `Override & continue` — keputusan audit-signifikan dicatat di chain summary, chain lanjut dengan drift tetap terbuka di `DRIFT-REPORT.md`. A severity count (`2 CRITICAL, 1 HIGH`) with no finding text is unanswerable — the keterangan contract (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`) applies.
 
 ### Opt-out
 

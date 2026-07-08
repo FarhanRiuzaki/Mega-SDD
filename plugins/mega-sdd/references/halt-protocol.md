@@ -133,8 +133,13 @@ next_action: "<one-line prose string>"         # plain string form
 - `log_and_continue` — soft halt; orchestrator logs + proceeds
 - `manual_review` — user reviews state manually (no auto-action)
 
-Consumer dispatch (orchestrate-flow halt displayer):
+Consumer dispatch (ANY halt-displaying surface — orchestrate-flow is the chain-path displayer; a skill halting on a STANDALONE run renders the same way):
 
+0. **Keterangan block FIRST (MANDATORY — the keterangan contract, `references/output-language.md §Prompt surfaces`).** BEFORE printing the envelope YAML, render a plain-language block in Tier-2 narration (Indonesian-mix by default):
+   - **Apa yang ditanya:** resolve `tag` to the ACTUAL text — quote the OQ question / CONFLICT claim pair / decision at stake verbatim from the source artifact (the vault doc, `binding.md`, the diff report). A bare `OQ-AR-1` is never a question.
+   - **Kenapa berhenti:** one line — which phase halted and why this blocks it.
+   - **Pilihan lo:** when the envelope carries choices (`options`, `suggested_action`, an action menu), list each as `CODE — keterangan konsekuensi` (Tier-1 code stays English; the description says what choosing it DOES). Mark the recommended default with its one-line reason when one exists.
+   - Then print the envelope YAML below the block (the YAML is the machine record; the block is for the human).
 1. Read `next_action.type` if present → format hint per type semantics (e.g., wrap commands in code fence)
 2. Else read `next_action.hint` if it's a string → display as plain text
 3. Else (no next_action) → emit `invalid_handoff` halt at validation gate
@@ -299,7 +304,7 @@ Regenerated vaults produce only the new form.
 - `vault_version` is the current vault version at emit time, not the target post-resolution version.
 - `source_skill` identifies the emitting skill — needed because consumers may dispatch differently per source.
 - `context` is human-readable; keep it short (one line). It's not a structured field.
-- For `diff_conflict`, `options` MUST list the user choices verbatim from the diff report (e.g., "supersede", "keep_vault", "capture_both").
+- For `diff_conflict`, `options` MUST list the user choices as `{code, keterangan}` pairs — the code verbatim from the diff report, the keterangan saying what choosing it does (e.g. `supersede` — keputusan baru menggantikan yang di vault; `keep_vault` — tolak perubahan PRD, vault tetap; `capture_both` — catat keduanya sebagai OQ untuk stakeholder). An optional `recommended: <code>` carries a one-line rationale. (Legacy bare-string arrays are read-compatible; the DISPLAYER still renders the legend per step 0.)
 
 ### Type-specific schemas (v1.1 additions)
 
@@ -313,6 +318,7 @@ details:
       vault_claim: <text>
       codebase_reality: <text>
       suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+      suggested_action_rationale: <one line — why, citing the evidence>   # keterangan contract: the enum never surfaces bare; the displayer also renders the 4-code legend (KEEP_VAULT = code harus diubah mengikuti vault; KEEP_CODE = vault di-update mengikuti kenyataan code; DEFER = jadi OQ — gate binding terbuka, unit digenerate membawa OQ-nya, execute-bolts prompt sebelum bolt final; SPLIT = claim dipecah jadi sub-claim)
 
 # dep_missing — emitted by execute-bolts when superpowers AND vendored fallback both absent
 details:

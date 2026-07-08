@@ -16,14 +16,17 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    ```
    CONFLICT-N (BLOCKING)
    > Vault claim: <text from binding.md>
-   > Codebase reality: <text from binding.md>
+   > Codebase reality: <text from binding.md> (<evidence anchor file:line from binding.md — MANDATORY: the user judges code-vs-vault, so show WHERE in code>)
+   > Prior call (suggestion only, when decisions.md carries one for this claim pattern): <ACTION> on <date> — <rationale>
 
    Choose action:
-     [K] KEEP_VAULT  — vault is correct; code patch will be required later
-     [C] KEEP_CODE   — vault is wrong; patch vault inline to match code
-     [D] DEFER       — downgrade CONFLICT to OQ; re-resolve later
-     [S] SPLIT       — break vault claim into sub-claims (user provides splits)
+     [K] KEEP_VAULT  — vault is correct; code patch will be required later (the CONFLICT re-raises on re-bind until the code change lands — by design)
+     [C] KEEP_CODE   — vault is wrong; patch vault inline to match code (vault edited this session)
+     [D] DEFER       — downgrade CONFLICT to OQ; gate binding TERBUKA, unit tetap digenerate membawa OQ-nya (execute-bolts prompt di "TBD: OQ-XXX" sebelum bolt final; P1 business menghentikan bolt)
+     [S] SPLIT       — break vault claim into sub-claims (user provides splits; each sub-claim re-binds separately)
    ```
+
+   The two claim texts + the evidence anchor are MANDATORY — a `CONFLICT-N` code alone is never a question (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`). The `Prior call` line renders ONLY when memory has one; it is a suggestion, never a default (the CONFLICT verdict is not bypassable by memory).
 
    **Resolution write-back grammar (S4 — the ONLY markers the gate reads).** A
    resolution is recorded by BOTH: (a) updating the `### CONFLICT-N` detail heading to

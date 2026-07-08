@@ -138,6 +138,6 @@ For Auto-resolved OQs: show batch summary, ask `["Apply all", "Review one-by-one
 
 For Added / Changed / Removed: walk by category, batch-confirm where safe (e.g., "apply all 5 unchanged flow renames? Y/N"), one-by-one for substantive changes.
 
-For New OQs: show list, ask the user to confirm priority assignment (P1 default) per OQ.
+For New OQs: show list, ask the user to confirm priority assignment (P1 default) per OQ — with the tier gloss rendered every time (the P1/P2 codes stay English; the keterangan says what each DOES): "P1 = blocking — eksekusi bolt HALTS sampai OQ ini dijawab (`oq_business_p1_unresolved`); P2 = non-blocking — dicatat, pipeline jalan terus."
 
 The user can stop at any time — partial decisions are persisted for the next run, the rest stays as `VAULT-DIFF.md` for offline review.

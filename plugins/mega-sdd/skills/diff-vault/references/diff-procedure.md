@@ -100,7 +100,7 @@ After applying approved changes, regenerate `vault.json` from the now-updated ma
 1. **Bump vault version** in `00-index.md` Vault Lock Status:
    - Patch bump: v1.1 → v1.2 (resolved OQs, minor changes, no scope shift).
    - Minor bump: v1.1 → v2.0 (significant additions/changes, e.g., new feature scope from new PRD).
-   - Skill suggests; user confirms via `AskUserQuestion`.
+   - Skill suggests; user confirms via `AskUserQuestion` — the question STATES the suggested bump + the rationale from this round's counts (e.g. "Suggest minor bump v1.1 → v2.0: 6 entitas baru + 2 conflicts resolved = scope shift"); options: `Patch vX.Y` — perubahan kecil, tanpa scope shift; `Minor vX.0` — penambahan signifikan / scope baru; the suggested one marked **(recommended)**.
 2. **Append Changelog entry** to `00-index.md`:
 
 ```markdown

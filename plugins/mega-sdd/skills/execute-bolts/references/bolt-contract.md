@@ -14,7 +14,7 @@ A "bolt" is the code artifact produced from executing one unit. The contract spe
 
 - Modify files outside `target_files`
 - Skip acceptance tests (no `--no-test` or similar)
-- Auto-resolve OQs (any "TBD: OQ-XXX" in unit body must be answered before bolt finalizes — user is prompted)
+- Auto-resolve OQs (any "TBD: OQ-XXX" in unit body must be answered before bolt finalizes — user is prompted per the keterangan contract: quote the OQ question text from the vault roll-up + the unit anchor where the TBD sits, then ask — `Answer now` — jawaban direkam ke unit, bolt lanjut (vault di-update via resolve-oq setelahnya); `Defer` — bolt unit ini halt dengan blocker YAML, OQ dieskalasi via resolve-oq, unit lain lanjut; `Abort batch` — seluruh batch berhenti, progress bolt yang sudah commit tersimpan)
 - Squash commits across multiple units (one unit = one commit set; commits across units stay separate)
 - Push to remote (push is a separate user action — bolt is local-only)
 

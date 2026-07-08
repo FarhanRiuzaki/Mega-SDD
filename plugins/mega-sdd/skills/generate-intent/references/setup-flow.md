@@ -173,13 +173,13 @@ b. **Canonical scope handling:**
    - Multiple scopes declared:
      - `--scope=<id>` set → validate against declared scopes; **halt `scope_not_declared_in_prd`** if invalid (surface the PRD-declared scope list + cancel).
      - Else if `<project>/.mega-sdd/memory/decisions.md` has a prior choice for this PRD sha256 + same cwd basename → silent default with confirm-once UX (5s timeout).
-     - Else → `AskUserQuestion`: one option per declared scope (smart-default flagged per cwd heuristic) + "All scopes (single combined vault — legacy behavior)" + "Cancel".
+     - Else → `AskUserQuestion` with a lead line ("Memilih satu scope memfilter PRD ke bagian scope itu; scope lain bisa digenerate sebagai vault terpisah nanti."): one option per declared scope rendered as `<id> — <name/1-line summary from the PRD scopes: block>` (smart-default flagged per cwd heuristic) + "All scopes — satu vault gabungan (legacy; tidak ada filter per scope)" + "Cancel".
      - If the user chose `--scope=all` (legacy) → emit a warning, proceed with all content.
    - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `00-index.md`.
 
 c. **Legacy PRD retrofit bridge:**
    - `AskUserQuestion`: "Yes, propose retrofit (recommended)" (dispatches an AI subagent per the legacy-retrofit-prompt ref, routed from the SKILL router) / "Treat as single-scope PRD" (legacy single-vault) / "Cancel — manual fix first" (**halt `prd_no_scopes_block_user_rejected_retrofit`**).
-   - On retrofit chosen: dispatch the subagent; render the diff (detected scopes + evidence + proposed frontmatter + section restructure); `AskUserQuestion` accept / review per scope / skip / cancel. On accept: write the retrofit to `<prd-name>.retrofit.md` (preserves the original); restart Step 0.9 from step a using the retrofit file. On `overall_confidence: LOW` → **halt `prd_retrofit_low_confidence`** (accept anyway / single-scope fallback / cancel).
+   - On retrofit chosen: dispatch the subagent; render the diff (detected scopes + evidence + proposed frontmatter + section restructure); `AskUserQuestion` with the glossed menu (canonical code names — `legacy-retrofit-prompt.md` mirrors these): `accept` — tulis `<prd>.retrofit.md` (original tidak disentuh), Step 0.9 restart dari file retrofit; `review per scope` — walk scope satu-satu, approve/reject per scope sebelum ditulis; `skip retrofit` — lanjut sebagai single-scope PRD tanpa filter (legacy); `cancel` — berhenti, tidak ada vault yang ditulis. On accept: write the retrofit to `<prd-name>.retrofit.md` (preserves the original); restart Step 0.9 from step a using the retrofit file. On `overall_confidence: LOW` → **halt `prd_retrofit_low_confidence`** (accept anyway / single-scope fallback / cancel).
 
 ## Multi-squad artifact emission
 
@@ -210,6 +210,8 @@ Per `generate-intent/references/vault-contract.md §constitution`. Write the 8th
 ## Scope-detection halt conditions
 
 Three halts fire during Step 0.9. All classified ALWAYS STOP CHAIN by `orchestrate-flow` (require human input). Pre-multi-scope vaults / PRDs without a `scopes:` block never trigger these (scope detection runs only when a `scopes:` block is present OR the retrofit bridge is engaged).
+
+**Options keterangan (rendered by the halt displayer per the keterangan contract — codes stay English, descriptions Tier-2):** `re-pick-from-declared` — pilih ulang dari daftar scope yang PRD deklarasikan; `manual-retrofit` — user edit `scopes:` frontmatter di PRD sendiri lalu re-run; `single-scope-fallback` — perlakukan PRD sebagai satu scope tanpa filter (legacy); `accept-anyway` — pakai hasil retrofit LOW-confidence apa adanya (risiko pemecahan scope salah; recommended HANYA kalau warnings-nya sudah direview); `cancel` — berhenti, tidak ada vault yang ditulis.
 
 ### `scope_not_declared_in_prd`
 Fires when `--scope=<id>` is set BUT the id is not in the PRD's `scopes:` frontmatter list.
