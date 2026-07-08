@@ -430,6 +430,7 @@ These need user decision before execution. Recommendations included.
 - **[MEMORY-OQ-6] Concurrent runs collision** — if user runs 2 mega-sdd pipelines concurrently in same project, memory write conflicts. Options: (a) File lock with retry (.flock); (b) Append-only with timestamp ordering; race-condition tolerant. (c) Halt second run with `memory_in_use` blocker. **Recommendation: (b)** — append-only writes are inherently race-tolerant if each write is atomic (a single fs.append call).
 
 - **[MEMORY-OQ-7] What about Iter 4 autonomy mode?** — When `/mega-sdd:auto --deep` runs end-to-end, does memory consultation slow it down? Options: (a) Read memory ONCE at chain start; cache per chain. (b) Re-read per skill. **Recommendation: (a)** — single read at orchestrator level; pass relevant slices to skills via handoff YAML.
+  > **Amendment (2026-07-08, token-efficiency B3b/M-16):** the single READ at chain start survives — in-session sub-skills share the context window, so the rows are already available. The slice RE-EMISSION half is superseded: re-sending row text per hop duplicated content already in context, so `memory_context` now carries pointers (see §14 amendment). OQ-6's own recommendation (append-only, race-tolerant atomic writes) is what justifies skills appending directly via the locked writer script.
 
 ## 14. Pipeline integration with Iter 4 (autonomy)
 
@@ -461,6 +462,8 @@ handoff:
         action: append
         content: "## Run #5..."
 ```
+
+> **Amendment (2026-07-08, token-efficiency B3b/M-16):** memory row content transited chat 2–3× per chain under this section's original design (chain-start read → per-hop `memory_context` slice re-emission → `memory_writes` content → the orchestrator's second re-emission into the append call), even though sub-skills run in-session with the chain-start rows already in context. Superseded as follows — `metadata.memory_context` carries **pointer slices** (`{file, rows: [date+id keys], digest}`; consumers use in-context rows or do a targeted Read — mandatory for fresh/resumed sessions and forked skills, and for generate-units' ≥3-count threshold); skills **append their own rows via `scripts/memory-write.sh` at emission time** (the script now owns the secret-scan (`[REDACTED-SECRET]`), the advisory lock, and the atomic append — one deterministic enforcement site, per the gates>rules doctrine); `metadata.memory_writes` becomes a **write receipt** `{files_written: [<paths>], rows_appended: <int>}` — the path LIST feeds the chain-end extract-learnings pass and `_index.md` regeneration; an "update" is an append carrying a supersedes marker (files stay append-only). `--memory-off`, the non-halting write tolerance, and detect-drift's direct-write fork pattern are unchanged (detect-drift was already the target shape). Operative docs: `orchestrate-flow/references/memory-layer.md`, `handoff-contract.md §Memory layer integration`, `memory/references/memory-schema.md §6/§8/§8.5`. Pinned by `tests/token-efficiency/test-b3b-memory-pointers.sh`.
 
 ## 15. Validation plan
 

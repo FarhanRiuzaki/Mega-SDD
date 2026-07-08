@@ -91,7 +91,7 @@ Skills reading memory check `memory_schema`. Mismatch → invoke migration helpe
 | `outcomes.md` | Halt patterns, retry counts, success rates per run — incl. `kind: sync` rows (Mode D runs) | Markdown chronological log | Gitignored (per-dev noise) |
 | `routing-outcomes.md` | Orchestrator routing decisions + outcomes log | Markdown append-only rows | Gitignored (per-dev noise) |
 | `install-outcomes.md` | install-deps audit log: per-tool installed/skipped/failed/sudo-pending with OS detection | Markdown append-only rows + per-run header | Gitignored (machine-specific) |
-| `_index.md` | Scope index: per file — row count, last-entry date, one-line current-state summary, open pending-suggestion count, size-threshold flag | Markdown table, REGENERATED (not append-only) by the orchestrator at its batched-write point | Gitignored (derived) |
+| `_index.md` | Scope index: per file — row count, last-entry date, one-line current-state summary, open pending-suggestion count, size-threshold flag | Markdown table, REGENERATED (not append-only) by orchestrate-flow at chain end over the receipt-touched scopes (§8.5) | Gitignored (derived) |
 
 ### `<project>/.mega-sdd/memory/routing-outcomes.md`
 
@@ -544,15 +544,16 @@ If a write fails (disk full, permission), skill logs the failure and continues �
 
 ### Append mechanism
 
-**CRITICAL**: Memory writes MUST use POSIX append (`>>`) for atomicity, NOT Claude Code's `Write` tool (which is overwrite, not atomic-append).
+**CRITICAL**: the canonical writer for every memory file is **`scripts/memory-write.sh`** — it secret-scans the content (`[REDACTED-SECRET]` redaction), acquires the advisory lock (3-retry backoff + stale-steal), and appends atomically (temp + rename). NEVER Claude Code's `Write`/`Edit` tools on an existing memory file (read-modify-write → two concurrent runs overwrite each other), and prefer the script over a raw `>>` heredoc (the heredoc skips the lock AND the secret scan).
 
-**Correct **:
+**Correct**:
 ```bash
-# Single-line append (atomic on POSIX file systems for small writes):
-echo "| 2026-05-21 | OQ-AR-7 | tech/recommend | ACCEPT: ... | resolve-oq@<timestamp> |" >> "$PROJECT_MEM/decisions.md"
+# Single row:
+bash "$PLUGIN_ROOT/scripts/memory-write.sh" --file="$PROJECT_MEM/decisions.md" --scope=project --cwd="$PROJECT_ROOT" \
+  --content='| 2026-05-21 | OQ-AR-7 | tech/recommend | ACCEPT: ... | resolve-oq@<timestamp> |'
 
-# Multi-line block append (uses heredoc; still single fs operation):
-cat >> "$VAULT_MEM/bind-history.md" << 'APPENDEOF'
+# Multi-line block (via stdin):
+bash "$PLUGIN_ROOT/scripts/memory-write.sh" --file="$VAULT_MEM/bind-history.md" --scope=vault --cwd="$PROJECT_ROOT" << 'APPENDEOF'
 
 ## Run #N — <ISO8601>
 - claims_total: 24
@@ -561,13 +562,15 @@ cat >> "$VAULT_MEM/bind-history.md" << 'APPENDEOF'
 APPENDEOF
 ```
 
-**Wrong**: Using `Write` or `Edit` tools to append. These read-modify-write the entire file → two concurrent runs would overwrite each other.
+**Tolerated (single-writer sites only)**: a raw POSIX `>>` heredoc where a skill's own doc already specifies it AND only one writer can hold the file (e.g. forked detect-drift's drift-history) — run `secret-scan.sh` on the content first per §8.5.
+
+**Wrong**: `Write`/`Edit` to append.
 
 ### Per-skill memory write protocol
 
-Each writer skill's `## Memory layer` section MUST specify: "Append to `<path>` via Bash `>>` heredoc". NEVER `Write` or `Edit` for memory files.
+Each writer skill's `## Memory layer` section MUST specify: "Append to `<path>` via `scripts/memory-write.sh` at emission time" (the ### file-lock protocol lives inside memory-write.sh). NEVER `Write` or `Edit` for memory files.
 
-For schema initialization (first write to a new memory file), use `Write` tool ONCE to create the file with frontmatter + empty section headers. Subsequent writes append below those headers via `>>`.
+For schema initialization (first write to a new memory file), use `Write` tool ONCE to create the file with frontmatter + empty section headers. Subsequent writes append below those headers via the script.
 
 ## 7. Schema migration (per MEMORY-OQ-1)
 
@@ -581,15 +584,15 @@ When `memory_schema` version bumps in future iters:
 
 ## 8. Memory consumption by orchestrate-flow
 
-Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (both resolved single-read-at-orchestrator):
+Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (single READ at orchestrator; M-16 supersedes the slice/batch transit):
 
-1. `/mega-sdd:auto --deep` reads all relevant memory ONCE at chain start
-2. Memory slices passed to each skill via handoff YAML `metadata.memory_context` field (see `orchestrate-flow/references/handoff-contract.md` §metadata extension)
-3. Skills read from in-memory slice (no disk re-read per skill)
-4. Skills emit writes via handoff YAML `metadata.memory_writes` array
-5. Orchestrator batches writes at chain end OR per-phase on halt (atomic per file)
+1. `/mega-sdd:auto --deep` reads all relevant memory ONCE at chain start — rows enter the session context here
+2. POINTER slices passed to each skill via handoff YAML `metadata.memory_context` (file path + row keys + one-line digest per relevant row — never row text; see `orchestrate-flow/references/handoff-contract.md` §metadata extension)
+3. Skills consult the rows already in session context; a consumer not holding them (fresh/resumed session, forked skill) does a targeted Read of the pointed file/rows
+4. Skills append their own rows via `scripts/memory-write.sh` at emission time (scan + lock + atomic append inside the script)
+5. The handoff returns a write receipt — `metadata.memory_writes: {files_written: [<paths>], rows_appended: <int>}` — which the orchestrator unions for the chain-end extract-learnings pass + `_index.md` regeneration
 
-This keeps autonomy mode fast AND memory-aware.
+This keeps autonomy mode fast AND memory-aware: row content transits chat once.
 
 ## 8.5 Scope index (`_index.md`) + hygiene rails
 
@@ -610,10 +613,10 @@ derived: true
 | outcomes.md | 9 | 2026-06-10 | last 3 syncs clean; stale=0 | 0 | ok |
 ```
 
-- Maintained by orchestrate-flow at its batched-write point (§8 single I/O point unchanged). Standalone skill runs do NOT regenerate it (stale index tolerated; readers treat it as a hint, never as the data).
+- Maintained by orchestrate-flow at chain end, over the scopes named in the handoffs' `memory_writes.files_written` receipts (§8). Standalone skill runs do NOT regenerate it (stale index tolerated; readers treat it as a hint, never as the data).
 - Chain-start reads consult `_index.md` FIRST and open only the files the chain needs (just-in-time, not preload).
 - **Size threshold**: any memory file > 256 KB sets `Size flag: prune?` in the index — a prune *suggestion* for `/mega-sdd:memory prune`; NEVER auto-prune.
-- **Secret scan on write (non-negotiable)**: every memory append runs `scripts/secret-scan.sh --check` on the content first; findings → redact the value (`[REDACTED-SECRET]`) before appending. Memory files can be git-tracked; do not rely on upstream redaction.
+- **Secret scan on write (non-negotiable)**: `scripts/memory-write.sh` runs the scan itself on every append (`[REDACTED-SECRET]` redaction) — one deterministic enforcement site regardless of which skill writes. A tolerated raw-`>>` site (§6) must run `scripts/secret-scan.sh` on its content first. Memory files can be git-tracked; do not rely on upstream redaction.
 - **Detector versioning**: `conventions.md` entries record the detecting skill version (already in the schema example: "via scan-codebase v1.1"). A convention's skip-re-detect privilege applies ONLY while the current scan-codebase version matches; on version change, re-detect (cache-version-bump pattern).
 
 ## 9. Privacy + opt-out

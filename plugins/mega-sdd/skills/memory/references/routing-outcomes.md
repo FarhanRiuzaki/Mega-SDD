@@ -92,11 +92,8 @@ Fingerprint INVALIDATES when:
    - duration-min: integer
    - converged: yes if status==completed AND blockers==[]; no otherwise
    - halts-fired: count of unique halt types fired during chain
-2. Acquire file lock on routing-outcomes.md (reuse memory file-lock pattern; backoff retry 3x)
-3. Append new row to ## Entries section
-4. Release lock
-5. On lock collision after 3 retries → halt memory_in_use (existing halt; no new halt type needed)
-6. On YAML/markdown parse error of existing file → emit routing_outcome_corrupt (SOFT halt; auto-invalidate file by renaming to .corrupt; next run starts fresh log)
+2. Append the row to ## Entries via `bash <plugin>/scripts/memory-write.sh --file=<project>/.mega-sdd/memory/routing-outcomes.md --scope=project --cwd=<project-root>` — the script owns the secret scan, the file lock (3-retry backoff + memory_in_use telemetry on exhaustion), and the atomic append. Exit ≠ 0 → log and continue; NEVER a chain halt (memory is optional).
+3. On YAML/markdown parse error of existing file → emit routing_outcome_corrupt (SOFT halt; auto-invalidate file by renaming to .corrupt; next run starts fresh log)
 ```
 
 ## Anti-halu rails

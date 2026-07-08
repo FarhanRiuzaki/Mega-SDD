@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.12.0
+version: 2.12.1
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 

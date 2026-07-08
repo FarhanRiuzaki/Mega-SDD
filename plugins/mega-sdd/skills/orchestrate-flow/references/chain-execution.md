@@ -227,11 +227,9 @@ a. Compute:
    - `duration-min`: integer wall-clock from chain start → now
    - `converged`: yes if final status==completed AND blockers==[]; no otherwise
    - `halts-fired`: count of unique halt types fired during chain
-b. Acquire file lock on `<project>/.mega-sdd/memory/routing-outcomes.md` (backoff + retry 3x; fail with `memory_in_use` if all retries fail).
-c. If file does not exist: create with header per schema doc.
-d. Append row to `## Entries` section via Bash `>>` heredoc (POSIX append requirement).
-e. Release lock.
-f. LOG: "routing-outcomes.md updated (entry: <chain-used> | <duration-min>min | converged=<yes/no>)"
+b. If the file does not exist: create with header per schema doc (Write, ONCE).
+c. Append the row via `bash <plugin>/scripts/memory-write.sh --file=<project>/.mega-sdd/memory/routing-outcomes.md --scope=project --cwd=<project-root>` — the script owns the lock (3-retry backoff, `memory_in_use` telemetry on exhaustion), the secret scan, and the atomic append; exit ≠ 0 → log and continue (never a halt).
+d. LOG: "routing-outcomes.md updated (entry: <chain-used> | <duration-min>min | converged=<yes/no>)"
 
 ## Final summary appendix (--deep)
 

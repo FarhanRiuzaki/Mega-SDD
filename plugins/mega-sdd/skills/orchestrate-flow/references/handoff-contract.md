@@ -75,19 +75,21 @@ handoff:
     ui_stack: <string>                  # short-form summary, e.g., "alpine + tailwind + sweetalert2"
     libs_count: <int>                   # total libs detected in §libs
   metadata:                             # memory layer integration; optional otherwise
-    memory_context:                     # IN — orchestrator provides relevant memory slices to skill at invocation
-      project_decisions_relevant: []    # rows from <project>/.mega-sdd/memory/decisions.md matching the skill's domain (canonical)
-      project_conventions_relevant: []  # rows from conventions.md
-      vault_outcomes_relevant: []       # rows from <vault>/.memory/*.json matching this skill
-      user_patterns_relevant: []        # rows from ~/.mega-sdd/memory/patterns.md (when ≥1 matching pattern)
-      user_preferences_relevant: []     # rows from preferences.md (flag defaults)
-    memory_writes:                      # OUT — skill emits writes for orchestrator to persist
-      - file: <relative-or-absolute-path>
-        scope: user | project | vault
-        action: append | update
-        content: |
-          <markdown row or JSON entry to append>
-        source_run: <skill-name>@<timestamp>
+    memory_context:                     # IN — POINTER slice (M-16), never row text: the rows are already in
+                                        # session context from the chain-start read; a consumer not holding
+                                        # them (fresh/resumed session, forked skill) does a targeted Read
+      project_decisions_relevant:       # pointers into <project>/.mega-sdd/memory/decisions.md (canonical)
+        - {file: <path>, rows: [<date>+<oq-id|conflict-id>, …], digest: <one line>}
+      project_conventions_relevant: []  # same pointer shape, into conventions.md
+      vault_outcomes_relevant: []       # same shape, into <vault>/.memory/*.json (rows: unit/rule ids)
+      user_patterns_relevant: []        # same shape, into ~/.mega-sdd/memory/patterns.md
+      user_preferences_relevant: []     # same shape, into preferences.md
+    memory_writes:                      # OUT — write RECEIPT (M-16), never content: the skill has ALREADY
+                                        # appended its rows via scripts/memory-write.sh at emission time
+                                        # (the script secret-scans + locks + appends atomically)
+      files_written:                    # path LIST, not a bare count — the chain-end extract-learnings
+        - <absolute-path>               # pass and _index.md regen key off these paths
+      rows_appended: <int>
     model_tiers:                        # resolved model tier per named subagent role
       auth-extractor: sonnet            # example; actual entries depend on chain roles
       code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
@@ -197,7 +199,7 @@ TYPE: object — `{ snapshot_path: string (absolute path), divergence_classifica
 
 ### `metadata:` (OPTIONAL — memory layer integration; when active)
 
-TYPE: object — `{ memory_context: object, memory_writes: array<object> }`. Optional — memory layer off (`--memory-off`) omits this block entirely.
+TYPE: object — `{ memory_context: object (pointer slices), memory_writes: object ({ files_written: array<string>, rows_appended: int } — a write receipt, not content) }`. Optional — memory layer off (`--memory-off`) omits this block entirely.
 
 ### `model_tiers:` (CONDITIONAL — if orchestrate-flow resolved overrides)
 
@@ -292,29 +294,28 @@ Before invoking the first skill in `--deep` mode:
 1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
 2. Read project-scope: `<cwd-project-root>/.mega-sdd/memory/decisions.md` + `conventions.md` + `outcomes.md`
 3. Read vault-scope (if vault path detected in CWD): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
-4. Build per-skill memory slices (only what's relevant to each skill's domain)
-5. Pass slices to each skill via handoff YAML `metadata.memory_context` field at invocation
+4. Build per-skill POINTER slices (file path + row keys + one-line digest per relevant row — no row text; the rows entered session context in steps 1–3)
+5. Pass the pointer slices to each skill via handoff YAML `metadata.memory_context` field at invocation
 
-### Orchestrator memory write (after each phase, atomic per file)
+### Skill memory writes (emission time, per M-16)
 
-After each skill emits its handoff YAML with `metadata.memory_writes`:
+Skills persist their own rows; the orchestrator receives a receipt:
 
-1. Parse each write entry (file, scope, action, content)
-2. Resolve target path based on scope (user/project/vault)
-3. Append (or update with supersedes marker) the content to the target file
-4. Per MEMORY-OQ-6: append-only writes are atomic at fs level; concurrent runs do not collide
-5. Failed writes logged to chat but do NOT halt the chain (memory is optional)
+1. The skill appends each row via `scripts/memory-write.sh --file=<resolved-path> --scope=<scope> --cwd=<project-root>` at emission time — the script secret-scans the content (`[REDACTED-SECRET]` redaction), acquires the advisory lock, and appends atomically (MEMORY-OQ-6: append-only, race-tolerant). The skill resolves the absolute path per scope rules itself. An "update" is an append carrying a supersedes marker in the row text — memory files are append-only; nothing rewrites prior rows.
+2. The handoff carries only `metadata.memory_writes: {files_written: [<paths>], rows_appended: <int>}` — a receipt of writes already on disk, never content.
+3. `memory-write.sh` exit ≠ 0 → the skill logs and continues (memory is optional; never a chain halt); the failed path is omitted from the receipt.
+4. The orchestrator logs one chat line per `files_written` entry and unions the paths for the chain-end extract-learnings pass + `_index.md` regeneration.
 
 ### Skill responsibilities
 
 Per the `§metadata` extension in this contract:
 
-- Skill READS its memory slice from `metadata.memory_context` at startup (no disk re-read)
+- Skill consults the row text already in session context (chain-start read); when the pointed rows are not in context — fresh/resumed session, forked skill — it does a targeted Read of the pointed file/rows. Never infer row content from the digest alone.
 - Skill applies memory consultations per its own SKILL.md §Memory layer section
-- Skill builds its memory writes during execution
-- Skill emits all writes in `metadata.memory_writes` array at end
+- Skill appends its rows via `scripts/memory-write.sh` at emission time
+- Skill emits the write receipt in `metadata.memory_writes` at end
 
-This keeps autonomy mode FAST (memory I/O batched at orchestrator level) and CONSISTENT (single source of truth for memory state per chain run).
+This keeps autonomy mode FAST (row content transits chat once, at the chain-start read) and CONSISTENT (one deterministic writer script owns scan + lock + append for every memory file).
 
 ### Schema mismatch handling (per MEMORY-OQ-1)
 

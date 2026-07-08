@@ -270,6 +270,8 @@ When memory is enabled (default; opt-out via `--memory-off`), this skill partici
 | After a user resolves a halt (next session) | `<vault>/.memory/bolt-outcomes.json` | Update the prior entry: resolution=(user_reverted_code \| user_edited_unit \| user_force_committed \| user_skipped), resolution_at, resolution_note |
 | After a chain run completes | `<project>/.mega-sdd/memory/outcomes.md` | Append a run summary: phases run, halts encountered, total duration, hard rule violation count |
 
+Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<vault|project> --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue. The "update the prior entry" row (halt resolution) is an append carrying a supersedes marker — bolt-outcomes.json entries stay append-only.
+
 **Reads:**
 
 | What | Source | How used |

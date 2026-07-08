@@ -96,6 +96,8 @@ When memory is enabled (default; opt-out via `--memory-off`), participate in the
 | At Step 0.5–0.7 flag setup | `~/.mega-sdd/memory/preferences.md` | Update flag tally: increment the count for the picked value (OUTPUT_MODE, PRD_STATUS, IMPLEMENTATION_MODE, PROJECT_SHAPE) |
 | After OQ auto-classifier runs (Step 3.5) | `<vault>/.memory/classifier-accuracy.json` | Append a run entry with tags_emitted + user_overrides (when the user flips a tag in review) + accuracy_estimate |
 
+Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<user|vault> --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue. The preferences flag tally is an in-place counter update, not a row append — read the file, recompute the tally line, and rewrite the whole (small) file via the SAME script with `--mode=overwrite` (still scanned, locked, atomic; never a bare `Write`/`Edit`).
+
 ### Reads
 
 | What | Source | How used |

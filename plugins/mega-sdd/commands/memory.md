@@ -41,4 +41,4 @@ Hard rails (anti-halu):
 
 On completion, the skill outputs operation-specific results (table, list, JSON, or interactive walk). Memory operations are side-skill — they do NOT trigger pipeline continuation.
 
-For pipeline integration: when running under `/mega-sdd:auto --deep`, the orchestrator reads memory ONCE at chain start and passes relevant slices to skills via handoff YAML `metadata.memory_context` (per MEMORY-OQ-7). Skills emit writes via handoff `metadata.memory_writes`; orchestrator batches persistence at chain end.
+For pipeline integration: when running under `/mega-sdd:auto --deep`, the orchestrator reads memory ONCE at chain start and passes POINTER slices (file + row keys + digest, never row text) to skills via handoff YAML `metadata.memory_context` (per MEMORY-OQ-7 as amended by M-16). Skills append their own rows via `scripts/memory-write.sh` at emission time; the handoff `metadata.memory_writes` carries only the write receipt (`files_written` paths + `rows_appended`).

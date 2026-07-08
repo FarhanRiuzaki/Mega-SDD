@@ -64,7 +64,7 @@ For specific producers, validate that their emitted metrics are consistent with 
 
 ## Propagation
 
-After all checks pass, propagate handoff metadata to the next skill in the chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification. The memory slice for the next skill is built from the updated state.
+After all checks pass, propagate handoff metadata to the next skill in the chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification. The memory POINTER slice for the next skill is built from the updated state (pointers only — row text never re-transits; see `memory-layer.md §Per-phase invocation`).
 
 ## Orchestrator consumption loop
 
