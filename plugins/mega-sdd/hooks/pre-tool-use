@@ -553,8 +553,16 @@ if d and d.get("status") == "FAIL":
 if fails:
     prefix = ""
     if len(fails) > 1:
-        prefix = "[%d execute-bolts gates are failing: %s — fix ALL before re-running; each is reported in turn] " % (len(fails), ", ".join(n for n, _ in fails))
-    print("mega-sdd:execute-bolts is blocked — " + prefix + fails[0][1])
+        # M-07: emit the remediation of EVERY failing gate in the ONE deny (was
+        # fails[0] only — each extra gate cost a full deny→fix→re-invoke cycle).
+        # Strictly more information per block; identical block semantics.
+        prefix = "[%d execute-bolts gates are failing: %s — fix ALL before re-running] " % (len(fails), ", ".join(n for n, _ in fails))
+        body = " ||| ".join("(%s) %s" % (n, m) for n, m in fails)
+        if len(body) > 2500:
+            body = body[:2500] + "… [truncated — run /mega-sdd:analyze for the full list]"
+        print("mega-sdd:execute-bolts is blocked — " + prefix + body)
+    else:
+        print("mega-sdd:execute-bolts is blocked — " + fails[0][1])
 ' 2>/dev/null)
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
     fi
@@ -664,7 +672,7 @@ if d and d.get("status") == "FAIL":
     # ECC-adoption Batch 1 (spec 2026-06-12-instincts-and-gateguard-design.md §B).
     # The FIRST edit touching a file anchored to a [LOCKED] claim is denied with
     # the exact investigation to perform; the RETRY passes (session-scoped state,
-    # 30-min expiry). Empty/absent index (greenfield, no LOCKED markers) = inert.
+    # session-lifetime dedup per M-07 — no time expiry; 500-entry LRU). Empty/absent index (greenfield, no LOCKED markers) = inert.
     # Fast path: two stat-class checks before any python.
     [ -z "${FILE_PATH_B64:-}" ] && exit 0
 
@@ -769,7 +777,11 @@ try:
         state = s
 except Exception:
     pass
-entries = {k: v for k, v in state.get("entries", {}).items() if now - v < 1800}
+# M-07: session-LIFETIME dedup (was a 1800s window — any bolts run >30 min
+# re-denied the SAME file + forced a re-investigation the session already did,
+# ~1-3K tokens each). First touch per file per session still gets the full
+# deny + prescription; the session_id key + 500-entry LRU bound the state.
+entries = dict(state.get("entries", {}))
 if rel in entries:
     raise SystemExit(0)  # already investigated this session — allow
 

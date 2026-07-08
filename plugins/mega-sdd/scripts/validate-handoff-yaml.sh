@@ -176,20 +176,47 @@ except Exception:
 # Two patterns:
 #   (a) fenced code block:  ```yaml\nhandoff:\n  ...\n```
 #   (b) inline:             handoff:\n  ...\n<blank line or end>
-def extract_handoff_block(text):
-    # Try fenced code block first
-    m = re.search(r"```(?:yaml|yml)?\s*\n(\s*handoff:.*?)\n```", text, re.DOTALL)
-    if m:
-        return m.group(1)
-    # Try inline — handoff: line followed by indented block
-    m = re.search(r"(?:^|\n)(\s*handoff:\s*\n(?:[ \t]+\S.*\n)+)", text, re.DOTALL)
-    if m:
-        return m.group(1)
-    return None
+def extract_handoff_blocks(text):
+    """ALL candidate blocks, in document order (B2 review: the old single
+    re.search validated only the FIRST match — a sub-skill quoting an upstream
+    handoff before emitting its own got the WRONG block silently validated,
+    re-opening audit closure D3-001)."""
+    blocks = [m.group(1) for m in re.finditer(
+        r"```(?:yaml|yml)?\s*\n(\s*handoff:.*?)\n```", text, re.DOTALL)]
+    if not blocks:
+        blocks = [m.group(1) for m in re.finditer(
+            r"(?:^|\n)(\s*handoff:\s*\n(?:[ \t]+\S.*\n)+)", text)]
+    return blocks
 
-handoff_text = extract_handoff_block(response)
+def _block_emitter(b):
+    m = re.search(r"emitted_by:\s*([^\s#]+)", b)
+    return m.group(1) if m else None
 
-if handoff_text is None:
+_blocks = extract_handoff_blocks(response)
+handoff_text = None
+_conflicting_emitters = None
+if _blocks:
+    _emitters = [e for e in (_block_emitter(b) for b in _blocks) if e]
+    if len(set(_emitters)) > 1:
+        _conflicting_emitters = sorted(set(_emitters))
+    else:
+        # The producer's OWN emission is last-in-message; quoted duplicates of
+        # the SAME emitter validate identically either way.
+        handoff_text = _blocks[-1]
+
+if _conflicting_emitters is not None:
+    result = {
+        "status": "FAIL",
+        "halt_type": "handoff_missing",
+        "details": {
+            "reason": "multiple `handoff:` blocks with CONFLICTING emitted_by values — cannot determine the producer's own emission",
+            "conflicting_emitted_by": _conflicting_emitters,
+            "blocks_found": len(_blocks),
+            "response_tail": response[-300:] if len(response) > 300 else response,
+        },
+        "next_action": {"hint": "the sub-skill chat contains handoff blocks from different emitters (e.g. a quoted upstream handoff plus its own). Re-run the producer standalone; it must quote foreign handoffs OUTSIDE a yaml fence or not at all."},
+    }
+elif handoff_text is None:
     # handoff_missing
     result = {
         "status": "FAIL",
@@ -291,6 +318,20 @@ else:
             for f in DICT_FIELDS:
                 if f in h and h[f] is not None and not is_dictish(h[f]):
                     type_errors.append(f"{f} must be an object/map when present, got scalar {h[f]!r}")
+            # B2 review (M-04): metrics.items_processed gates the downstream
+            # bolt_artifacts_missing check — a non-numeric value silently
+            # neutralized it (None -> conservative no-fire). Hard-check the one
+            # nested sub-field a gate depends on.
+            # Mirror the downstream _items_processed() tolerance EXACTLY (re.search
+            # for the first integer, so an inline "12  # units executed" comment the
+            # no-deps parser leaves attached still parses) — fire ONLY when a present,
+            # non-null value yields NO extractable integer (e.g. "many"), the case
+            # that silently neutralized the gate.
+            if isinstance(h.get("metrics"), dict) and "items_processed" in h["metrics"] \
+                    and h["metrics"]["items_processed"] is not None:
+                _ip = h["metrics"]["items_processed"]
+                if not re.search(r"-?\d+", str(_ip)):
+                    type_errors.append(f"metrics.items_processed must be an int when present, got {_ip!r}")
             # next_action.confidence (Iter-79 O-4): when present must be a number in [0,1] or
             # null. Parser-tolerant — coerce the string the no-deps parser hands us.
             if isinstance(na, dict) and "confidence" in na and na["confidence"] is not None:

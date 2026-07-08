@@ -78,24 +78,21 @@ Language-appropriate comment style (e.g. `//` for JS/PHP/Java, `#` for Python/Ru
 
 ## Compact streaming progress
 
-Per-bolt status emitted as a compact streaming format (chat-friendly, updated in place):
+Per-bolt status is TWO lines (M-05 — the old 7-line ▶/└─ block duplicated `_summary.md`, which persists the same detail to disk; ~2.2K tok saved on a 20-bolt batch):
 
 ```
 ▶ Bolt 7/20: U-007 "Create User model" (scope: BE)
-  └─ Context: 6 upstream loaded, 3 anti-patterns flagged, confidence HIGH
-  └─ Pre-flight: Hard Rules ✓ | PBT ready ✓ | Anchors verified 3/3 ✓
-  └─ Execution: TDD red ✓ → green ✓ (45s)
-  └─ Post-flight: Hard Rules ✓ | PBT ✓ | Drift check: clean ✓
-  └─ Commit: 8a3f2e1 "feat(U-007): create User model"
-✓ Bolt 7/20: U-007 → done in 1m23s, 0 retries, confidence 0.92
+✓ Bolt 7/20: U-007 → done in 1m23s, 0 retries, confidence 0.92, anchors 3/3 ✓, commit 8a3f2e1
 ```
 
-> **"Anchors verified N/N" honesty:** print that line ONLY after actually probing each
+Intermediate stage detail (context load, pre-flight, TDD phases, post-flight verdicts) goes to `_summary.md` only — print it in chat ONLY when a stage fails (the failing stage's line + the halt).
+
+> **"anchors N/N" honesty:** print that count ONLY after actually probing each
 > `## Anchors` path at prompt-assembly time (path exists; when the binding recorded an
 > excerpt/sha, the region still matches). A stale anchor is NOT a halt — inject
 > `ANCHOR STALE (verify before use)` in place of its confidence label in the dispatch
-> prompt and print `Anchors: N-1/N ✓, 1 stale` here. Never print a verified count no
-> check produced.
+> prompt and print `anchors N-1/N ✓, 1 stale` in the done line. Never print a verified
+> count no check produced.
 
 After the batch (printed at the end of an `--all` run):
 

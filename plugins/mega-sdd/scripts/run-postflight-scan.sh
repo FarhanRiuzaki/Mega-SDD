@@ -118,7 +118,14 @@ with open(tmp, "w") as f:
     json.dump(artifact, f, indent=1)
 os.replace(tmp, target)
 if not quiet:
-    print(json.dumps(artifact, indent=1))
+    # M-05: the B1 gate reads the ARTIFACT file, never stdout — dumping the full
+    # rules[] (verbatim rule text + evidence, ~350 tok/unit) on every passing
+    # per-unit run was pure chat cost. One line on pass; full artifact on fail.
+    if ok_all:
+        n_att = len([r for r in results if r.get("verdict") == "attested"])
+        print("postflight %s: pass (%d rules, %d attested) -> %s" % (unit_id, len(results), n_att, target))
+    else:
+        print(json.dumps(artifact, indent=1))
 sys.exit(0 if ok_all else 1)
 PYEOF
 PF_EXIT=$?

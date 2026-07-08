@@ -110,3 +110,6 @@ Per-skill target (descending priority by overage):
 - TDD-for-skills: before keeping a slimmed skill, confirm it still triggers + behaves on its `tests/skill-triggering/*.test.md` fixture.
 - Strangler, not rewrite: each phase ships independently on `v4-lean-core`; moat behavior verified against TF-Import artifacts each phase.
 - Reversible: all work on the branch; nothing merged until a phase passes its acceptance.
+
+
+> **Amendment (2026-07-06, token-efficiency B2/M-07):** the execute-bolts PreToolUse gate aggregator emits the remediation of EVERY failing gate in the single deny (joined, capped ~2500 chars with a /mega-sdd:analyze pointer), instead of fails[0] only — each additional failing gate previously cost a full deny→fix→re-invoke cycle. Identical block semantics; strictly more information per block.

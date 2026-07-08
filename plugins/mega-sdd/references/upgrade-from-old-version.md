@@ -43,14 +43,14 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | 57 | v3.38.1 | CRITICAL fix-forward (B-P1 + D1 + F-E-2) | binding.md gains `binding_metadata:` block (additive); `--rollback` menu default flipped to `[I] interactive` (safer) |
 | 58 | v3.39.0 | Halt taxonomy: +9 enum entries + `quality_gate_failed` subtypes | downstream consumers branch on `details.subtype` for `quality_gate_failed` |
 | 59 | v3.39.1 | Contract sweep: emit-fsd + install-deps Per-skill blocks | adds TYPE annotations (advisory until Iter 60) |
-| 60 | v3.40.0 | **F4 bypass tightening — anti-halu rail behavior change** | fields without TYPE annotation halt-against-author; migration via `--legacy-type-bypass` for one chain run |
+| 60 | v3.40.0 | **F4 bypass tightening — anti-halu rail behavior change** | fields without TYPE annotation halt-against-author; migration via `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` for one chain run |
 | 61 | v3.40.1 | Catch-all P2/P3 closure | emit-fsd citation slot extraction wired (Iter 54 dead-code fixed); test fixtures added |
 | 62 | v3.41.0 | Remaining Iter 56 audit closure (scenario sweep + doc bulk) | scenario-6 +8 walkthroughs; predictive-check coverage extended; `next_action` canonical shape documented |
 
 ## Recommended upgrade paths
 
 - **v3.0-v3.25 → v3.41.0:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
-- **v3.26-v3.37 → v3.41.0:** use Path B with `--legacy-type-bypass` flag for first chain run; remove flag after handoff TYPE annotations are in place.
+- **v3.26-v3.37 → v3.41.0:** use Path B with `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` flag for first chain run; remove flag after handoff TYPE annotations are in place.
 - **v3.38-v3.40 → v3.41.0:** seamless upgrade; existing chains compatible.
 
 ## Compatibility matrix
@@ -69,7 +69,7 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | Old `memory_schema:` version stamp | May halt `memory_schema_mismatch` | `/mega-sdd:memory migrate` |
 | Pre-Iter-30 bolt-reports without provenance trailer | New bolts OK; re-running old bolts halts | Skip re-runs OR add trailer manually |
 | Pre-Iter-33 handoff YAML missing `scope:`/`mutability:` blocks | Halt `invalid_handoff` on re-run via orchestrate-flow Step 6.b validation gate | Edit handoff template OR regenerate vault (Path A) |
-| Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | Run with `--legacy-type-bypass` flag for one chain run; fix handoff-contract.md TYPE annotations; remove flag |
+| Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | Run with `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` flag for one chain run; fix handoff-contract.md TYPE annotations; remove flag |
 | Pre-Iter-58 chain emitting halt names from the 9 newly-enumerated orphans | Now accepted (Iter 58 closed enum gap) | None — no action needed |
 
 ## Migration commands — run in this order
