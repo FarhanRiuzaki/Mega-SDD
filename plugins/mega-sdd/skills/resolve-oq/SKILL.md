@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.3.1
+version: 2.4.0
 description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, and bumps version + Changelog. Also resolves CONFLICT entries from a binding.md (`--binding`). Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -33,7 +33,7 @@ For each OQ the user (with the skill prompting) chooses one of four outcomes. Th
 | **Defer** (`[B]` to binding / stakeholder) | Keep open with stakeholder, deadline, or condition; or mark code-aware for `bind-codebase`. | `[ ]` + `**Deferred (v{X.Y})**: <reason / who / when>` | `deferred` |
 | **Skip** (`[D]`) | No vault change; revisited on the next pass. | unchanged | unchanged (pending) |
 
-Option `[B] Defer to binding` is shown ONLY when vault `mode: existing` (brownfield) AND CWD has repo signals (`.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`). Greenfield / no signals → user sees only `[A]`, `[C]`, `[D]`.
+Option `[B] Defer` is ALWAYS visible in the standard walk (stakeholder defer must be reachable in every context — the "No invention" rule routes `idk`/`whatever` here; the `--binding` propagated-OQ walk hides [B] per `references/binding-mode.md` — nested deferral not supported). Its `to binding` sub-target is offered ONLY when vault `mode: existing` (brownfield) AND CWD has repo signals (`.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`); greenfield / no signals → `[B]` offers the stakeholder defer only.
 
 ## Workflow (compact)
 

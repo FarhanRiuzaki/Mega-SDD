@@ -16,7 +16,7 @@ Everything downstream of the per-unit gates: the halt protocol (blocker envelope
 
 ## Halt protocol
 
-Per the bolt-contract failure modes (the bolt-contract ref listed in SKILL.md). Always emit a blocker YAML on halt:
+Per the bolt-contract failure modes (the bolt-contract ref listed in SKILL.md). BEFORE the envelope YAML, render the keterangan block per `plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` step 0 — resolve the cause/unit to actual text (which Hard rule, which test, quoted), one line of why the bolt stopped, and gloss each `next_action` code with its consequence (this applies on STANDALONE `/mega-sdd:execute-bolts` runs too, not only under the orchestrator). Then emit the blocker YAML:
 
 ```yaml
 blocker:

@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.1.0
+version: 2.2.0
 description: Evolves an existing mega-sdd vault when the PRD/BRD/Figma source changes. Computes a structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes — without erasing history. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 
@@ -45,7 +45,7 @@ Every diff item lands in one of these. The skill walks them in this order:
 
 The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR` / `NEW_SOURCE_PATHS` / `DIFF_SCOPE` at the start of each major step.
 
-**Step 0 — Inputs (MANDATORY).** Vault path (same auto-detection as `resolve-oq`; verify all 7 files exist + `00-index.md` has a Vault Lock Status section). New source path(s) — accept PDF / DOCX / MD / TXT; multiple allowed (e.g., new PRD + new tokens.json). Git safety check — run `git status` in the vault dir; if uncommitted, `AskUserQuestion` `["Yes, I'll commit first then re-invoke", "No, proceed anyway", "Cancel"]`. Persist `VAULT_DIR` and `NEW_SOURCE_PATHS` as absolute paths.
+**Step 0 — Inputs (MANDATORY).** Vault path (same auto-detection as `resolve-oq`; verify all 7 files exist + `00-index.md` has a Vault Lock Status section). New source path(s) — accept PDF / DOCX / MD / TXT; multiple allowed (e.g., new PRD + new tokens.json). Git safety check — run `git status` in the vault dir; if uncommitted, `AskUserQuestion` — question states the situation + consequence ("Vault dir punya uncommitted changes (<ringkas git status>). Diff-apply menulis 7 file + vault.json — tanpa commit, tidak ada rollback point."); options: `Yes, I'll commit first then re-invoke` **(recommended — commit-before-diff per the Hard rules)**, `No, proceed anyway` — perubahan tidak bisa di-revert via git, `Cancel`. Persist `VAULT_DIR` and `NEW_SOURCE_PATHS` as absolute paths.
 
 **Step 0.5 — Diff scope (MANDATORY).** `full` (default — diff every doc; for significant revisions) | `oq-only` (only check whether open OQs are now answered; skip entity/flow/decision diff; fast pass for minor clarifications) | `specific-docs` (user lists docs, e.g. "just `04-flows.md` and `06-constraints.md`"). Persist `DIFF_SCOPE`. Echo the plan. **Scope honesty:** if the user picks `oq-only`, do NOT secretly diff entities/flows.
 

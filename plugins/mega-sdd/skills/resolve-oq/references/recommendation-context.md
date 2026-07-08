@@ -168,10 +168,13 @@ Options:
      description: <rationale>. Source: <citation>. Fallback-if-wrong: <fallback>. Confidence: <HIGH|MEDIUM>.
 
   2. <alternative answer 1>
-     description: ...
+     description: <MANDATORY — what this alternative means + when you'd pick it over the
+       recommendation; if it has a source, cite it, else say "no source — common alternative".
+       NEVER left blank/"..." and NEVER given a fabricated citation.>
 
   3. <alternative answer 2>
-     description: ...
+     description: <same mandate as option 2>
+
 
   4. Defer (mark as deferred for later)
      description: Skip this OQ for now; revisit in next session.

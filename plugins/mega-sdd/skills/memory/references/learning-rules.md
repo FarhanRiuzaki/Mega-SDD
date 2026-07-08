@@ -196,9 +196,12 @@ suggestion:
 
 1. Read `~/.mega-sdd/memory/patterns.md` `## Pending suggestions` section
 2. For each pending suggestion:
-   - Show via `AskUserQuestion`:
+   - Show via `AskUserQuestion` (keterangan contract — each option carries its consequence; codes stay English):
      - **Question**: "Mega-SDD observed pattern X (Y times, confidence Z). Suggested action: <action>. ACCEPT?"
-     - **Options**: ACCEPT / REJECT / DEFER
+     - **Options**:
+       - `ACCEPT` — tulis ke learning-log + update `<target file>`; berlaku mulai run berikutnya; bisa di-rollback via `/mega-sdd:memory review` (audit trail dipertahankan)
+       - `REJECT` — dicatat dengan alasan lo; observasi yang sama tidak memicu suggestion lagi
+       - `DEFER` — tetap pending; setelah lebih dari 3× defer otomatis di-prune (dianggap tidak relevan)
 3. On ACCEPT:
    - Write entry to `~/.mega-sdd/memory/learning-log.md`
    - Update target heuristic file (e.g., add row to vault-contract.md auto-classifier table, set config.yaml `applied:` entry)

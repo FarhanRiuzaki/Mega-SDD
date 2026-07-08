@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.15.0
+version: 1.16.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild. Wave-based parallel-subagent extraction produces `.mega-sdd/knowledge-base/` with `[VERIFIED]/[INFERRED]/[OPEN]` confidence markers and `[LOCKED]/[INTENT]/[ARTIFACT]` mutability tiers — KB is an analysis input that drives REENGINEERING recommendations, not a 1:1 mirror of legacy. Output consumable by `mega-sdd:generate-intent` (Mode B via `--kb`) and `mega-sdd:bind-codebase` as secondary ground truth. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -194,7 +194,9 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
 
-If the same gate fails twice for the same agent → halt with the gate output. User decides whether to re-scope, re-prompt, or abort.
+**Per-wave confirmation (skipped under `--auto`)** — rendered per the keterangan contract: show the wave summary (domains covered, marker counts `[VERIFIED]/[INFERRED]/[OPEN]`, gate results), then options: `Lanjut wave N+1` **(recommended when all gates green)** — dispatch wave berikutnya; `Review output dulu` — pause, KB file paths ditampilkan untuk dibaca; `Stop` — KB partial tersimpan, bisa dilanjut nanti.
+
+If the same gate fails twice for the same agent → halt, SHOW the gate output (the actual failing checks, not just the gate name), and ask with per-option consequences: `Re-scope` — persempit domain assignment agent-nya, dispatch ulang; `Re-prompt` — dispatch ulang dengan feedback spesifik dari gate output; `Abort` — KB partial disimpan di disk (file per wave yang sudah lolos gate); tidak ada auto-resume — re-run mengulang wave-nya.
 
 ## Synthesis wave (main thread only)
 

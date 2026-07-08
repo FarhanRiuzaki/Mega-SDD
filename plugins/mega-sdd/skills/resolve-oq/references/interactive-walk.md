@@ -42,16 +42,19 @@ Loaded by `resolve-oq` for the standard (non-`--binding`) walk. The SKILL.md bod
 1. Parse `00-index.md` `## Changelog` for entries from prior runs of this skill (look for `### v{X.Y} (YYYY-MM-DD)` entries that say "Resolved N OQs via resolve-oq").
 2. If a prior round exists:
    - Show: *"Vault is currently at v{X.Y}. Last resolution round on {date} resolved {N} OQs. {M} OQs are still `[ ]` open."*
-   - Ask via `AskUserQuestion`: `["Continue from current state", "Start fresh review of all open OQs", "Cancel"]`.
+   - Ask via `AskUserQuestion` — every option carries its keterangan (what it does to the queue), per `plugins/mega-sdd/references/output-language.md §Prompt surfaces`:
+     - `Continue from current state` **(recommended — idempotent per the Atomicity rule)** — walk only the {M} still-open `[ ]` OQs, with the prior round's stats shown as context; prior resolutions untouched.
+     - `Start fresh review of all open OQs` — the QUEUE is identical (the same still-open `[ ]` set; resolved `[x]` / out-of-scope `[~]` entries are NEVER re-opened and skips are not tracked) — the only difference is framing: the prior round's stats/changelog context is disregarded.
+     - `Cancel` — exit now; nothing written.
 3. If no prior round: this is the first resolution pass. Continue.
 
 ## Step 0.6 — Resolution scope (MANDATORY, after resume detection)
 
 Ask the user which OQs to walk through this session:
 
-- **`p1-only`** — only Priority 1 OQs (sprint-0 blockers). Recommended for a focused first pass.
+- **`all-priorities`** **(recommended)** — ONE walk, P1 → P2 → P3 in order (the blocking tier still resolves first); avoids re-entering and re-reading the whole vault for a separate P2 pass. (Single source of the default — mirrors SKILL.md Step 0.6.)
+- **`p1-only`** — only Priority 1 OQs (sprint-0 blockers). Pick this only when P2/P3 are deliberately deferred to a later session.
 - **`p1-then-p2`** — P1 first, then P2. Skip P3.
-- **`all-priorities`** — full P1 → P2 → P3 walk. Long session.
 - **`by-category`** — group by category from the roll-up (e.g., "PRD inconsistencies" first, "Tech stack" second). Useful when each category aligns with a different stakeholder.
 - **`single-oq`** — jump to a specific OQ tag (e.g., `OQ-FL-1`). For quick targeted resolution.
 
@@ -107,23 +110,26 @@ OQ-<DOC>-<NNN> (<priority>, section <filename>)
 
 Choose action:
   [A] Answer now              — provide stakeholder resolution inline
-  [B] Defer to binding        — code-dependent OQ; resolve at bind-codebase phase
+  [B] Defer                   — you can't answer now: route to a stakeholder (who / by when / what
+                                unblocks it); in brownfield ALSO offers "to binding" (code-dependent
+                                OQ, resolved at bind-codebase phase)
   [C] Out of scope            — declare irrelevant to current spec
   [D] Skip                    — leave pending, decide later
 ```
 
-**Conditional display of Option [B].** Option [B] appears ONLY when ALL of these are true:
+**[B] Defer is ALWAYS visible** — a stakeholder defer must be reachable in every context (the "No invention" hard rule routes `idk`/`whatever` here; a greenfield user waiting on legal/PM needs it too). Only its **`to binding` sub-target** is conditional, offered when ALL of these are true:
 - Vault `mode: existing` (brownfield)
 - CWD has repo signals (any of `.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`)
 
-In greenfield contexts OR when no repo signals detected, suppress Option [B] from the menu. The user sees only [A], [C], [D].
+In greenfield contexts OR when no repo signals detected, [B] offers the stakeholder defer only.
 
 **Per-action state transitions:**
 
 | Action | OQ field changes |
 |---|---|
 | A — Answer | `status: resolved`, `resolved_at: <now>`, `resolution: <answer text>` |
-| B — Defer to binding | `status: deferred`, `defer_to: binding`, `deferred_at: <now>`, `deferred_reason: <optional user-provided text>` |
+| B — Defer (stakeholder) | `status: deferred`, `defer_to: stakeholder`, `deferred_at: <now>`, `deferred_reason: <who / by when / unblock condition>` |
+| B — Defer (to binding; brownfield sub-target) | `status: deferred`, `defer_to: binding`, `deferred_at: <now>`, `deferred_reason: <optional user-provided text>` |
 | C — Out of scope | `status: out-of-scope`, `out_of_scope_reason: <text>` |
 | D — Skip | (no field changes; OQ remains pending) |
 

@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.14.0
+version: 2.15.0
 description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -75,7 +75,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 
    [Run] [Edit] [Cancel]
    ```
-   Confirmation is ONE-TIME for the chain proposal; halts are NOT additional confirmations — they're interventions on real issues.
+   Per the keterangan contract (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`) each option carries its description: `Run` **(recommended)** — jalankan semua N fase end-to-end, berhenti hanya di blocker nyata; `Edit` — hanya `skip step N` / `stop after step N` (bukan reorder); `Cancel` — tidak ada fase yang dijalankan. Confirmation is ONE-TIME for the chain proposal; halts are NOT additional confirmations — they're interventions on real issues.
 
 7. **Execute chain.** Dispatch sub-skills with the `--auto` flag. Pause on blocker artifacts (any type) per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. `resolve-oq` is always interactive on per-OQ choices.
 
@@ -142,6 +142,8 @@ blocker:
     resolution: "update vault.mode to match CWD" | "re-detect by moving to clean dir"
   next_action: "Confirm correct mode then re-run /mega-sdd:orchestrate-flow"
 ```
+
+When this prompt reaches the user (i.e. the C1 chain-time re-detect did not already fix it — e.g. the user passed an explicit mode flag), the recommended default is the CWD-detected mode (CWD signals are ground truth per halt-protocol) and each resolution carries its consequence: `update vault.mode to match CWD` **(recommended)** — `existing` mengaktifkan detect-drift + verifikasi terhadap code lama sebelum menyentuhnya, `greenfield` melewatinya; `re-detect by moving to clean dir` — pakai kalau CWD-nya memang salah (misal vault greenfield tersimpan di dalam repo lain).
 
 ## Convergence loops + checkpoints
 

@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.5.0
+version: 1.6.0
 description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -104,7 +104,7 @@ Per `plugins/mega-sdd/references/paths.md`:
 
 1. **Detect vault**. Walk CWD for `<project>/.mega-sdd/vaults/*/vault.json` FIRST, then fall back to `<project>/docs/mega-sdd/vaults/*/vault.json` (legacy). OR accept explicit positional arg.
 2. **Check existing AGENTS.md**:
-   - If `<repo-root>/AGENTS.md` exists AND has no mega-sdd generation marker → halt; ask user choice (overwrite / append / sibling)
+   - If `<repo-root>/AGENTS.md` exists AND has no mega-sdd generation marker → halt; ask user choice per the glossed menu in §Halt conditions (sibling recommended; overwrite flagged destructive)
    - If exists AND has mega-sdd marker → safe to regenerate (idempotent)
 3. **Read vault sources**:
    - `vault.json` for structured metadata (project shape, mode, OQ counts)
@@ -131,7 +131,7 @@ Per `plugins/mega-sdd/references/paths.md`:
 
 ## Halt conditions
 
-- AGENTS.md exists, user-authored, no marker → halt; ask `overwrite | append | sibling` via AskUserQuestion
+- AGENTS.md exists, user-authored, no marker → halt; ask via AskUserQuestion with the glossed menu (keterangan contract): `sibling` **(recommended — the safe default per the Hard rails)** — tulis `AGENTS.mega-sdd.md` terpisah, file lo tidak disentuh; `append` — konten mega-sdd ditambahkan di bawah marker, teks manual dipertahankan; `overwrite` — **DESTRUKTIF**: AGENTS.md lama diganti seluruhnya, isi manual hilang
 - Vault not detected → halt; ask user for explicit path
 - vault.json missing required fields → halt; vault is corrupt; instruct repair
 

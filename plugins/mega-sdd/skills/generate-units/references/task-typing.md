@@ -93,7 +93,21 @@ When binding state is **PARTIAL_FIELDS_SURPLUS**:
 - **ADD** sub-list = (empty)
 - **KEEP** sub-list = `field_diff.KEEP`
 - **REMOVE** sub-list = `field_diff.REMOVE` with CAUTION note
-- INTERACTIVE prompt fires: user decides if surplus is feature drift / vault gap / legacy / rename
+- INTERACTIVE prompt fires — rendered per the keterangan contract (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`), never a bare category list:
+
+  ```
+  <entity> punya field SURPLUS di code yang tidak ada di vault claim:
+  > Vault claim: <claim text> (<vault doc §section>)
+  > Surplus fields: <list> (<binding.md row / code anchor>)
+
+  Apa status surplus ini?
+    [1] Feature drift   — field valid tapi belum terdokumentasi; field jadi KEEP di Migration notes + dicatat di unit ## Open questions (vault di-update via resolve-oq/diff-vault setelahnya — BUKAN oleh generate-units)
+    [2] Vault gap       — vault-nya kurang lengkap; field jadi KEEP di Migration notes + dicatat sebagai vault-gap note (perbaikan vault di-route ke diff-vault/sync — generate-units tidak menulis vault)
+    [3] Legacy deprecation — field memang mau dihapus; masuk REMOVE di Migration notes (bolt akan menghapusnya)
+    [4] Rename          — field lama → nama baru; map lama→baru di Migration notes
+  ```
+
+  Recommended default: when the surplus field carries data in a production-looking table (migrations/seeds reference it), suggest `[1] Feature drift` — deletion is the destructive branch and needs positive evidence, never a default.
 
 When binding state is **PARTIAL_FIELDS_BOTH**:
 - Both lists populated; HUMAN REVIEW mandatory before bolt

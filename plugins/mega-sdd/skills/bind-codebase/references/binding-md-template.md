@@ -75,6 +75,16 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 > (a TITLE like "tickets are auto-resolved", a `Status: NOT RESOLVED` line, Suggested-action
 > text) does NOT count (and must not — business vocabulary would silently open the gate).
 
+> **Enum legend (keterangan contract).** binding.md is a durable ARTIFACT — the legend below is
+> written in English here (Tier-3: artifact language, per output-language.md); the DISPLAYER
+> localizes it at prompt time (halt-protocol §Consumer dispatch step 0 / the resolve-oq
+> --binding menu carry the Tier-2 rendering). Codes stay English everywhere (Tier-1).
+> KEEP_VAULT = the vault is right; code must change to match (patch lands later).
+> KEEP_CODE = the vault is wrong; the vault is updated to match code reality.
+> DEFER = downgraded to an OQ; the binding gate OPENS and units generate carrying the OQ
+> (execute-bolts prompts at the unit's "TBD: OQ-XXX" before the bolt finalizes).
+> SPLIT = the claim is split into sub-claims, each re-bound separately.
+
 | ID | Vault Claim | Codebase Reality | Resolution Needed |
 |---|---|---|---|
 | CONFLICT-1 | ... | ... | KEEP_VAULT / KEEP_CODE / DEFER / SPLIT |
@@ -85,7 +95,7 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 - **conflict_class**: naming-collision | signature-drift | semantic | regulatory
 - **resolution_complexity**: low | medium | high
 - **Verdict**: CONFLICT (BLOCKING)
-- **Suggested action**: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+- **Suggested action**: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT — <1-line rationale citing the evidence anchor; the enum never surfaces bare>
 
 ## Open Questions (N)
 | ID | Question | Source | Auto-resolve attempted |

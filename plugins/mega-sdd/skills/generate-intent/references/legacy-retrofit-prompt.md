@@ -113,7 +113,7 @@ After subagent returns:
    - Proposed frontmatter
    - Section rename operations
 3. Show overall_confidence prominently
-4. AskUserQuestion: accept / review per scope / skip retrofit / cancel
+4. AskUserQuestion: accept / review per scope / skip retrofit / cancel — glossed per `setup-flow.md` Step 0.9c (same canonical code names; each option carries its consequence)
 5. On accept:
    - Write retrofit to `<prd-name>.retrofit.md` (sibling of original)
    - DO NOT modify original
