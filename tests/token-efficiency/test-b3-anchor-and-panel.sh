@@ -45,10 +45,15 @@ CLR=$(drive clear);    LCLR=${#CLR}
 UNK=$(drive weird);    LUNK=${#UNK}
 
 echo "$FULL" | grep -q "When this applies" && ok "M-13b: startup injects the FULL routing core" || fail "M-13b: startup missing full core"
-if ! echo "$RES" | grep -q "When this applies" && [ "$LRES" -lt 300 ]; then
-  ok "M-13b: resume SKIPS the anchor (len=$LRES, no routing core — already in transcript)"
+# resume injects ZERO anchor: neither the FULL core marker ("When this applies")
+# nor the SLIM core marker ("Hard gate"). Its length is env-dependent — dynamic
+# notices (dep_missing, superpowers WARN) fire regardless of source and legitimately
+# inflate it (CI has no tree-sitter/ast-grep/superpowers), so we check CONTENT, not
+# an absolute byte threshold. The dynamic notices are the intended "keep on resume".
+if ! echo "$RES" | grep -q "When this applies" && ! echo "$RES" | grep -q "Hard gate"; then
+  ok "M-13b: resume SKIPS the anchor entirely (no full core, no slim core — already in transcript; len=$LRES incl. dynamic notices)"
 else
-  fail "M-13b: resume did not skip the anchor (len=$LRES)"
+  fail "M-13b: resume injected anchor content (len=$LRES)"
 fi
 if ! echo "$CMP" | grep -q "When this applies" && echo "$CMP" | grep -q "Hard gate" && echo "$CMP" | grep -q "Output language"; then
   ok "M-13b: compact injects the SLIM core (Hard rule + Output language, no keyword bullets; len=$LCMP)"
