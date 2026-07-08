@@ -66,7 +66,10 @@ SELECT panel tier (risk-based)            (references/review-panel.md)
    minimal = spec · standard = spec+quality · full = +security +standards
    ▼
 DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-only)
-   each lens gets: unit body + base/head SHAs + its lens-specific context.
+   each lens gets: a unit-body slice sized to the lens (spec = full verbatim;
+   others = frontmatter + requirements + Hard rules + Anchors + Migration notes,
+   NOT the Implementation-steps narrative — per `review-panel.md §Blind dispatch`)
+   + base/head SHAs + its lens-specific context.
    NEVER the implementer's report, NEVER another lens's verdict.
    ▼
 MERGE in the controller (main thread)

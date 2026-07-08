@@ -8,8 +8,11 @@
 # stays loadable via the Skill tool. The danger of a diet is silently dropping
 # a trigger keyword -> a routing regression on a cold (post-compaction) start.
 # This test is the guard: every load-bearing ID/EN + natural-language trigger
-# MUST survive in the core, the hard rule MUST survive, and the dropped detail
-# MUST NOT appear in the injected core (proving the diet actually happened).
+# MUST survive on the ALWAYS-LOADED surface (the injected core OR some skill's
+# frontmatter description — both reload on a cold/post-compaction start), the
+# hard rule MUST survive in the core, and the dropped EXPLANATION detail MUST NOT
+# appear in the injected core (proving the diet actually happened). M-13 moved the
+# verbatim keyword bullets core->description; the union check below is the guard.
 
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -56,23 +59,39 @@ done
 if core_has "bind-codebase" && core_has "CONFLICT"; then ok "bind CONFLICT gate kept in core"
 else bad "bind CONFLICT gate dropped from core"; fi
 
-# ---- 4) EVERY load-bearing trigger keyword survives -------------------------
-# Dropping any of these regresses routing on a cold start. Curated, not exhaustive.
+# ---- 4) EVERY load-bearing trigger survives on the ALWAYS-LOADED surface -----
+# M-13 (token-efficiency B3): the diet collapsed the core's verbatim keyword
+# bullets to a pointer at the always-loaded descriptions. The real cold-start
+# invariant is NOT "the phrase is in the core" but "the phrase is reachable on a
+# cold/post-compaction start" — i.e. present in the injected core OR in some
+# mega-sdd skill's frontmatter description (the harness reloads the full skill
+# listing + descriptions on startup AND on compaction). So we assert each trigger
+# against the UNION of the core + every skill description. A phrase missing from
+# BOTH is a genuine routing regression; a phrase that merely moved core→description
+# is safe. (This is why the collapse first UNION'd bound-vault / legacy
+# intelligence / source of truth dari legacy into using-mega-sdd's own description
+# and check consistency / consistency report into analyze's.)
+ALWAYS_LOADED="$CORE"$'\n'"$(
+  for sk in "$ROOT"/plugins/mega-sdd/skills/*/SKILL.md; do
+    awk 'BEGIN{d=0} /^---[[:space:]]*$/{d++; next} d==1 && /^description:/{print} d>=2{exit}' "$sk"
+  done
+)"
+loaded_has() { printf '%s' "$ALWAYS_LOADED" | grep -qiF "$1"; }
 TRIGGERS=(
   # EN pipeline keywords
-  "intent" "unit" "bolt" "vault" "PRD" "BRD" "binding" "knowledge-base"
-  "extract intelligence" "reverse engineer" "rebuild" "sync" "auto"
+  "intent" "unit" "bolt" "vault" "PRD" "BRD" "binding" "bound-vault" "knowledge-base"
+  "extract intelligence" "reverse engineer" "legacy intelligence" "rebuild" "sync" "auto"
   # ID variants
   "pecah PRD" "buat dev" "lanjut" "next" "jalankan otomatis"
-  "siapkan context" "rebuild di stack baru"
+  "siapkan context" "rebuild di stack baru" "source of truth dari legacy"
   # natural-language diagnostic/output lanes
-  "cek konsistensi" "blast radius" "apa yang kena kalau ubah ini"
+  "cek konsistensi" "consistency report" "blast radius" "apa yang kena kalau ubah ini"
   "lihat memory" "buat FSD" "pasang tools"
   # CWD signal
   ".mega-sdd/"
 )
 for t in "${TRIGGERS[@]}"; do
-  if core_has "$t"; then ok "trigger kept: $t"; else bad "TRIGGER DROPPED from core: '$t'"; fi
+  if loaded_has "$t"; then ok "trigger reachable (core∪descriptions): $t"; else bad "TRIGGER DROPPED from ALL always-loaded surfaces: '$t'"; fi
 done
 
 # ---- 5) the diet actually happened: dropped detail NOT in the core ----------
