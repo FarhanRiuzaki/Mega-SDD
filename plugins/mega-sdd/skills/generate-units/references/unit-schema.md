@@ -198,7 +198,7 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
 
 ## Hard rule grammar (closed v1)
 
-Five mechanical rule types + a directive tier (generic `MUST/MUST NOT/DO NOT/NEVER/ALWAYS` prose — accepted but not machine-checkable; recorded `attested` with `--attest-directives` else `directive_unverified` at post-flight). A line matching neither a mechanical type nor the directive tier → halt at bolt time with `hard_rule_unparseable`.
+Five mechanical rule types + a directive tier (generic `MUST/MUST NOT/DO NOT/NEVER/ALWAYS` prose — accepted but not machine-checkable; recorded `attested` with `--attest-directives` else `directive_unverified` at post-flight). Modal-synonym carve-out: `MUST NOT modify <path>` / `NEVER add new <manifest> dependencies` with a PATH-SHAPED object (contains `.` or `/`) classify as the mechanical productions, never directive — they cannot be attested past; a prose object (`MUST NOT modify existing API contracts`) stays a directive. A line matching neither a mechanical type nor the directive tier → halt at bolt time with `hard_rule_unparseable`.
 
 ```ebnf
 RULE := DO_NOT_MODIFY | DO_NOT_ADD_DEPS | NAMING_RULE | SIGNATURE_RULE | FILE_PRESENCE_RULE

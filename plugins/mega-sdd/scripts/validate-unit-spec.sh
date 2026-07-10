@@ -444,9 +444,12 @@ def validate_unit(file_path):
     n_directive = 0
     if hr_match:
         hr_block = hr_match.group(1)
+        # Mirrors postflight_rules.py STRICT (S7-A): modal synonyms are the same
+        # mechanical intent; the object must be PATH-SHAPED (. or /) — a prose
+        # object ("existing", "runtime") stays a directive, not a machine check.
         strict_productions = [
-            re.compile(r"^-\s*DO NOT modify\s+\S+"),
-            re.compile(r"^-\s*DO NOT add new\s+\S+\s+dependencies"),
+            re.compile(r"^-\s*(?:DO NOT|MUST NOT|NEVER) modify\s+\S*[./]\S*"),
+            re.compile(r"^-\s*(?:DO NOT|MUST NOT|NEVER) add new\s+\S*\.\S+\s+dependencies"),
             re.compile(r"^-\s*\S+\s+MUST follow\s+(?:kebab-case|camelCase|snake_case|PascalCase)\s+naming"),
             re.compile(r"^-\s*function\s+\S+\s+MUST preserve signature:\s+.*"),
             re.compile(r"^-\s*file\s+\S+\s+MUST exist after bolt"),

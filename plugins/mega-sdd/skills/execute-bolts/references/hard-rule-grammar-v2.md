@@ -60,18 +60,21 @@ Each Hard Rule in unit body is now a YAML block. Multiple rules can appear in on
 ## Hard rules
 
 \`\`\`yaml
-id: do-not-modify-user-php
+id: no-raw-db-in-controllers
 language: php
 severity: error
 rule:
-  pattern: $$$
-  inside:
-    kind: program
-    has:
-      stopBy: end
-files: ["src/Models/User.php"]
-message: "src/Models/User.php is locked by binding (KEEP_CODE on C-007)"
+  pattern: $DB->query($$$ARGS)
+files: ["**/app/Http/Controllers/**"]
+message: "Controllers must not run raw DB queries (binding C-007) — use the repository layer"
 \`\`\`
+
+> **`files:` globs MUST be `**/`-prefixed** when relative (`files: ["**/src/Models/User.php"]`,
+> never `["src/Models/User.php"]`): `ast-grep scan --rule` matches a bare relative glob against
+> NOTHING — the rule silently scans zero files and "passes". The engine normalizes relative
+> globs to `**/` defensively, but author them correctly. And note what ast-grep CAN express:
+> content-presence rules (a forbidden pattern in scoped files). It is STATELESS — it cannot
+> detect "file was modified" or "dependency was added"; those stay v1 productions (below).
 
 \`\`\`yaml
 id: preserve-authenticate-user-sig
@@ -95,10 +98,10 @@ message: "Function authenticateUser signature is locked by Hard Rule"
 
 | v1 type | v2 equivalent |
 |---|---|
-| `DO NOT modify <path>` | `files: [<path>]` + rule with `severity: error` triggered by any AST change |
-| `DO NOT add new <manifest> dependencies` | Custom rule on manifest file pattern; `severity: error` if new top-level dep entry |
-| `<path-glob> MUST follow <case-style> naming` | Rule on file paths; constraint via regex |
-| `function <name> MUST preserve signature: <sig>` | Pattern with `$EMAIL: string, $PASSWORD: string` shape; constraint on params |
+| `DO NOT modify <path>` | **NONE — stays v1.** ast-grep is stateless (it cannot know "changed"); the v1 production checks git touched-set + sha256 vs preflight. Do NOT migrate. |
+| `DO NOT add new <manifest> dependencies` | **NONE — stays v1.** "New" requires a before/after diff ast-grep cannot express; the v1 production diffs the unit's own commit range. Do NOT migrate. |
+| `<path-glob> MUST follow <case-style> naming` | **NONE — stays v1.** ast-grep matches AST nodes, not file names; a files-only rule with no positive matcher is invalid. |
+| `function <name> MUST preserve signature: <sig>` | Pattern with `$EMAIL: string, $PASSWORD: string` shape; constraint on params (content-expressible — a decl NOT matching the locked shape is findable) |
 | `file <path> MUST exist after bolt` | Post-flight file existence check (no AST rule; simple `test -f`) |
 
 ## Pre/post-flight validation flow
@@ -115,14 +118,17 @@ For each rule in unit's `## Hard rules`:
    ```
    - Exit 0 → rule parses cleanly (zero matches on empty input is the expected baseline)
    - Exit non-zero with parse error in stderr → halt `hard_rule_unparseable` with stderr verbatim
-3. Snapshot relevant files (sha256 for `files:` paths)
+3. Snapshot relevant files (sha256 for `files:` paths) — an AUDIT record of the
+   pre-bolt state, NOT a lock check: a v2 rule is a pattern scan, and the bolt is
+   allowed (often required) to edit matched files to fix a pre-existing violation.
+   Lock semantics (DO_NOT_MODIFY) stay v1 per the mapping table.
 4. Persist to `<vault>/bolts/U-XXX/preflight.json`:
    ```json
    {
-     "rule_id": "do-not-modify-user-php",
+     "rule_id": "no-raw-db-in-controllers",
      "rule_yaml": "...",
-     "snapshot_paths": ["src/Models/User.php"],
-     "snapshot_sha256": {"src/Models/User.php": "abc123..."},
+     "snapshot_paths": ["app/Http/Controllers/UserController.php"],
+     "snapshot_sha256": {"app/Http/Controllers/UserController.php": "abc123..."},
      "snapshot_at": "2026-05-21T10:00:00Z"
    }
    ```
@@ -136,8 +142,10 @@ For each rule:
 3. Apply violation logic:
    - Any matches → VIOLATED (with file:line + matched text as evidence)
    - Zero matches → PASSED
-4. For `files:` lock rules (DO_NOT_MODIFY semantic): compare current sha256 to snapshot
-5. Write `<vault>/bolts/U-XXX/postflight.json` with per-rule status
+   (No sha256-vs-snapshot compare: a v2 rule is a pattern scan, not a file lock —
+   fixing a pre-bolt violation necessarily changes the file, so a sha check would
+   make honest remediation unreachable. Lock semantics stay v1.)
+4. Write `<vault>/bolts/U-XXX/postflight.json` with per-rule status
 
 ### Halt on violation
 
@@ -152,11 +160,16 @@ Walking ./vault/units/...
 
 U-001: 1 v1 rule found
   v1: "DO NOT modify src/Models/User.php"
+  → KEEP AS v1 (no v2 equivalent — DO_NOT_MODIFY needs git/sha state ast-grep
+    cannot express; see the mapping table). Nothing proposed.
+
+U-001b: 1 migratable v1 rule found
+  v1: "function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>"
   v2 (proposed):
-    id: do-not-modify-user-php
-    language: php
-    files: ["src/Models/User.php"]
-    rule: { pattern: $$$, inside: { kind: program } }
+    id: preserve-authenticate-user-sig
+    language: typescript
+    files: ["**/src/auth/**"]
+    rule: { pattern: "function authenticateUser($EMAIL: string, $PASSWORD: string): Promise<User> { $$$ }" }
     message: "..."
 
   ACCEPT migration? [Y/n/skip-unit]
@@ -170,13 +183,13 @@ User confirms per unit. v1 rules preserved as `<!-- v1: ... -->` HTML comments f
 ## Backward compatibility
 
 - v2.1 units with v1 rules → execute-bolts v1.4 parser still works (v1 path preserved)
-- v3.0 newly-generated units → v2 grammar by default
+- Newly-generated units emit v1 productions by default (binding-suggested `DO NOT modify …` etc.); v2 blocks are authored/migrated deliberately for pattern rules only
 - Mixed-grammar units → halt `hard_rule_mixed_grammar` (user must migrate first)
 - `--hard-rule-grammar=v1|v2` flag forces grammar; default `auto` (detect from rule YAML presence)
 
 ## ast-grep limitation: syntax-only
 
-ast-grep matches AST patterns; it does NOT do dataflow analysis. For mega-sdd's 5 original rule types this is sufficient — all 5 are AST-or-simpler. Future iters that need dataflow (e.g., "function X MUST flow tainted data into sanitizer Y") would need different tooling (CodeQL / Semgrep dataflow rules).
+ast-grep matches AST patterns; it does NOT do dataflow analysis, and it is STATELESS — it sees only the current tree, never "changed since X". Of mega-sdd's 5 original rule types only SIGNATURE_RULE is v2-expressible (see the mapping table); the state-dependent types (modify-lock, dep-diff, naming-on-new-files) stay v1. Future needs like dataflow ("function X MUST flow tainted data into sanitizer Y") would need different tooling (CodeQL / Semgrep dataflow rules).
 
 ## References
 
