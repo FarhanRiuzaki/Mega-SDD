@@ -34,11 +34,11 @@ For each unit with a non-empty `## Hard rules` body section:
 - `function <name> MUST preserve signature: <type-sig>`
 - `file <path> MUST exist after bolt`
 
-**Directive rules (third category — honest tier).** A generic `- MUST/MUST NOT/DO NOT/NEVER/ALWAYS …` prose line is ACCEPTED by the unit-stage validator (counted `hard_rules_directive_prose`) but is not machine-checkable by construction. At post-flight, `run-postflight-scan.sh` records such a rule as `type: directive` with verdict `directive_unverified` (non-pass) unless the run passes `--attest-directives="<who/why>"` after controller/panel review — then the verdict is `attested`, which `postflight_ok` accepts for directive-typed rules ONLY. A fabricated `pass` verdict on a directive line does not exist in the sanctioned writer's vocabulary.
+**Directive rules (third category — honest tier).** A generic `- MUST/MUST NOT/DO NOT/NEVER/ALWAYS …` prose line is ACCEPTED by the unit-stage validator (counted `hard_rules_directive_prose`) but is not machine-checkable by construction. At post-flight, `run-postflight-scan.sh` records such a rule as `type: directive` with verdict `directive_unverified` (non-pass) unless the run passes `--attest-directives="<who/why>"` after controller/panel review — then the verdict is `attested`, which `postflight_ok` accepts for directive-typed rules ONLY. **`--attest-directives` is blanket per run**: the one reason attests EVERY directive line in the unit (there is no per-rule attestation) — review ALL of them before attesting. Modal synonyms of the mechanical productions (`MUST NOT modify src/x.php`, `NEVER add new package.json dependencies`) classify as MECHANICAL, never directive — they cannot be attested past — **when the object is path-shaped** (contains `.` or `/`); a prose object (`MUST NOT modify existing API contracts`) stays a directive, because a mechanical check against a non-path would pass vacuously. A fabricated `pass` verdict on a directive line does not exist in the sanctioned writer's vocabulary.
 
 ## Pre-flight: v2 (ast-grep) snapshot
 
-For each rule, snapshot AST state via `ast-grep scan --rule <yaml> --json` (zero matches expected pre-bolt for "forbidden" rules). Persist the matched-files list + sha256 per matched file for the post-flight diff.
+For each rule, snapshot AST state via `ast-grep scan --rule <yaml> --json` (zero matches expected pre-bolt for "forbidden" rules). Persist the matched-files list + sha256 per matched file as an AUDIT record of the pre-bolt state — post-flight re-runs the scan; it does NOT sha-compare (a v2 rule is a pattern scan, not a lock — the bolt may legitimately edit matched files to fix a pre-existing violation).
 
 ## Pre-flight: v1 (legacy 5-grammar) snapshot
 
@@ -101,7 +101,7 @@ After the implementer reports DONE (its commit already landed), run the post-fli
 ast-grep scan --rule <rule-yaml-tempfile> --json <repo-root>
 ```
 
-Parse the JSON output. Match found → VIOLATED with `file:line` + matched text as evidence. Zero matches → PASSED. For `files:`-scoped lock rules, also compare the current sha256 to the preflight snapshot (defense in depth).
+Parse the JSON output. Match found → VIOLATED with `file:line` + matched text as evidence. Zero matches → PASSED. (No sha256-vs-snapshot compare — lock semantics stay v1 `DO_NOT_MODIFY`; see the grammar ref's mapping table.)
 
 **v1 grammar (legacy, preserved):**
 
@@ -127,7 +127,7 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 }
 ```
 
-**Mandatory evidence (B1 — enforced, not prose).** For a committed `create`/`extend` bolt whose unit has a **non-empty `## Hard rules`** section, this `postflight.json` MUST exist with `status: pass` and every `rules[].verdict: pass` (or `attested` on `directive`-typed rules) — and it is written by `run-postflight-scan.sh` and hook-guarded against direct writes plus the common programmatic write paths (best-effort deny, not cryptographically unforgeable — the gate reads the recorded status rather than recomputing the scan; recompute-at-gate is the durable follow-up, backlog). The Stop hook AND the execute-bolts gate re-run `validate-bolt-artifacts.sh --postflight-scan`; the PreToolUse aggregator **blocks the next `execute-bolts`** with **`postflight_evidence_missing`** when a Hard-rule bolt committed with no passing `postflight.json` — the post-flight scan can no longer be silently skipped or satisfied by a naive hand-written artifact. The validator reads the unit's content at the bolt commit (`git show`), so a retroactive unit edit cannot erase the obligation. Verify units skip post-flight (no changes to validate), so they are exempt. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1`.
+**Mandatory evidence (B1 — enforced, not prose).** For a committed `create`/`extend` bolt whose unit has a **non-empty `## Hard rules`** section, this `postflight.json` MUST exist with `status: pass` and every `rules[].verdict: pass` (or `attested` on `directive`-typed rules) — and it is written by `run-postflight-scan.sh` and hook-guarded against direct writes plus the common programmatic write paths (and, since v4.62.0, **RECOMPUTED at the gate**: `validate-bolt-artifacts.sh --postflight-scan --recompute` re-executes each committed Hard-rule bolt's mechanical rules from git/fs ground truth via the shared `scripts/_lib/postflight_rules.py` engine and OVERWRITES the artifact before the state is read — a forged/stale/absent artifact is regenerated; directives keep their prior human attestation via carry-forward). The Stop hook AND the execute-bolts gate re-run `validate-bolt-artifacts.sh --postflight-scan`; the PreToolUse aggregator **blocks the next `execute-bolts`** with **`postflight_evidence_missing`** when a Hard-rule bolt committed with no passing `postflight.json` — the post-flight scan can no longer be silently skipped or satisfied by a naive hand-written artifact. The validator reads the unit's content at the bolt commit (`git show`), so a retroactive unit edit cannot erase the obligation. Verify units skip post-flight (no changes to validate), so they are exempt. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md §B1`.
 
 > `--force-skip-postflight` skips the ast-grep step for ONE run only and is logged per the SKILL.md anti-bypass policy (handoff `notes.postflight_skipped: true` + `_summary.md`). It does NOT downgrade the rail; a follow-up re-run without the flag is required before drift-detect / merge.
 
@@ -165,7 +165,7 @@ blocker:
         evidence: "sha256 mismatch — preflight: abc123..., postflight: def456..."
       - rule: "function authenticateUser MUST preserve signature: (email: string, password: string) => Promise<User>"
         evidence: "Signature changed; postflight: (email: string, password: string, twoFactor?: string) => Promise<User>"
-  next_action: "The violation is in commit <sha>: fix the code forward (or git revert the bolt commit), then re-run run-postflight-scan.sh; execute-bolts stays gated until a passing postflight.json is recorded. If the RULE is wrong, edit the unit's Hard rules first."
+  next_action: "The violation is in commit <sha>: fix the code forward (or git revert the bolt commit), then re-run run-postflight-scan.sh; execute-bolts stays gated until a passing postflight.json is recorded. If the RULE is wrong, edit the unit's Hard rules AND COMMIT the edit as `fix(U-XXX): correct hard rule` — the gate recomputes against the unit text AT the bolt commit, so an uncommitted working-tree edit is silently overridden at the next gate (the writer's pass would be provisional)."
 ```
 
 ## verify-unit special path

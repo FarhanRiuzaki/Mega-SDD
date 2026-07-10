@@ -87,6 +87,20 @@ text = open(uf).read()
 # the gate's recompute). walk_unit_commits returns {uid: newest-first [(sha,[(st,p)])]}.
 unit_commits = postflight_rules.walk_unit_commits(git, PREFIX, 300).get(unit_id, [])
 
+# S7-HARDRULES-9: the GATE recomputes against the unit text AT the bolt commit
+# (git show), while this writer scans the WORKING-TREE text. If they differ, this
+# run's result is PROVISIONAL — warn loudly so "edit the rule → re-run → pass" is
+# never mistaken for a durable green (the gate would re-fail and overwrite it).
+if unit_commits:
+    # forward slashes: git rev-paths reject os.sep backslashes on native Windows
+    # Python, which silently muted this warn (empty show output).
+    rel_uf = os.path.relpath(uf, cwd).replace(os.sep, "/")
+    committed_text = git("show", "%s:%s" % (unit_commits[0][0], PREFIX + rel_uf if PREFIX else rel_uf)).stdout
+    if committed_text and committed_text != text:
+        print("WARN: unit text in the working tree differs from the bolt commit — this "
+              "result is PROVISIONAL. The gate recomputes at the bolt commit; commit your "
+              "unit edit as 'fix(%s): ...' so the recompute sees it." % unit_id, file=sys.stderr)
+
 # preflight snapshot (written by the skill's pre-flight step, when present)
 preflight = {}
 pf_path = os.path.join(bolt_dir, "preflight.json")

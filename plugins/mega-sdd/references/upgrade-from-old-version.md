@@ -90,6 +90,12 @@ All three are idempotent — safe to re-run.
 
 ## Common halts after upgrade + recovery
 
+### `postflight_evidence_missing` / `hard_rule_violated` on PREVIOUSLY-GREEN bolts (v4.79.0 Hard-rule engine hardening)
+
+**Cause:** the B1 gate RECOMPUTES each committed Hard-rule bolt's postflight scan from git/fs ground truth, and v4.79.0 fixed several engine holes — so a bolt that passed under the old engine can flip to fail at the next `execute-bolts` gate purely from upgrading. Expected flips (each means the lock was previously being dodged, not a false alarm): `*`/`+`/numbered-bullet locks now execute; v2 ast-grep rules with relative `files:` globs were silently INERT and now actually scan; `MUST NOT modify <path>` / `NEVER add new <manifest> dependencies` (path-shaped object) recompute as MECHANICAL past old attestations; SIGNATURE_RULE now requires exact parameter-list equality (added params fail). Also: a wrapped directive bullet is now lexed JOINED with its continuation lines, so its attest carry-forward key changes — a previously attested directive downgrades to `directive_unverified` once.
+
+**Recovery:** fix the violating code forward (or `git revert` the bolt commit) and re-run `scripts/run-postflight-scan.sh --cwd=<root> --unit=U-XXX`; re-attest re-keyed directives with `--attest-directives="<who/why>"`. If the RULE text is wrong, edit the unit's `## Hard rules` and COMMIT the edit as `fix(U-XXX): correct hard rule` — the gate recomputes against the unit text at the newest unit commit.
+
 ### `invalid_handoff` (Iter 33 F3 schema validation gate)
 
 **Cause:** old skill body emits handoff YAML missing `scope:` / `mutability:` / `constitution:` blocks; new orchestrate-flow Step 6.b validates against handoff-contract.md REQUIRED/CONDITIONAL/OPTIONAL annotations.

@@ -65,8 +65,20 @@ def walk_unit_commits(git, prefix, n=300):
             l = l.strip()
             if not l or "\t" not in l:
                 continue
-            st, _, p = l.partition("\t")
-            p = p.split("\t")[-1]  # renames: old\tnew — take new
+            st, _, rest = l.partition("\t")
+            seg = rest.split("\t")
+            if st[:1] == "R" and len(seg) == 2:
+                # S7-HARDRULES-6: a rename VACATES the old path — record it as a
+                # deletion so DO_NOT_MODIFY's touched-set sees `git mv locked new`
+                # (the old single-path form kept only the new name → rename dodge).
+                # Copies (C) leave the original intact: new path only.
+                old, new = seg
+                for pp, ss in ((old, "D"), (new, "R")):
+                    if prefix and pp.startswith(prefix):
+                        pp = pp[len(prefix):]
+                    files.append((ss, pp))
+                continue
+            p = seg[-1]
             if prefix and p.startswith(prefix):
                 p = p[len(prefix):]
             files.append((st[:1], p))
@@ -74,13 +86,32 @@ def walk_unit_commits(git, prefix, n=300):
     return out
 
 
+_BULLET = re.compile(r"^(?:[-*+]|\d+[.)])\s+(.*)$")
+_RULEISH = re.compile(r"\b(?:MUST|DO NOT|NEVER|ALWAYS)\b")
+_KEYWORD_LEAD = re.compile(r"^(?:MUST NOT|MUST|DO NOT|NEVER|ALWAYS)\b", re.IGNORECASE)
+
+
 def extract_hard_rules(unit_text):
-    """(dash_lines, v2_yaml_rules) from the unit's `## Hard rules` section."""
+    """(rule_lines, v2_yaml_rules) from the unit's `## Hard rules` section.
+
+    S7-HARDRULES-4: the old lexer accepted ONLY `- ` bullets — `*`/`+` bullets and
+    numbered items were silently dropped, so a unit could incur the B1 obligation
+    (the gate's obligation detector counts them) while the scan executed NOTHING and
+    recorded "section empty". Now: `- ` bullets always lex as rules; `*`/`+`/numbered
+    bullets lex as rules when they carry a rule keyword (MUST/DO NOT/NEVER/ALWAYS);
+    indented continuation lines join the OPEN bullet (standard list semantics); a
+    non-bullet keyword-LEADING line lexes verbatim (the bullet-evasion shape — it
+    executes if STRICT-parseable, else fails downstream). Everything else — intro
+    prose, decorative non-dash bullets, bold labels — is tolerated, mirroring
+    validate-unit-spec.sh's Hard-rule net EXACTLY: the unit-stage validator
+    documents "other non-dash prose stays tolerated", and a stricter engine here
+    retroactively hard-failed units that lint had passed (S7 review, r1-4)."""
     m = re.search(r"(?ims)^##[ \t]+Hard[ \t]+rules\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", unit_text)
     hr_block = m.group(1) if m else ""
     v2_rules = re.findall(r"```ya?ml\s*\n(.*?)```", hr_block, re.DOTALL)
     lines = []
     in_fence = False
+    open_rule = False
     for ln in hr_block.splitlines():
         s = ln.strip()
         if s.startswith("```"):
@@ -90,8 +121,25 @@ def extract_hard_rules(unit_text):
             continue
         if re.match(r"^(?:Citation|Source|Ref(?:erence)?|From)\s*:", s, re.IGNORECASE):
             continue
-        if s.startswith("- "):
-            lines.append(s[2:].strip())
+        bm = _BULLET.match(s)
+        if bm:
+            body = bm.group(1).strip()
+            if s.startswith("-") or _RULEISH.search(body):
+                lines.append(body)
+                open_rule = True
+            else:
+                open_rule = False  # decorative non-dash bullet — tolerated (lint parity)
+            continue
+        if ln[:1] in (" ", "\t") and open_rule:
+            # indented continuation of the OPEN bullet — join, never a new rule
+            lines[-1] = lines[-1] + " " + s
+            continue
+        if _KEYWORD_LEAD.match(s):
+            # bullet-evasion shape: rule-like line outside a bullet — never skip
+            lines.append(s)
+            open_rule = True
+        else:
+            open_rule = False  # non-rule prose (intro lines, labels) — tolerated
     return lines, v2_rules
 
 
@@ -107,8 +155,15 @@ def sha256_of(path):
 
 
 STRICT = [
-    ("DO_NOT_MODIFY", re.compile(r"^DO NOT modify\s+(\S+)")),
-    ("DO_NOT_ADD_DEPS", re.compile(r"^DO NOT add new\s+(\S+)\s+dependencies")),
+    # S7-HARDRULES-7: modal-verb synonyms are the SAME mechanical intent — without
+    # them "MUST NOT modify X" classified as an attestable directive, so a
+    # machine-checkable lock could be waved through on trust. The captured object
+    # must be PATH-SHAPED (contains . or /): a bare `\S+` captured the next WORD,
+    # so prose like "MUST NOT modify existing API contracts" became a mechanical
+    # lock on the path "existing" → vacuous auto-PASS. Non-path objects fall
+    # through to the directive tier (human attestation), same as before HR-7.
+    ("DO_NOT_MODIFY", re.compile(r"^(?:DO NOT|MUST NOT|NEVER) modify\s+(\S*[./]\S*)")),
+    ("DO_NOT_ADD_DEPS", re.compile(r"^(?:DO NOT|MUST NOT|NEVER) add new\s+(\S*\.\S+)\s+dependencies")),
     ("NAMING_RULE", re.compile(r"^(\S+)\s+MUST follow\s+(kebab-case|camelCase|snake_case|PascalCase)\s+naming")),
     ("SIGNATURE_RULE", re.compile(r"^function\s+(\S+)\s+MUST preserve signature:\s+(.*)$")),
     ("FILE_PRESENCE_RULE", re.compile(r"^file\s+(\S+)\s+MUST exist after bolt")),
@@ -213,6 +268,85 @@ def _attested_directives(prior_artifact):
     return out
 
 
+# Column-0 anchor: `files:` is a TOP-LEVEL ast-grep rule key. An indented
+# `files:`-looking line (e.g. inside a block-scalar `message: |`) is document
+# text, not a rule key — rewriting it corrupted the message and contaminated
+# the glob list (S7 review r1-7).
+_V2_FILES_INLINE = re.compile(r"^(files:\s*\[)(.*)(\])[ \t]*$", re.MULTILINE)
+_V2_FILES_BLOCK = re.compile(r"^(files:\s*\n)((?:[ \t]+-\s+[^\n]+\n?)+)", re.MULTILINE)
+
+
+def _split_globs(s):
+    """Split an inline files: list on commas OUTSIDE quotes/braces/brackets —
+    a naive split corrupted brace globs (`app/{Models,Entities}/x.php`) and
+    char-classes into unparseable globset patterns → permanent false-FAIL
+    with an "ast-grep error" evidence (S7 review r1-1)."""
+    items, buf, depth, q = [], [], 0, None
+    for ch in s:
+        if q:
+            buf.append(ch)
+            if ch == q:
+                q = None
+        elif ch in "'\"":
+            q = ch
+            buf.append(ch)
+        elif ch in "{[":
+            depth += 1
+            buf.append(ch)
+        elif ch in "}]":
+            depth -= 1
+            buf.append(ch)
+        elif ch == "," and depth == 0:
+            items.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    if buf:
+        items.append("".join(buf))
+    return [x for x in items if x.strip()]
+
+
+def _norm_v2_glob(g):
+    g = g.strip().strip("'\"")
+    while g.startswith("./"):  # literal ./ prefixes only — lstrip("./") ate the
+        g = g[2:]              # leading dot of hidden paths (.env → env)
+    if not g or g.startswith(("**", "/")):
+        return g
+    return "**/" + g
+
+
+def normalize_v2_files(rule_yaml):
+    """(normalized_yaml, glob_list). S7-HARDRULES-1 (CRITICAL): `ast-grep scan --rule`
+    matches a bare relative files: glob (`src/x.php`) against NOTHING — verified
+    empirically on 0.42.3 for both relative and absolute scan paths — so every rule
+    authored in the grammar ref's documented shape was silently INERT (zero files
+    scanned → zero matches → verdict pass while the lock never executed). Prefix
+    `**/` to every relative glob before the rule is written to the temp file;
+    already-`**/`-prefixed and absolute globs pass through untouched."""
+    globs = []
+
+    def _inline(m):
+        items = [_norm_v2_glob(x) for x in _split_globs(m.group(2))]
+        globs.extend(items)
+        return m.group(1) + ", ".join('"%s"' % x for x in items) + m.group(3)
+
+    def _block(m):
+        out = []
+        for ln in m.group(2).splitlines():
+            im = re.match(r"^([ \t]+-\s+)(.*)$", ln)
+            if im:
+                g = _norm_v2_glob(im.group(2))
+                globs.append(g)
+                out.append('%s"%s"' % (im.group(1), g))
+            else:
+                out.append(ln)
+        return m.group(1) + "\n".join(out) + "\n"
+
+    y = _V2_FILES_INLINE.sub(_inline, rule_yaml)
+    y = _V2_FILES_BLOCK.sub(_block, y)
+    return y, globs
+
+
 def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, prior_artifact=None):
     """Execute a unit's Hard rules against real git/fs → (results, ok_all).
 
@@ -226,7 +360,6 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
 
     touched = {p for _, fl in unit_commits for _, p in fl}
     added = {p for _, fl in unit_commits for st, p in fl if st == "A"}
-    oldest_sha = unit_commits[-1][0] if unit_commits else None
     prior_attested = _attested_directives(prior_artifact)
 
     results = []
@@ -263,36 +396,42 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                     results.append({"type": rtype, "rule": raw, "verdict": "fail",
                                     "evidence": "no bolt commit found for %s — cannot diff %s" % (unit_id, manifest)})
                     continue
-                # NOTE: manifests are read relative to cwd; the walk already stripped the
-                # project prefix from committed paths, and the writer passes the same cwd.
+                # S7-HARDRULES-5 (per-commit form, S7 review r1-3): a single
+                # oldest^..newest span re-widens across INTERLEAVED unrelated commits
+                # the moment a later `fix(U-XXX):` commit exists — and the documented
+                # remediation for a wrong rule GUARANTEES that shape. Diff each of the
+                # unit's OWN commits (sha^..sha) and union the additions; commits the
+                # unit does not own never enter any edge. Rev-paths use `:./` so git
+                # resolves them against cwd, not the repo root (S7 review r2-1: in a
+                # monorepo subproject a root-level same-named manifest was read at
+                # BOTH edges → a dep added by this very commit passed, fail-open).
                 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-                has_parent = git("rev-parse", "--verify", "-q", "%s^" % oldest_sha).returncode == 0
-                if has_parent:
-                    base_ref = "%s^" % oldest_sha
-                    before = git("show", "%s:%s" % (base_ref, manifest)).stdout
+                new_keys, new_lines, saw_depset = set(), [], False
+                for sha, fl in unit_commits:
+                    if not any(p == manifest for _, p in fl):
+                        continue  # this commit didn't touch the manifest
+                    has_parent = git("rev-parse", "--verify", "-q", "%s^" % sha).returncode == 0
+                    base_ref = "%s^" % sha if has_parent else EMPTY_TREE
+                    before = git("show", "%s:./%s" % (base_ref, manifest)).stdout if has_parent else ""
+                    cur = git("show", "%s:./%s" % (sha, manifest)).stdout
+                    b, a = dep_set(before, manifest), dep_set(cur, manifest)
+                    if b is None and not has_parent and a is not None:
+                        b = set()     # parseable new manifest at a root commit → 0 prior deps
+                    if b is not None and a is not None:
+                        saw_depset = True
+                        new_keys |= (a - b)
+                    else:
+                        dr = git("diff", "%s..%s" % (base_ref, sha), "--", manifest)
+                        new_lines += [l[1:].strip() for l in dr.stdout.splitlines()
+                                      if l.startswith("+") and not l.startswith("+++") and l[1:].strip()
+                                      and not l[1:].strip().startswith(("#", "//"))]
+                if new_keys:
+                    ok, ev = False, "NEW dependencies: %s" % ", ".join(sorted(new_keys))
+                elif new_lines:
+                    ok, ev = False, "added lines in %s: %s" % (manifest, "; ".join(new_lines[:5]))
                 else:
-                    base_ref = EMPTY_TREE
-                    before = ""   # root commit: the manifest is brand-new, no prior deps
-                cur = ""
-                try:
-                    cur = open(os.path.join(cwd, manifest)).read()
-                except OSError:
-                    pass
-                b, a = dep_set(before, manifest), dep_set(cur, manifest)
-                if b is None and not has_parent and a is not None:
-                    b = set()     # parseable new manifest at a root commit → 0 prior deps
-                if b is not None and a is not None:
-                    new = sorted(a - b)
-                    ok = not new
-                    ev = "dep keys unchanged" if ok else "NEW dependencies: %s" % ", ".join(new)
-                else:
-                    dr = git("diff", "%s..HEAD" % base_ref, "--", manifest)
-                    new_lines = [l[1:].strip() for l in dr.stdout.splitlines()
-                                 if l.startswith("+") and not l.startswith("+++") and l[1:].strip()
-                                 and not l[1:].strip().startswith(("#", "//"))]
-                    ok = not new_lines
-                    ev = "no added lines in %s" % manifest if ok else \
-                         "added lines in %s: %s" % (manifest, "; ".join(new_lines[:5]))
+                    ok = True
+                    ev = "dep keys unchanged" if saw_depset else "no added lines in %s" % manifest
                 results.append({"type": rtype, "rule": raw, "verdict": "pass" if ok else "fail", "evidence": ev})
             elif rtype == "NAMING_RULE":
                 pat, style = mm.group(1), mm.group(2)
@@ -323,13 +462,33 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                     results.append({"type": rtype, "rule": raw, "verdict": "pass" if ok else "fail",
                                     "evidence": "decl at %s: %s (preflight: %s)" % (loc, decl[:120], snap[:120])})
                 else:
-                    toks = [t.strip() for t in re.split(r"[(),]", sig) if t.strip() and "=>" not in t]
-                    norm_decl = re.sub(r"\s+", " ", decl)
-                    missing = [t for t in toks if re.sub(r"\s+", " ", t) not in norm_decl]
-                    ok = not missing
-                    results.append({"type": rtype, "rule": raw, "verdict": "pass" if ok else "fail",
-                                    "evidence": "decl at %s: %s%s" % (loc, decl[:120],
-                                                "" if ok else " — missing sig token(s): %s" % ", ".join(missing[:3]))})
+                    # S7-HARDRULES-3: the old token-SUBSET check passed ADDED parameters
+                    # (the docs' own canonical violation: twoFactor?: string appended) and
+                    # dropped =>-return tokens. Compare the full parenthesized parameter
+                    # list for EQUALITY; unextractable spans fail CLOSED (house style) —
+                    # the sanctioned alternative is a preflight signature snapshot.
+                    def _paren_span(s):
+                        i = s.find("(")
+                        if i < 0:
+                            return None
+                        depth = 0
+                        for j in range(i, len(s)):
+                            if s[j] == "(":
+                                depth += 1
+                            elif s[j] == ")":
+                                depth -= 1
+                                if depth == 0:
+                                    return re.sub(r"\s+", "", s[i:j + 1])
+                        return None
+                    want, got = _paren_span(sig), _paren_span(decl)
+                    if want is not None and got is not None:
+                        ok = want == got
+                        results.append({"type": rtype, "rule": raw, "verdict": "pass" if ok else "fail",
+                                        "evidence": "decl at %s: %s%s" % (loc, decl[:120],
+                                                    "" if ok else " — parameter list differs from required signature (required %s, found %s)" % (want[:80], got[:80]))})
+                    else:
+                        results.append({"type": rtype, "rule": raw, "verdict": "fail",
+                                        "evidence": "decl at %s: %s — cannot mechanically extract the parameter list (multi-line or unparenthesized decl); record a preflight signature snapshot to verify this rule" % (loc, decl[:120])})
             elif rtype == "FILE_PRESENCE_RULE":
                 path = mm.group(1)
                 ok = os.path.exists(os.path.join(cwd, path))
@@ -361,8 +520,14 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                 results.append({"type": "v2_ast_grep", "rule": rid, "verdict": "tool_missing",
                                 "evidence": "ast-grep not installed — cannot execute v2 rule (brew install ast-grep)"})
                 continue
+            # NO sha256-vs-preflight lock check here, by design: a v2 rule is a
+            # PATTERN SCAN, not a file lock — lock semantics (DO_NOT_MODIFY) stay v1
+            # per the grammar's mapping table. A sha compare against the working tree
+            # made honest remediation unreachable (fixing the violation necessarily
+            # changes the file → permanent MISMATCH fail) — S7 review r1-2.
+            ry_norm, _rule_globs = normalize_v2_files(ry)
             with tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False) as tf:
-                tf.write(ry)
+                tf.write(ry_norm)
                 tmp_rule = tf.name
             try:
                 rr = subprocess.run([astgrep, "scan", "--rule", tmp_rule, "--json", cwd],
