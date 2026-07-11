@@ -222,7 +222,7 @@ The following one-liners were absorbed (verbatim) from `skills/orchestrate-flow/
 - `secret_in_code` — execute-bolts (L0 gate): a committed secret was detected; user rotates it + purges it from history. ALWAYS STOP.
 - `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS STOP.
 - `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest. ALWAYS STOP.
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings survived the retry cap; user resolves them. ALWAYS STOP.
+- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. ALWAYS STOP.
 - `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s) then re-runs the suite. ALWAYS STOP.
 - `batch_suite_gate_missing` — execute-bolts: no green `_batch-suite.json` covers the newest code commit (a bolt OR an out-of-band edit); user runs the suite via `run-full-suite.sh`. ALWAYS STOP.
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.

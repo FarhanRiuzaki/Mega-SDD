@@ -31,7 +31,7 @@ blocker:
 
 ## `review_critical_unresolved` halt YAML
 
-When the review panel's retry budget exhausts with a **Critical** finding still open (per `review-panel.md §Merge + severity gate`), emit the terminal halt — the run STOPS; never proceed to the next bolt over an open Critical:
+When the review panel's retry budget exhausts with a **Critical** finding still open OR the spec lens still ❌ (per `review-panel.md §Merge + severity gate` — a missing/misread requirement carries no severity grade, so spec ❌ is its own terminal condition), emit the terminal halt — the run STOPS; never proceed to the next bolt over an open Critical or an unmet requirement:
 
 ```yaml
 blocker:
@@ -44,9 +44,9 @@ blocker:
     tier: <minimal|standard|full>
     open_criticals:
       - lens: <spec|quality|security|standards|design>
-        finding: <one-line>
-        anchor: <file:line>
-  next_action: "Review the open Critical(s) in bolt-report.md ## Review panel; fix the committed code (or revert the bolt commit) and re-run the unit. The finding survived the shared --max-retries budget — do not raise the cap to outlast it."
+        finding: <one-line>   # a still-❌ spec lens rides this list as lens: spec —
+        anchor: <file:line>   # the unmet requirement IS the open finding
+  next_action: "Review the open finding(s) in bolt-report.md ## Review panel — open Critical(s) and/or the spec lens's unmet requirement; fix the committed code (or revert the bolt commit) and re-run the unit. The finding survived the shared --max-retries budget — do not raise the cap to outlast it."
 ```
 
 ## Propose-and-confirm halt UX
@@ -71,7 +71,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `hard_rule_unanchored` — config issue.
 - `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
 - `scope_creep_detected` — the unit's scope is wrong or the plan drifted; human restructures.
-- `review_critical_unresolved` — a Critical survived the retry budget; human reviews the code.
+- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code.
 - `bolt_introduces_locked_drift` — LOCKED behavior is a human decision by definition; override-only (the fix-proposer template refuses LOCKED files).
 - `verify_unit_writable` — config issue.
 

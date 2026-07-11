@@ -27,7 +27,9 @@ fi
 # bridge diagram runs L0 BEFORE the panel
 if [ -f "$sb" ]; then
   grep -q 'L0 code gates' "$sb" || { echo "bridge missing L0 step"; err=1; }
-  awk '/RUN L0 code gates/{l0=NR} /SELECT panel tier/{p=NR} END{exit !(l0 && p && l0<p)}' "$sb" \
+  # FIRST occurrence: S7-C added a re-dispatch back-reference to the L0 box in the
+  # merge branch (below tier selection); the structural claim is about the box itself.
+  awk '/RUN L0 code gates/{if(!l0)l0=NR} /SELECT panel tier/{if(!p)p=NR} END{exit !(l0 && p && l0<p)}' "$sb" \
     || { echo "bridge: L0 must run before panel tier selection"; err=1; }
 fi
 # panel prompts carry the L0 results

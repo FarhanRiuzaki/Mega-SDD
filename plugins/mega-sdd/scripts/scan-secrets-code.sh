@@ -60,8 +60,19 @@ PYEOF
 fi
 
 # Fallback: plugin regex set over the changed files' HEAD content.
-CHANGED=$(git diff --name-only --diff-filter=ACMR "$BASE".."$HEAD" 2>/dev/null | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done)
-GITLEAKS_RC="$GITLEAKS_RC" python3 - $CHANGED <<'PYEOF'
+# S7-GATES-9: paths arrive via env (newline-separated), never argv — an unquoted
+# $CHANGED word-split paths with spaces, and each half failed open() → the file
+# was SILENTLY unscanned at the gate that promises "never unscanned".
+# core.quotepath=off: git C-quotes non-ASCII names ("na\303\257ve.py") and the
+# quoted literal fails isfile → silently skipped (review r2-2). A failed git diff
+# (shallow clone, bad range — the same states that crash gitleaks into this
+# fallback) must be a VISIBLE error, never a zero-file "clean" scan (review r1-5).
+if ! CHANGED=$(git -c core.quotepath=off diff --name-only --diff-filter=ACMR "$BASE".."$HEAD" 2>&1); then
+  echo "ERROR: git diff failed for ${BASE}..${HEAD} — the secret scan CANNOT run (${CHANGED})" >&2
+  printf '{"engine": "fallback-regex", "skipped": true, "error": "git diff failed - revision range unresolvable", "findings": [], "total": 0}\n'
+  exit 2
+fi
+CHANGED="$CHANGED" GITLEAKS_RC="$GITLEAKS_RC" python3 - <<'PYEOF'
 import json, os, re, sys
 
 PATTERNS = [
@@ -74,7 +85,10 @@ PATTERNS = [
     ("generic-assignment",  re.compile(r"(?i)\b(password|passwd|secret|api[_-]?key|token)\b\s*[:=]\s*['\"]([^'\"]{8,})['\"]")),
 ]
 findings = []
-for path in sys.argv[1:]:
+for path in os.environ.get("CHANGED", "").split("\n"):
+    # no strip(): a legit leading/trailing-space filename must stay scannable
+    if not path or not os.path.isfile(path):
+        continue
     try:
         text = open(path, encoding="utf-8", errors="replace").read()
     except OSError:

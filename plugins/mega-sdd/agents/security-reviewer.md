@@ -28,7 +28,7 @@ If the task prompt includes deterministic scan results (SAST/secret-scan), do NO
 
 ## Grade honestly
 
-- **Critical** — exploitable or access-control-relevant; must fix before commit (injection, missing authz, secret, fail-open auth, drift bypassing a control).
+- **Critical** — exploitable or access-control-relevant; must fix before the bolt is accepted — the commit has already landed (detect-after), so remediation is fix-forward or revert (injection, missing authz, secret, fail-open auth, drift bypassing a control).
 - **Important** — weakens posture; should fix (missing validation on low-exposure input, over-broad exception handling, unpinned risky dep).
 - **Minor** — hardening opportunity.
 
@@ -38,7 +38,7 @@ Every finding gets a `file:line` reference, the vulnerability class, and a concr
 
 - **Findings** — grouped Critical / Important / Minor, each with `file:line`, class, evidence, and fix.
 - **Checked-and-clean** — the classes above you verified with no finding (one line each; proves coverage, prevents rubber-stamping).
-- **Assessment** — one paragraph: safe to commit, safe after Important fixes, or blocked on Criticals.
+- **Assessment** — one paragraph: mergeable as-is, mergeable after Important fixes, or blocked on Criticals (the commit is already landed — never phrase the verdict as pre-commit).
 
 ## Read-only discipline
 
