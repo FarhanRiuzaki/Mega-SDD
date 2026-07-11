@@ -65,6 +65,10 @@ bash "$RPF" --cwd="$F" --unit=U-001 --attest-directives="panel reviewed 6c" --qu
   || fail "heal loop: rc=$RC"
 
 echo "── run-full-suite.sh ──"
+# S7-SUITE-1: the wrapper now refuses a dirty CODE tree (the artifact certifies a
+# COMMIT) — commit the heal fix (non-bolt chore: attributing it to U-001 would be
+# a real B3 escape, config/need.php is outside U-001's target_files).
+gitc "$F" add config >/dev/null; gitc "$F" commit -q -m "chore: commit the heal fix"
 SHA=$(git -C "$F" rev-parse HEAD)
 bash "$RFS" --cwd="$F" --runner=true --quiet >/dev/null 2>&1; RC=$?
 BS="$F/.mega-sdd/vaults/a/bolts/_batch-suite.json"

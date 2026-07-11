@@ -96,6 +96,10 @@ All three are idempotent — safe to re-run.
 
 **Recovery:** fix the violating code forward (or `git revert` the bolt commit) and re-run `scripts/run-postflight-scan.sh --cwd=<root> --unit=U-XXX`; re-attest re-keyed directives with `--attest-directives="<who/why>"`. If the RULE text is wrong, edit the unit's `## Hard rules` and COMMIT the edit as `fix(U-XXX): correct hard rule` — the gate recomputes against the unit text at the newest unit commit.
 
+### `whitelist_violation` / new B-gate blocks on legacy layouts / suite refusals (v4.80.0 validator hardening)
+
+**Cause:** three v4.80.0 hardenings surface on upgrade. (i) **B3 anchored matching** — the whitelist observer no longer honors suffix/fnmatch tolerances, so a past bolt commit (within the 300-commit walk) that relied on them (`legacy/app/config.py` for target `app/config.py`; `src/a/b/x.py` for `src/*.py`) now flips `whitelist_violation`. That commit DID escape its declared scope — review it; if the change is right, add the escaped paths to the unit's `target_files` and re-save. (ii) **Legacy-layout activation** — a project whose vault lives under `docs/mega-sdd/` or a `*-bound/` sibling (pre-`migrate-paths`, no `.mega-sdd/` dir) previously got ZERO B1/B2/B3/orphan coverage; on upgrade the gates activate at once (a `.mega-sdd/` dir is created for state) and `bolt_artifacts_missing` / `postflight_evidence_missing` / `batch_suite_gate_missing` are likely on the first `execute-bolts` — the dormant gates never forced those artifacts. Follow each halt's remediation (backfill or re-run); this is coverage arriving, not breakage. (iii) **run-full-suite refusals** — the wrapper now exits 2 on a dirty CODE tree, an empty repo, or a non-substantive `--vault`: commit or stash code changes first (add untracked litter like `.env`/caches to `.gitignore` — never commit secrets to clear a gate).
+
 ### `invalid_handoff` (Iter 33 F3 schema validation gate)
 
 **Cause:** old skill body emits handoff YAML missing `scope:` / `mutability:` / `constitution:` blocks; new orchestrate-flow Step 6.b validates against handoff-contract.md REQUIRED/CONDITIONAL/OPTIONAL annotations.

@@ -32,7 +32,7 @@ PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIV
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
 ```
 
-All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean".
+All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean". For the secret gate specifically (the always-on gate), a gitleaks RUNTIME failure (exit ≥ 2 — crash, incompatible CLI, bad log-opts) does not merely SKIP: it WARNs to stderr and falls back to the plugin's regex scan, and the emitted JSON `note` discloses the fallback — same degradation path as gitleaks-absent. gitleaks exit 1 with an unreadable report is a BLOCKING `report-unreadable` finding (leaks were detected; never reported clean).
 
 ## Toolchain detection (detect, never impose)
 

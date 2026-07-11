@@ -223,11 +223,16 @@ def find_decl_line(git, name):
     return None, None
 
 
-def _glob_match(p, pat):
+def _glob_match(p, pat, basename_fallback=True):
     """Glob match honoring `**` (any dirs incl zero) and stripping the documented
     `file:` prefix. S6 writers-lens fix: fnmatch never stripped `file:` (schema-conformant
     rules silently PASSED) and had no `**` recursion (app/**/*.php missed a file directly
-    under app/). `*`/`?` are segment-scoped ([^/]) — proper glob, not fnmatch's '/'-eating."""
+    under app/). `*`/`?` are segment-scoped ([^/]) — proper glob, not fnmatch's '/'-eating.
+
+    basename_fallback=False anchors the match to the FULL path only — required by the
+    B3 whitelist observer (S7-B3-1): a bare-filename pattern must never sanction a
+    same-named file in a different directory (the NAMING_RULE consumer keeps the
+    fallback; its patterns describe file names, not scopes)."""
     pat = pat[5:] if pat.startswith("file:") else pat
     rx, i = [], 0
     while i < len(pat):
@@ -242,7 +247,9 @@ def _glob_match(p, pat):
         else:
             rx.append(re.escape(pat[i])); i += 1
     cre = re.compile("^(?:%s)$" % "".join(rx))
-    return bool(cre.match(p)) or bool(cre.match(os.path.basename(p)))
+    if cre.match(p):
+        return True
+    return basename_fallback and bool(cre.match(os.path.basename(p)))
 
 
 def _attested_directives(prior_artifact):
