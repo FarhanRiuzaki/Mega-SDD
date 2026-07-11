@@ -5,7 +5,7 @@
 **Version:** 1.0
 **Introduced:** v3.25.0 (Iter 34)
 **Consumed by:** all SKILL.md subagent dispatch sites (cite via `references/model-tiers.md §<role-name>`)
-**Resolved by:** `mega-sdd:orchestrate-flow` v3.1.0+ Step 2.8 (override chain: CLI > project config > user preference > catalog default)
+**Resolved by:** `mega-sdd:orchestrate-flow` v3.1.0+ Step 2.8 (override chain: CLI > project config > user preference > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
 
 ---
 
@@ -86,10 +86,17 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 
 ## Override syntax
 
+> **Scope (S7-PANEL-3):** the `model_tiers:` override chain applies to SKILL-LEVEL
+> model picks (extraction waves, audit probes, consolidators). It does NOT apply to
+> the execute-bolts review-panel lenses (`*-reviewer`) — those are pinned in each
+> plugin agent's frontmatter, which the runtime reads directly; a
+> `model_tiers: {security-reviewer: …}` entry is silently ignored at panel dispatch
+> (see `execute-bolts/references/review-panel.md`). Do not configure panel lenses here.
+
 ### CLI flag (per-run override)
 
 ```bash
-/mega-sdd:auto --model-tier=code-quality-reviewer:sonnet ./prd.md
+/mega-sdd:auto --model-tier=intelligence-audit-probe:sonnet ./prd.md
 # multiple overrides allowed:
 /mega-sdd:auto --model-tier=audit-consolidator:opus --model-tier=audit-probe:sonnet
 ```
@@ -99,7 +106,7 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 `<project>/.mega-sdd/config.yaml`:
 ```yaml
 model_tiers:
-  code-quality-reviewer: sonnet  # team prefers cheaper reviews on this project
+  extract-intelligence-wave-5: sonnet  # cost-sensitive extraction on this project
   intelligence-audit-probe: sonnet  # bump from haiku to sonnet for higher signal
 ```
 
@@ -109,7 +116,7 @@ model_tiers:
 ```markdown
 ## Model tiers
 
-- `code-quality-reviewer`: sonnet  # personal preference (overrides catalog default opus)
+- `audit-consolidator`: opus  # personal preference (overrides catalog default)
 - `extract-intelligence-wave-5`: sonnet  # cost-sensitive default
 ```
 

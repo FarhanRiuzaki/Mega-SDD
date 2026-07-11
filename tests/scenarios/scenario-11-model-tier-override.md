@@ -39,19 +39,23 @@ Multiple overrides allowed:
 
 ```bash
 /mega-sdd:auto \
-  --model-tier=code-quality-reviewer:sonnet \
+  --model-tier=intelligence-audit-probe:sonnet \
   --model-tier=extract-intelligence-wave-5:sonnet \
   ./prd.md
 ```
 
-## Example 2 — Project always wants cheaper reviews
+> **Scope:** `model_tiers:` covers SKILL-LEVEL roles only. The execute-bolts review-panel
+> lenses (`*-reviewer`) are pinned in each agent's frontmatter and silently ignore this
+> config — see `review-panel.md` / `model-tiers.md §Override syntax`.
 
-You manage a project where team standardizes on sonnet reviews:
+## Example 2 — Project always wants cheaper extraction
+
+You manage a project where the team standardizes on cheaper extraction/audit passes:
 
 ```yaml
 # <project>/.mega-sdd/config.yaml
 model_tiers:
-  code-quality-reviewer: sonnet
+  intelligence-audit-probe: sonnet
   extract-intelligence-wave-5: sonnet
 ```
 

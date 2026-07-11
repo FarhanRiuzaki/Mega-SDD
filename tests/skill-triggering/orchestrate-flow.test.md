@@ -358,18 +358,18 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 ### OF-MT2 — CLI flag overrides project config + user preference
 
 **Setup:**
-- CLI flag: `--model-tier=code-quality-reviewer:sonnet`
-- `<project>/.mega-sdd/config.yaml` has `model_tiers: { code-quality-reviewer: haiku }`
-- `~/.mega-sdd/memory/preferences.md` `## Model tiers` has `- code-quality-reviewer: sonnet`
+- CLI flag: `--model-tier=intelligence-audit-probe:sonnet` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
+- `<project>/.mega-sdd/config.yaml` has `model_tiers: { intelligence-audit-probe: haiku }`
+- `~/.mega-sdd/memory/preferences.md` `## Model tiers` has `- intelligence-audit-probe: sonnet`
 
-**Trigger:** `/mega-sdd:auto --model-tier=code-quality-reviewer:sonnet ./prd.md`
+**Trigger:** `/mega-sdd:auto --model-tier=intelligence-audit-probe:sonnet ./prd.md`
 
 **Expected:**
-- Step 2.8 override chain resolves code-quality-reviewer to `sonnet` (CLI wins; project=haiku ignored; user=sonnet ignored — same result but CLI takes precedence)
-- metadata.model_tier_sources.code-quality-reviewer = "cli"
-- Log output mentions: "Model tier overrides applied: code-quality-reviewer=sonnet (cli-flag)"
+- Step 2.8 override chain resolves intelligence-audit-probe to `sonnet` (CLI wins; project=haiku ignored; user=sonnet ignored — same result but CLI takes precedence)
+- metadata.model_tier_sources.intelligence-audit-probe = "cli"
+- Log output mentions: "Model tier overrides applied: intelligence-audit-probe=sonnet (cli-flag)"
 - All other roles use catalog defaults
-- Subagent dispatch uses sonnet for code-quality-reviewer (NOT catalog opus default)
+- Subagent dispatch uses sonnet for intelligence-audit-probe (NOT catalog haiku default)
 
 ### OF-MT3 — Unknown role in override triggers soft halt + chain continues
 

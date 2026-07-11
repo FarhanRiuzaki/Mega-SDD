@@ -67,7 +67,7 @@ SELECT panel tier (risk-based)            (references/review-panel.md)
    ▼
 DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-only)
    each lens gets: a unit-body slice sized to the lens (spec = full verbatim;
-   others = frontmatter + requirements + Hard rules + Anchors + Migration notes,
+   others = frontmatter + requirements + Hard rules + Anchors/Anti-patterns + Migration notes,
    NOT the Implementation-steps narrative — per `review-panel.md §Blind dispatch`)
    + base/head SHAs + its lens-specific context.
    NEVER the implementer's report, NEVER another lens's verdict.
@@ -75,8 +75,12 @@ DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-o
 MERGE in the controller (main thread)
    evidence-or-drop (no file:line → discarded) → dedup, max severity → consensus marks
    ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer with the merged
-   │  issue list (shared cap: --max-retries, default 3); re-review stays blind.
-   │  Retries EXHAUSTED with a Critical still open → halt review_critical_unresolved
+   │  issue list (shared cap: --max-retries, default 3); the re-dispatch
+   │  RE-ENTERS at "RUN L0 code gates" (fresh scans against the new head;
+   │  re-review prompts carry the NEW results); re-review stays blind, diff
+   │  range keeps the ORIGINAL bolt base.
+   │  Retries EXHAUSTED with a Critical still open OR spec still ❌
+   │  → halt review_critical_unresolved
    ▼ clean (only Minor/Important remain — recorded in bolt-report ## Review panel)
 run post-flight scan (run-postflight-scan.sh), write bolt-report.md, mark unit DONE
    └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
@@ -139,8 +143,10 @@ scope: <scope-id>              # only when vault.json carries scope_metadata
 
 ## Review panel
 <MANDATORY when a panel ran: tier used, lens list, finding table
-(severity, file:line, lens), dropped-no-evidence count, and — if the bolt
-proceeded with an unresolved Critical — the review_critical_unresolved halt ref.
+(severity, file:line, lens), dropped-no-evidence count, and — when the run
+HALTED review_critical_unresolved (an open Critical or a still-❌ spec lens at
+cap exhaustion; the halt is terminal, the bolt never "proceeds" over it) — the
+halt ref.
 Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.>
 
 ## Failures (if any)

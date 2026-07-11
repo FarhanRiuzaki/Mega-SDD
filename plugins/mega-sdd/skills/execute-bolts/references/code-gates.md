@@ -13,7 +13,7 @@ Machine checks the controller runs on a bolt's `<base>..<head>` diff BEFORE disp
 
 ## The gates and their order
 
-Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff:
+Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff. `<base>` is the bolt's ORIGINAL base on EVERY pass — a panel re-dispatch re-enters here (review-panel.md §Merge) and the gates re-scan `original-base..new-head`, never fix-commit-only:
 
 | # | Gate | Script | Tool | Absent tool → |
 |---|---|---|---|---|
