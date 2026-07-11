@@ -74,6 +74,34 @@ if [ -z "$CWD" ] || [ ! -d "$CWD" ]; then
   exit 2
 fi
 
+# S7-VAL-1: gate ACTIVATION = any discoverable vault layout, not only .mega-sdd/.
+# vault_layouts.py exists (EB-VAL-2) precisely to cover legacy layouts
+# (docs/mega-sdd/vaults/*, *-bound siblings), but every gate mode short-circuited
+# on the .mega-sdd/ dir — a pure-legacy project (pre-migrate-paths) got ZERO
+# B1/B2/B3/orphan coverage, failing OPEN. A vault discoverable via any layout
+# makes the project provably mega-sdd, so creating .mega-sdd/ for the state file
+# is NOT root-minting (EB-GATE-6 forbids phantom roots with no vault at all).
+_gate_active() {
+  [ -d "${CWD}/.mega-sdd" ] && return 0
+  CWD="$CWD" python3 - <<'PY'
+import glob, os, sys
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_layouts
+cwd = os.environ["CWD"]
+for pre in vault_layouts.vault_prefixes(cwd):
+    for d in glob.glob(pre):
+        # a dependency dir is never a vault (node_modules/foo-bound/bolts must
+        # not activate the gates — and mint .mega-sdd — on a FOREIGN repo)
+        segs = os.path.relpath(d, cwd).replace(os.sep, "/").split("/")
+        if any(s in ("node_modules", "vendor") for s in segs):
+            continue
+        if os.path.isdir(d) and (os.path.isdir(os.path.join(d, "units"))
+                                 or os.path.isdir(os.path.join(d, "bolts"))):
+            sys.exit(0)
+sys.exit(1)
+PY
+}
+
 # ─── Shared python prologue (commit identity + layout discovery) ─────────────
 # Injected at the top of each mode's heredoc via $PY_COMMON. One git call
 # (`log --name-only`, pathspec-scoped to the project prefix in a monorepo —
@@ -199,16 +227,17 @@ def code_files(names):
 
 # ─── ORPHAN-SCAN mode ────────────────────────────────────────────────────────
 if [ "$ORPHAN_SCAN" = "1" ]; then
-  # Not a git repo (or no .mega-sdd) → nothing to scan; no state written.
+  # Not a git repo (or no vault layout at all) → nothing to scan; no state written.
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  _gate_active || exit 0
+  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   ORPHAN_STATE="${CWD}/.mega-sdd/.bolt-orphans-state.json"
   CWD="$CWD" ORPHAN_STATE="$ORPHAN_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
 state_file = os.environ["ORPHAN_STATE"]
 
 bolted = {}  # unit_id -> first (newest) commit sha
-for sha, subj, uid, _files in walk_log(200):
+for sha, subj, uid, _files in walk_log(300):  # S7-VAL-2: same window as B1/B2/B3
     if uid:
         bolted.setdefault(uid, sha)
 
@@ -255,7 +284,8 @@ fi
 # Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md
 if [ "$BATCH_SUITE_GATE" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  _gate_active || exit 0
+  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   BSG_STATE="${CWD}/.mega-sdd/.batch-suite-gate-state.json"
   CWD="$CWD" BSG_STATE="$BSG_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
@@ -323,31 +353,47 @@ for p in vault_layouts.batch_suite_files(cwd):
     except (OSError, ValueError):
         continue
 
-# A known-RED suite blocks outright.
-reds = [g for g in gates if str(g.get("status", "")).lower() == "red"]
-if reds:
-    emit("FAIL", "batch_suite_red",
-         "the recorded full-suite result is RED (%s) — a cross-bolt/out-of-band regression is live; "
-         "fix the failing tests and re-run the gate before any further bolt." % reds[0].get("_path", "?"),
-         {"red_gate": reds[0].get("_path")})
-
-# A green gate "covers" the tree iff the NEWEST CODE commit (bolt OR out-of-band) is an
-# ancestor of (or equal to) the gate's head_sha — i.e., the suite ran at or after the
-# last code change landed. Anchoring on newest_code (not newest_bolt) closes the
-# out-of-band half: a non-bolt code commit after a green suite is no longer covered.
-# S6 EB-VAL-1: head_sha MUST be a full 40-hex sha. A symbolic rev ("HEAD", a branch
-# name, "@") resolves at VALIDATION time — one artifact would cover every future
-# commit forever, structurally voiding the freshness anchor.
+# A RED suite blocks — but only a red that COVERS the newest code commit
+# (same freshness anchor as green). S7-SUITE-4: a stale red (older sha, or a
+# secondary vault's leftover) blocked FOREVER with a remediation that could
+# never clear it — "fix the failing tests" when the tests are green, and
+# run-full-suite used to rewrite only the first vault. A stale red is recorded
+# for transparency and superseded by fresh evidence; with NO fresh evidence at
+# all the gate still fails closed below (batch_suite_gate_missing).
 def covers(head_sha):
     if not head_sha or not re.fullmatch(r"[0-9a-f]{40}", str(head_sha).lower()):
         return False
     return git("merge-base", "--is-ancestor", newest_code, str(head_sha)).returncode == 0
 
+reds = [g for g in gates if str(g.get("status", "")).lower() == "red"]
+red_fresh = [g for g in reds if covers(g.get("head_sha"))]
+stale_reds = [g.get("_path") for g in reds if g not in red_fresh]
+if red_fresh:
+    emit("FAIL", "batch_suite_red",
+         "the recorded full-suite result is RED (%s) — a cross-bolt/out-of-band regression is live; "
+         "fix the failing tests and re-run run-full-suite.sh (it refreshes EVERY discovered vault's "
+         "artifact; use --vault=<name> to target one) before any further bolt." % red_fresh[0].get("_path", "?"),
+         {"red_gate": red_fresh[0].get("_path"), "stale_reds": stale_reds})
+
+# A green gate "covers" the tree iff the NEWEST CODE commit (bolt OR out-of-band) is an
+# ancestor of (or equal to) the gate's head_sha — i.e., the suite ran at or after the
+# last code change landed (covers() above, shared with the red check). Anchoring on
+# newest_code (not newest_bolt) closes the out-of-band half: a non-bolt code commit
+# after a green suite is no longer covered. S6 EB-VAL-1: head_sha MUST be a full
+# 40-hex sha — a symbolic rev ("HEAD", a branch name, "@") resolves at VALIDATION
+# time, so one artifact would cover every future commit forever.
 green_cover = [g for g in gates
                if str(g.get("status", "")).lower() == "green" and covers(g.get("head_sha"))]
 if green_cover:
+    # S7-SUITE-5: echo the runner into the gate state — the artifact records what
+    # command actually produced the evidence, and an explicit --runner override is
+    # surfaced (runner_overridden) so "some command exited 0" is never mistaken
+    # for "the project's detected full suite ran".
     emit("PASS", extra={"covered_by": green_cover[0].get("_path"),
-                        "newest_code_commit": newest_code})
+                        "newest_code_commit": newest_code,
+                        "runner": green_cover[0].get("runner"),
+                        "runner_overridden": bool(green_cover[0].get("runner_overridden")),
+                        "stale_reds": stale_reds})
 
 # Gate missing or stale (green but does not cover the newest code commit).
 stale = any(str(g.get("status", "")).lower() == "green" for g in gates)
@@ -357,15 +403,23 @@ symbolic = [g.get("_path") for g in gates
 oob = not newest_code_is_bolt  # the uncovered change came in WITHOUT a bolt (out-of-band)
 who = ("an OUT-OF-BAND code commit %s (no bolt provenance)" % newest_code[:9]) if oob \
       else ("bolt commit %s (%s)" % (newest_code[:9], newest_bolt_unit))
-detail = ("a green full-suite result exists but is STALE — it does not cover %s; a code change "
-          "landed after the last full-suite run." % who) if stale else \
-         ("no <vault>/bolts/_batch-suite.json records a full-suite run; %s shipped without a "
-          "final full-suite gate." % who)
+if stale:
+    detail = ("a green full-suite result exists but is STALE — it does not cover %s; a code change "
+              "landed after the last full-suite run." % who)
+elif stale_reds:
+    # S7-B r1-8: honest wording when the ONLY recorded evidence is a stale red —
+    # it is too old to block, but nothing fresh covers the tree either.
+    detail = ("the only recorded full-suite result(s) are STALE RED (%s) — too old to block, "
+              "and nothing fresh covers %s." % (", ".join(stale_reds), who))
+else:
+    detail = ("no <vault>/bolts/_batch-suite.json records a full-suite run; %s shipped without a "
+              "final full-suite gate." % who)
 if symbolic:
     detail += (" NOTE: %s carries a symbolic head_sha (e.g. \"HEAD\") — rejected; the artifact "
                "must pin the full 40-hex sha (run-full-suite.sh records it correctly)." % symbolic[0])
 emit("FAIL", "batch_suite_gate_missing", detail,
-     {"stale": stale, "out_of_band": oob, "newest_code_commit": newest_code})
+     {"stale": stale, "out_of_band": oob, "newest_code_commit": newest_code,
+      "stale_reds": stale_reds})
 PYEOF
   exit $?
 fi
@@ -380,7 +434,8 @@ fi
 # Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md (§B1)
 if [ "$POSTFLIGHT_SCAN" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  _gate_active || exit 0
+  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   PF_STATE="${CWD}/.mega-sdd/.bolt-postflight-state.json"
   CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" RECOMPUTE="$RECOMPUTE" python3 <<PYEOF
 $PY_COMMON
@@ -448,13 +503,16 @@ def has_hard_rules(text):
     # S6 EB-VAL-8: skip \`<\`-prefixed lines (HTML comments / placeholders) — the
     # unit-stage lexer (validate-unit-spec.sh) skips them, so counting them here
     # made a schema-conformant no-rules unit FAIL B1 with nothing to scan.
-    empties = {"none", "na", "n/a", "none.", "n/a.", "tbd", "todo", "nonfor",
+    # S7-B1-1: strip trailing punctuation before the lookup ("No hard rules apply."
+    # normalized to "nohardrulesapply." ∉ set → bogus B1 obligation) and cover the
+    # natural "None for this unit" phrasing (the old set carried the typo "nonfor").
+    empties = {"none", "na", "n/a", "tbd", "todo", "nonefor", "noneforthisunit",
                "nohardrules", "nohardrulesforthisunit", "nohardrulesapply",
                "notapplicable", "nonerequired", "noneapplicable", "nonefornow"}
     for ln in m.group(1).splitlines():
         if ln.strip().startswith("<"):
             continue
-        s = re.sub(r"[\`*_>\-\s]", "", ln).strip().lower()
+        s = re.sub(r"[\`*_>\-\s]", "", ln).strip().lower().rstrip(".,;:!?")
         if s and s not in empties:
             return True
     return False
@@ -597,11 +655,12 @@ fi
 # the NEXT execute-bolts on FAIL.
 if [ "$WHITELIST_SCAN" = "1" ]; then
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  [ -d "${CWD}/.mega-sdd" ] || exit 0
+  _gate_active || exit 0
+  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   WL_STATE="${CWD}/.mega-sdd/.bolt-whitelist-state.json"
   CWD="$CWD" WL_STATE="$WL_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
-import fnmatch
+import postflight_rules
 state_file = os.environ["WL_STATE"]
 
 # unit -> union of files its bolt commits touched (newest 300, subtree-scoped)
@@ -664,7 +723,9 @@ def targets_of(uid):
                 out.append(pm.group(1).strip().strip("'\""))
             elif re.match(r"^\s*-\s+[^:\s]+\s*$", ln):
                 out.append(ln.strip().lstrip("-").strip().strip("'\""))
-    return out
+    # S7-B r2-4: a ./-prefixed declaration names the SAME file — strip it (the
+    # anchored match would otherwise false-block a legit same-file commit).
+    return [t[2:] if t.startswith("./") else t for t in out]
 
 issues = []
 units_checked = 0
@@ -677,8 +738,16 @@ for uid, info in sorted(per_unit.items()):
     for p in sorted(info["files"]):
         if sanctioned(p):
             continue
+        # S7-B3-1/2: exact path or ANCHORED segment-scoped glob, nothing looser.
+        # The old suffix tolerances sanctioned DIFFERENT files (target app/config.py
+        # blessed legacy/app/config.py; and the reverse blessed root config.py), and
+        # raw fnmatch let * eat '/' (target src/*.py blessed src/a/b/evil.py) — the
+        # exact defect the sibling B1 engine's _glob_match already fixed. Targets are
+        # project-root-relative (generate-units emits them that way); the basename
+        # fallback is OFF so a bare filename never sanctions a same-named file in a
+        # different directory.
         ok = any(
-            p == t or fnmatch.fnmatch(p, t) or p.endswith("/" + t) or t.endswith("/" + p)
+            p == t or postflight_rules._glob_match(p, t, basename_fallback=False)
             for t in targets
         )
         if not ok:

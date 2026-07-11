@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.20.0
+version: 2.21.0
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the run on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -109,7 +109,7 @@ Every `bolt-report.md` MUST carry a `bolt_self_report` YAML block (numeric `conf
 - **RED → halt `batch_suite_red`**: the batch is NOT complete; emit the blocker with the failing test names; leave the tree for review (do not auto-revert); do not emit a `status: completed` handoff.
 - **Out-of-band bypass guard:** before the verdict, scan commits in the **batch window only** (from the invocation's base SHA — recorded at batch start — to HEAD, **excluding** this run's own bolt commits) for any commit that touched a unit's `target_files` yet carries no `SDD-PROVENANCE` trailer; record them in `_batch-suite.json.bypass_commits[]` and surface in `_summary.md`. A non-empty list forces the suite to run even on an otherwise-skippable invocation. Bound to the window — an unscoped `git log` would flag every pre-SDD commit.
 - **Skipped only for:** `--dry-run`, a run that committed zero code (verify-only / all-skipped → no gate required), or `--no-full-suite` (DISCOURAGED escape hatch — logged in `_summary.md` + handoff `notes.full_suite_skipped: true`, never silent).
-- **Enforcement (not prose):** the Stop hook runs `validate-bolt-artifacts.sh --batch-suite-gate` each turn end; the PreToolUse aggregator **blocks the next `execute-bolts`** when no green `_batch-suite.json` covers the newest code commit — a bolt OR an out-of-band edit (`batch_suite_gate_missing`) — or the recorded suite is RED (`batch_suite_red`). The hook VERIFIES the artifact; it never runs the suite. Procedure detail → `references/batch-and-fanout.md`; design → `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
+- **Enforcement (not prose):** the Stop hook runs `validate-bolt-artifacts.sh --batch-suite-gate` each turn end; the PreToolUse aggregator **blocks the next `execute-bolts`** when no green `_batch-suite.json` covers the newest code commit — a bolt OR an out-of-band edit (`batch_suite_gate_missing`) — or the recorded suite is RED (`batch_suite_red` — a red blocks only while it covers the newest code commit; a stale red is superseded by fresh evidence). The hook VERIFIES the artifact; it never runs the suite. Procedure detail → `references/batch-and-fanout.md`; design → `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
 
 ## Partial-state, resume + saga rollback
 
