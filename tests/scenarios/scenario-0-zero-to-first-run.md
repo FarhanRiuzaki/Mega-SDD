@@ -63,7 +63,7 @@ On first launch, Claude Code opens a browser window asking you to log in with yo
 In your running Claude Code session, type:
 
 ```
-/plugin marketplace add FarhanRiuzaki/Mega-SDD
+/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git
 /plugin install mega-sdd
 /plugin install superpowers
 ```
