@@ -73,8 +73,7 @@ This is the canonical install reference — other docs link here.
 
 ```bash
 # In Claude Code:
-/plugin marketplace add FarhanRiuzaki/Mega-SDD
-# (full URL also works: /plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git)
+/plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git
 /plugin install mega-sdd
 /plugin install superpowers   # recommended companion (TDD discipline)
 ```

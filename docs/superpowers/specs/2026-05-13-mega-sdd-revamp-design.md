@@ -467,13 +467,13 @@ Under `skills/_vendored/`:
 
 ```bash
 # Path 1 — full superpowers
-/plugin marketplace add farhanriuzaki/mega-sdd
+/plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git
 /plugin install mega-sdd
 /plugin install superpowers       # from same marketplace listing
 # Result: full superpowers experience, vendored skills inert
 
 # Path 2 — minimal (vendored only)
-/plugin marketplace add farhanriuzaki/mega-sdd
+/plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git
 /plugin install mega-sdd
 # Result: bolts work via vendored fallback, no superpowers session-start anchor
 ```

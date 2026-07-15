@@ -129,7 +129,7 @@ next_action: "<one-line prose string>"         # plain string form
 - `user_review` — user inspects artifact + decides
 - `invoke_skill` — orchestrator auto-invokes recovery skill
 - `chain_complete` — terminal; no further action
-- `file_plugin_bug` — internal bug; user files at github.com/FarhanRiuzaki/Mega-SDD/issues
+- `file_plugin_bug` — internal bug; user files at scm.bankmegadev.com/ai-rnd/mega-sdd/issues
 - `log_and_continue` — soft halt; orchestrator logs + proceeds
 - `manual_review` — user reviews state manually (no auto-action)
 

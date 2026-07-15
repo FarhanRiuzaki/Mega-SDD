@@ -218,7 +218,7 @@ Cite source for every clause flattened. Section omitted when constitution.md abs
 ```markdown
 ## Mega-sdd interop notes
 
-This project uses mega-sdd (https://github.com/FarhanRiuzaki/Mega-SDD) for spec-driven AI development. Additional context beyond this AGENTS.md:
+This project uses mega-sdd (https://scm.bankmegadev.com/ai-rnd/mega-sdd) for spec-driven AI development. Additional context beyond this AGENTS.md:
 
 - **Full vault**: `.mega-sdd/vaults/<slug>/` (canonical)
 - **Binding manifest**: `<vault>/binding.md` (vault claims validated against codebase; CONFIRMED / CONFLICT / OQ verdicts; Implementation State Map)

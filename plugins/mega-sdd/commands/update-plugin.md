@@ -15,7 +15,7 @@ Run via Bash:
 ls -d ~/.claude/plugins/marketplaces/mega-sdd 2>/dev/null
 ```
 
-If the directory does not exist, tell the user the plugin isn't installed via marketplace and stop. Suggest `/plugin marketplace add FarhanRiuzaki/Mega-SDD` (or the appropriate add command for their setup).
+If the directory does not exist, tell the user the plugin isn't installed via marketplace and stop. Suggest `/plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git` (or the appropriate add command for their setup).
 
 **Step 2 — Capture the current version (before pulling).**
 
