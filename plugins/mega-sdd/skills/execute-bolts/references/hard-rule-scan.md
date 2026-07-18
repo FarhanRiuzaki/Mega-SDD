@@ -17,7 +17,19 @@ The anti-hallucination gate. Each unit's `## Hard rules` are validated against r
 
 ## Pre-flight: grammar detection
 
-For each unit with a non-empty `## Hard rules` body section:
+The entire pre-flight (grammar detection → per-rule validation → snapshot capture) is **executed by `scripts/run-preflight-scan.sh --cwd=<root> --unit=U-XXX`** — the deterministic writer. The controller runs the script and maps its exit code to the halt taxonomy; it never computes shas or emits the JSON itself (the artifact is hook-guarded — see §`preflight.json` format):
+
+| Exit | Meaning → controller action |
+|---|---|
+| 0 | snapshot written / existing baseline kept (immutable) / no Hard rules — proceed |
+| 2 | usage error (unit not found / not a git repo) — fix the invocation |
+| 3 | halt `hard_rule_unparseable` (offending line / ast-grep stderr named verbatim) |
+| 4 | halt `hard_rule_mixed_grammar` (`--grammar=v1\|v2` is the escape hatch) |
+| 5 | halt `hard_rule_unanchored` (SIGNATURE_RULE symbol not in tracked source) |
+| 6 | halt `dep_missing` (v2 grammar, ast-grep absent) |
+| 7 | post-hoc refusal — bolt commits already exist and no baseline is on disk; NON-FATAL: proceed, post-flight falls back to commit evidence, log in the bolt-report |
+
+What the script executes, for each unit with a non-empty `## Hard rules` body section:
 
 - YAML code blocks under `## Hard rules` → **v2 grammar** (ast-grep YAML; the grammar spec is the v2 Hard-rule-grammar ref listed in SKILL.md).
 - Bulleted line items (`- DO NOT modify ...`) → **v1 grammar** (the 5-type legacy set).
@@ -38,24 +50,27 @@ For each unit with a non-empty `## Hard rules` body section:
 
 ## Pre-flight: v2 (ast-grep) snapshot
 
-For each rule, snapshot AST state via `ast-grep scan --rule <yaml> --json` (zero matches expected pre-bolt for "forbidden" rules). Persist the matched-files list + sha256 per matched file as an AUDIT record of the pre-bolt state — post-flight re-runs the scan; it does NOT sha-compare (a v2 rule is a pattern scan, not a lock — the bolt may legitimately edit matched files to fix a pre-existing violation).
+For each rule, snapshot AST state via `ast-grep scan --rule <yaml> --json` (zero matches expected pre-bolt for "forbidden" rules). Entries are recorded as `{type: v2_ast_grep, rule: <id>, matched_files: [{path, sha256}]}` in the same top-level `rules[]` array of `preflight.json` — an AUDIT record of the pre-bolt state, nothing more: post-flight re-runs the scan; it does NOT sha-compare (a v2 rule is a pattern scan, not a lock — the bolt may legitimately edit matched files to fix a pre-existing violation).
 
 ## Pre-flight: v1 (legacy 5-grammar) snapshot
 
 - `DO_NOT_MODIFY <path>` → record `sha256(file content)` if the file exists; record "absent" otherwise.
 - `DO_NOT_ADD_DEPS <manifest>` → record the manifest's dependency-section content.
 - `NAMING_RULE <path-glob> <case-style>` → no pre-snapshot (post-flight checks new files only).
-- `SIGNATURE_RULE function <name>` → read codebase-map §2 for the current signature; record verbatim. Not in codebase-map → halt `hard_rule_unanchored`.
+- `SIGNATURE_RULE function <name>` → the script extracts the current declaration via the shared `find_decl_line` (the SAME extractor post-flight uses) and records the pre-`{` prefix as `signature_at_preflight`; symbol not found in tracked source → exit 5 → halt `hard_rule_unanchored`.
 - `FILE_PRESENCE_RULE file <path>` → no pre-snapshot.
 
 ## `preflight.json` format
 
-Persist the snapshot as `<vault>/bolts/U-XXX/preflight.json` for post-flight comparison:
+`run-preflight-scan.sh` persists the snapshot as `<vault>/bolts/U-XXX/preflight.json` for post-flight comparison:
 
 ```json
 {
   "unit_id": "U-001",
   "snapshot_at": "2026-05-20T10:00:00Z",
+  "head_sha": "<HEAD sha at capture>",
+  "written_by": "run-preflight-scan.sh",
+  "grammar": "v1",
   "rules": [
     {"type": "DO_NOT_MODIFY", "path": "src/Models/User.php", "sha256": "abc123..."},
     {"type": "DO_NOT_ADD_DEPS", "manifest": "package.json", "deps_section": "..."},
@@ -63,6 +78,11 @@ Persist the snapshot as `<vault>/bolts/U-XXX/preflight.json` for post-flight com
   ]
 }
 ```
+
+The `snapshot_at` / `head_sha` / `written_by` / `grammar` top-level keys are provenance stamps added by the script; the `rules[]` entry shapes are UNCHANGED (the post-flight engine reads only `rules[]`, so the stamps are ignored by every consumer). The artifact is **hook-guarded like `postflight.json`** — Write/Edit denied plus the Bash tamper verbs — because the engine gives a present sha/signature snapshot precedence over commit evidence: a hand-written baseline with a wrong sha256 is a forged BASELINE that makes a `DO_NOT_MODIFY`/`SIGNATURE` violation undetectable. Lifecycle rules:
+
+1. **Re-capture is allowed only while the unit has no bolt commits** — a re-run overwrites the snapshot (fresh `snapshot_at`).
+2. **Once bolt commits exist the baseline is immutable** — an existing artifact is kept byte-identical; an absent one is refused with exit 7 (anti-laundering; post-flight then uses git commit evidence instead).
 
 ## Halt YAMLs
 
