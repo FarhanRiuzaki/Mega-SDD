@@ -35,9 +35,19 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    inside the detail block. `validate-handoff-binding-units.sh` and
    `validate-conflict-classification.sh` key ONLY on the heading-line marker or the
    dedicated Resolution line — a marker anywhere else (summary table only, prose) does
-   NOT clear the gate. Also update the summary-table `Resolution Needed` cell, and,
-   when `<vault>/binding.json` exists, set the claim's `resolution: <ACTION>` field
-   (per `bind-codebase/references/binding-json-schema.md`).
+   NOT clear the gate. Also update the summary-table `Resolution Needed` cell, and
+   ensure the detail block carries its `- **Claim**: C-NNN` line (legacy blocks
+   resolved before the W2 grammar may lack it — ADD it during write-back from the
+   conflict's claim context; a bounded self-heal). Then **Run**
+   `scripts/derive-binding-json.sh --vault <vault>` (the directory containing
+   `binding.md`) to refresh `binding.json` FROM the updated markdown — the json is
+   script-derived, never hand-patched (per
+   `bind-codebase/references/binding-json-schema.md`); the resolved claims'
+   `resolution:` fields appear from the RESOLVED blocks' Claim lines. Exit 2 = the
+   write-back is malformed (most often a RESOLVED block still missing its Claim
+   line) — fix the markdown and re-run. Do NOT re-run `validate-binding-json.sh`
+   after a derive — parity is tautological immediately after deriving from the
+   same markdown.
 
    Per-action behavior:
 
@@ -51,8 +61,8 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 3. **Walk Open Questions table.** For each propagated deferred-OQ, use the standard 4-action menu (`[A]` Answer now / `[C]` Out of scope / `[D]` Skip — same Step 2b menu as the standard walk), with **Option [B] Defer hidden** (already in binding context — nested deferral not supported; re-binding flow is via re-running `bind-codebase`).
 
 4. **Write back.** All resolutions persist to:
-   - `binding.md` — detail headings + Resolution lines per the write-back grammar above; summary rows updated
-   - `binding.json` (when present) — claim `resolution:` field set per action
+   - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above; summary rows updated
+   - `binding.json` — refreshed by running `scripts/derive-binding-json.sh --vault <vault>` after the markdown write (script-derived from `binding.md`; never edited by hand)
    - `vault.json` — append changelog: `{ "event": "resolve-oq-binding", "at": "<iso>", "summary": "N conflicts resolved, M OQs resolved" }`
    - `decisions.md` (memory layer) — each resolution recorded durably (survives re-binds; per resolve-oq's auto-memory-handoff reference)
 

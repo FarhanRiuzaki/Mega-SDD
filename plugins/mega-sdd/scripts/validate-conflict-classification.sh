@@ -58,6 +58,7 @@ conflicts_total = 0
 conflicts_classified = 0
 conflicts_unclassified = 0
 conflicts_resolved = 0
+conflicts_missing_claim = 0
 
 binding_files = sorted(
     glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "binding.md")) +
@@ -93,6 +94,11 @@ HEAD_RESOLVED_RE = re.compile(
 RESOLUTION_LINE_RE = re.compile(
     r"(?mi)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:Resolution|Status)(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?:✅\s*)*(?:RESOLVED\b|✅)"
 )
+# W2: `- **Claim**: C-NNN` line — the derive-binding-json.sh claim-id carrier.
+# MANDATORY on RESOLVED blocks (the derive exits 2 without it); recommended on
+# ACTIVE blocks, where its absence is a backward-compatible WARN here (never a
+# FAIL) so the omission surfaces at bind time instead of first-resolution time.
+CLAIM_LINE_RE = re.compile(r"(?m)^\s*[-*]\s*\*\*Claim\*\*\s*:\s*\S")
 
 
 def section_block(content, start_idx):
@@ -127,6 +133,11 @@ for bf in binding_files:
             st["resolved"] = True
         if CLASS_RE.search(block) and COMPLEXITY_RE.search(block):
             st["classified"] = True
+        # W2: markdown blocks only (grep-level; yaml blocks exempt) — track
+        # whether ANY of this id's sections carries the Claim line.
+        st["md_block"] = True
+        if CLAIM_LINE_RE.search(block):
+            st["claim_line"] = True
 
     # (b) forward-compat structured yaml blocks
     for block in YAML_BLOCK_RE.findall(content):
@@ -159,6 +170,21 @@ for bf in binding_files:
                     f"conflict_class/resolution_complexity enrichment"
                 ),
             })
+        # W2: ACTIVE markdown block lacking the `- **Claim**:` line → WARN
+        # (never FAIL — advisory, same posture as the classification fields).
+        if st.get("md_block") and not st.get("claim_line"):
+            conflicts_missing_claim += 1
+            issues.append({
+                "halt_type": "conflict_claim_line_missing",
+                "conflict_id": cid,
+                "binding_file": os.path.relpath(bf, cwd),
+                "missing_fields": ["Claim"],
+                "detail": (
+                    f"{cid} in {os.path.basename(bf)}: active conflict block "
+                    f"lacks a '- **Claim**: C-NNN' line — derive-binding-json.sh "
+                    f"will exit 2 if this conflict is resolved without it"
+                ),
+            })
 
 active = conflicts_total - conflicts_resolved
 if conflicts_total == 0:
@@ -167,13 +193,21 @@ if conflicts_total == 0:
 elif active == 0:
     status = "PASS"
     detail = f"all {conflicts_total} CONFLICTs resolved; no active conflicts to classify"
-elif conflicts_unclassified > 0:
+elif conflicts_unclassified > 0 or conflicts_missing_claim > 0:
     status = "WARN"
-    detail = (
-        f"{conflicts_classified}/{active} active CONFLICTs classified; "
-        f"{conflicts_unclassified} missing conflict_class/resolution_complexity "
-        f"({conflicts_resolved} resolved, exempt)"
-    )
+    parts = []
+    if conflicts_unclassified > 0:
+        parts.append(
+            f"{conflicts_classified}/{active} active CONFLICTs classified; "
+            f"{conflicts_unclassified} missing conflict_class/resolution_complexity "
+            f"({conflicts_resolved} resolved, exempt)"
+        )
+    if conflicts_missing_claim > 0:
+        parts.append(
+            f"{conflicts_missing_claim} active CONFLICT block(s) lack a "
+            f"'- **Claim**: C-NNN' line (W2 grammar; mandatory once resolved)"
+        )
+    detail = "; ".join(parts)
 else:
     status = "PASS"
     detail = f"all {active} active CONFLICTs have conflict_class + resolution_complexity ({conflicts_resolved} resolved)"
@@ -184,6 +218,7 @@ result = {
     "conflicts_resolved": conflicts_resolved,
     "conflicts_classified": conflicts_classified,
     "conflicts_unclassified": conflicts_unclassified,
+    "conflicts_missing_claim": conflicts_missing_claim,
     "issues": issues,
     "summary": detail,
 }

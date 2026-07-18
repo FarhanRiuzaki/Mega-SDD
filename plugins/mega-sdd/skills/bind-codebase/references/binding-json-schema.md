@@ -1,16 +1,25 @@
 # binding.json — structured State Map sidecar
 
-`bind-codebase` emits `binding.json` next to `binding.md` (same Step 4 write).
-Pure JSON root object, no frontmatter. Mirror of the Implementation State Map
-table + Confirmed Claims list, so downstream consumers (the graph builder)
-never parse the markdown table.
+`binding.json` is SCRIPT-DERIVED from `binding.md` by
+`scripts/derive-binding-json.sh` (bind-codebase Step 4.5; re-run by resolve-oq
+`--binding` after its write-back) — never hand-written or model-emitted, so
+`generated_by` is always `derive-binding-json@1.0.0`. Pure JSON root object, no
+frontmatter. Mirror of the Implementation State Map table + Confirmed Claims
+list, so downstream consumers (the graph builder) never parse the markdown
+table. Value provenance: `codebase_map_provenance` + `head` come verbatim from
+the `binding_metadata` frontmatter (written once at bind Step 4 — a re-derive
+never recomputes them); `state_reason` comes from the trailing
+`[reason: <enum>]` token in the State Map row's Anchor cell (stripped from
+`anchor` at derive time); `resolution` comes from RESOLVED `### CONFLICT-N`
+blocks' `- **Claim**: C-NNN` lines. `schema_version` stays `"1.0"` — the key
+set and shapes are unchanged; only value provenance and `generated_by` changed.
 
 ## Schema
 
 ```json
 {
   "schema_version": "1.0",
-  "generated_by": "bind-codebase@<version>",
+  "generated_by": "derive-binding-json@1.0.0",
   "generated_at": "<ISO8601 UTC>",
   "vault": "<vault dir path>",
   "codebase_map_provenance": "snapshot-verified | snapshot-stale | no-snapshot",
@@ -34,10 +43,15 @@ never parse the markdown table.
 Field notes (S4):
 - `state_reason` — WHY a state is `UNKNOWN` (or otherwise degraded). `truncated_section`
   is load-bearing: `generate-units` keys its direct-probe sub-rule on it (never `create`
-  straight off a capped map section). Optional/null for self-evident states.
+  straight off a capped map section). Optional/null for self-evident states. Sourced
+  from the State Map Anchor cell's `[reason: <enum>]` token; the derive FAILS (exit 2)
+  on an unknown token or on a truncation-citing Anchor cell with no token.
 - `resolution` — set by `/mega-sdd:resolve-oq --binding` when a CONFLICT claim is
   resolved (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT); null until then. resolve-oq
-  updates this sidecar alongside `binding.md` when the file exists.
+  writes the structural RESOLVED markers + the `- **Claim**: C-NNN` line into
+  `binding.md`, then refreshes this sidecar by re-running
+  `scripts/derive-binding-json.sh` (the ACTION is read from whichever RESOLVED
+  surface matched; the Claim line maps it onto the State Map claim id).
 
 ## Parity rule (validated by `scripts/validate-binding-json.sh`)
 

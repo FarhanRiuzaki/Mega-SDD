@@ -15,6 +15,7 @@ verdict: PASS_WITH_OQ
 
 ### CONFLICT-1 — `App\Models\Product` name collision
 
+- **Claim**: C-001
 - **Vault doc**: 01-entities.md §Product
 - **Codebase artifact**: `app/Models/Product.php` (pre-existing demo scaffold)
 - **conflict_class**: naming-collision

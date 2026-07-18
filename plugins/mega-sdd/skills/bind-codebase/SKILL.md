@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.7.0
+version: 2.8.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -63,20 +63,18 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 **3. Aggregate counts.** `claims_total`, `confirmed`, `conflict`, `oq`.
 
-**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs).
+**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs). The frontmatter's `binding_metadata` block carries `codebase_map_provenance` (Step 1) AND `head` — the current `git rev-parse HEAD` (or `null` outside git), written ONCE here; Step 4.5 copies both into `binding.json` verbatim. State Map rows whose state comes from a truncation/heuristic condition end their Anchor cell with the `[reason: <enum>]` token (S4 — `truncated_section` is mandatory when the truncation exception fired; generate-units keys its direct-probe rule on the derived `state_reason`), and RESOLVED `### CONFLICT-N` blocks carry their `- **Claim**: C-NNN` line — both per the template grammar.
 
-**4.5. Emit `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
-Write `<vault>/binding.json` from the SAME claim data you just rendered into the
-State Map — one `claims[]` entry per State Map row (`id`, `verdict`, `state`,
-`state_reason` (S4 — `truncated_section` is mandatory when the truncation
-exception fired; generate-units keys its direct-probe rule on it), `anchor`,
-`confidence`, `field_diff`, and `vault_source` from the Confirmed
-Claims list `vault file:line`). Set `codebase_map_provenance` from
-`binding_metadata`, `head` to the current `git rev-parse HEAD` (or null outside
-git). This is part of the binding write — emit it whether the bind is clean or
-blocked. Then **Run** `scripts/validate-binding-json.sh --vault <vault>`; a
-non-zero exit means `binding.md` and `binding.json` disagree — fix the write
-before proceeding (do NOT emit a halt YAML for this; it is an authoring bug).
+**4.5. Derive `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
+**Run** `scripts/derive-binding-json.sh --vault <vault>` — deterministic
+generator: `binding.json` is derived FROM `binding.md` (never hand-written —
+the State Map rows, Confirmed Claims list, CONFLICT blocks, and
+`binding_metadata` frontmatter you wrote in Step 4 are the single source of
+truth; `[reason: <enum>]` Anchor tokens become `state_reason`, RESOLVED
+blocks' Claim lines become `resolution`). This is part of the binding write —
+run it whether the bind is clean or blocked. Exit 2 = fix the Step-4
+`binding.md` write and re-run — an authoring bug, not a halt (do NOT emit a
+halt YAML for this).
 
 **5. Decision gate — non-negotiable:**
 
