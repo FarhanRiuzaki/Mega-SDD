@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "generated_by": "derive-binding-json@1.0.0",
+  "generated_at": "IGNORED-BY-TEST",
+  "vault": "v1",
+  "codebase_map_provenance": "snapshot-verified",
+  "head": "abc123def456",
+  "claims": [
+    {
+      "id": "C-001",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "state_reason": null,
+      "anchor": "UserController.php:45",
+      "confidence": "high",
+      "field_diff": "(exact match)",
+      "vault_source": "03-data-model.md:42",
+      "resolution": null
+    },
+    {
+      "id": "C-012",
+      "verdict": "OQ",
+      "state": "NEW",
+      "state_reason": null,
+      "anchor": "—",
+      "confidence": "n/a",
+      "field_diff": "n/a",
+      "vault_source": null,
+      "resolution": null
+    },
+    {
+      "id": "C-044",
+      "verdict": "CONFIRMED",
+      "state": "UNKNOWN",
+      "state_reason": "truncated_section",
+      "anchor": "truncated §4 — absence is not evidence (map capped)",
+      "confidence": "low",
+      "field_diff": "n/a",
+      "vault_source": "04-flows.md:12",
+      "resolution": null
+    },
+    {
+      "id": "C-050",
+      "verdict": "CONFLICT",
+      "state": "UNKNOWN",
+      "state_reason": null,
+      "anchor": "app/Models/Product.php:10",
+      "confidence": "medium",
+      "field_diff": "n/a",
+      "vault_source": null,
+      "resolution": null
+    },
+    {
+      "id": "C-051",
+      "verdict": "CONFLICT",
+      "state": "UNKNOWN",
+      "state_reason": null,
+      "anchor": "app/Http/Auth.php:10",
+      "confidence": "medium",
+      "field_diff": "n/a",
+      "vault_source": null,
+      "resolution": "KEEP_VAULT"
+    }
+  ]
+}

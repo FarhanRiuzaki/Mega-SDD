@@ -5,43 +5,23 @@ set -u
 VAULT=""
 while [ $# -gt 0 ]; do case "$1" in --vault) VAULT="$2"; shift 2;; --vault=*) VAULT="${1#*=}"; shift;; *) shift;; esac; done
 [ -n "$VAULT" ] || { echo "usage: validate-binding-json.sh --vault <dir>" >&2; exit 3; }
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
 V_VAULT="$VAULT" python3 <<'PYEOF'
 import json, os, sys
+# W2: parse_state_map moved BYTE-IDENTICAL (error strings + control flow) into
+# the shared _lib/binding_md.py so the parity validator and the generator
+# (derive-binding-json.sh) can never fork on md grammar.
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+from binding_md import parse_state_map
+
 vault = os.environ.get("V_VAULT") or ""
 if not vault:
     print("FAIL: V_VAULT not set", file=sys.stderr); sys.exit(3)
 md_path = os.path.join(vault, "binding.md")
 js_path = os.path.join(vault, "binding.json")
 errors = []
-
-def parse_state_map(md, errors):
-    rows = {}
-    in_tbl = False
-    for line in md.splitlines():
-        if line.strip().startswith("## Implementation State Map"):
-            in_tbl = True; continue
-        if in_tbl:
-            if line.startswith("## "):
-                break
-            if not line.strip().startswith("|"):
-                continue
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            # S4 BC-PARITY-5COL: aligned separators (|:---:|) are separator rows,
-            # not claim rows (they used to phantom-FAIL as ':---' claims).
-            if cells[0] in ("Claim ID", "---") or (cells[0] and set(cells[0]) <= set("-:")):
-                continue
-            if len(cells) < 6:
-                # S4 BC-PARITY-5COL: a short row inside the table region is a
-                # MALFORMED row — silently skipping it let a divergent md/json
-                # pair pass parity cleanly. Template pins 6 columns always
-                # (Field diff cell = n/a at non-ast tiers).
-                errors.append(
-                    f"malformed State Map row ({len(cells)} cells, need 6): {line.strip()[:120]}"
-                )
-                continue
-            rows[cells[0]] = {"id": cells[0], "verdict": cells[1], "state": cells[2]}
-    return rows
 
 try:
     md = open(md_path, encoding="utf-8").read()
