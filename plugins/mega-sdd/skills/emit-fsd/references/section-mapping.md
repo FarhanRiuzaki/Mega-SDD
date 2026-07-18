@@ -45,7 +45,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Slot:** `{{section-1-content}}`
 **Source:** `<vault>/01-overview.md` §Purpose + §Scope
 **Extraction:** Read entire §Purpose block + §Scope block; preserve markdown formatting; strip vault-internal anchors.
-**Citation:** `[¹] Source: vault/01-overview.md:L<purpose_start>-L<scope_end> (sha256: <short>)`
+**Citation:** `[¹] Source: vault/01-overview.md:L<purpose_start>-L<scope_end> (sha256: pending)`
 **Missing source:** emit `[Pending — vault/01-overview.md not yet generated]`
 
 ## Section 2 — Goals & Non-Goals
@@ -69,7 +69,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - From vault.json.stakeholders[]: emit one row per entry: `{role} | {name} | {responsibility}`
 - Fallback: emit single row `Author | {vault.author} | Project owner`
 
-**Citation:** `[¹] Source: vault/_meta/squads.yaml` OR `vault.json` (sha256: <short>)
+**Citation:** `[¹] Source: vault/_meta/squads.yaml` OR `vault.json` (sha256: pending)
 **Missing source:** emit single row with `Author | (unspecified — vault.json.author missing) | Project owner` + warning callout above table.
 
 ## Section 4 — User Stories
@@ -82,7 +82,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - `so_that`: from `unit.business_value` or frontmatter `user_story.so_that`; if absent, leave `(unspecified)`
 - `acceptance_test_summary`: 1-line condensation of `unit.acceptance_test.command` + expected outcome
 
-**Citation:** per-story footer `[Source: units/U-NNN.md (sha256: <short>)]`
+**Citation:** per-story footer `[Source: units/U-NNN.md (sha256: pending)]`
 **Missing source (no units/):** emit `[Pending — units/ directory not yet generated. Run /mega-sdd:generate-units after vault stabilizes.]`
 
 ## Section 5 — Functional Requirements
@@ -105,7 +105,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 
 **Detail block:** emit per-FR detail block from `fsd-template.md` Section 5 template.
 
-**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: <short>)]`
+**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: pending)]`
 **Missing source:** emit `[Pending — vault/02-functional.md not yet generated]`
 
 ## Section 6 — Non-Functional Requirements
@@ -136,7 +136,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - Modules: from codebase-map.md §Modules table — emit as table with `Module | Path | Responsibility`
 - Confirmed Claims: from binding.md `## Confirmed Claims` section — emit each as bulleted item with `[C-NNN]` ID prefix
 
-**Citation:** per source `[¹] binding.md:L<line>` AND `[²] codebase-map.md §Entities (sha256: <short>)`
+**Citation:** per source `[¹] binding.md:L<line>` AND `[²] codebase-map.md §Entities (sha256: pending)`
 **Missing source:** if binding.md absent → emit `[Pending — binding.md not yet generated. Run /mega-sdd:bind-codebase.]`; if codebase-map absent → `[Pending — codebase-map.md not yet generated. Run /mega-sdd:scan-codebase.]`
 
 ## Section 8 — API & Data Contracts
@@ -149,7 +149,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - Emit table rows: `| {name} | {signature} | {source_path}:L{line} |`
 - Append entities content: nested list of all entities from §Entities (sha256-stamped per row)
 
-**Citation:** per row `[Source: codebase-map.md §Public interfaces:L<line> (sha256: <Last_Scanned_Sha256>)]`
+**Citation:** per row `[Source: codebase-map.md §Public interfaces:L<line> (sha256: pending)]` — the model never transcribes `Last_Scanned_Sha256` values; the stamp is computed by the script from `codebase-map.md` bytes
 **Missing source:** emit `[Pending — codebase-map.md not yet generated]`
 
 ## Section 9 — Test Plan & UAT
@@ -194,17 +194,17 @@ Each FSD section in `fsd-template.md` has a `{{section-N-citations}}` slot (10 t
 
 **Extraction rule (per section N):**
 
-1. Read `citation_map.sections` entries (built during Step 3.f-g) for `fsd_section: "N.*"` (all entries whose section field starts with N, e.g., `5.FR-007`, `5.FR-008`).
+1. Collect the source citations section N used during Step 3 (every source path + line range cited by that section's body).
 2. De-duplicate by `source_path` (multiple FR entries in section 5 may cite the same vault/02-functional.md).
 3. Emit footer block:
 
    ```markdown
    **Sources for this section:**
-   - [¹] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
-   - [²] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
+   - [¹] `<source_path>:L<start>-L<end>` (sha256: `pending`)
+   - [²] `<source_path>:L<start>-L<end>` (sha256: `pending`)
    ```
 
-   Where `<sha-short>` is first 12 chars of `source_sha256`.
+   Stamps are placeholders at authoring time; `scripts/build-citation-map.sh` replaces them with real 12-char hashes and writes the map (SKILL.md Step 4.6). The model never writes hash characters.
 
 4. If section has zero citations (e.g., section 9 in pre-dev mode with no bolts, section 6 NFR when nothing specified): emit:
 
@@ -214,7 +214,7 @@ Each FSD section in `fsd-template.md` has a `{{section-N-citations}}` slot (10 t
 
 5. If `styling.include_citation_footnotes: false` → emit empty string (slot suppressed per styling override).
 
-**Halt path:** if extraction logic encounters an entry with `source_path` AND `source_sha256` missing (impossible if Step 3.b-c executed correctly; defensive check) → halt `quality_gate_failed:template_slot_unfilled` with details `{section: N, missing_field: "source_path|source_sha256"}`.
+**Halt path:** a citation whose path resolves to no existing file is caught deterministically at SKILL.md Step 4.6 — `build-citation-map.sh` exits 1 → halt `quality_gate_failed:citation_unresolvable` (never a prose-trusted defensive check). A slot with no extraction rule at all remains `quality_gate_failed:template_slot_unfilled` (Step 4.5).
 
 **Previously:** `fsd-template.md` declared 10 `{{section-N-citations}}` slot markers but `section-mapping.md` had NO extraction rule for them. Result before fix:
 - Best case: skill body halt `template_slot_unfilled` on every FSD emit (defensive)
@@ -225,20 +225,21 @@ Closed by the extraction rule above.
 
 ## Citation map schema
 
-`<vault>/fsd/.citation-map.json`:
+`<vault>/fsd/.citation-map.json` — SCRIPT-WRITTEN by `scripts/build-citation-map.sh` (SKILL.md Step 4.6); the model never authors or edits this file:
 
 ```json
 {
-  "schema_version": "1.0",
-  "emitted_at": "2026-05-25T10:30:00Z",
-  "emitted_by": "emit-fsd v1.0.0",
+  "schema_version": "2.0",
+  "emitted_at": "2026-07-19T10:30:00Z",
+  "emitted_by": "emit-fsd via scripts/build-citation-map.sh",
   "vault_sha256": "abc...",
   "mode": "pre-dev" | "post-dev",
   "sections": [
     {
       "fsd_section": "5.FR-007",
       "source_path": "vault/02-functional.md",
-      "source_lines": "L78-92",
+      "resolved_path": ".mega-sdd/vaults/v1/02-functional.md",
+      "source_lines": "L78-L92",
       "source_sha256": "def...",
       "emitted_text_sha256": "ghi..."
     }
@@ -249,11 +250,22 @@ Closed by the extraction rule above.
 }
 ```
 
+Schema 2.0 notes (v1.4.0 — every hash originates from `hashlib.sha256` over actual file bytes inside the script):
+
+- `source_path` keeps the AS-CITED display form; `resolved_path` (new) is the project-root-relative path the hash was actually computed over (resolution order: `vault/`-prefix → vault → project → codebase-map).
+- An unresolvable citation gets `source_sha256: null` + `unresolved: true` (and the script exits 1 → `citation_unresolvable` halt).
+- `emitted_text_sha256` = sha256 of the raw byte-slice of that FSD section AFTER stamping (redefined under the 2.0 bump; no consumer existed for the 1.0 meaning).
+- `emitted_by` includes the script name.
+- `missing_sources[]` shape `{section, expected_source, reason}` unchanged — script-derived from the `[Pending — …]` markers in FSD.md (consumer: orchestrate-flow `chain-execution.md` final summary).
+- `--sections` subset re-emit: the map reflects only the sections present in FSD.md (exact parity with pre-2.0 behavior; no merge-prior carry-forward).
+
 ## Drift detection
 
-On re-emit:
-1. Read prior `.citation-map.json` (if exists)
-2. For each prior citation entry: compute current sha256 of `source_path`
-3. If current ≠ prior → flag section for drift callout
+On re-emit (SKILL.md Step 2): run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<project-root>` and consume ONLY its output lines — the model does not read the map:
+
+- `DRIFT <section> <path> <old12> <new12>` / `GONE <section> <path> <old12>` → flag that section for a drift callout, using `old12`/`new12` in the callout text
+- `UNVERIFIED <section> <path>` → informational (a prior entry that cannot be re-verified — e.g. a legacy schema-1.0 display-form path that no longer resolves); no callout
+- `NO_PRIOR` / `PRIOR_UNREADABLE` → first emit; no callouts
+- no output → nothing drifted
 
 Drift callout text inserted as block quote BEFORE regenerated section (per fsd-template.md drift callout format).

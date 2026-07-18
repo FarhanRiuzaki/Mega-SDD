@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.3.0
+version: 1.4.0
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -33,7 +33,7 @@ description: Generate a Hybrid Confluence-format FSD (Functional Specification D
 ├── FSD.md                      # source markdown (10-section Hybrid Confluence template)
 ├── FSD.pdf                     # rendered PDF via pandoc (absent if pandoc/LaTeX unavailable)
 ├── FSD.styling.yaml            # styling config (generated on first run; preserved on re-emit)
-└── .citation-map.json          # vault-section → FSD-section citation trace
+└── .citation-map.json          # vault-section → FSD-section citation trace (script-written by build-citation-map.sh)
 ```
 
 ## Pre-flight checks
@@ -61,26 +61,25 @@ Emit detected mode + reasoning to chat: `"FSD mode: <mode> (detected via: <CWD s
 3. If `--styling=<path>` flag passed, load that path instead (overrides both).
 4. Resolve template variables: `project_name` from `vault.json.project_name` if styling has null; `vault_version` from `vault.json.vault_version`; `generation_date_*` from current ISO8601.
 
-### Step 2: Read prior citation map (drift detection)
+### Step 2: Prior-emit drift check (script-run)
 
-1. Check `<vault>/fsd/.citation-map.json` — if exists, parse as `prior_citation_map`.
-2. Else, `prior_citation_map = null` (first emit; no drift to detect).
+1. Run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<project-root>` and capture stdout.
+2. `NO_PRIOR` or `PRIOR_UNREADABLE` → first emit; no drift callouts.
+3. Otherwise each `DRIFT <section> <path> <old12> <new12>` / `GONE <section> <path> <old12>` line marks that section for a drift callout in Step 3, using `old12`/`new12` in the callout text. (`UNVERIFIED <section> <path>` is informational — a prior entry that cannot be re-verified; no callout.) No output = nothing drifted.
+4. NEVER Read `.citation-map.json` directly — the script is its only sanctioned reader; the model consumes ONLY the script's drift lines.
 
 ### Step 3: Per-section emission loop
 
 For each section N in 1-10 (filter by `styling.include_sections` if not "all"):
 
 a. Look up extraction rules in `references/section-mapping.md §Section N`.
-b. For each declared source artifact: check existence + read content + compute sha256.
+b. For each declared source artifact: check existence + read content.
 c. Apply extraction rules to produce slot content.
 d. If any source artifact absent: emit `[Pending — <source> not yet generated]` placeholder per anti-hallucination rule.
-e. Compute `emitted_text_sha256` of slot content.
-f. Compare `source_sha256` vs `prior_citation_map.sections[].source_sha256` (if applicable):
-   - Mismatch → flag section for drift callout; insert callout block quote BEFORE section content
-   - Match → no callout
-   - First emit (no prior) → no callout
-g. Append entry to in-memory `citation_map.sections[]`.
-h. Substitute slot in `references/fsd-template.md §Section N` template.
+e. If Step 2 script output flagged this section (a `DRIFT`/`GONE` line): insert the drift callout block quote BEFORE section content, using that line's `old12`/`new12` prefixes in the callout text (per fsd-template.md drift callout format).
+f. Substitute slot in `references/fsd-template.md §Section N` template.
+
+**Stamp rule (mandatory):** every citation stamp in emitted text is the LITERAL `(sha256: pending)` — the model MUST NOT write hash characters. Step 4.6's script replaces `pending` with the real 12-char prefix computed from file bytes.
 
 ### Step 4: Assemble FSD.md
 
@@ -112,6 +111,14 @@ next_action: "Internal bug: fsd-template.md has slot marker(s) that section-mapp
 
 STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` literals to PDF OR allowing pandoc to interpret them as template variables would be an anti-hallucination rail break.
 
+### Step 4.6: Stamp citations + write the map (script-run, BEFORE pandoc)
+
+Run `bash <plugin-root>/scripts/build-citation-map.sh --vault=<vault> --cwd=<project-root> --mode=<mode>`.
+
+- **Exit 0:** `pending` stamps in FSD.md are now real 12-char hashes (computed by the script from file bytes) and `<vault>/fsd/.citation-map.json` (schema 2.0) is written — including `missing_sources[]`, script-derived from the `[Pending — …]` markers (consumer contract unchanged: orchestrate-flow final summary). Proceed to Step 5.
+- **Exit 1:** halt `quality_gate_failed` with `subtype: citation_unresolvable`, details carrying the script's `UNRESOLVED`/`LEFTOVER` lines; STOP — do NOT render PDF (a fabricated or stale citation must never ship in a stamped document).
+- **Exit 2:** usage error / FSD.md missing — internal bug; re-check Step 4 wrote `<vault>/fsd/FSD.md`.
+
 ### Step 5: Render PDF via pandoc
 
 1. Check `pandoc` availability:
@@ -134,31 +141,9 @@ STOP — do NOT proceed to Step 5 (pandoc render). Shipping unfilled `{{...}}` l
 4. On pandoc non-zero exit: emit halt `quality_gate_failed` with subtype `pdf_render_failed`, details `{pandoc_stderr_tail: <last 500 chars>}`; STOP.
 5. On success: log `"✓ FSD.pdf rendered (<N> pages, <size_kb>KB)"`.
 
-### Step 5.5: Populate `missing_sources[]`
+### Step 6: Verify citation map exists
 
-The citation-map schema declares a `missing_sources[]` array; this step populates it. Adds population logic:
-
-During Step 3.d (per-section emission), when a source artifact is missing AND the section emits a `[Pending — X not yet generated]` placeholder, ALSO append an entry to in-memory `citation_map.missing_sources[]`:
-
-```yaml
-- section: "9"                                    # FSD section number
-  expected_source: "bolts/U-*/bolt-report.md"     # source artifact path/pattern that was missing
-  reason: "pre-dev mode (no bolts yet)"           # short rationale
-```
-
-Common reasons:
-- `"pre-dev mode (no bolts yet)"` — section 9 in pre-dev mode
-- `"vault file not generated yet"` — generic missing vault artifact
-- `"binding.md absent — bind-codebase not run"` — section 7 design without binding
-- `"codebase-map.md absent — scan-codebase not run"` — section 8 API/data without codebase scan
-
-Step 6 writes `missing_sources[]` to `.citation-map.json` alongside `sections[]`.
-
-**Consumer:** orchestrate-flow Step 7 final summary (when emit-fsd handoff received) can surface `len(missing_sources) > 0` as informational: "FSD emitted with N pending sections — full coverage available after running [scan-codebase / bind-codebase / execute-bolts]". Closes D4 (field was declared but unpopulated → consumer couldn't surface coverage gaps).
-
-### Step 6: Write citation map
-
-Write `<vault>/fsd/.citation-map.json` with `citation_map` assembled in Step 3, per `references/section-mapping.md §Citation map schema`.
+Citation map already written by Step 4.6 (`missing_sources[]` included — script-derived from the `[Pending — …]` markers) — verify `<vault>/fsd/.citation-map.json` exists; if absent, re-run Step 4.6.
 
 ### Step 7: Emit handoff (when --auto flag)
 
@@ -186,8 +171,9 @@ Per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. emit-fsd emi
 - `dep_missing` — `vault_present_for_fsd` predictive check fails (no vault.json found)
 - `quality_gate_failed` with subtype `pdf_render_failed` — pandoc exits non-zero in Step 5.3
 - `quality_gate_failed` with subtype `template_slot_unfilled` — internal bug: a `{{slot}}` marker in fsd-template.md has no extraction rule in section-mapping.md (impossible if reference files are consistent; defensive check)
+- `quality_gate_failed` with subtype `citation_unresolvable` — Step 4.6: FSD.md cites a source path that resolves to no existing file (fabricated or stale citation), detected deterministically by `scripts/build-citation-map.sh` exit 1; details carry the script's `UNRESOLVED`/`LEFTOVER` lines
 
-No new halt types added by emit-fsd; all halts reuse existing taxonomy.
+No new halt types added by emit-fsd; all halts reuse existing taxonomy (`citation_unresolvable` is a SUBTYPE of the existing `quality_gate_failed`, per `plugins/mega-sdd/references/halt-protocol.md`).
 
 ## Handoff emission
 
@@ -231,8 +217,8 @@ Out of scope: emit-fsd does NOT participate in mega-sdd memory layer (no reads, 
 
 ## Anti-hallucination rails
 
-1. EVERY section text MUST trace to a source artifact via `.citation-map.json` entry
+1. EVERY section text MUST trace to a source artifact via `.citation-map.json` entry — the map is SCRIPT-COMPUTED by `scripts/build-citation-map.sh` (Step 4.6); the model never writes the map
 2. Missing source MUST emit `[Pending — <source> not yet generated]` — NEVER fabricate content
 3. Slot markers `{{slot_name}}` MUST all be filled OR explicitly placeholdered — empty slot = halt `quality_gate_failed:template_slot_unfilled`
-4. sha256 stamps in citations MUST be computed at emit-time (not cached) — drift detection depends on freshness
-5. Drift callouts MUST surface in PDF — silent regeneration would hide content changes from reviewers
+4. sha256 stamps are computed at emit-time by `build-citation-map.sh` from file bytes — the model never writes a hash string (it emits the literal `(sha256: pending)`); a citation to a nonexistent path is a deterministic halt (`citation_unresolvable`), not a guess
+5. Drift callouts MUST surface in PDF — silent regeneration would hide content changes from reviewers (drift list produced by `scripts/check-citation-drift.sh`, the map's only sanctioned reader)

@@ -49,7 +49,7 @@ mega_sdd_version: "{{plugin_version}}"
 ## Functional Specification Document
 
 **Version:** {{vault_version}} · **Date:** {{generation_date_human}} · **Classification:** {{styling.classification}}
-**Mode:** {{emit_mode_label}} · **Source vault:** `{{vault_path}}` (sha256: `{{vault_sha256_short}}`)
+**Mode:** {{emit_mode_label}} · **Source vault:** `{{vault_path}}` (sha256: `pending`)
 
 ---
 
@@ -57,6 +57,8 @@ mega_sdd_version: "{{plugin_version}}"
 
 ---
 ```
+
+The `pending` token on the `**Source vault:**` line is special-cased by `scripts/build-citation-map.sh` (SKILL.md Step 4.6): it is stamped with sha256 of `<vault>/vault.json`. The model fills no sha256 slot anywhere — every stamp is authored as the literal `pending`.
 
 ## Section 1 — Overview
 
@@ -116,7 +118,7 @@ Per-story emit format:
 **Acceptance Criteria:**
 {{acceptance_test_summary}}
 
-[Source: units/{{unit_id}}.md (sha256: {{unit_sha256_short}})]
+[Source: units/{{unit_id}}.md (sha256: pending)]
 ```
 
 ## Section 5 — Functional Requirements
@@ -147,7 +149,7 @@ Per-FR detail format:
 - **Bound by:** {{binding_verdict}} (per `binding.md` claim {{claim_id}})
 - **Implemented in:** {{unit_ids_csv}} ({{bolt_status_summary}})
 
-[Source: vault/02-functional.md:L{{fr_line_start}}-L{{fr_line_end}} (sha256: {{vault_02_sha256_short}})]
+[Source: vault/02-functional.md:L{{fr_line_start}}-L{{fr_line_end}} (sha256: pending)]
 ```
 
 ## Section 6 — Non-Functional Requirements
@@ -271,11 +273,11 @@ All `{{slot_name}}` markers MUST be filled OR explicitly stamped `[Pending — <
 
 ```markdown
 **Sources for this section:**
-- [¹] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
-- [²] `<source_path>:L<start>-L<end>` (sha256: `<sha-short>`)
+- [¹] `<source_path>:L<start>-L<end>` (sha256: `pending`)
+- [²] `<source_path>:L<start>-L<end>` (sha256: `pending`)
 ```
 
-Cross-referenced from `.citation-map.json` for auditability.
+Stamped by `scripts/build-citation-map.sh` before PDF render (SKILL.md Step 4.6) — the literal `pending` tokens become real 12-char sha256 prefixes computed from file bytes; the model never writes hash characters. Cross-referenced from `.citation-map.json` (script-written, schema 2.0) for auditability.
 
 ## Drift callout format (when re-emit detects sha256 change)
 
@@ -283,4 +285,4 @@ Cross-referenced from `.citation-map.json` for auditability.
 > ⚠ **Updated since last emit** — `<source_path>` was sha256 `<old-prefix>`, now `<new-prefix>`. Section regenerated.
 ```
 
-Inserted as block quote BEFORE the regenerated section content.
+Inserted as block quote BEFORE the regenerated section content. `<old-prefix>`/`<new-prefix>` come from `scripts/check-citation-drift.sh` output (`DRIFT <section> <path> <old12> <new12>` — SKILL.md Step 2), never model-recalled.
