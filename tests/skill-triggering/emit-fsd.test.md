@@ -27,7 +27,7 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 ### EF5: Drift detection on re-emit
 - **Setup:** prior `.citation-map.json` exists from earlier emit; user edits `vault/01-overview.md` (sha256 changes)
 - **Prompt:** `/mega-sdd:emit-fsd`
-- **Expect:** Drift detection inserts `⚠ Updated since last emit` callout BEFORE regenerated section 1 in FSD.md; handoff metric `drift_callouts_count: 1`
+- **Expect:** Skill runs `scripts/check-citation-drift.sh` (Step 2) and consumes its `DRIFT <section> <path> <old12> <new12>` line — it NEVER Reads `.citation-map.json` directly; the `⚠ Updated since last emit` callout inserted BEFORE regenerated section 1 uses the script's old12/new12 prefixes; handoff metric `drift_callouts_count: 1`
 
 ### EF6: Section subset via --sections flag
 - **Setup:** vault stable; user only wants stakeholder + FR + design sections
@@ -55,10 +55,10 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 
 ## Pass criteria
 
-All EF1-EF10 succeed per `skills/emit-fsd/SKILL.md` Procedure. FSD output is human-readable, citation-grounded (every section traces to source artifact via `.citation-map.json`), idempotent on stable vault, drift-aware on regeneration.
+All EF1-EF10 succeed per `skills/emit-fsd/SKILL.md` Procedure. FSD output is human-readable, citation-grounded (every section traces to source artifact via `.citation-map.json` — script-computed by `scripts/build-citation-map.sh`, Step 4.6), idempotent on stable vault, drift-aware on regeneration.
 
 ## Anti-halu rail verification
 
 - EF7: missing source → `[Pending — X not yet generated]` placeholder; NEVER fabricates content
 - Iter 61 Step 4.5 check: post-emission scan halts on any remaining `{{slot}}` markers (defensive — should never fire if section-mapping.md extraction rules are correct)
-- Sha256 stamps in `.citation-map.json` computed at emit-time (not cached); drift detection depends on freshness
+- Sha256 stamps + `.citation-map.json` computed at emit-time by `scripts/build-citation-map.sh` from file bytes; the model emits `(sha256: pending)` placeholders and never writes hash strings; a citation to a nonexistent path is a deterministic exit-1 → `quality_gate_failed:citation_unresolvable` halt; drift list produced by `scripts/check-citation-drift.sh`

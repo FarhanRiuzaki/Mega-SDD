@@ -19,10 +19,10 @@ Follow `skills/emit-fsd/SKILL.md` Procedure exactly. Auto-invocation respects `-
 
 Hard rails (anti-halu):
 - FSD is a CITATION-GROUNDED VIEW of vault/units/bolts/binding. NEVER adds info not in source artifacts.
-- Every section text MUST trace to source artifact via `.citation-map.json` (sha256-stamped at emit-time).
+- Every section text MUST trace to a source artifact via `.citation-map.json` — the map and ALL sha256 stamps are SCRIPT-COMPUTED (`scripts/build-citation-map.sh`) from file bytes; the model never writes a hash.
 - Missing source → emit `[Pending — <source> not yet generated]` placeholder; NEVER fabricate content.
 - Slot markers `{{slot_name}}` in fsd-template.md MUST be filled OR explicitly placeholdered — empty slot = halt `quality_gate_failed:template_slot_unfilled`.
-- Drift callouts MUST surface in PDF on re-emit when source sha256 changed — silent regeneration would hide content changes from reviewers.
+- Drift callouts MUST surface in PDF on re-emit when source sha256 changed — silent regeneration would hide content changes from reviewers (drift list produced by `scripts/check-citation-drift.sh`).
 - Mode auto-detect from CWD state; user can force via `--mode=pre-dev|post-dev`.
 
 On completion, announce path to `<vault>/fsd/FSD.pdf` (or `FSD.html` LaTeX-fallback / `FSD.md` pandoc-absent fallback) + summary line: "FSD emitted: N sections, M citations, mode: <pre-dev|post-dev>". User uploads PDF manually to Confluence per corporate workflow.
