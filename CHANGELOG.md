@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.82.0] - 2026-07-19
+
+W-batch phase 1 (spec `docs/superpowers/specs/2026-07-19-w-batch-script-derive.md`, item W4) — the write-lane exits the model: **`preflight.json` is script-written + hook-guarded — the B1 baseline can no longer be forged or minted post-hoc.**
+
+### Added
+
+- **`scripts/run-preflight-scan.sh` — the deterministic pre-flight Hard-rule BASELINE writer** (the pre-bolt twin of `run-postflight-scan.sh`; NOT the unrelated predictive precondition gate `validate-preflight.sh`). It imports the SAME `_lib/postflight_rules.py` primitives the post-flight engine evaluates with (`extract_hard_rules` lexer, STRICT/DIRECTIVE classification, `sha256_of`, `find_decl_line`, `walk_unit_commits`, `normalize_v2_files`), so what pre-flight snapshots is byte-identical to what post-flight evaluates. Exit-code → halt map: 3 `hard_rule_unparseable`, 4 `hard_rule_mixed_grammar` (`--grammar=v1|v2` escape hatch), 5 `hard_rule_unanchored`, 6 `dep_missing`, **7 post-hoc refusal** — once bolt commits exist the baseline is immutable (existing artifact kept byte-identical; an absent one is REFUSED, non-fatal: post-flight falls back to git commit evidence). Snapshot carries provenance stamps (`snapshot_at`/`head_sha`/`written_by`/`grammar`); `rules[]` entry shapes unchanged — round-trip parity with the engine's snapshot branch is pinned by test.
+
+### Security
+
+- **The forgeable-baseline hole is closed.** `scan_unit` gives a present preflight sha/signature snapshot PRECEDENCE over git commit evidence (`_lib/postflight_rules.py` DO_NOT_MODIFY / SIGNATURE_RULE branches), so a wrong sha256 at pre-flight was an undetectable DO_NOT_MODIFY violation even at the v4.62.0 recompute gate — and `preflight.json` matched NO write guard. The PreToolUse Write/Edit evidence regex, the Bash-verb python guard, and the shell `PROTECTED` ERE (plain `(pre|post)` capturing group — BSD grep -E has no `(?:`) now cover `(pre|post)flight.json`; both deny messages name `run-preflight-scan.sh` as the sanctioned writer and the forged-BASELINE threat. Vault-prefix anchoring (S6 EB-VAL-7) and the tests/examples/fixtures + plugin-dev exemptions carry over unchanged. Documented residual: legacy model-written baselines already on disk stay trusted (same class as B2's read-not-recompute caveat); the `written_by` stamp is the lever for a later hardening.
+
+### Changed
+
+- `execute-bolts` SKILL.md (2.22.0 → 2.23.0): Pre-flight check 4 and Procedure step 1 rewritten from "capture the snapshot" to "run the script" with the exit-code → halt map; B1 paragraph, anti-halu rail, and Outputs name the writer pair + hook guard. `hard-rule-scan.md` opens the pre-flight with the executing script + exit table, unifies the v2 snapshot entry shape (`{type: v2_ast_grep, rule, matched_files[]}`), redefines the SIGNATURE_RULE snapshot source (shared `find_decl_line`, never codebase-map prose), and documents the provenance stamps + the two lifecycle rules. `hard-rule-grammar-v2.md`'s divergent per-rule persist shape is superseded by the unified `rules[]` schema (owner: `hard-rule-scan.md`). `halts-and-handoff.md` outputs bullet + plugin `CLAUDE.md` enforcement inventory updated.
+
+### Tests
+
+- `tests/postflight-evidence/test-preflight-scan.sh` — schema per rule type, round-trip parity with the engine's snapshot branch (honest pass / tamper MISMATCH), unparseable/mixed/unanchored/no-rules exits, anti-laundering (exit 7 + immutable baseline), pre-commit re-capture, and the forged-post-tamper-baseline threat pin (residual by design).
+- `tests/postflight-evidence/test-preflight-guard.sh` — drives the REAL hook: Write/Edit/redirect/rm/python-open-for-write denied, the sanctioned writer NOT blocked, postflight regression, non-vault path not false-blocked.
+
 ## [4.81.0] - 2026-07-11
 
 God-review stage 7 (execute-bolts), Batch C — the review panel + L0 gate contracts. Four confirmed findings (1 High) + one re-verified High-class gap + three same-slice Lows (archive `~/.mega-sdd/god-review-s7/panel.md`). The panel loop is prose-tier by design (gates > rules > hooks), so most fixes are contract-text corrections pinned by greps; the secret-scan fix is behavioral. Spec amendment: review-panel design spec.

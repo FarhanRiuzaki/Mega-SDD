@@ -155,7 +155,7 @@ Per unit:
     <repo-relative-path>: <sha256-hex> # computed by the controller AFTER the commit, from the committed content
   ```
   `scripts/compute-unit-staleness.sh` later compares these to the working tree — a mismatch marks the unit `stale` for the sync lane. Older bolt-reports without the field → staleness is `unknown` (treated as not-stale; never guessed).
-- `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff.
+- `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff (script-written by `run-preflight-scan.sh`; hook-guarded).
 - `<vault>/bolts/U-XXX/postflight.json` — Hard rule post-flight check results (per-rule pass/fail + evidence).
 
 Global:
