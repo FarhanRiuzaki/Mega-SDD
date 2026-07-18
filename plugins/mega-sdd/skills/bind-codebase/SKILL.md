@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.8.0
+version: 2.9.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -26,7 +26,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 ## Outputs
 
 - `binding.md` — always written, even when blocking.
-- `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/` per `plugins/mega-sdd/references/paths.md`) — written ONLY when no CONFLICTs (or `--strict` and no OQs).
+- `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/` per `plugins/mega-sdd/references/paths.md`) — written ONLY when no CONFLICTs (or `--strict` and no OQs); derived by `scripts/make-bound.sh` from the vault docs + `binding.json` — never typed out by the model.
 
 ## Procedure
 
@@ -78,8 +78,8 @@ halt YAML for this).
 
 **5. Decision gate — non-negotiable:**
 
-- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>/bound/`** (copy the 7 vault files into the nested `bound/` subdir; inject inline binding annotations per `binding-contract.md`). Announce clean + next step `/mega-sdd:generate-units <vault>/`.
-- If `conflict > 0` OR (`--strict` AND `oq > 0`): **DO NOT write `<vault>/bound/`.** Announce the blocker, emit the `bind_conflict` halt YAML (below), route to `resolve-oq`. Per-conflict recovery (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind ↔ resolve-oq sequence → `references/conflict-resolution.md`.
+- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>/bound/`** by **Running** `scripts/make-bound.sh --vault <vault>` (append `--strict` when the flag is set) — the deterministic deriver: it re-checks binding.md↔binding.json parity, REFUSES (exit 2) while any CONFLICT verdict exists, then copies the vault docs into `bound/`, injects the `<!-- BIND: -->` annotations from binding.json `vault_source` cells, and mirrors `binding.md`. NEVER hand-write bound/ files — a non-zero exit means fix the bind write, not bypass the script. Announce clean + next step `/mega-sdd:generate-units <vault>/`.
+- If `conflict > 0` OR (`--strict` AND `oq > 0`): **DO NOT write `<vault>/bound/`.** (make-bound.sh independently refuses while any CONFLICT verdict is in binding.json — never work around it by hand-writing files.) Announce the blocker, emit the `bind_conflict` halt YAML (below), route to `resolve-oq`. Per-conflict recovery (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind ↔ resolve-oq sequence → `references/conflict-resolution.md`.
 
 ```yaml
 blocker:
