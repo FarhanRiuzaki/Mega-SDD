@@ -27,7 +27,11 @@
 # run-analyze.sh's entities/OQ count-sync checks stay UNTOUCHED as independent
 # loose-parse cross-checks of this deriver.
 # Exit 0 = derived (ONE PASS line; WARNs to stderr); 2 = derive/parse/patch
-# error, vault.json NOT written; 3 = usage / unreadable vault; 4 =
+# error, vault.json NOT written — on an md-grammar mismatch: mega-sdd-authored
+# docs = an authoring bug (fix the markdown write and re-run); externally-
+# authored vault docs = not a bug, the grammar was never adopted (v5 adoption
+# lane) — fix manually per the generate-intent templates or re-generate via
+# the pipeline; 3 = usage / unreadable vault; 4 =
 # vault.json.lock held after backoff (skill maps to the memory_in_use halt —
 # keterangan envelope stays at the skill layer, verbatim).
 set -u
@@ -141,6 +145,12 @@ try:
     if errors:
         for e in errors:
             print("FAIL:", e)
+        print(
+            "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini "
+            "file hasil tulis eksternal, itu bukan bug: grammar-nya memang belum "
+            "diadopsi (lane adopsi datang di v5); perbaiki manual mengikuti "
+            "template vault generate-intent, atau re-generate via pipeline."
+        )
         sys.exit(2)
 
     # ── 3. Cross-count guard (anti-silent-empty; independent loose parse) ──
@@ -166,6 +176,13 @@ try:
                   f"{loose[cls]} vs parsed {parsed[cls]} (delta > 2). The md "
                   f"grammar the deriver reads diverges from the loose scan — "
                   f"fix the markdown structure, never hand-edit vault.json.")
+            print(
+                "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau "
+                "ini file hasil tulis eksternal, itu bukan bug: grammar-nya memang "
+                "belum diadopsi (lane adopsi datang di v5); perbaiki manual "
+                "mengikuti template vault generate-intent, atau re-generate via "
+                "pipeline."
+            )
             sys.exit(2)
 
     # ── 4. Prior + patch + event (validation before any assembly) ──

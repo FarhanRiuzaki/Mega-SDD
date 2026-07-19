@@ -18,7 +18,7 @@
 ## CWD inspection (deterministic, in order)
 
 1. **PRD/seed detection.** Does CWD contain `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates?
-2. **Vault detection.** Probe in priority order — `.mega-sdd/vaults/*/vault.json` (canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins.
+2. **Vault detection.** Probe in priority order — `.mega-sdd/vaults/*/vault.json` OR bare vault docs `.mega-sdd/vaults/*/0[0-6]-*.md` (canonical — SAME semantics as `validate-preflight.sh has_vault()`: the md docs alone count, so a 7-file vault without `vault.json` is still a vault, never invisible to routing) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins. When vault docs exist but `vault.json` is absent, the proposed chain FIRST runs `scripts/derive-vault-json.sh --vault <vault>` (derives the manifest deterministically from the docs — never hand-write it) before any phase that reads `vault.json`.
 3. **Bound-vault detection.** Same dirs but with `-bound` suffix?
 4. **Units detection.** Any `units/U-*.md` files?
 5. **Bolts detection.** Any `bolts/U-*/bolt-report.md`?

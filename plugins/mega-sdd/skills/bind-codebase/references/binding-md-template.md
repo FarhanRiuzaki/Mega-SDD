@@ -9,7 +9,7 @@ codebase_map: <map path>
 bound_at: <ISO timestamp>
 strict: <true/false>
 binding_metadata:
-  codebase_map_provenance: <"snapshot-verified" | "snapshot-stale" | "no-snapshot">   # per Step 1 shared-snapshot check; consumed by orchestrate-flow chain optimization
+  codebase_map_provenance: <"snapshot-verified" | "snapshot-stale" | "no-snapshot" | "unverified-external">   # per Step 1 shared-snapshot check (unverified-external = map failed validate-codebase-map.sh writer-provenance — externally authored); consumed by orchestrate-flow chain optimization
   head: <git HEAD sha at bind time, or null outside git>   # written ONCE here at Step 4; derive-binding-json.sh copies it VERBATIM into binding.json `head` (never recomputed at derive time, so a resolve-oq re-derive cannot falsely clear the graph's stale_vs_head signal)
 constitution_hash: <sha256>          # only when <vault>/constitution.md exists (Step 2.10)
 scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)

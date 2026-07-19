@@ -39,6 +39,7 @@ Check `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json
 - **MATCH + current** → record `binding_metadata.codebase_map_provenance = "snapshot-verified"`. Downstream consumers can trust the map is current; orchestrate-flow may remove scan-codebase from the chain when verified AND source files unchanged.
 - **MISMATCH** → `"snapshot-stale"`; suggest re-running scan-codebase before the next bind.
 - **Absent** → `"no-snapshot"`.
+- **Map failed writer-provenance** (SKILL Step 1's external-map check: `.mega-sdd/.codebase-map-state.json` records `status: FAIL` or a `codebase_map_fm_missing` issue — the map was authored outside mega-sdd) → `"unverified-external"`, OVERRIDING any sha256/currency match (a map with no trustworthy `generated_by`/`engine` frontmatter can never attest freshness). Surface the WARN keterangan from SKILL Step 1; the bind still proceeds — binding precision degrades to binary classification (no field-level diff without a trusted `precision_tier`).
 
 Snapshot reuse is a freshness attestation, NOT a parsing shortcut. Binding correctness is unchanged whether reuse confirms or rejects.
 
