@@ -20,6 +20,14 @@ Shared definitions referenced by all `mega-sdd` skills. **Single source of truth
 
 Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
 
+**`vault.json` is SCRIPT-DERIVED by `scripts/derive-vault-json.sh` — a model/hand write is an authoring bug.** Three lanes:
+
+- **Derive lane (md-authoritative):** `entities[]` (DBML `Table` blocks + the `// Purpose:` comment), `flows[]` (`### F-*-NNN:` headings + DoD + `**Source**:` AC harvest + `**_kb_source**:`), `adrs[]` (`### D-NNN:` + `Status:` line, absent → `accepted`), `open_questions[]` skeletons (the checkbox grammar + brackets; roll-up header as legacy category fallback), `open_questions_summary`, `vault_version` + the five Vault Lock enums. md is authoritative for existence — an OQ tag absent from the markdown is dropped (WARN), EXCEPT entries carrying `defer_to: binding` (no md home — preserved with a WARN, never dropped).
+- **Carry-forward lane (at-generation pins + unknown-key tolerance):** `prd_sha256`, `prd_path_at_generation`, `constitution_hash`/`constitution_version` (pinned at generation — recomputing would silently re-baseline; the script computes them fresh ONLY when absent and WARNs when the carried hash differs from the current `constitution.md`), legacy `mode` (carried verbatim even when it contradicts the md-derived `implementation_mode` — never reconciled), `title`, `scope`/`scope_metadata`, `source_documents`, `phase`/`phase_total`, `design_system_flags`, `design_system`, `advisor`, `changelog`, per-OQ JSON-only fields — and ANY prior key the deriver does not own, verbatim.
+- **Patch lane (`--patch <file.json>`):** the fields the model still authors — the carry-forward roster above when NEW values are being supplied (initial generation metadata, diff-vault `source_documents` replacement) + the per-OQ classifier records (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) + `defer_to`. Setting a derived key in a patch exits 2 (anti-laundering — the markdown stays the single grammar). `--event '<json>'` appends one changelog event under the same lock.
+
+`resolved_at`/`deferred_at` are **script-stamped on status transition** (never model-written). `generated_at` is **preserved when a re-derive produces otherwise-identical content** (idempotent no-op derives keep the sha256(vault.json) doc-control stamp stable) — this supersedes the diff-procedure's older "only `generated_at` updates" wording: on a true no-op, NOTHING updates.
+
 ```json
 {
   "vault_version": "1.1",
@@ -44,7 +52,7 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
     {"id": "D-001", "title": "Multi-tenant SaaS-only deployment", "doc": "05-decisions.md", "status": "accepted"}
   ],
   "open_questions": [
-    {"tag": "OQ-AR-1", "priority": "P1", "doc": "02-architecture.md", "status": "open", "category": "Tech stack & architecture", "resolver_owner": "Mike Patel"}
+    {"tag": "OQ-AR-1", "priority": "P1", "doc": "02-architecture.md", "status": "open", "category": "tech", "resolver_owner": "Mike Patel"}
   ],
   "open_questions_summary": {
     "total": 48,
@@ -88,12 +96,13 @@ phase_total: <int>    # total phases planned (parsed from suggested-phasing.md `
 ### Field rules
 
 - `phase` + `phase_total`: REQUIRED. Defaults `phase: 1, phase_total: 1` for back-compat (greenfield + Mode A PRD-driven + single-phase Mode B). Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase count. Missing field on an older vault.json → treat as `phase: 1, phase_total: 1`.
-- Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`).
+- Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`). The deriver enforces this by construction (md-authoritative existence).
+- **G1 — entities mirror rule:** each `Table` block carries a `// Purpose: <1 line>` DBML comment immediately above it (the compact-mode Purpose line, machine-read into `entities[].purpose`); the parser falls back to the full-mode `### <entity>` + `- **Purpose**:` block, else `null` — never fabricated.
 - `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
-- `open_questions[].category` matches the category header used in the `00-index.md` Open Questions roll-up.
-- `open_questions[].resolver_owner` is best-effort — extract from the OQ entry's "Resolve: ..." or "owner" hint when present; otherwise `null`.
+- `open_questions[].category` is **bracket-first**: the `[tech / scan]` / `[business]` marker on the OQ line wins (`tech` / `business`); the `00-index.md` roll-up category header is the legacy fallback only (startswith-tolerant, exactly as the validator reads it).
+- `open_questions[].resolver_owner` is best-effort — extracted from the OQ entry's `— resolve: ...` hint when present; otherwise `null`.
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
-- Keep this file in sync with the markdown on every regeneration / `diff-vault` / `resolve-oq` round. The markdown is canonical; `vault.json` is a derived index.
+- Re-run `scripts/derive-vault-json.sh` after every markdown round (regeneration / `diff-vault` / `resolve-oq`). The markdown is canonical; `vault.json` is a derived index — never hand-synced.
 
 ### Operator-workflow-UX capture + Design-Source OQ
 
@@ -123,34 +132,36 @@ A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its 
 
 ### When skills must regenerate `vault.json`
 
-- `generate-intent` Step 3 — initial generation.
-- `resolve-oq` Step 2c step 9 — after every Resolve / Out-of-Scope / Defer outcome.
-- `diff-vault` Step 6.5 — after applying approved changes (added/changed/removed entities, flows, ADRs, auto-resolved or new OQs).
-- `bind-codebase` Step 6 — audit log append (small append, not full regen, but still subject to lock per §Concurrency below).
+Every writer regenerates by **running the script** — never by editing the JSON:
+
+- `generate-intent` Step 3 — initial derive: `derive-vault-json.sh --vault <dir> --patch <authored-patch>` (metadata + classifier/advisor writebacks).
+- `resolve-oq` — after every Resolve / Out-of-Scope / Defer outcome's markdown edits: `derive-vault-json.sh --vault <dir> --event '<round-event-json>'` (+ `--patch` carrying `defer_to` for binding-defers).
+- `diff-vault` Step 6.5 — after applying approved changes: `derive-vault-json.sh --vault <dir> --patch <sources-patch>` (the replaced `source_documents` entry + updated `prd_sha256`/`prd_path_at_generation` when the PRD changed).
+- `bind-codebase` Step 6 — audit log append: `derive-vault-json.sh --vault <dir> --event '{"event":"bind",…}'`.
 - `detect-drift` — does NOT regenerate. detect-drift produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + generate-intent re-run (for entity/flow/ADR additions).
 
 ### Concurrency contract (closes audit D3-012)
 
-All `vault.json` writers MUST acquire an exclusive advisory file lock before writing. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the memory file-lock pattern (per `mega-sdd:memory`) — no new mechanism.
+The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the memory file-lock pattern (per `mega-sdd:memory`) — no new mechanism.
 
-**Writers subject to lock (4 total):**
-- `generate-intent` Step 11 (initial vault.json write)
-- `bind-codebase` Step 6 (audit log append) — and bind-codebase writes `binding.md` while HOLDING this same lock (binding.md has no separate lock; the vault lock covers the whole-rewrite so two concurrent binds can't interleave)
-- `diff-vault` Step 8 (regen from markdown)
-- `resolve-oq` Step 2c step 9 (regen after Resolve / Out-of-Scope / Defer outcome)
+**Writers (4 total — each invokes the script; none touches the lock directly):**
+- `generate-intent` Step 3 (initial derive, `--patch`)
+- `bind-codebase` Step 6 (`--event` audit append) — and bind-codebase still writes `binding.md` in the same Step-6 window (binding.md has no separate lock; the script-held derive is the serialization point for the manifest, and two concurrent binds are upgrade-your-plugin territory per Backward compatibility below)
+- `diff-vault` Step 6.5 (derive + `--patch` sources)
+- `resolve-oq` (derive + `--event` after every Resolve / Out-of-Scope / Defer outcome)
 
-**Lock acquisition pattern (per `mega-sdd:memory` SKILL.md §file-lock):**
+**Lock behavior (implemented in the script):**
 
 ```
-1. Compute lock_path = <vault>/vault.json.lock
-2. Attempt exclusive lock: create lock_path with O_EXCL | O_CREAT
-3. On collision (file exists): backoff (100ms / 500ms / 1500ms) + retry 3 attempts
-4. If all 3 retries fail → emit halt `memory_in_use` blocker with details {file: "vault.json", attempts: 3}
-5. On lock success: perform vault.json write atomically (temp file + rename)
-6. Release lock: rm lock_path
+1. lock_path = <vault>/vault.json.lock, created with O_EXCL | O_CREAT
+2. On collision: backoff (100ms / 500ms / 1500ms) + retry 3 attempts
+3. All retries fail → exit 4 (stderr carries the orphaned-lock hint);
+   the INVOKING SKILL maps exit 4 to the `memory_in_use` halt envelope below
+4. On success: derive + atomic write (temp file + os.replace), release lock
+   on ALL exit paths
 ```
 
-**Halt envelope (reuses `memory_in_use` — no new halt type):**
+**Halt envelope (reuses `memory_in_use` — no new halt type; emitted by the skill when the script exits 4, keterangan verbatim):**
 
 ```yaml
 type: memory_in_use
@@ -167,13 +178,13 @@ next_action:
 
 **Reader behavior:** vault.json readers (any skill that reads it) DO NOT need the lock — POSIX rename is atomic, so readers always see a consistent view (pre-write OR post-write, never mid-write). Lock is exclusive for writers only.
 
-**detect-drift exception:** detect-drift NEVER writes vault.json (existing convention per detect-drift SKILL.md §writes). No lock acquisition required.
+**detect-drift exception:** detect-drift's diagnostic lane NEVER writes vault.json (reports only). Its explicit-ACCEPT write-back lane refreshes vault.json the same way as every writer — by running `derive-vault-json.sh` (script-held lock) — never by hand.
 
 **Backward compatibility:** writers from plugin versions predating this contract MAY race; concurrent-write users should upgrade all skills atomically (single plugin version bump).
 
 ### OQ status tracking
 
-OQ entries in vault.json now support optional status-tracking fields. The full OQ entry shape:
+OQ entries in vault.json support status-tracking fields. **Status vocabulary is ONE closed set: `open | resolved | out_of_scope | deferred`** (G3 — the legacy `pending` / `out-of-scope` spellings are retired from the contract; the deriver and `open_questions_summary.by_status` use only this set). The full OQ entry shape:
 
 ```yaml
 oqs:
@@ -181,20 +192,19 @@ oqs:
     priority: P1 | P2 | P3
     section: <vault-filename.md>
     text: <question text>
-    # NEW in v1.1 — additive, backwards compatible:
-    status: pending | resolved | deferred | out-of-scope    # default: pending if absent
+    status: open | resolved | deferred | out_of_scope       # default: open if absent
     # When status=resolved:
-    resolved_at: <ISO8601 timestamp>
+    resolved_at: <ISO8601 timestamp>    # SCRIPT-STAMPED by derive-vault-json.sh on the transition into resolved — never model-written
     resolution: <answer text>
     # When status=deferred:
     defer_to: binding | stakeholder                         # binding = brownfield code-aware; stakeholder = waiting on human (e.g., legal review, target date)
-    deferred_at: <ISO8601 timestamp>
+    deferred_at: <ISO8601 timestamp>    # SCRIPT-STAMPED on the transition into deferred
     deferred_reason: <reason / PIC / target date — e.g., "waiting on legal review by 2026-06-01">
-    # When status=out-of-scope:
+    # When status=out_of_scope:
     out_of_scope_reason: <text>
 ```
 
-**Backwards compatibility:** OQ entries without a `status` field are treated as `status: pending` by all skills. vault.json writers MAY omit `status` for pending OQs to minimize diff churn. Existing v1.0.x vaults load unchanged.
+**Backwards compatibility:** OQ entries without a `status` field are treated as `status: open` by all skills (legacy `pending` values in pre-W5 manifests read the same way). Existing v1.0.x vaults load unchanged; the next derive rewrites them into the unified vocabulary from the markdown checkboxes.
 
 ## §OQ-conventions — Open Question tagging
 
@@ -315,7 +325,7 @@ User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "w
   "classification_confidence": "high",
   "scan_query": "codebase-map §test_frameworks",
   "doc": "02-architecture.md",
-  "status": "pending"
+  "status": "open"
 }
 ```
 
@@ -332,7 +342,7 @@ For `resolution_mode: recommend`:
   "scan_citations": ["app/Http/Resources/ErrorResource.php:12"],
   "fallback_if_wrong": "If RFC 7807 doesn't fit client expectations, revisit and consider JSON:API error format",
   "doc": "02-architecture.md",
-  "status": "pending"
+  "status": "open"
 }
 ```
 

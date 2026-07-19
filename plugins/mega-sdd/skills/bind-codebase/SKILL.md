@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.10.0
+version: 2.11.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -103,7 +103,7 @@ blocker:
 
 This YAML is the canonical halt artifact (for orchestrate-flow consumption); the prose announcement is for human readability.
 
-**6. Audit log.** Append a `bind` event to `<vault>/vault.json` changelog. Acquire the `vault.json.lock` advisory lock first (backoff + retry 3×, else `memory_in_use` halt); release after write. → `references/auto-memory-handoff.md`.
+**6. Audit log.** **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <vault> --event '{"event":"bind","at":"<iso>","binding":"binding.md","summary":"<claims/confirmed/conflict counts>"}'` — the script appends the `bind` event to the vault.json changelog under its own `vault.json.lock` (exit 4 → `memory_in_use` halt); never hand-edit vault.json. → `references/auto-memory-handoff.md`.
 
 ## Anti-hallucination rails
 

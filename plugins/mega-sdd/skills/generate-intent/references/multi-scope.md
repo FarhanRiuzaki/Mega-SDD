@@ -6,6 +6,8 @@
 
 When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scopes:` block, the vault is tagged with scope metadata. Single-scope PRDs without scopes block use current single-vault schema (no scope tagging).
 
+> **W5 patch-lane:** `title` / `scope` / `scope_metadata` / `prd_sha256` / `prd_path_at_generation` are AUTHORED fields — supply them in the `--patch` JSON consumed by `scripts/derive-vault-json.sh` at Step 3 (never hand-write vault.json). The deriver carries them forward verbatim on every later derive; `prd_sha256` is the at-generation pin `diff-vault` compares against and is NEVER recomputed by the script.
+
 ### vault.json extension
 
 ```json
@@ -80,13 +82,13 @@ When vault has scope metadata, `00-index.md` header MUST include:
 
 When vault has NO scope metadata (legacy single-scope PRD), 00-index.md header omits scope/sibling/contracts sections entirely.
 
-### Validation rules (enforced by generate-intent at write time)
+### Validation rules (enforced by generate-intent when assembling the authored patch)
 
 - If `scope` field present → `scope_metadata` MUST exist with all required fields
 - `scope_metadata.id` MUST match PRD frontmatter `scopes.<id>` key
 - `sibling_scopes_in_prd` MUST list ALL other scopes from PRD scopes block (not chosen ones)
-- `prd_sha256` MUST be sha256 of PRD content at generation time (used by memory recall)
-- When chosen scope == `all` (legacy flag) → vault written without `scope` field (back-compat)
+- `prd_sha256` MUST be sha256 of PRD content at generation time (used by memory recall) — computed once into the initial `--patch`; later derives carry it forward, and only `diff-vault` re-baselines it via its sources-patch
+- When chosen scope == `all` (legacy flag) → patch omits the `scope` field (back-compat)
 
 ### Backward compatibility
 

@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.2.0
+version: 2.3.0
 description: Evolves an existing mega-sdd vault when the PRD/BRD/Figma source changes. Computes a structured diff, preserves resolved OQs, flags conflicts where new source contradicts a resolved decision, and applies approved changes — without erasing history. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 
@@ -63,7 +63,7 @@ The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR
 
 **Step 6 — Apply approved changes.** `Edit` (preferred) or `Write` (large restructures) per category: auto-resolved OQs → `[x]` + resolution pointer; new OQs → append `[ ] **OQ-{CODE}-{N+1}**`; added → append per convention in the vault's existing `OUTPUT_MODE`; changed → in-place with a `> **Changed in v{X.Y}**` banner, IDs preserved; removed → annotate banner, content retained; conflicts (per user choice) → Supersede / Keep-vault / Capture-both. Exact apply rules per category: `references/diff-procedure.md`.
 
-**Step 6.5 — Refresh `vault.json`.** After applying, regenerate `vault.json` from the now-updated markdown per `../generate-intent/references/vault-contract.md §schema` (entities/flows/adrs/open_questions arrays, summary counts, `vault_version`, `generated_at`, `source_documents`). **Acquire the `vault.json.lock` advisory lock BEFORE writing (retry 3x, else halt `memory_in_use`); release after the atomic temp-file+rename write.** Re-running against an unchanged source yields an unchanged manifest (only `generated_at` updates). Detail: `references/diff-procedure.md`.
+**Step 6.5 — Refresh `vault.json`.** After applying, **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --patch <sources-patch>` — the script re-derives the structural arrays from the now-updated markdown per `../generate-intent/references/vault-contract.md §schema`; the patch carries the replaced `source_documents` entry + updated `prd_sha256`/`prd_path_at_generation` when the PRD changed (the ONLY fields diff-vault still authors). The script holds the `vault.json.lock` itself (exit 4 → halt `memory_in_use`). Re-running against an unchanged source is a byte-identical no-op (`generated_at` preserved). Detail: `references/diff-procedure.md`.
 
 **Step 7 — Update vault metadata.** Bump the vault version in `00-index.md` Vault Lock Status (patch = minor changes/no scope shift; minor = significant additions, e.g. new feature scope; skill suggests, user confirms). Append a Changelog entry (counts per category + conflicts resolved + source). Update `Last updated`. Update the PRD source reference (old → new; prior version moves into Changelog history). Changelog template: `references/diff-procedure.md`.
 
@@ -76,7 +76,7 @@ The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR
 - **No history erasure.** Every prior Changelog entry, resolved OQ, and ADR `Source:` citation persists across diffs. Identifiers are stable; Removed content is banner-annotated, never deleted.
 - **No silent overwrites.** Any conflict between vault state and new source (Resolved-OQ conflict, Decision conflict) surfaces to the user. The skill never auto-decides — even under `--auto` it emits a `diff_conflict` blocker instead.
 - **`prd_path_missing` → STOP.** If `vault.json.prd_path_at_generation` points to a non-existent file, halt; the user must restore the PRD or regenerate the vault. Holds under `--auto`.
-- **`memory_in_use` on lock failure.** `vault.json` writes acquire an advisory lock first; if it can't be acquired after retries, halt rather than risk a corrupt manifest.
+- **`memory_in_use` on lock failure.** The derive script acquires the advisory lock itself; when it exits 4 (lock held after retries), halt with the existing `memory_in_use` envelope rather than risk a corrupt manifest.
 - **Scope honesty.** `oq-only` does not secretly diff entities/flows. Scope is honored strictly.
 - **Reversibility.** The skill assumes git is in use and encourages commit-before-diff for rollback. No git → warn, don't refuse.
 - **Idempotency.** Re-running against an already-diffed (unchanged) source is a no-op beyond `Last updated` / the Changelog timestamp; the report regenerates but applying it changes nothing.
@@ -89,7 +89,7 @@ The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR
 
 ## Specialist references (load on demand)
 
-- **`references/diff-procedure.md`** — PRD change detection (`prd_sha256`), per-axis diff computation, apply mechanics (Step 6), `vault.json` refresh + advisory lock (Step 6.5), vault metadata update (Step 7), and the `prd_path_missing` / `memory_in_use` halts.
+- **`references/diff-procedure.md`** — PRD change detection (`prd_sha256`), per-axis diff computation, apply mechanics (Step 6), `vault.json` refresh via `derive-vault-json.sh` + sources-patch (Step 6.5), vault metadata update (Step 7), and the `prd_path_missing` / `memory_in_use` halts.
 - **`references/report-format.md`** — the full `VAULT-DIFF.md` template, per-section examples (conflicts, auto-resolved OQs, new OQs, added/changed/removed), and the Step 5 interactive walkthrough.
 - **`references/auto-and-chain.md`** — `--auto` behavior table, what stays interactive, the `diff_conflict` blocker YAML (incl. the `OQ-FLOW-3-cap` change-cap variant), canonical diff via `jd`, and the handoff YAML (with the scope block).
 

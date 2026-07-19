@@ -203,7 +203,7 @@ Per `generate-intent/references/vault-contract.md §constitution`. Write the 8th
 1. **Extract from PRD/KB:** coding standards (PRD tech-stack + KB conventions); security baselines (PRD non-functional + KB business rules); architecture invariants (PRD architecture + KB design-decisions); anti-patterns (KB critical findings + `.mega-sdd/memory/patterns.md`); performance constraints (PRD non-functional + KB perf hints); compliance (PRD constraints + regulatory KB sections).
 2. **Write `<vault>/constitution.md`** with 6 sections §A–§F (Coding standards / Security baselines / Architecture invariants / Anti-patterns / Performance constraints / Compliance).
 3. **Cite a source for every clause** (anti-halu rail): `(per PRD §<section>)` OR `(per KB §<file>:<line>)` OR `(per .mega-sdd/memory/decisions.md row <N>)`.
-4. **Persist hash in `vault.json`:** `"constitution_version": "1.0.0"`, `"constitution_hash": "<sha256 of constitution.md>"`.
+4. **Hash pin:** `constitution_version` + `constitution_hash` land in `vault.json` via the Step-3 `derive-vault-json.sh` run — the script computes them fresh at initial generation (sha256 of `constitution.md` + its `**Version**` line) and CARRIES THEM FORWARD on every later derive (at-generation pin, like `prd_sha256`); never hand-write them. If constitution.md is written AFTER the Step-3 derive, re-run `derive-vault-json.sh --vault <OUTPUT_DIR>` so the pin is computed.
 5. **Surface for sign-off:** one-line chat summary — "Constitution.md written with N clauses. Review before bolts begin: <path>".
 6. **`--no-constitution`** skips this step (7-file vault); for one-off greenfield demos.
 

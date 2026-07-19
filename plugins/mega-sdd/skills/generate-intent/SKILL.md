@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.12.0
+version: 2.13.0
 description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -98,10 +98,10 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 ├── 05-decisions.md      ← ADR-style: context → decision → consequences
 ├── 06-constraints.md    ← Technical, business, non-functional
 ├── _meta/ai-consumer-guide.md ← static copy (script — `copy-consumer-guide.sh`; never model-rendered)
-└── vault.json           ← Machine-readable manifest (derived index; markdown stays human-authoritative)
+└── vault.json           ← Machine-readable manifest (script-derived — `derive-vault-json.sh`; markdown stays human-authoritative)
 ```
 
-- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-contract.md §schema`. Acquire the `<vault>/vault.json.lock` advisory lock before writing it (backoff + retry 3×, else `memory_in_use` halt) per `vault-contract.md §Concurrency contract`.
+- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-contract.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the 7 markdown files, carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
 - An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-contract.md §constitution`.
 - Multi-squad mode (≥2 squads) additionally emits `_meta/squads.yaml`, `interfaces/_index.md`, and `.obsidian/graph.json` → `references/setup-flow.md`.
 - Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/multi-scope.md`.
@@ -118,7 +118,7 @@ Every Open Question is tagged at generation time with `category: business | tech
 - Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the `00-index.md` `## Auto-Classification Review` section.
 - **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. A user override recorded in `classifier-accuracy.json` always wins over re-classification (never silently overwrite a human correction).
 
-The classifier runs at Step 3.5 (after the 7 files, before the self-check) and writes results to both the markdown body and `vault.json` per `vault-contract.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`) → `references/generation-guide.md`.
+The classifier runs at Step 3.5 (after the 7 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed by `derive-vault-json.sh`, per `vault-contract.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`) → `references/generation-guide.md`.
 
 ## Workflow skeleton
 
@@ -127,7 +127,7 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
 1. **Step 0–0.9 — Setup (MANDATORY before any generation).** Confirm + create `OUTPUT_DIR`; set `IMPLEMENTATION_MODE` (`new` | `existing`, with `mode_migrate_after` for new); set `PRD_STATUS` (`final` | `draft`); set `OUTPUT_MODE` (`compact` | `full`); squad partition (single vs ≥2); Step 0.8 scan-aware context loading (probe codebase-map / conventions / KB; auto-route to scan-codebase if accepted); Step 0.9 scope detection + PRD filtering (picker / retrofit bridge). Full procedures, runtime ordering note (0.8 runs before 0.9), the squad-partition Q&A, and the three scope halts → `references/setup-flow.md`.
 2. **Step 1 — Inventory and read.** Locate inputs (sandbox `/mnt/user-data/uploads/` vs local CWD/ask); route each file to the right reader (PDF / DOCX / MD-TXT); for any Figma URL, load Figma MCP via `ToolSearch query:"figma"` — **if no MCP and no screenshots, ask before proceeding; never invent UI structure.** Read every input fully.
 3. **Step 2 — Extract before writing.** Build an internal map (product, project shape, components, entities, flows, decisions, constraints, gaps, optional design-system flags `HAS_UI_COMPONENTS` / `HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`). Infer + **confirm `PROJECT_SHAPE`** with the user (Project Shape Registry → `references/detection-and-shapes.md`). Gap-handling depends on `PRD_STATUS`: `draft` may pause when gaps > 10; `final` never pauses — every gap goes to OQs.
-4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **Run** `bash $PLUGIN_ROOT/scripts/copy-consumer-guide.sh --vault <OUTPUT_DIR>` — installs the static `_meta/ai-consumer-guide.md` (script-copied, never model-rendered; `$PLUGIN_ROOT` per `references/generation-guide.md §Reading the templates`). Then **`vault.json`** (with the advisory lock) + multi-squad artifacts if applicable.
+4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **Run** `bash $PLUGIN_ROOT/scripts/copy-consumer-guide.sh --vault <OUTPUT_DIR>` — installs the static `_meta/ai-consumer-guide.md` (script-copied, never model-rendered; `$PLUGIN_ROOT` per `references/generation-guide.md §Reading the templates`). Then assemble the **authored patch** (metadata + `source_documents` + `design_system_flags` [+ `design_system`] [+ scope block] [+ `phase`/`phase_total`] + per-OQ classifier records) and **Run** `bash $PLUGIN_ROOT/scripts/derive-vault-json.sh --vault <OUTPUT_DIR> --patch <patch-file>` — the script derives the structural arrays from the 7 files; **never hand-write `vault.json`**. Multi-squad artifacts if applicable.
 5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-contract.md §constitution`.
 6. **Step 3.5 — OQ auto-classification** on every generated OQ (see "OQ classification" above) → validation gate → `references/generation-guide.md`.
 7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus), the drafted 7 vault files, and the source (PRD/brief/KB). Materialize its findings BEFORE finalize:
@@ -135,7 +135,7 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
    - `missed_oq` → add an OQ to the roll-up (run it through the Step 3.5 classifier).
    - `misclassification` → retag the OQ `category`.
    - `coverage_gap` → add an OQ / flagged note.
-   Evidenceless findings are dropped. Record the pass in `vault.json` provenance: `advisor: {model, findings:{high,med,low}}` OR `advisor: skipped` (`--no-advisor`) OR `advisor: unavailable` (agent error — NEVER reported as clean). Focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`.
+   Evidenceless findings are dropped. Record the pass in `vault.json` provenance via the authored patch consumed by `derive-vault-json.sh`: `advisor: {model, findings:{high,med,low}}` OR `advisor: skipped` (`--no-advisor`) OR `advisor: unavailable` (agent error — NEVER reported as clean). Focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`.
 8. **Step 4 — Self-check before delivery.** Full anti-halu + readability + output-mode + `vault.json` integrity checklist → `references/self-check.md`.
 9. **Step 5 — Present.** Chat-only summary: doc + OQ counts, `PRD_STATUS`/`OUTPUT_MODE`, top blocker OQs, vault path, suggested next skill (`resolve-oq` / `detect-drift` / `diff-vault`). No "I have created…" preamble → `references/self-check.md`.
 
@@ -158,7 +158,7 @@ All halts emit the unified `blocker` envelope (`plugins/mega-sdd/references/halt
 
 - **OQ classification (Step 3.5):** `oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`. (See `references/generation-guide.md` for the halt YAML.)
 - **Scope detection (Step 0.9):** `scope_not_declared_in_prd`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence` — all ALWAYS STOP CHAIN. (See `references/setup-flow.md` for the halt YAMLs.)
-- **vault.json write:** `memory_in_use` if the advisory lock can't be acquired after retries.
+- **vault.json derive:** `memory_in_use` when `derive-vault-json.sh` exits 4 (the script holds and releases the `vault.json.lock` itself; exit 4 = lock held after backoff — surface the existing `memory_in_use` envelope, keterangan unchanged).
 
 ## Quality bar
 

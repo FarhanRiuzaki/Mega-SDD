@@ -285,6 +285,11 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
 
     checks = []
 
+    # NOTE (W5): the entities/OQ count-sync checks below are INTENTIONAL
+    # independent cross-checks of derive-vault-json.sh — they parse the md
+    # with a DIFFERENT, looser grammar than _lib/vault_md.py and are the
+    # detectors for deriver-parser bugs. Do NOT cull them as "tautological
+    # now that vault.json is script-derived".
     # Check 1: vault.json entities count vs 03-data-model.md entity blocks
     dm_path = os.path.join(vault_dir, "03-data-model.md")
     if os.path.isfile(dm_path):
