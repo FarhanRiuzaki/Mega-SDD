@@ -16,7 +16,8 @@
 #      tmp+os.replace — before pandoc renders, so PDF/HTML inherit real stamps).
 #      Special case: the '**Source vault:**' doc-control line is stamped with
 #      sha256 of <vault>/vault.json;
-#   4. writes <vault>/fsd/.citation-map.json (schema 2.0) — per-entry resolved_path
+#   4. writes <vault>/<doc>/.citation-map.json (schema 2.0, default doc: fsd) —
+#      per-entry resolved_path
 #      + source_sha256 (null + unresolved:true when the cited path resolves to no
 #      file), emitted_text_sha256 = sha256 of the section's post-stamp byte slice,
 #      top-level vault_sha256/mode, and missing_sources[] derived from the
@@ -27,8 +28,13 @@
 # halt quality_gate_failed subtype citation_unresolvable (emit-fsd Step 4.6).
 #
 # Usage:
-#   build-citation-map.sh --vault=<vault-dir> --cwd=<project-root> --mode=<mode>
+#   build-citation-map.sh --vault=<vault-dir> --cwd=<project-root> --mode=<mode> [--doc=<name>]
 #     (--mode is recorded into the map only; it changes no computation)
+#     (--doc names the doc lane, default fsd — it parameterizes ONLY the doc
+#      subdir <vault>/<doc>/<DOC>.md, the map path <vault>/<doc>/.citation-map.json,
+#      and the emitted_by label; with --doc absent or =fsd every code path is
+#      byte-identical to the pre-flag script. P3 seam for emit-prd/emit-sit —
+#      see references/emission-engine.md)
 #
 # Exit codes:
 #   0  clean — ONE stdout line (quiet-gates diet M-05a)
@@ -45,22 +51,28 @@ set -uo pipefail
 VAULT=""
 CWD=""
 MODE=""
+DOC="fsd"
 for arg in "$@"; do
   case "$arg" in
     --vault=*) VAULT="${arg#*=}" ;;
     --cwd=*)   CWD="${arg#*=}" ;;
     --mode=*)  MODE="${arg#*=}" ;;
+    --doc=*)   DOC="${arg#*=}" ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 [ -n "$VAULT" ] && [ -d "$VAULT" ] || { echo "--vault=<vault-dir> required (dir must exist)" >&2; exit 2; }
 [ -n "$CWD" ] && [ -d "$CWD" ] || { echo "--cwd=<project-root> required (dir must exist)" >&2; exit 2; }
-[ -f "$VAULT/fsd/FSD.md" ] || { echo "FSD.md not found at $VAULT/fsd/FSD.md — run emit-fsd Step 4 first" >&2; exit 2; }
+case "$DOC" in
+  ''|*[!a-z0-9-]*) echo "--doc must be lowercase alnum/hyphen (got: $DOC)" >&2; exit 2 ;;
+esac
+DOC_UPPER=$(printf '%s' "$DOC" | tr '[:lower:]' '[:upper:]')
+[ -f "$VAULT/$DOC/$DOC_UPPER.md" ] || { echo "$DOC_UPPER.md not found at $VAULT/$DOC/$DOC_UPPER.md — run emit-$DOC Step 4 first" >&2; exit 2; }
 
 LIB_DIR="$(cd "$(dirname "$0")" && pwd)/_lib"
 [ -f "$LIB_DIR/citation_pattern.py" ] || { echo "missing _lib/citation_pattern.py" >&2; exit 2; }
 
-VAULT="$VAULT" CWD="$CWD" MODE="$MODE" LIB_DIR="$LIB_DIR" python3 <<'PYEOF'
+VAULT="$VAULT" CWD="$CWD" MODE="$MODE" DOC="$DOC" DOC_UPPER="$DOC_UPPER" LIB_DIR="$LIB_DIR" python3 <<'PYEOF'
 import hashlib, json, os, re, sys, tempfile
 from datetime import datetime, timezone
 
@@ -70,8 +82,10 @@ from citation_pattern import PATH_REF_RE  # canonical grammar — never a new re
 vault = os.path.abspath(os.environ["VAULT"])
 cwd = os.path.abspath(os.environ["CWD"])
 mode = os.environ.get("MODE") or "unknown"
-fsd_path = os.path.join(vault, "fsd", "FSD.md")
-map_path = os.path.join(vault, "fsd", ".citation-map.json")
+doc = os.environ.get("DOC") or "fsd"
+doc_upper = os.environ.get("DOC_UPPER") or doc.upper()
+fsd_path = os.path.join(vault, doc, f"{doc_upper}.md")
+map_path = os.path.join(vault, doc, ".citation-map.json")
 
 raw = open(fsd_path, "rb").read()
 # Binary-safe: surrogateescape round-trips every non-UTF8 byte (CRLF-safe too —
@@ -274,7 +288,7 @@ for e in entries:
 
 # ── Atomic writes: FSD.md (only when changed) + the map (always) ──
 if final_bytes != raw:
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(fsd_path), prefix=".FSD.md.")
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(fsd_path), prefix=f".{doc_upper}.md.")
     with os.fdopen(fd, "wb") as f:
         f.write(final_bytes)
     os.replace(tmp, fsd_path)
@@ -283,7 +297,7 @@ vjson = os.path.join(vault, "vault.json")
 cmap = {
     "schema_version": "2.0",
     "emitted_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-    "emitted_by": "emit-fsd via scripts/build-citation-map.sh",
+    "emitted_by": f"emit-{doc} via scripts/build-citation-map.sh",
     "vault_sha256": sha256_file(vjson) if os.path.isfile(vjson) else None,
     "mode": mode,
     "sections": entries,
