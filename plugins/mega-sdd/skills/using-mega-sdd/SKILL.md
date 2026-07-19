@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 2.6.0
+version: 3.0.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -10,19 +10,19 @@ Route SDD work through mega-sdd phases, not inline answers. This anchor decides 
 
 ## When this applies
 
-Invoke a mega-sdd skill BEFORE responding when ANY hold: **(a)** the prompt types `/mega-sdd:<command>`; **(b)** it carries an SDD trigger keyword — the full EN + Indonesian keyword census lives in this skill's always-loaded description (intent/unit/bolt/vault/PRD/binding/extract-intelligence/rebuild/sync/auto, plus `pecah PRD`, `buat dev`, `lanjut`, `kode berubah`, …); or **(c)** the CWD shows SDD signals: `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` (back-compat `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`).
+Invoke a mega-sdd skill BEFORE responding when ANY hold: **(a)** the prompt types `/mega-sdd` or any `/mega-sdd:<verb>` (deprecated typed forms resolve as aliases through 5.x); **(b)** it carries an SDD trigger keyword — the full EN + Indonesian keyword census lives in this skill's always-loaded description (intent/unit/bolt/vault/PRD/binding/extract-intelligence/rebuild/sync/auto, plus `pecah PRD`, `buat dev`, `lanjut`, `kode berubah`, …); or **(c)** the CWD shows SDD signals: `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` (back-compat `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`).
 
 ### Auto-trigger on a strong signal
 
-CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation prompt — `lanjut`, `ok`, `proceed`, `go`) → propose `/mega-sdd:auto` (→ `orchestrate-flow --deep --auto`) with one upfront confirmation. Strong CWD = one of: legacy code + no PRD + no vault; a PRD present + no vault; vault + no units; units + no bolts; **map+binding present + change signal** (dirty journal non-empty OR HEAD ≠ map stamp) → propose `/mega-sdd:sync --auto` instead. General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005"), casual conversation, and debugging/refactoring unrelated to a vault do NOT auto-trigger — the prompt must carry mega-sdd intent. If the user says "skip binding" / "just write the code" / "ignore SDD", follow them — they are in control.
+CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation prompt — `lanjut`, `ok`, `proceed`, `go`) → propose `/mega-sdd` (→ `orchestrate-flow --deep --auto`) with one upfront confirmation. Strong CWD = one of: legacy code + no PRD + no vault; a PRD present + no vault; vault + no units; units + no bolts; **map+binding present + change signal** (dirty journal non-empty OR HEAD ≠ map stamp) → propose `/mega-sdd:sync --auto` instead. General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005"), casual conversation, and debugging/refactoring unrelated to a vault do NOT auto-trigger — the prompt must carry mega-sdd intent. If the user says "skip binding" / "just write the code" / "ignore SDD", follow them — they are in control.
 
-## Natural-language lanes
+## The front door (one rule)
 
-Route on phrasing, not just `/command` — each lane skill's own description carries its trigger phrases: `analyze` (consistency check), `graph` (impact / blast radius / what depends on this), `memory` (show / review learnings), `emit-fsd` (generate FSD), `emit-agents-md` (tool-agnostic interop), `install-deps` (pasang tools), `sync` (→ `orchestrate-flow --sync`, after ANY out-of-pipeline change: manual/AI edit, hotfix, git pull). A NEW PRD/BRD/Figma/brief on a project → multi-PRD routing (revise-in-place vs new epic); **when unsure, ASK**.
+**Any SDD lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (after ANY out-of-pipeline change: manual/AI edit, hotfix, git pull), `/mega-sdd:emit <prd|fsd|sit>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); **when unsure, ASK**.
 
 ## Hard rule
 
-For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing.
+For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing. Gated phases: Skill-dispatch only, never Agent-offload.
 
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 
@@ -52,7 +52,7 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
-Diagnostic & output lanes (route these on natural language, not just `/command`): `analyze` ("check consistency", "cek konsistensi", "consistency report"); `graph` ("impact", "blast radius", "what breaks if I change X", "apa yang kena kalau ubah ini", "what depends on this"); `memory` ("show memory", "what did mega-sdd learn", "review patterns", "lihat memory"); `emit-fsd` ("generate FSD", "buat FSD"); `emit-agents-md` ("emit AGENTS.md", "tool-agnostic interop"); `install-deps` ("install deps", "pasang tools").
+Diagnostic & output lanes compress to the front-door rule — any SDD lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit` via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
 
 Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
 

@@ -21,6 +21,14 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 - **Prompt:** `pecah PRD ini buat AI dev`
 - **Expect:** Skill tool call with `generate-intent`
 
+### Case T5: The 5.0.0 front door
+- **Prompt:** `/mega-sdd`
+- **Expect:** derive-state digest → status view → next-chain proposal with ONE confirmation → Skill tool call with `orchestrate-flow` (`--deep --auto`)
+
+### Case T6: Deprecated alias still resolves (5.x contract)
+- **Prompt:** `/mega-sdd:scan-codebase`
+- **Expect:** one-line Indonesian deprecation keterangan first, then Skill tool call with `scan-codebase` exactly as before (flags pass through)
+
 ## Non-trigger cases (must NOT invoke mega-sdd)
 
 ### Case NT1: Casual question
@@ -37,4 +45,4 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 
 ## Pass criteria
 
-All T1-T4 invoke a mega-sdd skill. None of NT1-NT3 invokes one.
+All T1-T6 invoke a mega-sdd skill. None of NT1-NT3 invokes one.

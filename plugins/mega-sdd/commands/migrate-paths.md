@@ -1,5 +1,5 @@
 ---
-description: Migrate mega-sdd outputs from the legacy scattered layout to the canonical .mega-sdd/ consolidation. Walks legacy paths (docs/mega-sdd/vaults/, .mega-sdd-memory/, top-level codebase-map.md, etc.), shows a dry-run preview, asks confirm, then runs the vetted migrate-paths.sh script — moves via git mv when in a git repo (preserves history) and rewrites internal references in vault.json + binding.md. Idempotent; safe to re-run.
+description: "Maintenance one-timer — migrate legacy scattered outputs to the canonical .mega-sdd/ layout (git mv + reference rewrite); dry-run preview; idempotent."
 argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new] [--auto-confirm]"
 ---
 

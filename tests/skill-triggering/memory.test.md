@@ -83,7 +83,7 @@ The Iter 5 memory + self-learning skill. Tests operations + scope handling + ant
 - **Expect:** resolve-oq surfaces memory suggestion (KEEP_CODE) but user evaluates current context; user picks KEEP_VAULT freely; outcome NOT biased to wrong direction
 
 ### AH5: --memory-off disables both reads + writes
-- **Prompt:** `/mega-sdd:auto ./prd.md --memory-off`
+- **Prompt:** `/mega-sdd ./prd.md --memory-off`
 - **Expect:** No memory consultation messages; no memory writes after chain
 - **Verify:** `~/.mega-sdd/memory/preferences.md` not modified (line count unchanged)
 

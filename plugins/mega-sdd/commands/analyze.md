@@ -1,6 +1,8 @@
 ---
-description: Unified cross-artifact consistency analysis — runs in two modes. AUTO (hook-driven, aggregate-only, fires at chain-end + phase boundary) and MANUAL (user-invoked, re-runs all validators). Produces CONSISTENCY-REPORT.md.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:analyze` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 # /mega-sdd:analyze
 

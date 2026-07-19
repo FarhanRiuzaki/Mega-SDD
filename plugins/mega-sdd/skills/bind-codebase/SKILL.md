@@ -1,7 +1,7 @@
 ---
 name: bind-codebase
-version: 2.12.0
-description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
+version: 2.12.1
+description: Validate a vault against codebase-map.md (+ KB secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim + an Implementation State Map; BLOCKS unit generation while conflicts remain. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
 # Bind-Codebase

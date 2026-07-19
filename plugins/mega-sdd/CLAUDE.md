@@ -34,7 +34,7 @@ Skill bodies shape behavior but cannot *enforce* it — the model may or may not
 
 - **Skills** (`skills/`) are lean routers (≤500 lines) using progressive disclosure — heavy detail lives in `references/*.md` loaded on demand. Don't reinflate a SKILL.md body.
 - **Agents** (`agents/`) are first-class plugin subagents: `bolt-implementer`, `spec-reviewer`, `code-quality-reviewer`, `security-reviewer`, `standards-reviewer`, `design-reviewer`, `domain-extractor`, `phase-advisor`. `execute-bolts` dispatches the bolt agents (risk-tiered parallel review panel — blind lenses merged in the controller, per `skills/execute-bolts/references/review-panel.md`); `extract-intelligence` dispatches `domain-extractor` per wave. Plugin agents must NOT use `hooks`/`mcpServers`/`permissionMode` frontmatter (silently ignored).
-- **Commands** (`commands/`) are the user's manual `/mega-sdd:` CLI entry points, one per pipeline step, each with an `argument-hint`. **Keep command↔skill parity — never delete a pipeline command in a cull**, even if a same-named skill exists.
+- **Commands** (`commands/`) — since 5.0.0 the public surface is THREE verbs: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit <prd|fsd|sit>`, plus the four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`). Every other command file is a **deprecation alias** that keeps resolving (same skill, flags pass through, one-line keterangan first). **Never delete a pipeline command in a cull** — a pipeline command may be demoted to an alias only in a MAJOR release, must keep resolving for that whole major cycle, and may be removed only in the FOLLOWING major after telemetry review (v5 spec decision 2).
 - **Hooks** (`hooks/`) — SessionStart anchor injection; a synchronous PreToolUse gate aggregator; PostToolUse validators (write the state files); Stop telemetry + handoff validation.
 - **`/mega-sdd:analyze`** is the consolidated consistency surface — runs the validators, emits `CONSISTENCY-REPORT.md`.
 
@@ -56,7 +56,7 @@ These are the rules v4 was built to. They are **derived from Anthropic's publish
 **Agents (`agents/*.md`)**
 - A plugin subagent needs only `name` (lowercase-hyphens) + `description`; the body IS its system prompt. **Do NOT use `hooks`, `mcpServers`, or `permissionMode`** — these are silently ignored for plugin agents. `tools` must exclude subagent-unavailable tools (`Agent`, `AskUserQuestion`). Assign the cheapest capable `model` per role.
 
-**Commands** — the user's manual `/mega-sdd:` CLI entry points; keep command↔skill parity (one per pipeline step). **Never delete a pipeline command in a cull**, even if a same-named skill exists.
+**Commands** — the user's manual CLI entry points. Since 5.0.0: three public verbs + four maintenance one-timers; everything else resolves as a deprecation alias. **Never delete a pipeline command in a cull** — demotion to an alias is allowed only in a MAJOR (the alias resolves for that whole major cycle); removal only in the following major, and only after telemetry review.
 
 **Paths** — canonical nested layout per `references/paths.md`: `<vault>/{bound,units,bolts}/` + `<vault>/binding.md`, never the legacy `<vault>-bound/` sibling.
 

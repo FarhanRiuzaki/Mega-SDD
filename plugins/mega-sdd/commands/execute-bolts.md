@@ -1,7 +1,9 @@
 ---
-description: Execute unit(s) to produce code commits via superpowers. TDD discipline, halt protocol, target-files whitelist enforced (prompt rule + review-panel scope check + deterministic B3 whitelist observer).
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "<unit-id | --all> [--parallel] [--worktree] [--max-retries=N] [--dry-run] [--force] [--auto] [--per-squad] [--squad=<id>] [--module=<id>] [--review-panel=minimal|standard|full|auto] [--no-code-gates] [--no-full-suite] [--hard-rule-grammar=v1|v2] [--no-pbt] [--no-empty-commits] [--no-drift-check] [--resume] [--rollback <unit-id>] [--memory-off] [--force-skip-postflight]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:execute-bolts` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke `mega-sdd:execute-bolts` via the Skill tool.
 

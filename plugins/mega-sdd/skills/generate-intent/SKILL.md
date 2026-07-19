@@ -1,7 +1,7 @@
 ---
 name: generate-intent
-version: 2.13.0
-description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
+version: 2.13.1
+description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 7-file anti-hallucination vault; Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
 # Grand Design Spec Generator (generate-intent)

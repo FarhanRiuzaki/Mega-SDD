@@ -1,7 +1,9 @@
 ---
-description: Diff a vault against a new PRD revision and produce a structured change report (added / changed / removed / OQ delta).
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[path/to/old-vault] [path/to/new-prd]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:diff-vault` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:diff-vault` skill via the Skill tool to compare an existing vault against a revised PRD/BRD.
 

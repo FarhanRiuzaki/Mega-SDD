@@ -1,7 +1,9 @@
 ---
-description: Replay a bolt's execution + detect divergence vs prior runs. Read-only diagnostic. Captures a bolt-state snapshot (bolt-report status + target-file live sha256 + preflight/postflight rule verdicts); diffs the current run vs the latest prior snapshot. Useful for regression detection after code changes OR debugging non-deterministic bolt behavior. bash + python3; optional jd for a canonical patch; zero required new deps.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: <unit-id> [--vault=<path>] [--capture-only] [--diff-against=<replay-id>] [--format=table|json]
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:replay` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel, which validate replay as a missing primitive for agentic-dev debugging.
 

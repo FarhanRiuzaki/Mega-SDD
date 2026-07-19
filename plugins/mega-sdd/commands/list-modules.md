@@ -1,7 +1,9 @@
 ---
-description: ADVANCED / AUTO-INVOKED — Show module progress. Auto-invoked by `/mega-sdd:auto` in chain end summary. Run standalone for mid-pipeline status check OR interactive DoD marking via --mark-dod flag. Computes per-module unit completion + DoD checklist status. Supports --mark-dod for interactive DoD item toggling. Module = semantic grouping ABOVE atomic units (per generate-units/references/modules-schema.md).
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:list-modules` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Display module progress + DoD status for the current vault.
 

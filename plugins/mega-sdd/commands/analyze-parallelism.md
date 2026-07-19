@@ -1,7 +1,9 @@
 ---
-description: ADVANCED / AUTO-INVOKED — DAG analysis of vault units. Auto-invoked by `/mega-sdd:auto` before execute-bolts when --parallel set. Run standalone for inspection / debugging / mermaid visual export. Read-only diagnostic. Helps user verify "Squad1 > Unit 1-3 parallel" intent before bolt execution.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--per=squad|module|all] [--format=table|json|mermaid] [--module=<id>] [--squad=<id>] [--depth-only]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:analyze-parallelism` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Analyze the unit dependency graph for parallelism opportunities and bottlenecks. Read-only.
 

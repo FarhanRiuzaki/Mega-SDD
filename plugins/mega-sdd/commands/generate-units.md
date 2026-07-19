@@ -1,7 +1,9 @@
 ---
-description: Decompose a (bound-)vault into atomic AI-executable unit specs with dependency graph.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: <vault-path> [--refresh] [--max-complexity=small|medium] [--auto]
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:generate-units` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke `mega-sdd:generate-units` via the Skill tool.
 

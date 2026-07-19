@@ -1,7 +1,9 @@
 ---
-description: ADVANCED / AUTO-INVOKED — Flatten vault → AGENTS.md. Auto-invoked by `/mega-sdd:auto` at chain end (respects config flag default-on). Run standalone for one-off regeneration OR --mode=sibling when AGENTS.md already exists user-authored. Tool-agnostic interop — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence. Pure write-out; idempotent regeneration.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--out=<path>] [--mode=overwrite|append|sibling] [--auto]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:emit-agents-md` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:emit-agents-md` skill via the Skill tool.
 

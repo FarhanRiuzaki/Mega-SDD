@@ -1,8 +1,8 @@
 ---
 name: detect-drift
-version: 3.1.2
+version: 3.1.3
 context: fork
-description: Non-interactive diagnostic that detects drift between a `mode=existing` vault (the "should be" state) and the live codebase (the "as is" state). Heuristic scan of entities, flows, decisions, and API surface; produces a structured DRIFT-REPORT.md with confidence-rated findings and queues direction calls to PENDING-SYNC.md (resolve via resolve-oq / sync — it never prompts). Use when the user says "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", "is the code in sync?", or paraphrases.
+description: Non-interactive drift diagnostic — compares a mode=existing vault against the live codebase; writes DRIFT-REPORT.md, queues direction calls to PENDING-SYNC.md (never prompts). Use when the user says "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", "is the code in sync?", or paraphrases.
 ---
 
 # Drift Detect — vault vs live codebase reconciliation

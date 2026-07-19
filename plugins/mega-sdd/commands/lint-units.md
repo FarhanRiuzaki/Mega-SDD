@@ -1,7 +1,9 @@
 ---
-description: ADVANCED / AUTO-INVOKED — Static analysis of vault units for quality + grounding. Auto-invoked by `/mega-sdd:auto` after generate-units phase — users rarely need to run this directly. Run standalone for debugging vault quality issues OR CI integration (--strict flag). Per-unit quality breakdown (HIGH/MEDIUM/LOW grounding_confidence), anchor verification status, Hard Rule coverage, acceptance_test presence, module + squad assignment status, Migration notes structure (extend units), task_type validity vs binding state. Returns prioritized recommendations for unit improvements before bolt execution. Read-only; never modifies vault.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:lint-units` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Static lint of vault units. Read-only diagnostic; surfaces issues BEFORE bolts run so the user can fix vault/binding/units instead of debugging failed bolts.
 

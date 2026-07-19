@@ -1,7 +1,7 @@
 ---
 name: resolve-oq
-version: 2.7.0
-description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, and bumps version + Changelog. Also resolves CONFLICT entries from a binding.md (`--binding`). Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
+version: 2.7.1
+description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
 # Resolve Open Questions

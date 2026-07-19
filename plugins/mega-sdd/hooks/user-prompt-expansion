@@ -4,6 +4,12 @@
 # event; the model usually then calls the Skill tool (where the primary gate
 # fires), but MAY follow the expanded prompt directly. This hook closes that
 # seam: when the moat state attests FAIL, block the expansion itself.
+# 5.0.0 (P6 sequencing #3): the matcher in hooks.json ALSO covers the /mega-sdd
+# front-door verb (bare `mega-sdd`, `mega-sdd:mega-sdd`, `/mega-sdd …` — but NOT
+# `/mega-sdd:<other>`), so a front-door dispatch whose chain reaches
+# execute-bolts passes through the same gate as the old typed command. The other
+# verbs (/mega-sdd:sync, /mega-sdd:emit, aliases) stay un-matched: they must
+# remain expandable while the moat is FAIL so the user can diagnose + resolve.
 # Output contract (current docs): top-level {"decision": "block", "reason": ...}.
 # Fail-open on anything undeterminable — the PreToolUse gate remains the backstop.
 set -uo pipefail

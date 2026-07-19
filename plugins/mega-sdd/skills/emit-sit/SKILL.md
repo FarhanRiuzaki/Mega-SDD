@@ -1,7 +1,7 @@
 ---
 name: emit-sit
-version: 1.0.0
-description: Generate a bank-style SIT (System Integration Test) document from a mega-sdd vault — TS test scenarios derived 1-to-1 from the vault's F-* flows with the Mermaid diagram embedded verbatim, a TC traceability matrix from unit acceptance_test entries, and UNFAKEABLE executed-evidence tables script-derived from acceptance.json / postflight.json / _batch-suite.json via scripts/build-sit-evidence.sh. Sign-off rows are paper-out placeholder literals the model never fills (a filled row is blocked as a fabricated record). Maturity planned → partial → executed computed from evidence coverage. Multi-scope vaults merge into ONE SIT with per-scope sections and TS-<SCOPE>-NNN ids. Triggers — "generate SIT", "emit SIT", "buat SIT", "dokumen SIT", "SIT untuk UAT", "bukti eksekusi test", or paraphrases.
+version: 1.0.1
+description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid verbatim), TC traceability matrix, script-derived executed-evidence tables, sign-off rows as placeholder literals; maturity computed from evidence. Triggers — "generate SIT", "emit SIT", "buat SIT", "dokumen SIT", "SIT untuk UAT", "bukti eksekusi test", or paraphrases.
 ---
 
 # Emit-SIT — System Integration Test Document Generator

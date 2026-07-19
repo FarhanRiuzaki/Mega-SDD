@@ -1,7 +1,9 @@
 ---
-description: Scan an existing repository and produce a `codebase-map.md` for SDD binding. Brownfield prep for mega-sdd pipeline.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[repo-path] [--depth=N] [--include=<glob>] [--exclude=<glob>] [--no-default-excludes] [--out=<path>] [--engine=tree-sitter|regex] [--changed-only] [--shallow-scan] [--force-deep] [--no-cache] [--memory-off] [--auto] [--force-large]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:scan-codebase` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:scan-codebase` skill via the Skill tool.
 
