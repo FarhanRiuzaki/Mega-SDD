@@ -258,6 +258,34 @@ if [ $RC -ne 0 ] && echo "$OUT" | grep -qi "MISMATCH\|violation\|fail"; then
 else bad "violation NOT caught rc=$RC: $OUT"; fi
 git -C "$PROJ" reset -q --hard HEAD~1
 
+# ── S10.5 B4 acceptance evidence (P4): the unit's own acceptance test is
+# re-executed against the committed tree and leaves hook-guarded evidence.
+# U-001's acceptance_test is `php -l src/routes.php` (the file the S10 bolt
+# created) — PASS when php exists; the whole stage SKIPs gracefully on a
+# runner without php (detect-never-impose). Negative: break routes.php syntax
+# → the L0 syntax rung + the acceptance entry both fail (build_broken lane),
+# then restore.
+stage "S10.5 acceptance evidence: php -l re-executed, syntax negative"
+if command -v php >/dev/null 2>&1; then
+  OUT="$(bash "$SCR/run-acceptance-tests.sh" --cwd="$PROJ" --unit=U-001 </dev/null 2>&1)"; RC=$?
+  if [ $RC -eq 0 ] && grep -q '"status": "pass"' "$VAULT/bolts/U-001/acceptance.json" \
+     && grep -q '"written_by": "run-acceptance-tests.sh"' "$VAULT/bolts/U-001/acceptance.json"; then
+    ok "acceptance evidence recorded: U-001 php -l PASS — $OUT"
+  else bad "acceptance rc=$RC: $OUT"; fi
+  printf '<?php\nthis is not php {{{\n' > "$PROJ/src/routes.php"
+  OUT="$(bash "$SCR/run-acceptance-tests.sh" --cwd="$PROJ" --unit=U-001 </dev/null 2>&1)"; RC=$?
+  if [ $RC -eq 1 ] && grep -q '"type": "syntax"' "$VAULT/bolts/U-001/acceptance.json" \
+     && grep -q '"status": "fail"' "$VAULT/bolts/U-001/acceptance.json"; then
+    ok "GATE FIRED: broken routes.php caught by the L0 syntax floor (exit 1, fail recorded)"
+  else bad "syntax break not caught rc=$RC: $OUT"; fi
+  git -C "$PROJ" checkout -q -- src/routes.php
+  bash "$SCR/run-acceptance-tests.sh" --cwd="$PROJ" --unit=U-001 </dev/null >/dev/null 2>&1 \
+    && ok "restored tree re-records green acceptance evidence" \
+    || bad "post-restore acceptance run failed"
+else
+  echo "  skip: php not on this runner — S10.5 acceptance asserts skipped gracefully"
+fi
+
 # ── S11 graph ────────────────────────────────────────────────────────────────
 stage "S11 build-graph"
 OUT="$(bash "$SCR/build-graph.sh" --root "$PROJ" </dev/null 2>&1)"; RC=$?

@@ -34,13 +34,20 @@ Binding: <binding refs if brownfield>
 Tests: <test pass count> passing
 Unit: U-XXX
 SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX
+SDD-Acceptance: v5
 ```
 
 `<type>` is the conventional-commit type that fits the unit (`feat`/`fix`/`refactor`…);
 the SCOPE is always the unit ID. The `Unit:` git trailer is the machine identity
 channel (survives subject rewording); the `SDD-PROVENANCE:` trailer is what the B2
 out-of-band bypass guard keys on — a code commit touching a unit's `target_files`
-WITHOUT it is flagged in `_batch-suite.json.bypass_commits[]`.
+WITHOUT it is flagged in `_batch-suite.json.bypass_commits[]`. The `SDD-Acceptance: v5`
+trailer is the **B4 commit-key** (P4 v4.96.0): it stamps the acceptance contract into
+the commit AT COMMIT TIME — the gate (`validate-bolt-artifacts.sh --acceptance-scan`)
+requires fresh passing `acceptance.json` evidence ONLY for commits carrying it, so a
+legacy pre-v5 bolt (no trailer) can never retro-block (the same
+read-obligation-at-commit discipline B1 applies via `unit_text()`; a retro edit cannot
+add or erase the key without rewriting history).
 
 ## Failure modes (and bolt behavior)
 
