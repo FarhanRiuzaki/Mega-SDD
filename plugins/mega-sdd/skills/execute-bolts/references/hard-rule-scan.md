@@ -28,13 +28,14 @@ The entire pre-flight (grammar detection → per-rule validation → snapshot ca
 | 5 | halt `hard_rule_unanchored` (SIGNATURE_RULE symbol not in tracked source) |
 | 6 | halt `dep_missing` (v2 grammar, ast-grep absent) |
 | 7 | post-hoc refusal — bolt commits already exist and no baseline is on disk; NON-FATAL: proceed, post-flight falls back to commit evidence, log in the bolt-report |
+| 8 | dirty-protected-path refusal — a rule target path (a `DO_NOT_MODIFY` path, or the file declaring a `SIGNATURE_RULE` symbol) differs from HEAD at baseline time; no artifact written. FATAL for this run (treat like a `hard_rule_violated`-style STOP, never proceed): commit or restore the protected file, then re-run — a dirty protected path at baseline time is indistinguishable from tampering |
 
 What the script executes, for each unit with a non-empty `## Hard rules` body section:
 
 - YAML code blocks under `## Hard rules` → **v2 grammar** (ast-grep YAML; the grammar spec is the v2 Hard-rule-grammar ref listed in SKILL.md).
 - Bulleted line items (`- DO NOT modify ...`) → **v1 grammar** (the 5-type legacy set).
 - Mixed (both forms in one unit) → halt `hard_rule_mixed_grammar` (user migrates via `/mega-sdd:migrate-rules`).
-- Override via `--hard-rule-grammar=v1|v2`.
+- Override via the script flag `--grammar=v1|v2` (the controller forwards the user-level `--hard-rule-grammar=v1|v2` value as `--grammar=<v>` on the script invocation — the script itself accepts only `--grammar`).
 
 **For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via parse-via-scan (`ast-grep test --validate` does NOT exist in the CLI — the snippet is in `hard-rule-grammar-v2.md` §Pre-flight, the single owner of the parse-check mechanics). Unparseable → halt `hard_rule_unparseable`.
 
@@ -83,6 +84,7 @@ The `snapshot_at` / `head_sha` / `written_by` / `grammar` top-level keys are pro
 
 1. **Re-capture is allowed only while the unit has no bolt commits** — a re-run overwrites the snapshot (fresh `snapshot_at`).
 2. **Once bolt commits exist the baseline is immutable** — an existing artifact is kept byte-identical; an absent one is refused with exit 7 (anti-laundering; post-flight then uses git commit evidence instead).
+3. **A baseline is minted only from a tree whose protected paths match HEAD** — before minting, the writer compares every rule target path (`DO_NOT_MODIFY` paths AND the file declaring each `SIGNATURE_RULE` symbol) against HEAD; any difference is refused with exit 8 and NO artifact is written (tamper-BEFORE-mint would bake the tampered sha into the baseline, and the engine gives a present snapshot precedence over commit evidence). Remedy: commit or restore the protected file, then re-run — a dirty protected path at baseline time is indistinguishable from tampering. Unrelated dirty files never block; a legitimate clean-tree pre-flight is unaffected (HEAD == disk).
 
 ## Halt YAMLs
 
@@ -106,7 +108,7 @@ blocker:
   details:
     unit_id: U-XXX
     rule: "function <name> MUST preserve signature: ..."
-    reason: "Referenced function not found in codebase-map; cannot snapshot or validate"
+    reason: "Referenced function not found in tracked source (shared find_decl_line extractor); cannot snapshot or validate"
   next_action: "Verify the function name is correct OR remove this rule if the function doesn't exist yet."
 ```
 

@@ -57,17 +57,25 @@ OQ_CONF_BRACKET_RE = re.compile(
 )
 
 # `→ **Resolved v1.1** (date): answer` / `→ Resolved v1.1: answer`
+# re.M: the annotation line may sit anywhere inside the OQ's multi-line block
+# (a resolved OQ is NOT always the last line of its doc — without re.M the `$`
+# only matched at block end and mid-doc annotations were silently dropped,
+# DELETING a prior resolution on re-derive since it is a DERIVED_OQ key).
 OQ_RESOLUTION_RE = re.compile(
-    r"→\s*\*{0,2}Resolved v[\d.]+\*{0,2}[^:\n]*:\s*(.+)$"
+    r"→\s*\*{0,2}Resolved v[\d.]+\*{0,2}[^:\n]*:\s*(.+)$", re.M
 )
 
 # `→ Out of Scope v1.1: reason`
-OQ_OOS_REASON_RE = re.compile(r"→\s*Out of Scope v[\d.]+\s*:\s*(.+)$")
+OQ_OOS_REASON_RE = re.compile(r"→\s*Out of Scope v[\d.]+\s*:\s*(.+)$", re.M)
 
 # `**Deferred (v1.1)**: reason` annotation (marks status deferred while the
-# checkbox stays `[ ]` — vault-contract.md §Status markers).
-OQ_DEFERRED_RE = re.compile(r"\*\*Deferred\b")
-OQ_DEFERRED_REASON_RE = re.compile(r"\*\*Deferred[^*]*\*\*\s*:\s*(.+)$")
+# checkbox stays `[ ]` — vault-contract.md §Status markers). Position-anchored
+# to the FULL annotation shape — bold-closed marker + `:` + a non-empty reason
+# (symmetric with the Resolved annotation, which requires its full
+# `→ … Resolved vX.Y …:` shape) — so ordinary bold `**Deferred**` wording
+# inside a question text can never fabricate the status or truncate the text.
+OQ_DEFERRED_RE = re.compile(r"\*\*Deferred\b[^*\n]*\*\*\s*:\s*\S")
+OQ_DEFERRED_REASON_RE = re.compile(r"\*\*Deferred[^*\n]*\*\*\s*:\s*(.+)$", re.M)
 
 # `— resolve: <PIC/source>` hint (resolver_owner is best-effort — None when
 # absent, never fabricated).
@@ -404,6 +412,15 @@ def parse_open_questions(doc_name, md, errors):
     oqs = []
     for n, (i, m) in enumerate(anchors):
         j = anchors[n + 1][0] if n + 1 < len(anchors) else len(lines)
+        # the block also ends at the next ##/### heading of any kind (the
+        # parse_flows/parse_adrs precedent): a later section's content must
+        # never feed this OQ's annotations — e.g. an unrelated `**Deferred**:`
+        # line under `## Notes` would fabricate status deferred + steal the
+        # reason for the doc's last OQ.
+        for k in range(i + 1, j):
+            if lines[k].startswith("## ") or lines[k].startswith("### "):
+                j = k
+                break
         block = "\n".join(lines[i:j])
         box, tag, rest = m.group(1), m.group(2), m.group(3)
         status = {" ": "open", "x": "resolved", "~": "out_of_scope"}[box]

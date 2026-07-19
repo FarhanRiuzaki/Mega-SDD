@@ -9,7 +9,10 @@
 #      default accepted + Superseded mapping; OQ status/category/mode/conf/
 #      text/resolution/oos-reason/deferred-reason/resolver_owner; summary;
 #      constitution_hash == python3-hashlib recompute; bracket-first category
-#      + roll-up fallback)
+#      + roll-up fallback; OQ annotation position pins — a resolved OQ that is
+#      NOT the last line of its doc keeps its resolution; bold '**Deferred**'
+#      inside a question text stays status=open with the text intact; a
+#      genuinely deferred OQ mid-doc keeps its deferred_reason)
 #   2  idempotency: second run byte-identical INCLUDING generated_at
 #   3  malformed → exit 2, vault.json untouched: duplicate flow id; duplicate
 #      OQ tag across docs; patch setting a derived key; patch setting a
@@ -75,12 +78,27 @@ echo "== W5: derive-vault-json =="
 # ── 1. round-trip vs checked-in expected json ──
 V1="$WORK/v1"; seed_vault "$V1"
 OUT=$(bash "$DERIVE" --vault "$V1" --patch "$FX/authored-patch.json" </dev/null 2>&1); RC=$?
-[ "$RC" -eq 0 ] && echo "$OUT" | grep -qF "PASS: derived vault.json (2 entities, 2 flows, 2 adrs, 5 oqs)" \
+[ "$RC" -eq 0 ] && echo "$OUT" | grep -qF "PASS: derived vault.json (2 entities, 2 flows, 2 adrs, 7 oqs)" \
   && ok "1: fixture derive exits 0 with the counted PASS line" \
   || fail "1: derive rc=$RC out: $(echo "$OUT" | head -3)"
 json_eq_ignoring_stamps "$V1/vault.json" "$FX/expected-vault.json" \
   && ok "1: derived json equals checked-in expected (entities/flows/adrs/OQ skeletons + authored patch merge)" \
   || fail "1: derived json diverges from expected"
+python3 - "$V1/vault.json" <<'PY' && ok "1: OQ annotation position pins — mid-doc resolution kept; bold Deferred-in-text stays open; mid-doc deferred_reason kept" || fail "1: OQ annotation position pin broken"
+import json, sys
+oq = {o["tag"]: o for o in json.load(open(sys.argv[1]))["open_questions"]}
+# a resolved OQ that is NOT the last line of its doc keeps its resolution
+assert oq["OQ-DM-1"]["status"] == "resolved" and oq["OQ-DM-1"]["resolution"] == "UUID."
+# bold '**Deferred**' inside the question text: status stays open, text intact
+assert oq["OQ-CN-3"]["status"] == "open"
+assert oq["OQ-CN-3"]["text"] == "how should **Deferred** settlement deep-links batch?"
+assert "deferred_reason" not in oq["OQ-CN-3"] and "deferred_at" not in oq["OQ-CN-3"]
+# a genuinely deferred OQ mid-doc (content follows) keeps its deferred_reason
+assert oq["OQ-CN-4"]["status"] == "deferred"
+assert oq["OQ-CN-4"]["deferred_reason"] == "waiting on legal review"
+assert oq["OQ-CN-4"]["text"] == "data retention period?"
+sys.exit(0)
+PY
 python3 - "$V1/vault.json" "$FX/constitution.md" <<'PY' && ok "1: constitution_hash equals hashlib recompute; transition stamps present" || fail "1: constitution_hash / transition stamps wrong"
 import hashlib, json, sys
 d = json.load(open(sys.argv[1]))
@@ -315,7 +333,7 @@ PY
 V10="$WORK/v10"; seed_vault "$V10"
 printf '\n## Open Questions\n- [ ] **OQ-001** [P1]: numeric bind-form tag parses\n' >> "$V10/06-constraints.md"
 OUT=$(bash "$DERIVE" --vault "$V10" </dev/null 2>&1); RC=$?
-[ "$RC" -eq 0 ] && echo "$OUT" | grep -qF "6 oqs" \
+[ "$RC" -eq 0 ] && echo "$OUT" | grep -qF "8 oqs" \
   && ok "10: numeric OQ-001 tag derives (no false cross-count exit 2 — amendment §3)" \
   || fail "10: numeric tag handling wrong (rc=$RC): $OUT"
 REPO_ROOT="$(cd "${PLUGIN_ROOT}/../.." && pwd)"

@@ -90,9 +90,15 @@ Implementation-State Classification does NOT change blocking rules. It is an ann
 
 ### CONFLICT entry format (classification enrichment)
 
-Every CONFLICT in `binding.md` is written as a markdown detail heading plus a
-`## Conflicts (N)` summary row. Each ACTIVE (unresolved) CONFLICT detail heading
-MUST carry two enrichment fields so downstream review can triage by kind and
+Every CONFLICT in `binding.md` is written as ONE `### CONFLICT-N` markdown detail
+block under `## Conflicts (N) — BLOCKING` — the sole carrier, machine-read AND
+human-read (no summary table; P2 grammar per `binding-md-template.md`, the
+authoritative template). Each block opens with its `- **Vault claim**:` /
+`- **Codebase reality**:` pair (the reality line carries the evidence anchor) and
+carries a `- **Claim**: C-NNN` line binding it to the State Map (mandatory on
+RESOLVED blocks — `derive-binding-json.sh` exits 2 without it; recommended on
+ACTIVE blocks). Each ACTIVE (unresolved) CONFLICT detail block MUST additionally
+carry two enrichment fields so downstream review can triage by kind and
 effort. A resolved conflict is exempt — resolved means the heading carries `✅` or
 the word `RESOLVED` immediately AFTER the conflict ID, or a dedicated
 `- **Resolution**:` line whose VALUE starts with the marker (written by
@@ -102,12 +108,15 @@ structural marker only).
 
 ```markdown
 ### CONFLICT-1 — `App\Models\Product` name collision
+- **Vault claim**: <the claim text — verbatim what the vault asserts>
+- **Codebase reality**: <what the code shows> (<evidence anchor file:line>)
+- **Claim**: C-NNN
 - **Vault doc**: 03-data-model.md §Product
 - **Codebase artifact**: app/Models/Product.php
 - **conflict_class**: naming-collision      # naming-collision | signature-drift | semantic | regulatory
 - **resolution_complexity**: low            # low | medium | high
 - **Verdict**: CONFLICT (BLOCKING)
-- **Suggested action**: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
+- **Suggested action**: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT — <1-line rationale citing the evidence anchor; the enum never surfaces bare>
 ```
 
 - `conflict_class` — the *kind* of disagreement:
@@ -127,10 +136,10 @@ For each OQ in the vault tagged `category: tech` AND `classification_confidence:
 
 - Reads `scan_query` from the OQ entry
 - Executes scan against codebase-map (and KB if present)
-- Apply outcome (per `bind-codebase` Procedure §2.6):
-  - **Single unambiguous match** → flip OQ to `status: resolved`; populate `resolution`, `resolved_at`, `scan_citations`
-  - **No match** → flip `resolution_mode` to `blocking`; OQ stays `pending` (no silent guess)
-  - **Multiple matches** → flip `resolution_mode` to `blocking`; list candidates
+- Apply outcome (per `bind-codebase` Procedure §2.6 — recorded in the vault MARKDOWN and carried into vault.json by the Step-6 derive, never hand-edited):
+  - **Single unambiguous match** → OQ becomes `status: resolved` with `resolution` + script-stamped `resolved_at` + `scan_citations`
+  - **No match** → flip `resolution_mode` to `blocking` (md-bracket edit); OQ stays `open` (no silent guess)
+  - **Multiple matches** → flip `resolution_mode` to `blocking` (md-bracket edit); list candidates
 - Recorded in `binding.md` "## Tech-OQ Auto-Resolved (Scan)" table
 
 ### Recommend mode (`resolution_mode: recommend`)

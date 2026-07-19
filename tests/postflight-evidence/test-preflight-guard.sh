@@ -45,14 +45,19 @@ mkdir -p "$F/.mega-sdd/vaults/app/units" "$F/.mega-sdd/vaults/app/bolts/U-001"
   && git -c user.email=t@t -c user.name=t commit -q -m "seed" )
 
 echo "── W4: preflight.json Write/Edit guard ──"
+# NB: the reason TEXT alone is not a block — the decision field carries the
+# deny; assert BOTH so a deny→ask downgrade can never stay green (the reason
+# string survives any decision downgrade).
 OUT=$(drive "$F" "Write" "{\"file_path\":\"$F/.mega-sdd/vaults/app/bolts/U-001/preflight.json\",\"content\":\"{}\"}")
-if printf '%s' "$OUT" | grep -q "evidence artifact" && printf '%s' "$OUT" | grep -qi "preflight"; then
-  ok "Write of preflight.json denied (evidence-artifact deny names preflight)"
+if printf '%s' "$OUT" | grep -q "evidence artifact" && printf '%s' "$OUT" | grep -qi "preflight" \
+   && printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"'; then
+  ok "Write of preflight.json denied (decision=deny; evidence-artifact reason names preflight)"
 else
-  fail "Write of preflight.json allowed (or deny text lacks preflight): $(printf '%s' "$OUT" | head -c 300)"
+  fail "Write of preflight.json allowed or not a hard deny: $(printf '%s' "$OUT" | head -c 300)"
 fi
 OUT=$(drive "$F" "Edit" "{\"file_path\":\"$F/.mega-sdd/vaults/app/bolts/U-001/preflight.json\",\"old_string\":\"a\",\"new_string\":\"b\"}")
-printf '%s' "$OUT" | grep -q "evidence artifact" && ok "Edit of preflight.json denied" || fail "Edit of preflight.json allowed"
+printf '%s' "$OUT" | grep -q "evidence artifact" && printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' \
+  && ok "Edit of preflight.json denied (decision=deny)" || fail "Edit of preflight.json allowed or not a hard deny"
 
 echo "── W4: Bash tamper verbs ──"
 OUT=$(drive "$F" "Bash" "{\"command\":\"echo '{}' > .mega-sdd/vaults/app/bolts/U-001/preflight.json\"}")
@@ -68,7 +73,8 @@ OUT=$(drive "$F" "Bash" "{\"command\":\"bash ${ROOT}/plugins/mega-sdd/scripts/ru
 
 echo "── regressions ──"
 OUT=$(drive "$F" "Write" "{\"file_path\":\"$F/.mega-sdd/vaults/app/bolts/U-001/postflight.json\",\"content\":\"{}\"}")
-printf '%s' "$OUT" | grep -q "evidence artifact" && ok "Write of postflight.json still denied" || fail "postflight regression: Write allowed"
+printf '%s' "$OUT" | grep -q "evidence artifact" && printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' \
+  && ok "Write of postflight.json still denied (decision=deny)" || fail "postflight regression: Write allowed or not a hard deny"
 mkdir -p "$F/bolts/U-1"
 OUT=$(drive "$F" "Write" "{\"file_path\":\"$F/bolts/U-1/preflight.json\",\"content\":\"{}\"}")
 if printf '%s' "$OUT" | grep -q "evidence artifact"; then

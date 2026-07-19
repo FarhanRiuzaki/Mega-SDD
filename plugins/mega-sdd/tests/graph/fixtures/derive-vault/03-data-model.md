@@ -33,3 +33,8 @@ Ref: leave_request.user_id > user.id
 
 ## Open Questions
 - [x] **OQ-DM-1** [P1]: which ID type? → **Resolved v1.1** (2026-07-19): UUID.
+
+## Retention
+
+- Leave rows are retained 7 years (the resolved OQ above is deliberately NOT
+  the last line of this doc — pins mid-doc annotation extraction).

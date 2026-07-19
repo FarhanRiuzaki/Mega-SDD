@@ -56,7 +56,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    |---|---|---|
    | K — KEEP_VAULT | Heading + Resolution line marked `✅ RESOLVED (KEEP_VAULT — code update pending)`; the code-change obligation stays traceable via the CONFLICT-N reference the affected units carry in `binding_refs` (the propagation drop keeps it un-droppable) | vault claim unchanged |
    | C — KEEP_CODE | Heading + Resolution line marked `✅ RESOLVED (KEEP_CODE — vault patched)` | Edit vault claim inline to match code |
-   | D — DEFER | Heading + Resolution line marked `✅ RESOLVED (DEFER)`; conflict moved to "Open Questions" table; tag as `deferred-binding` | none (the demoted OQ lives in binding.md — it enters vault.json via the Step-4 derive's `--patch` `{"open_questions":{"OQ-XXX":{…, "status":"deferred", "defer_to":"binding", …}}}`; the deriver preserves such entries on every future derive even though they have no vault-md home) |
+   | D — DEFER | Heading + Resolution line marked `✅ RESOLVED (DEFER)`; conflict moved to "Open Questions" table; tag as `deferred-binding` | none (the demoted OQ lives in binding.md — it enters vault.json via the Step-4 derive's `--patch <tmp-patch>`, file content `{"open_questions":{"OQ-XXX":{…, "status":"deferred", "defer_to":"binding", …}}}`; the deriver preserves such entries on every future derive even though they have no vault-md home) |
    | S — SPLIT | Heading + Resolution line marked `✅ RESOLVED (SPLIT)`; insert N sub-conflicts under it | For each sub-claim: edit vault to split |
 
 3. **Walk Open Questions table.** For each propagated deferred-OQ, use the standard 4-action menu (`[A]` Answer now / `[C]` Out of scope / `[D]` Skip — same Step 2b menu as the standard walk), with **Option [B] Defer hidden** (already in binding context — nested deferral not supported; re-binding flow is via re-running `bind-codebase`).
@@ -64,7 +64,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 4. **Write back.** All resolutions persist to:
    - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)
    - `binding.json` — refreshed by running `scripts/derive-binding-json.sh --vault <vault>` after the markdown write (script-derived from `binding.md`; never edited by hand)
-   - `vault.json` — **Run** `scripts/derive-vault-json.sh --vault <vault> --event '{"event":"resolve-oq-binding","at":"<iso>","summary":"N conflicts resolved, M OQs resolved"}'` (+ `--patch` with the DEFER-demoted `defer_to: binding` OQ entries per the table above). Run it AFTER `derive-binding-json.sh` (the W2 ordering — binding.json first, then the vault manifest event). Script-derived; never edited by hand
+   - `vault.json` — **Run** `scripts/derive-vault-json.sh --vault <vault> --event '{"event":"resolve-oq-binding","at":"<iso>","summary":"N conflicts resolved, M OQs resolved"}'` (+ `--patch <tmp-patch>` — a temp FILE carrying the DEFER-demoted `defer_to: binding` OQ entries per the table above; `--patch` never takes inline JSON). Run it AFTER `derive-binding-json.sh` (the W2 ordering — binding.json first, then the vault manifest event). Script-derived; never edited by hand
    - `decisions.md` (memory layer) — each resolution recorded durably (survives re-binds; per resolve-oq's auto-memory-handoff reference)
 
 5. **Hand-off (S4 — differs per action mix; a blanket re-bind LOOPS on KEEP_VAULT).**

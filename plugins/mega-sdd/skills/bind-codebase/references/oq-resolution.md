@@ -7,16 +7,18 @@
 
 All three annotate verdicts and surface OQs; none relaxes the CONFLICT gate.
 
+> **Write-surface rule (W5):** `vault.json` is never hand-edited here. Every OQ status change below is recorded in the **vault markdown** (checkbox + annotation + classification bracket — the exact grammar `scripts/_lib/vault_md.py` parses), and the Step-6 `derive-vault-json.sh` run mirrors it into `vault.json`. Per-OQ `status` / `resolution` / `resolution_mode` / `resolved_at` are DERIVED keys — a `--patch` that sets them on an md-homed OQ exits 2, and a hand-written value is overwritten by the next derive. The `--patch <tmp-patch>` lane (appended to the same Step-6 derive run) carries only (a) non-derived JSON-only fields on md-homed OQs (e.g. `scan_citations`) and (b) md-homeless `defer_to: binding` orphan entries, which have no markdown line to edit.
+
 ## 2.6 Tech-OQ auto-resolution (scan)
 
 For each vault OQ with `category: tech` AND `resolution_mode: scan` AND `classification_confidence: high` (only high-confidence auto-resolves):
 
 a. Read the OQ's `scan_query` (a codebase-map section reference or grep pattern).
 b. Execute the scan against the codebase-map (and KB if present).
-c. Apply the outcome:
-   - **Single unambiguous match** → OQ `status: resolved`, `resolution: <found value>`, `resolved_at: <now>`, `scan_citations: [<found at>]`. Update `vault.json`.
-   - **No match** → keep `status: pending`; flip `resolution_mode: scan` → `blocking`; note "scan returned no match". User reviews.
-   - **Multiple ambiguous matches** → keep `status: pending`; flip to `blocking`; list candidates in the OQ entry.
+c. Apply the outcome (markdown is the write surface; the Step-6 derive carries it into `vault.json`):
+   - **Single unambiguous match** → record the auto-resolution in the vault markdown: flip the OQ checkbox `[ ]` → `[x]` in the origin doc AND the `00-index.md` roll-up, and append the annotation `→ **Resolved v{vault version}** (YYYY-MM-DD): <found value>` to the OQ line (the exact grammar the deriver parses — it derives `status: resolved` + `resolution` from it and script-stamps `resolved_at` on the transition). Supply `scan_citations: [<found at>]` via `--patch <tmp-patch>` on the same Step-6 derive run (non-derived JSON-only key — allowed on md-homed OQs).
+   - **No match** → status stays `open` (checkbox unchanged); flip the OQ line's classification bracket `[tech / scan]` → `[tech / blocking]` in the origin doc + roll-up (the deriver mirrors `resolution_mode` from the bracket); note "scan returned no match" in the `binding.md` `## Open Questions` row. User reviews.
+   - **Multiple ambiguous matches** → status stays `open`; same `[tech / scan]` → `[tech / blocking]` bracket edit; list the candidates in the `binding.md` `## Open Questions` row.
 d. Append to `binding.md` under `## Tech-OQ Auto-Resolved (Scan)`:
    ```markdown
    | OQ-ID | Category | Question | Scan target | Resolution | Citations |
@@ -41,7 +43,7 @@ c. **Surface in `binding.md`** under `## Tech-OQ Recommendations (review require
    **Fallback if wrong**: If RFC 7807 doesn't fit, consider JSON:API error format.
    **User actions**: [ACCEPT] flip to resolved · [OVERRIDE] own resolution · [REJECT] flip to blocking
    ```
-d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via the standard `/mega-sdd:resolve-oq` walk — the OQ stays `pending` in `vault.json` until then.
+d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via the standard `/mega-sdd:resolve-oq` walk — the OQ stays `open` in `vault.json` until then.
 e. **Low confidence** tech-recommend OQs → skip surfacing; pass through UNCHANGED (`resolution_mode` is never mutated on confidence grounds — per `binding-contract.md` §Confidence gate; they are already in "## Auto-Classification Review").
 
 **Anti-halu rails:** NEVER auto-accept a recommendation (always user-in-the-loop for `recommend` mode). NEVER pass a recommendation with unverifiable citations downstream (citation verification is mandatory). `rationale` + `fallback_if_wrong` are the audit trail — if either is missing, the recommendation can't be trusted → halt.
@@ -52,13 +54,16 @@ Logical position: after Hard Rules emission, since it processes user-deferred OQ
 
 a. **Extract** the OQ text + section context.
 b. **Search the codebase-map for evidence:** entity name → §4 (data models); endpoint path → §3 (routes); file/symbol → §2 (public interfaces); otherwise string-search all sections with a conservative fuzzy threshold.
-c. **High-confidence match** (single unambiguous hit): set `status: resolved`, `resolved_at: <now>`, `resolution: "Auto-resolved by bind-codebase. Evidence: <codebase-map citation>"`. Append to `binding.md` `## Auto-Resolved Deferred OQs`:
+c. **High-confidence match** (single unambiguous hit) — record it where the OQ lives:
+   - **md-homed deferred OQ** (the normal case — the OQ line sits in a vault doc as `[ ]` + `**Deferred (v{X.Y})**: …`): flip the checkbox `[ ]` → `[x]` in the origin doc AND the `00-index.md` roll-up, and replace the `**Deferred (v{X.Y})**: …` annotation with `→ **Resolved v{vault version}** (YYYY-MM-DD): Auto-resolved by bind-codebase. Evidence: <codebase-map citation>` — the Step-6 derive mirrors `status: resolved` + `resolution` from these edits and script-stamps `resolved_at` on the transition.
+   - **md-homeless orphan** (a `defer_to: binding` entry with no vault-md line — e.g. a DEFER-demoted binding conflict): there is no markdown to edit; record the resolution via `--patch <tmp-patch>` on the Step-6 derive run — file content `{"open_questions":{"OQ-XXX":{"status":"resolved","resolution":"Auto-resolved by bind-codebase. Evidence: <codebase-map citation>"}}}` (the deriver accepts patch keys on `defer_to: binding` orphans and preserves the entry on every future derive).
+   Append to `binding.md` `## Auto-Resolved Deferred OQs`:
    ```markdown
    | OQ-ID | Question | Evidence (codebase-map) | Status |
    |---|---|---|---|
    | OQ-DATA-001 | ... | §4 entry: User table line 42 | auto-resolved |
    ```
-d. **No match / ambiguous** (multiple hits or low confidence): do NOT modify status (stays `deferred`); propagate to `binding.md` `## Open Questions` with `Auto-resolve attempted: no match found`. The user walks these via `/mega-sdd:resolve-oq --binding <binding.md>`.
+d. **No match / ambiguous** (multiple hits or low confidence): do NOT modify the OQ (markdown untouched — status stays `deferred`); propagate to `binding.md` `## Open Questions` with `Auto-resolve attempted: no match found`. The user walks these via `/mega-sdd:resolve-oq --binding <binding.md>`.
 e. **Conservative threshold:** when in doubt, fall back to manual resolution (d). Never silently auto-resolve a deferred OQ that could be wrong; never write an evidence string that doesn't exist in the codebase-map.
 
 Update aggregate counts (`claims_total` / `confirmed` / `conflict` / `oq`) to include any newly auto-resolved deferred OQs in `confirmed`.

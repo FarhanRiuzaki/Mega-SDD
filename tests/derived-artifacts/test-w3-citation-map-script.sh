@@ -230,9 +230,16 @@ else fail "9: forged hash survived a rebuild"; fi
 
 # ── 10: doc pins ──
 STEP3=$(sed -n '/^### Step 3:/,/^### Step 4:/p' "$SKILL")
-echo "$STEP3" | grep -q 'compute sha256' \
-  && fail "10: SKILL.md Step 3 still says 'compute sha256'" \
-  || ok "10: SKILL.md Step 3 no longer contains 'compute sha256'"
+# guard the extraction: an empty $STEP3 (renamed heading) would make the
+# negative grep below pass vacuously
+if [ -n "$STEP3" ]; then
+  ok "10: Step 3 section extracted (heading anchors intact)"
+  echo "$STEP3" | grep -q 'compute sha256' \
+    && fail "10: SKILL.md Step 3 still says 'compute sha256'" \
+    || ok "10: SKILL.md Step 3 no longer contains 'compute sha256'"
+else
+  fail "10: Step 3 section not found (heading renamed? — negative pin would be vacuous)"
+fi
 grep -q 'build-citation-map.sh' "$SKILL" && grep -q 'check-citation-drift.sh' "$SKILL" \
   && ok "10: SKILL.md names both scripts" || fail "10: SKILL.md missing a script name"
 grep -q '"schema_version": "2.0"' "$SM" \

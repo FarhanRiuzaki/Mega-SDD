@@ -74,8 +74,14 @@ grep -qF 'bind-time authoring obligation' "$BJS" && ok "P4: honest anchor-enforc
 
 # ── P5: shared lib, both scripts ──
 [ -f "$LIB" ] && ok "P5: scripts/_lib/binding_md.py exists" || fail "P5: binding_md.py missing"
-grep -qF 'binding_md' "$VALIDATE" && ok "P5: validator imports the shared parser" || fail "P5: validator does not reference binding_md"
-grep -qF 'binding_md' "$DERIVE" && ok "P5: generator imports the shared parser" || fail "P5: generator does not reference binding_md"
+# anchored to REAL import statements — the bare 'binding_md' token also lives
+# in header comments, so a grammar fork that keeps the comment would pass
+grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$VALIDATE" \
+  && ok "P5: validator imports the shared parser (import statement, not a comment)" \
+  || fail "P5: validator does not IMPORT binding_md (comment-only reference?)"
+grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$DERIVE" \
+  && ok "P5: generator imports the shared parser (import statement, not a comment)" \
+  || fail "P5: generator does not IMPORT binding_md (comment-only reference?)"
 grep -qF -- '- **Claim**' "$VCC" && ok "P5: conflict-classification WARNs on a Claim-less ACTIVE block" || fail "P5: Claim-line WARN missing from validate-conflict-classification.sh"
 
 # ── P6: empirical — top-level CI exercises the shared lib ──

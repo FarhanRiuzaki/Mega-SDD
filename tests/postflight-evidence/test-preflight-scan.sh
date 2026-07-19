@@ -18,6 +18,11 @@
 #   I. threat pin — a FORGED post-tamper baseline still passes the engine
 #      (residual by design: the write guard + post-hoc refusal are load-bearing;
 #      the engine is unchanged by W4)
+#   J. tamper-BEFORE-mint — a dirty DO_NOT_MODIFY target at baseline time ->
+#      exit 8, NO artifact (the baseline would bake the tampered sha in);
+#      same for a dirty SIGNATURE_RULE declaring file; restored tree -> mints
+#   K. dirty UNRELATED file -> still mints (the refusal scopes to protected
+#      paths only)
 set -u
 err=0
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -184,6 +189,38 @@ json.dump({"unit_id": "U-040", "rules": [{"type": "DO_NOT_MODIFY", "path": "src/
 ' "$repo/src/locked.js" "$(pf U-040)" </dev/null
 out=$(bash "$QABS" --cwd="$repo" --unit=U-040 </dev/null 2>&1); rc=$?
 [ $rc -eq 0 ] || { echo "I: threat pin changed — a forged post-tamper baseline no longer passes the engine (rc=$rc). If intentional, update the residual-risk docs (plugin CLAUDE.md inventory + W4 spec risks)"; err=1; }
+
+# ── J. tamper-BEFORE-mint: dirty protected path -> exit 8, no artifact ──
+# The tamper-then-mint hole: edit the frozen file FIRST (no commit), then run
+# the sanctioned writer — the baseline must be REFUSED, never minted from the
+# tampered working tree (it would bake the tampered sha in and pass B1).
+mkunit U-050 'DO NOT modify src/locked.js'
+echo '// tamper-before-mint' >> "$repo/src/locked.js"
+out=$(bash "$PABS" --cwd="$repo" --unit=U-050 </dev/null 2>&1); rc=$?
+[ $rc -eq 8 ] || { echo "J1: expected exit 8 dirty-protected refusal, got $rc: $out"; err=1; }
+[ ! -f "$(pf U-050)" ] || { echo "J1: refused run must not write an artifact"; err=1; }
+echo "$out" | grep -q 'src/locked.js' || { echo "J1: refusal must name the dirty protected path"; err=1; }
+echo "$out" | grep -qi 'indistinguishable from tampering' || { echo "J1: refusal must carry the remedy keterangan"; err=1; }
+( cd "$repo" && git checkout -q -- src/locked.js )
+out=$(bash "$PABS" --cwd="$repo" --unit=U-050 </dev/null 2>&1); rc=$?
+[ $rc -eq 0 ] && [ -f "$(pf U-050)" ] || { echo "J1: restored clean tree must mint (rc=$rc): $out"; err=1; }
+# same refusal for a dirty SIGNATURE_RULE declaring file
+mkunit U-051 'function keep MUST preserve signature: (a,b)'
+printf '// touched\n' >> "$repo/src/core.js"
+out=$(bash "$PABS" --cwd="$repo" --unit=U-051 </dev/null 2>&1); rc=$?
+[ $rc -eq 8 ] || { echo "J2: expected exit 8 for dirty SIGNATURE_RULE file, got $rc: $out"; err=1; }
+[ ! -f "$(pf U-051)" ] || { echo "J2: refused run must not write an artifact"; err=1; }
+echo "$out" | grep -q 'src/core.js' || { echo "J2: refusal must name the signature file"; err=1; }
+( cd "$repo" && git checkout -q -- src/core.js )
+
+# ── K. dirty UNRELATED file -> still mints (scope = protected paths only) ──
+mkunit U-052 'DO NOT modify src/locked.js'
+echo 'unrelated' > "$repo/src/unrelated.js"          # untracked, not a rule target
+echo '// tweak' >> "$repo/src/n2.js"                 # tracked+dirty, not a rule target
+out=$(bash "$PABS" --cwd="$repo" --unit=U-052 </dev/null 2>&1); rc=$?
+[ $rc -eq 0 ] && [ -f "$(pf U-052)" ] || { echo "K: unrelated dirty files must not block the mint (rc=$rc): $out"; err=1; }
+rm -f "$repo/src/unrelated.js"
+( cd "$repo" && git checkout -q -- src/n2.js )
 
 [ $err -eq 0 ] && echo "PASS: test-preflight-scan (W4 script-written baseline)" || echo "FAIL: test-preflight-scan"
 exit $err
