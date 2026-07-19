@@ -149,6 +149,8 @@ Cut filler. No padding to look thorough. No amputation to look minimal. Output m
 
 **Anti-AI-tone:** read each paragraph aloud mentally; if it sounds like AI translation or robotic prose, rewrite it in natural conversational tone for the target language. Avoid excessive hedging ("could", "may", "possibly") unless the content is genuinely ambiguous (then it goes to OQs). Use active, short, direct sentences.
 
+**Placement discipline:** Every generated artifact leads with its densest load-bearing content — TL;DR, verdict/OQ counts, markers, citations, DoD, hard constraints — and pushes exposition, glossary, and append-only history to the tail. LLM consumers weight the start and end of a document most; the middle is the weakest position. Never let a growing history section or generic boilerplate occupy the opening region, and never dilute a load-bearing table with narrative between its header and its rows. Summaries with counts go first; anything a reader could skip goes last.
+
 **Glossary policy:** first-use acronym/jargon in any doc → define it inline at first occurrence (e.g., "DBML (Database Markup Language)"). `00-index.md` MUST have a **Glossary** for cross-doc terms: DBML, ADR, FK, NFR, RTO, RPO, MPIN, CIF, OTP, SLO, parameterized, plus product-specific PRD terms.
 
 **Cross-reference budget:** max 2 cross-refs to other section/doc per section. If more are needed, inline the essential information or move to an appendix. Cross-refs must be self-contained.
@@ -222,6 +224,9 @@ Source for "This vault covers": first sentence of the `## Phase N` section in `s
 7. **Glossary** — cross-doc terms & acronyms. `compact`: only product-specific PRD terms + acronyms in the body (drop FK, RTO, RPO, SLO, ADR, NFR, DBML, DoD, OQ unless used). `full`: full glossary.
 8. **Open Questions roll-up** — categorized, sorted P1 → P2 → P3 within each (see roll-up structure below). `compact`: 1-line per OQ; `full`: multi-line per OQ.
 9. **Source documents** — files consumed.
+
+9.5. **Changelog** — append-only version history (newest first). Lives at the TAIL, never above the Executive Summary: it grows every resolve-oq / diff-vault round and history must not push load-bearing content out of the opening region. The current version stays early in Vault Lock Status.
+
 10. **Last updated** — YYYY-MM-DD.
 
 ### 01-overview.md

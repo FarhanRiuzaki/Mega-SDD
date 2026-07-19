@@ -13,6 +13,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/index"]
 ## Vault Lock Status
 
 - **Vault version**: v1.0
+- **History**: full version log in "## Changelog" at the end of this doc (newest entry first).
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
 - **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `/mega-sdd:diff-vault`).
@@ -28,17 +29,6 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/index"]
 > - `draft` → vault may have been paused mid-generation for clarification; some gaps may have been resolved inline before generation completed.
 
 > The vault is a **lock against requirements** (PRD/BRD), not against the codebase. Any change to the vault after lock = bump version + append Changelog + re-sign-off by relevant stakeholders. Dev and AI consumers MUST verify which vault version they're working from.
-
-## Changelog
-
-### v1.0 (YYYY-MM-DD)
-- Initial vault generated from PRD <version> <date>.
-- Mode: <new | existing>.
-
-<!-- Add a new entry above when revising the vault:
-### v1.1 (YYYY-MM-DD)
-- <changes>
--->
 
 ## Executive Summary
 
@@ -267,6 +257,17 @@ Cross-doc terms and acronyms:
 - **BRD**: <filename / version / date YYYY-MM>
 - **Figma**: <URL or frame set name>
 - **Other**: <existing system docs, etc.>
+
+## Changelog
+
+### v1.0 (YYYY-MM-DD)
+- Initial vault generated from PRD <version> <date>.
+- Mode: <new | existing>.
+
+<!-- Add a new entry above when revising the vault:
+### v1.1 (YYYY-MM-DD)
+- <changes>
+-->
 
 ## Last updated
 
