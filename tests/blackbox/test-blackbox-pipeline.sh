@@ -348,6 +348,28 @@ fi
 grep -q '| QA Lead | __________ | __________ | __________ | \[ \] Diterima · \[ \] Ditolak |' "$SITFRAG" \
   && ok "sign-off body rows are placeholder LITERALS (paper-out)" || bad "sign-off placeholders wrong"
 
+# ── S12.7 seed budget (P7 instrument): rank each consumer's CURRENT seed ──────
+# The ruler every slice-first cut is justified by, exercised on the real
+# pipeline vault. A codebase-map is materialized here (the binding frontmatter
+# already points at it) from the fixture's own PHP signatures so bind's dominant
+# seed component is measured, not omitted.
+stage "S12.7 measure-seeds: rank consumer seeds on the live vault"
+MAPDIR="$PROJ/.mega-sdd/codebase"; mkdir -p "$MAPDIR"
+{
+  echo "# Codebase Map"; echo "last_scanned_commit: $(git -C "$PROJ" rev-parse HEAD 2>/dev/null)"; echo
+  for f in $(find "$PROJ/src" -name '*.php' 2>/dev/null | sort); do
+    echo "## ${f#$PROJ/}"
+    grep -nE 'class |function |const ' "$f" 2>/dev/null | sed 's/^/    /'; echo
+  done
+} > "$MAPDIR/codebase-map.md"
+MOUT="$(bash "$SCR/measure-seeds.sh" --vault "$VAULT" --pack "$PLG/references/framework-conventions/laravel.md" 2>&1)"; MRC=$?
+[ $MRC -eq 0 ] && ok "measure-seeds ran on the pipeline vault" || bad "measure-seeds rc=$MRC: $MOUT"
+echo "$MOUT" | grep -q "bind-codebase" && ok "bind-codebase ranked (the #1 slice-first target)" || bad "bind row missing: $MOUT"
+# JSON contract holds on the real vault (telemetry substrate, P10)
+bash "$SCR/measure-seeds.sh" --vault "$VAULT" --json </dev/null 2>/dev/null \
+  | python3 -c 'import json,sys; json.load(sys.stdin)' && ok "measure-seeds --json well-formed on live vault" || bad "measure-seeds JSON malformed"
+echo "$MOUT" | sed 's/^/    /'
+
 # ── S13 verdict ──────────────────────────────────────────────────────────────
 stage "S13 verdict"
 echo "  artifacts: $(cd "$PROJ" && find .mega-sdd -type f | wc -l | tr -d ' ') files under .mega-sdd/ ($(du -sh "$PROJ/.mega-sdd" 2>/dev/null | cut -f1))"
