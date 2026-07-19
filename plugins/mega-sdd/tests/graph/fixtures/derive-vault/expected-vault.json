@@ -140,19 +140,35 @@
       "text": "notification channel unclear",
       "resolver_owner": "PM",
       "category": "PRD inconsistencies"
+    },
+    {
+      "tag": "OQ-CN-3",
+      "priority": "P2",
+      "doc": "06-constraints.md",
+      "status": "open",
+      "text": "how should **Deferred** settlement deep-links batch?"
+    },
+    {
+      "tag": "OQ-CN-4",
+      "priority": "P3",
+      "doc": "06-constraints.md",
+      "status": "deferred",
+      "text": "data retention period?",
+      "deferred_reason": "waiting on legal review",
+      "deferred_at": "<script-stamped>"
     }
   ],
   "open_questions_summary": {
-    "total": 5,
+    "total": 7,
     "by_priority": {
       "P1": 2,
-      "P2": 2,
-      "P3": 1
+      "P2": 3,
+      "P3": 2
     },
     "by_status": {
-      "open": 2,
+      "open": 3,
       "resolved": 1,
-      "deferred": 1,
+      "deferred": 2,
       "out_of_scope": 1
     }
   }

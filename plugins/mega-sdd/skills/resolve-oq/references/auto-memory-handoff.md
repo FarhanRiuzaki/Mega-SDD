@@ -78,7 +78,7 @@ For each OQ/CONFLICT during the walk:
 1. Build the recommendation via the context-aware recommendation flow (KB / memory / vault / codebase / silent fallback) — per the recommendation reference the SKILL.md router lists.
 2. Check recommendation confidence:
    - `confidence >= confidence-min` → auto-apply the recommendation; log to memory `decisions.md` with `source: ai_auto_accepted`; skip `AskUserQuestion`.
-   - `confidence < confidence-min` → escalate: surface the OQ as still-pending; emit log "recommendation low-conf; deferred for manual resolve-oq".
+   - `confidence < confidence-min` → escalate: surface the OQ as still-open; emit log "recommendation low-conf; deferred for manual resolve-oq".
 3. After the walk: emit a summary with auto-accepted count + deferred count.
 4. Status `paused` (not `completed`) if any OQs were deferred for manual resolution; the chain resumes after the user's manual walk.
 

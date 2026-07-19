@@ -17,7 +17,14 @@
 #      across a no-op re-derive (generated_at preserved)
 #   5  writer-handoff sweep: no writer surface still instructs a model-side
 #      vault.json write (lock-dance prose gone from the 4 writer skills +
-#      multi-scope/setup-flow/generation-guide)
+#      multi-scope/setup-flow/generation-guide) — TWO signatures per file:
+#      the lock-acquisition dance AND direct write/emit-vault.json phrasing
+#      (allowlisted for 'never …'/deriver-context sentences)
+#   6  OQ annotation position pins: a resolved OQ that is NOT the last line of
+#      its doc keeps its resolution; bold '**Deferred**' inside a question
+#      text stays status=open with the text intact; a genuinely deferred OQ
+#      mid-doc keeps its deferred_reason; an unrelated '**Deferred**:' line
+#      under a LATER heading never steals a last-OQ's status
 #
 # Run: bash tests/derived-artifacts/test-w5-vault-json-derive.sh
 set -uo pipefail
@@ -224,9 +231,18 @@ SWEEP_FILES=(
 SWEEP_OK=1
 for f in "${SWEEP_FILES[@]}"; do
   [ -f "$f" ] || { fail "5: sweep file missing: $f"; SWEEP_OK=0; continue; }
-  # the model-side lock dance is the signature of a hand-write instruction
+  # signature 1: the model-side lock dance
   if grep -qiE "acquire (an |the )?(exclusive )?(advisory |file )*lock" "$f"; then
     fail "5: $f still instructs a model-side vault.json lock acquisition"
+    SWEEP_OK=0
+  fi
+  # signature 2: direct write/emit-vault.json phrasing (a hand-write fallback
+  # needs no lock prose to regress W5). Allowlist: negations ('never write…')
+  # and deriver-context sentences (the script IS the sanctioned writer).
+  HW=$(grep -inE "(writ(e|es|ing)|emit(s|ting)?|generat(e|es|ing)|creat(e|es|ing)|updat(e|es|ing)) (the |a |an )?(full |complete |new )?\`?vault\.json\`?" "$f" \
+       | grep -viE "never|not |derive|deriver|script|sanctioned|hand-" || true)
+  if [ -n "$HW" ]; then
+    fail "5: $f carries a model-side vault.json write instruction: $(echo "$HW" | head -1 | cut -c1-160)"
     SWEEP_OK=0
   fi
 done
@@ -238,6 +254,67 @@ grep -q "derive-vault-json.sh" \
   || { fail "5: a writer SKILL.md lost its derive-vault-json.sh Run instruction"; SWEEP_OK=0; }
 grep -q "SCRIPT-DERIVED" "$PLUGIN_ROOT/skills/generate-intent/references/vault-contract.md" \
   || { fail "5: vault-contract.md lost the SCRIPT-DERIVED declaration"; SWEEP_OK=0; }
-[ "$SWEEP_OK" -eq 1 ] && ok "5: all 4 writers run the script; no surface instructs a model-side vault.json write/lock"
+[ "$SWEEP_OK" -eq 1 ] && ok "5: all 4 writers run the script; no surface instructs a model-side vault.json write/lock (2-signature sweep)"
+
+# ── 6. OQ annotation position pins (vault_md.py mid-doc extraction) ──
+V6="$WORK/v6"; mkdir -p "$V6"
+cat > "$V6/00-index.md" <<'MD'
+# Annotation Pin Vault
+
+## Vault Lock Status
+
+- **Vault version**: v1.0
+- **Project shape**: `web-app`
+- **Implementation mode**: `new`
+- **PRD status**: `draft`
+- **Output mode**: `compact`
+MD
+cat > "$V6/02-architecture.md" <<'MD'
+# Architecture
+
+## Open Questions
+
+- [ ] **OQ-AR-2** [P2]: how should **Deferred** settlement deep-links batch?
+- [ ] **OQ-AR-3** [P3]: retention period? **Deferred (v1.1)**: waiting on legal
+  (follow-up booked)
+- [x] **OQ-AR-1** [P1]: session store? → **Resolved v1.1** (2026-07-19): Redis.
+
+## Retention
+
+- Rows kept 7 years (the resolved OQ is NOT the last line of this doc).
+MD
+cat > "$V6/06-constraints.md" <<'MD'
+# Constraints
+
+## Open Questions
+
+- [ ] **OQ-CN-1** [P2]: rate limit per tenant?
+
+## Notes
+
+**Deferred (v1.2)**: the migration plan itself is deferred to phase 2.
+MD
+OUT=$(bash "$DERIVE" --vault "$V6" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && ok "6: annotation-pin vault derives (rc=0)" || fail "6: derive rc=$RC out: $(echo "$OUT" | head -3)"
+python3 - "$V6/vault.json" <<'PY' && ok "6: mid-doc resolution kept; bold-Deferred-in-text stays open; mid-doc deferred_reason kept; later-heading Deferred never steals status" || fail "6: OQ annotation position pin broken"
+import json, sys
+oq = {o["tag"]: o for o in json.load(open(sys.argv[1]))["open_questions"]}
+# resolved OQ NOT the last line of its doc → resolution still extracted
+assert oq["OQ-AR-1"]["status"] == "resolved" and oq["OQ-AR-1"]["resolution"] == "Redis."
+# bold '**Deferred**' inside the question text → status open, text intact
+assert oq["OQ-AR-2"]["status"] == "open"
+assert oq["OQ-AR-2"]["text"] == "how should **Deferred** settlement deep-links batch?"
+assert "deferred_reason" not in oq["OQ-AR-2"] and "deferred_at" not in oq["OQ-AR-2"]
+# genuinely deferred OQ mid-doc (a continuation line follows) → reason kept
+assert oq["OQ-AR-3"]["status"] == "deferred"
+assert oq["OQ-AR-3"]["deferred_reason"] == "waiting on legal"
+assert oq["OQ-AR-3"]["text"] == "retention period?"
+# an unrelated '**Deferred**:' under a LATER heading never fabricates status
+assert oq["OQ-CN-1"]["status"] == "open"
+assert "deferred_reason" not in oq["OQ-CN-1"] and "deferred_at" not in oq["OQ-CN-1"]
+s = json.load(open(sys.argv[1]))["open_questions_summary"]["by_status"]
+assert s == {"open": 2, "resolved": 1, "deferred": 1, "out_of_scope": 0}, s
+sys.exit(0)
+PY
 
 if [ "$FAILED" -eq 0 ]; then echo "ALL W5 E2E OK"; exit 0; else echo "W5 e2e FAILED"; exit 1; fi

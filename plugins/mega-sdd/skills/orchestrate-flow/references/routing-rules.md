@@ -74,7 +74,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 **Mode D change-signal inspection (cheap, two probes):** `grep -c . .mega-sdd/codebase/.dirty-paths.jsonl` and compare `git rev-parse HEAD` to the map frontmatter's `last_scanned_commit`. Either positive → Mode D candidate. Mode D NEVER fires on a repo without an existing map+binding (that's a normal brownfield first-run, rows above). Precedence: the P0/P1 OQ intent gate still runs first; a new PRD revision (diff-vault row) outranks sync.
 
 **OQ counting note:** When inspecting vault for P0/P1 OQ counts, distinguish:
-- `pending_p0_p1_count`: OQs with `status: pending` (or status field absent) at P0/P1 priority. These gate the chain via the intent rule above.
+- `pending_p0_p1_count`: OQs with `status: open` (or status field absent; a legacy `pending` value in a pre-W5 manifest reads the same) at P0/P1 priority. These gate the chain via the intent rule above.
 - `deferred_p0_p1_count`: OQs with `status: deferred`. These do NOT gate; they propagate to binding phase.
 
 ## Multi-squad detection

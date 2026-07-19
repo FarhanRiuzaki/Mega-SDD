@@ -134,18 +134,18 @@ A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its 
 
 Every writer regenerates by **running the script** — never by editing the JSON:
 
-- `generate-intent` Step 3 — initial derive: `derive-vault-json.sh --vault <dir> --patch <authored-patch>` (metadata + classifier/advisor writebacks).
-- `resolve-oq` — after every Resolve / Out-of-Scope / Defer outcome's markdown edits: `derive-vault-json.sh --vault <dir> --event '<round-event-json>'` (+ `--patch` carrying `defer_to` for binding-defers).
+- `generate-intent` Step 3.8 — initial derive, single run after constitution (3.4) / classifier (3.5) / advisor (3.7) complete: `derive-vault-json.sh --vault <dir> --patch <authored-patch>` (metadata + classifier/advisor writebacks).
+- `resolve-oq` — after every Resolve / Out-of-Scope / Defer outcome's markdown edits: `derive-vault-json.sh --vault <dir> --event '<round-event-json>'` (+ `--patch <tmp-patch>` carrying `defer_to` for binding-defers).
 - `diff-vault` Step 6.5 — after applying approved changes: `derive-vault-json.sh --vault <dir> --patch <sources-patch>` (the replaced `source_documents` entry + updated `prd_sha256`/`prd_path_at_generation` when the PRD changed).
 - `bind-codebase` Step 6 — audit log append: `derive-vault-json.sh --vault <dir> --event '{"event":"bind",…}'`.
-- `detect-drift` — does NOT regenerate. detect-drift produces reports only; vault.json regen happens via `resolve-oq` (for OQ-tagged actions) or manual + generate-intent re-run (for entity/flow/ADR additions).
+- `detect-drift` — dual-lane. The **diagnostic lane** never regenerates (reports only — DRIFT-REPORT.md / PENDING-SYNC.md). The **`--auto-apply=safe` explicit-ACCEPT write-back lane** regenerates like every writer: after applying the accepted vault patches it runs `derive-vault-json.sh --vault <vault-dir>` (script-held lock; per the §Concurrency detect-drift exception + detect-drift SKILL Step 6).
 
 ### Concurrency contract (closes audit D3-012)
 
 The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the memory file-lock pattern (per `mega-sdd:memory`) — no new mechanism.
 
 **Writers (4 total — each invokes the script; none touches the lock directly):**
-- `generate-intent` Step 3 (initial derive, `--patch`)
+- `generate-intent` Step 3.8 (initial derive, `--patch`)
 - `bind-codebase` Step 6 (`--event` audit append) — and bind-codebase still writes `binding.md` in the same Step-6 window (binding.md has no separate lock; the script-held derive is the serialization point for the manifest, and two concurrent binds are upgrade-your-plugin territory per Backward compatibility below)
 - `diff-vault` Step 6.5 (derive + `--patch` sources)
 - `resolve-oq` (derive + `--event` after every Resolve / Out-of-Scope / Defer outcome)

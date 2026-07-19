@@ -125,21 +125,21 @@
 ### TQ2: Scan-mode high-confidence — no match
 - **Setup:** OQ-AR-2 `resolution_mode: scan`, `confidence: high`; codebase-map §referenced has 0 hits
 - **Expect:**
-  - OQ-AR-2 stays `status: pending`; `resolution_mode` flipped from `scan` to `blocking` with note "scan returned no match"
+  - OQ-AR-2 stays `status: open`; `resolution_mode` flipped from `scan` to `blocking` (md-bracket edit `[tech / scan]` → `[tech / blocking]`) with note "scan returned no match"
   - binding.md "## Open Questions" section lists OQ-AR-2 (not in Auto-Resolved table)
   - No silent guess emitted
 
 ### TQ3: Scan-mode high-confidence — multiple matches
 - **Setup:** OQ-AR-3 `resolution_mode: scan`, `confidence: high`; codebase-map §referenced has 3 matches (e.g., jest + mocha + vitest all detected)
 - **Expect:**
-  - OQ-AR-3 stays `status: pending`; flipped to `blocking` with note "scan ambiguous — 3 matches: jest, mocha, vitest"
+  - OQ-AR-3 stays `status: open`; flipped to `blocking` (md-bracket edit) with note "scan ambiguous — 3 matches: jest, mocha, vitest"
   - User reviews manually
 
 ### TQ4: Medium/low-confidence scan-mode — skipped
 - **Setup:** OQ-AR-4 `resolution_mode: scan`, `confidence: medium`; codebase-map has clear single match
 - **Expect:**
   - Auto-resolution SKIPPED (per DESIGN-OQ-3 high-conf gate)
-  - OQ-AR-4 stays `pending` with `resolution_mode: scan` unchanged
+  - OQ-AR-4 stays `open` with `resolution_mode: scan` unchanged
   - User reviews via 00-index.md "## Auto-Classification Review" before re-running binding
 
 ### TQ5: Recommend-mode high-confidence — surfaced
@@ -147,9 +147,9 @@
 - **Expect:**
   - binding.md "## Tech-OQ Recommendations (review required)" section has full OQ-AR-7 block
   - Recommendation displays with all 4 fields + ACCEPT/OVERRIDE/REJECT user actions
-  - OQ stays `pending` (NOT auto-resolved) — user reviews after binding completes
+  - OQ stays `open` (NOT auto-resolved) — user reviews after binding completes
   - Pipeline continues (recommendation doesn't block)
-  - Under `--auto`, the handoff emits `status: completed` (NOT `paused`) with `next_action.suggested_skill: mega-sdd:generate-units` — recommendations are advisory and never pause the chain; the pending OQ carries forward into generate-units as ungrounded (per `bind-codebase/references/auto-memory-handoff.md` §Handoff emission; routing indexed in `orchestrate-flow/references/handoff-contract.md`)
+  - Under `--auto`, the handoff emits `status: completed` (NOT `paused`) with `next_action.suggested_skill: mega-sdd:generate-units` — recommendations are advisory and never pause the chain; the still-open OQ carries forward into generate-units as ungrounded (per `bind-codebase/references/auto-memory-handoff.md` §Handoff emission; routing indexed in `orchestrate-flow/references/handoff-contract.md`)
 
 ### TQ6: Recommend-mode underspecified — halt
 - **Setup:** OQ-AR-8 `resolution_mode: recommend`, `confidence: high`, but `fallback_if_wrong` is missing

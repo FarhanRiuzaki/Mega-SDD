@@ -114,7 +114,7 @@ Choose action:
                                 unblocks it); in brownfield ALSO offers "to binding" (code-dependent
                                 OQ, resolved at bind-codebase phase)
   [C] Out of scope            — declare irrelevant to current spec
-  [D] Skip                    — leave pending, decide later
+  [D] Skip                    — leave open, decide later
 ```
 
 **[B] Defer is ALWAYS visible** — a stakeholder defer must be reachable in every context (the "No invention" hard rule routes `idk`/`whatever` here; a greenfield user waiting on legal/PM needs it too). Only its **`to binding` sub-target** is conditional, offered when ALL of these are true:
@@ -123,13 +123,13 @@ Choose action:
 
 In greenfield contexts OR when no repo signals detected, [B] offers the stakeholder defer only.
 
-**Per-action state transitions** — the vault.json field changes are EFFECTED by `derive-vault-json.sh` reading your markdown edits (status from the checkbox, `resolution`/`out_of_scope_reason`/`deferred_reason` from the annotation text, `resolved_at`/`deferred_at` script-stamped on the transition). The model's job is (1) the markdown edit and (2) the derive args:
+**Per-action state transitions** — the vault.json field changes are EFFECTED by `derive-vault-json.sh` reading your markdown edits (status from the checkbox, `resolution`/`out_of_scope_reason`/`deferred_reason` from the annotation text, `resolved_at`/`deferred_at` script-stamped on the transition). The model's job is (1) the markdown edit and (2) the derive args. Note `--patch` takes a FILE path (`<tmp-patch>` = a scratchpad temp file holding the JSON shown; passing inline JSON exits 3):
 
 | Action | Markdown edit produces `status` | Derive args (`derive-vault-json.sh --vault <VAULT_DIR> …`) |
 |---|---|---|
 | A — Answer | `[x]` → `resolved` (+ `→ Resolved v{X.Y}: …` → `resolution`) | `--event '{"event":"oq-resolved","id":"OQ-XXX","at":"<iso>","action":"A"}'` |
-| B — Defer (stakeholder) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch` `{"open_questions":{"OQ-XXX":{"defer_to":"stakeholder"}}}` |
-| B — Defer (to binding; brownfield sub-target) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch` `{"open_questions":{"OQ-XXX":{"defer_to":"binding"}}}` |
+| B — Defer (stakeholder) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch <tmp-patch>` (file content: `{"open_questions":{"OQ-XXX":{"defer_to":"stakeholder"}}}`) |
+| B — Defer (to binding; brownfield sub-target) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch <tmp-patch>` (file content: `{"open_questions":{"OQ-XXX":{"defer_to":"binding"}}}`) |
 | C — Out of scope | `[~]` + `→ Out of Scope v{X.Y}: …` → `out_of_scope` | `--event '{"event":"oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"C"}'` |
 | D — Skip | no markdown change; OQ remains `open` | no derive run |
 

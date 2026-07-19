@@ -6,7 +6,8 @@
 # Pipeline: (1) parity preflight via validate-binding-json.sh (non-zero exit
 # passes through verbatim — the sidecar is trusted only after parity holds);
 # (2) deterministic refusal gate — ANY claims[].verdict == CONFLICT → exit 2
-# (regardless of `resolution`; bound/ only ever arrives via a fresh clean
+# (leading-token match, so a decorated `CONFLICT (BLOCKING)` cell refuses too;
+# regardless of `resolution`; bound/ only ever arrives via a fresh clean
 # re-bind), and under --strict any verdict == OQ also refuses; refusal touches
 # NOTHING on disk — a previously-clean bound/ stays; (3) byte-copy the vault's
 # 0[0-6]-*.md docs into a temp dir, inserting one standalone
@@ -59,9 +60,16 @@ except Exception as e:
     sys.exit(3)
 claims = [c for c in data.get("claims", []) if isinstance(c, dict)]
 
-# (2) Deterministic refusal gate — refusal paths write NOTHING.
+# (2) Deterministic refusal gate — refusal paths write NOTHING. The verdict is
+# normalized to its LEADING token: a decorated cell like `CONFLICT (BLOCKING)`
+# must refuse exactly like the bare enum (no validator enforces the closed
+# verdict enum, so an exact-match compare was a decoration bypass).
+def _verdict_tok(c):
+    toks = str(c.get("verdict", "")).strip().split()
+    return toks[0].upper() if toks else ""
+
 conflict_ids = [str(c.get("id")) for c in claims
-                if str(c.get("verdict", "")).strip().upper() == "CONFLICT"]
+                if _verdict_tok(c) == "CONFLICT"]
 if conflict_ids:
     print("REFUSE: CONFLICT verdict(s) in binding.json — bound/ is never "
           "produced while any conflict is active: " + ", ".join(conflict_ids))
@@ -70,7 +78,7 @@ if conflict_ids:
     sys.exit(2)
 if strict:
     oq_ids = [str(c.get("id")) for c in claims
-              if str(c.get("verdict", "")).strip().upper() == "OQ"]
+              if _verdict_tok(c) == "OQ"]
     if oq_ids:
         print("REFUSE: --strict and OQ verdict(s) in binding.json: "
               + ", ".join(oq_ids))

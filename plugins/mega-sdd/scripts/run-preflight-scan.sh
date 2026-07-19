@@ -20,7 +20,13 @@
 # snapshots is byte-identical to what post-flight evaluates — and it REFUSES to
 # mint a baseline after bolt commits exist (anti-laundering: a post-hoc baseline
 # could record the post-tamper sha; post-flight then falls back to the honest
-# commit-touched-set evidence instead).
+# commit-touched-set evidence instead). It ALSO refuses to mint when any rule
+# TARGET path (a DO_NOT_MODIFY path, or the file declaring a SIGNATURE_RULE
+# symbol) differs from HEAD on disk (exit 8): the baseline captures WORKING-TREE
+# bytes, so tamper-BEFORE-mint would bake the tampered sha into the baseline and
+# launder the committed violation past B1 — a dirty protected path at baseline
+# time is indistinguishable from tampering. Legit clean-tree pre-flights are
+# unaffected (HEAD == disk); unrelated dirty files never block.
 #
 # Usage:
 #   run-preflight-scan.sh --cwd=<project-root> --unit=U-XXX \
@@ -37,6 +43,9 @@
 #           baseline is on disk; a baseline minted now could launder a violation.
 #           NON-FATAL: proceed WITHOUT a baseline (post-flight uses git commit
 #           evidence); log the refusal in the bolt-report.
+#       8 = dirty-protected-path refusal — a rule target path differs from HEAD
+#           at baseline time; no artifact written. FATAL for this run: commit or
+#           restore the protected file, then re-run (NEVER proceed past it).
 set -uo pipefail
 
 CWD=""
@@ -137,6 +146,7 @@ if unit_commits:
     sys.exit(7)
 
 entries = []
+protected = []  # rule TARGET paths whose disk state must equal HEAD at mint time
 
 # ── v1 lines: classify with the SHARED STRICT/DIRECTIVE productions ──────────
 for raw in lines:
@@ -153,6 +163,7 @@ for raw in lines:
             sha = postflight_rules.sha256_of(os.path.join(cwd, path))
             entries.append({"type": rtype, "path": path,
                             "sha256": sha if sha is not None else "absent"})
+            protected.append(path)
         elif rtype == "DO_NOT_ADD_DEPS":
             # Audit-only capture (documented-schema parity): since S7-HARDRULES-5
             # the engine diffs the unit's OWN commits and never reads deps_section.
@@ -184,6 +195,8 @@ for raw in lines:
                 sys.exit(5)
             entries.append({"type": rtype, "function": name,
                             "signature_at_preflight": decl.split("{")[0].strip()})
+            if loc:
+                protected.append(loc.rsplit(":", 1)[0])
         # NAMING_RULE / FILE_PRESENCE_RULE: no pre-snapshot by documented schema
         # (post-flight checks new files / final presence only).
         continue
@@ -234,6 +247,27 @@ if v2_rules:
                             "matched_files": recs})
         finally:
             os.unlink(tmp_rule)
+
+# ── Tamper-before-mint refusal (exit 8) ──────────────────────────────────────
+# The baseline snapshots WORKING-TREE bytes and the engine gives a present
+# snapshot precedence over commit evidence — so a protected path edited BEFORE
+# the mint would bake the tampered sha into the baseline and the committed
+# violation would pass B1 ("sha256 unchanged"). A dirty protected path at
+# baseline time is indistinguishable from tampering: refuse, write nothing.
+# Scope is the rule TARGET paths only — an unrelated dirty file never blocks.
+dirty = []
+for path in sorted(set(protected)):
+    st = git("status", "--porcelain", "--", path)
+    if st.stdout.strip():
+        dirty.append(path)
+if dirty:
+    print("REFUSED (dirty protected path): %s differ(s) from HEAD — a dirty "
+          "protected path at baseline time is indistinguishable from tampering "
+          "(the working-tree snapshot would launder a Hard-rule violation past "
+          "B1). Commit or restore the protected file(s), then re-run "
+          "run-preflight-scan.sh. No artifact written." % ", ".join(dirty),
+          file=sys.stderr)
+    sys.exit(8)
 
 head_sha = git("rev-parse", "HEAD").stdout.strip()
 artifact = {

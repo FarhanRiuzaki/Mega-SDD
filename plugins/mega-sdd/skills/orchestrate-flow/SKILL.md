@@ -32,7 +32,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
    codebase_map: present | absent
    knowledge_base: present | absent (path: ...)  # priority: .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
    git_repo: yes | no
-   pending_p0_p1_count: N    # status: pending (or absent) P0/P1 OQs — these gate
+   pending_p0_p1_count: N    # status: open (or absent) P0/P1 OQs — these gate
    deferred_p0_p1_count: N   # status: deferred P0/P1 OQs — informational, do not gate
    mode_inferred: greenfield | brownfield | legacy-rebuild
    squad_count: N        # from <vault>/_meta/squads.yaml; 0 if absent or single squad

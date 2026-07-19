@@ -12,7 +12,7 @@
 
 ## Open Questions roll-up
 
-> Total: **5 Open Questions**.
+> Total: **7 Open Questions**.
 
 ### Tech stack & architecture (PRIORITY-1)
 - [ ] **OQ-AR-1** [P1] [tech / scan] [conf: high]: which test framework? — resolve: scan codebase-map §test_frameworks `[02-architecture.md]`

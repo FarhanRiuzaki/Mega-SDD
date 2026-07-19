@@ -89,7 +89,7 @@ This command invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh
 
 ## Scope
 
-- ✅ Binding → units OQ-ID propagation (slice 1; LIVE-section IDs only — auto-resolved/recommendation OQs AND pending `## Open Questions` OQs are advisory extras: no resolution ⇒ nothing to cite)
+- ✅ Binding → units OQ-ID propagation (slice 1; LIVE-section IDs only — auto-resolved/recommendation OQs AND still-open `## Open Questions` OQs are advisory extras: no resolution ⇒ nothing to cite)
 - ✅ Binding → units CONFLICT-ID propagation + CONFLICT *resolution* gate (slice 2 — shipped; unresolved conflict blocks, structural ✅/RESOLVED markers clear)
 - ✅ Binding-doc presence backstop (`binding_missing` — units citing conflicts with zero binding docs fail closed)
 - ❌ Binding → units Hard Rule propagation (slice 3)

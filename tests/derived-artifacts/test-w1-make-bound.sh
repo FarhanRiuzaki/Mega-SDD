@@ -16,7 +16,9 @@
 #   c  skipped counting pinned in the PASS line — K=3 (section-style +
 #      out-of-bounds + null vault_source all count as skipped)
 #   d  any CONFLICT verdict → exit 2 naming the claim id; pre-existing bound/
-#      left byte-identical; no .bound.tmp.* litter
+#      left byte-identical; no .bound.tmp.* litter; a DECORATED verdict cell
+#      ('CONFLICT (BLOCKING)') refuses identically (leading-token match — no
+#      closed-enum validator exists, so decoration must not bypass the gate)
 #   e  --strict + an OQ verdict → exit 2, fs untouched; without --strict the
 #      OQ row is annotated in claim-id form 'oq=C-0NN' (not OQ-NN)
 #   f  idempotent: second clean run → bound/ byte-identical (diff -r)
@@ -173,6 +175,30 @@ OUT=$(bash "$MB" --vault "$VC" </dev/null 2>&1); RC=$?
 diff -r "$WORK/snap-conflict" "$VC/bound" >/dev/null 2>&1 && no_litter "$VC" \
   && ok "d: refusal leaves the pre-existing bound/ byte-identical, no temp litter" \
   || fail "d: refusal touched the filesystem"
+
+# ── d2. DECORATED conflict verdict ('CONFLICT (BLOCKING)') → exit 2 too ──
+VD="$WORK/vd"; cp -R "$V" "$VD"
+python3 - "$VD/binding.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s = s.replace("| C-007 | CONFIRMED | IMPLEMENTED | app/Y.php:3 | high | n/a |",
+              "| C-007 | CONFLICT (BLOCKING) | UNKNOWN | app/Y.php:3 | high | n/a |")
+s = s.replace("## Conflicts (0)", """## Conflicts (1) — BLOCKING
+### CONFLICT-1 — Y mismatch
+- **Claim**: C-007
+- **Verdict**: CONFLICT (BLOCKING)""")
+open(p, "w", encoding="utf-8").write(s)
+PY
+bash "$DERIVE" --vault "$VD" </dev/null >/dev/null 2>&1 || fail "d2: re-derive after decorated-CONFLICT edit failed"
+cp -R "$VD/bound" "$WORK/snap-decorated"
+OUT=$(bash "$MB" --vault "$VD" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 2 ] && echo "$OUT" | grep -qF "C-007" \
+  && ok "d2: decorated 'CONFLICT (BLOCKING)' verdict → exit 2 naming the claim (leading-token normalization)" \
+  || fail "d2: decorated conflict verdict slipped past the refusal (rc=$RC): $OUT"
+diff -r "$WORK/snap-decorated" "$VD/bound" >/dev/null 2>&1 && no_litter "$VD" \
+  && ok "d2: decorated-verdict refusal touches nothing on disk" \
+  || fail "d2: decorated-verdict refusal modified the filesystem"
 
 # ── g. parity-broken pair → non-zero passthrough, fs untouched ──
 VP="$WORK/vp"; cp -R "$V" "$VP"
