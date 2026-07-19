@@ -129,7 +129,7 @@ After the chain is built, if it includes `scan-codebase` AND `<vault-path>/bindi
 
 - IF `snapshot-verified` AND `<project>/.mega-sdd/codebase/codebase-map.md` mtime is newer than every tracked source file mtime → REMOVE scan-codebase from the chain; log: `"⊘ scan-codebase skipped: binding.md attests snapshot-verified + source files unchanged"`.
 - IF `snapshot-stale` → keep scan-codebase; prepend log: `"⚠ scan-codebase retained: binding.md flagged snapshot-stale; codebase changed since last binding"`.
-- IF `no-snapshot` OR binding.md absent OR field unparseable → keep scan-codebase (baseline behavior; no optimization).
+- IF `no-snapshot` OR `unverified-external` (externally-authored map without writer-provenance — can never attest freshness) OR binding.md absent OR field unparseable → keep scan-codebase (baseline behavior; no optimization).
 
 ## Predictive preflight loop
 

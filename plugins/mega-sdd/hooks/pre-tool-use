@@ -460,6 +460,8 @@ if os.path.exists(moat_path):
             rem.append("conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding <binding.md> (human-in-the-loop), or re-run /mega-sdd:bind-codebase until conflicts=0")
         if any(t in ("oq_id_dropped", "conflict_id_dropped") for t in types):
             rem.append("propagation drops: add the missing OQ-/CONFLICT-IDs to the relevant unit frontmatter binding_refs")
+        if any(t == "binding_stale_recertify" for t in types):
+            rem.append("binding basi (stale): file yang di-anchor binding berubah sejak binding_metadata.head oleh commit di luar pipeline unit — jalankan /mega-sdd:sync atau /mega-sdd:bind-codebase ulang (daftar file ada di field expected pada drop-nya)")
         fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run /mega-sdd:validate-handoff for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run

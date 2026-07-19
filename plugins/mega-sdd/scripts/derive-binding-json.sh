@@ -3,8 +3,12 @@
 # DERIVED from <vault>/binding.md, never hand-written or model-emitted.
 # Shares its md grammar with validate-binding-json.sh via _lib/binding_md.py
 # (the B1 shared-engine precedent — parsing can never fork).
-# Exit 0 = derived; 2 = derive/parse error (fix the Step-4 binding.md write and
-# re-run — an authoring bug, not a halt); 3 = usage / unreadable binding.md.
+# Exit 0 = derived; 2 = derive/parse error — the artifact does not match the
+# mega-sdd grammar. mega-sdd-authored: an authoring bug (fix the Step-4
+# binding.md write and re-run — not a halt). Externally-authored binding.md:
+# not a bug — the grammar simply was never adopted (the v5 adoption lane covers
+# this); fix manually per binding-md-template.md or re-generate via the
+# pipeline. 3 = usage / unreadable binding.md.
 # On ANY error binding.json is NOT written (never a partial/stale overwrite).
 set -u
 VAULT=""
@@ -102,6 +106,12 @@ for cid, row in rows.items():
 if errors:
     for e in errors:
         print("FAIL:", e)
+    print(
+        "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini file "
+        "hasil tulis eksternal, itu bukan bug: grammar-nya memang belum diadopsi "
+        "(lane adopsi datang di v5); perbaiki manual mengikuti "
+        "binding-md-template.md, atau re-generate via pipeline (re-bind)."
+    )
     sys.exit(2)
 
 # (6) Assemble + atomic write. generated_at is PRESERVED from the existing

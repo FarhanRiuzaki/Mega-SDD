@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.11.0
+version: 2.12.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -30,7 +30,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 ## Procedure
 
-**1. Load inputs.** Read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, instruct the user to run `scan-codebase` first. Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first. Propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
+**1. Load inputs.** Read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, instruct the user to run `scan-codebase` first. Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first. **External-map provenance check:** also read `.mega-sdd/.codebase-map-state.json` (written by `validate-codebase-map.sh`); if it records `status: FAIL` or a `codebase_map_fm_missing` issue (an externally-authored map without writer-provenance frontmatter), the bind PROCEEDS but WARN with keterangan: "peta codebase ini ditulis di luar mega-sdd (frontmatter provenance hilang/invalid) — presisi binding turun ke klasifikasi biner; jalankan /mega-sdd:scan-codebase untuk map ber-provenance" and record `binding_metadata.codebase_map_provenance: "unverified-external"` — NEVER `"snapshot-verified"` for such a map. Propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
 
 **2. Per claim, produce a verdict** (per `references/binding-contract.md`). **This is the moat:**
 
@@ -76,9 +76,13 @@ the State Map rows, Confirmed Claims list, CONFLICT blocks, and
 `binding_metadata` frontmatter you wrote in Step 4 are the single source of
 truth; `[reason: <enum>]` Anchor tokens become `state_reason`, RESOLVED
 blocks' Claim lines become `resolution`). This is part of the binding write —
-run it whether the bind is clean or blocked. Exit 2 = fix the Step-4
+run it whether the bind is clean or blocked. Exit 2 = the artifact does not
+match the mega-sdd grammar. When mega-sdd wrote `binding.md` this run: fix the Step-4
 `binding.md` write and re-run — an authoring bug, not a halt (do NOT emit a
-halt YAML for this).
+halt YAML for this). When `binding.md` was authored EXTERNALLY (hand/foreign
+tool): itu bukan bug — grammar-nya memang belum diadopsi (lane adopsi datang
+di v5); perbaiki manual mengikuti `references/binding-md-template.md`, atau
+re-generate via pipeline (re-bind).
 
 **5. Decision gate — non-negotiable:**
 

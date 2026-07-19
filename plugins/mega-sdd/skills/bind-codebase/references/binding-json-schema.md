@@ -22,7 +22,7 @@ set and shapes are unchanged; only value provenance and `generated_by` changed.
   "generated_by": "derive-binding-json@1.0.0",
   "generated_at": "<ISO8601 UTC>",
   "vault": "<vault dir path>",
-  "codebase_map_provenance": "snapshot-verified | snapshot-stale | no-snapshot",
+  "codebase_map_provenance": "snapshot-verified | snapshot-stale | no-snapshot | unverified-external",
   "head": "<git HEAD sha at bind time, or null>",
   "claims": [
     {

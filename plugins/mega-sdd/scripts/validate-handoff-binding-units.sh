@@ -18,6 +18,16 @@
 #      Resolution/Status line — prose containing the word "resolved" does NOT count.
 #      An unresolved block is a drop even if its ID is cited. Deleting the binding doc
 #      while units cite CONFLICT-IDs is itself a drop (binding_missing, fail-closed).
+#   3. Binding freshness RECERTIFY (P0 v4.92.0) — binding_metadata.head (the git HEAD
+#      the binding attests to, parsed via the shared _lib/binding_md.py grammar) is
+#      recertified against the commits in <head>..HEAD intersected with the
+#      binding.json claims[] anchor paths — EXCLUDING unit-attributed commits (the
+#      shared B1 engine's unit_of() grammar): pipeline bolt commits touch anchored
+#      files by design and are governed by B1/B3; recertify guards the
+#      OUT-OF-PIPELINE lane. An anchored file changed by a non-unit commit →
+#      blocking drop (binding_stale_recertify, keterangan in Indonesian). Migration-safe:
+#      legacy head-less bindings, missing binding.json, HEAD-moved-but-no-anchor-hit,
+#      non-git projects, and git failures are advisory/skip — never REJECTED.
 # Drops are reported as structured blockers; the result file is OVERWRITE-NOT-APPEND
 # (current truth) and is read by the execute-bolts PreToolUse gate (status==FAIL blocks).
 #
@@ -53,7 +63,12 @@ done
 # Resolve project root (Iter 71 — class-bug fix: if invoked from a sub-folder
 # like .mega-sdd/knowledge-base/, walk UP to the outermost .mega-sdd/ parent
 # so state files land in the canonical location, not nested .mega-sdd/.mega-sdd/).
-_RPR_HELPER="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib/resolve-project-root.sh"
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+# P0 v4.92.0 (binding RECERTIFY): the freshness check reuses the ONE binding.md
+# frontmatter grammar — _lib/binding_md.py parse_frontmatter_metadata — via the
+# MEGA_SDD_LIB_DIR sys.path pattern (validate-binding-json.sh precedent).
+export MEGA_SDD_LIB_DIR="${_SCRIPT_DIR}/_lib"
+_RPR_HELPER="${_SCRIPT_DIR}/_lib/resolve-project-root.sh"
 if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then
   # shellcheck disable=SC1090
   . "$_RPR_HELPER"
@@ -78,6 +93,7 @@ CWD="$CWD" BLOCKER_FILE="$BLOCKER_FILE" QUIET="$QUIET" python3 <<'PYEOF'
 import json
 import os
 import re
+import subprocess
 import sys
 import glob
 from datetime import datetime, timezone
@@ -443,6 +459,171 @@ for cid in conflict_drop_candidates:
             "found_in_units": [],
         })
 
+# --- Pass 5: binding freshness RECERTIFY (P0 v4.92.0 — git provenance at the
+# moat gate). The gate used to read binding.md STRUCTURE only: a hand-authored
+# or stale binding.md with no active CONFLICT heading yielded PASS and opened
+# execute-bolts. Now the binding's own attestation (binding_metadata.head,
+# written once at bind Step 4) is recertified against git ground truth: when
+# any file the binding ANCHORS (binding.json claims[].anchor — script-derived,
+# trustworthy) was changed between that head and current HEAD by a commit NOT
+# attributed to a unit (unit_of() — unit-attributed bolt commits are the
+# pipeline's own lane, governed by B1/B3), the binding is provably stale for
+# exactly the files it binds → blocking drop (binding_stale_recertify).
+# Migration-safe verdict ladder (a v4 artifact is never REJECTED):
+#   - not a git repo / git failure                → skip silently (tolerant)
+#   - head absent (legacy v4 binding)             → advisory extra only
+#   - sibling binding.json absent                 → advisory extra only
+#   - head == HEAD                                → fresh, nothing recorded
+#   - HEAD moved, no OUT-OF-PIPELINE anchor hit   → advisory extra only (notice)
+#   - non-unit commit changed an anchored file    → FAIL (blocks the moat)
+def _git(args):
+    try:
+        r = subprocess.run(["git", "-C", cwd] + args,
+                           capture_output=True, text=True, timeout=15)
+    except Exception:
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def _anchor_paths(bj):
+    """Project-relative file-path prefixes from binding.json claims[] anchor
+    cells: split multi-anchor cells on ' + ', strip any trailing [reason:]
+    token, take the prefix before ':<line>', drop prose cells (spaces)."""
+    paths = set()
+    for c in bj.get("claims", []):
+        if not isinstance(c, dict):
+            continue
+        cell = str(c.get("anchor") or "")
+        cell = re.sub(r"\[reason:\s*[a-z_]+\]\s*$", "", cell).strip()
+        for part in re.split(r"\s\+\s", cell):
+            cand = part.strip().split(":", 1)[0].strip()
+            if cand.startswith("./"):
+                cand = cand[2:]
+            # a path token, not prose ("dynamic route detected…", "—", "n/a")
+            if not cand or " " in cand or ("/" not in cand and "." not in cand):
+                continue
+            if cand in ("n/a", "—", "-"):
+                continue
+            paths.add(cand)
+    return paths
+
+
+_recertify_stale = 0
+_inside_git = _git(["rev-parse", "--is-inside-work-tree"])
+if _inside_git is not None and _inside_git.strip() == "true":
+    _cur_head = (_git(["rev-parse", "HEAD"]) or "").strip() or None
+    try:
+        sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+        from binding_md import parse_frontmatter_metadata
+        from postflight_rules import unit_of  # the ONE commit-attribution grammar (B1 engine)
+    except Exception:
+        parse_frontmatter_metadata = None
+    for bp in binding_paths:
+        if _cur_head is None or parse_frontmatter_metadata is None:
+            break
+        try:
+            _bmd = open(bp).read()
+        except Exception:
+            continue
+        _bhead = parse_frontmatter_metadata(_bmd).get("head")
+        if not _bhead:
+            extras.append({
+                "type": "binding_head_absent",
+                "source_binding": os.path.relpath(bp, cwd),
+                "warning": (
+                    "binding.md carries no binding_metadata.head (legacy pre-v4.92 "
+                    "binding) — freshness recertify skipped; the next bind/re-bind "
+                    "stamps it. Advisory only."
+                ),
+            })
+            continue
+        if _bhead == _cur_head:
+            continue  # fresh — bound at the current HEAD
+        _bj_path = os.path.join(os.path.dirname(bp), "binding.json")
+        if not os.path.isfile(_bj_path):
+            extras.append({
+                "type": "binding_json_absent",
+                "source_binding": os.path.relpath(bp, cwd),
+                "warning": (
+                    "binding_metadata.head present but no sibling binding.json — "
+                    "the anchor set is unavailable, freshness recertify skipped. "
+                    "Run scripts/derive-binding-json.sh --vault <vault>. Advisory only."
+                ),
+            })
+            continue
+        try:
+            _bj = json.load(open(_bj_path))
+        except Exception:
+            continue  # unparseable sidecar — parity validator owns that failure
+        # ONE git call: every commit in <head>..HEAD with subject + Unit
+        # trailers + touched paths. Unit-ATTRIBUTED commits (feat(U-XXX):,
+        # `(bolt): U-XXX`, `Unit:` trailer — the exact grammar of the shared
+        # B1 engine's unit_of(), imported above, never re-implemented) are
+        # EXCLUDED from the staleness intersection: pipeline bolt commits touch
+        # anchored files BY DESIGN (extend units anchor existing code) and are
+        # already governed by the B1 hard-rule + B3 whitelist gates — recertify
+        # guards the OUT-OF-PIPELINE lane (manual hotfixes, git pull, foreign
+        # tools). A violation smuggled under a feat(U-XXX) subject is caught by
+        # B1/B3, not this check. A path counts toward the intersection only
+        # when at least one NON-unit-attributed commit touched it.
+        # --relative: project-relative paths (the repo root may be above cwd).
+        _fmt = "%x01%H%x02%s%x02%(trailers:key=Unit,valueonly,separator=%x2C)"
+        _log = _git(["log", "--format=" + _fmt, "--name-only", "--relative",
+                     _bhead + "..HEAD", "--", "."])
+        if _log is None:
+            continue  # unknown/foreign sha or git failure — skip (tolerant)
+        _changed = set()
+        for _chunk in _log.split("\x01"):
+            if not _chunk.strip():
+                continue
+            _hline, _, _tail = _chunk.partition("\n")
+            _parts = _hline.split("\x02")
+            _subj = _parts[1] if len(_parts) > 1 else ""
+            _trail = _parts[2] if len(_parts) > 2 else ""
+            if unit_of(_subj, _trail):
+                continue  # pipeline-attributed — B1/B3 govern this commit
+            for _p in _tail.splitlines():
+                _p = _p.strip()
+                if _p:
+                    _changed.add(_p)
+        _anchors = _anchor_paths(_bj)
+        _hits = sorted({
+            c for c in _changed
+            if c in _anchors or any(c.endswith("/" + a) for a in _anchors)
+        })
+        if _hits:
+            _recertify_stale += 1
+            drops.append({
+                "type": "binding_stale_recertify",
+                "source_binding": os.path.relpath(bp, cwd),
+                "binding_head": _bhead,
+                "current_head": _cur_head,
+                "changed_anchored_files": _hits,
+                "expected": (
+                    "binding sudah basi terhadap file yang di-bind — file ter-anchor "
+                    "berikut berubah sejak binding_metadata.head (" + _bhead[:12] + ") "
+                    "oleh commit DI LUAR pipeline unit (commit non-unit; commit bolt "
+                    "ber-atribusi unit sudah dijaga gate B1/B3 dan tidak dihitung): "
+                    + ", ".join(_hits) + ". Jalankan /mega-sdd:sync (incremental) atau "
+                    "re-bind via /mega-sdd:bind-codebase sebelum generate-units/"
+                    "execute-bolts — verdict lama tidak lagi menggambarkan kode saat ini."
+                ),
+            })
+        else:
+            extras.append({
+                "type": "binding_head_mismatch",
+                "source_binding": os.path.relpath(bp, cwd),
+                "binding_head": _bhead,
+                "current_head": _cur_head,
+                "warning": (
+                    "HEAD moved since bind (%s..%s) but no anchored file was changed "
+                    "by an out-of-pipeline commit (unit-attributed bolt commits are "
+                    "governed by B1/B3 and excluded) — the binding is still current "
+                    "for everything it binds. Advisory only."
+                    % (_bhead[:12], _cur_head[:12])
+                ),
+            })
+
 # --- Report ---
 def _next_action(drops):
     if not drops:
@@ -458,6 +639,13 @@ def _next_action(drops):
         parts.append(
             "propagation drops: append the listed OQ-/CONFLICT-IDs to the relevant unit's "
             "frontmatter `binding_refs:` list"
+        )
+    if types & {"binding_stale_recertify"}:
+        parts.append(
+            "binding basi (stale): jalankan /mega-sdd:sync atau /mega-sdd:bind-codebase "
+            "ulang — file yang di-anchor binding berubah sejak binding_metadata.head "
+            "oleh commit di luar pipeline unit (daftar file ada di field `expected` "
+            "pada drop-nya)"
         )
     parts.append("then re-run validator (or save the unit — PostToolUse auto-re-validates)")
     return "; ".join(parts) + "."
@@ -476,6 +664,7 @@ report = {
         "oq_ids_cited_by_some_unit": len(unit_oq_citations),
         "conflict_ids_cited_by_some_unit": len(unit_conflict_citations),
         "conflicts_unresolved": len([d for d in drops if d.get("type") == "conflict_unresolved"]),
+        "bindings_stale_recertify": _recertify_stale,
         "drops": len(drops),
         "extras": len(extras),
     },
