@@ -1,0 +1,27 @@
+# Batch 2 — vault.json derive + boilerplate/unit diet + placement (W5, P2, P3, P4)
+
+**Date:** 2026-07-19 · **Research basis:** [`research/2026-07-19-token-format-research-okf.md`](../../../research/2026-07-19-token-format-research-okf.md) · **Predecessor:** [`2026-07-19-w-batch-script-derive.md`](2026-07-19-w-batch-script-derive.md) (W4/W3/W2/W1 shipped v4.82.0–v4.85.0). Drafted by 4 spec agents + cross-check auditor; every load-bearing claim verified file:line against v4.85.0. Cross-check verdict: **SHIP WITH FIXES** — no item dulls the CONFLICT gate, B1/B2/B3, A1, citation discipline, the keterangan contract, or the Mermaid rule; net grounding improves.
+
+## Ship order (risk-ascending; one green commit per phase; marketplace == plugin at every phase)
+
+| Phase | Item | Version | Character |
+|---|---|---|---|
+| 1 | **P4** placement discipline | v4.86.0 | Docs-only: 00-index Changelog → tail, placement-principle paragraph in generation-guide §Readability, item renumbering. Ships FIRST so P2a's template surgery lands once against final order |
+| 2 | **P3** unit-spec diet | v4.87.0 | Schema/template/dispatch edits, no scripts: drop gate-inert frontmatter keys (grounding_evidence, superpowers_skills, estimated_complexity, rebuild_freedom submap — KEEP one-line mutability tier+rationale), de-triplicate acceptance criteria (verify+HIGH keeps marker-bearing body; create/extend get pointer line; ears only where it adds EARS form), per-lens slice trim (security/standards drop Goal/Context/OoS; quality keeps Goal+OoS; spec keeps FULL body) |
+| 3 | **P2** boilerplate diet | v4.88.0 | Two commits, one version: (commit 1) P2a `_meta/ai-consumer-guide.md` shipped static + `copy-consumer-guide.sh` (resolve via resolve-plugin-root.sh pattern; cksum-identity pinned) + P2d dispatch constants → `agents/bolt-implementer.md` (marker strings byte-identical; logged dispatch references contract by name+version); (commit 2) P2b `stamp-binding-boilerplate.sh` (banner+legend script-stamped post-write; binding.json byte-identical pre/post stamp pinned; keterangan pins updated SAME commit) + P2c Conflicts summary table dropped, claim/reality pair moves INTO the `### CONFLICT-N` detail block (machine-read form becomes sole carrier — sharper) |
+| 4 | **W5** vault.json derive | v4.89.0 | Largest blast radius, last, on settled surface: `derive-vault-json.sh` + `_lib/vault_md.py` (shared with validate-vault-oqs.sh — two-validators-one-grammar), HYBRID design: md-derived structural arrays (entities/flows/adrs/open_questions skeletons) + **carry-forward lane** for at-generation pins + **--patch lane** for JSON-only model fields (recommend/scan details, design_system_flags, advisor provenance) + `--event` lane for changelog appends. 4 writers (generate-intent, resolve-oq, diff-vault, bind-codebase Step 6) switch from hand-writing to Run |
+
+## Cross-check amendments (locked — implement as stated)
+
+1. **W5 MUST-FIX — constitution pin:** `constitution_hash`/`constitution_version` are carried forward from prior vault.json exactly like `prd_sha256` (at-generation semantics; recompute would silently re-baseline a hand-edited constitution). Compute fresh ONLY when absent (initial generation). Optional WARN when carried hash ≠ current file hash (free drift telemetry). `setup-flow.md` "Persist hash" instruction updated in the same pass.
+2. **W5 MUST-FIX — binding-deferred OQs:** entries carrying `defer_to: binding` (written by binding-mode DEFER for demoted conflicts; no md home) are PRESERVED by the deriver with a WARN, never dropped by md-authoritative existence.
+3. **W5:** `OQ_LINE_RE` tag capture aligned with the loose `OQ_TAG_RE` (numeric `OQ-001` tags must parse, not trip the cross-count exit 2). Legacy `mode` field carried verbatim even when contradicting md-derived `implementation_mode` (never reconciled). G3 status-vocab unification names the two interactive-walk strings (`status: out-of-scope` hyphenated; Skip → "remains pending"). multi-scope.md title/scope/prd_sha256 writes become patch-lane instructions. generated_at preserved on content-identical derive (documented as an intentional improvement over diff-procedure's "always updates").
+4. **P2 additions:** self-check.md has THREE spine pins (Halt protocol + Parallel-work guidance + Companion skills) — all three become guide-existence + pointer checks; generation-guide §Readability Glossary policy line rewritten (else the model re-emits moved rows); superpowers-bridge legacy path cite is :39.
+5. **P4:** new `**History**` bullet label explicitly left unpinned in Tier-1 (W5's G2 pins only the six Vault Lock labels); the `## Open Questions roll-up` heading mismatch stays OUT of this batch.
+6. **Collisions sequenced:** generate-intent SKILL Step 3 + generation-guide + 00-index template + self-check.md + binding-mode.md are touched by multiple phases — each phase re-verifies anchors against the post-predecessor file (the W2→W1 discipline).
+
+## Suite impact
+
+Baseline 134 executed → P4 +0, P3 +1 (`tests/token-efficiency/test-p3-unit-diet.sh`), P2 +4 (`tests/boilerplate-diet/test-p2{a,b,c,d}-*.sh`), W5 +2 (`tests/derived-artifacts/test-w5-vault-json-derive.sh`, plugin `tests/graph/test-derive-vault-json-vault.sh`) → **141**. In-place edits: keterangan + 6d pins (P2). Per the main-CI-red lesson: verify each phase via `gh run list` after push, never local-only.
+
+Full per-item drafts (verified current-behavior facts, edit lists, algorithms, test asserts, risks, do-not-do inventories) live in session workflow `wf_bd02239b-41e`.
