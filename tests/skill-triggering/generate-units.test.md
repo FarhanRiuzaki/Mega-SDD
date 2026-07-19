@@ -166,7 +166,6 @@
     - KEEP: `nip`, `password` (existing logic preserved)
     - REMOVE: (none)
   - `grounding_confidence: HIGH` in frontmatter
-  - `grounding_evidence.binding_state_summary: { PARTIAL_FIELDS_MISSING: 1 }`
 
 ### DG4: PARTIAL_FIELDS_SURPLUS triggers interactive prompt
 - **Setup:** binding has state=PARTIAL_FIELDS_SURPLUS with field_diff: ADD=[], KEEP=[order_id, items], REMOVE=[legacy_ref]
@@ -189,7 +188,7 @@
 - **Expect:**
   - WARNING in unit body footer: `<!-- ⚠️ Anchor warning: app/Http/Controllers/AuditLogController.php:1 file not found; anchor may be aspirational -->`
   - Unit STILL written (no halt)
-  - `grounding_evidence.anchors_verified: 0/1` in frontmatter
+  - anchor tally visible in the chat summary line (`anchors: 0/1 verified — 1 aspirational`); warning footer in unit body
 
 ### DG7: Grounding confidence label visible in chat output
 - **Setup:** generate 3 units with varying confidence

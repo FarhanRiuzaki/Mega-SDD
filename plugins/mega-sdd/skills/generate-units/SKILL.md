@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.14.0
+version: 2.15.0
 description: Decomposes a (bound-)vault into atomic, AI-executable unit specs — each unit is one PR-sized bolt — per `references/unit-schema.md`. Reads `binding.md`'s Implementation State Map to assign `task_type` (create | verify | extend) per unit, carries OQ-IDs from binding into units, makes Anchors mandatory when binding evidence exists, and builds a dependency DAG (rejecting cycles). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -88,7 +88,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **8. Fill `existing_interfaces`.** Brownfield → pull from binding-manifest CONFIRMED entries for the targeted files. Greenfield → empty.
 
-**9. Fill `acceptance_test`.** ≥1 `type: test` entry (mandatory); generate a command stub matching the detected test framework; add `type: manual` for user-visible flows. **Render test:** if any target_file matches the active pack's `detail_view_glob`, the unit MUST ALSO carry a `type: render` test (factory-create model, GET detail route, assert 200 + a real field renders) — a route-200 smoke test does NOT satisfy this. Enforced by `validate-unit-spec.sh` (`render_test_missing`). This is the FIRST PASS — adversarial review runs in Step 9.5. Detail: `references/decomposition-rails.md §Render test`.
+**9. Fill `acceptance_test`.** ≥1 `type: test` entry (mandatory); generate a command stub matching the detected test framework; add `type: manual` for user-visible flows. **Render test:** if any target_file matches the active pack's `detail_view_glob`, the unit MUST ALSO carry a `type: render` test (factory-create model, GET detail route, assert 200 + a real field renders) — a route-200 smoke test does NOT satisfy this. Enforced by `validate-unit-spec.sh` (`render_test_missing`). This is the FIRST PASS — adversarial review runs in Step 9.5. Detail: `references/decomposition-rails.md §Render test`. Body §Acceptance criteria: verify units carry the expanded (marker-bearing when HIGH) criteria; create/extend carry the one-line pointer to the structured entries plus only non-restating items (TBD OQs, prose-only constraints); `ears:` only where it adds precision beyond `expects:`.
 
 **9.b. Attach a UI contract to view-bearing units.** When a target_file matches the pack's `view_glob`, attach a `## UI contract` (label_map, fk_display, value_formatting, flow-derived `required_states`) so the bolt renders a production-grade view. Every entry is GROUNDED in the vault — never invented; a missing source becomes an Open Question, never a defaulted value. Detail: `references/decomposition-rails.md §UI contract`.
 

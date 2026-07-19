@@ -14,10 +14,7 @@ acceptance_test:
   - type: test
     command: <command>
     expects: passes
-superpowers_skills:
-  - test-driven-development
 binding_refs: []
-estimated_complexity: small
 ---
 
 # Unit U-XXX — <Title>
@@ -40,9 +37,8 @@ estimated_complexity: small
 
 ## Acceptance criteria
 
-- <criterion 1, e.g., "All tests pass">
-- <criterion 2, e.g., "Lint clean">
-- <manual check if applicable>
+Acceptance criteria are the frontmatter `acceptance_test:` entries (authoritative).
+<TBD OQ items / prose-only constraints, if any — verify units: expanded criteria per unit-schema §Acceptance criteria>
 
 ## Out of scope
 
