@@ -148,7 +148,8 @@ try:
         print(
             "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini "
             "file hasil tulis eksternal, itu bukan bug: grammar-nya memang belum "
-            "diadopsi (lane adopsi datang di v5); perbaiki manual mengikuti "
+            "diadopsi; cek lane adopsi: scripts/certify-artifact.sh --rung=vault "
+            "menawarkan DEMOTE (re-ingest rung PRD) atau perbaiki manual mengikuti "
             "template vault generate-intent, atau re-generate via pipeline."
         )
         sys.exit(2)
@@ -179,9 +180,10 @@ try:
             print(
                 "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau "
                 "ini file hasil tulis eksternal, itu bukan bug: grammar-nya memang "
-                "belum diadopsi (lane adopsi datang di v5); perbaiki manual "
-                "mengikuti template vault generate-intent, atau re-generate via "
-                "pipeline."
+                "belum diadopsi; cek lane adopsi: scripts/certify-artifact.sh "
+                "--rung=vault menawarkan DEMOTE (re-ingest rung PRD) atau perbaiki "
+                "manual mengikuti template vault generate-intent, atau re-generate "
+                "via pipeline."
             )
             sys.exit(2)
 

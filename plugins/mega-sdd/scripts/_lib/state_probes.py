@@ -88,6 +88,18 @@ _CODE_SKIP_DIRS = {
 # `.dirty-paths.jsonl` journal (Mode D change signal).
 DIRTY_JOURNAL_REL = os.path.join(".mega-sdd", "codebase", ".dirty-paths.jsonl")
 
+# Foreign-SDD tool signals (P2 adoption gates, spec 2026-07-19-v5-execution-spec.md
+# P2 row; research §3 entry matrix): spec-kit / Kiro / OpenSpec conventions plus a
+# generic `specs/*.md` frontmatter sniff. Recognition only — the adoption verdict
+# itself is certify-artifact.sh's job (routing proposes the DEMOTE lane; decision 7:
+# a DEMOTE under --auto is ALWAYS a confirmed C2 halt, never silent).
+FOREIGN_SDD_DIR_SIGNALS = (
+    ("spec-kit", ".specify"),
+    ("kiro", os.path.join(".kiro", "specs")),
+    ("openspec", "openspec"),
+    ("openspec", ".openspec"),
+)
+
 _SHA40_RE = re.compile(r"[0-9a-f]{40}")
 _STAMP_RE = re.compile(r"(?m)^last_scanned_commit:\s*(\S+)\s*$")
 _PRD_NAME_RE = re.compile(r"(?:^|[-_.])(?:prd|brd)(?:[-_.]|$)", re.IGNORECASE)
@@ -270,6 +282,44 @@ def probe_knowledge_base(cwd):
         if os.path.isfile(os.path.join(cwd, rel)):
             return {"present": True, "path": rel}
     return {"present": False, "path": None}
+
+
+def probe_foreign_sdd(cwd, cap=20):
+    """Foreign-SDD artifact recognition (P2 adoption) — read-only + bounded.
+    Known tool dirs (spec-kit `.specify/`, Kiro `.kiro/specs/`, OpenSpec
+    `openspec/`|`.openspec/`) + generic `specs/*.md` whose head opens with YAML
+    frontmatter. Returns [{"tool", "path"}] rows — plain data; the adoption
+    lane (certify-artifact --rung=prd, DEMOTE always confirmed) is policy and
+    lives in the routing table, never here."""
+    hits = []
+    for tool, rel in FOREIGN_SDD_DIR_SIGNALS:
+        if os.path.isdir(os.path.join(cwd, rel)):
+            hits.append({"tool": tool, "path": rel})
+    sdir = os.path.join(cwd, "specs")
+    if os.path.isdir(sdir):
+        try:
+            names = sorted(os.listdir(sdir))
+        except OSError:
+            names = []
+        for name in names:
+            if len(hits) >= cap:
+                break
+            if not name.lower().endswith(".md"):
+                continue
+            path = os.path.join(sdir, name)
+            if not os.path.isfile(path):
+                continue
+            try:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    head = f.read(256)
+            except OSError:
+                continue
+            # Frontmatter sniff: bare prose notes in a specs/ folder are not an
+            # SDD signal; a frontmatter-opened spec file is.
+            if head.startswith("---\n") or head.startswith("---\r\n"):
+                hits.append({"tool": "generic-specs",
+                             "path": os.path.join("specs", name)})
+    return hits
 
 
 def probe_dirty_journal(cwd):
@@ -536,6 +586,7 @@ def collect_probes(cwd):
         "codebase_map": probe_codebase_map(cwd, git_info.get("head")),
         "knowledge_base": probe_knowledge_base(cwd),
         "dirty_journal_rows": probe_dirty_journal(cwd),
+        "foreign_sdd": probe_foreign_sdd(cwd),
         "preflight_predicates": {
             "has_vault": has_vault(cwd),
             "has_bound_or_vault": has_bound_or_vault(cwd),
@@ -588,6 +639,8 @@ def derive(probes):
         "map_stamp_matches_head": cmap["matches_head"],
     }
 
+    foreign_sdd = probes.get("foreign_sdd") or []
+
     derived = {
         "vault": vault["name"] if vault else None,
         "vault_path": vault["path"] if vault else None,
@@ -600,8 +653,22 @@ def derive(probes):
         "manifest_derive_needed": bool(
             vault and not vault["has_vault_json"] and vault["vault_doc_count"]
         ),
+        "foreign_sdd": foreign_sdd,
         "notes": notes,
     }
+
+    if foreign_sdd:
+        # Adoption lane (P2): recognition only — a DEMOTE re-ingest burns
+        # generate-intent tokens and produces a DIFFERENT vault than the user
+        # placed, so it is ALWAYS confirmed (C2 adoption_demote_confirm,
+        # decision 7). Never a silent chain hop.
+        tools = ",".join(sorted({h["tool"] for h in foreign_sdd}))
+        notes.append(
+            "foreign SDD artifacts detected (%s) -> adoption lane: "
+            "certify-artifact --rung=prd per spec file (DEMOTE is always a "
+            "confirmed C2 adoption_demote_confirm halt under --auto, never "
+            "unconfirmed)" % tools
+        )
 
     def finish(position, chain):
         derived["position"] = position

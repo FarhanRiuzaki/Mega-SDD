@@ -80,9 +80,9 @@ run it whether the bind is clean or blocked. Exit 2 = the artifact does not
 match the mega-sdd grammar. When mega-sdd wrote `binding.md` this run: fix the Step-4
 `binding.md` write and re-run — an authoring bug, not a halt (do NOT emit a
 halt YAML for this). When `binding.md` was authored EXTERNALLY (hand/foreign
-tool): itu bukan bug — grammar-nya memang belum diadopsi (lane adopsi datang
-di v5); perbaiki manual mengikuti `references/binding-md-template.md`, atau
-re-generate via pipeline (re-bind).
+tool): itu bukan bug — grammar-nya memang belum diadopsi (binding adalah artefak
+mid-pipeline yang di-derive, bukan rung adopsi `certify-artifact`); perbaiki manual
+mengikuti `references/binding-md-template.md`, atau re-generate via pipeline (re-bind).
 
 **5. Decision gate — non-negotiable:**
 
