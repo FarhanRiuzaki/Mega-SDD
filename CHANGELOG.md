@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.1.1] - 2026-07-19
+
+P7 slice-first — the advisor evidence-bundle (v5 spec P7 row, REORDERED by measurement + advisor counsel: rank by cost-units, not bytes). feat(token): **`build-advisor-bundle.sh` — the phase-advisor dispatch stops pasting the whole codebase-map (+vault+KB) into a FRESH subagent (paid at full 1.0x — the top real-dollar lever) and passes a compact sha-stamped SEED instead** (draft verdicts + anchors + the map/vault/KB *paths*). The advisor has Read/Grep/Glob and is instructed to Grep the on-disk map past the seed — so the bundle is a seed, never a boundary. The instrument gains `--weight fresh|resident` so ranking reflects cache-weighted cost-units (fresh subagent seed 1.0x vs resident main-context 0.1x): re-ranked, **phase-advisor is the #1 real-dollar seed**, not bind-codebase. The precomputed bind-map slice is DROPPED (recall-completeness unprovable); the safe bind-map lever becomes a later grep-on-demand commit.
+
+### Added
+- `plugins/mega-sdd/scripts/build-advisor-bundle.sh` — derives `<vault>/.advisor-bundle.md` (verdict+anchor seed + map/vault/KB paths + map sha256 + mandatory expansion contract); missing map degrades honestly (present:false, sha null — never fabricated).
+- `tests/phase-advisor/test-advisor-bundle.sh` — the **seed-not-boundary gate**: a contradiction placed in the map outside every verdict is absent from the bundle but reachable via the bundle's map path; bundle mandates the grep; checklist + SKILL + agent make expansion mechanical.
+- `seeding_budget.py --weight fresh|resident|<float>` → cost-units; `measure-seeds.sh` ranks by cost-units, tags each consumer fresh/resident.
+
+### Changed
+- `bind-codebase` SKILL Step 2.12 + `advisor-checklist.md` — dispatch by bundle **path** (not pasted corpus); advisor Greps the full map for `missed_match`.
+- Blackbox S12.7 — builds the bundle + asserts strict-subset + cost-unit ranking on the live vault.
+
 ## [5.1.0] - 2026-07-19
 
 P7 slice-first — the measurement instrument first (v5 spec P7 row; research `research/2026-07-19-p7-seed-budget-baseline.md`; advisor counsel: measure-first). feat(token): **`seeding_budget.py` + `measure-seeds.sh` — the ruler every slice-first cut is justified by.** Points at each consumer's current seed and ranks by bytes: bind-codebase is the dominant seed (**≥57%**, codebase-map + framework-pack), phase-advisor #2, generate-units' bound/ portion small-and-risky (→ retired last). oq-queue verified already collapsed by `all-priorities` (no rebuild). The **phase invariant** for every later cut: a slice is a *seed the consumer expands from, never a cap* — each bind-slice/advisor-bundle/kb-claims commit must ship a seed-not-boundary CONFLICT test.

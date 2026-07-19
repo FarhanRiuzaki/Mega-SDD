@@ -51,64 +51,72 @@ BOUND_DIR="$VAULT/bound"
 BINDING_MD="$VAULT/binding.md"
 BINDING_JSON="$VAULT/binding.json"
 
-# Seed definitions: NAME|<space-separated component paths>. Missing components
-# are counted as 0 by the lib and surfaced, never guessed.
-_measure() {  # _measure <label> <paths...>
-  python3 "$LIB" --label "$1" --json "${@:2}" 2>/dev/null
-}
+# Cache weighting: a FRESH subagent seed is paid at 1.0x; a RESIDENT main-context
+# load is cached ~0.1x after turn 1 (research §2). Ranking by cost-units, not raw
+# bytes, is what points slice-first at real dollars — a whole-map paste into a
+# subagent outranks a bigger resident load.
+BUNDLE="$VAULT/.advisor-bundle.md"   # post-5.1.1 advisor seed (build-advisor-bundle.sh)
 
 RECORDS="$(mktemp 2>/dev/null || mktemp -t measureseeds)"
 trap 'rm -f "$RECORDS"' EXIT
 : > "$RECORDS"
 
-emit() {  # emit <label> <component paths...>
-  local label="$1"; shift
-  # Drop empty args so the lib doesn't choke; keep at least one token.
+emit() {  # emit <label> <weight fresh|resident> <component paths...>
+  local label="$1" weight="$2"; shift 2
   local args=(); for a in "$@"; do [ -n "$a" ] && args+=("$a"); done
   [ ${#args[@]} -gt 0 ] || return 0
-  _measure "$label" "${args[@]}" >> "$RECORDS"
+  python3 "$LIB" --label "$label" --weight "$weight" --json "${args[@]}" 2>/dev/null >> "$RECORDS"
 }
 
-# 1. bind-codebase main-context open: vault docs + codebase-map + KB + pack.
-emit "bind-codebase" "${VAULT_DOCS[@]}" ${MAP:+"$MAP"} ${KB:+"$KB"} ${PACK:+"$PACK"}
-# 2. phase-advisor subagent seed: checklist + draft binding + map + vault + KB.
-emit "phase-advisor" "$ADV_CHECKLIST" ${BINDING_MD:+"$BINDING_MD"} ${MAP:+"$MAP"} "${VAULT_DOCS[@]}" ${KB:+"$KB"}
-# 3. generate-units open: bound/ annotated docs + binding manifest + sidecar.
-emit "generate-units" ${BOUND_DIR:+"$BOUND_DIR"} ${BINDING_MD:+"$BINDING_MD"} ${BINDING_JSON:+"$BINDING_JSON"}
-# 4. resolve-oq open: the vault (re-read each pass unless all-priorities).
-emit "resolve-oq" "${VAULT_DOCS[@]}"
+# 1. bind-codebase — RESIDENT main context: vault + codebase-map + KB + pack.
+emit "bind-codebase" resident "${VAULT_DOCS[@]}" ${MAP:+"$MAP"} ${KB:+"$KB"} ${PACK:+"$PACK"}
+# 2. phase-advisor — FRESH subagent. Post-5.1.1 the PASTED seed is the compact
+#    bundle + checklist (+ draft binding); the map/vault/KB are grep-on-demand,
+#    NOT pasted. Absent bundle → surfaced as MISSING (bind hasn't built it yet).
+emit "phase-advisor" fresh "$ADV_CHECKLIST" "$BUNDLE" ${BINDING_MD:+"$BINDING_MD"}
+# 3. generate-units — RESIDENT: bound/ annotated docs + binding manifest + sidecar.
+emit "generate-units" resident ${BOUND_DIR:+"$BOUND_DIR"} ${BINDING_MD:+"$BINDING_MD"} ${BINDING_JSON:+"$BINDING_JSON"}
+# 4. resolve-oq — RESIDENT: the vault (re-read each pass unless all-priorities).
+emit "resolve-oq" resident "${VAULT_DOCS[@]}"
 
-python3 - "$RECORDS" "$AS_JSON" "${MAP:-}" "${KB:-}" "${PACK:-}" <<'PYEOF'
-import json, sys
-records_path, as_json, mapf, kbf, packf = sys.argv[1], sys.argv[2] == "1", sys.argv[3], sys.argv[4], sys.argv[5]
+python3 - "$RECORDS" "$AS_JSON" "${MAP:-}" "${KB:-}" "${PACK:-}" "$BUNDLE" <<'PYEOF'
+import json, os, sys
+records_path, as_json, mapf, kbf, packf, bundlef = (
+    sys.argv[1], sys.argv[2] == "1", sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
 recs = []
 with open(records_path, encoding="utf-8") as fh:
     for line in fh:
         line = line.strip()
         if line:
             recs.append(json.loads(line))
-recs.sort(key=lambda r: r.get("bytes", 0), reverse=True)
+# Rank by cost-units (cache-weighted) — the unit that reflects real dollars.
+recs.sort(key=lambda r: r.get("cost_units", r.get("approx_tokens", 0)), reverse=True)
 total = sum(r.get("bytes", 0) for r in recs) or 1
+total_cu = sum(r.get("cost_units", 0) for r in recs) or 1
 notes = []
-if not mapf: notes.append("codebase-map: not found (bind/advisor seeds understated)")
+if not mapf: notes.append("codebase-map: not found (bind seed understated; advisor greps it on demand)")
 if not kbf:  notes.append("KB: not found (legacy-rebuild lane understated)")
 if not packf: notes.append("framework-pack: not passed (--pack); bind loads exactly one, ~KB-scale")
+if not os.path.isfile(bundlef): notes.append("advisor bundle: not built yet (run build-advisor-bundle.sh at bind) — phase-advisor seed shows the checklist floor only")
+notes.append("phase-advisor is FRESH (1.0x): its map/vault/KB are grep-on-demand, NOT pasted (5.1.1) — the eliminated whole-map paste was the top real-dollar lever")
 notes.append("domain-extractor legacy wave slice + live drafts: (varies) — not counted")
 
 if as_json:
     print(json.dumps({"seeds": recs, "notes": notes}, ensure_ascii=False, indent=2))
 else:
-    print("Seed budget (ranked by bytes) — current v5.0.0 baseline")
-    print(f"{'consumer':<18}{'bytes':>10}{'~tokens':>10}{'share':>8}  components")
-    print("-" * 72)
+    print("Seed budget (ranked by cost-units = tokens x cache-weight) — v5.1.x")
+    print(f"{'consumer':<16}{'cache':>9}{'bytes':>9}{'~tokens':>9}{'cost-un':>9}{'share':>8}  comp")
+    print("-" * 74)
     for r in recs:
-        share = 100.0 * r.get("bytes", 0) / total
+        cu = r.get("cost_units", 0)
+        share = 100.0 * cu / total_cu
         comps = len(r.get("components", []))
         miss = r.get("missing", [])
-        cflag = f"{comps}" + (f" (+{len(miss)} missing)" if miss else "")
-        print(f"{r.get('label',''):<18}{r.get('bytes',0):>10}{r.get('approx_tokens',0):>10}{share:>7.1f}%  {cflag}")
-    print("-" * 72)
-    print(f"{'TOTAL':<18}{total:>10}{sum(r.get('approx_tokens',0) for r in recs):>10}")
+        cache = "fresh" if r.get("weight", 0) >= 1.0 else "resident"
+        cflag = f"{comps}" + (f" +{len(miss)}miss" if miss else "")
+        print(f"{r.get('label',''):<16}{cache:>9}{r.get('bytes',0):>9}{r.get('approx_tokens',0):>9}{cu:>9}{share:>7.1f}%  {cflag}")
+    print("-" * 74)
+    print(f"{'TOTAL':<16}{'':>9}{total:>9}{sum(r.get('approx_tokens',0) for r in recs):>9}{total_cu:>9}")
     if notes:
         print("\nNotes (honest omissions):")
         for n in notes:
