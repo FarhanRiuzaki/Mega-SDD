@@ -31,14 +31,14 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
    - YES → Mode B brief. Propose chain starting with `generate-intent --from-prompt <input>`.
 
 4. **Is `<input>` empty**?
-   - YES → CWD inspection via `orchestrate-flow`'s routing-rules drives the chain. No fixed starting phase; CWD decides.
+   - YES → CWD inspection via `orchestrate-flow`'s routing-rules drives the chain (`Run: scripts/derive-state.sh --cwd=<root>` → read `.mega-sdd/state.json`, apply the routing decision table). No fixed starting phase; CWD decides.
 
 5. **Flag handling**:
    - `--deep` (default true for `auto`; opt-out via `--shallow` to revert to 3-skill cap).
    - `--greenfield` — EXPLICIT opt-in for stack-agnostic vault generation. REQUIRED when CWD has no framework manifest (package.json / composer.json / Gemfile / pyproject.toml / go.mod / Cargo.toml). Without this flag AND no manifest detected → halt `no_starterkit_detected`.
    - `--step-after=<phase>` — switch to manual handoffs after this phase (e.g., `--step-after=bind-codebase` to review binding before continuing).
    - `--stop-after=<phase>` — halt after this phase even if no blocker.
-   - `--resume` — re-enter a paused/halted chain; CWD inspection rebuilds cursor; halts re-fire if blockers unresolved.
+   - `--resume` — re-enter a paused/halted chain; CWD inspection (a fresh `derive-state.sh` digest) rebuilds cursor; halts re-fire if blockers unresolved.
    - `--manual` — disable autonomy entirely; reverts to per-skill explicit-command behavior (each skill's chat hint replaces auto-continue).
    - `--out=<path>` — REQUIRED when starting phase is `extract-intelligence` (legacy rebuild scenario). Specifies the OUTPUT_ROOT (parent dir), default `.mega-sdd/`; the KB is written to `<out>/knowledge-base/`.
 

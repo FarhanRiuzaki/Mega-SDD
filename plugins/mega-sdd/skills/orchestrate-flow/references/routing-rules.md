@@ -17,16 +17,44 @@
 
 ## CWD inspection (deterministic, in order)
 
-1. **PRD/seed detection.** Does CWD contain `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates?
-2. **Vault detection.** Probe in priority order — `.mega-sdd/vaults/*/vault.json` OR bare vault docs `.mega-sdd/vaults/*/0[0-6]-*.md` (canonical — SAME semantics as `validate-preflight.sh has_vault()`: the md docs alone count, so a 7-file vault without `vault.json` is still a vault, never invisible to routing) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins. When vault docs exist but `vault.json` is absent, the proposed chain FIRST runs `scripts/derive-vault-json.sh --vault <vault>` (derives the manifest deterministically from the docs — never hand-write it) before any phase that reads `vault.json`.
-3. **Bound-vault detection.** Same dirs but with `-bound` suffix?
-4. **Units detection.** Any `units/U-*.md` files?
-5. **Bolts detection.** Any `bolts/U-*/bolt-report.md`?
-6. **Repo detection.** Is CWD inside a git repo? Any package manifests?
-7. **Codebase-map detection.** Probe in priority order — `.mega-sdd/codebase/codebase-map.md` (canonical) → `<repo-root>/codebase-map.md` (legacy). First hit wins.
-8. **Knowledge-base detection.** Probe in priority order — `.mega-sdd/knowledge-base/README.md` (default), `docs/knowledge-base/README.md` (legacy), `docs/mega-sdd/knowledge-base/README.md`, `old-reference/knowledge-base/README.md`. First hit wins; report as `knowledge_base: present (path: <hit>)` or `absent`.
-9. **Open Questions count.** Aggregate P0/P1 OQ count across vault files.
-10. **Drift signals.** Has detect-drift been run recently?
+**`Run: scripts/derive-state.sh --cwd=<WORK_DIR>`** — the ONE probe engine. Every probe below executes inside the shared library `scripts/_lib/state_probes.py` (the SAME library `validate-preflight.sh` reads its `has_vault()`-class predicates from — decision 8, spec `2026-07-19-v5-execution-spec.md`) and lands in `<root>/.mega-sdd/state.json` (a `probes` object + a `derived` object) plus a one-line stdout digest. **Read `state.json`; never re-probe by hand** — hand-probing is exactly how the pre-P1 routing↔preflight `has_vault` fork happened. When no `.mega-sdd/` exists yet the script writes no file (it never mints an SDD signal in an unrelated directory); pass `--json-only` and read stdout instead.
+
+The 10 probes and where each lands:
+
+| # | Probe (identical semantics to the pre-P1 prose) | `state.json` field |
+|---|---|---|
+| 1 | **PRD/seed detection** — `prd.md`, `seed-PRD.md`, or root `*.md` PRD candidates | `probes.prd` (`present` / `candidates[]` / `newest_mtime`) |
+| 2 | **Vault detection** — priority order: `.mega-sdd/vaults/*` (canonical — `vault.json` OR bare `0[0-6]-*.md` docs count, SAME semantics as `validate-preflight.sh has_vault()`, now literally the same library function: a 7-file vault without `vault.json` is still a vault, never invisible to routing) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins (`probes.vaults[0]` / `derived.vault`). When vault docs exist but `vault.json` is absent (`derived.manifest_derive_needed: true`), the proposed chain FIRST runs `scripts/derive-vault-json.sh --vault <vault>` (derives the manifest deterministically from the docs — never hand-write it) before any phase that reads `vault.json` — the script already prepends this step to `derived.proposed_next` | `probes.vaults[]` |
+| 3 | **Bound-vault detection** — `<vault>/bound/` (canonical) or legacy `<vault>-bound/` sibling | `probes.vaults[].bound_present` |
+| 4 | **Units detection** — `units/U-*.md` (+ `U-*/unit.md` layout + legacy sibling) | `probes.vaults[].units_count` |
+| 5 | **Bolts detection** — `bolts/U-*/bolt-report.md` | `probes.vaults[].bolts_count` |
+| 6 | **Repo detection** — inside a git repo? package manifests? existing code files? | `probes.git` / `probes.manifests[]` / `probes.code` |
+| 7 | **Codebase-map detection** — `.mega-sdd/codebase/codebase-map.md` (canonical) → `<repo-root>/codebase-map.md` (legacy); first hit wins; + frontmatter `last_scanned_commit` vs git HEAD | `probes.codebase_map` (`present` / `path` / `last_scanned_commit` / `matches_head`) |
+| 8 | **Knowledge-base detection** — `.mega-sdd/knowledge-base/README.md` (default) → `docs/knowledge-base/README.md` (legacy) → `docs/mega-sdd/knowledge-base/README.md` → `old-reference/knowledge-base/README.md`; first hit wins; report as `knowledge_base: present (path: <hit>)` or `absent` | `probes.knowledge_base` |
+| 9 | **Open Questions count** — P0/P1 OQs split open-vs-deferred per the §OQ counting note (vault.json first, shared `vault_md` OQ grammar fallback) | `probes.vaults[].oq` (`pending_p0_p1` / `deferred_p0_p1`) |
+| 10 | **Drift signals** — `DRIFT-REPORT.md` presence + recency (drift report at least as new as the newest bolt-report) | `probes.vaults[].drift_report` / `derived.drift_recent` |
+
+`derived.position` + `derived.proposed_next` carry the script's default reading of the decision matrix below. The matrix stays authoritative: flag- and intent-conditioned rows (`--greenfield`, `--sync`, `--from`/`--to`, rebuild intent, memory-informed overrides) are applied by the orchestrator ON TOP of the digest — the script never invents intent (such rows surface as `derived.notes[]` with an empty chain).
+
+### Derived-position map (script default ↔ matrix row)
+
+| `derived.position` | Encodes matrix row | Default `proposed_next` |
+|---|---|---|
+| `empty` | no inputs at all | `[]` (ask for PRD/brief) |
+| `legacy_code_only` | code, no PRD/KB/vault — rebuild-intent rows need the user's word | `[]` + note |
+| `prd_no_vault` | PRD, no vault (starterkit rows; absent starterkit → halt `no_starterkit_detected` note) | scan → intent → bind → units, or `[]` + note |
+| `kb_no_vault` | `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` |
+| `oq_gate` | unresolved P0/P1 OQs, status != deferred | `resolve-oq` |
+| `prd_revision` | new PRD revision (file newer than vault) | `diff-vault <prd>` |
+| `maintenance_sync` | Mode D row | the full sync chain (below) |
+| `vault_greenfield_no_units` | vault mode=greenfield, no units | `generate-units` |
+| `vault_no_map` | vault mode=existing, no codebase-map | scan → bind → units |
+| `vault_map_unbound` | vault + map, no bound-vault (incl. ACTIVE conflicts / mixed resolutions) | `bind-codebase` |
+| `binding_resolved_no_rebind` | KEEP_VAULT/DEFER-only resolved binding (row below) | `generate-units` |
+| `bound_no_units` | bound-vault exists, no units | `generate-units` |
+| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all` (`--per-squad` when `squad_count ≥ 2`) |
+| `all_units_executed` | all units executed, no recent drift check | `detect-drift` |
+| `pipeline_complete` | all executed + recent drift check | `[]` |
 
 ## Decision matrix
 
@@ -59,7 +87,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 | Vault has `squad_count: ≥2`, units exist, user invokes from a single-squad context (e.g., on a dev's laptop with a specific role) | Ask: "Run for which squad?" then propose `execute-bolts --squad=<answer>` |
 | Vault has `squad_count: ≥2` but `interfaces_count: 0` and ≥1 unit has cross-squad coupling hint in vault_source | `generate-units` (re-run, will surface `interface_ref_missing` halts as needed) |
 | All units executed, no recent drift check | `detect-drift` |
-| **Mode D — maintenance/sync** (map + binding exist AND change signal present: `.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the map's `last_scanned_commit`) | `scan-codebase --changed-only` (writes `<vault>/.sync-changed-paths.txt` — the durable changed set the forked downstream reads once the journal is consumed; **on the full-scan fallback** it writes no changed set and hands off `bind-codebase --auto` DIRECTLY — a FULL re-bind, detect-drift SKIPPED because there is nothing to scope, §3.8(b)(1); a scope-less detect-drift would null-terminate the chain before the re-bind) → `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (scoped to those changed paths; its OWN handoff CONTINUES the sync lane straight to `bind-codebase --paths`, NEVER to resolve-oq — resolve-oq has no drift-consumption mode) → [`resolve-oq` ONLY if the drift walkthrough CREATED an `OQ-DC-N` stub — resolve-oq handles that stub in its ordinary intent mode; it never ingests drift findings] → `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` → `generate-units --reconcile` → `execute-bolts` (stale/new units only; `superseded` skipped). The never-ending-development lane per spec `2026-06-10-living-vault-continuous-sync-design.md` §3.3 (per-hop handoff semantics clarified by §3.8); `--sync` forces this row regardless of other inference. |
+| **Mode D — maintenance/sync** (map + binding exist AND change signal present: `.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the map's `last_scanned_commit` — i.e. `derived.change_signal` in `state.json`) | `scan-codebase --changed-only` (writes `<vault>/.sync-changed-paths.txt` — the durable changed set the forked downstream reads once the journal is consumed; **on the full-scan fallback** it writes no changed set and hands off `bind-codebase --auto` DIRECTLY — a FULL re-bind, detect-drift SKIPPED because there is nothing to scope, §3.8(b)(1); a scope-less detect-drift would null-terminate the chain before the re-bind) → `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (scoped to those changed paths; its OWN handoff CONTINUES the sync lane straight to `bind-codebase --paths`, NEVER to resolve-oq — resolve-oq has no drift-consumption mode) → [`resolve-oq` ONLY if the drift walkthrough CREATED an `OQ-DC-N` stub — resolve-oq handles that stub in its ordinary intent mode; it never ingests drift findings] → `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` → `generate-units --reconcile` → `execute-bolts` (stale/new units only; `superseded` skipped). The never-ending-development lane per spec `2026-06-10-living-vault-continuous-sync-design.md` §3.3 (per-hop handoff semantics clarified by §3.8); `--sync` forces this row regardless of other inference. |
 | Vault has unresolved P0/P1 OQs with status != deferred | `resolve-oq` first (intent gate, before any other chain) |
 | Vault has only deferred P0/P1 OQs + brownfield context | `scan-codebase` → `bind-codebase` (which auto-resolves deferred OQs) |
 | New PRD revision detected (file newer than vault) | `diff-vault <new-prd>` first |
@@ -71,7 +99,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
   This is cache-warming only — a failure here NEVER blocks sync and emits no halt
   YAML (the graph is rebuilt lazily on next `/mega-sdd:graph` query regardless).
 
-**Mode D change-signal inspection (cheap, two probes):** `grep -c . .mega-sdd/codebase/.dirty-paths.jsonl` and compare `git rev-parse HEAD` to the map frontmatter's `last_scanned_commit`. Either positive → Mode D candidate. Mode D NEVER fires on a repo without an existing map+binding (that's a normal brownfield first-run, rows above). Precedence: the P0/P1 OQ intent gate still runs first; a new PRD revision (diff-vault row) outranks sync.
+**Mode D change-signal inspection (from the digest — same two probes, script-run):** read `derived.change_signal` in `state.json` — `dirty_journal_rows` (non-empty lines of `.mega-sdd/codebase/.dirty-paths.jsonl`) and `map_stamp_matches_head` (map frontmatter `last_scanned_commit` vs `git rev-parse HEAD`). `dirty_journal_rows > 0` OR `map_stamp_matches_head: no` → Mode D candidate. Mode D NEVER fires on a repo without an existing map+binding (that's a normal brownfield first-run, rows above). Precedence: the P0/P1 OQ intent gate still runs first; a new PRD revision (diff-vault row) outranks sync.
 
 **OQ counting note:** When inspecting vault for P0/P1 OQ counts, distinguish:
 - `pending_p0_p1_count`: OQs with `status: open` (or status field absent; a legacy `pending` value in a pre-W5 manifest reads the same) at P0/P1 priority. These gate the chain via the intent rule above.

@@ -680,10 +680,71 @@ fi
 # One line, counts only — ambient awareness that the code moved since the last
 # scan. Signals: dirty-paths journal non-empty OR git HEAD ≠ the map's
 # last_scanned_commit stamp. Never blocks; absent when clean.
+#
+# P1 (v4.93.0, decision 8): the signals come from the ONE probe engine —
+# scripts/derive-state.sh → .mega-sdd/state.json (shared _lib/state_probes.py,
+# the same library routing + validate-preflight read) — so this notice can
+# never diverge from what routing sees. Gated behind the existing map-present
+# condition (no new latency on non-SDD CWDs). Stale-plugin-cache tolerance:
+# when derive-state.sh is absent or fails, the pre-P1 bash computation below
+# runs unchanged (byte-identical notice strings).
 STALENESS_NOTICE=""
 LV_MAP="${project_root}/.mega-sdd/codebase/codebase-map.md"
 if [ -f "$LV_MAP" ] && \
    ! grep -qE "^[[:space:]]*staleness_notice:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
+  LV_FROM_DIGEST=0
+  LV_DS="${SCRIPT_DIR}/../scripts/derive-state.sh"
+  if [ -f "$LV_DS" ] && bash "$LV_DS" --cwd="$project_root" >/dev/null 2>&1 \
+     && [ -f "${project_root}/.mega-sdd/state.json" ]; then
+    # Build the SAME notice strings from the digest. Prints "CLEAN" when no
+    # notice is due, the notice line otherwise; empty output = parse failure
+    # → the bash fallback below engages.
+    LV_OUT=$(STATE="${project_root}/.mega-sdd/state.json" python3 - 2>/dev/null <<'PYLV'
+import json, os
+try:
+    s = json.load(open(os.environ["STATE"]))
+    p = s["probes"]
+except Exception:
+    raise SystemExit(0)  # empty output -> bash fallback
+dirty = p.get("dirty_journal_rows", 0)
+cmap = p.get("codebase_map") or {}
+stamp = cmap.get("last_scanned_commit")
+head = (p.get("git") or {}).get("head")
+detail = "%d journaled write(s)" % dirty
+if stamp and head and head != stamp:
+    detail += "; map stamp %s ≠ HEAD %s" % (stamp[:8], head[:8])
+moved = dirty > 0 or bool(stamp and head and head != stamp)
+open_n = 0
+pending = ""
+for v in p.get("vaults") or []:
+    if v.get("layout") not in ("canonical", "legacy-docs"):
+        continue  # parity with the pre-P1 glob set
+    n = v.get("pending_sync_open", 0)
+    if n > 0:
+        open_n += n
+        pending = "%s/PENDING-SYNC.md" % v.get("path", "")
+if open_n > 0:
+    line = ("mega-sdd: %d open sync decision(s) queued in %s — resolve the queue first."
+            % (open_n, pending))
+    if moved:
+        line += (" Code also moved since last scan (%s) — re-run `/mega-sdd:sync` after."
+                 % detail)
+    print(line)
+elif moved:
+    print("mega-sdd: codebase moved since last scan (%s) — `/mega-sdd:sync` reconciles map → drift → binding → units."
+          % detail)
+else:
+    print("CLEAN")
+PYLV
+)
+    if [ -n "$LV_OUT" ]; then
+      LV_FROM_DIGEST=1
+      if [ "$LV_OUT" != "CLEAN" ]; then
+        STALENESS_NOTICE=$'\n\n'"$LV_OUT"
+      fi
+    fi
+  fi
+  if [ "$LV_FROM_DIGEST" -eq 0 ]; then
   LV_JOURNAL="${project_root}/.mega-sdd/codebase/.dirty-paths.jsonl"
   LV_DIRTY=0
   if [ -s "$LV_JOURNAL" ]; then
@@ -723,6 +784,7 @@ if [ -f "$LV_MAP" ] && \
   elif [ "$LV_MOVED" -eq 1 ]; then
     STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — \`/mega-sdd:sync\` reconciles map → drift → binding → units."
   fi
+  fi  # LV_FROM_DIGEST fallback (pre-P1 bash computation, unchanged)
 fi
 
 # ─── Resumed-after-compaction notice (ECC Batch 2) ──────────────────────────
