@@ -15,9 +15,11 @@
 #             incl. conflict counts, units, bolts, OQ P0/P1 open-vs-deferred,
 #             squads, interfaces, drift-report, pending-sync), git, manifests,
 #             code, codebase_map (+ last_scanned_commit vs HEAD), knowledge_base,
-#             dirty_journal_rows, preflight_predicates
+#             dirty_journal_rows, foreign_sdd (spec-kit/Kiro/OpenSpec/generic
+#             specs-with-frontmatter recognition, P2 adoption), preflight_predicates
 #   derived — position enum + proposed_next chain per the routing decision table
-#             (+ mode_inferred, starterkit, change_signal, notes)
+#             (+ mode_inferred, starterkit, change_signal, foreign_sdd, notes;
+#             the digest line mentions foreign_sdd only when non-empty)
 #
 # Output: ONE human line on stdout (quiet-gates); --json-only prints the full JSON
 # instead. The file is written atomically, and ONLY when <root>/.mega-sdd/ already
@@ -102,12 +104,18 @@ units = vrow["units_count"] if vrow else 0
 bolts = vrow["bolts_count"] if vrow else 0
 oq = vrow["oq"]["pending_p0_p1"] if vrow else 0
 cs = d["change_signal"]
+# P2 adoption: mention foreign-SDD recognition ONLY when non-empty (digest
+# stays byte-stable for every pre-P2 fixture).
+fsdd = d.get("foreign_sdd") or []
+fsdd_tok = (
+    " foreign_sdd=" + ",".join(sorted({h["tool"] for h in fsdd})) if fsdd else ""
+)
 print(
     "mega-sdd state: position=%s vault=%s units=%d bolts=%d oq_p0p1_open=%d "
-    "map=%s dirty=%d next: %s%s"
+    "map=%s dirty=%d%s next: %s%s"
     % (
         d["position"], vault, units, bolts, oq,
-        cs["map_stamp_matches_head"], cs["dirty_journal_rows"], nxt,
+        cs["map_stamp_matches_head"], cs["dirty_journal_rows"], fsdd_tok, nxt,
         "" if state_file else "  [state.json not written: no .mega-sdd/]",
     )
 )

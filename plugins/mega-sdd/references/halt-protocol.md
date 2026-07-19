@@ -84,7 +84,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | memory_schema_mismatch | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | hard_rule_unanchored | unit_underspecified | verify_unit_writable
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | routing_outcome_corrupt | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | memory_schema_mismatch | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | hard_rule_unanchored | unit_underspecified | verify_unit_writable | adoption_demote_confirm
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
@@ -215,6 +215,7 @@ These halt types are emitted by producers as `→ halt <name>` or `type: <name>`
 
 - `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
 
+- `adoption_demote_confirm` — orchestrate-flow / auto (P2 adoption lane, decision 7 LOCKED): `scripts/certify-artifact.sh` returned verdict `DEMOTE` for an externally-authored artifact (foreign vault/KB grammar → PRD-rung re-ingest; degenerate map → re-scan). **C2 — business gate, ALWAYS a halt under `--auto`, never unconfirmed**: the demotion burns generate-intent tokens and produces a DIFFERENT vault than the artifact the user placed. Displayer renders the certify keterangan block verbatim FIRST (per step 0 — it already carries why + per-option consequences in Indonesian), then ONE AskUserQuestion-shaped confirmation with glossed options `RE_INGEST` (jalankan re-ingest di rung PRD — artefak BARU ber-grammar mega-sdd, burn token) / `MANUAL_FIX` (berhenti; user perbaiki artefak mengikuti template lalu jalankan ulang certify) / `CANCEL` (batal — artefak tidak diadopsi). After the answer the chain PROCEEDS per the choice (this is confirm-then-proceed, NOT an always-stop-re-run halt). Never fires for a v4-mega-sdd-authored artifact (migration guarantee: CERTIFIED_DEGRADED floor, REJECTED forbidden). Source skill: `orchestrate-flow`.
 - `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (HOOK-LAYER DETECTION via SessionStart, DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in anchor injection. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at SessionStart means the warning re-fires on every session until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
 
 The following one-liners were absorbed (verbatim) from `skills/orchestrate-flow/references/halt-taxonomy.md`, which now carries classification names only:
@@ -380,4 +381,17 @@ details:
   consumed_interface_id: <kebab-id>
   producer_squad: <producer-squad-id>
   interface_status: draft
+
+# adoption_demote_confirm — emitted by orchestrate-flow/auto when
+# scripts/certify-artifact.sh verdicts DEMOTE (P2 adoption; decision 7)
+details:
+  rung: prd | map | vault | kb | units
+  artifact_path: <path certify-artifact was run against>
+  verdict: DEMOTE
+  certify_keterangan: <the certify KETERANGAN block, verbatim — incl. the
+                       derive-vault-json exit-2 lines when the rung is vault>
+  demote_target: "generate-intent (PRD-rung re-ingest)" | "scan-codebase (re-scan)" | "extract-intelligence (re-extract)"
+  options: [{code: RE_INGEST, keterangan: <apa yang terjadi + biaya token>},
+            {code: MANUAL_FIX, keterangan: <perbaiki mengikuti template, lalu certify ulang>},
+            {code: CANCEL, keterangan: <artefak tidak diadopsi, chain berhenti>}]
 ```

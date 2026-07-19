@@ -169,6 +169,12 @@ rm -rf "$F/.git"; gitinit "$F"
 write_map "$F/.mega-sdd/codebase/codebase-map.md" "$(git -C "$F" rev-parse HEAD)"
 printf '{"p":"a.php"}\n{"p":"b.php"}\n{"p":"c.php"}\n' > "$F/.mega-sdd/codebase/.dirty-paths.jsonl"
 
+# P2 adoption: foreign-SDD signals — spec-kit dir + generic specs/ (one file WITH
+# frontmatter counts, one bare-prose file must NOT).
+F="$WORK/f10-foreign-sdd"; mkdir -p "$F/.mega-sdd" "$F/.specify" "$F/specs"
+printf -- '---\ntitle: checkout spec\n---\n# Checkout\n' > "$F/specs/checkout.md"
+printf 'plain notes, no frontmatter\n' > "$F/specs/notes.md"
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 state_field() { # $1=fixture-dir  $2=python expr over the loaded state dict `d`
   python3 -c "
@@ -359,6 +365,30 @@ out=$( cd "$WORK/f6-units-no-bolts" && printf '{"session_id":"t","source":"start
 printf '%s' "$out" | grep -qF 'codebase moved since last scan' \
   && fail "f6: clean fixture got a staleness notice" \
   || ok "f6: clean fixture stays silent (no notice)"
+
+# ── 6. foreign-SDD adoption probe (P2) ──────────────────────────────────────
+note "== 6. foreign-SDD adoption probe (P2) =="
+DIGEST=$(run_ds "$WORK/f10-foreign-sdd" 2>/dev/null)
+got=$(state_field "$WORK/f10-foreign-sdd" "len(d['derived']['foreign_sdd'])")
+[ "$got" = "2" ] && ok "f10: derived.foreign_sdd has 2 rows (.specify + frontmatter'd specs/*.md; bare-prose notes.md excluded)" \
+  || fail "f10: foreign_sdd rows expected 2, got '$got'"
+got=$(state_field "$WORK/f10-foreign-sdd" "sorted(h['tool'] for h in d['derived']['foreign_sdd'])")
+[ "$got" = "['generic-specs', 'spec-kit']" ] && ok "f10: tools = generic-specs + spec-kit" \
+  || fail "f10: tools wrong: $got"
+got=$(state_field "$WORK/f10-foreign-sdd" "d['probes']['foreign_sdd']==d['derived']['foreign_sdd']")
+[ "$got" = "True" ] && ok "f10: probes.foreign_sdd == derived.foreign_sdd (one probe, surfaced)" \
+  || fail "f10: probe/derived foreign_sdd split: $got"
+printf '%s' "$DIGEST" | grep -qF 'foreign_sdd=generic-specs,spec-kit' \
+  && ok "f10: digest line mentions foreign_sdd=generic-specs,spec-kit" \
+  || fail "f10: digest missing foreign_sdd token: $DIGEST"
+state_field "$WORK/f10-foreign-sdd" "'\n'.join(d['derived']['notes'])" | grep -q 'adoption_demote_confirm' \
+  && ok "f10: adoption note names the confirmed C2 lane (decision 7 — never unconfirmed)" \
+  || fail "f10: adoption note missing/unwired"
+# digest byte-stability: clean fixtures NEVER carry the token
+DIGEST=$(run_ds "$WORK/f6-units-no-bolts" 2>/dev/null)
+printf '%s' "$DIGEST" | grep -qF 'foreign_sdd=' \
+  && fail "f6: clean fixture digest grew a foreign_sdd token (byte-stability broken)" \
+  || ok "f6: clean digest unchanged (no foreign_sdd token)"
 
 note ""
 if [ "$FAILED" -eq 0 ]; then note "ALL P1 state-engine assertions PASS"; else note "P1 state-engine FAILURES"; fi

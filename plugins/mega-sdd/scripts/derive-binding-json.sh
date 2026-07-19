@@ -109,7 +109,7 @@ if errors:
     print(
         "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini file "
         "hasil tulis eksternal, itu bukan bug: grammar-nya memang belum diadopsi "
-        "(lane adopsi datang di v5); perbaiki manual mengikuti "
+        "(binding di-derive dari bind-codebase, bukan di-adopsi); perbaiki manual mengikuti "
         "binding-md-template.md, atau re-generate via pipeline (re-bind)."
     )
     sys.exit(2)
