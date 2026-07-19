@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.5.0
+version: 1.6.0
 description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -146,6 +146,12 @@ Run `bash <plugin-root>/scripts/build-citation-map.sh --vault=<vault> --cwd=<pro
 ### Step 6: Verify citation map exists
 
 Citation map already written by Step 4.6 (`missing_sources[]` included — script-derived from the `[Pending — …]` markers) — verify `<vault>/fsd/.citation-map.json` exists; if absent, re-run Step 4.6.
+
+### Step 6.5: Doc-control stamp (script-run)
+
+Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=fsd --maturity=<pre-development|post-development per Step 0 mode> --position="<pipeline digest, e.g. bolts 3/7 complete>" --generated-at=<now ISO8601>`.
+
+The doc-control block is SCRIPT-OWNED (a parser-invisible HTML comment after the frontmatter, per `plugins/mega-sdd/references/emission-engine.md §Doc-control stamping`) — the model never types it. Exit 2 → internal bug (FSD.md missing; re-check Step 4). Between full emissions, orchestrate-flow refreshes the `position` field at chain boundaries via the same script (~0 tokens — no re-emission needed for a state bump).
 
 ### Step 7: Emit handoff (when --auto flag)
 

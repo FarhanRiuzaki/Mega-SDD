@@ -322,6 +322,32 @@ if [ $RC -eq 0 ] && echo "$OUT" | grep -q "^DRIFT "; then
   ok "GATE FIRED: source drift detected — $(echo "$OUT" | grep -m1 '^DRIFT ')"
 else bad "drift not detected rc=$RC: $OUT"; fi
 
+# ── S12.5 SIT evidence (P5): the SIT §1–§5 fragment is script-derived from the
+# REAL artifacts this pipeline produced (flows + units + acceptance/postflight);
+# absent evidence stays [Pending], sign-off rows are placeholder literals.
+stage "S12.5 build-sit-evidence: script-derived SIT tables, Pending honest, sign-off literal"
+OUT="$(bash "$SCR/build-sit-evidence.sh" --vault="$VAULT" --cwd="$PROJ" </dev/null 2>&1)"; RC=$?
+SITFRAG="$VAULT/sit/.sit-evidence.md"
+[ $RC -eq 0 ] && [ -f "$SITFRAG" ] && ok "fragment written: $OUT" || bad "build-sit-evidence rc=$RC: $OUT"
+grep -q '^### TS-001 — Submit leave request (F-U-001)$' "$SITFRAG" \
+  && grep -qF 'A["Fill form"] --> B["Validate dates"]' "$SITFRAG" \
+  && ok "TS-001 scenario carries the flow's Mermaid VERBATIM" \
+  || bad "TS scaffold wrong"
+grep -q '\[Pending — bolt U-002 belum dieksekusi\]' "$SITFRAG" \
+  && ok "U-002 without evidence stays [Pending] — never invented" \
+  || bad "U-002 Pending row missing"
+if command -v php >/dev/null 2>&1; then
+  echo "$OUT" | grep -q 'maturity=partial' && ok "maturity=partial (U-001 evidence real, U-002 pending)" \
+    || bad "maturity wrong: $OUT"
+  grep -qE '\| U-001 \| [0-9]+ \(test\) \| `php -l src/routes.php` \| pass \|' "$SITFRAG" \
+    && ok "§4.1 acceptance row mirrors the real acceptance.json (L0 syntax rows precede it)" || bad "acceptance row wrong"
+else
+  echo "$OUT" | grep -q 'maturity=planned' && ok "maturity=planned (no php on runner — no evidence)" \
+    || bad "maturity wrong: $OUT"
+fi
+grep -q '| QA Lead | __________ | __________ | __________ | \[ \] Diterima · \[ \] Ditolak |' "$SITFRAG" \
+  && ok "sign-off body rows are placeholder LITERALS (paper-out)" || bad "sign-off placeholders wrong"
+
 # ── S13 verdict ──────────────────────────────────────────────────────────────
 stage "S13 verdict"
 echo "  artifacts: $(cd "$PROJ" && find .mega-sdd -type f | wc -l | tr -d ' ') files under .mega-sdd/ ($(du -sh "$PROJ/.mega-sdd" 2>/dev/null | cut -f1))"

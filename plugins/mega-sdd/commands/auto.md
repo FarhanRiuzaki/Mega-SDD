@@ -97,6 +97,9 @@ This command transparently invokes diagnostic skills at appropriate phases — u
 | After `execute-bolts` | `list-modules` | Per-module status in chain summary |
 | At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
 | At chain end | `emit-fsd` (**OPT-IN** — requires `--with-fsd` flag; expensive pandoc/LaTeX deps) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
+| At chain end | `emit-sit` **PROPOSAL** (one line, never auto-run) when ≥1 `bolts/U-*/acceptance.json` exists | "Bukti eksekusi tersedia — `/mega-sdd:emit-sit` menghasilkan SIT dengan tabel bukti §4 script-derived" |
+| At chain end | `emit-prd` reverse-lane **MENTION** (one line, never auto-run) when a KB exists but no vault | Team-readable PRD draft from the KB, markers `[VERIFIED]/[INFERRED]/[OPEN]` carried verbatim |
+| At EACH chain boundary | Doc-control stamp refresh for existing emitted docs (`scripts/refresh-doc-stamps.sh --doc=<fsd\|prd\|sit> --position=…` — script-lane, ~0 tokens, `--position` only; never a maturity bump) | Doc-control blocks stay current between full emissions |
 | At chain end | Memory review prompt | Surface pending learning suggestions |
 
 **Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
