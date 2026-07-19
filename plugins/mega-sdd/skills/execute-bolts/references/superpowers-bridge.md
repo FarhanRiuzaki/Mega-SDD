@@ -26,7 +26,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 
    `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh implementer per unit, then the **review panel** (parallel blind lenses per `references/review-panel.md`). Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 
-1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A unit's optional `superpowers_skills` frontmatter is treated as a technique hint.
+1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A legacy unit's optional `superpowers_skills` frontmatter is treated as a technique hint (no longer written; the agents encode the discipline regardless).
 
 2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `$PLUGIN_ROOT/skills/_vendored/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale; see `plugins/mega-sdd/references/plugin-root-resolution.md`):
    ```bash
@@ -67,8 +67,10 @@ SELECT panel tier (risk-based)            (references/review-panel.md)
    ▼
 DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-only)
    each lens gets: a unit-body slice sized to the lens (spec = full verbatim;
-   others = frontmatter + requirements + Hard rules + Anchors/Anti-patterns + Migration notes,
-   NOT the Implementation-steps narrative — per `review-panel.md §Blind dispatch`)
+   others = frontmatter + requirements + Hard rules + Anchors/Anti-patterns + Migration notes
+   (+ Goal/Out-of-scope for the quality lens; the design slice unchanged),
+   NOT the Implementation-steps narrative and NOT Goal/Context/Out-of-scope
+   for security/standards — per `review-panel.md §Blind dispatch`)
    + base/head SHAs + its lens-specific context.
    NEVER the implementer's report, NEVER another lens's verdict.
    ▼

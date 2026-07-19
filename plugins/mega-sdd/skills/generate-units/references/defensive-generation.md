@@ -90,13 +90,10 @@ id: U-007
 title: ...
 task_type: create
 grounding_confidence: HIGH | MEDIUM | LOW
-grounding_evidence:
-  upstream_artifacts: [codebase-map.md, binding.md]    # what was consulted
-  anchors_verified: 3/3                                # how many anchors resolved
-  target_files_collision_check: passed                 # whether step 7.6 raised
-  binding_state_summary: { IMPLEMENTED: 2, NEW: 0, UNKNOWN: 1 }
 ---
 ```
+
+The anchor tally and collision outcome surface in the per-unit chat summary line (below) and the anchor-warning body footer — no frontmatter block needed.
 
 ### Confidence levels
 
@@ -150,7 +147,7 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 - Pre-flight auto-route uses existing scan-codebase + bind-codebase (no new code paths)
 - Per-unit cross-check NEVER silent-rewrites task_type — always user confirms via prompt
 - Anchor warnings DON'T fabricate citations; flag missing references for user review
-- `grounding_confidence` is descriptive for `create`/`extend` and for MEDIUM/LOW values; for `verify`+HIGH it is PRESCRIPTIVE — the A1 rail (`verify_grounding_untrusted`, this file §verify-grounding) hard-blocks execute-bolts on ungrounded criteria. (The purely-descriptive field is `grounding_evidence`.)
+- `grounding_confidence` is descriptive for `create`/`extend` and for MEDIUM/LOW values; for `verify`+HIGH it is PRESCRIPTIVE — the A1 rail (`verify_grounding_untrusted`, this file §verify-grounding) hard-blocks execute-bolts on ungrounded criteria. (`grounding_evidence` is no longer written; legacy units carrying it are tolerated.)
 - `--auto` mode picks safest defaults (extend over create on collision; never force overwrite)
 
 ## Backward compatibility

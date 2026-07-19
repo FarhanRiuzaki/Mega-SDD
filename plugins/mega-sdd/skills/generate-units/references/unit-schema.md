@@ -48,21 +48,14 @@ risk: low | medium | high | critical   # OPTIONAL — written by generate-units 
                                    # MEDIUM = binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex
                                    # LOW = no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors
                                    # Required on newly generated units; may be absent on legacy units.
-grounding_evidence:                # — descriptive metadata; not enforced downstream
-  upstream_artifacts: []           # what was consulted: [codebase-map.md, binding.md]
-  anchors_verified: <N>/<M>        # how many of M anchors resolved (file exists + line valid)
-  target_files_collision_check: passed | warning | resolved-via-prompt
-  binding_state_summary: {}        # { IMPLEMENTED: N, PARTIAL_FIELDS_MISSING: N, ... }
-mutability:                        # propagates the mutability tier from binding/KB
-  tier: LOCKED | INTENT | ARTIFACT # tier of the vault claims this unit implements
-  source: kb_locked | kb_intent | kb_artifact | vault_locked | inferred
-  rationale: <string>              # 1-line reason (e.g., "BI Reg 23/2/2021 §4 — field name + type + validation MUST preserve")
-  rebuild_freedom:                 # what rebuild may change
-    field_names: yes | no          # for LOCKED + integration-contract → no
-    field_types: yes | no          # for LOCKED → no
-    storage_shape: yes | no        # for LOCKED + audit-required → no
-    flow_implementation: yes | no  # for INTENT → yes; LOCKED + algorithm-specified → no
-  # Pre-v2.5.1 units OR units without KB-derived claims → field omitted; downstream treats as INTENT (safe default).
+mutability: "LOCKED — BI Reg 23/2/2021 §4: field name+type+validation MUST preserve (kb_locked)"
+                                   # ONE QUOTED line: `<TIER> — <rationale incl. source>`, TIER = LOCKED | INTENT | ARTIFACT.
+                                   # Quoting is MANDATORY — an unquoted rationale carrying a colon-space would
+                                   # parse as a nested mapping and break the YAML frontmatter (repo authoring
+                                   # standard). Absent → downstream treats as INTENT (safe default). The
+                                   # ENFORCEABLE half of the old rebuild_freedom sub-map lives in `## Hard rules`
+                                   # (DO_NOT_MODIFY / SIGNATURE productions) — unchanged. Legacy nested-map
+                                   # units are tolerated — no reader parses this key.
 squad: <squad-id>                  # OPTIONAL — required when ≥2 squads declared in _meta/squads.yaml
                                    # Format: squad-<kebab-case>. Omit or set to `default` for single-squad projects.
 scope: <scope-id>                  # OPTIONAL — written when source vault.json has `scope` field
@@ -105,8 +98,11 @@ acceptance_test:                   # how to verify the bolt succeeded
                                    # OPTIONAL (additive, backward-compatible) — an EARS-shaped statement
                                    # ("WHEN <trigger> THE SYSTEM SHALL <response>" / "WHILE <state> ..." /
                                    # "IF <condition> THEN THE SYSTEM SHALL ...") making the criterion
-                                   # machine-checkable. When present, the bolt's TDD test MUST assert
-                                   # exactly this statement (and PBT properties MAY be derived from it).
+                                   # machine-checkable. Emit ONLY when the EARS statement adds behavioral
+                                   # precision absent from `expects:` (e.g. expects is a bare "passes");
+                                   # NEVER a restatement of expects — nothing parses ears downstream.
+                                   # When present the bolt's TDD test MUST assert exactly this statement
+                                   # (and PBT properties MAY be derived from it).
                                    # Absent → prose `expects:` remains the criterion (no behavior change);
                                    # validators tolerate absence everywhere.
   - type: manual
@@ -119,15 +115,13 @@ acceptance_test:                   # how to verify the bolt succeeded
                                    # pack `## Test patterns` -> detail_view_render template.
     command: "php artisan test --filter WidgetShowRendersTest"
     expects: "GET detail route 200 + asserts a real display field renders"
-superpowers_skills:                # which superpowers skills execute-bolts invokes
-  - test-driven-development
-  - subagent-driven-development
 binding_refs:                      # binding manifest IDs this unit honors
   - C-001
   - OQ-012
-estimated_complexity: small        # small | medium | large
 ---
 ```
+
+**Legacy keys.** Pre-diet units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. The diet is writer-side only: no validator requires their absence.
 
 ## Required body sections (polished AI-coding-prompt shape)
 
@@ -178,8 +172,14 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
 - **ADD**: <new code to write>
 
 ## Acceptance criteria
-<expanded form of frontmatter acceptance_test — exactly what passing means>
-<For task_type=verify: ALL acceptance criteria must assert behavior of existing implementation — not new behavior.>
+<Written ONCE — the frontmatter `acceptance_test:` entries are the structured authority; this section is per-task_type.>
+<For task_type=create|extend: the section body is ONE pointer line — "Acceptance criteria are the frontmatter
+ `acceptance_test:` entries (authoritative)." — plus ONLY lines that add information the structured entries
+ cannot carry: TBD OQ items ("TBD: <OQ-ID> — <question>") and prose-only constraints. NEVER a verbatim
+ expansion of each entry's command/expects.>
+<For task_type=verify: expanded criteria at ALL confidence levels (marker-bearing when grounding_confidence
+ is HIGH) — a verify unit always keeps its expanded body criteria; the A1 grounding substrate lives here.
+ ALL acceptance criteria must assert behavior of existing implementation — not new behavior.>
 <For task_type=verify with grounding_confidence: HIGH (A1 — per-AC source grounding): prefix EACH criterion
  with a grounding marker that proves the asserted behavior already exists in NON-TEST source:
    - [grounded: src/Services/Purchase.php:142] the 4th daily purchase is rejected
