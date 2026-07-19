@@ -110,9 +110,16 @@ while IFS= read -r line; do
   echo "$line" | grep -qiE "does not exist|does NOT exist" || { fail "ast-grep test --validate presented as real: $line"; BAD=1; }
 done < <(grep -rn "ast-grep test --validate" "$P/skills" "$P/commands" 2>/dev/null | grep -v Binary)
 [ "$BAD" = "0" ] && ok "ast-grep test --validate only ever mentioned as nonexistent"
-grep -q "missing_dependency" "$EB/references/bolt-dispatch-prompt.md" \
-  && fail "missing_dependency alias survives in dispatch vocabulary" \
-  || ok "dispatch vocabulary uses canonical dep_missing"
+# P2d moved the halt vocabulary into the agent system prompt — the canonical
+# dep_missing pin must cover BOTH the dispatch template AND its new home.
+BAD=0
+for f in "$EB/references/bolt-dispatch-prompt.md" "$P/agents/bolt-implementer.md"; do
+  grep -q "missing_dependency" "$f" && { fail "missing_dependency alias survives in $(basename "$f")"; BAD=1; }
+done
+[ "$BAD" = "0" ] && ok "halt vocabulary uses canonical dep_missing (dispatch template + bolt-implementer agent)"
+grep -q "dep_missing" "$P/agents/bolt-implementer.md" \
+  && ok "bolt-implementer carries the canonical dep_missing halt type" \
+  || fail "bolt-implementer missing the dep_missing halt type (vocabulary did not land in the agent)"
 
 echo "── panel agents ──"
 grep -q "implementer claims" "$P/agents/spec-reviewer.md" \

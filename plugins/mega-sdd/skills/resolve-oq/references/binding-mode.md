@@ -8,10 +8,10 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 
 1. **Load and parse binding.md.** Expect sections:
    - "## Confirmed Claims" (no action needed — informational)
-   - "## Conflicts (N) — BLOCKING" with table columns: ID | Vault Claim | Codebase Reality | Resolution Needed
+   - "## Conflicts (N) — BLOCKING" carrying one `### CONFLICT-N` detail block per conflict (heading + `- **Vault claim**:` / `- **Codebase reality**:` / `- **Claim**:` lines — the only conflict carrier)
    - "## Open Questions (N)" — auto-propagated deferred OQs that couldn't be auto-resolved
 
-2. **Walk Conflicts table.** For each conflict, present:
+2. **Walk the `### CONFLICT-N` detail blocks** (the menu is built from the detail headings). For each conflict, present:
 
    ```
    CONFLICT-N (BLOCKING)
@@ -26,7 +26,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
      [S] SPLIT       — break vault claim into sub-claims (user provides splits; each sub-claim re-binds separately)
    ```
 
-   The two claim texts + the evidence anchor are MANDATORY — a `CONFLICT-N` code alone is never a question (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`). The `Prior call` line renders ONLY when memory has one; it is a suggestion, never a default (the CONFLICT verdict is not bypassable by memory).
+   The two claim texts + the evidence anchor are MANDATORY — a `CONFLICT-N` code alone is never a question (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`). Source them from the detail block's `- **Vault claim**:` and `- **Codebase reality**:` lines (the anchor rides the Codebase-reality line). **Legacy fallback (pre-P2 bindings):** when a block predates those two lines, read the claim/reality pair from the old summary table and the evidence anchor from the Implementation State Map `Anchor` column (via the block's `- **Claim**:` id). The `Prior call` line renders ONLY when memory has one; it is a suggestion, never a default (the CONFLICT verdict is not bypassable by memory).
 
    **Resolution write-back grammar (S4 — the ONLY markers the gate reads).** A
    resolution is recorded by BOTH: (a) updating the `### CONFLICT-N` detail heading to
@@ -34,11 +34,12 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    `- **Resolution**: ✅ RESOLVED (<ACTION>) <ISO date> — <one-line rationale>` line
    inside the detail block. `validate-handoff-binding-units.sh` and
    `validate-conflict-classification.sh` key ONLY on the heading-line marker or the
-   dedicated Resolution line — a marker anywhere else (summary table only, prose) does
-   NOT clear the gate. Also update the summary-table `Resolution Needed` cell, and
-   ensure the detail block carries its `- **Claim**: C-NNN` line (legacy blocks
-   resolved before the W2 grammar may lack it — ADD it during write-back from the
-   conflict's claim context; a bounded self-heal). Then **Run**
+   dedicated Resolution line — a marker anywhere else (prose, a legacy table) does
+   NOT clear the gate. Ensure the detail block carries its `- **Claim**: C-NNN` line
+   (legacy blocks resolved before the W2 grammar may lack it — ADD it during
+   write-back from the conflict's claim context; a bounded self-heal). Legacy note:
+   pre-P2 bindings may still carry a summary table — ignore it; never update it
+   (the gate never read it). Then **Run**
    `scripts/derive-binding-json.sh --vault <vault>` (the directory containing
    `binding.md`) to refresh `binding.json` FROM the updated markdown — the json is
    script-derived, never hand-patched (per
@@ -61,7 +62,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 3. **Walk Open Questions table.** For each propagated deferred-OQ, use the standard 4-action menu (`[A]` Answer now / `[C]` Out of scope / `[D]` Skip — same Step 2b menu as the standard walk), with **Option [B] Defer hidden** (already in binding context — nested deferral not supported; re-binding flow is via re-running `bind-codebase`).
 
 4. **Write back.** All resolutions persist to:
-   - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above; summary rows updated
+   - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)
    - `binding.json` — refreshed by running `scripts/derive-binding-json.sh --vault <vault>` after the markdown write (script-derived from `binding.md`; never edited by hand)
    - `vault.json` — append changelog: `{ "event": "resolve-oq-binding", "at": "<iso>", "summary": "N conflicts resolved, M OQs resolved" }`
    - `decisions.md` (memory layer) — each resolution recorded durably (survives re-binds; per resolve-oq's auto-memory-handoff reference)

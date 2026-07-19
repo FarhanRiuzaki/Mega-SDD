@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.24.0
+version: 2.25.0
 description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the run on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -75,10 +75,10 @@ Follows `references/superpowers-bridge.md` per-unit flow — the default executo
 
 Per `references/bolt-dispatch-prompt.md` (template) + `references/context-enrichment.md` (assembly logic). Total dispatch prompt budget ≤9KB target, **hard cap 12KB → halt `dispatch_prompt_too_large`** (a progressive T2 budget tracker truncates disposable sections first; the halt fires only when non-truncatable `constitution_clauses` alone exceed budget).
 
-- **TIER 1 (always, ≤2KB):** unit body, halt vocabulary, self-assessment template, **atomic commit discipline reminder, anti-context block, provenance trailer template**, and an acceptance-test-provenance NOTE when the test was weakly authored, the reuse-index path (always) + reuse_candidates hint.
+- **TIER 1 (always, ≤2KB):** unit body, the **agent-carried contracts pointer** (halt / self-report / rollback / provenance / atomic — the constant blocks live in the `bolt-implementer` system prompt, named + versioned by one T1 line), the **per-unit provenance values block**, the **anti-context block**, and an acceptance-test-provenance NOTE when the test was weakly authored, the reuse-index path (always) + reuse_candidates hint.
 - **TIER 2 (conditional, ≤10KB, budget-tracked):** depends_on summaries, framework pack rules (glob-filtered), constitution clauses, KB anti-patterns, historical memory, the **starterkit context slice** + §patterns + reference code exemplar (auto-injected per unit per `starterkit_relevance`; emits `deep_scan_cache_corrupt` soft halt on a corrupt cache; machinery → `references/starterkit-enrichment.md`, loaded ONLY when `.mega-sdd/codebase/starterkit-context.yaml` exists), confidence labels, validation hints, the reuse slice (filtered reuse-index entries). Section-priority truncation cascade (constitution clauses NEVER dropped) → `references/context-enrichment.md`.
 - **TIER 3 (reference-only):** full upstream reports, constitution, KB files, memory, framework pack — read on demand, never embedded.
-- The assembled prompt is written to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance. **Anti-halu rails:** every T2 inclusion cites its source; the anti-context block is populated from real data (never invented); self-assessment confidence is numeric `0.0–1.0`; a provenance trailer is MANDATORY in every modified file (post-flight verifies it — missing → **halt `provenance_missing`**).
+- The assembled prompt is written to `<vault>/bolts/U-XXX/dispatch-prompt.md` for provenance. **Anti-halu rails:** the halt/self-report/rollback/provenance contracts are **agent-carried** (the `bolt-implementer` system prompt is their sole prompt-side source; the dispatch carries the pointer line + the per-unit values — obligations unchanged); every T2 inclusion cites its source; the anti-context block is populated from real data (never invented); self-assessment confidence is numeric `0.0–1.0`; a provenance trailer is MANDATORY in every modified file (post-flight verifies it — missing → **halt `provenance_missing`**).
 
 ### Post-flight Hard Rule validation (the safety net — gate)
 

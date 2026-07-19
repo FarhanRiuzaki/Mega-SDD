@@ -66,7 +66,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `bolt_repeated_partial_failure` — structural problem; a fix won't help.
 - `provenance_missing` — user must add the trailer.
 - `dispatch_prompt_too_large` — config issue, not bolt-fixable.
-- `dep_missing` — environment setup needed. (The dispatch-prompt halt vocabulary emits this same type; the legacy alias `missing_dependency` is retired.)
+- `dep_missing` — environment setup needed. (The agent-carried halt vocabulary — `agents/bolt-implementer.md` §Halt vocabulary — emits this same type; the legacy alias `missing_dependency` is retired.)
 - `hard_rule_unparseable` — config issue.
 - `hard_rule_unanchored` — config issue.
 - `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).

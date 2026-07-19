@@ -67,7 +67,14 @@ has "$DV" "tanpa commit, tidak ada rollback point" && ok "diff-vault git-safety:
 has "$P/skills/diff-vault/references/report-format.md" "P1 = blocking" && ok "diff-vault OQ priority: P1/P2 tier gloss" || fail "diff-vault: bare P1/P2 codes"
 has "$P/skills/diff-vault/references/diff-procedure.md" "STATES the suggested bump" && ok "diff-vault version bump: rationale + glossed options" || fail "diff-vault bump: shape unmandated"
 BT="$P/skills/bind-codebase/references/binding-md-template.md"
-has "$BT" "Enum legend (keterangan contract" && ok "binding.md template: 4-enum legend" || fail "binding template: legend missing"
+SB="$P/scripts/stamp-binding-boilerplate.sh"
+has "$BT" "Enum legend (keterangan contract" && ok "binding.md template: enum-legend note (single source named)" || fail "binding template: legend note missing"
+# P2b: the 4-code gloss text single-sources in the stamp script (stamped into every emitted binding.md)
+has "$SB" "Enum legend (keterangan contract" && ok "stamp script: legend blockquote carried (stamped post-write)" || fail "stamp script: legend blockquote missing"
+has "$SB" "the vault is right; code must change to match" && ok "stamp script: KEEP_VAULT gloss" || fail "stamp script: KEEP_VAULT gloss missing"
+has "$SB" "the vault is wrong; the vault is updated to match code reality" && ok "stamp script: KEEP_CODE gloss" || fail "stamp script: KEEP_CODE gloss missing"
+has "$SB" "downgraded to an OQ; the binding gate OPENS" && ok "stamp script: DEFER gloss (truthful — gate opens)" || fail "stamp script: DEFER gloss missing"
+has "$SB" "split into sub-claims, each re-bound separately" && ok "stamp script: SPLIT gloss" || fail "stamp script: SPLIT gloss missing"
 has "$BT" "1-line rationale citing the evidence anchor" && ok "binding.md template: Suggested action carries rationale" || fail "binding template: bare suggested action"
 TT="$P/skills/generate-units/references/task-typing.md"
 has "$TT" "Apa status surplus ini?" && ok "PARTIAL_FIELDS_SURPLUS review: template authored (was unwritten)" || fail "surplus review: template still missing"
@@ -83,7 +90,7 @@ has "$EI" "Re-scope" && has "$EI" "KB partial disimpan" && ok "extract twice-fai
 has "$OL" "fabricated UX" && ok "contract: fabricated-UX clause (keterangan must match real mechanics)" || fail "contract: fabricated-UX clause missing"
 has "$IW" "the QUEUE is identical" && ok "resume prompt: Start-fresh gloss truthful (no invented skip-tracking)" || fail "resume prompt: fabricated gloss survives"
 has "$BM" "gate binding TERBUKA" && ok "DEFER gloss truthful (gate opens; units carry the OQ) — binding-mode" || fail "DEFER gloss: 'terblokir' fabrication survives in binding-mode"
-if grep -qF 'tetap terblokir' "$BM" "$HP" "$BT" "$OL" 2>/dev/null; then fail "DEFER 'terblokir' fabrication survives somewhere"; else ok "DEFER 'terblokir' fabrication purged from all 4 surfaces"; fi
+if grep -qF 'tetap terblokir' "$BM" "$HP" "$BT" "$OL" "$SB" 2>/dev/null; then fail "DEFER 'terblokir' fabrication survives somewhere"; else ok "DEFER 'terblokir' fabrication purged from all 5 surfaces (incl. stamp script)"; fi
 has "$TT" "BUKAN oleh generate-units" && ok "surplus review: vault updates routed to resolve-oq/diff-vault (no invented vault write)" || fail "surplus review: vault-mutation claim survives"
 has "$EI" "tidak ada auto-resume" && ok "extract Abort gloss truthful (no invented _meta/resume)" || fail "extract: _meta fabrication survives"
 # coverage misses closed

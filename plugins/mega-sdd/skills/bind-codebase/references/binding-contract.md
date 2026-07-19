@@ -192,7 +192,7 @@ When binding blocks:
 The full file template is the binding-md-template reference listed in `bind-codebase/SKILL.md` §Specialist references. Required sections:
 - Summary counts (claims_total, confirmed, conflict, oq)
 - Confirmed list (cite vault file:line + codebase evidence)
-- Conflicts table (id, vault claim, codebase reality, resolution_needed)
+- Conflict detail blocks — one `### CONFLICT-N` heading per conflict carrying **Vault claim** / **Codebase reality** (+ evidence anchor) / **Suggested action** lines; no summary table (the detail heading is the only machine-read AND the only human form)
 - OQ table (id, question, vault source)
 
 ## bound-vault structure

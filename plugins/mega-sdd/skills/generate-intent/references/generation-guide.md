@@ -21,7 +21,7 @@ Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The 7-fil
 - `02-architecture.md > UI components & patterns` sub-section: appears **only if** `HAS_UI_COMPONENTS = true`. Otherwise omitted entirely (no header, no placeholder, no OQ).
 - `06-constraints.md > Design system` top-level section: appears **only if** at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`. Within it, sub-blocks (Tokens / Accessibility / Voice & brand) appear only for the `true` flags.
 - `00-index.md > Reading paths`: the "UI/UX or FE Dev" path appears **only if** `02-architecture#ui-components` or `06-constraints#design-system` is present.
-- `00-index.md > Glossary`: design-system glossary entries (design tokens, design system, WCAG, a11y, semantic HTML) appear **only if** the term is actually used elsewhere in the vault.
+- `00-index.md > Glossary`: product-specific PRD terms only. The generic + design-system standard rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, design tokens, design system, WCAG, a11y, semantic HTML) live in the static `_meta/ai-consumer-guide.md` (installed by `scripts/copy-consumer-guide.sh` in Step 3) — never re-emitted per vault.
 
 **No shape-based defaulting.** A `PROJECT_SHAPE=mobile-app` project with no source coverage of design-system content produces a vault with no design-system sections. The skill never injects WCAG levels, color palettes, spacing scales, or component lists from prior knowledge.
 
@@ -125,7 +125,7 @@ Driven by `OUTPUT_MODE` (Step 0.7):
 | Entity descriptions (doc 03) | DBML only + 1-line `Purpose:` per entity. No prose narrative. | DBML + per-entity prose: Purpose, Key fields, Relations |
 | Flow blocks (doc 04) | Mermaid flowchart (the flow body) + DoD checklist per flow. Skip Preconditions/Postconditions sections (derivable from the diagram). Source line still required. | Actor / Trigger + Preconditions + Mermaid flow diagram + Postconditions + DoD + Failure handling + Source |
 | Decision blocks (doc 05) | 1-paragraph: `D-XXX: title — context in 1 sentence. Decision: <X>. Consequences: <Y, Z>. Source: PRD §...` | Multi-section: Status / Date / Context / Decision / Consequences (✅⚠️ bullets) / Source |
-| Glossary (doc 00) | Only product-specific terms from the PRD + acronyms that appear in the vault body. Drop generic IT terms (FK, RTO, RPO, SLO, ADR, NFR) unless they appear in the body. | Full glossary including generic IT terms |
+| Glossary (doc 00) | Product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms. | Same — the generic-rows drop is unconditional (both modes); the static guide carries the standard rows |
 | Open Questions per doc | 1-line: `OQ-{CODE}-{N} [P{1\|2\|3}]: <question> — resolve: <PIC/source>` | Multi-line: question + reasoning + impact + resolution path |
 | Sources section | Bullet list, no prose intro. | Same |
 | "Note" / "Why X" asides in body | Cut. Reasoning belongs in `05-decisions.md`. | Allowed when it adds context. |
@@ -151,7 +151,7 @@ Cut filler. No padding to look thorough. No amputation to look minimal. Output m
 
 **Placement discipline:** Every generated artifact leads with its densest load-bearing content — TL;DR, verdict/OQ counts, markers, citations, DoD, hard constraints — and pushes exposition, glossary, and append-only history to the tail. LLM consumers weight the start and end of a document most; the middle is the weakest position. Never let a growing history section or generic boilerplate occupy the opening region, and never dilute a load-bearing table with narrative between its header and its rows. Summaries with counts go first; anything a reader could skip goes last.
 
-**Glossary policy:** first-use acronym/jargon in any doc → define it inline at first occurrence (e.g., "DBML (Database Markup Language)"). `00-index.md` MUST have a **Glossary** for cross-doc terms: DBML, ADR, FK, NFR, RTO, RPO, MPIN, CIF, OTP, SLO, parameterized, plus product-specific PRD terms.
+**Glossary policy:** first-use acronym/jargon in any doc → define it inline at first occurrence (e.g., "DBML (Database Markup Language)"). `00-index.md` MUST have a **Glossary** carrying **product-specific PRD terms only** (e.g., MPIN, CIF, OTP, parameterized) plus one pointer line to the **Standard terms** table in `_meta/ai-consumer-guide.md`. Never re-emit the generic rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, or the design-system terms) into 00-index — they ship in the static guide, both output modes.
 
 **Cross-reference budget:** max 2 cross-refs to other section/doc per section. If more are needed, inline the essential information or move to an appendix. Cross-refs must be self-contained.
 
@@ -221,7 +221,10 @@ Source for "This vault covers": first sentence of the `## Phase N` section in `s
 4. **Reading paths by role** — Architect: 02 → 03 → 05 → 06; Dev (FE/BE): 02 → 03 → 04; QA: 04 (focus DoD); PM / Business Owner: 00 → 01 → 05.
 5. **Reading order** (full sequence with a 1-line purpose per doc).
 6. **Anti-hallucination rules** for dev / dev-AI consumers.
-7. **Glossary** — cross-doc terms & acronyms. `compact`: only product-specific PRD terms + acronyms in the body (drop FK, RTO, RPO, SLO, ADR, NFR, DBML, DoD, OQ unless used). `full`: full glossary.
+
+6.5. **Implementation Notes for AI Consumers** — vault metadata + the PER-VAULT specialization only (which unresolved P1 OQ clusters block which work areas + the layer-routing anchors for THIS vault) + the MANDATORY guide pointer; the generic protocol (halt YAML envelopes, mode cross-check checklists, parallel-work guidance, companion skills) is NEVER re-stated — it lives in `_meta/ai-consumer-guide.md`, installed by `copy-consumer-guide.sh`.
+
+7. **Glossary** — product-specific PRD terms only, BOTH modes, plus the pointer line to the guide's Standard-terms table; standard/generic terms live in `_meta/ai-consumer-guide.md`.
 8. **Open Questions roll-up** — categorized, sorted P1 → P2 → P3 within each (see roll-up structure below). `compact`: 1-line per OQ; `full`: multi-line per OQ.
 9. **Source documents** — files consumed.
 

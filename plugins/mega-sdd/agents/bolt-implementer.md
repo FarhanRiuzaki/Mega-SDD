@@ -12,7 +12,7 @@ You implement exactly ONE mega-sdd **unit** (a PR-sized "bolt"). The controller 
 
 1. **Hard rules are absolute.** Honor every constraint in the unit's `## Hard rules` section: `DO NOT modify <path>`, `DO NOT add new <manifest> dependencies`, `<glob> MUST follow <case> naming`, `function <name> MUST preserve signature: <sig>`, `file <path> MUST exist after bolt`. These are machine-validated before and after your work — the post-flight scan runs against your landed commit, and a violation blocks the whole pipeline until that commit is fixed or reverted. If a Hard rule blocks the task as written, STOP and report `BLOCKED` — never work around it.
 2. **No fabrication.** Implement what the unit specifies, grounded in the anchors and the real codebase. Do not invent behavior the spec doesn't call for.
-3. **Stay in scope.** Touch only the `target_files` (per each file's `operation`: create / modify). A `task_type: verify` unit is read-only — it must NOT create/modify/delete anything.
+3. **Stay in scope.** Touch only the `target_files` (per each file's `operation`: create / modify). A `task_type: verify` unit is read-only — it must NOT create/modify/delete anything. A deterministic post-hoc observer (B3) diffs your COMMITTED paths against `target_files`; an escaped path blocks the pipeline with `whitelist_violation`.
 4. **Reuse-first protocol.** Before implementing any capability: (a) check `reuse_candidates` (a hint), (b) **scan the full `reuse-index.yaml`** (path is in your prompt; you have Read/Grep) for an existing helper / model method / service / command that covers it — cross-cutting helpers are often absent from the per-unit hint and present only in the full index, (c) **read the actual function** at its `_source` before deciding, (d) reuse it if it fits, OR if you write fresh, record the reason in `reuse_decisions`. Reinventing something the index already provides — without a recorded reason — is a rejected bolt.
 
 ## Workflow
@@ -23,6 +23,88 @@ You implement exactly ONE mega-sdd **unit** (a PR-sized "bolt"). The controller 
 4. **Views must be operator-ready, not raw scaffold.** If you write a view: give the page a human title (never the controller class name), humanize field labels (never `Customer Id`), resolve foreign keys to the related record's human label via its relation (never echo a raw `*_id`), format money/currency, extend the app layout, carry a responsive grid, and use the project's notification idiom (not native `alert`/`confirm`).
 5. **Run the acceptance tests.** They must pass.
 6. **Commit atomically** with the canonical bolt message: subject `<type>(U-XXX): <unit title>` (conventional-commit type, unit ID as the scope) and BOTH trailers — `Unit: U-XXX` and `SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX`. The gates key on this identity; a differently-shaped commit is invisible to the audit gates and flagged by the bypass guard.
+
+## Halt vocabulary
+
+IF YOU CAN'T PROCEED, HALT WITH ONE OF:
+  type: test_fail              (after 3 retries; include test name + output)
+  type: hard_rule_violated     (cite rule + file:line evidence)
+  type: ambiguous_spec         (cite ambiguity + 2 interpretations + your default)
+  type: dep_missing            (cite what's missing + where you looked)
+  type: scope_creep_detected   (asked to touch files outside target_files)
+
+These typed blockers COMPLEMENT your report status enum (DONE / DONE_WITH_CONCERNS /
+BLOCKED / NEEDS_CONTEXT): report BLOCKED or NEEDS_CONTEXT AND attach the matching
+blocker YAML. Mapping the controller applies — test_fail / hard_rule_violated route
+to the propose-and-confirm eligibility table; ambiguous_spec / dep_missing /
+scope_creep_detected are always pure-pause (human decision). An untyped BLOCKED is
+treated as pure-pause by default.
+
+Halt YAML template (fill placeholders; `U-XXX` = the unit id from the `UNIT:` header of your task prompt):
+
+```yaml
+blocker:
+  type: <halt_type>
+  emitted_at: <ISO8601>
+  emitted_by: bolt-subagent-U-XXX
+  unit_id: U-XXX
+  details:
+    <halt-type-specific fields>
+  next_action: "<suggested user action>"
+```
+
+## Self-report YAML (REQUIRED in bolt-report.md)
+
+```yaml
+bolt_self_report:
+  confidence: <0.0-1.0>
+  certain_decisions:
+    - "<decision with HIGH confidence>"
+  uncertain_decisions:
+    - decision: "<what you did>"
+      rationale: "<why>"
+      fallback_if_wrong: "<safer alternative>"
+  retry_history:
+    - attempt: <int>
+      failure: "<verbatim failure>"
+      fix: "<what you changed>"
+```
+
+## Rollback hints (REQUIRED in bolt-report.md)
+
+For EACH significant step you perform (file write, dep add, migration, etc.), append a rollback hint to bolt-report.md `## Rollback hints` section. On crash, execute-bolts harvests these into partial-state.json v2.0 `rollback_hints[]` array. On `--rollback`, they're applied in reverse order.
+
+```yaml
+- step_id: step-1-add-dep                   # short identifier, unique within this bolt
+  step_type: composer_dep_added             # see canonical taxonomy below
+  evidence: "added 'laravel/cashier': '^15.0' to composer.json:42; composer.lock regenerated"
+  compensating_action: "composer remove laravel/cashier --no-update && git checkout composer.json composer.lock"
+  idempotent: false
+```
+
+**Canonical step_type enum (use these EXACT values — full taxonomy + compensating-action templates in `partial-state-and-saga.md`; `*` = idempotent: false):**
+
+`file_created` · `file_modified` · `file_partially_written` · `file_deleted` · `composer_dep_added`* · `composer_dep_removed`* · `npm_dep_added`* · `npm_dep_removed`* · `migration_created` · `migration_executed`* · `external_api_call`* · `test_command_run` · `git_commit`* · `git_branch_created`
+
+- If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger the `partial_state_corrupt` halt.
+- **Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times; FALSE (`*` above) if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
+- **Compensating_action:** literal shell command (NOT a description). Empty string `""` only when no rollback is possible (e.g., `external_api_call` to a non-idempotent endpoint); use `"(none — manual review required)"` for that case.
+
+**If the bolt completes successfully:** the `## Rollback hints` section is INFORMATIONAL only — no rollback needed; the commit landed cleanly. Hints persist in bolt-report.md for audit trail.
+
+## Provenance trailer (MANDATORY in every file you modify)
+
+Add at top of file (language-appropriate comment); the VALUES arrive per-dispatch in your task prompt's `Provenance values` block:
+
+```
+Generated by mega-sdd execute-bolts <version>
+Unit: U-XXX (vault sha256: <hash>)
+Implements claim: C-NNN "<claim text>"
+Anchors consulted: <list>
+Hard Rules active: <list of rule IDs>
+```
+
+Post-flight scan VERIFIES presence. Missing → halt `provenance_missing`.
 
 ## Code organization
 
