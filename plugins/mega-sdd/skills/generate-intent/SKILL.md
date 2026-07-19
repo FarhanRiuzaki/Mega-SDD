@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.11.0
+version: 2.12.0
 description: Spec-driven intent generation — convert a PRD/BRD (+ Figma) OR a free-text brief OR an extract-intelligence knowledge base into a 7-file anti-hallucination vault (+ vault.json). Mode A (PRD parse) vs Mode B (free-text Q&A) auto-detected from the positional argument shape; `--from-prompt` forces Mode B; `--kb=<path>` is the legacy-rebuild KB sub-mode; `--phase=N` scopes a phased KB rebuild; `--scope=<id>` selects one scope of a multi-scope PRD. Every OQ is tagged `category` (business | tech) + `resolution_mode` + `classification_confidence`. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -97,6 +97,7 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 ├── 04-flows.md          ← User + system flows (per-layer addressable) + per-flow Definition of Done
 ├── 05-decisions.md      ← ADR-style: context → decision → consequences
 ├── 06-constraints.md    ← Technical, business, non-functional
+├── _meta/ai-consumer-guide.md ← static copy (script — `copy-consumer-guide.sh`; never model-rendered)
 └── vault.json           ← Machine-readable manifest (derived index; markdown stays human-authoritative)
 ```
 
@@ -126,7 +127,7 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
 1. **Step 0–0.9 — Setup (MANDATORY before any generation).** Confirm + create `OUTPUT_DIR`; set `IMPLEMENTATION_MODE` (`new` | `existing`, with `mode_migrate_after` for new); set `PRD_STATUS` (`final` | `draft`); set `OUTPUT_MODE` (`compact` | `full`); squad partition (single vs ≥2); Step 0.8 scan-aware context loading (probe codebase-map / conventions / KB; auto-route to scan-codebase if accepted); Step 0.9 scope detection + PRD filtering (picker / retrofit bridge). Full procedures, runtime ordering note (0.8 runs before 0.9), the squad-partition Q&A, and the three scope halts → `references/setup-flow.md`.
 2. **Step 1 — Inventory and read.** Locate inputs (sandbox `/mnt/user-data/uploads/` vs local CWD/ask); route each file to the right reader (PDF / DOCX / MD-TXT); for any Figma URL, load Figma MCP via `ToolSearch query:"figma"` — **if no MCP and no screenshots, ask before proceeding; never invent UI structure.** Read every input fully.
 3. **Step 2 — Extract before writing.** Build an internal map (product, project shape, components, entities, flows, decisions, constraints, gaps, optional design-system flags `HAS_UI_COMPONENTS` / `HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`). Infer + **confirm `PROJECT_SHAPE`** with the user (Project Shape Registry → `references/detection-and-shapes.md`). Gap-handling depends on `PRD_STATUS`: `draft` may pause when gaps > 10; `final` never pauses — every gap goes to OQs.
-4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **`vault.json`** (with the advisory lock) + multi-squad artifacts if applicable.
+4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **Run** `bash $PLUGIN_ROOT/scripts/copy-consumer-guide.sh --vault <OUTPUT_DIR>` — installs the static `_meta/ai-consumer-guide.md` (script-copied, never model-rendered; `$PLUGIN_ROOT` per `references/generation-guide.md §Reading the templates`). Then **`vault.json`** (with the advisory lock) + multi-squad artifacts if applicable.
 5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-contract.md §constitution`.
 6. **Step 3.5 — OQ auto-classification** on every generated OQ (see "OQ classification" above) → validation gate → `references/generation-guide.md`.
 7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus), the drafted 7 vault files, and the source (PRD/brief/KB). Materialize its findings BEFORE finalize:

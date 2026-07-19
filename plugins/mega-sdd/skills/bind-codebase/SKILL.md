@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.9.0
+version: 2.10.0
 description: Validate a vault against codebase-map.md (primary ground truth) and the knowledge base (secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim, an Implementation State Map, tech-OQ auto-resolution, and suggested unit hard rules. BLOCKS downstream unit generation while conflicts remain unresolved. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -63,9 +63,13 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 **3. Aggregate counts.** `claims_total`, `confirmed`, `conflict`, `oq`.
 
-**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs). The frontmatter's `binding_metadata` block carries `codebase_map_provenance` (Step 1) AND `head` — the current `git rev-parse HEAD` (or `null` outside git), written ONCE here; Step 4.5 copies both into `binding.json` verbatim. State Map rows whose state comes from a truncation/heuristic condition end their Anchor cell with the `[reason: <enum>]` token (S4 — `truncated_section` is mandatory when the truncation exception fired; generate-units keys its direct-probe rule on the derived `state_reason`), and RESOLVED `### CONFLICT-N` blocks carry their `- **Claim**: C-NNN` line — both per the template grammar.
+**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs). The model writes NO banner and NO enum legend — both are stamped by the Step 4.5 script. Conflicts render as `### CONFLICT-N` detail blocks ONLY (each opening with its `- **Vault claim**:` / `- **Codebase reality**:` pair) — the machine-read form is the only form; there is no summary table. The frontmatter's `binding_metadata` block carries `codebase_map_provenance` (Step 1) AND `head` — the current `git rev-parse HEAD` (or `null` outside git), written ONCE here; Step 4.5 copies both into `binding.json` verbatim. State Map rows whose state comes from a truncation/heuristic condition end their Anchor cell with the `[reason: <enum>]` token (S4 — `truncated_section` is mandatory when the truncation exception fired; generate-units keys its direct-probe rule on the derived `state_reason`), and RESOLVED `### CONFLICT-N` blocks carry their `- **Claim**: C-NNN` line — both per the template grammar.
 
-**4.5. Derive `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
+**4.5. Stamp boilerplate, then derive `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
+**Run** `scripts/stamp-binding-boilerplate.sh --vault <vault>` FIRST — injects the
+do-not-hand-edit banner + the keterangan enum legend into `binding.md` (static,
+idempotent, parser-invisible — the legend gloss text single-sources in that
+script; the model never types either block). THEN
 **Run** `scripts/derive-binding-json.sh --vault <vault>` — deterministic
 generator: `binding.json` is derived FROM `binding.md` (never hand-written —
 the State Map rows, Confirmed Claims list, CONFLICT blocks, and
@@ -91,8 +95,8 @@ blocker:
     conflict_count: N
     conflicts:
       - id: CONFLICT-1   # canonical conflict-ID form (the token the gate + validators read); C-NNN is the CLAIM-ID namespace
-        vault_claim: <verbatim from binding.md>
-        codebase_reality: <verbatim from binding.md>
+        vault_claim: <verbatim from the ### CONFLICT-N detail block's `- **Vault claim**:` line>
+        codebase_reality: <verbatim from the detail block's `- **Codebase reality**:` line (incl. the evidence anchor)>
         suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
   next_action: "Run /mega-sdd:resolve-oq --binding <binding.md>"
 ```

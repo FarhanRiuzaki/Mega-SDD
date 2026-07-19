@@ -30,7 +30,7 @@ Verify every doc has:
 - [ ] If `compact`: doc 04 Preconditions/Postconditions sections cut; Steps + DoD remain detailed.
 - [ ] If `compact`: doc 05 ADRs use the 1-paragraph format, not the multi-section block.
 - [ ] If `compact`: OQ entries are 1-line, not multi-line elaboration.
-- [ ] If `compact`: Glossary contains only terms used in the body + product-specific terms; generic IT terms dropped.
+- [ ] Glossary (BOTH modes — the drop is unconditional): product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms; generic/standard rows never re-emitted.
 - [ ] If `full`: every section per template scaffold is filled, including prose narrative, JSON examples, multi-bullet consequences.
 
 **Anti-halu invariants (mandatory in BOTH modes — never cut even in compact):**
@@ -63,10 +63,10 @@ Verify every doc has:
 - [ ] All four metadata flags (`project_shape`, `implementation_mode`, `prd_status`, `output_mode`) match `00-index.md` Vault Lock Status.
 - [ ] Design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) match the values used to drive Step 3 conditional generation.
 
-**Halt protocol & implementation notes:**
-- [ ] `00-index.md` contains "Halt protocol for autonomous runs" sub-section under Implementation Notes for AI Consumers (per template).
-- [ ] `00-index.md` contains "Parallel-work guidance while P1s are unresolved" sub-section.
-- [ ] `00-index.md` contains "Companion skills for vault evolution" sub-section pointing to `resolve-oq` / `diff-vault` / `detect-drift`.
+**Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
+- [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the `copy-consumer-guide.sh` Run in Step 3 installed it — script-copied, never model-rendered).
+- [ ] `00-index.md` Implementation Notes carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in 00-index is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
+- [ ] `00-index.md` Glossary carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
 
 **Design-system grounding (only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.

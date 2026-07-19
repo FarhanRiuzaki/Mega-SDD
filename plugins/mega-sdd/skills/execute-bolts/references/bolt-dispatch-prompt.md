@@ -8,14 +8,12 @@ Canonical prompt template for dispatching bolt subagent via superpowers `executi
 
 - Template structure
 - Unit body (verbatim)
-- Halt vocabulary (pre-loaded for clean halts)
-- Self-assessment vocabulary (REQUIRED in bolt-report.md)
+- Contracts (agent-carried) — halt / self-report / rollback / provenance / atomic
+- Provenance values (per-dispatch)
+- Legacy dispatch note (order-3 fallback)
 - Acceptance-test provenance NOTE
-- Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section)
-- Atomic discipline (scaffolded, not assumed)
 - Reuse index (PRIMARY reuse lookup surface — T1 line + T2 slice)
 - Anti-context (negative space = freedom + protection)
-- Provenance trailer (MANDATORY in every modified file)
 - Upstream bolts (depends_on chain — 1-line summary each)
 - Framework pack rules (filtered by your target_files glob match)
 - Constitution clauses (referenced by your vault_source)
@@ -45,50 +43,38 @@ TIER 1 — Always read (target ≤2KB)
 ## Unit body (verbatim)
 <full unit frontmatter + body — non-negotiable>
 
-## Halt vocabulary (pre-loaded for clean halts)
+## Contracts (agent-carried)
 
-IF YOU CAN'T PROCEED, HALT WITH ONE OF:
-  type: test_fail              (after 3 retries; include test name + output)
-  type: hard_rule_violated     (cite rule + file:line evidence)
-  type: ambiguous_spec         (cite ambiguity + 2 interpretations + your default)
-  type: dep_missing            (cite what's missing + where you looked)
-  type: scope_creep_detected   (asked to touch files outside target_files)
+Halt / self-report / rollback / provenance / atomic contracts: carried by your system prompt (agents/bolt-implementer.md, mega-sdd v<plugin.json version at dispatch>)
 
-These typed blockers COMPLEMENT your report status enum (DONE / DONE_WITH_CONCERNS /
-BLOCKED / NEEDS_CONTEXT): report BLOCKED or NEEDS_CONTEXT AND attach the matching
-blocker YAML. Mapping the controller applies — test_fail / hard_rule_violated route
-to the propose-and-confirm eligibility table; ambiguous_spec / dep_missing /
-scope_creep_detected are always pure-pause (human decision). An untyped BLOCKED is
-treated as pure-pause by default.
+> **Assembly note (controller):** fill `<plugin.json version at dispatch>` from
+> `plugin.json` under the resolved plugin root (`resolve-plugin-root.sh` — Step 4.5
+> already shells out). The line is logged as-is to `dispatch-prompt.md`: a forensic
+> reader resolves the exact contract text by name + version (agent files are
+> versioned in the plugin cache and git — the M-09 sole-copy trade, deterministic
+> resolution). The constants themselves are NEVER re-embedded here — the
+> bolt-implementer system prompt is their single prompt-side source and cannot be
+> truncated by the T2 budget.
 
-Halt YAML template (fill placeholders):
-```yaml
-blocker:
-  type: <halt_type>
-  emitted_at: <ISO8601>
-  emitted_by: bolt-subagent-U-XXX
+## Provenance values (per-dispatch)
+
+The VALUES the agent fills into the agent-carried trailer shape (its system
+prompt §Provenance trailer) in every modified file:
+
+```
+Provenance values:
   unit_id: U-XXX
-  details:
-    <halt-type-specific fields>
-  next_action: "<suggested user action>"
+  vault_sha256: <hash>
+  claims: C-NNN "<claim text>" (one line per implemented claim)
+  anchors_consulted: <list>
+  hard_rules_active: <list of rule IDs>
 ```
 
-## Self-assessment vocabulary (REQUIRED in bolt-report.md)
-
-```yaml
-bolt_self_report:
-  confidence: <0.0-1.0>
-  certain_decisions:
-    - "<decision with HIGH confidence>"
-  uncertain_decisions:
-    - decision: "<what you did>"
-      rationale: "<why>"
-      fallback_if_wrong: "<safer alternative>"
-  retry_history:
-    - attempt: <int>
-      failure: "<verbatim failure>"
-      fix: "<what you changed>"
-```
+> **Legacy dispatch (order-3 fallback ONLY, per `superpowers-bridge.md`):** the generic
+> superpowers executor's system prompt lacks the contracts — Read
+> `agents/bolt-implementer.md` and inline its §Halt vocabulary / §Self-report /
+> §Rollback hints / §Provenance trailer sections verbatim into the prompt before
+> dispatching.
 
 ## Acceptance-test provenance NOTE
 
@@ -112,37 +98,6 @@ execute-bolts injects this NOTE into the dispatch prompt when the unit's `accept
 
 The NOTE is OMITTED for units with strong provenance (the default for newly generated units). Legacy units (no `_authored_by:` field) are treated as `same-pass` and trigger the NOTE.
 
-## Rollback hints (REQUIRED in bolt-report.md `## Rollback hints` section)
-
-For EACH significant step you perform (file write, dep add, migration, etc.), append a rollback hint to bolt-report.md `## Rollback hints` section. On crash, execute-bolts harvests these into partial-state.json v2.0 `rollback_hints[]` array. On `--rollback`, they're applied in reverse order.
-
-```yaml
-- step_id: step-1-add-dep                   # short identifier, unique within this bolt
-  step_type: composer_dep_added             # see canonical taxonomy below
-  evidence: "added 'laravel/cashier': '^15.0' to composer.json:42; composer.lock regenerated"
-  compensating_action: "composer remove laravel/cashier --no-update && git checkout composer.json composer.lock"
-  idempotent: false
-```
-
-**Canonical step_type enum (use these EXACT values — full taxonomy + compensating-action templates in `partial-state-and-saga.md`; `*` = idempotent: false):**
-
-`file_created` · `file_modified` · `file_partially_written` · `file_deleted` · `composer_dep_added`* · `composer_dep_removed`* · `npm_dep_added`* · `npm_dep_removed`* · `migration_created` · `migration_executed`* · `external_api_call`* · `test_command_run` · `git_commit`* · `git_branch_created`
-
-- If a step doesn't fit any of these, use `file_modified` (safest fallback) OR omit the rollback hint (less safe). Unknown step_type values in partial-state.json trigger the `partial_state_corrupt` halt.
-- **Idempotent flag:** TRUE if the compensating_action is safe to re-run multiple times; FALSE (`*` above) if running the action twice could compound errors (composer cache, DB state, external state). FALSE values prompt user confirmation per-action during `--rollback`.
-- **Compensating_action:** literal shell command (NOT a description). Empty string `""` only when no rollback is possible (e.g., `external_api_call` to a non-idempotent endpoint); use `"(none — manual review required)"` for that case.
-
-**If the bolt completes successfully:** the `## Rollback hints` section is INFORMATIONAL only — no rollback needed; the commit landed cleanly. Hints persist in bolt-report.md for audit trail.
-
-## Atomic discipline (scaffolded, not assumed)
-
-- THIS BOLT = ONE COMMIT — message format + BOTH commit trailers (`Unit:` + `SDD-PROVENANCE:`)
-  per your agent contract (your system prompt carries the canonical format; the gates key on
-  those trailers — a dispatch whose system prompt lacks it consults `agents/bolt-implementer.md` :25)
-- DO NOT touch files outside the unit's `target_files` — a deterministic post-hoc
-  observer (B3) diffs your COMMITTED paths against the whitelist; an escaped path
-  blocks the pipeline with `whitelist_violation`
-
 ## Reuse index (PRIMARY reuse lookup surface — T1 line + T2 slice)
 
 T1 (always, one line):
@@ -162,19 +117,6 @@ DO NOT MODIFY: <list of LOCKED files from data-mutation-policy.md>
 DO NOT REPLICATE: <list of KB anti-patterns relevant to this unit's domain>
 DO NOT WRITE: <forbidden patterns from framework pack — e.g., $(document).ready()>
 DO NOT COMMIT IF: <preconditions — e.g., test failures, hard rule violations, missing provenance trailer>
-
-## Provenance trailer (MANDATORY in every modified file)
-
-Add at top of file (language-appropriate comment):
-```
-Generated by mega-sdd execute-bolts <version>
-Unit: U-XXX (vault sha256: <hash>)
-Implements claim: C-NNN "<claim text>"
-Anchors consulted: <list>
-Hard Rules active: <list of rule IDs>
-```
-
-Post-flight scan VERIFIES presence. Missing → halt `provenance_missing`.
 
 ═══════════════════════════════════════════
 TIER 2 — Conditional context (target ≤10KB total)
@@ -310,7 +252,7 @@ The budget dict, the priority-ordered T2 section list, the per-section truncatio
 - Anti-context block populated from actual data sources (data-mutation-policy.md, KB, framework pack) — NEVER invented
 - Confidence labels MUST cite source (binding C-NNN OR KB inference OR heuristic default with rationale)
 - Validation hints MUST be specific commands (not "run tests")
-- Provenance trailer template MUST include actual values (unit_id, vault_sha256, claim_id, anchors, rule_ids), not placeholders
+- The Provenance values block MUST carry actual values (unit_id, vault_sha256, claim_id, anchors, rule_ids), not placeholders — the agent-carried trailer shape (bolt-implementer §Provenance trailer) is filled from it
 
 ## Logging
 

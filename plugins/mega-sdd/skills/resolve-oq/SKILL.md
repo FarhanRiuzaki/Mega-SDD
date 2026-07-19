@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.5.0
+version: 2.6.0
 description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, and bumps version + Changelog. Also resolves CONFLICT entries from a binding.md (`--binding`). Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -78,7 +78,7 @@ No invention; tag preservation; full auditability (Changelog + per-OQ markers = 
 ## Specialist references (load on demand)
 
 - **`references/interactive-walk.md`** — the full Step 0–5 procedure: vault location + lock check, resume, scope, parse, per-OQ display + 4-action menu, per-action state transitions, Resolve/OOS/Defer/Skip apply logic, cross-cutting multi-doc landing, promoted-entry formatting per target doc, the vault.json lock contract, the version + Changelog template, the self-check list, and the summary format.
-- **`references/binding-mode.md`** — the `--binding <binding.md>` flow: Conflicts table walk (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT), propagated deferred-OQ walk, write-back to `binding.md` + `vault.json`, hand-off, and hard rails.
+- **`references/binding-mode.md`** — the `--binding <binding.md>` flow: CONFLICT detail-block walk (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT), propagated deferred-OQ walk, write-back to `binding.md` + `vault.json`, hand-off, and hard rails.
 - **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, the `AskUserQuestion` presentation, audit trail, and the override self-correction loop.
 - **`references/auto-memory-handoff.md`** — non-interactive machinery: the `--auto` interactive-vs-auto step table, the memory layer reads/writes, the `--auto-accept-from-memory` / `--confidence-min` / `--non-interactive` flags (convergence-loop use), scope-context surfacing, and the handoff YAML emitted under `--auto`.
 

@@ -19,11 +19,9 @@ Assembly logic for the bolt-dispatch prompt. Implements the 10 AI-executor princ
 ## TIER 1 (always included, target ≤2KB)
 
 - Unit body (frontmatter + body sections).
-- Halt vocabulary block (halt types + YAML templates).
-- Self-assessment vocabulary template.
-- Atomic commit discipline reminder.
+- **Contracts pointer line** (halt / self-report / rollback / provenance / atomic — agent-carried by the bolt-implementer system prompt; one line naming `agents/bolt-implementer.md` + the plugin version at dispatch; see `bolt-dispatch-prompt.md §Contracts`). The constant blocks themselves are NEVER re-embedded in T1.
+- **Provenance values block** (per-unit: unit_id, vault sha256, claim ids + texts, anchors, active Hard-rule ids — the values the agent fills into its agent-carried trailer shape).
 - Anti-context block (DO NOT MODIFY / DO NOT REPLICATE / DO NOT WRITE / DO NOT COMMIT IF).
-- Provenance trailer template.
 - **Acceptance-test provenance NOTE:** if the unit's `acceptance_test._authored_by` is `same-pass` OR `adversarial-review-failed` (weak blind-spot signals per `generate-units/references/adversarial-test-prompt.md`), append a NOTE warning the bolt subagent the acceptance_test may have missed bugs the implementation introduces. The subagent's self-assessment is instructed to flag `acceptance_test_concern: <details>` if the implementation passes the test but feels under-validated. The NOTE template lives in the dispatch-prompt template (listed in SKILL.md).
 - **Reuse index path (ALWAYS — even when `reuse_candidates` is empty):**
   `Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup surface; scan it for any capability you are about to write (you have Read/Grep). The reuse_candidates above are a fast-path hint, NOT the boundary.`

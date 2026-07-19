@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# test-p2a-consumer-guide.sh — batch2 P2a (spec 2026-07-19-batch2-derive-and-diet.md):
+# the 00-index generic consumer spine ships as a STATIC guide installed by script —
+# zero model output tokens, byte-identical across vaults.
+#
+#   1  shipped guide exists + carries the moved content (halt YAML, parallel-work,
+#      companion skills, standard terms) — moved, not lost
+#   2  templates/00-index.md no longer carries the moved blocks (negative pins) but
+#      keeps Anti-hallucination rules + the Implementation Notes heading + the
+#      _meta/ai-consumer-guide.md pointer
+#   3  SKILL.md + generation-guide name copy-consumer-guide.sh; self-check pins
+#      rewritten (all three spine pins → guide-existence + pointer checks)
+#   4  EMPIRICAL: copy-consumer-guide.sh installs a cksum-identical copy; second
+#      run idempotent (byte-identical); exit 0
+#
+# Run: bash tests/boilerplate-diet/test-p2a-consumer-guide.sh
+set -uo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+P="${ROOT}/plugins/mega-sdd"
+GUIDE="$P/skills/generate-intent/references/templates/ai-consumer-guide.md"
+IDX="$P/skills/generate-intent/references/templates/00-index.md"
+SKILL="$P/skills/generate-intent/SKILL.md"
+GG="$P/skills/generate-intent/references/generation-guide.md"
+SC="$P/skills/generate-intent/references/self-check.md"
+CP="$P/scripts/copy-consumer-guide.sh"
+
+FAILED=0
+ok()   { printf '  \342\234\223 %s\n' "$*"; }
+fail() { printf '  \342\234\227 FAIL: %s\n' "$*"; FAILED=1; }
+WORK="$(mktemp -d 2>/dev/null || mktemp -d -t p2a)"
+trap 'rm -rf "$WORK"' EXIT
+
+echo "== P2a: consumer guide is shipped static, script-installed =="
+
+# ── 1: shipped guide carries the moved content ──
+[ -f "$GUIDE" ] && ok "1: shipped guide exists" || { fail "1: shipped guide missing"; }
+grep -qF 'blocker:' "$GUIDE" && grep -qF 'resolver_route' "$GUIDE" \
+  && ok "1: halt-YAML examples moved into the guide" || fail "1: halt-YAML examples lost"
+grep -qF 'blockers:' "$GUIDE" && ok "1: multi-blocker array example present" || fail "1: array example lost"
+grep -qF 'oq_blocker' "$GUIDE" && grep -qiF 'backward compat' "$GUIDE" \
+  && ok "1: backward-compat note moved" || fail "1: backward-compat note lost"
+grep -qF 'Parallel-work' "$GUIDE" && ok "1: parallel-work guidance moved" || fail "1: parallel-work guidance lost"
+grep -qF 'resolve-oq' "$GUIDE" && grep -qF 'diff-vault' "$GUIDE" && grep -qF 'detect-drift' "$GUIDE" \
+  && ok "1: companion-skills routing moved" || fail "1: companion-skills routing lost"
+grep -qF 'MANDATORY before writing/modifying any code' "$GUIDE" \
+  && ok "1: mode cross-check checklists moved" || fail "1: cross-check checklists lost"
+grep -qF '| ADR |' "$GUIDE" && grep -qF '| DBML |' "$GUIDE" && grep -qF '| SLO |' "$GUIDE" \
+  && ok "1: standard-terms generic rows moved" || fail "1: standard-terms rows lost"
+grep -qF 'do not hand-edit' "$GUIDE" && ok "1: static-copy header note present" || fail "1: static header note missing"
+
+# ── 2: 00-index template diet landed ──
+if grep -qF 'resolver_route' "$IDX"; then fail "2: 00-index template still carries the halt-YAML spine (resolver_route)"; else ok "2: halt-YAML spine gone from 00-index template"; fi
+if grep -qF 'blockers:' "$IDX"; then fail "2: blockers: fence survives in 00-index template"; else ok "2: no blockers: fence in 00-index template"; fi
+if grep -qF 'Parallel-work guidance while P1s are unresolved' "$IDX"; then fail "2: parallel-work section survives in template"; else ok "2: parallel-work section gone from template"; fi
+if grep -qF 'Companion skills for vault evolution' "$IDX"; then fail "2: companion-skills section survives in template"; else ok "2: companion-skills section gone from template"; fi
+grep -qF 'Anti-hallucination rules' "$IDX" && ok "2: Anti-hallucination rules KEPT in template" || fail "2: Anti-hallucination rules lost from template"
+grep -qF 'Implementation Notes for AI Consumers' "$IDX" && ok "2: Implementation Notes heading KEPT (kb_module_graph home)" || fail "2: Implementation Notes heading lost"
+grep -qF '_meta/ai-consumer-guide.md' "$IDX" && ok "2: guide pointer present in template" || fail "2: guide pointer missing from template"
+grep -qF 'kb_module_graph' "$IDX" && ok "2: kb_module_graph slot survives" || fail "2: kb_module_graph slot lost"
+if grep -qF '| ADR |' "$IDX"; then fail "2: generic glossary rows survive in template"; else ok "2: generic glossary rows gone (guide pointer instead)"; fi
+
+# ── 3: workflow + self-check wiring ──
+grep -qF 'copy-consumer-guide.sh' "$SKILL" && ok "3: SKILL Step 3 runs copy-consumer-guide.sh" || fail "3: SKILL does not name the copy script"
+grep -qF 'copy-consumer-guide.sh' "$GG" && ok "3: generation-guide names the copy script" || fail "3: generation-guide does not name the copy script"
+grep -qF 'ai-consumer-guide.md' "$SKILL" && ok "3: SKILL output contract shows _meta/ai-consumer-guide.md" || fail "3: output contract missing the guide"
+grep -qF '_meta/ai-consumer-guide.md' "$SC" && ok "3: self-check pins guide existence" || fail "3: self-check guide-existence pin missing"
+grep -qF 'resolver_route' "$SC" && ok "3: self-check carries the no-halt-YAML-in-00-index regression check" || fail "3: self-check regression check missing"
+# all three legacy spine pins rewritten (the old sub-section-presence checks are gone)
+LEGACY=0
+grep -qF 'contains "Halt protocol for autonomous runs"' "$SC" && { fail "3: legacy Halt-protocol spine pin survives in self-check"; LEGACY=1; }
+grep -qF 'contains "Parallel-work guidance' "$SC" && { fail "3: legacy Parallel-work spine pin survives in self-check"; LEGACY=1; }
+grep -qF 'contains "Companion skills for vault evolution"' "$SC" && { fail "3: legacy Companion-skills spine pin survives in self-check"; LEGACY=1; }
+[ "$LEGACY" = "0" ] && ok "3: all three spine pins rewritten to guide-existence + pointer checks"
+# generation-guide no longer mandates the generic glossary rows per-vault
+if grep -qE 'MUST have a \*\*Glossary\*\* for cross-doc terms: DBML' "$GG"; then fail "3: generation-guide still mandates generic rows in 00-index"; else ok "3: generation-guide glossary policy rewritten (no re-emitted generic rows)"; fi
+
+# ── 4: EMPIRICAL — deterministic install, cksum identity, idempotent ──
+V="$WORK/vault"; mkdir -p "$V"
+FAKE_HOME="$WORK/home"; mkdir -p "$FAKE_HOME"   # neutralize any real plugin cache (resolver falls back to repo root)
+HOME="$FAKE_HOME" bash "$CP" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 0 ] && ok "4: copy script exit 0" || fail "4: copy script failed (rc=$RC)"
+[ -f "$V/_meta/ai-consumer-guide.md" ] && ok "4: _meta/ai-consumer-guide.md installed" || fail "4: guide not installed"
+S1="$(cksum < "$GUIDE")"; S2="$(cksum < "$V/_meta/ai-consumer-guide.md" 2>/dev/null || echo differ)"
+[ "$S1" = "$S2" ] && ok "4: installed copy cksum-identical to shipped guide" || fail "4: copy differs from shipped guide"
+HOME="$FAKE_HOME" bash "$CP" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
+S3="$(cksum < "$V/_meta/ai-consumer-guide.md" 2>/dev/null || echo differ)"
+[ "$RC" -eq 0 ] && [ "$S1" = "$S3" ] && ok "4: second run idempotent (byte-identical, exit 0)" || fail "4: re-run not idempotent (rc=$RC)"
+
+if [ "$FAILED" -eq 0 ]; then echo "ALL P2A PINS OK"; exit 0; else echo "P2A pins FAILED"; exit 1; fi
