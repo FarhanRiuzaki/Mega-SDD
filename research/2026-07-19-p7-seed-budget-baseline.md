@@ -27,12 +27,43 @@ Reproduce: `bash plugins/mega-sdd/scripts/measure-seeds.sh --vault <vault> --pac
 2. **generate-units' bound/ portion is a ~2× copy of the vault docs — low absolute bytes, and its derivation is already 0 model-tokens (script lane).** Its cost is architectural, not tokens, yet it is the only P7 item that touches the moat belt. → **bound/ retirement is LAST (or deferred)**, per the advisor.
 3. **resolve-oq's multi-pass re-read is already collapsed** by `all-priorities` (one walk, P1→P2→P3; SKILL Step 0.6). The stakeholder walk is inherently interactive and cannot be collapsed further without breaking no-fabrication. → **oq-queue = verify-then-check-off, do NOT rebuild** (rebuilding is the over-engineering the WAJIB bar forbids).
 
+## The cache-economics correction (why bytes were the wrong unit)
+
+Ranking by **bytes** put bind-codebase #1. But bytes are the wrong unit: a FRESH
+subagent seed is paid at full 1.0x, while a RESIDENT main-context load is cached
+at ~0.1x after turn 1 (research §2: cache_read is 91.9% of raw at 0.1x; subagent
+seeding is the largest real-dollar bucket, 50.3M of 100.7M). Re-ranked by
+**cost-units = tokens × cache-weight** (instrument `--weight fresh|resident`):
+
+| consumer | cache | cost-units | share | why |
+|---|---|---|---|---|
+| **phase-advisor** | fresh 1.0x | — | **top** | dispatched fresh; the whole-map paste was paid in full |
+| bind-codebase | resident 0.1x | — | 2nd | map/pack cached after turn 1 |
+| generate-units / resolve-oq | resident 0.1x | — | low | cached |
+
+So the **phase-advisor seed is the top real-dollar lever AND the safe one** — the
+advisor already has Read/Grep/Glob, so "seed not boundary" is mechanical, not a
+pledge. That reordered P7: advisor-bundle first; the bind-map *precomputed* slice
+is **dropped entirely** (its seed-not-boundary test can't distinguish slice-
+regression from inherent bind limits — the tell that it is the wrong shape); the
+safe bind-map lever is a *later* grep-on-demand commit (full map stays on disk,
+nothing removed from searchable → moat safe by construction, measured on its own
+cache profile).
+
 ## The measured P7 order (5.1.x, per-item commits)
 
-- **5.1.0** — this instrument + baseline (shipped).
-- **5.1.1** — bind-slice + advisor evidence-bundles (the codebase-map/pack cut — biggest measured seed).
-- **5.1.2** — kb-claims digest (the legacy-rebuild KB seed).
-- **5.1.x (last / deferred)** — bound/ retirement (refusal re-homed as a standalone gate FIRST; state.json binding-clean signal must already carry "ready for units"; generate-units task_type reconstructed from binding.json alone).
+- **5.1.0** — instrument + baseline (shipped).
+- **5.1.1** — **advisor evidence-bundle** (`build-advisor-bundle.sh`): the dispatch
+  passes a compact sha-stamped SEED (verdicts + anchors + map/vault/KB **paths**)
+  instead of the whole-map paste; the advisor Greps the on-disk map past it. Ships
+  the seed-not-boundary CONFLICT test + the instrument's cost-unit weighting. (shipped)
+- **5.1.2** — kb-claims digest (the legacy-rebuild KB seed; fresh where it seeds subagents).
+- **5.1.x (later)** — bind-map **grep-on-demand** (NOT a precomputed slice): bind
+  Greps/Reads the on-disk map per claim instead of holding it whole in context;
+  nothing removed from searchable, so no recall-completeness proof needed.
+- **5.1.x (last / deferred)** — bound/ retirement (refusal re-homed as a standalone
+  gate FIRST; state.json binding-clean signal must already carry "ready for units";
+  generate-units task_type reconstructed from binding.json alone).
 - oq-queue — checked off by measurement; no code.
 
 ## The phase invariant (binding on EVERY slice change)

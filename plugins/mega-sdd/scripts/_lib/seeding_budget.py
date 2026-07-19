@@ -12,19 +12,28 @@ framework — no tokenizer dependency, no network, deterministic.
 
 Token estimate: ceil(bytes / TOKENS_DIVISOR). ~4 bytes/token is the standard
 rule-of-thumb for English + code. This is for RANKING and BUDGET verdicts only —
-it is NOT a billing figure and never claims to be (the real cost is
-cache-weighted cost-units; see research/2026-07-19-v5-architecture-research.md).
+it is NOT a billing figure and never claims to be.
+
+Cost weighting (`--weight`): raw bytes are the WRONG unit for ranking token
+work, because a fresh subagent seed is paid at full rate while a resident main-
+context load is cached at ~0.1x after turn 1 (research §2: cache_read is 91.9%
+of raw at 0.1x; subagent seeding is the largest real-dollar bucket). `--weight
+fresh` (=1.0) / `--weight resident` (=0.1) / `--weight <float>` multiplies
+approx-tokens into cost-units so the ranking reflects real dollars, not bytes —
+a whole-map paste into an advisor (fresh) outranks a bigger resident load.
 
 CLI:
   seeding_budget.py [paths...] [--stdin] [--label NAME] [--budget N]
-                    [--enforce] [--json]
+                    [--enforce] [--weight fresh|resident|FLOAT] [--json]
 
-  paths      files (dirs expand to their files, non-recursive by default;
-             --recursive to walk) — each counted once (dedup by realpath)
-  --stdin    also count text piped on stdin (labeled "<stdin>")
-  --budget N verdict the total approx-tokens against N (advisory by default)
-  --enforce  make --budget blocking: exit 1 when OVER (else always exit 0)
-  --json     emit the machine record instead of the table
+  paths       files (dirs expand to their files, non-recursive by default;
+              --recursive to walk) — each counted once (dedup by realpath)
+  --stdin     also count text piped on stdin (labeled "<stdin>")
+  --budget N  verdict the total (cost-units if --weight, else approx-tokens)
+              against N (advisory by default)
+  --enforce   make --budget blocking: exit 1 when OVER (else always exit 0)
+  --weight W  fresh (1.0) | resident (0.1) | a float — emit cost_units
+  --json      emit the machine record instead of the table
 
 Exit: 0 = measured (or UNDER/no-budget); 1 = OVER and --enforce; 3 = usage.
 """
@@ -34,6 +43,7 @@ import os
 import sys
 
 TOKENS_DIVISOR = 4  # bytes-per-token rule-of-thumb; ranking/budget only
+CACHE_WEIGHTS = {"fresh": 1.0, "resident": 0.1}  # subagent-seed vs resident-cached
 
 
 def approx_tokens(nbytes):
@@ -75,8 +85,11 @@ def _iter_paths(paths, recursive):
                 yield (rp, p, os.path.getsize(p))
 
 
-def measure(paths, stdin_bytes=0, recursive=False):
-    """Return a record: total bytes/tokens + per-component breakdown + missing."""
+def measure(paths, stdin_bytes=0, recursive=False, weight=None):
+    """Return a record: total bytes/tokens + per-component breakdown + missing.
+
+    When `weight` is a float, add cost_units = round(approx_tokens * weight) —
+    the cache-weighted unit the ranking should actually use."""
     components = []
     total = 0
     missing = []
@@ -91,17 +104,21 @@ def measure(paths, stdin_bytes=0, recursive=False):
         components.append({"path": "<stdin>", "bytes": stdin_bytes,
                            "approx_tokens": approx_tokens(stdin_bytes)})
         total += stdin_bytes
-    return {
+    rec = {
         "bytes": total,
         "approx_tokens": approx_tokens(total),
         "components": components,
         "missing": missing,
     }
+    if weight is not None:
+        rec["weight"] = weight
+        rec["cost_units"] = round(approx_tokens(total) * weight)
+    return rec
 
 
 def main(argv):
-    paths, use_stdin, label, budget, enforce, as_json, recursive = \
-        [], False, None, None, False, False, False
+    paths, use_stdin, label, budget, enforce, as_json, recursive, weight_arg = \
+        [], False, None, None, False, False, False, None
     i = 0
     while i < len(argv):
         a = argv[i]
@@ -123,6 +140,11 @@ def main(argv):
             budget = argv[i] if i < len(argv) else None
         elif a.startswith("--budget="):
             budget = a.split("=", 1)[1]
+        elif a == "--weight":
+            i += 1
+            weight_arg = argv[i] if i < len(argv) else None
+        elif a.startswith("--weight="):
+            weight_arg = a.split("=", 1)[1]
         elif a.startswith("--"):
             print(f"usage: seeding_budget.py [paths...] [--stdin] [--label N] "
                   f"[--budget N] [--enforce] [--json]  (unknown flag: {a})",
@@ -140,19 +162,34 @@ def main(argv):
               "[--enforce] [--json]", file=sys.stderr)
         return 3
 
-    rec = measure(paths, stdin_bytes=stdin_bytes, recursive=recursive)
+    weight = None
+    if weight_arg is not None:
+        if weight_arg in CACHE_WEIGHTS:
+            weight = CACHE_WEIGHTS[weight_arg]
+        else:
+            try:
+                weight = float(weight_arg)
+            except ValueError:
+                print(f"FAIL: --weight must be fresh|resident|<float> (got {weight_arg})",
+                      file=sys.stderr)
+                return 3
+
+    rec = measure(paths, stdin_bytes=stdin_bytes, recursive=recursive, weight=weight)
     if label:
         rec["label"] = label
+
+    # The metric the budget verdicts against: cost-units when weighted, else tokens.
+    metric = rec["cost_units"] if weight is not None else rec["approx_tokens"]
 
     verdict = None
     if budget is not None:
         try:
             b = int(budget)
         except ValueError:
-            print(f"FAIL: --budget must be an integer token count (got {budget})",
+            print(f"FAIL: --budget must be an integer count (got {budget})",
                   file=sys.stderr)
             return 3
-        verdict = "OVER" if rec["approx_tokens"] > b else "UNDER"
+        verdict = "OVER" if metric > b else "UNDER"
         rec["budget"] = b
         rec["verdict"] = verdict
 
@@ -160,14 +197,16 @@ def main(argv):
         print(json.dumps(rec, ensure_ascii=False))
     else:
         name = label or "seed"
-        print(f"{name}: {rec['bytes']} bytes  ~{rec['approx_tokens']} tokens"
+        cu = f"  ={rec['cost_units']} cost-units @{weight}x" if weight is not None else ""
+        print(f"{name}: {rec['bytes']} bytes  ~{rec['approx_tokens']} tokens{cu}"
               f"  ({len(rec['components'])} components)")
         for c in rec["components"]:
             print(f"  {c['bytes']:>9} B  ~{c['approx_tokens']:>7} tok  {c['path']}")
         if rec["missing"]:
             print(f"  MISSING (counted as 0): {', '.join(rec['missing'])}")
         if verdict is not None:
-            print(f"  BUDGET {rec['budget']} tok -> {verdict}")
+            unit = "cost-units" if weight is not None else "tok"
+            print(f"  BUDGET {rec['budget']} {unit} -> {verdict}")
 
     if verdict == "OVER" and enforce:
         return 1

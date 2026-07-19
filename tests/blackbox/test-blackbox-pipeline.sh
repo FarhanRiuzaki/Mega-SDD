@@ -362,12 +362,20 @@ MAPDIR="$PROJ/.mega-sdd/codebase"; mkdir -p "$MAPDIR"
     grep -nE 'class |function |const ' "$f" 2>/dev/null | sed 's/^/    /'; echo
   done
 } > "$MAPDIR/codebase-map.md"
+# P7 5.1.1: build the advisor SEED bundle (replaces the whole-map paste into the
+# FRESH advisor subagent) — the top real-dollar lever. It is a strict subset that
+# points at the on-disk map; the advisor greps past it.
+BOUT="$(bash "$SCR/build-advisor-bundle.sh" --vault "$VAULT" 2>&1)"; BRC=$?
+[ $BRC -eq 0 ] && [ -f "$VAULT/.advisor-bundle.md" ] && ok "advisor bundle built (seed, not whole-map paste)" || bad "build-advisor-bundle rc=$BRC: $BOUT"
+grep -qE 'codebase_map_sha256: [0-9a-f]{64}' "$VAULT/.advisor-bundle.md" && ok "bundle sha-stamps the map it points at" || bad "bundle sha missing"
+grep -qiF "autoApprove" "$VAULT/.advisor-bundle.md" 2>/dev/null && bad "bundle leaked whole-map content" || ok "bundle is a strict subset (no whole-map paste)"
 MOUT="$(bash "$SCR/measure-seeds.sh" --vault "$VAULT" --pack "$PLG/references/framework-conventions/laravel.md" 2>&1)"; MRC=$?
 [ $MRC -eq 0 ] && ok "measure-seeds ran on the pipeline vault" || bad "measure-seeds rc=$MRC: $MOUT"
-echo "$MOUT" | grep -q "bind-codebase" && ok "bind-codebase ranked (the #1 slice-first target)" || bad "bind row missing: $MOUT"
+echo "$MOUT" | grep -q "bind-codebase" && ok "consumers ranked by cost-units (cache-weighted)" || bad "bind row missing: $MOUT"
+echo "$MOUT" | grep -qE "phase-advisor +fresh" && ok "phase-advisor weighted FRESH (1.0x); map is grep-on-demand" || bad "advisor not fresh-weighted: $MOUT"
 # JSON contract holds on the real vault (telemetry substrate, P10)
 bash "$SCR/measure-seeds.sh" --vault "$VAULT" --json </dev/null 2>/dev/null \
-  | python3 -c 'import json,sys; json.load(sys.stdin)' && ok "measure-seeds --json well-formed on live vault" || bad "measure-seeds JSON malformed"
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); assert all("cost_units" in s for s in d["seeds"])' && ok "measure-seeds --json carries cost_units (P10 substrate)" || bad "measure-seeds JSON malformed / no cost_units"
 echo "$MOUT" | sed 's/^/    /'
 
 # ── S13 verdict ──────────────────────────────────────────────────────────────

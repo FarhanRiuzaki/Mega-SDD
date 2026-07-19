@@ -48,6 +48,20 @@ echo "$OUT" | grep -q '"verdict": "OVER"' && ok "JSON carries verdict" || bad "v
 OUT="$(printf 'abcd' | python3 "$LIB" --stdin --json 2>&1)"
 echo "$OUT" | grep -q '"bytes": 4' && ok "--stdin bytes counted" || bad "--stdin: $OUT"
 
+# ── --weight cost-units (cache economics: fresh 1.0x vs resident 0.1x) ─────────
+printf '________________________________________' > "$WORK/forty.txt"  # 40B -> 10 tok
+OUT="$(python3 "$LIB" "$WORK/forty.txt" --weight fresh --json 2>&1)"
+echo "$OUT" | grep -q '"cost_units": 10' && ok "fresh weight (1.0x): cost_units == tokens" || bad "fresh weight: $OUT"
+OUT="$(python3 "$LIB" "$WORK/forty.txt" --weight resident --json 2>&1)"
+echo "$OUT" | grep -q '"cost_units": 1' && ok "resident weight (0.1x): 10 tok -> 1 cost-unit" || bad "resident weight: $OUT"
+OUT="$(python3 "$LIB" "$WORK/forty.txt" --weight 0.5 --json 2>&1)"
+echo "$OUT" | grep -q '"cost_units": 5' && ok "float weight 0.5x honored" || bad "float weight: $OUT"
+python3 "$LIB" "$WORK/forty.txt" --weight bogus >/dev/null 2>&1
+[ $? -eq 3 ] && ok "bad --weight -> usage exit 3" || bad "weight validation"
+# budget verdicts against cost-units when weighted (resident discount clears it)
+python3 "$LIB" "$WORK/forty.txt" --weight resident --budget 5 --enforce >/dev/null 2>&1
+[ $? -eq 0 ] && ok "weighted budget uses cost-units (1 <= 5, UNDER)" || bad "weighted budget wrong unit"
+
 # ── usage guard ──────────────────────────────────────────────────────────────
 python3 "$LIB" >/dev/null 2>&1
 [ $? -eq 3 ] && ok "no-args -> usage exit 3" || bad "usage exit contract"
@@ -67,10 +81,13 @@ OUT="$(bash "$MEASURE" --vault "$V" 2>&1)"; MRC=$?
 echo "$OUT" | grep -q "bind-codebase"  && ok "ranks bind-codebase seed"  || bad "bind-codebase row missing: $OUT"
 echo "$OUT" | grep -q "phase-advisor"  && ok "ranks phase-advisor seed"  || bad "phase-advisor row missing"
 echo "$OUT" | grep -q "generate-units" && ok "ranks generate-units seed" || bad "generate-units row missing"
-# JSON mode is well-formed + sorted desc
+# JSON mode is well-formed + sorted desc by cost-units (cache-weighted), and
+# every consumer carries a cache weight + cost_units.
 JOUT="$(bash "$MEASURE" --vault "$V" --json 2>&1)"
-echo "$JOUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); b=[s["bytes"] for s in d["seeds"]]; sys.exit(0 if b==sorted(b,reverse=True) else 1)' \
-  && ok "JSON ranked descending by bytes" || bad "JSON not sorted / malformed"
+echo "$JOUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); c=[s["cost_units"] for s in d["seeds"]]; sys.exit(0 if c==sorted(c,reverse=True) else 1)' \
+  && ok "JSON ranked descending by cost-units" || bad "JSON not sorted by cost-units / malformed"
+echo "$JOUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if all("weight" in s and "cost_units" in s for s in d["seeds"]) else 1)' \
+  && ok "every consumer carries cache weight + cost_units" || bad "weight/cost_units missing from a consumer"
 # honest omission note fires (this vault has a map but no KB, no pack)
 echo "$JOUT" | grep -q "KB: not found" && ok "honest omission note for missing KB" || bad "missing-KB note absent"
 
