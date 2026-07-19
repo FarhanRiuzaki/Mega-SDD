@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [4.91.0] - 2026-07-19
+
+test(blackbox): **end-to-end blackbox harness + disposable playground — the pipeline proves itself before every ship.**
+
+### Added
+
+- `tests/blackbox/test-blackbox-pipeline.sh` — 13-stage driver running the REAL shipped scripts in their real order against a synthetic leave-request mini-app (fixture at `tests/blackbox/fixture/`: legacy PHP maker-checker app + PRD), from empty legacy repo to a `READY TO SHIP` verdict, in ~3s (CI-discovered). Happy path: vault validators → `derive-vault-json` (--patch + byte-identical re-derive) → consumer guide (cksum-pinned) → binding stamp/derive/parity → `make-bound` → `--event` changelog → unit spec → B1 baseline → honest bolt postflight → graph → citation map with real stamped hashes. Gate proof — five live firings asserted: `make-bound` REFUSES while a CONFLICT verdict exists (exit 2, no `bound/`); `run-preflight-scan` REFUSES a tamper-then-mint (exit 8, no artifact); `run-postflight-scan` catches a committed Hard-rule violation (fail + MISMATCH evidence); `build-citation-map` halts on a fabricated citation path (exit 1 UNRESOLVED); `check-citation-drift` reports DRIFT on source change.
+- `tests/blackbox/seed-playground.sh` — instantiates the same fixture as a disposable git playground (default `/tmp/mega-sdd-playground`, `--force` to reseed) for LIVE skill runs (`/mega-sdd:auto`) in a fresh session.
+
 ## [4.90.0] - 2026-07-19
 
 God-review of the shipped v4.82.0–v4.89.0 batch (5 blind lenses × 2-vote adversarial verification; 23 CONFIRMED, 0 refuted) — fix(review): **every confirmed finding closed; two critical gate holes shut.**
