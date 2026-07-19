@@ -59,6 +59,17 @@ done
 if core_has "bind-codebase" && core_has "CONFLICT"; then ok "bind CONFLICT gate kept in core"
 else bad "bind CONFLICT gate dropped from core"; fi
 
+# ---- 3b) the 5.0.0 front-door contract survives in the core -----------------
+# P6 collapsed the natural-language lanes to ONE rule: any SDD lane phrase →
+# the /mega-sdd front door. The core must carry that rule + the other two
+# public verbs + the Skill-dispatch (never Agent-offload) moat line — the same
+# intent as the trigger checks: what the anchor promises must survive the diet.
+for needle in "/mega-sdd" "front door" "/mega-sdd:sync" "/mega-sdd:emit"; do
+  if core_has "$needle"; then ok "front-door rule keeps: $needle"; else bad "front-door rule LOST: $needle"; fi
+done
+if core_has "never Agent-offload"; then ok "core keeps the Skill-dispatch moat line"
+else bad "Skill-dispatch (never Agent-offload) line dropped from core"; fi
+
 # ---- 4) EVERY load-bearing trigger survives on the ALWAYS-LOADED surface -----
 # M-13 (token-efficiency B3): the diet collapsed the core's verbatim keyword
 # bullets to a pointer at the always-loaded descriptions. The real cold-start

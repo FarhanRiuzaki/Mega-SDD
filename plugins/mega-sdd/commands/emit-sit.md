@@ -1,7 +1,9 @@
 ---
-description: Generate a bank-style SIT (System Integration Test) document from vault + bolt evidence. TS scenarios 1-to-1 from F-* flows (Mermaid verbatim), TC traceability matrix from unit acceptance_test entries, UNFAKEABLE §4 executed-evidence tables script-derived from acceptance.json / postflight.json / _batch-suite.json (absent evidence stays [Pending], never invented). Sign-off rows are paper-out placeholder literals — a model-filled row is blocked as a fabricated record. Maturity planned → partial → executed computed from evidence coverage.
+description: "DEPRECATED — folded into /mega-sdd:emit sit; alias resolves through 5.x"
 argument-hint: "[vault-path] [--vaults=<csv>] [--no-pdf] [--auto]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:emit-sit` sudah dilebur ke `/mega-sdd:emit sit` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd:emit sit`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:emit-sit` skill via the Skill tool.
 

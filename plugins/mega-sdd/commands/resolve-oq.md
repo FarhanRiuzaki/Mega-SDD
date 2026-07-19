@@ -1,7 +1,9 @@
 ---
-description: Interactively resolve Open Questions in an existing vault and write answers back into the right docs + vault.json.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[path/to/vault] [optional OQ tag like OQ-FLOWS-3]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:resolve-oq` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:resolve-oq` skill via the Skill tool to walk through unresolved Open Questions in a generated vault.
 

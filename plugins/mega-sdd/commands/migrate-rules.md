@@ -1,7 +1,9 @@
 ---
-description: Migrate v1 Hard Rule grammar (5-type) to v2 ast-grep YAML rules. Walks vault units; offers per-unit migration via AskUserQuestion (explicit confirm per ITER6-OQ-2). v1 rules preserved as HTML comments for audit. Writes .migration-log.md.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: <vault-path> [--dry-run] [--auto-confirm] [--to=v2]
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:migrate-rules` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the Hard Rule grammar migration helper via Bash + `mega-sdd:execute-bolts` skill consultation.
 

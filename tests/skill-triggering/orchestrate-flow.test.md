@@ -186,7 +186,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - PRD at `<project_root>/prd.md` describing "User management feature"
 - No prior vault, no prior codebase-map.md, no prior starterkit-context.yaml
 
-**Trigger:** `/mega-sdd:auto`
+**Trigger:** `/mega-sdd`
 
 **Expected pipeline:**
 1. orchestrate-flow detects: PRD + starterkit + no vault → starterkit-first chain
@@ -226,7 +226,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - `.mega-sdd/memory/routing-outcomes.md` exists with ≥3 rows matching current project fingerprint, all converged=yes, all chain-used="starterkit-first"
 - Default routing-rules.md would propose "direct" chain
 
-**Trigger:** `/mega-sdd:auto`
+**Trigger:** `/mega-sdd`
 
 **Expected:**
 - Step 2.7 reads routing-outcomes.md
@@ -240,7 +240,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 **Setup:**
 - `.mega-sdd/memory/routing-outcomes.md` does not exist (fresh project)
 
-**Trigger:** `/mega-sdd:auto`
+**Trigger:** `/mega-sdd`
 
 **Expected:**
 - Step 2.7 reads routing-outcomes.md → file absent → skips routing recommendation
@@ -255,7 +255,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - Project has Laravel composer.json (framework detected)
 - Chain proposes scan-codebase
 
-**Trigger:** `/mega-sdd:auto`
+**Trigger:** `/mega-sdd`
 
 **Expected:**
 - Step 3.5 runs predictive checks for scan-codebase
@@ -345,7 +345,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - No `<project>/.mega-sdd/config.yaml` `model_tiers:` section
 - No `~/.mega-sdd/memory/preferences.md` `## Model tiers` section
 
-**Trigger:** `/mega-sdd:auto ./prd.md`
+**Trigger:** `/mega-sdd ./prd.md`
 
 **Expected:**
 - Step 2.8 reads all 3 override sources (cli_overrides, project_overrides, user_overrides) — all empty
@@ -362,7 +362,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - `<project>/.mega-sdd/config.yaml` has `model_tiers: { intelligence-audit-probe: haiku }`
 - `~/.mega-sdd/memory/preferences.md` `## Model tiers` has `- intelligence-audit-probe: sonnet`
 
-**Trigger:** `/mega-sdd:auto --model-tier=intelligence-audit-probe:sonnet ./prd.md`
+**Trigger:** `/mega-sdd --model-tier=intelligence-audit-probe:sonnet ./prd.md`
 
 **Expected:**
 - Step 2.8 override chain resolves intelligence-audit-probe to `sonnet` (CLI wins; project=haiku ignored; user=sonnet ignored — same result but CLI takes precedence)
@@ -378,7 +378,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - `future-unreleased-role` is NOT in `references/model-tiers.md §Catalog`
 - `audit-probe` IS in catalog (intelligence-audit-probe)
 
-**Trigger:** `/mega-sdd:auto ./prd.md`
+**Trigger:** `/mega-sdd ./prd.md`
 
 **Expected:**
 - Step 2.8 processes project_overrides

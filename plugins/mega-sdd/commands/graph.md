@@ -1,7 +1,9 @@
 ---
-description: Query the derived mega-sdd graph — impact/blast-radius over units, claims, modules, flows, KB domains, traced to code anchors.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "--impact <id|file[:line]> [--upstream|--downstream]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:graph` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:graph` skill via the Skill tool to query the project graph.
 

@@ -1,5 +1,5 @@
 ---
-description: Inspect / manage mega-sdd's persistent memory across user / project / vault scopes. Self-learning is suggestion-only (never auto-applied without user ACCEPT). Operations — list / show / search / review / prune / promote / diff / export / import / clear.
+description: "Maintenance — inspect/manage mega-sdd memory (user/project/vault scopes); suggestion-only learning. Ops: list/show/search/review/prune/promote/diff/export/import/clear."
 argument-hint: <operation> [args] [--scope=<user|project|vault>] [--memory-off]
 ---
 

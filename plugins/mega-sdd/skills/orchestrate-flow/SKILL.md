@@ -1,7 +1,7 @@
 ---
 name: orchestrate-flow
-version: 2.17.0
-description: Multi-skill lifecycle orchestrator for mega-sdd. Inspects CWD, proposes a chain of sub-skills (extract-intelligence / generate-intent / scan-codebase / bind-codebase / generate-units / execute-bolts / resolve-oq / detect-drift / diff-vault), confirms once, then executes the chain in --auto mode. `--deep` lifts the 3-skill cap and chains to pipeline-end via handoff-YAML auto-continue; `--resume` resumes a paused chain from CWD state; `--auto` runs autonomously. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
+version: 2.17.1
+description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
 # Orchestrate-Flow — Lifecycle Orchestrator

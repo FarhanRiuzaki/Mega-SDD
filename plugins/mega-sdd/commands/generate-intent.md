@@ -1,7 +1,9 @@
 ---
-description: Generate a 7-file SDD intent vault from PRD/BRD/Figma OR free-text brief. Anti-hallucination guarantees.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: '[<prd-path> | --from-prompt "<brief>" | --kb=<path>] [--scan=<path>|--greenfield] [--scope=<id>] [--out=<path>] [--auto]'
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:generate-intent` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:generate-intent` skill via the Skill tool.
 

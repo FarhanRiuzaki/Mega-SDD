@@ -1,7 +1,7 @@
 ---
 name: graph
-version: 1.0.0
-description: Queries the derived mega-sdd graph — impact / blast-radius analysis over units, claims, modules, flows, and KB domains, all traced to code anchors. Use when the user asks "what breaks if I change X", "blast radius", "impact of this code", "apa yang kena kalau ubah ini", "what depends on this unit", or runs /mega-sdd:graph. The graph is derived from existing artifacts (vault.json, binding.json, units, modules.yaml, KB) and rebuilt lazily when stale; it is never authored.
+version: 1.0.1
+description: Queries the derived mega-sdd graph — impact / blast-radius over units, claims, modules, flows, KB domains, traced to code anchors; rebuilt lazily when stale, never authored. Use when the user asks "what breaks if I change X", "blast radius", "impact of this code", "apa yang kena kalau ubah ini", "what depends on this unit", or runs /mega-sdd:graph.
 ---
 
 # mega-sdd:graph

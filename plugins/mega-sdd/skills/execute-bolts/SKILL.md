@@ -1,7 +1,7 @@
 ---
 name: execute-bolts
-version: 2.26.0
-description: Executes one or more units into code commits (bolts). Bridges to superpowers (executing-plans, subagent-driven-development, test-driven-development) with a vendored fallback. Runs a Hard Rule pre-flight + post-flight scan that validates each unit's `## Hard rules` against codebase state and HALTS the run on any violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
+version: 2.26.1
+description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
 # Execute-Bolts

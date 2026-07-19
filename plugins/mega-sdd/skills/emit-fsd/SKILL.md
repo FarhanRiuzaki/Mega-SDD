@@ -1,7 +1,7 @@
 ---
 name: emit-fsd
-version: 1.6.0
-description: Generate a Hybrid Confluence-format FSD (Functional Specification Document) — Markdown + PDF — from a mega-sdd vault. Grounded on actual vault/units/bolts/binding artifacts with sha256-stamped citation discipline per `.citation-map.json`. Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
+version: 1.6.1
+description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts with sha256-stamped citations per .citation-map.json; pre/post-development mode auto-detect; missing source emits [Pending — X], never fabrication. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
 # Emit-FSD — Functional Specification Document Generator

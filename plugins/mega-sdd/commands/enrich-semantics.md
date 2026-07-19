@@ -1,7 +1,9 @@
 ---
-description: Retro-fit staged-input semantics onto an existing knowledge base without a full re-extract. Re-reads cited legacy _source, detects the multi-step wizard / maker-checker pattern, and PROPOSES a `stages:` block per workflow for review (two-phase; --apply patches only after you accept).
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: --vault=<path> [--legacy-root=<path>] --semantic=staged-input [--apply]
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:enrich-semantics` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 > **Auto integration:** `/mega-sdd:auto` runs this step automatically in **propose** mode whenever a KB carries a `kb_flow_staging_missing` advisory — it writes `ENRICHMENT-PROPOSALS.md` and PAUSES for your review (never auto-applies). `--legacy-root` is OPTIONAL: when omitted it is auto-discovered from the KB README's "source codebase path" + common legacy dirs (`old-reference/`, `legacy/`, …). Pass `--legacy-root` explicitly to override. Disable the auto step with `--no-enrich-staging` on `auto`.
 

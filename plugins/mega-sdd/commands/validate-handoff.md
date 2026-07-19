@@ -1,6 +1,8 @@
 ---
-description: Validate cross-artifact handoff integrity (walking-skeleton slice — binding→units OQ-ID propagation). Halts deterministically when traceability IDs drop at the binding→unit boundary.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:validate-handoff` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 # /mega-sdd:validate-handoff
 

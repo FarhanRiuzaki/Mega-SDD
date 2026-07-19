@@ -1,7 +1,9 @@
 ---
-description: Compare a vault against the actual codebase and report drift (missing entities, renamed fields, undocumented endpoints, mode-migration gaps).
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[path/to/vault] [path/to/codebase]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:detect-drift` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:detect-drift` skill via the Skill tool to reconcile a vault against a live codebase.
 

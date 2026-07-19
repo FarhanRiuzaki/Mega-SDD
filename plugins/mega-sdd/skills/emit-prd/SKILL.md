@@ -1,7 +1,7 @@
 ---
 name: emit-prd
-version: 1.0.0
-description: Generate a PRD (Product Requirements Document) from mega-sdd state — forward mode (vault exists) renders PRD prose from vault/KB sources; REVERSE mode (knowledge base present, no vault) drafts a team-readable PRD from an extract-intelligence KB with [VERIFIED]/[INFERRED]/[OPEN] confidence markers carried VERBATIM into the PRD text (an inferred claim is never presented as fact — deterministically checked by scripts/check-prd-markers.sh). User journeys emit as Mermaid. Citation discipline via build-citation-map.sh --doc=prd. Maturity draft-from-legacy → reviewed → final where reviewed/final are human-set slots the model never fills. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
+version: 1.0.1
+description: Generate a PRD from mega-sdd state — forward (vault to PRD prose) or REVERSE (KB, no vault) with [VERIFIED]/[INFERRED]/[OPEN] markers carried verbatim; journeys as Mermaid; reviewed/final maturity human-set. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
 ---
 
 # Emit-PRD — Product Requirements Document Generator

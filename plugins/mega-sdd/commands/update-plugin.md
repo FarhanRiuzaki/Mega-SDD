@@ -1,5 +1,5 @@
 ---
-description: Pull the latest mega-sdd plugin from the mega-sdd marketplace repo and refresh the local plugin cache.
+description: "Maintenance one-timer — pull the latest mega-sdd from the marketplace clone and guide the cache refresh."
 argument-hint: (no args)
 ---
 

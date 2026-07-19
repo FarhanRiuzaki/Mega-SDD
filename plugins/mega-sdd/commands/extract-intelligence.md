@@ -1,7 +1,9 @@
 ---
-description: Extract tech-agnostic domain knowledge from a legacy codebase. Produces `.mega-sdd/knowledge-base/` (canonical) — multi-file knowledge base organized by business domain. Emits mutability tier markers `[LOCKED]/[INTENT]/[ARTIFACT]` orthogonal to confidence markers. Output consumable by `generate-intent --kb=<path>` and `bind-codebase` as secondary ground truth.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: <legacy-codebase-path> [--out=<path>] [--seed=<path>] [--max-parallel=N] [--auto]
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:extract-intelligence` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:extract-intelligence` skill via the Skill tool.
 

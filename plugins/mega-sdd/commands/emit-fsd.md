@@ -1,7 +1,9 @@
 ---
-description: ADVANCED / AUTO-INVOKED — Generate Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts state with sha256-stamped citation discipline. Auto-invoked by `/mega-sdd:auto` at chain end (skip via `--no-fsd`). Run standalone for on-demand regen (e.g., after diff-vault / resolve-oq). Mode auto-detect — pre-development (vault only) vs post-development (vault + bolts). PDF via pandoc + xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent. Anti-hallucination — every section traces to source artifact; missing source emits [Pending — X] placeholder, never fabricates.
+description: "DEPRECATED — folded into /mega-sdd:emit fsd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--mode=pre-dev|post-dev|auto] [--no-pdf] [--styling=<path>] [--sections=<csv>] [--auto]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:emit-fsd` sudah dilebur ke `/mega-sdd:emit fsd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd:emit fsd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:emit-fsd` skill via the Skill tool.
 

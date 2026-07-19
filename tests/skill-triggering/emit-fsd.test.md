@@ -39,13 +39,13 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 - **Prompt:** `/mega-sdd:emit-fsd`
 - **Expect:** Section 7 (Design / Architecture) emits `[Pending — binding.md not yet generated. Run /mega-sdd:bind-codebase.]` placeholder; NEVER fabricates design content from vault alone
 
-### EF8: Auto-invocation from /mega-sdd:auto pipeline
-- **Setup:** vault + units + bolts complete; `/mega-sdd:auto ./prd.md` running
+### EF8: Auto-invocation from /mega-sdd front-door pipeline
+- **Setup:** vault + units + bolts complete; `/mega-sdd ./prd.md` running
 - **Expect:** At chain end (after emit-agents-md), orchestrate-flow Step 6 auto-invokes `/mega-sdd:emit-fsd --auto`; FSD.pdf emitted; chain summary includes "FSD emitted: N sections, M citations, mode: post-dev"
 
 ### EF9: --no-fsd flag skips auto-invocation
 - **Setup:** same as EF8
-- **Prompt:** `/mega-sdd:auto ./prd.md --no-fsd`
+- **Prompt:** `/mega-sdd ./prd.md --no-fsd`
 - **Expect:** Chain runs to completion WITHOUT invoking emit-fsd; chain summary OMITS FSD line
 
 ### EF10: --dry-run prints plan without execution

@@ -62,7 +62,7 @@
     ],
     "UserPromptExpansion": [
       {
-        "matcher": "execute-bolts|mega-sdd:execute-bolts",
+        "matcher": "execute-bolts|mega-sdd:execute-bolts|^mega-sdd$|mega-sdd:mega-sdd|/mega-sdd($|[^:])",
         "hooks": [
           {
             "type": "command",

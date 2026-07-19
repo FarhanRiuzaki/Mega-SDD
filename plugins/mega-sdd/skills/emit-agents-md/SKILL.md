@@ -1,7 +1,7 @@
 ---
 name: emit-agents-md
-version: 1.6.0
-description: Flatten mega-sdd vault + binding + units summary into AGENTS.md format (Linux Foundation AAIF standard; 60k+ repos adopt). Tool-agnostic visibility — Continue.dev, Cursor, Aider, and other AGENTS.md-aware tools can consume mega-sdd's intelligence without knowing mega-sdd specifics. Pure write-out; zero runtime cost; idempotent regeneration. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
+version: 1.6.1
+description: Flatten vault + binding + units into AGENTS.md (AAIF standard) for tool-agnostic interop; idempotent write-out. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
 # Emit AGENTS.md — Tool-Agnostic Interop

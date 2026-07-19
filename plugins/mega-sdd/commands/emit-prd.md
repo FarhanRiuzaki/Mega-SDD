@@ -1,7 +1,9 @@
 ---
-description: Generate a PRD (Product Requirements Document) — forward mode renders team-readable PRD prose from an existing vault; REVERSE mode drafts the PRD a legacy project never had from an extract-intelligence knowledge base, with [VERIFIED]/[INFERRED]/[OPEN] confidence markers carried VERBATIM (an inferred claim is never presented as fact — deterministic check via scripts/check-prd-markers.sh). User journeys emit as Mermaid. Maturity draft-from-legacy → reviewed → final where reviewed/final are human-set.
+description: "DEPRECATED — folded into /mega-sdd:emit prd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--kb=<path>] [--mode=forward|reverse|auto] [--no-pdf] [--auto]"
 ---
+
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:emit-prd` sudah dilebur ke `/mega-sdd:emit prd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd:emit prd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
 
 Invoke the `mega-sdd:emit-prd` skill via the Skill tool.
 

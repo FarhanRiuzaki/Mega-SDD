@@ -1,11 +1,13 @@
 ---
-description: Inspect CWD and orchestrate a chain of mega-sdd sub-skills with single confirmation. Halt-pauses on blockers. `--deep` chains to pipeline-end; `--resume` continues a paused chain from CWD state. Power-user front-door (assumes you know what to chain) — typical users start with `/mega-sdd:auto`, the user-facing entry with input-shape detection.
+description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
 argument-hint: "[vault-path] [--from=<phase>] [--to=<phase>] [--dry-run] [--deep] [--resume] [--sync] [--auto] [--memory-off] [--greenfield|--brownfield] [--converge|--no-converge] [--max-cycles=N] [--strict-quality] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--with-fsd] [--no-fsd] [--no-drift-check] [--no-enrich-staging]"
 ---
 
-> **`/mega-sdd:orchestrate-flow` vs `/mega-sdd:auto`** — both invoke the same orchestrate-flow skill. The difference:
-> - **`/mega-sdd:orchestrate-flow`** (this command) — power-user lower-level chain executor. Skips input-shape detection. Use when you know exactly what skills to chain (custom composition, partial pipeline re-run, debugging).
-> - **`/mega-sdd:auto`** — user-facing entry-point with input-shape detection + chain proposal + single confirm. **Typical users should start there.**
+> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:orchestrate-flow` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
+
+> **`/mega-sdd:orchestrate-flow` vs `/mega-sdd`** — both invoke the same orchestrate-flow skill. The difference:
+> - **`/mega-sdd:orchestrate-flow`** (this alias) — power-user lower-level chain executor. Skips input-shape detection. Use when you know exactly what skills to chain (custom composition, partial pipeline re-run, debugging).
+> - **`/mega-sdd`** (the front door) — user-facing entry-point with derive-state status view + input-shape detection + chain proposal + single confirm. **Typical users should start there.**
 >
 > Both accept same flags. Both invoke the same skill.
 
