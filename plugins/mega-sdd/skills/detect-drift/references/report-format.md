@@ -170,7 +170,7 @@ Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-o
 
 **Batch-confirm UX:** all drafts presented as ONE diff (per-file hunks); user choices are ACCEPT ALL / pick per-patch / REJECT ALL. Nothing is written before the explicit ACCEPT. Rejected drafts are preserved in `DRIFT-ACTIONS.md` as `proposed_patch:` blocks for later manual use.
 
-**On ACCEPT:** apply the patches; append a `00-index.md` Changelog entry listing every patched section + provenance; bump the vault version (minor); regenerate `vault.json` under the `vault.json.lock` advisory lock (per `generate-intent/references/vault-contract.md §Concurrency contract`). The next `bind-codebase` run then re-verdicts the patched claims (in the sync lane, `--paths` covers them automatically since their vault sections changed).
+**On ACCEPT:** apply the patches; append a `00-index.md` Changelog entry listing every patched section + provenance; bump the vault version (minor); refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (W5: the script re-derives the structural mirror from the patched markdown and holds the `vault.json.lock` itself — exit 4 → `memory_in_use` halt; never hand-write vault.json). The next `bind-codebase` run then re-verdicts the patched claims (in the sync lane, `--paths` covers them automatically since their vault sections changed).
 
 **Rails:** never auto-accept; never patch from inference (only from the finding's cited code evidence); LOW-confidence findings are NOT write-back eligible (report-only); `[LOCKED]`-tier claims are NEVER patched from code (a CRITICAL drift on a locked claim is a compliance escalation, not a sync) — surface and stop.
 

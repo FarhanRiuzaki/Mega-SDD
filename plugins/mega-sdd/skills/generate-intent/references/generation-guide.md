@@ -53,14 +53,16 @@ Capture these in `02-architecture.md` (and the component/view inventory) and ref
    - `fallback_if_wrong`: "blocking — request an explicit design source from the PO".
    Only when the user accepts is the `design_system` block written (with `source: design-intelligence-recommend`).
 
-In both cases the `design_system` block (vault-contract.md §design_system) is written to `vault.json` + the `06-constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
+In both cases the `design_system` block (vault-contract.md §design_system) is written into the authored patch (it lands in `vault.json` via `derive-vault-json.sh`) + the `06-constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
 
 ## `vault.json` machine-readable manifest
 
-Alongside the 7 markdown files, generate `vault.json` — a structured manifest AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index.
+Alongside the 7 markdown files, `vault.json` is a structured manifest AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index. **The model NEVER writes `vault.json`** — it is script-derived:
 
-- **Schema, field rules, and regeneration trigger points** → `generate-intent/references/vault-contract.md §schema`. Read this before generating `vault.json`.
-- **Advisory lock:** acquire an exclusive file lock on `<vault>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE writing `vault.json`. Backoff + retry 3×; fail with `memory_in_use` halt if all retries fail. Release after the atomic write (temp file + rename) completes. The lock is REQUIRED for the initial write — concurrent generate-intent invocations on the same path would race.
+- **Run** `bash $PLUGIN_ROOT/scripts/derive-vault-json.sh --vault <OUTPUT_DIR> --patch <patch-file>` after the 7 files (and constitution.md) are on disk. The script derives every structural mirror from the markdown: `entities[]`, `flows[]`, `adrs[]`, `open_questions[]` skeletons, `open_questions_summary`, `vault_version` + the five Vault Lock enums; it computes `constitution_hash` fresh at initial generation and carries it forward thereafter.
+- **The model still authors** (via the `--patch` JSON, a scratchpad temp file): `title`, `source_documents`, `design_system_flags` [+ `design_system`], `advisor` provenance, scope block (`scope`/`scope_metadata`/`prd_sha256`/`prd_path_at_generation`), `phase`/`phase_total`, and the per-OQ JSON-only classifier fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`). Setting a derived key in the patch exits 2 (anti-laundering).
+- **Lock:** the script acquires and releases `<vault>/vault.json.lock` itself (backoff + retry per `generate-intent/references/vault-contract.md §Concurrency contract`); exit 4 → surface the existing `memory_in_use` halt envelope.
+- **Schema, field rules, and regeneration trigger points** → `generate-intent/references/vault-contract.md §schema`.
 - **Why both formats:** humans review markdown (narrative, citations, nuance); AI consumers read `vault.json` (fast structural lookup, no token-heavy prose parsing, reliable enum-based status/priority filtering).
 
 ## Reading the templates
@@ -93,7 +95,7 @@ After Step 3 writes the 7 files but BEFORE the Step 4 self-check, run the auto-c
    - `fallback_if_wrong` — what to revisit if this recommendation turns out incorrect (1 sentence).
    - **Anti-halu rail:** NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
 4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
-5. **Write classified OQ data** back to both the markdown body and `vault.json` per `generate-intent/references/vault-contract.md §Updated OQ schema`.
+5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-contract.md §Updated OQ schema` — never hand-edit `vault.json`.
 6. **Generate the `00-index.md` "## Auto-Classification Review" section** before the main OQ roll-up. List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
 7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-contract.md §Validation rules`:
    - Tech OQ missing `resolution_mode` → halt `oq_tech_missing_mode`.
@@ -111,7 +113,7 @@ blocker:
     oq_id: OQ-AR-7
     missing_fields: [scan_citations, fallback_if_wrong]
     oq_text: "<verbatim from vault>"
-  next_action: "Re-run generate-intent OR manually populate the missing fields in vault.json before bind-codebase."
+  next_action: "Re-run generate-intent OR populate the missing fields in the authored patch and re-run derive-vault-json.sh before bind-codebase."
 ```
 
 ## Output mode policy

@@ -1,0 +1,22 @@
+{
+  "title": "Demo Leave System",
+  "source_documents": [
+    {"type": "PRD", "path": "./prd.md", "version": "1.0", "date": "2026-07-19"}
+  ],
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": false,
+    "HAS_TOKENS": false,
+    "HAS_A11Y": false,
+    "HAS_VOICE_BRAND": false
+  },
+  "advisor": {"model": "demo", "findings": {"high": 0, "med": 0, "low": 1}},
+  "open_questions": {
+    "OQ-AR-1": {"scan_query": "codebase-map §test_frameworks"},
+    "OQ-AR-7": {
+      "recommendation": "Use RFC 7807 problem+json envelope",
+      "rationale": "Industry standard; matches existing ErrorResource shape.",
+      "scan_citations": ["app/Http/Resources/ErrorResource.php:12"],
+      "fallback_if_wrong": "Revisit with JSON:API error format"
+    }
+  }
+}

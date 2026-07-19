@@ -4,7 +4,7 @@
 - PRD change detection (`prd_sha256`)
 - Per-axis diff computation (entities / flows / decisions / OQs / constraints / design-system)
 - Apply mechanics (Step 6)
-- `vault.json` refresh (Step 6.5) + advisory lock
+- `vault.json` refresh (Step 6.5) — derive script + sources-patch
 - Vault metadata update (Step 7)
 - Halts: `prd_path_missing`, `memory_in_use`
 
@@ -75,25 +75,16 @@ For each approved change, use `Edit` (preferred) or `Write` (when restructuring 
 
 ## Refresh `vault.json` (Step 6.5)
 
-After applying approved changes, regenerate `vault.json` from the now-updated markdown so AI consumers don't see stale state.
+After applying approved changes, refresh `vault.json` by **running the derive script** — the model never rebuilds the manifest by hand:
 
-1. Read all 7 markdown files (post-apply state).
-2. Rebuild the manifest fields per `generate-intent/references/vault-contract.md` §schema:
-   - `entities[]` from `03-data-model.md` DBML — add new entries this round, preserve existing.
-   - `flows[]` from `04-flows.md` — add new flow IDs, optionally mark removed flows with their banner annotation in metadata. Existing flow IDs stay even when their content changed.
-   - `adrs[]` from `05-decisions.md` — new D-XXX entries get `status: accepted` (or `superseded` if this round flipped a prior decision).
-   - `open_questions[]` — refresh `status` per markdown checkbox state. Auto-resolved OQs flip `open` → `resolved`. New OQs get `status: open`.
-   - `open_questions_summary.total` and `by_priority` / `by_status` — recompute from the new array.
-   - `vault_version` — match the post-bump version from Step 7 (write both; sequence so vault.json reflects the new version).
-   - `generated_at` — update to the current timestamp.
+1. Assemble the **sources-patch** (a small JSON file) with the ONLY fields diff-vault still authors:
    - `source_documents[]` — replace the prior PRD entry with the new source per Step 7.
-3. Write to `<VAULT_DIR>/vault.json`. Overwrites the prior manifest.
+   - `prd_sha256` + `prd_path_at_generation` — updated ONLY when the PRD actually changed (this is the deliberate re-baseline; the script itself NEVER recomputes the at-generation pin).
+2. **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --patch <sources-patch>`. The script re-derives `entities[]` / `flows[]` / `adrs[]` / `open_questions[]` / `open_questions_summary` / `vault_version` + Vault Lock enums from the post-apply markdown (run it AFTER the Step-7 version bump lands in 00-index, or re-run it then), carries every other authored field forward, stamps `resolved_at` on OQs this round flipped to resolved, and writes atomically under its own `vault.json.lock` (exit 4 → `memory_in_use` halt; exit 2 = a Step-6 markdown edit broke the vault grammar — fix the markdown and re-run).
 
-**vault.json advisory lock (REQUIRED):** acquire an exclusive file lock on `<VAULT_DIR>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE overwriting vault.json. Backoff + retry 3x; fail with `memory_in_use` halt if all retries fail. Release the lock after the atomic write (temp file + rename) completes. Concurrent diff-vault + bind-codebase + generate-intent writes would otherwise corrupt the manifest.
+> **Idempotency**: re-running against an unchanged source is a byte-identical no-op — `generated_at` is PRESERVED when the derived content is otherwise identical (this supersedes the older "only `generated_at` updates" rule: on a true no-op, nothing updates, which also keeps the FSD doc-control sha stable). The Step 8 self-check verifies markdown ↔ JSON consistency.
 
-> **Idempotency**: re-running against an unchanged source produces an unchanged `vault.json` (same field values, only `generated_at` updates). The Step 8 self-check verifies markdown ↔ JSON consistency.
-
-> **Why a separate step**: the Step 6 markdown edits are content; the JSON regen is structural. Keeping them adjacent but distinct lets self-check verify each independently.
+> **Why a separate step**: the Step 6 markdown edits are content; the derive is structural and script-owned. Keeping them adjacent but distinct lets self-check verify each independently.
 
 ## Update vault metadata (Step 7)
 
@@ -130,4 +121,4 @@ Message: "PRD at `<path>` no longer exists; cannot detect changes. Move PRD back
 
 ## Halt — `memory_in_use`
 
-Triggered when the `vault.json.lock` advisory lock cannot be acquired after 3 backoff retries (Step 6.5). Stop the apply phase; tell the user another vault writer (diff-vault / bind-codebase / generate-intent) holds the lock and to retry once it releases.
+Triggered when `derive-vault-json.sh` exits 4 (the script could not acquire `vault.json.lock` after its 3 backoff retries — Step 6.5). Stop the apply phase; surface the existing `memory_in_use` envelope: another vault writer (diff-vault / bind-codebase / generate-intent / resolve-oq) holds the lock — retry once it releases, or remove an orphaned lock per the script's stderr hint.

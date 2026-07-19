@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.6.0
+version: 2.7.0
 description: Interactive resolver for Open Questions in an existing mega-sdd vault. Walks the OQ roll-up by priority, captures stakeholder answers, updates the vault with resolution markers, and bumps version + Changelog. Also resolves CONFLICT entries from a binding.md (`--binding`). Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -31,7 +31,7 @@ For each OQ the user (with the skill prompting) chooses one of four outcomes. Th
 | **Resolve** (`[A] Answer now`) | Capture answer; inline in OQ entry (simple) or promoted into a target section — new ADR, field constraint, flow step. | `[x]` + `→ Resolved v{X.Y}: <answer / pointer>` | `resolved` |
 | **Out of Scope** (`[C]`) | Move to the doc's Out of Scope section with rationale. | `[~]` + `→ Out of Scope v{X.Y}: <reason>` | `out_of_scope` |
 | **Defer** (`[B]` to binding / stakeholder) | Keep open with stakeholder, deadline, or condition; or mark code-aware for `bind-codebase`. | `[ ]` + `**Deferred (v{X.Y})**: <reason / who / when>` | `deferred` |
-| **Skip** (`[D]`) | No vault change; revisited on the next pass. | unchanged | unchanged (pending) |
+| **Skip** (`[D]`) | No vault change; revisited on the next pass. | unchanged | unchanged (remains `open`) |
 
 Option `[B] Defer` is ALWAYS visible in the standard walk (stakeholder defer must be reachable in every context — the "No invention" rule routes `idk`/`whatever` here; the `--binding` propagated-OQ walk hides [B] per `references/binding-mode.md` — nested deferral not supported). Its `to binding` sub-target is offered ONLY when vault `mode: existing` (brownfield) AND CWD has repo signals (`.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`); greenfield / no signals → `[B]` offers the stakeholder defer only.
 
@@ -47,7 +47,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 
 **Step 1 — Parse OQ list.** Read all 7 files; from each numbered doc (01–06) extract still-`[ ]` entries (skip `[x]` / `[~]`). Per OQ capture tag, priority, doc origin, question text, generator resolution hint. Cross-reference `00-index.md` roll-up for the **category**. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
 
-**Step 2 — Loop per OQ.** Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`). Present the 4-action menu (A/B/C/D; `[B]` conditional as above). Apply the chosen outcome, writing field updates to `vault.json` immediately and appending a changelog event. Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Run the **cross-cutting check** for OQs touching ≥3 docs (primary doc holds full content; others get terse cross-refs). Update the roll-up in `00-index.md` to mirror the marker. Allow bail-out at any time (always offer "Stop here, save progress, exit"). **All four outcomes' exact field changes, promoted-entry formatting per target doc, and the vault.json lock contract are in `references/interactive-walk.md`.**
+**Step 2 — Loop per OQ.** Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`). Present the 4-action menu (A/B/C/D; `[B]` conditional as above). Apply the chosen outcome's markdown edits, then run the derive script immediately (it recomputes the vault.json mirror from the markdown and appends the round event). Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Run the **cross-cutting check** for OQs touching ≥3 docs (primary doc holds full content; others get terse cross-refs). Update the roll-up in `00-index.md` to mirror the marker. Allow bail-out at any time (always offer "Stop here, save progress, exit"); each derive is atomic, so a bail leaves the last consistent state. **All four outcomes' markdown edits, the per-action `--event`/`--patch` args, and promoted-entry formatting per target doc are in `references/interactive-walk.md`.**
 
 **Step 3 — Update vault metadata.** Patch-bump the vault version in `00-index.md` Vault Lock Status (one shared `v{X.Y}` for the whole round). Append a Changelog entry listing Resolved / Out of Scope / Deferred / Still-open counts (template in `references/interactive-walk.md`). Update `Last updated` to today.
 
@@ -60,7 +60,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 - **No invention.** Every resolution comes from user input in this session. Never auto-fill answers from prior knowledge, reasoning, or industry defaults. `idk` / `whatever` / `any default` → push back, offer **Defer** and route to the stakeholder.
 - **"Answer all OQs for me" → refuse.** The point of this skill is capturing *stakeholder* answers. Offer to mark unknowns Deferred, or route specific OQs to a read-doc query.
 - **Tag preservation.** Every OQ tag survives resolution — the marker preserves the identifier for commits, PRs, and downstream references.
-- **Vault.json writeback is mandatory** for Resolve / Out-of-Scope / Defer outcomes. Acquire the `vault.json.lock` exclusive lock (backoff + retry 3×; `memory_in_use` halt if all fail) per the Concurrency contract before every write; release after the atomic write. Recompute `open_questions_summary`; add new ADRs to `adrs[]`; update changed entities in `entities[]`.
+- **The derive run is mandatory** after each Resolve / Out-of-Scope / Defer outcome's markdown edits: **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --event '{"event":"oq-resolved|oq-deferred|oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"A|B|C"}'` (+ `--patch` carrying `{"open_questions":{"OQ-XXX":{"defer_to":"binding"}}}` for binding-defers). The script recomputes status/summary/adrs/entities from the markdown and holds the `vault.json.lock` itself — exit 4 → surface the `memory_in_use` halt (keterangan unchanged); never hand-edit vault.json.
 - **Read-only on code.** The skill never modifies code files. Deferred-to-binding OQs resolve later at `bind-codebase`; code patches happen later still in `execute-bolts`.
 - **Atomicity + idempotency.** Each OQ resolution is a self-contained edit; bailing mid-loop preserves partial progress. Re-running on a partially-resolved vault resumes from current state without rewriting already-resolved entries.
 - **Lock has audit consequences.** Unlocking a `🔒 LOCKED` vault is recorded in the round's Changelog; the user re-locks and re-signs-off afterward.
@@ -77,7 +77,7 @@ No invention; tag preservation; full auditability (Changelog + per-OQ markers = 
 
 ## Specialist references (load on demand)
 
-- **`references/interactive-walk.md`** — the full Step 0–5 procedure: vault location + lock check, resume, scope, parse, per-OQ display + 4-action menu, per-action state transitions, Resolve/OOS/Defer/Skip apply logic, cross-cutting multi-doc landing, promoted-entry formatting per target doc, the vault.json lock contract, the version + Changelog template, the self-check list, and the summary format.
+- **`references/interactive-walk.md`** — the full Step 0–5 procedure: vault location + lock check, resume, scope, parse, per-OQ display + 4-action menu, per-action state transitions, Resolve/OOS/Defer/Skip apply logic, cross-cutting multi-doc landing, promoted-entry formatting per target doc, the per-action derive `--event`/`--patch` args, the version + Changelog template, the self-check list, and the summary format.
 - **`references/binding-mode.md`** — the `--binding <binding.md>` flow: CONFLICT detail-block walk (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT), propagated deferred-OQ walk, write-back to `binding.md` + `vault.json`, hand-off, and hard rails.
 - **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, the `AskUserQuestion` presentation, audit trail, and the override self-correction loop.
 - **`references/auto-memory-handoff.md`** — non-interactive machinery: the `--auto` interactive-vs-auto step table, the memory layer reads/writes, the `--auto-accept-from-memory` / `--confidence-min` / `--non-interactive` flags (convergence-loop use), scope-context surfacing, and the handoff YAML emitted under `--auto`.

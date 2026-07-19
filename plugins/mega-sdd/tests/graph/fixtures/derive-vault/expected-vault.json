@@ -1,0 +1,159 @@
+{
+  "vault_version": "1.1",
+  "generated_at": "<stamp>",
+  "title": "Demo Leave System",
+  "project_shape": "web-app",
+  "implementation_mode": "new",
+  "prd_status": "draft",
+  "output_mode": "compact",
+  "mode_migrate_after": null,
+  "constitution_version": "1.0",
+  "constitution_hash": "a547c0be4c3fb55c9e73d8c91e51a209aa60850747d53b18382634a58ad5c9f7",
+  "source_documents": [
+    {
+      "type": "PRD",
+      "path": "./prd.md",
+      "version": "1.0",
+      "date": "2026-07-19"
+    }
+  ],
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": false,
+    "HAS_TOKENS": false,
+    "HAS_A11Y": false,
+    "HAS_VOICE_BRAND": false
+  },
+  "advisor": {
+    "model": "demo",
+    "findings": {
+      "high": 0,
+      "med": 0,
+      "low": 1
+    }
+  },
+  "entities": [
+    {
+      "name": "user",
+      "purpose": "System user account",
+      "doc": "03-data-model.md",
+      "fields_count": 5
+    },
+    {
+      "name": "leave_request",
+      "purpose": "Leave request lifecycle",
+      "doc": "03-data-model.md",
+      "fields_count": 3
+    }
+  ],
+  "flows": [
+    {
+      "id": "F-U-001",
+      "title": "Submit leave request",
+      "type": "user",
+      "doc": "04-flows.md",
+      "dod_count": 3,
+      "source_acs": [
+        "AC1-1",
+        "AC1-2"
+      ]
+    },
+    {
+      "id": "F-S-002",
+      "title": "Nightly accrual",
+      "type": "system",
+      "doc": "04-flows.md",
+      "dod_count": 1,
+      "_kb_source": [
+        "20-workflows/accrual.md"
+      ]
+    }
+  ],
+  "adrs": [
+    {
+      "id": "D-001",
+      "title": "Use PostgreSQL",
+      "doc": "05-decisions.md",
+      "status": "accepted"
+    },
+    {
+      "id": "D-002",
+      "title": "Legacy session auth",
+      "doc": "05-decisions.md",
+      "status": "superseded"
+    }
+  ],
+  "open_questions": [
+    {
+      "tag": "OQ-AR-1",
+      "priority": "P1",
+      "doc": "02-architecture.md",
+      "status": "open",
+      "category": "tech",
+      "resolution_mode": "scan",
+      "classification_confidence": "high",
+      "text": "which test framework?",
+      "resolver_owner": "scan codebase-map §test_frameworks",
+      "scan_query": "codebase-map §test_frameworks"
+    },
+    {
+      "tag": "OQ-AR-7",
+      "priority": "P2",
+      "doc": "02-architecture.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "text": "what HTTP error envelope shape?",
+      "deferred_reason": "waiting on platform team ruling",
+      "recommendation": "Use RFC 7807 problem+json envelope",
+      "rationale": "Industry standard; matches existing ErrorResource shape.",
+      "scan_citations": [
+        "app/Http/Resources/ErrorResource.php:12"
+      ],
+      "fallback_if_wrong": "Revisit with JSON:API error format",
+      "deferred_at": "<script-stamped>"
+    },
+    {
+      "tag": "OQ-AR-9",
+      "priority": "P3",
+      "doc": "02-architecture.md",
+      "status": "out_of_scope",
+      "category": "business",
+      "text": "support SOAP fallback?",
+      "out_of_scope_reason": "REST only per PRD."
+    },
+    {
+      "tag": "OQ-DM-1",
+      "priority": "P1",
+      "doc": "03-data-model.md",
+      "status": "resolved",
+      "text": "which ID type?",
+      "resolution": "UUID.",
+      "category": "PRD inconsistencies",
+      "resolved_at": "<script-stamped>"
+    },
+    {
+      "tag": "OQ-FL-2",
+      "priority": "P2",
+      "doc": "04-flows.md",
+      "status": "open",
+      "text": "notification channel unclear",
+      "resolver_owner": "PM",
+      "category": "PRD inconsistencies"
+    }
+  ],
+  "open_questions_summary": {
+    "total": 5,
+    "by_priority": {
+      "P1": 2,
+      "P2": 2,
+      "P3": 1
+    },
+    "by_status": {
+      "open": 2,
+      "resolved": 1,
+      "deferred": 1,
+      "out_of_scope": 1
+    }
+  }
+}

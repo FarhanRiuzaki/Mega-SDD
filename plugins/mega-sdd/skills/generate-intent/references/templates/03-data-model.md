@@ -17,6 +17,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/data-model"]
 ## Entities (DBML)
 
 ```dbml
+// Purpose: <1 line — what this entity is for>
 Table <entity_name> {
   id bigint [pk, increment]
   <field> <type> [<constraints>, note: '<purpose>']
@@ -25,6 +26,7 @@ Table <entity_name> {
   deleted_at timestamp [null]
 }
 
+// Purpose: <1 line — what this entity is for>
 Table <next_entity> {
   id bigint [pk, increment]
   <field> <type>
@@ -53,7 +55,7 @@ Ref: <table>.<fk_field> - <other_table>.id  // one-to-one
 <repeat>
 <!-- /compact-skip -->
 
-<!-- compact-mode rendering: omit the entire Entity descriptions section. DBML block + 1-line `Purpose:` per entity (added inline before each Table) is sufficient. -->
+<!-- compact-mode rendering: omit the entire Entity descriptions section. DBML block + the 1-line Purpose per entity is sufficient — the 1-line Purpose is the `// Purpose:` comment above each Table (machine-read into vault.json entities[].purpose by derive-vault-json.sh). -->
 
 ## Constraints
 

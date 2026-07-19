@@ -123,20 +123,17 @@ Choose action:
 
 In greenfield contexts OR when no repo signals detected, [B] offers the stakeholder defer only.
 
-**Per-action state transitions:**
+**Per-action state transitions** — the vault.json field changes are EFFECTED by `derive-vault-json.sh` reading your markdown edits (status from the checkbox, `resolution`/`out_of_scope_reason`/`deferred_reason` from the annotation text, `resolved_at`/`deferred_at` script-stamped on the transition). The model's job is (1) the markdown edit and (2) the derive args:
 
-| Action | OQ field changes |
-|---|---|
-| A — Answer | `status: resolved`, `resolved_at: <now>`, `resolution: <answer text>` |
-| B — Defer (stakeholder) | `status: deferred`, `defer_to: stakeholder`, `deferred_at: <now>`, `deferred_reason: <who / by when / unblock condition>` |
-| B — Defer (to binding; brownfield sub-target) | `status: deferred`, `defer_to: binding`, `deferred_at: <now>`, `deferred_reason: <optional user-provided text>` |
-| C — Out of scope | `status: out-of-scope`, `out_of_scope_reason: <text>` |
-| D — Skip | (no field changes; OQ remains pending) |
+| Action | Markdown edit produces `status` | Derive args (`derive-vault-json.sh --vault <VAULT_DIR> …`) |
+|---|---|---|
+| A — Answer | `[x]` → `resolved` (+ `→ Resolved v{X.Y}: …` → `resolution`) | `--event '{"event":"oq-resolved","id":"OQ-XXX","at":"<iso>","action":"A"}'` |
+| B — Defer (stakeholder) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch` `{"open_questions":{"OQ-XXX":{"defer_to":"stakeholder"}}}` |
+| B — Defer (to binding; brownfield sub-target) | `[ ]` + `**Deferred (v{X.Y})**: …` → `deferred` | `--event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}'` + `--patch` `{"open_questions":{"OQ-XXX":{"defer_to":"binding"}}}` |
+| C — Out of scope | `[~]` + `→ Out of Scope v{X.Y}: …` → `out_of_scope` | `--event '{"event":"oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"C"}'` |
+| D — Skip | no markdown change; OQ remains `open` | no derive run |
 
-After action selection, write the field updates to `vault.json` immediately and append to the vault's changelog:
-```
-{ "event": "oq-resolved" | "oq-deferred" | "oq-out-of-scope", "id": "OQ-XXX", "at": "<iso>", "action": "A|B|C|D" }
-```
+Run the derive immediately after each outcome's markdown edits — it recomputes status/summary from the markdown, appends the `--event` object to the vault changelog, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt; exit 2 = your markdown edit broke the OQ grammar — fix the markdown and re-run). Never hand-edit `vault.json`.
 
 ### Step 2c — Apply outcome
 
@@ -167,9 +164,7 @@ After action selection, write the field updates to `vault.json` immediately and 
    - Other docs: append to the appropriate sub-section, with a `> Resolves OQ-{tag}` annotation.
 7. Write the changes to the file(s) using `Edit`.
 8. Update the OQ roll-up entry in `00-index.md` to also show `[x]` resolved with the same pointer.
-9. **Update `vault.json` (lock contract):** change the OQ's `status` from `open` to `resolved` in the manifest, recompute `open_questions_summary` counts. If a new ADR was created, add it to `adrs[]`. If a new entity field was added, update that entity in `entities[]`.
-
-   Acquire an exclusive file lock on `<vault>/vault.json.lock` per `generate-intent/references/vault-contract.md §Concurrency contract` BEFORE writing vault.json. Backoff + retry 3×; fail with a `memory_in_use` halt if all retries fail. Release the lock after the atomic write completes. Lock acquisition is REQUIRED for every vault.json regen path in resolve-oq (Resolve / Out-of-Scope / Defer outcomes ALL write vault.json).
+9. **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --event '{"event":"oq-resolved","id":"OQ-XXX","at":"<iso>","action":"A"}'` — the script flips the OQ's `status` to `resolved` from the `[x]` checkbox, stamps `resolved_at`, recomputes `open_questions_summary`, and picks up the new ADR in `adrs[]` / changed entity in `entities[]` from the markdown.
 10. Show the user a confirmation summary of the diff.
 
 **If `Out of Scope`:**
@@ -178,7 +173,7 @@ After action selection, write the field updates to `vault.json` immediately and 
 2. Move the OQ entry to the same doc's `## Out of Scope` section with format: `- <original question text>. (was OQ-XXX-N, declared OOS v{X.Y} on YYYY-MM-DD: <rationale>)`.
 3. In the original `## Open Questions` section, mark the OQ `[~]` with a one-line pointer: `[~] **OQ-XXX-N** [P{x}]: <original question> → Out of Scope v{X.Y}: see Out of Scope section.`
 4. Update the roll-up entry in `00-index.md` similarly.
-5. **Update `vault.json`:** set the OQ's `status` to `out_of_scope` in the manifest; recompute `open_questions_summary.by_status`. (Same lock contract as the Resolve path.)
+5. **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --event '{"event":"oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"C"}'` — the `[~]` marker derives `status: out_of_scope` and the summary recomputes.
 
 **If `Defer`:**
 
@@ -193,7 +188,7 @@ For brownfield code-aware OQs, prefer the 4-action menu's `[B] Defer to binding`
 2. Append to the OQ entry: `**Deferred (v{X.Y})**: <reason / PIC / target date>`.
 3. Leave `[ ]` open (it's still an Open Question, just waiting).
 4. Update the roll-up annotation in `00-index.md` so readers see the defer reason at-a-glance.
-5. **Update `vault.json`:** set the OQ's `status` to `deferred` in the manifest; set `defer_to: stakeholder`; set `deferred_at: <iso>`; set `deferred_reason: <user-provided text>` (per OQ schema in `vault-contract.md`); recompute `open_questions_summary.by_status`. (Same lock contract.)
+5. **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --event '{"event":"oq-deferred","id":"OQ-XXX","at":"<iso>","action":"B"}' --patch <tmp-patch>` where the patch is `{"open_questions":{"OQ-XXX":{"defer_to":"stakeholder"}}}` (or `"binding"` for the brownfield sub-target) — the `**Deferred**` annotation derives `status: deferred` + `deferred_reason`; `deferred_at` is script-stamped; the summary recomputes.
 
 **If `Skip`:**
 

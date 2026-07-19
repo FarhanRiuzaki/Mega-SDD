@@ -52,16 +52,10 @@ Verify every doc has:
 - [ ] Folder structure matches the 7-file spec.
 - [ ] Language matches source (PRD ID → docs ID; PRD EN → docs EN).
 
-**`vault.json` manifest:**
-- [ ] `vault.json` exists at `<OUTPUT_DIR>/vault.json` alongside the 7 markdown files.
-- [ ] Every entity defined in `03-data-model.md` DBML appears in the `entities[]` array.
-- [ ] Every flow ID in `04-flows.md` (one per `F-{prefix}-NNN`) appears in `flows[]`.
-- [ ] Every ADR `D-NNN` in `05-decisions.md` appears in `adrs[]`.
-- [ ] Every OQ tag across docs 01–06 appears in `open_questions[]` with matching priority and status.
-- [ ] `open_questions_summary.total` equals the count in `open_questions[]` and matches the `00-index.md` roll-up.
-- [ ] `open_questions_summary.by_priority` counts match the per-priority counts in the roll-up.
-- [ ] All four metadata flags (`project_shape`, `implementation_mode`, `prd_status`, `output_mode`) match `00-index.md` Vault Lock Status.
-- [ ] Design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) match the values used to drive Step 3 conditional generation.
+**`vault.json` manifest (script-derived — never hand-checked field-by-field):**
+- [ ] `derive-vault-json.sh` ran in Step 3 and printed its `PASS: derived vault.json (…)` line (the structural arrays, summary, Vault Lock enums, and constitution pin are the SCRIPT's job — a hand-written vault.json is an authoring bug).
+- [ ] The counts in the PASS line (`E entities, F flows, A adrs, Q oqs`) match the doc counts you generated (DBML `Table` blocks, `F-*-NNN` headings, `D-NNN` headings, checkbox OQs).
+- [ ] The authored patch carried every field the model owns: metadata + `source_documents` + `design_system_flags` (matching the Step 3 conditional-generation values) [+ `design_system`] [+ scope block] + the per-OQ recommend/scan records — the validator's `oq_recommend_underspecified` is the tripwire for a recommend-OQ whose JSON-only fields went missing.
 
 **Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
 - [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the `copy-consumer-guide.sh` Run in Step 3 installed it — script-copied, never model-rendered).

@@ -65,9 +65,19 @@ esac
 STATE_FILE="${CWD}/.mega-sdd/.vault-oqs-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || exit 2
 
+# W5 two-validators-one-grammar: the OQ-tag + category-bracket regexes are
+# imported from _lib/vault_md.py (shared with derive-vault-json.sh) —
+# byte-identical to the strings previously inlined here (pinned by
+# tests/graph/test-derive-vault-json-vault.sh). Constant-only refactor: NO
+# behavior change to windows, rails, or exit codes.
+export MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib"
+
 CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" python3 <<'PYEOF'
 import json, os, re, glob, sys
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_md
 
 cwd = os.environ["CWD"]
 file_path = os.environ["FILE_PATH"]
@@ -115,7 +125,8 @@ citation_pattern = re.compile(
 )
 # S4 BC-HANDOFF-1 (mirror of validate-handoff-binding-units.sh): also match
 # bind's numeric fresh-OQ form (OQ-001 / OQ-12), not just lettered vault IDs.
-oq_pattern = re.compile(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b")
+# W5: the pattern lives in _lib/vault_md.py (shared with derive-vault-json.sh).
+oq_pattern = vault_md.OQ_TAG_RE
 
 # Iter-79 U-GI: independently re-apply the deterministic Auto-classifier heuristic
 # text-pattern table (vault-contract.md §Auto-classifier heuristics) to detect an OQ
@@ -188,8 +199,10 @@ for oq, window in oq_blocks:
         # it read False on every real OQ → the mis-tag check cry-wolfed on a correctly
         # tagged `[tech / scan]` OQ. The resolution_mode-dependent halts moved to the
         # structured vault.json pass below (their fields are JSON-only).
-        has_tech_category = bool(re.search(r'\[\s*tech\b|"category"\s*:\s*"tech"', window, re.IGNORECASE))
-        has_business_category = bool(re.search(r'\[\s*business\b|"category"\s*:\s*"business"', window, re.IGNORECASE))
+        # W5: patterns imported from _lib/vault_md.py — byte-identical to the
+        # strings previously compiled inline here (two-validators-one-grammar).
+        has_tech_category = bool(vault_md.CATEGORY_BRACKET_RE.search(window))
+        has_business_category = bool(vault_md.CATEGORY_BRACKET_BUSINESS_RE.search(window))
 
         # ─── Iter-79 U-GI: oq_misclassified_tech (advisory) ──────────────────
         # OQ text reads tech (matches the heuristic table) but is NOT tagged tech —

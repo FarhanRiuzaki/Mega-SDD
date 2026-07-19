@@ -4,7 +4,7 @@
 - Extraction-scorecard preflight (advisory)
 - Codebase-map shared-snapshot reuse (Step 1)
 - Scope propagation (Step 1)
-- vault.json advisory lock (Step 6)
+- vault.json audit append (Step 6)
 - Handoff emission (--auto)
 - Memory layer
 
@@ -46,9 +46,9 @@ Snapshot reuse is a freshness attestation, NOT a parsing shortcut. Binding corre
 
 When `vault.json` has a `scope` field (multi-scope vault), persist `scope_metadata` to the `binding.md` header and emit a `scope:` block in the handoff YAML. If `scope_metadata.prd_sections_used` lists sections → constrain claim validation to those sections (skip other scopes' claims). No scope (legacy single-vault) → proceed as before. Header gains `**Scope**: <name> (<id>)` when applicable.
 
-## vault.json advisory lock (Step 6)
+## vault.json audit append (Step 6)
 
-Before appending the `bind` event to `vault.json`, acquire an exclusive lock on `<vault>/vault.json.lock` (per `generate-intent/references/vault-contract.md §Concurrency contract`): backoff + retry 3×; fail with the `memory_in_use` halt if all retries fail; release after the write. Lock acquisition is REQUIRED — concurrent-tab writes would corrupt the JSON.
+The `bind` event is appended by **running** `derive-vault-json.sh --vault <vault> --event '{"event":"bind","at":"<iso>",…}'` — the script acquires and releases the `<vault>/vault.json.lock` itself (per `generate-intent/references/vault-contract.md §Concurrency contract`) and re-derives the structural mirror from the vault markdown in the same pass. Exit 4 (lock held after backoff) → surface the `memory_in_use` halt. Never append to vault.json by hand — concurrent-tab hand-writes are exactly the corruption the script-held lock closes.
 
 ## Handoff emission (--auto)
 
@@ -105,7 +105,7 @@ handoff:
     clauses_referenced: []
 ```
 
-The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid`. Tech-OQ recommendations do NOT change the status: they are surfaced in binding.md ("## Tech-OQ Recommendations (review required)") for post-binding review, the OQ stays `pending` in vault.json (carried into generate-units as an ungrounded OQ, never a baked-in decision), and bind emits `status: completed` so the chain proceeds to generate-units — recommendations are advisory and never block (see `bind-codebase/references/oq-resolution.md` §2.7). Required ONLY under `--auto`.
+The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid`. Tech-OQ recommendations do NOT change the status: they are surfaced in binding.md ("## Tech-OQ Recommendations (review required)") for post-binding review, the OQ stays `open` in vault.json (carried into generate-units as an ungrounded OQ, never a baked-in decision), and bind emits `status: completed` so the chain proceeds to generate-units — recommendations are advisory and never block (see `bind-codebase/references/oq-resolution.md` §2.7). Required ONLY under `--auto`.
 
 ## Memory layer
 

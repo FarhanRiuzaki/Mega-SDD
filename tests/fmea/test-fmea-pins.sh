@@ -33,9 +33,11 @@ grep -q 'Overlap rail' "$P/skills/execute-bolts/SKILL.md" \
 grep -q 'PENDING-SYNC.archive.md' "$P/skills/orchestrate-flow/references/sync-digest.md" \
   && pass "D2: PENDING-SYNC lifecycle (archive + pressure + stale marker)" || fail "D2: lifecycle missing"
 
-# D3 — binding.md under the vault lock
-grep -q 'binding.md.*while HOLDING this same lock' "$P/skills/generate-intent/references/vault-contract.md" \
-  && pass "D3: binding.md covered by vault lock" || fail "D3: binding lock coverage missing"
+# D3 — binding.md serialization under the vault.json write path (W5: the lock
+# moved INTO derive-vault-json.sh — the contract must still name binding.md's
+# serialization story, not silently drop it)
+grep -q 'binding.md has no separate lock; the script-held derive is the serialization point' "$P/skills/generate-intent/references/vault-contract.md" \
+  && pass "D3: binding.md serialization named under the script-held vault lock" || fail "D3: binding lock coverage missing"
 
 # D4 — unit-count scale advisory
 grep -q 'Scale advisory' "$P/skills/generate-units/SKILL.md" \
