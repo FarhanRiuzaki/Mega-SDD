@@ -40,6 +40,8 @@ All emit JSON; a tool failure is a visible SKIP with a reason, never silently re
 
 Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is machine territory, not a finding. Lint/typecheck failures are findings.
 
+**L0 syntax floor (P4 v4.96.0 — the zero-config rung UNDER gate 2).** Even with no repo-own lint/typecheck config, a committed file must at least parse: `scripts/run-acceptance-tests.sh` (the B4 evidence writer, run at post-flight per SKILL.md Procedure step 5) executes `php -l` / `python3 -m py_compile` / `node --check` / `ruby -c` over the bolt's changed files as a pre-rung — only when the interpreter already exists on PATH (detect-never-impose; absent interpreters are recorded in `acceptance.json.syntax_skipped`, never installed). A syntax failure is recorded with NO retry (syntax is deterministic) and halts **`build_broken`**. Deterministic home (documented choice): the rung lives INSIDE the B4 writer — one writer, one hook-guarded artifact — so the syntax evidence is auditable in `acceptance.json` next to the acceptance verdicts instead of a second unguarded artifact.
+
 ## Blocking vs advisory
 
 Per the gates-doctrine (blocking only for critical + un-promptable):

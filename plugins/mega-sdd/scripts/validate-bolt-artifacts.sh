@@ -42,6 +42,7 @@ ORPHAN_SCAN=0
 BATCH_SUITE_GATE=0
 POSTFLIGHT_SCAN=0
 WHITELIST_SCAN=0
+ACCEPTANCE_SCAN=0
 RECOMPUTE=0
 for arg in "$@"; do
   case "$arg" in
@@ -52,6 +53,7 @@ for arg in "$@"; do
     --postflight-scan) POSTFLIGHT_SCAN=1 ;;
     --recompute) RECOMPUTE=1 ;;
     --whitelist-scan) WHITELIST_SCAN=1 ;;
+    --acceptance-scan) ACCEPTANCE_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -636,6 +638,144 @@ try:
     os.replace(tmp, state_file)
 except OSError:
     pass
+if not quiet:
+    print(json.dumps(state, indent=1))
+sys.exit(1 if issues else 0)
+PYEOF
+  exit $?
+fi
+
+# ─── ACCEPTANCE-SCAN mode (B4 — P4 v4.96.0, the WAJIB accuracy floor) ────────
+# A v5-keyed bolt (its commit carries the `SDD-Acceptance: v5` trailer stamped
+# at commit time per bolt-contract.md) must carry <vault>/bolts/U-XXX/
+# acceptance.json written by scripts/run-acceptance-tests.sh, fresh (its pinned
+# head_sha covers the unit's newest bolt commit — the B2 covers() ancestry
+# anchor) and non-red. COMMIT-KEYED so legacy bolts NEVER retro-block: the key
+# is read from the bolt commit itself (git ground truth at commit time — the
+# same read-obligation-at-commit precedent as B1's unit_text(), EB-GATE-8
+# stickiness; a retro edit cannot add or erase it without rewriting history).
+# Pre-v5 bolts lack the trailer → advisory note in the state, never a FAIL.
+# Like B2 (and unlike B1) the artifact is READ, not recomputed — re-running
+# acceptance tests inside a PreToolUse hook is the inflation the doctrine
+# forbids; the write guard + the deterministic writer are the trust root.
+if [ "$ACCEPTANCE_SCAN" = "1" ]; then
+  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  _gate_active || exit 0
+  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
+  ACC_STATE="${CWD}/.mega-sdd/.bolt-acceptance-state.json"
+  CWD="$CWD" ACC_STATE="$ACC_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
+state_file = os.environ["ACC_STATE"]
+
+# unit -> all bolt commit shas (newest first) — commit identity per PY_COMMON.
+per_unit = {}
+for sha, subj, uid, _files in walk_log(300):
+    if uid:
+        per_unit.setdefault(uid, []).append(sha)
+
+V5_TRAILER = re.compile(r"(?im)^SDD-Acceptance:\s*v5\b")
+def v5_keyed(shas):
+    """True iff ANY of the unit's bolt commits was stamped with the v5
+    acceptance contract at commit time (a later v5 re-execution of a legacy
+    unit re-keys it — that run DID owe acceptance evidence)."""
+    for s in shas:
+        if V5_TRAILER.search(git("show", "-s", "--format=%B", s).stdout or ""):
+            return True
+    return False
+
+def covers(head_sha, newest):
+    if not head_sha or not re.fullmatch(r"[0-9a-f]{40}", str(head_sha).lower()):
+        return False  # symbolic sha rejected (S6 EB-VAL-1 parity)
+    return git("merge-base", "--is-ancestor", newest, str(head_sha)).returncode == 0
+
+RUN_HINT = ("Run \`bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> "
+            "--unit=U-XXX\` — it re-executes the unit's acceptance_test entries (plus the "
+            "L0 syntax floor over the bolt's changed files) and records the evidence "
+            "itself; the artifact is hook-guarded, direct writes are denied.")
+
+issues = []
+legacy_advisory = []
+v5_count = 0
+for uid in sorted(per_unit):
+    shas = per_unit[uid]
+    if vault_layouts.find_unit_file(cwd, uid) is None:
+        continue  # retired unit — orphan-scan owns that case
+    keyed = v5_keyed(shas)
+    art_path = vault_layouts.find_bolt_artifact(cwd, uid, "acceptance.json")
+    if not keyed:
+        # LEGACY bolt: never blocked — advisory note at most (migration guarantee).
+        if art_path is None:
+            legacy_advisory.append(uid)
+        continue
+    v5_count += 1
+    art = None
+    if art_path:
+        try:
+            art = json.load(open(art_path))
+        except (OSError, ValueError):
+            art = None  # present but unreadable = not valid evidence
+    if art is None:
+        issues.append({
+            "halt_type": "acceptance_evidence_missing", "unit_id": uid,
+            "commit": shas[0],
+            "detail": ("no readable <vault>/bolts/%s/acceptance.json — the bolt is v5-keyed "
+                       "(SDD-Acceptance trailer) but the acceptance evidence was never "
+                       "recorded" % uid),
+        })
+        continue
+    if not covers(art.get("head_sha"), shas[0]):
+        issues.append({
+            "halt_type": "acceptance_evidence_missing", "unit_id": uid,
+            "commit": shas[0],
+            "detail": ("<vault>/bolts/%s/acceptance.json is STALE — its head_sha does not "
+                       "cover the newest bolt commit %s (or is not a full 40-hex sha); "
+                       "re-run run-acceptance-tests.sh at the current HEAD" % (uid, shas[0][:9])),
+        })
+        continue
+    entries = art.get("entries") or []
+    failing = [e for e in entries if isinstance(e, dict) and e.get("pass") is False]
+    status = str(art.get("status", "")).lower()
+    # Positive-evidence discipline (B1 postflight_ok parity): a recorded pass
+    # with a failing entry inside is NOT pass.
+    if status in ("pass", "pending_manual_only") and not failing:
+        continue
+    if failing and all(str(e.get("type", "")).lower() == "syntax" for e in failing):
+        issues.append({
+            "halt_type": "build_broken", "unit_id": uid, "commit": shas[0],
+            "failing": [e.get("command", "") for e in failing][:5],
+            "detail": ("<vault>/bolts/%s/acceptance.json records L0 SYNTAX failures — a "
+                       "committed file fails its language's own syntax check (php -l / "
+                       "py_compile / node --check / ruby -c); the build is broken at the "
+                       "floor" % uid),
+        })
+    else:
+        issues.append({
+            "halt_type": "acceptance_red", "unit_id": uid, "commit": shas[0],
+            "failing": [e.get("command", "") for e in failing][:5],
+            "detail": ("<vault>/bolts/%s/acceptance.json records a non-pass result — an "
+                       "acceptance_test entry failed against the committed code (after the "
+                       "single bounded auto-retry)" % uid),
+        })
+
+state = {
+    "ts": ts, "mode": "acceptance-scan",
+    "status": "FAIL" if issues else "PASS",
+    "bolt_units_seen": len(per_unit),
+    "v5_keyed_units": v5_count,
+    "legacy_advisory": legacy_advisory,
+    "issues_count": len(issues), "issues": issues,
+    "next_action": ("%d v5-keyed bolt(s) lack passing acceptance evidence. %s Fix the "
+                    "committed code where the recorded result is red; execute-bolts is "
+                    "gated until resolved." % (len(issues), RUN_HINT))
+                   if issues else
+                   ("Every v5-keyed bolt carries passing acceptance evidence."
+                    + (" (%d legacy pre-v5 bolt(s) without acceptance.json — advisory only, "
+                       "never blocked.)" % len(legacy_advisory) if legacy_advisory else "")),
+}
+tmp = state_file + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(state, f, indent=1)
+os.replace(tmp, state_file)
 if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if issues else 0)

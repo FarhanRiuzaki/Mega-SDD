@@ -231,6 +231,11 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
     # B3 whitelist observer (S6 EB-GATE-11): bolt commits must stay inside their
     # unit's target_files whitelist (∪ sanctioned extras). Detect-and-block-next.
     bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
+    # B4 acceptance evidence (P4 v4.96.0): a v5-keyed bolt (SDD-Acceptance:v5
+    # commit trailer) must carry fresh passing acceptance.json. Commit-keyed —
+    # legacy bolts advisory-only. Detect-and-block-next; the artifact is READ,
+    # never re-executed here (B2 parity — no test runs inside a hook).
+    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --acceptance-scan --quiet >/dev/null 2>&1 || true
   fi
 fi
 

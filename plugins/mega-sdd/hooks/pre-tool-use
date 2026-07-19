@@ -422,6 +422,11 @@ except Exception as e:
         # gate. (The 6 state files are already re-derived; this extends it to B1's artifact.)
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --postflight-scan --recompute --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
+        # B4 acceptance evidence (P4 v4.96.0): commit-keyed — only bolts whose
+        # commits carry the SDD-Acceptance:v5 trailer can FAIL this state; legacy
+        # bolts are advisory-only. Like B2 the artifact is READ, never re-executed
+        # here (re-running acceptance tests in a hook is the forbidden inflation).
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --acceptance-scan --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-cross-cutting-registration.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -505,6 +510,28 @@ if d and d.get("status") == "FAIL":
     n = d.get("issues_count", len(d.get("issues", [])))
     units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
     fails.append(("whitelist-observer", "whitelist scan found %s unit(s) whose bolt commits touched files OUTSIDE their target_files whitelist (%s%s). Either revert the escaped paths or add them to the unit target_files (with the right operation) and re-save; execute-bolts is gated until resolved. State: %s/.bolt-whitelist-state.json" % (n, units, ", …" if n > 8 else "", md)))
+
+# acceptance-evidence (B4 — P4 v4.96.0, the WAJIB accuracy floor): a v5-keyed bolt
+# (its commit carries the SDD-Acceptance:v5 trailer, stamped at commit time — the
+# B1 read-obligation-at-commit precedent applied to the acceptance contract) must
+# carry passing <vault>/bolts/U-XXX/acceptance.json. Legacy pre-v5 bolts NEVER
+# block here (commit-keyed migration guarantee — the validator records them as
+# advisory only and keeps status PASS).
+d = L(".bolt-acceptance-state.json")
+if d and d.get("status") == "FAIL":
+    iss = d.get("issues", [])
+    miss = [i for i in iss if i.get("halt_type") == "acceptance_evidence_missing"]
+    red = [i for i in iss if i.get("halt_type") == "acceptance_red"]
+    broken = [i for i in iss if i.get("halt_type") == "build_broken"]
+    if miss:
+        units = ", ".join(i.get("unit_id", "?") for i in miss[:8])
+        fails.append(("acceptance-evidence", "acceptance scan found %s v5-keyed bolt(s) with no fresh acceptance.json (%s%s). Run `bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX` for each listed unit — it re-executes the unit acceptance_test entries (plus the L0 syntax floor over the bolt changed files) and records the hook-guarded evidence itself (halt acceptance_evidence_missing). Keterangan: bolt ber-trailer SDD-Acceptance wajib punya bukti acceptance yang tereksekusi; bolt lama (pra-v5) tidak pernah diblokir. State: %s/.bolt-acceptance-state.json" % (len(miss), units, ", …" if len(miss) > 8 else "", md)))
+    if broken:
+        units = ", ".join(i.get("unit_id", "?") for i in broken[:8])
+        fails.append(("acceptance-evidence", "recorded acceptance evidence shows L0 SYNTAX failures for %s unit(s) (%s%s) — a committed file fails the syntax check of its own language (php -l / py_compile / node --check / ruby -c); halt build_broken (no retry — syntax is deterministic). Keterangan: file yang di-commit tidak lolos cek sintaks bahasanya sendiri — build rusak di lantai paling dasar; perbaiki file-nya lalu jalankan ulang run-acceptance-tests.sh. State: %s/.bolt-acceptance-state.json" % (len(broken), units, ", …" if len(broken) > 8 else "", md)))
+    if red:
+        units = ", ".join(i.get("unit_id", "?") for i in red[:8])
+        fails.append(("acceptance-evidence", "recorded acceptance evidence is RED for %s unit(s) (%s%s) — an acceptance_test entry failed against the committed code even after the single bounded auto-retry (halt acceptance_red). Keterangan: kode yang sudah di-commit gagal acceptance test unit-nya — perbaiki kodenya (atau revert commit bolt), lalu jalankan `bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX` sampai hijau. State: %s/.bolt-acceptance-state.json" % (len(red), units, ", …" if len(red) > 8 else "", md)))
 
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
@@ -713,6 +740,7 @@ _GUARDED = (
     ".cross-cutting-state.json", ".bolt-orphans-state.json",
     ".batch-suite-gate-state.json", ".bolt-postflight-state.json",
     ".factory-ledger-state.json", ".bolt-whitelist-state.json",
+    ".bolt-acceptance-state.json",
 )
 if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUARDED):
     print("protected")
@@ -726,17 +754,21 @@ if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUAR
 # gives a present sha/signature snapshot PRECEDENCE over commit evidence, so
 # a forged baseline laundered a DO_NOT_MODIFY/SIGNATURE violation past B1
 # even at the recompute gate; sanctioned writer: scripts/run-preflight-scan.sh.
-elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:pre|post)flight\.json|_batch-suite\.json)$", rel):
+# P4: the B4 acceptance evidence acceptance.json joins the guard the same way —
+# the gate READS it (B2-style, never recomputed in the hook), so one plain
+# Write of {status:pass} would clear a documented hard block; sanctioned
+# writer: scripts/run-acceptance-tests.sh.
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance)\.json|_batch-suite\.json)$", rel):
     # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
     # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
     print("evidence")
 ' 2>/dev/null)
       if [ "$FP_GUARD" = "protected" ]; then
-        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, factory-ledger) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
+        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
       fi
       if [ "$FP_GUARD" = "evidence" ]; then
-        emit_block "Blocked: direct Write/Edit of a B1/B2 evidence artifact (preflight.json / postflight.json / _batch-suite.json). These are produced ONLY by their deterministic writers — run \`bash <plugin>/scripts/run-preflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (captures the pre-flight Hard-rule BASELINE snapshot), \`bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (executes the unit's Hard rules and records verdicts) or \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` (runs the FULL suite and records the result at the pinned HEAD). A hand-written artifact is a forged gate verdict — and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). Human user can still modify these files via shell outside the agent."
+        emit_block "Blocked: direct Write/Edit of a B1/B2/B4 evidence artifact (preflight.json / postflight.json / acceptance.json / _batch-suite.json). These are produced ONLY by their deterministic writers — run \`bash <plugin>/scripts/run-preflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (captures the pre-flight Hard-rule BASELINE snapshot), \`bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (executes the unit's Hard rules and records verdicts), \`bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX\` (re-executes the unit's acceptance_test entries + the L0 syntax floor and records the B4 evidence) or \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` (runs the FULL suite and records the result at the pinned HEAD). A hand-written artifact is a forged gate verdict — and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). Human user can still modify these files via shell outside the agent."
       fi
     fi
 
@@ -848,7 +880,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:pre|post)flight\.json|bolts/_batch-suite\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -875,7 +907,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|bolts/[^[:space:]]*(pre|post)flight\.json|bolts/_batch-suite\.json'
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
@@ -923,7 +955,7 @@ else:
     fi
 
     if [ -n "$BYPASS_DETECTED" ]; then
-      REASON="Blocked: $BYPASS_DETECTED. Guard state files (moat + quality-gate states under .mega-sdd/) and the B1/B2 evidence artifacts (preflight.json, postflight.json, _batch-suite.json) are managed by hooks/validators/deterministic writers — direct agent modification is a forged gate verdict, and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run at the execute-bolts gate), or run the sanctioned writer (scripts/run-preflight-scan.sh / scripts/run-postflight-scan.sh / scripts/run-full-suite.sh). Human user can still modify these files via shell outside the agent."
+      REASON="Blocked: $BYPASS_DETECTED. Guard state files (moat + quality-gate states under .mega-sdd/) and the B1/B2/B4 evidence artifacts (preflight.json, postflight.json, acceptance.json, _batch-suite.json) are managed by hooks/validators/deterministic writers — direct agent modification is a forged gate verdict, and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run at the execute-bolts gate), or run the sanctioned writer (scripts/run-preflight-scan.sh / scripts/run-postflight-scan.sh / scripts/run-acceptance-tests.sh / scripts/run-full-suite.sh). Human user can still modify these files via shell outside the agent."
       emit_block "$REASON"
     fi
     ;;

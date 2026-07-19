@@ -41,6 +41,7 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── units/U-*.md, _index.md                # Atomic units
 │   │   ├── bolts/U-*/bolt-report.md               # Bolt outcomes
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
+│   │   ├── bolts/U-*/acceptance.json              # B4 acceptance evidence (run-acceptance-tests.sh)
 │   │   ├── interfaces/                            # Multi-squad interface notes
 │   │   ├── fsd/                                   # Confluence FSD output (emit-fsd)
 │   │   │   ├── FSD.md                             # Markdown source
