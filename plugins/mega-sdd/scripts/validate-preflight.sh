@@ -54,9 +54,26 @@ if command -v tree-sitter >/dev/null 2>&1 || command -v tree-sitter-cli >/dev/nu
   TS_PRESENT=1
 fi
 
+# P1 (v4.93.0, decision 8): the probe predicates live in the SHARED library
+# scripts/_lib/state_probes.py — one probe set for preflight AND the routing
+# digest (derive-state.sh), so the two surfaces can never re-diverge again.
+# Semantics are IDENTICAL to the inline functions this script carried pre-P1
+# (incl. S4 BC-PREFLIGHT-LEGACY: the map probe accepts the legacy repo-root
+# location; probing only the canonical path FATAL-blocked every bind on a
+# pre-migration project whose map bind would happily consume).
+export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
+
 CWD="$CWD" SKILL="$SKILL" TS_PRESENT="$TS_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
-import json, os, glob, sys
+import json, os, sys
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+from state_probes import (
+    has_vault as _has_vault,
+    has_bound_or_vault as _has_bound_or_vault,
+    has_units as _has_units,
+    has_codebase_map as _has_codebase_map,
+)
 
 cwd = os.environ["CWD"]
 skill = os.environ.get("SKILL", "")
@@ -64,42 +81,21 @@ ts_present = os.environ.get("TS_PRESENT", "0") == "1"
 quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-vault_root = os.path.join(cwd, ".mega-sdd", "vaults")
-
 
 def has_vault():
-    return bool(
-        glob.glob(os.path.join(vault_root, "*", "vault.json")) or
-        glob.glob(os.path.join(vault_root, "*", "0[0-6]-*.md"))
-    )
+    return _has_vault(cwd)
 
 
 def has_bound_or_vault():
-    # Bound copy: canonical <vault>/bound/ (v3.4+) OR legacy <vault>-bound/.
-    return has_vault() or bool(
-        glob.glob(os.path.join(vault_root, "*", "bound", "*")) or
-        glob.glob(os.path.join(vault_root, "*-bound", "*"))
-    )
+    return _has_bound_or_vault(cwd)
 
 
 def has_units():
-    return bool(
-        glob.glob(os.path.join(vault_root, "*", "units", "U-*.md")) or
-        glob.glob(os.path.join(vault_root, "*", "units", "U-*", "unit.md")) or
-        glob.glob(os.path.join(vault_root, "*-bound", "units", "U-*.md")) or
-        glob.glob(os.path.join(vault_root, "*-bound", "units", "U-*", "unit.md"))
-    )
+    return _has_units(cwd)
 
 
 def has_codebase_map():
-    # S4 BC-PREFLIGHT-LEGACY: probe the SAME order bind-codebase does
-    # (SKILL.md §Inputs + paths.md back-compat) — canonical nested path, then the
-    # legacy repo-root map. Probing only the canonical path FATAL-blocked every
-    # bind on a pre-migration project whose map bind would happily consume.
-    return (
-        os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md"))
-        or os.path.isfile(os.path.join(cwd, "codebase-map.md"))
-    )
+    return _has_codebase_map(cwd)
 
 
 fatal = None          # {check_id, on_fail}
