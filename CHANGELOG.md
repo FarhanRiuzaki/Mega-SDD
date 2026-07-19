@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.1.0] - 2026-07-19
+
+P7 slice-first — the measurement instrument first (v5 spec P7 row; research `research/2026-07-19-p7-seed-budget-baseline.md`; advisor counsel: measure-first). feat(token): **`seeding_budget.py` + `measure-seeds.sh` — the ruler every slice-first cut is justified by.** Points at each consumer's current seed and ranks by bytes: bind-codebase is the dominant seed (**≥57%**, codebase-map + framework-pack), phase-advisor #2, generate-units' bound/ portion small-and-risky (→ retired last). oq-queue verified already collapsed by `all-priorities` (no rebuild). The **phase invariant** for every later cut: a slice is a *seed the consumer expands from, never a cap* — each bind-slice/advisor-bundle/kb-claims commit must ship a seed-not-boundary CONFLICT test.
+
+### Added
+- `plugins/mega-sdd/scripts/_lib/seeding_budget.py` — thin byte/approx-token counter + advisory/`--enforce` budget verdict; surfaces MISSING components (never understates by omission).
+- `plugins/mega-sdd/scripts/measure-seeds.sh` — per-consumer seed enumerator + ranked table (`--json` = P10 telemetry substrate); honest "(varies)" omissions, never fabricated counts.
+- `plugins/mega-sdd/tests/token-cost/test-seeding-budget.sh` — 18 checks (math, dedup, missing-surfaced, budget/enforce exit contract, live-vault ranking).
+- Blackbox stage **S12.7** — the instrument re-measured on the real pipeline vault every CI run.
+
 ## [5.0.0] - 2026-07-19
 
 P6 surface collapse (v5 spec `docs/superpowers/specs/2026-07-19-v5-execution-spec.md` P6 row + decisions 1/2 + sequencing #3; research §5) — feat(surface)!: **three verbs — `/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit` — 24 commands become aliases for the 5.x cycle; BREAKING: the command surface contract (artifacts unchanged, forever readable).**

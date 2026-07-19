@@ -188,7 +188,9 @@ grep -qiF "telemetry review" "$P/CLAUDE.md" \
   && ok "CLAUDE.md carries the decision-2 alias/removal amendment" || fail "CLAUDE.md amendment missing"
 V1=$(grep -oE '"version": "[^"]+"' "$P/.claude-plugin/plugin.json" | head -1)
 V2=$(grep -oE '"version": "[^"]+"' "$ROOT/.claude-plugin/marketplace.json" | head -1)
-[ "$V1" = '"version": "5.0.0"' ] && ok "plugin.json is 5.0.0" || fail "plugin.json version wrong: $V1"
+# The surface collapse landed in the 5.x MAJOR; assert major==5 (not a frozen
+# minor — that is the version-archaeology anti-pattern) + the two manifests agree.
+echo "$V1" | grep -qE '"version": "5\.[0-9]+\.[0-9]+"' && ok "plugin.json is on the 5.x surface major ($V1)" || fail "plugin.json not 5.x: $V1"
 [ "$V1" = "$V2" ] && ok "marketplace.json matches plugin.json" || fail "manifest mismatch: $V1 vs $V2"
 
 echo
