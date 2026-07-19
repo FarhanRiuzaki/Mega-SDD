@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-citation-drift.sh — W3: the SANCTIONED reader of <vault>/fsd/.citation-map.json
+# check-citation-drift.sh — W3: the SANCTIONED reader of <vault>/<doc>/.citation-map.json
 # (spec 2026-07-19-w-batch-script-derive.md). The model NEVER Reads the map — this
 # script reads the prior map itself, recomputes each source's sha256 from file
 # bytes, and prints ONLY drifted-source lines. That replaces emit-fsd's wholesale
@@ -8,7 +8,11 @@
 # a legacy model-written map surfaces as DRIFT (the conservative direction).
 #
 # Usage:
-#   check-citation-drift.sh --vault=<vault-dir> --cwd=<project-root>
+#   check-citation-drift.sh --vault=<vault-dir> --cwd=<project-root> [--doc=<name>]
+#     (--doc names the doc lane, default fsd — it parameterizes ONLY the prior-map
+#      path <vault>/<doc>/.citation-map.json; with --doc absent or =fsd every code
+#      path is byte-identical to the pre-flag script. P3 seam for emit-prd/emit-sit
+#      — see references/emission-engine.md)
 #
 # Stdout grammar (pinned — never 64-hex strings, never raw JSON):
 #   DRIFT <section> <path> <old12> <new12>   source bytes changed since the prior emit
@@ -30,17 +34,22 @@ set -uo pipefail
 
 VAULT=""
 CWD=""
+DOC="fsd"
 for arg in "$@"; do
   case "$arg" in
     --vault=*) VAULT="${arg#*=}" ;;
     --cwd=*)   CWD="${arg#*=}" ;;
+    --doc=*)   DOC="${arg#*=}" ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 [ -n "$VAULT" ] && [ -d "$VAULT" ] || { echo "--vault=<vault-dir> required (dir must exist)" >&2; exit 2; }
 [ -n "$CWD" ] && [ -d "$CWD" ] || { echo "--cwd=<project-root> required (dir must exist)" >&2; exit 2; }
+case "$DOC" in
+  ''|*[!a-z0-9-]*) echo "--doc must be lowercase alnum/hyphen (got: $DOC)" >&2; exit 2 ;;
+esac
 
-MAP="$VAULT/fsd/.citation-map.json"
+MAP="$VAULT/$DOC/.citation-map.json"
 if [ ! -f "$MAP" ]; then
   echo "NO_PRIOR"
   exit 0

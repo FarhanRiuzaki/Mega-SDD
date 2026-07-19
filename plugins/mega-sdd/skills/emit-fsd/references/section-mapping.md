@@ -3,6 +3,10 @@
 > **Per-section: source artifact path(s), extraction rules, citation format.**
 > Consumed by `emit-fsd/SKILL.md` Step 4 (per-section emission loop).
 > Every slot in `fsd-template.md` MUST have an extraction rule here.
+>
+> This file is the FSD doc-pack's **section map** for the shared emission engine
+> (`plugins/mega-sdd/references/emission-engine.md` §What a doc-pack supplies) —
+> the engine spine is doc-agnostic; every FSD-specific extraction rule lives here.
 
 ## Contents
 
