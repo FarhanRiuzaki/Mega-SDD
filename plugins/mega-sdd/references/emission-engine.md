@@ -9,9 +9,10 @@
 - What a doc-pack supplies
 - The emission spine (steps)
 - Script contracts (shared, `--doc`-parameterized)
+- Doc-pack sidecar scripts (P5 — doc-specific, not engine spine)
 - Anti-hallucination rails (engine-level)
 - Doc-pack registry
-- P5 seams (deliberately not generalized in P3)
+- P5 seams (declared in P3 — resolved in P5)
 
 ## What a doc-pack supplies
 
@@ -48,7 +49,12 @@ All three scripts live in `plugins/mega-sdd/scripts/` and default to the FSD lan
 
 - **`build-citation-map.sh --vault=<v> --cwd=<root> --mode=<m> [--doc=<name>]`** — parses `<vault>/<doc>/<DOC>.md`'s citation markers via the canonical `_lib/citation_pattern.py` grammar, resolves each cited path (vault/-prefix → vault → project → codebase-map), computes sha256 over file BYTES, replaces `pending` stamps in place, writes `<vault>/<doc>/.citation-map.json` (schema 2.0 — the `fsd_section` key name is schema-pinned and stays for every doc lane). Exit 0 clean (ONE stdout line) · 1 UNRESOLVED/LEFTOVER (map still written — audit trail survives the halt) · 2 usage. Idempotent.
 - **`check-citation-drift.sh --vault=<v> --cwd=<root> [--doc=<name>]`** — the sanctioned reader of `<vault>/<doc>/.citation-map.json`; recomputes each prior source's sha256 and prints ONLY the pinned grammar `DRIFT <section> <path> <old12> <new12>` / `GONE <section> <path> <old12>` / `UNVERIFIED <section> <path>` / `NO_PRIOR` / `PRIOR_UNREADABLE` — never 64-hex strings, never raw JSON. Exit 0 for all informational outcomes · 2 usage.
-- **`refresh-doc-stamps.sh --vault=<v> --doc=<name> [--maturity=..] [--position=..] [--generated-at=..]`** — writes/refreshes ONLY the script-owned doc-control block (`<!-- mega-sdd:doc-control … -->`, inserted after the frontmatter) without touching any other byte (stamp-binding-boilerplate.sh precedent: parser-invisible, pure-additive, idempotent, atomic). Exit 0 stamped/no-op · 2 usage/doc missing. **P3 status: shipped + tested, NOT yet wired into any skill — P5 wires it at phase boundaries** so a maturity/position bump costs ~0 tokens instead of a full re-emission.
+- **`refresh-doc-stamps.sh --vault=<v> --doc=<name> [--maturity=..] [--position=..] [--generated-at=..]`** — writes/refreshes ONLY the script-owned doc-control block (`<!-- mega-sdd:doc-control … -->`, inserted after the frontmatter) without touching any other byte (stamp-binding-boilerplate.sh precedent: parser-invisible, pure-additive, idempotent, atomic). Exit 0 stamped/no-op · 2 usage/doc missing. **WIRED (P5):** every emitter's final step runs it (emit-fsd Step 6.5, emit-prd Step 6, emit-sit Step 6), and orchestrate-flow refreshes the `position` field for every existing emitted doc at chain boundaries (`chain-execution.md §Auto-integrated diagnostics` — script-lane, ~0 tokens; a maturity/position bump never needs a re-emission). Maturity rungs are set ONLY at emit time (FSD from mode; SIT from the `build-sit-evidence.sh` verdict) or by humans (PRD `reviewed`/`final`) — the chain boundary passes `--position` only.
+
+### Doc-pack sidecar scripts (P5 — doc-specific, not engine spine)
+
+- **`build-sit-evidence.sh --vault=<v> [--vault=<v2> …] --cwd=<root> [--out=..] [--check-signoff]`** — the SIT doc-pack's deterministic evidence builder: emits the §1–§5 fragment (`<vault>/sit/.sit-evidence.md`) from `04-flows.md` + unit `acceptance_test[]` + the hook-guarded B4/B1/B2 artifacts, computes the `planned|partial|executed` maturity verdict, and enforces the sign-off slot grammar (`--check-signoff`: a non-placeholder Nama/Tanggal/Tanda-tangan/Status cell in §5 → exit 1 `SIGNOFF_*` + keterangan — a model-filled sign-off is a fabricated record, decision 5).
+- **`check-prd-markers.sh --prd=<PRD.md> --cwd=<root> [--kb=..]`** — the PRD doc-pack's marker-preservation check: a PRD line citing a KB claim must carry that claim's `[VERIFIED]/[INFERRED]/[OPEN]` marker verbatim (`MARKER_STRIPPED`/`MARKER_UPGRADED`/`MARKER_MISSING` → exit 1 + keterangan — an inferred claim presented as fact never ships).
 
 ## Anti-hallucination rails (engine-level)
 
@@ -65,11 +71,11 @@ Every doc-pack inherits these (the FSD doc-pack states the operative FSD wording
 | doc | pack (skill) | status |
 |---|---|---|
 | `fsd` | `emit-fsd` (SKILL.md + references/section-mapping.md + fsd-template.md) | LIVE — the extracted-from original; byte-parity-pinned |
-| `prd` | `emit-prd` — reverse-capable, `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim | P5 |
-| `sit` | `emit-sit` — TS-NNN ← F-NNN scenarios, script-derived executed evidence, placeholder-literal sign-off | P5 |
+| `prd` | `emit-prd` (SKILL.md + references/prd-sections.md + prd-template.md) — forward + REVERSE (KB, no vault), `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`check-prd-markers.sh`) | LIVE (P5) |
+| `sit` | `emit-sit` (SKILL.md + references/sit-sections.md + sit-template.md) — TS-NNN ← F-NNN scenarios (Mermaid verbatim), script-derived executed evidence + placeholder-literal sign-off (`build-sit-evidence.sh`) | LIVE (P5) |
 
-## P5 seams (deliberately not generalized in P3)
+## P5 seams (declared in P3 — resolved in P5)
 
-- **`validate-fsd-slots.sh` stays FSD-scoped.** Its PostToolUse contract keys on the written file path (`*FSD.md` / `*/fsd/*.md`) and writes `.mega-sdd/.fsd-slots-state.json`; widening the path filter to `prd/`/`sit/` (or adding a `--doc` flag the hook dispatch could never pass) would change hook behavior for existing projects — not zero-risk, so P3 leaves it untouched. P5 generalizes the slot scan when it ships the prd/sit lanes.
-- **`refresh-doc-stamps.sh` is unwired** — no skill invokes it until P5 (zero behavior change in P3).
-- The map's `fsd_section` field name is schema-2.0-pinned; renaming it per doc lane is a schema-3.0 decision for P5, not a P3 parameterization.
+- **`validate-fsd-slots.sh` stays FSD-scoped — permanently.** Its PostToolUse contract keys on the written file path (`*FSD.md` / `*/fsd/*.md`) and writes `.mega-sdd/.fsd-slots-state.json`; widening the path filter (or adding a `--doc` flag the hook dispatch could never pass) would change hook behavior for existing projects. **P5's chosen zero-risk wiring:** the prd/sit lanes run the engine's step-5 in-skill `grep -oE '\{\{[a-z0-9_-]+\}\}'` slot scan, and the SIT sign-off slot grammar is enforced by the SIBLING deterministic check `build-sit-evidence.sh --check-signoff` (run as a mandatory emit-sit gate step + as a re-emission guard) — no hook contract touched.
+- **`refresh-doc-stamps.sh` is WIRED (P5)** — emitter final steps + orchestrate-flow chain boundaries (see §Script contracts above).
+- The map's `fsd_section` field name is schema-2.0-pinned and stays for every doc lane (prd/sit maps reuse it verbatim); renaming per doc lane remains a schema-3.0 decision.

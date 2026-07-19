@@ -12,7 +12,8 @@
 #   4  parser-invisible: build-citation-map.sh entry set + stamps identical
 #      across stamping; validate-fsd-slots.sh still PASSes
 #   5  missing doc → exit 2; bad --doc → exit 2
-#   6  P3 ships UNWIRED: no file under plugins/mega-sdd/skills/ names the script
+#   6  P5 WIRING (was: P3 ships unwired): every emitter final step + the
+#      orchestrate-flow chain boundary invoke the script
 #
 # Run: bash tests/derived-artifacts/test-p3-refresh-doc-stamps.sh
 set -uo pipefail
@@ -120,12 +121,15 @@ bash "$REFRESH" --vault="$V" --doc=sit </dev/null >/dev/null 2>&1; RC=$?
 bash "$REFRESH" --vault="$V" --doc='FSD;rm' </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 2 ] && ok "5: malformed --doc → exit 2" || fail "5: malformed --doc rc=$RC (want 2)"
 
-# ── 6: P3 ships the refresher UNWIRED (P5 wires it) ──
-if grep -rq 'refresh-doc-stamps' "${ROOT}/plugins/mega-sdd/skills" 2>/dev/null; then
-  fail "6: a skill references refresh-doc-stamps.sh — P3 must ship it unwired (zero behavior change)"
-else
-  ok "6: no skill references refresh-doc-stamps.sh (unwired until P5)"
-fi
+# ── 6: P5 wiring — emitters + orchestrate-flow chain boundary invoke it ──
+# (P3 shipped the script UNWIRED and this check pinned that; P5 v4.97.0 wired
+# it, so the pin flips: every doc-pack's final step AND the chain-boundary
+# refresh in orchestrate-flow must name the script.)
+WIRED=1
+for w in skills/emit-fsd skills/emit-prd skills/emit-sit skills/orchestrate-flow; do
+  grep -rq 'refresh-doc-stamps' "${ROOT}/plugins/mega-sdd/$w" 2>/dev/null || { WIRED=0; fail "6: $w lost the refresh-doc-stamps.sh wiring (P5)"; }
+done
+[ "$WIRED" -eq 1 ] && ok "6: P5 wiring live — emit-fsd/emit-prd/emit-sit + orchestrate-flow chain boundary invoke refresh-doc-stamps.sh"
 
 if [ "$FAILED" -eq 0 ]; then note "PASS: P3 refresh-doc-stamps suite"; exit 0
 else note "FAIL: P3 refresh-doc-stamps suite"; exit 1; fi
