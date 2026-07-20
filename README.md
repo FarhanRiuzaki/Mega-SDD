@@ -84,7 +84,7 @@ For higher precision (optional, recommended), let the OS-aware installer set up 
 /mega-sdd:install-deps
 ```
 
-It detects your OS + package manager and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `tectonic` with safety rails (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+It detects your OS + package manager and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) + a detected Chrome for PDF with safety rails (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
 ### 2. Keep it updated
 
@@ -286,7 +286,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Generate Confluence FSD manually | `/mega-sdd:emit fsd` (chain-end auto-emit is opt-in via `--with-fsd`) |
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
-| Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
+| Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |

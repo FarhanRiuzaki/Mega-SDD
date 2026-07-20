@@ -23,7 +23,7 @@ description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid 
 
 - `<vault-path>` (positional, optional — defaults to first vault detected via `plugins/mega-sdd/references/paths.md` priority order)
 - `--vaults=<comma-list>` (multi-scope merge — ONE SIT, per-scope sections, ids `TS-<SCOPE>-NNN`; scope id from each vault's `vault.json scope_metadata.id`)
-- `--no-pdf` (markdown-only; useful when pandoc/LaTeX absent)
+- `--no-pdf` (markdown-only; skip the md2pdf render)
 - `--auto` (orchestrator-invoked; emit handoff YAML in chat per `mega-sdd:orchestrate-flow/references/handoff-contract.md`)
 
 ## Outputs
@@ -31,7 +31,7 @@ description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid 
 ```
 <vault-path>/sit/
 ├── SIT.md                      # 5-section SIT (see references/sit-template.md)
-├── SIT.pdf                     # rendered PDF via pandoc (absent if pandoc/LaTeX unavailable)
+├── SIT.pdf                     # GitHub-style PDF via scripts/md2pdf.sh (Chrome; SIT.html fallback if Chrome absent)
 ├── .sit-evidence.md            # script-written fragment (build-sit-evidence.sh) — the §1–§5 tables
 └── .citation-map.json          # script-written by build-citation-map.sh --doc=sit
 ```
@@ -40,7 +40,7 @@ description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid 
 
 1. **vault_present_for_sit**: `test -f <vault-path>/vault.json` OR vault docs `0[0-6]-*.md` present — required (halt `dep_missing` if absent)
 2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only)
-3. **pandoc_latex_engine_present**: `command -v xelatex || command -v tectonic` — warn if absent (HTML fallback)
+3. **chrome_present** / **mmdc_present**: warn-only (Chrome → PDF else GitHub-styled HTML; mmdc → mermaid diagrams else code). PDF style is github.css, never LaTeX.
 
 ## Procedure
 
@@ -90,9 +90,9 @@ Run `bash <plugin-root>/scripts/build-sit-evidence.sh --check-signoff --vault=<v
 - Exit 0 → sign-off rows are still placeholder literals. Proceed.
 - Exit 1 → halt `quality_gate_failed` subtype `signoff_fabricated` with the script's `SIGNOFF_*` lines + keterangan verbatim; STOP — a model-filled sign-off row is a fabricated approval record (decision 5) and must never render.
 
-### Step 5: Render PDF via pandoc (optional)
+### Step 5: Render PDF via md2pdf (optional)
 
-Same lane as emit-fsd Step 5: pandoc absent → skip with warning; LaTeX absent → HTML fallback; pandoc failure → halt `quality_gate_failed:pdf_render_failed`. `--no-pdf` skips.
+Same lane as emit-fsd Step 5 — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/md2pdf.sh" <vault>/sit/SIT.md <vault>/sit/SIT.pdf --toc` (GitHub/VS Code style, NEVER LaTeX; throwaway-copy transforms keep `SIT.md`'s citation sha intact). Exit 0 → `SIT.pdf`; exit 3 → Chrome absent, `SIT.html` fallback (accepted); exit 2 → pandoc absent (skip); exit 1 → halt `quality_gate_failed:pdf_render_failed`. `--no-pdf` skips.
 
 ### Step 6: Doc-control stamp (script-run)
 

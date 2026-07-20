@@ -151,7 +151,8 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
 | `pandoc` | emit-fsd / emit-prd / emit-sit (PDF rendering) | Markdown-only output |
-| `tectonic` | emit lanes (LaTeX engine for PDF) | HTML → browser print-to-PDF |
+| `mmdc` | emit lanes — mermaid→SVG for the md2pdf PDF (Chrome-print, GitHub style) | mermaid stays code |
+| Google Chrome | emit lanes — the PDF printer (detect-only, not installed) | GitHub-styled HTML fallback |
 | `markdownlint-cli2` | lint-units (vault prose) | skill-internal heuristics |
 | `semgrep` | execute-bolts L0 code gate 4 (SAST on bolt diffs) | gate SKIPs with a note |
 | `gitleaks` | execute-bolts L0 code gate 3 (secret scan) | plugin regex fallback (always scanned) |

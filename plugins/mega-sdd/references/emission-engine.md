@@ -26,7 +26,7 @@ A **doc-pack** is a skill (e.g. `emit-fsd`) that binds the engine spine to one d
 | **template** | the slot-marker (`{{slot_name}}`) skeleton the loop fills | `emit-fsd/references/fsd-template.md` |
 | **maturity ladder** | the doc's maturity rungs for the doc-control stamp | FSD `pre-development → post-development` (PRD `draft-from-legacy → reviewed → final`; SIT `planned → partial → executed`) |
 | **mode detection** | how CWD state picks the emission mode/maturity | `section-mapping.md §Mode determination` |
-| **render config** | styling + optional PDF/HTML render inputs | `emit-fsd/references/styling-config.yaml` + `pandoc-template.tex` |
+| **render config** | styling + optional PDF/HTML render inputs | `emit-fsd/references/styling-config.yaml` (doc-metadata) + `scripts/md2pdf.sh` + `references/github.css` (PDF style — NEVER LaTeX) |
 
 The doc-pack keeps EVERY doc-specific rule (section semantics, slot names, mode labels, halt subtypes' `source_skill`, handoff schema). The engine owns only the spine below.
 
@@ -40,7 +40,7 @@ The proven 8-step order (extracted from `emit-fsd/SKILL.md` — the FSD doc-pack
 4. **Assemble `<DOC>.md`** — substitute slot content into the doc-pack template; write to `<vault>/<doc>/<DOC>.md`.
 5. **Unfilled-slot scan** — scan the assembled file for leftover `{{...}}` markers (`grep -oE '\{\{[a-z0-9_-]+\}\}'`); ANY hit → halt `quality_gate_failed` with subtype `template_slot_unfilled` and STOP before render — a literal slot marker must never ship.
 6. **Citation stamping + map write (script-run, BEFORE render)** — run `build-citation-map.sh --vault=<vault> --cwd=<project-root> --mode=<mode> [--doc=<doc>]`. Exit 0 → stamps are real, `<vault>/<doc>/.citation-map.json` (schema 2.0) written including script-derived `missing_sources[]`; exit 1 → halt `quality_gate_failed:citation_unresolvable` carrying the script's `UNRESOLVED`/`LEFTOVER` lines, do NOT render (a fabricated or stale citation must never ship in a stamped document); exit 2 → internal usage bug.
-7. **Optional render** — pandoc → PDF via xelatex/tectonic; HTML fallback when LaTeX absent; markdown-only when pandoc absent (the doc-pack owns the exact commands + warnings). Render failure → halt `quality_gate_failed:pdf_render_failed`.
+7. **Optional render** — md2pdf.sh → GitHub-styled PDF via Chrome (never LaTeX); HTML fallback when Chrome absent; markdown-only when pandoc absent (the doc-pack owns the exact commands + warnings). Render failure → halt `quality_gate_failed:pdf_render_failed`.
 8. **Doc-control stamping** — the doc-control/state-stamp block (maturity rung, pipeline position, generated-at pointer) is SCRIPT-OWNED: `refresh-doc-stamps.sh` writes/refreshes it as a parser-invisible HTML-comment block; the model never types it. Then summary to user (+ handoff YAML under `--auto`, per the doc-pack).
 
 ## Script contracts (shared, `--doc`-parameterized)

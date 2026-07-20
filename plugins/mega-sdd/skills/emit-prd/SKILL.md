@@ -31,7 +31,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 ```
 <out-root>/prd/
 ├── PRD.md                      # 6-section PRD (see references/prd-template.md)
-├── PRD.pdf                     # via pandoc when available
+├── PRD.pdf                     # GitHub-style PDF via scripts/md2pdf.sh (Chrome; PRD.html fallback)
 └── .citation-map.json          # script-written by build-citation-map.sh --doc=prd
 ```
 
@@ -40,7 +40,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 ## Pre-flight checks
 
 1. **source_present**: vault (`vault.json` or `0[0-6]-*.md` docs) OR KB (`knowledge-base/README.md`) — neither → halt `dep_missing`
-2. **pandoc_installed** / **pandoc_latex_engine_present** — warn-only degradations (same lane as emit-fsd)
+2. **pandoc_installed** / **chrome_present** / **mmdc_present** — warn-only (PDF via Chrome else GitHub-styled HTML; mmdc→mermaid diagrams else code; never LaTeX)
 
 ## Procedure
 
@@ -81,9 +81,9 @@ Run `bash <plugin-root>/scripts/check-prd-markers.sh --prd=<out-root>/prd/PRD.md
 - Exit 1 → halt `quality_gate_failed` subtype `marker_stripped` carrying the script's `MARKER_STRIPPED`/`MARKER_UPGRADED`/`MARKER_MISSING` lines + keterangan verbatim; STOP — an inferred claim presented as fact must never ship.
 - (Forward mode with no KB: the script exits 0 with a note — harmless to always run.)
 
-### Step 5: Render PDF via pandoc (optional)
+### Step 5: Render PDF via md2pdf (optional)
 
-Same lane as emit-fsd Step 5 (skip/HTML-fallback/halt `pdf_render_failed`). `--no-pdf` skips.
+Same lane as emit-fsd Step 5 — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/md2pdf.sh" <vault>/prd/PRD.md <vault>/prd/PRD.pdf --toc` (GitHub/VS Code style, NEVER LaTeX; transforms on a throwaway copy so `PRD.md`'s citation sha stays intact). Exit 0 → `PRD.pdf`; exit 3 → Chrome absent, `PRD.html` fallback (accepted, not a halt); exit 2 → pandoc absent (skip); exit 1 → halt `pdf_render_failed`. `--no-pdf` skips.
 
 ### Step 6: Doc-control stamp (script-run)
 
