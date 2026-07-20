@@ -80,7 +80,7 @@ After Step 10 populates §7 Framework, run the deep-scan stage automatically (op
 
 On completion, announce: "Codebase map written to `<path>`." + the CWD-conditional next step (vault exists → `/mega-sdd:bind-codebase <vault>`; none yet → `/mega-sdd:generate-intent --scan=<map>`).
 
-Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record per your local template — the record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`** (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record per your local template — the record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`** (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
 
 ## Memory layer
 

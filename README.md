@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 4.70.0 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 5.2.1 · **License:** MIT
 
 </div>
 
@@ -17,7 +17,7 @@
 ## 30-second pitch
 
 ```bash
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 That's it. Mega-sdd runs the full pipeline: parse PRD → scan codebase → bind claims → generate atomic units → execute bolts via TDD → commit code. Single upfront confirmation; auto-continues unless something needs human input.
@@ -110,11 +110,11 @@ A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/s
 ### 4. Common invocations
 
 ```bash
-/mega-sdd:auto ./prd.md                   # PRD → working code (5 phases)
-/mega-sdd:auto ./legacy-php/ --out=./new/ # Legacy KB → vault → code (6 phases)
-/mega-sdd:auto "build a clinic system"    # Free-text brief → code (3 phases)
-/mega-sdd:auto                            # CWD-driven (inspect state, propose chain)
-/mega-sdd:auto --resume                   # Continue paused/halted chain
+/mega-sdd ./prd.md                   # PRD → working code (5 phases)
+/mega-sdd ./legacy-php/ --out=./new/ # Legacy KB → vault → code (6 phases)
+/mega-sdd "build a clinic system"    # Free-text brief → code (3 phases)
+/mega-sdd                            # no arg → status view, then proposes next chain
+/mega-sdd --resume                   # Continue paused/halted chain
 ```
 
 Single confirmation. Auto-continues clean phases. Halts surface YAML blockers with a `next_action` field — exactly what to run to recover.
@@ -141,7 +141,7 @@ The full defense in depth (19 layers, including the code-delivery quality gates)
 
 Most AI-dev tools take a PRD → spit code in one shot. **Mega-sdd inserts structured intermediate artifacts** (vault → binding → units → bolts) so every layer is auditable, every handoff is contracted, and the AI agent has explicit constraints to respect at each step.
 
-- **One command, full pipeline** — `/mega-sdd:auto` runs PRD → vault → binding → units → tested commits with a single upfront confirmation; halts carry the exact recovery command.
+- **One command, full pipeline** — `/mega-sdd` runs PRD → vault → binding → units → tested commits with a single upfront confirmation; halts carry the exact recovery command.
 - **Smart orchestrator** — memory-driven routing (after 3+ successful runs of your project shape it recommends the proven chain) + predictive preflight (catches `dep_missing` *before* the chain starts, not 8 minutes in).
 - **Starterkit-aware** — auto-detects your stack's actual conventions (auth lib, RBAC, UI stack, layouts) and generates units that cite *your* patterns, so bolts match your codebase by default.
 - **Memory that learns across sessions** — three scopes (user / project / vault), suggestion-only via `/mega-sdd:memory review`, mandatory audit log + rollback, `--memory-off` honored.
@@ -221,7 +221,7 @@ flowchart TD
     GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks}}:::gate
 
     %% Orchestrator with intelligence layer
-    AUTO([🚀 /mega-sdd:auto --deep<br/>single confirm + auto-continue<br/>+ checkpoints + smart routing]):::primary
+    AUTO([🚀 /mega-sdd --deep<br/>single confirm + auto-continue<br/>+ checkpoints + smart routing]):::primary
     AUTO <-.reads + writes.-> ROUTING
     AUTO -.consults pre-invoke.-> PREDICT
     AUTO -.validates every handoff.-> GATE
@@ -255,41 +255,43 @@ flowchart TD
 - 📐 **starterkit-context**: auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
 - **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting + intelligence-layer consults
 
-All phases auto-chain via `/mega-sdd:auto`. Each phase emits typed handoff YAML that the orchestrator validates (schema + types) before continuing; the intelligence layer consults past routing outcomes at chain start, runs predictive preflight before each skill, and records the run's outcome at chain end. Halts only on real issues (CONFLICT, P1 business OQ, Hard Rule violation, invalid handoff); auto-continues otherwise.
+All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that the orchestrator validates (schema + types) before continuing; the intelligence layer consults past routing outcomes at chain start, runs predictive preflight before each skill, and records the run's outcome at chain end. Halts only on real issues (CONFLICT, P1 business OQ, Hard Rule violation, invalid handoff); auto-continues otherwise.
 
 ---
 
 ## Commands
 
-`/mega-sdd:auto` is the only command most users type. `/mega-sdd:sync` is the second — run it after any out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`). Everything else is either a manual phase entry point or auto-invoked by `auto`.
+`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit>` emits the three team documents. Four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) stay as typed commands; every pre-v5 command still resolves as a deprecation alias through the 5.x cycle.
 
-**Full per-command reference (all 27): [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
+**Full per-command reference: [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
 <details>
 <summary><b>📝 Procedure cheat-sheet</b></summary>
 
 | Scenario | Commands |
 |---|---|
-| **One-shot end-to-end** (recommended) | `/mega-sdd:auto ./prd.md` · `/mega-sdd:auto ./legacy/ --out=./new/` · `/mega-sdd:auto "brief"` |
-| Phase-by-phase greenfield | `/mega-sdd:generate-intent "your idea"` then `/mega-sdd:orchestrate-flow` |
-| Phase-by-phase brownfield | `/mega-sdd:generate-intent ./prd.md` then `/mega-sdd:orchestrate-flow` |
-| Legacy rebuild | `/mega-sdd:auto ./legacy/ --out=./rebuild/` |
+| **One-shot end-to-end** (recommended) | `/mega-sdd ./prd.md` · `/mega-sdd ./legacy/ --out=./new/` · `/mega-sdd "brief"` |
+| Phase-by-phase greenfield | `/mega-sdd:generate-intent "your idea"` then `/mega-sdd` |
+| Phase-by-phase brownfield | `/mega-sdd:generate-intent ./prd.md` then `/mega-sdd` |
+| Legacy rebuild | `/mega-sdd ./legacy/ --out=./rebuild/` |
 | Unresolved P1 business OQs | `/mega-sdd:resolve-oq` |
 | Bolt halted on Hard Rule | Review `<vault>/bolts/U-XXX/postflight.json`; revert OR edit unit's Hard rules; re-run unit |
-| Resume after halt | `/mega-sdd:auto --resume` |
+| Resume after halt | `/mega-sdd --resume` |
 | Module-filtered execution | `/mega-sdd:execute-bolts --module=M-auth` |
 | Squad-filtered execution | `/mega-sdd:execute-bolts --squad=squad-be` (multi-squad mode) |
 | Per-squad parallel | `/mega-sdd:execute-bolts --per-squad --parallel` |
 | Inspect memory | `/mega-sdd:memory show <topic>` |
 | Review pending learning suggestions | `/mega-sdd:memory review` |
 | Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
-| Generate Confluence FSD manually | `/mega-sdd:emit-fsd` (auto-runs at chain end) |
+| Generate Confluence FSD manually | `/mega-sdd:emit fsd` (chain-end auto-emit is opt-in via `--with-fsd`) |
+| Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
+| Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
 | Install missing native deps (pandoc, tectonic, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
-| Privacy-sensitive run | `/mega-sdd:auto ./prd.md --memory-off` |
-| Disable auto-diagnostic flags | `/mega-sdd:auto ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md --no-fsd` |
+| Privacy-sensitive run | `/mega-sdd ./prd.md --memory-off` |
+| Disable auto-diagnostic flags | `/mega-sdd ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md` |
 | PRD revision arrived | `/mega-sdd:diff-vault ./new-prd.md` |
 | Code drift periodic check | `/mega-sdd:detect-drift` |
 
@@ -304,7 +306,7 @@ All phases auto-chain via `/mega-sdd:auto`. Each phase emits typed handoff YAML 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **17 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + **27 slash commands** (your manual `/mega-sdd:` CLI entry points, one per pipeline step). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -349,7 +351,7 @@ Mega-sdd halts on real issues; never silent failures. Common halt types:
 - `oq_recommend_underspecified` — recommendation missing required fields
 - `memory_schema_mismatch` — memory file version differs
 
-Each halt emits a YAML `blocker` with a `next_action` field. Resume via `/mega-sdd:auto --resume`.
+Each halt emits a YAML `blocker` with a `next_action` field. Resume via `/mega-sdd --resume`.
 
 Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-from-halt.md).
 
@@ -369,16 +371,16 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 Single-confirm pipeline-end execution with auto-continue, progress indication, CWD + mid-skill-checkpoint resume.
 
 ```bash
-/mega-sdd:auto ./prd.md                    # detect → propose chain → confirm once → run
-/mega-sdd:auto --resume                    # continue paused chain (CWD + checkpoint driven)
-/mega-sdd:auto --step-after=bind-codebase  # manual handoff after binding
-/mega-sdd:auto --shallow                   # opt-out of --deep (cap-3 default)
-/mega-sdd:auto --manual                    # disable autonomy entirely
-/mega-sdd:auto --memory-off                # disable memory layer
-/mega-sdd:auto --no-lint                   # skip auto lint-units pass
-/mega-sdd:auto --no-analyze                # skip auto analyze-parallelism
-/mega-sdd:auto --no-agents-md              # skip auto AGENTS.md emit
-/mega-sdd:auto --no-fsd                    # skip auto FSD emit
+/mega-sdd ./prd.md                    # detect → propose chain → confirm once → run
+/mega-sdd --resume                    # continue paused chain (CWD + checkpoint driven)
+/mega-sdd --step-after=bind-codebase  # manual handoff after binding
+/mega-sdd --shallow                   # opt-out of --deep (cap-3 default)
+/mega-sdd --manual                    # disable autonomy entirely
+/mega-sdd --memory-off                # disable memory layer
+/mega-sdd --no-lint                   # skip auto lint-units pass
+/mega-sdd --no-analyze                # skip auto analyze-parallelism
+/mega-sdd --no-agents-md              # skip auto AGENTS.md emit
+/mega-sdd --with-fsd                  # opt-in FSD emit at chain end (off by default)
 ```
 
 ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, conflict resolutions, hard-rule violations). Otherwise silent + auto-progresses.
@@ -393,10 +395,10 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
-│   ├── skills/                             # 17 skills (lean routers + progressive disclosure) + _vendored/
+│   ├── skills/                             # 19 skills (lean routers + progressive disclosure) + _vendored/
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
-│   ├── commands/                           # 27 slash commands (manual /mega-sdd: CLI entry points)
-│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (22 packs)
+│   ├── commands/                           # 3 public verbs + 4 maintenance one-timers + 24 deprecation aliases (resolve through 5.x)
+│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
 │   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations + validators
 │   └── CLAUDE.md                           # AI-agent contributor guidelines

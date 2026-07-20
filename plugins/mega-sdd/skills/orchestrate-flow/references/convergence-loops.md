@@ -30,7 +30,7 @@ Default behavior in `--deep` mode:
 
 - `--converge` (default ON in `--deep`) — auto-loop eligible halts up to `--max-cycles`
 - `--no-converge` — STOP on any halt (legacy behavior; explicit user resume needed)
-- `--max-cycles=N` — max convergence iterations before forcing human review (default 3; canonical with `/mega-sdd:orchestrate-flow` command)
+- `--max-cycles=N` — max convergence iterations before forcing human review (default 3; canonical with `/mega-sdd` command)
 
 ## Convergence loop algorithm
 

@@ -76,7 +76,7 @@ Halts not yet classified (or in older skill bodies) default to legacy behavior (
 
 ## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
 
-When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, diff-vault conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd:orchestrate-flow`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
+When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, diff-vault conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
 
 The envelope is uniform across types so a single consumer can handle all of them.
 

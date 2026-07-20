@@ -125,7 +125,7 @@ Auto-generated AFTER every batch (overwrite-safe; idempotent regen) at `<vault>/
 | ... | ... | ... | ... | ... | ... | ... | ... |
 
 ## Halts open (N)
-- U-XXX: <halt_type> after <retries> retries. <fix proposal status>. Resume: `/mega-sdd:auto --resume`.
+- U-XXX: <halt_type> after <retries> retries. <fix proposal status>. Resume: `/mega-sdd --resume`.
 
 ## Hard rule violations across batch (by rule)
 | Rule | Source | Violations | Resolution |
@@ -139,7 +139,7 @@ Auto-generated AFTER every batch (overwrite-safe; idempotent regen) at `<vault>/
 - U-XXX: "<decision>" — fallback: <safer alternative>
 
 ## Next steps
-- Resolve <N> halts: `/mega-sdd:auto --resume`
+- Resolve <N> halts: `/mega-sdd --resume`
 - After all green: detect-drift will auto-run (hybrid gate; --no-drift-check opt-out)
 ```
 
@@ -204,7 +204,7 @@ IF `phase` is absent (older vault): default to `phase: 1, phase_total: 1` → us
 
 ## Handoff emission (`--auto`)
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

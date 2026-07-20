@@ -29,7 +29,7 @@
 
 `<project>/.mega-sdd/memory/telemetry.jsonl` — append-only, line-delimited JSON, one event per line.
 
-**Opt-out:** `--no-telemetry` flag on `/mega-sdd:auto` and `/mega-sdd:orchestrate-flow` (per-invocation, advisory only — hooks don't read this flag) OR `telemetry: false` in `<project>/.mega-sdd/config.yaml` (persistent — hooks DO honor this).
+**Opt-out:** `--no-telemetry` flag on `/mega-sdd` and `/mega-sdd` (per-invocation, advisory only — hooks don't read this flag) OR `telemetry: false` in `<project>/.mega-sdd/config.yaml` (persistent — hooks DO honor this).
 
 **Diagnostic log (Iter 67.5):** Stop hook also writes to `<project>/.mega-sdd/memory/hook-debug.log` on every Stop invocation (one JSON line per fire). Purpose: prove the Claude Code harness is actually invoking the hook for the project CWD. If `hook-debug.log` doesn't grow during a real turn, the hook is not being called and no amount of script-side debugging will fix it.
 

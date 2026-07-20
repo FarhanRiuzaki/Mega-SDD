@@ -586,7 +586,7 @@ When `memory_schema` version bumps in future iters:
 
 Per AUTONOMY-OQ-7 + MEMORY-OQ-7 (single READ at orchestrator; M-16 supersedes the slice/batch transit):
 
-1. `/mega-sdd:auto --deep` reads all relevant memory ONCE at chain start — rows enter the session context here
+1. `/mega-sdd --deep` reads all relevant memory ONCE at chain start — rows enter the session context here
 2. POINTER slices passed to each skill via handoff YAML `metadata.memory_context` (file path + row keys + one-line digest per relevant row — never row text; see `orchestrate-flow/references/handoff-contract.md` §metadata extension)
 3. Skills consult the rows already in session context; a consumer not holding them (fresh/resumed session, forked skill) does a targeted Read of the pointed file/rows
 4. Skills append their own rows via `scripts/memory-write.sh` at emission time (scan + lock + atomic append inside the script)

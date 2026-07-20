@@ -36,8 +36,6 @@ bash tests/vendoring/sync-superpowers.test.sh
 
 Run manual fixtures by reading them and walking through each case in a fresh Claude Code session.
 
-(rest of original CONTRIBUTING.md follows...)
-
 ## Versioning rules
 
 This repository contains two version axes that move independently:
@@ -97,7 +95,7 @@ git tag v0.13.0
 git push origin v0.13.0
 ```
 
-Tags enable `git#vX.Y.Z` pin examples in the README. Tagging is currently spotty (only v0.3-v0.6 exist on the remote); aim to tag every release going forward.
+Tags enable `git#vX.Y.Z` pin examples in the README. Tag every release.
 
 ## Adding a new skill
 
@@ -105,7 +103,7 @@ When adding a new skill to the plugin:
 
 1. Create directory under `plugins/mega-sdd/skills/<skill-name>/`.
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
-3. Add a corresponding command at `plugins/mega-sdd/commands/<skill-name>.md` so it appears in slash autocomplete.
+3. **Do NOT add a `commands/<skill-name>.md` file.** Since v5.0.0 the public command surface is frozen at three verbs (`/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit`) plus four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`); every other file in `commands/` is a pre-v5 deprecation alias kept for the 5.x cycle, not a pattern to copy. A new skill is internal — it is reached through the `/mega-sdd` front door (state-based routing) or, for a document, the `/mega-sdd:emit` verb. Only a deliberate spec-level decision may extend the canonical surface (see `plugins/mega-sdd/CLAUDE.md` §Commands).
 4. Reference `references/vault-contract.md` for shared definitions instead of duplicating.
 5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.

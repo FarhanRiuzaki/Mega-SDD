@@ -147,7 +147,7 @@ Start: I have an old mega-sdd project on v3.26.1+
   Q: Do I still have the original PRD / KB / brief that generated the vault?
 
   ├── YES + I want fresh modern artifacts (Path A — RECOMMENDED)
-  │     → /mega-sdd:auto <original-input>
+  │     → /mega-sdd <original-input>
   │     → Lets pipeline regenerate vault + binding + units fresh on new schema
   │     → 5 min; minimal friction
   │
@@ -157,7 +157,7 @@ Start: I have an old mega-sdd project on v3.26.1+
         ↓
         /mega-sdd:memory migrate          # if memory_schema_mismatch fires
         ↓
-        /mega-sdd:auto --resume           # continues pipeline; halts on real schema gaps
+        /mega-sdd --resume           # continues pipeline; halts on real schema gaps
         ↓
         For each halt: read halt envelope next_action.hint; apply suggested fix
         ↓

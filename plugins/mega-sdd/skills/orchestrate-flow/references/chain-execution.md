@@ -116,12 +116,12 @@ Read the EP1 classifier output (when present — see the PARKED status above). W
 - **iter_type=MINOR** → Act mode default. If `--plan` → Plan mode first; else continue in Act.
 - **iter_type=MAJOR** → **Plan mode FIRST mandatory.**
   - Check for `<project>/.mega-sdd/.plan-pending` (JSON from prior Plan-mode invocation matching current task_id + session_id).
-  - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd:auto --act` (the `--act` flag) to transition.
+  - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd --act` (the `--act` flag) to transition.
   - If `.plan-pending` present + fresh + matches current task: read it; continue in Act mode. Delete `.plan-pending` on Act completion.
 - **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion — question carries the risk context ("MAJOR = perubahan besar; tanpa Plan phase tidak ada review rencana sebelum eksekusi. Proceed?"); options: `Plan first` **(recommended)** — tulis rencana + STOP untuk review, lanjut via `--act`; `Proceed without plan` — langsung eksekusi tanpa rencana tertulis.
 - **Explicit Plan force:** `--plan-then-act` flag forces two-phase regardless of classifier.
 
-Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd:auto --plan` or delete `.plan-pending`".
+Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd --plan` or delete `.plan-pending`".
 
 ## Chain optimization via binding provenance
 
@@ -179,12 +179,12 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc/LaTeX dependency + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
 | After all phases complete | Memory review check (per the `memory` skill review op if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
 | **After EACH phase completes (chain boundary)** | **Doc-control stamp refresh** (script-lane, ~0 tokens): for each ALREADY-EMITTED doc — `<vault>/fsd/FSD.md`, `<vault>/prd/PRD.md`, `<vault>/sit/SIT.md` — that exists, `Run: bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=<fsd\|prd\|sit> --position="<phase just completed> selesai; next: <next phase or chain end>"`. **`--position` ONLY** — maturity rungs are set at emit time (SIT via the `build-sit-evidence.sh` verdict; FSD via mode) or by humans (PRD `reviewed`/`final`); the chain never bumps maturity. Non-zero exit → log one line, never halt (the stamp is metadata, not a gate). Skip silently when no emitted doc exists. | Doc-control blocks stay current between full emissions (per `plugins/mega-sdd/references/emission-engine.md §Doc-control stamping`) |
-| After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit-prd` (reverse mode). Pipeline lanjut via `generate-intent --kb` — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
-| After `execute-bolts` completes AND ≥1 `bolts/U-*/acceptance.json` exists | Chain-summary PROPOSAL (one line, never auto-run): "Bukti eksekusi tersedia — `/mega-sdd:emit-sit` menghasilkan dokumen SIT dengan tabel bukti §4 script-derived (maturity dari coverage evidence)." | One line in the chain end summary |
+| After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit prd` (reverse mode). Pipeline lanjut via `generate-intent --kb` — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
+| After `execute-bolts` completes AND ≥1 `bolts/U-*/acceptance.json` exists | Chain-summary PROPOSAL (one line, never auto-run): "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan dokumen SIT dengan tabel bukti §4 script-derived (maturity dari coverage evidence)." | One line in the chain end summary |
 
 These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
-**Exception — staged-input enrichment PAUSES.** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `/mega-sdd:enrich-semantics --apply` → `/mega-sdd:auto --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging`.
+**Exception — staged-input enrichment PAUSES.** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `/mega-sdd:enrich-semantics --apply` → `/mega-sdd --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging`.
 
 **Manual override**: users invoking individual commands directly (`/mega-sdd:lint-units` etc.) still works for debugging/one-off use. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on `auto`/`orchestrate-flow`.
 
@@ -217,7 +217,7 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 
 ### Opt-out
 
-- `--no-drift-check` flag in `/mega-sdd:auto` or `execute-bolts` → skip the auto-drift gate entirely. Escape hatch, not default.
+- `--no-drift-check` flag in `/mega-sdd` or `execute-bolts` → skip the auto-drift gate entirely. Escape hatch, not default.
 
 ### On-demand drift (separate from auto-gate)
 
@@ -248,7 +248,7 @@ In `--deep` mode, append to the final summary:
   - AGENTS.md emission confirmation (file path + section count)
   - Memory review prompt if pending suggestions exist
   - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run /mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>)."`
-  - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit-fsd."`
+  - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit fsd."`
 - **Predictive preflight metrics:**
   ```yaml
   metrics:

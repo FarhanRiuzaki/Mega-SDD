@@ -27,7 +27,7 @@ Trigger this skill for:
 - "spec out this idea" / "from this prompt" / "baku dari ide" / "I have a brief not a PRD"
 - The user types a short description of a project and wants to skip writing a full PRD.
 - The user is currently round-tripping to ChatGPT to get a structured prompt for generate-intent; this skill replaces that round-trip.
-- Inside `/mega-sdd:orchestrate-flow` Rule 0 chain (auto-dispatched when prompt arg detected and no vault/PRD in CWD).
+- Inside `/mega-sdd` Rule 0 chain (auto-dispatched when prompt arg detected and no vault/PRD in CWD).
 
 Do NOT use this skill when:
 
@@ -205,7 +205,7 @@ Topics not specified (will become P1 OQs in vault):
 
 Suggested next step:
 - /mega-sdd:generate-intent <OUTPUT_DIR>/source/seed-PRD.md
-- OR /mega-sdd:orchestrate-flow <OUTPUT_DIR> (auto-chains generation + resolve-oq)
+- OR /mega-sdd <OUTPUT_DIR> (auto-chains generation + resolve-oq)
 ```
 
 If invoked from `orchestrate-flow` Rule 0, control returns to orchestrate-flow which dispatches `generate-intent` next.
@@ -227,7 +227,7 @@ If invoked from `orchestrate-flow` Rule 0, control returns to orchestrate-flow w
 
 ## --auto flag
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow` via Rule 0 chain) to skip logistical prompts only. **Substance prompts — every Q&A question — ALWAYS stay interactive.** That's the entire point of this skill: capturing the user's actual answers, never Claude's guesses.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd` via Rule 0 chain) to skip logistical prompts only. **Substance prompts — every Q&A question — ALWAYS stay interactive.** That's the entire point of this skill: capturing the user's actual answers, never Claude's guesses.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|

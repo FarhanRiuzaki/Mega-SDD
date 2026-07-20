@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.2] - 2026-07-20
+
+Post-v5 surface + docs alignment (4-agent audit; the v5.0.0 command collapse left stale guidance behind). No pipeline behavior change; the installer trims two tools it never invoked.
+
+### Changed
+- **Docs → the v5 three-verb surface.** Both READMEs, in-skill/reference guidance, and CONTRIBUTING now present `/mega-sdd` (front door — was `/mega-sdd:auto` / user-facing `orchestrate-flow`), `/mega-sdd:sync`, `/mega-sdd:emit <prd|fsd|sit>` as the surface. ~57 `/mega-sdd:auto`→`/mega-sdd` + `orchestrate-flow`→`/mega-sdd` swaps across skill/reference bodies; user-facing `emit-fsd|prd|sit` guidance → the `emit` verb. **Deprecation-alias self-declarations and precise halt-remediation aliases were deliberately KEPT** (they resolve all 5.x; precision beats purity). Frozen history (`docs/superpowers/`, research, CHANGELOG) untouched. Stale counts corrected (17→19 skills, 27→3-verb+aliases, 22→25 packs); README version badges 4.70.0/4.38.0 → 5.2.2; FSD documented as opt-in via `--with-fsd` (`--no-fsd` a no-op).
+- **CONTRIBUTING "Adding a new skill" step 3** no longer tells contributors to add a `commands/<skill>.md` per skill — that would grow the frozen public surface. New skills are internal, reached via the front door.
+- **install-deps installs only what is used.** Dropped **`gh`** (zero real invocations — the claimed post-bolt PR pattern does not exist) and **`osv-scanner`** (no CVE/lockfile gate consumes it; its fallbacks were never wired) from the tool matrix, defaults, and platform install docs — ~65MB the installer offered for nothing. Corrected `ripgrep` used-by (scan-codebase only) and the gate-5 tool column (python3 urllib, not curl). `tests/code-gates/test-gates-wired.sh` updated to the two real code-gate tools (semgrep, gitleaks). A CVE lockfile-audit gate remains an available future feature — now honestly absent rather than pretended.
+
 ## [5.2.1] - 2026-07-20
 
 Post-fork-AB platform findings + the P6 cosmetic sweep (`research/2026-07-20-fork-ab-headless-attempt.md`).

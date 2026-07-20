@@ -17,7 +17,7 @@ Argument parsing:
 - `--sections=<comma-list>`: emit subset (e.g., `--sections=1,2,5,7,8,10` for stakeholder-specific FSD)
 - `--auto`: skip confirmation prompts + emit handoff YAML in chat (e.g., when invoked by orchestrate-flow at chain end)
 
-Follow `skills/emit-fsd/SKILL.md` Procedure exactly. Auto-invocation respects `--no-fsd` flag on `/mega-sdd:auto` (skip emit at chain end).
+Follow `skills/emit-fsd/SKILL.md` Procedure exactly. Auto-invocation respects `--no-fsd` flag on `/mega-sdd` (skip emit at chain end).
 
 Hard rails (anti-halu):
 - FSD is a CITATION-GROUNDED VIEW of vault/units/bolts/binding. NEVER adds info not in source artifacts.

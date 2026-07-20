@@ -37,7 +37,7 @@ Related-but-separate config surfaces (different scopes, documented where they li
 
 ## Headless / CI
 
-- Always pass `--auto` (or use `/mega-sdd:auto` / `orchestrate-flow --auto`) — interactive steps otherwise emit `AskUserQuestion` and a headless run hangs. Every pipeline phase has an `--auto` path; decisions queue (PENDING-SYNC.md / OQ roll-up) instead of prompting.
+- Always pass `--auto` (or use `/mega-sdd` / `orchestrate-flow --auto`) — interactive steps otherwise emit `AskUserQuestion` and a headless run hangs. Every pipeline phase has an `--auto` path; decisions queue (PENDING-SYNC.md / OQ roll-up) instead of prompting.
 - `claude -p --bare` SKIPS hooks entirely — the hook-enforced gates are invisible there. The deterministic gates also exist as `scripts/` (run `scripts/validate-handoff-binding-units.sh --cwd=. --quiet`; exit code gates your CI job) — scripts survive every runtime, per the plugin doctrine.
 - Set `telemetry: false` here to silence diagnostics in CI checkouts.
 - Full recipes (PR drift gate, sync-on-merge, pure-script gates): `plugins/mega-sdd/references/ci-recipe.md`.

@@ -69,7 +69,7 @@ Each checkpoint write is a single fs.append. Concurrent skill invocations on sam
 3. Restore cursor state from `cursor` field
 4. Continue execution from `next_step`
 
-For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/mega-sdd:auto --resume`:
+For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/mega-sdd --resume`:
 
 1. CWD / artifact inspection (`routing-rules.md`) first selects WHICH PHASE to resume — the orchestrator itself keeps NO chain-level state file (see handoff-contract.md §Resume mechanics).
 2. *Within that re-entered phase only*, read the phase skill's checkpoints in the current vault; identify the last incomplete invocation (most recent checkpoint without a "completed" marker).
@@ -105,7 +105,7 @@ When skill emits `status: halted` with active checkpoints, orchestrator surfaces
 ⛔ Phase 3 of 5: bind-codebase → status: halted, items: 45/100 claims, blocked: 1
 
 Last checkpoint: claim-45 at 2026-05-21T11:00:00Z
-Resume command: /mega-sdd:auto --resume (re-enters chain at bind-codebase claim-46)
+Resume command: /mega-sdd --resume (re-enters chain at bind-codebase claim-46)
 ```
 
 ## Backward compatibility
