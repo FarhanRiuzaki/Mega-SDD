@@ -66,6 +66,18 @@ cache profile).
   generate-units task_type reconstructed from binding.json alone).
 - oq-queue — checked off by measurement; no code.
 
+## P7 CLOSE-OUT (2026-07-20, user-confirmed) — the token thesis landed; the rest measured low-value
+
+P7 closes as **substantially complete** after 5.1.0 (instrument) + 5.1.1 (advisor-bundle). The cache lens (fresh 1.0× vs resident 0.1×) proved the one big *fresh-subagent-seed* lever was the bind→advisor whole-map paste — **shipped in 5.1.1**. Every other planned P7 item measured low-real-dollar or already-done, so building them as specced would be the over-engineering the WAJIB "pas" bar forbids:
+
+- **kb-claims** — no whole-KB *fresh* seed remains: the advisor is path-based (5.1.1); `domain-extractor` already reads KB cross-refs on-demand + injects a compact `glossary_index` (80–120KB parsed once → ~96KB/wave saved); bind/emit-prd read KB *resident* (0.1×). Deferred.
+- **bind-map** — resident 0.1×; the *precomputed* slice was DROPPED (recall-completeness unprovable). The safe lever is a later **grep-on-demand** commit; low real-dollar, deferred.
+- **bound/ retirement** — tiny bytes, already 0 model-tokens; only moat-belt risk = architectural cleanliness, not a token win. Deferred (advisor: "do it last or defer").
+- **oq-queue** — already collapsed by `all-priorities`. Done, no code.
+- **execute-bolts** review-panel/bolt dispatch — already hard-budget-capped (T1≤2KB/T2≤10KB/≤9KB target/12KB halt; framework-pack path-glob-sliced; reuse-sliced). Already optimized.
+
+Net P7 delivery: the measurement instrument (reusable for P8/P10) + the single genuine fresh-seed cut, both CI-green. Next: **P8 terse plane** (v5.2.0) — the *second* cost driver (standing-context residency, research §2), where resident-but-monotonic artifact size is the lever the instrument now measures.
+
 ## The phase invariant (binding on EVERY slice change)
 
 This restates the user's original hard rule: *a more token-efficient artifact WITHOUT losing the sharpness of the gates.* Every slice/bundle is a **seed the consumer expands from — never a cap.** The failure mode is silent and it is a moat regression: a slice that hides the one piece of evidence which would flip a claim to CONFLICT yields a false CONFIRMED, and **no existing gate catches it** (the input changed, not the gate — binding.json comes out clean and every downstream gate correctly passes it).

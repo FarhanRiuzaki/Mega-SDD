@@ -22,6 +22,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 3 | Secrets in code | `scripts/scan-secrets-code.sh --base= --head=` | gitleaks → plugin regex fallback | fallback regex set (never unscanned) |
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | curl to the official registry | offline → `unverified` WARNING |
+| 6 | Dep authorization (ADVISORY) | `scripts/check-dep-authorization.sh --unit= --base= --head=` | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
 Scripts live at `$PLUGIN_ROOT/scripts/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale). Resolve it once with one Bash call, then prefix every `scripts/<name>.sh` above with `$PLUGIN_ROOT/` (full rationale: `plugins/mega-sdd/references/plugin-root-resolution.md`):
 
@@ -50,10 +51,10 @@ Per the gates-doctrine (blocking only for critical + un-promptable):
   - a secret in the diff (`scan-secrets-code.sh` exit 1) → halt `secret_in_code`
   - an ERROR-severity SAST finding (`run-code-scan.sh` exit 2) → halt `sast_critical_finding`
   - a new dependency the registry definitively 404s (`validate-new-deps.sh` exit 2) → halt `dep_not_found` (hallucinated/slopsquat package — never install)
-- **FINDINGS (non-blocking, fed to the panel + bolt-report):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline).
+- **FINDINGS (non-blocking, fed to the panel + bolt-report):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline), **`dep_unauthorized`** (gate 6 — the bolt added a dependency the unit's `allowed_new_deps` did not sanction; anti-over-engineering per the WAJIB bar). Gate 6 is **advisory-first by design** (always exit 0): the future blocking escalation is deferred and, when it lands, is commit-keyed like B4 so legacy bolts never retro-block. A unit with no `allowed_new_deps:` key (v4/pre-v5) is `enforced:false` — never a finding.
 - **SKIPs** are recorded in the bolt-report `## Review panel` section so a "clean" run that scanned nothing is never mistaken for a clean scan.
 
-These halts follow the same shape and discipline as `hard_rule_violated` (detect-after): blocker YAML + `bolt-report.md` with the findings; the flagged code sits in an already-landed commit, and the remediation acts on that commit. There is no `--force` path around the secret gate; `--no-code-gates` (below) skips gates 1–2 and 4 only — secrets and dep-existence always run.
+These halts follow the same shape and discipline as `hard_rule_violated` (detect-after): blocker YAML + `bolt-report.md` with the findings; the flagged code sits in an already-landed commit, and the remediation acts on that commit. There is no `--force` path around the secret gate; `--no-code-gates` (below) skips gates 1–2, 4, and 6 (the advisory/non-critical set) — secrets and dep-existence always run.
 
 ## Halt YAMLs
 
@@ -87,6 +88,6 @@ The merged L0 JSON (gate results + skips) is appended to each review-panel lens 
 
 ## Config + opt-out
 
-- `.mega-sdd/config.yaml` → `code_gates: true` (default). `false` disables gates 1–2 and 4 (toolchain + SAST) for the project; **secrets (gate 3) and dep-existence (gate 5) always run** — they are the critical + un-promptable pair.
+- `.mega-sdd/config.yaml` → `code_gates: true` (default). `false` disables gates 1–2, 4, and 6 (toolchain + SAST + advisory dep-authorization) for the project; **secrets (gate 3) and dep-existence (gate 5) always run** — they are the critical + un-promptable pair.
 - CLI `--no-code-gates` — same scope as `code_gates: false`, one run only; logged in the bolt-report.
 - Tool installation: semgrep + gitleaks (+ osv-scanner) ship in the `/mega-sdd:install-deps` matrix; every gate degrades gracefully without them per the table above.
