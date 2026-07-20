@@ -21,7 +21,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 2 | Lint + typecheck | per `detect-toolchain.sh` output | the repo's own linter/typechecker | SKIP (note) |
 | 3 | Secrets in code | `scripts/scan-secrets-code.sh --base= --head=` | gitleaks → plugin regex fallback | fallback regex set (never unscanned) |
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
-| 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | curl to the official registry | offline → `unverified` WARNING |
+| 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
 | 6 | Dep authorization (ADVISORY) | `scripts/check-dep-authorization.sh --unit= --base= --head=` | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
 Scripts live at `$PLUGIN_ROOT/scripts/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale). Resolve it once with one Bash call, then prefix every `scripts/<name>.sh` above with `$PLUGIN_ROOT/` (full rationale: `plugins/mega-sdd/references/plugin-root-resolution.md`):
@@ -90,4 +90,4 @@ The merged L0 JSON (gate results + skips) is appended to each review-panel lens 
 
 - `.mega-sdd/config.yaml` → `code_gates: true` (default). `false` disables gates 1–2, 4, and 6 (toolchain + SAST + advisory dep-authorization) for the project; **secrets (gate 3) and dep-existence (gate 5) always run** — they are the critical + un-promptable pair.
 - CLI `--no-code-gates` — same scope as `code_gates: false`, one run only; logged in the bolt-report.
-- Tool installation: semgrep + gitleaks (+ osv-scanner) ship in the `/mega-sdd:install-deps` matrix; every gate degrades gracefully without them per the table above.
+- Tool installation: semgrep + gitleaks ship in the `/mega-sdd:install-deps` matrix; every gate degrades gracefully without them per the table above.

@@ -1,6 +1,6 @@
 # Handoff Contract — Skill → Orchestrator
 
-When mega-sdd skills run under `--auto` (i.e., dispatched by `orchestrate-flow --deep` or `/mega-sdd:auto`), they MUST emit a structured **handoff record** at the end of their chat output. The orchestrator parses this record to decide whether to auto-continue the chain, pause on blocker, or stop.
+When mega-sdd skills run under `--auto` (i.e., dispatched by `orchestrate-flow --deep` or `/mega-sdd`), they MUST emit a structured **handoff record** at the end of their chat output. The orchestrator parses this record to decide whether to auto-continue the chain, pause on blocker, or stop.
 
 This contract is required ONLY when `--auto` is in effect. Standalone skill invocations (user typed `/mega-sdd:<specific-skill>`) MAY emit the YAML but it is informational — no orchestrator consumes it.
 
@@ -248,7 +248,7 @@ starterkit_context:
 ### Status values
 
 - **`completed`** — skill ran successfully end-to-end. Orchestrator auto-continues to `next_action.suggested_skill` if `--deep` mode active.
-- **`paused`** — skill completed its work BUT something downstream needs user attention (e.g., business OQs needing resolution). Chain pauses; user reviews surfaced items; resumes via `/mega-sdd:auto --resume` or `/mega-sdd:orchestrate-flow --deep --resume`.
+- **`paused`** — skill completed its work BUT something downstream needs user attention (e.g., business OQs needing resolution). Chain pauses; user reviews surfaced items; resumes via `/mega-sdd --resume` or `/mega-sdd --deep --resume`.
 - **`halted`** — hard blocker fired (CONFLICT, hard_rule_violated, dedup_ambiguous, etc.). `blockers` populated with one or more entries per halt-protocol. Chain stops. User resolves manually.
 
 ### Block of artifacts
@@ -346,7 +346,7 @@ This gives the user real-time visibility without polluting chat with verbose per
 
 ### Resume mechanics (AUTONOMY-OQ-2 resolved: CWD-driven)
 
-`/mega-sdd:auto --resume` does NOT read a persisted state file. It re-runs CWD inspection per `routing-rules.md`, proposes the same chain, and:
+`/mega-sdd --resume` does NOT read a persisted state file. It re-runs CWD inspection per `routing-rules.md`, proposes the same chain, and:
 - If artifacts already exist for earlier phases → skip them (cursor advances past them automatically based on CWD signals)
 - If the cursor lands on a previously-halted phase → user must have resolved the blocker manually (else the same halt fires again, which is correct safety behavior)
 - If user wants to RE-RUN a previously-completed phase → use `orchestrate-flow --from=<phase>` explicit override
@@ -385,12 +385,12 @@ Precedence is unambiguous because the levels never overlap: CWD inspection first
 ## Slash-command flag surface
 
 ```
-/mega-sdd:orchestrate-flow [--from=<phase>] [--to=<phase>] [--dry-run]
+/mega-sdd [--from=<phase>] [--to=<phase>] [--dry-run]
   + [--deep]      # NEW: lift 3-skill cap; chain to pipeline-end when state clean
   + [--resume]    # NEW: CWD-driven resume (no persisted state)
 ```
 
 ```
-/mega-sdd:auto [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual]
+/mega-sdd [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual]
                 # NEW — one-shot autonomous pipeline
 ```

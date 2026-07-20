@@ -140,7 +140,7 @@ blocker:
     vault_mode: greenfield | existing  # what vault.json says
     cwd_signals: [.git, package.json, ...]  # what was detected
     resolution: "update vault.mode to match CWD" | "re-detect by moving to clean dir"
-  next_action: "Confirm correct mode then re-run /mega-sdd:orchestrate-flow"
+  next_action: "Confirm correct mode then re-run /mega-sdd"
 ```
 
 When this prompt reaches the user (i.e. the C1 chain-time re-detect did not already fix it — e.g. the user passed an explicit mode flag), the recommended default is the CWD-detected mode (CWD signals are ground truth per halt-protocol) and each resolution carries its consequence: `update vault.mode to match CWD` **(recommended)** — `existing` mengaktifkan detect-drift + verifikasi terhadap code lama sebelum menyentuhnya, `greenfield` melewatinya; `re-detect by moving to clean dir` — pakai kalau CWD-nya memang salah (misal vault greenfield tersimpan di dalam repo lain).
@@ -148,7 +148,7 @@ When this prompt reaches the user (i.e. the C1 chain-time re-detect did not alre
 ## Convergence loops + checkpoints
 
 - **Convergence** (`--deep`): cycle-eligible halts auto-resolve via memory-pre-filled recommendations and re-run, up to `--max-cycles`; all other halts stop the chain. Algorithm, per-cycle output, `convergence_max_reached` envelope, the propose-and-confirm bolt bridge, and anti-halu rails are in `references/convergence-loops.md`.
-- **Checkpoints:** long-running skills emit per-step JSONL checkpoints enabling mid-skill resume (`--resume-from=<step-id>` per-skill; `/mega-sdd:auto --resume` chain-wide finds the latest automatically). Granularity, rotation, and resume logic in `references/checkpoint-protocol.md`.
+- **Checkpoints:** long-running skills emit per-step JSONL checkpoints enabling mid-skill resume (`--resume-from=<step-id>` per-skill; `/mega-sdd --resume` chain-wide finds the latest automatically). Granularity, rotation, and resume logic in `references/checkpoint-protocol.md`.
 
 ## Halt protocol
 

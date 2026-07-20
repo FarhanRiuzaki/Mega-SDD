@@ -36,8 +36,10 @@ fi
 grep -q 'Deterministic scan results' "$rp" || { echo "review-panel.md missing L0 injection"; err=1; }
 # config key + always-run carve-out documented
 grep -q 'code_gates' "$pc" || { echo "project-config.md missing code_gates key"; err=1; }
-# install-deps matrix carries the three tools
-for t in semgrep gitleaks osv-scanner; do
+# install-deps matrix carries the code-gate tools (secret + SAST). osv-scanner
+# was dropped in v5.2.2 — no CVE/lockfile gate consumes it (see the deps audit);
+# gate 5 dep-existence uses python3 urllib, not an installed tool.
+for t in semgrep gitleaks; do
   grep -q "id: $t" "$tm" || { echo "tool-matrix missing $t"; err=1; }
 done
 # pack template documents the optional Toolchain override

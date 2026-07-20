@@ -11,7 +11,7 @@ Loaded when `resolve-oq` runs under `--auto`, as an `orchestrate-flow` chain pha
 
 ## --auto flag
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -51,7 +51,7 @@ The `## OQ resolutions` table gains an optional `scope` column when the vault ha
 
 | What | Source | How used |
 |---|---|---|
-| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` — under --auto the handoff passes a POINTER slice `metadata.memory_context.project_decisions_relevant` (`{file, rows: [date+conflict-id, …], digest}`). Consult the rows already in session context from the chain-start read; when they are NOT in context (typical for `/mega-sdd:auto --resume` in a fresh session) **do a targeted Read of the pointed file's `## CONFLICT resolutions` table — the suggestion needs the actual resolution values + occurrence counts, never the digest alone** | SUGGEST a pre-filled action in `AskUserQuestion` (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
+| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` — under --auto the handoff passes a POINTER slice `metadata.memory_context.project_decisions_relevant` (`{file, rows: [date+conflict-id, …], digest}`). Consult the rows already in session context from the chain-start read; when they are NOT in context (typical for `/mega-sdd --resume` in a fresh session) **do a targeted Read of the pointed file's `## CONFLICT resolutions` table — the suggestion needs the actual resolution values + occurrence counts, never the digest alone** | SUGGEST a pre-filled action in `AskUserQuestion` (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
 | Cross-project patterns (when project memory has no match) | `~/.mega-sdd/memory/patterns.md` | SUGGEST a per-pattern action with confidence + source observation count |
 
 ### Anti-halu rails
@@ -125,7 +125,7 @@ This helps multi-architect scenarios where one OQ might involve cross-scope depe
 
 ## Handoff emission
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto --resume` after a halt), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd --resume` after a halt), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

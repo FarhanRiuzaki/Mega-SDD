@@ -126,7 +126,7 @@ Missing `codebase-map.md` → run `scan-codebase` first. Vault missing `00-index
 
 ## Hand-off
 
-Clean binding → `/mega-sdd:generate-units <vault>/` (the bound-vault is the nested `<vault>/bound/`). Blocked → `/mega-sdd:resolve-oq --binding <binding.md>`. Under `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd:auto`), emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — and participate in the memory layer. Both → `references/auto-memory-handoff.md`.
+Clean binding → `/mega-sdd:generate-units <vault>/` (the bound-vault is the nested `<vault>/bound/`). Blocked → `/mega-sdd:resolve-oq --binding <binding.md>`. Under `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd`), emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — and participate in the memory layer. Both → `references/auto-memory-handoff.md`.
 
 ## Specialist references (load on demand)
 

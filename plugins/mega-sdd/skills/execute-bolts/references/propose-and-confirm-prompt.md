@@ -139,7 +139,7 @@ After subagent returns:
 ❓ How to proceed?
    [1] Apply proposed fix + re-execute (recommended if confidence ≥0.75)
    [2] Show alternative fix options (if alternative_fixes present)
-   [3] Reject — I'll fix manually then /mega-sdd:auto --resume
+   [3] Reject — I'll fix manually then /mega-sdd --resume
    [4] Override halt — accept current state as "good enough" (logs to memory)
    (Cancel chain — pause everything for review — rides the built-in "Other"/Esc escape; the platform caps AskUserQuestion at 4 options, per halt-recovery.md §Propose-and-confirm)
 ```

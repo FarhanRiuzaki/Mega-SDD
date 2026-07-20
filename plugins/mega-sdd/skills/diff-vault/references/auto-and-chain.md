@@ -11,7 +11,7 @@ Loaded when diff-vault runs under `--auto` or as an orchestrate-flow chain phase
 
 ## `--auto` behavior
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd:orchestrate-flow`) to skip logistical prompts. Conflicts represent disagreement between vault state and new source; the skill never auto-decides them.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip logistical prompts. Conflicts represent disagreement between vault state and new source; the skill never auto-decides them.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|

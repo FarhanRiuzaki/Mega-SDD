@@ -31,7 +31,7 @@ Write `<vault>/units/_index.md` with:
 
 ## Handoff emission (--auto)
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

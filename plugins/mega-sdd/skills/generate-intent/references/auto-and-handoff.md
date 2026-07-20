@@ -9,7 +9,7 @@
 
 ## `--auto` flag behavior
 
-The `--auto` flag is set by upstream callers — typically `/mega-sdd:orchestrate-flow`, the lifecycle orchestrator — to skip logistical prompts. When `--auto` is set, the Workflow steps behave differently:
+The `--auto` flag is set by upstream callers — typically `/mega-sdd`, the lifecycle orchestrator — to skip logistical prompts. When `--auto` is set, the Workflow steps behave differently:
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -39,7 +39,7 @@ When `--auto` is active and the skill produces a P1 Open Question that would blo
 
 ## Handoff emission (`--auto`)
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
 
 ```yaml
 handoff:

@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 4.38.0 · **License:** MIT
+**Version:** 5.2.1 · **License:** MIT
 
 > **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
@@ -11,19 +11,24 @@ Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-
 Canonical install, update, and uninstall instructions live in the **[root README — Quick start](../../README.md#quick-start-5-minutes)**. TL;DR (typed inside the Claude Code chat, not your shell): add the marketplace, `/plugin install mega-sdd`, optionally `/mega-sdd:install-deps` — then in any project:
 
 ```
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md).
 
 ## Commands you'll actually use
 
-`/mega-sdd:auto` is the headline — it runs the whole pipeline autonomously with one upfront confirmation. The rest are the same stages, drivable by hand.
+`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit>` emits the three team documents. The pre-v5 stage commands below still resolve as 5.x deprecation aliases.
 
 | Command | What it does |
 |---|---|
-| `/mega-sdd:auto <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
+| `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
 | `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
+| `/mega-sdd:emit <prd\|fsd\|sit>` | The three team documents (PRD / Confluence FSD / SIT) emitted from vault/units/bolts state; no arg lists them with maturity |
+| `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
+| `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
+| `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
+| **Manual stage entry points — 5.x deprecation aliases (keep resolving; print a one-line notice)** | |
 | `/mega-sdd:generate-intent <prd>` | PRD or idea → vault (entities, flows, decisions, open questions) |
 | `/mega-sdd:scan-codebase [path]` | AST-scan an existing repo → `codebase-map.md` |
 | `/mega-sdd:bind-codebase <vault>` | Validate vault claims against the real code → CONFIRMED / CONFLICT / OQ |
@@ -33,12 +38,8 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | `/mega-sdd:detect-drift` | Compare committed code against the vault |
 | `/mega-sdd:analyze` | One consistency report across all artifacts |
 | `/mega-sdd:extract-intelligence <legacy>` | Legacy codebase → knowledge base (the rebuild lane) |
-| `/mega-sdd:emit-fsd` | Confluence-style FSD (PDF) generated from the vault |
-| `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
-| `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
-| `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
 
-Full set: **27 commands** in [`commands/`](./commands/) — one per pipeline step, each with an `argument-hint`. Run any of them with no args to see its usage.
+Full surface: **3 public verbs + 4 maintenance one-timers**; the other 24 files in [`commands/`](./commands/) are deprecation aliases that keep resolving through the whole 5.x cycle. Run any command with no args to see its usage.
 
 ## First time? Start with a scenario
 
@@ -52,7 +53,7 @@ A canonical example PRD (the standard frontmatter + `§`-section format) lives a
 [legacy → extract-intelligence] → PRD/idea → generate-intent → (scan + bind, brownfield) → generate-units → execute-bolts → emit-agents-md / emit-fsd
 ```
 
-`/mega-sdd:auto` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs insert `scan-codebase` + `bind-codebase`; the legacy-rebuild lane starts from `extract-intelligence`.
+`/mega-sdd` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs insert `scan-codebase` + `bind-codebase`; the legacy-rebuild lane starts from `extract-intelligence`.
 
 **And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + the map's git stamp), surfaced as a one-line session-start notice, and reconciled by `/mega-sdd:sync`:
 
@@ -68,13 +69,13 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 
 ```
 plugins/mega-sdd/
-├── .claude-plugin/plugin.json    # plugin manifest (v4.38.0)
-├── skills/                       # 17 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
+├── .claude-plugin/plugin.json    # plugin manifest (version SSOT)
+├── skills/                       # 19 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
 │   ├── generate-units/  execute-bolts/          # the core pipeline
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
-│   ├── memory/  emit-agents-md/  emit-fsd/  install-deps/
+│   ├── memory/  emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
 ├── agents/                       # 8 first-class subagents
 │   ├── bolt-implementer.md       # execute-bolts implementer
@@ -82,7 +83,7 @@ plugins/mega-sdd/
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
 │   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
-├── commands/                     # 27 slash commands — your manual /mega-sdd: CLI entry points
+├── commands/                     # 3 public verbs (mega-sdd · sync · emit) + 4 maintenance one-timers + 24 deprecation aliases (resolve through 5.x)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts
@@ -141,26 +142,27 @@ Full key reference + scope table (user / project / vault): [`references/project-
 
 ## Optional native tools
 
-Mega-sdd adopts stable native binaries instead of reinventing them — all optional, each with a graceful fallback. `/mega-sdd:install-deps` installs them for you (see [Install](#install)).
+Mega-sdd adopts stable native binaries instead of reinventing them — all optional, each with a graceful fallback. `/mega-sdd:install-deps` installs them for you (see [Install / update](#install--update)).
 
 | Tool | Used by | Fallback |
 |---|---|---|
 | `tree-sitter` | scan-codebase (AST extraction) | regex engine (lower precision) |
 | `ast-grep` | execute-bolts / generate-units (Hard Rules v2) | v1 5-type grammar |
-| `ripgrep` (`rg`) | scan-codebase / bind-codebase / detect-drift / lint-units | GNU grep |
+| `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
-| `pandoc` | emit-fsd (FSD PDF rendering) | Markdown-only output |
-| `tectonic` | emit-fsd (LaTeX engine for PDF) | HTML → browser print-to-PDF |
+| `pandoc` | emit-fsd / emit-prd / emit-sit (PDF rendering) | Markdown-only output |
+| `tectonic` | emit lanes (LaTeX engine for PDF) | HTML → browser print-to-PDF |
 | `markdownlint-cli2` | lint-units (vault prose) | skill-internal heuristics |
-| `gh` | execute-bolts (optional PR automation) | manual PR by user |
+| `semgrep` | execute-bolts L0 code gate 4 (SAST on bolt diffs) | gate SKIPs with a note |
+| `gitleaks` | execute-bolts L0 code gate 3 (secret scan) | plugin regex fallback (always scanned) |
 
 Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`references/ci-recipe.md`](./references/ci-recipe.md).
 
 ## What's new
 
-**v4.38.0** — *Pipeline reads the latest plugin version:* skills resolve `$PLUGIN_ROOT` to the highest cached version (Claude Code keeps every version side-by-side and never GCs them), so a stale-version path can't make a subagent read outdated templates or scripts; `session-start`'s version pick is now SemVer-correct.
-**v4.37.0** — *Windows hooks fire again:* the hook dispatcher is invoked via `bash run-hook.sh`, so `cmd.exe` stops choking on the `#!` shebang (`'#!' is not recognized…`) — the enforcement gates now actually run on Windows + Git Bash.
-**v4.36.0** — *Factory Line:* a derived checkpoint ledger + state-driven router let `orchestrate-flow` loop backward to re-run an unresolved phase to convergence, under a deterministic anti-spin retry cap.
+**v5.2.1** — *Hook recovery + fork headless caveat:* an interrupted run's hook-driven recovery now routes to `/mega-sdd --resume` (the front door); the `context: fork` headless caveat is documented — under `claude -p` a forked skill silently runs inline (no token win, telemetry dark), while PreToolUse gates + SessionStart still fire, so scripted/CI usage stays gate-safe.
+**v5.2.0** — *Dependency authorization:* execute-bolts code gate 6 — a bolt that adds a dependency the unit's `allowed_new_deps` did not sanction is flagged `dep_unauthorized` (advisory-first, deterministic).
+**v5.0.0** — *Surface collapse:* the public surface became three verbs (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit`); the 24 former stage commands became deprecation aliases that keep resolving through the whole 5.x cycle.
 
 Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single source of release history).
 

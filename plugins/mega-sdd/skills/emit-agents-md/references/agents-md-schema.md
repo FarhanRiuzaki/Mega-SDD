@@ -257,7 +257,7 @@ Header HTML comments declare vault-state fields. Each field renders ONLY when it
 | `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block  |
 | `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `/mega-sdd:replay`  |
 | `replay_snapshot_count` value 0 | omit field entirely | new vault, never replayed |
-| `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd:auto --converge` has run ≥1 successful cycle  |
+| `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd --converge` has run ≥1 successful cycle  |
 | `convergence_cycle_count` value 0 | omit field entirely | no convergence runs |
 
 **Anti-halu rails:**

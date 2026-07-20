@@ -2,7 +2,7 @@
 
 This is the OPERATIVE emission spec for extract-intelligence's handoff YAML (per `orchestrate-flow/references/handoff-contract.md` §Precedence — each skill's own handoff reference is the operative copy; the contract owns only the base schema + the cross-skill routing index).
 
-When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit this record as a YAML code fence in the LAST assistant message before exiting (chat-block semantics — NOT to a file on disk). The orchestrator parses it to decide auto-continue. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution). The `scope:` and `mutability:` blocks are part of the canonical record — extract-intelligence is the PRIMARY mutability-tier producer (`tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`).
+When invoked with `--auto` (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit this record as a YAML code fence in the LAST assistant message before exiting (chat-block semantics — NOT to a file on disk). The orchestrator parses it to decide auto-continue. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution). The `scope:` and `mutability:` blocks are part of the canonical record — extract-intelligence is the PRIMARY mutability-tier producer (`tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`).
 
 ```yaml
 handoff:

@@ -13,7 +13,7 @@ Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain pha
 
 ## `--auto` behavior
 
-Since v3.0.0 detect-drift is **forked + non-interactive by default** (`context: fork`) — there is no interactive mode, so this table describes the *only* (deterministic) behavior; `--auto` is implied. Upstream callers (typically `/mega-sdd:orchestrate-flow`) pass `--vault=…` / `--code=…` / `--scope=…` so Step 0 resolves without guessing.
+Since v3.0.0 detect-drift is **forked + non-interactive by default** (`context: fork`) — there is no interactive mode, so this table describes the *only* (deterministic) behavior; `--auto` is implied. Upstream callers (typically `/mega-sdd`) pass `--vault=…` / `--code=…` / `--scope=…` so Step 0 resolves without guessing.
 
 | Step | Deterministic behavior (forked — never prompts) |
 |---|---|

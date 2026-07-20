@@ -75,7 +75,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 | State (from inspection) | Proposed chain |
 |---|---|
 | Legacy codebase + no PRD + no vault + rebuild intent (user mentioned "rebuild di stack baru" / "reverse engineer" / "extract intelligence") | `extract-intelligence <legacy>` → `generate-intent --kb=<kb>` |
-| `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` (skip extract-intelligence — already done). **+ MENTION the `emit-prd` reverse lane** (one line, never auto-chained): a team-readable PRD draft from the KB with `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`/mega-sdd:emit-prd`, reverse mode). Docs are OUTPUTS — `generate-intent --kb` stays the pipeline continuation. |
+| `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` (skip extract-intelligence — already done). **+ MENTION the `emit-prd` reverse lane** (one line, never auto-chained): a team-readable PRD draft from the KB with `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`/mega-sdd:emit prd`, reverse mode). Docs are OUTPUTS — `generate-intent --kb` stays the pipeline continuation. |
 | Brief only (no vault, no PRD, no KB) + starterkit absent + `--greenfield` | `generate-intent --from-prompt --greenfield` (Q&A first) |
 | PRD exists, no vault, starterkit absent + `--greenfield` | `generate-intent <prd> --greenfield` |
 | Vault exists, mode=greenfield, no units | `generate-units` |
@@ -174,7 +174,7 @@ Override via `--brownfield` / `--greenfield` flag on `auto`/`orchestrate-flow`.
 
 - `--from=<phase>` skips earlier phases regardless of CWD state. Useful for forcing re-execution of a specific later phase.
 - `--to=<phase>` stops at that phase. Useful for staging (run extract + intent, review, then run bind + units + bolts separately).
-- `--from` + `--to` + `--deep` combine cleanly. Example: `/mega-sdd:orchestrate-flow --deep --from=bind-codebase --to=generate-units` runs only the 2-phase window.
+- `--from` + `--to` + `--deep` combine cleanly. Example: `/mega-sdd --deep --from=bind-codebase --to=generate-units` runs only the 2-phase window.
 
 ### `--resume` mechanics
 

@@ -16,7 +16,7 @@
 
 ## `--auto` setup behavior (quick reference)
 
-`--auto` (set by `orchestrate-flow` / `/mega-sdd:auto`) skips logistical prompts in these steps. The full table + anti-halu carve-outs are routed from the SKILL router's "Specialist references" (the `--auto`/handoff ref); the setup-specific defaults:
+`--auto` (set by `orchestrate-flow` / `/mega-sdd`) skips logistical prompts in these steps. The full table + anti-halu carve-outs are routed from the SKILL router's "Specialist references" (the `--auto`/handoff ref); the setup-specific defaults:
 
 The per-step `--auto` defaults (Step 0 output-path, 0.5 IMPLEMENTATION_MODE, `mode_migrate_after`, 0.6 PRD_STATUS, 0.7 OUTPUT_MODE, Step 2 gap-count pause) are the canonical table in `generate-intent/references/auto-and-handoff.md` §`--auto` flag behavior — setup-flow does not restate them.
 

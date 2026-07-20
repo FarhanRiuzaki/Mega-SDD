@@ -132,7 +132,7 @@ echo "FALLBACKS: $FALLBACKS"
 - **macOS without brew**: PKG_MGR = `none` initially; install-deps proposes installing brew first via official Apple-pkg-manager-friendly method. Auto-execution of Homebrew's own install script (`/bin/bash -c "$(curl -fsSL https://...)"`) is FORBIDDEN per safety rails — instead, point user to https://brew.sh and instruct manual install.
 - **WSL Ubuntu without `apt`**: extremely rare; happens in chroot/container envs. Halt `pkg_mgr_not_found` with hint to install apt.
 - **Windows native (no WSL, no git-bash)**: out of scope — user instructed to install WSL Ubuntu (or git-bash) and re-run.
-- **Windows + winget primary (no scoop, no runtimes)**: `ripgrep`, `pandoc`, and `gh` install via winget, but `tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is `scoop`, with `cargo`/`npm`/`go` as cross-platform fallbacks. If none of scoop/cargo/npm/go is present, those four are reported `unsupported` with the concrete remedy (install scoop, or a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
+- **Windows + winget primary (no scoop, no runtimes)**: `ripgrep` and `pandoc` install via winget, but `tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is `scoop`, with `cargo`/`npm`/`go` as cross-platform fallbacks. If none of scoop/cargo/npm/go is present, those four are reported `unsupported` with the concrete remedy (install scoop, or a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
 - **Alpine `apk`**: most mega-sdd deps (pandoc, tree-sitter) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
 
 ## Fallback chain

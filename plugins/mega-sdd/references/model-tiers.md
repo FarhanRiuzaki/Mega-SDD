@@ -96,9 +96,9 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 ### CLI flag (per-run override)
 
 ```bash
-/mega-sdd:auto --model-tier=intelligence-audit-probe:sonnet ./prd.md
+/mega-sdd --model-tier=intelligence-audit-probe:sonnet ./prd.md
 # multiple overrides allowed:
-/mega-sdd:auto --model-tier=audit-consolidator:opus --model-tier=audit-probe:sonnet
+/mega-sdd --model-tier=audit-consolidator:opus --model-tier=audit-probe:sonnet
 ```
 
 ### Per-project config

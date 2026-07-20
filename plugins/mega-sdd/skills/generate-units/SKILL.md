@@ -141,7 +141,7 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 
 "Generated N units. Suggested next: `/mega-sdd:execute-bolts --all` to execute in order, or `/mega-sdd:execute-bolts U-001` to start with the first."
 
-Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd:auto`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
 
 ## Specialist references (load on demand)
 

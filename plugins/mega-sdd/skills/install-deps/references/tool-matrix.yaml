@@ -85,7 +85,7 @@ tools:
         notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
   - id: ripgrep
-    used_by: [scan-codebase, bind-codebase, detect-drift, lint-units]
+    used_by: [scan-codebase]
     purpose: "Fast structured grep (JSON output)"
     fallback_behavior: "GNU grep (slower; no JSON)"
     matrix:
@@ -224,28 +224,6 @@ tools:
         verify_cmd: "command -v markdownlint-cli2"
         size_mb: 2
 
-  - id: gh
-    used_by: [execute-bolts]
-    purpose: "GitHub CLI for PR automation (optional)"
-    fallback_behavior: "Manual PR creation"
-    matrix:
-      - os: macos
-        pkg_mgr: brew
-        install_cmd: "brew install gh"
-        verify_cmd: "command -v gh"
-        size_mb: 30
-      - os: [linux, wsl]
-        pkg_mgr: apt
-        install_cmd: "sudo apt install -y gh"
-        requires_sudo: true
-        verify_cmd: "command -v gh"
-        size_mb: 30
-      - os: windows-bash
-        pkg_mgr: winget
-        install_cmd: "winget install GitHub.cli"
-        verify_cmd: "command -v gh"
-        size_mb: 35
-
   - id: semgrep
     used_by: [execute-bolts]
     purpose: "SAST scan on bolt diffs (L0 code gates)"
@@ -285,32 +263,10 @@ tools:
         size_mb: 15
         notes: "Cross-platform fallback (incl. Linux w/ Go)"
 
-  - id: osv-scanner
-    used_by: [execute-bolts]
-    purpose: "Cross-ecosystem known-CVE audit of dependency lockfiles (L0 code gates, advisory)"
-    fallback_behavior: "Ecosystem-native audit (npm audit / pip-audit / cargo audit / composer audit) when present; else skipped"
-    matrix:
-      - os: macos
-        pkg_mgr: brew
-        install_cmd: "brew install osv-scanner"
-        verify_cmd: "command -v osv-scanner"
-        size_mb: 30
-      - os: windows-bash
-        pkg_mgr: winget
-        install_cmd: "winget install Google.OSVScanner"
-        verify_cmd: "command -v osv-scanner"
-        size_mb: 35
-      - os: any
-        pkg_mgr: go
-        install_cmd: "go install github.com/google/osv-scanner/cmd/osv-scanner@v1"
-        verify_cmd: "command -v osv-scanner"
-        size_mb: 35
-        notes: "Cross-platform fallback (incl. Linux w/ Go)"
-
 # Defaults
 defaults:
   required_tools: []                                          # ALL tools optional; mega-sdd has graceful fallback for each
   recommended_minimum: [tree-sitter, ast-grep, ripgrep]        # baseline for brownfield projects
   fsd_extension: [pandoc, tectonic]                            # FSD generation
-  code_gates: [semgrep, gitleaks, osv-scanner]                 # execute-bolts L0 code gates
-  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, gh, semgrep, gitleaks, osv-scanner]
+  code_gates: [semgrep, gitleaks]                              # execute-bolts L0 code gates (secret + SAST); gate 5 dep-existence uses python3 urllib
+  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, semgrep, gitleaks]

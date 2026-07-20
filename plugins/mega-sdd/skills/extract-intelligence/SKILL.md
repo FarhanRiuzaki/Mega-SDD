@@ -310,7 +310,7 @@ On completion, announce:
 
 ## Handoff emission
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd:auto`), emit a handoff YAML record at the end of skill output per your local template in `references/handoff.md` — the OPERATIVE emission spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
+When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record at the end of skill output per your local template in `references/handoff.md` — the OPERATIVE emission spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
 
 The canonical `extract-intelligence` handoff record — full schema including the `scope:` and `mutability:` blocks (extract-intelligence is the PRIMARY mutability-tier producer: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`) — lives in `references/handoff.md`. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution).
 

@@ -37,13 +37,11 @@ Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6
 |---|---|---|---|
 | `tree-sitter` (or `tree-sitter-cli`) | scan-codebase v2.0+ (AST extraction) | Regex engine (lower precision) | macOS: `brew install tree-sitter` · Linux/win: `cargo install tree-sitter-cli` · Node: `npm install -g tree-sitter-cli` |
 | `ast-grep` (alias `sg`) | execute-bolts v2.0+ (Hard Rule v2 grammar) | v1 grammar (5 types only) | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
-| `ripgrep` (`rg`) | scan-codebase + detect-drift + bind-codebase + lint-units (v14.0+) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
+| `ripgrep` (`rg`) | scan-codebase (v14.0+; structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
 | `jd` | diff-vault v1.1+ (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd@latest` |
 | `markdownlint-cli2` | lint-units (Iter 14+; vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
-| `gh` (GitHub CLI) | execute-bolts post-bolt PR pattern (optional) | Manual PR creation by user | macOS: `brew install gh` · Linux: package manager · win: `scoop install gh` |
 | `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
 | `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
-| `osv-scanner` | execute-bolts L0 code gates (known-CVE lockfile audit, advisory) | Ecosystem-native audit (npm/pip/cargo/composer audit) or skipped | macOS: `brew install osv-scanner` · any: `go install github.com/google/osv-scanner/cmd/osv-scanner@v1` |
 | `superpowers` plugin | execute-bolts (TDD bridge) | Vendored fallback at `plugins/mega-sdd/skills/_vendored/` | `/plugin install superpowers` |
 
 ## One-command install (recommended setup)
@@ -53,7 +51,6 @@ If you have **Homebrew** (macOS / Linux):
 ```bash
 brew install tree-sitter ast-grep ripgrep jd
 npm install -g markdownlint-cli2     # optional; vault prose lint
-brew install gh                       # optional; PR automation
 ```
 
 If you have **cargo** (cross-platform Rust):
@@ -68,20 +65,20 @@ If you have **npm** only:
 
 ```bash
 npm install -g tree-sitter-cli @ast-grep/cli markdownlint-cli2
-# ripgrep + jd + gh: install via system package manager (apt/brew/scoop/etc)
+# ripgrep + jd: install via system package manager (apt/brew/scoop/etc)
 ```
 
 If you are on **Windows** (git-bash / MSYS2):
 
-`tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep`, `pandoc`, and `gh` install via either winget or scoop.
+`tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep` and `pandoc` install via either winget or scoop.
 
 ```powershell
 # Scoop (covers every tool natively — recommended on Windows):
-scoop install tree-sitter ast-grep ripgrep jd pandoc tectonic gh
+scoop install tree-sitter ast-grep ripgrep jd pandoc tectonic
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
-# winget (covers ripgrep / pandoc / gh only):
-winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc GitHub.cli
+# winget (covers ripgrep / pandoc only):
+winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
 # tree-sitter / ast-grep / tectonic / jd: use scoop above, or the cargo/npm/go fallback:
 cargo install tree-sitter-cli ast-grep tectonic   # if Rust present
 npm install -g tree-sitter-cli @ast-grep/cli      # if Node present
@@ -98,7 +95,6 @@ command -v ast-grep && echo "✓ ast-grep ready"
 command -v rg && echo "✓ ripgrep ready"
 command -v jd && echo "✓ jd ready"
 command -v markdownlint-cli2 && echo "✓ markdownlint-cli2 ready"
-command -v gh && echo "✓ gh ready"
 ```
 
 ## Minimal-footprint setup (skip everything optional)
@@ -108,7 +104,6 @@ Mega-sdd works WITHOUT any of these. You get:
 - execute-bolts: Hard Rule v1 grammar (5 closed types)
 - diff-vault: skill-internal compare
 - lint-units: internal heuristic checks
-- No PR automation
 
 For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least `tree-sitter` + `ast-grep` + `ripgrep`.
 
