@@ -32,6 +32,13 @@ test-output/
 **/.mega-sdd/RULE-GAP-REPORT.md
 **/.mega-sdd/memory/hook-debug.log
 **/.mega-sdd/memory/telemetry.jsonl
+**/.mega-sdd/.compaction-snapshot.json
+**/.mega-sdd/TOKEN-COST-REPORT.md
+**/.mega-sdd/graph.json
+**/.mega-sdd/state.json
+**/.mega-sdd/project.md
+!tests/fixtures/**/.mega-sdd/state.json
+!tests/fixtures/**/.mega-sdd/graph.json
 
 # Internal training material (not for the public repo)
 training/
