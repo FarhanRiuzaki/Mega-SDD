@@ -12,6 +12,17 @@ Structural proof: both fork-intact runs show the skill executing **inline in the
 
 Implication for the capability notes: the fork A/B **requires interactive sessions** — the runbook's "BUKA SESSION CLAUDE CODE BARU" was load-bearing, not convenience. No flag known to enable forked skills under `-p` (Claude Code 2.1.215).
 
+### The complete `-p` hook matrix (probed, 2026-07-20)
+
+| Surface | Under `claude -p`? | Evidence |
+|---|---|---|
+| **PreToolUse gates (THE MOAT)** | ✅ **FIRES** | live probe: a `>`-redirect onto `.validation-blockers.json` in a scratch playground was **BLOCKED** by the anti-self-bypass guard with the full keterangan |
+| SessionStart | ✅ fires | hook-debug.log: 4/4 headless runs logged `session-start` |
+| Stop / SubagentStop | ❌ does NOT fire | hook-debug.log: zero natural `stop` entries across 4 runs (the one entry is the manual canonical invocation) |
+| `context: fork` | ❌ NO-OP (runs inline) | 0 sidechains, no `subagents/` dir in either fork-intact run |
+
+**Net: headless `-p` is GATE-SAFE but MEASUREMENT-DARK and FORK-LESS.** The moat holds in scripted/CI usage; what degrades is telemetry (no turn/subagent markers → `report-token-cost.sh` sees no turns) and the fork pilot's token win. Safe to script *gated* skills headless; never *measure* headless, and never expect a fork.
+
 ## Wall 2 (scenario): a legitimate `constitution_drift_detected` halt now sits in front of the full scan
 
 The fork arm's forensics (attempt B#2) settled what arm A#1 mis-diagnosed: `binding.md`'s `constitution_hash becd9c3c…` = hash of **constitution v1.0** (verified: `bound/constitution.md` minus BIND annotations reproduces it exactly), while the live `constitution.md` is **v1.1** (`d22feac6…`) — §F-002 changed substantively (source-of-fund "CA/SA PROVISIONAL" → **Savings-only**, per resolved OQ-FL-6). The 2026-06-25 21:48 `refresh_mode: incremental` re-bind carried the stale hash forward. So the halt is REAL: the binding validated claims against superseded constitution text; C-CN-\* verdicts + §F-002 Hard Rules were never re-bound under v1.1. **A full-scan A/B on this vault is only comparable after `/mega-sdd:sync` (or `bind-codebase`) refreshes the binding** — which also consumes the old drift scenario, so the post-sync A/B measures a fresh one.
