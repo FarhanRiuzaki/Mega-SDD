@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.1] - 2026-07-20
+
+Post-fork-AB platform findings + the P6 cosmetic sweep (`research/2026-07-20-fork-ab-headless-attempt.md`).
+
+### Changed
+- `hooks/pre-tool-use` — Factory-Line recovery message now routes to `/mega-sdd --resume` (5.x front door) instead of the deprecated `/mega-sdd:auto`; Branch-1c comment clarified (the `mega-sdd:auto` case arm stays for 5.x alias back-compat).
+- `plugins/mega-sdd/CLAUDE.md` — `context: fork` capability note gains the **headless caveat** (probed): under `claude -p` the fork silently NO-OPS (runs inline) and Stop/SubagentStop don't fire (telemetry dark), while **PreToolUse gates + SessionStart DO fire** (live probe: anti-self-bypass blocked a forged `.validation-blockers.json` write under `-p`) — scripted/CI usage is gate-safe but measurement-dark; the fork A/B requires interactive sessions.
+
+### Noted (not shipped)
+- Prose-halt bulldoze measured at 1-in-4 on the detect-drift constitution gate (n=4, headless) — recorded as a gates>rules datapoint; the deterministic sha-compare is hookable if field data warrants (advisory-first doctrine).
+
 ## [5.2.0] - 2026-07-20
 
 P9 accuracy ceiling — dep-authorization (v5 spec P9 row; research §7; the user's WAJIB "pas, expert-dev, no over-engineering" mandate as a MECHANISM). P8 (terse plane) was measured and **deferred** (`research/2026-07-20-p8-terse-plane-assessment.md`): the emitters flatten+sha-stamp vault prose as the human docs' cited source, so terse-ing it breaks invariant-3 citation AND degrades the human docs — a narrow safe-terse rides P10. So this minor is P9. feat(accuracy): **`check-dep-authorization.sh` (execute-bolts code gate 6) — a bolt that adds a dependency the unit's `allowed_new_deps` did not sanction is flagged `dep_unauthorized` (scope-creep / over-engineering).** Deterministic-first (per code-gates doctrine — don't burn the LLM over-engineering lens on what a diff decides for free), ADVISORY-first (always exit 0; blocking escalation deferred + commit-keyed like B4), legacy-safe (a unit with no `allowed_new_deps:` key is a no-op). Distinct from the blocking `DO_NOT_ADD_DEPS` Hard rule (binary zero-dep); this is the graduated advisory allowlist. Reuse-first: the manifest-diff was factored OUT of `validate-new-deps.sh` into a shared `_lib/dep_manifest.py` (byte-parity preserved) so gates 5+6 can never disagree on "a new dependency". The reuse gate was NOT built — reuse/duplication is already deliberately advisory (a test blocks wiring it into PreToolUse); escalating it would relitigate a settled gates-doctrine call.

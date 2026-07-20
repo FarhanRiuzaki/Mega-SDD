@@ -169,8 +169,9 @@ EOF
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
 case "${TOOL_NAME:-}" in
   Skill)
-    # Branch 1c: scope flag validation for mega-sdd:auto / generate-intent /
-    # orchestrate-flow. Reads transcript_path to find user's most recent message +
+    # Branch 1c: scope flag validation for orchestrate-flow (the /mega-sdd front
+    # door) / generate-intent; the mega-sdd:auto case arm stays for 5.x alias
+    # back-compat. Reads transcript_path to find user's most recent message +
     # extract --scope=X flag (args not in tool_input). Validates against PRD scopes.
     case "${SKILL_NAME:-}" in
       mega-sdd:auto|mega-sdd:generate-intent|mega-sdd:orchestrate-flow)
@@ -272,7 +273,7 @@ print(
     "same stuck phase will only spin. RECOVERY: resolve the underlying OQ/CONFLICT for this "
     "phase, then RESET the rebuildable ledger (rm %s/factory-ledger.json — it rebuilds from "
     "phase handoffs, clearing the stale attempt history; it is NOT anti-self-bypass protected) "
-    "and re-run via /mega-sdd:auto --resume. State: %s"
+    "and re-run via /mega-sdd --resume. State: %s"
     % (skill, phase, halt, msg, md, d_state)
 )
 ' 2>/dev/null)
