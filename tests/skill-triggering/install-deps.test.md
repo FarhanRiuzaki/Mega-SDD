@@ -5,9 +5,9 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 ## Trigger cases
 
 ### ID1: macOS brew detection + audit
-- **Setup:** macOS with `brew --version` returning v4.x; pandoc + tectonic not installed
+- **Setup:** macOS with `brew --version` returning v4.x; pandoc + mmdc not installed
 - **Prompt:** `/mega-sdd:install-deps`
-- **Expect:** Skill detects `OS: macos`, `PKG_MGR: brew`; audits 8 tools; identifies 2 missing (pandoc, tectonic); proposes install plan with sizes (~70MB total); AskUserQuestion shown with `[Install all]` / `[Pick subset]` / `[Cancel]`
+- **Expect:** Skill detects `OS: macos`, `PKG_MGR: brew`; audits 8 tools; identifies 2 missing (pandoc, mmdc); proposes install plan with sizes (~70MB total); AskUserQuestion shown with `[Install all]` / `[Pick subset]` / `[Cancel]`
 
 ### ID2: Ubuntu apt detection + sudo separation
 - **Setup:** Ubuntu 22.04 in WSL; `apt --version` working; pandoc missing
@@ -45,7 +45,7 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 - **Expect:** ast-grep re-audited from scratch; memory cache ignored
 
 ### ID9: --dry-run prints plan without execution
-- **Setup:** vault stable; pandoc + tectonic missing
+- **Setup:** vault stable; pandoc + mmdc missing
 - **Prompt:** `/mega-sdd:install-deps --dry-run`
 - **Expect:** Skill prints install plan (commands, sizes) but does NOT invoke Bash tool to run them; memory file NOT written
 
@@ -56,8 +56,8 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 
 ### ID11: --tools=<csv> filters subset
 - **Setup:** all 8 tools missing
-- **Prompt:** `/mega-sdd:install-deps --tools=pandoc,tectonic`
-- **Expect:** Only pandoc + tectonic in install plan; other 6 tools skipped (NOT marked missing in chat output for this run)
+- **Prompt:** `/mega-sdd:install-deps --tools=pandoc,mmdc`
+- **Expect:** Only pandoc + mmdc in install plan; other 6 tools skipped (NOT marked missing in chat output for this run)
 
 ### ID12: --pkg-mgr override
 - **Setup:** macOS with brew available; user prefers cargo for Rust tools

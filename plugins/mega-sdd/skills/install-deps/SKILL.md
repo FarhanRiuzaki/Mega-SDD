@@ -1,7 +1,7 @@
 ---
 name: install-deps
 version: 1.5.0
-description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
+description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
 # Install-Deps — OS-Aware Dependency Installer
@@ -15,13 +15,13 @@ description: Detect OS + package manager and install missing optional native dep
 - "install deps" / "auto install" / "install tools" / "pasang tools"
 - After fresh mega-sdd install — bootstrap optional native binaries
 - After predictive-checks warn (e.g., `pandoc_installed: warn` from emit-fsd predictive checks)
-- Before generating FSD PDFs — pandoc + tectonic needed by emit-fsd
+- Before generating emit PDFs — pandoc + a detected Chrome (mmdc for mermaid) via md2pdf.sh
 - Cross-machine re-sync (memory layer skips already-installed tools)
 
 ## Inputs
 
 - `--dry-run` (show install plan; don't execute)
-- `--tools=<csv>` (limit to subset, e.g., `--tools=pandoc,tectonic` for FSD-only)
+- `--tools=<csv>` (limit to subset, e.g., `--tools=pandoc,mmdc` for emit-PDF-only)
 - `--force-recheck` (ignore memory; re-audit every tool from scratch)
 - `--pkg-mgr=<name>` (override auto-detected manager; e.g., force `cargo` instead of `brew`)
 - `--manual` (print install commands but skip Bash invocation — user runs commands themselves)

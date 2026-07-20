@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.3] - 2026-07-20
+
+feat(emit): the GitHub/VS Code PDF render pipeline is native (spec `docs/superpowers/specs/2026-07-20-md2pdf-render-engine.md`; user PDF-export standard). The emit lanes (emit-fsd / emit-prd / emit-sit) stop rendering PDFs via pandoc+LaTeX — LaTeX output is academic-paper style (borderless tables, float "Figure N" diagrams, page-break-cut diagrams) — and use the shipped `scripts/md2pdf.sh` instead: frontmatter → visible ```yaml block, ```mermaid → SVG (mmdc), pandoc `-f markdown-implicit_figures` → HTML with `references/github.css`, Chrome `--print-to-pdf`.
+
+- **Moat-safe by construction:** transforms run on a throwaway `mktemp` copy — the citation-stamped source `.md` stays BYTE-IDENTICAL (test-pinned), so `check-citation-drift` never sees false drift.
+- **One fallback ladder, no LaTeX anywhere:** Chrome → PDF; no Chrome → GitHub-styled HTML (same css, print from a browser); no pandoc → markdown. The markdown is the moat-cited/CI artifact; the PDF is human-facing, so a no-Chrome CI/headless run emitting HTML is correct by design (CI is NOT gated on Chrome).
+- **Dependency shift (consistent with 5.2.2 "install only what's used"):** `tectonic`/`xelatex` + `pandoc-template.tex` + LaTeX styling vars RETIRED (unused now); `mmdc` (`@mermaid-js/mermaid-cli`) ADDED to the install matrix (used now); **Chrome is detect-only** (GUI app — probed by md2pdf, never installed). Per-vault PDF styling override migrates from `FSD.styling.yaml` LaTeX vars → a `<vault>/…/github.css` drop-in.
+- **Known degradation (documented):** mermaid-flows is a hard rule, so a PDF built without Chrome+mmdc shows mermaid as code, not diagrams.
+
+### Added
+- `plugins/mega-sdd/scripts/md2pdf.sh` (+ `--html`/`--toc`) + `plugins/mega-sdd/references/github.css` — the shipped pipeline (self-resolving css, Chrome probe, mktemp transforms).
+- `tests/render/test-md2pdf.sh` — CI-safe: HTML-path stages + the byte-identical-source moat assertion + per-vault css override + usage guards.
+
+### Changed
+- emit-fsd Step 1 (styling→github.css) + Step 5 (md2pdf); emit-prd/emit-sit inherit; preflights swap LaTeX-engine → chrome/mmdc (warn-only); `validate-pandoc-render.sh`, `emission-engine.md`, `halt-protocol.md`, install-deps matrix/SKILL/os-detection, tooling-install, predictive-checks, READMEs, and the emit doc-fixtures updated. Removed `pandoc-template.tex`.
+
 ## [5.2.2] - 2026-07-20
 
 Post-v5 surface + docs alignment (4-agent audit; the v5.0.0 command collapse left stale guidance behind). No pipeline behavior change; the installer trims two tools it never invoked.

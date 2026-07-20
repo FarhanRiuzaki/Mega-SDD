@@ -346,7 +346,7 @@ try:
         "hook_source": "PostToolUse",
         "payload": {
             "halt_type": "pdf_render_failed",
-            "fix_applied": "detected pandoc failure; suggested install of tectonic",
+            "fix_applied": "detected pandoc/render failure; md2pdf falls back to GitHub-styled HTML; suggested install of mmdc/Chrome",
             "original_emit_site": "PostToolUse-Bash-validate-pandoc-render",
             "logged_at_chat": False,
             "exit_code": d.get("exit_code"),

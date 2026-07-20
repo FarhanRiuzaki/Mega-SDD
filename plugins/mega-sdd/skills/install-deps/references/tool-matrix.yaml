@@ -145,8 +145,7 @@ tools:
         size_mb: 8
         notes: "Cross-platform fallback (incl. Windows w/ Go)"
 
-  - id: pandoc
-    used_by: [emit-fsd]
+  
     purpose: "FSD PDF rendering (emit-fsd)"
     fallback_behavior: "Markdown-only output (no PDF)"
     matrix:
@@ -178,35 +177,27 @@ tools:
         verify_cmd: "command -v pandoc"
         size_mb: 30
 
-  - id: tectonic
-    used_by: [emit-fsd]
-    purpose: "LaTeX engine for FSD PDF (lighter alternative to BasicTeX54)"
-    fallback_behavior: "HTML output (browser print-to-PDF) when neither tectonic nor xelatex available"
-    notes: "Recommended over BasicTeX (~2GB) — tectonic is ~50MB self-contained"
+  - id: mmdc
+    used_by: [emit-fsd, emit-prd, emit-sit]
+    purpose: "mermaid-cli — pre-render ```mermaid blocks to SVG for the md2pdf PDF lane (mermaid-flows is a hard rule)"
+    fallback_behavior: "mermaid rendered as a code block, not a diagram (visible quality drop)"
+    notes: "The PDF render engine is scripts/md2pdf.sh (pandoc HTML + Chrome print, GitHub/VS Code style — NEVER LaTeX). Chrome/Chromium is the printer: it is a GUI app, detect-only (probed by md2pdf.sh), NOT installed here; absent → GitHub-styled HTML fallback."
     matrix:
       - os: macos
-        pkg_mgr: brew
-        install_cmd: "brew install tectonic"
-        verify_cmd: "command -v tectonic"
-        size_mb: 50
+        pkg_mgr: npm
+        install_cmd: "npm install -g @mermaid-js/mermaid-cli"
+        verify_cmd: "command -v mmdc"
+        size_mb: 15
       - os: [linux, wsl]
-        pkg_mgr: apt
-        install_cmd: "cargo install tectonic"
-        verify_cmd: "command -v tectonic"
-        size_mb: 60
-        notes: "No native apt pkg in older Ubuntu; cargo fallback"
+        pkg_mgr: npm
+        install_cmd: "npm install -g @mermaid-js/mermaid-cli"
+        verify_cmd: "command -v mmdc"
+        size_mb: 15
       - os: windows-bash
-        pkg_mgr: scoop
-        install_cmd: "scoop install tectonic"
-        verify_cmd: "command -v tectonic"
-        size_mb: 60
-        notes: "scoop native Windows source (per tectonic docs); no winget package"
-      - os: any
-        pkg_mgr: cargo
-        install_cmd: "cargo install tectonic"
-        verify_cmd: "command -v tectonic"
-        size_mb: 60
-        notes: "Cross-platform fallback (incl. Windows w/ Rust)"
+        pkg_mgr: npm
+        install_cmd: "npm install -g @mermaid-js/mermaid-cli"
+        verify_cmd: "command -v mmdc"
+        size_mb: 15
 
   - id: markdownlint-cli2
     used_by: [lint-units]
@@ -267,6 +258,6 @@ tools:
 defaults:
   required_tools: []                                          # ALL tools optional; mega-sdd has graceful fallback for each
   recommended_minimum: [tree-sitter, ast-grep, ripgrep]        # baseline for brownfield projects
-  fsd_extension: [pandoc, tectonic]                            # FSD generation
+  fsd_extension: [pandoc, mmdc]                              # emit PDF: pandoc HTML + Chrome print (mmdc for mermaid); Chrome detect-only
   code_gates: [semgrep, gitleaks]                              # execute-bolts L0 code gates (secret + SAST); gate 5 dep-existence uses python3 urllib
-  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, semgrep, gitleaks]
+  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, mmdc, markdownlint-cli2, semgrep, gitleaks]

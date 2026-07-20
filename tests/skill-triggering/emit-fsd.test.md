@@ -1,13 +1,13 @@
 # /mega-sdd:emit-fsd Trigger + Behavior Test
 
-Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation discipline via `.citation-map.json`. PDF via pandoc + xelatex/tectonic with HTML fallback.
+Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation discipline via `.citation-map.json`. PDF via scripts/md2pdf.sh (pandoc HTML + Chrome print, GitHub style; HTML fallback without Chrome; NEVER LaTeX).
 
 ## Trigger cases
 
 ### EF1: Explicit invocation on stable vault
 - **Setup:** vault exists at `<project>/.mega-sdd/vaults/<slug>/` with vault.json + 01-overview.md + 02-functional.md; no units/ yet
 - **Prompt:** `/mega-sdd:emit-fsd`
-- **Expect:** Skill invoked; mode auto-detected as `pre-dev`; FSD.md + (if pandoc/LaTeX available) FSD.pdf + .citation-map.json written to `<vault>/fsd/`; FSD.md has `DRAFT` watermark + section 9 = "TBD — pending bolt execution"
+- **Expect:** Skill invoked; mode auto-detected as `pre-dev`; FSD.md + (if Chrome available) FSD.pdf else FSD.html + .citation-map.json written to `<vault>/fsd/`; FSD.md has `DRAFT` watermark + section 9 = "TBD — pending bolt execution"
 
 ### EF2: Post-development mode auto-detection
 - **Setup:** vault + units/ + bolts/ all present; bolt-reports include acceptance_test results
@@ -19,8 +19,8 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 - **Prompt:** `/mega-sdd:emit-fsd`
 - **Expect:** Predictive check `pandoc_installed` warns; FSD.md emitted; FSD.pdf NOT emitted; handoff metric `fallback_format: markdown`
 
-### EF4: LaTeX absent → HTML fallback
-- **Setup:** pandoc present; neither xelatex nor tectonic on PATH
+### EF4: Chrome absent → HTML fallback
+- **Setup:** pandoc present; Chrome/Chromium not on PATH
 - **Prompt:** `/mega-sdd:emit-fsd`
 - **Expect:** FSD.md emitted; pandoc generates FSD.html (standalone, self-contained) instead of PDF; handoff metric `fallback_format: html`
 

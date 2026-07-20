@@ -23,8 +23,8 @@ description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/
 
 - `<vault-path>` (positional, optional — defaults to first vault detected via `plugins/mega-sdd/references/paths.md` priority order)
 - `--mode={pre-dev|post-dev|auto}` (default: `auto` — detect from CWD state)
-- `--no-pdf` (markdown-only; useful when pandoc/LaTeX absent)
-- `--styling=<path-to-yaml>` (override default `FSD.styling.yaml`)
+- `--styling=<path-to-yaml>` (override `FSD.styling.yaml` doc-metadata; PDF look is `github.css`, see Step 1)
+- `--no-pdf` (emit `FSD.md` only — skip the md2pdf render)
 - `--sections=<comma-list>` (emit subset; e.g., `--sections=1,2,5,7,8,10`)
 - `--auto` (orchestrator-invoked; emit handoff YAML in chat per `mega-sdd:orchestrate-flow/references/handoff-contract.md`)
 
@@ -32,17 +32,20 @@ description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/
 
 ```
 <vault-path>/fsd/
-├── FSD.md                      # source markdown (10-section Hybrid Confluence template)
-├── FSD.pdf                     # rendered PDF via pandoc (absent if pandoc/LaTeX unavailable)
-├── FSD.styling.yaml            # styling config (generated on first run; preserved on re-emit)
+├── FSD.md                      # source markdown (10-section Hybrid Confluence template) — the moat-cited artifact
+├── FSD.pdf                     # GitHub/VS Code-style PDF via scripts/md2pdf.sh (Chrome print)
+├── FSD.html                    # GitHub-styled HTML fallback when Chrome absent (print from a browser)
+├── github.css                  # OPTIONAL per-vault styling override (else the shipped default is used)
+├── FSD.styling.yaml            # doc-metadata (project_name / version / date) — NOT PDF styling
 └── .citation-map.json          # vault-section → FSD-section citation trace (script-written by build-citation-map.sh)
 ```
 
 ## Pre-flight checks
 
 1. **vault_present_for_fsd**: `test -f <vault-path>/vault.json` — required (halt `dep_missing` if absent)
-2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only)
-3. **pandoc_latex_engine_present**: `command -v xelatex || command -v tectonic` — warn if absent (degraded to HTML fallback)
+2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only; PDF/HTML both need pandoc)
+3. **chrome_present**: `md2pdf.sh` probes Google Chrome / Chromium — warn-only if absent (degraded to GitHub-styled HTML; `FSD.md` + `.citation-map.json` are the source of truth, so a no-Chrome CI/headless run is fine by design)
+4. **mmdc_present**: `command -v mmdc` — warn-only if absent (mermaid blocks render as code, not diagrams — a quality drop, since mermaid-flows is a hard rule; install `npm install -g @mermaid-js/mermaid-cli`)
 
 Full preflight catalog: `mega-sdd:orchestrate-flow/references/predictive-checks.md` §emit-fsd preflight checks.
 
@@ -56,12 +59,15 @@ User flag `--mode={pre-dev|post-dev|auto}` overrides detection. `auto` (default)
 
 Emit detected mode + reasoning to chat: `"FSD mode: <mode> (detected via: <CWD state evidence>)"`.
 
-### Step 1: Read styling config
+### Step 1: Resolve doc metadata (NOT PDF styling)
 
-1. Check `<vault>/fsd/FSD.styling.yaml` — if exists, load.
+PDF **visual** styling is `scripts/md2pdf.sh` + `references/github.css` (GitHub/VS Code look), NOT LaTeX — see Step 5. This step only resolves the **doc-metadata** variables used inside `FSD.md`'s title block:
+
+1. Check `<vault>/fsd/FSD.styling.yaml` — if exists, load (metadata overrides only; any LaTeX `variable`/font/margin fields it carries are now IGNORED).
 2. Else, copy `references/styling-config.yaml` to `<vault>/fsd/FSD.styling.yaml` and load.
 3. If `--styling=<path>` flag passed, load that path instead (overrides both).
-4. Resolve template variables: `project_name` from `vault.json.project_name` if styling has null; `vault_version` from `vault.json.vault_version`; `generation_date_*` from current ISO8601.
+4. Resolve: `project_name` from `vault.json.project_name` if styling has null; `vault_version` from `vault.json.vault_version`; `generation_date_*` from current ISO8601.
+5. **PDF look override (optional):** if a human wants to customize the PDF appearance, they drop a `<vault>/fsd/github.css` — `md2pdf.sh` uses it instead of the shipped default. This replaces the old LaTeX-variable knob.
 
 ### Step 2: Prior-emit drift check (script-run)
 
@@ -121,27 +127,21 @@ Run `bash <plugin-root>/scripts/build-citation-map.sh --vault=<vault> --cwd=<pro
 - **Exit 1:** halt `quality_gate_failed` with `subtype: citation_unresolvable`, details carrying the script's `UNRESOLVED`/`LEFTOVER` lines; STOP — do NOT render PDF (a fabricated or stale citation must never ship in a stamped document).
 - **Exit 2:** usage error / FSD.md missing — internal bug; re-check Step 4 wrote `<vault>/fsd/FSD.md`.
 
-### Step 5: Render PDF via pandoc
+### Step 5: Render PDF via md2pdf (GitHub/VS Code style — NEVER LaTeX)
 
-1. Check `pandoc` availability:
-   - Absent → skip Step 5; log warning to chat: `"⚠ pandoc not installed — skipping PDF render. Run: brew install pandoc"`; proceed to Step 6.
-2. Check LaTeX engine:
-   - `xelatex` present → engine = xelatex
-   - `tectonic` present → engine = tectonic
-   - Neither → fallback to HTML output: `pandoc <vault>/fsd/FSD.md -o <vault>/fsd/FSD.html --standalone --self-contained`; log warning: `"⚠ no LaTeX engine — emitted FSD.html instead of FSD.pdf. Print-to-PDF from browser. Install: brew install tectonic"`; proceed to Step 6.
-3. Run pandoc:
+The PDF is rendered by the shared pipeline `scripts/md2pdf.sh` (frontmatter → visible ```yaml block; ```mermaid → SVG via `mmdc`; pandoc `-f markdown-implicit_figures` → HTML with `github.css`; Chrome `--print-to-pdf`). LaTeX/`xelatex`/`tectonic` is NOT used — its academic-paper output (borderless tables, float "Figure N" diagrams, page-break-cut diagrams) is banned by `docs/superpowers/specs/2026-07-20-md2pdf-render-engine.md`.
+
+1. **Run** (skip only if `--no-pdf`):
    ```bash
-   pandoc <vault>/fsd/FSD.md \
-     -o <vault>/fsd/FSD.pdf \
-     --template=plugins/mega-sdd/skills/emit-fsd/references/pandoc-template.tex \
-     --pdf-engine=<engine> \
-     --toc \
-     --toc-depth=<styling.toc_depth> \
-     --variable=<styling-key>=<value>... \
-     --listings
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/md2pdf.sh" <vault>/fsd/FSD.md <vault>/fsd/FSD.pdf --toc
    ```
-4. On pandoc non-zero exit: emit halt `quality_gate_failed` with subtype `pdf_render_failed`, details `{pandoc_stderr_tail: <last 500 chars>}`; STOP.
-5. On success: log `"✓ FSD.pdf rendered (<N> pages, <size_kb>KB)"`.
+   The transforms run on a throwaway copy — **`FSD.md` is never modified**, so its citation sha256 (Step 3) stays intact.
+2. Interpret the exit code:
+   - **0** → `FSD.pdf` written. Log `"✓ FSD.pdf rendered (GitHub style)"`. Proceed to Step 6.
+   - **3** → Chrome absent (or print failed): `FSD.html` was written (same `github.css`). Log `"⚠ Chrome absent — emitted GitHub-styled FSD.html; print-to-PDF from a browser, or install Chrome. (FSD.md is the source of truth.)"`. Proceed to Step 6 — this is an accepted fallback, NOT a halt.
+   - **2** → pandoc absent: log `"⚠ pandoc not installed — skipped render (FSD.md is complete). Run: brew install pandoc"`. Proceed to Step 6.
+   - **1** → real render error: emit halt `quality_gate_failed` subtype `pdf_render_failed`, details `{md2pdf_stderr_tail: <last 500 chars>}`; STOP.
+3. If any `mmdc absent`/`mmdc failed` warning appeared, surface it: `"⚠ mermaid rendered as code (mmdc absent) — install npm i -g @mermaid-js/mermaid-cli for diagrams."`
 
 ### Step 6: Verify citation map exists
 
@@ -168,7 +168,7 @@ FSD generated (<mode>):
   Sections: <N>/<10> emitted (<excluded_count> excluded per --sections OR include_sections)
   Citations: <N> source-grounded entries
   Drift callouts: <N> sections changed since last emit
-  PDF: <path OR "skipped (pandoc absent)" OR "fallback HTML (LaTeX absent)">
+  PDF: <path OR "skipped (pandoc absent)" OR "fallback HTML (Chrome absent)">
   Suggested next: <Confluence upload OR re-emit after diff-vault OR no action>
 ```
 
@@ -194,7 +194,7 @@ handoff:
   status: completed | halted
   artifacts:
     - <absolute path to <vault>/fsd/FSD.md>
-    - <absolute path to <vault>/fsd/FSD.pdf>     # OR FSD.html if LaTeX absent; OR absent line if pandoc absent
+    - <absolute path to <vault>/fsd/FSD.pdf>     # OR FSD.html if Chrome absent; OR absent line if pandoc absent
     - <absolute path to <vault>/fsd/.citation-map.json>
     - <absolute path to <vault>/fsd/FSD.styling.yaml>
   next_action:
@@ -209,7 +209,7 @@ handoff:
     drift_callouts_count: <int>      # ≥0 — sections changed since last emit; 0 on first emit
     mode: <"pre-dev" | "post-dev">   #
     pdf_emitted: <true | false>      #
-    fallback_format: <null | "html" | "markdown">  # when pandoc/LaTeX absent
+    fallback_format: <null | "html" | "markdown">  # when pandoc/Chrome absent
   scope:                             # OPTIONAL — when vault has scope_metadata
     id: <scope id>
     name: <scope name>

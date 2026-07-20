@@ -3,7 +3,7 @@
 #
 # Detects quality_gate_failed:pdf_render_failed when a Bash command invoking
 # pandoc returns non-zero exit. Per attestation: hook detects + auto-attempts
-# install of tectonic via /mega-sdd:install-deps (if available); else escalate
+# install of mmdc / detect Chrome via /mega-sdd:install-deps (if available); else escalate
 # to user_review.
 #
 # Inputs: --cwd, --bash-command (base64-encoded for safety), --exit-code
@@ -71,7 +71,7 @@ state = {
     "exit_code": exit_code,
     "command_snippet": cmd[:200],
     "detail": f"pandoc exited with code {exit_code}",
-    "next_action": "Run /mega-sdd:install-deps --tools=tectonic to install PDF LaTeX engine, then re-run emit-fsd. If install fails (sudo/network), manual install required.",
+    "next_action": "Install Chrome (PDF printer, detect-only) or run /mega-sdd:install-deps --tools=mmdc; md2pdf falls back to GitHub-styled HTML without Chrome (spec 2026-07-20-md2pdf-render-engine.md)
 }
 with open(state_file, "w") as f:
     json.dump(state, f, indent=2)

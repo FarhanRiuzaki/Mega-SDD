@@ -9,7 +9,7 @@ User arguments: $ARGUMENTS
 
 Argument parsing:
 - `--dry-run`: show install plan + estimated sizes; don't execute (useful to preview)
-- `--tools=<csv>`: limit to subset (e.g., `--tools=pandoc,tectonic` for FSD deps only)
+- `--tools=<csv>`: limit to subset (e.g., `--tools=pandoc,mmdc` for emit PDF deps only)
 - `--force-recheck`: ignore memory cache; re-audit every tool from scratch
 - `--pkg-mgr=<name>`: override auto-detected manager (e.g., `--pkg-mgr=cargo` to use Rust toolchain instead of brew/apt)
 - `--manual`: print install commands as instructions but skip Bash invocation (user runs manually)

@@ -70,17 +70,17 @@ npm install -g tree-sitter-cli @ast-grep/cli markdownlint-cli2
 
 If you are on **Windows** (git-bash / MSYS2):
 
-`tree-sitter`, `ast-grep`, `tectonic`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep` and `pandoc` install via either winget or scoop.
+`tree-sitter`, `ast-grep`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep` and `pandoc` install via either winget or scoop.
 
 ```powershell
 # Scoop (covers every tool natively — recommended on Windows):
-scoop install tree-sitter ast-grep ripgrep jd pandoc tectonic
+scoop install tree-sitter ast-grep ripgrep jd pandoc  # + npm i -g @mermaid-js/mermaid-cli for mermaid
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
 # winget (covers ripgrep / pandoc only):
 winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
-# tree-sitter / ast-grep / tectonic / jd: use scoop above, or the cargo/npm/go fallback:
-cargo install tree-sitter-cli ast-grep tectonic   # if Rust present
+# tree-sitter / ast-grep / jd: use scoop above, or the cargo/npm/go fallback:
+cargo install tree-sitter-cli ast-grep   # if Rust present
 npm install -g tree-sitter-cli @ast-grep/cli      # if Node present
 go install github.com/josephburnett/jd@latest     # if Go present
 ```
