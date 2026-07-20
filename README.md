@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 5.2.1 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 5.2.4 · **License:** MIT
 
 </div>
 
@@ -84,7 +84,7 @@ For higher precision (optional, recommended), let the OS-aware installer set up 
 /mega-sdd:install-deps
 ```
 
-It detects your OS + package manager and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) + a detected Chrome for PDF with safety rails (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+It detects your OS + package manager and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) with safety rails — and detects Google Chrome for the GitHub-style PDF render (never LaTeX; GitHub-styled HTML fallback if absent) (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
 ### 2. Keep it updated
 
