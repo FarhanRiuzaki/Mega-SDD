@@ -562,33 +562,33 @@ blocker:
   type: install_failed
   source_skill: install-deps
   details:
-    tool: tectonic
-    install_cmd: "brew install tectonic"
-    verify_cmd: "command -v tectonic"
+    tool: mmdc
+    install_cmd: "npm install -g @mermaid-js/mermaid-cli"
+    verify_cmd: "command -v mmdc"
     exit_code: 1
     stderr_tail: "Error: Failed to download from formula cask: connection timed out"
     subtype: install_command_failed
   next_action:
-    hint: "Inspect stderr_tail; fix root cause (network / repo signing / PATH); retry single tool via /mega-sdd:install-deps --tools=tectonic"
+    hint: "Inspect stderr_tail; fix root cause (network / repo signing / PATH); retry single tool via /mega-sdd:install-deps --tools=mmdc"
 ```
 
 Recovery options:
 
 ```bash
 # Option 1: Retry single failed tool (most common; transient network issue):
-/mega-sdd:install-deps --tools=tectonic --force-recheck
+/mega-sdd:install-deps --tools=mmdc --force-recheck
 
-# Option 2: Switch package manager via override (if e.g., brew formula broken; cargo build still works):
-/mega-sdd:install-deps --tools=tectonic --pkg-mgr=cargo
+# Option 2: Force a specific package manager (for a tool with multiple sources):
+/mega-sdd:install-deps --tools=<tool> --pkg-mgr=<mgr>
 
 # Option 3: Skip + use fallback (if tool optional for current workflow):
-# e.g., tectonic missing → emit-fsd falls back to HTML output for browser print-to-PDF
-# Just continue without tectonic; install later.
+# e.g., mmdc missing → emit PDF renders mermaid as code (not a diagram); Chrome missing → GitHub-styled HTML fallback
+# Just continue; the emit lane degrades gracefully (md2pdf, never LaTeX). Install later.
 
 # Option 4: Manual install + verify:
 /mega-sdd:install-deps --manual                          # prints install commands but doesn't execute
 # Run the printed command yourself, then:
-/mega-sdd:install-deps --tools=tectonic --force-recheck  # verify install + write to memory
+/mega-sdd:install-deps --tools=mmdc --force-recheck  # verify install + write to memory
 ```
 
 If `subtype: verify_after_install_failed`: install ran but tool not on PATH. Common fix:
@@ -613,15 +613,15 @@ blocker:
   source_skill: emit-fsd
   details:
     subtype: pdf_render_failed
-    pandoc_stderr_tail: "! LaTeX Error: File `fontspec.sty' not found."
+    md2pdf_stderr_tail: "md2pdf: pandoc HTML render failed"
 ```
 
-Recovery: install LaTeX engine via install-deps:
+The emit lanes render PDFs via `scripts/md2pdf.sh` (pandoc HTML + Chrome print, GitHub/VS Code style — NEVER LaTeX). `pdf_render_failed` fires ONLY on a real render error (exit 1); a **Chrome-absent** run is NOT a halt — md2pdf writes GitHub-styled `FSD.html` (exit 3) and the lane proceeds. Recovery for a genuine failure:
 
 ```bash
-/mega-sdd:install-deps --tools=tectonic
-# After tectonic installed:
-/mega-sdd:emit-fsd <vault-path>   # retry FSD render
+/mega-sdd:install-deps --tools=pandoc,mmdc   # pandoc = the renderer; mmdc = mermaid diagrams
+# Chrome is detect-only (a GUI app, never auto-installed) — install it for direct PDF, else FSD.html.
+/mega-sdd:emit fsd <vault-path>              # retry the render
 ```
 
 ### `subtype: template_slot_unfilled` (emit-fsd, Iter 54)

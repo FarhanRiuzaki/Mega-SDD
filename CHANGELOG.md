@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.4] - 2026-07-20
+
+fix(consistency): sweep the last LaTeX/tectonic references out of the LIVING surfaces after the 5.2.3 md2pdf migration. `tests/scenarios/scenario-6-recovery-from-halt.md` (install-failed + `pdf_render_failed` recovery blocks now reflect md2pdf: Chrome-absent → HTML fallback is not a halt; tectonic→mmdc; `/mega-sdd:emit fsd`), `os-detection.md` scoop note, and the `pandoc` tool-matrix purpose. READMEs re-audited to current state: version badges → 5.2.4, plugin README "What's new" gains the v5.2.3 md2pdf headline, root README Chrome-detect wording. Frozen history (`docs/superpowers/plans/` + the May-2026 iter-54/55 specs) deliberately UNTOUCHED — those are point-in-time records, not current guidance.
+
 ## [5.2.3] - 2026-07-20
 
 feat(emit): the GitHub/VS Code PDF render pipeline is native (spec `docs/superpowers/specs/2026-07-20-md2pdf-render-engine.md`; user PDF-export standard). The emit lanes (emit-fsd / emit-prd / emit-sit) stop rendering PDFs via pandoc+LaTeX — LaTeX output is academic-paper style (borderless tables, float "Figure N" diagrams, page-break-cut diagrams) — and use the shipped `scripts/md2pdf.sh` instead: frontmatter → visible ```yaml block, ```mermaid → SVG (mmdc), pandoc `-f markdown-implicit_figures` → HTML with `references/github.css`, Chrome `--print-to-pdf`.

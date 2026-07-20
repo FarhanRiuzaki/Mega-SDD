@@ -96,7 +96,7 @@ esac
 FALLBACKS=""
 # On Windows, a SECONDARY native manager (scoop/winget/choco that is present but is
 # NOT the detected primary) is a first-class fallback. Several tools (tree-sitter,
-# ast-grep, tectonic, jd) ship natively only via scoop, so a winget-primary box must
+# ast-grep, jd) ship natively only via scoop, so a winget-primary box must
 # still reach them when scoop is installed — prefer these over runtime installs.
 if [ "$OS" = "windows-bash" ]; then
   for m in scoop winget choco; do
