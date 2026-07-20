@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.0] - 2026-07-20
+
+P9 accuracy ceiling — dep-authorization (v5 spec P9 row; research §7; the user's WAJIB "pas, expert-dev, no over-engineering" mandate as a MECHANISM). P8 (terse plane) was measured and **deferred** (`research/2026-07-20-p8-terse-plane-assessment.md`): the emitters flatten+sha-stamp vault prose as the human docs' cited source, so terse-ing it breaks invariant-3 citation AND degrades the human docs — a narrow safe-terse rides P10. So this minor is P9. feat(accuracy): **`check-dep-authorization.sh` (execute-bolts code gate 6) — a bolt that adds a dependency the unit's `allowed_new_deps` did not sanction is flagged `dep_unauthorized` (scope-creep / over-engineering).** Deterministic-first (per code-gates doctrine — don't burn the LLM over-engineering lens on what a diff decides for free), ADVISORY-first (always exit 0; blocking escalation deferred + commit-keyed like B4), legacy-safe (a unit with no `allowed_new_deps:` key is a no-op). Distinct from the blocking `DO_NOT_ADD_DEPS` Hard rule (binary zero-dep); this is the graduated advisory allowlist. Reuse-first: the manifest-diff was factored OUT of `validate-new-deps.sh` into a shared `_lib/dep_manifest.py` (byte-parity preserved) so gates 5+6 can never disagree on "a new dependency". The reuse gate was NOT built — reuse/duplication is already deliberately advisory (a test blocks wiring it into PreToolUse); escalating it would relitigate a settled gates-doctrine call.
+
+### Added
+- `plugins/mega-sdd/scripts/_lib/dep_manifest.py` — shared base..head manifest diff (`added_deps`), 7 ecosystems.
+- `plugins/mega-sdd/scripts/check-dep-authorization.sh` — gate 6; parses `allowed_new_deps` (inline/block/absent), Indonesian keterangan on findings.
+- `tests/code-gates/test-dep-authorization.sh` — 13 checks (three modes, block-list form, advisory exit-0, keterangan, multi-ecosystem lib, legacy no-op).
+- `allowed_new_deps: []` optional field in the unit schema.
+
+### Changed
+- `validate-new-deps.sh` refactored onto `_lib/dep_manifest.py` (parity-proven via `tests/code-gates/test-scripts-behave.sh`).
+- execute-bolts SKILL + `code-gates.md` — gate 6 enumerated; `--no-code-gates` skips gates 1–2, 4, 6 (advisory set).
+
 ## [5.1.1] - 2026-07-19
 
 P7 slice-first — the advisor evidence-bundle (v5 spec P7 row, REORDERED by measurement + advisor counsel: rank by cost-units, not bytes). feat(token): **`build-advisor-bundle.sh` — the phase-advisor dispatch stops pasting the whole codebase-map (+vault+KB) into a FRESH subagent (paid at full 1.0x — the top real-dollar lever) and passes a compact sha-stamped SEED instead** (draft verdicts + anchors + the map/vault/KB *paths*). The advisor has Read/Grep/Glob and is instructed to Grep the on-disk map past the seed — so the bundle is a seed, never a boundary. The instrument gains `--weight fresh|resident` so ranking reflects cache-weighted cost-units (fresh subagent seed 1.0x vs resident main-context 0.1x): re-ranked, **phase-advisor is the #1 real-dollar seed**, not bind-codebase. The precomputed bind-map slice is DROPPED (recall-completeness unprovable); the safe bind-map lever becomes a later grep-on-demand commit.

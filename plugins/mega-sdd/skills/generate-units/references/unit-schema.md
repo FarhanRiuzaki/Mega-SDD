@@ -90,6 +90,15 @@ produces_interfaces: []            # OPTIONAL — list of vault interface IDs th
 consumes_interfaces: []            # OPTIONAL — list of vault interface IDs this unit depends on
                                    # `execute-bolts` halts (cross_squad_interface_draft) if any referenced
                                    # interface has status: draft.
+allowed_new_deps: []               # OPTIONAL (v5 P9) — the ALLOWLIST of new third-party
+                                   # dependencies this unit sanctions. execute-bolts code gate 6
+                                   # (check-dep-authorization.sh) flags any dep the bolt ADDED that is
+                                   # NOT in this list as `dep_unauthorized` (anti-over-engineering /
+                                   # scope-creep, the WAJIB "pas" bar) — a deterministic ADVISORY finding
+                                   # fed to the panel, never a halt. `[]` = "no new deps sanctioned".
+                                   # ABSENT (v4/pre-v5 units) → the gate is a no-op (enforced:false), never
+                                   # a finding. Distinct from the `DO_NOT_ADD_DEPS` Hard rule (which BLOCKS
+                                   # ALL new deps via B1); this is the graduated, advisory allowlist form.
 acceptance_test:                   # how to verify the bolt succeeded
   - type: test                     # test | manual | lint | typecheck | render
     command: "npm test -- auth"
