@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.5] - 2026-07-21
+
+fix(front-door): the bare `/mega-sdd` verb the docs advertise NEVER registered — Claude Code registers plugin commands only under the plugin namespace (`/mega-sdd:<command>`), so `commands/mega-sdd.md` resolved as `/mega-sdd:mega-sdd` and bare `/mega-sdd` returned "Unknown command" (confirmed 12× across sessions on CC 2.1.215; frontmatter `name:` only changes the display label — there is NO in-plugin way to claim a bare verb). Fix: ship a standalone user-level wrapper.
+
+### Added
+- `plugins/mega-sdd/scripts/install-front-door.sh` — writes `~/.claude/commands/mega-sdd.md`, a thin wrapper that resolves the ACTIVE install path from `installed_plugins.json` at invocation time (version-proof) and forwards `$ARGUMENTS` verbatim to the plugin's front-door command. Idempotent via a version-marker line; a pre-existing wrapper WITHOUT the marker is treated as user-authored and never touched (`--force` to override).
+
+### Changed
+- `hooks/session-start` — auto-heals the wrapper every session, BEFORE the SDD-signal early-exit (so the first session after install on ANY CWD installs it) and fully guarded (`|| true` — a wrapper failure can never break anchor injection).
+- Root README Quick start + plugin README + `commands/update-plugin.md` — document how the bare verb actually works; `/mega-sdd:mega-sdd` named as the pre-first-session namespaced equivalent.
+
 ## [5.2.4] - 2026-07-20
 
 fix(consistency): sweep the last LaTeX/tectonic references out of the LIVING surfaces after the 5.2.3 md2pdf migration. `tests/scenarios/scenario-6-recovery-from-halt.md` (install-failed + `pdf_render_failed` recovery blocks now reflect md2pdf: Chrome-absent → HTML fallback is not a halt; tectonic→mmdc; `/mega-sdd:emit fsd`), `os-detection.md` scoop note, and the `pandoc` tool-matrix purpose. READMEs re-audited to current state: version badges → 5.2.4, plugin README "What's new" gains the v5.2.3 md2pdf headline, root README Chrome-detect wording. Frozen history (`docs/superpowers/plans/` + the May-2026 iter-54/55 specs) deliberately UNTOUCHED — those are point-in-time records, not current guidance.
