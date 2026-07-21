@@ -115,6 +115,7 @@ if [ "$has_sdd_signal" -eq 0 ]; then
   fi
   cat <<'SLIM_EOF'
 <<EXTREMELY_IMPORTANT>>
+mega-sdd-trace:session
 mega-sdd is installed: it is the MANDATORY development workflow (plugin default), auto-invoked whether or not the user types /mega-sdd. This CWD has no SDD context yet.
 
 Hard rule: BEFORE writing or modifying any production code in this session, route through mega-sdd — invoke the `mega-sdd:using-mega-sdd` skill for routing, or propose `/mega-sdd <input>` (PRD / brief / legacy path) to initialize the pipeline here. Exempt: casual Q&A, reading/explaining code, and non-code tasks.
@@ -894,6 +895,7 @@ fi
 
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
+mega-sdd-trace:session
 You have mega-sdd skills available. SDD context detected in CWD.
 
 ${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${COMPACT_RESUME}${INSTINCT_BLOCK}

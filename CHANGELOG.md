@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.7] - 2026-07-21
+
+feat(observability): `mega-sdd-trace` — the single-token AI-gateway/Langfuse log-filter contract. Internal deployments route Claude traffic through a gateway that logs request bodies; this stamps every mega-sdd iteration so gateway/Langfuse full-text filters (`contains "mega-sdd-trace"`, prefix-match per phase) cleanly separate mega-sdd traffic from everything else.
+
+### Added
+- `mega-sdd-trace:session` — stamped by `hooks/session-start` in BOTH injection blocks (full anchor + v5.2.6 slim block); carried in every subsequent request body of the session via conversation history.
+- `mega-sdd-trace:turn` — stamped by `hooks/user-prompt-submit` once per user prompt in mega-sdd projects (fresh per-iteration marker for gateways that index only the newest delta). Opt-out: `trace_tag: false` in `.mega-sdd/config.yaml`.
+- `mega-sdd-trace:<skill>` — anchor Hard-rule extension (using-mega-sdd v3.1.0): every skill announce line ends with the token; every subagent dispatch prompt MUST contain it (subagents run fresh-context — the session tag never reaches them). Bolt template carries `mega-sdd-trace:execute-bolts:<unit-id>` explicitly (`bolt-dispatch-prompt.md`).
+
+### Changed
+- `tests/hooks/session-start.test.sh` — asserts the session tag in both injection blocks.
+
 ## [5.2.6] - 2026-07-21
 
 feat(routing): mega-sdd is the MANDATORY development workflow by default — installing the plugin auto-routes every session, whether or not the user types `/mega-sdd`. The SessionStart hook's no-signal branch no longer exits silently: it injects a SLIM routing rule (token-diet — the full `using-mega-sdd` anchor stays signal-gated) that requires routing dev tasks through mega-sdd and proposing `/mega-sdd <input>` init before any production code is written in a fresh CWD; casual Q&A / read-only / non-code tasks stay exempt by the rule's own text.

@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 3.0.0
+version: 3.1.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -23,6 +23,8 @@ CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation
 ## Hard rule
 
 For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing. Gated phases: Skill-dispatch only, never Agent-offload.
+
+**Observability tag (AI-gateway/Langfuse filter contract):** every skill announce line MUST end with the trace token `` `mega-sdd-trace:<skill>` `` (e.g. "I'm using the scan-codebase skill to map the repository. `mega-sdd-trace:scan-codebase`"), and every subagent dispatch prompt (bolt-implementer, review panel, advisor, …) MUST contain a `mega-sdd-trace:<skill>` line — subagents run with fresh context and would otherwise be invisible to the gateway filter. One token, verbatim, no variants — gateway logs filter on it.
 
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 

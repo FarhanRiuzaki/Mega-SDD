@@ -29,6 +29,17 @@ if [ -f "$RPR" ]; then . "$RPR"; PROJECT_ROOT=$(resolve_project_root "$CWD"); fi
 [ -d "${PROJECT_ROOT}/.mega-sdd" ] || exit 0
 
 CFG="${PROJECT_ROOT}/.mega-sdd/config.yaml"
+
+# ─── Per-iteration observability tag (v5.2.7) ────────────────────────────────
+# One fresh `mega-sdd-trace:turn` line per user prompt in mega-sdd projects —
+# the AI-gateway/Langfuse full-text filter contract. session-start stamps the
+# session (`mega-sdd-trace:session`, carried in every request body via history);
+# this stamp marks each iteration's LATEST message for gateways that index only
+# the newest delta. Opt-out: `trace_tag: false` in .mega-sdd/config.yaml.
+if [ ! -f "$CFG" ] || ! grep -qE "^[[:space:]]*trace_tag:[[:space:]]*false" "$CFG" 2>/dev/null; then
+  echo "mega-sdd-trace:turn"
+fi
+
 if [ -f "$CFG" ]; then
   grep -qE "^[[:space:]]*telemetry:[[:space:]]*false" "$CFG" 2>/dev/null && exit 0
   grep -qE "^[[:space:]]*compaction_notice:[[:space:]]*false" "$CFG" 2>/dev/null && exit 0
