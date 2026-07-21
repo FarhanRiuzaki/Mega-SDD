@@ -65,6 +65,8 @@ Then tell the user the final step is one built-in command (custom slash commands
 
 If `BEFORE_VERSION == AFTER_VERSION`, say "already up to date" and skip the cache-refresh nudge.
 
+> Note: the bare `/mega-sdd` wrapper (`~/.claude/commands/mega-sdd.md`) needs NO manual refresh on update — it resolves the active install path from `installed_plugins.json` at invocation time, and the SessionStart hook re-heals it (version-marker check) every session.
+
 **Hard rules:**
 - Never run destructive git ops (reset --hard, force pull, checkout -f) — fast-forward only.
 - Never touch the user's own working directory; this command operates only inside `~/.claude/plugins/`.

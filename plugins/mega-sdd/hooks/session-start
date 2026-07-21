@@ -92,6 +92,15 @@ for signal in ".mega-sdd" "docs/mega-sdd" "vaults" "bound-vault" "units" "bindin
   fi
 done
 
+# ─── Bare /mega-sdd front-door wrapper auto-heal (v5.2.5) ────────────────────
+# Claude Code registers plugin commands ONLY as /mega-sdd:<command>; the bare
+# /mega-sdd verb the docs advertise can only exist as a STANDALONE user-level
+# command (~/.claude/commands/mega-sdd.md). Ship it here: idempotent
+# (version-marker check inside the script), runs BEFORE the SDD-signal early-exit
+# so any session on any CWD heals the wrapper, and is fully guarded — a wrapper
+# install failure must never break anchor injection.
+bash "${SCRIPT_DIR}/../scripts/install-front-door.sh" >/dev/null 2>&1 || true
+
 # If no signals, skip injection
 if [ "$has_sdd_signal" -eq 0 ]; then
   exit 0
