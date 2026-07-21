@@ -2,7 +2,7 @@
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 5.2.5 · **License:** MIT
+**Version:** 5.2.6 · **License:** MIT
 
 > **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
@@ -163,6 +163,7 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
+**v5.2.6** — *Mandatory routing by default:* installing the plugin makes mega-sdd the default dev workflow in EVERY session — no-signal CWDs no longer exit silently; the SessionStart hook injects a slim routing rule (route dev tasks via `using-mega-sdd`, propose `/mega-sdd <input>` init before production code; casual Q&A exempt). Full anchor stays signal-gated (token diet). Opt-out: `~/.claude/.mega-sdd-routing-off` or `MEGA_SDD_ROUTING=off`.
 **v5.2.5** — *The bare `/mega-sdd` verb actually registers:* Claude Code namespaces plugin commands (`/mega-sdd:<command>`), so the advertised bare front door never resolved. The SessionStart hook now auto-installs a thin user-level wrapper (`~/.claude/commands/mega-sdd.md` via `scripts/install-front-door.sh`, version-marker idempotent, user-authored files respected) that forwards verbatim to the plugin's front-door command.
 **v5.2.3** — *Native GitHub/VS Code PDF render:* the emit lanes (`emit-fsd`/`emit-prd`/`emit-sit`) render PDFs via the shipped `scripts/md2pdf.sh` (pandoc HTML + `github.css` + Chrome print, mermaid → SVG) — **never pandoc+LaTeX**. Bordered tables, inline diagrams, one-page-fit. Moat-safe (transforms on a throwaway copy — the citation-stamped source `.md` is untouched); Chrome-absent → GitHub-styled HTML fallback (CI-safe). Dependency shift: `tectonic` retired, `mmdc` added, Chrome detect-only.
 **v5.2.1** — *Hook recovery + fork headless caveat:* an interrupted run's hook-driven recovery now routes to `/mega-sdd --resume` (the front door); the `context: fork` headless caveat is documented — under `claude -p` a forked skill silently runs inline (no token win, telemetry dark), while PreToolUse gates + SessionStart still fire, so scripted/CI usage stays gate-safe.
