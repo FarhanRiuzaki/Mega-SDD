@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.2.6] - 2026-07-21
+
+feat(routing): mega-sdd is the MANDATORY development workflow by default — installing the plugin auto-routes every session, whether or not the user types `/mega-sdd`. The SessionStart hook's no-signal branch no longer exits silently: it injects a SLIM routing rule (token-diet — the full `using-mega-sdd` anchor stays signal-gated) that requires routing dev tasks through mega-sdd and proposing `/mega-sdd <input>` init before any production code is written in a fresh CWD; casual Q&A / read-only / non-code tasks stay exempt by the rule's own text.
+
+### Changed
+- `hooks/session-start` — no-signal CWD → slim mandatory-routing block (with the plugin's output-language contract inlined); opt-out via `~/.claude/.mega-sdd-routing-off` marker or `MEGA_SDD_ROUTING=off` env.
+- `tests/hooks/session-start.test.sh` — no-signal case now asserts the slim block, new opt-out case asserts silence; no-signal cases run under a sandbox HOME so real user state can't flip results.
+- READMEs (root Quick start + plugin What's new) document the default and the opt-out.
+
 ## [5.2.5] - 2026-07-21
 
 fix(front-door): the bare `/mega-sdd` verb the docs advertise NEVER registered — Claude Code registers plugin commands only under the plugin namespace (`/mega-sdd:<command>`), so `commands/mega-sdd.md` resolved as `/mega-sdd:mega-sdd` and bare `/mega-sdd` returned "Unknown command" (confirmed 12× across sessions on CC 2.1.215; frontmatter `name:` only changes the display label — there is NO in-plugin way to claim a bare verb). Fix: ship a standalone user-level wrapper.

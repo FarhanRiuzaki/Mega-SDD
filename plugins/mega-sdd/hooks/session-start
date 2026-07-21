@@ -101,8 +101,29 @@ done
 # install failure must never break anchor injection.
 bash "${SCRIPT_DIR}/../scripts/install-front-door.sh" >/dev/null 2>&1 || true
 
-# If no signals, skip injection
+# ─── No-signal CWD: mandatory-routing slim block (v5.2.6) ───────────────────
+# Installing the plugin makes mega-sdd the DEFAULT development workflow — every
+# session routes through it, whether or not the user types /mega-sdd. A CWD
+# without SDD signals no longer exits silently: it gets a SLIM routing rule
+# (token-diet — the full anchor stays signal-gated below) telling the model to
+# route dev tasks via using-mega-sdd / propose `/mega-sdd <input>` init.
+# Opt-out: ~/.claude/.mega-sdd-routing-off (user-level, all sessions) or
+# MEGA_SDD_ROUTING=off. Non-dev/casual sessions are exempt by the rule's own text.
 if [ "$has_sdd_signal" -eq 0 ]; then
+  if [ -f "${HOME}/.claude/.mega-sdd-routing-off" ] || [ "${MEGA_SDD_ROUTING:-on}" = "off" ]; then
+    exit 0
+  fi
+  cat <<'SLIM_EOF'
+<<EXTREMELY_IMPORTANT>>
+mega-sdd is installed: it is the MANDATORY development workflow (plugin default), auto-invoked whether or not the user types /mega-sdd. This CWD has no SDD context yet.
+
+Hard rule: BEFORE writing or modifying any production code in this session, route through mega-sdd — invoke the `mega-sdd:using-mega-sdd` skill for routing, or propose `/mega-sdd <input>` (PRD / brief / legacy path) to initialize the pipeline here. Exempt: casual Q&A, reading/explaining code, and non-code tasks.
+
+Output language: narrate in Indonesian + English technical terms by default (explicit user request > user's language > Indonesian for short input); Tier-1 structural tokens stay English.
+
+Opt-out (per user): create ~/.claude/.mega-sdd-routing-off
+<</EXTREMELY_IMPORTANT>>
+SLIM_EOF
   exit 0
 fi
 

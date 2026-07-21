@@ -6,7 +6,7 @@
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 5.2.5 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** 5.2.6 · **License:** MIT
 
 </div>
 
@@ -79,6 +79,8 @@ This is the canonical install reference — other docs link here.
 ```
 
 > **The bare `/mega-sdd` verb** — Claude Code registers plugin commands only under the plugin namespace (`/mega-sdd:<command>`), so the bare front door is provided by a tiny user-level wrapper at `~/.claude/commands/mega-sdd.md`. The plugin's SessionStart hook installs and maintains it automatically — your **first session after install** (any project, any CWD) creates it; from the next session on, `/mega-sdd` works everywhere. Until then, `/mega-sdd:mega-sdd` is the namespaced equivalent. Manual install: `bash <plugin-dir>/scripts/install-front-door.sh`.
+>
+> **Mandatory routing (default)** — installing the plugin makes mega-sdd the default development workflow: every session routes dev work through the pipeline automatically, whether or not you type `/mega-sdd`. SDD projects get the full routing anchor; fresh CWDs get a slim rule that proposes `/mega-sdd <input>` before any production code is written (casual Q&A exempt). Opt out per user: `touch ~/.claude/.mega-sdd-routing-off`.
 
 For higher precision (optional, recommended), let the OS-aware installer set up the native binaries for you:
 
