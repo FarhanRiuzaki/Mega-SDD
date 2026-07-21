@@ -21,6 +21,7 @@ tmp1="$(mktemp -d)"; home1="$(mktemp -d)"
 out="$(cd "$tmp1" && HOME="$home1" bash "$HOOK")"
 echo "$out" | grep -q "MANDATORY development workflow" || fail "no-signal CWD should inject the slim routing block, got: $out"
 echo "$out" | grep -q "using-mega-sdd" || fail "slim block missing the using-mega-sdd routing pointer"
+echo "$out" | grep -q "mega-sdd-trace:session" || fail "slim block missing the mega-sdd-trace:session observability tag"
 rm -rf "$tmp1" "$home1"
 
 # Test 1b: no-signal CWD + opt-out marker → empty output
@@ -35,6 +36,7 @@ tmp2="$(mktemp -d)"
 mkdir -p "${tmp2}/docs/mega-sdd"
 out="$(cd "$tmp2" && bash "$HOOK")"
 echo "$out" | grep -q "EXTREMELY_IMPORTANT" || fail "anchor wrapper missing from signal CWD output"
+echo "$out" | grep -q "mega-sdd-trace:session" || fail "full anchor block missing the mega-sdd-trace:session observability tag"
 echo "$out" | grep -q "mega-sdd" || fail "anchor body missing 'mega-sdd' mention"
 rm -rf "$tmp2"
 
