@@ -96,7 +96,9 @@ Same lane as emit-fsd Step 5 — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/md2pdf.sh"
 
 ### Step 6: Doc-control stamp (script-run)
 
-Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=sit --maturity=<Step 0 verdict> --position="<pipeline digest, e.g. bolts 3/7 executed>" --generated-at=<now ISO8601>`. The doc-control block is SCRIPT-OWNED (parser-invisible HTML comment) — the model never types it.
+Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=sit --maturity=<Step 0 verdict> --position="<pipeline digest, e.g. bolts 3/7 executed>" --generated-at=<now ISO8601> --bump --change-note="<derived>"`. The doc-control block, the `version`/`status` fields, and the **Riwayat Revisi** region are SCRIPT-OWNED — the model never types any of them.
+
+**Change-note derivation (mandatory, never free prose):** build the note from Step 1's drift output — `NO_PRIOR` → `Emisi awal`; otherwise `Regenerasi §<list of DRIFT/GONE sections> — <n> sumber berubah` (e.g. `Regenerasi §2, §4 — 3 sumber berubah`); no drift lines at all → `Re-emisi tanpa perubahan sumber`. Version `1.0`/`2.0` + `status: approved` are minted ONLY by a human running `--approve --approver="Nama, Peran"` — the model NEVER passes `--approve`.
 
 ### Step 7: Handoff (when --auto) + summary (always)
 
