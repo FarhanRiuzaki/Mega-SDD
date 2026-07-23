@@ -39,7 +39,7 @@ description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid 
 ## Pre-flight checks
 
 1. **vault_present_for_sit**: `test -f <vault-path>/vault.json` OR vault docs `0[0-6]-*.md` present — required (halt `dep_missing` if absent)
-2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only)
+2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only — or run `/mega-sdd:install-deps` to install automatically)
 3. **chrome_present** / **mmdc_present**: warn-only (Chrome → PDF else GitHub-styled HTML; mmdc → mermaid diagrams else code). PDF style is github.css, never LaTeX.
 
 ## Procedure

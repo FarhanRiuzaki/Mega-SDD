@@ -58,6 +58,7 @@ Resolution:
 - unit_spec FAIL → fix unit frontmatter per validate-unit-spec.sh findings
 - vault_binding_coverage FAIL → re-run /mega-sdd:bind-codebase
 - vault_oqs FAIL → fix OQ structure in vault docs
+- FAIL traceable to a low-precision (regex-tier) scan or another missing optional native dep upstream → run `/mega-sdd:install-deps` then re-run the upstream skill (scan-codebase / generate-units / etc.)
 <etc.>
 ```
 

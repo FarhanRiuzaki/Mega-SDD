@@ -45,7 +45,7 @@ description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/
 1. **vault_present_for_fsd**: `test -f <vault-path>/vault.json` — required (halt `dep_missing` if absent)
 2. **pandoc_installed**: `command -v pandoc` — warn if absent (degraded to markdown-only; PDF/HTML both need pandoc)
 3. **chrome_present**: `md2pdf.sh` probes Google Chrome / Chromium — warn-only if absent (degraded to GitHub-styled HTML; `FSD.md` + `.citation-map.json` are the source of truth, so a no-Chrome CI/headless run is fine by design)
-4. **mmdc_present**: `command -v mmdc` — warn-only if absent (mermaid blocks render as code, not diagrams — a quality drop, since mermaid-flows is a hard rule; install `npm install -g @mermaid-js/mermaid-cli`)
+4. **mmdc_present**: `command -v mmdc` — warn-only if absent (mermaid blocks render as code, not diagrams — a quality drop, since mermaid-flows is a hard rule; install `npm install -g @mermaid-js/mermaid-cli` — or run `/mega-sdd:install-deps` to install automatically)
 
 Full preflight catalog: `mega-sdd:orchestrate-flow/references/predictive-checks.md` §emit-fsd preflight checks.
 
