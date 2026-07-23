@@ -1,12 +1,12 @@
 ---
 name: using-mega-sdd
-version: 3.1.0
+version: 3.1.1
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
 # Using Mega-SDD
 
-Route SDD work through mega-sdd phases, not inline answers. This anchor decides *whether* a mega-sdd skill applies and *which*; the skills own the work. (Routing core only — invoke the `using-mega-sdd` skill for the pipeline map, phase-ownership, multi-PRD lifecycle, and red-flags detail.)
+Route SDD work through mega-sdd phases, not inline answers. This anchor decides *whether* a mega-sdd skill applies and *which*; the skills own the work. (Routing core only — invoke `using-mega-sdd` for the pipeline map, phase-ownership, multi-PRD lifecycle, and red-flags detail.)
 
 ## When this applies
 
@@ -24,7 +24,7 @@ CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation
 
 For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing. Gated phases: Skill-dispatch only, never Agent-offload.
 
-**Observability tag (AI-gateway/Langfuse filter contract):** every skill announce line MUST end with the trace token `` `mega-sdd-trace:<skill>` `` (e.g. "I'm using the scan-codebase skill to map the repository. `mega-sdd-trace:scan-codebase`"), and every subagent dispatch prompt (bolt-implementer, review panel, advisor, …) MUST contain a `mega-sdd-trace:<skill>` line — subagents run with fresh context and would otherwise be invisible to the gateway filter. One token, verbatim, no variants — gateway logs filter on it.
+**Observability tag:** every skill announce line MUST end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt MUST contain a `mega-sdd-trace:<skill>` line (fresh-context subagents are otherwise invisible to the AI-gateway/Langfuse filter). One token, verbatim, no variants.
 
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 
