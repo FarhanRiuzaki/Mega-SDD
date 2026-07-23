@@ -63,7 +63,11 @@ for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
          "$(command -v google-chrome 2>/dev/null || true)" \
          "$(command -v google-chrome-stable 2>/dev/null || true)" \
          "$(command -v chromium 2>/dev/null || true)" \
-         "$(command -v chromium-browser 2>/dev/null || true)"; do
+         "$(command -v chromium-browser 2>/dev/null || true)" \
+         "/c/Program Files/Google/Chrome/Application/chrome.exe" \
+         "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" \
+         "${LOCALAPPDATA:+${LOCALAPPDATA}/Google/Chrome/Application/chrome.exe}" \
+         "/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"; do
   [ -n "$c" ] && [ -x "$c" ] && CHROME="$c" && break
 done
 

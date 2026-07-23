@@ -14,69 +14,74 @@ tools:
     matrix:
       - os: macos
         pkg_mgr: brew
-        install_cmd: "brew install tree-sitter"
+        install_cmd: "brew install tree-sitter-cli"
         verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 5
+        notes: "The brew tree-sitter formula is library-only; the CLI ships as tree-sitter-cli (binary name: tree-sitter)"
       - os: [linux, wsl]
         pkg_mgr: apt
         install_cmd: "sudo apt install -y tree-sitter-cli"
         requires_sudo: true
-        verify_cmd: "command -v tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 5
+        notes: "Ubuntu 24.04+/Debian 13+ only; older releases use the cargo/npm fallback rows"
       - os: [linux, wsl]
         pkg_mgr: dnf
         install_cmd: "sudo dnf install -y tree-sitter-cli"
         requires_sudo: true
-        verify_cmd: "command -v tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 5
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install tree-sitter.tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        size_mb: 6
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install tree-sitter"
         verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 6
-        notes: "scoop is the native Windows source for tree-sitter (per tree-sitter docs); no winget package"
+        notes: "scoop is a native Windows source for tree-sitter (per tree-sitter docs); winget tree-sitter.tree-sitter-cli also available"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 8
         notes: "Cross-platform fallback when no native pkg available (incl. Windows w/ Rust)"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter-cli"
+        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
         size_mb: 6
         notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
   - id: ast-grep
-    used_by: [execute-bolts, generate-units]
+    used_by: [execute-bolts, generate-units, detect-drift]
     purpose: "Hard Rule v2 grammar (5-10x expressivity vs v1)"
-    fallback_behavior: "v1 grammar (5 closed types)"
+    fallback_behavior: "v1-authored rules run natively; units already carrying v2 rules HALT dep_missing until installed"
     matrix:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install ast-grep"
         verify_cmd: "command -v ast-grep"
         size_mb: 8
-      - os: [linux, wsl]
-        pkg_mgr: apt
-        install_cmd: "cargo install ast-grep"
-        requires_sudo: false
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install ast-grep.ast-grep"
         verify_cmd: "command -v ast-grep"
-        size_mb: 12
-        notes: "No native apt pkg; cargo is the canonical install for ast-grep on Debian/Ubuntu"
+        size_mb: 10
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install ast-grep"
-        verify_cmd: "command -v ast-grep || command -v sg"
+        verify_cmd: "command -v ast-grep"
         size_mb: 10
-        notes: "scoop is the native Windows source (matches references/tooling-install.md); no winget package"
+        notes: "scoop is a native Windows source (matches references/tooling-install.md); winget ast-grep.ast-grep also available"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install ast-grep --locked"
         verify_cmd: "command -v ast-grep"
         size_mb: 12
-        notes: "Cross-platform fallback (incl. Windows w/ Rust)"
+        notes: "Cross-platform fallback (incl. Windows w/ Rust); covers Debian/Ubuntu — no native apt pkg for ast-grep"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g @ast-grep/cli"
@@ -123,7 +128,7 @@ tools:
         size_mb: 5
 
   - id: jd
-    used_by: [diff-vault]
+    used_by: [diff-vault, replay]
     purpose: "Canonical JSON/YAML diff with RFC-6902 patches"
     fallback_behavior: "Manual Read+compare via skill body"
     matrix:
@@ -133,19 +138,26 @@ tools:
         verify_cmd: "command -v jd"
         size_mb: 4
       - os: windows-bash
-        pkg_mgr: scoop
-        install_cmd: "scoop install jd"
+        pkg_mgr: winget
+        install_cmd: "winget install josephburnett.jd"
         verify_cmd: "command -v jd"
         size_mb: 8
-        notes: "scoop native Windows source; otherwise the go fallback below"
+        notes: "winget ships jd 2.x; avoids the scoop extras-bucket step"
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop bucket add extras && scoop install jd"
+        verify_cmd: "command -v jd"
+        size_mb: 8
+        notes: "jd lives in the scoop 'extras' bucket (not Main), so the bucket-add is required first; or use the winget row above"
       - os: any
         pkg_mgr: go
-        install_cmd: "go install github.com/josephburnett/jd@latest"
+        install_cmd: "go install github.com/josephburnett/jd/v2/jd@latest"
         verify_cmd: "command -v jd"
         size_mb: 8
-        notes: "Cross-platform fallback (incl. Windows w/ Go)"
+        notes: "Cross-platform fallback (incl. Windows w/ Go); v2 is the current major (the v1 diff format is not compatible)"
 
   - id: pandoc
+    used_by: [emit-fsd, emit-prd, emit-sit, emit-uat]
     purpose: "md2pdf HTML render for the emit PDF lanes (emit-fsd/prd/sit/uat)"
     fallback_behavior: "Markdown-only output (no PDF)"
     matrix:
@@ -178,7 +190,7 @@ tools:
         size_mb: 30
 
   - id: mmdc
-    used_by: [emit-fsd, emit-prd, emit-sit]
+    used_by: [emit-fsd, emit-prd, emit-sit, emit-uat]
     purpose: "mermaid-cli — pre-render ```mermaid blocks to SVG for the md2pdf PDF lane (mermaid-flows is a hard rule)"
     fallback_behavior: "mermaid rendered as a code block, not a diagram (visible quality drop)"
     notes: "The PDF render engine is scripts/md2pdf.sh (pandoc HTML + Chrome print, GitHub/VS Code style — NEVER LaTeX). Chrome/Chromium is the printer: it is a GUI app, detect-only (probed by md2pdf.sh), NOT installed here; absent → GitHub-styled HTML fallback."
@@ -225,6 +237,12 @@ tools:
         install_cmd: "brew install semgrep"
         verify_cmd: "command -v semgrep"
         size_mb: 120
+      - os: windows-bash
+        pkg_mgr: pipx
+        install_cmd: "pipx install semgrep"
+        verify_cmd: "command -v semgrep"
+        size_mb: 120
+        notes: "Windows route via pipx (Python-based; no winget/scoop semgrep pkg)"
       - os: any
         pkg_mgr: pipx
         install_cmd: "pipx install semgrep"

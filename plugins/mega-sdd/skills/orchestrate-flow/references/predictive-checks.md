@@ -300,7 +300,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   fatal: no
   predicts_halt: (no halt; degraded output — markdown-only)
 
-- **check_id: `pandoc_latex_engine_present`**
+- **check_id: `chrome_mmdc_present`**
   command: `md2pdf.sh probes Chrome/Chromium (PDF printer) + command -v mmdc (mermaid)`
   expected: exit 0
   on_fail: "Chrome absent -> md2pdf emits GitHub-styled HTML (print-to-PDF from a browser) instead of PDF; mmdc absent -> mermaid stays code. Install Chrome (detect-only) + run /mega-sdd:install-deps --tools=mmdc. PDF is NEVER LaTeX."

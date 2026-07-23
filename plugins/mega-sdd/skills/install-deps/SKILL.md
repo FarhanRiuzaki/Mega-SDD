@@ -1,7 +1,7 @@
 ---
 name: install-deps
-version: 1.5.0
-description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, tectonic, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
+version: 1.5.1
+description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
 # Install-Deps — OS-Aware Dependency Installer
@@ -37,7 +37,7 @@ Plus chat-only output: detected OS, tool inventory, install plan, per-tool verif
 
 ## Pre-flight checks
 
-1. **pkg_mgr_detected**: at least one of (brew | apt | dnf | pacman | apk | winget | scoop | cargo | npm | go) is on PATH
+1. **pkg_mgr_detected**: at least one of (brew | apt | dnf | pacman | apk | winget | scoop | choco | cargo | npm | go | pipx) is on PATH
    - If none → halt `pkg_mgr_not_found`
 2. **memory_writable**: `<project>/.mega-sdd/memory/` exists and writable (or can be created)
 
@@ -206,7 +206,7 @@ handoff:
     tools_failed: <int>              # install or verify failed
     tools_sudo_pending: <int>        # requires_sudo — printed but not auto-run
     detected_os: <"macos" | "linux" | "wsl" | "windows-bash" | "unknown">
-    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "cargo-fallback" | "none">
+    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "pipx" | "cargo-fallback" | "none">
 ```
 
 Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under `--auto`.

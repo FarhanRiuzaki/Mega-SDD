@@ -1,6 +1,6 @@
 # Mega-SDD Optional Native Tooling — Install Guide
 
-> **v1.0.0+ Iter 55 update (documented Iter 61 per B-P3-1):** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify + memory-cache outcomes), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
+> **Auto-install:** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify + memory-cache outcomes), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
 
 ## Platform support matrix
 
@@ -19,7 +19,7 @@ How much of mega-sdd works per environment (verified 2026-06-11 against the ship
 
 Centralized install commands for all native binaries mega-sdd can leverage. **All are OPTIONAL** — mega-sdd has graceful fallbacks for every tool. Install for higher precision + better UX; skip for minimal-footprint setup.
 
-Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6.md` + research): bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat, license redistribution, maintenance overhead). Install once via your package manager.
+Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat, license redistribution, maintenance overhead). Install once via your package manager.
 
 ## Contents
 
@@ -35,21 +35,25 @@ Per Iter 14 audit (`docs/superpowers/audits/2026-05-21-command-sprawl-audit-v3.6
 
 | Tool | Used by | Fallback if absent | Install |
 |---|---|---|---|
-| `tree-sitter` (or `tree-sitter-cli`) | scan-codebase v2.0+ (AST extraction) | Regex engine (lower precision) | macOS: `brew install tree-sitter` · Linux/win: `cargo install tree-sitter-cli` · Node: `npm install -g tree-sitter-cli` |
-| `ast-grep` (alias `sg`) | execute-bolts v2.0+ (Hard Rule v2 grammar) | v1 grammar (5 types only) | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
-| `ripgrep` (`rg`) | scan-codebase (v14.0+; structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
-| `jd` | diff-vault v1.1+ (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd@latest` |
-| `markdownlint-cli2` | lint-units (Iter 14+; vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
+| `tree-sitter` (or `tree-sitter-cli`) | scan-codebase (AST extraction) | Regex engine (lower precision) | macOS: `brew install tree-sitter-cli` · Linux/win: `cargo install tree-sitter-cli` · Node: `npm install -g tree-sitter-cli` |
+| `ast-grep` (alias `sg`) | execute-bolts, generate-units, detect-drift (Hard Rule v2 grammar) | v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
+| `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
+| `jd` | diff-vault, replay (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
+| `pandoc` | emit-fsd/prd/sit/uat (md2pdf HTML render for the PDF lanes) | Markdown-only output (no PDF) | macOS: `brew install pandoc` · apt: `apt install pandoc` · win: `winget install JohnMacFarlane.Pandoc` |
+| `mmdc` (`@mermaid-js/mermaid-cli`) | emit-fsd/prd/sit/uat (pre-render mermaid to SVG for the PDF lane) | mermaid stays a code block (quality drop) | `npm install -g @mermaid-js/mermaid-cli` (all platforms) |
+| `markdownlint-cli2` | lint-units (vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
 | `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
 | `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
 | `superpowers` plugin | execute-bolts (TDD bridge) | Vendored fallback at `plugins/mega-sdd/skills/_vendored/` | `/plugin install superpowers` |
+
+> `pandoc` + `mmdc` power the emit PDF lanes; the PDF printer is a detected Chrome/Chromium (GUI app, detect-only — never installed by mega-sdd). Absent Chrome → GitHub-styled HTML fallback.
 
 ## One-command install (recommended setup)
 
 If you have **Homebrew** (macOS / Linux):
 
 ```bash
-brew install tree-sitter ast-grep ripgrep jd
+brew install tree-sitter-cli ast-grep ripgrep jd
 npm install -g markdownlint-cli2     # optional; vault prose lint
 ```
 
@@ -57,7 +61,7 @@ If you have **cargo** (cross-platform Rust):
 
 ```bash
 cargo install tree-sitter-cli ast-grep ripgrep
-go install github.com/josephburnett/jd@latest
+go install github.com/josephburnett/jd/v2/jd@latest
 npm install -g markdownlint-cli2
 ```
 
@@ -70,19 +74,23 @@ npm install -g tree-sitter-cli @ast-grep/cli markdownlint-cli2
 
 If you are on **Windows** (git-bash / MSYS2):
 
-`tree-sitter`, `ast-grep`, and `jd` have **no winget package** — their native Windows source is **Scoop**. `ripgrep` and `pandoc` install via either winget or scoop.
+`tree-sitter`, `ast-grep`, `jd`, `ripgrep`, and `pandoc` all have both winget and Scoop packages. Note `jd` lives in the Scoop **`extras`** bucket (not Main), so add that bucket first.
 
 ```powershell
-# Scoop (covers every tool natively — recommended on Windows):
-scoop install tree-sitter ast-grep ripgrep jd pandoc  # + npm i -g @mermaid-js/mermaid-cli for mermaid
+# Scoop (jd is in the 'extras' bucket, not Main):
+scoop install tree-sitter ast-grep ripgrep pandoc
+scoop bucket add extras && scoop install jd
+npm install -g @mermaid-js/mermaid-cli    # mermaid render for the PDF lane
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
-# winget (covers ripgrep / pandoc only):
+# winget (covers all five native tools):
 winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
-# tree-sitter / ast-grep / jd: use scoop above, or the cargo/npm/go fallback:
+winget install tree-sitter.tree-sitter-cli ast-grep.ast-grep josephburnett.jd
+
+# or the cross-platform runtime fallbacks:
 cargo install tree-sitter-cli ast-grep   # if Rust present
 npm install -g tree-sitter-cli @ast-grep/cli      # if Node present
-go install github.com/josephburnett/jd@latest     # if Go present
+go install github.com/josephburnett/jd/v2/jd@latest   # if Go present
 ```
 
 `/mega-sdd:install-deps` automates this: on a winget-primary box it also uses Scoop as a fallback when present, and for any tool it can't reach it prints the concrete remedy (install Scoop, or a runtime) instead of silently skipping.
@@ -94,7 +102,11 @@ command -v tree-sitter || command -v tree-sitter-cli && echo "✓ tree-sitter re
 command -v ast-grep && echo "✓ ast-grep ready"
 command -v rg && echo "✓ ripgrep ready"
 command -v jd && echo "✓ jd ready"
+command -v pandoc && echo "✓ pandoc ready"
+command -v mmdc && echo "✓ mmdc ready"
 command -v markdownlint-cli2 && echo "✓ markdownlint-cli2 ready"
+command -v semgrep && echo "✓ semgrep ready"
+command -v gitleaks && echo "✓ gitleaks ready"
 ```
 
 ## Minimal-footprint setup (skip everything optional)
@@ -134,14 +146,13 @@ If you have `ast-grep` AND `sg` aliases conflicting (sg is the short form), mega
 ### Updating tools
 
 ```bash
-brew upgrade tree-sitter ast-grep ripgrep jd
-npm update -g markdownlint-cli2
+brew upgrade tree-sitter-cli ast-grep ripgrep jd pandoc semgrep gitleaks
+npm update -g @mermaid-js/mermaid-cli markdownlint-cli2
 ```
 
 Mega-sdd is tested against versions pinned in `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` (tree-sitter grammars). Major version drift may produce warnings; minor versions typically compatible.
 
 ## References
 
-- Iter 6 spec — tree-sitter + ast-grep adoption
-- Iter 14 audit (research-driven adoptions: ripgrep + jd + markdownlint-cli2)
 - `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — tree-sitter grammar version matrix
+- Tool-adoption history and rationale: `CHANGELOG.md` + git log

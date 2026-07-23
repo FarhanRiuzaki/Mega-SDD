@@ -109,6 +109,7 @@ fi
 command -v cargo >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}cargo "
 command -v npm >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}npm "
 command -v go >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}go "
+command -v pipx >/dev/null 2>&1 && FALLBACKS="${FALLBACKS}pipx "   # Python-based tools: semgrep
 FALLBACKS=$(echo "$FALLBACKS" | sed 's/ $//')   # trim trailing space
 
 # === Output (consumed by install-deps SKILL.md Step 1) ===
@@ -132,19 +133,22 @@ echo "FALLBACKS: $FALLBACKS"
 - **macOS without brew**: PKG_MGR = `none` initially; install-deps proposes installing brew first via official Apple-pkg-manager-friendly method. Auto-execution of Homebrew's own install script (`/bin/bash -c "$(curl -fsSL https://...)"`) is FORBIDDEN per safety rails — instead, point user to https://brew.sh and instruct manual install.
 - **WSL Ubuntu without `apt`**: extremely rare; happens in chroot/container envs. Halt `pkg_mgr_not_found` with hint to install apt.
 - **Windows native (no WSL, no git-bash)**: out of scope — user instructed to install WSL Ubuntu (or git-bash) and re-run.
-- **Windows + winget primary (no scoop, no runtimes)**: `ripgrep` and `pandoc` install via winget, but `tree-sitter`, `ast-grep`, and `jd` have **no winget package** — their native Windows source is `scoop`, with `cargo`/`npm`/`go` as cross-platform fallbacks. If none of scoop/cargo/npm/go is present, those four are reported `unsupported` with the concrete remedy (install scoop, or a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
+- **Windows + winget primary**: `ripgrep`, `pandoc`, `tree-sitter` (`tree-sitter.tree-sitter-cli`), `ast-grep` (`ast-grep.ast-grep`), and `jd` (`josephburnett.jd`) all install via winget. `gitleaks` has a `scoop` package but **no winget package** — its native Windows source is `scoop`, with `go` as the cross-platform fallback; `semgrep` is Python-based and installs via `pipx`. If a tool's needed manager (scoop for gitleaks / pipx for semgrep / a runtime) is absent, it is reported `unsupported` with the concrete remedy (install scoop / pipx / a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
 - **Alpine `apk`**: most mega-sdd deps (pandoc, tree-sitter) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
 
 ## Fallback chain
 
 When primary PKG_MGR lacks a tool (per `tool-matrix.yaml`), install-deps Step 3 tries fallback managers in this order:
 
-0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. This matters because `tree-sitter`, `ast-grep`, and `jd` ship natively on Windows only via **scoop**, so a `winget`-primary box reaches them through this step when scoop is present.
+0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. This matters because `gitleaks` ships natively on Windows only via **scoop** (no winget package), so a `winget`-primary box reaches it through this step when scoop is present. (`tree-sitter`, `ast-grep`, and `jd` now have winget packages too, so a winget-primary box installs those directly.)
 1. `cargo` (Rust-based: tree-sitter-cli, ast-grep, ripgrep)
 2. `npm` (Node-based: markdownlint-cli2, tree-sitter-cli, @ast-grep/cli)
-3. `go install` (Go-based: jd)
+3. `go install` (Go-based: jd, gitleaks)
+4. `pipx` (Python-based: semgrep)
 
-If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation). On Windows specifically, when an `unsupported` tool was skipped purely for lack of a manager, the warning MUST name the concrete remedy — "install `scoop` (https://scoop.sh) then re-run, or install Node/Rust/Go for the cross-platform fallback" — rather than a bare skip, so the user knows why the tool is missing and how to get it.
+**Detected-but-no-matrix-row managers.** Some managers are detected as a primary yet have **no rows in `tool-matrix.yaml`**: `choco` (Windows) and `yum` (legacy RHEL/CentOS), plus `pacman`/`apk`. A box whose primary is one of these detects the manager but installs nothing *from* it — every tool routes through the runtime fallback chain above (`cargo`/`npm`/`go`/`pipx`). This is by design: the runtime installers are cross-platform, so choco/yum/pacman/apk are treated as detect-only-then-fallback rather than carrying their own tool rows.
+
+If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation). On Windows specifically, when an `unsupported` tool was skipped purely for lack of a manager, the warning MUST name the concrete remedy — "install `scoop` (https://scoop.sh) then re-run, or install Node/Rust/Go/pipx for the cross-platform fallback" — rather than a bare skip, so the user knows why the tool is missing and how to get it.
 
 ## Cross-reference
 
