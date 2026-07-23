@@ -71,6 +71,11 @@ def unesc(s):
     # undo markdown-cell escapes for spreadsheet cells
     return s.replace("\\|", "|").replace("`", "")
 
+PLACEHOLDER = "__________"
+EXEC_STATUS = "[ ] Pass · [ ] Fail · [ ] Blocked"
+def blank_exec(v):   # workbook gives testers EMPTY cells, not markdown placeholders
+    return "" if v in (PLACEHOLDER, EXEC_STATUS, "—") else v
+
 # ── parse §2 scenarios ──────────────────────────────────────────────────────
 scen_re = re.compile(r"^### (UAT-[A-Z0-9-]+) — (.*?) \((F-[A-Z0-9-]+)\)\s*$")
 scenarios = []   # {id,title,fid,meta:[(k,v)],steps:[[7 cells]]}
@@ -101,12 +106,10 @@ for ln in lines:
     if in3 and ln.strip().startswith("|"):
         cells = md_row(ln)
         if not all(re.fullmatch(r":?-{3,}:?", c) for c in cells if c):
-            rtm.append([unesc(c) for c in cells])
-
-PLACEHOLDER = "__________"
-EXEC_STATUS = "[ ] Pass · [ ] Fail · [ ] Blocked"
-def blank_exec(v):   # workbook gives testers EMPTY cells, not markdown placeholders
-    return "" if v in (PLACEHOLDER, EXEC_STATUS, "—") else v
+            row = [unesc(c) for c in cells]
+            if row:  # trailing cell is the "Status UAT" column — blank it for the tester
+                row[-1] = blank_exec(row[-1])
+            rtm.append(row)
 
 # ── minimal OOXML ───────────────────────────────────────────────────────────
 INVALID_SHEET = str.maketrans({c: " " for c in r':\/?*[]'})
