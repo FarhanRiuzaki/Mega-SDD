@@ -68,7 +68,7 @@ When the skill is invoked without `--auto`, conflict handling is fully interacti
 
 ## Canonical diff via `jd`
 
-Use `jd` (RFC-7386/6902 compliant JSON/YAML diff with patch generation) for canonical structural diff of vault.json between revisions, replacing the ad-hoc Read+compare approach. Install is OPTIONAL — the skill works without it.
+Use `jd` (RFC-7386/6902 compliant JSON/YAML diff with patch generation) for canonical structural diff of vault.json between revisions, replacing the ad-hoc Read+compare approach. Install is OPTIONAL — the skill works without it — or run `/mega-sdd:install-deps` to install automatically.
 
 ```bash
 if command -v jd >/dev/null; then
