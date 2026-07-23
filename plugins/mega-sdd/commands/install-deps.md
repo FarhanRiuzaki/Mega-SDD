@@ -13,7 +13,7 @@ Argument parsing:
 - `--force-recheck`: ignore memory cache; re-audit every tool from scratch
 - `--pkg-mgr=<name>`: override auto-detected manager (e.g., `--pkg-mgr=cargo` to use Rust toolchain instead of brew/apt)
 - `--manual`: print install commands as instructions but skip Bash invocation (user runs manually)
-- `--auto`: skip confirmation prompts + emit handoff YAML (orchestrator-invoked)
+- `--auto`: emit handoff YAML (orchestrator-invoked); the batch confirmation still runs
 
 Follow `skills/install-deps/SKILL.md` Procedure exactly.
 

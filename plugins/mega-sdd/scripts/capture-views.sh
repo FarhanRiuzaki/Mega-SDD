@@ -56,7 +56,12 @@ mkdir -p "$OUT" 2>/dev/null || { echo '{"skipped":true,"reason":"cannot create o
 CHROME_BIN=""
 for c in google-chrome google-chrome-stable chromium chromium-browser chrome \
          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-         "/Applications/Chromium.app/Contents/MacOS/Chromium"; do
+         "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+         "/c/Program Files/Google/Chrome/Application/chrome.exe" \
+         "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" \
+         "${LOCALAPPDATA:+${LOCALAPPDATA}/Google/Chrome/Application/chrome.exe}" \
+         "/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"; do
+  [ -n "$c" ] || continue
   if command -v "$c" >/dev/null 2>&1; then CHROME_BIN="$c"; break; fi
   if [ -x "$c" ]; then CHROME_BIN="$c"; break; fi
 done
