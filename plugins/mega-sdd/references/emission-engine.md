@@ -24,7 +24,7 @@ A **doc-pack** is a skill (e.g. `emit-fsd`) that binds the engine spine to one d
 | `<DOC>.md` | the emitted markdown file at `<vault>/<doc>/<DOC>.md` | `<vault>/fsd/FSD.md` |
 | **section map** | per-section source artifact(s) + extraction rules + citation format + missing-source placeholder text | `emit-fsd/references/section-mapping.md` |
 | **template** | the slot-marker (`{{slot_name}}`) skeleton the loop fills | `emit-fsd/references/fsd-template.md` |
-| **maturity ladder** | the doc's maturity rungs for the doc-control stamp | FSD `pre-development → post-development` (PRD `draft-from-legacy → reviewed → final`; SIT `planned → partial → executed`) |
+| **maturity ladder** | the doc's maturity rungs for the doc-control stamp | FSD `pre-development → post-development` (PRD `draft-from-legacy → reviewed → final`; SIT `planned → partial → executed`; UAT `draft → ready-for-uat → signed-off`) |
 | **mode detection** | how CWD state picks the emission mode/maturity | `section-mapping.md §Mode determination` |
 | **render config** | styling + optional PDF/HTML render inputs | `emit-fsd/references/styling-config.yaml` (doc-metadata) + `scripts/md2pdf.sh` + `references/github.css` (PDF style — NEVER LaTeX) |
 
@@ -56,6 +56,8 @@ All three scripts live in `plugins/mega-sdd/scripts/` and default to the FSD lan
 
 - **`build-sit-evidence.sh --vault=<v> [--vault=<v2> …] --cwd=<root> [--out=..] [--check-signoff]`** — the SIT doc-pack's deterministic evidence builder: emits the §1–§5 fragment (`<vault>/sit/.sit-evidence.md`) from `04-flows.md` + unit `acceptance_test[]` + the hook-guarded B4/B1/B2 artifacts, computes the `planned|partial|executed` maturity verdict, and enforces the sign-off slot grammar (`--check-signoff`: a non-placeholder Nama/Tanggal/Tanda-tangan/Status cell in §5 → exit 1 `SIGNOFF_*` + keterangan — a model-filled sign-off is a fabricated record, decision 5).
 - **`check-prd-markers.sh --prd=<PRD.md> --cwd=<root> [--kb=..]`** — the PRD doc-pack's marker-preservation check: a PRD line citing a KB claim must carry that claim's `[VERIFIED]/[INFERRED]/[OPEN]` marker verbatim (`MARKER_STRIPPED`/`MARKER_UPGRADED`/`MARKER_MISSING` → exit 1 + keterangan — an inferred claim presented as fact never ships).
+- **`build-uat-scaffold.sh --vault=<v> [--vault=<v2> …] --cwd=<root> [--out=..] [--check-execution]`** — the UAT doc-pack's deterministic scaffold builder: emits the §1–§4 fragment (`<vault>/uat/.uat-scaffold.md`) with business scenarios aligned 1:1 to SIT TS ids (UAT-NNN mirrors TS-NNN derivation), execution/RTM/berita-acara cells held to script-owned placeholder literals, and warns (never fails) when the SIT entry gate (SEOJK §2.3.1.5) isn't yet `executed`. `--check-execution` is the UAT lane's fabrication gate — any filled §2 execution cell, §3 RTM status, or §4 sign-off cell in the assembled `UAT.md` → exit 1 halt `execution_fabricated`, since UAT execution results are a human-run event, never a model guess.
+- **`build-uat-xlsx.sh --vault=<v>`** — the UAT doc-pack's zero-dependency xlsx renderer (python3 stdlib only — hand-written OOXML, no openpyxl/pip): derives a version-named `<vault>/uat/UAT-v<version>.xlsx` (version read from the sidecar `.doc-history.json`) with Rekap/RTM/per-scenario sheets, execution columns left BLANK for the tester. Exit 3 REFUSE when the target file already exists (never overwrite a tester's filled workbook); exit 1 on an unparsable `UAT.md`.
 
 ## Anti-hallucination rails (engine-level)
 
@@ -75,6 +77,7 @@ Every doc-pack inherits these (the FSD doc-pack states the operative FSD wording
 | `fsd` | `emit-fsd` (SKILL.md + references/section-mapping.md + fsd-template.md) | LIVE — the extracted-from original; byte-parity-pinned |
 | `prd` | `emit-prd` (SKILL.md + references/prd-sections.md + prd-template.md) — forward + REVERSE (KB, no vault), `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`check-prd-markers.sh`) | LIVE (P5) |
 | `sit` | `emit-sit` (SKILL.md + references/sit-sections.md + sit-template.md) — TS-NNN ← F-NNN scenarios (Mermaid verbatim), script-derived executed evidence + placeholder-literal sign-off (`build-sit-evidence.sh`) | LIVE (P5) |
+| `uat` | `emit-uat` (SKILL.md + references/uat-sections.md + uat-template.md) — UAT-NNN ← F-NNN business scenarios aligned to SIT TS ids, placeholder-literal execution columns + berita acara (`build-uat-scaffold.sh`), zero-dep xlsx render (`build-uat-xlsx.sh`) | LIVE (5.3.0) |
 
 ## P5 seams (declared in P3 — resolved in P5)
 
