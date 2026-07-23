@@ -40,7 +40,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 ## Pre-flight checks
 
 1. **source_present**: vault (`vault.json` or `0[0-6]-*.md` docs) OR KB (`knowledge-base/README.md`) — neither → halt `dep_missing`
-2. **pandoc_installed** / **chrome_present** / **mmdc_present** — warn-only (PDF via Chrome else GitHub-styled HTML; mmdc→mermaid diagrams else code; never LaTeX) — or run `/mega-sdd:install-deps` to install automatically
+2. **pandoc_installed** / **chrome_present** / **mmdc_present** — warn-only (PDF via Chrome else GitHub-styled HTML; mmdc→mermaid diagrams else code; never LaTeX) — pandoc/mmdc can be installed via `/mega-sdd:install-deps` (Chrome is detect-only; install it manually)
 
 ## Procedure
 
