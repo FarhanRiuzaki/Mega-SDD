@@ -14,7 +14,7 @@ This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-financ
 - Patience — extract-intelligence is the longest phase (~3 hours for 500-file legacy)
 
 ```bash
-brew install tree-sitter ast-grep ripgrep jd
+brew install tree-sitter-cli ast-grep ripgrep jd
 command -v tree-sitter && command -v ast-grep && echo "✓ ready"
 ```
 

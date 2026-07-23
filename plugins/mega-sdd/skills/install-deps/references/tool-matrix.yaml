@@ -261,6 +261,11 @@ tools:
         verify_cmd: "command -v gitleaks"
         size_mb: 10
       - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install Gitleaks.Gitleaks"
+        verify_cmd: "command -v gitleaks"
+        size_mb: 12
+      - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install gitleaks"
         verify_cmd: "command -v gitleaks"

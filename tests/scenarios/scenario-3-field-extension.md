@@ -10,7 +10,7 @@
 - `tree-sitter` + `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
 
 ```bash
-brew install tree-sitter ast-grep
+brew install tree-sitter-cli ast-grep
 command -v tree-sitter && command -v ast-grep && echo "✓ ready"
 ```
 
@@ -296,7 +296,7 @@ Need `precision_tier: ast` (tree-sitter engine). If `precision_tier: regex`, fie
 Install tree-sitter + re-run scan-codebase:
 
 ```bash
-brew install tree-sitter
+brew install tree-sitter-cli
 /mega-sdd:scan-codebase --engine=tree-sitter
 /mega-sdd:bind-codebase
 /mega-sdd:generate-units --refresh

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.3.1] - 2026-07-23
+
+fix(install-deps): the install-deps audit batch — 26 adversarially-verified findings closed across the tool matrix, its docs, and every consumer surface. The headline class: install commands that would fail on real user machines (brew `tree-sitter` went library-only → `tree-sitter-cli`; jd's scoop route needs the extras bucket and its go route moved to `/v2`; four tree-sitter rows verified the wrong binary name; Chrome was never probed at its Windows paths, so the PDF lane could not work on Git Bash; semgrep's pipx route was unreachable from the detection/fallback chain).
+
+### Added
+- `tests/derived-artifacts/test-tool-matrix.sh` — structural parse test for `tool-matrix.yaml` (schema per entry, sudo↔requires_sudo row pairing, curl|bash ban, defaults⊆ids, and a raw-line duplicate/orphan detector that replays the shipped `- id: pandoc` corruption; pyyaml optional with visible SKIP).
+- winget rows: `tree-sitter.tree-sitter-cli`, `ast-grep.ast-grep`, `josephburnett.jd`, `Gitleaks.Gitleaks`; a windows-bash `pipx` row for semgrep; `pipx`/`choco` in the pre-flight + handoff enums and the fallback chain.
+- `tests/interaction-keterangan/test-install-deps-keterangan.sh` — pins the rewritten Step-4 batch-confirm template (per-option Indonesian keterangan grounded in real `fallback_behavior`, exactly one recommended default).
+- Every consumer skill's missing-tool warning now names `/mega-sdd:install-deps` as the remedy (10 surfaces; emit-prd's line explicitly scopes Chrome as detect-only).
+
+### Changed
+- Chrome probe ladders in `md2pdf.sh` + `capture-views.sh` gain Git Bash Windows candidates (Program Files x64/x86, `$LOCALAPPDATA`, msedge last) — additive, macOS/Linux precedence unchanged.
+- `used_by` completed for all 9 tools (pandoc/mmdc → the four emit lanes; jd += replay; ast-grep += detect-drift); ast-grep `fallback_behavior` now states the v2-rules `dep_missing` halt honestly; `sg` alias dropped from verify (consumers probe `ast-grep` only).
+- `tooling-install.md` human table covers all 9 tools; version-archaeology fragments stripped; stale "no winget package" claims corrected (incl. a freshly-caught gitleaks one); `predictive-checks` check_id `pandoc_latex_engine_present` → `chrome_mmdc_present`.
+
+### Fixed
+- ast-grep's apt-keyed row that actually invoked cargo (deleted; the `any/cargo --locked` fallback covers Debian/Ubuntu); the `--auto` "skip confirmation prompts" overpromise in `commands/install-deps.md`; `tectonic` purged from the install-deps trigger surface; bare `brew install tree-sitter` swept from the runtime warning in `validate-preflight.sh` and all walkthrough/test docs.
+
 ## [5.3.0] - 2026-07-23
 
 feat(uat+versioning): the fourth team document — `emit-uat` (spec `docs/superpowers/specs/2026-07-23-uat-docpack-and-doc-versioning-design.md`) generates business-facing UAT test scripts 1:1 from SIT flows, with a script-owned execution-fabrication gate and a zero-dep xlsx render for testers; alongside it, the emission engine gains a script-owned doc versioning ladder (sidecar `.doc-history.json`, `--bump`/`--approve`, a rendered Riwayat Revisi region) shared by every doc-pack. This release wires `emit-uat` into the public surface and enumerates it everywhere the three-doc set used to be assumed.

@@ -260,7 +260,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 **Expected:**
 - Step 3.5 runs predictive checks for scan-codebase
 - `tree_sitter_present` check fails (non-fatal)
-- Warning displayed to user BEFORE chain starts: "⚠️ tree-sitter not installed; scan-codebase will fall back to regex engine. Install: brew install tree-sitter..."
+- Warning displayed to user BEFORE chain starts: "⚠️ tree-sitter not installed; scan-codebase will fall back to regex engine. Install: brew install tree-sitter-cli..."
 - Chain proceeds normally (scan-codebase uses regex)
 - handoff metrics.predictive_warnings_count = 1; metrics.predictive_halts_count = 0
 

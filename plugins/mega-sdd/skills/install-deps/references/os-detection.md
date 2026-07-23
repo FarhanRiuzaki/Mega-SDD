@@ -133,14 +133,14 @@ echo "FALLBACKS: $FALLBACKS"
 - **macOS without brew**: PKG_MGR = `none` initially; install-deps proposes installing brew first via official Apple-pkg-manager-friendly method. Auto-execution of Homebrew's own install script (`/bin/bash -c "$(curl -fsSL https://...)"`) is FORBIDDEN per safety rails — instead, point user to https://brew.sh and instruct manual install.
 - **WSL Ubuntu without `apt`**: extremely rare; happens in chroot/container envs. Halt `pkg_mgr_not_found` with hint to install apt.
 - **Windows native (no WSL, no git-bash)**: out of scope — user instructed to install WSL Ubuntu (or git-bash) and re-run.
-- **Windows + winget primary**: `ripgrep`, `pandoc`, `tree-sitter` (`tree-sitter.tree-sitter-cli`), `ast-grep` (`ast-grep.ast-grep`), and `jd` (`josephburnett.jd`) all install via winget. `gitleaks` has a `scoop` package but **no winget package** — its native Windows source is `scoop`, with `go` as the cross-platform fallback; `semgrep` is Python-based and installs via `pipx`. If a tool's needed manager (scoop for gitleaks / pipx for semgrep / a runtime) is absent, it is reported `unsupported` with the concrete remedy (install scoop / pipx / a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
+- **Windows + winget primary**: `ripgrep`, `pandoc`, `tree-sitter` (`tree-sitter.tree-sitter-cli`), `ast-grep` (`ast-grep.ast-grep`), `jd` (`josephburnett.jd`), and `gitleaks` (`Gitleaks.Gitleaks`) all install via winget; `scoop` remains an alternative source and `go` the cross-platform fallback for gitleaks; `semgrep` is Python-based and installs via `pipx`. If a tool's needed manager (pipx for semgrep / a runtime) is absent, it is reported `unsupported` with the concrete remedy (install pipx / a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
 - **Alpine `apk`**: most mega-sdd deps (pandoc, tree-sitter) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
 
 ## Fallback chain
 
 When primary PKG_MGR lacks a tool (per `tool-matrix.yaml`), install-deps Step 3 tries fallback managers in this order:
 
-0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. This matters because `gitleaks` ships natively on Windows only via **scoop** (no winget package), so a `winget`-primary box reaches it through this step when scoop is present. (`tree-sitter`, `ast-grep`, and `jd` now have winget packages too, so a winget-primary box installs those directly.)
+0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. Every matrix tool with a Windows row (`tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `gitleaks`) now has BOTH winget and scoop routes, so this step matters mainly for a box whose primary manager lacks a specific package version or is broken.
 1. `cargo` (Rust-based: tree-sitter-cli, ast-grep, ripgrep)
 2. `npm` (Node-based: markdownlint-cli2, tree-sitter-cli, @ast-grep/cli)
 3. `go install` (Go-based: jd, gitleaks)
