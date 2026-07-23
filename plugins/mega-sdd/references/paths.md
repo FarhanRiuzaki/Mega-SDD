@@ -45,9 +45,13 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── interfaces/                            # Multi-squad interface notes
 │   │   ├── fsd/                                   # Confluence FSD output (emit-fsd)
 │   │   │   ├── FSD.md                             # Markdown source
-│   │   │   ├── FSD.pdf                            # Rendered PDF (pandoc + LaTeX)
+│   │   │   ├── FSD.pdf                            # Rendered PDF (md2pdf.sh — GitHub-style, never LaTeX)
 │   │   │   ├── FSD.styling.yaml                   # User-editable styling overrides
-│   │   │   └── .citation-map.json                 # Audit trace per section
+│   │   │   ├── .citation-map.json                 # Audit trace per section
+│   │   │   └── .doc-history.json                  # Doc versioning sidecar (refresh-doc-stamps.sh --bump)
+│   │   ├── prd/                                   # PRD output (emit-prd): PRD.md, PRD.pdf, .citation-map.json, .doc-history.json
+│   │   ├── sit/                                   # SIT output (emit-sit): SIT.md, SIT.pdf, .sit-evidence.md, .citation-map.json, .doc-history.json
+│   │   ├── uat/                                   # UAT output (emit-uat): UAT.md, UAT.pdf, UAT-v<version>.xlsx, .uat-scaffold.md, .citation-map.json, .doc-history.json
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
 │   │   ├── .memory/                               # Vault-scope memory
 │   │   │   ├── classifier-accuracy.json

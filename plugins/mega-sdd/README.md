@@ -18,7 +18,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 
 ## Commands you'll actually use
 
-`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit>` emits the three team documents. The pre-v5 stage commands below still resolve as 5.x deprecation aliases.
+`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. The pre-v5 stage commands below still resolve as 5.x deprecation aliases.
 
 > **How the bare verb works**: Claude Code registers plugin commands only as `/mega-sdd:<command>`, so `/mega-sdd` itself is a user-level wrapper (`~/.claude/commands/mega-sdd.md`) that the SessionStart hook auto-installs on your first session and keeps current across plugin updates (`scripts/install-front-door.sh`, version-marker idempotent — a hand-edited wrapper without the marker is never touched). Before that first session, use `/mega-sdd:mega-sdd`.
 
@@ -26,7 +26,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 |---|---|
 | `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
 | `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
-| `/mega-sdd:emit <prd\|fsd\|sit>` | The three team documents (PRD / Confluence FSD / SIT) emitted from vault/units/bolts state; no arg lists them with maturity |
+| `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 | `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |

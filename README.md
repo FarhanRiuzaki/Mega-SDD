@@ -265,7 +265,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 ## Commands
 
-`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit>` emits the three team documents. Four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) stay as typed commands; every pre-v5 command still resolves as a deprecation alias through the 5.x cycle.
+`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) stay as typed commands; every pre-v5 command still resolves as a deprecation alias through the 5.x cycle.
 
 **Full per-command reference: [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
@@ -310,7 +310,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |

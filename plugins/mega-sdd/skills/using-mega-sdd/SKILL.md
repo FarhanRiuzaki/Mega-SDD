@@ -18,7 +18,7 @@ CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation
 
 ## The front door (one rule)
 
-**Any SDD lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (after ANY out-of-pipeline change: manual/AI edit, hotfix, git pull), `/mega-sdd:emit <prd|fsd|sit>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); **when unsure, ASK**.
+**Any SDD lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (after ANY out-of-pipeline change: manual/AI edit, hotfix, git pull), `/mega-sdd:emit <prd|fsd|sit|uat>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); **when unsure, ASK**.
 
 ## Hard rule
 
@@ -54,7 +54,7 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
-Diagnostic & output lanes compress to the front-door rule — any SDD lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit` via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
+Diagnostic & output lanes compress to the front-door rule — any SDD lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
 
 Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
 

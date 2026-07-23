@@ -3,7 +3,7 @@ description: THE mega-sdd front door — any SDD lane phrase routes here. No arg
 argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--no-telemetry] [--plan|--act|--plan-then-act]"
 ---
 
-> **The 5.0.0 surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit>` (the three team documents). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or a deprecated alias that keeps resolving through the 5.x cycle.
+> **The 5.0.0 surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or a deprecated alias that keeps resolving through the 5.x cycle.
 
 This command THINLY WRAPS the orchestrate-flow machinery — it detects the input shape, renders state, and dispatches; it never duplicates chain logic. **Every gated phase is dispatched via the Skill tool (`mega-sdd:orchestrate-flow` and its sub-skills) — NEVER offloaded to the Agent tool.** The PreToolUse moat gates key on Skill calls; an Agent-tool offload would bypass them (matcher excludes `Agent`), so it is forbidden.
 
@@ -104,16 +104,17 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 | Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
 | After `execute-bolts` | `list-modules` | Per-module status in chain summary |
 | At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
-| At chain end | `emit-fsd` (**OPT-IN** — requires `--with-fsd` flag; expensive pandoc/LaTeX deps) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
+| At chain end | `emit-fsd` (**OPT-IN** — requires `--with-fsd` flag; pandoc + Chrome md2pdf render) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
 | At chain end | `emit-sit` **PROPOSAL** (one line, never auto-run) when ≥1 `bolts/U-*/acceptance.json` exists | "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan SIT dengan tabel bukti §4 script-derived" |
+| At chain end | `emit-uat` **MENTION** (one line, never auto-run) when SIT.md exists | "Tim UAT butuh test script? `/mega-sdd:emit uat` menghasilkan skenario bisnis 1:1 dari flow + berita acara" |
 | At chain end | `emit-prd` reverse-lane **MENTION** (one line, never auto-run) when a KB exists but no vault | Team-readable PRD draft from the KB, markers `[VERIFIED]/[INFERRED]/[OPEN]` carried verbatim |
-| At EACH chain boundary | Doc-control stamp refresh for existing emitted docs (`scripts/refresh-doc-stamps.sh --doc=<fsd\|prd\|sit> --position=…` — script-lane, ~0 tokens, `--position` only; never a maturity bump) | Doc-control blocks stay current between full emissions |
+| At EACH chain boundary | Doc-control stamp refresh for existing emitted docs (`scripts/refresh-doc-stamps.sh --doc=<fsd\|prd\|sit\|uat> --position=…` — script-lane, ~0 tokens, `--position` only; never a maturity bump) | Doc-control blocks stay current between full emissions |
 | At chain end | Memory review prompt | Surface pending learning suggestions |
 
 **Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
 
 **Opt-in only:**
-- `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; expensive pandoc/LaTeX deps; user can invoke `/mega-sdd:emit fsd` manually for one-off)
+- `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; pandoc + Chrome md2pdf render; user can invoke `/mega-sdd:emit fsd` manually for one-off)
 - `--no-fsd` — legacy alias / no-op (FSD is opt-in via `--with-fsd`)
 - `--no-telemetry` — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
 - `--plan` — force Plan mode regardless of classifier output. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via the `--act` flag (`/mega-sdd --act`).

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.3.0] - 2026-07-23
+
+feat(uat+versioning): the fourth team document — `emit-uat` (spec `docs/superpowers/specs/2026-07-23-uat-docpack-and-doc-versioning-design.md`) generates business-facing UAT test scripts 1:1 from SIT flows, with a script-owned execution-fabrication gate and a zero-dep xlsx render for testers; alongside it, the emission engine gains a script-owned doc versioning ladder (sidecar `.doc-history.json`, `--bump`/`--approve`, a rendered Riwayat Revisi region) shared by every doc-pack. This release wires `emit-uat` into the public surface and enumerates it everywhere the three-doc set used to be assumed.
+
+### Added
+- `emit-uat` doc-pack (`skills/emit-uat/`) — UAT-NNN business scenarios aligned to SIT TS ids, maturity ladder `draft → ready-for-uat → signed-off`.
+- `scripts/build-uat-scaffold.sh` — deterministic UAT fragment builder; `--check-execution` is the UAT lane's fabrication gate (`execution_fabricated`) — a model-filled execution/RTM/sign-off cell halts, never ships.
+- `scripts/build-uat-xlsx.sh` — zero-dependency (python3 stdlib only) render of `UAT.md` into a version-named `UAT-v<version>.xlsx`; exit 3 REFUSE contract never overwrites a tester's filled workbook.
+- SEOJK 21/2017 §2.3.1.5 berita acara UAT block, mirroring the SIT sign-off precedent (placeholder-literal, never model-filled).
+- Doc versioning engine (script-owned): sidecar `<vault>/<doc>/.doc-history.json`, `refresh-doc-stamps.sh --bump`/`--approve --approver=…`, and a rendered `**Riwayat Revisi:**` table (`<!-- mega-sdd:revision-history -->` region) — per spec §4.
+- `/mega-sdd:emit uat` dispatch row, doc-maturity listing entry, and doc-pack registry row.
+
+### Changed
+- `commands/emit.md`, `commands/mega-sdd.md`, `skills/using-mega-sdd/SKILL.md` — every `<prd|fsd|sit>` doc enumeration extended to `<prd|fsd|sit|uat>`; "three team documents" → "four team documents".
+- `references/emission-engine.md` — doc-pack registry + sidecar-scripts section gain the `uat` lane; maturity-ladder cell extended.
+- `references/paths.md` — vault tree gains sibling `prd/`, `sit/`, `uat/` output dirs and `.doc-history.json` sidecars.
+- Full-emission emitters now pass `--bump` to `refresh-doc-stamps.sh`; chain-boundary refreshes stay `--position`-only.
+
+### Fixed
+- Stale "pandoc + LaTeX" comments in `references/paths.md` (FSD.pdf) and `commands/mega-sdd.md` (the `--with-fsd` auto-invoke row) — FSD rendering has used `md2pdf.sh` (GitHub-style, Chrome-rendered, never LaTeX) since the render pipeline moved off pandoc/LaTeX.
+
 ## [5.2.7] - 2026-07-21
 
 feat(observability): `mega-sdd-trace` — the single-token AI-gateway/Langfuse log-filter contract. Internal deployments route Claude traffic through a gateway that logs request bodies; this stamps every mega-sdd iteration so gateway/Langfuse full-text filters (`contains "mega-sdd-trace"`, prefix-match per phase) cleanly separate mega-sdd traffic from everything else.
