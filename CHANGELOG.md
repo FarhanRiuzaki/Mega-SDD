@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.3.2] - 2026-07-23
+
+fix(hardening): the review-accepted minor backlog from the v5.3.0/v5.3.1 review waves — sidecar schema guards, gate shape-hardening, and table-cell escaping, each with a pinning test.
+
+### Added
+- `--check-execution` gains `EXECUTION_SHAPE`: a §2 table row whose cell count is neither 2 (metadata) nor 7 (step) is now a violation — a column-dropped fabricated step row can no longer slip past the placeholder checks; ``` fence tracking added so mermaid `|`-prefixed lines never false-positive.
+- `test-tool-matrix.sh` probe 1b — drops the FIRST `- id:` line so the orphans-list detector branch is directly exercised (closes the unprobed-branch review note).
+
+### Fixed
+- `refresh-doc-stamps.sh`: a valid-JSON-but-malformed `.doc-history.json` (`{}`, a list, a non-numeric version) now exits 2 "refusing to guess" instead of crashing mid-write with KeyError.
+- `build-uat-xlsx.sh`: a non-object sidecar falls back to version `0.1` instead of raising AttributeError.
+- Flow titles containing `|` no longer break the §1/§3 tables — `cell()` escaping applied to title cells in BOTH scaffold siblings (`build-uat-scaffold.sh`, `build-sit-evidence.sh`).
+
 ## [5.3.1] - 2026-07-23
 
 fix(install-deps): the install-deps audit batch — 26 adversarially-verified findings closed across the tool matrix, its docs, and every consumer surface. The headline class: install commands that would fail on real user machines (brew `tree-sitter` went library-only → `tree-sitter-cli`; jd's scoop route needs the extras bucket and its go route moved to `/v2`; four tree-sitter rows verified the wrong binary name; Chrome was never probed at its Windows paths, so the PDF lane could not work on Git Bash; semgrep's pipx route was unreachable from the detection/fallback chain).

@@ -124,6 +124,14 @@ if os.path.isfile(hist_path):
     except (OSError, ValueError):
         print(f"ERROR: {hist_path} unreadable — refusing to guess version state", file=sys.stderr)
         sys.exit(2)
+    # Schema guard: valid JSON that is not a schema-1 sidecar (e.g. {}, a list,
+    # or a mangled version) gets the same refuse-to-guess lane as unreadable —
+    # never a KeyError mid-write.
+    if (not isinstance(hist, dict)
+            or not isinstance(hist.get("history"), list)
+            or not re.fullmatch(r"\d+\.\d+", str(hist.get("version") or ""))):
+        print(f"ERROR: {hist_path} malformed (not a schema-1 sidecar) — refusing to guess version state", file=sys.stderr)
+        sys.exit(2)
 
 def next_version(cur, kind):
     # kind: "bump" (minor) | "approve" (next whole). cur None → 0.1 / 1.0.

@@ -371,5 +371,72 @@ OUT=$(bash "$BUILD" --cwd="$PROJ" </dev/null 2>&1); RC=$?
 OUT=$(bash "$BUILD" --vault="$PROJ/nope" --cwd="$PROJ" </dev/null 2>&1); RC=$?
 [ "$RC" -eq 2 ] && ok "10: bad vault dir → exit 2" || fail "10: bad-vault rc=$RC (want 2)"
 
+# ── 11: v5.3.2 hardening — '|'-in-title escaping, fence immunity, EXECUTION_SHAPE ──
+VAULTP="$PROJ/.mega-sdd/vaults/vp"
+mkdir -p "$VAULTP/units" "$VAULTP/uat"
+printf '{"project_name":"pipa"}\n' > "$VAULTP/vault.json"
+cat > "$VAULTP/04-flows.md" <<'MD'
+# 04 — Flows
+
+## User flows
+
+### F-U-001: Login | dengan SSO
+
+**Flow**:
+```mermaid
+flowchart TD
+    A -->|ya| B
+|weird| C
+```
+
+**Definition of Done**:
+- [ ] user masuk
+MD
+OUT=$(bash "$BUILD" --vault="$VAULTP" --cwd="$PROJ" </dev/null 2>&1); RC=$?
+FRAGP="$VAULTP/uat/.uat-scaffold.md"
+if [ "$RC" -eq 0 ] && grep -q 'Login \\| dengan SSO' "$FRAGP"; then
+  ok "11: '|' in flow title escaped (\\|) in fragment table cells"
+else fail "11: title-escape rc=$RC"; fi
+ROW11=$(grep '^| UAT-001 | TS-001 |' "$FRAGP" | head -1)
+P11=$(printf '%s' "$ROW11" | grep -o ' | ' | wc -l | tr -d ' ')
+[ "$P11" = "4" ] && ok "11: §1 row keeps 5 columns despite the raw '|' in the title" \
+  || fail "11: §1 row column drift (inner seps=$P11): $ROW11"
+
+UATMDP="$VAULTP/uat/UAT.md"
+{
+  printf -- '---\ntitle: UAT\n---\n\n# UAT\n\n'
+  printf '## 1. Ruang Lingkup & Kriteria\n\n'
+  sed -n '/uat-scaffold:§1 /,/\/uat-scaffold:§1 /p' "$FRAGP"
+  printf '\n## 2. Skenario UAT\n\n'
+  sed -n '/uat-scaffold:§2 /,/\/uat-scaffold:§2 /p' "$FRAGP"
+  printf '\n## 3. Matriks Ketertelusuran\n\n'
+  sed -n '/uat-scaffold:§3 /,/\/uat-scaffold:§3 /p' "$FRAGP"
+  printf '\n## 4. Berita Acara\n\n'
+  sed -n '/uat-scaffold:§4 /,/\/uat-scaffold:§4 /p' "$FRAGP"
+} > "$UATMDP"
+python3 - "$UATMDP" <<'PY'
+import re, sys
+p = sys.argv[1]
+t = open(p, encoding="utf-8").read()
+row = "| 1 | Login SSO | user masuk | __________ | [ ] Pass · [ ] Fail · [ ] Blocked | __________ | __________ |"
+t = re.sub(r"<!-- uat-steps:UAT-\S+ -->", row, t)
+open(p, "w", encoding="utf-8").write(t)
+PY
+OUT=$(bash "$BUILD" --check-execution --vault="$VAULTP" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && ok "11: mermaid '|'-line inside a fence does NOT trip the gate (fence tracking)" \
+  || fail "11: fence immunity rc=$RC out: $OUT"
+
+python3 - "$UATMDP" <<'PY'
+import sys
+p = sys.argv[1]
+t = open(p, encoding="utf-8").read()
+t = t.replace("**Pelaksana:**", "| 2 | aksi curang | hasil | Pass |\n**Pelaksana:**", 1)
+open(p, "w", encoding="utf-8").write(t)
+PY
+OUT=$(bash "$BUILD" --check-execution --vault="$VAULTP" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 1 ] && echo "$OUT" | grep -q 'EXECUTION_SHAPE' \
+  && ok "11: malformed 4-cell step row → EXECUTION_SHAPE violation (column-dropped fabrication caught)" \
+  || fail "11: shape gate rc=$RC out: $OUT"
+
 if [ "$FAILED" -eq 0 ]; then note "PASS: Task 3 uat-scaffold suite"; exit 0
 else note "FAIL: Task 3 uat-scaffold suite"; exit 1; fi
