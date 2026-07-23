@@ -130,7 +130,7 @@ elif name == "scan-codebase":
         warnings.append({"check_id": "tree_sitter_present",
                          "detail": "tree-sitter not installed; scan-codebase falls back to the regex engine "
                                    "(lower precision; bind-codebase field-level diff will degrade). Install via "
-                                   "/mega-sdd:install-deps or `brew install tree-sitter`."})
+                                   "/mega-sdd:install-deps or `brew install tree-sitter-cli`."})
     checks.append({"check": "tree_sitter_present", "status": "WARN" if warnings else "PASS"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")

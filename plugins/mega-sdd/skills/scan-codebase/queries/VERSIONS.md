@@ -20,7 +20,7 @@ The query files in this directory are tested against these tree-sitter grammar v
 
 ```bash
 # Install tree-sitter CLI
-brew install tree-sitter        # macOS
+brew install tree-sitter-cli        # macOS
 cargo install tree-sitter-cli   # Cross-platform
 npm install -g tree-sitter-cli  # Cross-platform alternative
 

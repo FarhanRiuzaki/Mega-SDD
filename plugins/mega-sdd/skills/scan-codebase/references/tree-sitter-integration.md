@@ -38,7 +38,7 @@ blocker:
   details:
     required_binary: tree-sitter
     install_commands:
-      macos: "brew install tree-sitter"
+      macos: "brew install tree-sitter-cli"
       linux: "cargo install tree-sitter-cli"
       windows: "scoop install tree-sitter"
       universal: "npm install -g tree-sitter-cli"
