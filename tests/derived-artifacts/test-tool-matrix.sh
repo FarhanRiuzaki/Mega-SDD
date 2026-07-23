@@ -380,6 +380,21 @@ if [ -n "$PYBIN" ]; then
   expect_fail "$YOUT" "B" "probe(g): same mutation, yaml-parsed tool count drops to 8 (cross-validated)"
 fi
 
+# Probe 1b (g) — drop the FIRST entry's '- id:' line: its keys then appear
+# before ANY active list item, so the orphans-list branch (cur is None) fires
+# directly (v5.3.2 — closes the unprobed-branch review note).
+cp "$TM" "$WORK/probe-orphan-first.yaml"
+python3 - "$WORK/probe-orphan-first.yaml" <<'PY'
+import sys
+p = sys.argv[1]
+lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
+out = [l for l in lines if l.strip() != '- id: tree-sitter']
+assert len(out) == len(lines) - 1, "expected to drop exactly one line"
+open(p, 'w', encoding='utf-8').writelines(out)
+PY
+OUT="$(run_raw "$WORK/probe-orphan-first.yaml")"
+expect_fail "$OUT" "G" "probe(g): dropped FIRST '- id:' line — orphans-list (cur is None) branch fires"
+
 # Probe 2 (e) — inject a curl | bash install_cmd (never-curl|bash contract).
 cp "$TM" "$WORK/probe-curlbash.yaml"
 python3 - "$WORK/probe-curlbash.yaml" <<'PY'

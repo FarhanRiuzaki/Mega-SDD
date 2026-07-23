@@ -425,7 +425,7 @@ if any(p["flows"] for p in parsed):
     L.append(sep)
     for p in parsed:
         for f in p["flows"]:
-            row = "| %s | %s | %s | %s | %d |" % (f["ts_id"], f["id"], f["title"], f["type"], len(f["dod"]))
+            row = "| %s | %s | %s | %s | %d |" % (f["ts_id"], f["id"], cell(f["title"], 80), f["type"], len(f["dod"]))
             if multi_scope:
                 row = "| %s %s" % (scope_label(p), row)
             L.append(row)

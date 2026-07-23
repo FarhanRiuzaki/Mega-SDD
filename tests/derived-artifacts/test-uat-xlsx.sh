@@ -247,5 +247,35 @@ OUT=$(bash "$BUILD" --vault="$VAULT8" </dev/null 2>&1); RC=$?
 [ "$RC" -eq 1 ] && ok "8: UAT.md without any '### UAT-' block → exit 1" \
   || fail "8: no-scenario rc=$RC (want 1) out: $OUT"
 
+# ── 9: non-object sidecar → version falls back to 0.1, no crash (v5.3.2 guard) ──
+VAULT9="$PROJ/.mega-sdd/vaults/v9"
+mkdir -p "$VAULT9/uat"
+cat > "$VAULT9/uat/UAT.md" <<'MD'
+---
+title: UAT
+---
+
+# UAT
+
+## 2. Skenario UAT
+
+### UAT-001 — Login (F-U-001)
+
+| Field | Nilai |
+|---|---|
+| Flow | F-U-001 |
+
+| No | Aksi | Expected Result | Actual Result | Status | Defect | Bukti |
+|---|---|---|---|---|---|---|
+| 1 | Buka | Tampil | __________ | [ ] Pass · [ ] Fail · [ ] Blocked | __________ | __________ |
+
+## 3. Matriks
+MD
+printf '[1,2,3]' > "$VAULT9/uat/.doc-history.json"
+OUT=$(bash "$BUILD" --vault="$VAULT9" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ -f "$VAULT9/uat/UAT-v0.1.xlsx" ] && echo "$OUT" | grep -q 'version=0.1' \
+  && ok "9: non-object sidecar → 0.1 default (isinstance guard, no AttributeError)" \
+  || fail "9: rc=$RC out: $OUT"
+
 if [ "$FAILED" -eq 0 ]; then note "PASS: Task 4 uat-xlsx suite"; exit 0
 else note "FAIL: Task 4 uat-xlsx suite"; exit 1; fi

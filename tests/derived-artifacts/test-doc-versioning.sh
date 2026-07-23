@@ -179,5 +179,23 @@ else
   fail "11: test-p3-refresh-doc-stamps.sh regressed"
 fi
 
+# ── 12: schema guard — valid-JSON-but-malformed sidecar refuses to guess (v5.3.2) ──
+SC="$V/fsd/.doc-history.json"
+cp "$SC" "$WORK/sidecar-backup.json"
+B12=$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$DOC")
+printf '{}' > "$SC"
+OUT=$(bash "$REFRESH" --vault="$V" --doc=fsd --bump --change-note="x" </dev/null 2>&1); RC=$?
+A12=$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$DOC")
+[ "$RC" -eq 2 ] && echo "$OUT" | grep -q "malformed" && [ "$B12" = "$A12" ] && [ "$(cat "$SC")" = "{}" ] \
+  && ok "12: {} sidecar + --bump → exit 2 (refuse to guess); doc + sidecar untouched" \
+  || fail "12: empty-object sidecar rc=$RC out: $OUT"
+printf '[1,2]' > "$SC"
+bash "$REFRESH" --vault="$V" --doc=fsd --bump --change-note="x" </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 2 ] && ok "12: non-object sidecar → exit 2" || fail "12: list-sidecar rc=$RC (want 2)"
+printf '{"schema":1,"doc":"fsd","version":"abc","status":"draft","history":[]}' > "$SC"
+bash "$REFRESH" --vault="$V" --doc=fsd --bump --change-note="x" </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 2 ] && ok "12: non-numeric version string → exit 2" || fail "12: bad-version rc=$RC (want 2)"
+cp "$WORK/sidecar-backup.json" "$SC"
+
 if [ "$FAILED" -eq 0 ]; then note "PASS: doc-versioning suite"; exit 0
 else note "FAIL: doc-versioning suite"; exit 1; fi

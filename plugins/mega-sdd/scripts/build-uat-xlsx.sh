@@ -53,7 +53,9 @@ if not os.path.isfile(uat_md):
 version = "0.1"
 if os.path.isfile(hist_path):
     try:
-        version = json.load(open(hist_path)).get("version") or "0.1"
+        h = json.load(open(hist_path))
+        if isinstance(h, dict):  # non-object sidecar → keep the 0.1 default
+            version = h.get("version") or "0.1"
     except (OSError, ValueError):
         pass
 out_path = os.path.join(vault, "uat", f"UAT-v{version}.xlsx")

@@ -1,6 +1,6 @@
 ---
 name: emit-uat
-version: 1.0.0
+version: 1.0.1
 description: Generate a UAT test-script document for the business UAT team — business-language scenarios 1:1 per F-* flow (aligned to SIT TS ids), step tables with placeholder execution columns, compact RTM, berita acara UAT page (SEOJK 21/2017), plus a zero-dep xlsx workbook for testers. Triggers — "generate UAT", "emit UAT", "buat UAT", "dokumen UAT", "test script UAT", "skrip uji UAT", "UAT script", "berita acara UAT", or paraphrases.
 ---
 
@@ -92,7 +92,7 @@ Run `bash <plugin-root>/scripts/build-citation-map.sh --vault=<vault> --cwd=<pro
 Run `bash <plugin-root>/scripts/build-uat-scaffold.sh --check-execution --vault=<vault>`.
 
 - Exit 0 → every execution / sign-off cell is still a placeholder literal. Proceed.
-- Exit 1 → halt `quality_gate_failed:execution_fabricated` with the script's violation lines (`EXECUTION_FILLED` / `STEPS_MISSING` / `RTM_FILLED` / `BA_FILLED` / `SIGNOFF_FILLED` / `BA_SECTION_MISSING`) + keterangan verbatim; STOP — a model-filled execution or sign-off cell is a fabricated test record (SEOJK context) and must never render. The model restores the placeholder literals; it NEVER "completes" a result.
+- Exit 1 → halt `quality_gate_failed:execution_fabricated` with the script's violation lines (`EXECUTION_FILLED` / `EXECUTION_SHAPE` / `STEPS_MISSING` / `RTM_FILLED` / `BA_FILLED` / `SIGNOFF_FILLED` / `SIGNOFF_SHAPE` / `BA_SECTION_MISSING`) + keterangan verbatim; STOP — a model-filled execution or sign-off cell is a fabricated test record (SEOJK context) and must never render. The model restores the placeholder literals; it NEVER "completes" a result.
 
 ### Step 5: Render PDF via md2pdf (optional)
 

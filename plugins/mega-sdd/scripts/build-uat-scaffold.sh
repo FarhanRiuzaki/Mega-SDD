@@ -128,8 +128,14 @@ def check_execution(uat_path):
     cur_uat = "?"        # current UAT-id within §2
     ba_table = None      # §4 table mode: 'info' | 'defects' | 'signoff' | None
     keputusan_seen = False
+    in_fence = False     # ``` fence tracking — mermaid lines may start with '|'
     v = []
     for i, line in enumerate(lines, 1):
+        if re.match(r"^\s*```", line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
         hm = re.match(r"^## (\d+)\.", line)
         if hm:
             section = int(hm.group(1))
@@ -154,13 +160,22 @@ def check_execution(uat_path):
             if not line.strip().startswith("|"):
                 continue
             cells = _cells(line)
-            if len(cells) != 7 or _is_sep(cells) or cells[0] == "No":
-                continue  # metadata rows / header / separator
-            for idx, col in STEP_COLS.items():
-                if cells[idx - 1] != PLACEHOLDER:
-                    v.append("EXECUTION_FILLED %d %s %s" % (i, cur_uat, col))
-            if cells[4] != EXEC_STATUS:
-                v.append("EXECUTION_FILLED %d %s Status" % (i, cur_uat))
+            if not cells or _is_sep(cells):
+                continue
+            if len(cells) == 7:
+                if cells[0] == "No":
+                    continue  # step-table header
+                for idx, col in STEP_COLS.items():
+                    if cells[idx - 1] != PLACEHOLDER:
+                        v.append("EXECUTION_FILLED %d %s %s" % (i, cur_uat, col))
+                if cells[4] != EXEC_STATUS:
+                    v.append("EXECUTION_FILLED %d %s Status" % (i, cur_uat))
+                continue
+            if len(cells) != 2:
+                # §2 knows exactly two table shapes: 2-cell metadata rows and
+                # 7-cell step rows — anything else is a malformed (possibly
+                # column-dropped) step row the placeholder checks cannot see.
+                v.append("EXECUTION_SHAPE %d %s %d-cell" % (i, cur_uat, len(cells)))
             continue
         # §3 — RTM: last cell (Status UAT) must stay placeholder
         if section == 3:
@@ -484,7 +499,7 @@ if any(p["flows"] for p in parsed):
     L.append(sep)
     for p in parsed:
         for f in p["flows"]:
-            row = "| %s | %s | %s | %s | %s |" % (f["uat_id"], f["ts_id"], f["id"], f["title"], f["type"])
+            row = "| %s | %s | %s | %s | %s |" % (f["uat_id"], f["ts_id"], f["id"], cell(f["title"], 80), f["type"])
             if multi_scope:
                 row = "| %s %s" % (scope_label(p), row)
             L.append(row)
@@ -589,7 +604,7 @@ if any(p["flows"] for p in parsed):
         for f in p["flows"]:
             units = units_for_flow(p, f["id"])
             row = "| %s | %s | %s | %s | %s | %s |" % (
-                f["id"], f["title"], f["uat_id"], f["ts_id"],
+                f["id"], cell(f["title"], 80), f["uat_id"], f["ts_id"],
                 ", ".join(units) if units else "—", PLACEHOLDER)
             if multi_scope:
                 row = "| %s %s" % (scope_label(p), row)
