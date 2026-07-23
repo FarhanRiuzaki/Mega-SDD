@@ -205,11 +205,16 @@ if echo "$REKAP" | grep -q 'UAT-001' && echo "$REKAP" | grep -q 'UAT-002'; then
 else fail "4: Rekap missing scenario ids"; fi
 echo "$RTM" | grep -q 'F-U-001' \
   && ok "4: RTM sheet carries F-U-001" || fail "4: RTM missing F-U-001"
+if echo "$RTM" | grep -q '__________'; then
+  fail "4: RTM sheet still carries '__________' (Status UAT cell not blanked)"
+else ok "4: RTM Status-UAT cell blank (no '__________' literal)"; fi
 
-# ── 5: execution cells empty-by-construction (no placeholder literal) ──
+# ── 5: execution cells empty-by-construction (no placeholder literals) ──
 if echo "$S1" | grep -q '__________'; then
   fail "5: UAT-001 sheet still carries '__________' placeholder"
-else ok "5: UAT-001 execution cells blank (no '__________' literal)"; fi
+elif echo "$S1" | grep -q '\[ \] Pass'; then
+  fail "5: UAT-001 Status cell still carries EXEC_STATUS literal '[ ] Pass · …'"
+else ok "5: UAT-001 execution cells blank (no '__________' nor '[ ] Pass' literal)"; fi
 
 # ── 6: refuse-overwrite (never clobber a tester-filled workbook) ──
 SHA1=$(shasum -a 256 "$UATX" | cut -d' ' -f1)
