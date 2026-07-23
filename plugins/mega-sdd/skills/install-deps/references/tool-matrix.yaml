@@ -145,8 +145,8 @@ tools:
         size_mb: 8
         notes: "Cross-platform fallback (incl. Windows w/ Go)"
 
-  
-    purpose: "md2pdf HTML render for the emit PDF lanes (emit-fsd/prd/sit)"
+  - id: pandoc
+    purpose: "md2pdf HTML render for the emit PDF lanes (emit-fsd/prd/sit/uat)"
     fallback_behavior: "Markdown-only output (no PDF)"
     matrix:
       - os: macos
