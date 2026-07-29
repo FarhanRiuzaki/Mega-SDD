@@ -149,10 +149,19 @@ if [ $? -eq 124 ]; then fail "bare drive root C: HUNG"
 else pass "bare drive root terminates -> [$out]"; fi
 
 # B4: bare relative name — `dirname a` == `.`, then `dirname .` == `.` forever.
-#     This one hangs the PRE-FIX code on macOS/Linux too.
 out="$(with_timeout 8 bash -c '. "$1"; resolve_project_root "relname"' _ "$LIB")"
 if [ $? -eq 124 ]; then fail "bare relative name HUNG"
 else pass "bare relative name terminates -> [$out]"; fi
+
+# B4b: CONTROL — the PRE-FIX reference MUST hang on that same input, proving the
+# defect is not Windows-only and that B4 is a real fix rather than a no-op. Run
+# from a directory with no .mega-sdd so the `.` attractor is actually reached.
+( cd "$TMP" && with_timeout 8 ref_resolve "relname" >/dev/null 2>&1 )
+if [ $? -eq 124 ]; then
+  pass "control: pre-fix reference HANGS on a relative name (defect reproduced here, not just on Windows)"
+else
+  fail "control: pre-fix reference terminated — B4 no longer pins a real defect"
+fi
 
 # B5: "." must not spin.
 out="$(with_timeout 8 bash -c '. "$1"; resolve_project_root "."' _ "$LIB")"
