@@ -537,8 +537,26 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                 tf.write(ry_norm)
                 tmp_rule = tf.name
             try:
-                rr = subprocess.run([astgrep, "scan", "--rule", tmp_rule, "--json", cwd],
-                                    capture_output=True, text=True)
+                # BOUNDED, and the bound is load-bearing. This is a repo-wide
+                # ast-grep scan, and B1 postflight is RECOMPUTED at the execute-bolts
+                # gate — i.e. this runs inside the BLOCKING PreToolUse hook. An
+                # unbounded scan there is the same failure shape as the 2026-07-28
+                # Windows hang: work with no ceiling in a path Claude Code waits on.
+                # 120 s is generous for a large repo while still terminating.
+                try:
+                    rr = subprocess.run([astgrep, "scan", "--rule", tmp_rule, "--json", cwd],
+                                        capture_output=True, text=True, timeout=120)
+                except subprocess.TimeoutExpired:
+                    # FAIL-CLOSED, deliberately. A Hard rule whose check did not
+                    # complete has NOT been shown to hold, and this verdict feeds a
+                    # blocking gate — treating "we ran out of time" as `pass` would
+                    # let a timeout launder a violation. Same branch the tool-error
+                    # case already takes below.
+                    results.append({"type": "v2_ast_grep", "rule": rid, "verdict": "fail",
+                                    "evidence": "ast-grep scan exceeded 120s — rule NOT verified "
+                                                "(fail-closed; narrow the rule's files: globs or "
+                                                "re-run outside the gate)"})
+                    continue
                 if rr.returncode not in (0, 1):
                     results.append({"type": "v2_ast_grep", "rule": rid, "verdict": "fail",
                                     "evidence": "ast-grep error: %s" % rr.stderr.strip()[:200]})

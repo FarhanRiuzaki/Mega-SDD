@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.10.0] - 2026-07-30
+
+fix(gates): the repo-wide `ast-grep` scan in the B1 gate path ran unbounded — inside the blocking PreToolUse hook.
+
+Generalising the v5.9.0 regression, on the observation that the unbounded-child problem is not specific to install-deps. Surveying every `subprocess` call in `scripts/_lib/` (the libraries hook-invoked validators import) found three unbounded calls, one of them in the worst possible place:
+
+- **`postflight_rules.py:540`** — `ast-grep scan --rule … <cwd>`, a **repo-wide** scan. Per the contract, B1 postflight is *recomputed at the execute-bolts gate*, so this executes inside the **blocking** PreToolUse hook. Unbounded work in a path Claude Code waits on is the exact shape of the 2026-07-28 Windows hang.
+- **`dep_manifest.py`** — two `git show` / `git diff` calls, lower risk but same class.
+
+The repo already had the right pattern — `state_probes.py` used `timeout=` — it simply was not applied consistently. That is the kind of drift a mechanical check catches and prose does not.
+
+**The timeout fails CLOSED.** A Hard rule whose check did not complete has *not* been shown to hold, and this verdict feeds a blocking gate; treating "ran out of time" as `pass` would let a timeout launder a violation. A timeout now takes the same branch as a tool error: `verdict: fail`, with evidence naming the 120 s bound and how to narrow the rule.
+
+New `tests/hooks/bounded-subprocess.test.sh` walks the AST of every file in `scripts/_lib/` and fails on any `subprocess.run`/`Popen`/`check_output` without `timeout=`. It refuses to report green if the matcher finds zero calls (a vacuous pass), carries a control fixture proving the matcher flags an unbounded call while ignoring a bounded one, and separately asserts the gate-path timeout yields `fail` rather than `pass`.
+
+Scope note, stated honestly: an earlier count in this investigation claimed eight hook-invoked scripts run heavy external tools. That count was **mention-based and wrong** — `mmdc` and `pandoc` appear in those files only in comments. Verified by execution site, the actionable surface was three subprocess calls, one of which mattered.
+
 ## [5.9.0] - 2026-07-30
 
 fix(install-deps): **v5.8.0 regression** — the new execution probes shipped with no timeout and no pre-filter, and stalled an audit on a corporate Windows laptop.
