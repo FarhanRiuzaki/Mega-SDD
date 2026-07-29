@@ -96,6 +96,12 @@ mkdir -p "$R/plain/src/deep"
 # the nested .mega-sdd/.mega-sdd defensive guard
 mkdir -p "$R/nested/.mega-sdd/.mega-sdd/x"
 : > "$R/nested/.mega-sdd/config.yaml"
+# PHANTOM-ROOT-ONLY: a .mega-sdd carrying a nested .mega-sdd, with NO substantive
+# root anywhere up the chain. This is the exact shape the `!= ".mega-sdd"` guard
+# exists to protect (helper header: a phantom root must never be elected), and the
+# only shape where a trailing-slash basename divergence changes the ANSWER rather
+# than just an intermediate. Found by an adversarial audit, 2026-07-29.
+mkdir -p "$R/phantom/.mega-sdd/.mega-sdd/x"
 
 CASES="
 $R/proj
@@ -116,6 +122,13 @@ $R/nested/.mega-sdd/.mega-sdd/x
 $R
 /
 $TMP
+$R/proj/
+$R/proj/.mega-sdd/
+$R/proj/.mega-sdd//
+$R/green/
+$R/phantom/.mega-sdd/
+$R/phantom/.mega-sdd
+$R/plain/src/deep/
 "
 eq_fail=0
 for c in $CASES; do
@@ -127,7 +140,7 @@ for c in $CASES; do
     eq_fail=1
   fi
 done
-[ "$eq_fail" -eq 0 ] && pass "byte-identical to pre-fix reference across 18 POSIX cases" \
+[ "$eq_fail" -eq 0 ] && pass "byte-identical to pre-fix reference across 25 POSIX cases (incl. the trailing-slash class)" \
                      || fail "output diverged from pre-fix reference"
 
 # ─────────────────────────────────────────────────────────────────────────────
