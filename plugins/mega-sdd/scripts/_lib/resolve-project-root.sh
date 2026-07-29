@@ -53,13 +53,21 @@ resolve_project_root() {
   esac
   local orig="$d"
   local first_match=""
-  local prev="" guard=0
+  local prev="" guard=0 _rpr_b=""
   while [ -n "$d" ] && [ "$d" != "/" ]; do
     # Backstop: never spin, whatever the input. 64 is far deeper than any real
     # tree (Windows MAX_PATH bottoms out long before this).
     guard=$((guard + 1))
     if [ "$guard" -gt 64 ]; then break; fi
-    if [ -d "$d/.mega-sdd" ] && [ "${d##*/}" != ".mega-sdd" ]; then
+    # basename equivalent, fork-free. `${d##*/}` ALONE is NOT equivalent: for a
+    # trailing-slash path it yields "" where basename yields the last component
+    # (basename '/p/.mega-sdd/' == '.mega-sdd', '${d##*/}' == ''), which would
+    # silently stop the nested-.mega-sdd guard below from firing and let a phantom
+    # root be elected. Strip trailing slashes first — still zero forks.
+    _rpr_b="$d"
+    while [ "${_rpr_b%/}" != "$_rpr_b" ] && [ -n "${_rpr_b%/}" ]; do _rpr_b="${_rpr_b%/}"; done
+    _rpr_b="${_rpr_b##*/}"
+    if [ -d "$d/.mega-sdd" ] && [ "$_rpr_b" != ".mega-sdd" ]; then
       if [ -z "$first_match" ]; then first_match="$d"; fi
       # Substantive = canonical .mega-sdd content OR a live Factory Line / memory layer
       # OR a LEGACY vault layout (docs/mega-sdd/vaults, *-bound sibling) — the same set
