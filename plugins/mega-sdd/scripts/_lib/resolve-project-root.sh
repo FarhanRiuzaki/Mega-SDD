@@ -43,10 +43,23 @@ _rpr_has_bound_vault() {
 
 resolve_project_root() {
   local d="${1:-$PWD}"
+  # ── Windows separator normalization (MUST precede any suffix arithmetic) ───
+  # Claude Code hands hooks a NATIVE cwd on Windows (C:\Users\me\proj). Without
+  # this, `${d%/*}` finds no '/' to strip and the walk cannot make progress.
+  # Guarded by $OSTYPE (a bash builtin variable — no fork) so a POSIX path that
+  # legitimately CONTAINS a backslash is never rewritten.
+  case "${OSTYPE:-}" in
+    msys*|cygwin*|win32*) d="${d//\\//}" ;;
+  esac
   local orig="$d"
   local first_match=""
-  while [ "$d" != "/" ] && [ -n "$d" ]; do
-    if [ -d "$d/.mega-sdd" ] && [ "$(basename "$d")" != ".mega-sdd" ]; then
+  local prev="" guard=0
+  while [ -n "$d" ] && [ "$d" != "/" ]; do
+    # Backstop: never spin, whatever the input. 64 is far deeper than any real
+    # tree (Windows MAX_PATH bottoms out long before this).
+    guard=$((guard + 1))
+    if [ "$guard" -gt 64 ]; then break; fi
+    if [ -d "$d/.mega-sdd" ] && [ "${d##*/}" != ".mega-sdd" ]; then
       if [ -z "$first_match" ]; then first_match="$d"; fi
       # Substantive = canonical .mega-sdd content OR a live Factory Line / memory layer
       # OR a LEGACY vault layout (docs/mega-sdd/vaults, *-bound sibling) — the same set
@@ -60,7 +73,21 @@ resolve_project_root() {
         return 0
       fi
     fi
-    d=$(dirname "$d")
+    # ── Windows drive root ends the walk (AFTER evaluating it above) ─────────
+    # `dirname C:` returns `C:` on Git Bash — a FIXED POINT. The pre-fix loop
+    # condition (`[ "$d" != "/" ]`) could never be satisfied from a Windows path,
+    # so this spun forever, forking one `dirname` per iteration (measured 220 ms
+    # each on a Windows 11 + CrowdStrike laptop) INSIDE the BLOCKING PreToolUse
+    # hook. That was the Windows 100%-CPU hang, 2026-07-28.
+    case "$d" in [A-Za-z]:|[A-Za-z]:/) break ;; esac
+    # Pure parameter expansion — ZERO forks. The old `d=$(dirname "$d")` cost a
+    # subshell fork + an exec PER LEVEL; on Git Bash that is a real bash.exe
+    # CreateProcess, and every one of them is scanned by a kernel EDR.
+    prev="$d"
+    d="${d%/*}"
+    # No separator left to strip (bare relative name, or a form the cases above
+    # did not catch) → the walk cannot progress. Stop instead of spinning.
+    if [ "$d" = "$prev" ]; then break; fi
   done
   # No substantive root anywhere: nearest plain candidate (greenfield), else
   # the original input (no .mega-sdd ancestor at all).

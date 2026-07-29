@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.4.0] - 2026-07-29
+
+fix(windows): two independent P0 defects found by field-diagnosing a Windows 11 + CrowdStrike laptop where Claude Code sat "red" for tens of minutes at 100% CPU — an unbounded process-spawning loop in the shared project-root resolver, and a `command -v python3` guard that is a false positive against the Windows App Execution Alias stub, which had been letting every enforcement gate pass unevaluated and silently.
+
+Design + measurements: [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md).
+
+### Fixed
+- **`scripts/_lib/resolve-project-root.sh` no longer spins forever on a Windows path.** The walk-up loop used `d=$(dirname "$d")` and terminated only on `[ "$d" != "/" ]`; on Git Bash `dirname C:` returns `C:`, a fixed point the condition can never satisfy. Reached from the `pre-tool-use` fast short-circuit — which runs *before* the python parse — on every `Bash`/`Edit`/`Write`/`Skill` call, inside an `async: false` hook Claude Code blocks on. Measured 220 ms/iteration on the reporting machine (`sys` 4.637s vs `user` 2.083s — 69% kernel time, the EDR scanning each spawn), so a single stuck hook spawned ~5,400 processes against the 600 s default timeout. This helper is sourced by **9 hooks and 43 scripts**. The same defect was reproducible on macOS for relative inputs (`dirname a` → `.` → `.`), just never reached there.
+- **The walk is now fork-free.** `$(dirname …)`/`$(basename …)` → `${d%/*}`/`${d##*/}`; two process operations per path level became zero. Backslash normalization is gated on `$OSTYPE` so a POSIX filename containing a backslash is never rewritten. Drive-root termination, a no-progress guard, and a 64-iteration backstop close the class rather than the instance. Resolution semantics — substantive root, litter shadowing, greenfield fallback, legacy layouts, nested-`.mega-sdd` guard — are unchanged and pinned byte-identical against a verbatim pre-fix reference implementation.
+- **The moat no longer dies silently without an interpreter.** Windows ships App Execution Alias stubs at `%LOCALAPPDATA%\Microsoft\WindowsApps\{python,python3}.exe` — installed by App Installer, not Python — in a directory on the default PATH. With no real interpreter they exit 49 writing only to stderr, so every hook's JSON parse returned empty **while `command -v python3` succeeded**, the python3-absent fail-closed branch never ran, and `pre-tool-use` exited 0 with the binding→units gate, the CONFLICT gate, every quality gate and anti-self-bypass all unevaluated. Confirmed on the reporting machine: `python3` and `python` both stubs, `py` absent, zero usable interpreters, no diagnostic anywhere. Breaks invariant #2; now fails closed with a stated reason.
+- **`session-start` no longer aborts to zero output.** It runs under `set -euo pipefail`, so a python3 command substitution exiting 49 killed the hook mid-way and emitted **0 bytes** — the routing anchor never reached the model and mega-sdd was entirely inert without saying so. It now emits the anchor plus a missing-interpreter notice and exits cleanly.
+
+### Added
+- **`scripts/_lib/resolve-python.sh`** — `mega_sdd_python` resolves a *usable* interpreter (`python3` → `python` → `py -3`), rejecting any candidate under `WindowsApps` case-insensitively, memoized, spawning **zero processes** (a command substitution is itself a `bash.exe` fork under Git Bash). "First PATH hit wins" mirrors what the shell would actually execute, so a name shadowed by the stub is never returned.
+- **SessionStart missing-interpreter notice** and a keterangan-carrying deny reason on the fail-closed gate, both pointing at `/mega-sdd:install-deps` and at disabling the Windows alias.
+- Three pinning suites: `tests/hooks/resolve-project-root.test.sh` (18-case byte-identical equivalence + 7 termination cases under hard timeouts + a zero-fork assertion with a live sentinel), `tests/hooks/resolve-python.test.sh` (10 cases incl. a control proving `command -v python3` *is* fooled by the fixture), `tests/hooks/python-guard.test.sh` (end-to-end deny / no-over-block / notice / no-false-alarm).
+
+### Changed
+- **Behavior change, deliberate:** machines that were silently passing every gate are now *blocked* at `execute-bolts` until they have a working interpreter or their blockers attest PASS. This is why the bump is MINOR, not patch.
+
 ## [5.3.2] - 2026-07-23
 
 fix(hardening): the review-accepted minor backlog from the v5.3.0/v5.3.1 review waves — sidecar schema guards, gate shape-hardening, and table-cell escaping, each with a pinning test.

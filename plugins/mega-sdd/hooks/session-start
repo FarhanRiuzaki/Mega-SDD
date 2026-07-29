@@ -181,6 +181,41 @@ if [ "$sp_present" -eq 0 ]; then
   WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Bolts phase will use vendored fallback. For full features run: `/plugin install superpowers`</important-reminder>'
 fi
 
+# ─── Missing-interpreter notice (Windows alias-stub class, 2026-07-28) ───────
+# python3 is a HARD runtime requirement of every mega-sdd hook, and until now it
+# was declared nowhere and detected with `command -v` — which SUCCEEDS against the
+# Windows App Execution Alias stub. A machine with no usable interpreter ran the
+# whole pipeline with every gate silently unevaluated and no diagnostic anywhere.
+# Surface it once, at session start, so the degradation is never silent again.
+# Fork-free probe; never blocks.
+PY_WARN=""
+PY_LIB_SS="${SCRIPT_DIR}/../scripts/_lib/resolve-python.sh"
+if [ -f "$PY_LIB_SS" ]; then
+  # shellcheck disable=SC1090
+  . "$PY_LIB_SS"
+  if ! mega_sdd_python >/dev/null 2>&1; then
+    PY_WARN=$'\n\n<important-reminder>⚠️ Mega-SDD: tidak ada interpreter python3 yang bisa dipakai di mesin ini. Keterangan: seluruh hook mega-sdd (gate binding→units, CONFLICT gate, quality gates, anti-self-bypass) mem-parse input lewat python3 — tanpa itu gate TIDAK dievaluasi dan hanya jatuh ke mode fail-closed. Di Windows penyebab tersering adalah App Execution Alias stub di %LOCALAPPDATA%\\Microsoft\\WindowsApps yang terbaca ada di PATH tapi bukan Python asli. Remedy: jalankan `/mega-sdd:install-deps`, atau matikan alias di Settings > Apps > Advanced app settings > App execution aliases lalu pasang Python.</important-reminder>'
+    # ── EARLY EXIT, and it is load-bearing ──────────────────────────────────
+    # Every stage below parses JSON/YAML through python3 inside command
+    # substitutions. With no usable interpreter those substitutions exit
+    # non-zero and `set -euo pipefail` (line 5) aborts this hook MID-WAY —
+    # emitting NOTHING AT ALL, so the routing anchor itself is silently lost
+    # and mega-sdd never announces it exists. (Observed on a Windows 11
+    # corporate laptop 2026-07-28: session-start produced 0 bytes.)
+    # Emit what is already computed and stop cleanly instead. This also skips
+    # the wasted stub invocations, each of which is a process spawn.
+    cat <<EOF
+<<EXTREMELY_IMPORTANT>>
+mega-sdd-trace:session
+You have mega-sdd skills available. SDD context detected in CWD.
+
+${ANCHOR_CONTENT}${WARN}${PY_WARN}
+<</EXTREMELY_IMPORTANT>>
+EOF
+    exit 0
+  fi
+fi
+
 # ─── C1 self-resolve: mode_migrate (Iter 67.7.1 hook-layer enforcement) ─────
 # Gate B response (reviewer 2026-05-27): C1 protocol shipped as prose has
 # audit-failed 4×. Hook-layer enforcement deterministically detects + fixes
@@ -898,6 +933,6 @@ cat <<EOF
 mega-sdd-trace:session
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${COMPACT_RESUME}${INSTINCT_BLOCK}
+${ANCHOR_CONTENT}${WARN}${PY_WARN}${SELF_RESOLVE_BLOCK}${STALENESS_NOTICE}${COMPACT_RESUME}${INSTINCT_BLOCK}
 <</EXTREMELY_IMPORTANT>>
 EOF

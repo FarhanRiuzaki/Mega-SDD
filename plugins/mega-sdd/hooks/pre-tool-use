@@ -92,19 +92,39 @@ elif tool_name in ("Edit", "Write"):
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then
-  # ── python3-absent fail-closed fallback (moat integrity) ───────────────────
-  # Without python3 the JSON parse yields nothing and this hook would silently
-  # fail OPEN — bypassing the binding→units gate. Best-effort shell extraction:
-  # block execute-bolts when a blockers file exists and does not attest PASS.
-  if ! command -v python3 >/dev/null 2>&1; then
+  # ── python3-UNUSABLE fail-closed fallback (moat integrity) ─────────────────
+  # Without a working python3 the JSON parse yields nothing and this hook would
+  # silently fail OPEN — bypassing the binding→units gate. Best-effort shell
+  # extraction: block execute-bolts when a blockers file exists and does not
+  # attest PASS.
+  #
+  # The guard USED to be `! command -v python3`, which is a FALSE POSITIVE on
+  # Windows: the App Execution Alias stub in %LOCALAPPDATA%\Microsoft\WindowsApps
+  # is on the default PATH, so `command -v` succeeded, this branch never ran, and
+  # the hook exited 0 with every gate unevaluated — the moat died silently.
+  # Measured on a Windows 11 corporate laptop 2026-07-28 (python3 AND python both
+  # stubs, `py` absent). mega_sdd_python resolves a USABLE interpreter, fork-free.
+  PY_LIB="${0%/*}/../scripts/_lib/resolve-python.sh"
+  PY_USABLE=1
+  if [ -f "$PY_LIB" ]; then
+    # shellcheck disable=SC1090
+    . "$PY_LIB"
+    mega_sdd_python >/dev/null 2>&1 || PY_USABLE=0
+  else
+    command -v python3 >/dev/null 2>&1 || PY_USABLE=0
+  fi
+  if [ "$PY_USABLE" -eq 0 ]; then
     FB_CWD=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    # Windows cwd arrives with backslashes (JSON-escaped); normalize so the
+    # -d test below can actually find .mega-sdd.
+    case "${OSTYPE:-}" in msys*|cygwin*|win32*) FB_CWD="${FB_CWD//\\//}" ;; esac
     FB_SKILL=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"skill"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
     if [ -n "$FB_CWD" ] && [ -d "${FB_CWD}/.mega-sdd" ]; then
       case "$FB_SKILL" in
         *execute-bolts*)
           FB_MOAT="${FB_CWD}/.mega-sdd/.validation-blockers.json"
           if [ -f "$FB_MOAT" ] && ! grep -q '"status"[[:space:]]*:[[:space:]]*"PASS"' "$FB_MOAT" 2>/dev/null; then
-            printf '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "mega-sdd gate (fail-closed): python3 unavailable and .validation-blockers.json does not attest PASS — install python3 or resolve blockers before execute-bolts"}, "decision": "block", "reason": "mega-sdd gate fail-closed without python3"}\n'
+            printf '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "mega-sdd gate (fail-closed): no usable python3 interpreter, and .validation-blockers.json does not attest PASS. Keterangan: hook mega-sdd butuh python3 untuk mengevaluasi gate; tanpa itu gate tidak bisa dipercaya, jadi execute-bolts diblokir alih-alih diloloskan diam-diam. Di Windows penyebab tersering adalah App Execution Alias stub di %%LOCALAPPDATA%%\\\\Microsoft\\\\WindowsApps yang terlihat ada di PATH tapi bukan Python. Remedy: jalankan `/mega-sdd:install-deps`, atau matikan alias di Settings > Apps > Advanced app settings > App execution aliases lalu pasang Python — kemudian selesaikan blocker sebelum execute-bolts."}, "decision": "block", "reason": "mega-sdd gate fail-closed: no usable python3"}\n'
             exit 0
           fi
           ;;
