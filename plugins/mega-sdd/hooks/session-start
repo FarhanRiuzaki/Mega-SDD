@@ -928,6 +928,9 @@ PYINST
   fi
 fi
 
+# NOTE: ${PY_WARN} is empty on every path that reaches here — the branch that sets
+# it exits early (see the missing-interpreter block above). Interpolated anyway so
+# the notice still renders if that early exit is ever made conditional.
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
 mega-sdd-trace:session
