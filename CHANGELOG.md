@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.5.0] - 2026-07-29
+
+fix(hooks): every value parsed out of a hook's stdin JSON was re-parsed by `eval` — corrupting Windows paths outright, silently dropping any path with a space on every platform, and executing an embedded `$(…)`.
+
+Four hooks (`pre-tool-use`, `post-tool-use`, `stop`, `user-prompt-submit`) printed bare `KEY=value` lines from python and consumed them with `eval`, which puts each value through word-splitting, backslash removal, globbing and command substitution. Measured on bash 5:
+
+| input line | resulting variable |
+|---|---|
+| `FILE_PATH=/Users/me/My Docs/x.md` | **unset** |
+| `FILE_PATH=C:\proj\.mega-sdd\x.md` | `C:proj.mega-sddx.md` |
+| `FILE_PATH=/tmp/$(touch ./PWNED)n.md` | `/tmp/n.md`, **and `./PWNED` is created** |
+
+**On Windows this made the plugin inert.** `cwd` arrives native, so `CWD` became `C:proj`, `PROJECT_ROOT` was garbage, no `.mega-sdd` was ever found, and every validator ran against a nonexistent directory. This sits *behind* the v5.4.0 `python3` guard — a team that installed Python per the v5.4.0 remedy would still have had a plugin that did nothing.
+
+**On POSIX it was a silent partial loss.** A path containing a space left `FILE_PATH` unset, and the `[ -z "$FILE_PATH" ] && exit 0` guard then no-op'd the entire PostToolUse Write/Edit branch — every validator dispatch skipped, no diagnostic. Measured on a unit write inside a project at `…/My Project/`: **1 python3 exec before the fix (the stdin parse, then exit), 28 after** — the 27 that never ran were the hook's entire contribution for that write. The identical write with no space in any path measures 28 both before and after, so the fix restores correct behavior on the broken path without changing the working one.
+
+Fixed at the producer with `shlex.quote()`, routed through a single `emit()` helper in each hook so a new unquoted field has to bypass the helper rather than just follow the surrounding style. `eval` is retained: the hazard was never `eval`, it was handing `eval` unquoted input. `pre-tool-use` already base64'd `file_path`/`command`/`args` — that precedent shows the hazard was understood for the obviously hostile fields and simply not generalized, and `stop:51` even carried a comment asking for this gating that was never implemented.
+
+**Behavior change:** on POSIX, writes to paths containing a space now run the PostToolUse Write/Edit branch for the first time. Projects with spaces in their paths may see validator state files, and possibly blockers, they have never seen. Those blockers were always true — they were simply never computed.
+
+Also hardens v5.4.1's own short-circuit against the same class: it read the first `"cwd"` in the raw JSON and would have silently `exit 0`'d on a real mega-sdd project if that scan ever picked up the wrong value. It now short-circuits only when the extracted cwd is a real directory — fail-safe instead of fail-open, still zero forks.
+
+Design, measurements, and the two Windows separator defects deliberately left for a follow-up (D2: 12 `case "$FILE_PATH"` globs that match no native Windows path; D3: the anti-self-bypass guard proven inert under Windows path semantics via `ntpath`): [`docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md`](docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md).
+
 ## [5.4.1] - 2026-07-29
 
 perf(windows): give `post-tool-use` the fast-negative short-circuit its sibling `pre-tool-use` has carried since v4.

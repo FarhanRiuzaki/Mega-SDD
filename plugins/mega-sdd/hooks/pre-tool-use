@@ -53,11 +53,19 @@ if [ -n "$SC_CWD" ]; then
   fi
 fi
 
-# Parse via python3 — assign to local vars first (no backslash in f-string)
+# Parse via python3. Every value is shell-quoted with shlex.quote() — the consumer
+# is `eval`, which re-parses a bare `KEY=value`: a space silently drops the value,
+# a backslash is eaten (destroying every Windows path, so CWD became `C:proj` and
+# PROJECT_ROOT was garbage), and $(…) is EXECUTED. file_path/command/args stay on
+# the base64 channel; `emit()` covers everything else.
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json
+import shlex
 import sys
 import base64
+
+def emit(key, value):
+    print(key + "=" + shlex.quote(str(value)))
 
 try:
     data = json.loads(sys.stdin.read())
@@ -69,26 +77,21 @@ tool_name = data.get("tool_name", "")
 tool_input = data.get("tool_input", {})
 transcript_path = data.get("transcript_path", "")
 
-print(f"CWD={cwd}")
-print(f"TOOL_NAME={tool_name}")
-print(f"TRANSCRIPT_PATH={transcript_path}")
+emit("CWD", cwd)
+emit("TOOL_NAME", tool_name)
+emit("TRANSCRIPT_PATH", transcript_path)
 
 if tool_name == "Skill":
-    skill_name = tool_input.get("skill", "")
-    print(f"SKILL_NAME={skill_name}")
+    emit("SKILL_NAME", tool_input.get("skill", ""))
     args = tool_input.get("args", "") or ""
-    args_b64 = base64.b64encode(str(args).encode()).decode()
-    print(f"SKILL_ARGS_B64={args_b64}")
+    emit("SKILL_ARGS_B64", base64.b64encode(str(args).encode()).decode())
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
-    cmd_b64 = base64.b64encode(cmd.encode()).decode()
-    print(f"BASH_CMD_B64={cmd_b64}")
+    emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
 elif tool_name in ("Edit", "Write"):
     fp = tool_input.get("file_path", "")
-    fp_b64 = base64.b64encode(fp.encode()).decode()
-    print(f"FILE_PATH_B64={fp_b64}")
-    sid = data.get("session_id", "")
-    print(f"SESSION_ID={sid}")
+    emit("FILE_PATH_B64", base64.b64encode(fp.encode()).decode())
+    emit("SESSION_ID", data.get("session_id", ""))
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then

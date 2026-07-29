@@ -64,15 +64,37 @@ if [ -n "$SC_CWD" ]; then
     # so the -d test can actually find .mega-sdd (the resolver normalizes too, but
     # this value is also used for the test below).
     case "${OSTYPE:-}" in msys*|cygwin*|win32*) SC_CWD="${SC_CWD//\\\\//}"; SC_CWD="${SC_CWD//\\//}" ;; esac
-    SC_ROOT=$(resolve_project_root "$SC_CWD")
-    if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+    # Only trust the extraction if it names a real directory. This scan takes the
+    # FIRST `"cwd"` in the raw JSON, which is the top-level key for every payload
+    # Claude Code emits — but key order is not a guarantee, and a tool_input value
+    # containing the literal `"cwd"` earlier in the document would yield a garbage
+    # SC_CWD whose resolved root has no .mega-sdd, i.e. a silent `exit 0` on a real
+    # mega-sdd project. Fail SAFE instead: an unverifiable cwd falls through to the
+    # authoritative python parse rather than short-circuiting. Costs no fork.
+    if [ -d "$SC_CWD" ]; then
+      SC_ROOT=$(resolve_project_root "$SC_CWD")
+      if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+    fi
   fi
 fi
 
-# Parse stdin via python3 — assign to local vars first; f-strings can't contain backslashes
+# Parse stdin via python3. EVERY value is shell-quoted with shlex.quote() because
+# the consumer below is `eval` — a bare `KEY=value` line is re-parsed by the shell,
+# which mangles or EXECUTES the value. Measured on bash 5 (2026-07-29):
+#   KEY=/Users/me/My Docs/x.md   -> KEY unset (prefix-assignment + a failed command)
+#   KEY=/tmp/$(touch ./PWNED)n.md-> KEY=/tmp/n.md  and ./PWNED IS CREATED
+#   KEY=C:\proj\.mega-sdd\x.md   -> KEY=C:proj.mega-sddx.md (every \ eaten)
+# So: any path containing a space was silently dropped on EVERY platform, every
+# Windows path was destroyed (making PROJECT_ROOT garbage and this whole hook
+# inert there), and a path carrying $(…) was executed. shlex.quote closes all
+# three at the source; `emit()` keeps it impossible to add a new unquoted field.
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json
+import shlex
 import sys
+
+def emit(key, value):
+    print(key + "=" + shlex.quote(str(value)))
 
 try:
     data = json.loads(sys.stdin.read())
@@ -84,33 +106,30 @@ cwd = data.get("cwd", "")
 tool_name = data.get("tool_name", "")
 tool_input = data.get("tool_input", {})
 
-print(f"SESSION_ID={session_id}")
-print(f"CWD={cwd}")
-print(f"TOOL_NAME={tool_name}")
+emit("SESSION_ID", session_id)
+emit("CWD", cwd)
+emit("TOOL_NAME", tool_name)
 
 if tool_name == "Read":
-    file_path = tool_input.get("file_path", "")
-    print(f"FILE_PATH={file_path}")
+    emit("FILE_PATH", tool_input.get("file_path", ""))
 elif tool_name == "Skill":
-    skill_name = tool_input.get("skill", "")
-    print(f"SKILL_NAME={skill_name}")
+    emit("SKILL_NAME", tool_input.get("skill", ""))
 elif tool_name == "Bash":
     # Pass command via base64 to avoid shell-quoting nightmares with multi-line commands.
     import base64
     cmd = tool_input.get("command", "")
-    cmd_b64 = base64.b64encode(cmd.encode()).decode()
-    print(f"BASH_CMD_B64={cmd_b64}")
+    emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
 elif tool_name in ("Write", "Edit"):
     # Iter 67.6: [HOOK-VALIDATE] trigger for binding→units handoff validator.
-    file_path = tool_input.get("file_path", "")
-    print(f"FILE_PATH={file_path}")
+    emit("FILE_PATH", tool_input.get("file_path", ""))
 elif tool_name == "Agent":
     # Edge-case track: detect subagent failures (deep_scan_subagent_failed reframe).
-    # Pass subagent_type + description for context.
+    # Pass subagent_type + description for context. `description` is arbitrary model
+    # prose — the value most likely to carry spaces, quotes, newlines and $(…).
     subagent_type = tool_input.get("subagent_type", "")
     description = tool_input.get("description", "")
-    print(f"AGENT_SUBAGENT_TYPE={subagent_type}")
-    print(f"AGENT_DESCRIPTION={description[:200]}")
+    emit("AGENT_SUBAGENT_TYPE", subagent_type)
+    emit("AGENT_DESCRIPTION", description[:200])
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi

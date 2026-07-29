@@ -25,10 +25,15 @@ set -uo pipefail
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
 # Parse stdin via python3 (pipe in; script via -c).
-# NOTE: f-string expression parts cannot contain backslashes — assign to locals first.
+# NOTE: emission goes through emit()/shlex.quote, not an f-string — the consumer is
+# `eval`, so an unquoted value would be re-parsed by the shell (see the block below).
 PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
 import json
+import shlex
 import sys
+
+def emit(key, value):
+    print(key + "=" + shlex.quote(str(value)))
 
 try:
     data = json.loads(sys.stdin.read())
@@ -41,14 +46,16 @@ transcript_path = data.get("transcript_path", "")
 hook_event = data.get("hook_event_name", "")
 stop_hook_active = data.get("stop_hook_active", False)
 
-print(f"SESSION_ID={session_id}")
-print(f"CWD={cwd}")
-print(f"TRANSCRIPT_PATH={transcript_path}")
-print(f"HOOK_EVENT={hook_event}")
-print(f"STOP_HOOK_ACTIVE={stop_hook_active}")
+emit("SESSION_ID", session_id)
+emit("CWD", cwd)
+emit("TRANSCRIPT_PATH", transcript_path)
+emit("HOOK_EVENT", hook_event)
+emit("STOP_HOOK_ACTIVE", stop_hook_active)
 ' 2>/dev/null)
 
-# eval needs key=value with no shell metacharacters; gate it
+# The gating the old comment here asked for is now done at the SOURCE: every value
+# above is shlex.quote()d, so eval cannot word-split, strip backslashes (which
+# destroyed every Windows cwd/transcript path) or execute an embedded $(…).
 if [ -n "$PARSE_OUTPUT" ]; then
   eval "$PARSE_OUTPUT" 2>/dev/null || true
 fi

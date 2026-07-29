@@ -12,11 +12,14 @@
 set -uo pipefail
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
-PARSE=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
+# shlex.quote() is load-bearing: the consumer is `eval`, which re-parses a bare
+# `KEY=value` — dropping any value with a space, eating backslashes (so a Windows
+# cwd arrived as `C:proj`), and executing an embedded $(…).
+PARSE=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,shlex,sys
 try: d=json.loads(sys.stdin.read())
 except Exception: sys.exit(0)
-print("CWD=%s" % d.get("cwd",""))
-print("TRANSCRIPT=%s" % d.get("transcript_path",""))' 2>/dev/null)
+print("CWD=" + shlex.quote(str(d.get("cwd",""))))
+print("TRANSCRIPT=" + shlex.quote(str(d.get("transcript_path",""))))' 2>/dev/null)
 [ -n "$PARSE" ] || exit 0
 eval "$PARSE" 2>/dev/null || true
 [ -n "${CWD:-}" ] || exit 0
