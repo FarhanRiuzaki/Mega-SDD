@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.4.1] - 2026-07-29
+
+perf(windows): give `post-tool-use` the fast-negative short-circuit its sibling `pre-tool-use` has carried since v4.
+
+`post-tool-use` has the widest matcher in `hooks.json` (`Read|Skill|Bash|Write|Edit|Agent`), so it runs after almost every tool call in **every** project — including ones with no `.mega-sdd` at all. It paid its full prologue (python3 cold start + `dirname` + resolver walk + `date`) before it could discover it had nothing to do.
+
+It now resolves the project root in pure shell first and exits immediately when no `.mega-sdd` ancestor exists. Measured on a `Read` in a non-mega-sdd project: **15 → 5 external process spawns**. On the Windows + EDR laptops that is ~2 s of tax removed per tool call, for work that was never going to run.
+
+Moat-neutral by construction: the short-circuit fires only when no `.mega-sdd` exists anywhere up the chain, which is mutually exclusive with every branch below it — all of them already gated on `.mega-sdd`. It costs zero forks itself (cwd extraction is parameter expansion, not `sed`), and falls through to the authoritative path whenever the cwd cannot be extracted or the resolver helper is absent.
+
+Second item struck from the spawn-reduction backlog in [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md) §8.
+
 ## [5.4.0] - 2026-07-29
 
 fix(windows): two independent P0 defects found by field-diagnosing a Windows 11 + CrowdStrike laptop where Claude Code sat "red" for tens of minutes at 100% CPU — an unbounded process-spawning loop in the shared project-root resolver, and a `command -v python3` guard that is a false positive against the Windows App Execution Alias stub, which had been letting every enforcement gate pass unevaluated and silently.

@@ -232,8 +232,10 @@ MINOR bump, not a patch.
 Spawn-count reduction (root cause A removed the unbounded case; the 10–153
 spawns/tool-call baseline remains). Tracked separately:
 
-- `post-tool-use` pipes to `python3` at line 36 before any `.mega-sdd` check, so
-  every tool call in **every** project pays an interpreter cold start.
+- ~~`post-tool-use` pipes to `python3` at line 36 before any `.mega-sdd` check, so
+  every tool call in **every** project pays an interpreter cold start.~~
+  **DONE in v5.4.1** — pure-shell fast-negative short-circuit, the sibling of the
+  guard `pre-tool-use` has carried since v4. Non-mega-sdd `Read`: 15 → 5 spawns.
 - The Write/Edit branch fans out 6 background validators then `wait`s, on an
   `async: true` hook nobody waits for — no debounce, no concurrency cap, so trees
   pile up across consecutive tool calls.
