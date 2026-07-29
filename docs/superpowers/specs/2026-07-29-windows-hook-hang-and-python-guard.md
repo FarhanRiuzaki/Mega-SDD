@@ -239,6 +239,10 @@ spawns/tool-call baseline remains). Tracked separately:
 - The Write/Edit branch fans out 6 background validators then `wait`s, on an
   `async: true` hook nobody waits for — no debounce, no concurrency cap, so trees
   pile up across consecutive tool calls.
+  **UN-PARKED 2026-07-29 (v5.7.0)** — D2 landed, so the `$FILE_PATH` globs this
+  item depends on now work on every platform. The `validate-unit-spec.sh` caveat at
+  the end of this note still stands and still constrains the scoping. Original
+  parking note follows.
   **PARKED, not merely deferred (2026-07-29).** The obvious fix is a `$FILE_PATH`
   precondition, and scoping it uncovered two defects that invalidate its premise:
   `eval "$PARSE_OUTPUT"` corrupted `FILE_PATH` outright (fixed in v5.5.0 — see
