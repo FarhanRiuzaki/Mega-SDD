@@ -25,6 +25,7 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memor
 ## Halt conditions
 
 - **Repo > 100k files:** confirm with user (`--force-large` flag required to proceed).
+- **Estimated extraction time > 60 s** (Step 5 spawn-cost gate): confirm with user before extracting, offering `--engine=regex` / continue / `--include=<glob>`. This fires FAR earlier than the 100k halt on Windows — at ~220 ms/spawn a 100k-file repo is 6.1 hours, so the file-count halt is a POSIX-era guard that never gets reached there. See `references/scan-procedure.md §Spawn-cost gate`.
 - **Detection produces 0 public interfaces:** warn user — likely scan misconfiguration; offer to re-run with different `--include`.
 - **`--engine=tree-sitter` set AND tree-sitter not on PATH:** halt `dep_missing` with install commands (install guidance is in the tree-sitter integration reference).
 

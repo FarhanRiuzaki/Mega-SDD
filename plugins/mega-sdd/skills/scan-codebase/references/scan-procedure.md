@@ -116,11 +116,55 @@ This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan
 
 For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate; full re-extract for every file (correctness guarantee preserved for full scans). The gate runs BEFORE per-file extraction so it actually short-circuits the expensive per-file invocations.
 
+### Spawn-cost gate (MANDATORY before extraction, both engines)
+
+The two engines differ by **three orders of magnitude in process spawns**, and that
+difference — not file count — is what decides whether a scan finishes:
+
+| engine | invocations |
+|---|---|
+| `tree-sitter` | **one per FILE** |
+| `regex` (ripgrep) | **one per LANGUAGE** |
+
+On POSIX a spawn costs ~18 ms and the difference is invisible. On a Windows box with
+an endpoint-security agent it is **~220 ms** (measured, `windows-team-environment`),
+so a perfectly ordinary 2,000-file repo costs ~7.3 minutes of pure spawn tax under
+tree-sitter and under a second under regex. This is a real field hang, not a
+hypothetical.
+
+Before Step 5 extraction, compute:
+
+```
+N        = files that will actually be extracted (after the invalidation gate)
+per_spawn = 0.22s on OS=windows-bash, else 0.02s
+estimate  = N × per_spawn        # tree-sitter only; regex is ~n_languages × per_spawn
+```
+
+- `estimate` ≤ 60 s → proceed silently.
+- `estimate` > 60 s → **AskUserQuestion before extracting.** State N, the estimate,
+  and the OS. Options, each with its keterangan (→ `plugins/mega-sdd/references/output-language.md §Prompt surfaces`):
+  - **Switch to `--engine=regex`** — one call per language instead of per file; finishes in seconds. Lower precision (regex tier, not `ast`), which the map records honestly in `precision_tier`.
+  - **Continue with tree-sitter** — full AST precision, takes about the stated time. Reasonable on a fast disk / POSIX, or when precision matters more than latency.
+  - **Narrow the scan** — re-run with `--include=<glob>` to cut N.
+
+Do NOT silently downgrade the engine: precision is a property the map reports, so the
+choice belongs to the user. Do NOT skip the estimate on Windows because the repo
+"looks small" — 200 files is already 44 s there.
+
+The existing `>100k files` halt stays, but note it is a POSIX-era guard: at 220 ms a
+100k-file repo is **6.1 hours**, so on Windows this gate fires long before that halt
+is ever reached.
+
 ### If `engine: tree-sitter` (default when available)
 
 - For each detected language, locate `queries/tags-<lang>.scm` in the plugin dir.
 - For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue.
 - Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file.
+  **This is one process per file** — see the spawn-cost gate above. (Batching multiple
+  paths into a single `tree-sitter query` call is the structural fix and would collapse
+  N spawns to ~1 per language; it is NOT adopted here because the batched capture
+  output format could not be verified — the dev machine's tree-sitter ships no compiled
+  grammars. Verify on a box with working grammars before changing the invocation.)
 - Parse capture output (line + col + capture name + symbol text) into the interface table.
 - Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them) — `generate-units` re-runs the same queries itself to build its file-level symbol graph (pagerank-targeting §Build), cached at `<vault>/.internal/symbol-graph.json`.
 - Languages without `.scm` file → fall back to regex (graceful per-language degradation).

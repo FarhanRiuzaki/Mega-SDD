@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.11.0] - 2026-07-30
+
+fix(scan-codebase): the tree-sitter engine spawns one process **per file** — on a Windows box with endpoint security that is the hang, and nothing warned.
+
+Field report: `scan-codebase` hangs on the office laptop. The cause is a scale assumption calibrated on POSIX.
+
+| engine | invocations |
+|---|---|
+| `tree-sitter` | **one per FILE** (`scan-procedure.md`: "one call per source file") |
+| `regex` (ripgrep) | **one per LANGUAGE** ("one call per language") |
+
+A ~1000× difference in spawn count for a typical repo. At the ~18 ms/spawn of a dev Mac it is invisible; at the **~220 ms measured on the team's laptops** it decides whether the scan finishes:
+
+| files | tree-sitter, Windows |
+|---:|---:|
+| 200 | 44 s |
+| 2,000 | **7.3 min** |
+| 10,000 | 37 min |
+| 100,000 | **6.1 hours** |
+
+The only existing guard was `>100k files → confirm`, which at 220 ms/spawn is a **six-hour** threshold — it never fires in practice. And `--shallow-scan` does not help a *first* scan, since its invalidation gate reuses unchanged files by sha and on a first run every file is new. So an ordinary 2,000-file repo stalled with no warning and no obvious escape.
+
+Adds a **mandatory spawn-cost gate before Step 5**: estimate `N × per_spawn` (0.22 s on `windows-bash`, 0.02 s elsewhere) and, above 60 s, ask before extracting — offering `--engine=regex` (seconds, lower precision), continue with tree-sitter, or narrow with `--include`. The engine is never downgraded silently: `precision_tier` is reported in the map, so the trade is the user's to make.
+
+**Batching is the structural fix and is deliberately NOT shipped here.** Collapsing N spawns into one `tree-sitter query` call per language would remove the problem rather than manage it, but the batched capture-output format could not be verified — this machine's tree-sitter ships no compiled grammars (the exact "brew installs the CLI with zero grammars" case the procedure already documents). Shipping an unverified change to the extraction path is how the v5.8.0 regression happened. Recorded in `scan-procedure.md` with what is needed to verify it.
+
 ## [5.10.0] - 2026-07-30
 
 fix(gates): the repo-wide `ast-grep` scan in the B1 gate path ran unbounded — inside the blocking PreToolUse hook.
