@@ -150,6 +150,8 @@ When primary PKG_MGR lacks a tool (per `tool-matrix.yaml`), install-deps Step 3 
 
 If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation). On Windows specifically, when an `unsupported` tool was skipped purely for lack of a manager, the warning MUST name the concrete remedy — "install `scoop` (https://scoop.sh) then re-run, or install Node/Rust/Go/pipx for the cross-platform fallback" — rather than a bare skip, so the user knows why the tool is missing and how to get it.
 
+> **The scoop remedy has a precondition, and on a locked-down corporate image it can be unreachable.** Scoop's official bootstrap is **PowerShell-only** (`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then `irm get.scoop.sh | iex`). Where PowerShell is blocked by Group Policy — a common bank/government build, where `cmd` and Git Bash are the only shells — scoop cannot be installed at all, so pointing the user there is a dead end. On such a box say so explicitly and route to `winget` instead, verifying `python` rather than `python3` (see the `python3` rows in `tool-matrix.yaml`: the winget/python.org installer never ships `python3.exe`, and `resolve-python.sh`'s ladder falls through to `python`).
+
 ## Cross-reference
 
 - `tool-matrix.yaml` — encodes which install_cmd to use per detected (OS, PKG_MGR) tuple
