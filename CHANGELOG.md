@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.7.1] - 2026-07-29
+
+docs(hooks): correct a comment that claimed enforcement the code does not have, and record the evidence state of the parked fan-out item.
+
+`post-tool-use` carried five "PreToolUse Branch N … gates execute-bolts" claims. Four are accurate — flow-coverage (5), sibling-consistency (7), ui-quality (8) and cross-cutting (11) are all in the gate's state loader. **The fifth was false:** `vault-flow-staging` is listed at `pre-tool-use:405` among the states DEMOTED to advisory, and `.vault-flow-staging-state.json` is not among the 11 states the gate loads at all. `CLAUDE.md`'s enforced/advisory table was already correct; only the hook comment had drifted.
+
+Not cosmetic: a comment that overstates enforcement is what makes the next person scoping a change here treat an advisory validator as load-bearing. It did exactly that during this investigation.
+
+Also records, in the v5.4.0 spec §8, the evidence state of `write-fanout-no-megasdd-precondition` — un-parked by v5.7.0 but **deliberately not shipped**. The scope is narrower than the audit's framing (v5.4.1 already closed the literal "no `.mega-sdd` precondition"), the right argument is input-independence rather than gate re-derivation, `validate-unit-spec` is provably input-*dependent* and must stay unconditional, and the `strace` fixture built to clear the remaining six did not yet drive them to write their state files. Static analysis plus a partial trace is not enough to gate a moat-adjacent fan-out on, so it stays open with the dead ends written down.
+
 ## [5.7.0] - 2026-07-29
 
 fix(hooks): `post-tool-use` dispatched every validator through `/` globs against native Windows paths — the whole PostToolUse tree never ran there (D2).
