@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.7.0] - 2026-07-29
+
+fix(hooks): `post-tool-use` dispatched every validator through `/` globs against native Windows paths — the whole PostToolUse tree never ran there (D2).
+
+Last of the three defects opened by the 2026-07-28 Windows field report (D1 → v5.5.0, D3 → v5.6.0).
+
+The hook routes everything through 12 `case "$FILE_PATH"` globs written with `/`, plus the own-output anti-feedback guard and a `DIRTY_REL` prefix strip. Claude Code hands hooks **native** paths on Windows, which match none of them. On the team's machines that meant the 6 background unit-write validators (binding→units handoff, constitution propagation, starterkit conformance, flow-coverage, sibling-consistency, fan-out parity), the KB validators, codebase-map, binding, ui-quality, cross-cutting and factory-ledger dispatch **never fired**; the own-output guard leaked so mega-sdd journalled its own writes; and `DIRTY_REL` recorded absolute paths where consumers expect repo-relative ones.
+
+PATH-shim exec tally on a unit write, decomposed so each layer gets the credit it earns:
+
+| scenario | python3 execs |
+|---|---:|
+| POSIX baseline | 28 |
+| **D2 isolated** — cwd normalized, `file_path` native | **11** |
+| true pre-fix Windows — both native | 1 |
+| fixed | 28 |
+
+The globs alone account for **17 of 28** dispatch steps; the further collapse to 1 is the cwd path that v5.5.0 addressed at the `eval` layer.
+
+Fixed with one normalization immediately after the `eval`, before any consumer — centrally, so the next glob added to this file is not broken again.
+
+**The `:-` defaults in that fix are load-bearing, not defensive noise.** The file runs under `set -u` and `FILE_PATH` is emitted only for Read/Write/Edit — it is unset for every Bash, Skill and Agent call. bash 3.2 (macOS) tolerates `${VAR//x/y}` on an unset name; **bash 5 treats it as an unbound-variable error and kills the hook.** Verified on `bash:5.3` (5.3.15, the team's exact version) and against the real hook on bash 5.2: the bare form exits 1 with `FILE_PATH: unbound variable` on 3 of 4 tool-call types. The obvious one-line fix would have taken the hook down on the majority of tool calls on the exact platform it targets, and the dev machine could not have noticed.
+
+**Behavior change:** a Windows machine will now produce validator state files, and possibly blockers, it has never produced. Those findings were always true — they were never computed.
+
+This un-parks `write-fanout-no-megasdd-precondition` (~120 spawns), whose premise was that these globs work.
+
+Design + measurements: [`docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md`](docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md).
+
 ## [5.6.0] - 2026-07-29
 
 fix(hooks): the anti-self-bypass guard matched `/` patterns against OS-native paths — on Windows the forged-gate-verdict protection did not exist (D3).

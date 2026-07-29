@@ -136,6 +136,36 @@ if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
 
 eval "$PARSE_OUTPUT" 2>/dev/null || true
 
+# ─── D2: ONE separator normalization for the whole hook ──────────────────────
+# Claude Code hands hooks NATIVE paths on Windows (C:\Users\me\proj\src\App.php).
+# Everything downstream is written with "/": 12 `case "$FILE_PATH"` globs, the
+# own-output anti-feedback guard (*"/.mega-sdd/"*), and the DIRTY_REL prefix strip
+# against a PROJECT_ROOT that resolve_project_root has already normalized. A native
+# path matched NONE of them, so on Windows the 6 background unit-write validators,
+# the KB validators, codebase-map, binding, ui-quality, cross-cutting and
+# factory-ledger dispatch never fired; the own-output guard leaked, making mega-sdd
+# journal its own writes; and DIRTY_REL recorded an absolute path where consumers
+# expect a repo-relative one.
+#
+# Normalizing HERE, once, is deliberate — a per-site fix would leave the next glob
+# added to this file broken again. Validators receive the normalized value too,
+# which is strictly better: they glob with "/" as well, and python opens a
+# forward-slash Windows path fine. $OSTYPE-gated (a bash builtin — no fork), so a
+# POSIX filename legitimately containing a backslash is never rewritten.
+# The `:-` defaults are load-bearing, not defensive noise: this file runs under
+# `set -u`, and FILE_PATH is emitted ONLY for Read/Write/Edit — it is unset for
+# every Bash, Skill and Agent call. bash 3.2 tolerates pattern substitution on an
+# unset name, but bash >= 4.4 treats it as an unbound-variable error, which under
+# `set -u` KILLS the hook outright. The team runs bash 5.3.15, so the bare form
+# would have taken the hook down on the majority of tool calls on the exact
+# platform this fix is for.
+case "${OSTYPE:-}" in
+  msys*|cygwin*|win32*)
+    CWD="${CWD:-}";             CWD="${CWD//\\//}"
+    FILE_PATH="${FILE_PATH:-}"; FILE_PATH="${FILE_PATH//\\//}"
+    ;;
+esac
+
 if [ -z "${CWD:-}" ]; then exit 0; fi
 
 # ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────

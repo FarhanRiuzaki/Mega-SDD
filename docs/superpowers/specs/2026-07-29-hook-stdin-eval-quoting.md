@@ -113,7 +113,10 @@ authoritative parse instead. Fail-safe rather than fail-open, at zero fork cost.
 were not touched here, so the field can attribute any behavior change to exactly
 one commit:
 
-- **D2** — `post-tool-use` has 12 `case "$FILE_PATH"` globs written with `/`. A
+- **D2 — DONE in v5.7.0**, see
+  [`2026-07-29-post-tool-use-native-path-dispatch.md`](2026-07-29-post-tool-use-native-path-dispatch.md).
+  Measured impact: the globs alone cost 17 of 28 dispatch steps. Original note follows.
+  `post-tool-use` has 12 `case "$FILE_PATH"` globs written with `/`. A
   native Windows path matches none of them, so the 6 backgrounded unit-write
   validators, the KB validators, codebase-map, binding, ui-quality, cross-cutting
   and factory-ledger dispatch never fire. The own-output guard
