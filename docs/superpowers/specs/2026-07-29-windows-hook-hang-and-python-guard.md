@@ -164,24 +164,44 @@ Emits a missing-interpreter notice, then **exits cleanly** rather than letting
 `set -e` abort it silently — so the anchor still reaches the model and the
 degradation is stated out loud.
 
-### E. `install-deps` — FOLLOW-UP, not in this commit
+### E. `install-deps`
 
-`python3` must be declared in `tool-matrix.yaml` as the first **required** tool with
-per-OS install routes. It is currently undeclared, and `defaults.required_tools: []`
-carries the comment "ALL tools optional; mega-sdd has graceful fallback for each" —
-false for the one hard dependency in the system.
+`python3` declared in `tool-matrix.yaml` as the first genuinely **required** tool,
+routes web-verified against each live registry per the v5.3.1 audit lesson (that
+audit found 6 already-dead routes). `defaults.required_tools: []` and its comment
+"ALL tools optional; mega-sdd has graceful fallback for each" are amended — false
+for the one hard dependency in the system.
 
-Deliberately deferred: per the v5.3.1 audit lesson, upstream package IDs rot, so
-every route must be web-verified against its live registry before it lands (that
-audit found 6 already-dead routes). Two Windows questions must be answered first,
-because a wrong answer ships a remedy that does not work:
-1. does a winget/python.org install actually put a **`python3`** command on PATH in
-   Git Bash, or only `python.exe` + `py.exe`?
-2. does it take precedence over the WindowsApps alias, or does the alias keep
-   shadowing it because that directory sits earlier on PATH?
+The two Windows questions that gated this are now answered, and the answers changed
+the remedy:
 
-Until then the SessionStart notice and the deny reason carry the manual remedy
-(disable the alias in Settings, then install Python).
+1. **Does a winget/python.org install put a `python3` command on PATH? NO.** The
+   installer ships `python.exe`, `pythonw.exe`, `py.exe` only — CPython's
+   `PC/layout` `alias3` option (which would emit `python3.exe`) is in **no preset**,
+   and the winget manifest declares `Commands: [py, python, pythonw, pyw]`. Only the
+   *Microsoft Store* package registers `python3` as an alias.
+2. **Does it beat the WindowsApps alias? The question is malformed.** The installer
+   does prepend its dir to PATH, but there is no `python3.exe` to override the stub
+   *with*, so the lookup for `python3` walks past the real install and lands on the
+   0-byte stub. **A user can `winget install` Python successfully and still be
+   broken.**
+
+Consequence: **scoop is the preferred Windows route.** Its manifest declares a real
+`python3` shim (`bin: [["python.exe","python3"], …]`) and its installer *prepends*
+the shims directory to PATH, so it beats the alias. Per-user, no admin, and no
+Group Policy surface — unlike winget, which Policy CSP `DesktopAppInstaller` can
+disable outright on a managed image. All three remedy strings name scoop explicitly.
+
+Note the winget row still earns its place: `resolve-python.sh`'s ladder falls
+through to `python`, which *is* real after a winget install — so the fail-closed
+gate lifts even though the bare `python3` name stays broken. Its `verify_cmd` is
+`python -V`, not `python3 -V`, for exactly that reason.
+
+Residual gap: the ~56 hook call sites still invoke bare `python3` rather than the
+resolved `$MEGA_SDD_PY`, so on a winget-only machine the hooks themselves remain
+broken even though the guard now reports correctly. Tracked in §8 — until that
+lands, scoop is not merely preferred on Windows, it is the only route that fully
+works.
 
 ## 6. Invariant impact
 

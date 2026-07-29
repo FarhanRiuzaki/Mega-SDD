@@ -25,7 +25,7 @@
 #     a  — every parsed tools[] entry has id/used_by/purpose/
 #          fallback_behavior/matrix (dict-shaped: catches missing keys,
 #          NOT the duplicate-key merge — that is raw check g/a's job)
-#     b  — tool count == 9 AND id set == union(defaults.* groups)
+#     b  — tool count == 10 AND id set == union(defaults.* groups)
 #     c  — every matrix row has os/pkg_mgr/install_cmd/verify_cmd/size_mb
 #     f  — every defaults group ⊆ tool ids
 #
@@ -154,11 +154,11 @@ def main():
         g_pass = False
         g_msgs.append("orphaned key(s) at 4-space indent outside any active '- id:' entry: " +
                        ", ".join(f"line {ln} '{k}:'" for ln, k in orphans))
-    if not (n_id == c_purpose == c_fallback == c_matrix == 9):
+    if not (n_id == c_purpose == c_fallback == c_matrix == 10):
         g_pass = False
         g_msgs.append(f"line-count mismatch: id={n_id} purpose={c_purpose} "
-                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==9)")
-    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==9, no orphaned keys"
+                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==10)")
+    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==10, no orphaned keys"
            if g_pass else "; ".join(g_msgs))
     print(f"RESULT|G|{'PASS' if g_pass else 'FAIL'}|{msg}")
 
@@ -253,17 +253,17 @@ def main():
            if a_pass else "; ".join(a_msgs))
     print(f"RESULT|A_YAML|{'PASS' if a_pass else 'FAIL'}|{msg}")
 
-    # ── b: tool count == 9 AND id set == union(defaults.* groups) ──
+    # ── b: tool count == 10 AND id set == union(defaults.* groups) ──
     ids = [t.get('id') for t in tools if isinstance(t, dict)]
     id_set = set(ids)
     group_names = ['required_tools', 'recommended_minimum', 'fsd_extension', 'code_gates', 'full_stack']
     union = set()
     for g in group_names:
         union |= set(defaults.get(g) or [])
-    count_ok = len(ids) == 9 and len(id_set) == 9
+    count_ok = len(ids) == 10 and len(id_set) == 10
     union_ok = union == id_set
     b_pass = count_ok and union_ok
-    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 9); "
+    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 10); "
            f"union(defaults groups)==tool-id-set: {union_ok} "
            f"(union={sorted(union)} ids={sorted(id_set)})")
     print(f"RESULT|B|{'PASS' if b_pass else 'FAIL'}|{msg}")
