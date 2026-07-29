@@ -31,6 +31,10 @@
 #   4  no usable Python interpreter and the bash bootstrap could not find one
 #   5  registry write failed or did not round-trip (backup is intact)
 #   6  not a Windows environment
+#   7  the interpreter is not a native Windows Python (no `winreg` module) — an
+#      MSYS2/Cygwin Python cannot read HKCU. Distinct from 5 on purpose: 5 means
+#      "the write failed", 7 means "we never got as far as looking", and the two
+#      have completely different remedies.
 set -uo pipefail
 
 case "$0" in */*) SCRIPT_DIR="${0%/*}" ;; *) SCRIPT_DIR="." ;; esac
@@ -193,6 +197,16 @@ try:
     raise SystemExit(0)
 
 except wp.WindowsPathError as e:
+    # Separate "this interpreter cannot reach the registry at all" from "the write
+    # failed": an MSYS2/Cygwin Python has no winreg, and telling the operator their
+    # registry write failed would send them looking in entirely the wrong place.
+    if "winreg unavailable" in str(e):
+        print("not_native_python")
+        sys.stderr.write(
+            "fix-windows-path: this Python has no `winreg` module, so it is an "
+            "MSYS2/Cygwin build, not a native Windows Python. Install Python via "
+            "winget or scoop and re-run; nothing was read or written.\n")
+        raise SystemExit(7)
     print("error")
     sys.stderr.write("fix-windows-path: %s\n" % e)
     raise SystemExit(5)

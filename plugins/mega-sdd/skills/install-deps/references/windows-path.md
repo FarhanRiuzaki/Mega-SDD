@@ -39,6 +39,7 @@ bash "<plugin>/scripts/fix-windows-path.sh" --probe=<binary>
 | 3 | `probe_miss` — not on the persisted PATH either | Real gap. Try the repair below, then re-probe. |
 | 4 | `no_interpreter` — no Python, on PATH or at the known install roots | Cannot introspect. Tell the user to restart the terminal and re-run. |
 | 6 | not a Windows shell | Should be unreachable; the Step 6 branch is `windows-bash`-gated. |
+| 7 | `not_native_python` — the interpreter has no `winreg` (MSYS2/Cygwin build) | Nothing was read or written. Install Python via winget or scoop, then re-run. |
 
 Only after a repair attempt still yields rc 3 should this become
 `install_failed` / `verify_after_install_failed`.

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.8.1] - 2026-07-30
+
+fix(install-deps): `fix-windows-path.sh` reported "registry write failed" when it had never reached the registry.
+
+Found while rehearsing the v5.8.0 acceptance script against a fake plugin cache. An interpreter without the `winreg` module — an MSYS2/Cygwin Python rather than a native Windows one — raised `WindowsPathError`, which the handler mapped to exit 5, documented as *"registry write failed or did not round-trip"*.
+
+That is a misdiagnosis with a real cost: the operator would go looking for a failed or partial write, possibly try to restore from a backup, when in fact nothing was read or written and the actual remedy is a different Python. Now exit **7** / `not_native_python`, with the remedy named in the message. Propagated to the rc tables in `references/windows-path.md` and `SKILL.md` Step 6.
+
 ## [5.8.0] - 2026-07-30
 
 fix(install-deps): four Windows defects from one field run — a stale PATH read as a failed install, `verify_cmd` testing presence instead of usability, winget's msstore source killing every install, and a remedy that cannot be followed where it is needed.

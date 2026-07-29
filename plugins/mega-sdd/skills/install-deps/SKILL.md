@@ -165,6 +165,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/fix-windows-path.sh" --probe=<binary>
 - rc 0 → mark `verified`, note "restart terminal". **Not** a halt.
 - rc 3 → propose the gated PATH repair (`--ensure-dirs --dry-run` first, then `--backup-to=<project>/.mega-sdd/memory/path-backup-<ts>.txt`), re-probe, and only if it is still rc 3 mark `unverified`.
 - rc 4 / rc 6 → mark `unverified` with "restart terminal and re-run".
+- rc 7 → the interpreter is an MSYS2/Cygwin build with no `winreg`; nothing was read or written. Mark `unverified` and name the remedy (install Python via winget or scoop).
 
 Full triage table, the per-installer binary locations, and the destructive methods that must never be used: `references/windows-path.md`.
 
