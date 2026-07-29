@@ -26,15 +26,24 @@ def _is_manifest(path):
 
 
 def _git_show(ref, path, cwd="."):
-    r = subprocess.run(["git", "show", f"{ref}:{path}"],
-                       capture_output=True, text=True, cwd=cwd)
+    # timeout: git is normally fast, but this runs inside hook-invoked validators
+    # and an unbounded child in a path Claude Code waits on is the shape of the
+    # 2026-07-28 hang. Matches state_probes.py's existing convention.
+    try:
+        r = subprocess.run(["git", "show", f"{ref}:{path}"],
+                           capture_output=True, text=True, cwd=cwd, timeout=30)
+    except subprocess.TimeoutExpired:
+        return ""
     return r.stdout if r.returncode == 0 else ""
 
 
 def changed_manifests(base, head, cwd="."):
     """Manifest paths that changed between base..head (dep files only)."""
-    r = subprocess.run(["git", "diff", "--name-only", f"{base}..{head}"],
-                       capture_output=True, text=True, cwd=cwd)
+    try:
+        r = subprocess.run(["git", "diff", "--name-only", f"{base}..{head}"],
+                           capture_output=True, text=True, cwd=cwd, timeout=30)
+    except subprocess.TimeoutExpired:
+        return []
     return [p for p in r.stdout.splitlines() if _is_manifest(p)]
 
 
