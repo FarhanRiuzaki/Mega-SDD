@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.6.0] - 2026-07-29
+
+fix(hooks): the anti-self-bypass guard matched `/` patterns against OS-native paths — on Windows the forged-gate-verdict protection did not exist (D3).
+
+Two guards in `pre-tool-use` derive a project-relative path with `os.path.relpath`, which returns **OS-native** separators, then match it against forward-slash patterns.
+
+**Anti-self-bypass Write/Edit guard.** On Windows `rel` is `.mega-sdd\.validation-blockers.json`, so neither the equality test, the `endswith`, nor the B1/B2/B4 evidence regex could match. Every forged gate verdict passed:
+
+| write target | POSIX | Windows (before) |
+|---|---|---|
+| `.mega-sdd/.validation-blockers.json` | blocked | **allowed** |
+| `.mega-sdd/.unit-spec-state.json` | blocked | **allowed** |
+| `<vault>/bolts/U-001/postflight.json` (B1) | blocked | **allowed** |
+| `<vault>/bolts/_batch-suite.json` (B2) | blocked | **allowed** |
+
+There was **no input shape that worked** — a forward-slash path from the model does not rescue it, because `ntpath.abspath` re-normalizes to backslashes before `relpath` runs.
+
+**LOCKED-index guard.** `.mega-sdd/.locked-index.json` is a committed, team-shared artifact whose keys were written OS-native and looked up OS-native. Consistent on one machine, broken across a mixed team: an index built on macOS carries `src/app/Legacy.php` while a Windows teammate looks up `src\app\Legacy.php`, so the lookup missed and the LOCKED guard went inert for that teammate — and the reverse broke the macOS devs. This one is not Windows-only; it is a shared-artifact portability bug a single-platform team would never see.
+
+Fixed by normalizing to `/` at all three sites (both guards plus `build-locked-index.sh`'s key writer, making the committed artifact platform-neutral), guarded on `os.sep` so a POSIX filename legitimately containing a backslash is never rewritten. **No behavior change on POSIX** — `os.sep == "/"` makes each one a no-op; verified end-to-end against the real hook.
+
+**Behavior change:** a Windows machine that has been freely writing gate state files will now be blocked. Those writes were always violations — they were simply never detected.
+
+Tests pin the class with `ntpath`, Python's Windows path module, which imports on any platform and reproduces exact Windows semantics from macOS — no Windows machine required. Includes an anti-drift check, since the test transcribes the guard logic and a transcription that drifts from its source stops testing anything silently.
+
+Design: [`docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md`](docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md). **D2 remains open** — `post-tool-use`'s 12 `case "$FILE_PATH"` globs still match no native Windows path.
+
 ## [5.5.0] - 2026-07-29
 
 fix(hooks): every value parsed out of a hook's stdin JSON was re-parsed by `eval` — corrupting Windows paths outright, silently dropping any path with a space on every platform, and executing an embedded `$(…)`.
