@@ -239,6 +239,17 @@ spawns/tool-call baseline remains). Tracked separately:
 - The Write/Edit branch fans out 6 background validators then `wait`s, on an
   `async: true` hook nobody waits for — no debounce, no concurrency cap, so trees
   pile up across consecutive tool calls.
+  **PARKED, not merely deferred (2026-07-29).** The obvious fix is a `$FILE_PATH`
+  precondition, and scoping it uncovered two defects that invalidate its premise:
+  `eval "$PARSE_OUTPUT"` corrupted `FILE_PATH` outright (fixed in v5.5.0 — see
+  [`2026-07-29-hook-stdin-eval-quoting.md`](2026-07-29-hook-stdin-eval-quoting.md)),
+  and the 12 `case "$FILE_PATH"` globs are written with `/` so they match **no**
+  native Windows path (D2, still open). A precondition built on those globs would
+  be a no-op on Windows and a fail-open elsewhere. Do NOT re-rank this item by its
+  ~120-spawn estimate until D2 lands. Note also that one of the seven unconditional
+  validators, `validate-unit-spec.sh:325-342`, DOES read arbitrary source files (it
+  line-counts a `path:line` grounding anchor), so it cannot be gated to
+  artifact-only writes on the same argument as the other six.
 - `validate-bolt-artifacts.sh` (51 KB) is invoked 5× in the Stop hook and 5× again
   in the PreToolUse gate, each with a different `--flag`.
 - `$(cd "$(dirname "$0")" && pwd)` costs a fork in every hook; `${0%/*}` does not.
