@@ -119,7 +119,13 @@ one commit:
   and factory-ledger dispatch never fire. The own-output guard
   (`*"/.mega-sdd/"*`) is also inert, so mega-sdd journals its own outputs, and
   `DIRTY_REL="${FILE_PATH#"$PROJECT_ROOT"/}"` leaks an absolute path.
-- **D3** — `pre-tool-use`'s anti-self-bypass Write/Edit guard matches
+- **D3 — DONE in v5.6.0**, see
+  [`2026-07-29-windows-path-separator-guards.md`](2026-07-29-windows-path-separator-guards.md).
+  The investigation also turned up a second instance of the same class that this
+  note did not anticipate: the LOCKED-index guard, whose committed artifact keys
+  were OS-native on both the writer and the reader, so the guard went inert for
+  any teammate on the other OS. Original note follows.
+  `pre-tool-use`'s anti-self-bypass Write/Edit guard matches
   forward-slash patterns against `os.path.relpath` output. Proven with `ntpath`
   (Windows path semantics, runnable anywhere): for
   `C:\proj\.mega-sdd\.validation-blockers.json` the guard reports **inert**, and

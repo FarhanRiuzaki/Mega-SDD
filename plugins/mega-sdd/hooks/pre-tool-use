@@ -752,6 +752,18 @@ except Exception:
 root = os.environ.get("PROJECT_ROOT", "")
 p = os.path.abspath(fp) if os.path.isabs(fp) else os.path.abspath(os.path.join(root, fp))
 rel = os.path.relpath(p, root) if root else p
+# D3 (2026-07-29): os.path.relpath returns OS-native separators, and every pattern
+# below is written with "/". On Windows `rel` came back as
+# `.mega-sdd\.validation-blockers.json`, so `rel == ".mega-sdd/" + g`, the
+# `.endswith("/.mega-sdd/" + g)` test and the evidence-artifact regex ALL matched
+# nothing — the forged-gate-verdict guard did not exist there (invariant #2). It
+# stayed inert whatever shape the model sent, because ntpath.abspath normalizes a
+# forward-slash path to backslashes anyway. Proven with ntpath, which gives exact
+# Windows semantics on any host; pinned by tests/hooks/guard-path-separators.test.sh.
+# Guarded on os.sep so a POSIX filename legitimately containing a backslash is
+# never rewritten.
+if os.sep != "/":
+    rel = rel.replace(os.sep, "/")
 if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
     raise SystemExit(0)
 # S5 GU-HOOK-2: the quality-gate states join the moat state — every one of
@@ -827,6 +839,11 @@ try:
     rel = os.path.relpath(os.path.abspath(fp), root)
 except Exception:
     raise SystemExit(0)
+# D3: match the POSIX-normalized keys build-locked-index.sh writes. Before this the
+# lookup used OS-native separators on both sides, so a committed index built on one
+# platform never matched a teammate on the other and the LOCKED guard went inert.
+if os.sep != "/":
+    rel = rel.replace(os.sep, "/")
 if rel not in files:
     raise SystemExit(0)
 

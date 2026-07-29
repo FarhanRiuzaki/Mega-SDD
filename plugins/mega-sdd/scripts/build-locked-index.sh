@@ -41,7 +41,16 @@ for src in sorted(sources):
         lines = open(src, encoding="utf-8", errors="replace").read().splitlines()
     except OSError:
         continue
+    # D3 (2026-07-29): keys are POSIX-normalized. `.locked-index.json` is a COMMITTED,
+    # team-shared artifact, and os.path.relpath emits OS-native separators — an index
+    # built on macOS carries `a/b.md` keys while the PreToolUse LOCKED guard on a
+    # Windows teammate looks up `a\b.md`, so the lookup missed and the guard went
+    # inert for that teammate (and vice versa). "/" makes the artifact platform-neutral;
+    # the consumer normalizes the same way. os.sep-guarded so a POSIX filename
+    # legitimately containing a backslash is never rewritten.
     rel_src = os.path.relpath(src, cwd)
+    if os.sep != "/":
+        rel_src = rel_src.replace(os.sep, "/")
     for i, line in enumerate(lines):
         if "[LOCKED]" not in line:
             continue
