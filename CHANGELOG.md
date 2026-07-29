@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.9.0] - 2026-07-30
+
+fix(install-deps): **v5.8.0 regression** — the new execution probes shipped with no timeout and no pre-filter, and stalled an audit on a corporate Windows laptop.
+
+Field report: v5.7 completed on one office laptop; v5.8 hung on a colleague's. The cause is in v5.8.0's own fix. Converting 39 `verify_cmd` values from `command -v` to `<tool> --version` was right for correctness, but `command -v` is a shell **builtin** — zero forks, and it cannot hang. An execution probe can.
+
+Measured, macOS warm (Windows + EDR is roughly an order of magnitude worse):
+
+| probe | time |
+|---|---:|
+| `semgrep --version` | **3880 ms** |
+| `mmdc --version` | 384 ms |
+| `markdownlint-cli2 --version` | 366 ms |
+| all 9 tools, exec probes | **~5.1 s** |
+| all 9 tools, `command -v` (v5.7) | **53 ms** |
+
+**~96× slower**, unbounded, and run for every tool including ones that are not installed. On a network where a proxy blackholes a tool's startup update check, that is not slow — it is stopped.
+
+Three parts to the fix, all in the procedure rather than the matrix:
+
+1. **`command -v` pre-filter first, mandatory.** Not on PATH → `missing` immediately, no exec probe. Only tools that are actually present pay the cost.
+2. **`timeout 10 <verify_cmd>`** — never unbounded, in both Step 2 (audit) and Step 6 (post-install verify).
+3. **Exit 124 → `present`/`verified` with a `slow-verify` note, never `missing`.** `command -v` already proved the binary exists; calling a slow probe a missing tool would propose a reinstall of something already installed.
+
+Anti-hallucination rail 12 and three new assertions in `test-verify-cmd-usability.sh` pin all three, so this cannot silently return.
+
+The v5.8.0 usability invariant is unchanged and still correct — presence genuinely cannot prove usability where an alias stub exists. What was wrong was making every tool pay an unbounded exec for it.
+
 ## [5.8.1] - 2026-07-30
 
 fix(install-deps): `fix-windows-path.sh` reported "registry write failed" when it had never reached the registry.

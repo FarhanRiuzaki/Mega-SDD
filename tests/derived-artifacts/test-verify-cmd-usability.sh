@@ -61,7 +61,29 @@ else
   fail "no 'python -V' verify_cmd — the winget python3 route cannot verify"
 fi
 
-# ── 4. CONTROL: the detector fires on the exact historical defect ────────────
+# ── 4. the exec probe must be BOUNDED, and a timeout must not mean `missing` ──
+# v5.8.0 converted 39 verify_cmd values from `command -v` (a shell builtin, which
+# cannot hang) to execution probes — and shipped them with NO timeout and NO
+# pre-filter. `semgrep --version` alone measures 3.9 s warm on macOS; the nine
+# probes total ~5.1 s against ~53 ms for the builtins, ~96x. On a corporate Windows
+# box with an EDR and a TLS-inspecting proxy that stalled an audit outright.
+# The procedure must therefore pin all three parts of the fix.
+SKILL="$HERE/../../plugins/mega-sdd/skills/install-deps/SKILL.md"
+if [ -f "$SKILL" ]; then
+  grep -q 'timeout 10' "$SKILL" \
+    && pass "Step 2/6 bound the exec probe with an explicit timeout" \
+    || fail "no 'timeout 10' in SKILL.md — verify_cmd can hang the audit"
+  grep -qi 'Pre-filter with .command -v. FIRST' "$SKILL" \
+    && pass "command -v pre-filter is mandated BEFORE the exec probe" \
+    || fail "no mandatory command -v pre-filter — absent tools would pay exec cost"
+  grep -q '124' "$SKILL" \
+    && pass "timeout (exit 124) has a defined verdict" \
+    || fail "exit 124 undefined — a slow probe would be read as a missing tool"
+else
+  fail "install-deps SKILL.md not found at $SKILL"
+fi
+
+# ── 5. CONTROL: the detector fires on the exact historical defect ────────────
 # Without this, a matrix that stopped containing verify_cmd at all would pass 1-3
 # silently. Replay the pre-2026-07-30 shape on a temp copy and require a catch.
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
