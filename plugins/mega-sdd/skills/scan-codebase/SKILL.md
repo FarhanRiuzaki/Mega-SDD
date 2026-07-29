@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.18.2
+version: 2.19.0
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md consumed by bind-codebase as ground truth. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -49,7 +49,7 @@ Detailed per-step logic — including the tree-sitter multi-binary probe, the pe
 2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle` (full per-ecosystem table: `references/scan-procedure.md §Step 2`). Multiple → record all.
 3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
 4. **Build tree (depth-limited).** Walk dirs up to `--depth`, respecting `--exclude` (defaults in `references/exclusions.md`).
-5. **Extract public interfaces.** Run the per-file invalidation gate first (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` not persisted — generate-units builds its own symbol graph from the same queries) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
+5. **Extract public interfaces.** **Spawn-cost gate first** — tree-sitter invokes one process per FILE while regex/ripgrep invokes one per LANGUAGE, a ~1000x difference that decides whether the scan finishes at all on a Windows box with endpoint security (~220 ms/spawn measured: a 2,000-file repo is ~7.3 min under tree-sitter, <1 s under regex). Estimate `N x per_spawn` before extracting and, above 60 s, ASK before proceeding (`references/scan-procedure.md §Spawn-cost gate`); never silently downgrade the engine, since `precision_tier` is reported in the map. Then run the per-file invalidation gate (REUSE unchanged files under `--shallow-scan`). Then tree-sitter (`name.definition.*` → §2; `name.reference.*` not persisted — generate-units builds its own symbol graph from the same queries) when available, else regex/ripgrep per-language patterns. Languages without a `.scm` file fall back to regex (per-language graceful degradation).
 6. **Extract routes.** Per-framework signatures covering EVERY framework in the Step 8.5 detection table (Express/Laravel/Rails/Django/Gin/Axum/Spring/…) — full table in `references/scan-procedure.md` Step 6.
 7. **Extract data models.** Per-ORM signatures across all ecosystems (Prisma/Eloquent/ActiveRecord/Django ORM/GORM/Diesel/JPA/…) — full table in `references/scan-procedure.md` Step 7.
 8. **Detect naming conventions.** Sample 20+ files/language: file case, symbol case, test-file suffix.
