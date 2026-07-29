@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.6.0
+version: 1.6.1
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -61,13 +61,23 @@ If detection yields `OS = unknown` OR `PKG_MGR = none` AND no fallbacks → emit
 Read `references/tool-matrix.yaml`. For each tool:
 
 1. Check memory file `<project>/.mega-sdd/memory/install-outcomes.md` (if exists) for prior install entry within last 30 days.
-2. **Usability is the only thing that can mark a tool `present`.** Run `verify_cmd` from the matrix entry matching detected (OS, PKG_MGR). Every `verify_cmd` is an EXECUTION probe (`<tool> --version`), never a PATH lookup:
+2. **Pre-filter with `command -v` FIRST — this ordering is mandatory, not an optimisation.**
+   - Not on PATH → mark `missing` immediately. **Do not run the exec probe.** A name absent from PATH is conclusively missing, and `command -v` is a shell builtin: zero forks, ~5 ms for all tools combined.
+   - On PATH → continue to the exec probe below. Only tools that are actually present pay its cost.
+3. **Usability is the only thing that can mark a tool `present`** — but the probe MUST be bounded:
+
+   ```bash
+   timeout 10 <verify_cmd>
+   ```
+
+   **Never run `verify_cmd` unbounded.** `command -v` is a builtin and cannot hang; an execution probe can, and on a corporate network a tool that checks for updates on startup will block until the proxy gives up. Measured cost of the exec probes, macOS warm — Windows + EDR is roughly an order of magnitude worse: `semgrep --version` **3.9 s**, `mmdc --version` 384 ms, `markdownlint-cli2 --version` 366 ms, everything else under 150 ms.
    - Exit 0 → mark `present`; capture the version from stdout best-effort.
    - Exit non-zero → mark `missing`.
-   - A memory hit from step 1 **plus** exit 0 → additionally annotate `cached-installed` (we installed it before; don't re-propose it). A memory hit NEVER skips `verify_cmd`.
+   - **Timeout (exit 124) → mark `present` with a `slow-verify` note, NEVER `missing`.** `command -v` already proved the binary exists; a slow probe is not a missing tool, and treating it as one would propose a pointless reinstall of something already installed.
+   - A memory hit from step 1 **plus** exit 0 → additionally annotate `cached-installed` (we installed it before; don't re-propose it). A memory hit NEVER skips the probe.
    - **The exit code is the verdict — never gate on a stdout pattern.** `semgrep --version` prints an upgrade banner before the version, so a "does stdout look like a version" test false-fails a working tool.
-3. **`command -v` may only ever produce `missing`, never `present`.** It is fine as a cheap fork-free pre-filter — a name absent from PATH is conclusively missing, and skipping the exec probe there matters on EDR-heavy Windows boxes where every spawn costs ~220 ms. But a `command -v` **hit** is not evidence the tool works: Windows ships App Execution Alias stubs in `%LOCALAPPDATA%\Microsoft\WindowsApps` (on the default per-user PATH) that resolve, print "Python was not found…" to stderr, and exit 49. Presence ≠ usability.
-4. **`python3` is the named exception** — the one entry in `defaults.required_tools`. Its verdict comes from the shared resolver, not a bare `verify_cmd`, because the working command name differs per install route:
+4. **A `command -v` hit is never sufficient on its own.** Windows ships App Execution Alias stubs in `%LOCALAPPDATA%\Microsoft\WindowsApps` (on the default per-user PATH) that resolve, print "Python was not found…" to stderr, and exit 49. Presence ≠ usability — which is exactly why the pre-filter may only ever produce `missing`, never `present`.
+5. **`python3` is the named exception** — the one entry in `defaults.required_tools`. Its verdict comes from the shared resolver, not a bare `verify_cmd`, because the working command name differs per install route:
 
    ```bash
    bash -c '. "${CLAUDE_PLUGIN_ROOT}/scripts/_lib/resolve-python.sh" && mega_sdd_python && $MEGA_SDD_PY -V'
@@ -150,7 +160,7 @@ If ANY install fails:
 
 For each successfully-installed tool:
 
-1. Run `verify_cmd` from matrix entry.
+1. Run `verify_cmd` from matrix entry, **bounded exactly as in Step 2** — `timeout 10 <verify_cmd>`, never unbounded. Exit 124 (timeout) → `verified` with a `slow-verify` note: the install just exited 0, so a slow probe is not a failed install.
 2. Exit 0 + version capture → mark `verified`.
 3. Exit non-zero → **on `OS = windows-bash`, do NOT mark `unverified` yet** — go to the Windows branch below. On every other OS, mark `unverified` and add to the halt list.
 
@@ -271,3 +281,4 @@ Participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-sch
 9. NEVER write PATH with `reg add` from Git Bash — the `reg` parser mangles backslashes and semicolons, prints `ERROR: Invalid syntax` **while returning RC=0**, and writes nothing or writes partially.
 10. NEVER hand-write a `.reg` file for `reg import` — a wrong `hex(2)` UTF-16LE encoding imports "successfully" while storing a corrupt value (observed: a 798-char USER PATH truncated to 92). NEVER use `setx PATH` either — it truncates at 1024 chars and expands `%VAR%`, destroying `REG_EXPAND_SZ`. The only sanctioned path writer is `scripts/fix-windows-path.sh`.
 11. ALWAYS back up the current PATH before modifying it — `fix-windows-path.sh` refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
+12. NEVER run a `verify_cmd` unbounded, and NEVER run one for a tool `command -v` already reported absent. An execution probe can block forever where a builtin cannot; `semgrep --version` alone measures 3.9 s warm on macOS, and v5.8.0 shipped these probes with no timeout and no pre-filter, which stalled an audit on a corporate Windows machine. Bound with `timeout 10`, and treat exit 124 as `present`/`verified`, never `missing`.
