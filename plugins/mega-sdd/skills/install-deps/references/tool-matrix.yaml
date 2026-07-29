@@ -7,6 +7,58 @@
 schema_version: "1.0"
 
 tools:
+  - id: python3
+    used_by: [hooks]
+    purpose: "Every mega-sdd hook parses its stdin JSON through python3 — the gate aggregator, the validators, and the telemetry layer all depend on it"
+    fallback_behavior: "NONE. This is the one genuinely REQUIRED tool: without a usable interpreter the hooks fail closed (execute-bolts is blocked) and SessionStart emits a degraded-mode notice. It is not optional and has no graceful path."
+    matrix:
+      - os: macos
+        pkg_mgr: brew
+        install_cmd: "brew install python@3.14"
+        verify_cmd: "python3 -V"
+        size_mb: 70
+        notes: "Formula aliases python/python3/python@3 all resolve here; installs $HOMEBREW_PREFIX/bin/python3"
+      - os: [linux, wsl]
+        pkg_mgr: apt
+        install_cmd: "sudo apt install -y python3"
+        requires_sudo: true
+        verify_cmd: "python3 -V"
+        size_mb: 30
+        notes: "Metapackage; python-is-python3 is only for a bare `python` name and is NOT needed"
+      - os: [linux, wsl]
+        pkg_mgr: dnf
+        install_cmd: "sudo dnf install -y python3"
+        requires_sudo: true
+        verify_cmd: "python3 -V"
+        size_mb: 30
+        notes: "The bare `python` name comes from the separate package python-unversioned-command (not python3-unversioned-command)"
+      - os: linux
+        pkg_mgr: pacman
+        install_cmd: "sudo pacman -S --needed python"
+        requires_sudo: true
+        verify_cmd: "python3 -V"
+        size_mb: 73
+        notes: "No python3 package exists on Arch; core/python IS 3.x and ships /usr/bin/python3"
+      - os: windows-bash
+        pkg_mgr: scoop
+        install_cmd: "scoop install python"
+        verify_cmd: "python3 -V"
+        size_mb: 110
+        notes: "PREFERRED Windows route — the ONLY package-manager route that yields a working `python3` command. Its manifest declares a python3 shim, and the scoop installer PREPENDS the shims dir to PATH, so it beats the WindowsApps alias stub. Per-user, no admin, no Group Policy surface."
+      - os: windows-bash
+        pkg_mgr: winget
+        install_cmd: "winget install --scope user -e --id Python.Python.3.14"
+        verify_cmd: "python -V"
+        size_mb: 110
+        notes: "Verify with `python`, NOT `python3` — the python.org/winget installer ships python.exe/py.exe/pythonw.exe and NEVER python3.exe (CPython PC/layout: the alias3 option is in no preset). PATH is prepended, but there is no python3.exe to override the WindowsApps stub with, so `python3` STILL resolves to the stub after a successful install. mega-sdd's resolve-python.sh ladder falls through to `python` and works. The ID pins a minor — there is no floating Python.Python.3 — so re-verify when 3.15 lands (~Oct 2026)."
+      - os: windows-bash
+        pkg_mgr: choco
+        install_cmd: "choco install -y python3"
+        requires_sudo: true
+        verify_cmd: "python -V"
+        size_mb: 110
+        notes: "Needs an elevated shell; same missing-python3 caveat as winget"
+
   - id: tree-sitter
     used_by: [scan-codebase]
     purpose: "AST-precise symbol extraction (scan-codebase)"
@@ -279,8 +331,10 @@ tools:
 
 # Defaults
 defaults:
-  required_tools: []                                          # ALL tools optional; mega-sdd has graceful fallback for each
+  required_tools: [python3]                                   # python3 is the ONE hard dependency: every hook parses stdin JSON through it,
+                                                              # and without a usable interpreter the gates fail closed. Every OTHER tool is
+                                                              # optional and has a documented graceful fallback.
   recommended_minimum: [tree-sitter, ast-grep, ripgrep]        # baseline for brownfield projects
   fsd_extension: [pandoc, mmdc]                              # emit PDF: pandoc HTML + Chrome print (mmdc for mermaid); Chrome detect-only
   code_gates: [semgrep, gitleaks]                              # execute-bolts L0 code gates (secret + SAST); gate 5 dep-existence uses python3 urllib
-  full_stack: [tree-sitter, ast-grep, ripgrep, jd, pandoc, mmdc, markdownlint-cli2, semgrep, gitleaks]
+  full_stack: [python3, tree-sitter, ast-grep, ripgrep, jd, pandoc, mmdc, markdownlint-cli2, semgrep, gitleaks]

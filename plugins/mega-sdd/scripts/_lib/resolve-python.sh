@@ -113,5 +113,5 @@ mega_sdd_python() {
 # One-line, human-facing remedy string — kept here so every surface that reports
 # a missing interpreter says the same thing.
 mega_sdd_python_remedy() {
-  printf '%s' "python3 tidak tersedia (di Windows biasanya karena App Execution Alias stub di WindowsApps yang bukan Python asli). Jalankan \`/mega-sdd:install-deps\`, atau matikan alias-nya di Settings > Apps > Advanced app settings > App execution aliases lalu pasang Python."
+  printf '%s' "python3 tidak tersedia (di Windows biasanya karena App Execution Alias stub di WindowsApps yang bukan Python asli). Jalankan \`/mega-sdd:install-deps\` — di Windows pilih route scoop (\`scoop install python\`), satu-satunya package manager yang menghasilkan perintah \`python3\` berfungsi; winget/python.org hanya memasang python.exe + py.exe sehingga \`python3\` tetap jatuh ke stub. Alternatif: matikan alias di Settings > Apps > Advanced app settings > App execution aliases lalu pasang Python."
 }
