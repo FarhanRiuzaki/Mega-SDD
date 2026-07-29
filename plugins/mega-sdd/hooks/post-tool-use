@@ -764,8 +764,17 @@ except Exception:
     # Follows each 04-flows.md flow's `_kb_source` back-reference; FAILs with
     # vault_flow_staging_drop when the cited KB workflow has a `stages:` block but
     # the vault flow dropped it. Project-wide scan; self-skips when no KB / no
-    # `_kb_source` (backward-compatible). PreToolUse Branch 14 gates execute-bolts
-    # on its status==FAIL (dedicated single-purpose validator -> status gate is precise).
+    # `_kb_source` (backward-compatible).
+    #
+    # ADVISORY — surfaced via /mega-sdd:analyze, NOT a blocking gate. This comment
+    # previously claimed "PreToolUse Branch 14 gates execute-bolts on its
+    # status==FAIL", which was false in both directions: `pre-tool-use:405` lists
+    # vault-flow-staging among the states DEMOTED to advisory, and the gate's state
+    # loader never reads `.vault-flow-staging-state.json` at all (verified against
+    # the 11 `L(".…")` sites, 2026-07-29). CLAUDE.md's enforced/advisory table was
+    # already correct; only this comment had drifted. A comment that overstates
+    # enforcement is not cosmetic — it is what makes the next person scoping a
+    # change here treat an advisory validator as load-bearing.
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-vault-flow-staging.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json" \

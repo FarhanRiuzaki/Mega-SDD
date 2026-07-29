@@ -240,9 +240,41 @@ spawns/tool-call baseline remains). Tracked separately:
   `async: true` hook nobody waits for — no debounce, no concurrency cap, so trees
   pile up across consecutive tool calls.
   **UN-PARKED 2026-07-29 (v5.7.0)** — D2 landed, so the `$FILE_PATH` globs this
-  item depends on now work on every platform. The `validate-unit-spec.sh` caveat at
-  the end of this note still stands and still constrains the scoping. Original
-  parking note follows.
+  item depends on now work on every platform. **Still NOT shipped, and here is the
+  state of the evidence so the next attempt does not restart from zero:**
+
+  1. *Scope correction.* v5.4.1's short-circuit already exits when there is no
+     `.mega-sdd` at all, so the literal "no `.mega-sdd` precondition" is closed.
+     What remains is narrower: a **source** write inside a mega-sdd project still
+     runs 7 unconditional artifact validators.
+  2. *The right argument is input-independence, not gate re-derivation.* A validator
+     whose inputs live entirely under `.mega-sdd/` / `*-bound/` / `docs/mega-sdd/`
+     cannot change verdict when a non-artifact file is written. That needs no moat
+     reasoning. Do not build the change on "the gate re-derives anyway" — only
+     `.unit-spec-state.json` is both gate-read and gate-re-derived (`pre-tool-use:427`,
+     and it is the ONLY one of the seven in the gate's 11 `L(".…")` state loads).
+  3. *`validate-unit-spec` is provably input-DEPENDENT* — `:325-342` `_anchor_resolves`
+     opens `os.path.join(cwd, path)` and line-counts it to validate a `path:line`
+     grounding anchor. It must stay unconditional. Its shape (`if not
+     os.path.isfile(full): return False`) also means a delete-the-source-tree probe
+     would wrongly clear it: it swallows absence and returns the same verdict.
+     Mutate line counts instead.
+  4. *Instrument the rest with `strace`, and prove the instrument first.* `docker run
+     --privileged python:3.12-slim` + `apt-get install strace git`, then
+     `strace -f -e trace=openat,execve`. Two traps cost real time here: a fixture
+     whose units are all `task_type: create` never reaches the anchor code (the
+     probe reported a false 0 for `validate-unit-spec`), and directory `openat`s
+     from globbing are traversal, not reads — filter with `[ -f ]`. Add a
+     self-check that the trace registers a known source read AND a known `git`
+     execve before believing any zero.
+  5. *Unfinished:* the fixture still did not drive the validators to write their
+     state files, so the read-set observed is partial. Until a fixture provably
+     exercises each validator end to end, the six-of-seven claim is supported by
+     static analysis plus a partial trace — **not enough to gate a moat-adjacent
+     fan-out on.** Build that fixture first; `tests/blackbox/` seeding is the
+     obvious starting point.
+
+  Original parking note follows.
   **PARKED, not merely deferred (2026-07-29).** The obvious fix is a `$FILE_PATH`
   precondition, and scoping it uncovered two defects that invalidate its premise:
   `eval "$PARSE_OUTPUT"` corrupted `FILE_PATH` outright (fixed in v5.5.0 — see
