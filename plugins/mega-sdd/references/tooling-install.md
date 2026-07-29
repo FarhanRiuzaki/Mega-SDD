@@ -10,10 +10,21 @@ How much of mega-sdd works per environment (verified 2026-06-11 against the ship
 |---|---|---|---|---|---|
 | **macOS / Linux** | ✅ | ✅ | ✅ | ✅ deterministic | Full support |
 | **Windows + WSL** | ✅ | ✅ | ✅ | ✅ deterministic | **Full support — the recommended Windows path** |
-| **Windows + Git Bash (MINGW)** | ✅ | ✅ *if `python3` on PATH* (Windows Python is usually `python`/`py` — add a `python3` alias/shim) | ✅ same condition | ✅ even WITHOUT python3 — the pre-tool-use fail-closed shell fallback still blocks execute-bolts when blockers ≠ PASS | Works; diagnostics degrade without python3 |
+| **Windows + Git Bash (MINGW)** | ✅ | ✅ *if a USABLE interpreter resolves* — `resolve-python.sh` walks `python3` → `python` → `py -3` and rejects the WindowsApps alias stub, so no manual shim is needed; do NOT add a `python3` alias by hand | ✅ same condition | ✅ even WITHOUT python3 — the pre-tool-use fail-closed shell fallback still blocks execute-bolts when blockers ≠ PASS | Works; diagnostics degrade without python3 |
 | **Windows native (cmd/PowerShell, no bash)** | ⚠️ prose only — the model can follow skills via PowerShell | ❌ hooks are bash (`run-hook.sh` routes to `hooks/<name>.ps1` when present, but no `.ps1` ports ship) | ❌ | ⚠️ **prose-enforced only — no deterministic gate** | Not recommended for real pipelines |
 
 > **Windows hook dispatch requires `bash` resolvable on PATH.** `hooks.json` invokes the dispatcher as `bash run-hook.sh <name>`, so cmd.exe launches `bash.exe` with the script as an argument rather than trying to interpret the file (a `.cmd`-extension dispatcher made cmd parse the `#!` shebang and fail with `'#!' is not recognized as an internal or external command`). On the Git Bash / WSL rows above, "✅ Hooks" therefore assumes Git for Windows (or WSL) is installed and its `bash` wins on PATH.
+>
+> **It also assumes Claude Code itself is running its Bash tool, not its PowerShell tool.** Claude Code enables the PowerShell tool automatically on Windows when it cannot find Git Bash, and falls back to `powershell.exe`. On a corporate image where PowerShell is blocked by policy, every hook command then dies before `bash` is ever reached — the symptom is `EUNKNOWN: unknown error, uv_spawn` naming `powershell.exe`, which looks like a mega-sdd failure but is not one. Fix it host-side in `~/.claude/settings.json`:
+>
+> ```jsonc
+> { "env": {
+>     "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe",
+>     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "0"
+> } }
+> ```
+>
+> This is a Claude Code setting, not a plugin setting — mega-sdd invokes `bash` explicitly in all 9 `hooks.json` entries and ships no `.ps1`.
 
 `/mega-sdd:install-deps` detects winget/scoop/choco on Windows (best-effort) and apt inside WSL. PowerShell ports of the 5 hooks are a tracked roadmap item — tell us if your team needs native cmd.
 

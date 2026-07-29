@@ -44,10 +44,10 @@ tools:
         install_cmd: "scoop install python"
         verify_cmd: "python3 -V"
         size_mb: 110
-        notes: "PREFERRED Windows route — the ONLY package-manager route that yields a working `python3` command. Its manifest declares a python3 shim, and the scoop installer PREPENDS the shims dir to PATH, so it beats the WindowsApps alias stub. Per-user, no admin, no Group Policy surface."
+        notes: "PREFERRED Windows route — the ONLY package-manager route that yields a working `python3` command. Its manifest declares a python3 shim, and the scoop installer PREPENDS the shims dir to PATH, so it beats the WindowsApps alias stub. Per-user, no admin, no Group Policy surface. PRECONDITION: scoop must ALREADY be installed — its official bootstrap is PowerShell-only (`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` then `irm get.scoop.sh | iex`). On a corporate image where PowerShell is blocked by policy this route CANNOT be bootstrapped; fall back to the winget row below and verify with `python`, not `python3` (resolve-python.sh's ladder falls through to it)."
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install --scope user -e --id Python.Python.3.14"
+        install_cmd: "winget install --source winget --scope user -e --id Python.Python.3.14"
         verify_cmd: "python -V"
         size_mb: 110
         notes: "Verify with `python`, NOT `python3` — the python.org/winget installer ships python.exe/py.exe/pythonw.exe and NEVER python3.exe (CPython PC/layout: the alias3 option is in no preset). PATH is prepended, but there is no python3.exe to override the WindowsApps stub with, so `python3` STILL resolves to the stub after a successful install. mega-sdd's resolve-python.sh ladder falls through to `python` and works. The ID pins a minor — there is no floating Python.Python.3 — so re-verify when 3.15 lands (~Oct 2026)."
@@ -67,43 +67,43 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 5
         notes: "The brew tree-sitter formula is library-only; the CLI ships as tree-sitter-cli (binary name: tree-sitter)"
       - os: [linux, wsl]
         pkg_mgr: apt
         install_cmd: "sudo apt install -y tree-sitter-cli"
         requires_sudo: true
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 5
         notes: "Ubuntu 24.04+/Debian 13+ only; older releases use the cargo/npm fallback rows"
       - os: [linux, wsl]
         pkg_mgr: dnf
         install_cmd: "sudo dnf install -y tree-sitter-cli"
         requires_sudo: true
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 5
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install tree-sitter.tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        install_cmd: "winget install --source winget tree-sitter.tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 6
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install tree-sitter"
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 6
         notes: "scoop is a native Windows source for tree-sitter (per tree-sitter docs); winget tree-sitter.tree-sitter-cli also available"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 8
         notes: "Cross-platform fallback when no native pkg available (incl. Windows w/ Rust)"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g tree-sitter-cli"
-        verify_cmd: "command -v tree-sitter || command -v tree-sitter-cli"
+        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
         size_mb: 6
         notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
@@ -115,29 +115,29 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install ast-grep"
-        verify_cmd: "command -v ast-grep"
+        verify_cmd: "ast-grep --version"
         size_mb: 8
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install ast-grep.ast-grep"
-        verify_cmd: "command -v ast-grep"
+        install_cmd: "winget install --source winget ast-grep.ast-grep"
+        verify_cmd: "ast-grep --version"
         size_mb: 10
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install ast-grep"
-        verify_cmd: "command -v ast-grep"
+        verify_cmd: "ast-grep --version"
         size_mb: 10
         notes: "scoop is a native Windows source (matches references/tooling-install.md); winget ast-grep.ast-grep also available"
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install ast-grep --locked"
-        verify_cmd: "command -v ast-grep"
+        verify_cmd: "ast-grep --version"
         size_mb: 12
         notes: "Cross-platform fallback (incl. Windows w/ Rust); covers Debian/Ubuntu — no native apt pkg for ast-grep"
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g @ast-grep/cli"
-        verify_cmd: "command -v ast-grep"
+        verify_cmd: "ast-grep --version"
         size_mb: 10
         notes: "Cross-platform fallback (incl. Windows w/ Node)"
 
@@ -149,34 +149,34 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install ripgrep"
-        verify_cmd: "command -v rg"
+        verify_cmd: "rg --version"
         size_mb: 3
       - os: [linux, wsl]
         pkg_mgr: apt
         install_cmd: "sudo apt install -y ripgrep"
         requires_sudo: true
-        verify_cmd: "command -v rg"
+        verify_cmd: "rg --version"
         size_mb: 3
       - os: [linux, wsl]
         pkg_mgr: dnf
         install_cmd: "sudo dnf install -y ripgrep"
         requires_sudo: true
-        verify_cmd: "command -v rg"
+        verify_cmd: "rg --version"
         size_mb: 3
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install BurntSushi.ripgrep.MSVC"
-        verify_cmd: "command -v rg"
+        install_cmd: "winget install --source winget BurntSushi.ripgrep.MSVC"
+        verify_cmd: "rg --version"
         size_mb: 4
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install ripgrep"
-        verify_cmd: "command -v rg"
+        verify_cmd: "rg --version"
         size_mb: 4
       - os: any
         pkg_mgr: cargo
         install_cmd: "cargo install ripgrep"
-        verify_cmd: "command -v rg"
+        verify_cmd: "rg --version"
         size_mb: 5
 
   - id: jd
@@ -187,24 +187,24 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install jd"
-        verify_cmd: "command -v jd"
+        verify_cmd: "jd --version"
         size_mb: 4
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install josephburnett.jd"
-        verify_cmd: "command -v jd"
+        install_cmd: "winget install --source winget josephburnett.jd"
+        verify_cmd: "jd --version"
         size_mb: 8
         notes: "winget ships jd 2.x; avoids the scoop extras-bucket step"
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop bucket add extras && scoop install jd"
-        verify_cmd: "command -v jd"
+        verify_cmd: "jd --version"
         size_mb: 8
         notes: "jd lives in the scoop 'extras' bucket (not Main), so the bucket-add is required first; or use the winget row above"
       - os: any
         pkg_mgr: go
         install_cmd: "go install github.com/josephburnett/jd/v2/jd@latest"
-        verify_cmd: "command -v jd"
+        verify_cmd: "jd --version"
         size_mb: 8
         notes: "Cross-platform fallback (incl. Windows w/ Go); v2 is the current major (the v1 diff format is not compatible)"
 
@@ -216,29 +216,29 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install pandoc"
-        verify_cmd: "command -v pandoc"
+        verify_cmd: "pandoc --version"
         size_mb: 20
       - os: [linux, wsl]
         pkg_mgr: apt
         install_cmd: "sudo apt install -y pandoc"
         requires_sudo: true
-        verify_cmd: "command -v pandoc"
+        verify_cmd: "pandoc --version"
         size_mb: 25
       - os: [linux, wsl]
         pkg_mgr: dnf
         install_cmd: "sudo dnf install -y pandoc"
         requires_sudo: true
-        verify_cmd: "command -v pandoc"
+        verify_cmd: "pandoc --version"
         size_mb: 25
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install JohnMacFarlane.Pandoc"
-        verify_cmd: "command -v pandoc"
+        install_cmd: "winget install --source winget JohnMacFarlane.Pandoc"
+        verify_cmd: "pandoc --version"
         size_mb: 30
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install pandoc"
-        verify_cmd: "command -v pandoc"
+        verify_cmd: "pandoc --version"
         size_mb: 30
 
   - id: mmdc
@@ -250,17 +250,17 @@ tools:
       - os: macos
         pkg_mgr: npm
         install_cmd: "npm install -g @mermaid-js/mermaid-cli"
-        verify_cmd: "command -v mmdc"
+        verify_cmd: "mmdc --version"
         size_mb: 15
       - os: [linux, wsl]
         pkg_mgr: npm
         install_cmd: "npm install -g @mermaid-js/mermaid-cli"
-        verify_cmd: "command -v mmdc"
+        verify_cmd: "mmdc --version"
         size_mb: 15
       - os: windows-bash
         pkg_mgr: npm
         install_cmd: "npm install -g @mermaid-js/mermaid-cli"
-        verify_cmd: "command -v mmdc"
+        verify_cmd: "mmdc --version"
         size_mb: 15
 
   - id: markdownlint-cli2
@@ -271,12 +271,12 @@ tools:
       - os: any
         pkg_mgr: npm
         install_cmd: "npm install -g markdownlint-cli2"
-        verify_cmd: "command -v markdownlint-cli2"
+        verify_cmd: "markdownlint-cli2 --version"
         size_mb: 2
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install markdownlint-cli2"
-        verify_cmd: "command -v markdownlint-cli2"
+        verify_cmd: "markdownlint-cli2 --version"
         size_mb: 2
 
   - id: semgrep
@@ -287,18 +287,18 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install semgrep"
-        verify_cmd: "command -v semgrep"
+        verify_cmd: "semgrep --version"
         size_mb: 120
       - os: windows-bash
         pkg_mgr: pipx
         install_cmd: "pipx install semgrep"
-        verify_cmd: "command -v semgrep"
+        verify_cmd: "semgrep --version"
         size_mb: 120
         notes: "Windows route via pipx (Python-based; no winget/scoop semgrep pkg)"
       - os: any
         pkg_mgr: pipx
         install_cmd: "pipx install semgrep"
-        verify_cmd: "command -v semgrep"
+        verify_cmd: "semgrep --version"
         size_mb: 120
         notes: "Cross-platform fallback (pipx; pip3 install --user semgrep also works)"
 
@@ -310,22 +310,22 @@ tools:
       - os: macos
         pkg_mgr: brew
         install_cmd: "brew install gitleaks"
-        verify_cmd: "command -v gitleaks"
+        verify_cmd: "gitleaks --version"
         size_mb: 10
       - os: windows-bash
         pkg_mgr: winget
-        install_cmd: "winget install Gitleaks.Gitleaks"
-        verify_cmd: "command -v gitleaks"
+        install_cmd: "winget install --source winget Gitleaks.Gitleaks"
+        verify_cmd: "gitleaks --version"
         size_mb: 12
       - os: windows-bash
         pkg_mgr: scoop
         install_cmd: "scoop install gitleaks"
-        verify_cmd: "command -v gitleaks"
+        verify_cmd: "gitleaks --version"
         size_mb: 12
       - os: any
         pkg_mgr: go
         install_cmd: "go install github.com/zricethezav/gitleaks/v8@latest"
-        verify_cmd: "command -v gitleaks"
+        verify_cmd: "gitleaks --version"
         size_mb: 15
         notes: "Cross-platform fallback (incl. Linux w/ Go)"
 

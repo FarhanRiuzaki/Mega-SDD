@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.5.2
+version: 1.6.0
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -61,10 +61,19 @@ If detection yields `OS = unknown` OR `PKG_MGR = none` AND no fallbacks → emit
 Read `references/tool-matrix.yaml`. For each tool:
 
 1. Check memory file `<project>/.mega-sdd/memory/install-outcomes.md` (if exists) for prior install entry within last 30 days.
-2. If memory says "installed" AND `command -v <tool>` (or alternate per matrix `verify_cmd`) passes → mark `cached-installed`; skip audit.
-3. Otherwise, run `verify_cmd` from matrix entry matching detected (OS, PKG_MGR):
-   - Exit 0 → mark `present` (already installed); capture version via tool's `--version` if available
-   - Exit non-zero → mark `missing`
+2. **Usability is the only thing that can mark a tool `present`.** Run `verify_cmd` from the matrix entry matching detected (OS, PKG_MGR). Every `verify_cmd` is an EXECUTION probe (`<tool> --version`), never a PATH lookup:
+   - Exit 0 → mark `present`; capture the version from stdout best-effort.
+   - Exit non-zero → mark `missing`.
+   - A memory hit from step 1 **plus** exit 0 → additionally annotate `cached-installed` (we installed it before; don't re-propose it). A memory hit NEVER skips `verify_cmd`.
+   - **The exit code is the verdict — never gate on a stdout pattern.** `semgrep --version` prints an upgrade banner before the version, so a "does stdout look like a version" test false-fails a working tool.
+3. **`command -v` may only ever produce `missing`, never `present`.** It is fine as a cheap fork-free pre-filter — a name absent from PATH is conclusively missing, and skipping the exec probe there matters on EDR-heavy Windows boxes where every spawn costs ~220 ms. But a `command -v` **hit** is not evidence the tool works: Windows ships App Execution Alias stubs in `%LOCALAPPDATA%\Microsoft\WindowsApps` (on the default per-user PATH) that resolve, print "Python was not found…" to stderr, and exit 49. Presence ≠ usability.
+4. **`python3` is the named exception** — the one entry in `defaults.required_tools`. Its verdict comes from the shared resolver, not a bare `verify_cmd`, because the working command name differs per install route:
+
+   ```bash
+   bash -c '. "${CLAUDE_PLUGIN_ROOT}/scripts/_lib/resolve-python.sh" && mega_sdd_python && $MEGA_SDD_PY -V'
+   ```
+
+   It rejects any candidate under `WindowsApps` and walks `python3` → `python` → `py -3`. Exit 0 → `present`; record WHICH name resolved (a winget/python.org install ships no `python3.exe`, so `python` is the working name there). Exit non-zero → `missing`, and print `mega_sdd_python_remedy` verbatim from that same file rather than composing new remedy prose.
 
 `--force-recheck` flag skips memory cache; re-audits every tool.
 
@@ -143,17 +152,32 @@ For each successfully-installed tool:
 
 1. Run `verify_cmd` from matrix entry.
 2. Exit 0 + version capture → mark `verified`.
-3. Exit non-zero → mark `unverified`; add to halt list (install ran but tool not on PATH — PATH refresh needed OR install bug).
+3. Exit non-zero → **on `OS = windows-bash`, do NOT mark `unverified` yet** — go to the Windows branch below. On every other OS, mark `unverified` and add to the halt list.
+
+#### Windows branch (`OS = windows-bash`) — stale PATH is not a failed install
+
+An installer writes `HKCU\Environment\Path`; a bash session that is already running never sees it (winget prints "restart your shell to use the new value"). So a `verify_cmd` failing here proves nothing about the install. Ask the question that does distinguish them — *will it resolve in a NEW shell?*:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/fix-windows-path.sh" --probe=<binary>
+```
+
+- rc 0 → mark `verified`, note "restart terminal". **Not** a halt.
+- rc 3 → propose the gated PATH repair (`--ensure-dirs --dry-run` first, then `--backup-to=<project>/.mega-sdd/memory/path-backup-<ts>.txt`), re-probe, and only if it is still rc 3 mark `unverified`.
+- rc 4 / rc 6 → mark `unverified` with "restart terminal and re-run".
+
+Full triage table, the per-installer binary locations, and the destructive methods that must never be used: `references/windows-path.md`.
 
 Emit chat output:
 
 ```
 Verifying...
   ✓ <tool> v<version>
+  ↻ <tool> (installed — resolves in a new shell; restart the terminal)
   ✗ <tool> (install ran but verify failed — try `hash -r` and re-run; OR check PATH)
 ```
 
-If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`.
+If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`, or subtype `path_stale_pending_restart` when the probe succeeded but this shell cannot see it.
 
 ### Step 7: Memory write
 
@@ -242,3 +266,7 @@ Participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-sch
 5. NEVER install Claude Code itself — out of scope; this skill installs OPTIONAL mega-sdd deps only.
 6. Memory write happens AFTER verify pass — never record "installed" on partial state.
 7. Skip tools with no matching matrix entry AND no working fallback — emit warning, don't halt entire batch.
+8. NEVER treat `command -v <tool>` as proof a tool works — it may only ever yield `missing`. A Windows App Execution Alias stub resolves on PATH and exits 49. Promotion to `present` requires an execution probe.
+9. NEVER write PATH with `reg add` from Git Bash — the `reg` parser mangles backslashes and semicolons, prints `ERROR: Invalid syntax` **while returning RC=0**, and writes nothing or writes partially.
+10. NEVER hand-write a `.reg` file for `reg import` — a wrong `hex(2)` UTF-16LE encoding imports "successfully" while storing a corrupt value (observed: a 798-char USER PATH truncated to 92). NEVER use `setx PATH` either — it truncates at 1024 chars and expands `%VAR%`, destroying `REG_EXPAND_SZ`. The only sanctioned path writer is `scripts/fix-windows-path.sh`.
+11. ALWAYS back up the current PATH before modifying it — `fix-windows-path.sh` refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.

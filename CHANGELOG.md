@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.8.0] - 2026-07-30
+
+fix(install-deps): four Windows defects from one field run — a stale PATH read as a failed install, `verify_cmd` testing presence instead of usability, winget's msstore source killing every install, and a remedy that cannot be followed where it is needed.
+
+A team laptop (Windows 11, Git Bash, winget, PowerShell blocked by Group Policy, CrowdStrike) ran `/mega-sdd:install-deps`. First every install failed with exit 248/94; after a retry succeeded, **every install exited 0 and every `verify_cmd` still failed** — and the audit had reported `python3` as present on a machine with no Python at all.
+
+**A — a stale PATH is not a failed install.** An installer writes `HKCU\Environment\Path`; a bash session already running never sees it (winget prints "restart your shell to use the new value"). A `verify_cmd` failing right after an install therefore carries no information. New `scripts/fix-windows-path.sh` + `scripts/_lib/windows_path.py` answer the question that does distinguish them — *will this resolve in a NEW shell?* — by composing the persisted system + user PATH from the registry. Step 6 now routes through it on `os = windows-bash`: resolvable → `verified` plus "restart the terminal", not a halt. Also repairs the directories Windows never adds to PATH at all (`pipx` → `~\.local\bin`, `pip --user` → `%APPDATA%\Roaming\Python\Python<XY>\Scripts`), gated behind a mandatory backup.
+
+**B — `verify_cmd` tested presence, not usability.** 39 of the 46 `verify_cmd` values were literally `command -v <tool>`, so "run verify_cmd" and "test presence" were the same operation for every tool except python3. That is why the field output read `✓ jd (command -v jd — RC=0)`, and it is the mechanism behind the python3 false positive: a WindowsApps alias stub sits on the default PATH, resolves to `command -v`, prints "Python was not found…" to stderr and exits 49. v5.4.0 fixed this for the *hooks*; the *audit* was never updated. All 39 are now execution probes (`--version` measured rc 0 on all nine tools), and `command -v` may only ever produce `missing`, never `present` — it stays as a cheap fork-free pre-filter, which matters at ~220 ms/spawn on an EDR box. **Exit code is the verdict, never a stdout pattern**: `semgrep --version` prints an upgrade banner ahead of the version.
+
+**C — winget's msstore source killed the whole command.** Verified in winget-cli source rather than inferred: `winget install` is the one search command that does *not* set `TreatSourceFailuresAsWarning`, so a failing source terminates the run even though it also prints the matches it found in the `winget` source. `0x8A15005E` is `PINNED_CERTIFICATE_MISMATCH` — corporate TLS inspection breaks winget's msstore cert pin **permanently**, so this recurs on that network forever; `0x801901F8` is HTTP 504. Exit 248/94 are POSIX low-byte truncations of those two HRESULTs — two failures, not four. `--source winget` is now pinned on all 7 winget routes. (The operator's workaround was right; their stated reason, "source ambiguity", was not — genuine ambiguity has its own code, `0x8A150016`, which never appeared.)
+
+**D — the scoop remedy is unreachable where it is most needed.** The matrix calls `scoop install python` the only route yielding a working `python3`, and every fail-closed hook message steers there — but scoop's bootstrap is PowerShell-only (`irm get.scoop.sh | iex`). On a PowerShell-blocked image the sole documented remedy cannot be followed, and nothing said so. Now stated in both the matrix note and `os-detection.md`, with winget named as the fallback (verify `python`, not `python3`).
+
+Anti-hallucination rails 8-11 encode the methods that must never be used, each observed to fail destructively on that machine: `reg add` from Git Bash (mangles backslashes, prints `ERROR: Invalid syntax` **while returning RC=0**), a hand-written `.reg` + `reg import` (**truncated a 798-char USER PATH to 92**), and `setx PATH` (1024-char cap, expands `%VAR%`, destroys `REG_EXPAND_SZ`).
+
+Also recorded, and explicitly **not** a plugin defect: `EUNKNOWN: uv_spawn` on `powershell.exe`. mega-sdd invokes `bash` in all 9 hook entries and ships no `.ps1`; Claude Code enables its PowerShell tool automatically when it cannot find Git Bash. Host-side fix in `tooling-install.md`: `CLAUDE_CODE_GIT_BASH_PATH` + `CLAUDE_CODE_USE_POWERSHELL_TOOL: "0"`. Generic `OTEL_*` keys cannot cause it.
+
+**Not verified here:** no Windows machine was available. The `winreg` write path, `py -3`, the scoop `python3` shim and `tree-sitter-cli --version` are exercised against fakes, upstream docs and source — not the real platform. The nine `--version` exit codes were measured locally.
+
+Design: [`docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md`](docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md).
+
 ## [5.7.1] - 2026-07-29
 
 docs(hooks): correct a comment that claimed enforcement the code does not have, and record the evidence state of the parked fan-out item.
