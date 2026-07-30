@@ -10,11 +10,24 @@
 #
 # COST WEIGHTS (Opus price ratios, expressed relative to 1 uncached input token):
 #   input_tokens                x1.00
-#   cache_creation_input_tokens x1.25
+#   cache_creation @ 5-min TTL  x1.25
+#   cache_creation @ 1-hour TTL x2.00   <- Claude Code writes 1h TTL on the main lane
 #   cache_read_input_tokens     x0.10
 #   output_tokens               x5.00
 # Cost-weighted total is in "cost-equivalent input tokens" — a price-faithful unit,
 # NOT a raw count. raw/cost ratio > 1 means the raw number overstates the bill.
+#
+# CACHE-CREATION TTL (v5.13.0 — was a flat x1.25, i.e. the 5-minute rate applied to
+# everything, understating the main lane by 60% on its single largest line item):
+# cache_creation has TWO prices and the transcript states which one applied, per
+# message, in `usage.cache_creation.ephemeral_{5m,1h}_input_tokens`. The Stop /
+# SubagentStop hooks now carry that split into telemetry, so this report prices
+# cache creation EXACTLY rather than assuming a TTL.
+#   - split present  -> measured: 5m x1.25 + 1h x2.00.
+#   - split absent   -> assumed lane default (telemetry written before v5.13.0):
+#                       main lane x2.00 (measured 1h), subagent lane x1.25 (5m).
+# The report and the state JSON both label how much of cache_creation was measured
+# vs assumed — an assumed baseline must never be read as a measured one.
 #
 # REPORT-ONLY: reads <cwd>/.mega-sdd/memory/telemetry.jsonl, writes
 # <cwd>/.mega-sdd/TOKEN-COST-REPORT.md + <cwd>/.mega-sdd/.token-cost-state.json.
@@ -59,13 +72,27 @@ quiet = os.environ["QUIET"] == "1"
 emit_json = os.environ["EMIT_JSON"] == "1"
 
 # Opus price ratios relative to 1 uncached input token.
+# NOTE: W["cache_creation_input_tokens"] is the FALLBACK weight only — it is used
+# for pre-v5.13.0 telemetry that carries no TTL split, and it is lane-dependent
+# (see CC_LANE_FALLBACK). Where the split IS present, cache creation is priced by
+# CC_5M / CC_1H instead. Both paths are accounted separately and labelled.
+CC_5M = 1.25          # cache_creation at the 5-minute TTL
+CC_1H = 2.00          # cache_creation at the 1-hour TTL
+CC_LANE_FALLBACK = {  # measured harness behaviour, per lane, when no split is present
+    "turn_end_marker": CC_1H,       # main lane writes 1h
+    "subagent_end_marker": CC_5M,   # subagent lane writes 5m
+}
 W = {
     "input_tokens": 1.00,
-    "cache_creation_input_tokens": 1.25,
+    "cache_creation_input_tokens": CC_1H,
     "cache_read_input_tokens": 0.10,
     "output_tokens": 5.00,
 }
 TOKKEYS = tuple(W.keys())
+# Split keys ride inside payload.usage but are NOT summed into raw/by_token_type —
+# they are a breakdown OF cache_creation_input_tokens, not an additional lane.
+SPLIT_5M = "cache_creation_5m_input_tokens"
+SPLIT_1H = "cache_creation_1h_input_tokens"
 
 def skill_name_of(rec, payload):
     for src in (rec, payload):
@@ -83,8 +110,13 @@ type_totals = {k: 0 for k in TOKKEYS}
 turns = 0
 subagent_turns = 0        # subagent_end_marker events with usage — fork cost lives here
 per_skill = {}            # skill -> {turns, raw, cost, **type_totals}
+per_model = {}            # model -> {turns, cost} — settles "which tier did this run at"
 current_skill = None
 have_telemetry = os.path.isfile(telemetry)
+# cache_creation provenance: exactly-priced (TTL known) vs lane-assumed.
+cc_measured_5m = 0
+cc_measured_1h = 0
+cc_assumed = 0
 
 def add_skill(skill):
     if skill not in per_skill:
@@ -129,6 +161,7 @@ if have_telemetry:
             bucket = add_skill(sk)
             turns += 1
             bucket["turns"] += 1
+            event_cost = 0.0
             for k in TOKKEYS:
                 v = usage.get(k, 0)
                 if not isinstance(v, (int, float)):
@@ -137,10 +170,35 @@ if have_telemetry:
                 raw_total += v
                 type_totals[k] += v
                 bucket[k] += v
-                w = v * W[k]
+                if k == "cache_creation_input_tokens":
+                    # Price by the TTL the harness actually used, when it told us.
+                    s5 = usage.get(SPLIT_5M, 0)
+                    s1 = usage.get(SPLIT_1H, 0)
+                    s5 = int(s5) if isinstance(s5, (int, float)) else 0
+                    s1 = int(s1) if isinstance(s1, (int, float)) else 0
+                    split = s5 + s1
+                    if split > 0:
+                        # Any residual beyond the stated split falls back to the lane
+                        # default rather than being silently dropped or over-credited.
+                        residual = max(0, v - split)
+                        cc_measured_5m += s5
+                        cc_measured_1h += s1
+                        cc_assumed += residual
+                        w = s5 * CC_5M + s1 * CC_1H + residual * CC_LANE_FALLBACK.get(etype, CC_1H)
+                    else:
+                        cc_assumed += v
+                        w = v * CC_LANE_FALLBACK.get(etype, CC_1H)
+                else:
+                    w = v * W[k]
                 cost_total += w
+                event_cost += w
                 bucket["cost_weighted"] += w
                 bucket["raw"] += v
+            mdl = payload.get("model")
+            if isinstance(mdl, str) and mdl:
+                mb = per_model.setdefault(mdl, {"turns": 0, "cost_weighted": 0.0})
+                mb["turns"] += 1
+                mb["cost_weighted"] += event_cost
 
 cost_total_i = int(round(cost_total))
 ratio = round(raw_total / cost_total, 2) if cost_total > 0 else 0.0
@@ -155,6 +213,15 @@ for sk, b in skills_sorted:
         "pct_cost": round(100 * b["cost_weighted"] / cost_total, 1) if cost_total > 0 else 0.0,
     })
 
+cc_total = cc_measured_5m + cc_measured_1h + cc_assumed
+cc_pct_measured = round(100 * (cc_measured_5m + cc_measured_1h) / cc_total, 1) if cc_total > 0 else 0.0
+
+models_out = [
+    {"model": m, "turns": b["turns"], "cost_weighted": int(round(b["cost_weighted"])),
+     "pct_cost": round(100 * b["cost_weighted"] / cost_total, 1) if cost_total > 0 else 0.0}
+    for m, b in sorted(per_model.items(), key=lambda kv: kv[1]["cost_weighted"], reverse=True)
+]
+
 state = {
     "status": "PASS",   # report-only; always PASS so the analyze aggregate never trips
     "have_telemetry": have_telemetry,
@@ -164,8 +231,17 @@ state = {
     "cost_weighted_total": cost_total_i,
     "overstatement_ratio": ratio,
     "by_token_type": type_totals,
-    "weights": W,
+    # Provenance of the single largest line item. pct_measured < 100 ⇒ part of this
+    # total is a lane ASSUMPTION (pre-v5.13.0 telemetry), not a measurement.
+    "cache_creation_ttl": {
+        "measured_5m": cc_measured_5m,
+        "measured_1h": cc_measured_1h,
+        "assumed": cc_assumed,
+        "pct_measured": cc_pct_measured,
+    },
+    "weights": dict(W, cache_creation_5m=CC_5M, cache_creation_1h=CC_1H),
     "by_skill": skills_out,
+    "by_model": models_out,   # empty for pre-v5.13.0 telemetry (no model field emitted)
 }
 
 def human(n):
@@ -197,8 +273,41 @@ else:
     lines.append("|---|---:|---:|---:|")
     for k in TOKKEYS:
         v = type_totals[k]
+        if k == "cache_creation_input_tokens":
+            # Priced per TTL, so a single weight column would be a fiction here.
+            cc_cost = cc_measured_5m * CC_5M + cc_measured_1h * CC_1H + cc_assumed * CC_1H
+            lines.append(f"| {k} | per-TTL | {v:,} | {int(round(cc_cost)):,} |")
+            lines.append(f"| &nbsp;&nbsp;↳ @5m TTL (measured) | x{CC_5M:.2f} | {cc_measured_5m:,} | "
+                         f"{int(round(cc_measured_5m*CC_5M)):,} |")
+            lines.append(f"| &nbsp;&nbsp;↳ @1h TTL (measured) | x{CC_1H:.2f} | {cc_measured_1h:,} | "
+                         f"{int(round(cc_measured_1h*CC_1H)):,} |")
+            lines.append(f"| &nbsp;&nbsp;↳ TTL unknown (lane default) | x{CC_1H:.2f}/x{CC_5M:.2f} | "
+                         f"{cc_assumed:,} | {int(round(cc_assumed*CC_1H)):,} |")
+            continue
         lines.append(f"| {k} | x{W[k]:.2f} | {v:,} | {int(round(v*W[k])):,} |")
     lines.append("")
+    if cc_total > 0:
+        if cc_pct_measured >= 99.95:
+            lines.append("> **cache_creation TTL: 100% measured.** Every cache-creation token was "
+                         "priced at the TTL the harness actually used.")
+        elif cc_pct_measured <= 0.05:
+            lines.append("> ⚠️ **cache_creation TTL: 0% measured — this total is an ESTIMATE.** "
+                         "This telemetry predates the TTL split (v5.13.0), so cache creation is "
+                         "priced by lane default (main x2.00, subagent x1.25). Treat it as an "
+                         "assumed baseline, not a measurement.")
+        else:
+            lines.append(f"> ⚠️ **cache_creation TTL: {cc_pct_measured}% measured, "
+                         f"{round(100-cc_pct_measured,1)}% lane-assumed.** Mixed telemetry — the "
+                         "assumed share is an estimate, not a measurement.")
+        lines.append("")
+    if models_out:
+        lines.append("## By model (cost-weighted, descending)")
+        lines.append("")
+        lines.append("| Model | turns | cost-weighted | % of cost |")
+        lines.append("|---|---:|---:|---:|")
+        for m in models_out:
+            lines.append(f"| {m['model']} | {m['turns']} | {m['cost_weighted']:,} | {m['pct_cost']}% |")
+        lines.append("")
     lines.append("## By skill (cost-weighted, descending)")
     lines.append("")
     lines.append("| Skill | turns | raw | cost-weighted | % of cost |")
@@ -208,8 +317,8 @@ else:
                      f"{s['cost_weighted']:,} | {s['pct_cost']}% |")
     lines.append("")
     lines.append("> Cost weights are Opus price ratios relative to 1 uncached input token "
-                 "(input x1, cache_creation x1.25, cache_read x0.1, output x5). The cost-weighted "
-                 "total is a price-faithful unit, not a raw count.")
+                 "(input x1, cache_creation x1.25 @5m / x2.00 @1h, cache_read x0.1, output x5). "
+                 "The cost-weighted total is a price-faithful unit, not a raw count.")
 with open(os.path.join(cwd, ".mega-sdd", "TOKEN-COST-REPORT.md"), "w") as f:
     f.write("\n".join(lines) + "\n")
 

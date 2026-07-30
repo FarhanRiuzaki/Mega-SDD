@@ -2,12 +2,17 @@
 # test-token-cost-report.sh — Batch 1 (token), lever S4: cost-weighted reporting.
 #
 # Pins report-token-cost.sh: it rolls up telemetry.jsonl turn_end_marker /
-# subagent_end_marker usage into a COST-WEIGHTED total (input x1, cache_creation
-# x1.25, cache_read x0.1, output x5 — Opus price ratios), attributes cost per
-# skill, and reports the raw/cost overstatement ratio. This is the fix for the
-# field audit's headline: 176M RAW tokens were ~37M cost-equivalent because 91.9%
-# were cache_read. Report-only — writes TOKEN-COST-REPORT.md + .token-cost-state.json,
-# touches no gate. CI-safe: bash + python3 only.
+# subagent_end_marker usage into a COST-WEIGHTED total (input x1, cache_read x0.1,
+# output x5, cache_creation x1.25 @5m TTL / x2.00 @1h TTL — Opus price ratios),
+# attributes cost per skill, and reports the raw/cost overstatement ratio. This is
+# the fix for the field audit's headline: 176M RAW tokens were ~37M cost-equivalent
+# because 91.9% were cache_read. Report-only — writes TOKEN-COST-REPORT.md +
+# .token-cost-state.json, touches no gate. CI-safe: bash + python3 only.
+#
+# Case 3 pins the v5.13.0 TTL correction: cache_creation has TWO prices and the
+# transcript states which applied. Where the hooks carried the split through, it is
+# priced EXACTLY; where they did not (pre-v5.13.0 telemetry, Cases 1-2), it falls
+# back to the per-lane default and the report must SAY it is assumed.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -39,11 +44,12 @@ cat > "$ROOT/.mega-sdd/memory/telemetry.jsonl" <<'JSONL'
 {"event_type":"subagent_end_marker","skill":"mega-sdd:execute-bolts","agent_type":"mega-sdd:execute-bolts","hook_source":"SubagentStop","payload":{"skill_name":"mega-sdd:execute-bolts","agent_id":"abc123","usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1000}}}
 JSONL
 
-# Hand-computed expectations:
-#   scan turn  : 1000*1 + 2000*1.25 + 100000*0.1 + 500*5  = 16000 (raw 103500)
-#   bind turn  :  500*1 +    0*1.25 +  50000*0.1 + 200*5  =  6500 (raw  50700)
-#   bolts subag:    0   +    0      +      0      +1000*5  =  5000 (raw   1000)
-#   TOTAL cost = 27500 | TOTAL raw = 155200 | ratio = 155200/27500 = 5.64 | turns = 3
+# Hand-computed expectations. This fixture carries NO TTL split (it is pre-v5.13.0
+# telemetry), so cache_creation takes the LANE fallback: main x2.00, subagent x1.25.
+#   scan turn  : 1000*1 + 2000*2.00 + 100000*0.1 + 500*5  = 17500 (raw 103500)
+#   bind turn  :  500*1 +    0      +  50000*0.1 + 200*5  =  6500 (raw  50700)
+#   bolts subag:    0   +    0      +      0     +1000*5  =  5000 (raw   1000)
+#   TOTAL cost = 29000 | TOTAL raw = 155200 | ratio = 155200/29000 = 5.35 | turns = 3
 bash "$REPORT" --cwd="$ROOT" --quiet >/dev/null 2>&1
 STATE="$ROOT/.mega-sdd/.token-cost-state.json"
 [ -f "$STATE" ] || { fail "state file .token-cost-state.json not written"; }
@@ -54,7 +60,7 @@ if [ -f "$STATE" ]; then
   TURNS="$(_field "$STATE" "['turns']")"
   RATIO="$(_field "$STATE" "['overstatement_ratio']")"
   echo "  (cost_weighted=$CW raw=$RAW turns=$TURNS ratio=$RATIO)"
-  [ "$CW" = "27500" ]  && pass "cost-weighted total = 27500" || fail "cost-weighted total = $CW (want 27500)"
+  [ "$CW" = "29000" ]  && pass "cost-weighted total = 29000" || fail "cost-weighted total = $CW (want 29000)"
   [ "$RAW" = "155200" ] && pass "raw total = 155200" || fail "raw total = $RAW (want 155200)"
   [ "$TURNS" = "3" ]   && pass "turns = 3 (incl. subagent marker)" || fail "turns = $TURNS (want 3)"
   # subagent_turns pins the fork-measurement integrity signal: exactly the count of
@@ -62,13 +68,19 @@ if [ -f "$STATE" ]; then
   # 0 ⇒ SubagentStop never fired ⇒ fork cost uncapturable ⇒ verdict refused.
   SUBT="$(_field "$STATE" "['subagent_turns']")"
   [ "$SUBT" = "1" ]    && pass "subagent_turns = 1 (one subagent_end_marker)" || fail "subagent_turns = $SUBT (want 1)"
-  [ "$RATIO" = "5.64" ] && pass "overstatement ratio = 5.64x" || fail "ratio = $RATIO (want 5.64)"
+  [ "$RATIO" = "5.35" ] && pass "overstatement ratio = 5.35x" || fail "ratio = $RATIO (want 5.35)"
+
+  # The lane fallback must be VISIBLE as an assumption, never worn as a measurement.
+  PCTM="$(_field "$STATE" "['cache_creation_ttl']['pct_measured']")"
+  ASSUMED="$(_field "$STATE" "['cache_creation_ttl']['assumed']")"
+  [ "$PCTM" = "0.0" ]     && pass "pct_measured = 0 for pre-v5.13.0 telemetry" || fail "pct_measured = $PCTM (want 0.0)"
+  [ "$ASSUMED" = "2000" ] && pass "all 2000 cache_creation tokens marked assumed" || fail "assumed = $ASSUMED (want 2000)"
 
   # Per-skill attribution: find each skill's cost in by_skill.
   SCAN_C="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((s['cost_weighted'] for s in d['by_skill'] if s['skill']=='mega-sdd:scan-codebase'),'MISSING'))" "$STATE")"
   BIND_C="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((s['cost_weighted'] for s in d['by_skill'] if s['skill']=='mega-sdd:bind-codebase'),'MISSING'))" "$STATE")"
   BOLT_C="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((s['cost_weighted'] for s in d['by_skill'] if s['skill']=='mega-sdd:execute-bolts'),'MISSING'))" "$STATE")"
-  [ "$SCAN_C" = "16000" ] && pass "scan-codebase cost-weighted = 16000" || fail "scan cost = $SCAN_C (want 16000)"
+  [ "$SCAN_C" = "17500" ] && pass "scan-codebase cost-weighted = 17500" || fail "scan cost = $SCAN_C (want 17500)"
   [ "$BIND_C" = "6500" ]  && pass "bind-codebase cost-weighted = 6500" || fail "bind cost = $BIND_C (want 6500)"
   [ "$BOLT_C" = "5000" ]  && pass "execute-bolts (subagent) cost-weighted = 5000" || fail "bolts cost = $BOLT_C (want 5000)"
 
@@ -93,6 +105,69 @@ RC=$?
 HT="$(_field "$ROOT2/.mega-sdd/.token-cost-state.json" "['have_telemetry']" 2>/dev/null || echo ERR)"
 [ "$HT" = "False" ] && pass "have_telemetry=false recorded" || fail "have_telemetry = $HT (want False)"
 rm -rf "$ROOT2"
+
+# ── Case 3: TTL split present → cache_creation priced EXACTLY, not assumed ────
+# This is the v5.13.0 correction. The hooks carry usage.cache_creation.ephemeral_*
+# through as cache_creation_{5m,1h}_input_tokens, so the report prices the real rate
+# instead of guessing a TTL. Also pins per-model attribution (the Phase 1b question:
+# "what tier did the bolt lane actually run at" is answered from telemetry, not a
+# special run).
+ROOT3="$(mktemp -d)"; mkdir -p "$ROOT3/.mega-sdd/memory"
+cat > "$ROOT3/.mega-sdd/memory/telemetry.jsonl" <<'JSONL'
+{"event_type":"turn_end_marker","skill":"orchestrate-flow","hook_source":"Stop","payload":{"model":"claude-opus-5","usage":{"input_tokens":0,"cache_creation_input_tokens":10000,"cache_creation_5m_input_tokens":4000,"cache_creation_1h_input_tokens":6000,"cache_read_input_tokens":0,"output_tokens":0}}}
+{"event_type":"subagent_end_marker","skill":"mega-sdd:bolt-implementer","agent_type":"mega-sdd:bolt-implementer","hook_source":"SubagentStop","payload":{"model":"claude-sonnet-5","skill_name":"mega-sdd:bolt-implementer","usage":{"input_tokens":0,"cache_creation_input_tokens":1000,"cache_creation_5m_input_tokens":1000,"cache_creation_1h_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0}}}
+JSONL
+# main   : 4000*1.25 + 6000*2.00 = 5000 + 12000 = 17000
+# subagt : 1000*1.25                             =  1250
+# TOTAL  = 18250 | raw = 11000 (split keys are a BREAKDOWN of cache_creation,
+#                              never summed into raw — that would double-count)
+bash "$REPORT" --cwd="$ROOT3" --quiet >/dev/null 2>&1
+S3="$ROOT3/.mega-sdd/.token-cost-state.json"
+if [ -f "$S3" ]; then
+  CW3="$(_field "$S3" "['cost_weighted_total']")"
+  RAW3="$(_field "$S3" "['raw_total']")"
+  PCT3="$(_field "$S3" "['cache_creation_ttl']['pct_measured']")"
+  M5="$(_field "$S3" "['cache_creation_ttl']['measured_5m']")"
+  M1="$(_field "$S3" "['cache_creation_ttl']['measured_1h']")"
+  [ "$CW3" = "18250" ] && pass "TTL-exact cost = 18250 (4000@1.25 + 6000@2.00 + 1000@1.25)" \
+                       || fail "TTL-exact cost = $CW3 (want 18250)"
+  [ "$RAW3" = "11000" ] && pass "split keys excluded from raw_total (no double-count)" \
+                        || fail "raw_total = $RAW3 (want 11000 — split keys leaked into raw)"
+  [ "$PCT3" = "100.0" ] && pass "pct_measured = 100 when the split is present" || fail "pct_measured = $PCT3 (want 100.0)"
+  [ "$M5" = "5000" ] && pass "measured_5m = 5000 across both lanes" || fail "measured_5m = $M5 (want 5000)"
+  [ "$M1" = "6000" ] && pass "measured_1h = 6000" || fail "measured_1h = $M1 (want 6000)"
+  OP="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((m['cost_weighted'] for m in d['by_model'] if m['model']=='claude-opus-5'),'MISSING'))" "$S3")"
+  SN="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((m['cost_weighted'] for m in d['by_model'] if m['model']=='claude-sonnet-5'),'MISSING'))" "$S3")"
+  [ "$OP" = "17000" ] && pass "by_model attributes 17000 to claude-opus-5" || fail "opus cost = $OP (want 17000)"
+  [ "$SN" = "1250" ]  && pass "by_model attributes 1250 to claude-sonnet-5" || fail "sonnet cost = $SN (want 1250)"
+fi
+REP3="$ROOT3/.mega-sdd/TOKEN-COST-REPORT.md"
+grep -q "100% measured" "$REP3" 2>/dev/null && pass "report states TTL was 100% measured" \
+  || fail "report does not state the TTL was measured"
+grep -q "claude-opus-5" "$REP3" 2>/dev/null && pass "report renders the By model table" || fail "report missing By model table"
+rm -rf "$ROOT3"
+
+# ── Case 4: partial split → residual falls back to the lane, and is LABELLED ──
+# Guards the silent-drop failure mode: a split that does not account for the whole
+# cache_creation total must charge the remainder, not discard or over-credit it.
+ROOT4="$(mktemp -d)"; mkdir -p "$ROOT4/.mega-sdd/memory"
+cat > "$ROOT4/.mega-sdd/memory/telemetry.jsonl" <<'JSONL'
+{"event_type":"turn_end_marker","skill":"orchestrate-flow","hook_source":"Stop","payload":{"usage":{"input_tokens":0,"cache_creation_input_tokens":1000,"cache_creation_5m_input_tokens":200,"cache_creation_1h_input_tokens":300,"cache_read_input_tokens":0,"output_tokens":0}}}
+JSONL
+# 200*1.25 + 300*2.00 + residual 500*2.00 (main lane) = 250 + 600 + 1000 = 1850
+bash "$REPORT" --cwd="$ROOT4" --quiet >/dev/null 2>&1
+S4="$ROOT4/.mega-sdd/.token-cost-state.json"
+if [ -f "$S4" ]; then
+  CW4="$(_field "$S4" "['cost_weighted_total']")"
+  AS4="$(_field "$S4" "['cache_creation_ttl']['assumed']")"
+  PCT4="$(_field "$S4" "['cache_creation_ttl']['pct_measured']")"
+  [ "$CW4" = "1850" ] && pass "residual charged at the lane rate (cost = 1850)" || fail "cost = $CW4 (want 1850)"
+  [ "$AS4" = "500" ]  && pass "residual 500 recorded as assumed" || fail "assumed = $AS4 (want 500)"
+  [ "$PCT4" = "50.0" ] && pass "pct_measured = 50 on a partial split" || fail "pct_measured = $PCT4 (want 50.0)"
+fi
+grep -q "lane-assumed" "$ROOT4/.mega-sdd/TOKEN-COST-REPORT.md" 2>/dev/null \
+  && pass "report flags the mixed measured/assumed state" || fail "report does not flag the mixed state"
+rm -rf "$ROOT4"
 
 echo
 if [ "$fails" -eq 0 ]; then echo "ALL PASS (test-token-cost-report)"; exit 0
