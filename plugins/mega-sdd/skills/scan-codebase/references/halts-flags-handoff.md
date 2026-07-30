@@ -2,12 +2,16 @@
 
 ## Contents
 - Anti-hallucination rails
-- Halt conditions (dep_missing; 0-interface; >100k files)
+- Halt conditions (dep_missing; spawn budget; >100k files; monorepo ambiguity; the 0-interface NON-halt)
+- scan_spawn_budget_exceeded (STOP)
+- scan_repo_too_large (STOP)
+- scan_primary_app_ambiguous (STOP)
 - deep_scan_subagent_failed (SOFT)
 - deep_scan_cache_corrupt (SOFT)
 - deep_scan_subagent_all_failed (ALWAYS STOP)
+- Deterministic behavior (non-interactive; `--auto` selects the chain lane)
 - Flags catalog
-- Hand-off announcement + handoff YAML emission
+- Hand-off announcement + handoff YAML emission (UNCONDITIONAL)
 - Memory layer (reads / writes / anti-halu rails)
 
 Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memory integration. The surface scan procedure and the deep-scan stage are separate references the SKILL.md router links to.
@@ -20,14 +24,76 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memor
 - Deep-scan no-fabrication: each subagent MUST emit `lib: not_detected` when no fingerprint matches, NEVER guess. The consolidator self-validates each slice against starterkit-context-schema.md before write and drops violators (a rules-tier LLM check, not a hook).
 - Deep-scan citation rail: every starterkit-context.yaml field MUST be backed by `_source: [<file>, ...]` companion field (libs slice: `_source` names the producing manifest). Slices without `_source` are dropped by the consolidator self-validation.
 - Deep-scan read-only: every extractor prompt template carries the READ-ONLY rail (no Edit/Write/mutating Bash). This is a **prompt-level rule (rules tier), not a dispatch-level tool restriction** — the extractors are prompt-template dispatches, not plugin agents with a `tools:` allowlist. A slice whose output evidences a rail violation is dropped at consolidation.
-- Secret-scan gate: assembled `codebase-map.md` / `starterkit-context.yaml` / `reuse-index.yaml` content is scrubbed BEFORE write by running `scripts/secret-scan.sh --redact` (deterministic; matched values become `[REDACTED-SECRET]`; a private-key match redacts the WHOLE block, header through END marker) + one chat warning citing the source `file:line` (per `references/scan-procedure.md` Step 10a; the deep-scan write sites are Step 10.5.3 steps 3+6). The gate redacts scan outputs only — it never edits repo source.
+- Secret-scan gate: assembled `codebase-map.md` / `starterkit-context.yaml` / `reuse-index.yaml` content is scrubbed BEFORE write by running `scripts/secret-scan.sh --redact` (deterministic; matched values become `[REDACTED-SECRET]`; a private-key match redacts the WHOLE block, header through END marker). **Findings from EVERY scrub site are routed to disk** — append the affected source `file:line` + pattern class (never the matched value) to `<project>/.mega-sdd/codebase/SECRET-FINDINGS.md`, then also emit one chat line. Both sites implement it: the surface write in `references/scan-procedure.md` Step 10a (which owns the file's table shape), and the two deep-scan writes in `references/deep-scan-dispatch.md` Step 10.5.3 steps 3+6 (`starterkit-context.yaml` + `reuse-index.yaml`), whose step-6 FINDINGS ROUTING clause points back at that same shape. Disk is the durable channel because this skill is non-interactive: the artifact keeps only `[REDACTED-SECRET]`, the handoff schema carries `blockers[]` and no warnings key, and a chat-only warning would leave the live credential's location recoverable nowhere. The gate redacts scan outputs only — it never edits repo source.
 
 ## Halt conditions
 
-- **Repo > 100k files:** confirm with user (`--force-large` flag required to proceed).
-- **Estimated extraction time > 60 s** (Step 5 spawn-cost gate): confirm with user before extracting, offering `--engine=regex` / continue / `--include=<glob>`. This fires FAR earlier than the 100k halt on Windows — at ~220 ms/spawn a 100k-file repo is 6.1 hours, so the file-count halt is a POSIX-era guard that never gets reached there. See `references/scan-procedure.md §Spawn-cost gate`.
-- **Detection produces 0 public interfaces:** warn user — likely scan misconfiguration; offer to re-run with different `--include`.
+scan-codebase is **non-interactive on every path**: every condition below resolves to a named blocker carrying its exact re-run command, emitted with `status: halted`, and the run STOPS. None of them is a question, and none of them waits. The ONE lane-dependent condition is the Step 5 spawn budget — see its bullet.
+
+- **Repo > 100k files AND no `--force-large`:** emit `scan_repo_too_large` (re-run with `--force-large` to accept the cost, or `--include=<glob>` to narrow). Proceed silently when `--force-large` was passed.
+- **Estimated extraction time > 60 s** (Step 5 spawn-cost gate) — **LANE-DEPENDENT, the only such condition**. Lane 1, an explicit `--engine=` or `--include=`, already IS the caller's precision-vs-latency decision → proceed, log the estimate, no blocker. Lane 2, **undecided STANDALONE** (a direct user invocation carrying none of lane 3's signals): emit `scan_spawn_budget_exceeded` before extracting, carrying `N_total` (= `N_hash` + `N_extract`), the estimate, the OS, and the three re-run commands (`--engine=regex` / `--engine=tree-sitter` / `--include=<glob>`). Lane 3, **UNATTENDED** — `--auto`, a forked body, or an orchestrator-dispatched phase (how the Mode-D `--changed-only` sync hop arrives); `--auto` alone is NOT the discriminator, since no routing row renders it on the scan hop: **neither halt nor stall** — downgrade to `--engine=regex` and record it in the map frontmatter (`precision_tier: regex` + `precision_downgrade_reason`), one chat line, and the handoff `next_action.rationale` with the AST-recovery command; `status: completed`, no `blockers[]` entry. A blocker on that lane would halt phase 1 of nearly every brownfield chain, and no routing row pre-resolves `--engine`/`--include`. This gate fires FAR earlier than the 100k halt on Windows — at ~220 ms/spawn a 100k-file repo is 6.1 hours (and the gate trips at ~272 files), so the file-count halt is a POSIX-era guard that never gets reached there. Lane rationale + the record shape: `references/scan-procedure.md §Spawn-cost gate`.
+- **Monorepo primary-app unresolvable** (≥2 app-root manifests, no explicit `--include`, no root manifest that owns them — Step 2 precedence exhausted): emit `scan_primary_app_ambiguous` listing the candidate app roots. See `references/scan-procedure.md §Step 2`.
 - **`--engine=tree-sitter` set AND tree-sitter not on PATH:** halt `dep_missing` with install commands (install guidance is in the tree-sitter integration reference).
+- **Detection produces 0 public interfaces — NOT a halt, by decision.** A repo can legitimately expose nothing, and the alternative reading (a misconfigured `--include`) is fixed by re-running, not by waiting. Record the suggested re-run command (`--include=<glob>`) in the scan summary AND in the handoff `next_action.rationale`, emit `status: completed`, and finish. Do not add it to the halted trigger list below.
+
+### `scan_spawn_budget_exceeded` — STOP (lane 2 only: undecided STANDALONE)
+
+**Emitted ONLY on the undecided STANDALONE lane** — a direct user invocation, with no explicit
+`--engine=`/`--include=` and none of the unattended signals (`--auto`, a forked
+body, an orchestrator-dispatched phase). On ANY unattended invocation this condition
+does NOT produce a blocker at all: the chain lane downgrades to regex and records it (`precision_tier: regex` +
+`precision_downgrade_reason` in the map frontmatter, one chat line, the AST-recovery command
+in `next_action.rationale`) and finishes with `status: completed`. Both branches are the same
+policy — the caller keeps the precision decision — expressed for the lane that has a caller to
+hand it back to. → `references/scan-procedure.md §Spawn-cost gate`.
+
+```yaml
+type: scan_spawn_budget_exceeded
+source_skill: scan-codebase
+details:
+  engine: tree-sitter
+  os: <"windows-bash" | "posix">
+  n_hash: <int>                      # invalidation-gate spawns (0 without --shallow-scan)
+  n_extract: <int>                   # files that would actually be extracted
+  n_total: <int>                     # n_hash + n_extract — the TOTAL bill
+  per_spawn_sec: <0.22 on windows-bash, else 0.02>
+  estimate_sec: <int>
+  budget_sec: 60
+next_action: "Re-run with ONE of — (a) `--engine=regex`: satu panggilan per bahasa, selesai dalam detik, presisi turun ke tier `regex` dan peta mencatatnya di `precision_tier`; (b) `--engine=tree-sitter`: lanjut dengan presisi AST penuh dan bayar ~<estimate_sec>s; (c) `--include=<glob>`: persempit himpunan file sehingga n_extract turun. Presisi adalah properti yang DILAPORKAN peta, jadi pilihannya milik pengguna — skill tidak menurunkan engine diam-diam."
+```
+
+Recovery: caller re-runs with one of the three flags. An explicit `--engine=`/`--include=` suppresses this gate, so the remedy always terminates. The `--auto` lane's recovery command (`--engine=tree-sitter` / `--include=<glob>`) terminates for the same reason.
+
+### `scan_repo_too_large` — STOP
+
+```yaml
+type: scan_repo_too_large
+source_skill: scan-codebase
+details:
+  files_enumerated: <int>
+  threshold: 100000
+next_action: "Re-run with `--force-large` untuk tetap memindai seluruh repo (biaya waktu penuh diterima), atau `--include=<glob>` untuk mempersempit ke app/paket yang relevan. Scan tidak menebak dan tidak menunggu jawaban."
+```
+
+Recovery: caller re-runs with `--force-large` or `--include=<glob>`.
+
+### `scan_primary_app_ambiguous` — STOP
+
+```yaml
+type: scan_primary_app_ambiguous
+source_skill: scan-codebase
+details:
+  candidate_app_roots:
+    - path: "apps/web"
+      manifest: "apps/web/package.json"
+    - path: "apps/api"
+      manifest: "apps/api/composer.json"
+  root_manifest: <"none" | "workspace-pointer-only: <file>">
+  precedence_exhausted: "no --include, no owning root manifest, >1 app-root manifest"
+next_action: "Re-run with `--include=<glob>` menunjuk app yang jadi target (mis. `--include='apps/api/**'`). Peta yang menggabungkan beberapa app akan salah saat di-bind, jadi pilihan app adalah keputusan pemanggil — scan tidak memilih sendiri dan tidak bertanya."
+```
+
+Recovery: caller re-runs with `--include=<glob>`.
 
 ### `deep_scan_subagent_failed` — SOFT
 
@@ -70,6 +136,23 @@ next_action: "Re-run /mega-sdd:scan-codebase later (likely API outage; user retr
 
 Recovery: user re-runs scan-codebase later. Chain halts.
 
+## Deterministic behavior (non-interactive; `--auto` selects the chain lane)
+
+scan-codebase has **no interactive mode**, so this table describes the *only* behavior. `--auto` is **not** a no-op and **not** merely "implied": it names the **CHAIN LANE** — an `orchestrate-flow` / `/mega-sdd` / `sync` hop, and every forked run — where nobody is on the other end. Exactly ONE row is lane-dependent (Step 5's spawn budget); every other row behaves identically with or without the flag. Each row is a former human-stop site converted to a deterministic outcome. The safety property those stops protected (a costly / wrong-scope / lossy scan never proceeds on the skill's own unrecorded authority) survives in one of two shapes: a **named blocker that stops the run and hands the decision back with the exact command to make it**, or — where stopping is itself the unsafe act — a **RECORDED downgrade** that states in the artifact exactly what was traded and how to get it back.
+
+| Site | Deterministic behavior (never prompts, never waits) |
+|---|---|
+| Step 0 (engine) | Probe both binary names + grammar smoke test; none → `engine: regex` with a chat note. `--engine=tree-sitter` and absent → `dep_missing` |
+| Step 2 (monorepo primary app) | Precedence: explicit `--include` > owning root manifest > single app-root manifest; residual ambiguity → `scan_primary_app_ambiguous` |
+| Step 4 (repo > 100k files) | `--force-large` passed → proceed; else → `scan_repo_too_large` |
+| Step 5 (spawn-cost gate, `estimate` > 60 s) — **the one lane-dependent row** | **Lane 1** explicit `--engine=`/`--include=` → proceed, log the estimate. **Lane 2** undecided STANDALONE (a direct user invocation) → `scan_spawn_budget_exceeded`, STOP. **Lane 3** UNATTENDED (`--auto` / forked / orchestrator-dispatched — ties go here) → downgrade to `--engine=regex` and RECORD it (map `precision_tier: regex` + `precision_downgrade_reason`, one chat line, AST-recovery command in `next_action.rationale`), `status: completed`. **Never** an UNRECORDED downgrade — `precision_tier` is a property the map reports, so lane 2 keeps the choice with the caller and lane 3 keeps the map honest about the tier it delivered |
+| Step 5 (0 public interfaces) | NOT a halt — record the suggested `--include=<glob>` re-run in the summary + handoff, `status: completed` |
+| Step 10a / 10.5.3 (secret findings) | Redact the artifact, append the `file:line` rows to `.mega-sdd/codebase/SECRET-FINDINGS.md`, list it in `artifacts[]`, emit one chat line; never blocks, never waits |
+| Step 10.5 (deep-scan slices) | `deep_scan_subagent_failed` / `deep_scan_cache_corrupt` auto-recover (partial output / cache invalidate); all five fail → `deep_scan_subagent_all_failed` |
+| Hand-off | Emitted on **every** invocation, `--auto` or not (see §Handoff YAML emission) |
+
+**Never:** calls `AskUserQuestion`; waits for a reply; downgrades the engine WITHOUT stamping `precision_tier` + `precision_downgrade_reason` in the map, saying so in chat, and carrying the recovery command in the handoff; guesses a primary app; writes a handoff only under `--auto`; edits repo source.
+
 ## Flags catalog
 
 - `--depth=N`: tree depth (default 8)
@@ -80,8 +163,8 @@ Recovery: user re-runs scan-codebase later. Chain halts.
   - Default: `<project-root>/.mega-sdd/codebase/codebase-map.md` per `plugins/mega-sdd/references/paths.md`
   - Legacy default: `<project-root>/codebase-map.md` (preserved when `.mega-sdd/` dir absent OR `layout: legacy` in config)
   - User explicit `--out=<path>` always respected
-- `--auto`: skip confirmation prompts
-- `--force-large`: proceed on >100k file repos
+- `--auto`: **selects the CHAIN LANE — it is not semantically empty.** There are no prompts left to skip (§Deterministic behavior above is the only behavior), but the flag still carries meaning: it declares that nobody is on the other end (an `orchestrate-flow` / `/mega-sdd` / `sync` hop, or a forked body), which is what lets the Step 5 spawn-cost gate take the RECORDED regex downgrade instead of halting phase 1 of the chain. Without it the run is STANDALONE and that gate emits `scan_spawn_budget_exceeded` instead. Every other outcome is identical either way, and its absence never suppresses the handoff
+- `--force-large`: accept the cost on >100k file repos (without it, that condition emits `scan_repo_too_large`)
 - `--engine=tree-sitter|regex`: force engine; default auto-detect via `command -v tree-sitter`
 - `--shallow-scan`: two coupled fast-path semantics — (a) skip the Step 10.5 deep-scan stage (emit only the surface codebase-map.md), and (b) enable the Step 5 per-file invalidation gate (reuse prior §2 rows whose `Last_Scanned_Sha256` matches the file's current hash; only changed files re-extract — per `references/scan-procedure.md` §Step 5)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
@@ -95,7 +178,7 @@ On completion, announce: "Codebase map written to `<path>`." followed by the CWD
 
 ## Handoff YAML emission
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record at the end of skill output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+**UNCONDITIONAL — emitted at the end of skill output on EVERY invocation**, chain (`--auto`, typically `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is deliberately NOT `--auto`-gated: a direct `/mega-sdd:scan-codebase` run never injects `--auto`, and this skill is non-interactive, so the handoff is the only channel by which the caller learns `next_action`, `artifacts[]` and `blockers[]`. Gating it on `--auto` would make a standalone run emit nothing at all. Template below is the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:
@@ -108,6 +191,7 @@ handoff:
     - <absolute path to .mega-sdd/codebase/reuse-index.yaml>          # only when deep-scan ran (reuse slice)
     - <absolute path to .mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json>  # only when Step 10.6 wrote it
     - <absolute path to <vault>/.sync-changed-paths.txt>  # only on --changed-only incremental success with a vault present (sync-lane scope channel)
+    - <absolute path to .mega-sdd/codebase/SECRET-FINDINGS.md>  # only when the Step 10a / 10.5.3 scrub found credentials this run (durable rotation worklist — the file:line the chat warning alone would lose)
   starterkit_context:                                                  # block only when deep-scan ran
     reused: false                                                       # true if cache hit
     framework: laravel
@@ -125,6 +209,12 @@ handoff:
     suggested_args:
       - "--scan=<absolute path to .mega-sdd/codebase/codebase-map.md>"
       - "--auto"
+    # APPEND to `rationale` when the Step 5 `--auto` lane downgraded the engine (map carries
+    # precision_tier: regex + precision_downgrade_reason): the estimate / N_total / OS / budget,
+    # the AST-recovery command (`/mega-sdd:scan-codebase --engine=tree-sitter`, or
+    # `--include=<glob>` to narrow), and the consequence — at regex tier bind-codebase Step 2.5
+    # implementation-state falls back to BINARY. This is the handoff third of that lane's record
+    # (the other two: the map frontmatter and one chat line). Status stays `completed`.
     rationale: "Scan complete; starterkit-first ordering — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation (bind-codebase when a vault already exists; detect-drift on the sync lane)."
   blockers: []                                          # populated when status: halted
   metrics:
@@ -140,7 +230,9 @@ handoff:
 
 > The `starterkit_context:` block + the `starterkit-context.yaml` artifact entry are CONDITIONAL — emitted only when deep-scan ran successfully (framework detected at MEDIUM+ confidence). Skip both when deep-scan was skipped or failed entirely.
 
-Status `halted` on: `dep_missing` | `deep_scan_subagent_all_failed` | `memory_in_use`. Required ONLY under `--auto`.
+Status `halted` on: `dep_missing` | `scan_spawn_budget_exceeded` (STANDALONE lane only) | `scan_repo_too_large` | `scan_primary_app_ambiguous` | `deep_scan_subagent_all_failed` | `memory_in_use` — and `blockers[]` carries that blocker's YAML verbatim. A named blocker emitted with `status: completed` would be read downstream as a clean scan and the chain would continue on a map that was never produced, so the halting is the safety property the former human-stop sites protected. **`0 public interfaces` is deliberately NOT in this list** — it completes with the suggested `--include=<glob>` re-run recorded in the summary and in `next_action.rationale` (§Halt conditions). **Neither is the `--auto` lane's precision downgrade** — `scan_spawn_budget_exceeded` reaches `blockers[]` ONLY from the undecided standalone lane; under `--auto` the same condition produces a completed scan whose map carries `precision_tier: regex` + `precision_downgrade_reason` and whose `next_action.rationale` carries the AST-recovery command. A produced-but-lower-precision map is a real deliverable the chain can use; there is nothing for a downstream consumer to guess, because the tier is stamped in the artifact it reads.
+
+The handoff is **required on every invocation**, not only under `--auto`.
 
 ## Memory layer
 

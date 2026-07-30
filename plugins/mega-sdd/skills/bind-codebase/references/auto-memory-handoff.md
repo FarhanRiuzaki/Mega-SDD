@@ -2,10 +2,11 @@
 
 ## Contents
 - Extraction-scorecard preflight (advisory)
+- Halt YAML — `bind_inputs_missing`
 - Codebase-map shared-snapshot reuse (Step 1)
 - Scope propagation (Step 1)
 - vault.json audit append (Step 6)
-- Handoff emission (--auto)
+- Handoff emission (UNCONDITIONAL)
 - Memory layer
 
 ## Extraction-scorecard preflight (advisory)
@@ -32,6 +33,41 @@ Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):
 
 > A blocking enforcement gate must be a deterministic validator wired to a hook — prose that says "HALT" enforces nothing. Do not add prose claiming to HALT here without a backing validator.
 
+## Halt YAML — `bind_inputs_missing`
+
+Emitted when a required bind input cannot be resolved deterministically, is **ambiguous**, or resolves anywhere that is **not a DIRECT CHILD** of the `<project-root>/.mega-sdd/vaults/` glob root — outside it, or nested one level too deep inside it (SKILL.md §Inputs Step 0 + §Halt conditions). bind never prompts on any of these branches, so this blocker is the *only* outcome — never `vaults[0]`, never a guess. After emit the bind stops; no `binding.md`, no `binding.json`, no `bound/`. The handoff YAML is STILL emitted before stopping — on EVERY invocation, chain or standalone (§Handoff emission) — with `status: halted`, this blocker in `blockers:`, and empty `artifacts:`. A Step-0 stop must never look like a completion to the chain, and on a standalone run the handoff is the only place the re-invocation command survives.
+
+Two discriminators, each a closed set — `missing` says WHICH input, `reason` says WHY:
+
+- `details.missing`: `vault` | `codebase_map` | `vault_index`
+- `details.reason`: `not_found` | `vault_ambiguous` | `vault_outside_glob_root` | `malformed`
+
+`details.candidates` is REQUIRED when `reason: vault_ambiguous` (every candidate path, so the caller can re-invoke with an explicit `--vault=`) and omitted otherwise.
+
+```yaml
+blocker:
+  type: bind_inputs_missing
+  emitted_at: <ISO8601>
+  emitted_by: bind-codebase
+  details:
+    missing: vault                     # vault | codebase_map | vault_index
+    reason: vault_ambiguous            # not_found | vault_ambiguous | vault_outside_glob_root | malformed
+    resolved_from: "<--vault arg | derive-state probes.vaults[] | CWD probe>"
+    candidates:                        # REQUIRED for vault_ambiguous; omit otherwise
+      - <absolute path to candidate vault 1>
+      - <absolute path to candidate vault 2>
+    context: "<e.g. 'Step 0: 2 vaults under .mega-sdd/vaults/ and no --vault/positional arg'>"
+  next_action: "Re-invoke with an explicit vault: /mega-sdd:bind-codebase <vault> [--auto]"
+  # next_action per reason:
+  #   vault_ambiguous          → re-invoke with an explicit --vault=<path>/positional (list candidates above)
+  #   not_found                → run /mega-sdd:generate-intent (no vault yet), or pass --vault=<path>
+  #   vault_outside_glob_root  → run /mega-sdd:migrate-paths (legacy layout → canonical .mega-sdd/vaults/)
+  #   codebase_map (missing)   → run /mega-sdd:scan-codebase first
+  #   vault_index (malformed)  → repair <vault>/00-index.md / vault.json, then re-bind
+```
+
+The `vault_outside_glob_root` branch is a **moat-visibility** rail, not a tidiness rule: `validate-handoff-binding-units.sh` scans four non-recursive globs rooted at `<cwd>/.mega-sdd/vaults/` — `vaults/binding.md`, `vaults/binding-*.md`, `vaults/*/binding.md`, `vaults/*/binding-*.md` — whose deepest reach is that single `*` level. A `binding.md` outside the root, OR under a vault nested deeper than one level inside it, is invisible to the validator and the gate reports PASS with an active CONFLICT. The blocker's name is historical; its condition is "not a direct child", which is strictly tighter than "outside". Absence of a vault is separately hook-blocked upstream (`validate-preflight.sh` FATAL `binding_input_vault_missing`); this blocker exists for the ambiguity and location cases that hook does not see.
+
 ## Codebase-map shared-snapshot reuse (Step 1)
 
 Check `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` (per `plugins/mega-sdd/references/shared-snapshot-schema.md`). Parse and compare its `codebase_map_sha256` to the just-read codebase-map's actual sha256, THEN check map currency against the repo (S4 — the sha256 alone proves only that the map FILE is unchanged, not that the CODE hasn't moved):
@@ -51,9 +87,19 @@ When `vault.json` has a `scope` field (multi-scope vault), persist `scope_metada
 
 The `bind` event is appended by **running** `derive-vault-json.sh --vault <vault> --event '{"event":"bind","at":"<iso>",…}'` — the script acquires and releases the `<vault>/vault.json.lock` itself (per `generate-intent/references/vault-contract.md §Concurrency contract`) and re-derives the structural mirror from the vault markdown in the same pass. Exit 4 (lock held after backoff) → surface the `memory_in_use` halt. Never append to vault.json by hand — concurrent-tab hand-writes are exactly the corruption the script-held lock closes.
 
-## Handoff emission (--auto)
+## Handoff emission (UNCONDITIONAL)
 
-When invoked with `--auto` (typically `orchestrate-flow --deep` / `/mega-sdd`), emit a handoff YAML at the end of output per the local template below — the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+**Emitted at the end of output on EVERY invocation** — chain (`--auto`, typically
+`orchestrate-flow --deep` / `/mega-sdd`) *and* standalone. It is deliberately NOT `--auto`-gated:
+a direct `/mega-sdd:bind-codebase <vault>` run never injects `--auto` (`commands/bind-codebase.md`
+does not add it), and this skill is non-interactive by contract (`SKILL.md` §Anti-hallucination
+rails) — so the handoff is the ONLY channel by which the caller learns `next_action`,
+`artifacts[]` and `blockers[]`. Gating it on `--auto` would make a standalone run emit nothing at
+all, and that is exactly the defect the scan side already closed (`scan-codebase/references/halts-flags-handoff.md`
+§Handoff YAML emission). It matters most on the two branches a human most needs routed: a
+`bind_conflict` stop whose only exit is `resolve-oq`, and a Step-0 `bind_inputs_missing` stop
+whose only exit is a re-invocation with an explicit vault. Template below is the OPERATIVE spec
+(`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:
@@ -106,7 +152,9 @@ handoff:
     clauses_referenced: []
 ```
 
-The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid`. Tech-OQ recommendations do NOT change the status: they are surfaced in binding.md ("## Tech-OQ Recommendations (review required)") for post-binding review, the OQ stays `open` in vault.json (carried into generate-units as an ungrounded OQ, never a baked-in decision), and bind emits `status: completed` so the chain proceeds to generate-units — recommendations are advisory and never block (see `bind-codebase/references/oq-resolution.md` §2.7). Required ONLY under `--auto`.
+The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit only when applicable. Status `halted` on `bind_conflict` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `bind_inputs_missing` (a Step-0 stop is a halt, not a completion — see the `bind_inputs_missing` section above; its handoff carries `artifacts: []`, `blockers:` with the blocker, and `next_action.suggested_skill` per the blocker's `next_action`). Tech-OQ recommendations do NOT change the status: they are surfaced in binding.md ("## Tech-OQ Recommendations (review required)") for post-binding review, the OQ stays `open` in vault.json (carried into generate-units as an ungrounded OQ, never a baked-in decision), and bind emits `status: completed` so the chain proceeds to generate-units — recommendations are advisory and never block (see `bind-codebase/references/oq-resolution.md` §2.7).
+
+The handoff is **required on every invocation**, not only under `--auto` — see the section intro for why (a standalone run injects no `--auto`, and a non-interactive skill has no other channel to its caller).
 
 ## Memory layer
 
@@ -114,6 +162,6 @@ When memory is enabled (default; opt-out `--memory-off`), participate per `mega-
 
 **Writes:** after binding completes → append a run summary (claims/confirmed/conflict/oq counts + Implementation State Map distribution + Tech-OQ resolution counts) to `<vault>/.memory/bind-history.md`; new convention detected → append (additive) to `<project>/.mega-sdd/memory/conventions.md`. Each append goes **directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<vault|project> --cwd=<project-root>` at emission time** (scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Write failure → log and continue.
 
-**Reads:** past CONFLICT resolutions matching the current conflict pattern (`<project>/.mega-sdd/memory/decisions.md`) → SUGGEST the same resolution via the blocker YAML `next_action.suggested_resolution` (user still picks via resolve-oq); cross-project CONFLICT patterns (`~/.mega-sdd/memory/patterns.md`) → suggest when project memory has no match AND ≥3 cross-project matches exist; past Hard Rule violation patterns (`<vault>/.memory/bolt-outcomes.json`) → when emitting Suggested Unit Hard Rules, DOWNGRADE rules violated+reverted ≥3 times to Anti-patterns. Under `--auto` the handoff passes POINTER slices (`{file, rows, digest}`) — consult the rows already in session context from the chain-start read; when they are NOT in context (fresh-session `--resume` re-entry), **do a targeted Read of the pointed files — both ≥3 thresholds need the actual match/violation counts, never the digest alone.**
+**Reads:** past CONFLICT resolutions matching the current conflict pattern (`<project>/.mega-sdd/memory/decisions.md`) → SUGGEST the same resolution via the blocker YAML `next_action.suggested_resolution` (user still picks via resolve-oq); cross-project CONFLICT patterns (`~/.mega-sdd/memory/patterns.md`) → suggest when project memory has no match AND ≥3 cross-project matches exist; past Hard Rule violation patterns (`<vault>/.memory/bolt-outcomes.json`) → when emitting Suggested Unit Hard Rules, DOWNGRADE rules violated+reverted ≥3 times to Anti-patterns. Under `--auto` the handoff passes POINTER slices (`{file, rows, digest}`) — consult the rows already in session context from the chain-start read; when they are NOT in context (fresh-session `--resume` re-entry, **or any forked skill — no conversation history, so the pointed rows are never in context and the targeted Read is unconditional**), **do a targeted Read of the pointed files — both ≥3 thresholds need the actual match/violation counts, never the digest alone.** The three pointed paths are canonical and named in the same sentence, so a fork can reach them without the handoff; and per the rails below memory only ever *suggests* — a missing read degrades suggestion quality, never a CONFLICT verdict.
 
 **Anti-halu rails:** memory suggestions surface in `binding.md` `## Past Resolution Suggestions` AND the halt blocker YAML; every suggestion cites its source entry; the CONFLICT verdict is NEVER bypassed by memory (memory only suggests a resolution direction); `--memory-off` disables reads + writes; suggestions never override current codebase-map evidence.

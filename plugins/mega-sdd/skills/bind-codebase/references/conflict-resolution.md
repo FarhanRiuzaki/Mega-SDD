@@ -43,7 +43,7 @@ KEEP_VAULT / DEFER (vault + code unchanged) → NO re-bind (it would re-raise th
 - NOTE: a re-bind BEFORE the code change re-raises this CONFLICT (bind re-derives from the unchanged contradiction; prior calls surface from decisions.md as suggestions only) — proceed to generate-units instead; re-bind after the code lands
 
 ### b. KEEP_CODE — code is correct, vault must update
-- Action: bind-codebase prompts user to confirm; vault is patched in place; resolve-oq logs the patch in vault.json changelog
+- Action: **`resolve-oq`'s binding-mode walker owns BOTH the confirm and the patch** — it prompts per conflict, patches the vault in place once the user picks KEEP_CODE, and logs the patch in the vault.json changelog (`resolve-oq/references/binding-mode.md`; also stated at `bind-codebase/references/binding-contract.md §Resolution paths`). **`bind-codebase` itself never prompts and never patches the vault** — it only re-derives verdicts from vault-vs-code, so a KEEP_CODE patch shows up as CONFIRMED on the next re-bind. (Prior wording attributed the prompt to bind-codebase; that was stale. The safety property is unchanged and now sits with the surface that actually owns it: the §Anti-pattern rule below still forbids patching the vault without a user choice, and bind — which cannot ask — is simply not a surface that patches.)
 - Effect: vault now matches code; CONFIRMED on next bind
 - Use when: vault claim was made without code context; code reality is the truth
 

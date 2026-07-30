@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.15.0] - 2026-07-31
+
+feat(fork-readiness): `scan-codebase` and `bind-codebase` are now non-interactive on every path — and the spawn-cost gate stopped being a chain-killer on the way.
+
+Groups B and C of the fork-safety audit's edit list ([`research/2026-07-30-fork-safety-audit-scan-bind.md`](research/2026-07-30-fork-safety-audit-scan-bind.md)). **No `context: fork` frontmatter was flipped** — that step stays gated on the two interactive runs the spec specifies. Everything that makes the flip *safe* ships here. Skill versions: `scan-codebase` 2.21.0, `bind-codebase` 2.13.0.
+
+**The spawn-cost gate needed a third lane, and finding that out took two tries.** Converting the `>60s` `AskUserQuestion` into a hard blocker made the skill fork-safe and simultaneously introduced a live regression: the old `--auto` *proceeded*, the new behaviour was a hard STOP at phase 1 of nearly every brownfield chain, with **zero** orchestrate-flow routing rows able to pre-resolve it. On Windows (~0.22 s/spawn) that fires at ~272 files. Restoring "proceed" was not the answer either — that re-opens the unattended multi-hour stall the gate exists to close (100k files ≈ 6.1 h). The gate now resolves by lane, first match wins:
+
+| lane | condition | outcome |
+|---|---|---|
+| 1 | explicit `--engine=` / `--include=` | proceed, log the estimate — the caller already decided |
+| 2 | undecided **standalone** | `scan_spawn_budget_exceeded`, STOP, carrying the exact re-run commands |
+| 3 | **unattended** (orchestrator-dispatched or forked) | downgrade to regex, **recorded in three places** |
+
+Lane 3 stamps `precision_tier: regex` plus a new `precision_downgrade_reason` in the map frontmatter, emits one chat line, and carries the AST-recovery command in the handoff `next_action.rationale`. This follows the house rule that `--auto` takes the SAFEST option (precedent: `generate-units/references/pagerank-targeting.md` §`--auto` policy) — unattended, "safest" is neither a six-hour stall nor a phase-1 halt. It does **not** breach the no-silent-downgrade rail: as that same precedent puts it, *"'silently' is about the record, not the action"* — and the record here is stronger than the prompt it replaces.
+
+**A flag-literal lane 3 would have re-created the regression inside its own fix.** `--auto` looks like the obvious condition, but **no routing row renders it on the scan hop** — scan is phase 1, so nothing hands it a handoff. Keying lane 3 on the flag would have dropped every chain-dispatched scan straight back into lane 2. The condition is unattended-ness, with an explicit fail-safe tie-break toward lane 3: a stamped regex map is recoverable, a halted chain produced nothing.
+
+**scan-codebase (Group B).** Every human-stop path became a named blocker carrying its re-run command — `scan_spawn_budget_exceeded`, `scan_repo_too_large`, `scan_primary_app_ambiguous` — with YAML shapes reusing the file's shipped form. The monorepo prompt ("ask ONCE which app is the PRIMARY scan target") became deterministic precedence: explicit `--include` > owning root manifest > single app-root manifest, blocker only on residual ambiguity. `0 public interfaces` is explicitly **not** a halt — a repo may legitimately expose nothing — and is recorded as a suggested re-run instead. **Handoff emission is now unconditional**: it was gated on `--auto`, which a direct `/mega-sdd:scan-codebase` invocation never injects, so a forked run would have emitted no `next_action`, no `artifacts[]`, no `blockers[]` at all. And the secret-scan finding now lands on disk (`.mega-sdd/codebase/SECRET-FINDINGS.md`, `file:line` + pattern class, never the matched value) — the map only ever stored `[REDACTED-SECRET]`, so the live credential's location existed **only in chat** and a fork would have swallowed the one thing needed to rotate it.
+
+**bind-codebase (Group C).** A deterministic Step 0 resolves the vault from `--vault=`/positional → `derive-state.sh`'s `derived.vault_path` → a CWD probe, and **ambiguity emits `bind_inputs_missing` with the candidate list — never `vaults[0]`, never a guess, never a prompt.** The resolved path is constrained to a **direct child** of `.mega-sdd/vaults/`, matching the four non-recursive globs the gate actually scans; "under" would have let a nested path resolve somewhere the gate never looks. `conflict-resolution.md`'s *"bind-codebase prompts user to confirm; vault is patched in place"* was stale attribution — resolve-oq's walker owns both — and under fork it had no compliant reading left, since the only way to follow it was to patch without the confirm, which the same file forbids. Reattributed. Bind's handoff is unconditional too, for the same reason as scan's.
+
+**The moat was not touched, by design and by verification.** The audit established that bind's CONFLICT/OQ decision path is already fork-clean and needs zero edits; an adversarial verifier confirmed nothing in this change reaches it. All the work is at the input and output boundaries.
+
+**Tests:** `plugins/mega-sdd/tests/scan/test-scan-codebase-fork.sh` and `plugins/mega-sdd/tests/moat/test-bind-codebase-fork.sh` — both structured to pass today and to *fire* once the frontmatter flips, so the flip cannot land without its rails. The ask-class sweep matches paraphrases, not just the literal `AskUserQuestion` token, with legitimate mentions allow-listed by exact context so it cannot become a rubber stamp. Suite: 179 pass / 0 fail.
+
 ## [5.14.0] - 2026-07-31
 
 fix(sync-lane): the Mode-D fallback handed a non-interactive `bind-codebase` no vault at all — found while auditing whether scan/bind can be forked.

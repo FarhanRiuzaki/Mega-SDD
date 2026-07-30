@@ -75,7 +75,17 @@ Walk up from CWD until `.git` is found — test `-e` not `-d` (in a linked git w
 
 Probe in order (record ALL hits — multi-language projects are normal):
 
-> **Monorepo rail:** when app-root manifests exist in MULTIPLE distinct top-level dirs (e.g. `apps/web/package.json` + `apps/api/composer.json` + root workspace), ask ONCE which app is the PRIMARY scan target (or `--include` it explicitly); a map that conflates several apps' routes/models binds wrongly downstream. Multi-language inside ONE app (php+js) is normal and needs no question.
+> **Monorepo rail (deterministic precedence — NEVER ask).** When app-root manifests exist in MULTIPLE distinct top-level dirs (e.g. `apps/web/package.json` + `apps/api/composer.json` + a root workspace file), resolve the PRIMARY scan target by this precedence, **first match wins**:
+>
+> | # | Rule | Outcome |
+> |---|---|---|
+> | 1 | **Explicit `--include=<glob>`** was passed (one or more) | The include set IS the scan target. The caller already decided; do not second-guess it. |
+> | 2 | **A root manifest that owns the tree** — a manifest at the repo root declaring its own dependencies/scripts (not a bare workspace pointer: `workspaces`/`packages`-only `package.json`, a lone `pnpm-workspace.yaml`, a `go.work`, a Cargo `[workspace]` with no `[package]`) | The repo root is the primary app; the sub-app dirs are scanned as part of it. |
+> | 3 | **Exactly ONE app-root manifest** below the root (every other candidate dir carries none) | That dir is the primary app. |
+>
+> **Residual ambiguity only** — ≥2 app-root manifests, no explicit `--include`, and no root manifest that owns them → emit the **`scan_primary_app_ambiguous`** blocker listing every candidate app root plus the exact re-run command (`--include=<glob>`), and STOP. Never guess, never scan-all-and-hope, never ask: a map that conflates several apps' routes/models binds wrongly downstream, and the choice of which app is in scope is the caller's. Multi-language inside ONE app (php+js) is normal and is **not** ambiguity — record all languages and continue.
+>
+> Log the resolved rule (`Primary app: <dir> (rule 2 — root manifest)`); it is a run note, not a new map field.
 - `package.json` → js/ts (npm/yarn/pnpm/bun)
 - `composer.json` → php/composer
 - `Cargo.toml` → rust
@@ -231,15 +241,109 @@ estimate  = N_total × per_spawn  # tree-sitter only; regex extraction is
 ```
 
 - `estimate` ≤ 60 s → proceed silently.
-- `estimate` > 60 s → **AskUserQuestion before extracting.** State `N_total` (broken
-  out as `N_hash` + `N_extract`), the estimate, and the OS. Options, each with its keterangan (→ `plugins/mega-sdd/references/output-language.md §Prompt surfaces`):
-  - **Switch to `--engine=regex`** — one call per language instead of per file; finishes in seconds. Lower precision (regex tier, not `ast`), which the map records honestly in `precision_tier`.
-  - **Continue with tree-sitter** — full AST precision, takes about the stated time. Reasonable on a fast disk / POSIX, or when precision matters more than latency.
-  - **Narrow the scan** — re-run with `--include=<glob>` to cut `N_extract` (and `N_files` with it).
+- `estimate` > 60 s → the gate resolves **BY LANE**. It is deterministic on every lane and
+  **never a question** — the skill is non-interactive on every path. First match wins:
 
-Do NOT silently downgrade the engine: precision is a property the map reports, so the
-choice belongs to the user. Do NOT skip the estimate on Windows because the repo
-"looks small" — 200 files is already 44 s there.
+| # | Lane | Condition | Outcome |
+|---|---|---|---|
+| 1 | **Decided** | an explicit `--engine=` (either value) OR an explicit `--include=` on the invocation | Proceed. The caller already made the precision-vs-latency call; log the estimate as a one-line note, no blocker, no downgrade. |
+| 2 | **Undecided STANDALONE** | a DIRECT user invocation: no explicit `--engine=`/`--include=`, and NONE of lane 3's unattended signals | Emit `scan_spawn_budget_exceeded` and STOP before extracting (YAML shape: `references/halts-flags-handoff.md`). A human invoked this run and reads its output; the precision choice is theirs. |
+| 3 | **UNATTENDED — the chain lane, and every forked run** | ANY of: `--auto`; the body is running FORKED; or an orchestrator (`orchestrate-flow`, `/mega-sdd`, `/mega-sdd:sync`) dispatched this phase — which is how the Mode-D `--changed-only` sync hop arrives | **Downgrade to `--engine=regex` and RECORD it loudly** (three surfaces, below). Neither a halt nor a stall. |
+
+**Lane 2 vs lane 3 — the test is UNATTENDED-ness, and ties go to lane 3.** `--auto` alone is
+NOT a sufficient discriminator and must never be read as one: **ZERO**
+`orchestrate-flow/references/routing-rules.md` rows render `--auto` on the *scan* hop — phase 1
+is written as bare `scan-codebase` / `scan-codebase --changed-only`, and only the DOWNSTREAM
+hops (`generate-intent … --auto`, `bind-codebase <vault> --auto`, `detect-drift … --auto`)
+carry the flag, because scan is phase 1 and nothing hands IT a handoff. Reading "no `--auto`"
+as "standalone" would drop every chain-dispatched scan into lane 2 and re-create exactly the
+phase-1 chain halt this split exists to remove. The signals above are all decidable at
+dispatch time — a forked body has no conversation history and is unattended by construction,
+and a chain-driven phase is visible as such when it is dispatched. **Where they are ambiguous,
+take lane 3.** The failure modes are not symmetric: a wrong lane 3 is a recoverable, loudly
+stamped regex map the caller can re-run at AST precision; a wrong lane 2 is a halted chain that
+produced nothing.
+
+**Lane 1 in detail.** An explicit `--engine=` (either value) or an explicit `--include=` on
+the invocation IS the caller's precision-vs-latency decision already made — honor it, log the
+estimate as a one-line note, and proceed without a blocker. Re-running with any lane-2 remedy
+therefore terminates: the blocker cannot loop, and neither can lane 3's recovery command.
+
+**Lane 2 in detail.** State `N_total` (broken out as `N_hash` + `N_extract`), the estimate,
+and the OS in `details`, and carry the three remedies in `next_action` as **re-run commands
+the caller executes**, each with its keterangan (→
+`plugins/mega-sdd/references/output-language.md §Prompt surfaces` — a halt surface owes the
+same keterangan a prompt did; the obligation did not leave with the prompt).
+They are remedies, NOT options awaiting a reply:
+  - **`--engine=regex`** — satu panggilan per bahasa, bukan per file; selesai dalam hitungan detik. Presisi turun ke tier `regex` (bukan `ast`), dan peta mencatatnya jujur di `precision_tier`.
+  - **`--engine=tree-sitter`** — lanjut dengan presisi AST penuh dan bayar biayanya (kira-kira sebesar estimasi). Masuk akal di disk cepat / POSIX, atau saat presisi lebih penting daripada latensi.
+  - **`--include=<glob>`** — mempersempit himpunan file, memotong `N_extract` (dan `N_files` bersamanya). Pilih ini kalau hanya satu app/paket yang relevan.
+
+**Lane 3 in detail — what "RECORD it loudly" means (all three surfaces, not one):**
+
+1. **The map frontmatter (the durable surface).** `precision_tier: regex` — the field already
+   exists (`references/codebase-map-schema.md`) — PLUS `precision_downgrade_reason`, a
+   one-line string carrying the four facts: the estimate, `N_total` with its
+   `N_hash` + `N_extract` breakdown, the OS, and the 60 s budget. Shape:
+
+   ```yaml
+   precision_tier: regex
+   precision_downgrade_reason: "step-5 spawn budget: N_total=2000 (N_hash=0 + N_extract=2000) x 0.22s/spawn (os=windows-bash) = ~440s > 60s budget; --auto lane downgraded tree-sitter -> regex"
+   ```
+
+2. **One chat line**, same four facts plus the recovery command.
+3. **The handoff.** `next_action.rationale` carries the exact re-run command that recovers AST
+   precision — `/mega-sdd:scan-codebase --engine=tree-sitter` (pay the estimate in full) or
+   `/mega-sdd:scan-codebase --include=<glob>` (narrow the set so tree-sitter fits the budget).
+   `status: completed`, `blockers: []` — this is a finished scan at a stated tier, not a halt.
+
+   Name the downstream consequence in BOTH the chat line and the rationale: at
+   `precision_tier: regex`, `bind-codebase` Step 2.5 implementation-state classification falls
+   back to BINARY (implemented / not) instead of field-level
+   (`bind-codebase/references/implementation-state.md`). A degraded tier the consumer can see
+   is the whole point of stamping it.
+
+**Why `--auto` downgrades instead of halting — written down, not implied.**
+
+*(a) The house rule is that `--auto` takes the SAFEST option.* Precedent:
+`generate-units/references/pagerank-targeting.md` §`--auto` policy — *"`--auto` runs with
+nobody watching — exactly where a 37-minute stall strands someone."* Unattended, "safest" is
+neither of the alternatives. A full tree-sitter pass is a multi-hour stall (100k files ×
+0.22 s ≈ 6.1 h on Windows). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1
+of nearly every brownfield row in `orchestrate-flow/references/routing-rules.md`, and **ZERO**
+routing rows carry `--engine`/`--include`/`--force-large`, so a chain cannot pre-resolve this
+gate the way it pre-resolves `bind-codebase <vault>` — the blocker would strand the whole
+chain before a single artifact exists. On Windows the gate fires at only ~272 files, so this
+is the common case, not a corner case. Safest here is finishing in seconds at a precision the
+map states honestly.
+
+*(b) This does NOT violate the no-silent-downgrade rail — that rail protects the RECORD, not
+the action.* The governing sentence is `generate-units/references/pagerank-targeting.md`
+§`--auto` policy: *"The `--auto` skip is not a SILENT skip — 'silently' is about the record,
+not the action."* The record here is STRONGER than the one that sentence blesses: map
+frontmatter (durable, machine-readable, read by every downstream consumer) + a chat line + the
+handoff rationale, versus pagerank's unit body + closing summary line. Nothing is hidden, and
+the map never claims a tier it did not deliver.
+
+*(c) Why this does NOT port back to pagerank's own rail — producer vs consumer.*
+`pagerank-targeting.md` §`--auto` policy forbids ITS `--auto` lane from re-scanning at regex
+tier, and that stays correct: `generate-units` is a **CONSUMER** — a regex re-scan there
+MUTATES `precision_tier` inside an already-written `codebase-map.md`, shared upstream state
+every other consumer reads (`bind-codebase` anchors included), unrecoverable without a full
+re-scan. `scan-codebase` is the **PRODUCER** of `precision_tier`: it stamps its own output, on
+this run, in the same write, with the reason beside it. Producer-stamps-own-output and
+consumer-mutates-upstream-state are different acts; the two rails agree.
+
+**The no-silent-downgrade rail, restated WITH the lane split so it cannot read as
+contradicted.** Do NOT downgrade the engine without a record: precision is a property the map
+reports, so where a human is present — lane 2, the undecided standalone invocation — the
+choice belongs to the user, and the gate hands it back as a blocker instead of making the call
+for them. Lane 3 does downgrade, and it is not "silent" in the sense this rail forbids: it is
+stamped in `precision_tier` + `precision_downgrade_reason`, announced in chat, and carried in
+the handoff rationale with the recovery command. What the rail actually forbids — a map that
+claims AST precision it did not deliver, or a tier change nobody can see — stays forbidden on
+every lane. Do NOT skip the estimate on Windows because the repo "looks small" — 200 files is
+already 44 s there.
 
 The existing `>100k files` halt stays, but note it is a POSIX-era guard: at 220 ms a
 100k-file repo is **6.1 hours**, so on Windows this gate fires long before that halt
@@ -448,7 +552,22 @@ bash "$PLUGIN_ROOT/scripts/secret-scan.sh" --redact <assembled-artifact-tmp-file
 ```
 
 - The script detects AWS keys, private-key blocks, GitHub/Slack/OpenAI-style tokens, JWT-shaped strings, and `password|secret|api_key|token = "…"` assignments; it replaces each matched VALUE with `[REDACTED-SECRET]` in place (the symbol/route row survives) and prints a JSON report of `{pattern, line, excerpt}` findings.
-- Findings present → emit one chat warning listing the affected source `file:line` rows from the report so the user can rotate/relocate the credential.
+- Findings present → **write them to disk FIRST, then also emit one chat line.** Chat is not a durable channel: this skill is non-interactive (and forkable), so its chat is a transcript the user may never read, and the handoff schema carries `blockers[]` only — inventing a `warnings:` key is forbidden. The artifact itself keeps only `[REDACTED-SECRET]`, so **the location of the live credential would otherwise exist nowhere** and the user could not rotate it. Append (create if absent) to `<project-root>/.mega-sdd/codebase/SECRET-FINDINGS.md` — the same durable-queue move as `detect-drift`'s `PENDING-SYNC.md`, and inside `.mega-sdd/**`, which the bulk walk excludes by default so it can never feed back as scan input:
+
+```markdown
+# Secret-scan findings — rotate or relocate these credentials
+
+> Scan menemukan pola kredensial di source. Nilainya sudah di-redact dari artefak
+> mega-sdd, TAPI kredensial aslinya masih hidup di file sumber di bawah ini —
+> rotasi atau pindahkan ke env/secret manager, lalu hapus barisnya dari daftar ini.
+
+## <ISO8601 run timestamp> — <artifact that was scrubbed>
+| Source | Pattern | Artifact |
+|---|---|---|
+| `<source file>:<line>` | `<pattern class from the report>` | `<artifact>` |
+```
+
+  Write the `file:line` + pattern class ONLY — **never the matched value**; this is a rotation worklist, not a secret store. The same durable channel is used by every scrub site (Step 10a's `codebase-map.md` and Step 10.5.3's `starterkit-context.yaml` / `reuse-index.yaml`). List the file in the handoff `artifacts[]` when it was written this run.
 - This gate redacts the ARTIFACT — it never edits repo source files.
 - Empty `findings` (the normal case) → write as-is, no chat output.
 - **After the rename into place, refresh the map-validator state:** `bash "$PLUGIN_ROOT/scripts/validate-codebase-map.sh" --cwd=<project-root> --quiet`. The temp-file + `mv` write does not fire the PostToolUse `Write|Edit` dispatch, so this keeps `.codebase-map-state.json` fresh for `/mega-sdd:analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state).
