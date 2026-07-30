@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.6.1
+version: 1.7.0
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -64,26 +64,55 @@ Read `references/tool-matrix.yaml`. For each tool:
 2. **Pre-filter with `command -v` FIRST — this ordering is mandatory, not an optimisation.**
    - Not on PATH → mark `missing` immediately. **Do not run the exec probe.** A name absent from PATH is conclusively missing, and `command -v` is a shell builtin: zero forks, ~5 ms for all tools combined.
    - On PATH → continue to the exec probe below. Only tools that are actually present pay its cost.
-3. **Usability is the only thing that can mark a tool `present`** — but the probe MUST be bounded:
+3. **Usability is the only thing that can mark a tool `present`** — but the probe MUST be bounded. **Resolve the bounding prefix; never type it literally at a probe site.** The resolver is the prelude of the *same* Bash invocation that runs the probe loop:
 
    ```bash
-   timeout 10 <verify_cmd>
+   # Prelude — same Bash invocation as the probes below. Shell state does NOT
+   # survive between tool calls, so Step 6 re-runs this prelude instead of
+   # referring back to this variable. Two builtins, zero forks.
+   if   command -v timeout  >/dev/null 2>&1; then BOUND="timeout -k 2 10"
+   elif command -v gtimeout >/dev/null 2>&1; then BOUND="gtimeout -k 2 10"
+   else BOUND=""; fi
+
+   $BOUND <verify_cmd>   # unquoted on purpose — an empty BOUND must vanish
    ```
 
-   **Never run `verify_cmd` unbounded.** `command -v` is a builtin and cannot hang; an execution probe can, and on a corporate network a tool that checks for updates on startup will block until the proxy gives up. Measured cost of the exec probes, macOS warm — Windows + EDR is roughly an order of magnitude worse: `semgrep --version` **3.9 s**, `mmdc --version` 384 ms, `markdownlint-cli2 --version` 366 ms, everything else under 150 ms.
+   **A `verify_cmd` containing a shell operator MUST be wrapped, or the bound covers
+   only its first word-group.** Seven matrix rows read
+   `tree-sitter --version || tree-sitter-cli --version`. Substituted bare, the shell parses
+   `||` at the TOP level: `timeout … tree-sitter --version` is bounded, then the fallback
+   limb runs **completely unbounded** — and because `||` yields the LAST command's status,
+   it also swallows the 124/137 the bound just produced, so the verdict table below reads
+   the fallback's code instead. Both halves of the protection are lost silently.
+   When the value contains `||`, `&&`, `|`, or `;`, wrap it in one bounded shell:
+
+   ```bash
+   $BOUND sh -c "<verify_cmd>"   # one bounded process; the operator is INSIDE the bound
+   ```
+
+   Every value in `tool-matrix.yaml` is plain words and flags — no quotes, `$`, or
+   backticks — so double-quoting is safe today. If a future row needs any of those, give
+   that tool a single-command `verify_cmd` rather than escaping around this rule.
+
+   **`timeout` is not universal, and its absence is not a fact about the probed tool.** Git Bash ships MSYS2 coreutils `timeout` and Linux ships GNU coreutils, but **stock macOS ships neither `timeout` nor `gtimeout`** — `gtimeout` only appears after `brew install coreutils`. A literal prefix there makes every probe exit 127 and, under the verdict table below, reports every *installed* tool as `missing`. When `BOUND` resolves empty, state it once in the audit output and continue; probes run unbounded on that machine. **A missing bounding utility degrades the protection — it must NEVER be converted into a verdict about the probed tool.**
+
+   **Write the flag BEFORE the duration** — the reverse order is a parse error that exits 127. GNU `timeout` sends SIGTERM at expiry and then *waits* for the child; `-k 2` escalates to SIGKILL 2 s later, so the ceiling is an explicit ~12 s. Under Git Bash (MSYS2) SIGTERM **does** reach a native `.exe`: the MSYS2 runtime injects a thread that calls `ExitProcess`, then escalates to `TerminateProcess` after ~10 s (cygwin `kill` docs; `git-for-windows/msys2-runtime` PR#15, PR#16, commit `c967bd8`). The unescalated form is therefore a **bounded ~10 s overshoot on top of the bound, not an unbounded hang**. `-k 2` is still worth keeping: it makes the ceiling a number this procedure owns and states, instead of one that depends on an MSYS2 runtime implementation detail.
+
+   **Never run `verify_cmd` unbounded when a bound resolves.** `command -v` is a builtin and cannot hang; an execution probe can, and on a corporate network a tool that checks for updates on startup will block until the proxy gives up. Measured cost of the exec probes, macOS warm — Windows + EDR is roughly an order of magnitude worse: `semgrep --version` **3.9 s**, `mmdc --version` 384 ms, `markdownlint-cli2 --version` 366 ms, everything else under 150 ms.
    - Exit 0 → mark `present`; capture the version from stdout best-effort.
-   - Exit non-zero → mark `missing`.
-   - **Timeout (exit 124) → mark `present` with a `slow-verify` note, NEVER `missing`.** `command -v` already proved the binary exists; a slow probe is not a missing tool, and treating it as one would propose a pointless reinstall of something already installed.
+   - **Timeout — exit 124 (SIGTERM landed) OR exit 137 (the `-k` escalation had to SIGKILL) → mark `present` with a `slow-verify` note, NEVER `missing`.** `command -v` already proved the binary exists; a slow probe is not a missing tool, and treating it as one would propose a pointless reinstall of something already installed. **Both codes carry the same verdict** — a native `.exe` that ignores SIGTERM exits 137, and reading 137 as a failed probe reintroduces exactly the false-`missing` bug the bound exists to prevent.
+   - **Exit 127 → mark `present` with a `probe-inconclusive` note, NEVER `missing`.** `command -v` already resolved this name in step 2, so 127 cannot mean the tool is absent from PATH — it means the probe layer itself could not run: no bounding utility on this machine, flags written in the wrong order, or a shim whose interpreter is gone. Say *inconclusive*, not *working*: we did not observe the tool execute. **The absence of the bounding utility must never itself produce a `missing` verdict** — that proposes reinstalling software that is already installed.
+   - Exit non-zero with any OTHER code (not 124, 137, or 127) → mark `missing`.
    - A memory hit from step 1 **plus** exit 0 → additionally annotate `cached-installed` (we installed it before; don't re-propose it). A memory hit NEVER skips the probe.
    - **The exit code is the verdict — never gate on a stdout pattern.** `semgrep --version` prints an upgrade banner before the version, so a "does stdout look like a version" test false-fails a working tool.
 4. **A `command -v` hit is never sufficient on its own.** Windows ships App Execution Alias stubs in `%LOCALAPPDATA%\Microsoft\WindowsApps` (on the default per-user PATH) that resolve, print "Python was not found…" to stderr, and exit 49. Presence ≠ usability — which is exactly why the pre-filter may only ever produce `missing`, never `present`.
 5. **`python3` is the named exception** — the one entry in `defaults.required_tools`. Its verdict comes from the shared resolver, not a bare `verify_cmd`, because the working command name differs per install route:
 
    ```bash
-   bash -c '. "${CLAUDE_PLUGIN_ROOT}/scripts/_lib/resolve-python.sh" && mega_sdd_python && $MEGA_SDD_PY -V'
+   $BOUND bash -c '. "${CLAUDE_PLUGIN_ROOT}/scripts/_lib/resolve-python.sh" && mega_sdd_python && $MEGA_SDD_PY -V'
    ```
 
-   It rejects any candidate under `WindowsApps` and walks `python3` → `python` → `py -3`. Exit 0 → `present`; record WHICH name resolved (a winget/python.org install ships no `python3.exe`, so `python` is the working name there). Exit non-zero → `missing`, and print `mega_sdd_python_remedy` verbatim from that same file rather than composing new remedy prose.
+   This is an execution probe like any other, so it carries the **same resolved prefix and the same carve-out** — bounded, and exit 124 / 137 / 127 never mean `missing`. It rejects any candidate under `WindowsApps` and walks `python3` → `python` → `py -3`. Exit 0 → `present`; record WHICH name resolved (a winget/python.org install ships no `python3.exe`, so `python` is the working name there). Exit non-zero with any OTHER code → `missing`, and print `mega_sdd_python_remedy` verbatim from that same file rather than composing new remedy prose.
 
 `--force-recheck` flag skips memory cache; re-audits every tool.
 
@@ -91,6 +120,7 @@ Emit chat output:
 
 ```
 Auditing tool inventory...
+  bound: <timeout -k 2 10 | gtimeout -k 2 10 | none — probes unbounded, `brew install coreutils` to bound them>
   ✓ <tool> <version>             # present
   ⊘ <tool>                       # cached-installed (skipped audit)
   ✗ <tool> (missing — <fallback_behavior>)
@@ -160,9 +190,21 @@ If ANY install fails:
 
 For each successfully-installed tool:
 
-1. Run `verify_cmd` from matrix entry, **bounded exactly as in Step 2** — `timeout 10 <verify_cmd>`, never unbounded. Exit 124 (timeout) → `verified` with a `slow-verify` note: the install just exited 0, so a slow probe is not a failed install.
+1. Run `verify_cmd` from matrix entry, **bounded exactly as in Step 2**. Shell state does not survive between tool calls, so **re-run the resolver prelude here** rather than reusing Step 2's variable — and never hard-code the prefix, for the same stock-macOS reason:
+
+   ```bash
+   if   command -v timeout  >/dev/null 2>&1; then BOUND="timeout -k 2 10"
+   elif command -v gtimeout >/dev/null 2>&1; then BOUND="gtimeout -k 2 10"
+   else BOUND=""; fi
+
+   $BOUND <verify_cmd>
+   # …but if <verify_cmd> contains `||`, `&&`, `|` or `;` (the seven tree-sitter rows do),
+   # use `$BOUND sh -c "<verify_cmd>"` — see Step 2, or the operator escapes the bound.
+   ```
+
+   Report the resolved prefix here the same way Step 2 does — including `none — probes unbounded` when the ladder falls through to empty. Exit 124 OR exit 137 (timeout — SIGTERM landed, or the `-k` SIGKILL escalation fired) → `verified` with a `slow-verify` note: the install just exited 0, so a slow probe is not a failed install. **Exit 127 → `verified` with a `probe-inconclusive` note, never `unverified`** — the install exited 0 and `command -v` resolves the name, so a probe layer that could not run says nothing about the install.
 2. Exit 0 + version capture → mark `verified`.
-3. Exit non-zero → **on `OS = windows-bash`, do NOT mark `unverified` yet** — go to the Windows branch below. On every other OS, mark `unverified` and add to the halt list.
+3. Exit non-zero with any code other than 124/137/127 → **on `OS = windows-bash`, do NOT mark `unverified` yet** — go to the Windows branch below. On every other OS, mark `unverified` and add to the halt list.
 
 #### Windows branch (`OS = windows-bash`) — stale PATH is not a failed install
 
@@ -281,4 +323,5 @@ Participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-sch
 9. NEVER write PATH with `reg add` from Git Bash — the `reg` parser mangles backslashes and semicolons, prints `ERROR: Invalid syntax` **while returning RC=0**, and writes nothing or writes partially.
 10. NEVER hand-write a `.reg` file for `reg import` — a wrong `hex(2)` UTF-16LE encoding imports "successfully" while storing a corrupt value (observed: a 798-char USER PATH truncated to 92). NEVER use `setx PATH` either — it truncates at 1024 chars and expands `%VAR%`, destroying `REG_EXPAND_SZ`. The only sanctioned path writer is `scripts/fix-windows-path.sh`.
 11. ALWAYS back up the current PATH before modifying it — `fix-windows-path.sh` refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
-12. NEVER run a `verify_cmd` unbounded, and NEVER run one for a tool `command -v` already reported absent. An execution probe can block forever where a builtin cannot; `semgrep --version` alone measures 3.9 s warm on macOS, and v5.8.0 shipped these probes with no timeout and no pre-filter, which stalled an audit on a corporate Windows machine. Bound with `timeout 10`, and treat exit 124 as `present`/`verified`, never `missing`.
+12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent. An execution probe can block where a builtin cannot; `semgrep --version` alone measures 3.9 s warm on macOS, and v5.8.0 shipped these probes with no timeout and no pre-filter, which stalled an audit on a corporate Windows machine. Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
+13. NEVER hard-code that bound as a literal at a probe site, and NEVER let its absence become a verdict about a tool. Stock macOS ships neither `timeout` nor `gtimeout`, so a literal prefix exits 127 on every probe there and would report every installed tool `missing` — the exact false-`missing` class rule 12 exists to prevent. Keep `-k 2` whenever a bound *does* resolve: GNU `timeout` alone sends SIGTERM and then WAITS for the child. Under Git Bash (MSYS2) that SIGTERM still lands — the runtime injects an `ExitProcess` thread and escalates to `TerminateProcess` after ~10 s, so the unescalated worst case is a bounded overshoot, not a hang — but `-k 2` is what makes the ceiling a number this procedure owns rather than an MSYS2 runtime implementation detail.

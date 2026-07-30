@@ -61,26 +61,146 @@ else
   fail "no 'python -V' verify_cmd — the winget python3 route cannot verify"
 fi
 
-# ── 4. the exec probe must be BOUNDED, and a timeout must not mean `missing` ──
+# ── 4. the exec probe must be BOUNDED, and no bound-side failure may mean `missing` ──
 # v5.8.0 converted 39 verify_cmd values from `command -v` (a shell builtin, which
 # cannot hang) to execution probes — and shipped them with NO timeout and NO
 # pre-filter. `semgrep --version` alone measures 3.9 s warm on macOS; the nine
 # probes total ~5.1 s against ~53 ms for the builtins, ~96x. On a corporate Windows
 # box with an EDR and a TLS-inspecting proxy that stalled an audit outright.
-# The procedure must therefore pin all three parts of the fix.
+#
+# Two separate invariants live here, and BOTH need pinning.
+#
+# (i) The bound must RESOLVE, never be a literal. Stock macOS ships neither
+#     `timeout` nor `gtimeout` (`gtimeout` arrives only with `brew install
+#     coreutils`), so a hard-coded prefix exits 127 on every probe there — and the
+#     verdict table routes "non-zero, other code" to `missing`. That reports EVERY
+#     installed tool as missing and proposes reinstalling software that is already
+#     present: the absence of the bounding utility becoming a verdict about the
+#     bounded tool. Git Bash ships MSYS2 coreutils `timeout` in /usr/bin and Linux
+#     ships GNU coreutils, so the ladder `timeout` → `gtimeout` → empty covers all
+#     three target platforms. The prefix is re-resolved per Bash invocation because
+#     shell state does not survive between tool calls — Step 2 and Step 6 are
+#     separated by a confirmation gate and an install batch, so a variable set in
+#     one is unset in the other, and `$BOUND` would silently expand to nothing.
+#
+# (ii) `-k` and its exit code. GNU timeout sends SIGTERM at expiry and then WAITS
+#     for the child; only `--kill-after`/`-k` escalates to SIGKILL. Measured against
+#     GNU coreutils 9.7 with a SIGTERM-ignoring child: the unescalated form → rc=124
+#     after 30 s; `timeout -k 1 2` → rc=137 after 3 s. On Git Bash the unescalated
+#     form is NOT unbounded: verified against primary sources (cygwin.com `kill`
+#     docs; git-for-windows/msys2-runtime PR#15, PR#16, commit c967bd8) MSYS2
+#     delivers SIGTERM to a non-MSYS child by injecting a thread that calls
+#     ExitProcess and escalating to TerminateProcess after ~10 s — a bounded
+#     overshoot, not a hang. `-k 2` is kept because it makes the ceiling a number
+#     the procedure owns rather than an MSYS2 implementation detail. Flag ORDER
+#     matters: the flag must precede the duration or it is a parse error (rc 127).
+#     Because `-k` makes 137 reachable, 137 must share 124's verdict, and 127 must
+#     be excluded from the `missing` catch-all for BOTH reasons above.
 SKILL="$HERE/../../plugins/mega-sdd/skills/install-deps/SKILL.md"
+
+# probe_skill <file> — runs every SKILL.md invariant against <file>, printing one
+# `OK:<id>` or `BAD:<id>` line per check. Returns 1 if any check failed. Written as
+# a function so the CONTROL block below exercises the REAL checks against mutated
+# copies instead of re-implementing them (a re-implemented control proves nothing
+# about the checks that actually run).
+probe_skill() {
+  ps_f="$1"; ps_rc=0
+  ps_chk() { # ps_chk <id> <condition-rc>
+    if [ "$2" -eq 0 ]; then echo "OK:$1"; else echo "BAD:$1"; ps_rc=1; fi
+  }
+
+  # the bound is RESOLVED via the 3-limb ladder, at BOTH probe invocations
+  n_t=$(grep -cF 'BOUND="timeout -k 2 10"'  "$ps_f")
+  n_g=$(grep -cF 'BOUND="gtimeout -k 2 10"' "$ps_f")
+  n_e=$(grep -cF 'BOUND=""'                 "$ps_f")
+  [ "$n_t" -ge 2 ] && [ "$n_g" -ge 2 ] && [ "$n_e" -ge 2 ]
+  ps_chk "bound-resolver(t=$n_t g=$n_g empty=$n_e)" $?
+
+  # EVERY probe site uses the resolved prefix, never a literal. Counting the
+  # prefix itself (not `$BOUND <verify_cmd>`) is deliberate: it also covers the
+  # python3 probe, whose command is `$BOUND bash -c '…resolve-python.sh…'` rather
+  # than a matrix verify_cmd. Exact count, so a NEW unbounded probe site is a FAIL
+  # rather than something a `-ge 2` threshold silently tolerates.
+  # 4 sites: Step 2 exec probe, Step 2 `sh -c` wrapper for compound verify_cmd,
+  # Step 2 item 5 (python3), Step 6 post-install.
+  n_u=$(grep -cE '^[[:space:]]*\$BOUND ' "$ps_f")
+  [ "$n_u" -eq 4 ]; ps_chk "bound-not-literal(sites=$n_u/4)" $?
+
+  # A compound verify_cmd must be wrapped, or the shell parses `||` at the TOP level:
+  # only the first limb is bounded, the fallback runs unbounded, and `||` returns the
+  # LAST status — swallowing the 124/137 the bound just produced. Seven matrix rows
+  # are compound (`tree-sitter --version || tree-sitter-cli --version`).
+  grep -qF '$BOUND sh -c' "$ps_f"; ps_chk "compound-verify_cmd-wrapped" $?
+
+  # anti-regression: no unescalated `timeout <n>` anywhere
+  grep -qE 'timeout +[0-9]' "$ps_f"; [ $? -ne 0 ]; ps_chk "no-bare-timeout" $?
+
+  grep -qi 'Pre-filter with .command -v. FIRST' "$ps_f"; ps_chk "prefilter" $?
+  grep -q '124' "$ps_f"; ps_chk "code-124" $?
+
+  n_137=$(grep -c '137' "$ps_f"); [ "$n_137" -ge 2 ]; ps_chk "code-137(sites=$n_137)" $?
+
+  # THE macOS FIX: rc 127 — the bounding utility missing, or a probe layer that
+  # could not run — may never yield `missing`/`unverified`, at either table.
+  grep -qF 'Exit 127 → mark `present` with a `probe-inconclusive` note, NEVER `missing`' "$ps_f" \
+    && grep -qF 'Exit 127 → `verified` with a `probe-inconclusive` note, never `unverified`' "$ps_f" \
+    && grep -qF 'absence of the bounding utility must never itself produce a `missing` verdict' "$ps_f"
+  ps_chk "code-127-not-missing" $?
+
+  # the platform fact that makes the resolver load-bearing must be stated
+  grep -qF 'stock macOS ships neither `timeout` nor `gtimeout`' "$ps_f"; ps_chk "macos-no-timeout" $?
+
+  # catch-alls must name the excluded codes, 127 included
+  grep -qF 'any OTHER code (not 124, 137, or 127)' "$ps_f" \
+    && grep -qF 'any code other than 124/137/127' "$ps_f"
+  ps_chk "catchall-excludes-124-137-127" $?
+
+  return $ps_rc
+}
+
 if [ -f "$SKILL" ]; then
-  grep -q 'timeout 10' "$SKILL" \
-    && pass "Step 2/6 bound the exec probe with an explicit timeout" \
-    || fail "no 'timeout 10' in SKILL.md — verify_cmd can hang the audit"
-  grep -qi 'Pre-filter with .command -v. FIRST' "$SKILL" \
-    && pass "command -v pre-filter is mandated BEFORE the exec probe" \
-    || fail "no mandatory command -v pre-filter — absent tools would pay exec cost"
-  grep -q '124' "$SKILL" \
-    && pass "timeout (exit 124) has a defined verdict" \
-    || fail "exit 124 undefined — a slow probe would be read as a missing tool"
+  while IFS= read -r line; do
+    case "$line" in
+      OK:*)  pass "SKILL.md ${line#OK:}" ;;
+      BAD:*) fail "SKILL.md ${line#BAD:}" ;;
+    esac
+  done <<EOF
+$(probe_skill "$SKILL")
+EOF
 else
   fail "install-deps SKILL.md not found at $SKILL"
+fi
+
+# ── 4-CONTROL: every check above must go RED on its own targeted mutation ─────
+# Without this a SKILL.md that stopped discussing bounds at all could satisfy the
+# negative checks vacuously. Each mutation removes exactly one property and must
+# be caught by exactly the check that owns it.
+if [ -f "$SKILL" ]; then
+  TMPS="$(mktemp -d)"
+  # id @ sed program @ check-id prefix that MUST turn BAD  (@ separates fields
+  # because the sed programs themselves use / and | as their own delimiters)
+  while IFS='@' read -r mid mprog mexpect; do
+    [ -n "$mid" ] || continue
+    sed "$mprog" "$SKILL" > "$TMPS/m.md"
+    if cmp -s "$SKILL" "$TMPS/m.md"; then
+      fail "control[$mid]: mutation was a no-op — this control proves nothing"
+      continue
+    fi
+    mout=$(probe_skill "$TMPS/m.md")
+    if printf '%s\n' "$mout" | grep -q "^BAD:$mexpect"; then
+      pass "control[$mid]: '$mexpect' fires on the mutation (check is not vacuous)"
+    else
+      fail "control[$mid]: expected BAD:$mexpect, got: $(printf '%s' "$mout" | grep '^BAD:' | tr '\n' ' ')"
+    fi
+  done <<'MUT'
+strip-resolver-fallbacks@/BOUND="gtimeout -k 2 10"/d;/BOUND=""/d@bound-resolver
+literal-at-probe-site@s/\$BOUND <verify_cmd>/timeout -k 2 10 <verify_cmd>/g@bound-not-literal
+drop-k-escalation@s/timeout -k 2 10/timeout 10/g@no-bare-timeout
+drop-127-verdict@/Exit 127 /d@code-127-not-missing
+drop-macos-fact@s/stock macOS ships neither/most systems ship/@macos-no-timeout
+widen-catchall@s|any OTHER code (not 124, 137, or 127)|any OTHER code|;s|124/137/127|124/137|@catchall-excludes-124-137-127
+MUT
+  rm -rf "$TMPS"
 fi
 
 # ── 5. CONTROL: the detector fires on the exact historical defect ────────────

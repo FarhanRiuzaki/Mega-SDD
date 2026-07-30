@@ -34,7 +34,10 @@
 # Exit: 0 = snapshot written / existing baseline kept (immutable) / no Hard rules
 #       2 = cannot run (usage / unit not found / not a git repo)
 #       3 = halt hard_rule_unparseable (a line matches no v1 production and is
-#           not a directive; or a v2 YAML block fails parse-via-scan — stderr verbatim)
+#           not a directive; or a v2 YAML block fails parse-via-scan — stderr verbatim;
+#           or that parse-via-scan exceeds its 120s bound, which is the SAME state —
+#           the rule was not validated, and a baseline missing a rule's matched_files
+#           is a FALSE baseline, so the run halts rather than snapshot a lie)
 #       4 = halt hard_rule_mixed_grammar (bulleted v1 rules + YAML fences coexist;
 #           force one grammar with --grammar=v1|v2, or /mega-sdd:migrate-rules)
 #       5 = halt hard_rule_unanchored (SIGNATURE_RULE symbol not in tracked source)
@@ -86,7 +89,23 @@ quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+    # BOUNDED. Local git plumbing is low-risk, not zero-risk: an fsmonitor daemon,
+    # a wedged index.lock, or a network-backed worktree can stall a read-only call
+    # indefinitely, and this runs in a path Claude Code waits on. 60 s is 6x the
+    # repo's own rev-parse precedent (refresh-doc-stamps.sh / validate-codebase-map.sh
+    # use timeout=10) — generous for any honest local call, finite for a wedged one.
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True,
+                              timeout=60)
+    except subprocess.TimeoutExpired:
+        # FAIL-CLOSED to exit 2 ("cannot run"), NEVER a synthetic empty result. This
+        # helper feeds the dirty-protected-path refusal below, where an empty
+        # `git status --porcelain` reads as "clean tree" — a swallowed timeout would
+        # OPEN the anti-laundering gate. Exit 2 is already this script's documented
+        # cannot-run code, so no consumer contract changes.
+        print("ERROR: `git %s` exceeded 60s — cannot run (wedged git/fsmonitor?). "
+              "No artifact written." % " ".join(a), file=sys.stderr)
+        sys.exit(2)
 
 PREFIX = git("rev-parse", "--show-prefix").stdout.strip()
 
@@ -222,8 +241,39 @@ if v2_rules:
             tf.write(ry_norm)
             tmp_rule = tf.name
         try:
-            rr = subprocess.run([astgrep, "scan", "--rule", tmp_rule, "--json", cwd],
-                                capture_output=True, text=True)
+            # BOUNDED, and the bound is load-bearing — the same rationale the
+            # post-flight TWIN already carries (_lib/postflight_rules.py, the
+            # `ast-grep scan` there). This is a repo-wide AST scan, run once per v2
+            # Hard rule PER UNIT, and execute-bolts makes this script a mandatory
+            # per-unit call (SKILL.md pre-flight check 4, which also forbids
+            # skipping it) — i.e. work with no ceiling in a path Claude Code waits
+            # on, the exact shape of the 2026-07-28 Windows hang. 120 s mirrors the
+            # twin exactly; the two sites must not drift apart again.
+            try:
+                rr = subprocess.run([astgrep, "scan", "--rule", tmp_rule, "--json", cwd],
+                                    capture_output=True, text=True, timeout=120)
+            except subprocess.TimeoutExpired:
+                # HALT — and deliberately NOT `continue`. Post-flight can record a
+                # timeout as verdict `fail` because it produces VERDICTS; pre-flight
+                # produces a BASELINE and has no `fail` to record. Falling through
+                # would persist this rule with an EMPTY `matched_files`, i.e. a FALSE
+                # baseline that post-flight then compares against — strictly worse
+                # than stopping, because it is silent.
+                #
+                # Exit 3 (hard_rule_unparseable) is REUSED, not extended. v2 rules are
+                # validated by parse-via-scan — the returncode branch immediately
+                # below is what turns "ast-grep rejected the rule" into exit 3 — so
+                # "the scan never finished" and "the scan rejected the rule" are the
+                # same epistemic state: THE RULE WAS NOT VALIDATED. Inventing a ninth
+                # code would have to be wired into the execute-bolts exit-code table
+                # and its reference docs; the halt taxonomy is a closed enum and this
+                # branch does not need to open it.
+                print("TIMEOUT (v2): ast-grep scan for rule %s exceeded 120s — the rule "
+                      "was NOT validated and NO baseline was captured; halt "
+                      "hard_rule_unparseable. Narrow the rule's `files:` globs (a "
+                      "repo-wide pattern scan is the usual cause) and re-run." % rid,
+                      file=sys.stderr)
+                sys.exit(3)
             if rr.returncode not in (0, 1):
                 # parse-via-scan: a rejected rule is the unparseable halt,
                 # stderr verbatim (ast-grep test --validate does not exist).

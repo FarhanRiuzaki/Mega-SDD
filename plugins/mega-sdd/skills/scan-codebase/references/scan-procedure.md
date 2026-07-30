@@ -6,7 +6,7 @@
 - Step 1 — Detect repo root
 - Step 2 — Detect package manager / language
 - Step 3 — Detect test framework
-- Step 4 — Build tree (depth-limited)
+- Step 4 — Build tree (depth-limited) + persist the enumeration (`.scan/files.z`)
 - Step 5 — Extract public interfaces (per-file invalidation gate; tree-sitter; regex/ripgrep)
 - Step 6 — Extract routes
 - Step 7 — Extract data models
@@ -98,23 +98,98 @@ Grep for known imports/configs (per detected ecosystem; record all):
 - **jvm:** `junit`/`junit-jupiter` in pom.xml/build.gradle deps; `src/test/java/`
 - **.NET:** `xunit` / `nunit` / `MSTest.TestFramework` PackageReference in `*.csproj`; `*Tests.csproj` / `*.Tests/` projects (built-in `dotnet test`)
 
-## Step 4 — Build tree (depth-limited)
+## Step 4 — Build tree (depth-limited) + persist the enumeration
 
 Walk dirs up to `--depth`, respect `--exclude` (the default exclusion list is a separate reference). Output as markdown tree.
+
+**Persist that same walk — it is the ONLY full-tree pass in the scan.** Step 5 (invalidation gate + extraction) READS the persisted list; nothing after this step re-walks the tree. Write it NUL-delimited to a DETERMINISTIC path — **not** a `mktemp -d`: each step runs as its own command invocation, so a shell variable set here is already gone by Step 5, and a `T="$(mktemp -d)"` here would leave Step 5 reading from an empty path. `SCAN_TMP` below is a literal constant, re-declared verbatim in every later block that needs it.
+
+```bash
+SCAN_TMP=".mega-sdd/codebase/.scan"; mkdir -p "$SCAN_TMP"
+
+# The SAME walk that produced the markdown tree above — `--include` / `--exclude`
+# plus the default exclusion list applied (→ `references/exclusions.md`; extend the
+# prune list with EVERY entry there, and add `-name` filters for `--include`).
+# NUL-delimited so spaces / UTF-8 in paths survive. Plain `find` (not `find -L`)
+# because the symlink rail below forbids following directory symlinks.
+#
+# Prune by -name, NOT by -path './node_modules'. A './x' path pattern anchors at
+# the repo ROOT, so a monorepo's packages/*/node_modules/ and sub/vendor/ are
+# enumerated and hashed anyway — the exact inflation this list exists to prevent.
+find . \( -type d \( -name .git -o -name .mega-sdd -o -name node_modules \
+                     -o -name vendor \) \) -prune -o \
+     -type f -print0 > "$SCAN_TMP/files.z"
+```
+
+`$SCAN_TMP` lives under `.mega-sdd/**`, which the walk already prunes, so `files.z` can never re-enter a later enumeration. Both it and `hashes.txt` (Step 5) are scratch: overwritten every run, safe to delete.
 
 **Symlink rail:** do NOT follow symlinked directories (loop risk: `./link → ../ → ./link` hangs the walk). Note encountered dir symlinks in one log line; a user who needs them traversed passes explicit `--include` for the TARGET path. Files >10 MB skip tree-sitter (regex fallback or skip; log in the scan summary) — a single minified bundle must not stall extraction.
 
 ## Step 5 — Extract public interfaces
 
-### Per-file invalidation gate
+### Order of operations (fixed — the spawn-cost gate must be able to see the hashing)
 
-This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, the gate compares each source file's current sha256 to the `Last_Scanned_Sha256` column in prior `codebase-map.md` §2:
+1. **Enumerate** source files ONCE — Step 4's walk with `--include` / `--exclude` + the default exclusion list already applied — persisted NUL-delimited to `.mega-sdd/codebase/.scan/files.z` by **§Step 4 itself** (the command is there, in Step 4, not here) → `N_files`. Every later step READS that file; nothing re-walks the tree.
+2. **Per-file invalidation gate** — ONE batched hash over that persisted list (`N_hash` = 1 spawn, see below) → resolves the REUSE set → `N_extract`.
+3. **Spawn-cost gate** — budgets `N_hash + N_extract`, i.e. the TOTAL spawn bill including step 2, not just extraction.
+4. **Extraction** (tree-sitter / regex) over the non-REUSE set.
+
+Step 2 sits before step 3 only because BATCHED hashing costs ONE spawn and is unconditionally under budget. **If you cannot batch** (no `xargs`, or a per-file fallback for any reason), then `N_hash = N_files` and the spawn-cost gate MUST be evaluated BEFORE hashing with that value — an unbatched invalidation gate is exactly the runaway this gate exists to catch.
+
+### Per-file invalidation gate (per FILE decision — ONE batched hash process, never one per file)
+
+This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, the gate compares the enumerated source files' current sha256 against the `Last_Scanned_Sha256` column in prior `codebase-map.md` §2.
+
+**Hash the whole enumeration in ONE BATCHED invocation.** The decision is per file; the hashing is not. A hasher accepts many paths and emits one `<digest>  <path>` line each from a single process — do NOT loop the hasher one path at a time, and do NOT hash inside the per-file extraction loop. Measured on this repo's dev box (501 files, macOS): one-path-at-a-time = 501 spawns / 13,085 ms; batched via `xargs -0` = 1 hasher process / 448 ms — **29x**, and the ratio grows with N. On `OS=windows-bash` each of those spawns costs ~220 ms instead of ~26 ms, so the same loop is the difference between a sub-second gate and a multi-minute one.
+
+Command shape:
+
+```bash
+# 0. SAME literal constant Step 4 declared — re-declared here ON PURPOSE:
+#    shell variables do NOT survive between step invocations, so nothing is
+#    inherited and nothing needs to be.
+SCAN_TMP=".mega-sdd/codebase/.scan"
+
+# 1. Probe the hasher ONCE — before the batch, never inside a loop.
+#    sha256sum: GNU coreutils (Linux, Git Bash). shasum -a 256: macOS.
+#    `command -v` is a shell builtin: no process.
+HASH="sha256sum"; command -v sha256sum >/dev/null 2>&1 || HASH="shasum -a 256"
+
+# 2. REUSE Step 4's enumeration — do NOT re-walk here. Step 4 already walked the
+#    tree with --include / --exclude AND the default exclusion list applied and
+#    persisted it to "$SCAN_TMP/files.z", so the normal path is a pure read that
+#    costs nothing. The ONLY sanctioned fallback when that list is absent (Step 4
+#    skipped, resumed run) is re-running STEP 4's walk into that same path — one
+#    `find` spawn, which makes N_hash 2 instead of 1.
+#    A bare `find .` is NOT the fallback: it is a second full-tree stat pass AND
+#    it re-admits node_modules/ + .mega-sdd/, which inflates N_files and breaks
+#    the anti-bias rail (→ `references/exclusions.md`; SKILL.md §Mandatory rails
+#    "Exclude SDD outputs from the bulk walk").
+if [ ! -s "$SCAN_TMP/files.z" ]; then
+  mkdir -p "$SCAN_TMP"
+  find . \( -type d \( -name .git -o -name .mega-sdd -o -name node_modules \
+                       -o -name vendor \) \) -prune -o \
+       -type f -print0 > "$SCAN_TMP/files.z"      # ← Step 4's walk, same prune list
+fi
+
+# 3. Hash the WHOLE list in ONE batched call. xargs re-splits ONLY when argv
+#    would overflow, so this is 1 process for a few hundred files and roughly
+#    1 per ~20k paths beyond that — never 1 per file.
+#    $HASH is unquoted ON PURPOSE: it may be the two words `shasum -a 256`.
+xargs -0 $HASH < "$SCAN_TMP/files.z" > "$SCAN_TMP/hashes.txt"   # ← the gate's ONLY spawn
+```
+
+Then read `$SCAN_TMP/hashes.txt` (one `<digest>  <path>` line per file) and diff it against prior §2 in-model — that comparison is pure text work, zero further spawns:
 - File current sha256 == prior `Last_Scanned_Sha256` → REUSE prior §2 entries for this file; SKIP tree-sitter/regex re-extraction for it.
 - File current sha256 != prior → re-extract symbols via tree-sitter/regex (logic below); update `Last_Scanned_Sha256` to current sha256.
 - File not in prior map → re-extract symbols + add to §2 with current sha256.
 - File in prior map but not in current repo enumeration → drop from §2 (file removed).
 
-For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate; full re-extract for every file (correctness guarantee preserved for full scans). The gate runs BEFORE per-file extraction so it actually short-circuits the expensive per-file invocations.
+For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate entirely; `N_hash = 0`; full re-extract for every file (correctness guarantee preserved for full scans). The gate runs BEFORE per-file extraction so it actually short-circuits the expensive per-file invocations.
+
+**Honest `OS=windows-bash` note — which regime you are in decides the advice.**
+- *Unbatched* (one hasher spawn per file — the shape this section forbids): `--shallow-scan` is **net-negative** on Windows. On a 2,000-file repo with 10 changed it burns 2,000 hash spawns (~440 s) to avoid 1,990 extraction spawns (~438 s), because under an endpoint-security agent a sha256 spawn costs the same ~220 ms as a tree-sitter spawn. The "fast path" becomes the slowest step in the scan. It only pays at a very small changed fraction, and even then barely.
+- *Batched* (the mandated shape above): `N_hash` = 1 (2 if Step 4's `files.z` is missing and the walk has to be redone), so `--shallow-scan` pays at any changed fraction below ~100% and should be recommended on Windows. The residual cost is one process reading every file's bytes — EDR on-access file scanning, **not measured here** and not spawn tax; do not attach a number to it.
 
 ### Spawn-cost gate (MANDATORY before extraction, both engines)
 
@@ -132,20 +207,35 @@ so a perfectly ordinary 2,000-file repo costs ~7.3 minutes of pure spawn tax und
 tree-sitter and under a second under regex. This is a real field hang, not a
 hypothetical.
 
-Before Step 5 extraction, compute:
+Before Step 5 extraction, compute the **TOTAL** spawn bill — the invalidation gate's
+own hashing included. Budgeting only post-invalidation extraction is how a
+`--shallow-scan` run used to sail through this gate with a 2.2 s estimate while the
+invalidation decision itself burned 2,000 spawns:
 
 ```
-N        = files that will actually be extracted (after the invalidation gate)
+N_extract = files that will actually be extracted (after the invalidation gate)
+N_hash    = spawns the invalidation gate itself costs:
+              0 without --shallow-scan (gate skipped)
+              1 with --shallow-scan and BATCHED hashing — the single `xargs`
+                batch. The file list is REUSED from Step 4's walk
+                (`.mega-sdd/codebase/.scan/files.z`), so there is no `find` and
+                no `mktemp` here; those are Step 4 costs, paid with or without
+                --shallow-scan. Add +1 if that list is missing and Step 4's walk
+                must be redone, +1 per extra argv batch (~1 per 20k paths).
+              N_files if the hashing is NOT batched — the regression this
+                gate exists to catch; see §Order of operations
+N_total   = N_hash + N_extract
 per_spawn = 0.22s on OS=windows-bash, else 0.02s
-estimate  = N × per_spawn        # tree-sitter only; regex is ~n_languages × per_spawn
+estimate  = N_total × per_spawn  # tree-sitter only; regex extraction is
+                                 # ~n_languages × per_spawn, but N_hash still counts
 ```
 
 - `estimate` ≤ 60 s → proceed silently.
-- `estimate` > 60 s → **AskUserQuestion before extracting.** State N, the estimate,
-  and the OS. Options, each with its keterangan (→ `plugins/mega-sdd/references/output-language.md §Prompt surfaces`):
+- `estimate` > 60 s → **AskUserQuestion before extracting.** State `N_total` (broken
+  out as `N_hash` + `N_extract`), the estimate, and the OS. Options, each with its keterangan (→ `plugins/mega-sdd/references/output-language.md §Prompt surfaces`):
   - **Switch to `--engine=regex`** — one call per language instead of per file; finishes in seconds. Lower precision (regex tier, not `ast`), which the map records honestly in `precision_tier`.
   - **Continue with tree-sitter** — full AST precision, takes about the stated time. Reasonable on a fast disk / POSIX, or when precision matters more than latency.
-  - **Narrow the scan** — re-run with `--include=<glob>` to cut N.
+  - **Narrow the scan** — re-run with `--include=<glob>` to cut `N_extract` (and `N_files` with it).
 
 Do NOT silently downgrade the engine: precision is a property the map reports, so the
 choice belongs to the user. Do NOT skip the estimate on Windows because the repo
