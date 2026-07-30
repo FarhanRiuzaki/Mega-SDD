@@ -292,6 +292,14 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
    real config/source lines, so a hardcoded credential must not ship in the artifact. Same scrub
    applies to .reuse-index.yaml.tmp in the step-3 EXCEPTION write.)
    (Use temp file + rename pattern: write to .starterkit-context.yaml.tmp, scrub, then mv)
+   FINDINGS ROUTING — identical to Step 10a and NOT optional here: when the scrub reports
+   findings for EITHER temp file, append the affected source `file:line` + pattern class
+   (NEVER the matched value) to <project>/.mega-sdd/codebase/SECRET-FINDINGS.md using the
+   table shape in `scan-codebase/references/scan-procedure.md` §Step 10a, name the scrubbed
+   artifact in the `Artifact` column, list SECRET-FINDINGS.md in the handoff `artifacts:`,
+   and emit one chat line. The artifact keeps only `[REDACTED-SECRET]`, so without this the
+   live credential's location survives nowhere — and these two writes quote first-party
+   source, the likeliest place a default credential is embedded.
 7. Validate the written file is parseable:
    - If parse fails: emit halt deep_scan_cache_corrupt (soft); delete file; retry write once
    - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block

@@ -244,12 +244,45 @@ required, and RUN 1 does not clear RUN 2's question:**
   dispatch. Gates bind, and also decides whether scan's default-on deep-scan stage survives a fork.
 
 **Decisions taken (they cannot be inferred from any existing rail):**
-- **Spawn-cost gate → named `scan_spawn_budget_exceeded` blocker** carrying the re-run command, not
-  an automatic downgrade to regex. Both `--engine=` and `--include=` already exist, so this adds no
-  surface and stays detect-drift-shaped. Rejected the alternative (loud recorded downgrade): it
-  would need `scan-procedure.md:240` — *"Do NOT silently downgrade the engine: precision is a
-  property the map reports, so the choice belongs to the user"* — reconciled in writing, and a
-  blocker keeps that choice with the user where the rail puts it.
+- **Spawn-cost gate → a THREE-LANE split** (**AMENDED 2026-07-30**, see below). Lane 1: an explicit
+  `--engine=`/`--include=` IS the caller's decision → proceed, log the estimate. Lane 2, **undecided
+  STANDALONE** (a direct user invocation): the named `scan_spawn_budget_exceeded` blocker carrying
+  the re-run command. Lane 3, **UNATTENDED** — `--auto`, a forked body, or an
+  orchestrator-dispatched phase (how the Mode-D `--changed-only` hop arrives), ambiguity resolved HERE: **downgrade to `--engine=regex`
+  and RECORD it loudly** — `precision_tier: regex` + a new `precision_downgrade_reason` in the map frontmatter, one
+  chat line, and the AST-recovery re-run command in the handoff `next_action.rationale`;
+  `status: completed`, no `blockers[]` entry.
+
+  > **What this amendment corrects.** The first cut took the blocker UNCONDITIONALLY. That was a
+  > **live regression, not a future one**: the pre-existing `--auto` behaviour *proceeded*, and
+  > **zero** orchestrate-flow routing rows carry `--engine`/`--include`/`--force-large`, so a chain
+  > cannot pre-resolve the gate the way `handoff-contract.md` pre-resolves `bind-codebase <vault>`.
+  > `scan-codebase` is phase 1 of nearly every brownfield row, and on Windows (~0.22 s/spawn) the
+  > gate trips at only **~272 files** — so an unconditional blocker hard-stopped nearly every
+  > brownfield chain at phase 1, on the common case. Restoring a bare "proceed" was equally wrong:
+  > that re-opens the unattended multi-hour stall the gate exists to close (100k files ≈ 6.1 h).
+  >
+  > **Lane 3 is NOT keyed on the `--auto` literal**, and this is load-bearing: **zero** routing rows
+  > render `--auto` on the *scan* hop either — `routing-rules.md` writes phase 1 as bare
+  > `scan-codebase` / `scan-codebase --changed-only`, and only the DOWNSTREAM hops carry the flag,
+  > because scan is phase 1 and nothing hands IT a handoff. A flag-literal lane 3 would have put
+  > every chain-dispatched scan back in the blocker lane — the regression, re-created inside its own
+  > fix. The condition is unattended-ness (`--auto` / `--changed-only` / forked / orchestrator-
+  > dispatched), and ties resolve to lane 3 because the failure modes are asymmetric: a wrong lane 3
+  > is a recoverable, loudly stamped regex map; a wrong lane 2 is a chain that produced nothing.
+  >
+  > **Why lane 3 is legitimate, written down in `scan-procedure.md §Spawn-cost gate` rather than
+  > assumed.** (a) The house rule is that `--auto` takes the SAFEST option
+  > (`generate-units/references/pagerank-targeting.md` §`--auto` policy), and unattended, "safest" is
+  > neither a multi-hour stall nor a phase-1 chain halt — it is finishing in seconds at a precision
+  > the map states honestly. (b) It does NOT violate `scan-procedure.md`'s *"Do NOT silently downgrade
+  > the engine"* rail, because **that rail protects the RECORD, not the action** — the governing
+  > sentence is pagerank's own *"The `--auto` skip is not a SILENT skip — 'silently' is about the
+  > record, not the action"*, and the record here (durable map frontmatter + chat + handoff) is
+  > STRONGER than the one that sentence blesses. (c) It does not port back to pagerank's rail either:
+  > `generate-units` is a **CONSUMER** mutating already-written upstream state; `scan-codebase` is the
+  > **PRODUCER** stamping its own output in the same write. Lane 2 keeps the rail's original force
+  > exactly where it has a human to hand the choice back to.
 - **Monorepo rail → deterministic precedence** (explicit `--include` > root manifest > single
   app-root manifest), blocker only on residual ambiguity. A bare blocker is not acceptable on its
   own: **zero** orchestrate-flow routing rows carry `--include`/`--engine`/`--force-large`, and scan
@@ -258,6 +291,18 @@ required, and RUN 1 does not clear RUN 2's question:**
 - **Warnings channel → the secret-scan warning must be routed to disk.** scan's handoff schema
   carries `blockers[]` only. The map stores `[REDACTED-SECRET]`; the live credential's `file:line`
   exists **only in chat** (`scan-procedure.md:451`) and a fork would swallow it.
+
+**Closed after the adversarial re-review (2026-07-30, same day):** besides the spawn-gate lane split
+above — bind's handoff is now **unconditional** at both sites (`bind-codebase/SKILL.md` §Hand-off +
+`references/auto-memory-handoff.md`), which was scan's B8 defect with no C-item counterpart: a direct
+`/mega-sdd:bind-codebase` run never injects `--auto`, so an `--auto`-gated handoff emitted nothing at
+all on the standalone lane — the one lane with no chain to fall back on, and the one where
+`bind_conflict` / `bind_inputs_missing` most need a route out. Also closed: the C2 glob-root
+constraint now binds at **direct-child** level (`vaults/<slug>/`) rather than the looser "under
+`.mega-sdd/vaults/`", matching the four non-recursive globs at
+`scripts/validate-handoff-binding-units.sh:123-128`; the deep-scan scrub sites
+(`deep-scan-dispatch.md` Step 10.5.3 steps 3+6) now implement the SECRET-FINDINGS.md routing that
+`halts-flags-handoff.md` claims for EVERY scrub site.
 
 **Fixable today, independent of 5a — do not wait for the runs:** three surfaces already describe
 `bind-codebase` as forked while its frontmatter carries no `context:` key, and two of three render

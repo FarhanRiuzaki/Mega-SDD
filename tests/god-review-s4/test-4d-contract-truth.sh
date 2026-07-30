@@ -113,7 +113,11 @@ AMH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handof
 python3 - "$AMH" <<'PY' && ok "HANDOFF-3: operative bind template uses <vault>/bound/ + emitted_at (no legacy vault-bound/)" || fail "HANDOFF-3: operative bind handoff template stale"
 import re, sys
 doc = open(sys.argv[1]).read()
-m = re.search(r"## Handoff emission \(--auto\).*?```yaml\n(.*?)```", doc, re.S)
+# Header suffix is NOT part of this pin — it moved from "(--auto)" to "(UNCONDITIONAL)"
+# when bind's handoff stopped being --auto-gated (fork-safety fix, 2026-07-30). The pinned
+# subject is the TEMPLATE BODY below it, unchanged: <vault>/bound/ + emitted_at, no legacy
+# vault-bound/. Anchor on the stable header stem so a future rename cannot silently skip it.
+m = re.search(r"## Handoff emission[^\n]*\n.*?```yaml\n(.*?)```", doc, re.S)
 assert m, "bind handoff template not found"
 b = m.group(1)
 sys.exit(0 if ("emitted_at:" in b and "<vault>/bound/" in b and "vault-bound/" not in b) else 1)
