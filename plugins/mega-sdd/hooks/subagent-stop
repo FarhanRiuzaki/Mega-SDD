@@ -86,9 +86,24 @@ except Exception:
 if not os.path.isfile(telemetry):
     sys.exit(0)
 
-# SUM usage across ALL assistant turns in the subagent transcript (not last-only).
+# SUM usage across ALL assistant turns in the subagent transcript (not last-only),
+# DEDUPED BY message.id: the harness writes one JSONL record per content block, all
+# sharing one message.id and repeating the SAME usage object, so a blind sum
+# over-counts (measured 2.47x aggregate over 10 real transcripts; duplicate records
+# verified usage-identical). Summing the whole file is correct HERE and only here —
+# a subagent transcript is read once, at the subagent boundary. (The main-session
+# transcript is append-only and its hook fires every turn, so hooks/stop windows by
+# a byte cursor instead.)
+# Also captured: the exact cache_creation TTL split, so report-token-cost.sh prices
+# cache creation at its real rate instead of assuming a TTL for this lane; and the
+# model, which is what settles "what tier did bolt-implementer actually run at".
 keys = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
 tot = {k: 0 for k in keys}
+cc5 = 0
+cc1 = 0
+model = ""
+seen = set()
+nameless = 0
 have = False
 if atp and os.path.isfile(atp):
     with open(atp) as f:
@@ -100,14 +115,35 @@ if atp and os.path.isfile(atp):
             msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
             if not (msg and isinstance(msg.get("usage"), dict)):
                 continue
+            mid = msg.get("id")
+            # Dedup only on a REAL id. A message with no id has no identity to
+            # dedup on, so collapsing those would silently drop distinct turns.
+            if isinstance(mid, str) and mid:
+                if mid in seen:
+                    continue
+                seen.add(mid)
+            else:
+                nameless += 1
             u = msg["usage"]
             have = True
+            if not model and isinstance(msg.get("model"), str):
+                model = msg["model"]
             for k in keys:
                 v = u.get(k, 0)
                 if isinstance(v, (int, float)):
                     tot[k] += int(v)
+            cc = u.get("cache_creation")
+            if isinstance(cc, dict):
+                v5 = cc.get("ephemeral_5m_input_tokens", 0)
+                v1 = cc.get("ephemeral_1h_input_tokens", 0)
+                if isinstance(v5, (int, float)):
+                    cc5 += int(v5)
+                if isinstance(v1, (int, float)):
+                    cc1 += int(v1)
 if not have:
     sys.exit(0)  # subagent transcript missing/empty — nothing to attribute
+tot["cache_creation_5m_input_tokens"] = cc5
+tot["cache_creation_1h_input_tokens"] = cc1
 
 event = {
     "ts": ts,
@@ -117,6 +153,8 @@ event = {
     "hook_source": "SubagentStop",
     "payload": {
         "usage": tot,
+        "messages": len(seen) + nameless,
+        "model": model,
         "skill_name": agent_type,
         "agent_type": agent_type,
         "agent_id": agent_id,

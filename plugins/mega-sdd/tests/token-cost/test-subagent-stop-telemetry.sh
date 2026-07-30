@@ -59,12 +59,20 @@ if [ -n "$EV" ]; then
   CHK="$(printf '%s' "$EV" | python3 -c '
 import json,sys
 e=json.loads(sys.stdin.read()); u=e["payload"]["usage"]
-exp={"input_tokens":15,"cache_creation_input_tokens":100,"cache_read_input_tokens":3000,"output_tokens":130}
+# The four core keys are the summed cost. The TTL split keys ride alongside and are
+# 0 here because this fixture carries no usage.cache_creation object (pre-v5.12.0
+# transcript shape) — that is exactly the case report-token-cost.sh lane-assumes.
+exp={"input_tokens":15,"cache_creation_input_tokens":100,"cache_read_input_tokens":3000,"output_tokens":130,
+     "cache_creation_5m_input_tokens":0,"cache_creation_1h_input_tokens":0}
 print("USAGE_OK" if u==exp else f"USAGE_BAD:{u}")
+# Two id-less assistant messages must NOT collapse into one: dedup keys on message.id,
+# and a message with no id has no identity to dedup on.
+print("COUNT_OK" if e["payload"].get("messages")==2 else f"COUNT_BAD:{e['payload'].get('messages')}")
 print("SKILL_OK" if e["payload"]["skill_name"]=="mega-sdd:bolt-implementer" else "SKILL_BAD")
 print("SRC_OK" if e.get("hook_source")=="SubagentStop" else "SRC_BAD")
 ')"
   echo "$CHK" | grep -q USAGE_OK && pass "usage SUMMED across turns (15/100/3000/130, not last-only)" || fail "usage wrong: $(echo "$CHK"|grep USAGE)"
+  echo "$CHK" | grep -q COUNT_OK && pass "id-less messages counted individually (dedup needs a real id)" || fail "message count wrong: $(echo "$CHK"|grep COUNT)"
   echo "$CHK" | grep -q SKILL_OK && pass "attributed to agent_type (mega-sdd:bolt-implementer)" || fail "skill_name wrong"
   echo "$CHK" | grep -q SRC_OK && pass "hook_source=SubagentStop" || fail "hook_source wrong"
 fi

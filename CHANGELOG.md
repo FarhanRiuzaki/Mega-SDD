@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.13.0] - 2026-07-30
+
+fix(telemetry): the token instrument was wrong by ~11.6x in one direction and ~2.5x in the other — every prior optimization round was aimed with it.
+
+This ships **Phase 0** of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) (research: [`research/2026-07-30-token-audit-end-to-end.md`](research/2026-07-30-token-audit-end-to-end.md)). It saves **zero tokens by itself** — it is the ruler the rest of the work is measured with, and it was mis-calibrated three separate ways.
+
+**⚠️ Expect the numbers to MOVE. That is the correction landing, not a regression.** Main-thread cost jumps ~11x, subagent cost drops ~2.5x, and cache-creation cost rises ~60% on the main lane. Nothing got more expensive; the instrument stopped lying.
+
+**1. `hooks/stop` recorded one message per turn, not the turn.** It kept only `last_usage` — but a turn is many assistant messages (one per tool round trip), and the last carries only the final message's usage. `hooks/subagent-stop` already carried this correction for the subagent lane, its own comment noting last-message-only ran "~7x under"; the main lane never got it. Measured over **10 real session transcripts / 547 turns**: last-message-only under-reports by **11.65x aggregate** (median 9.53x, range 2.8–18.3x).
+
+**The obvious fix would have been worse than the bug.** "Sum the transcript" is right for `subagent-stop` — a subagent transcript is read *once*, at the subagent boundary. It is wrong for `stop`: the main transcript is append-only for the whole session and the hook fires *every turn*, so summing the file each time re-emits the cumulative total every turn — O(N²). `stop` now windows by a **per-session byte cursor** and sums only what was appended since its last firing. Per-session matters: one shared cursor would see a path mismatch under two concurrent sessions, reset, and re-sum each whole transcript. Truncation skips to the new EOF rather than re-counting from zero — for an instrument, one under-reported turn beats one fabricated spike. A double `Stop` firing now correctly emits `{}` instead of re-billing the turn.
+
+**2. Both lanes over-counted by ~2.5x — the harness writes one JSONL record per content block.** All records for one message share a `message.id` and repeat the *same* usage object (verified: 0 of 56 duplicated ids carried divergent usage in a 548-record transcript). Blind summing therefore inflates by the block multiplicity — **2.468x aggregate**, median 2.404x. Both hooks now dedup by `message.id`. Dedup keys on a **non-empty** id only: a message with no id has no identity to dedup on, and collapsing those silently drops distinct turns (caught by the existing subagent fixture, whose messages carry no ids). `stop` additionally skips `isSidechain` records — those are billed by `SubagentStop` against their own nested transcript, so counting them in the main lane would double-count the entire bolt and review-panel lane.
+
+**3. `report-token-cost.sh` priced ALL cache creation at the 5-minute rate.** It hard-coded x1.25; the 1-hour TTL costs x2.00. Cache creation is the single largest line item in a real pipeline run, so the report understated it by 60% wherever the 1h TTL applied.
+
+The planned fix was a per-lane constant. Measurement made that unnecessary: **the transcript states the TTL per message** in `usage.cache_creation.ephemeral_{5m,1h}_input_tokens` (measured this session: 666,802 tokens @1h, 0 @5m on the main lane — confirming the 1h claim as a *measurement*, not an assumption). Both hooks now carry that split into telemetry and the report prices cache creation **exactly**. The lane constants survive only as the fallback for telemetry written before this release, a partial split charges its residual rather than dropping it, and **every report states what share was measured vs assumed** — `cache_creation_ttl.pct_measured`. The existing telemetry in a repo is 0% measured, so the first genuinely measured baseline is the first run after this release, not a re-report of old data.
+
+**Free rider:** the same read captures `message.model`, so the report now carries a **By model** table. That answers "what tier did the bolt lane actually run at" from ordinary telemetry — the spec's Phase 1b no longer needs a special instrumented run.
+
+**Tests:** new `plugins/mega-sdd/tests/token-cost/test-stop-turn-usage.sh` (14 assertions: window, dedup, id-less messages, sidechain exclusion, per-session cursor isolation, truncation-resets-to-EOF, malformed-transcript-still-exits-0) plus TTL-exact / lane-fallback / residual cases in `test-token-cost-report.sh`.
+
 ## [5.12.0] - 2026-07-30
 
 fix(windows): five findings from a full-plugin Windows portability audit — including a missing `.gitattributes` that makes a default Git-for-Windows clone unable to execute a single script.
