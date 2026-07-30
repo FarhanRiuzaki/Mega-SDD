@@ -68,7 +68,22 @@ quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+    # BOUNDED. Local git plumbing is low-risk, not zero-risk: an fsmonitor daemon,
+    # a wedged index.lock, or a network-backed worktree can stall a read-only call
+    # indefinitely, and this runs in a path Claude Code waits on. 60 s is 6x the
+    # repo's own rev-parse precedent (refresh-doc-stamps.sh / validate-codebase-map.sh
+    # use timeout=10) — generous for any honest local call, finite for a wedged one.
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True,
+                              timeout=60)
+    except subprocess.TimeoutExpired:
+        # FAIL-CLOSED to exit 2 ("cannot run"), NEVER a synthetic empty result: the
+        # commit walks below decide Hard-rule VERDICTS, and an empty git result reads
+        # as "nothing touched" — i.e. it would launder a violation into a pass. Exit 2
+        # is already this script's documented cannot-run code.
+        print("ERROR: `git %s` exceeded 60s — cannot run (wedged git/fsmonitor?). "
+              "No artifact written." % " ".join(a), file=sys.stderr)
+        sys.exit(2)
 
 PREFIX = git("rev-parse", "--show-prefix").stdout.strip()
 

@@ -12,9 +12,10 @@
 - `hard_rule_unparseable`
 - `unit_oq_trace_missing`
 - `starterkit_rule_citation_missing` (ALWAYS STOP)
+- Confirm gates (not halts — no blocker YAML)
 - Halt-vs-warning summary
 
-Every structured halt conforms to `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. The SKILL.md step skeleton names the trigger for each; this file carries the emitted YAML and recovery action. All halts STOP generation unless noted; under `--auto` they set handoff `status: halted`.
+Every structured halt conforms to `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. The SKILL.md step skeleton names the trigger for each; this file carries the emitted YAML and recovery action. All halts STOP generation unless noted; under `--auto` they set handoff `status: halted`. **Confirm gates are NOT halts** — they carry no blocker YAML, add no member to the halt enum, and never set `status: halted`; under `--auto` each takes its documented safest default and declares it in the closing Hand-off summary line instead. **That is a summary line, not a schema field** — the handoff YAML has no `warnings` channel and one must never be invented (`references/auto-and-memory.md §Handoff emission`).
 
 ## When each halt fires (index)
 
@@ -179,8 +180,32 @@ next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<pa
 
 Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass. This halt is ALWAYS STOP — never a soft warning. Do NOT write the unit while the citation is missing.
 
+## Confirm gates (not halts — no blocker YAML)
+
+These STOP to ask, then continue on the user's answer. They emit NO blocker envelope and add
+no member to the halt enum.
+
+- **Step 7.5 spawn-cost gate — estimated symbol-graph build > 60 s.** Building the PageRank
+  symbol graph spawns one `tree-sitter query` process per source FILE (`scan-codebase` does
+  not persist `name.reference.*` captures). Estimate `N x per_spawn` with `per_spawn` =
+  0.22 s on windows-bash, else 0.02 s; above 60 s ask before building, offering
+  `--skip-pagerank` (recommended) / continue / re-scan at regex tier. Fires at ~272 source
+  files on Windows-with-EDR, where a 10,000-source-file repo is ~37 min.
+  **`N` is defined in exactly one place** — the §Spawn-cost gate section of the
+  pagerank-targeting reference listed in the skill router — which also names its zero-spawn
+  source (`codebase-map.md` §2). Read it there; this file deliberately does not restate it.
+  Same section carries the full wording + per-option keterangan.
+  - **Under `--auto` this gate does NOT prompt and does NOT halt.** Above 60 s it takes the
+    safest option — skip the suggestion pass, RECORD the skip in the unit body's
+    `## PageRank suggestions` section and in the closing Hand-off summary line, and never
+    re-scan at regex tier (that would mutate shared `precision_tier` state unattended). No
+    `blockers[]` entry, `status` stays `completed`. Detail: §`--auto` policy in the same
+    reference.
+
 ## Halt-vs-warning summary
 
 Hard halts (STOP): `cycle_detected`, `cross_squad_dep_invalid`, `interface_ref_missing`, `cross_squad_ambiguous`, `cross_module_dep_invalid`, `module_cycle_detected`, `dedup_ambiguous`, `unit_underspecified`, `hard_rule_unparseable`, `unit_oq_trace_missing`, `starterkit_rule_citation_missing`. Plus the binding-gate refusal on unresolved CONFLICTs and the `verify`-without-anchor binding-gap halt.
 
 Soft (proceed, surface a WARNING): anchor file missing / line out of bounds (Step 12.3); Implementation-steps bullet-only (Step 12.5 c); module ≥10% unassigned; target_files collision force-create (option 4). The full halt-vs-warning matrix is in the defensive-generation reference listed in the skill router.
+
+Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): the Step 7.5 spawn-cost gate (§Confirm gates above).

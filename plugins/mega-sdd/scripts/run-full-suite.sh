@@ -147,10 +147,26 @@ printf '%s' "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$' || {
 # dependency dirs (node_modules/, vendor/) and tool junk (.DS_Store, caches) are
 # exempt: they are never part of any commit, so refusing them is a permanent loop.
 DIRTY=$(CWD="$CWD" python3 - <<'PY'
-import glob, os, re, subprocess
+import glob, os, re, subprocess, sys
 cwd = os.environ["CWD"]
 def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+    # BOUNDED. Local git plumbing is low-risk, not zero-risk: an fsmonitor daemon,
+    # a wedged index.lock, or a network-backed worktree can stall a read-only call
+    # indefinitely, and this runs in a path Claude Code waits on. 60 s is 6x the
+    # repo's own rev-parse precedent (refresh-doc-stamps.sh uses timeout=10).
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True,
+                              timeout=60)
+    except subprocess.TimeoutExpired:
+        # FAIL-CLOSED, and here that takes an extra step. This block's STDOUT is the
+        # verdict: the shell wraps it as DIRTY=$(...) and treats EMPTY as "tree is
+        # clean". So exiting quietly would fail OPEN — the dirty-tree refusal would
+        # silently pass and the suite would certify HEAD while testing a dirty tree.
+        # Emit a sentinel on stdout FIRST so `[ -n "$DIRTY" ]` fires, then exit.
+        print("GIT-TIMEOUT: `git %s` exceeded 60s — tree cleanliness UNKNOWN "
+              "(fail-closed; check for a wedged git/fsmonitor, then re-run)"
+              % " ".join(a))
+        sys.exit(2)
 prefix = git("rev-parse", "--show-prefix").stdout.strip()
 vault_roots = []
 for pat in ("*-bound", os.path.join("*", "*-bound"), os.path.join("docs", "mega-sdd", "vaults", "*-bound")):

@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.15.1
+version: 2.16.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -80,7 +80,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **7. Fill `target_files` whitelist.** Greenfield → expected files from vault component definitions; brownfield → bound-vault citations (specific paths from binding). Can't determine target_files → halt (vault too vague).
 
-**7.5. PageRank target_files suggestions.** When `codebase-map.md` is `precision_tier: ast`, surface top-K symbol-graph file suggestions in the unit's `## PageRank suggestions` section — informational, NEVER auto-added to target_files (user promotes manually). Skipped on regex tier / `--skip-pagerank`. Detail: `references/task-typing.md §Step 7.5` + `references/pagerank-targeting.md`.
+**7.5. PageRank target_files suggestions.** When `codebase-map.md` is `precision_tier: ast`, surface top-K symbol-graph file suggestions in the unit's `## PageRank suggestions` section — informational, NEVER auto-added to target_files (user promotes manually). Skipped on regex tier / `--skip-pagerank`. **Spawn-cost gate first** — `scan-codebase` does NOT persist the `name.reference.*` captures, so building the symbol graph re-runs `tree-sitter query` one process per FILE over the WHOLE source set (every member of `N`, not just the files that changed). At the ~220 ms/spawn measured on Windows-with-EDR a 10,000-source-file repo is ~37 min. Estimate `N x per_spawn` (0.22 s on windows-bash, else 0.02 s) before building and, above 60 s, ASK before proceeding. **`N` is defined in exactly one place — `references/pagerank-targeting.md §Spawn-cost gate` — read it there; do not restate it here.** That section also names its source — never a fresh walk, because sizing the walk must not cost the walk. Tier 1 is `scan-codebase`'s persisted enumeration (`.mega-sdd/codebase/.scan/files.z`, one spawn, EXACT). Only when that file is absent do you fall back to `codebase-map.md` §2 — and then the count **is a FLOOR**, never a ceiling, and `truncated_sections` containing `2` means §2 is capped, so take the >60 s branch REGARDLESS of the count. `--auto` never prompts: above 60 s it takes the safest option — skip the suggestion pass, DECLARE the skip in the unit body and in the closing Hand-off summary line, and never touch `precision_tier` (same section, §`--auto` policy). Detail: `references/task-typing.md §Step 7.5` + `references/pagerank-targeting.md`.
 
 **7.6. Per-unit target_files collision check.** Before writing each unit, for each `operation: create` entry that already exists on disk → INTERACTIVE prompt (convert to `verify`/`extend`, rename, force-create, or skip). Fires ONLY on genuine collision; `--auto` picks the safest default; `--collision-policy` overrides. Detail: `references/task-typing.md §Step 7.6` (single owner).
 

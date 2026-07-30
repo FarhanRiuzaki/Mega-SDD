@@ -1,0 +1,57 @@
+# .gitattributes — LF is a HARD REQUIREMENT here, not a style preference.
+# Do not delete this file. Do not narrow the `*` rule below to `*.sh`.
+#
+# WHY IT EXISTS
+# Claude Code installs this plugin by `git clone` into its marketplace cache, and
+# that clone inherits the machine's `core.autocrlf` (the cache repo sets nothing
+# of its own). The DEFAULT Git for Windows installer option is
+# `core.autocrlf=true`. Without the rules below, every shipped script is checked
+# out with CRLF on such a machine, and then:
+#
+#   plugins/mega-sdd/hooks/run-hook.sh:13   set -euo pipefail
+#
+# parses as `set -e -u -o $'pipefail\r'` -> `set: pipefail: invalid option name`.
+# The dispatcher exits RC=2 and dispatches NOTHING. Both branches are severe:
+#   * blocking hooks (PreToolUse, SessionStart, UserPromptExpansion,
+#     UserPromptSubmit, PreCompact) fail the session outright;
+#   * async hooks (PostToolUse, Stop, SubagentStop, PostToolUseFailure) fail
+#     INVISIBLY — the dirty journal, postflight scan and batch-suite gate all
+#     evaporate while the model still believes it is gated.
+# Independently, `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh` takes a
+# hard syntax error under CRLF, leaving `resolve_project_root` undefined for
+# every script that sources it.
+# Source: research/2026-07-29-windows-portability-audit.md, finding
+# `crlf-no-gitattributes` (severity: hang, skills: ALL).
+#
+# WHY THE CATCH-ALL MUST STAY `*`
+# The eight hook entry points have NO file extension —
+#   hooks/pre-tool-use, post-tool-use, session-start, stop, subagent-stop,
+#   pre-compact, user-prompt-submit, user-prompt-expansion
+# — so a `*.sh` rule misses every single one of them, i.e. it would miss exactly
+# the files whose corruption kills the plugin.
+#
+# LIMIT
+# Adding this file does NOT renormalize an existing clone. A machine that already
+# checked out CRLF must re-clone the plugin cache.
+#
+# ENFORCEMENT (gates > rules > hooks)
+# tests/platform/test-line-endings.sh asks Git itself, via `git check-attr text
+# eol`, whether eol=lf actually reaches all eight extensionless entry points, and
+# fails if any tracked file under plugins/mega-sdd/ carries a CR byte.
+
+* text=auto eol=lf
+
+# ── Binary / byte-exact exceptions ────────────────────────────────────────────
+# Derived from `git ls-files`, not guessed: the only tracked files Git's own
+# content heuristic classifies as binary today are three PDFs
+# (docs/prd-reference/*.pdf, examples/timeoff/PRD-Examples.pdf). `text=auto`
+# would already spare them via the NUL-byte heuristic; pinning them explicitly
+# means no future heuristic miss can rewrite their bytes.
+# If you ever track a new binary type (png/jpg/ico/woff/xlsx/zip/…), add it here.
+*.pdf binary
+
+# Byte-exact fixture: deliberately invalid UTF-8 (0xC3 0x28) with NO NUL byte, so
+# Git's heuristic classifies it as TEXT and `text=auto` would take it. `-text`
+# (rather than `binary`) pins its bytes while keeping it diffable — the fail-open
+# regression it guards is a function of those exact bytes.
+tests/fixtures/code-delivery/regressions/adv01-utf8-failopen/.mega-sdd/vaults/demo/04-flows.md -text

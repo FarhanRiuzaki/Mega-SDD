@@ -88,7 +88,23 @@ quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+    # BOUNDED. Note this is the REPO-METADATA helper, not the test runner — the
+    # user-supplied acceptance commands below keep their own `--timeout` budget and
+    # are deliberately left on it. Local git plumbing is low-risk, not zero-risk: an
+    # fsmonitor daemon, a wedged index.lock, or a network-backed worktree can stall a
+    # read-only call indefinitely, in a path Claude Code waits on. 60 s is 6x the
+    # repo's own rev-parse precedent (refresh-doc-stamps.sh uses timeout=10).
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True,
+                              timeout=60)
+    except subprocess.TimeoutExpired:
+        # FAIL-CLOSED to exit 2 ("cannot run"), NEVER a synthetic empty result: the
+        # changed-file walk feeds the L0 syntax floor, and an empty result reads as
+        # "nothing changed" — a silently EMPTY acceptance run that still writes a
+        # green-looking artifact. Exit 2 is this script's documented cannot-run code.
+        print("ERROR: `git %s` exceeded 60s — cannot run (wedged git/fsmonitor?). "
+              "No artifact written." % " ".join(a), file=sys.stderr)
+        sys.exit(2)
 
 PREFIX = git("rev-parse", "--show-prefix").stdout.strip()
 

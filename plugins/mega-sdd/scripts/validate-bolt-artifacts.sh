@@ -121,7 +121,29 @@ quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def git(*a):
-    return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True)
+    # BOUNDED. This helper lives in $PY_COMMON, injected into FIVE gate blocks
+    # (orphan / batch-suite / postflight / acceptance / whitelist), so one unbounded
+    # call here is five hangs — and this validator is re-run by the BLOCKING
+    # PreToolUse gate and by the Stop hook. Local git plumbing is low-risk, not
+    # zero-risk: an fsmonitor daemon, a wedged index.lock, or a network-backed
+    # worktree can stall a read-only call indefinitely. 60 s is 6x the rev-parse
+    # precedent set elsewhere in scripts/ (timeout=10) and the walks here are
+    # `log --name-only` over a 300-commit window, not the whole history.
+    # NOTE: this whole block is a SINGLE-QUOTED shell string, so a bare apostrophe
+    # anywhere in it silently ends the string. Keep this comment apostrophe-free.
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True,
+                              timeout=60)
+    except subprocess.TimeoutExpired:
+        # FAIL-CLOSED to exit 2 ("error" per the exit table in the header), NEVER a
+        # synthetic empty result: every gate below reads these walks, and an empty
+        # log reads as "no bolt commits exist" — which quietly SATISFIES B1/B2/B3/B4
+        # by making the obligation disappear. An error the caller can see beats a
+        # gate that opens itself.
+        print("ERROR: `git %s` exceeded 60s — cannot determine bolt-commit state "
+              "(wedged git/fsmonitor?); gate NOT evaluated." % " ".join(a),
+              file=sys.stderr)
+        sys.exit(2)
 
 # Monorepo scoping (S6 EB-VAL-5): git names are repo-root-relative; the project
 # may live at a prefix. All log walks are pathspec-scoped to the prefix so
