@@ -196,9 +196,74 @@ Payback rule (§2 of the research doc):
 `0.1 × (resident_old − resident_new) × turns_remaining > 2.0 × seed` (1h TTL, main lane).
 
 - **5a — fork `scan-codebase` + `bind-codebase`.** **~2.0M cost-units (floor 1.7M) = 11–16% of
-  main-thread cost.** Remaining blocker for scan is *one missing `--auto-policy` paragraph* another
-  skill already ships verbatim. **Risk: handoff-under-fork is unexercised** — both skills emit
-  handoff blocks; prove that path before shipping. Costs latency.
+  main-thread cost.** Costs latency. **Audited 2026-07-30 — see the amendment below.**
+
+### 5a amendment — findings of the fork-safety audit
+
+Full report + evidence: [`research/2026-07-30-fork-safety-audit-scan-bind.md`](../../../research/2026-07-30-fork-safety-audit-scan-bind.md)
+(13 agents, 6 dimensions each adversarially refuted). **Three things in the line above were wrong.**
+
+**Wrong #1 — the scoping.** "One missing `--auto-policy` paragraph another skill already ships
+verbatim" understates it. Verbatim reuse is also *incorrect* here: `generate-units` can take
+`--skip-pagerank` as its safe default because PageRank is advisory and `execute-bolts` ignores it;
+scan's extraction **is** the deliverable. Real scan work = 4 prompt sites + 1 behaviour table +
+1 warnings channel + 1 unconditional handoff. Real bind work = a deterministic Step 0 + one stale
+reattribution + one declaration.
+
+**Wrong #2 — the named risk was the wrong risk.** "A fork could change where
+`.validation-blockers.json` lands and break the CONFLICT gate" is **REFUTED** on three independent
+mechanisms: bind **never writes that file** (sole writer is `scripts/validate-handoff-binding-units.sh:85`,
+invoked by hooks with a hook-computed `--cwd`); the state is **recomputed at the gate before it is
+read** (`hooks/pre-tool-use:421-422` then `:474-494`, fail-closed); and direct writes are hard-denied
+(`:774/:804/:924/:951`). **The moat is fork-immune here, and it is immune by recompute-at-gate — not
+by anything the skill body says.** The June "producer-timing race" is stale for the moat.
+
+**Wrong #3 — the real blocker is elsewhere, and it is not fixable by editing prose.**
+`bind-codebase` dispatches `phase-advisor` **by default** (`SKILL.md:58`). Whether a `context: fork`
+body can dispatch an `Agent` at depth 2 is **doc-cited but never exercised** — and the `detect-drift`
+pilot cannot settle it, because detect-drift dispatches no subagent at all.
+
+**Verdicts:**
+
+| | verdict |
+|---|---|
+| **scan-codebase** | **GO** after a bounded edit set — no unresolvable risk remains |
+| **bind-codebase** | **NO-GO until the depth-2 probe returns** |
+| **both** | gated by **Precondition 0** below, which pre-dates this audit |
+
+**Precondition 0 (the project's own contract, `plugins/mega-sdd/CLAUDE.md:69`):** fork may be
+extended to scan/bind *only after* the live token before/after on `detect-drift` confirms the win.
+It has never produced a verdict — the only attempt failed because `context: fork` silently no-ops
+under `claude -p` (`research/2026-07-20-fork-ab-headless-attempt.md`). **Two interactive runs are
+required, and RUN 1 does not clear RUN 2's question:**
+- **RUN 1 (pilot):** one `/mega-sdd:sync` on a Mode-D brownfield repo, invoked **from a
+  sub-directory**. Measures (a) the token win per the scaffolded procedure, (b) whether a forked
+  skill's handoff reaches the orchestrator's capture point, (c) CWD inheritance — do artifacts land
+  at the canonical root?
+- **RUN 2 (depth-2 probe):** a `context: fork` skill whose body attempts exactly one `Agent`
+  dispatch. Gates bind, and also decides whether scan's default-on deep-scan stage survives a fork.
+
+**Decisions taken (they cannot be inferred from any existing rail):**
+- **Spawn-cost gate → named `scan_spawn_budget_exceeded` blocker** carrying the re-run command, not
+  an automatic downgrade to regex. Both `--engine=` and `--include=` already exist, so this adds no
+  surface and stays detect-drift-shaped. Rejected the alternative (loud recorded downgrade): it
+  would need `scan-procedure.md:240` — *"Do NOT silently downgrade the engine: precision is a
+  property the map reports, so the choice belongs to the user"* — reconciled in writing, and a
+  blocker keeps that choice with the user where the rail puts it.
+- **Monorepo rail → deterministic precedence** (explicit `--include` > root manifest > single
+  app-root manifest), blocker only on residual ambiguity. A bare blocker is not acceptable on its
+  own: **zero** orchestrate-flow routing rows carry `--include`/`--engine`/`--force-large`, and scan
+  is phase 1 of nearly every brownfield chain — an unthreaded blocker converts a one-time question
+  into a phase-1 chain halt for every monorepo user.
+- **Warnings channel → the secret-scan warning must be routed to disk.** scan's handoff schema
+  carries `blockers[]` only. The map stores `[REDACTED-SECRET]`; the live credential's `file:line`
+  exists **only in chat** (`scan-procedure.md:451`) and a fork would swallow it.
+
+**Fixable today, independent of 5a — do not wait for the runs:** three surfaces already describe
+`bind-codebase` as forked while its frontmatter carries no `context:` key, and two of three render
+the sync-lane handoff as bare `bind-codebase --auto` with **no vault signal** on the one lane where
+both downstream phases are forked (`routing-rules.md:92` + `scan-procedure.md:49` vs
+`halts-flags-handoff.md:110`).
 - **5b — `codebase-map.md` deriver.** Measured **37.6K cost-units per write**, ≥188K lifetime;
   currently re-typed **in full** on every incremental sync. Needs 4 anti-hallucination rails that
   are currently prose-trusted.

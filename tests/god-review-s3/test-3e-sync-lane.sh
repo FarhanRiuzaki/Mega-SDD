@@ -98,15 +98,18 @@ if grep -qF 'so downstream full-scans consistently' "$SP"; then
 else
   ok "B6: buggy scope-less-detect-drift fallback wording removed from scan-procedure"
 fi
+# Tightened 2026-07-30 (fork-safety audit): the render must carry <vault>. On this
+# branch no .sync-changed-paths.txt is written, so the vault path is the ONLY signal
+# the non-interactive downstream bind receives. See tests/scan/test-sync-lane-vault-signal.sh.
 grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SP" \
-  && grep -qF 'next_action: mega-sdd:bind-codebase --auto' "$SP" \
-  && ok "B6: SP fallback hands off bind-codebase --auto (full re-bind)" || fail "B6: SP fallback missing bind-codebase --auto continuation"
+  && grep -qF 'next_action: mega-sdd:bind-codebase <vault> --auto' "$SP" \
+  && ok "B6: SP fallback hands off bind-codebase <vault> --auto (full re-bind)" || fail "B6: SP fallback missing bind-codebase <vault> --auto continuation"
 grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HFH" \
   && ok "B6: HFH handoff comment names the bind-codebase fallback continuation" || fail "B6: HFH fallback comment not updated"
 grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HC" \
   && ok "B6: handoff-contract mirror names the bind-codebase fallback continuation" || fail "B6: HC mirror fallback branch not updated"
-grep -qF 'on the full-scan fallback' "$RR" && grep -qF 'hands off `bind-codebase --auto` DIRECTLY' "$RR" \
-  && ok "B6: routing-rules Mode D row carries the fallback sub-branch" || fail "B6: routing-rules Mode D row missing fallback sub-branch"
+grep -qF 'on the full-scan fallback' "$RR" && grep -qF 'hands off `bind-codebase <vault> --auto` DIRECTLY' "$RR" \
+  && ok "B6: routing-rules Mode D row carries the fallback sub-branch (with <vault>)" || fail "B6: routing-rules Mode D row missing fallback sub-branch"
 grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SPEC" \
   && ok "B6: spec §3.8(b)(1) amended off the buggy 'drop --scope' call" || fail "B6: spec §3.8(b)(1) still says drop --scope"
 # secondary cleanup: generate-units --reconcile is NOT a scope-channel consumer
