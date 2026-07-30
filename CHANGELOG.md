@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.14.0] - 2026-07-31
+
+fix(sync-lane): the Mode-D fallback handed a non-interactive `bind-codebase` no vault at all — found while auditing whether scan/bind can be forked.
+
+Phase 5a of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) asked a narrow question: can `scan-codebase` and `bind-codebase` take `context: fork`? A 13-agent audit (6 dimensions, each adversarially refuted) answered it — and found a live defect on the way. Full report with `file:line` evidence: [`research/2026-07-30-fork-safety-audit-scan-bind.md`](research/2026-07-30-fork-safety-audit-scan-bind.md).
+
+**The live defect — five surfaces, one missing word.** On the Mode-D sync lane, `scan-codebase --changed-only`'s full-scan fallback writes **no** `.sync-changed-paths.txt` and hands straight to a FULL re-bind. On that branch the vault path is the **only** signal the downstream bind receives — and bind is non-interactive there, so it cannot ask for it. The authoritative handoff schema always rendered it as `bind-codebase <vault> --auto`; the design spec's shorthand rendered it bare, and three operative surfaces had copied the shorthand. Fixed in all five, including the spec that was the drift source. Pinned by the new `tests/scan/test-sync-lane-vault-signal.sh`, which caught two of the five sites the first time it ran — one of them a site this change had already missed.
+
+**Fork attribution corrected.** Three surfaces described `bind-codebase` as already `context: fork` while its frontmatter carries no `context:` key. A doc that claims a skill is forked when it is not is how the real flip gets skipped; the test now fails if that reappears, and flips its assertions to demand the Group-C rails the moment `context: fork` does land.
+
+**The audit's answer, recorded in the spec so it is not re-litigated:**
+
+- **`scan-codebase` — GO** after a bounded edit set. **`bind-codebase` — NO-GO** until one probe returns. Both additionally gated by the project's own precondition (`plugins/mega-sdd/CLAUDE.md:69`): fork may extend to scan/bind only after the `detect-drift` token A/B confirms the win, which has **never produced a verdict** — the only attempt failed because `context: fork` silently no-ops under `claude -p`.
+- **The risk everyone assumed is not the risk.** "A fork could move where `.validation-blockers.json` lands and break the CONFLICT gate" is **refuted** on three independent mechanisms: bind never writes that file (sole writer `scripts/validate-handoff-binding-units.sh:85`, invoked by hooks with a hook-computed `--cwd`); the state is recomputed at the gate before it is read (`hooks/pre-tool-use:421-422` → `:474-494`, fail-closed); direct writes are hard-denied. **The moat is fork-immune here — by recompute-at-gate, not by anything a skill body says.** bind's CONFLICT verdict path needs zero edits, and any patch that touches it while "making it fork-safe" should be rejected on sight.
+- **The real blocker cannot be fixed by editing prose.** `bind-codebase` dispatches `phase-advisor` by default. Whether a `context: fork` body can dispatch an `Agent` at depth 2 is doc-cited but never exercised, and the `detect-drift` pilot cannot settle it — detect-drift dispatches no subagent at all. A permanent `--no-advisor` fallback is not the answer: that is a silent moat-recall downgrade.
+- **Two design decisions recorded** (neither is inferable from any existing rail): the spawn-cost gate becomes a named blocker carrying its re-run command rather than an automatic downgrade to regex — `scan-procedure.md:240` puts the precision choice with the user, and a blocker keeps it there; and the monorepo rail becomes deterministic precedence with a blocker only on residual ambiguity, because **zero** orchestrate-flow routing rows carry `--include`/`--engine`, so a bare blocker would convert a one-time question into a phase-1 chain halt for every monorepo user.
+- Also corrected: "one missing `--auto-policy` paragraph another skill already ships verbatim" was wrong twice over — verbatim reuse is *incorrect* here, since `generate-units` can default to `--skip-pagerank` only because PageRank is advisory, while scan's extraction **is** the deliverable.
+
+No frontmatter was flipped. That step is gated on two interactive runs (a token/handoff/CWD pilot, and a depth-2 `Agent` probe) which are specified in the spec.
+
 ## [5.13.0] - 2026-07-30
 
 fix(telemetry): the token instrument was wrong by ~11.6x in one direction and ~2.5x in the other — every prior optimization round was aimed with it.
