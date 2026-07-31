@@ -26,7 +26,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 What stays interactive even with `--auto`:
 
 - **Per-OQ choice** (Resolve / OOS / Defer / Skip) — captures stakeholder answers; never auto-decides.
-- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The separate confirm-the-destination round trip is gone; the human's control over it is not.
+- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The override target is VALIDATED before any write against the vault's 7 document filenames (`interactive-walk.md` §"Reading the Other free text" step 1) — a miss is not an override, is narrated, and never re-prompts. The separate confirm-the-destination round trip is gone; the human's control over it — and the pre-write check that used to ride it — is not.
 - **Cross-cutting OQ landing** — same mechanism: the primary doc + cross-ref plan are disclosed in the option the human picks.
 - **LOCKED vault unlock confirmation** — audit-significant.
 

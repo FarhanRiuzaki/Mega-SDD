@@ -145,7 +145,8 @@ nothing else.
 **The presented alternative loses its slot — its INFORMATION does not.** "Other" already covers
 "answer in my own words", so a pre-typed alternative is a convenience, whereas Skip and
 end-the-walk have no other home. The considered alternatives are therefore listed **in the question
-text as prose** (`Alternatif: X — kalau …; Y — kalau …`), each still carrying its source or the
+text as prose**, on the `Alternatif yang sudah dipertimbangkan:` line of the template below
+(`… {alt-1} — kalau …; {alt-2} — kalau …`), each still carrying its source or the
 explicit `tanpa sumber` marker per `recommendation-context.md`. The question text has no length cap;
 the operator reads them and types one into "Other" to pick it. Same knowledge, zero slot cost.
 **Never invent an alternative to fill the prose line** — no grounded alternative → omit the line.
@@ -185,20 +186,19 @@ string catalog — an English-writing user gets this same prompt in English by p
 question: |
   {the OQ question text again, verbatim — the tag alone is never a question}
 
-  Alternatif yang sudah dipertimbangkan: {alt-1} — kalau {kapan kamu memilihnya}
-  ({Sumber: <citation>} | tanpa sumber — alternatif umum); {alt-2} — kalau {…} ({…}).
-  {← omit this whole line when no grounded alternative exists; NEVER invent one}
+  Alternatif yang sudah dipertimbangkan: {alt-1} — kalau {kapan kamu memilihnya} ({Sumber: <citation>} | tanpa sumber — alternatif umum); {alt-2} — kalau {…} ({…}).
+  {← omit this whole block when no grounded alternative exists; NEVER invent one}
 
   Pilihanmu LANGSUNG jadi resolusi: opsi rekomendasi sudah menuliskan ke mana jawabannya mendarat,
   jadi memilih = sekaligus mengonfirmasi tujuan. Ringkasan diff tetap ditampilkan setelahnya.
   • Mau jawab sendiri (termasuk mengambil salah satu alternatif di atas)? pilih "Other", ketik
-    jawabanmu; tambahkan "→ <file>.md" di akhir kalau mau memaksa dokumen tujuan lain.
-  • Cuma mau memindahkan tujuan tanpa mengubah jawaban? ketik "→ <file>.md" saja di "Other":
-    itu berarti "terima rekomendasi, tapi taruh di file itu".
-  • Skip (opsi [2]) = OQ ini dilewati: tidak ada perubahan file, tetap `[ ]` open, muncul lagi
-    di pass berikutnya. Walk lanjut ke OQ berikutnya.
-  • Tekan Esc = SELESAIKAN walk-nya sekarang: OQ ini tidak disentuh, progres yang sudah
-    ter-derive aman, skill lompat ke Step 3 (bump versi + Changelog) lalu keluar.
+    jawabanmu; tambahkan "→ <file>.md" di akhir kalau mau memaksa dokumen tujuan lain — nama
+    filenya HARUS salah satu dari 7 dokumen vault (`00-index.md` … `06-constraints.md`), di luar
+    itu override-nya ditolak dan kamu diberi tahu.
+  • Cuma mau memindahkan tujuan tanpa mengubah jawaban? ketik "→ <file>.md" saja di "Other" (juga
+    harus salah satu dari 7 dokumen vault): itu berarti "terima rekomendasi, tapi taruh di file itu".
+  • Skip (opsi [2]) = lewati OQ INI SAJA lalu walk LANJUT ke OQ berikutnya — tidak ada perubahan file, OQ tetap `[ ]` open dan muncul lagi di pass berikutnya.
+  • Tekan Esc = AKHIRI SELURUH walk sekarang, OQ ini tidak disentuh — progres yang sudah ter-derive aman, skill lompat ke Step 3 (bump versi + Changelog) lalu keluar.
 header: "{OQ tag}"          # short — e.g. "OQ-DC-4"
 multiSelect: false
 options:
@@ -212,7 +212,7 @@ options:
   - label: "Skip"
     description: "Lewati OQ ini saja: tidak ada edit file, tidak ada derive run, OQ tetap `[ ]`
                   open dan dihitung sebagai 'still open' di ringkasan akhir. Walk LANJUT ke OQ
-                  berikutnya — kalau mau menghentikan seluruh walk, tekan Esc."
+                  berikutnya — kalau mau mengakhiri walk-nya, tekan Esc."
   - label: "Defer"
     description: "Belum bisa dijawab sekarang. OQ tetap `[ ]` open dan ditandai
                   `**Deferred (v{X.Y})**`; aku tanya SATU kali lagi — satu prompt berisi dua
@@ -261,17 +261,19 @@ question: |
   Belum ada rekomendasi untuk OQ ini: tidak ada sumber yang bisa dikutip, dan menebak tanpa
   sumber dilarang. **Tulis jawabanmu langsung di "Other"** — jawabannya akan mendarat
   {inline di entri OQ | sebagai {ADR baru di 05-decisions.md | …}} sesuai prefix `{CODE}-`;
-  tambahkan "→ <file>.md" di akhir kalau mau dokumen tujuan lain. Karena belum ada rekomendasi,
-  menulis "→ <file>.md" SAJA tanpa jawaban tidak mengubah apa pun — OQ tetap `[ ]` open.
-  • Skip (opsi [1]) = lewati OQ ini saja; walk lanjut ke OQ berikutnya.
-  • Tekan Esc = selesaikan walk-nya sekarang; progres yang sudah ter-derive aman.
+  tambahkan "→ <file>.md" di akhir kalau mau dokumen tujuan lain — nama filenya HARUS salah satu
+  dari 7 dokumen vault (`00-index.md` … `06-constraints.md`), di luar itu override-nya ditolak.
+  Karena belum ada rekomendasi, menulis "→ <file>.md" SAJA tanpa jawaban tidak mengubah apa pun —
+  OQ tetap `[ ]` open.
+  • Skip (opsi [1]) = lewati OQ INI SAJA lalu walk LANJUT ke OQ berikutnya — tidak ada perubahan file, OQ tetap `[ ]` open.
+  • Tekan Esc = AKHIRI SELURUH walk sekarang, OQ ini tidak disentuh — progres yang sudah ter-derive aman, skill lompat ke Step 3 lalu keluar.
 header: "{OQ tag}"
 multiSelect: false
 options:
   - label: "Skip"
     description: "Lewati OQ ini saja: tidak ada edit file, tidak ada derive run, OQ tetap `[ ]`
                   open dan dihitung sebagai 'still open' di ringkasan akhir. Walk LANJUT ke OQ
-                  berikutnya — kalau mau menghentikan seluruh walk, tekan Esc."
+                  berikutnya — kalau mau mengakhiri walk-nya, tekan Esc."
   - label: "Defer"
     description: "Belum bisa dijawab sekarang. OQ tetap `[ ]` open dan ditandai
                   `**Deferred (v{X.Y})**`; aku tanya SATU kali lagi — satu prompt berisi dua
@@ -282,8 +284,10 @@ options:
                   di {origin doc} dan ditandai `[~]`; aku minta SATU kalimat alasan dulu."
 ```
 
-Three options + Other + Esc. Never pad the empty slot with an invented answer, and never advertise
-the bare-`→ <file>.md` shortcut here — there is no recommendation for it to compose with.
+Three options + Other + Esc — that IS the shape, not four with a hole. The answer slot is simply
+unspent; there is no phantom empty slot to fill, and no invented answer may be minted to fill one.
+Never advertise the bare-`→ <file>.md` shortcut here either — there is no recommendation for it to
+compose with.
 
 #### Reading the "Other" free text (deterministic parse order)
 
@@ -292,9 +296,25 @@ the bare-`→ <file>.md` shortcut here — there is no recommendation for it to 
 "lanjut atau berhenti?" is answerable with the word "stop"). Parse in THIS order — no re-prompt is
 permitted at any branch:
 
-1. **Destination override FIRST.** Strip a trailing `→ <file>.md` (or `-> <file>.md`) → that file
-   becomes the resolution destination, overriding the auto-classification. Record it; it needs no
-   confirmation prompt (the Step 2c diff summary shows it and can still be corrected there).
+1. **Destination override FIRST.** Strip a trailing `→ <file>.md` (or `-> <file>.md`), then
+   **VALIDATE the stripped target BEFORE any write.** The comparison is exact: take the value's
+   basename and compare it, character for character, against the vault's seven document filenames
+   — `00-index.md`, `01-overview.md`, `02-architecture.md`, `03-data-model.md`, `04-flows.md`,
+   `05-decisions.md`, `06-constraints.md`. Nothing else is a legal destination (no directory, no
+   path outside `VAULT_DIR`, no invented filename, no near-miss spelling). The collapse removed the
+   pre-write "confirm/override the destination?" prompt, so this check — not the post-write
+   narration — is what catches a bad target.
+   - **Hit** → that file becomes the resolution destination, overriding the auto-classification.
+     Record it; it needs no confirmation prompt (the Step 2c diff summary shows it and can still be
+     corrected there).
+   - **Miss** → the fragment is NOT an override, and it is DROPPED from the answer text (it was
+     plainly a destination attempt, not content). Narrate the rejection, naming the legal set:
+     *"`→ {X}` bukan salah satu dari 7 dokumen vault (`00-index.md` … `06-constraints.md`) —
+     override tujuan diabaikan."* Then continue deterministically, with **no re-prompt**: a
+     non-empty remainder still resolves the OQ, landing at the AUTO-CLASSIFIED target (narrate
+     which file it landed in); a BARE invalid override resolves nothing — no markdown change, the
+     OQ stays `[ ]` open, counted as skipped, because the user's stated intent was to redirect and
+     that intent cannot be honored. **Never land an answer in a file outside the seven.**
 2. **Non-empty remainder is the answer.** Action `A` (Answer) with that text, landing at the
    override from (1) when one was present, otherwise at the auto-classified target.
 3. **Empty remainder after a bare override → accept the RECOMMENDED answer, land it at the
@@ -329,7 +349,7 @@ file holding the JSON shown; passing inline JSON exits 3):
 | `[4]` | C — Out of scope | `[~]` + `→ Out of Scope v{X.Y}: …` → `out_of_scope` | `--event '{"event":"oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"C"}'` |
 | `[2]` (or an empty Other) | D — Skip | no markdown change; OQ remains `open` | no derive run; **walk continues** to the next OQ |
 | *Esc* | — end the walk | no markdown change for THIS OQ; it remains `open` | no derive run; jump to Step 3 |
-| bare override, no recommendation to accept | — no-op | no markdown change; OQ remains `open` | no derive run; narrate, count as skipped |
+| bare override that cannot be honored (no recommendation to accept, **or** a target outside the vault's 7 documents) | — no-op | no markdown change; OQ remains `open` | no derive run; narrate, count as skipped |
 
 **The letters `A` / `B` / `C` in `"action"` are the recorded contract — they are NOT the slot
 numbers.** A prompt renumbered to `[1]`–`[4]` still emits `"action":"A"|"B"|"C"`; never
@@ -343,6 +363,21 @@ This step is the WORK (markdown edits, derive calls, cross-reference writing), n
 the Answer path it asks NOTHING — the answer and its destination already arrived in Step 2b. Only
 the two minority paths spend a second prompt, and they must: Defer needs who/when and Out of scope
 needs a rationale, and both are recorded state that may not be invented (hard rule "No invention").
+
+**Recorded language on BOTH follow-ups — the Tier-2/Tier-3 seam, resolved.** The two follow-up
+prompts are Tier-2 narration and render in the narration language (same precedence as Step 2b).
+What they cause to be WRITTEN is Tier-3 vault content and goes in the **vault's content language**
+(`plugins/mega-sdd/references/output-language.md §Tier-3` — "content recorded INTO the vault … stays
+the vault's language"). The seam is resolved per channel, and the option descriptions must promise
+only what the channel delivers:
+
+- **A canned option** records that option's fixed reason category **expressed in the vault's
+  language**. When narration language and vault language are the same — the common case — that is
+  the label verbatim. When they differ, it is the same one of four known categories rendered in the
+  vault's language: a fixed mapping, never a re-interpretation and never a new reason. So a canned
+  option's description says *"Tercatat sebagai: …"*, never *"tercatat verbatim"*.
+- **"Other" free text is the human's own words and is recorded VERBATIM, never translated** — the
+  same rule the OQ answer text follows. Only this channel may be described as verbatim.
 
 **If `Resolve`:**
 
@@ -393,10 +428,12 @@ precedence as Step 2b; the strings below are the default rendering.
 question: |
   Out of scope untuk: "{full OQ question text, verbatim}"  ({OQ tag}, dari {origin doc})
 
-  Alasannya apa? Kalimat ini tercatat verbatim di entri `## Out of Scope` dan terbaca di
-  audit trail — jadi tulis yang bisa dipertanggungjawabkan, bukan "tidak perlu".
-  Kalau alasannya di luar empat pilihan ini, pilih "Other" dan ketik sendiri.
-header: "out of scope"   # short; the OQ tag is already in the question text
+  Alasannya apa? Alasan ini masuk ke entri `## Out of Scope` dan terbaca di audit trail — jadi
+  tulis yang bisa dipertanggungjawabkan, bukan "tidak perlu". Kalau alasannya di luar empat
+  pilihan ini, pilih "Other" dan ketik sendiri: teks "Other" tercatat VERBATIM apa adanya,
+  sedangkan memilih salah satu kategori di bawah mencatat kategori itu dalam bahasa isi vault.
+  • Tekan Esc = BATALKAN penetapan out-of-scope ini DAN AKHIRI SELURUH walk: OQ tetap `[ ]` open, tidak ada perubahan file, skill lompat ke Step 3 (bump versi + Changelog) lalu keluar.
+header: "out of scope"   # short; the OQ tag + question text ride THIS question's own body above — every follow-up question must carry them itself, never rely on a sibling question that may be omitted
 multiSelect: false
 options:
   - label: "Di luar scope rilis ini"
@@ -413,8 +450,9 @@ options:
   - label: "Bukan tanggung jawab produk ini"
     description: "Tercatat sebagai: 'bukan tanggung jawab produk ini'. Entri pindah ke
                   `## Out of Scope` di {origin doc}, marker jadi `[~]`."
-  # "Other" = tulis alasanmu sendiri; itu yang tercatat verbatim. Esc = batalkan penetapan OOS
-  #           (OQ tetap `[ ]` open, tidak ada perubahan file) — konsisten dengan Esc di Step 2b.
+  # "Other" = tulis alasanmu sendiri; itu yang tercatat verbatim. Esc sudah dijelaskan di question
+  #           text di atas (batal + walk berakhir) — konsisten dengan Esc di Step 2b, dan sengaja
+  #           TIDAK ditinggal hanya di komentar ini: operator tidak membaca komentar YAML.
 ```
 
 If the user presses Esc here, **nothing is recorded** — the OOS is abandoned, the OQ stays `[ ]`
@@ -422,7 +460,8 @@ open, and the walk ends per the Step-2b Esc semantics. Never fall back to a cann
 
 Then:
 
-1. The rationale is in hand (the chosen option's label verbatim, or the "Other" free text).
+1. The rationale is in hand (the chosen category, recorded per the recorded-language rule above, or
+   the "Other" free text verbatim).
 2. Move the OQ entry to the same doc's `## Out of Scope` section with format: `- <original question text>. (was OQ-XXX-N, declared OOS v{X.Y} on YYYY-MM-DD: <rationale>)`.
 3. In the original `## Open Questions` section, mark the OQ `[~]` with a one-line pointer: `[~] **OQ-XXX-N** [P{x}]: <original question> → Out of Scope v{X.Y}: see Out of Scope section.`
 4. Update the roll-up entry in `00-index.md` similarly.
@@ -430,9 +469,10 @@ Then:
 
 **If `Defer`** (the ONE sanctioned second prompt on this path — who/when is recorded state and may not be invented):
 
-There are TWO defer targets (per `vault-contract.md §schema` `defer_to` field):
+There are TWO defer targets (per `vault-contract.md §OQ status tracking`, `defer_to` field — a
+closed two-value set with **no declared default**):
 
-- **`defer_to: stakeholder`** (default) — waiting on a human decision (legal review, PM, security, target date)
+- **`defer_to: stakeholder`** — waiting on a human decision (legal review, PM, security, target date); also the only legal value in greenfield, where it is written explicitly rather than defaulted
 - **`defer_to: binding`** — code-aware OQ; offered ONLY in brownfield context (vault.mode=existing AND repo signals present); resolved at `bind-codebase` phase against codebase-map
 
 **The sub-target and the reason are collected in ONE `AskUserQuestion` CALL carrying TWO questions.**
@@ -443,8 +483,18 @@ or derived** — an unasked `deferred_reason` is an invariant-#5 breach. Apply t
 one-call-many-questions shape anywhere else a follow-up needs more than one value.
 
 Q1 (`defer_to`) is present ONLY in brownfield (vault `mode: existing` AND repo signals). In
-greenfield the call carries Q2 alone and `defer_to` takes its schema default `stakeholder` — that is
-the single legal value in that context, not a derived answer. Same language precedence as Step 2b.
+greenfield the call carries Q2 alone and `defer_to` is written EXPLICITLY as `stakeholder` by the
+derive patch in step 5 below. **It is not a schema default — `vault-contract.md §OQ status
+tracking` declares none for `defer_to`** (it declares one only for `status`); `stakeholder` is the
+single LEGAL value in that context, because `binding` means "resolved at `bind-codebase` against a
+codebase-map" and greenfield has no repo to bind against. A determined value, not a derived answer.
+Same language precedence as Step 2b.
+
+Because Q1 disappears in greenfield, **Q2 carries the OQ tag and the verbatim question text in its
+own body** — otherwise the greenfield operator is asked a bare *"alasan defer-nya apa?"* with no
+question and no tag in front of it, which is exactly the keterangan rule-1 breach the contract
+forbids. **Esc anywhere on this call abandons the Defer and ends the walk**; that consequence is
+stated in Q2's operator-visible body below, not left to a YAML comment.
 
 ```
 questions:
@@ -464,36 +514,44 @@ questions:
         description: "OQ ini bisa dijawab oleh KODE yang sudah ada. Tersimpan `defer_to: binding`;
                       fase `bind-codebase` yang akan mencocokkannya ke codebase-map dan
                       menyelesaikannya di sana. Hanya masuk akal di repo brownfield."
-  - question: |            # ← Q2: ALWAYS present
-      Alasan defer-nya apa? Kalimat ini tercatat verbatim sebagai
-      `**Deferred (v{X.Y})**: …` di entri OQ dan di roll-up `00-index.md`.
-      Sebutkan PIC dan/atau tanggal target lewat "Other" kalau sudah ada —
-      empat pilihan di bawah hanya kategorinya.
-    header: "alasan"       # short; the OQ tag is already in the question text
+  - question: |            # ← Q2: ALWAYS present; it repeats the tag + question text itself, because Q1 (which carries them) is OMITTED in greenfield
+      Defer: "{full OQ question text, verbatim}"  ({OQ tag}, dari {origin doc})
+
+      Alasan defer-nya apa? Alasan ini masuk sebagai `**Deferred (v{X.Y})**: …` di entri OQ dan
+      di roll-up `00-index.md`. Sebutkan PIC dan/atau tanggal target lewat "Other" kalau sudah
+      ada — empat pilihan di bawah hanya kategorinya: teks "Other" tercatat VERBATIM apa adanya,
+      sedangkan memilih salah satu kategori mencatat kategori itu dalam bahasa isi vault.
+      • Tekan Esc = BATALKAN defer ini DAN AKHIRI SELURUH walk: tidak ada apa pun yang ditulis untuk OQ ini (tetap `[ ]` open, tanpa anotasi `**Deferred**`), skill lompat ke Step 3 lalu keluar.
+    header: "alasan"       # short; Q2 carries the OQ tag + question text in its own body above
     multiSelect: false
     options:
       - label: "Menunggu keputusan stakeholder / PIC"
-        description: "Tercatat verbatim: 'menunggu keputusan stakeholder / PIC'. Kalau kamu sudah
-                      tahu SIAPA dan KAPAN, pakai 'Other' — mis. 'menunggu Bu Rina (Compliance),
-                      target 2026-08-15' — supaya who/when ikut tercatat, bukan hilang."
+        description: "Tercatat sebagai: 'menunggu keputusan stakeholder / PIC' (dalam bahasa isi
+                      vault). Kalau kamu sudah tahu SIAPA dan KAPAN, pakai 'Other' — mis.
+                      'menunggu Bu Rina (Compliance), target 2026-08-15' — supaya who/when ikut
+                      tercatat verbatim, bukan hilang."
       - label: "Menunggu review legal / compliance"
-        description: "Tercatat verbatim: 'menunggu review legal / compliance'. Tambahkan nama
-                      reviewer / tanggal target lewat 'Other' kalau sudah ada."
+        description: "Tercatat sebagai: 'menunggu review legal / compliance' (dalam bahasa isi
+                      vault). Tambahkan nama reviewer / tanggal target lewat 'Other' kalau sudah
+                      ada — teks 'Other' itu yang tercatat verbatim."
       - label: "Butuh data / investigasi dulu"
-        description: "Tercatat verbatim: 'butuh data / investigasi dulu'. Pakai 'Other' kalau mau
-                      menyebut data apa dan siapa yang mengambilnya."
+        description: "Tercatat sebagai: 'butuh data / investigasi dulu' (dalam bahasa isi vault).
+                      Pakai 'Other' kalau mau menyebut data apa dan siapa yang mengambilnya."
       - label: "Menunggu dependency teknis selesai"
-        description: "Tercatat verbatim: 'menunggu dependency teknis selesai'. Pakai 'Other' untuk
-                      menyebut dependency-nya (mis. 'menunggu API partner v2 live')."
-    # "Other" pada Q2 = tulis alasan/PIC/tanggal sendiri; itu yang tercatat verbatim.
+        description: "Tercatat sebagai: 'menunggu dependency teknis selesai' (dalam bahasa isi
+                      vault). Pakai 'Other' untuk menyebut dependency-nya (mis. 'menunggu API
+                      partner v2 live')."
+    # "Other" pada Q2 = tulis alasan/PIC/tanggal sendiri; HANYA teks itu yang tercatat verbatim.
 ```
 
 **Esc on this follow-up abandons the Defer** — nothing is written, the OQ stays `[ ]` open with no
 `**Deferred**` annotation, and the walk ends per the Step-2b Esc semantics. Never fall back to a
 canned reason: a defer with an invented `deferred_reason` is worse than no defer.
 
-1. The defer reason is now in hand from Q2 (option label verbatim, or the "Other" free text) and
-   `defer_to` from Q1 (or the greenfield default `stakeholder`). **Do not ask again.**
+1. The defer reason is now in hand from Q2 (the chosen category, recorded per the recorded-language
+   rule above, or the "Other" free text verbatim) and `defer_to` from Q1 (or, in greenfield, the
+   explicit `stakeholder` value — the only legal one there, not a schema default). **Do not ask
+   again.**
 2. Append to the OQ entry: `**Deferred (v{X.Y})**: <reason / PIC / target date>`.
 3. Leave `[ ]` open (it's still an Open Question, just waiting).
 4. Update the roll-up annotation in `00-index.md` so readers see the defer reason at-a-glance.

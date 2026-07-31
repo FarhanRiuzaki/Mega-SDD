@@ -46,7 +46,9 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 
 ### B2: Defer is ALWAYS visible (greenfield)
 - **Setup:** vault.mode=greenfield
-- **Expect:** Slot `[3]` Defer still shown — a stakeholder defer must be reachable in every context. What changes is the FOLLOW-UP: it carries the reason question only (no `defer_to` sub-target question), and `defer_to` takes its schema default `stakeholder`
+- **Expect:** Slot `[3]` Defer still shown — a stakeholder defer must be reachable in every context. What changes is the FOLLOW-UP: it carries the reason question only (no `defer_to` sub-target question), and `defer_to` is written EXPLICITLY as `stakeholder` by the derive patch
+- **Critical:** `stakeholder` is NOT a schema default — `generate-intent/references/vault-contract.md §OQ status tracking` declares no default for `defer_to`. It is the only LEGAL value in greenfield (`binding` requires a repo to bind against), so it is determined, not derived. A doc that cites a "schema default" here is the defect
+- **Critical:** because Q1 is omitted, Q2 must carry the OQ tag AND the verbatim question text in its own body — a bare "alasan defer-nya apa?" with no question in front of it is a keterangan rule-1 breach on every greenfield Defer
 
 ### B3: Defer sub-target hidden (no repo signals)
 - **Setup:** vault.mode=existing but CWD has no .git/package.json/etc.
@@ -54,7 +56,7 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 
 ### B4: Alternatives ride the question text, not a slot
 - **Setup:** recommendation built with one grounded alternative
-- **Expect:** the alternative appears as prose in the question text (`Alternatif: … — kalau …`) with its citation or an explicit `tanpa sumber` marker; it does NOT consume an option slot
+- **Expect:** the alternative appears as prose in the question text under the template's own literal, `Alternatif yang sudah dipertimbangkan: … — kalau …`, with its citation or an explicit `tanpa sumber` marker; it does NOT consume an option slot
 - **Critical:** no grounded alternative → the line is OMITTED, never padded with an invented one
 
 ### B5: No typed end-the-walk sentinel
@@ -74,14 +76,23 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 - **8b — BARE override (D5):** `→ 02-architecture.md` alone → action `A` accepting the RECOMMENDED answer, landed in `02-architecture.md`. **It must NOT parse as Skip** — that silently discarded an accepted answer before this round
 - **8c — bare override with NO recommendation:** nothing to accept → no file change, OQ stays `[ ]` open, outcome narrated, counted as skipped
 - **8d — empty "Other":** Skip, with the outcome narrated (not a silent no-op)
+- **8e — override target VALIDATED pre-write:** the stripped `→ <file>.md` basename must match, character for character, one of the vault's seven documents (`00-index.md`, `01-overview.md`, `02-architecture.md`, `03-data-model.md`, `04-flows.md`, `05-decisions.md`, `06-constraints.md`). The collapse removed the pre-write destination confirmation, so this check — not the post-write narration — is what catches a bad target
+- **8f — invalid override WITH answer text:** `Pakai RFC 7807 → 07-appendix.md` → the `→ 07-appendix.md` fragment is rejected and DROPPED from the answer text (never recorded as content); the rejection is narrated naming the legal set; the answer still resolves, landing at the AUTO-CLASSIFIED target, which is also narrated. No re-prompt
+- **8g — invalid override, BARE:** `→ notes.md` alone → nothing is honorable (the stated intent was to redirect) → no markdown change, OQ stays `[ ]` open, counted as skipped, rejection narrated. **Never** silently accept the recommendation at the auto target, and **never** land an answer in a file outside the seven
 
 ### B9: Defer follow-up = ONE call, TWO questions
 - **Setup:** brownfield, Defer chosen
 - **Expect:** ONE `AskUserQuestion` whose `questions` array holds 2 entries — Q1 `defer_to` (`stakeholder` / `binding`, each with a mandatory keterangan), Q2 the reason (≤4 common-reason options + "Other" for PIC/date specifics). The 4-option cap is per QUESTION, not per call
-- **Critical:** neither `defer_to` nor `deferred_reason` may be defaulted or derived from the OQ text (invariant #5). Esc here abandons the Defer — nothing is written
+- **Critical:** neither `defer_to` nor `deferred_reason` may be defaulted or derived from the OQ text (invariant #5). Esc here abandons the Defer AND ends the walk — nothing is written for this OQ
+- **Critical:** Q2 is the ALWAYS-present question, so Q2 (not only Q1) carries the OQ tag + verbatim question text, and Q2 (not a YAML comment) discloses Esc in operator-visible text
 
 ### B10: Out-of-scope follow-up
-- **Expect:** ONE `AskUserQuestion`, one question, ≤4 rationale options each stating what lands verbatim + "Other" for a custom rationale. Esc abandons the OOS; a canned rationale is never substituted
+- **Expect:** ONE `AskUserQuestion`, one question, ≤4 rationale options + "Other" for a custom rationale. Esc abandons the OOS **and ends the walk**, disclosed in the question text rather than only in a YAML comment; a canned rationale is never substituted
+
+### B10b: recorded language on BOTH follow-ups (the Tier-2/Tier-3 seam)
+- **Setup:** the operator is writing in English; the vault's content language is Indonesian
+- **Expect:** the follow-up prompts RENDER in English (Tier-2 precedence rule 2), but what lands in the vault is written in the vault's language (Tier-3, `plugins/mega-sdd/references/output-language.md`). Picking a canned category records that fixed category in the vault's language — a fixed mapping, never a re-interpretation
+- **Critical:** only the "Other" free text may be described, or recorded, as VERBATIM. A canned option's description promising "tercatat verbatim" is the defect — it promises Tier-3 fidelity for a Tier-2 string
 
 ### B11: State transitions per action
 - **`[1]` / "Other" text / bare override → action `A`** → OQ becomes `status: resolved`, `resolved_at: <iso>`, `resolution: <text>`
@@ -115,7 +126,8 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 
 ### BM2: Walks propagated deferred OQs
 - **Setup:** binding.md has 1 CONFLICT + 2 Open Questions rows
-- **Expect:** Skill walks CONFLICTs first, then OQs using the SAME collapsed single prompt as the standard walk (`[1]` recommended answer / `[2]` Skip / `[4]` Out of scope + "Other" + Esc), with slot `[3]` Defer dropped — nested deferral not supported. The freed slot is left empty, never filled with an invented answer. Recorded `action` letters unchanged (`A` / `C`; Skip emits no event)
+- **Expect:** Skill walks CONFLICTs first, then OQs using the SAME collapsed single prompt as the standard walk, with Defer NOT offered at all — nested deferral is not supported in binding context. Slot numbers are display positions, so the three options render as `[1]` recommended answer / `[2]` Skip / `[3]` Out of scope, per `references/binding-mode.md` step 3 — plus "Other" and Esc
+- **Critical:** THREE options, not four with a hole. The cap is a ceiling, not a quota: no fourth option is invented to fill the freed capacity, and there is no empty/placeholder slot. Recorded `action` letters unchanged (`A` / `C`; Skip emits no event)
 
 ### BM3: Resolutions persist
 - **After resolving 1 conflict + 1 OQ:** binding.md updated, vault.json changelog entry added
@@ -165,7 +177,7 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 - **Memory write:** `.mega-sdd/memory/decisions.md` row marked `source: ai_recommended`
 
 ### REC8: Audit trail on OVERRIDE
-- **Setup:** User picks alternative option (not recommended)
+- **Setup:** a `(recommended)` option WAS on the prompt and the user declined it — answering via "Other" with different text (often an alternative from the question text, typed back)
 - **Expect:** vault OQ entry has `resolution_source: user_override`; memory row marked `recommendation_ignored: <recommended-text>`
 - **Self-learning feedback:** override counter incremented for this OQ pattern
 
@@ -173,10 +185,15 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 - **Setup:** Same OQ pattern has been overridden 5 times across runs
 - **Expect:** `~/.mega-sdd/memory/patterns.md` pending suggestion: "Disable recommendation for OQ pattern X (5/5 overrides)"; user reviews via `/mega-sdd:memory review`; ACCEPT disables future recommendations for that pattern
 
+### REC10b: "Other" with NO recommendation is a direct answer, NOT an override
+- **Setup:** the no-recommendation shape (no citable signal, or the probe failed) — "Other" is the ONLY answer channel there; user types an answer
+- **Expect:** vault OQ entry gets `resolution_source: user_direct` (the third declared value, per `references/recommendation-context.md §Audit trail`); memory row `source: user_direct`; NO `recommendation_ignored` field
+- **Critical:** the override counter is NOT incremented and no `user_override` row is written. Keying the OVERRIDE branch on the CHANNEL ("answered via Other") instead of on *a recommendation existing and being declined* books every unsourced-OQ answer as an override of a recommendation that never existed — and would fire the REC9 self-correction loop on patterns the recommender never attempted
+
 ### REC10: Override reason captured (optional)
 - **Setup:** User picks alternative + provides override reason via free-text
 - **Expect:** memory row includes `override_reason: <user-text>`; aids future pattern analysis
 
 ## Pass criteria
 
-All R1-R7 invoke skill correctly. The per-OQ walk costs ONE `AskUserQuestion` on the common path (B1, B13); Defer stays visible in every context and only its sub-target question is brownfield-conditional (B2-B3); alternatives ride the question text (B4); there is no typed end-the-walk sentinel and Esc ends the walk while slot `[2]` skips one item (B5-B7); the "Other" parse order composes a bare destination override with the recommendation (B8); the Defer follow-up is one call with two questions and nothing it collects is ever defaulted (B9-B10). State transitions match B11 and the changelog contract B12 — letters, never slot numbers, and no event at all for Skip. Language precedence and the high-stakes double marker hold (B14-B15). Binding mode walks conflicts and OQs per BM1-BM3; hand-off is ACTION-MIX per BM4-BM5 (KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units — never a blanket re-bind that loops); DEFER-resolved uncited CONFLICTs are advisory at the binding→units gate per BM6. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.
+All R1-R7 invoke skill correctly. The per-OQ walk costs ONE `AskUserQuestion` on the common path (B1, B13); Defer stays visible in every context and only its sub-target question is brownfield-conditional (B2-B3); alternatives ride the question text (B4); there is no typed end-the-walk sentinel and Esc ends the walk while slot `[2]` skips one item (B5-B7); the "Other" parse order composes a bare destination override with the recommendation and VALIDATES its target against the vault's seven documents before any write (B8, incl. 8e-8g); the Defer follow-up is one call with two questions, Q2 carries the tag + question text and discloses Esc in operator-visible text, nothing it collects is ever defaulted, and only the "Other" channel is described as verbatim (B9-B10b). State transitions match B11 and the changelog contract B12 — letters, never slot numbers, and no event at all for Skip. Language precedence and the high-stakes double marker hold (B14-B15). Binding mode walks conflicts and OQs per BM1-BM3 (three options, Defer not offered, no invented fourth); hand-off is ACTION-MIX per BM4-BM5 (KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units — never a blanket re-bind that loops); DEFER-resolved uncited CONFLICTs are advisory at the binding→units gate per BM6. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE (keyed on a recommendation existing and being declined — never on the "Other" channel, per REC10b), and the self-correction loop after consistent overrides.
