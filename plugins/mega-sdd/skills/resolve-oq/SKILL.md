@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.7.1
+version: 2.9.0
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -24,16 +24,21 @@ Every Open Question carries a stable identifier (`OQ-{CODE}-{N}`) that tracks th
 
 ## Resolution outcomes
 
-For each OQ the user (with the skill prompting) chooses one of four outcomes. The skill never auto-decides — it captures stakeholder answers.
+For each OQ the user (with the skill prompting) chooses one of four outcomes. The skill never auto-decides — it captures stakeholder answers. **All four are collected in ONE `AskUserQuestion` per OQ** (shape + slots: `references/interactive-walk.md` Step 2b, which is canonical). The `action` letters below are the recorded derive contract — they are NOT the display slot numbers.
 
-| Outcome | Effect on vault | OQ marker | vault.json `status` |
-|---|---|---|---|
-| **Resolve** (`[A] Answer now`) | Capture answer; inline in OQ entry (simple) or promoted into a target section — new ADR, field constraint, flow step. | `[x]` + `→ Resolved v{X.Y}: <answer / pointer>` | `resolved` |
-| **Out of Scope** (`[C]`) | Move to the doc's Out of Scope section with rationale. | `[~]` + `→ Out of Scope v{X.Y}: <reason>` | `out_of_scope` |
-| **Defer** (`[B]` to binding / stakeholder) | Keep open with stakeholder, deadline, or condition; or mark code-aware for `bind-codebase`. | `[ ]` + `**Deferred (v{X.Y})**: <reason / who / when>` | `deferred` |
-| **Skip** (`[D]`) | No vault change; revisited on the next pass. | unchanged | unchanged (remains `open`) |
+| Outcome | Prompt slot | `action` | Effect on vault | OQ marker | vault.json `status` |
+|---|---|---|---|---|---|
+| **Resolve** | `[1]` recommended / **Other** (free text, or a bare `→ <file>.md` that accepts the recommendation and re-lands it) | `A` | Capture answer; inline in OQ entry (simple) or promoted into a target section — new ADR, field constraint, flow step. The answer option's description DISCLOSES where it lands, so choosing it also confirms the destination. | `[x]` + `→ Resolved v{X.Y}: <answer / pointer>` | `resolved` |
+| **Skip** | `[2]` | `D` (no derive run) | No vault change; revisited on the next pass. **The walk continues** to the next OQ. | unchanged | unchanged (remains `open`) |
+| **Defer** (to binding / stakeholder) | `[3]` | `B` | Keep open with stakeholder, deadline, or condition; or mark code-aware for `bind-codebase`. Costs ONE follow-up CALL carrying TWO questions (sub-target + reason) — recorded state, never invented. | `[ ]` + `**Deferred (v{X.Y})**: <reason / who / when>` | `deferred` |
+| **Out of Scope** | `[4]` | `C` | Move to the doc's Out of Scope section with rationale. Costs ONE follow-up prompt (the rationale). | `[~]` + `→ Out of Scope v{X.Y}: <reason>` | `out_of_scope` |
+| *(end the walk)* | **Esc** | — (no derive run) | This OQ untouched; jump to Step 3 — version bump + Changelog still record the round, then exit. | unchanged | unchanged (remains `open`) |
 
-Option `[B] Defer` is ALWAYS visible in the standard walk (stakeholder defer must be reachable in every context — the "No invention" rule routes `idk`/`whatever` here; the `--binding` propagated-OQ walk hides [B] per `references/binding-mode.md` — nested deferral not supported). Its `to binding` sub-target is offered ONLY when vault `mode: existing` (brownfield) AND CWD has repo signals (`.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`); greenfield / no signals → `[B]` offers the stakeholder defer only.
+The platform caps `AskUserQuestion` at 4 options **per question**, so **"Other" carries the free-text answer** (that merge is the collapse) and the considered alternatives ride the question text as prose instead of a slot. **Esc ends the WALK** — the same meaning the plugin's two other `AskUserQuestion` surfaces give it (`execute-bolts/references/halt-recovery.md`, `references/propose-and-confirm-prompt.md`), so Skip gets a real slot. **There is no typed `STOP` sentinel**: an OQ like "lanjut atau berhenti?" is answerable with the word "stop", which a sentinel would silently swallow. Skip and Esc are both stated in the question text of every prompt, so neither is folklore.
+
+The 4-option cap is **per question, not per call** — one `AskUserQuestion` takes 1–4 questions, each with its own ≤4 options and its own "Other". That is why the Defer follow-up collects both the sub-target and the reason in ONE round trip.
+
+`Defer` (slot `[3]`) is ALWAYS visible in the standard walk (stakeholder defer must be reachable in every context — the "No invention" rule routes `idk`/`whatever` here; the `--binding` propagated-OQ walk drops the slot per `references/binding-mode.md` — nested deferral not supported). Its `to binding` sub-target is offered as Q1 of the Defer follow-up ONLY when vault `mode: existing` (brownfield) AND CWD has repo signals (`.git`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`); greenfield / no signals → the follow-up carries the reason question alone and `defer_to` takes its schema default `stakeholder`.
 
 ## Workflow (compact)
 
@@ -47,13 +52,13 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 
 **Step 1 — Parse OQ list.** Read all 7 files; from each numbered doc (01–06) extract still-`[ ]` entries (skip `[x]` / `[~]`). Per OQ capture tag, priority, doc origin, question text, generator resolution hint. Cross-reference `00-index.md` roll-up for the **category**. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
 
-**Step 2 — Loop per OQ.** Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`). Present the 4-action menu (A/B/C/D; `[B]` conditional as above). Apply the chosen outcome's markdown edits, then run the derive script immediately (it recomputes the vault.json mirror from the markdown and appends the round event). Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Run the **cross-cutting check** for OQs touching ≥3 docs (primary doc holds full content; others get terse cross-refs). Update the roll-up in `00-index.md` to mirror the marker. Allow bail-out at any time (always offer "Stop here, save progress, exit"); each derive is atomic, so a bail leaves the last consistent state. **All four outcomes' markdown edits, the per-action `--event`/`--patch` args, and promoted-entry formatting per target doc are in `references/interactive-walk.md`.**
+**Step 2 — Loop per OQ.** Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`). Present **ONE `AskUserQuestion`** — 4 slots (`[1]` recommended answer, `[2]` Skip, `[3]` Defer, `[4]` Out of scope) + "Other" (the free-text answer + destination override) + Esc (end the walk). The considered alternatives are listed as prose in the question text, each with its source or an explicit `tanpa sumber` marker — never invented. The answer option's description carries its keterangan AND discloses where the answer lands (target doc, inline vs promoted, cross-cutting cross-refs), so the choice IS the destination confirmation — **do NOT ask for the answer or the destination in separate prompts.** Only Defer and Out of scope spend a second prompt (Defer = ONE call carrying two questions, sub-target + reason; OOS = the rationale). Apply the chosen outcome's markdown edits, then run the derive script immediately (it recomputes the vault.json mirror from the markdown and appends the round event). Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Update the roll-up in `00-index.md` to mirror the marker. Bail-out is reachable on every prompt via Esc; each derive is atomic, so a bail leaves the last consistent state. **The prompt's verbatim shape, the no-recommendation shape, the "Other" parse order, the Defer/OOS follow-up templates, all outcomes' markdown edits, the per-action `--event`/`--patch` args, and promoted-entry formatting per target doc are in `references/interactive-walk.md`.**
 
 **Step 3 — Update vault metadata.** Patch-bump the vault version in `00-index.md` Vault Lock Status (one shared `v{X.Y}` for the whole round). Append a Changelog entry listing Resolved / Out of Scope / Deferred / Still-open counts (template in `references/interactive-walk.md`). Update `Last updated` to today.
 
 **Step 4 — Self-check before exit.** Every resolved OQ `[x]` with a `→ Resolved v{X.Y}` pointer in BOTH origin doc and roll-up; every OOS `[~]` present in the target Out of Scope section; every Deferred `[ ]` with a defer note; no OQ silently dropped; version bumped; Changelog accurate; `Last updated` set; promoted entries exist (grep the cross-reference); no invented answers; `vault.json` summary + per-OQ `status` match the markdown. Full checklist in `references/interactive-walk.md`.
 
-**Step 5 — Present summary.** Stats (`{R} resolved · {O} OOS · {D} deferred · {S} skipped · {U} untouched`); new `v{X.Y}`; absolute `VAULT_DIR`; top 3 remaining P1 blockers if any; next step (re-run after stakeholder follow-up; lock manually for sprint). If any OQs deferred to binding → suggest `scan-codebase && bind-codebase` (brownfield) or warn there is no resolution path (greenfield). No "I have resolved…" preamble.
+**Step 5 — Present summary.** Stats (`{R} resolved · {O} OOS · {D} deferred · {S} skipped · {N} unreached (Esc ended the walk before them — name the resume tag) · {U} untouched`); new `v{X.Y}`; absolute `VAULT_DIR`; top 3 remaining P1 blockers if any; next step (re-run after stakeholder follow-up; lock manually for sprint). If any OQs deferred to binding → suggest `scan-codebase && bind-codebase` (brownfield) or warn there is no resolution path (greenfield). No "I have resolved…" preamble.
 
 ## Hard rules (the rails)
 
@@ -77,9 +82,9 @@ No invention; tag preservation; full auditability (Changelog + per-OQ markers = 
 
 ## Specialist references (load on demand)
 
-- **`references/interactive-walk.md`** — the full Step 0–5 procedure: vault location + lock check, resume, scope, parse, per-OQ display + 4-action menu, per-action state transitions, Resolve/OOS/Defer/Skip apply logic, cross-cutting multi-doc landing, promoted-entry formatting per target doc, the per-action derive `--event`/`--patch` args, the version + Changelog template, the self-check list, and the summary format.
+- **`references/interactive-walk.md`** — the full Step 0–5 procedure and the **canonical shape of the single per-OQ prompt**: vault location + lock check, resume, scope, parse, per-OQ display + the one collapsed `AskUserQuestion` (4 slots + Other + Esc, keterangan rules, the alternatives-as-prose rule, the no-recommendation shape, the "Other" parse order, Esc = end the walk), the Defer two-question follow-up and the OOS rationale follow-up verbatim, per-action state transitions, Resolve/Skip/Defer/OOS apply logic, cross-cutting multi-doc landing by disclosure, promoted-entry formatting per target doc, the per-action derive `--event`/`--patch` args, the version + Changelog template, the self-check list, and the summary format.
 - **`references/binding-mode.md`** — the `--binding <binding.md>` flow: CONFLICT detail-block walk (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT), propagated deferred-OQ walk, write-back to `binding.md` + `vault.json`, hand-off, and hard rails.
-- **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, the `AskUserQuestion` presentation, audit trail, and the override self-correction loop.
+- **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, what the recommendation contributes to the single prompt (slot `[1]` + its description, and how the considered alternatives are written as question-text prose; the shape itself is owned by `interactive-walk.md` and is not restated there), the high-stakes marker, audit trail, and the override self-correction loop.
 - **`references/auto-memory-handoff.md`** — non-interactive machinery: the `--auto` interactive-vs-auto step table, the memory layer reads/writes, the `--auto-accept-from-memory` / `--confidence-min` / `--non-interactive` flags (convergence-loop use), scope-context surfacing, and the handoff YAML emitted under `--auto`.
 
 ## Related skills

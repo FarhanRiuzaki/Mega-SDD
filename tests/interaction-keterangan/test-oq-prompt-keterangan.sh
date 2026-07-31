@@ -40,10 +40,11 @@ has "$IW" "recommended — idempotent per the Atomicity rule" && ok "resume prom
 # single scope default: all-priorities recommended; p1-only must NOT carry 'Recommended'
 grep -qF '**`all-priorities`** **(recommended)**' "$IW" && ok "scope prompt: all-priorities is the single recommended default" || fail "scope prompt: default not unified"
 if grep -qF 'p1-only`** — only Priority 1 OQs (sprint-0 blockers). Recommended' "$IW"; then fail "scope prompt: p1-only still marked Recommended (contradictory default)"; else ok "scope prompt: p1-only no longer claims the default"; fi
-has "$IW" "[B] Defer is ALWAYS visible" && ok "action menu: stakeholder Defer reachable in every context (greenfield gap closed)" || fail "action menu: Defer still binding-only/conditional"
+# (the letters became slots when the walk collapsed to ONE prompt — the rail is the same)
+has "$IW" "Defer is ALWAYS visible" && ok "action menu: stakeholder Defer reachable in every context (greenfield gap closed)" || fail "action menu: Defer still binding-only/conditional"
 has "$IW" "defer_to: stakeholder" && ok "action menu: stakeholder-defer state transition defined" || fail "action menu: stakeholder transition missing"
 SK="$P/skills/resolve-oq/SKILL.md"
-grep -qF 'Option `[B] Defer` is ALWAYS visible' "$SK" && ok "SKILL.md conditional-display synced" || fail "SKILL.md: old binding-only conditional survives"
+grep -qF '`Defer` (slot `[3]`) is ALWAYS visible' "$SK" && ok "SKILL.md conditional-display synced" || fail "SKILL.md: old binding-only conditional survives"
 BM="$P/skills/resolve-oq/references/binding-mode.md"
 has "$BM" "evidence anchor file:line" && ok "CONFLICT menu: evidence anchor mandated" || fail "CONFLICT menu: anchor missing"
 has "$BM" "Prior call (suggestion only" && ok "CONFLICT menu: prior-call slot present" || fail "CONFLICT menu: prior-call slot missing"
