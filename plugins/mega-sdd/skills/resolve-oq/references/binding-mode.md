@@ -64,10 +64,12 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    - `[1]` the recommended answer (omitted when no citation-probed recommendation exists)
    - `[2]` Skip
    - `[3]` Out of scope
-   - *Other* — the free-text answer + the destination override, parsed per Step 2b
+   - *Other* — the free-text ANSWER, parsed per Step 2b
    - *Esc* — end the walk
 
-   Never add a fourth option to fill the freed capacity: an invented answer is fabrication, and the cap is a ceiling, not a quota. There is no typed end-the-walk sentinel here either. The recorded `action` letters are unchanged (`A` answer / `C` out-of-scope / Skip emits no event).
+   **The `→ <file>.md` destination override does NOT apply in this mode** — Step 2b validates it against the vault's seven documents, and this walk writes none of them: a propagated-OQ resolution's only markdown home is `binding.md` (step 4). So the destination is fixed, not choosable. Still strip a trailing `→ <file>.md` and REJECT it with narration ("tujuan resolusi di mode `--binding` selalu `binding.md`") exactly as Step 2b handles a target outside the legal set: the remainder is the answer, and a BARE override resolves nothing (no write, counted as skipped). Never land a `--binding` resolution in a vault document.
+
+   Never add a fourth option to fill the freed capacity: three options is the shape — not four with a hole. An invented answer is fabrication, and the cap is a ceiling, not a quota. There is no typed end-the-walk sentinel here either. The recorded `action` letters are unchanged (`A` answer / `C` out-of-scope / Skip emits no event).
 
 4. **Write back.** All resolutions persist to:
    - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)

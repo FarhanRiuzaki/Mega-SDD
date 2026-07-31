@@ -178,7 +178,8 @@ For each citation in the recommendation:
    template lives in Step 2b.
 3. **The considered alternatives do NOT take a slot** — Skip and end-the-walk need the platform's
    four slots more than a pre-typed alternative does, and "Other" already covers *answer in my own
-   words*. The alternatives are surfaced as prose in the question text (`Alternatif: X — kalau …`),
+   words*. The alternatives are surfaced as prose in the question text, on the line the Step 2b
+   template labels `Alternatif yang sudah dipertimbangkan:` (`… {alt-1} — kalau …`),
    and this section's rule on how to write them is unchanged: MANDATORY explanation of what the
    alternative means and when you would pick it over the recommendation; if it has a source, cite
    it, otherwise say `tanpa sumber — alternatif umum`. **NEVER left blank/"…" and NEVER given a
@@ -199,12 +200,27 @@ On user selection:
   - vault.json OQ entry: `resolution: <answer>`, `resolution_source: recommendation`, `recommendation_citation: <citation>`
   - memory `decisions.md`: append row with `source: ai_recommended` flag
 
-- **Answered via "Other" with different text (OVERRIDE)** — since the alternatives no longer own a
-  slot, an override arrives as free text (often one of the alternatives listed in the question text,
-  typed back) → record:
+- **Answered via "Other" WHILE a `(recommended)` option was on the prompt (OVERRIDE)** — since the
+  alternatives no longer own a slot, an override arrives as free text (often one of the alternatives
+  listed in the question text, typed back). The branch is keyed on *a recommendation existing and
+  being declined*, not on the channel: "Other" is also the ONLY answer channel on the
+  no-recommendation shape, so keying it on the channel alone would book every unsourced-OQ answer as
+  an override of a recommendation that never existed. → record:
   - vault.json OQ entry: `resolution: <user-typed-answer>`, `resolution_source: user_override`
   - memory `decisions.md`: append row with `source: user_override`, `recommendation_ignored: <recommended-answer>`, `override_reason: <if-provided>`
   - User-scope `patterns.md`: increment "recommendation override" counter for this OQ type
+
+- **Answered via "Other" when NO recommendation was surfaced** (the no-recommendation shape — no
+  signal, or the citation probe failed and it downgraded silently; "Other" is the only answer
+  channel there) → this is a direct answer, **not** an override:
+  - vault.json OQ entry: `resolution: <user-typed-answer>`, `resolution_source: user_direct`
+    — the third and last value of `resolution_source`, declared here alongside `recommendation` and
+    `user_override`, and existing precisely because this shape has no recommended option to accept
+    or decline. No `recommendation_ignored` field (there is no recommended answer to name).
+  - memory `decisions.md`: append row with `source: user_direct`
+  - **No override counter increment** anywhere. Counting these would make the self-correction loop
+    below fire on OQs the recommender never even attempted — it would disable recommendations for a
+    pattern on the evidence that no recommendation was ever built for it.
 
 - **Picked Skip** → nothing recorded anywhere: no vault edit, no derive run, no memory row. A skip is
   not an override and must never increment the override counter.

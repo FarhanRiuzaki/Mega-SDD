@@ -14,8 +14,18 @@
 # re-worded but behaviourally-identical edit breaks — or that a behaviourally-broken but
 # identically-worded edit passes — is not a rail. So the structural checks below parse the fenced
 # blocks (option counts, per-option description presence / substance / non-placeholder-ness,
-# mandated fields present as slots, the follow-up prompts' question+option structure) and only the
-# machine-parsed derive payloads are pinned as exact strings.
+# mandated fields present as slots, the follow-up prompts' question+option structure).
+#
+# WORD-PRESENCE IS NOT A RAIL. Two shipped bugs proved it: the Esc and Skip consequences were
+# SWAPPED in both bullet sets, and the whole `Alternatif …` block was deleted from the canonical
+# template — both with the suite green, because the assertions only checked that the words "Esc",
+# "Skip" and "Alternatif" appeared *somewhere*. Every walk-control claim is therefore CLASSIFIED
+# by what it says (see the WALK-CONTROL SEMANTIC MATRIX in the shared lib below), and template
+# blocks are pinned inside the fence a model copies, never in the prose one screen above them.
+# Exact strings survive only where the literal IS the contract: the machine-parsed derive
+# payloads, the Tier-1 tokens the plugin pins English in every language, the forbidden sentinels,
+# and the recorded rationale sentences that exist to stop a future author reintroducing a
+# deleted trap. Every assertion here is falsification-tested — see the tranche 3b report.
 #
 # Run: bash tests/interaction-keterangan/test-oq-single-prompt.sh
 # CI-safe: bash + python3 only.
@@ -106,6 +116,152 @@ def assert_keterangan(where, n, label, desc):
     chk(len(hits) >= 2, tag + " description reads as narration prose (markers: %s)"
         % ", ".join(sorted(hits))[:40],
         tag + " description does not read as narration (markers: %s)" % sorted(hits))
+
+# ---------------------------------------------------------------------------------------------
+# The WALK-CONTROL SEMANTIC MATRIX.
+#
+# Esc and Skip are the two controls a user can confuse, and the consequences are opposite:
+#   Esc  = END THE WHOLE WALK (this OQ untouched, jump to Step 3)
+#   Skip = skip THIS OQ ONLY, the walk CONTINUES
+# Asserting that the words "Esc" and "Skip" are merely PRESENT is not a rail: swapping the two
+# consequences leaves every such assertion true. So the checks below classify what each line
+# CLAIMS, using two deliberately WIDE synonym families:
+#   * the REQUIRED side is a family, so a legitimate re-wording inside the family still passes;
+#   * the FORBIDDEN side is a SUPERSET of the other control's family, so a synonym cannot evade
+#     it — "SELESAIKAN walk-nya" / "walk BERAKHIR" / "stop the walk" all read as end-the-walk.
+# Because the required family for one control is contained in the forbidden family of the other,
+# a straight swap of the two consequences fails BOTH halves of BOTH lines.
+# ---------------------------------------------------------------------------------------------
+
+# a verb (any language, any inflection) that means "terminate"
+END_VERB = (r"akhiri|mengakhiri|diakhiri|berakhir|sudahi|menyudahi|hentikan|menghentikan|"
+             r"dihentikan|berhenti|setop|selesaikan|menyelesaikan|diselesaikan|selesai|"
+             r"stop|stops|stopped|stopping|end|ends|ended|ending|terminate|terminates|"
+             r"terminated|abort|aborts|aborted|finish|finishes|finished|quit|quits|"
+             r"exit|exits|exited|keluar|tutup|menutup|ditutup|cease|halt|halts")
+# a noun phrase that scopes the consequence to the WHOLE WALK (not to one OQ)
+WALK_SCOPE = (r"seluruh\s+walk|semua\s+walk|whole\s+walk|entire\s+walk|walk\s*-?\s*nya|"
+               r"walknya|walk\s+sekarang|walk\s+ini|walk\s+secara\s+keseluruhan|the\s+walk|"
+               r"this\s+walk|seluruh\s+sesi|sesi\s+ini|whole\s+session|walk\s+berakhir|"
+               r"walk\s+selesai|walk\s+dihentikan")
+# a phrase that means "and then carry on with the queue"
+CONTINUE_RX = (r"lanjut|melanjutkan|dilanjutkan|meneruskan|diteruskan|terus\s+ke|"
+             r"continue|continues|continuing|carries\s+on|carry\s+on|proceeds?\s+to|resume|"
+             r"berikutnya|next\s+OQ|OQ\s+selanjutnya|selanjutnya")
+# a phrase that scopes an action to ONE OQ only
+ONE_ONLY = r"ini\s+saja|INI\s+SAJA|only\s+this|this\s+one\s+only|satu\s+ini\s+saja"
+# a verb that means "throw this pending outcome away"
+CANCEL_RX = (r"batalkan|membatalkan|dibatalkan|batal|abandon|abandons|abandoned|cancel|"
+           r"cancels|cancelled|canceled|discard|discards|dropped|dibuang")
+
+# a negator that FLIPS the phrase it governs. Without this, "walk TIDAK lanjut ke OQ
+# berikutnya" satisfies the REQUIRED continue-claim on a Skip line while leaving the
+# forbidden end-of-walk side clean — i.e. "Skip ends the walk" ships green by a different
+# mechanism than the one this rail was built to catch.
+NEGATOR = (r"tidak|tak|bukan|jangan|belum|tanpa|berhenti\s+dari|"
+           r"not|never|no\s+longer|without|won'?t|cannot|can'?t|does\s*n'?o?t|do\s*n'?o?t")
+
+def hit(fam, text):
+    return bool(re.search(r"\b(?:%s)\b" % fam, text, re.I))
+
+def hit_unnegated(fam, text):
+    """True when `fam` matches AND at least one match is NOT governed by a negator.
+    A negator counts when it sits within the same clause, before the match."""
+    for m in re.finditer(r"\b(?:%s)\b" % fam, text, re.I):
+        head = text[:m.start()]
+        # only look back to the start of the current clause — a negator in a previous
+        # clause governs that clause, not this one.
+        head = re.split(r"[.;]|—|–|\s-\s", head)[-1]
+        if not re.search(r"\b(?:%s)\b" % NEGATOR, head, re.I):
+            return True
+    return False
+
+def claims_end_of_walk(text):
+    """True when `text` claims something TERMINATES THE WHOLE WALK."""
+    return hit_unnegated(END_VERB, text) and hit(WALK_SCOPE, text)
+
+def claims_continue(text):
+    """True when `text` claims the walk CARRIES ON — negated phrases do NOT count."""
+    return hit_unnegated(CONTINUE_RX, text)
+
+def clauses(text):
+    """Split narration into clauses so an attribution can be checked per clause."""
+    return [c for c in re.split(r"[.;]|—|–|\s-\s", text) if c.strip()]
+
+def assert_walk_control_line(where, line, control):
+    """`control` is 'esc' or 'skip'. Assert the line says what that control ACTUALLY does,
+    and does NOT say what the OTHER one does."""
+    tag = "%s %s line" % (where, control.upper())
+    if control == "esc":
+        chk(claims_end_of_walk(line),
+            tag + ": states it ENDS THE WHOLE WALK",
+            tag + ": does not state that Esc ends the whole walk — %r" % line[:110])
+        chk(not claims_continue(line),
+            tag + ": does NOT claim the walk carries on to the next OQ",
+            tag + ": claims the walk CONTINUES — that is Skip's semantics, not Esc's: %r"
+            % line[:110])
+        chk(not hit(ONE_ONLY, line),
+            tag + ": does NOT claim to skip this one OQ only",
+            tag + ": claims a single-OQ skip — that is Skip's semantics, not Esc's: %r"
+            % line[:110])
+    else:
+        chk(claims_continue(line),
+            tag + ": states the walk CONTINUES to the next OQ",
+            tag + ": does not state that the walk continues — %r" % line[:110])
+        chk(not claims_end_of_walk(line),
+            tag + ": does NOT claim to end the whole walk",
+            tag + ": claims to END THE WALK — that is Esc's semantics, not Skip's: %r"
+            % line[:110])
+        # Skip must also SCOPE itself to one OQ. Without this, its scope can be widened
+        # from "this OQ" to "all remaining OQs" — still continuing, still not ending the
+        # walk, and therefore invisible to both assertions above.
+        chk(hit(ONE_ONLY, line),
+            tag + ": SCOPES itself to this ONE OQ",
+            tag + ": does not scope itself to a single OQ — a widened Skip silently drops "
+                  "the rest of the queue: %r" % line[:110])
+
+def assert_skip_description(where, desc):
+    """Skip's own option `description` is a walk-control surface too — the operator reads it
+    INSTEAD of the bullet as often as not. It must claim continuation, and any end-the-walk
+    claim inside it is legal ONLY when that clause attributes the ending to Esc."""
+    tag = "%s Skip description" % where
+    chk(desc is not None, tag + " exists", tag + " is missing")
+    if desc is None:
+        return
+    chk(claims_continue(desc),
+        tag + ": states the walk CONTINUES to the next OQ",
+        tag + ": never says the walk continues — the operator cannot tell Skip from Esc: %r"
+        % desc[:110])
+    unattributed = [c.strip() for c in clauses(desc)
+                    if claims_end_of_walk(c) and not re.search(r"\bEsc\b", c)]
+    chk(not unattributed,
+        tag + ": every end-the-walk claim in it is attributed to Esc, never to Skip",
+        tag + ": claims Skip ENDS THE WALK (clause not attributed to Esc): %r"
+        % (unattributed[:1],))
+
+def bullets(body):
+    """The `•` bullets of a question body, each joined with its wrapped continuation lines —
+    so a bullet that later gets re-wrapped is still read as ONE claim."""
+    out, open_ = [], False
+    for line in body.splitlines():
+        s = line.strip()
+        if s.startswith("•"):
+            out.append(s.lstrip("•").strip())
+            open_ = True
+        elif re.match(r"^\s*(header|multiSelect|options|questions|-)\s*[:\s]", line) or not s:
+            open_ = False
+        elif open_ and line[:1].isspace() and not s.startswith("#"):
+            out[-1] += " " + s
+    return out
+
+def bullet_about(body, word):
+    """Every bullet that mentions `word` as a whole word."""
+    return [b for b in bullets(body) if re.search(r"\b%s\b" % word, b)]
+
+def question_body(block):
+    """The operator-visible question text of a prompt block (everything the user reads
+    before the option list)."""
+    return block[block.index("question:"):block.index("options:")]
 OQLIBPY
 
 echo "== 1. the canonical template a model copies: 4 slots, correct affordances =="
@@ -161,6 +317,40 @@ panel = full[:full.index('question:')]
 chk('High-stakes business OQ' in panel and 'ONLY when category: business AND P1' in panel,
     "panel banner carries the high-stakes marker, gated to business+P1",
     "panel banner lost the high-stakes marker or its gate")
+
+# ---- the alternatives' information-preservation mitigation -----------------------------------
+# Dropping the alternative's option slot was only acceptable because the alternatives survive as
+# sourced prose IN THE QUESTION TEXT. That block is the WHOLE mitigation, so it is pinned in the
+# CANONICAL TEMPLATE A MODEL COPIES — not in the prose above it, and not one file over in
+# recommendation-context.md. (Deleting the template block while leaving the prose intact is
+# exactly the edit that used to read green.)
+qbody = question_body(full)
+ALT = 'Alternatif yang sudah dipertimbangkan:'
+chk(ALT in qbody,
+    "the alternatives block is IN the canonical template's question text",
+    "the alternatives block is GONE from the template — the information-preservation mitigation "
+    "for dropping the alternative's option slot no longer exists in the shape a model copies")
+if ALT in qbody:
+    alt = next(l for l in qbody.splitlines() if ALT in l)
+    chk('Sumber:' in alt and 'tanpa sumber' in alt,
+        "the alternatives block carries the source-or-`tanpa sumber` form per alternative",
+        "the alternatives block lost its citation slot — an alternative could be presented "
+        "as grounded with nothing behind it")
+    chk(re.search(r'kalau|when', alt, re.I),
+        "each alternative carries its when-would-you-pick-this clause",
+        "the alternatives are bare names with no selection criterion")
+    tail = qbody[qbody.index(ALT):]
+    tail = tail[:tail.index('\n\n')] if '\n\n' in tail else tail
+    chk(re.search(r'(NEVER invent|jangan (pernah )?(meng)?(arang|karang))', tail, re.I),
+        "the never-invent-an-alternative rule rides the template block itself",
+        "the template block has no never-invent rule attached — a model may mint an "
+        "ungrounded alternative to fill the line")
+    chk(re.search(r'\bomit\b|hilangkan|jangan tampilkan', tail, re.I),
+        "the template says to OMIT the block when no grounded alternative exists",
+        "the template gives no omit path — the block becomes mandatory and gets filled with a guess")
+
+# ---- Skip's own description is a walk-control surface --------------------------------------
+assert_skip_description("canonical", dict(opts).get('Skip'))
 sys.exit(RC_[0])
 PY
 [ $? -eq 0 ] || FAILED=1
@@ -175,10 +365,22 @@ src = open(sys.argv[1], encoding='utf-8').read()
 norec = block_after(src, '#### When there is NO recommendation')
 opts = options_of(norec)
 
-chk(0 < len(opts) <= 4,
-    "no-recommendation template declares %d options (<= cap; the answer slot is unspent)" % len(opts),
-    "no-recommendation template declares %d options" % len(opts))
-labels = [l.lower() for l, _ in opts]
+# The SET, not the size. `0 < n <= 4` lets an invented, unsourced 4th option in — which is
+# precisely the fabrication this shape exists to prevent (there is NO citable signal here, so
+# any option beyond the three affordances would be a guess wearing an option slot).
+labels = [l.lower().strip() for l, _ in opts]
+ALLOWED = {'skip', 'defer', 'out of scope'}
+chk(len(opts) == 3,
+    "no-recommendation template declares exactly 3 options (the answer slot is unspent)",
+    "no-recommendation template declares %d options — the shape is 3 affordances + Other + Esc, "
+    "and slot [1] must stay UNSPENT (never filled with an unsourced guess): %r" % (len(opts), labels))
+extra = [l for l in labels if l not in ALLOWED]
+chk(not extra,
+    "no-recommendation options are exactly {Skip, Defer, Out of scope} — nothing invented",
+    "an option outside the three affordances appears with no citation behind it: %r" % extra)
+chk(len(set(labels)) == len(labels),
+    "no-recommendation options are distinct",
+    "a duplicate option label appears: %r" % labels)
 chk(not any('(recommended)' in l for l in labels),
     "no-recommendation template marks NOTHING as recommended",
     "an option is marked (recommended) with no citation-probed recommendation — fabrication")
@@ -196,6 +398,14 @@ chk('rekomendasi' in q.lower() or 'recommendation' in q.lower(),
 chk('tidak mengubah apa pun' in q or 'nothing to accept' in q.lower(),
     "no-recommendation shape states that a bare destination override changes nothing",
     "no-recommendation shape advertises the bare-override shortcut with no recommendation behind it")
+
+assert_skip_description("no-recommendation", dict(opts).get('Skip'))
+
+# the two shapes' Skip descriptions must not drift apart — Skip means the same thing in both
+full_skip = dict(options_of(block_after(src, '#### The prompt, verbatim'))).get('Skip')
+chk(full_skip is not None and full_skip == dict(opts).get('Skip'),
+    "Skip's description is identical in both shapes (no one-sided drift)",
+    "Skip's description differs between the two shapes — one of them will drift out of true")
 sys.exit(RC_[0])
 PY
 [ $? -eq 0 ] || FAILED=1
@@ -248,15 +458,27 @@ for heading, name in (('#### The prompt, verbatim', 'full shape'),
     chk('STOP' not in blk and 'BERHENTI' not in blk,
         "%s: no typed end-the-walk sentinel in the prompt" % name,
         "%s: a typed sentinel survives — it would swallow a legitimate answer" % name)
-    q = blk[blk.index('question:'):blk.index('options:')]
-    chk('Esc' in q, "%s: Esc is stated in the question text (discoverable)" % name,
-        "%s: Esc semantics are folklore — not in the question text" % name)
-    chk('Skip' in q, "%s: Skip is stated in the question text" % name,
-        "%s: Skip is folklore — not in the question text" % name)
+    q = question_body(blk)
     chk('Other' in q, "%s: the Other free-text channel is stated in the question text" % name,
         "%s: Other channel undocumented in the question text" % name)
-    chk('walk' in q.lower(), "%s: the question text says what Esc does to the WALK" % name,
-        "%s: the question text never distinguishes ending the walk from skipping an item" % name)
+
+    # ---- the SEMANTIC matrix (not word-presence) --------------------------------------------
+    # `'Esc' in q and 'Skip' in q` stays true after the two consequences are SWAPPED, which is
+    # how a swap once shipped green. Each bullet is classified by what it CLAIMS instead.
+    esc_b  = bullet_about(q, 'Esc')
+    skip_b = bullet_about(q, 'Skip')
+    chk(len(esc_b) == 1, "%s: exactly ONE bullet documents Esc (discoverable, once)" % name,
+        "%s: %d bullets mention Esc — expected exactly 1 (0 = folklore, 2+ = two homes to drift)"
+        % (name, len(esc_b)))
+    chk(len(skip_b) == 1, "%s: exactly ONE bullet documents Skip" % name,
+        "%s: %d bullets mention Skip — expected exactly 1" % (name, len(skip_b)))
+    chk(not (set(esc_b) & set(skip_b)),
+        "%s: the Esc and Skip bullets are separate lines (each control owns its own claim)" % name,
+        "%s: one bullet carries BOTH controls — their consequences cannot be told apart" % name)
+    for b in esc_b:
+        assert_walk_control_line(name, b, 'esc')
+    for b in skip_b:
+        assert_walk_control_line(name, b, 'skip')
 
 # the deletion is RECORDED so a future author does not reintroduce it
 chk('would silently swallow a legitimate answer' in iw or 'swallow a legitimate answer' in iw,
@@ -328,6 +550,11 @@ sys.path.insert(0, os.environ['OQLIB'])
 from oqlib import *
 src = open(sys.argv[1], encoding='utf-8').read()
 
+# Real section boundaries, never a magic byte window: a `[:4000]` slice silently stops pinning
+# the moment the prose above it grows (it was measured at 36 chars of headroom).
+defer_sec = src[src.index('**If `Defer`**'):src.index('**If `Skip`**')]
+oos_sec   = src[src.index('**If `Out of Scope`**'):src.index('**If `Defer`**')]
+
 # ---- Defer: ONE call, TWO questions (the 4-option cap is per QUESTION, not per call)
 defer = block_after(src, '**If `Defer`**')
 chk(defer.lstrip().startswith('questions:'),
@@ -355,24 +582,105 @@ q1_labels = [l.lower() for l, _ in options_of(qs[0])]
 chk('stakeholder' in q1_labels and 'binding' in q1_labels,
     "Defer Q1 offers exactly the two schema values stakeholder / binding",
     "Defer Q1 labels are %r — must be the defer_to schema values" % q1_labels)
-chk('greenfield' in defer or 'OMIT this whole entry' in defer,
-    "Defer Q1 is marked brownfield-only (omitted in greenfield)",
-    "Defer Q1 is unconditional — greenfield would be offered a binding target that never runs")
+
+# ---- Q1's brownfield gate: pinned ON Q1, not by a word that appears anywhere -----------------
+# `'greenfield' in defer` is satisfied by Q2's own comment ("…is OMITTED in greenfield"), so it
+# stayed true even with Q1 made unconditional. The gate is a DIRECTIVE ATTACHED TO Q1.
+OMIT_RX = (r"(OMIT|omit|hilangkan|jangan (tampilkan|tanya)|drop|skip)\s+"
+           r"(this whole entry|this entry|this question|entry ini|pertanyaan ini|it)")
+GATE_RX = r"greenfield|no repo signals|tanpa (sinyal )?repo|mode: existing"
+chk(re.search(OMIT_RX, qs[0]) and re.search(GATE_RX, qs[0]),
+    "Defer Q1 carries an omission DIRECTIVE on itself, gated on greenfield / no repo signals",
+    "Defer Q1 is unconditional — nothing on Q1 itself says to omit it, so greenfield gets "
+    "offered a `defer_to: binding` target with no repo to bind against")
+chk(not re.search(OMIT_RX, qs[1]),
+    "Defer Q2 carries no omission directive — it is ALWAYS present",
+    "Defer Q2 is conditional too — a defer could then be recorded with NO reason at all")
+chk(re.search(r"ALWAYS present|selalu (ada|ditanyakan)", qs[1]),
+    "Defer Q2 is explicitly marked unconditional",
+    "nothing marks Defer Q2 as always-present")
+# and the prose must state the actual two-part condition + what greenfield writes instead
+chk('mode: existing' in defer_sec and re.search(r'repo signals', defer_sec),
+    "the Defer prose states BOTH brownfield conditions (vault mode + repo signals)",
+    "the Defer prose does not state the two conditions that gate Q1")
+chk(re.search(r'greenfield[^.]{0,120}stakeholder', defer_sec, re.S)
+    or re.search(r'stakeholder[^.]{0,160}greenfield', defer_sec, re.S),
+    "greenfield's `defer_to` is stated to be written EXPLICITLY as stakeholder",
+    "with Q1 omitted, nothing says what `defer_to` becomes — it would be defaulted (invariant #5)")
 
 # Q2's canned reasons must not lose the who/when the vault entry mandates
 q2_descs = ' '.join(d or '' for _, d in options_of(qs[1])).lower()
 chk('other' in q2_descs, "Defer Q2 options route PIC/date specifics to Other",
     "Defer Q2 canned reasons swallow the who/when with no route to free text")
 
-after = src[src.index('**If `Defer`**'):][:4000]
+after = defer_sec
 # phrasing-agnostic: a negation applied to "defaulted or derived", plus the invariant it breaches
 chk(re.search(r'\b(never|neither|not)\b[^.]{0,80}\bdefault(ed)?\b[^.]{0,40}\bderived\b', after, re.I)
     and 'invariant-#5' in after,
     "the Defer follow-up's values may never be defaulted or derived (invariant #5)",
     "nothing forbids defaulting defer_to / deferred_reason")
-chk('abandons the Defer' in after[:4000],
-    "Esc on the Defer follow-up abandons it — no canned reason substituted",
-    "Esc on the Defer follow-up has no specified outcome")
+
+# ---- Esc on the Defer follow-up: pin the MEANING, in both homes ------------------------------
+# The old pin was the literal phrase `abandons the Defer`; the sentence around it could be
+# inverted to "records the canned reason" while that substring survived elsewhere. Three
+# independent facts are pinned instead: (1) Esc cancels the pending Defer, (2) NOTHING is
+# recorded for it, (3) a canned reason may never be substituted.
+esc_sent = [s for s in re.split(r'(?<=[.!])\s', after) if re.search(r'\bEsc\b', s)]
+chk(esc_sent, "the Defer section states an Esc outcome",
+    "the Defer section never says what Esc does — the operator's only exit is unspecified")
+cancels = [s for s in esc_sent if hit(CANCEL_RX, s)]
+chk(cancels,
+    "Esc on the Defer follow-up CANCELS the pending defer (not merely 'has an outcome')",
+    "no sentence says Esc cancels the defer — an Esc could then be read as confirming it")
+chk(any(re.search(r'nothing is (written|recorded)|tidak ada apa pun yang ditulis|'
+                  r'no .{0,20}Deferred.{0,20} annotation', s, re.I) for s in cancels),
+    "Esc on the Defer follow-up records NOTHING (no annotation, no vault write)",
+    "the Esc branch does not say that nothing is written — a partial defer could be persisted")
+chk(any(claims_end_of_walk(s) for s in esc_sent),
+    "Esc on the Defer follow-up also ENDS THE WALK (same reading as Step 2b)",
+    "the Defer follow-up's Esc does not end the walk — a second, divergent Esc meaning")
+chk(re.search(r'(never|jangan|tidak boleh|not)\b[^.]{0,60}\b(canned|default|bawaan|invented)\b',
+              after, re.I),
+    "a canned/invented defer reason may NEVER be substituted for an Esc",
+    "nothing forbids falling back to a canned reason when the user escapes")
+CANNED_WRITE = (r'\b(records?|writes?|saves?|substitutes?|falls? back to|stores?|'
+                r'tercatat sebagai|dicatat)\b[^.]{0,50}\b(canned|default|bawaan)\b')
+# The exemption must be CLAUSE-scoped, not sentence-scoped. A negator anywhere in the
+# sentence used to excuse the whole sentence, so an ADDITIVE clause that LICENSES writing a
+# canned reason ("… kalau operator tidak menjawab, sistem records a canned default …") read
+# green while the original prohibition still satisfied its own assertion — an invariant-#5
+# licence hiding behind an unrelated negation.
+NEGATED = r'\b(never|not|no|nothing|neither|jangan|tidak|bukan|dilarang|forbidden)\b'
+
+def _canned_write_is_licensed(sentence):
+    """True when this sentence actually PERMITS recording a canned reason — i.e. some
+    CANNED_WRITE match is not governed by a negator in its own clause."""
+    for m in re.finditer(CANNED_WRITE, sentence, re.I):
+        head = re.split(r'[,;]|—|–|\s-\s', sentence[:m.start()])[-1]
+        if not re.search(NEGATED, head, re.I):
+            return True
+    return False
+
+asserted = [s for s in re.split(r'(?<=[.!])\s', after) if _canned_write_is_licensed(s)]
+chk(not asserted,
+    "no branch is specified that RECORDS a canned reason",
+    "a branch records a canned/default defer reason — invariant-#5 breach (invented state): %r"
+    % (asserted[:1],))
+
+# the operator-visible half: Q2's own Esc bullet must carry the same two facts
+q2_body = qs[1][:qs[1].index('options:')]
+q2_esc = bullet_about(q2_body, 'Esc')
+chk(len(q2_esc) == 1,
+    "Defer Q2 states the Esc consequence in operator-visible text (exactly one bullet)",
+    "Defer Q2 has %d operator-visible Esc bullets — expected 1 (a YAML comment is not "
+    "operator-visible)" % len(q2_esc))
+for b in q2_esc:
+    assert_walk_control_line("Defer Q2", b, 'esc')
+    chk(hit(CANCEL_RX, b), "Defer Q2 Esc bullet: says the defer itself is CANCELLED",
+        "Defer Q2 Esc bullet: does not say the pending defer is abandoned — %r" % b[:110])
+    chk(re.search(r'\bdefer\b', b, re.I),
+        "Defer Q2 Esc bullet: names the outcome being abandoned (the defer)",
+        "Defer Q2 Esc bullet: does not name what is abandoned — %r" % b[:110])
 
 # ---- Out of scope: ONE call, one question, real keterangan
 oos = block_after(src, '**If `Out of Scope`**')
@@ -384,10 +692,27 @@ chk('question:' in oos and 'header:' in oos,
     "OOS follow-up is not a specified prompt")
 for k, (label, desc) in enumerate(oopts, 1):
     assert_keterangan("OOS", k, label, desc)
-oos_after = src[src.index('**If `Out of Scope`**'):][:4000]
+oos_after = oos_sec
 chk('never' in oos_after and 'invariant-#5' in oos_after,
     "the OOS rationale may never be defaulted or derived (invariant #5)",
     "nothing forbids inventing an out_of_scope_reason")
+# the OOS follow-up's Esc carries the same two facts, in operator-visible text
+oos_body = oos[:oos.index('options:')]
+oos_esc = bullet_about(oos_body, 'Esc')
+chk(len(oos_esc) == 1,
+    "the OOS follow-up states the Esc consequence in operator-visible text (exactly one bullet)",
+    "the OOS follow-up has %d operator-visible Esc bullets — expected 1" % len(oos_esc))
+for b in oos_esc:
+    assert_walk_control_line("OOS follow-up", b, 'esc')
+    chk(hit(CANCEL_RX, b), "OOS Esc bullet: says the out-of-scope declaration is CANCELLED",
+        "OOS Esc bullet: does not say the pending OOS is abandoned — %r" % b[:110])
+    chk(re.search(r'out.?of.?scope', b, re.I),
+        "OOS Esc bullet: names the outcome being abandoned",
+        "OOS Esc bullet: does not name what is abandoned — %r" % b[:110])
+chk(re.search(r'(never|jangan|tidak boleh|not)\b[^.]{0,60}\b(canned|default|bawaan|invented)\b',
+              oos_after, re.I),
+    "a canned OOS rationale may NEVER be substituted for an Esc",
+    "nothing forbids falling back to a canned rationale when the user escapes")
 sys.exit(RC_[0])
 PY
 [ $? -eq 0 ] || FAILED=1
