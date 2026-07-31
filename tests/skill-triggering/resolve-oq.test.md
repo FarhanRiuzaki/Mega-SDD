@@ -34,28 +34,78 @@ Manual-run fixture for the `resolve-oq` skill.
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** Flow proposes scan-codebase next (deferred OQs do NOT gate the chain)
 
-## Behavior — 4-action menu
+## Behavior — the ONE collapsed per-OQ prompt
 
-### B1: All 4 options offered (brownfield)
+Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display detail; the recorded
+`action` letters (`A`/`B`/`C`) are the derive contract and did NOT change with the collapse.
+
+### B1: One prompt, 4 slots (brownfield)
 - **Setup:** vault.mode=existing AND .git present
-- **Expect:** Per OQ, options [A] Answer / [B] Defer / [C] Out-of-scope / [D] Skip shown
+- **Expect:** Per OQ, exactly ONE `AskUserQuestion` with options `[1]` `<recommended answer> (recommended)` / `[2]` Skip / `[3]` Defer / `[4]` Out of scope; "Other" carries the free-text answer + the `→ <file>.md` destination override; Esc ends the walk
+- **Critical:** NO separate "what is your answer?" prompt and NO separate "confirm the destination?" prompt — the answer option's description discloses where the answer lands
 
-### B2: Defer option hidden (greenfield)
+### B2: Defer is ALWAYS visible (greenfield)
 - **Setup:** vault.mode=greenfield
-- **Expect:** Per OQ, only options [A] / [C] / [D] shown
+- **Expect:** Slot `[3]` Defer still shown — a stakeholder defer must be reachable in every context. What changes is the FOLLOW-UP: it carries the reason question only (no `defer_to` sub-target question), and `defer_to` takes its schema default `stakeholder`
 
-### B3: Defer option hidden (no repo signals)
+### B3: Defer sub-target hidden (no repo signals)
 - **Setup:** vault.mode=existing but CWD has no .git/package.json/etc.
-- **Expect:** Only options [A] / [C] / [D] shown; skill warns user about the mode/CWD mismatch
+- **Expect:** Slot `[3]` Defer still shown; the follow-up omits the `stakeholder`/`binding` question; skill warns user about the mode/CWD mismatch
 
-### B4: State transitions per action
-- **[A] Answer** → OQ becomes `status: resolved`, `resolved_at: <iso>`, `resolution: <text>`
-- **[B] Defer to binding** → `status: deferred`, `defer_to: binding`, `deferred_at: <iso>`, optional `deferred_reason`
-- **[C] Out of scope** → `status: out-of-scope`, `out_of_scope_reason: <text>`
-- **[D] Skip** → no field change; OQ remains pending
+### B4: Alternatives ride the question text, not a slot
+- **Setup:** recommendation built with one grounded alternative
+- **Expect:** the alternative appears as prose in the question text (`Alternatif: … — kalau …`) with its citation or an explicit `tanpa sumber` marker; it does NOT consume an option slot
+- **Critical:** no grounded alternative → the line is OMITTED, never padded with an invented one
 
-### B5: Vault.json changelog appended
-- **After any action:** vault.json gets a new changelog entry: `{ "event": "oq-<action>", "id": "OQ-XXX", "at": "<iso>", "action": "A|B|C|D" }`
+### B5: No typed end-the-walk sentinel
+- **Setup:** an OQ whose text is "payment gateway timeout — lanjut atau berhenti?"; user types `stop` into "Other"
+- **Expect:** `stop` is recorded as the ANSWER (action `A`). The walk does not end. There is no `STOP`/`BERHENTI` sentinel anywhere in the walk
+
+### B6: Esc ends the walk (not the item)
+- **Setup:** N=5 OQs, 2 already resolved, Esc pressed on OQ 3
+- **Expect:** OQ 3 untouched and counted as skipped; the walk does NOT advance to OQ 4; skill jumps to Step 3 (version bump + Changelog recording the 2 resolutions) and exits. Same meaning Esc has in `execute-bolts/references/halt-recovery.md` and `propose-and-confirm-prompt.md`
+
+### B7: Skip (slot `[2]`) skips ONE OQ and continues
+- **Setup:** N=5 OQs, Skip chosen on OQ 3
+- **Expect:** no file change, no derive run, OQ 3 stays `[ ]` open; the walk CONTINUES to OQ 4
+
+### B8: "Other" parse order — destination override composes with the answer
+- **8a — text + override:** `Pakai RFC 7807 → 02-architecture.md` → action `A`, answer = `Pakai RFC 7807`, destination = `02-architecture.md`
+- **8b — BARE override (D5):** `→ 02-architecture.md` alone → action `A` accepting the RECOMMENDED answer, landed in `02-architecture.md`. **It must NOT parse as Skip** — that silently discarded an accepted answer before this round
+- **8c — bare override with NO recommendation:** nothing to accept → no file change, OQ stays `[ ]` open, outcome narrated, counted as skipped
+- **8d — empty "Other":** Skip, with the outcome narrated (not a silent no-op)
+
+### B9: Defer follow-up = ONE call, TWO questions
+- **Setup:** brownfield, Defer chosen
+- **Expect:** ONE `AskUserQuestion` whose `questions` array holds 2 entries — Q1 `defer_to` (`stakeholder` / `binding`, each with a mandatory keterangan), Q2 the reason (≤4 common-reason options + "Other" for PIC/date specifics). The 4-option cap is per QUESTION, not per call
+- **Critical:** neither `defer_to` nor `deferred_reason` may be defaulted or derived from the OQ text (invariant #5). Esc here abandons the Defer — nothing is written
+
+### B10: Out-of-scope follow-up
+- **Expect:** ONE `AskUserQuestion`, one question, ≤4 rationale options each stating what lands verbatim + "Other" for a custom rationale. Esc abandons the OOS; a canned rationale is never substituted
+
+### B11: State transitions per action
+- **`[1]` / "Other" text / bare override → action `A`** → OQ becomes `status: resolved`, `resolved_at: <iso>`, `resolution: <text>`
+- **`[3]` Defer → action `B`** → `status: deferred`, `defer_to: stakeholder|binding`, `deferred_at: <iso>`, `deferred_reason: <asked, never invented>`
+- **`[4]` Out of scope → action `C`** → `status: out-of-scope`, `out_of_scope_reason: <text>`
+- **`[2]` Skip** → no field change; OQ remains pending; **no derive run at all**
+- **Esc** → no field change for the current OQ; walk ends
+
+### B12: Vault.json changelog appended
+- **After a Resolve / Defer / Out-of-scope:** vault.json gets a new changelog entry: `{ "event": "oq-resolved|oq-deferred|oq-out-of-scope", "id": "OQ-XXX", "at": "<iso>", "action": "A|B|C" }`
+- **Critical:** Skip emits NO event — `"action": "D"` never appears in a changelog entry. The recorded value is always a LETTER, never a slot number (`"action": "1"` is a defect)
+
+### B13: Prompt budget (the collapse, as a rail)
+- Answer = **1** prompt · Skip = **1** · end the walk = **1** · Defer = **2** (choice + the one two-question call) · Out of scope = **2** (choice + rationale)
+- **Critical:** a Defer costing 3 (sub-target and reason asked separately) is a regression
+
+### B14: Language precedence on the prompt
+- **Setup:** the user has been writing in English
+- **Expect:** the panel, question body, bullets, `Alternatif` line, option labels and descriptions all render in ENGLISH per `plugins/mega-sdd/references/output-language.md §Precedence` rule 2. The Indonesian template strings are the default rendering, not a fixed catalog
+- **Critical:** Tier-1 tokens (`OQ-…`, `P1`, `[ ]`/`[x]`/`[~]`, file names, `defer_to`, `stakeholder`, `binding`, `HIGH`/`MEDIUM`) stay English in every language
+
+### B15: High-stakes marker in BOTH positions
+- **Setup:** OQ with `category: business` AND `P1`
+- **Expect:** the ⚠️ marker appears on the panel banner AND as the prefix of the recommended option's `description`. Losing either is a regression
 
 ## Behavior — --binding mode
 
@@ -65,7 +115,7 @@ Manual-run fixture for the `resolve-oq` skill.
 
 ### BM2: Walks propagated deferred OQs
 - **Setup:** binding.md has 1 CONFLICT + 2 Open Questions rows
-- **Expect:** Skill walks CONFLICTs first, then OQs (with 4-action menu, Option B hidden because nested deferral not supported)
+- **Expect:** Skill walks CONFLICTs first, then OQs using the SAME collapsed single prompt as the standard walk (`[1]` recommended answer / `[2]` Skip / `[4]` Out of scope + "Other" + Esc), with slot `[3]` Defer dropped — nested deferral not supported. The freed slot is left empty, never filled with an invented answer. Recorded `action` letters unchanged (`A` / `C`; Skip emits no event)
 
 ### BM3: Resolutions persist
 - **After resolving 1 conflict + 1 OQ:** binding.md updated, vault.json changelog entry added
@@ -129,4 +179,4 @@ Manual-run fixture for the `resolve-oq` skill.
 
 ## Pass criteria
 
-All R1-R7 invoke skill correctly. 4-action menu obeys brownfield/greenfield/repo-signal conditions. State transitions match B4. Binding mode walks conflicts and OQs per BM1-BM3; hand-off is ACTION-MIX per BM4-BM5 (KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units — never a blanket re-bind that loops); DEFER-resolved uncited CONFLICTs are advisory at the binding→units gate per BM6. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.
+All R1-R7 invoke skill correctly. The per-OQ walk costs ONE `AskUserQuestion` on the common path (B1, B13); Defer stays visible in every context and only its sub-target question is brownfield-conditional (B2-B3); alternatives ride the question text (B4); there is no typed end-the-walk sentinel and Esc ends the walk while slot `[2]` skips one item (B5-B7); the "Other" parse order composes a bare destination override with the recommendation (B8); the Defer follow-up is one call with two questions and nothing it collects is ever defaulted (B9-B10). State transitions match B11 and the changelog contract B12 — letters, never slot numbers, and no event at all for Skip. Language precedence and the high-stakes double marker hold (B14-B15). Binding mode walks conflicts and OQs per BM1-BM3; hand-off is ACTION-MIX per BM4-BM5 (KEEP_CODE/SPLIT→bind-codebase, KEEP_VAULT/DEFER-only→generate-units — never a blanket re-bind that loops); DEFER-resolved uncited CONFLICTs are advisory at the binding→units gate per BM6. Context-aware recommendations (REC1-REC10) follow `references/recommendation-context.md` — citation mandatory, silent fallback when no confident sources, audit trail on ACCEPT + OVERRIDE, self-correction loop after consistent overrides.

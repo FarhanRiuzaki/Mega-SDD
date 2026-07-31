@@ -59,7 +59,15 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    | D — DEFER | Heading + Resolution line marked `✅ RESOLVED (DEFER)`; conflict moved to "Open Questions" table; tag as `deferred-binding` | none (the demoted OQ lives in binding.md — it enters vault.json via the Step-4 derive's `--patch <tmp-patch>`, file content `{"open_questions":{"OQ-XXX":{…, "status":"deferred", "defer_to":"binding", …}}}`; the deriver preserves such entries on every future derive even though they have no vault-md home) |
    | S — SPLIT | Heading + Resolution line marked `✅ RESOLVED (SPLIT)`; insert N sub-conflicts under it | For each sub-claim: edit vault to split |
 
-3. **Walk Open Questions table.** For each propagated deferred-OQ, use the standard 4-action menu (`[A]` Answer now / `[C]` Out of scope / `[D]` Skip — same Step 2b menu as the standard walk), with **Option [B] Defer hidden** (already in binding context — nested deferral not supported; re-binding flow is via re-running `bind-codebase`).
+3. **Walk Open Questions table.** For each propagated deferred-OQ, use the standard walk's **single collapsed prompt** (`interactive-walk.md` Step 2b is canonical — ONE `AskUserQuestion` per OQ), with **Defer dropped** (already in binding context — nested deferral not supported; re-binding flow is via re-running `bind-codebase`). That leaves **three** options, and slot numbers are display positions, so Out of scope renders at `[3]` here:
+
+   - `[1]` the recommended answer (omitted when no citation-probed recommendation exists)
+   - `[2]` Skip
+   - `[3]` Out of scope
+   - *Other* — the free-text answer + the destination override, parsed per Step 2b
+   - *Esc* — end the walk
+
+   Never add a fourth option to fill the freed capacity: an invented answer is fabrication, and the cap is a ceiling, not a quota. There is no typed end-the-walk sentinel here either. The recorded `action` letters are unchanged (`A` answer / `C` out-of-scope / Skip emits no event).
 
 4. **Write back.** All resolutions persist to:
    - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)

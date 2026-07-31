@@ -19,15 +19,18 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 | Step 0 (lock check, if `Status: 🔒 LOCKED`) | Ask user to confirm unlock | Default to "proceed if DRAFT" (no unlock implied). If LOCKED, **STILL ASK** — unlocking has audit consequences. |
 | Step 0.5 (resume detection) | Ask continue / fresh / cancel | Default to "continue from current state". |
 | Step 0.6 (resolution scope) | Ask scope | Default to `p1-only` — DELIBERATE chain-context divergence from the interactive default (`all-priorities`): a chain only needs the P1 blocking tier resolved to resume; P2/P3 stay for a later interactive session. |
-| Step 2 (per-OQ Resolve/OOS/Defer/Skip) | **Always ask** | **Always ask** (substance prompt — no override) |
-| Step 2c (cross-cutting multi-doc landing) | Ask user to confirm primary doc | Always ask (substance prompt — landing affects content placement) |
+| Step 2b (the ONE per-OQ prompt: Resolve/Defer/OOS/Skip + the answer + the landing) | **Always ask** | **Always ask** (substance prompt — no override) |
+| Step 2c (cross-cutting multi-doc landing) | Chosen on the Step 2b prompt — the primary doc + cross-refs are DISCLOSED in the answer option's description, so picking the option is the human's confirmation | Identical — always the human's call, never auto-decided |
+| Step 2c (Defer follow-up: `defer_to` + reason; OOS follow-up: rationale) | **Always ask** — ONE call, and for Defer that call carries BOTH questions | **Always ask** — recorded state may never be defaulted or derived (invariant #5) |
 
 What stays interactive even with `--auto`:
 
 - **Per-OQ choice** (Resolve / OOS / Defer / Skip) — captures stakeholder answers; never auto-decides.
-- **Resolution destination override** when auto-classification is wrong.
-- **Cross-cutting OQ landing prompts** — affects which doc the answer lives in.
+- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The separate confirm-the-destination round trip is gone; the human's control over it is not.
+- **Cross-cutting OQ landing** — same mechanism: the primary doc + cross-ref plan are disclosed in the option the human picks.
 - **LOCKED vault unlock confirmation** — audit-significant.
+
+The `--auto` skips remain **logistical only**. Nothing in the collapse converts a substance prompt into a default: the count of human decisions per OQ is unchanged, only the number of round trips they cost.
 
 When this skill is invoked without `--auto`, behavior is the standard interactive walk.
 

@@ -306,12 +306,72 @@ batches = **1.5×** on the agent-batch portion.
 
 ## Phase 3 — human stops
 
-**3a — resolve-oq: 3 human round trips per OQ → 1.** Its own sibling reference already specifies 1.
-**Gain: 22 → 7–13 stops (`--auto`, N=8); 25–42 interactive.** Coverage-independent.
+**3a — resolve-oq: 3 human round trips per OQ → 1.** Its own sibling reference already specified 1 —
+but at FIVE options, over the platform's 4-option `AskUserQuestion` cap, and with Skip dropped; it
+was reconciled, not copied. **SHIPPED** (`skills/resolve-oq/references/interactive-walk.md` Step 2b
+is canonical; `recommendation-context.md` points at it and does not restate it).
 *Constraint:* the mandated **keterangan** contract (question text + source + per-option explanation
 in Indonesian) must survive on every prompt — see `references/output-language.md` and the
 `oq-interaction-keterangan` rule. Merging the action menu with free-text capture must not degrade
 the Defer/OOS/Skip affordance.
+
+Shipped shape: `[1]` recommended answer · `[2]` Skip · `[3]` Defer · `[4]` Out of scope · "Other" =
+the free-text answer + the destination override · **Esc = end the walk** (the plugin-wide reading of
+Esc — `halt-recovery.md` and `propose-and-confirm-prompt.md` both use it for *cancel the activity*).
+The considered alternatives lost their slot and moved into the question text as sourced prose; no
+typed `STOP` sentinel exists (it would swallow a legitimate answer). The Defer follow-up is ONE
+`AskUserQuestion` **call** carrying TWO questions — the platform's 4-option cap is per QUESTION, and
+a call takes 1–4 of them.
+
+**Gain — RE-DERIVED from the shipped procedure. The published "22 → 7–13 stops (`--auto`, N=8);
+25–42 interactive" is corrected at the FLOOR only; the delivered work MEETS the published claim.**
+
+Assumptions, on the outside: N = 8 OQs; a clean vault (the conditional LOCKED-unlock prompt is
+excluded from both columns); mix **5 Answer / 1 Defer / 1 Out-of-scope / 1 Skip**, one of the 5
+Answers cross-cutting. Fixed logistical prompts per run = Step 0 vault + Step 0.6 scope
+(+ Step 0.5 resume, which fires only when a prior round exists) = **2 interactive on a first pass,
+3 on a resume; 0 under `--auto`** (all three default).
+
+| Path | Prompts BEFORE | Prompts AFTER |
+|---|---|---|
+| Answer (incl. a bare `→ <file>.md` that accepts the recommendation) | 3 (action menu + answer + destination confirm) `+1` if cross-cutting | **1** |
+| Skip | 1 | **1** (slot `[2]` on the same prompt) |
+| Defer | 2 (menu + who/when) | **2** — one choice + ONE two-question follow-up call; kept by design (recorded state, invariant #5) |
+| Out of scope | 2 (menu + rationale) | **2** — kept by design |
+
+**Closed form, `--auto`:** `stops = N + (#Defer + #OOS)`. Answer and Skip cost 1; Defer and OOS cost
+2 because their second value is recorded state that may not be invented.
+
+- Floor = **N = 8** (nothing deferred). This is the one correction to the published band.
+- At the stated mix: BEFORE `5×3 + 1 + 2 + 2 + 1 = 21`; AFTER `8 + 1 + 1 = **10**`, a **2.1×**
+  reduction — **inside the published 7–13 band. The delivered work MEETS the published claim.**
+- Interactive at the same mix: `10 + 2 = **12**` first pass, `10 + 3 = **13**` on a resume, against
+  `23` / `24` before (**1.85–1.92×**).
+
+What D4 (the one-call two-question Defer follow-up) bought: without it, a brownfield Defer costs 3
+(menu + sub-target + reason) and the same mix lands at **11**, not 10. The arithmetic above assumes
+the shipped one-call shape.
+
+Correction to the published figure — one, not three:
+
+1. The `22` baseline reproduces (21 at the stated mix) — that number stands.
+2. **`7` is unreachable at N = 8.** The collapsed floor is exactly N: the human must see the prompt
+   even to decline it, so 8 OQs cost ≥ 8 stops. A sub-N figure requires
+   `--auto-accept-from-memory`, a different flag; plain `--auto` never auto-decides a substance
+   prompt. **Published band `7–13` → `8–13`.**
+3. **The ceiling is NOT widened.** An earlier draft proposed `13 → 16` on the grounds that an
+   all-Defer/OOS round costs `8 + 8 = 16`. That is a target adjusted to the implementation and is
+   retracted: the delivered work at the stated mix is 10, inside the published band. Readers who
+   need a different mix have the closed form above; the acceptance band stays `8–13` at the stated
+   mix.
+
+The `25–42 interactive` pair is published without its N and does not reproduce at N = 8 in either
+direction (42 needs N ≈ 13 with every OQ answered and cross-cutting). Superseded by the interactive
+row above. This supersedes `research/2026-07-30-token-audit-end-to-end.md` §6.1 / §6.2 row 4 for
+this lever; the audit's other rows are untouched.
+
+Pinned by `tests/interaction-keterangan/test-oq-single-prompt.sh`; behavior fixture
+`tests/skill-triggering/resolve-oq.test.md`.
 
 **3b — batch the bind CONFLICT walk** using the `suggested_action` bind already computes.
 **Gain: 2–4 stops** (not 6 — `KEEP_CODE` rows cannot batch; they patch the vault inline).

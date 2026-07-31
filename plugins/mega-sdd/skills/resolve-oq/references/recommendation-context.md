@@ -158,45 +158,56 @@ For each citation in the recommendation:
 
 ## AskUserQuestion presentation
 
-When a recommendation is built (AND all citations probed successfully), the `AskUserQuestion` for the OQ uses this format:
+> **`interactive-walk.md` Step 2b is CANONICAL for this prompt's shape** — the verbatim template,
+> the slot table, the option cap, the "Other" parse order, the Esc semantics, and the per-action
+> derive mapping live there and are **deliberately not restated here**, so the shape has exactly one
+> normative home. This section owns only what the recommendation CONTRIBUTES to that prompt. If this
+> section and Step 2b ever disagree, Step 2b wins.
 
-```
-Question: <OQ text>
+**ONE prompt per OQ.** The recommendation does not get its own round trip: it rides the same single
+`AskUserQuestion` that also captures a free-text answer, Skip, Defer, and Out of scope.
 
-Options:
-  1. <recommended answer text> (recommended)
-     description: <rationale>. Source: <citation>. Fallback-if-wrong: <fallback>. Confidence: <HIGH|MEDIUM>.
+### What the recommendation contributes
 
-  2. <alternative answer 1>
-     description: <MANDATORY — what this alternative means + when you'd pick it over the
-       recommendation; if it has a source, cite it, else say "no source — common alternative".
-       NEVER left blank/"..." and NEVER given a fabricated citation.>
+1. **The recommended answer takes the first option slot**, labelled `<answer>  (recommended)`.
+   Exactly one option is ever marked recommended, and only when the citation probe passed.
+2. **Its `description` must carry, in this order:** the high-stakes prefix when (and only when)
+   `category: business` AND `P1`; the rationale (1–3 sentences); `Sumber: <probed citation>`;
+   `Kalau salah: <fallback-if-wrong>`; `Confidence: HIGH|MEDIUM`; and the destination disclosure
+   (`→ mendarat …` — target doc, inline vs promoted, cross-refs when cross-cutting). The exact
+   template lives in Step 2b.
+3. **The considered alternatives do NOT take a slot** — Skip and end-the-walk need the platform's
+   four slots more than a pre-typed alternative does, and "Other" already covers *answer in my own
+   words*. The alternatives are surfaced as prose in the question text (`Alternatif: X — kalau …`),
+   and this section's rule on how to write them is unchanged: MANDATORY explanation of what the
+   alternative means and when you would pick it over the recommendation; if it has a source, cite
+   it, otherwise say `tanpa sumber — alternatif umum`. **NEVER left blank/"…" and NEVER given a
+   fabricated citation, and NEVER invented to fill the line** — no grounded alternative means the
+   line is omitted, not padded.
+4. **When there is no recommendation at all** (no signal, or the probe failed) the slot is simply
+   not spent — see Step 2b §"When there is NO recommendation". Never surface an unsourced guess.
 
-  3. <alternative answer 2>
-     description: <same mandate as option 2>
-
-
-  4. Defer (mark as deferred for later)
-     description: Skip this OQ for now; revisit in next session.
-
-  5. Out of scope
-     description: This OQ is not in scope for current milestone.
-```
-
-User selects via interactive menu. Default cursor on option 1 (`recommended`).
+Default cursor sits on the recommended option. Skip, Defer, Out of scope, the "Other" answer
+channel, and Esc are all owned by Step 2b.
 
 ## Audit trail
 
 On user selection:
 
-- **Picked `(recommended)`** → record in vault + memory:
+- **Picked `(recommended)`** — including a bare `→ <file>.md` destination override, which per Step 2b
+  composes with (i.e. accepts) the recommendation → record in vault + memory:
   - vault.json OQ entry: `resolution: <answer>`, `resolution_source: recommendation`, `recommendation_citation: <citation>`
   - memory `decisions.md`: append row with `source: ai_recommended` flag
 
-- **Picked alternative (OVERRIDE)** → record:
-  - vault.json OQ entry: `resolution: <user-chosen-answer>`, `resolution_source: user_override`
+- **Answered via "Other" with different text (OVERRIDE)** — since the alternatives no longer own a
+  slot, an override arrives as free text (often one of the alternatives listed in the question text,
+  typed back) → record:
+  - vault.json OQ entry: `resolution: <user-typed-answer>`, `resolution_source: user_override`
   - memory `decisions.md`: append row with `source: user_override`, `recommendation_ignored: <recommended-answer>`, `override_reason: <if-provided>`
   - User-scope `patterns.md`: increment "recommendation override" counter for this OQ type
+
+- **Picked Skip** → nothing recorded anywhere: no vault edit, no derive run, no memory row. A skip is
+  not an override and must never increment the override counter.
 
 - **Picked Defer/Out-of-scope** → record:
   - vault.json: mark `status: deferred` or `status: out-of-scope`
@@ -218,6 +229,12 @@ For OQs tagged with `category: business` + priority `P1`, the AskUserQuestion de
 > ⚠️ **High-stakes business OQ.** Review citation + rationale carefully before accepting. AI recommendation is a starting point, not authority.
 
 This visual marker discourages lazy ACCEPT for regulatory / finance / compliance OQs.
+
+**The collapse does not move it — it carries it in BOTH positions.** With three prompts merged into
+one, the marker rides (a) the recommended option's `description` prefix, exactly as above, AND
+(b) the panel banner above the question text (`interactive-walk.md` Step 2b). Losing either
+position is a regression: the banner is what the user sees before reading options, the description
+prefix is what sits next to the answer they are about to accept.
 
 ## Examples
 
@@ -252,20 +269,19 @@ Recommendation: Yes — refund prior payments via auto-reversal job (recommended
   Confidence: HIGH
 ```
 
-### Example 3 — No confident recommendation (silent fallback)
+### Example 3 — No confident recommendation (silent fallback) — STILL one round trip
+
+The recommendation slot is simply not spent. The answer rides "Other". The walk does NOT gain a
+prompt because the recommendation is missing — the shape is owned by `interactive-walk.md` Step 2b
+§"When there is NO recommendation" and is not reproduced here.
 
 ```
 OQ-CN-12 [P3] [business / blocking]: What is the SLA for OFAC sanction screening response?
-
-(No recommendation surfaced — no KB / memory / vault / codebase signal sufficient.)
-
-Options:
-  1. <user enters answer>
-  2. Defer
-  3. Out of scope
+  Sumber: (tidak ada — tidak ada sinyal KB / memory / vault / codebase yang bisa dikutip)
 ```
 
-User does normal interactive walk; no fabricated recommendation. Better silent than wrong.
+No fabricated recommendation, no unsourced guess dressed as one, and no empty slot padded with an
+invented answer. Better silent than wrong — and still ONE stop.
 
 ## References
 
