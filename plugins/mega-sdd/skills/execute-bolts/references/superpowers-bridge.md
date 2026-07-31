@@ -36,7 +36,11 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
    [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
    ```
 
-3. **Legacy path.** If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before.
+3. **Legacy path — CLOSED 2026-07-31.** This used to read: *"If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before."* That fallback is retired for `bolt-implementer`, because its premise is not reachable: **`scripts/build-dispatch-prompt.sh` and `agents/bolt-implementer.md` ship in the SAME plugin tree**, and the builder fills the version on its `## Contracts (agent-carried)` line from the very plugin root it resolved — so if the builder ran, the agent file exists at that root at that version. There is no state where the builder is present and the first-class agents are not.
+
+   The path also could not be made honest cheaply: `bolt-dispatch-prompt.md` specified that on this path the prompt must inline the agent's §Halt vocabulary / §Self-report / §Rollback hints / §Provenance trailer verbatim, the builder has no flag for it and never did, and on that path the emitted contracts line asserts the executor's system prompt carries contracts it does not have — a bolt running with no halt vocabulary, no rollback hints and no provenance-trailer shape, silently. Neither the builder, the skill, nor the validator can detect the branch.
+
+   **If the Agent tool genuinely cannot dispatch `mega-sdd:bolt-implementer`, that is a broken install: STOP and surface it to the human** (untyped blocker → pure-pause, per `agents/bolt-implementer.md §Halt vocabulary`). Never substitute a generic executor while telling it that its system prompt carries contracts it does not hold. Items 1 and 2 above are unaffected — superpowers *technique* skills remain an optional enhancement with a vendored fallback.
 
 ## Per-unit flow (review panel)
 
@@ -45,10 +49,22 @@ load unit U-XXX
    │  verify target_files (per each file's operation); if --worktree, isolate
    │  (superpowers using-git-worktrees if present, else a plain git branch)
    ▼
+BUILD the dispatch prompt              (scripts/build-dispatch-prompt.sh — SKILL.md 4.5)
+   writes <vault>/bolts/U-XXX/dispatch-prompt.md; returns inline_core on stdout
+   ├─ exit 1 + a `halt` object on stdout → halt dispatch_prompt_too_large
+   │            (prompt written deliberately = forensic evidence)
+   ├─ exit 2 → usage / IO / no interpreter — nothing published, do NOT dispatch
+   ├─ exit 4 (or exit 1 with no parseable stdout) → INTERNAL ERROR, not a budget
+   │            halt — nothing published, nothing destroyed; a prior attempt's
+   │            prompt may still be on disk INTACT. The EXIT CODE decides, not
+   │            the file: do NOT dispatch
+   ▼ exit 0 (never --quiet: it suppresses the JSON carrying inline_core
+             and design_slice_path; always pass --plugin-root)
 DISPATCH mega-sdd:bolt-implementer        (Agent tool)
-   pass: the full unit body + frontmatter (target_files, acceptance_test,
-   ## Hard rules, ## Anchors, ## Anti-patterns, binding_refs) + context.
-   The implementer writes the failing acceptance test first (TDD), implements,
+   pass: inline_core VERBATIM (<=700B) — the pointer to the written prompt, which
+   carries the full unit body + frontmatter (target_files, acceptance_test,
+   ## Hard rules, ## Anchors, ## Anti-patterns, binding_refs) + tiered context.
+   The implementer READS that file first, then writes the failing acceptance test (TDD), implements,
    runs the tests, COMMITS with the canonical message + trailers
    (bolt-contract.md §Commit message format) — the commit topology is
    detect-after: everything below runs against this landed commit.
@@ -88,7 +104,10 @@ run post-flight scan (run-postflight-scan.sh), write bolt-report.md, mark unit D
    └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
 ```
 
-The controller constructs each agent's task prompt from the unit — see `references/bolt-dispatch-prompt.md` for the tiered-context (T1/T2) assembly. The agent never inherits session history; the controller passes exactly what it needs.
+The agent never inherits session history; it gets exactly what the controller passes. **Two different constructions:**
+
+- **`bolt-implementer`** — the controller does NOT construct its prompt. It runs `scripts/build-dispatch-prompt.sh` (SKILL.md §Step 4.5), which writes the full tiered T1/T2 prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`, and dispatches with the returned `inline_core` VERBATIM — a ≤700B pointer the implementer follows to Read that file. The controller never re-types or paraphrases the assembled prompt. Emitted shape → `references/bolt-dispatch-prompt.md`; spec → `references/context-enrichment.md`.
+- **The review lenses** — still controller-constructed, per `references/review-panel.md §Blind dispatch` (per-lens unit-body slices + lens-specific context). They are NOT given `inline_core`, never read the implementer's report, and **are never given a path that reaches another lens's verdict or the implementer's self-report** — which forbids `<vault>/bolts/U-XXX/` (it holds `bolt-report.md`) and permits `<vault>/lens-inputs/U-XXX/` (controller-written lens inputs only). The design lens's rubric arrives as the builder's `design_slice_path`, pointing at `<vault>/lens-inputs/U-XXX/design-slice.md`.
 
 > Post-flight Hard Rule validation (ast-grep) still runs per `references/hard-rule-scan.md` regardless of dispatch path. The spec-reviewer's Hard-rule check is defense-in-depth, not a replacement for the deterministic scan + the PreToolUse gate.
 

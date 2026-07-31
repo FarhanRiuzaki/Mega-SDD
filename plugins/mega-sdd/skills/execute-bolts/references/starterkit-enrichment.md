@@ -1,6 +1,6 @@
 # execute-bolts — Starterkit slice enrichment (Step 4.5.b-starterkit)
 
-The starterkit read/build/§patterns/code-slice/inject machinery for the T2.3 "Starterkit context (relevant slice)" section of the bolt dispatch prompt. **Load this file ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists** (same trigger as generate-units' `starterkit-derivation.md`) — when the file is absent, skip this entire reference; the Map §6 fallback and the Design slice in `context-enrichment.md` (which also owns the budgets + T2 truncation cascade) still apply.
+**This file is the SPECIFICATION for the starterkit half of `scripts/build-dispatch-prompt.sh`, not a procedure the model runs.** It defines the read/build/§patterns/code-slice/inject machinery for the T2.3 "Starterkit context (relevant slice)" section of the bolt dispatch prompt, and the builder implements it and is tested against it. **The builder applies this whole file ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists** (same trigger as generate-units' `starterkit-derivation.md`) — when the file is absent it skips this entire slice and the Map §6 fallback + the Design slice in `context-enrichment.md` (which also owns the budgets + T2 truncation cascade) apply instead. Read it to review or amend builder behavior; where the pseudocode below describes a known defect it is annotated as such and the builder **reproduces it as written** — do not silently "fix" one side.
 
 ## Contents
 - Starterkit slice: read
@@ -59,7 +59,11 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   # truncation cascade (truncated before code_examples, NOT first-dropped). validate-dispatch-prompt.sh
   # asserts the emitted prompt carries a `Design tokens:` line for ui_ux units — ADVISORY:
   # its state is surfaced via /mega-sdd:analyze, nothing in PreToolUse reads it (per the
-  # demotion list); this prose is the operative rail.
+  # demotion list); this prose is the operative rail WHEN THE INPUT EXISTS. On a greenfield
+  # repo there is no starterkit-context.yaml and therefore no design_tokens at all: the line is
+  # legitimately absent and the advisory validator records `tokens_not_injected`. That is an
+  # honest absent-input report, NOT a builder defect — emitting a token line there would be
+  # fabrication (invariant #5). The Design slice in context-enrichment.md is the greenfield pipe.
 
 IF "libs" in unit.starterkit_relevance AND starterkit_context.libs exists:
   slice.libs = filter(starterkit_context.libs, by usage_hint overlap with unit.target_files)
@@ -109,6 +113,8 @@ IF starterkit_context.patterns exists AND unit.target_files is non-empty:
 ```
 
 **Matching semantics:** location is the primary discriminator. Naming-fallback fires only when `pattern.location is null` (= the framework genuinely has no directory convention for that category — e.g. Next.js file-based routing, Express where handlers live anywhere). Location-primary is conservative and avoids crowding T2 with false-positive categories.
+
+> **KNOWN DEFECT — reproduced as written; amendment pending.** `location.rstrip("/") + "/"` + `startswith` assumes `location` is a DIRECTORY. For a pack whose `route` category declares a single FILE (`route: {location: routes/api.php}`), `target_file.startswith("routes/api.php/")` can never be true, so the route category never matches — and the naming fallback cannot rescue it, because that branch is gated on `location is None`. The builder reproduces this exactly rather than re-deriving the matcher: silently widening the match would change which categories reach T2 and what the §patterns block asserts. Fix it in the spec (e.g. an is-file branch that compares equality) and the builder together, never one alone.
 
 `compile_pattern_to_regex` converts a pack naming pattern (e.g. `{Model}Controller<ext>` or `{Model}.handler.ts`) by replacing `{Model}` → `[A-Z]\w+`, `{model}` → `[a-z_]+`, `<ext>` → `re.escape(extension)`, anchored with `$`. On compile failure → log + skip the naming-regex fallback (location match still applies if available).
 
@@ -160,24 +166,39 @@ FOR each (category, source_list) in [
     log "starterkit.<category>._source not found on disk: <full_example_path>"
 ```
 
-**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via /mega-sdd:analyze, not a PreToolUse block; this prose is the operative rail. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
+**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via /mega-sdd:analyze, not a PreToolUse block; this prose is the operative rail **whenever a real `_source` exemplar exists**. When none does (greenfield, or a `_source` path absent on disk) the section is omitted and the validator records `exemplar_missing` — the honest absent-input report; the alternative is inventing an exemplar path, which the anti-halu rail below forbids outright. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
 
 **Anti-halu rail:** `slice.code_examples.<category>.path` MUST equal the file actually read (provenance); never invent or substitute. The chosen exemplar must be a real `_source` entry — selecting by linter-clean re-ORDERS the real candidates, it never fabricates one.
 
 ## Slice truncation order
 
-If the slice exceeds the T2 budget (design_tokens is MID-priority):
+This is the tier-**8a** `starterkit_slice` rung ladder of the `context-enrichment.md` cascade (tier 8 also carries `map_patterns` at 8b and `design_slice` at 8c — all three now have rows) — the builder steps ONE rung per pass and re-measures, it does not run the list to completion. If the slice exceeds the T2 budget (design_tokens is MID-priority):
 1. Truncate `slice.libs[]` — keep top 10 by relevance score (overlap count with target_files).
 2. If still over → truncate `slice.code_examples.<category>.content` to first 50 lines; mark `truncated: true` (controller/view/component alike).
 3. If still over → truncate `slice.ui_ux.idioms[]` to top 3.
 4. If still over → compact `slice.ui_ux.design_tokens` — keep `colors` + `fonts`, drop `spacing` detail to `spacing=<scale-name|default>`. **design_tokens is MID-priority: compacted/dropped only AFTER libs + idioms, and BEFORE code_examples (step 5). NEVER first-dropped.** (The `Design tokens:` line is retained as long as any token survives, so validate-dispatch-prompt.sh still sees it.)
 5. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved).
 6. If still over → drop the remaining `slice.ui_ux.design_tokens` line.
-7. If still over → emit halt `dispatch_prompt_too_large` (chain stops).
+7. If still over → the slice is at its drop floor; the halt decision **delegates to the ONE global halt check** in `context-enrichment.md §Halt path` (`dispatch_prompt_too_large` requires the full three-way conjunction — this step never halts on its own, or the slice being tight would fire a halt the global condition rejects). **Re-decided and KEPT 2026-07-31:** one halt, one definition, one place is the right shape; the danger was only ever that the global halt could not fire, and that was fixed where it belonged — `context-enrichment.md ## AMENDMENT 2026-07-31` re-derives the cap numbers from 123 measured runs and proves the conjunction reachable on four units.
+
+**Un-budgeted by this ladder:** `### UI design quality heuristics` (the injected `ui-design-heuristics.md` body, measured ≥4 826 B) has **no rung** — no step drops or trims it, and the builder does not invent an 8th step to do so. Adding one is a spec amendment, not a builder change. Measured consequence, so it is not a theoretical concern: on a UI-bearing unit the tier-8 drop floor cannot fall below that block, and the whole priorities-1-to-8 floor was measured at **6 374 B** on such a unit versus 746–947 B on non-UI units — 47 % of `cap_t2` that no cascade rung can reclaim.
 
 ## Starterkit slice: inject
 
-Populate the T2.3 "Starterkit context (relevant slice)" section in the bolt-subagent dispatch-prompt template (listed in SKILL.md) with the built slice:
+The builder populates the T2.3 "Starterkit context (relevant slice)" section of the bolt-subagent dispatch-prompt template (`bolt-dispatch-prompt.md`, listed in SKILL.md) with the built slice. **The marker lines below are byte-compatible with `validate-dispatch-prompt.sh`'s regexes** (`Design tokens:`, `Design system:`, `Pattern:`, `File:`) — they are matched, not merely read, so re-wording one silently disarms the check that asserts it landed.
+
+> **Absent values are DROPPED, not rendered** (`context-enrichment.md §The absent-value rule`). Every composed line here — `Auth:`, `Authz:`, `UI/UX:`, `Design tokens:`, `Design system:`, `Libs in scope:` — and every §patterns field (`location`, `naming`, `extension`) drops the `key=value` pair whose value is absent, and drops the whole line when every value on it is absent. **Never `None`, `null`, `n/a` or `""`.** A missing sub-key of a present dict is an ABSENT INPUT and gets the same treatment as an absent file: omit and record in `sections_omitted`. This matters most where the emitted line then asserts its own authority — e.g. a `Design system:` line whose `source=` is absent cannot also say "when source=scanned-template, the starterkit tokens above are authoritative", and `Libs in scope: alpinejs@None` names a version nobody recorded.
+
+> **`design_slice_path` on the starterkit branch — the extraction boundary, pinned** (the key was `design_slice_text` before 2026-07-31 round 3; the boundary below is unchanged, only the carrier is — `context-enrichment.md §design_slice_path`). When the starterkit `ui_ux` slice is built, `context-enrichment.md §Design slice` skips (the template is authoritative), so there is no `## Design system (UI-bearing unit…)` section to hand the `design-reviewer` lens. The lens's rubric is then **exactly these three emitted lines of `### Starterkit context`, in this order, whichever of them survived the absent-value rule:**
+>
+> 1. `UI/UX: …`
+> 2. `Design tokens: …`
+> 3. `Design system: …`
+>
+> **Nothing else travels.** `Auth:` / `Authz:` / `Libs in scope:` / the §patterns block / the reference code exemplar are not a design rubric and must not reach the design lens as one — a lens judging UI quality against an auth line is judging against a contract nobody wrote. If none of the three survived, **no lens-input file is written**, `design_slice_path` is ABSENT (not `""`), and the controller tells the lens it has no rubric rather than substituting a different section.
+>
+> **This branch runs ONLY when the unit is `ui_bearing`, and that is a round-4 correction to THIS branch.** `starterkit_relevance: [ui_ux]` on the frontmatter is not sufficient: a unit whose `target_files` are all backend declares the relevance, gets the slice lines in its own prompt, and is still **not** UI-bearing — so no `design-reviewer` is dispatched for it and no rubric is written. Round 3 gated the lens-input write on the slice text alone, which is exactly this branch, and shipped a `design_slice_path` for pure-backend units. The gate is now `ui_bearing`, matching `context-enrichment.md §Design slice` and `review-panel.md §Tier selection`.
+
 
 ```
 ### Starterkit context (relevant to this unit)

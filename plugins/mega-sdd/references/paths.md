@@ -42,6 +42,8 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── bolts/U-*/bolt-report.md               # Bolt outcomes
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
 │   │   ├── bolts/U-*/acceptance.json              # B4 acceptance evidence (run-acceptance-tests.sh)
+│   │   ├── bolts/U-*/dispatch-prompt.md           # Assembled bolt dispatch (build-dispatch-prompt.sh)
+│   │   ├── lens-inputs/U-*/design-slice.md        # Controller-written REVIEW-LENS inputs ONLY — never implementer/reviewer output (review-panel.md §Blind dispatch)
 │   │   ├── interfaces/                            # Multi-squad interface notes
 │   │   ├── fsd/                                   # Confluence FSD output (emit-fsd)
 │   │   │   ├── FSD.md                             # Markdown source
@@ -106,6 +108,7 @@ Every writer skill resolves output paths via this protocol:
 | `bind-codebase` | binding.md + bound/ | `<vault>/binding.md` + `<vault>/bound/` | `<vault>/binding.md` + `<vault>-bound/` |
 | `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
+| `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `generate-units` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
@@ -223,6 +226,7 @@ For project repo `.gitignore`:
 # .mega-sdd/vaults/*/.internal/          # checkpoints + symbol-graph cache
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/bolts/              # bolt reports (regenerable)
+# .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)
 ```
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.

@@ -8,9 +8,11 @@
 #   1  agent carries the moved blocks whole (all 5 halt types, self-report keys,
 #      step_type enum, trailer marker, whitelist_violation) — canonical vocab only
 #   2  dispatch template no longer carries the constants (negative pins) but carries
-#      the Contracts pointer, the Provenance values block, and the Legacy dispatch
-#      inline instruction
-#   3  context-enrichment T1 list updated; caps unchanged
+#      the Contracts pointer and the Provenance values block. The Legacy dispatch
+#      (order-3) inline instruction was RETIRED 2026-07-31 by tranche 2b; the pin is
+#      inverted to guard the closure, not deleted.
+#   3  context-enrichment T1 list updated; the load-bearing caps (cap_hard, cap_t2)
+#      unchanged; cap_t1 pinned to its 2026-07-31 measured amendment
 #   4  validate-bolt-artifacts.sh key strings unchanged (marker + bolt_self_report:)
 #
 # Run: bash tests/boilerplate-diet/test-p2d-agent-contracts.sh
@@ -22,6 +24,7 @@ P="${ROOT}/plugins/mega-sdd"
 AG="$P/agents/bolt-implementer.md"
 BP="$P/skills/execute-bolts/references/bolt-dispatch-prompt.md"
 CE="$P/skills/execute-bolts/references/context-enrichment.md"
+SB="$P/skills/execute-bolts/references/superpowers-bridge.md"
 SK="$P/skills/execute-bolts/SKILL.md"
 VBA="$P/scripts/validate-bolt-artifacts.sh"
 
@@ -61,8 +64,19 @@ grep -qF 'carried by your system prompt (agents/bolt-implementer.md' "$BP" \
 grep -qF 'plugin.json version at dispatch' "$BP" && ok "2: version resolved from plugin.json at dispatch" || fail "2: version source missing"
 grep -qF 'Provenance values' "$BP" && grep -qF 'vault_sha256' "$BP" \
   && ok "2: per-dispatch Provenance values block present" || fail "2: Provenance values block missing"
-grep -qF 'Legacy dispatch (order-3 fallback ONLY' "$BP" && grep -qF 'inline its' "$BP" \
-  && ok "2: legacy order-3 inline instruction present" || fail "2: legacy dispatch note missing"
+# The order-3 legacy-dispatch element was REMOVED 2026-07-31 (tranche 2b): the builder and
+# agents/bolt-implementer.md ship in the SAME plugin tree, so "first-class agents unavailable
+# while the builder ran" is unreachable. This assertion is INVERTED rather than deleted — it now
+# pins the closure, so a future pass cannot quietly restore an inline-the-contracts fallback that
+# would tell a generic executor its system prompt carries contracts it does not hold.
+if grep -qF 'Legacy dispatch (order-3 fallback ONLY' "$BP"; then
+  fail "2: retired order-3 legacy-dispatch element resurfaced in the dispatch template"
+else
+  grep -qF 'order-3 legacy-dispatch element is REMOVED' "$BP" \
+    && grep -qF 'Legacy path — CLOSED' "$SB" \
+    && ok "2: order-3 legacy dispatch closed, and closure recorded in BOTH surfaces" \
+    || fail "2: order-3 removed but its closure is not recorded in template + bridge"
+fi
 # test-pinned per-dispatch sections stay
 grep -qF '## Design system (UI-bearing unit' "$BP" && grep -qF 'Acceptance-test provenance NOTE' "$BP" \
   && grep -qF 'Reuse index' "$BP" && ok "2: test-pinned dynamic sections untouched" || fail "2: a pinned dynamic section was dropped"
@@ -71,8 +85,17 @@ grep -qF '## Design system (UI-bearing unit' "$BP" && grep -qF 'Acceptance-test 
 grep -qF 'Contracts pointer line' "$CE" && ok "3: T1 lists the contracts pointer" || fail "3: T1 contracts-pointer entry missing"
 grep -qF 'Provenance values block' "$CE" && ok "3: T1 lists the provenance values block" || fail "3: T1 values entry missing"
 if grep -qF 'Halt vocabulary block' "$CE"; then fail "3: stale T1 'Halt vocabulary block' entry survives"; else ok "3: stale T1 constant entries gone"; fi
-grep -qF 'cap_hard:      12288' "$CE" && grep -qF 'cap_t2:        10240' "$CE" && grep -qF 'cap_t1:        2048' "$CE" \
-  && ok "3: byte caps unchanged (freed headroom IS the win)" || fail "3: caps drifted"
+# `cap_hard` and `cap_t2` are the LOAD-BEARING caps and are still pinned unchanged: cap_hard is
+# term (b) of the dispatch_prompt_too_large conjunction, and cap_t2 is what triggers the truncation
+# cascade. `cap_t1` moved 2048 -> 12288 on 2026-07-31 by a measured amendment (§AMENDMENT in
+# context-enrichment.md, n=123 runs): T1 is never truncated and the unit body is verbatim, so no
+# value of cap_t1 bounds anything — it is a REPORTING THRESHOLD, and 2048 was satisfiable only when
+# the framework-pack content was missing. Pinned to the amended value, with the amendment itself
+# pinned alongside so the number can never drift without its justification.
+grep -qF 'cap_hard:      12288' "$CE" && grep -qF 'cap_t2:        10240' "$CE" \
+  && ok "3: load-bearing caps unchanged (cap_hard = halt term b, cap_t2 = cascade trigger)" || fail "3: load-bearing caps drifted"
+grep -qF 'cap_t1:        12288' "$CE" && grep -qF 'AMENDMENT 2026-07-31' "$CE" \
+  && ok "3: cap_t1 carries its measured amendment" || fail "3: cap_t1 drifted from its amendment"
 grep -qF 'agent-carried' "$SK" && ok "3: execute-bolts SKILL states the agent-carried contracts" || fail "3: SKILL wording stale"
 
 # ── 4: validator key strings unchanged ──
