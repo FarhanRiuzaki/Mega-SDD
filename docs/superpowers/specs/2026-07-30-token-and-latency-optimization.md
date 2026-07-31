@@ -109,11 +109,24 @@ observe-only) + the TTL-exact / lane-fallback / residual cases added to
 
 ## Phase 1 — `bolt-implementer` model pin (two SEPARABLE items)
 
-**1a — pin it, regardless of any historical run.** It is the **only** agent in the plugin without
-an explicit `model:` (verified: 4× opus, 4× sonnet elsewhere) and has **no `model-tiers.md` catalog
-row**. Ship: explicit `model:` in `agents/bolt-implementer.md` frontmatter + catalog row + a
-catalog↔frontmatter parity test (the panel-pin test is the precedent). **A "it ran Sonnet" answer
-in 1b does NOT make 1a unnecessary** — unpinned is the defect.
+**1a — AMENDED 2026-07-31: the original premise was stale; the real gap is narrower.**
+`agents/bolt-implementer.md:5` **does** carry an explicit declaration — `model: inherit`. Verified
+across the 8 plugin agents: 3× opus (`code-quality-reviewer`, `phase-advisor`, `security-reviewer`),
+4× sonnet (`design-reviewer`, `domain-extractor`, `spec-reviewer`, `standards-reviewer`), 1×
+`inherit` (`bolt-implementer`). The earlier "only agent without an explicit `model:` (4× opus, 4×
+sonnet elsewhere)" is wrong on both counts.
+
+`inherit` **is** an explicit declaration, and a defensible design here: the implementer tracks the
+operator's chosen tier, so a session deliberately running a stronger model gets a stronger
+implementer without editing the plugin — which suits the LOCKED "akurasi code WAJIB" mandate better
+than a hard pin. It is therefore **not** a defect to fix.
+
+**The remaining real gap: it has NO row in `references/model-tiers.md`** — the catalog is silent on
+the one agent whose tier is operator-controlled, so nothing documents that choice or its rationale.
+**Ship: the catalog row only** (added 2026-07-31, row 22, tier `inherit`). **Do NOT change the
+agent's `model:` value** — swapping `inherit` for a hard tier is a cost/quality behavior change this
+spec itself defers to 1b. A catalog↔frontmatter parity test remains optional follow-up; note that
+`inherit` is a legitimate frontmatter value it must accept, not a missing pin.
 
 **1b — choose the tier only after the measured run.** Worth **6.3–7.2M cost-units (17–19%)** if
 bolts ran Opus-tier; **exactly 0 if Sonnet**. One `usage.model` read from any bolt transcript
@@ -137,8 +150,147 @@ multi-squad already routes to the parallel procedure).
 skip-ahead)" — wave-level parallelism only, never pipelining unit N+1 against unit N's review tail.
 
 **2b — move bolt dispatch-prompt assembly into a script.** ~9KB/bolt of pure copy/filter/sort/cap
-logic, currently model-assembled **and materialized twice**. **Gain: 25–75 min serial generation on
-a 40-unit run; ~179K output tokens → ~4.8K.** The cleanest both-axes lever in the audit.
+logic, currently model-assembled **and materialized twice**. **Gain:**
+
+> **MEASURED 2026-07-31 against the shipped working tree — this replaces the round-3
+> `PENDING MEASUREMENT` markers.** Two figures previously stood here (`~4.8K / 37.3×`, then
+> `~6.9K / ~26×`), each re-derived from the PREVIOUS round's measurement rather than from shipped
+> code, while the code moved under both (stdout slim; `--plugin-root` made mandatory and the
+> invocation string longer; the design slice moved off stdout to
+> `<vault>/lens-inputs/U-XXX/design-slice.md`). **Both are struck.** Everything below was produced
+> by one measurement pass over `plugins/mega-sdd/scripts/build-dispatch-prompt.sh` as it stands in
+> the working tree.
+>
+> **Corpus and method (so it is reproducible, not just asserted).** 35 real `U-*.md` units found in
+> this tree, renumbered `U-001…U-035`, run through the exact §Invocation form
+> (`--plugin-root` passed, no `--quiet`, no `--explain`) on three fixture projects. Arms are
+> discriminated deterministically and asserted, never assumed:
+> **A — non-UI, n = 25** (`design_slice_path` key ABSENT from stdout);
+> **B — UI on a starterkit repo, n = 10** (slice file does NOT begin with the `## Design system
+> (UI-bearing unit` heading, and the prompt carries `### Starterkit context`);
+> **C — UI on a greenfield repo, n = 10** (slice file BEGINS with that heading). All 105 runs
+> exited 0.
+>
+> **One corpus modification, disclosed because reproducibility is the point.** Arm B required
+> stamping `starterkit_relevance: [ui_ux, libs, auth]` into every unit's frontmatter: only 1 of the
+> 35 found units carries the field, and without it the starterkit design-slice branch never runs
+> (`sk_ui` stays `None` and the builder falls through to the greenfield branch even on a starterkit
+> repo — an arm-B reading that is really arm C). The stamp is schema-legal and is what
+> `generate-units` writes on a real starterkit repo. **Arms A and C use the units exactly as found.**
+>
+> Every byte figure is stated **at a named absolute-path length** — specifically project root 67 B +
+> `/.mega-sdd/vaults/demo-bound/bolts/U-XXX/dispatch-prompt.md` (59 B) = a **126-byte
+> `prompt_path`** — because path length is what made three prior figures non-reproducible, and the
+> vault name sits inside the path that gets carried: the builder's stdout carries the project path
+> **2× on a non-UI unit and 3× on a UI unit**, and `inline_core` carries it **1×** — verified
+> exactly (a 42-byte path lengthening moved stdout by exactly 84 B / 126 B and `inline_core` by
+> exactly 42 B), so normalisation between path lengths is arithmetic, not estimation.
+> Divisor: **4 chars/token, the same divisor on both sides of every comparison.**
+
+- **Output tokens: OLD side ~179K per 40-unit run — CONFIRMED and UNAFFECTED.** The pre-change flow
+  materialized the ~9KB prompt TWICE as model output (pre-change `context-enrichment.md:182` +
+  `superpowers-bridge.md:91`): 179,000 tok × 4 B/tok ÷ 40 ÷ 2 = 8,942 B = 8.74 KB/bolt, matching the
+  "~9KB/bolt" premise. This is the one figure on this item that survives round 3; it describes the
+  flow that was replaced, not the replacement.
+- **Output tokens: NEW side — MEASURED 2026-07-31, `578 B–1,251 B` per bolt ⇒ `~14×–31×`.** The
+  residual is the **enumerated set** below; anything not in this list is not counted, so the next
+  reader can audit the set rather than the sum.
+
+  | term | bytes | basis |
+  |---|---|---|
+  | Bash `command` — the shipped three-line §Invocation form | **190 / 298 / 406** | MEASURED verbatim from `SKILL.md:80-83` == `context-enrichment.md:381-383`. 190 = short root (`/Users/me/app`, 13 B) with `${CLAUDE_PLUGIN_ROOT}` left LITERAL; 406 = this repo's own root (67 B) with the plugin root PRE-EXPANDED (`/Users/farhanriuzaki/.claude/plugins/marketplaces/mega-sdd/plugins/mega-sdd`, 75 B); 298 = either middle case. **Which form the controller emits is UNRESOLVED** — the template contains `${CLAUDE_PLUGIN_ROOT}` twice, and expansion swings the string more than path length does. Both are published; neither is assumed. |
+  | Bash `description` | **30–60 (ESTIMATED)** | No shipped literal exists to measure. Band taken from the Bash tool's own "keep it brief (5–10 words)" guidance. Labelled estimated wherever it appears. |
+  | Agent `prompt` = `inline_core` VERBATIM | **303 (measured floor) … 700 (contract cap)** | MEASURED min 303 B (arm A, short root) / med 437 B / max 587 B at this repo's root, n = 45 (25 non-UI + 20 UI). The **ceiling uses the contractual ≤700 B cap** (`SKILL.md:87`), not the corpus max — the found corpus is thin-bodied (largest real unit body 1,692 B per §AMENDMENT) and a schema-legal 10–12-`target_files` unit approaches the cap. |
+  | Agent `subagent_type` = `mega-sdd:bolt-implementer` | **25** | exact |
+  | Agent `description` | **30–60 (ESTIMATED)** | as above |
+  | **residual / bolt** | **578 (floor, all-measured-except-descriptions) … 1,251 (ceiling)** | floor = 190+30+303+25+30; ceiling = 406+60+700+25+60 |
+
+  **⇒ 145–313 tok/bolt · 5,780–12,510 tok per 40-unit run · `179,000 ÷ that` = `14.3× – 31.0×`.**
+  Centre of mass (this repo's root, literal `${CLAUDE_PLUGIN_ROOT}`, measured `inline_core` spread):
+  740–1,030 B/bolt = 7,400–10,300 tok/run = **17.4×–24.2×**.
+  **The ratio is a LOWER BOUND, deliberately:** the new side counts the Bash and Agent `description`
+  params, the confirmed 179K old side counted prompt bytes only. Growth with path length is exact —
+  **+3 B/bolt per character of project-root length** (`--cwd` + `--vault` in the command = 2×,
+  `inline_core`'s READ-FIRST pointer = 1×).
+  **The design-lens hand-off is NOT in this residual** — it is its own line item below, because the
+  confirmed 179K old side does not include it either.
+- **Output tokens: the design-lens hand-off (round-3 D3) — its OWN line item, MEASURED.** Pre-change
+  the controller pasted the whole design slice into the `design-reviewer` prompt as model output
+  (`review-panel.md` at HEAD: *"It receives the SAME design slice injected into the implementer's
+  prompt"*, and §Blind dispatch: *"Everything else a lens needs is pasted as text"*). It now emits
+  one path. Measured per UI bolt: **greenfield 9,635 B → 129 B, saved 9,506 B ≈ 2,377 output tok**;
+  **greenfield with the design_slice truncation rung fired 3,420 B → 129 B, saved 3,291 B ≈ 823 tok**;
+  **starterkit 495 B → 129 B, saved 366 B ≈ 92 tok** (the starterkit branch only ever carried the
+  `### Starterkit context` design lines — D3's saving there is small and must not be quoted as the
+  headline). At 10 greenfield UI bolts in a 40-unit run: **≈ 8,200–23,800 output tokens saved**,
+  i.e. of the same order as, or larger than, the entire post-change residual — which is what
+  justified moving the slice off the paste.
+- **Input tokens — a SEPARATE line item, never folded into the ratio. MEASURED 2026-07-31.** The
+  builder's stdout is the sole carrier of `inline_core`, so `--quiet` is forbidden and the report
+  JSON lands as a tool result every bolt. **Three figures that must never be averaged**, all at this
+  repo's own root length (67 B), min / median / max:
+
+  | arm | n | stdout bytes | tok |
+  |---|---|---|---|
+  | A non-UI | 25 | **731 / 815 / 922** | 183 / 204 / 231 |
+  | B UI, starterkit repo | 10 | **985 / 1,043 / 1,343** | 246 / 261 / 336 |
+  | C UI, greenfield repo | 10 | **1,199 / 1,256 / 1,343** | 300 / 314 / 336 |
+
+  At a 13-byte project root these fall to 623 / 823 / 1,037 B respectively; at a 144-byte root they
+  rise to 885 / 1,216 / 1,430 B. Per 40-unit run: **8,150 input tok** all-non-UI, **9,252 input tok**
+  on a 30 non-UI + 10 greenfield-UI mix. The **round-3 `design_slice_text` → `design_slice_path`
+  rename removed 9,754–9,808 B/bolt from this channel on a greenfield UI unit** (the retired key's
+  exact `json.dumps(indent=2, ensure_ascii=True)` member was **9,911 B** — not the 9,635 B file
+  size; newline and quote escaping is the difference), and 369–423 B on a starterkit UI unit.
+  The previously published `3.0–3.6 KB/bolt = ~30K–36K/run, 41–63 % of it sections_omitted` is
+  struck — that shape no longer ships. **No cost-weighted ratio is claimed in either direction:**
+  the OLD flow's input debit was never quantified (the controller had to Read the unit, constitution,
+  vault.json, starterkit-context.yaml, reuse-index.yaml, binding.md, upstream bolt-reports and pack
+  bodies that the builder now reads in-process), and a one-sided weighting would be a fabricated
+  comparison. Residency: this tool result is billed 1.0× once and then `cache_read` 0.1× on every
+  subsequent controller turn — the multiplier is real, N is unmeasured, and no N is invented here.
+- **Cost-weighted, OUTPUT CHANNEL ONLY** (`scripts/report-token-cost.sh`: input 1.0×, cache_read
+  0.1×, output 5.0×). Old side **179,000 × 5.0 = 895,000 cost-units/run**; new side
+  **5,780–12,510 × 5.0 = 28,900–62,550 cost-units/run**. Both sides are the same channel at the same
+  weight, so the comparison is sound. **Do not add the input leg (8,150–9,252 cost-units/run at
+  1.0×) to the new side and divide** — that would imply a total-cost ratio, and the old side's input
+  debit is unmeasured. The input leg is an absolute, published above, and stands alone.
+- **Wall clock: GROSS 19.9–59.7 min, NET 15–55 min (conditional — one term is assumed).**
+  **Gross, recomputed from the CONFIRMED 179K:** 179,000 output tok ÷ 50–150 tok/s = 3,580–1,193 s =
+  **59.7–19.9 min** per 40-unit run. **The previously published "gross 25–75 min" is struck: it does
+  not reproduce from the confirmed 179K at the 50–150 tok/s band its own sentence states** (that
+  arithmetic yields 20.5–61.4 min). Netted against it, per 40-unit run:
+  - new-side generation of the residual: **0.6–3.8 min** (5,780–12,510 tok at 150–50 tok/s);
+  - builder runtime, **MEASURED**: median **0.186 s/bolt** (n = 140, macOS, warm cache, clean
+    `subprocess` timing; min 0.177 · p90 0.198 · max 0.223) → **7.4 s = 0.12 min over 40**;
+  - builder spawn tax on the Windows/CrowdStrike target, **DERIVED not measured**: **6 exec'd
+    binaries measured** here via a PATH shim (1 `bash`, 3 `dirname`, 2 `python3` — exactly the
+    script header's count for the `--plugin-root`-passed form) plus the header's ~3 subshell forks
+    ≈ 9 process creations × the operator's documented 220 ms floor = 1.98 s/bolt → **1.3 min over 40**;
+  - one new subagent `Read` round-trip per bolt: **UNMEASURED and not measurable from here.**
+    Assumed 1.5–4.5 s → **1.0–3.0 min over 40**. The bytes are a near-wash on non-UI units
+    (`file_bytes` median 9,272 B vs the 8,942 B/bolt the old premise implies) and unquantified on UI
+    units, where the file is larger (median 16,235 B starterkit / 18,688 B greenfield).
+
+    > **These three medians are AS-OF the round-3 builder** (the 105-run pass) and have NOT been
+    > re-measured since. Two round-4 changes shift them by measured constants: the corrected tracker
+    > enumeration adds **+235 B to every unit**, and the `ui_bearing` gate's new omission line adds
+    > a further **+216 B to non-`ui_bearing` units** — so the non-UI median reads **≈9,723 B** and
+    > the two UI medians **≈16,470 / ≈18,923 B** when carried forward arithmetically. Carried
+    > forward, not re-measured: stated so that re-running the documented method and getting ~9,723
+    > reads as *this disclosure*, not as a builder regression or an unreproducible measurement.
+    > The wall-clock arithmetic below is unaffected — a 451 B shift on a ~9 KB file does not move
+    > the assumed Read term's 1.5–4.5 s band.
+
+  **NET, worked corner by corner:** fast/macOS/low-Read `19.9 − 0.6 − 0.12 − 1.0 = 18.1 min`;
+  fast/Windows-EDR/high-Read `19.9 − 0.6 − 1.32 − 3.0 = 14.9 min`; slow/macOS/low-Read
+  `59.7 − 3.8 − 0.12 − 1.0 = 54.7 min`; slow/Windows-EDR/high-Read
+  `59.7 − 3.8 − 1.32 − 3.0 = 51.6 min`. **⇒ NET ≈ 15–55 min per 40-unit run.** NET is explicitly
+  conditional on the ASSUMED Read term; strike that term and the two measured/derived endpoints
+  give **19.2–54.6 min**. A NET that hides an assumed term inside a single number is the shape that
+  failed three times — the assumption is on the outside here.
+
+The cleanest both-axes lever in the audit.
 *Constraint:* the T2 truncation cascade is a moat surface — the script must reproduce it exactly.
 
 **2c — collapse the per-bolt L0 fan-out to ~3 wrapper calls.** 13–16 sequential main-thread Bash
@@ -380,7 +532,8 @@ p99 gap 22.8 h, max 3.7 days).
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now
 **by cost-weighted token saved**, with the both-axes levers (2b) kept high because they are free
-wall-clock too. Phase 1a is a one-line correctness fix, ship it whenever. Phase 1b needs no run
+wall-clock too. Phase 1a is now a docs-only catalog row (see its amendment — the "unpinned agent"
+premise was stale; `model: inherit` is already declared), ship it whenever. Phase 1b needs no run
 anymore (Phase 0's `by_model` answers it). Phase 4 is spawn-tax — pure wall-clock, ~0 tokens —
 so it drops below the token work despite being cheap.
 

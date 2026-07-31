@@ -48,6 +48,16 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 
 **Examples:** extract-intelligence wave-5 synthesis; intelligence-audit deep dimension analysis; code-quality-reviewer; pipeline-audit consolidator.
 
+### inherit — the operator-tiered escape hatch (deliberate, not "unpinned")
+
+A fourth legal `model:` value for a plugin agent: the subagent runs on whatever tier the operator chose for the session. Pick it when ALL of these hold:
+
+- The role's right tier is genuinely a **per-project cost/quality call**, not a property of the task shape (so no fixed rubric row above is correct for every user).
+- The operator's own session tier is a good proxy for that call — a session run on a stronger model *should* get a stronger agent.
+- A wrong hard pin is expensive in BOTH directions (pinning down costs more downstream than it saves; pinning up taxes every routine run).
+
+`inherit` is an **explicit** declaration and a catalog↔frontmatter parity check must accept it as one — it is not a missing pin. Do not reach for it to avoid making a decision; the rubric above is the default path. Exactly one role uses it today (`bolt-implementer`, row 22).
+
 ### Default when in doubt: sonnet
 
 Sonnet is the safe middle ground. Escalate to opus only with concrete evidence the task needs broader reasoning. Drop to haiku only when scope is provably bounded.
@@ -79,8 +89,9 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 19 | `security-reviewer` | **opus** | Semantic authz-vs-spec + architectural-drift reasoning; deep code review per the opus criteria (review-panel security lens) |
 | 20 | `standards-reviewer` | sonnet | Pattern recognition vs pack rules + sibling files; bounded judgment with known output schema (review-panel standards lens) |
 | 21 | `design-reviewer` | sonnet | Code-evidence checks against an explicit design contract (tokens/states/a11y rubric); pattern recognition, not open-ended taste (review-panel design lens) |
+| 22 | `bolt-implementer` | **inherit** | Deliberately operator-tiered, not unpinned: the implementer writes the code the LOCKED "akurasi code WAJIB" mandate is about, so it tracks the tier the operator chose for the session — a session run on a stronger model gets a stronger implementer with no plugin edit. A hard pin would also cut the wrong way in both directions: pinning down risks paying more via panel rejections + re-dispatches than the per-token saving, pinning up taxes every routine bolt. `inherit` is an EXPLICIT frontmatter value (`agents/bolt-implementer.md`), and any catalog↔frontmatter parity check must accept it as such (spec `2026-07-30-token-and-latency-optimization.md` §Phase 1a, amended) |
 
-**Distribution:** 4 opus + 14 sonnet + 3 haiku. Sonnet-dominant by design.
+**Distribution:** 4 opus + 14 sonnet + 3 haiku + 1 inherit (22 rows). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
 
 ---
 

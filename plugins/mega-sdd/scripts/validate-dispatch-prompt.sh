@@ -87,6 +87,28 @@ mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || {
   echo "ERROR: cannot create $(dirname "$STATE_FILE")" >&2; exit 2;
 }
 
+# Interpreter probe BEFORE anything else runs. Bare `python3` is a documented
+# FALSE POSITIVE on Windows (WindowsApps App Execution Alias stub — stderr
+# message, exit 49), and this validator is dispatched deterministically by
+# hooks/post-tool-use on every builder invocation. A bare `python3` here means
+# the hook fires faithfully into a script that exits 49, writes NO state file,
+# and leaves .dispatch-prompt-state.json frozen at last-run truth — a dark gate
+# indistinguishable from a passing one, on exactly the machine class where the
+# builder's own pack loss would need catching.
+# $MEGA_SDD_PY MUST be expanded UNQUOTED — `py -3` is two words.
+_RPY_VDP="${SCRIPT_DIR}/_lib/resolve-python.sh"
+if [ -f "$_RPY_VDP" ]; then
+  # shellcheck disable=SC1090
+  . "$_RPY_VDP"
+  if ! mega_sdd_python; then
+    [ "$QUIET" -eq 0 ] && { mega_sdd_python_remedy >&2; echo >&2; }
+    exit 2
+  fi
+else
+  MEGA_SDD_PY="python3"
+fi
+export MEGA_SDD_PY
+
 # Pull the pack section via the shared resolver (tech-agnostic chokepoint).
 # Exit 3 from the resolver = section absent in every pack of the chain (=> SKIP).
 PACK_RESOLVER="${SCRIPT_DIR}/_lib/resolve-framework-pack.sh"
@@ -97,7 +119,7 @@ fi
 
 CWD="$CWD" STATE_FILE="$STATE_FILE" QUIET="$QUIET" FILE_PATH="$FILE_PATH" \
 UI_SECTION="$UI_SECTION" \
-python3 <<'PYEOF'
+$MEGA_SDD_PY <<'PYEOF'
 import json
 import os
 import re

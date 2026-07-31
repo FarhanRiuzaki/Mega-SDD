@@ -389,6 +389,39 @@ for h in sorted(hits):
       done <<< "$PATHS_FOUND"
     fi
 
+    # ── Code-delivery slice F (Bash leg): builder-written dispatch prompt ───
+    # PARITY RESTORE, not a new gate. The Write|Edit leg below dispatches
+    # validate-dispatch-prompt.sh on any write of
+    # `*.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md`. Before the builder
+    # existed, execute-bolts materialized that file with Write, so the validator
+    # fired automatically, per bolt, with zero model cooperation. The builder
+    # now writes it from inside Python — no Write tool event, so that leg went
+    # dead and the only replacement was a prose line in SKILL.md telling the
+    # model to run the validator itself. `gates > rules > hooks` is one-way:
+    # an existing deterministic hook is never downgraded into prose. This leg
+    # restores the automatic firing on the Bash call that runs the builder.
+    #
+    # Matches on the BASENAME so it catches both the ${CLAUDE_PLUGIN_ROOT} house
+    # form and an absolute path. Deliberately does NOT read the builder's stdout
+    # (a hook cannot see it) and does NOT reconstruct the prompt path from the
+    # command string: validate-dispatch-prompt.sh's scan is project-wide /
+    # current-truth, so --cwd alone is both correct and sufficient — the same
+    # shape as the cross-cutting + ui-quality dispatches below.
+    #
+    # Fires once per builder invocation = once per bolt. That is PARITY with the
+    # pre-builder Write cadence, not fan-out: the per-item spawn prohibition is
+    # about spawns multiplied INSIDE one logical operation, and per-bolt firing
+    # is the only cadence that survives a 40-unit run halting at unit 12.
+    # Advisory (S6 EB-HONEST-3): nothing in PreToolUse reads
+    # .dispatch-prompt-state.json — it is surfaced via /mega-sdd:analyze.
+    if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -q "build-dispatch-prompt\.sh"; then
+      SCRIPT_DIR_BDP="$(cd "$(dirname "$0")" && pwd)"
+      VALIDATOR_DP_B="${SCRIPT_DIR_BDP}/../scripts/validate-dispatch-prompt.sh"
+      if [ -x "$VALIDATOR_DP_B" ]; then
+        bash "$VALIDATOR_DP_B" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+      fi
+    fi
+
     # ── B.5-followup: pandoc render failure detection ──────────────────────
     # PostToolUse fires only on SUCCESS and its Bash payload has no documented
     # exit_code field — failures arrive via the PostToolUseFailure event (this
@@ -590,6 +623,12 @@ except Exception:
     # signatures` (no view_glob) or no ui_ux prompt exists. Writes
     # .dispatch-prompt-state.json. ADVISORY (S6 EB-HONEST-3): nothing in PreToolUse
     # reads this state — it is surfaced via /mega-sdd:analyze, per the demotion list.
+    # NOTE: the shipped writer is now scripts/build-dispatch-prompt.sh, which writes
+    # from Python and fires no Write event — see the Bash-leg twin of this dispatch
+    # in the Bash) branch above. This leg stays for hand/agent edits of an emitted
+    # prompt and for any future Write-based writer; both legs run the same validator
+    # with the same project-wide scan, so a double fire is idempotent (the state file
+    # is OVERWRITE-not-append, current truth).
     case "$FILE_PATH" in
       *.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md)
         VALIDATOR_DP="${SCRIPT_DIR}/../scripts/validate-dispatch-prompt.sh"

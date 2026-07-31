@@ -41,7 +41,9 @@
 #
 # Exit codes:
 #   0  success (chain printed, or section found + printed)
-#   2  bad/unknown argument (strict parse)
+#   2  bad/unknown argument (strict parse), or NO USABLE PYTHON INTERPRETER
+#      (Windows App-Execution-Alias stub). Non-zero-and-not-3 means the chain is
+#      UNKNOWN, never "this project has no pack" — callers MUST distinguish.
 #   3  no pack resolvable at all (no _universal.md present) OR --section absent
 #      in every pack of the chain. Callers treat exit 3 as SKIP.
 
@@ -81,7 +83,29 @@ if [ -z "$PACK_ROOT" ] || [ ! -d "$PACK_ROOT" ]; then
   exit 3
 fi
 
-CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" python3 <<'PYEOF'
+# Interpreter. Bare `python3` is a documented FALSE POSITIVE on Windows: the
+# WindowsApps App Execution Alias stub sits on the default PATH, prints to
+# stderr and exits 49. A caller that swallows a non-zero exit here loses the
+# WHOLE framework-pack contribution of every dispatch at exit 0 — reproduced at
+# 8733 -> 5412 bytes — so this resolver must not be the weak link.
+# An interpreter already resolved by the CALLER wins (build-dispatch-prompt.sh
+# exports MEGA_SDD_PY); otherwise resolve it here via the shared helper.
+# $MEGA_SDD_PY MUST be expanded UNQUOTED — `py -3` is two words.
+if [ -z "${MEGA_SDD_PY:-}" ]; then
+  _RPY_FP="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/resolve-python.sh"
+  if [ -f "$_RPY_FP" ]; then
+    # shellcheck disable=SC1090
+    . "$_RPY_FP"
+    if ! mega_sdd_python; then
+      [ "$QUIET" -eq 0 ] && mega_sdd_python_remedy >&2
+      exit 2
+    fi
+  else
+    MEGA_SDD_PY="python3"
+  fi
+fi
+
+CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" $MEGA_SDD_PY <<'PYEOF'
 import os
 import re
 import sys
