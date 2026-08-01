@@ -42,7 +42,12 @@ mk_proj() { # $1=dir ; creates src files + git commit + files.z
   mkdir -p "$1/src/models" "$1/.mega-sdd/codebase/.scan"
   printf 'export class User {}\n' > "$1/src/models/user.ts"
   printf 'export function main() {}\n' > "$1/src/app.ts"
-  (cd "$1" && git init -q . && git add -A && git commit -qm init) >/dev/null 2>&1
+  # local identity is MANDATORY: CI runners have no global identity and newer
+  # git no longer auto-constructs one — a silent commit failure here leaves a
+  # zero-commit repo, and the deriver then (correctly) omits the stamp the
+  # assertions below require. Masked on dev machines by the global config.
+  (cd "$1" && git init -q . && git config user.email t@t && git config user.name t \
+    && git add -A && git commit -qm init) >/dev/null 2>&1
   printf 'src/models/user.ts\0src/app.ts\0' > "$1/.mega-sdd/codebase/.scan/files.z"
 }
 mk_delta_full() { # $1=dir
@@ -291,7 +296,8 @@ grep -q "| $FAKE |" "$P/.mega-sdd/codebase/codebase-map.md" && ok "F18: hashes.t
 if git init --object-format=sha256 -q "$WORK/p15" >/dev/null 2>&1; then
   P="$WORK/p15"; mkdir -p "$P/src" "$P/.mega-sdd/codebase/.scan"
   printf 'x\n' > "$P/src/a.ts"; printf 'src/a.ts\0' > "$P/.mega-sdd/codebase/.scan/files.z"
-  (cd "$P" && git add -A && git commit -qm i) >/dev/null 2>&1
+  (cd "$P" && git config user.email t@t && git config user.name t \
+    && git add -A && git commit -qm i) >/dev/null 2>&1
   D="$WORK/d15"; mk_delta_full "$D"
   run_deriver "$P" full "$D" >/dev/null
   grep -qE '^last_scanned_commit: [0-9a-f]{64}$' "$P/.mega-sdd/codebase/codebase-map.md" \
