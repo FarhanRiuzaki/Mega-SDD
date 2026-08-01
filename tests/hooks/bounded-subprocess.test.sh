@@ -651,6 +651,17 @@ if re.search(r"^\s*continue\s*$", text, re.M):
     print("falls-through")
 elif re.search(r"sys\.exit\(\s*[1-9]", text):
     print("halts")
+elif re.search(r"\bdie\(\s*[1-9]", text):
+    # 4d batch form: fatal exits route through a local die(code, msg) helper so
+    # the unprocessed batch remainder is disclosed. A die() call counts as a
+    # halt ONLY when the helper body PROVABLY calls sys.exit on its code arg —
+    # a die() that logs without exiting is still the silent-false-baseline bug.
+    src = "\n".join(lines)
+    m = re.search(r"^def die\(code[^\n]*\n((?:[ \t]+[^\n]*\n?|\n)*)", src, re.M)
+    if m and re.search(r"sys\.exit\(\s*code\s*\)", m.group(1)):
+        print("halts")
+    else:
+        print("no-exit")
 else:
     print("no-exit")
 HALTEOF
@@ -676,9 +687,16 @@ open(os.path.join(d, "v_halt.py"), "w").write(AST + EXC + "                sys.e
 open(os.path.join(d, "v_none.py"), "w").write(AST + EXC + "                pass\n")
 open(os.path.join(d, "v_bare.py"), "w").write(AST)
 open(os.path.join(d, "v_git.py"), "w").write(GIT + AST + EXC + "                continue\n")
+DIE_OK = ("def die(code, msg):\n"
+          "    print(msg)\n"
+          "    sys.exit(code)\n")
+DIE_BAD = ("def die(code, msg):\n"
+           "    print(msg)\n")
+open(os.path.join(d, "v_dieok.py"), "w").write(DIE_OK + AST + EXC + "                die(3, \"t\")\n")
+open(os.path.join(d, "v_diebad.py"), "w").write(DIE_BAD + AST + EXC + "                die(3, \"t\")\n")
 VEOF
-v_all="$(halt_verdict "$TMP/v_cont.py")/$(halt_verdict "$TMP/v_halt.py")/$(halt_verdict "$TMP/v_none.py")/$(halt_verdict "$TMP/v_bare.py")/$(halt_verdict "$TMP/v_git.py")"
-V_WANT="falls-through/halts/no-exit/no-handler/falls-through"
+v_all="$(halt_verdict "$TMP/v_cont.py")/$(halt_verdict "$TMP/v_halt.py")/$(halt_verdict "$TMP/v_none.py")/$(halt_verdict "$TMP/v_bare.py")/$(halt_verdict "$TMP/v_git.py")/$(halt_verdict "$TMP/v_dieok.py")/$(halt_verdict "$TMP/v_diebad.py")"
+V_WANT="falls-through/halts/no-exit/no-handler/falls-through/halts/no-exit"
 if [ "$v_all" = "$V_WANT" ]; then
   pass "control: every halt verdict is reachable, and a preceding git() handler does not fool the probe"
 else

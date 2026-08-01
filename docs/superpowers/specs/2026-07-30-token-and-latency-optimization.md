@@ -650,6 +650,119 @@ operator's Windows/CrowdStrike floor applied uniformly.
 > Carried open (PLAUSIBLE, disclosed): the sub-second read-then-write race on ns-precision bash
 > (parallel-sessions lane; safe direction preserved).
 
+> **DESIGN 2026-08-01 (tranche 4, second release: 4d+4e only — 4f stays deferred to its OWN
+> release and its own adversarial round; it touches the B1 recompute, the single riskiest moat
+> surface in the set, and ships nothing here).**
+>
+> **4d — the two pre-flight scripts take a unit LIST; the controller pays one spawn-chain and one
+> tool round-trip per batch, not per unit.** Both scripts gain `--units=U-001,U-002,…`
+> (comma-separated; `--unit=` stays byte-compatible for a single unit — every existing call site
+> and fixture is untouched). The per-unit halt semantics are NOT relaxed; what changes is only
+> where the loop lives:
+>
+> - `check-anchor-freshness.sh --units=…` — read-only probe, so the batch processes EVERY unit
+>   and reports every stale one in a single output (strictly more informative than N stops).
+>   Fixed costs amortized once per batch: `rev-parse --show-prefix`, `git ls-files`, and
+>   `walk_unit_commits` (which already computes ALL units' commits in one log walk — the batch
+>   finally uses that). Exit: `2` fail-fast if any unit cannot run (unit not found — a controller
+>   bug, not a verdict), else `1` if ≥1 not-yet-bolted unit has a stale anchor (halt
+>   `anchor_missing`, every offending unit listed), else `0`. Advisory WARNs for already-bolted
+>   units print per unit, exactly as today.
+> - `run-preflight-scan.sh --units=…` — the baseline WRITER, so the batch is sequential and
+>   fail-fast on every FATAL code: the first unit hitting `3/4/5/6/8` (or `2`) stops the batch and
+>   the script exits with THAT code, the offending unit named on stderr and the unprocessed
+>   remainder listed — the run was halting anyway, and a half-processed batch must be visible, not
+>   silent. Exit `7` (post-hoc refusal) keeps its NON-FATAL contract: it is collected per unit,
+>   the batch continues, and the final exit is `7` iff ≥1 refusal (stderr names each refused unit
+>   so the controller can log each in its bolt-report). Successful units' artifacts are written
+>   exactly as the single-unit path writes them — same schema, same immutable-keep, same
+>   tamper-refusals; a fatal mid-batch leaves earlier units' already-written baselines in place
+>   (they are valid artifacts; the re-run's immutable-keep/no-Hard-rules paths make re-batching
+>   the same list idempotent).
+> - `execute-bolts` SKILL.md pre-flight checks 3.7 + 4 now instruct ONE batched invocation over
+>   all target units instead of a per-unit loop — the exit-code → halt map is unchanged (any fatal
+>   code halts the run; the stderr names which unit fired it; **exit 2 is a PRE-LOOP abort — no
+>   verdict/baseline exists for ANY unit, and both checks now carry an explicit "any other
+>   non-zero → STOP" clause** so a controller can never read a rc-2 as "proceed"). Scripts
+>   self-skip units with no `## Anchors` / no Hard rules, so the controller passes the full target
+>   list without filtering. **Procedure step 1 KEEPS the per-unit re-capture** (round-1 static
+>   finding 4): the old step 1 ran the writer at dispatch time, and a pre-commit re-run OVERWRITES
+>   the batch baseline with the file state at THAT moment — folding it into the T0 batch would
+>   have let a sibling bolt's legitimate commit to a later unit's `DO NOT modify` path read as a
+>   false `hard_rule_violated` at post-flight. The 4d saving on this script is the check-4
+>   validation loop (N→1); the step-1 dispatch-time capture is semantics, not spawn tax.
+> - **The L3-6 boundary is untouched:** postflight/acceptance writers stay strictly single-unit —
+>   batching them would defer the `execute-bolts/SKILL.md:88` in-run STOP past N commits.
+>
+> **4e — the 4 unconditional project-wide PostToolUse scanners get an input-keyed debounce**
+> (bolt-artifacts, ui-deferral, vault-binding-coverage, vault-flow-staging — the Write|Edit arm's
+> project-wide set; the three file-scoped unconditional validators unit-spec/vault-oqs/fsd-slots
+> keep firing unchanged). Today all four re-scan the project on EVERY Write|Edit, including a
+> 50-file source-code bolt run where none of their inputs moved. New guard, same architecture as
+> the shipped 4c turn-gate: a stamp `.mega-sdd/.ptu-scan-stamp` records HEAD at the last scan; the
+> four scanners are SKIPPED only when the stamp exists, HEAD resolves and equals the stamp,
+> the written FILE_PATH is not itself under a mega-sdd tree (zero-exec case guard —
+> `.mega-sdd`/`docs/mega-sdd`/`*-bound`), and a `find -mindepth 1 -newer <stamp>` probe over
+> `.mega-sdd` + `docs/mega-sdd` + root-level `*-bound`/`*/*-bound` (glob-expanded, present dirs
+> only) returns empty with rc 0. Fail TOWARD scanning on every doubt (stamp absent, HEAD
+> unresolvable, find rc≠0); the stamp is written only AFTER all four scans complete.
+> "Per-turn" (the research's lever direction) is subsumed: the guard is input-keyed, so it also
+> skips across consecutive quiet turns AND re-scans twice in one turn when inputs actually change
+> — strictly the safer refinement in both directions.
+>
+> - **Why a skip can never lie to a gate:** none of the four states is read by PreToolUse at all —
+>   ui-deferral and vault-flow-staging are on the demoted-advisory list, and
+>   `.bolt-artifacts-state.json` / `.vault-binding-coverage-state.json` appear at ZERO of the gate
+>   aggregator's `L()` sites (verified against all 11, 2026-08-01). Every state the gate DOES read
+>   is re-derived at the gate itself (S4/S5/S6 + §4a-ii). The only consumer of the four is
+>   `/mega-sdd:analyze`, which re-runs the validators fresh. The residual staleness is therefore a
+>   state file whose mtime is old — never a verdict anyone reads stale.
+> - **Probe prunes (the F1 lesson, applied at design time):** derived outputs are never scan
+>   inputs, so the probe prunes `memory/`, `.cache/`, the four auto-analyze report outputs, every
+>   `.*-state.json`, `.validation-blockers.json`, `.ui-quality-blockers.json`, BOTH stamps,
+>   `.dirty-paths.jsonl` — the living-vault journal this same hook APPENDS on every source write
+>   in a mapped repo; without that prune the debounce would be vacuous exactly in the mapped-repo
+>   case it exists for — plus (round-1 static finding 8) `state.json`, `graph.json`,
+>   `.locked-files-index.json`, and `.compaction-snapshot.json`. The list is explicitly
+>   NON-exhaustive: an unlisted derived file costs an over-scan on the turn it changes, never an
+>   under-scan.
+> - **The mirror is closed BOTH ways (fix-opens-its-mirror, pre-empted):** the 4c Stop probe gains
+>   the same prunes (`.ptu-scan-stamp`, `.*-state.json`, `.validation-blockers.json`,
+>   `.ui-quality-blockers.json`, `.dirty-paths.jsonl`) — otherwise the new stamp and the
+>   PostToolUse validators' state rewrites would re-trigger the Stop scans every turn and silently
+>   undo 4c; conversely the PTU probe prunes `.stop-scan-stamp`. The five Stop scans key on
+>   commits + evidence artifacts only, and none of the pruned files is either — the widened Stop
+>   prune also extends 4c's skip to write-bearing turns whose writes touched no scan input, same
+>   safety argument, disclosed here as deliberate 4e scope.
+> - **New derived artifact, full registration:** `.ptu-scan-stamp` joins `.stop-scan-stamp` on
+>   every surface — the Write/Edit deny list (the deny MESSAGE now names both stamps), both Bash
+>   anti-self-bypass PROTECTED regexes, `.gitignore`, and `references/paths.md`. Carried open,
+>   same as 4c (PLAUSIBLE/CONFIRMED-inherent, disclosed): the sub-second read-then-write race on
+>   ns-precision bash (parallel-sessions lane); a DEPTH-1 deletion directly under a probe root
+>   (only the root's mtime moves, which `-mindepth 1` excludes — commented at the guard); and a
+>   backdated-mtime shell edit evading `find -newer`. All three share the same stale side: an
+>   un-refreshed ADVISORY state file — never a gate verdict — and analyze re-runs fresh.
+>
+> **ROUND-1 (dual blind, 2026-08-01) — 0 Critical shipped, all folded pre-ship.** The EXECUTION
+> reviewer (7 attack lanes, all fixtures) returned SHIP with 3 inherent Minors (above); every
+> constructed attack on batch isolation (PATH-strip mid-batch, dedupe/whitespace arg abuse,
+> legacy `*-bound` + monorepo-PREFIX fixtures, exit-8 protected-path bleed both orderings,
+> deny-surface live-fire incl. `tee`/`sed -i`/`rm+touch`, Stop-lane evidence-class preservation)
+> held. The STATIC reviewer returned FIX-FIRST; findings folded: (1+2) the exit-2 lane had NO
+> controller mapping and the batch turned one bad unit id into a whole-gate skip — both checks
+> now carry the explicit STOP clause and the "remainder listed" prose no longer claims rc-2
+> discloses a remainder (it is a pre-loop abort); (3) the `build-dispatch-prompt.sh` "can never
+> disagree" anchor-regex pin pointed at rotted line numbers and was enforced by nothing — now
+> line-number-free AND pinned byte-identical by the 4de test; (4) **the near-Critical**: the
+> first cut moved baseline capture from dispatch time to T0 undisclosed — step-1 re-capture
+> restored (see the 4d bullet); (5) the mutual-prune direction-1 test arm was vacuous (the PTU
+> firing it observed was itself a skip) — the arm now forces a genuine scan and proves the state
+> rewrite happened; (6) `snapshot_at`/`head_sha` were batch-wide — now stamped per unit at write
+> time; (7) the deny message did not name the stamps it blocks; (8) four unlisted derived files
+> made the debounce silently not pay after a session start / graph derive / compaction — pruned,
+> list declared non-exhaustive; (9) the legacy `docs/mega-sdd` + root `*-bound` probe arms were
+> untested — both now have fixtures.
+
 ---
 
 ## Phase 5 — cost-only levers (accept the latency penalty; decide by the payback rule)
@@ -964,7 +1077,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d → 4 → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (own round) → 5e → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now

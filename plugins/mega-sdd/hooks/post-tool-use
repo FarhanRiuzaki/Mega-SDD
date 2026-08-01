@@ -769,20 +769,84 @@ except Exception:
       [ -n "$events" ] && echo "$events" >> "$TELEMETRY_FILE" 2>/dev/null || true
     }
 
+    # ── Input-keyed debounce for the 4 unconditional PROJECT-WIDE scanners ──
+    # (spec §4e, tranche 4-second): bolt-artifacts, ui-deferral,
+    # vault-binding-coverage, vault-flow-staging re-scan the project on EVERY
+    # Write|Edit — including a 50-file source-code bolt run where none of their
+    # inputs moved. Same architecture as the Stop hook's §4c turn-gate: skip
+    # ONLY when (stamp exists) AND (HEAD == stamped sha) AND (the written file
+    # is not itself under a mega-sdd tree) AND (nothing under
+    # .mega-sdd / docs/mega-sdd / legacy *-bound is newer than the stamp,
+    # rc-checked — a failed probe is DOUBT and must scan). Why a skip can never
+    # lie to a gate: NONE of the four states is read by PreToolUse (ui-deferral
+    # + vault-flow-staging are demoted-advisory; the other two appear at zero
+    # of the gate aggregator's L() sites) and every gate-read state is
+    # re-derived at the gate itself (S4/S5/S6); /mega-sdd:analyze re-runs the
+    # validators fresh. Probe prunes = derived OUTPUTS only (state files, both
+    # scan stamps, memory/, .cache/, analyze reports, and .dirty-paths.jsonl —
+    # the journal THIS hook appends on every source write in a mapped repo;
+    # without that prune the debounce would be vacuous exactly there). The
+    # three file-scoped unconditional validators (unit-spec, vault-oqs,
+    # fsd-slots) are NOT debounced — they key on the written file.
+    # Known blind spot, shared with the Stop probe's -mindepth 1 (deliberate):
+    # a DEPTH-1 deletion directly under a probe root (rm -rf .mega-sdd/vaults)
+    # only bumps the root's mtime, which -mindepth 1 excludes — the skip
+    # persists until HEAD moves or any mega-sdd-tree Write fires. Stale side is
+    # advisory-only (none of the 4 states is gate-read; analyze re-runs fresh).
+    PTU_SCAN_STAMP="${PROJECT_ROOT}/.mega-sdd/.ptu-scan-stamp"
+    NEED_PTU_SCAN=1
+    CUR_HEAD_PTU=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf '')
+    if [ -f "$PTU_SCAN_STAMP" ] && [ -n "$CUR_HEAD_PTU" ]; then
+      case "$FILE_PATH" in
+        *.mega-sdd/*|*docs/mega-sdd/*|*-bound/*)
+          : ;;  # written INTO a mega-sdd tree — its scanners must see it: scan
+        *)
+          LAST_HEAD_PTU=""
+          IFS= read -r LAST_HEAD_PTU < "$PTU_SCAN_STAMP" 2>/dev/null || LAST_HEAD_PTU=""
+          if [ "$CUR_HEAD_PTU" = "$LAST_HEAD_PTU" ]; then
+            # Legacy trees probed when present: docs/mega-sdd plus root-level
+            # *-bound vault dirs (the vault_layouts.py discovery globs).
+            PTU_PROBE_DIRS=("${PROJECT_ROOT}/.mega-sdd")
+            [ -d "${PROJECT_ROOT}/docs/mega-sdd" ] && PTU_PROBE_DIRS+=("${PROJECT_ROOT}/docs/mega-sdd")
+            for _bd in "${PROJECT_ROOT}"/*-bound "${PROJECT_ROOT}"/*/*-bound; do
+              [ -d "$_bd" ] && PTU_PROBE_DIRS+=("$_bd")
+            done
+            CHANGED_PTU=$(find "${PTU_PROBE_DIRS[@]}" -mindepth 1 \
+              \( -name memory -o -name .cache \) -prune -o \
+              \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
+                 -o -name TOKEN-COST-REPORT.md -o -name .token-cost-state.json \
+                 -o -name '.*-state.json' -o -name .validation-blockers.json \
+                 -o -name .ui-quality-blockers.json -o -name .stop-scan-stamp \
+                 -o -name .ptu-scan-stamp -o -name .dirty-paths.jsonl \
+                 -o -name state.json -o -name graph.json \
+                 -o -name .locked-files-index.json \
+                 -o -name .compaction-snapshot.json \) -prune -o \
+              -newer "$PTU_SCAN_STAMP" -print 2>/dev/null)
+            FIND_RC_PTU=$?
+            [ "$FIND_RC_PTU" -eq 0 ] && [ -z "$CHANGED_PTU" ] && NEED_PTU_SCAN=0
+          fi
+          ;;
+      esac
+    fi
+
     # ── Validator 2 (Phase B slice B.2): bolt artifacts ─────────────────────
+    if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-bolt-artifacts.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.bolt-artifacts-state.json" \
       "PostToolUse-Write-validate-bolt-artifacts"
+    fi
 
     # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
     # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
     # bolt-reports / no pack UI signatures. ADVISORY (S6 EB-HONEST-2): nothing in
     # PreToolUse reads .ui-deferral-state.json — it is surfaced via /mega-sdd:analyze.
+    if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \
       "PostToolUse-Write-validate-ui-deferral"
+    fi
 
     # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
     run_validator_and_emit \
@@ -804,10 +868,12 @@ except Exception:
 
     # ── Validator 6 (Phase C slices 4+5): vault→binding + units→bolts ──────
     # Project-wide scan; runs on any Write|Edit (script self-skips when no vaults).
+    if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.vault-binding-coverage-state.json" \
       "PostToolUse-Write-validate-vault-binding-coverage"
+    fi
 
     # ── Validator 6b (semantic-depth): staged-input non-loss KB→vault ──────
     # Follows each 04-flows.md flow's `_kb_source` back-reference; FAILs with
@@ -824,10 +890,20 @@ except Exception:
     # already correct; only this comment had drifted. A comment that overstates
     # enforcement is not cosmetic — it is what makes the next person scoping a
     # change here treat an advisory validator as load-bearing.
+    if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-vault-flow-staging.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json" \
       "PostToolUse-Write-validate-vault-flow-staging"
+
+    # Stamp ONLY after all four project-wide scans completed this firing, only
+    # when HEAD resolved, and only in an ADOPTED project (the stamp must never
+    # MINT .mega-sdd/ — the 4a cache/EB-GATE-6 lesson). A crash before this
+    # line re-scans on the next firing — fail toward scanning.
+    if [ -n "$CUR_HEAD_PTU" ] && [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
+      printf '%s\n' "$CUR_HEAD_PTU" > "$PTU_SCAN_STAMP" 2>/dev/null || true
+    fi
+    fi
 
     # ── Validator 6c: vault flow Mermaid mandate (Mermaid-flows hard rule) ──
     # Fires on a vault 04-flows.md write. Each F-<prefix>-NNN flow body must be a

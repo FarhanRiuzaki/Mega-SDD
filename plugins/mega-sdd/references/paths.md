@@ -242,3 +242,4 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 
 - `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Never committed (gitignored), never read as project state.
 - `<root>/.mega-sdd/.stop-scan-stamp` — the Stop hook's turn-gate stamp (HEAD sha at the last artifact scan). Absence simply means the next Stop scans; never committed.
+- `<root>/.mega-sdd/.ptu-scan-stamp` — the PostToolUse debounce stamp for the 4 unconditional project-wide scanners (HEAD sha at their last run). Absence simply means the next Write|Edit scans; never committed.
