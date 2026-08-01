@@ -266,7 +266,7 @@ Depth expectations:
   - Timezone / date-boundary issues (midnight, DST, fiscal year boundary)
   - Silent error swallowing (empty catch blocks, swallowed errors, error suppression)
   - .bak vs live file discrepancies
-  - **Dynamic dispatch seams (P6)** — behaviour reached via DI-container resolution, reflection / `dynamic`, attribute/annotation/convention routing, interface → implementation dispatch, or event/delegate/middleware wiring. Document the resolved target(s) as a business outcome (cite BOTH the seam site and each target); an unresolvable seam is an `[OPEN]` here, never an invented target. See `references/wave-dispatch-templates.md` DEEP DISCIPLINES P6 + STACK IDIOM TABLE for the per-stack idiom to look for.
+  - **Dynamic dispatch seams (P6)** — behaviour reached via DI-container resolution, reflection / `dynamic`, attribute/annotation/convention routing, interface → implementation dispatch, or event/delegate/middleware wiring. Document the resolved target(s) as a business outcome (cite BOTH the seam site and each target); an unresolvable seam is an `[OPEN]` here, never an invented target. See `agents/domain-extractor.md` §Deep disciplines P6 + the STACK IDIOM TABLE in `references/wave-dispatch-templates.md` §Stack-idiom slicing for the per-stack idiom to look for.
 - Each entry MUST have: description + source file:line + rebuild guidance (replicate/don't/open).
 
 ## 10. Open Questions

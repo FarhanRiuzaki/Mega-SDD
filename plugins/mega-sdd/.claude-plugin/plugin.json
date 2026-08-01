@@ -1,6 +1,6 @@
 {
   "name": "mega-sdd",
-  "version": "5.17.0",
+  "version": "5.18.0",
   "description": "Spec-Driven Development as an autonomous agent pipeline: extract → intent → scan → bind → units → bolts. Anti-hallucination by construction — every claim cites its source, and spec↔code binding (CONFIRMED / CONFLICT / OQ verdicts) gates code generation. AST-precise codebase analysis (tree-sitter), ast-grep-validated Hard Rules, persistent memory, first-class subagents, and a consolidated /analyze consistency surface. Native binary deps (tree-sitter + ast-grep) with graceful regex fallback.",
   "author": {
     "name": "Farhan Riuzaki"
