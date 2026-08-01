@@ -249,12 +249,30 @@ def code_files(names):
     return out
 '
 
-# ─── ORPHAN-SCAN mode ────────────────────────────────────────────────────────
-if [ "$ORPHAN_SCAN" = "1" ]; then
+# ─── Composable scan invocation (spec §4a-ii, tranche 4) ─────────────────────
+# The five scan modes were mutually exclusive by early-exit; the PreToolUse gate
+# and the Stop hook each paid 5 bash spawn-chains per firing. Multiple scan
+# flags now compose in ONE invocation: the identical per-block guards are
+# hoisted here (evaluated once), each block records its rc via _scan_done, and
+# a multi-scan run exits with the MAX rc after the last requested block. A
+# single-scan invocation exits inside _scan_done — behavior byte-identical.
+# Every mode's python, state file, and verdict semantics are untouched: this is
+# call-site consolidation, never a scan merge.
+SCAN_COUNT=$((ORPHAN_SCAN + BATCH_SUITE_GATE + POSTFLIGHT_SCAN + WHITELIST_SCAN + ACCEPTANCE_SCAN))
+if [ "$SCAN_COUNT" -ge 1 ]; then
   # Not a git repo (or no vault layout at all) → nothing to scan; no state written.
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
   _gate_active || exit 0
   mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
+fi
+MULTI_RC=0
+_scan_done() {
+  [ "$1" -gt "$MULTI_RC" ] && MULTI_RC=$1
+  [ "$SCAN_COUNT" -gt 1 ] || exit "$1"
+}
+
+# ─── ORPHAN-SCAN mode ────────────────────────────────────────────────────────
+if [ "$ORPHAN_SCAN" = "1" ]; then
   ORPHAN_STATE="${CWD}/.mega-sdd/.bolt-orphans-state.json"
   CWD="$CWD" ORPHAN_STATE="$ORPHAN_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
@@ -295,7 +313,7 @@ if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if orphans else 0)
 PYEOF
-  exit $?
+  _scan_done $?
 fi
 
 # ─── BATCH-SUITE-GATE mode (B2) ──────────────────────────────────────────────
@@ -307,9 +325,6 @@ fi
 # is the ONLY sanctioned write path — the artifact is Write/Edit-guarded).
 # Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md
 if [ "$BATCH_SUITE_GATE" = "1" ]; then
-  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  _gate_active || exit 0
-  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   BSG_STATE="${CWD}/.mega-sdd/.batch-suite-gate-state.json"
   CWD="$CWD" BSG_STATE="$BSG_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
@@ -445,7 +460,7 @@ emit("FAIL", "batch_suite_gate_missing", detail,
      {"stale": stale, "out_of_band": oob, "newest_code_commit": newest_code,
       "stale_reds": stale_reds})
 PYEOF
-  exit $?
+  _scan_done $?
 fi
 
 # ─── POSTFLIGHT-SCAN mode (B1) ───────────────────────────────────────────────
@@ -457,9 +472,6 @@ fi
 # EB-GATE-4: the wrapper is the ONLY sanctioned write path — Write/Edit-guarded).
 # Design: docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md (§B1)
 if [ "$POSTFLIGHT_SCAN" = "1" ]; then
-  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  _gate_active || exit 0
-  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   PF_STATE="${CWD}/.mega-sdd/.bolt-postflight-state.json"
   CWD="$CWD" PF_STATE="$PF_STATE" QUIET="$QUIET" RECOMPUTE="$RECOMPUTE" python3 <<PYEOF
 $PY_COMMON
@@ -664,7 +676,7 @@ if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if issues else 0)
 PYEOF
-  exit $?
+  _scan_done $?
 fi
 
 # ─── ACCEPTANCE-SCAN mode (B4 — P4 v4.96.0, the WAJIB accuracy floor) ────────
@@ -681,9 +693,6 @@ fi
 # acceptance tests inside a PreToolUse hook is the inflation the doctrine
 # forbids; the write guard + the deterministic writer are the trust root.
 if [ "$ACCEPTANCE_SCAN" = "1" ]; then
-  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  _gate_active || exit 0
-  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   ACC_STATE="${CWD}/.mega-sdd/.bolt-acceptance-state.json"
   CWD="$CWD" ACC_STATE="$ACC_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
@@ -802,7 +811,7 @@ if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if issues else 0)
 PYEOF
-  exit $?
+  _scan_done $?
 fi
 
 # ─── WHITELIST-SCAN mode (B3 — S6 EB-GATE-11) ────────────────────────────────
@@ -816,9 +825,6 @@ fi
 # Writes .mega-sdd/.bolt-whitelist-state.json; the PreToolUse aggregator blocks
 # the NEXT execute-bolts on FAIL.
 if [ "$WHITELIST_SCAN" = "1" ]; then
-  git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  _gate_active || exit 0
-  mkdir -p "${CWD}/.mega-sdd" 2>/dev/null || exit 0
   WL_STATE="${CWD}/.mega-sdd/.bolt-whitelist-state.json"
   CWD="$CWD" WL_STATE="$WL_STATE" QUIET="$QUIET" python3 <<PYEOF
 $PY_COMMON
@@ -944,7 +950,14 @@ if not quiet:
     print(json.dumps(state, indent=1))
 sys.exit(1 if issues else 0)
 PYEOF
-  exit $?
+  _scan_done $?
+fi
+
+# A multi-scan invocation ends HERE with the MAX rc of its scans — it must
+# never fall through into the FILE_PATH mode below (single-scan invocations
+# already exited inside _scan_done; SCAN_COUNT=0 falls through unchanged).
+if [ "$SCAN_COUNT" -ge 1 ]; then
+  exit "$MULTI_RC"
 fi
 
 # FILE_PATH is the written file. May or may not exist (Edit happens, then validator

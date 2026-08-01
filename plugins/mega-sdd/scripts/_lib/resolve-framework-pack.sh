@@ -12,8 +12,11 @@
 # Adding a new stack = adding a pack file; never editing a validator.
 #
 # This is a RESOLVER, not a validator: it prints to stdout and sets an exit
-# code. It writes NO state file and has NO PASS/FAIL status semantics — those
-# belong to the downstream validators that CONSUME this helper.
+# code. It writes NO STATE file and has NO PASS/FAIL status semantics — those
+# belong to the downstream validators that CONSUME this helper. It DOES maintain
+# a derived, discardable stdout cache under <root>/.mega-sdd/.cache/pack-resolver/
+# (only when .mega-sdd/ already exists — never minted); deleting it costs one
+# cold resolve.
 #
 # Usage:
 #   resolve-framework-pack.sh --cwd=<project-root> [--section=<name>] [--quiet]
@@ -83,6 +86,83 @@ if [ -z "$PACK_ROOT" ] || [ ! -d "$PACK_ROOT" ]; then
   exit 3
 fi
 
+# ─── Derived cache — ZERO-EXEC hit path (spec §4a-i, tranche 4) ───────────────
+# Four gate-firing validators call this resolver per PreToolUse firing; the
+# answer changes only when starterkit-context.yaml / codebase-map.md / the pack
+# files change. The cache is DERIVED and DISCARDABLE (deleting it costs one
+# cold resolve) — it is NOT a state file; stdout on a hit is byte-identical to
+# a cold run (the cache stores the cold run's exact stdout + exit code).
+#
+# Validity is decided with BUILTINS only (bash-3.2-safe): a hit spawns ZERO
+# pythons and no child beyond the prologue's two dirname subshells above.
+#   - input-file EXISTENCE parity ([ -f ]) for both project inputs — `-nt` alone
+#     is true when the reference file is MISSING, so a deleted input would
+#     wrongly validate a stale cache without this;
+#   - [ cache -nt input ] for both project inputs, EVERY pack file in the
+#     cached chain, and the pack ROOT dir (a newly added more-specific pack
+#     bumps the dir mtime).
+# Any doubt (unreadable cache, meta mismatch, unexpected format) falls through
+# to the cold path below, which rewrites the cache on success.
+# GRANULARITY, stated: bash `-nt` compares whole seconds on some platforms, so a
+# cache written in the SAME wall-clock second as its input does not validate and
+# the next call re-resolves cold. That is the SAFE direction (a wasted resolve,
+# never a stale answer) and self-heals one second later — do not "fix" it by
+# accepting equal mtimes, which would serve stale output when an input is
+# modified in the same second AFTER the cache write.
+_SK_FILE="${CWD}/.mega-sdd/codebase/starterkit-context.yaml"
+_CM_FILE="${CWD}/.mega-sdd/codebase/codebase-map.md"
+_SK_F=0; [ -f "$_SK_FILE" ] && _SK_F=1
+_CM_F=0; [ -f "$_CM_FILE" ] && _CM_F=1
+_SEC_KEY="${SECTION:-_chain}"
+_SEC_KEY_SAFE=""
+while [ -n "$_SEC_KEY" ]; do
+  _C="${_SEC_KEY%"${_SEC_KEY#?}"}"; _SEC_KEY="${_SEC_KEY#?}"
+  case "$_C" in
+    [A-Za-z0-9._-]) _SEC_KEY_SAFE="${_SEC_KEY_SAFE}${_C}" ;;
+    *) _SEC_KEY_SAFE="${_SEC_KEY_SAFE}-" ;;
+  esac
+done
+# F6 (round-1): cache ONLY when .mega-sdd/ already exists — the writer must
+# never mint a phantom project root (EB-GATE-6 doctrine); empty cache path
+# disables both the hit read below and the python writer.
+_CACHE_FILE=""
+if [ -d "${CWD}/.mega-sdd" ]; then
+  _CACHE_DIR="${CWD}/.mega-sdd/.cache/pack-resolver"
+  _CACHE_FILE="${_CACHE_DIR}/${_SEC_KEY_SAFE:-_chain}.out"
+fi
+if [ -n "$_CACHE_FILE" ] && [ -f "$_CACHE_FILE" ]; then
+  _META=""
+  IFS= read -r _META < "$_CACHE_FILE" 2>/dev/null || _META=""
+  _META="${_META%$'\r'}"   # a CRLF-written meta (Windows python) must not poison the parse
+  case "$_META" in
+    "# packres-v1 rc="*" sk=${_SK_F} cm=${_CM_F} chain="*)
+      _RC_PART="${_META#\# packres-v1 rc=}"; _RC="${_RC_PART%% *}"
+      _CHAIN_PART="${_META#* chain=}"
+      _VALID=1
+      # a resolver-CODE change must bust the cache too (F5): $0 is an input
+      [ "$_CACHE_FILE" -nt "$0" ] || _VALID=0
+      [ "$_CACHE_FILE" -nt "$PACK_ROOT" ] || _VALID=0
+      if [ "$_SK_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_SK_FILE" ]; then _VALID=0; fi
+      if [ "$_CM_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_CM_FILE" ]; then _VALID=0; fi
+      if [ "$_VALID" = "1" ] && [ -n "$_CHAIN_PART" ]; then
+        for _PK in $_CHAIN_PART; do
+          _PK_PATH="${PACK_ROOT}/${_PK}"
+          if [ ! -f "$_PK_PATH" ] || ! [ "$_CACHE_FILE" -nt "$_PK_PATH" ]; then _VALID=0; break; fi
+        done
+      fi
+      case "$_RC" in 0|3) ;; *) _VALID=0 ;; esac
+      if [ "$_VALID" = "1" ]; then
+        _FIRST=1
+        while IFS= read -r _LINE || [ -n "$_LINE" ]; do
+          if [ "$_FIRST" = "1" ]; then _FIRST=0; continue; fi
+          printf '%s\n' "$_LINE"
+        done < "$_CACHE_FILE"
+        exit "$_RC"
+      fi
+      ;;
+  esac
+fi
+
 # Interpreter. Bare `python3` is a documented FALSE POSITIVE on Windows: the
 # WindowsApps App Execution Alias stub sits on the default PATH, prints to
 # stderr and exits 49. A caller that swallows a non-zero exit here loses the
@@ -105,7 +185,8 @@ if [ -z "${MEGA_SDD_PY:-}" ]; then
   fi
 fi
 
-CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" $MEGA_SDD_PY <<'PYEOF'
+CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" \
+PACKRES_CACHE="$_CACHE_FILE" PACKRES_SK="$_SK_F" PACKRES_CM="$_CM_F" $MEGA_SDD_PY <<'PYEOF'
 import os
 import re
 import sys
@@ -115,10 +196,36 @@ section = os.environ.get("SECTION", "")
 quiet = os.environ.get("QUIET", "0") == "1"
 pack_root = os.environ["PACK_ROOT"]
 
+chain = []  # populated below; the cache writer reads it for the meta line
+
 
 def warn(msg):
     if not quiet:
         print(msg, file=sys.stderr)
+
+
+def finish(rc, body):
+    """Print the contract stdout, write the derived cache (spec §4a-i), exit rc.
+    The cache stores this EXACT stdout + rc; the bash hit path replays it with
+    zero execs. A cache-write failure is silent — the cold path IS the contract."""
+    cache = os.environ.get("PACKRES_CACHE", "")
+    if cache:
+        try:
+            os.makedirs(os.path.dirname(cache), exist_ok=True)
+            meta = "# packres-v1 rc=%d sk=%s cm=%s chain=%s" % (
+                rc, os.environ.get("PACKRES_SK", "0"), os.environ.get("PACKRES_CM", "0"),
+                " ".join("%s.md" % n for n in chain))
+            tmp = cache + ".tmp"
+            with open(tmp, "w", newline="\n") as f:
+                f.write(meta + "\n")
+                if body:
+                    f.write(body if body.endswith("\n") else body + "\n")
+            os.replace(tmp, cache)
+        except Exception:
+            pass
+    if body:
+        sys.stdout.write(body if body.endswith("\n") else body + "\n")
+    sys.exit(rc)
 
 
 def strip_md(name):
@@ -211,9 +318,8 @@ if not os.path.isfile(pack_path(pack_name)):
 if not os.path.isfile(pack_path(pack_name)):
     # not even _universal.md exists — nothing resolvable
     warn("# no resolvable pack (even _universal.md is missing)")
-    sys.exit(3)
+    finish(3, "")
 
-chain = []
 seen = set()
 cur = pack_name
 while cur and cur not in seen:
@@ -225,12 +331,11 @@ while cur and cur not in seen:
     cur = parse_extends(cur)
 
 if not chain:
-    sys.exit(3)
+    finish(3, "")
 
 # --- No --section: print the chain (basenames with .md, most-specific-first) ---
 if not section:
-    print(" ".join(f"{n}.md" for n in chain))
-    sys.exit(0)
+    finish(0, " ".join(f"{n}.md" for n in chain))
 
 
 # --- With --section: emit merged section bodies, most-specific-first ---
@@ -270,13 +375,12 @@ for name in chain:
 
 if not emitted:
     warn(f"# section '{section}' not declared in any pack of the chain — SKIP")
-    sys.exit(3)
+    finish(3, "")
 
 out_blocks = []
 for name, sec in emitted:
     out_blocks.append(f"# --- from {name}.md ---\n{sec}")
-print("\n\n".join(out_blocks))
-sys.exit(0)
+finish(0, "\n\n".join(out_blocks))
 PYEOF
 
 exit $?

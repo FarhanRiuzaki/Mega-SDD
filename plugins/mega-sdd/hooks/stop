@@ -23,7 +23,11 @@
 set -uo pipefail
 
 # Always read stdin first
-STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+# stdin read with a BUILTIN (spec §4b): read -d '' consumes to EOF (JSON has no
+# NUL); rc non-zero at EOF by design, hence `|| true`.
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true
+[ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # Parse stdin via python3 (pipe in; script via -c).
 # NOTE: emission goes through emit()/shlex.quote, not an f-string — the consumer is
@@ -77,7 +81,13 @@ fi
 # CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
 # during a chain step). Walk UP to outermost .mega-sdd/ parent so state files,
 # debug log, and telemetry land in the canonical location instead of nested.
-SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+# Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
+# absolute in the shipped dispatch; the subshell fallback covers relative $0.
+SCRIPT_DIR_RPR="${0%/*}"
+case "$SCRIPT_DIR_RPR" in
+  /*) ;;
+  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 if [ -f "$RPR_HELPER" ]; then
   # shellcheck disable=SC1090
@@ -227,23 +237,65 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
   SCRIPT_DIR_OS="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
   VALIDATOR_OS="${SCRIPT_DIR_OS}/../scripts/validate-bolt-artifacts.sh"
   if [ -f "$VALIDATOR_OS" ]; then
-    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
-    # B2 batch-suite gate: after a code-bearing bolt run, a green full-suite result
-    # must cover the newest CODE commit (a bolt OR an out-of-band edit). Detection-only
-    # here (Stop never blocks); the PreToolUse execute-bolts aggregator blocks the NEXT run on FAIL.
-    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
-    # B1 postflight evidence: a committed Hard-rule create/extend bolt must carry
-    # a passing postflight.json (the post-flight scan was prose-only). Same detect-and-
-    # block-next contract — the PreToolUse aggregator blocks the NEXT run on FAIL.
-    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --postflight-scan --quiet >/dev/null 2>&1 || true
-    # B3 whitelist observer (S6 EB-GATE-11): bolt commits must stay inside their
-    # unit's target_files whitelist (∪ sanctioned extras). Detect-and-block-next.
-    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
-    # B4 acceptance evidence (P4 v4.96.0): a v5-keyed bolt (SDD-Acceptance:v5
-    # commit trailer) must carry fresh passing acceptance.json. Commit-keyed —
-    # legacy bolts advisory-only. Detect-and-block-next; the artifact is READ,
-    # never re-executed here (B2 parity — no test runs inside a hook).
-    bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --acceptance-scan --quiet >/dev/null 2>&1 || true
+    # ── Turn-gate (spec §4c): run the scans only on turns that could change their
+    # verdict. All five scans key on COMMITS + EVIDENCE ARTIFACTS, so two cheap
+    # probes cover every input: (a) HEAD vs the sha stamped at the last scan,
+    # (b) any write/delete under .mega-sdd since the stamp (dir-mtime catches
+    # deletions), EXCLUDING memory/ + .cache/ (this hook itself appends the debug
+    # log there every firing — without the prune the gate would never skip).
+    # A skipped turn leaves the state files exactly as the last scan wrote them —
+    # still-true verdicts — and the PreToolUse execute-bolts gate re-derives all
+    # of them anyway (S6 EB-GATE-1), so a stale skip can never open a gate.
+    # Fail TOWARD scanning: stamp absent, HEAD unresolvable, or any probe doubt
+    # → scan. The stamp is written only AFTER the scans complete (a crash
+    # re-scans next turn), and only when HEAD resolved.
+    STOP_SCAN_STAMP="${PROJECT_ROOT}/.mega-sdd/.stop-scan-stamp"
+    NEED_ARTIFACT_SCAN=1
+    CUR_HEAD_SS=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf '')
+    if [ -f "$STOP_SCAN_STAMP" ] && [ -n "$CUR_HEAD_SS" ]; then
+      LAST_HEAD_SS=""
+      IFS= read -r LAST_HEAD_SS < "$STOP_SCAN_STAMP" 2>/dev/null || LAST_HEAD_SS=""
+      if [ "$CUR_HEAD_SS" = "$LAST_HEAD_SS" ]; then
+        # Legacy vault layouts keep evidence under docs/mega-sdd/ — probe it too
+        # when present (${VAR:+"$VAR"} keeps quoting; absent dir adds no arg).
+        LEGACY_SS=""
+        [ -d "${PROJECT_ROOT}/docs/mega-sdd" ] && LEGACY_SS="${PROJECT_ROOT}/docs/mega-sdd"
+        # Excluded from the probe (round-1 F1): the four auto-analyze/report
+        # OUTPUTS this hook's own tail rewrites every firing — they are derived
+        # FROM the scan states, never inputs to the scans; without the exclusion
+        # the gate never skips in any telemetry-active project. Round-1 F2:
+        # capture find's rc — a failed probe is DOUBT and must scan, never read
+        # as "no change" (no head, so no SIGPIPE rc distortion; output size is
+        # bounded by the .mega-sdd tree listing).
+        # -mindepth 1: the .mega-sdd ROOT dir's own mtime bumps on every direct-
+        # child write (the stamp itself, analyze temp/renames) — pure noise; the
+        # real deletion signal lives in SUBDIR mtimes (vaults/*/bolts), still probed.
+        CHANGED_SS=$(find "${PROJECT_ROOT}/.mega-sdd" ${LEGACY_SS:+"$LEGACY_SS"} -mindepth 1 \
+          \( -name memory -o -name .cache \) -prune -o \
+          \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
+             -o -name TOKEN-COST-REPORT.md -o -name .token-cost-state.json \) -prune -o \
+          -newer "$STOP_SCAN_STAMP" -print 2>/dev/null)
+        FIND_RC_SS=$?
+        [ "$FIND_RC_SS" -eq 0 ] && [ -z "$CHANGED_SS" ] && NEED_ARTIFACT_SCAN=0
+      fi
+    fi
+    if [ "$NEED_ARTIFACT_SCAN" = "1" ]; then
+      # ONE composable invocation (spec §4a-ii) — orphan + B2 batch-suite + B1
+      # postflight + B3 whitelist + B4 acceptance. Detection-only here (Stop never
+      # blocks); the PreToolUse execute-bolts aggregator blocks the NEXT run on
+      # FAIL. NOTE: no --recompute on this lane (unchanged) — recompute-at-gate
+      # belongs to the blocking PreToolUse path; the artifacts are READ here,
+      # never re-executed (no test runs inside a hook).
+      bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1
+      SCAN_RC_SS=$?
+      # Stamp ONLY when the composed scan actually evaluated (rc 0 = clean,
+      # 1 = findings recorded). An errored scan (rc 2 — e.g. a git timeout's
+      # "gate NOT evaluated") must NOT mark the turn as scanned: fail toward
+      # scanning, per the contract (round-1 IMP-1).
+      if [ -n "$CUR_HEAD_SS" ] && { [ "$SCAN_RC_SS" -eq 0 ] || [ "$SCAN_RC_SS" -eq 1 ]; }; then
+        printf '%s\n' "$CUR_HEAD_SS" > "$STOP_SCAN_STAMP" 2>/dev/null || true
+      fi
+    fi
   fi
 fi
 

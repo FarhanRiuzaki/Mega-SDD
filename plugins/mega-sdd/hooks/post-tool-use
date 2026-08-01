@@ -28,7 +28,11 @@
 
 set -uo pipefail
 
-STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+# stdin read with a BUILTIN (spec §4b): read -d '' consumes to EOF (JSON has no
+# NUL); rc non-zero at EOF by design, hence `|| true`.
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true
+[ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ───────
 # The matcher is the widest in hooks.json (Read|Skill|Bash|Write|Edit|Agent), and
@@ -172,7 +176,13 @@ if [ -z "${CWD:-}" ]; then exit 0; fi
 # CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
 # during a chain step). Walk UP to outermost .mega-sdd/ parent so state files
 # land in the canonical location instead of a nested .mega-sdd/<sub>/.mega-sdd/.
-SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+# Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
+# absolute in the shipped dispatch; the subshell fallback covers relative $0.
+SCRIPT_DIR_RPR="${0%/*}"
+case "$SCRIPT_DIR_RPR" in
+  /*) ;;
+  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 if [ -f "$RPR_HELPER" ]; then
   # shellcheck disable=SC1090
