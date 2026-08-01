@@ -243,7 +243,7 @@ run_ds "$WORK/f6-units-no-bolts" >/dev/null 2>&1
 got=$(state_field "$WORK/f6-units-no-bolts" "d['derived']['position']")
 [ "$got" = "units_pending_bolts" ] && ok "f6: position=units_pending_bolts" || fail "f6: position got '$got'"
 got=$(state_field "$WORK/f6-units-no-bolts" "d['derived']['proposed_next']")
-[ "$got" = "['execute-bolts --all']" ] && ok "f6: proposed_next=[execute-bolts --all]" || fail "f6: chain wrong: $got"
+[ "$got" = "['execute-bolts --all --parallel']" ] && ok "f6: proposed_next=[execute-bolts --all --parallel] (chain dispatch is wave-parallel, spec §2a)" || fail "f6: chain wrong: $got"
 got=$(state_field "$WORK/f6-units-no-bolts" "str(d['probes']['vaults'][0]['units_count'])+'/'+str(d['probes']['vaults'][0]['bolts_count'])")
 [ "$got" = "2/0" ] && ok "f6: units=2 bolts=0" || fail "f6: counts expected 2/0, got '$got'"
 

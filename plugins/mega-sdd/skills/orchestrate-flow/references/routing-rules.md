@@ -53,7 +53,7 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | `vault_map_unbound` | vault + map, no bound-vault (incl. ACTIVE conflicts / mixed resolutions) | `bind-codebase` |
 | `binding_resolved_no_rebind` | KEEP_VAULT/DEFER-only resolved binding (row below) | `generate-units` |
 | `bound_no_units` | bound-vault exists, no units | `generate-units` |
-| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all` (`--per-squad` when `squad_count ≥ 2`) |
+| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all --parallel` (`--per-squad` when `squad_count ≥ 2` — already parallel by procedure) |
 | `all_units_executed` | all units executed, no recent drift check | `detect-drift` |
 | `pipeline_complete` | all executed + recent drift check | `[]` |
 
@@ -83,7 +83,7 @@ Per user directive "scan code base harusnya di atur di depan ... starterkit itu 
 | Vault exists, codebase-map exists, no bound-vault, BUT `binding.md` has NO ACTIVE (unresolved) conflict block AND every resolution action is KEEP_VAULT or DEFER (ZERO KEEP_CODE/SPLIT — those edited the vault and still need a re-bind) — a KEEP_VAULT/DEFER-only resolution leaves `bound/` absent by design | `generate-units` (the resolution-marked binding.md needs no re-bind; routing to `bind-codebase` would re-derive the unchanged vault-vs-code contradiction, re-raise the SAME CONFLICT and infinite-loop — per `resolve-oq/references/binding-mode.md` Step 5 + `convergence-loops.md`). NOTE: a MIXED / KEEP_CODE / SPLIT resolution ALSO leaves `bound/` absent but the vault WAS edited — it falls through to the `bind-codebase` row below (re-bind), matching the resolve-oq handoff + convergence surfaces |
 | Vault exists, codebase-map exists, no bound-vault | `bind-codebase` (alone if blocking; chain if clean) |
 | Bound-vault exists, no units | `generate-units` |
-| Units exist, some not in bolts | `execute-bolts --all` |
+| Units exist, some not in bolts | `execute-bolts --all --parallel` |
 | Vault has `squad_count: ≥2`, units exist, some not in bolts | `execute-bolts --per-squad` |
 | Vault has `squad_count: ≥2`, units exist, user invokes from a single-squad context (e.g., on a dev's laptop with a specific role) | Ask: "Run for which squad?" then propose `execute-bolts --squad=<answer>` |
 | Vault has `squad_count: ≥2` but `interfaces_count: 0` and ≥1 unit has cross-squad coupling hint in vault_source | `generate-units` (re-run, will surface `interface_ref_missing` halts as needed) |
@@ -154,7 +154,7 @@ When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains.
 | Vault exists, mode=existing, no codebase-map | `scan-codebase` → `bind-codebase` → `generate-units` → `execute-bolts` (4 phases — vault already written; can't retro-scan-aware it without `--refresh`) |
 | Vault exists, codebase-map exists, no bound-vault | `bind-codebase` → `generate-units` → `execute-bolts` (3 phases) |
 | Bound-vault exists, no units | `generate-units` → `execute-bolts` (2 phases) |
-| Units exist, some not in bolts | `execute-bolts --all` (1 phase) |
+| Units exist, some not in bolts | `execute-bolts --all --parallel` (1 phase) |
 
 ### Greenfield vs brownfield detection
 

@@ -38,7 +38,7 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ### Step 3 — Hand-off (judgment, keyed on the script's numbers)
 
-- `parallelism_speedup` ≥ 2 → suggest `/mega-sdd:execute-bolts --per-squad --parallel`.
+- `parallelism_speedup` ≥ 2 → suggest `/mega-sdd:execute-bolts --per-squad` when the vault declares ≥2 squads, else `/mega-sdd:execute-bolts --all --parallel` (`--per-squad` HALTS on a single-squad vault by procedure — never suggest the halting form).
 - `parallelism_speedup` < 1.5 → suggest reviewing the over-coupling candidates above before executing.
 - Bottlenecks present (high-fork keystone units on the critical path) → suggest scope-down OR explicitly accept the keystone.
 - Always link `/mega-sdd:lint-units` for a quality pass before execution.
@@ -59,4 +59,4 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 - `plugins/mega-sdd/scripts/analyze-parallelism.sh` — the deterministic DAG core (covered by `tests/parallelism/test-analyze-parallelism.sh`)
 - `plugins/mega-sdd/skills/generate-units/references/modules-schema.md` — cross-module `blocked_by`
-- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--per-squad --parallel` execution
+- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` — `--all --parallel` / `--per-squad` execution

@@ -72,12 +72,15 @@ DISPATCH mega-sdd:bolt-implementer        (Agent tool)
 implementer reports  DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
    ├─ BLOCKED / NEEDS_CONTEXT → controller supplies context or halts — never silent-skip
    ▼ DONE
-RUN L0 code gates                         (references/code-gates.md)
-   repo-own format(-fix)/lint/typecheck → secret scan → SAST → new-dep existence
-   ├─ secret_in_code / sast_critical_finding / dep_not_found → HALT
-   │  (no panel; the flagged code is in the already-landed commit — remediation
+RUN L0 code gates — ONE call: run-code-gates.sh   (references/code-gates.md)
+   internal order: repo-own format(-fix)/lint/typecheck → secret scan → SAST
+   → new-dep existence → dep-auth (advisory)
+   ├─ exit 1: secret_in_code / sast_critical_finding / dep_not_found → HALT
+   │  (short-circuit — later gates never spawned, recorded in not_run[];
+   │  no panel; the flagged code is in the already-landed commit — remediation
    │  acts on that commit per code-gates.md)
-   ▼ pass (findings + skips recorded, injected into lens prompts)
+   ├─ exit 2: environment error — nothing certified, fix + re-run, never "clean"
+   ▼ exit 0 (findings + skips in the stdout JSON, pasted into lens prompts)
 SELECT panel tier (risk-based)            (references/review-panel.md)
    minimal = spec · standard = spec+quality · full = +security +standards
    ▼

@@ -41,7 +41,7 @@ End-to-end integration test for `--deep` mode running pipeline-end with NO block
 ... (units output)
 ✓ Phase 4 of 5: generate-units → status: completed, items: 7 units, blocked: 0
    (7 units: 7 create, 0 verify — greenfield-ish; no existing implementation)
-▶ Phase 5 of 5: invoking execute-bolts (--all --auto)
+▶ Phase 5 of 5: invoking execute-bolts (--all --parallel --auto)
 ... (bolt execution per unit, including pre/post-flight Hard rule validation)
 ✓ Phase 5 of 5: execute-bolts → status: completed, items: 7 units, blocked: 0
 

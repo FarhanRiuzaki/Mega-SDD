@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.17.0
+version: 1.18.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild — wave-based extraction produces .mega-sdd/knowledge-base/ with [VERIFIED]/[INFERRED]/[OPEN] + [LOCKED]/[INTENT]/[ARTIFACT] markers, consumed by generate-intent --kb and bind-codebase. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -47,7 +47,7 @@ Naming: this is the mega-sdd-flavored take on the legacy reverse-engineering pat
 - Legacy codebase path (positional, required)
 - `--out=<path>` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — the KB is written to `<out>/knowledge-base/`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
-- `--max-parallel=N` (subagent cap per wave; **default 3** per the empirical optimum; soft warn at >5; hard cap 8 — see orchestrate-flow/references/predictive-checks.md `subagent_capacity_reasonable`)
+- `--max-parallel=N` (subagent cap per wave; **default 5** — the dispatch is a compact variable core + a Read-first static file, so coordination overhead no longer caps the fleet below the platform's comfort zone; soft warn at >5; hard cap 8 — see orchestrate-flow/references/predictive-checks.md `subagent_capacity_reasonable`)
 - `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)
 
 ## Output

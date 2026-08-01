@@ -13,7 +13,7 @@ Machine checks the controller runs on a bolt's `<base>..<head>` diff BEFORE disp
 
 ## The gates and their order
 
-Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff. `<base>` is the bolt's ORIGINAL base on EVERY pass — a panel re-dispatch re-enters here (review-panel.md §Merge) and the gates re-scan `original-base..new-head`, never fix-commit-only:
+Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff. `<base>` is the bolt's ORIGINAL base on EVERY pass — a panel re-dispatch re-enters here (review-panel.md §Merge) and the gates re-scan `original-base..new-head`, never fix-commit-only. **Under `--parallel` the same rule is expressed per commit** (wave commits interleave, so a contiguous range would sweep siblings): the re-entry scan covers the unit's own commit SET — the original bolt commit AND each fix commit (`<sha>^..<sha>` per commit, results merged) — which keeps attempt-1's findings in the record (this rule's purpose) without attributing sibling commits to this unit (`batch-and-fanout.md §--all`):
 
 | # | Gate | Script | Tool | Absent tool → |
 |---|---|---|---|---|
@@ -24,14 +24,20 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
 | 6 | Dep authorization (ADVISORY) | `scripts/check-dep-authorization.sh --unit= --base= --head=` | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
-Scripts live at `$PLUGIN_ROOT/scripts/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale). Resolve it once with one Bash call, then prefix every `scripts/<name>.sh` above with `$PLUGIN_ROOT/` (full rationale: `plugins/mega-sdd/references/plugin-root-resolution.md`):
+**Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller no longer runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned — on a blocking run it does strictly less work than the per-turn flow it replaced), and emits ONE merged JSON on stdout — the exact `## Deterministic scan results` payload. It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in SKILL.md Procedure step 3 — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
 
-```bash
-DERIVED="<this reference file's absolute path, truncated before /skills/>"
-RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
-PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
-[ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
 ```
+bash <plugin-root>/scripts/run-code-gates.sh \
+  --cwd=<project-root> --base=<bolt-base-sha> --head=<new-head-sha> \
+  --unit=<vault>/units/U-XXX.md [--pack=<active-pack.md>] [--no-code-gates]
+```
+
+- **Exit 0** — gates ran, no blocking finding; non-blocking findings + SKIPs ride in the JSON for the panel.
+- **Exit 1** — a BLOCKING finding; the JSON `halt` object carries the type (`secret_in_code` / `sast_critical_finding` / `dep_not_found`) and IS the blocker payload.
+- **Exit 2** — usage/environment error (bad args, unresolvable base/head, an always-run gate could not complete): NOTHING was certified — never treat as clean; fix and re-run.
+- `--unit=` feeds gate 6 (absent → a visible SKIP, never silent). `--pack=` applies a pack `## Toolchain` override to gates 1–2 (pack override > detection, per the section below). `--no-code-gates` and the `code_gates: false` config key (read by the wrapper itself) skip gates 1–2, 4 and 6 — **gates 3 and 5 always run**.
+- Timeouts are bounded per command (120s toolchain / 300s gate script): a toolchain timeout is a per-tool failure note, a SAST timeout is a visible SKIP ("scan NOT performed"), a secrets/dep-existence timeout is exit 2 — the always-run pair is never silently skipped.
+- The individual scripts stay invocable directly for debugging; the wrapper is the shipped path, and a panel re-dispatch re-enters at the same one call over `original-base..new-head`.
 
 All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean". For the secret gate specifically (the always-on gate), a gitleaks RUNTIME failure (exit ≥ 2 — crash, incompatible CLI, bad log-opts) does not merely SKIP: it WARNs to stderr and falls back to the plugin's regex scan, and the emitted JSON `note` discloses the fallback — same degradation path as gitleaks-absent. gitleaks exit 1 with an unreadable report is a BLOCKING `report-unreadable` finding (leaks were detected; never reported clean).
 
@@ -39,7 +45,7 @@ All emit JSON; a tool failure is a visible SKIP with a reason, never silently re
 
 `scripts/detect-toolchain.sh --cwd=<project>` probes for the repo's OWN formatter/linter/typechecker config (prettier/biome/eslint/tsc, ruff/black/mypy, gofmt/golangci-lint/go-vet, rustfmt/clippy, pint/php-cs-fixer/phpstan/psalm, rubocop, EditorConfig) and emits the commands with their config-file evidence. **No config evidence → no command** — the bolt loop NEVER introduces a formatter or linter the project doesn't already use (that is a unit-level decision, not a gate side-effect). A project framework pack MAY override detection via an optional `## Toolchain` section (see `framework-conventions/_template.md`); pack override > detection.
 
-Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is machine territory, not a finding. Lint/typecheck failures are findings.
+Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is machine territory, not a finding. Lint/typecheck failures are findings. **A fix lands AFTER the bolt commit and dirties the working tree** — the JSON discloses it (`format.fix_applied: true`, per-tool `fix_rc`): the controller commits the formatting fix under the unit's canonical identity (a follow-up commit in the unit's commit set, `bolt-contract.md §Commit message format`) before proceeding — pre-flight 3 (clean tree) makes silently carrying the dirt into the next unit impossible.
 
 **L0 syntax floor (P4 v4.96.0 — the zero-config rung UNDER gate 2).** Even with no repo-own lint/typecheck config, a committed file must at least parse: `scripts/run-acceptance-tests.sh` (the B4 evidence writer, run at post-flight per SKILL.md Procedure step 5) executes `php -l` / `python3 -m py_compile` / `node --check` / `ruby -c` over the bolt's changed files as a pre-rung — only when the interpreter already exists on PATH (detect-never-impose; absent interpreters are recorded in `acceptance.json.syntax_skipped`, never installed). A syntax failure is recorded with NO retry (syntax is deterministic) and halts **`build_broken`**. Deterministic home (documented choice): the rung lives INSIDE the B4 writer — one writer, one hook-guarded artifact — so the syntax evidence is auditable in `acceptance.json` next to the acceptance verdicts instead of a second unguarded artifact.
 
@@ -84,10 +90,10 @@ halt:
 
 ## Feeding results into the panel
 
-The merged L0 JSON (gate results + skips) is appended to each review-panel lens prompt as a `## Deterministic scan results` block. Lenses do NOT re-report machine-caught findings; the security lens verifies blockers were addressed and hunts what scanners can't see (authz semantics, architectural drift). This keeps the blind protocol intact — L0 output is machine fact, not another lens's opinion.
+The wrapper's stdout JSON — gate results, skips, `not_run[]` — is the merged L0 JSON, appended verbatim to each review-panel lens prompt as a `## Deterministic scan results` block (the controller pastes it; it never re-assembles or summarizes the per-gate results). Lenses do NOT re-report machine-caught findings; the security lens verifies blockers were addressed and hunts what scanners can't see (authz semantics, architectural drift). This keeps the blind protocol intact — L0 output is machine fact, not another lens's opinion.
 
 ## Config + opt-out
 
-- `.mega-sdd/config.yaml` → `code_gates: true` (default). `false` disables gates 1–2, 4, and 6 (toolchain + SAST + advisory dep-authorization) for the project; **secrets (gate 3) and dep-existence (gate 5) always run** — they are the critical + un-promptable pair.
-- CLI `--no-code-gates` — same scope as `code_gates: false`, one run only; logged in the bolt-report.
+- `.mega-sdd/config.yaml` → `code_gates: true` (default). `false` disables gates 1–2, 4, and 6 (toolchain + SAST + advisory dep-authorization) for the project; **secrets (gate 3) and dep-existence (gate 5) always run** — they are the critical + un-promptable pair. The key is read by `run-code-gates.sh` itself — the controller does not pre-check it.
+- CLI `--no-code-gates` — same scope as `code_gates: false`, one run only; forwarded to `run-code-gates.sh` as its `--no-code-gates` flag; logged in the bolt-report.
 - Tool installation: semgrep + gitleaks ship in the `/mega-sdd:install-deps` matrix; every gate degrades gracefully without them per the table above.

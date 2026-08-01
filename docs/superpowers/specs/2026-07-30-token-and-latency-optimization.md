@@ -149,6 +149,89 @@ multi-squad already routes to the parallel procedure).
 *Constraint:* preserve `batch-and-fanout.md:18` "on any failure halt the entire `--all` run (no
 skip-ahead)" — wave-level parallelism only, never pipelining unit N+1 against unit N's review tail.
 
+> **DESIGN 2026-08-01 (tranche 2a/2c/2d).** The gap, stated precisely: the flag exists
+> (`execute-bolts --parallel`), the procedure exists (`batch-and-fanout.md` §`--all` step 3, with
+> the overlap rail), the auto-run exists (`chain-execution.md` diagnostics row: analyze-parallelism
+> runs before every chained execute-bolts invocation and its row claims the plan is "passed") — and
+> **no chain path connects them**: not one routing row, decision-matrix row, handoff row, or
+> pipeline example carries `--parallel`. 2a wires the existing pieces; it invents no mechanism.
+>
+> **The channel is in-context, not a flag.** There is no `--waves=` input and none is added. The
+> chain's auto-run invokes `analyze-parallelism.sh --format=json`; its `waves` array IS the
+> `depends_on` topological layering, and it is already sitting in the controller's context when the
+> next phase dispatches. `execute-bolts --parallel` consumes it as the layering input when present;
+> a standalone `--parallel` run (no plan in context) computes its own grouping exactly as today. In
+> BOTH cases the **target_files overlap rail is applied by execute-bolts itself, per wave, at
+> dispatch time** — the script does not compute it, deliberately: the rail lives with the
+> dispatcher, so a stale or hand-edited plan can never bypass it (units in the same wave whose
+> whitelists intersect still serialize).
+>
+> **Failure semantics at the wave boundary** (the constraint above, made operational): when any
+> unit in the in-flight wave records a failure (implementer BLOCKED, L0 blocking halt, panel
+> `review_critical_unresolved`, post-flight violation), the controller **completes the detect-after
+> pipeline for every unit already dispatched in that wave** — their commits have already landed;
+> abandoning them would leave landed commits with no verdict trail (and trip B1/B2/B4 at the next
+> gate anyway) — and **dispatches no further unit and no further wave**. "No skip-ahead" = never
+> START new work past a failure; it never meant discard verdicts on work already committed. The
+> next wave dispatches only after the current wave's panels have ALL merged clean — never pipelined
+> against a review tail.
+>
+> **Sites — ROUND-1 CORRECTION 2026-08-01: "all prose/routing, no script change" was WRONG.** The
+> blind static reviewer found the gap statement itself had a hole: the routing rows were ported to a
+> SCRIPT in the v5 state-engine work, and `routing-rules.md:56` sits in the "Derived-position map
+> (script default ↔ matrix row)" table — it DOCUMENTS `scripts/_lib/state_probes.py:773`'s output.
+> Editing the doc without the engine left the front door (`/mega-sdd` proposes from
+> `derived.proposed_next`) dispatching sequential while every prose surface and fixture claimed
+> parallel, with `tests/state/test-derive-state.sh` f6 pinning the divergence CI-green. Fixed in the
+> same round: the engine's `units_pending_bolts` chain now emits `--all --parallel`, the f6 fixture
+> pins it, and `test-2a2d-chain-parallel.sh` pins the ENGINE (not just its docs). The
+> `maintenance_sync` proposal entry stays bare `execute-bolts` deliberately — sync-lane bolt args
+> arrive from the generate-units `--reconcile` handoff at dispatch time, which now carries the flag.
+> Prose/routing sites as originally listed: `routing-rules.md` :56 `units_pending_bolts` row,
+> :86 decision-matrix row, :157 1-phase chain row (each `execute-bolts --all` → `--all --parallel`;
+> the `--per-squad` leg is untouched — its procedure is already parallel by construction);
+> `orchestrate-flow/SKILL.md` step-6 pipeline example; `handoff-contract.md` generate-units routing
+> row + `generate-units/references/auto-and-memory.md` emission (`suggested_args:
+> ["--all", "--parallel", "--auto"]`); `chain-execution.md` diagnostics row reworded to name the
+> actual channel (JSON in context) instead of asserting an unspecified "passed";
+> `batch-and-fanout.md` §`--all` step 3 gains the wave-plan-consumption sentence + the boundary
+> semantics above; `execute-bolts/SKILL.md` `--parallel` flag text gains one line (chain runs
+> receive the flag from routing; wave plan consumed when in context). Trigger-test fixtures that
+> pin the proposed args are updated in the same change. **The flag DEFAULT stays sequential**
+> (`batch-and-fanout.md:16` remains true): 2a changes what the chain passes, not what the skill
+> defaults to — standalone suggestions outside the chain (generate-units completion line, README)
+> deliberately keep plain `--all`.
+>
+> **Gain basis, honestly labelled:** the 2.5–2.7× figure is the audit's DAG estimate under the
+> analyze-parallelism speedup model ("1 bolt = 1 min, unlimited parallel — an estimate, not a
+> promise", the script's own label). Real wall-clock depends on each vault's DAG shape and is not
+> synthetically measurable here; no measured wall-clock is claimed and none should be quoted as one.
+>
+> **ROUND-1 rails (same blind round as the sites correction — same-tree wave concurrency was
+> activated-by-default with unspecified semantics; all four specified in `batch-and-fanout.md
+> §--all` + the agent body, none left as hand-waves):**
+> - **In-flight cap, concrete:** wave dispatch is bounded (default 5 concurrent implementers,
+>   cap-sized slices; the same bound stated in `squad-subagent.md`, which previously said only
+>   "a sensible in-flight cap"). Unbounded fan-out was the I2 finding — each bolt later fans out
+>   panel lenses, and the platform's concurrent-task comfort zone is finite.
+> - **Per-unit gate ranges:** wave commits interleave, so `wave-base..wave-head` is no unit's
+>   range. The atomic-commit contract + the canonical commit identity give each unit's L0 run its
+>   OWN commit (`<its-commit>^..<its-commit>`; re-dispatch scans the unit's commit SET, one call
+>   per commit, results merged — the S7 "never fix-commit-only" purpose preserved without
+>   attributing sibling commits). Under sequential execution this is byte-identical to the shipped
+>   `bolt-base..new-head`.
+> - **Index contention:** concurrent commits into one branch race on git's index.lock; the
+>   `bolt-implementer` contract now names it CONTENTION — bounded retry, never `BLOCKED` — so a
+>   benign race cannot manufacture a wave halt (detector-as-chain-killer, blocked).
+> - **Shared test state:** acceptance runs inside a wave share project test state; the named valve
+>   is `--worktree` (per-bolt isolation) or dropping the flag at the chain's Edit step — disclosed
+>   in the procedure, never a silent hazard. Full worktree-coupling as the wave default was
+>   EVALUATED and REJECTED this round: the `--worktree` flag's merge-back procedure is one line of
+>   prose today — too thin to carry a default; revisit only with a real worktree procedure spec.
+> - Also fixed in-round: `commands/analyze-parallelism.md` Step-3 suggested `--per-squad --parallel`
+>   unconditionally — a form that HALTS on single-squad vaults by procedure; now squad-count-
+>   conditional. Consumed wave plans skip already-completed units explicitly (resume-safe).
+
 **2b — move bolt dispatch-prompt assembly into a script.** ~9KB/bolt of pure copy/filter/sort/cap
 logic, currently model-assembled **and materialized twice**. **Gain:**
 
@@ -299,8 +382,104 @@ turns per bolt, re-run on every panel re-dispatch. **Gain: macOS ~14–29 min, W
 *Constraint (hard):* the wrapper **must** preserve the cheap→expensive short-circuit, or it does
 strictly more subprocess work than today on a blocking run — a regression on the target platform.
 
+> **DESIGN 2026-08-01 (tranche 2a/2c/2d).** One new script, `scripts/run-code-gates.sh` — the
+> single-call L0 executor. It composes the five existing gate scripts **as-is** (subprocess calls,
+> zero reimplementation: `detect-toolchain.sh`, `scan-secrets-code.sh`, `run-code-scan.sh`,
+> `validate-new-deps.sh`, `check-dep-authorization.sh` — the last with its space-separated arg
+> style preserved) plus the detected toolchain commands, in the shipped gate order, and emits ONE
+> merged JSON to stdout: the exact payload the controller pastes verbatim as the
+> `## Deterministic scan results` block into every lens prompt. The wrapper resolves its siblings
+> from its own directory (`dirname $0`), which retires the per-bolt plugin-root resolver block that
+> `code-gates.md` used to carry — one fewer Bash turn before any gate even ran.
+>
+> **Contract.** Args (house `--key=value`): `--cwd=` `--base=` `--head=` required; `--unit=`
+> optional (absent → gate 6 recorded as a SKIP with reason, never silently dropped);
+> `--no-code-gates` flag = the CLI opt-out; the `.mega-sdd/config.yaml` `code_gates: false` key is
+> read by the wrapper itself — both skip gates 1–2, 4, 6 while **gates 3 (secrets) and 5
+> (dep-existence) always run**, the un-disableable pair, unchanged. Exit codes: **0** = ran, no
+> blocking finding (non-blocking findings ride in the JSON for the panel); **1** = a BLOCKING
+> finding — the JSON carries the `halt` object (`secret_in_code` / `sast_critical_finding` /
+> `dep_not_found`) and the controller emits that halt exactly as before; **2** = usage/environment
+> error (bad args, unresolvable base/head, no python3) — nothing scanned, never reported clean.
+> Every toolchain command runs under a per-command timeout (120s, mirroring the Bash-tool bound the
+> controller had); a timeout is a visible per-gate failure note, never a hang and never a silent
+> pass. Formatter `fix_cmd` auto-fix + re-check behavior is carried INTO the wrapper verbatim from
+> the code-gates.md table, and any mutation it makes is disclosed in the JSON
+> (`format.fix_applied: true`) so the controller sees the tree changed.
+>
+> **The short-circuit, made structural (the hard constraint above):** the wrapper runs gates in
+> order and STOPS at the first BLOCKING result — later gates are recorded in `not_run[]`, their
+> subprocesses never spawned. The test proves this behaviorally, not by trusting the JSON: a PATH
+> shim `semgrep` that writes a marker file when invoked is planted, a secret-bearing commit is
+> scanned, and the assertion is exit 1 + `secret_in_code` + **marker absent** (SAST never
+> executed). Degradation paths are untouched because they live inside the gate scripts themselves
+> (gitleaks runtime-failure → regex fallback stays in `scan-secrets-code.sh`); "a SKIP is visible,
+> never silent" carries into the merged JSON per gate.
+>
+> **What the controller does after 2c:** ONE Bash call per bolt attempt (a panel re-dispatch
+> re-enters at the same one call, over the same original-base..new-head range); paste stdout into
+> the lens prompts. The before-side turn count, from the shipped procedure: 1 resolver block +
+> 1 detect-toolchain + 2–4 toolchain check/fix commands + 4 gate scripts = **9–13 main-thread Bash
+> turns per attempt** (the audit's "13–16" included base/head resolution and re-runs) → **1**.
+> Wall-clock gain stays the audit's estimate (macOS ~14–29 min, Windows ~25–40 min per 40-unit
+> run); the wrapper's own runtime is measured at ship time and reported as an absolute, not
+> folded into that estimate.
+>
+> **MEASURED 2026-08-01 (n stated per arm, macOS warm):** wrapper floor — gitleaks/semgrep absent,
+> fallback/skip paths — median **0.637 s/bolt** (n = 10, min 0.455 · max 1.415); with both tools
+> live median **7.06 s/bolt** (n = 5), dominated by `semgrep --config auto`'s registry pull — a
+> per-run TOOL cost identical in the per-turn flow it replaced, never quoted as wrapper overhead.
+>
+> **ROUND-1 (blind execution review, 2026-08-01) — 1 Critical + 2 Important + 7 Minor, all folded
+> before ship:**
+> - **Critical — unknown gate exit codes fell through to "pass".** The gate scripts call bare
+>   `python3` internally; on the documented WindowsApps alias-stub environment (the v5.4.0 P0
+>   history) every gate exits 49 while the wrapper's own resolve-python interpreter works — the
+>   reviewer produced a run where a SECRET-bearing diff was certified clean at exit 0. Fixed:
+>   per-gate rc sets are now closed — secrets {0,1} and new-dep {0,2-with-JSON} die exit-2 on
+>   anything else (nothing certified), SAST degrades to a visible SKIP, and the test reproduces
+>   the stub environment deterministically (a `WindowsApps/python3` stub + real `python`) proving
+>   exit 2, never 0.
+> - **Important — gate-6 vanished from the record on any short-circuit without `--unit`** (the
+>   skip was recorded only when execution REACHED gate 6). Fixed structurally: skips for gates
+>   decided off are recorded UP FRONT, and the test asserts a gate-accounting invariant — every
+>   gate in exactly one of gates-ran/skips/not_run — on every path.
+> - **Important — the config read matched a NESTED `code_gates:` key, last match winning** (an
+>   off-schema nested block could silently disable SAST project-wide). Fixed: top-level key only,
+>   first match wins, quoted values honored.
+> - Minor, all folded: failing `fix_cmd` disclosed (`fix_rc`, re-check's output in `output_tail`,
+>   die-path stderr warning when a fix already mutated the tree); the formatter-dirt aftermath
+>   given an owner (controller commits the fix under the unit identity — pre-flight 3 enforces);
+>   unresolvable `--unit` and a requested-but-unparseable `--pack` are visible notes, never silent
+>   degradation; `range{}` pins resolved 40-hex SHAs; an internal crash exits 2, never 1 (exit 1
+>   is only ever a blocking finding with its JSON present). The reviewer's process-group-kill fix
+>   for timed-out command trees (M6) was IMPLEMENTED and then REVERTED: it requires a bare
+>   `subprocess.Popen`, which the repo's bounded-subprocess law
+>   (`tests/hooks/bounded-subprocess.test.sh` — every `subprocess.*` call carries `timeout=` on
+>   the call itself) structurally forbids, and weakening that hook-tier scanner to fit new code is
+>   the exact class this round exists to catch. The law wins; the residue — an orphan grandchild
+>   of a timed-out toolchain command may briefly survive the direct-child kill — is disclosed in
+>   the wrapper header and stands as a known Minor.
+> - Carried open (Windows-only, unconfirmed by execution): the CPython `subprocess` reader-thread
+>   hang past timeout when orphan grandchildren hold pipes, and native-Windows path-style OSError
+>   handling — both land in the Windows validation lane, not this tranche.
+
 **2d — one-line: `extract-intelligence` `--max-parallel` default 3 → 5.** 6 → 4 sequential agent
 batches = **1.5×** on the agent-batch portion.
+
+> **DESIGN 2026-08-01 (tranche 2a/2c/2d).** Flip sites: `extract-intelligence/SKILL.md` flag line
+> (`default 3` → `default 5`; the soft-warn >5 and hard cap 8 stay), `commands/extract-intelligence.md`
+> flag doc, and `orchestrate-flow/references/predictive-checks.md` `subagent_capacity_reasonable`
+> `on_fail` text — which still asserts "the empirical optimum is 3 (the default)" and carries a
+> garbled ".0+ per audit" fragment; both are replaced. **Supersession, stated:** the "optimum 3"
+> claim predates 5d — its basis was per-dispatch coordination overhead in the era when every wave
+> dispatch was model-assembled (~large output per in-flight subagent). After 5d moved the invariant
+> contract into the `domain-extractor` body and the mechanical injections into
+> `.dispatch-static.md`, the per-dispatch output is a compact variable core, so the overhead
+> ceiling that justified 3 no longer exists; 5 stays under the platform's ~10-concurrent-task
+> comfort zone and under the existing soft-warn line. Gain arithmetic unchanged: `ceil(N/3) →
+> ceil(N/5)` batches; at the audit's 18-domain corpus that is 6 → 4 = **1.5×** on the agent-batch
+> portion. No new measurement is claimed.
 
 ---
 

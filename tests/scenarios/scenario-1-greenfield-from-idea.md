@@ -43,7 +43,7 @@ You'll see a chain proposal:
 Proposed pipeline (--deep):
   1. generate-intent --from-prompt "build a clinic appointment system..."
   2. generate-units                                  → atomic implementation units
-  3. execute-bolts --all                             → code commits per unit
+  3. execute-bolts --all --parallel                  → code commits per unit
 
 Halts may re-engage you mid-chain (test failures, business OQ resolutions,
 hard-rule violations, dedup ambiguity, recommendation reviews). Otherwise
@@ -148,7 +148,7 @@ ls .mega-sdd/vaults/clinic-app/units/
 
 ## Step 6 — Phase 3: execute-bolts
 
-Mega-sdd auto-runs `execute-bolts --per-squad --parallel` (single squad mode in this scenario):
+Mega-sdd auto-runs `execute-bolts --all --parallel` (single squad in this scenario — `--per-squad` needs ≥2 squads):
 
 ```
 ▶ Phase 3 of 3: invoking execute-bolts (using wave plan)
