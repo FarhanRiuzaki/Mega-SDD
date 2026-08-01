@@ -581,6 +581,75 @@ operator's Windows/CrowdStrike floor applied uniformly.
 - **4f (L3-5)** — memoize B1 recompute inside the blocking hook. Magnitude deliberately
   unquantified pending a run with real bolt commits.
 
+> **DESIGN 2026-08-01 (tranche 4, first release: 4a+4b+4c only).** Phase 4 ships in TWO releases,
+> deliberately: 4a/4b/4c are the two HIGHs + the largest MED and live on the hook side; 4d/4e/4f
+> are deferred to the follow-up — 4f touches the B1 recompute (the single riskiest moat surface in
+> the set; it gets its own round), 4e's debounce is safe ONLY because of the gate-time re-derive
+> architecture and deserves an unhurried proof, 4d is LOW. Splitting keeps each release's blast
+> radius reviewable — the lesson of every prior tranche on this spec.
+>
+> **4a-i — the pack resolver gets a derived cache with a ZERO-EXEC hit path.**
+> `_lib/resolve-framework-pack.sh` is the chokepoint 4 gate-firing validators call (ui-quality,
+> cross-cutting, sibling-consistency, flow-coverage) — each call pays ~3 subshells + a python spawn
+> for input that changes only when two project files or the pack files change. New: a derived cache
+> under `<root>/.mega-sdd/.cache/pack-resolver/` (one file per `--section`/chain request, storing
+> the exact stdout + the resolved chain + input-file existence fingerprint). **Hit-path validity is
+> decided with bash BUILTINS only** — `[ -f ]` existence parity for `starterkit-context.yaml` /
+> `codebase-map.md` and `[ cache -nt input ]` for BOTH project inputs, EVERY pack file in the
+> cached chain, and the pack ROOT dir (a newly-added more-specific pack changes the dir mtime) —
+> zero execs, no python, stdout byte-identical to a cold run. Any doubt (missing helper, mismatch,
+> unreadable cache) falls through to the current cold path, which then rewrites the cache. The
+> resolver's "writes NO state file" contract is amended honestly: the cache is DERIVED and
+> DISCARDABLE (deleting it costs one cold resolve), never state. `-nt`'s "true when file2 is
+> missing" hazard is neutralized by the recorded existence fingerprint.
+>
+> **4a-ii — the five `validate-bolt-artifacts.sh` gate/Stop calls become ONE composable call.**
+> The scan flags are already independent if-blocks; the change makes them COMPOSABLE in a single
+> invocation (`--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan
+> --acceptance-scan`) sharing one bash spawn + one project-root resolve, and both call sites
+> (pre-tool-use execute-bolts gate block, Stop hook) collapse 5 spawn-chains → 1. Each mode's
+> python heredoc + its state file + its verdict semantics are byte-unchanged — this is call-site
+> consolidation, NOT a scan merge; the deeper one-python merge from the research's 40→8 ceiling is
+> explicitly out of scope until measured need.
+>
+> **4b — plumbing execs on the 8 hook entry tops become builtins.** The always-paid per-firing
+> plumbing (`sed|head` cwd extraction, `$(dirname)` subshells, `date -u` where a timestamp is
+> non-essential, config `grep`) is replaced with bash builtins: `[[ =~ ]]`/`BASH_REMATCH` for the
+> stdin cwd extraction (same regex semantics as the shipped sed — first match wins), `${0%/*}` for
+> script-dir derivation, builtin `read`-loop config probing. The extraction MUST stay byte-
+> equivalent on the paths the shipped sed accepted — pinned by comparing both extractors over a
+> corpus of stdin shapes (incl. Windows `\\`-escaped paths, the documented hazard class).
+>
+> **4c — the Stop hook's five artifact scans run only on turns that could change their verdict.**
+> Guard today: `[ -d .mega-sdd ]` — 5 validator spawn-chains (~40 execs) on EVERY turn end. New
+> guard, checked first with ~3 execs (git rev-parse + find + the stamp read): a stamp file `.mega-sdd/.stop-scan-stamp` records the HEAD
+> sha at the last scan; the scans re-run when (a) `git rev-parse HEAD` differs from the stamp,
+> (b) anything under `.mega-sdd/` (or legacy `docs/mega-sdd/`) is newer than the stamp
+> (`find -newer` with memory/, .cache/, and the four auto-analyze report outputs pruned —
+> broader than the bolts/ tree, in the safe direction; SUBDIRECTORY deletions caught via dir-mtime — under `-mindepth 1` a direct root-child deletion is invisible, and the stale side there is a recorded FAIL: over-blocking, never open), (c) the stamp is absent, or (d) HEAD is
+> unresolvable (fail toward scanning). All five scans key on commits + evidence artifacts, so the
+> two probes cover every input; a skipped turn leaves the state files exactly as the last scan
+> wrote them — still-true verdicts, and the PreToolUse gate re-derives all of them anyway (the
+> S6 EB-GATE-1 block), so a stale skip can never open a gate. The stamp is written ONLY after the
+> five scans complete (a crash re-scans next turn — fail toward scanning).
+>
+> **ROUND-1 (blind static trace, 2026-08-01) — 0 Critical (the gate re-derive holds), 7 Important,
+> all folded:** the turn-gate NEVER skipped in telemetry-active projects (the hook's own auto-analyze
+> tail rewrites four report files after the stamp — now pruned, plus `-mindepth 1` because the
+> `.mega-sdd` ROOT dir's mtime bumps on every direct-child write; a telemetry-fixture test arm now
+> proves the skip where the saving was claimed); a failed `find` probe read as "no change" (fail-away
+> — now rc-checked: doubt scans); Windows-native python wrote the cache CRLF so it NEVER validated on
+> the target platform (writer pins `newline="\n"`, reader strips a trailing CR); the resolver header
+> still claimed "writes NO state file" (amended at the contract itself); a resolver-CODE change did
+> not bust the cache (`$0` is now an input); the cache writer could MINT `.mega-sdd/` in non-adopted
+> projects (EB-GATE-6 — now gated on the dir existing); the two new hook-consumed files were outside
+> the anti-self-bypass guard (`.stop-scan-stamp` + `.cache/pack-resolver/` added to both deny
+> surfaces). Minor folded: "zero-exec hit" overclaim reworded (zero PYTHONS is the proven property;
+> the prologue keeps two dirname subshells), the "each turn end" prose sites turn-gated, spec probe
+> wording tightened to what shipped, `.gitignore` + `paths.md` cover the two new derived artifacts.
+> Carried open (PLAUSIBLE, disclosed): the sub-second read-then-write race on ns-precision bash
+> (parallel-sessions lane; safe direction preserved).
+
 ---
 
 ## Phase 5 — cost-only levers (accept the latency penalty; decide by the payback rule)

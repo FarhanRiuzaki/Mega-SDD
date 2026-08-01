@@ -52,6 +52,13 @@ mk() { # $1=tool $2=tool_input JSON $3=cwd
 }
 tally() { # $1=payload $2=OSTYPE value -> prints exec count
   : > "$CNT/py"
+  # Exec-count equality between arms is this test's PROXY for "Windows dispatches
+  # like POSIX". The pack-resolver's derived cache (spec §4a-i) legitimately makes
+  # a WARM run spawn fewer pythons than a COLD one, which breaks the proxy's
+  # identical-starting-state assumption without touching the property under test —
+  # so every tally starts cache-cold. (Deleting the cache is always safe: it is
+  # derived and discardable by contract.)
+  rm -rf "$P/.mega-sdd/.cache" 2>/dev/null
   printf '%s' "$1" | OSTYPE="$2" PATH="$SHIM:$PATH" bash "$HOOK" >/dev/null 2>&1
   wc -l < "$CNT/py" | tr -d ' '
 }

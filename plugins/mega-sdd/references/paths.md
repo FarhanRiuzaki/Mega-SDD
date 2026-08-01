@@ -237,3 +237,8 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 
 - `commands/migrate-paths.md` — migration helper
 - `plugins/mega-sdd/references/upgrade-from-old-version.md` — legacy-layout upgrade guide
+
+## Derived caches (never state)
+
+- `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Never committed (gitignored), never read as project state.
+- `<root>/.mega-sdd/.stop-scan-stamp` — the Stop hook's turn-gate stamp (HEAD sha at the last artifact scan). Absence simply means the next Stop scans; never committed.

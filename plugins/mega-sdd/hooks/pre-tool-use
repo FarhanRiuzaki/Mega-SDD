@@ -27,7 +27,12 @@
 
 set -uo pipefail
 
-STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+# stdin read with a BUILTIN (spec §4b — this hook fires on every Bash/Edit/Write/
+# Skill call; the `cat` exec was pure plumbing). read -d '' consumes to EOF (JSON
+# carries no NUL); rc is non-zero at EOF by design, hence the `|| true`.
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true
+[ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ────────
 # Speed: the matcher is global (Skill|Bash|Edit|Write), so EVERY such tool call in
@@ -36,14 +41,28 @@ STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 # and exit 0 BEFORE paying a python3 cold-start (~30-150ms) when there is no
 # .mega-sdd ancestor. This is MOAT-NEUTRAL by construction: it fires ONLY when no
 # .mega-sdd exists — mutually exclusive with the fall-through path that reaches the
-# gates, so it can never bypass invariant #2 or any other gate. It uses the SAME
-# pure-sed cwd extraction (cf. the python-absent fallback below) and the SAME
-# resolve_project_root walk-up as the authoritative gate, so its .mega-sdd decision
-# is byte-identical. When the cwd can't be extracted OR the resolver helper is
-# absent, it does NOT short-circuit — it falls through to the authoritative path.
-SC_CWD=$(printf '%s' "$STDIN_JSON" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+# gates, so it can never bypass invariant #2 or any other gate. It uses a BUILTIN
+# cwd extraction (spec §4b) equivalent to the historical `sed -n 's/.*"cwd"…/p' |
+# head -1` on the single-line JSON the harness emits: greedy `.*` = LAST match
+# wins, reproduced by looping [[ =~ ]] to the final occurrence (pinned by the
+# corpus parity test), and the SAME resolve_project_root walk-up as the
+# authoritative gate, so its .mega-sdd decision is byte-identical. When the cwd
+# can't be extracted OR the resolver helper is absent, it does NOT short-circuit —
+# it falls through to the authoritative path.
+SC_CWD=""
+SC_REST="$STDIN_JSON"
+while [[ "$SC_REST" =~ \"cwd\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+  SC_CWD="${BASH_REMATCH[1]}"
+  SC_REST="${BASH_REMATCH[2]}"
+done
 if [ -n "$SC_CWD" ]; then
-  SC_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+  # Script-dir via parameter expansion (no dirname exec); $0 is absolute in the
+  # shipped dispatch (run-hook.sh) — the subshell fallback covers a relative $0.
+  SC_SCRIPT_DIR="${0%/*}"
+  case "$SC_SCRIPT_DIR" in
+    /*) ;;
+    *) SC_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+  esac
   SC_RPR="${SC_SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
   if [ -f "$SC_RPR" ]; then
     # shellcheck disable=SC1090
@@ -145,7 +164,13 @@ if [ -z "${CWD:-}" ]; then exit 0; fi
 # operates inside .mega-sdd/knowledge-base/). Without walking up, ${CWD}/.mega-sdd/
 # → .mega-sdd/knowledge-base/.mega-sdd/ (nested). resolve_project_root walks UP
 # to the outermost .mega-sdd/ parent. Fallback: original CWD.
-SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+# Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
+# absolute in the shipped dispatch; the subshell fallback covers relative $0.
+SCRIPT_DIR_RPR="${0%/*}"
+case "$SCRIPT_DIR_RPR" in
+  /*) ;;
+  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 if [ -f "$RPR_HELPER" ]; then
   # shellcheck disable=SC1090
@@ -438,19 +463,15 @@ except Exception as e:
         # its own branch. Same doctrine as the moat: a stale, absent, or forged
         # state is overwritten with current truth BEFORE the aggregator reads
         # it (this also neutralizes any Bash-forged PASS — EB-GATE-5).
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --batch-suite-gate --quiet >/dev/null 2>&1 || true
-        # B1 recompute-at-gate: --recompute re-executes each committed Hard-rule bolt's
-        # mechanical rules from git/fs ground truth and OVERWRITES its postflight.json
-        # before the state is derived — a forged/stale evidence artifact cannot open the
-        # gate. (The 6 state files are already re-derived; this extends it to B1's artifact.)
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --postflight-scan --recompute --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --whitelist-scan --quiet >/dev/null 2>&1 || true
-        # B4 acceptance evidence (P4 v4.96.0): commit-keyed — only bolts whose
-        # commits carry the SDD-Acceptance:v5 trailer can FAIL this state; legacy
-        # bolts are advisory-only. Like B2 the artifact is READ, never re-executed
-        # here (re-running acceptance tests in a hook is the forbidden inflation).
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --acceptance-scan --quiet >/dev/null 2>&1 || true
+        # The five bolt-artifact scans run as ONE composable invocation (spec §4a-ii)
+        # — one bash spawn-chain instead of five; every scan's python, state file, and
+        # verdict are unchanged. Still here: B1 recompute-at-gate (--recompute
+        # re-executes each committed Hard-rule bolt's mechanical rules from git/fs
+        # ground truth and OVERWRITES its postflight.json before the state is derived
+        # — a forged/stale evidence artifact cannot open the gate) and B4 acceptance
+        # evidence (commit-keyed; the artifact is READ, never re-executed here —
+        # re-running acceptance tests in a hook is the forbidden inflation).
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-cross-cutting-registration.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -771,6 +792,7 @@ if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
 # forged PASS in any of them opened its execute-bolts hard block. .plan-pending /
 # .iter-classifier.json stay OUT (documented orchestrate-flow write paths).
 _GUARDED = (
+    ".stop-scan-stamp",
     ".validation-blockers.json", ".unit-spec-state.json", ".flow-coverage-state.json",
     ".sibling-consistency-state.json", ".ui-quality-blockers.json",
     ".cross-cutting-state.json", ".bolt-orphans-state.json",
@@ -794,6 +816,14 @@ if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUAR
 # the gate READS it (B2-style, never recomputed in the hook), so one plain
 # Write of {status:pass} would clear a documented hard block; sanctioned
 # writer: scripts/run-acceptance-tests.sh.
+elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
+    # Round-1 CRIT-1 (tranche 4): the resolver cache is a hook-consumed input to
+    # four blocking gates and validates by mtime alone — a Write-forged cache
+    # (rc=3 meta) flips a real FAIL to SKIP and the gate re-derive re-reads the
+    # poison. Sanctioned writer: the resolver itself (python, not the agent).
+    # The Bash lane already denies this path; this closes the Write/Edit lane
+    # (the _GUARDED tuple is exact-basename and cannot express the path).
+    print("evidence")
 elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance)\.json|_batch-suite\.json)$", rel):
     # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
@@ -921,7 +951,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -948,7 +978,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json'
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
