@@ -17,7 +17,7 @@ The anti-hallucination gate. Each unit's `## Hard rules` are validated against r
 
 ## Pre-flight: grammar detection
 
-The entire pre-flight (grammar detection → per-rule validation → snapshot capture) is **executed by `scripts/run-preflight-scan.sh --cwd=<root> --unit=U-XXX`** — the deterministic writer. The controller runs the script and maps its exit code to the halt taxonomy; it never computes shas or emits the JSON itself (the artifact is hook-guarded — see §`preflight.json` format):
+The entire pre-flight (grammar detection → per-rule validation → snapshot capture) is **executed by `scripts/run-preflight-scan.sh --cwd=<root> --units=U-001,U-002,…`** — the deterministic writer, called ONCE per batch with every target unit (`--unit=U-XXX` remains valid for a single unit). The controller runs the script and maps its exit code to the halt taxonomy; it never computes shas or emits the JSON itself (the artifact is hook-guarded — see §`preflight.json` format). Batch semantics: a FATAL code (3/4/5/6/8) stops the batch at the offending unit (named on stderr, unprocessed remainder listed); **exit 2 is a PRE-LOOP abort** (unresolvable unit id / usage / not a git repo) — nothing was processed, no baseline written for any unit, no remainder listing; exit 7 is per-unit and non-fatal — the batch continues and the final exit is 7 iff ≥1 unit was refused (each named on stderr):
 
 | Exit | Meaning → controller action |
 |---|---|

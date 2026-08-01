@@ -792,7 +792,7 @@ if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
 # forged PASS in any of them opened its execute-bolts hard block. .plan-pending /
 # .iter-classifier.json stay OUT (documented orchestrate-flow write paths).
 _GUARDED = (
-    ".stop-scan-stamp",
+    ".stop-scan-stamp", ".ptu-scan-stamp",
     ".validation-blockers.json", ".unit-spec-state.json", ".flow-coverage-state.json",
     ".sibling-consistency-state.json", ".ui-quality-blockers.json",
     ".cross-cutting-state.json", ".bolt-orphans-state.json",
@@ -831,7 +831,7 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
     print("evidence")
 ' 2>/dev/null)
       if [ "$FP_GUARD" = "protected" ]; then
-        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
+        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger — plus the derived scan stamps .stop-scan-stamp / .ptu-scan-stamp) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
       fi
       if [ "$FP_GUARD" = "evidence" ]; then
         emit_block "Blocked: direct Write/Edit of a B1/B2/B4 evidence artifact (preflight.json / postflight.json / acceptance.json / _batch-suite.json). These are produced ONLY by their deterministic writers — run \`bash <plugin>/scripts/run-preflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (captures the pre-flight Hard-rule BASELINE snapshot), \`bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (executes the unit's Hard rules and records verdicts), \`bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX\` (re-executes the unit's acceptance_test entries + the L0 syntax floor and records the B4 evidence) or \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` (runs the FULL suite and records the result at the pinned HEAD). A hand-written artifact is a forged gate verdict — and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). Human user can still modify these files via shell outside the agent."
@@ -951,7 +951,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -978,7 +978,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
+    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.

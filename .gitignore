@@ -51,6 +51,7 @@ __pycache__/
 .env
 .env.local
 
-# mega-sdd derived caches + stop-scan stamp (tranche 4 — derived, never state)
+# mega-sdd derived caches + scan stamps (tranche 4 — derived, never state)
 **/.mega-sdd/.cache/
 **/.mega-sdd/.stop-scan-stamp
+**/.mega-sdd/.ptu-scan-stamp

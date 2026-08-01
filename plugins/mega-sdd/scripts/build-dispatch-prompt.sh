@@ -1196,8 +1196,12 @@ for p in TARGET_PATHS:
 #      GIT-TRACKED, and walk_unit_commits exists ONLY to pick HALT vs ADVISORY.
 #      The builder stamps a LABEL and never halts, so it needs neither.
 # The two regexes and the `<`-skip rule below are copied VERBATIM from
-# check-anchor-freshness.sh:94/100/103-104 so the two probes can never disagree
-# about what an anchor IS. execute-bolts Step 3.7 keeps invoking the SCRIPT and
+# check-anchor-freshness.sh (its TOKEN regex, its `## Anchors` section regex,
+# and its `<`-prefix skip — line-number-free on purpose: the 4d batch refactor
+# rotted an earlier :NN pointer here) so the two probes can never disagree
+# about what an anchor IS; tests/token-efficiency/test-4de-batch-preflight-
+# ptu-debounce.sh pins the TOKEN regex literals byte-identical across both
+# files. execute-bolts Step 3.7 keeps invoking the SCRIPT and
 # keeps owning the `anchor_missing` halt — these are two distinct contracts.
 # NOT hoistable to one batch-start pass: "never a bind-era HIGH re-stamped
 # mid-batch" (:79) means the probe must reflect the tree at THIS bolt's assembly.
