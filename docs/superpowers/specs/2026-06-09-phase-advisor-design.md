@@ -232,3 +232,5 @@ The user's real PRD + starterkit: run generate-intent and bind-codebase, confirm
 - [x] Anti-halu rails symmetric with producer rails (evidence-required; read-only; distinct unavailable state).
 - [x] Channel verified against the codebase: advisor materializes canonical `### CONFLICT-NNN` at Step 2.12 (before counts/gate) → reaches Step 5 gate + `.validation-blockers.json` (`validate-handoff-binding-units.sh`) → execute-bolts PreToolUse hook.
 - [x] Moat-asymmetry rail present: advisor adds blockers autonomously, never auto-downgrades (invariant #2 protected).
+
+> **Superseded (2026-08-01, tranche 5c of `2026-07-30-token-and-latency-optimization.md`):** the intent-leg dispatch in this design ("reads vault + source" as pasted content) is superseded — Step 3.7 now dispatches PATHS + a compact seed under the seed-not-horizon contract; see spec §5c and `generate-intent/references/advisor-checklist.md`.

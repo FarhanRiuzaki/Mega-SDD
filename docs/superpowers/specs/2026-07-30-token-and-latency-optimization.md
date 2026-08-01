@@ -579,9 +579,34 @@ both downstream phases are forked (`routing-rules.md:92` + `scan-procedure.md:49
   pre-change baseline (and the synthetic map's 37.9 KB size lands on the same scale, which is
   consistency, not proof). Pinned by `tests/token-efficiency/test-derive-codebase-map.sh` —
   rails 1–4 proven behaviorally (incl. the mutate-on-disk no-rehash proof for rail 1).
-- **5c — intent-leg phase-advisor seed bundle.** The shipped fix was wired to the **bind leg only**.
-  15–50K per dispatch. **Invariant: a slice is a SEED the consumer expands from, never a CAP** —
-  ship a seed-not-boundary CONFLICT test.
+- **5c — intent-leg phase-advisor seed dispatch. SHIPPED v5.20.0 (2026-08-01).** The P7
+  slice-first fix was wired to the **bind leg only**; the intent leg's Step 3.7 still pasted the
+  drafted 7 vault files + the whole source into the fresh `phase-advisor` subagent —
+  **15–50K tok per dispatch, central ~30K (research §6.2 row 11's measurement; not re-measured
+  here — no live vault run exists in this repo to measure against, and the pasted-corpus size IS
+  the vault+source size, project-dependent by construction).** Unlike bind, the intent leg needs
+  **no bundle builder**: after Step 3 every claim, OQ text, and classification bracket the
+  advisor hunts (fabrication / missed_oq / misclassification / coverage_gap) is already ON DISK
+  — the five JSON-only recommend fields (`scan_query`/`recommendation`/`rationale`/
+  `scan_citations`/`fallback_if_wrong`) are NOT (they ride the Step-3.8 authored patch) and are
+  out of this pass's scope. The dispatch carries the vault DIR path + the source file PATHS +
+  the scope id / phase N-of-total on filtered runs + the OQ roll-up counts — a seed of a few
+  hundred bytes — with a **fail-closed pre-dispatch path check** (an unresolvable source is
+  `advisor: unavailable`, never clean) and two carve-outs (sibling-scope/out-of-phase source
+  sections are not `coverage_gap`s; MCP-loaded Figma has no path and never grounds a
+  `fabrication`). **The trade, stated, §5d-style:** the removed side is the pasted corpus as
+  main-thread OUTPUT at the 5.0× weight (research's 15–50K/dispatch — GROSS, project-dependent);
+  the advisor now re-reads much of the same corpus as fresh subagent INPUT at 1.0× — so the net
+  is the 5×→1× weight differential plus whatever the advisor's selective reads skip, and **no
+  net constant is quoted** because the corpus size is the project's. The seed-not-horizon
+  invariant ships as contract prose in BOTH homes; `coverage_gap` explicitly REQUIRES the
+  whole-on-disk-source sweep (inside the carve-outs), mirroring bind's `missed_match`
+  whole-map grep. Pinned by `tests/token-efficiency/test-5c-intent-advisor-seed.sh` —
+  **prose-contract pins** (both legs' expansion contracts, the no-paste dispatch shape,
+  bind parity, agent tools); the BEHAVIORAL seed-not-boundary fixture lives on the bind leg
+  (`tests/phase-advisor/test-advisor-bundle.sh`, which plants evidence outside the bundle and
+  proves it reachable), and the intent leg's rails are prose-tier by design — same tier as the
+  dispatch they guard.
 - **5d — extract-intelligence dispatch: invariant into the agent body, injections into a script.
   SHIPPED v5.18.0 (2026-08-01).** The research row's premise held (no template; the invariant was
   model-typed per dispatch) but its **~150K/run (~129K output) figure did NOT reproduce and is
@@ -691,7 +716,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c → 2a/2c/2d → 4 → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d → 4 → 5e → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now
