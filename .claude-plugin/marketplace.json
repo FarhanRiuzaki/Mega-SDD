@@ -10,7 +10,7 @@
       "name": "mega-sdd",
       "source": "./plugins/mega-sdd",
       "description": "Spec-Driven Development for AI dev: intent → units → bolts pipeline with anti-hallucination guarantees and brownfield codebase grounding.",
-      "version": "5.23.0",
+      "version": "5.24.0",
       "author": { "name": "Farhan Riuzaki" },
       "homepage": "https://scm.bankmegadev.com/ai-rnd/mega-sdd",
       "repository": "https://scm.bankmegadev.com/ai-rnd/mega-sdd.git",

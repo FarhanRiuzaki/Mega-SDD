@@ -500,6 +500,21 @@ else:
         if uid:
             bolted.setdefault(uid, sha)
 
+# §4f-ii: ONE single-shot \`git cat-file --batch\` serves every unit's at-commit
+# text read — the N-scaling child-process term of BOTH modes (one \`git show\` per
+# bolted unit per firing, gate lane AND Stop lane). Requests use the EXPLICIT
+# root-relative path (PREFIX+rel) — the same string the solo show used. Batching
+# only: the blob is re-read from git on EVERY firing; a failed/timed-out batch
+# returns {} and every read falls back to its solo git call.
+_TEXT_REQ = {}
+for _uid in bolted:
+    _uf = vault_layouts.find_unit_file(cwd, _uid)
+    if _uf:
+        _rel = os.path.relpath(_uf, cwd).replace(os.sep, "/")
+        if not _rel.startswith(".."):
+            _TEXT_REQ[_uid] = "%s:%s" % (bolted[_uid], (PREFIX + _rel) if PREFIX else _rel)
+_TEXT_BATCH = postflight_rules.batch_cat(cwd, list(_TEXT_REQ.values())) if _TEXT_REQ else {}
+
 def unit_text(uid, sha):
     """The unit's text — preferring its content AT the bolt commit (S6 EB-GATE-8:
     a retroactive unit edit — task_type flipped to verify, ## Hard rules blanked —
@@ -508,11 +523,21 @@ def unit_text(uid, sha):
     uf = vault_layouts.find_unit_file(cwd, uid)
     if not uf:
         return None
-    rel = os.path.relpath(uf, cwd)
+    rel = os.path.relpath(uf, cwd).replace(os.sep, "/")
     if not rel.startswith(".."):
-        r = git("show", "%s:%s" % (sha, (PREFIX + rel) if PREFIX else rel))
-        if r.returncode == 0 and r.stdout.strip():
-            return r.stdout
+        req = "%s:%s" % (sha, (PREFIX + rel) if PREFIX else rel)
+        if req in _TEXT_BATCH:
+            b = _TEXT_BATCH[req]
+            if b:  # non-empty blob at the commit — decode == text-mode show
+                t = b.decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
+                if t.strip():
+                    return t
+            # empty/missing at the commit: same fallthrough the solo show took,
+            # without paying the solo git call
+        else:
+            r = git("show", req)
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout
     try:
         return open(uf).read()
     except OSError:
@@ -617,7 +642,8 @@ def recompute_unit(uid, text):
         except (OSError, ValueError):
             prior = None
     results, ok_all = postflight_rules.scan_unit(
-        cwd, git, uid, text, all_commits.get(uid, []), preflight, "", prior_artifact=prior)
+        cwd, git, uid, text, all_commits.get(uid, []), preflight, "",
+        prior_artifact=prior, prefetch=_PREFETCH)
     artifact = {
         "unit_id": uid, "scanned_at": ts, "status": "pass" if ok_all else "fail",
         "head_sha": _HEAD, "written_by": "validate-bolt-artifacts.sh --recompute",
@@ -628,6 +654,62 @@ def recompute_unit(uid, text):
     with open(tmp, "w") as f:
         json.dump(artifact, f, indent=1)
     os.replace(tmp, target)
+
+# §4f prefetch (recompute lane): the rule-driven ground-truth reads collapse to
+# ≤4 alternation greps (SIGNATURE decls, spec §4f-i) + ONE cat-file --batch
+# (DEPS before/after pairs + parent probes, §4f-ii) instead of one child
+# process per rule/commit. Enumerated from the SAME lexer + STRICT productions scan_unit
+# runs; anything the enumeration missed falls back to its solo git call inside
+# scan_unit — verdicts byte-identical either way. This is BATCHING: every value
+# is re-derived from git on THIS firing; nothing carries across firings, and
+# recompute_unit still runs UNCONDITIONALLY for every obligated unit (the memo
+# was REJECTED — spec §4f trust analysis).
+_PREFETCH = None
+if recompute:
+    _sig_names, _parent_reqs, _blob_reqs = [], [], []
+    for _uid in sorted(bolted):
+        _t = unit_text(_uid, bolted[_uid])
+        if _t is None or task_type(_t) == "verify" or not has_hard_rules(_t):
+            continue
+        _lines, _v2 = postflight_rules.extract_hard_rules(_t)
+        for _raw in _lines:
+            for _rtype, _rx in postflight_rules.STRICT:
+                _mm = _rx.match(_raw)
+                if _mm:
+                    if _rtype == "SIGNATURE_RULE":
+                        _sig_names.append(_mm.group(1))
+                    elif _rtype == "DO_NOT_ADD_DEPS":
+                        _man = _mm.group(1)
+                        _man_x = _man[2:] if _man.startswith("./") else _man
+                        for _sha, _fl in all_commits.get(_uid, []):
+                            if any(_p == _man for _st, _p in _fl):
+                                # scan_unit reads via "rev:./path" (cwd-relative);
+                                # the batch requests the EXPLICIT root-relative
+                                # form (PREFIX+path) — same blob, no \`./\` magic.
+                                _parent_reqs.append("%s^" % _sha)
+                                _blob_reqs.append(("%s^:./%s" % (_sha, _man), "%s^:%s%s" % (_sha, PREFIX, _man_x)))
+                                _blob_reqs.append(("%s:./%s" % (_sha, _man), "%s:%s%s" % (_sha, PREFIX, _man_x)))
+                    break
+    _decls = postflight_rules.find_decl_lines(git, _sig_names) if _sig_names else {}
+    _cat = postflight_rules.batch_cat(cwd, _parent_reqs + [_e for _d2, _e in _blob_reqs]) \
+        if (_parent_reqs or _blob_reqs) else {}
+    _blob_map = {_d2: _cat[_e] for _d2, _e in _blob_reqs if _e in _cat}
+    _obj_map = {_r: (_cat[_r] is not None) for _r in _parent_reqs if _r in _cat}
+
+    class _Prefetch:
+        def decl(self, name):
+            # (decl, loc) or (None, None) = a RESULT (definitively not found);
+            # a name absent from the dict = MISS -> scan_unit's solo fallback.
+            return _decls.get(name)
+        def blob(self, rev_path):
+            if rev_path in _blob_map:
+                _v = _blob_map[rev_path]
+                # known-missing -> "" (what a solo \`git show\` leaves in stdout)
+                return "" if _v is None else _v.decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
+            return None
+        def has_object(self, rev):
+            return _obj_map.get(rev)
+    _PREFETCH = _Prefetch()
 
 issues = []
 for uid in sorted(bolted):
