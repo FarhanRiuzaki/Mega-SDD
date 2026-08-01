@@ -763,6 +763,80 @@ operator's Windows/CrowdStrike floor applied uniformly.
 > list declared non-exhaustive; (9) the legacy `docs/mega-sdd` + root `*-bound` probe arms were
 > untested — both now have fixtures.
 
+> **DESIGN 2026-08-01 (tranche 4f — the L3-5 lever is AMENDED: the memo is REJECTED on
+> measurement + trust analysis; what ships is BATCHING inside the recompute, at zero trust-model
+> change).** L3-5 said "memoize B1 recompute inside the blocking hook; magnitude deliberately
+> unquantified pending a run with real bolt commits." The run now exists (PATH-shim, macOS,
+> N = 0/5/10 committed Hard-rule bolts, honest artifacts via the real writers):
+>
+> - **Common v1 mix** (DO_NOT_MODIFY with a preflight snapshot — in-process sha256; DEPS rule
+>   whose manifest no bolt commit touched): recompute marginal cost = **1 exec** (the HEAD
+>   rev-parse). There is nothing for a memo to save.
+> - **Worst v1 mix** (per unit: 1 SIGNATURE rule + a manifest-touching DEPS commit): **41 git at
+>   N = 10** — 10 `git grep` (one per SIGNATURE name) + 10 parent `rev-parse --verify` + 20
+>   before/after `git show` pairs + 1 HEAD ≈ **~9 s per gate firing on the Windows floor**.
+> - **v2 (ast-grep) rules** — the only place minutes live — **cannot be memoized soundly at
+>   all**: the scan covers UNTRACKED files, whose content changes are invisible to HEAD, to
+>   `git status --porcelain` (same `??` line), and to any enumerable-input hash.
+> - **Trust analysis (the reason the memo dies even where it is computable):** any memo hit
+>   path trusts (memo + artifact) disk consistency. A co-forgery via an exotic write path —
+>   exactly the attacker the verb-enumeration deny is documented NOT to stop — would then
+>   survive to the gate read. B1 recompute-at-gate exists BECAUSE "the write-guard is a
+>   best-effort deny, not a cryptographic guarantee — recompute is the durable hardening"
+>   (CLAUDE.md). A memo reintroduces trust in the best-effort layer at the single most
+>   load-bearing moat gate: fix-opens-its-mirror at moat scale. REJECTED.
+>
+> **What ships instead — same computation, fewer processes, re-derived from ground truth on
+> EVERY firing (the 4a-ii doctrine, applied inside the scan):**
+>
+> - **4f-i — SIGNATURE decl lookup batches to ≤4 greps per firing** (one per declaration
+>   pattern, all unresolved names as an ERE alternation), replacing one `git grep` per name.
+>   Per-name semantics byte-identical: names resolve at the FIRST pattern (in the existing
+>   priority order) yielding a usable line, matches are re-attributed per name python-side with
+>   the same regex translated to line-context, and the `.md`/vault self-match filter is
+>   unchanged.
+> - **4f-ii — blob reads batch through ONE single-shot `git cat-file --batch`** run
+>   (`subprocess.run` with the full request list as stdin and the standard 60 s bound — no
+>   interactive pipe management, Windows-safe, honoring the bounded-subprocess law): the
+>   per-unit `unit_text` at-commit reads (paid in BOTH modes — the N-scaling term of every gate
+>   AND Stop firing), the DEPS before/after manifest pairs, and the parent-existence probes.
+>   Requests are fully known up front (two phases: unit texts first, then the rule-derived
+>   pairs). The rare non-JSON `git diff` fallback lane stays per-commit (bounded, unchanged).
+> - The single-unit writer path (`run-postflight-scan.sh`) is byte-unchanged — `scan_unit`
+>   takes optional prefetch callbacks, defaulting to the current per-call subprocesses.
+> - Expected: worst-v1 recompute delta 41 → ≤6 execs, and the shared unit_text term drops
+>   N → 1 in both modes; v2 keeps its per-rule `ast-grep` + 120 s bound untouched.
+> - **The moat pin:** the `recompute_unit` call is unconditional WITHIN the obligation branch —
+>   a forged `postflight.json` is still overwritten from ground truth on every firing,
+>   test-pinned (including under a cat-file kill-switch: batch failure degrades to solo,
+>   never opens). The obligation predicate (`has_hard_rules`) now reads the BATCHED unit
+>   blob — which is why the stream-integrity guards below are load-bearing, not hygiene.
+>
+> **ROUND-1 (dual blind, 2026-08-01) — both reviewers FIX-FIRST, all folded pre-ship.**
+> Static (3 High / 3 Medium / 2 Low): the `batch_cat` parser consumed replies positionally
+> with NO stream validation — a truncated/desynced stream (rc≠0 with partial stdout, or a
+> crafted newline-bearing dir name adding an input line) could erase a unit's B1 obligation
+> or hand DEPS a wrong blob (CLOSED: newline-bearing requests dropped to solo, rc≠0 → `{}`,
+> truncated-slice + total-consumption checks); strict-UTF-8 `.encode()` raised an uncaught
+> `UnicodeEncodeError` on surrogate-escaped paths and the gate crash direction is a stale
+> PASS (CLOSED: surrogateescape + `except Exception → {}`); the unresolved-decl `(None,
+> None)` was returned as a RESULT so the solo fallback was dead code and the byte-identical
+> claim false (CLOSED: unresolved names are OMITTED = MISS → solo second opinion); one bad
+> SIGNATURE name could take down the whole alternation round (CLOSED: rc≥2 = no-information
+> + ≤100-name chunking, which also caps the O(lines×names) re-attribution); the DEPS
+> diff-fallback funnel widened by a `./`-prefixed manifest in the explicit request (CLOSED:
+> normalized; the diff lane's own rc-blindness stays pre-existing, disclosed); batch
+> timeout lowered 60→20 s so a wedged git costs one short ceiling, not an additive full
+> one. Execution (9 hostile parity fixtures, truncation/kill-switch shims): lone-`\r`
+> (classic-Mac) unit text collapsed to one line under the batch decode and ERASED the
+> obligation where solo universal-newlines caught it — a measured fail-open (CLOSED:
+> `\r`→`\n` at both decode sites); truncated-stream wrong-verdicts (CLOSED by the same
+> stream guards); Windows `os.sep` in rev-path requests normalized (pre-existing, fixed in
+> passing — run-postflight-scan.sh precedent). Test arms added: pattern rounds 2/4, prefix
+> pair, ghost name (solo-second-opinion), cat-file kill-switch. Everything else held:
+> substring/metachar names, CRLF fixtures, EMPTY_TREE + non-JSON lanes, untracked/deleted
+> vaults, poison paths, forgery on every firing; measured delta 3 git (≤5), Stop lane 14→5.
+
 ---
 
 ## Phase 5 — cost-only levers (accept the latency penalty; decide by the payback rule)
@@ -1077,7 +1151,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (own round) → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (memo REJECTED; batching) ✅ v5.24.0 → 5e → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now

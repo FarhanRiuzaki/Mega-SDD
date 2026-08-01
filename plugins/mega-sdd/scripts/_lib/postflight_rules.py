@@ -196,6 +196,126 @@ def dep_set(raw, manifest):
     return out
 
 
+# The 4 declaration patterns, in PRIORITY order (find_decl_line's contract).
+# %s is the escaped function name. Kept module-level so the batched lookup
+# (find_decl_lines, spec §4f-i) and the solo lookup share ONE source of truth.
+_DECL_PATTERNS = (
+    r"(function|def|fn|func)[[:space:]]+%s[[:space:]]*\(",   # function/def/fn/func NAME(
+    r"(const|let|var)[[:space:]]+%s[[:space:]]*=",            # const NAME = (arrow/expr)
+    r"%s[[:space:]]*[:=][[:space:]]*(async[[:space:]]*)?\(",  # NAME: (…) => / NAME = (…) =>
+    r"%s[[:space:]]*\([^)]*\)[[:space:]]*\{",                 # method NAME(...) {
+)
+
+
+def _decl_line_usable(fpath):
+    """The .md/vault self-match filter — shared verbatim by both lookups."""
+    return not (fpath.startswith(".mega-sdd/") or fpath.startswith("docs/mega-sdd/")
+                or fpath.lower().endswith((".md", ".markdown")))
+
+
+def _posix_to_py(pat):
+    """POSIX ERE → python re for LINE-content tests: within one grep output line no
+    newline can appear, so [[:space:]] narrows to [ \\t\\f\\v\\r] with identical
+    semantics. Used only to re-attribute batched alternation matches per name."""
+    return pat.replace("[[:space:]]", "[ \\t\\f\\v\\r]")
+
+
+def find_decl_lines(git, names):
+    """Batched find_decl_line (spec §4f-i): ≤4 `git grep` calls TOTAL for all names
+    (one alternation per pattern round), not one per name. Byte-identical per-name
+    semantics: a name resolves at the FIRST pattern round (priority order) that
+    yields a usable line, and within a round takes its FIRST usable line in git
+    grep's output order — exactly the solo loop. Returns {name: (decl, loc)} with
+    (None, None) for unresolved names. Ground truth is re-derived on EVERY call —
+    this is batching, never memoization (the §4f trust analysis)."""
+    out = {}
+    pending = [n for n in dict.fromkeys(names) if n]
+    for pat in _DECL_PATTERNS:
+        if not pending:
+            break
+        # Chunked alternation (ADV-004): an over-long argv or one regcomp-hostile
+        # name must never take down the round for EVERY name — <=100 names per
+        # grep bounds both the argv and the O(lines x names) re-attribution.
+        for ci in range(0, len(pending), 100):
+            chunk = pending[ci:ci + 100]
+            alt = "(" + "|".join(re.escape(n) for n in chunk) + ")"
+            r = git("grep", "-nE", pat % alt)
+            if r.returncode >= 2:
+                continue  # regcomp/arg error — NO information; chunk stays pending
+            if not r.stdout:
+                continue
+            py_rx = {n: re.compile(_posix_to_py(pat % re.escape(n))) for n in chunk}
+            resolved_this_round = set()
+            for l in r.stdout.splitlines():
+                parts = l.split(":", 2)
+                if len(parts) != 3:
+                    continue
+                if not _decl_line_usable(parts[0]):
+                    continue
+                content = parts[2]
+                for n in chunk:
+                    if n in resolved_this_round or n in out:
+                        continue
+                    if py_rx[n].search(content):
+                        out[n] = (content.strip(), "%s:%s" % (parts[0], parts[1]))
+                        resolved_this_round.add(n)
+        pending = [n for n in pending if n not in out]
+    # A name this lookup could NOT resolve is deliberately OMITTED — absent means
+    # MISS, and scan_unit re-checks it with the solo find_decl_line before ever
+    # writing a "not found" verdict (ADV-003: an unresolved name must get the
+    # solo second opinion, or the byte-identical claim is false).
+    return out
+
+
+def batch_cat(cwd, requests, timeout=20):
+    """ONE single-shot `git cat-file --batch` serving every (rev[:path]) request
+    (spec §4f-ii): the full request list is written as stdin to a bounded
+    subprocess.run — no interactive pipe management (Windows-safe; honors the
+    repo's bounded-subprocess law). Returns {request: bytes | None} (None =
+    missing/unresolvable). Deduplicates requests; EVERY anomaly — timeout,
+    non-zero rc, undecodable path, a request that would smuggle extra input
+    lines, a truncated or over/under-consumed reply stream — returns {} (or
+    drops the request) so every consumer falls back to its solo per-call git
+    read: fail toward the unbatched ground-truth path, never toward a blob that
+    might belong to a different request (ADV-001/ADV-002, round-1 4f). The 20 s
+    bound is deliberately LOWER than the solo git() 60 s: a batch failure is
+    cheap (solo fallback), so a wedged git costs one short ceiling here, not an
+    additive full one."""
+    # A request containing a newline would become TWO cat-file input lines and
+    # shift every later reply by one — desync, the fail-open direction. Drop it
+    # to the solo path instead (attacker-creatable via a crafted dir name).
+    reqs = [r for r in dict.fromkeys(requests) if r and "\n" not in r and "\r" not in r]
+    if not reqs:
+        return {}
+    try:
+        pr = subprocess.run(["git", "-C", cwd, "cat-file", "--batch"],
+                            input=("\n".join(reqs) + "\n").encode("utf-8", "surrogateescape"),
+                            capture_output=True, timeout=timeout)
+    except Exception:
+        return {}
+    if pr.returncode != 0:
+        return {}  # a real cat-file error; "missing" objects reply in-stream at rc 0
+    out, buf, pos = {}, pr.stdout, 0
+    for req in reqs:
+        nl = buf.find(b"\n", pos)
+        if nl < 0:
+            return {}  # fewer replies than requests — never trust a partial stream
+        header = buf[pos:nl]
+        pos = nl + 1
+        parts = header.split()
+        if len(parts) == 3 and parts[2].isdigit():
+            size = int(parts[2])
+            if pos + size + 1 > len(buf):
+                return {}  # truncated blob — a short slice is not this blob
+            out[req] = buf[pos:pos + size]
+            pos += size + 1  # trailing newline after the blob body
+        else:
+            out[req] = None  # "<obj> missing" / "<obj> ambiguous" — no body follows
+    if pos != len(buf):
+        return {}  # trailing unconsumed output — the stream did not match the requests
+    return out
+
+
 def find_decl_line(git, name):
     """First function/method declaration line for `name` in tracked source.
     Uses POSIX [[:space:]] not \\s: git grep runs the platform regex engine (BSD on
@@ -203,21 +323,16 @@ def find_decl_line(git, name):
     SIGNATURE_RULE emitted a false 'not found' FAIL that permanently blocked B1. Also
     broadened past the C-style `function NAME(` shape to arrow/expr and method decls."""
     n = re.escape(name)
-    for pat in (r"(function|def|fn|func)[[:space:]]+%s[[:space:]]*\(" % n,   # function/def/fn/func NAME(
-                r"(const|let|var)[[:space:]]+%s[[:space:]]*=" % n,            # const NAME = (arrow/expr)
-                r"%s[[:space:]]*[:=][[:space:]]*(async[[:space:]]*)?\(" % n,  # NAME: (…) => / NAME = (…) =>
-                r"%s[[:space:]]*\([^)]*\)[[:space:]]*\{" % n):                # method NAME(...) {
+    for pat in (p % n for p in _DECL_PATTERNS):
         r = git("grep", "-nE", pat)
         for l in r.stdout.splitlines():
             parts = l.split(":", 2)
             if len(parts) != 3:
                 continue
-            fpath = parts[0]
             # Match only REAL source — never the unit spec / vault docs, which contain
             # the rule's own `function NAME MUST preserve signature: function NAME(...)`
             # text and would otherwise self-match (the \s bug had masked this).
-            if (fpath.startswith(".mega-sdd/") or fpath.startswith("docs/mega-sdd/")
-                    or fpath.lower().endswith((".md", ".markdown"))):
+            if not _decl_line_usable(parts[0]):
                 continue
             return parts[2].strip(), "%s:%s" % (parts[0], parts[1])
     return None, None
@@ -354,7 +469,8 @@ def normalize_v2_files(rule_yaml):
     return y, globs
 
 
-def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, prior_artifact=None):
+def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, prior_artifact=None,
+              prefetch=None):
     """Execute a unit's Hard rules against real git/fs → (results, ok_all).
 
     unit_commits: newest-first [(sha, [(status, relpath)])] for THIS unit (from
@@ -362,7 +478,14 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
     attest:       the --attest-directives reason (empty at the gate).
     prior_artifact: parsed prior postflight.json (or None). Provided by the GATE only,
                   to carry forward attested directives; run-postflight-scan.sh passes
-                  None (→ byte-identical: attest ? attested : directive_unverified)."""
+                  None (→ byte-identical: attest ? attested : directive_unverified).
+    prefetch:     optional batching backend (spec §4f): an object with
+                  .decl(name) -> (decl, loc) | MISS, .blob(rev_path) -> str | MISS
+                  (rev_path is the exact string a solo `git show` would take), and
+                  .has_object(rev) -> bool | MISS. Every MISS falls back to the solo
+                  per-call subprocess, so verdicts are byte-identical with or without
+                  it. This is BATCHING of the same ground-truth reads, re-derived on
+                  every call — never memoization across calls."""
     lines, v2_rules = extract_hard_rules(unit_text)
 
     touched = {p for _, fl in unit_commits for _, p in fl}
@@ -417,10 +540,20 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                 for sha, fl in unit_commits:
                     if not any(p == manifest for _, p in fl):
                         continue  # this commit didn't touch the manifest
-                    has_parent = git("rev-parse", "--verify", "-q", "%s^" % sha).returncode == 0
+                    has_parent = None
+                    if prefetch is not None:
+                        has_parent = prefetch.has_object("%s^" % sha)
+                    if has_parent is None:
+                        has_parent = git("rev-parse", "--verify", "-q", "%s^" % sha).returncode == 0
                     base_ref = "%s^" % sha if has_parent else EMPTY_TREE
-                    before = git("show", "%s:./%s" % (base_ref, manifest)).stdout if has_parent else ""
-                    cur = git("show", "%s:./%s" % (sha, manifest)).stdout
+                    def _blob(rev_path):
+                        if prefetch is not None:
+                            b = prefetch.blob(rev_path)
+                            if b is not None:
+                                return b
+                        return git("show", rev_path).stdout
+                    before = _blob("%s:./%s" % (base_ref, manifest)) if has_parent else ""
+                    cur = _blob("%s:./%s" % (sha, manifest))
                     b, a = dep_set(before, manifest), dep_set(cur, manifest)
                     if b is None and not has_parent and a is not None:
                         b = set()     # parseable new manifest at a root commit → 0 prior deps
@@ -455,7 +588,8 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                 results.append({"type": rtype, "rule": raw, "verdict": "pass" if ok else "fail", "evidence": ev})
             elif rtype == "SIGNATURE_RULE":
                 name, sig = mm.group(1), mm.group(2).strip()
-                decl, loc = find_decl_line(git, name)
+                dl = prefetch.decl(name) if prefetch is not None else None
+                decl, loc = dl if dl is not None else find_decl_line(git, name)
                 snap = None
                 for pr in (preflight.get("rules") or []):
                     if pr.get("type") == "SIGNATURE_RULE" and pr.get("function") == name:
