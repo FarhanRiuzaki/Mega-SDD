@@ -35,7 +35,7 @@
 
 ### R6: Units exist, no bolts
 - **State:** units/U-001.md etc., no bolts/
-- **Expect:** Propose `execute-bolts --all`
+- **Expect:** Propose `execute-bolts --all --parallel` (chain dispatch is wave-parallel per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
 
 ### R7: P0 OQs present
 - **State:** any state, vault has unresolved P0 OQs
@@ -101,12 +101,12 @@ All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4
 ### MS3: Single-squad (squad_count=1) → existing behavior
 - **Setup:** vault has `_meta/squads.yaml` with exactly 1 squad declared
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** proposes `execute-bolts --all` (NOT `--per-squad`)
+- **Expect:** proposes `execute-bolts --all --parallel` (NOT `--per-squad`)
 
 ### MS4: No squads.yaml → existing behavior
 - **Setup:** vault has no `_meta/squads.yaml`
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all`
+- **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all --parallel`
 
 ## Deep-chain mode (v1.3+, Iter 4)
 
@@ -205,7 +205,7 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
    - Step 7.7 fires for all generated units
    - Units that touch UI/auth/RBAC/libs gain starterkit anchors + Hard Rules
    - Handoff: `starterkit_context:` + 2 new metrics (`units_with_starterkit_anchors: <N>`, `units_with_starterkit_rules: <N>`)
-7. Phase 5: `mega-sdd:execute-bolts --all --auto` invoked
+7. Phase 5: `mega-sdd:execute-bolts --all --parallel --auto` invoked (wave layering from the chain's analyze-parallelism JSON)
    - Per-unit T2.3 slice injection for units with non-empty starterkit_relevance
    - Bolts produce code matching starterkit patterns (extends layouts.app, uses SweetAlert2, Spatie middleware)
    - Handoff: `starterkit_context:` + 2 new metrics (`bolts_used_starterkit_slice: <N>`, `slice_avg_size_kb: <X.X>`)

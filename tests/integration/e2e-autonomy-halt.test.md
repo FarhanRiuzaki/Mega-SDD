@@ -75,7 +75,7 @@ Resuming chain from Phase 3 of 5 (bind-codebase re-runs to produce bound-vault).
 ✓ Phase 4 of 5: generate-units → status: completed, items: 9 units, blocked: 0
    (9 units: 2 verify (existing User CRUD) + 7 create (new endpoints))
 
-▶ Phase 5 of 5: invoking execute-bolts (--all --auto)
+▶ Phase 5 of 5: invoking execute-bolts (--all --parallel --auto)
 ... (executes 9 units with pre/post-flight)
 ✓ Phase 5 of 5: execute-bolts → status: completed, items: 9 units, blocked: 0
 

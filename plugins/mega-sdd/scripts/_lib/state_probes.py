@@ -768,9 +768,13 @@ def derive(probes):
     if units == 0:
         return finish("bound_no_units", ["generate-units"])
     if bolts < units:
+        # Chain dispatch is wave-parallel (token-and-latency spec §2a): the
+        # --per-squad procedure is parallel by construction; the --all leg
+        # carries --parallel explicitly. Standalone suggestions elsewhere keep
+        # plain --all — this is the CHAIN proposer.
         chain = (
             ["execute-bolts --per-squad"] if vault["squad_count"] >= 2
-            else ["execute-bolts --all"]
+            else ["execute-bolts --all --parallel"]
         )
         return finish("units_pending_bolts", chain)
 

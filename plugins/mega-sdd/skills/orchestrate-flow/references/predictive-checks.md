@@ -199,7 +199,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `subagent_capacity_reasonable`**
   command: `[ "<max-parallel-flag-value>" -le 5 ]`
   expected: exit 0 (max-parallel ≤ 5)
-  on_fail: "extract-intelligence --max-parallel=<N> exceeds the advisory threshold (5). The empirical optimum is 3 (the default).0+ per audit. Higher values cause coordination overhead > gain. Soft warn at >5; hard cap at 8 still enforced by extract-intelligence."
+  on_fail: "extract-intelligence --max-parallel=<N> exceeds the advisory threshold (5, the default). Above it, coordination overhead tends to outrun the gain. Soft warn at >5; hard cap at 8 still enforced by extract-intelligence."
   fatal: no
   predicts_halt: (no halt; degraded throughput)
 

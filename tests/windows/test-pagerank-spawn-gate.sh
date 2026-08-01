@@ -123,7 +123,11 @@ has "$PR" '~272 files on windows-bash' \
 if grep -rqF '5-10s' "$GU"; then fail "a '5-10s' figure survives somewhere under $GU"; else ok "sweep: no '5-10s' figure left anywhere in generate-units"; fi
 
 # ------------------------------------------------------------------ (4) wiring
-has "$SK" 'version: 2.16.0' && ok "SKILL frontmatter version bumped to 2.16.0" || fail "SKILL version not bumped"
+# FLOOR check, not an exact pin: 2.16.0 is the version that shipped the pagerank
+# gate — any LATER version keeps it (an exact pin rots on every unrelated bump).
+V="$(grep -m1 '^version:' "$SK" | awk '{print $2}')"
+python3 -c "import sys; a=[int(x) for x in '$V'.split('.')]; sys.exit(0 if a>=[2,16,0] else 1)" 2>/dev/null \
+  && ok "SKILL frontmatter version >= 2.16.0 (pagerank gate shipped there; now $V)" || fail "SKILL version below 2.16.0 (got '$V')"
 has "$SK" '**Spawn-cost gate first**' && ok "SKILL.md Step 7.5 names the gate inline" || fail "SKILL.md Step 7.5 does not name the gate"
 has "$SK" 'one process per FILE over the WHOLE source set' && ok "SKILL.md carries the per-FILE cost inline" || fail "SKILL.md missing the per-FILE fact"
 # ...and states it over the SOURCE set, not "the whole repo" — the loose phrasing round 1

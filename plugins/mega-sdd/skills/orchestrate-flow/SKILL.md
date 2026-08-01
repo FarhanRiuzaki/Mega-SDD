@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.17.1
+version: 2.18.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -67,7 +67,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
      2. scan-codebase             → codebase-map.md
      3. bind-codebase             → binding.md + bound-vault/
      4. generate-units            → units/
-     5. execute-bolts --all       → bolts/
+     5. execute-bolts --all --parallel → bolts/
 
    Halts may re-engage you mid-chain (test failures, business OQ
    resolutions, hard-rule violations, dedup ambiguity, recommendation
