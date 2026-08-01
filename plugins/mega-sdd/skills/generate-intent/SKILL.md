@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.13.1
+version: 2.14.0
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 7-file anti-hallucination vault; Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -130,7 +130,7 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
 4. **Step 3 — Generate the 7 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` (conditional design-system sections; operator-surface + Design-Source OQ rules). Then **Run** `bash $PLUGIN_ROOT/scripts/copy-consumer-guide.sh --vault <OUTPUT_DIR>` — installs the static `_meta/ai-consumer-guide.md` (script-copied, never model-rendered; `$PLUGIN_ROOT` per `references/generation-guide.md §Reading the templates`). Multi-squad artifacts if applicable. `vault.json` is NOT derived here — the single derive runs at Step 3.8, after constitution (3.4), classifier (3.5), and advisor (3.7) have produced the patch content.
 5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-contract.md §constitution`.
 6. **Step 3.5 — OQ auto-classification** on every generated OQ (see "OQ classification" above) → validation gate → `references/generation-guide.md`.
-7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus), the drafted 7 vault files, and the source (PRD/brief/KB). Materialize its findings BEFORE finalize:
+7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).** Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus) + **the vault DIR path, the source file PATHS (PRD/brief/screenshot files/KB dir), the scope id + phase N/total when this is a `--scope`/`--phase` run, and the OQ roll-up counts** — **NOT the pasted file contents** (the claims, OQ text, and classification brackets are on disk after Step 3; the advisor has `Read`/`Grep`/`Glob` and opens the corpus itself — the dispatch is a SEED it expands past, never its horizon; this is the P7 slice-first cut on the intent leg, mirroring the bind leg's seed-not-horizon contract). **Pre-dispatch precondition (fail-closed): verify every named path resolves on disk.** An unresolvable source path → record `advisor: unavailable` (never clean) or fix the path and re-dispatch. **Figma frames loaded via MCP are NOT on disk and are unreadable by the advisor** — state `Figma: MCP-loaded, unreadable by you` in the seed instead of naming a path (uploaded screenshot FILES are real paths and stay in scope). Materialize its findings BEFORE finalize:
    - `fabrication` → demote the claim to an OQ (or flag) + Changelog note.
    - `missed_oq` → add an OQ to the roll-up (run it through the Step 3.5 classifier).
    - `misclassification` → retag the OQ `category`.
