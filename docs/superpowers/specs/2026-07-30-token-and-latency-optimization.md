@@ -523,9 +523,62 @@ constraint now binds at **direct-child** level (`vaults/<slug>/`) rather than th
 the sync-lane handoff as bare `bind-codebase --auto` with **no vault signal** on the one lane where
 both downstream phases are forked (`routing-rules.md:92` + `scan-procedure.md:49` vs
 `halts-flags-handoff.md:110`).
-- **5b — `codebase-map.md` deriver.** Measured **37.6K cost-units per write**, ≥188K lifetime;
-  currently re-typed **in full** on every incremental sync. Needs 4 anti-hallucination rails that
-  are currently prose-trusted.
+- **5b — `codebase-map.md` deriver (`scripts/derive-codebase-map.sh`). SHIPPED v5.19.0
+  (2026-08-01).** Measured pre-change baseline **37.6K cost-units per write**, ≥188K lifetime;
+  the map was re-typed **in full** on every write — worst on
+  the `--changed-only` sync lane, whose merge semantics DEMAND byte-identical carry-forward that
+  the model delivers by retyping every unchanged row at the 5.0× output weight.
+
+  **Division of labour.** The model stays what it must be — the extraction-output parser (its
+  tool-result reads of tree-sitter/rg output) and the author of the judgment sections (§5 naming /
+  §6 patterns / §7 framework). Everything else moves to the deriver: the model writes a small
+  **delta** (`$SCAN_TMP/delta/`: `frontmatter.json` + `s2.rows`+`s2.files` + `s3.rows` +
+  `s4.rows`+`s4.files` + `s5.md`/`s6.md`/`s7.md`, rows in the map's own format but WITHOUT the
+  sha256 column) and the script assembles the map: §1 tree rendered from Step 4's `files.z`
+  (box-drawing, depth-limited — the model never types the tree), `Last_Scanned_Sha256` joined
+  from Step 5's `hashes.txt` (which exists only on the `--shallow-scan` lane) or hashed
+  in-process via hashlib — either way the model never types 64-hex again — replace-set merge
+  per section (canonical-header-gated: a touched §2/§4 whose prior column order is
+  non-canonical is exit 3, never a positional guess), atomic temp+rename with the validator
+  gating the TEMP before the rename (a rejected assembly never overwrites a good prior map). `--mode=full` (all
+  sections from the delta) and `--mode=merge` (absent delta section = carry the prior's,
+  byte-identical; §2/§4 replace by `s*.files`, §3 whole-section-or-carry).
+
+  **The 4 prose-trusted anti-hallucination rails, made structural:**
+  1. *Carry-forward byte-identity + original `Last_Scanned_Sha256`* (scan-procedure §Anti-halu
+     rail) — carried rows are byte-COPIES of the prior map; only delta rows get fresh hashes.
+  2. *"A merge that cannot prove a row's provenance (prior map corrupt) → fall back to full
+     scan"* — an unparseable/section-missing prior in merge mode is **exit 3 `fallback_full`**,
+     nothing written; the caller re-runs a full scan.
+  3. *"DROP rows whose file vanished"* — prior §2/§4 rows whose `File` no longer exists on disk
+     are dropped by the script (in-process existence check, zero spawns) and counted in the
+     stdout JSON; §3 deletions ride the model's whole-section replace (its `Handler` column has
+     no reliable path key).
+  4. *Schema shape* — all 7 sections always present ("None detected", never omitted);
+     `generated_at`/`generated_by`/`repo_root` script-stamped; `last_scanned_commit` from the
+     script's own `git rev-parse --verify 'HEAD^{commit}'`, OMITTED on failure or a literal
+     `HEAD` (the zero-commit poisoning rule enforced where the stamp is minted).
+
+  **Chained, so the write-path gates are structural too:** the deriver runs
+  `secret-scan.sh --redact` on the assembled temp (Step 10a — findings JSON passed through on
+  stdout for the model's `SECRET-FINDINGS.md` routing), renames atomically, then refreshes
+  `validate-codebase-map.sh --quiet` (the post-write state-freshness step). Constant spawn
+  count per write, no per-item fan-out.
+
+  **Deliberately NOT in scope, named:** parsing tree-sitter capture output inside the script —
+  the dev box ships no compiled grammars, so that parse cannot be verified here, the exact
+  reason scan-procedure §Step 5 refuses to change the per-file invocation; shipping an
+  unverifiable parser would be fabrication-by-code. The model remains the extraction parser.
+
+  **Measured (2026-08-01, synthetic 200-file fixture — method scripted, reproducible; 4 B/tok):**
+  FULL scan — map 37,885 B, model-typed delta 17,365 B ⇒ **54% of the map's bytes no longer
+  typed** (2.18×; ≈5.1K output tok ≈ 25.6K cost-units per full write at the 5.0× weight).
+  MERGE with 5/200 files changed — the model types **537 B** against the old full retype of
+  37,930 B ⇒ **70.6× on the sync lane** (≈9.3K output tok ≈ 46.7K cost-units per sync write) —
+  the lane the ≥188K lifetime floor lived on. The 37.6K/write research figure stands as the
+  pre-change baseline (and the synthetic map's 37.9 KB size lands on the same scale, which is
+  consistency, not proof). Pinned by `tests/token-efficiency/test-derive-codebase-map.sh` —
+  rails 1–4 proven behaviorally (incl. the mutate-on-disk no-rehash proof for rail 1).
 - **5c — intent-leg phase-advisor seed bundle.** The shipped fix was wired to the **bind leg only**.
   15–50K per dispatch. **Invariant: a slice is a SEED the consumer expands from, never a CAP** —
   ship a seed-not-boundary CONFLICT test.
@@ -638,7 +691,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b → 5c → 2a/2c/2d → 4 → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c → 2a/2c/2d → 4 → 5e → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now

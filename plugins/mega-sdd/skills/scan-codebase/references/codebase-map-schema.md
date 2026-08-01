@@ -1,6 +1,6 @@
 # Codebase Map Schema
 
-`codebase-map.md` is the structured output of `scan-codebase`. It is consumed by `bind-codebase` to validate vault claims against repo reality. It is regenerable — never edited manually.
+`codebase-map.md` is the structured output of `scan-codebase`. It is consumed by `bind-codebase` to validate vault claims against repo reality. It is regenerable — never edited manually. Since tranche 5b it is ASSEMBLED by `scripts/derive-codebase-map.sh` (the model supplies a delta; carry-forward, the sha column, §1, the staleness stamp, and the write-path gates are script-owned — `scan-procedure.md` Step 10). Consumers are unaffected: the schema below is unchanged, and hand-written fixture maps remain valid inputs.
 
 ## Required sections
 
