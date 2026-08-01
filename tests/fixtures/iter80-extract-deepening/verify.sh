@@ -2,10 +2,12 @@
 # verify.sh — fixture-verified DoD for the extract-intelligence deepening (v3.72.0+).
 #
 # WHAT THIS PROVES (Fork-A — deterministic, script-provable):
-#   1. The P1–P4 deep disciplines are wired into the GENERIC WAVE SUBAGENT DISPATCH PROMPT
-#      (wave-dispatch-templates.md DEEP DISCIPLINES block) + the REPORT BACK provenance
-#      self-check fields — i.e. they reach every extraction subagent ("otomatis"), not just
-#      the parent SKILL.md the subagents never read.
+#   1. The P1–P4 deep disciplines are wired into the SUBAGENT'S OWN SYSTEM PROMPT
+#      (agents/domain-extractor.md §Deep disciplines — moved there from the typed
+#      wave-dispatch-templates.md block by tranche 5d; the agent body loads on every
+#      dispatch BY CONSTRUCTION) + the REPORT BACK provenance self-check fields — i.e.
+#      they reach every extraction subagent ("otomatis"), not just the parent SKILL.md
+#      the subagents never read.
 #   2. validate-extraction-scorecard.sh returns correct verdicts: SKIP (absent — back-compat),
 #      PASS (consistent), FAIL (PARTIAL/MISSING principle with ZERO [OPEN] markers — the
 #      hidden-gap silent-drift case), and PASS+advisory once the gap is honestly surfaced
@@ -58,15 +60,17 @@ except Exception as e:
     print('ERR:'+str(e))
 " 2>/dev/null; }
 
-# ── 1. P1–P4 wired into the wave SUBAGENT dispatch prompt (Fork-A: reaches subagents) ──
-note "=== 1. P1–P4 deep disciplines wired into the generic wave dispatch prompt — Fork-A ==="
-grep -q "DEEP DISCIPLINES" "$DISPATCH" && ok "DEEP DISCIPLINES block present in dispatch prompt" || fail "no DEEP DISCIPLINES block in wave-dispatch-templates.md"
-grep -q "State & data provenance" "$DISPATCH" && ok "P1 (state writer<->reader provenance + clone inheritance) present" || fail "P1 missing from dispatch"
-grep -q "Enumerate ALL sites" "$DISPATCH" && ok "P2 (enumerate all rule/flow sites + entry-point dispatchers) present" || fail "P2 missing from dispatch"
-grep -q "Behaviour-as-EXECUTED" "$DISPATCH" && ok "P3 (behaviour-as-executed / debug-as-feature) present" || fail "P3 missing from dispatch"
-grep -q "Classify files by structure" "$DISPATCH" && ok "P4 (structural file classification) present" || fail "P4 missing from dispatch"
-grep -q "provenance_anomalies" "$DISPATCH" && ok "REPORT BACK self-check field provenance_anomalies present" || fail "REPORT BACK provenance self-check missing"
-grep -q "provenance_read_side_thin" "$DISPATCH" && ok "Wave-3 non-blocking advisory provenance_read_side_thin present" || fail "Wave-3 provenance advisory missing"
+# ── 1. P1–P4 wired into the SUBAGENT SYSTEM PROMPT (Fork-A: reaches subagents by construction) ──
+note "=== 1. P1–P4 deep disciplines wired into the domain-extractor agent body — Fork-A ==="
+AGENT_BODY="${PLUGIN_ROOT}/plugins/mega-sdd/agents/domain-extractor.md"
+[ -f "$AGENT_BODY" ] || { fail "missing: $AGENT_BODY"; exit 1; }
+grep -q "Deep disciplines" "$AGENT_BODY" && ok "Deep disciplines block present in the agent body (system prompt)" || fail "no Deep disciplines block in agents/domain-extractor.md"
+grep -q "State & data provenance" "$AGENT_BODY" && ok "P1 (state writer<->reader provenance + clone inheritance) present" || fail "P1 missing from the agent body"
+grep -q "Enumerate ALL sites" "$AGENT_BODY" && ok "P2 (enumerate all rule/flow sites + entry-point dispatchers) present" || fail "P2 missing from the agent body"
+grep -q "Behaviour-as-EXECUTED" "$AGENT_BODY" && ok "P3 (behaviour-as-executed / debug-as-feature) present" || fail "P3 missing from the agent body"
+grep -q "Classify files by structure" "$AGENT_BODY" && ok "P4 (structural file classification) present" || fail "P4 missing from the agent body"
+grep -q "provenance_anomalies" "$AGENT_BODY" && ok "REPORT BACK self-check field provenance_anomalies present in the agent body" || fail "REPORT BACK provenance self-check missing"
+grep -q "provenance_read_side_thin" "$DISPATCH" && ok "Wave-3 non-blocking advisory provenance_read_side_thin present (controller-side, stays in the templates)" || fail "Wave-3 provenance advisory missing"
 
 # ── 2. Scorecard validator verdicts (Fork-A: the keystone B1 gate is real) ─────────────
 note ""

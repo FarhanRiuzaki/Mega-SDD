@@ -2,14 +2,17 @@
 
 Per-wave subagent prompt templates + grep commands for the quality gate that runs between waves. Read this BEFORE dispatching any wave.
 
+**Division of labour (tranche 5d):** the INVARIANT extraction contract — extraction depth, deep disciplines P1–P4+P6, the REPORT BACK format + self-check rails, glossary-index usage — lives in `agents/domain-extractor.md` (the subagent's system prompt: it loads on every `domain-extractor` dispatch by construction — extract-intelligence is its only dispatcher — so a lazy or hurried controller cannot truncate it the way a typed block could be). The MECHANICAL injections — the stack-idiom slice + the glossary index — are built into `<kb-dir>/.dispatch-static.md` by `scripts/build-extract-static.sh`, which every subagent Reads first. The controller TYPES only the small variable core below (scope, paths, files, output) plus each wave's SCOPE block. Do NOT re-type the disciplines or the injections into a dispatch prompt — that is the measured ~9 KB/dispatch (≈34K output tok per 15-dispatch run) 5d removed.
+
 ---
 
 ## Contents
 
 - Model tier per wave
-- `<GLOSSARY_INDEX>` placeholder
+- The dispatch-static file (script-built: stack-idiom slice + glossary index)
 - Reference offset hints
-- Generic agent prompt structure
+- Generic agent prompt structure (the variable core)
+- Stack-idiom slicing (script-executed; the master table)
 - Wave 0 — Prep (main thread)
 - Wave 1 — Foundation (3 parallel subagents)
 - Wave 2 — Masters (4 parallel subagents)
@@ -36,9 +39,15 @@ Override per role via CLI flag / project config / user preference (see `plugins/
 
 ---
 
-## `<GLOSSARY_INDEX>` placeholder
+## The dispatch-static file (script-built)
 
-Between Wave 1 completion and Wave 2 dispatch, the main thread parses `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction) ONCE and builds a compact `glossary_index` (term → 1-line definition + line range). Injected into each Wave 2/3/4 subagent prompt as `<GLOSSARY_INDEX>` placeholder.
+`bash <plugin-root>/scripts/build-extract-static.sh --kb-dir=<kb> --plugin-root=<plugin-root>` (where `<plugin-root>` = the resolved plugin root — the gate blocks below derive it via `resolve-plugin-root.sh`; from the SKILL.md body use the plugin-root env var directly) writes `<kb-dir>/.dispatch-static.md` (temp-file + rename, so the path either holds a complete file or is untouched; compact JSON on stdout: `status`, `static_path`, `stacks`, `stack_source`, `columns`, `glossary_present`, `glossary_skipped`, `glossary_terms`, `warnings`, `bytes`). Run it at **Wave 0 with `--no-glossary`** (idiom slice only — Wave 1 REBUILDS the glossary, and on a re-run into an existing KB a prior run's glossary must otherwise leak in as a stale index that Wave-1 subagents, who WRITE the glossary, would be told to trust) and AGAIN **after the Wave 1 gate passes, without the flag** (it now also emits the `## GLOSSARY INDEX` section parsed from `00-overview/glossary.md`). The script is idempotent — it builds from what exists on disk; re-running it is always safe. Every wave subagent Reads this ONE file first (the instruction lives in the `domain-extractor` agent body), so the controller never types either injection into a prompt. The file is disposable and regenerable — safe to delete any time, one script run rebuilds it, and it need not travel when a KB is copied into a rebuild project.
+
+The file sits at the KB ROOT (dot-prefixed) — deliberately OUTSIDE `kb-leak-scan.sh`'s `SCAN_DIRS`, because the idiom slice legitimately contains raw stack tokens (`UPDATE`, `$_GET`, `EF SaveChanges`, …) that must never be counted as KB tech-leaks.
+
+### Glossary index (inside the dispatch-static file)
+
+After Wave 1, the builder parses `<kb-dir>/00-overview/glossary.md` (typically 80-120 KB after full extraction) ONCE — deterministically, not by the model — and emits a compact `glossary_index` (term → 1-line definition + line range) into the dispatch-static file. Since 5d the main thread neither reads the full glossary into its own context nor re-types the index per dispatch.
 
 **Index format (one line per term — spec amendment 2026-07-06; the old per-term YAML triple cost ~40% more across an 80–120 KB glossary):**
 
@@ -49,11 +58,12 @@ glossary_index (term: short_def (L<start>-<end>)):
 # ... one line per glossary entry
 ```
 
-- `short_def` cap: **~80 chars** — truncate at a word boundary with `…`; the full prose stays spot-readable via the line range. The cap applies to the INDEX only; glossary.md itself is untouched.
-- `(L42-58)` = the term's line range in `glossary.md` (same semantics as the old `location:` field; used with `Read offset/limit` for spot-reads).
-- The subagent-facing usage instruction lives ONCE, inside the generic skeleton's `GLOSSARY INDEX` comment block below (it used to be stated twice per prompt — here AND in the skeleton). Citation format in outputs is unchanged: `glossary.md §customer-onboarding:42-58`, never the bare form.
+- `short_def` cap: **~80 chars** — the builder truncates at a word boundary with `…`. The def is a VERBATIM prefix of the term's glossary prose — a script cannot paraphrase, which also removes the summarization-drift surface the model-built index carried. The full prose stays spot-readable via the line range. The cap applies to the INDEX only; glossary.md itself is untouched.
+- `(L42-58)` = the term's line range in `glossary.md` (heading line through the line before the next heading; same semantics as the old `location:` field; used with `Read offset/limit` for spot-reads).
+- The subagent-facing usage instruction lives ONCE, in `agents/domain-extractor.md` §Read the dispatch-static file FIRST (it is invariant, so it rides the system prompt — ONLY spot-read glossary.md via the index ranges, never re-read it whole). Citation format in outputs is unchanged: `glossary.md §customer-onboarding:42-58`, never the bare form.
+- Wave 1 dispatches have no glossary index (Wave 1 creates the glossary). Wave 5 (main thread): reads glossary.md directly per the Wave 5 contract (no subagent dispatch).
 
-**Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction; the one-line index form saves a further ~40% of the injected index itself.
+**Net savings:** ~96 KB redundant I/O eliminated per wave (15% of 535K wave token budget). 4 subagents × 3 waves (2/3/4) = 12 subagent reads saved per extraction; the one-line index form saves a further ~40% of the injected index itself; and since 5d the index is TYPED by no one — it travels as a file, not as model output.
 
 ## Reference offset hints
 
@@ -63,9 +73,9 @@ When the producer subagent doesn't know exact line ranges (citation written into
 
 ---
 
-## Generic agent prompt structure
+## Generic agent prompt structure (the variable core)
 
-Every wave's subagent prompt MUST follow this skeleton:
+Every wave's subagent prompt MUST follow this skeleton — and carry ONLY this. The extraction contract (extraction depth, deep disciplines P1–P4+P6, REPORT BACK + self-check rails, glossary-index usage, tech-agnostic output scoping) is already in the `domain-extractor` agent body and fires on every dispatch by construction; re-typing any of it into the prompt is the measured ~9 KB/dispatch regression 5d removed:
 
 ```
 ROLE: Legacy code archaeologist for [wave-specific scope].
@@ -74,24 +84,14 @@ CONTEXT:
 - Project at: <absolute path>
 - Legacy stack: <language>, <db>, <integrations>
 - Target stack: <new stack the rebuild will use>
-- Output MUST BE TECH-AGNOSTIC — no legacy stack terms outside §11 Source References + 50-integrations/.
 
 SEED INPUT (cross-check only, do NOT blindly trust):
 - <path to forensic dump if it exists; otherwise: "none">
 
-# === GLOSSARY INDEX (auto-injected by main thread for Wave 2/3/4) ===
-<GLOSSARY_INDEX>
-# === END GLOSSARY INDEX ===
-#
-# Use the GLOSSARY INDEX block above as your authoritative compact reference for glossary terms.
-# Wave 2/3/4 subagents: do NOT re-read the full glossary.md file — the index above already has
-# every term's short_def + line range. ONLY spot-read glossary.md (with `Read offset:X limit:Y`)
-# when you need full prose context for one specific term, and use the range from the index.
-# When citing a glossary entry in your output, include the line range:
-# `glossary.md §customer-onboarding:42-58` (NOT bare `glossary.md §customer-onboarding`).
-#
-# Wave 1: no GLOSSARY_INDEX is injected (glossary doesn't exist yet — Wave 1 creates it).
-# Wave 5 (main thread): reads glossary.md directly per Wave 5 contract (no subagent dispatch).
+READ FIRST: <kb-dir>/.dispatch-static.md
+  (stack-idiom rows + glossary index; script-built — §The dispatch-static file.
+   If it is missing, run build-extract-static.sh BEFORE dispatching — never
+   dispatch without it.)
 
 LEGACY FILES TO READ (explicit list, with file sizes):
 - <file1> (<size> KB)
@@ -101,65 +101,33 @@ LEGACY FILES TO READ (explicit list, with file sizes):
 OUTPUT TO: <absolute path to MD file>
 
 USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-template.
-
-DISCIPLINE DELTAS (non-negotiable; your agent body already carries the core rails —
-cite-every-claim, [VERIFIED]/[INFERRED]/[OPEN] on every non-trivial claim, mutability
-tier definitions, no-fabrication/ambiguity→[OPEN], tech-agnostic vocabulary — these
-are the ADDITIONS this dispatch requires):
-- Citation placement: file:line ON THE SAME LINE as the marker, AND listed in §11. A claim without inline citation is UNCITED — downstream validators flag it for downgrade.
-- Mutability default: uncertain → [INTENT]. NEVER auto-default to [LOCKED] (needs positive evidence: regulatory citation, contract spec, audit trail, external FK) or [ARTIFACT] (needs positive evidence: zero-caller code, legacy stack workaround, dead branch). Pair the tier with the confidence marker — see `references/knowledge-base-schema.md` §Marker conventions Axis 2.
-- Compare .bak / dated files vs live versions; document discrepancies in §9.
-
-EXTRACTION DEPTH (deeper reasoning — protected by citation discipline above):
-- **Business logic extraction**: don't just describe WHAT the code does — infer the business RULE behind it. E.g., if code checks `amount > 100000`, don't write "checks if amount exceeds threshold" — write "transaction amounts above 100,000 require additional approval [INFERRED] (`src/workflow/approval.ts:45`)" with the business rule made explicit.
-- **Error path coverage**: for every happy-path flow, look for catch blocks, error handlers, fallback branches, timeout handlers, retry logic. Document each as a separate claim with its own marker. Silent error swallowing (empty catch, `|| true`) → flag in §9 Edge Cases.
-- **Conditional branching**: when code has if/switch that drives different business outcomes (not just UI branching), document EACH branch as a separate business rule claim with its own citation.
-- **Integration contract depth**: for every external system call (API, DB query, file I/O, message queue), document: protocol, authentication method, payload shape, error handling, retry policy, timeout. Each as a separate cited claim.
-- **Hidden state machines**: look for status/state fields that drive branching. Reconstruct the state diagram even if no explicit state machine exists. Document transitions with citations to the code that implements each transition.
-
-DEEP DISCIPLINES (catch the cases a write-side-only read misses; each is mandatory reasoning, protected by the citation discipline above):
-- **P1 — State & data provenance (writer ↔ reader pairing + clone inheritance)**: for every state field you document as WRITTEN (a status/flag set via the stack's persistence or assignment idiom — see the STACK IDIOMS rows below), also find where that value is READ — the query predicate, condition, or filter that branches on it. Cite BOTH sides. Classify each value: writer+reader present → confirmed; documented writer with NO reader in scope → flag `write-only / possibly vestigial`; a value a downstream reader depends on but that is never written in this flow → flag `inherited / cross-domain seam` (it likely arrives via a clone copy or an upstream flow). For every clone-style copy (a bulk row-copy, snapshot, record-duplicate, or object/struct copy — table row P1), list the fields carried over IMPLICITLY (the non-overwritten columns/fields) and trace who reads them downstream — that is where cross-domain coupling hides. **Capture the coupling as a BUSINESS OUTCOME** ("an amendment must still trigger the downstream dispatch + facility re-balance"), NOT as the implementation accident ("inherits `update_status=7` via clone") — the rebuild owns the encoding, so don't tie the rule to a legacy value. Do NOT invent a reader or writer to complete a pair: an unpaired side is `[OPEN]`, never a guess.
-- **P2 — Enumerate ALL sites of a rule or flow**: when you find a business rule (classifier, validator, gate, threshold), do NOT stop at the first occurrence. Search for the same discriminating signature (field set + comparison + outcome) elsewhere and document EVERY site with its own citation. If two sites disagree → document each separately and mark `[OPEN]` / conflict; never average them into one consensus rule. Examine the entry point of every controller / handler / form file for **entry-point dispatchers** — a branch on an action/mode/HTTP-verb/route discriminator (table row P2): each branch is a DISTINCT flow entry that may set a different initial state — capture them as separate flows / initial-states (distinct operating models, e.g. teller-driven vs back-office, must stay distinguishable even if the rebuild later consolidates them), not one unified flow.
-- **P3 — Behaviour-as-EXECUTED, not as-INTENDED**: production legacy code accretes debug artefacts and silent paths. Scan for and document what an operator OBSERVES: unconditional halt / hard-exit / early-return on a production path (a guard that ALWAYS fires → `[ARTIFACT: debug-code-as-feature]` — table row P3); the FULL transaction-rollback policy (which failures roll back vs are deliberately absorbed/skipped — that is a runtime contract); hardcoded test flags (an always-true gate, a `debug = 1`, a `// delete after testing`); and silent-success paths (empty catch / swallowed error / "expected failure → return success" — table row P3).
-- **P4 — Classify files by structure, not naming**: a file's role comes from its shape, not its filename prefix. Inspect template/output ratio, form-tag/markup presence, and early-return action gates to classify each in-scope file as view / action_handler / dual_purpose / dispatcher / service. When the structural fingerprint contradicts the filename hint (a file named like an action-only handler that ALSO renders a full view → `dual_purpose`), document the mismatch in §9 — downstream rebuild planning depends on the real role.
-- **P6 — Dynamic dispatch & runtime wiring**: a call site whose concrete target is decided at RUNTIME, not lexically, is a **dynamic seam** — a write-side-only read sees the seam but not what it actually does. For every dynamic seam (table row P6 — DI-container resolution, reflection / `dynamic` / duck-typed dispatch, attribute/annotation/convention-based routing & validation, interface → implementation dispatch, event/delegate/middleware/observer wiring), locate the real target(s) the runtime would bind and document the OBSERVED behaviour as a business outcome, citing BOTH the seam site and each resolved target. A seam you can resolve to one or more concrete targets → confirmed; a seam whose target genuinely cannot be determined from the code (e.g. a container registration scanned by convention with no enumerable consumer in scope) → `[OPEN]`, never an invented target. This is the inverse of P2 (one call site, N runtime targets) and the most common silent-miss on DI/reflection-heavy stacks (C#/.NET, Java/Spring, Go, modern TS) — do NOT skip a seam just because the target is not in the same file.
-
-**STACK IDIOMS (auto-injected)** — the disciplines above are stack-neutral; the rows below give the concrete idiom to grep/read for, sliced by the dispatcher to this project's detected legacy stack(s). If a file you read is in a stack not covered by the rows, reason by analogy from the closest idiom (never assume "not present" — confirm by reading):
-
-<STACK_IDIOM_ROWS>
-
-REPORT BACK (last line of your response, exact format):
-- path: <absolute output path>
-- verified: <int>
-- inferred: <int>
-- open: <int>
-- locked: <int>
-- intent: <int>
-- artifact: <int>
-- sources_cited: <int>
-- provenance_pairs_checked: <int>      # P1: state values where BOTH writer + reader were located
-- provenance_anomalies: <int>          # P1: write-only OR read-only-cross-domain values flagged (each MUST carry an [OPEN] or seam annotation)
-- rule_sites_multi: <int>              # P2: rules found in >1 site (each documented separately)
-- dynamic_seams_found: <int>           # P6: runtime-resolved dispatch sites located (DI / reflection / attr-route / interface / event)
-- dynamic_seams_resolved: <int>        # P6: seams resolved to ≥1 concrete target, both sides cited
-- dynamic_seams_open: <int>            # P6: seams whose target could not be resolved from code (each MUST carry an [OPEN])
-- gate_self_check: pass | fail (<reason if fail>)
 ```
 
-> **P1 self-check rail:** if you report `provenance_anomalies > 0`, every anomaly MUST appear in the output as a `write-only` / `inherited / cross-domain seam` note WITH an `[OPEN]` marker (or a cited seam). An anomaly count with no matching annotation in the file is a `fail` on `gate_self_check`.
->
-> **P6 self-check rail:** `dynamic_seams_found` MUST equal `dynamic_seams_resolved + dynamic_seams_open`. Every seam counted in `dynamic_seams_open` MUST appear in the output with an `[OPEN]` marker; every resolved seam MUST cite both the seam site and at least one target. A `dynamic_seams_open > 0` with fewer matching `[OPEN]` markers is a `fail` on `gate_self_check`.
+**What used to be typed here, and where it lives now** (the relocation is 1:1 — no rule was dropped):
+
+| Was typed per dispatch | Lives now |
+|---|---|
+| DISCIPLINE DELTAS (same-line citation + §11, `[INTENT]`-default + positive-evidence tiers, `.bak`-vs-live) | `agents/domain-extractor.md` §Core discipline + §Mutability tiers |
+| EXTRACTION DEPTH (5 bullets) | `agents/domain-extractor.md` §Extraction depth |
+| DEEP DISCIPLINES P1–P4 + P6 | `agents/domain-extractor.md` §Deep disciplines |
+| REPORT BACK exact format + P1/P6 self-check rails | `agents/domain-extractor.md` §Report back |
+| GLOSSARY INDEX usage comment | `agents/domain-extractor.md` §Read the dispatch-static file FIRST |
+| Tech-agnostic output scoping (no stack terms outside §11 + 50-integrations/) | `agents/domain-extractor.md` §Core discipline |
+| `<GLOSSARY_INDEX>` injection | `<kb-dir>/.dispatch-static.md` §GLOSSARY INDEX (script-built) |
+| `<STACK_IDIOM_ROWS>` injection | `<kb-dir>/.dispatch-static.md` §STACK IDIOMS (script-built slice) |
+
+The REPORT BACK contract is unchanged — the controller still parses the same exact-format block (incl. `provenance_anomalies`, `dynamic_seams_*`, `gate_self_check`) from each subagent's final message; it simply arrives via the agent body instead of the typed prompt.
 
 ---
 
-## `<STACK_IDIOM_ROWS>` placeholder (dispatcher-side slicing)
+## Stack-idiom slicing (script-executed; the master table below is the single copy)
 
-The MASTER STACK IDIOM TABLE below lives HERE (dispatcher-side, the single authoritative copy — never inject it whole when detection succeeds). Before dispatching each wave subagent, the main thread substitutes `<STACK_IDIOM_ROWS>` with a SLICE of this table (spec amendment 2026-07-06 in `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` — the full 8-stack table cost ~2.5 KB × 12–15 dispatches while the prompt's own CONTEXT block already names the legacy stack):
+The MASTER STACK IDIOM TABLE below lives HERE (the single authoritative copy — never emitted whole when detection succeeds, and never duplicated into the script: `scripts/build-extract-static.sh` PARSES this table at run time, so editing the table here is sufficient and doc↔script drift is structurally impossible). The builder slices it into `.dispatch-static.md` §STACK IDIOMS per these rules (spec amendment 2026-07-06 in `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` — the full 8-stack table cost ~2.5 KB × 12–15 dispatches while the prompt's own CONTEXT block already names the legacy stack; script-executed since tranche 5d):
 
-1. **Detected stacks** = the UNION of languages in the Wave 0 enumeration (`.scan-meta.json` language breakdown — every language present, not just the dominant one; a PHP+JS legacy gets BOTH columns). Language → column mapping follows the SAME alias convention as `scripts/kb-leak-scan.sh` `LANG_MAP` (the canonical `.scan-meta.json` language-name mapper — the two consumers must not drift): javascript/js/node/nodejs/typescript/ts → `JS / TS`; c#/csharp/cs/.net/dotnet/vb/vb.net → `C# / .NET`; kotlin → `Java`; golang → `Go`; py → `Python`; rb → `Ruby`; rs → `Rust`; match case-insensitively. Markup/data-only languages in the breakdown (HTML, CSS, SQL, YAML, …) map to no column and are ignored for slicing.
-2. **Injected slice** = the `Principle` column + one column per detected stack, ALL 9 rows, rendered as a markdown table (2..N+1 columns). The substitution target is the STANDALONE `<STACK_IDIOM_ROWS>` line inside the skeleton fence — it is the token's only in-skeleton occurrence; replace exactly that line.
-3. **Fallback — inject the FULL table** when: the enumeration is missing/empty, NO detected language maps to a column, or the run predates `.scan-meta.json`. Never dispatch with an empty `<STACK_IDIOM_ROWS>` — a subagent must always have concrete idiom anchors (the skeleton's reason-by-analogy line covers stacks beyond the injected slice either way).
-4. Mixed case — SOME detected languages map, others don't: inject the mapped columns (the analogy line covers the rest); do NOT fall back to the full table for that.
+1. **Detected stacks** = the UNION of languages in the Wave 0 enumeration (`.scan-meta.json` language breakdown — every language present, not just the dominant one; a PHP+JS legacy gets BOTH columns). Language → column mapping follows the SAME alias convention as `scripts/kb-leak-scan.sh` `LANG_MAP` (the canonical `.scan-meta.json` language-name mapper): javascript/js/node/nodejs/typescript/ts → `JS / TS`; c#/csharp/cs/.net/dotnet/vb/vb.net/vbnet → `C# / .NET`; kotlin → `Java`; golang → `Go`; py → `Python`; rb → `Ruby`; rs → `Rust`; match case-insensitively. **The alias map — unlike the idiom table — is a hand-maintained duplicate in its two consumers (`kb-leak-scan.sh` + `build-extract-static.sh`); keep them in step** (full-set parity is pinned by `tests/token-efficiency/test-extract-dispatch-static.sh`). Markup/data-only languages in the breakdown (HTML, CSS, SQL, YAML, …) map to no column and are ignored for slicing.
+2. **Emitted slice** = the `Principle` column + one column per detected stack, ALL 9 rows, rendered as a markdown table (2..N+1 columns), written into `.dispatch-static.md` §STACK IDIOMS.
+3. **Fallback — emit the FULL table** when: the enumeration is missing/empty, NO detected language maps to a column, or the run predates `.scan-meta.json`. The builder never writes an empty §STACK IDIOMS — a subagent must always have concrete idiom anchors (the agent body's reason-by-analogy rule covers stacks beyond the emitted slice either way).
+4. Mixed case — SOME detected languages map, others don't: emit the mapped columns (the analogy rule covers the rest); do NOT fall back to the full table for that.
 
 **MASTER STACK IDIOM TABLE** (dispatcher-side; match the row to the principle):
 
@@ -186,9 +154,10 @@ Not dispatched; main thread runs:
 3. If `--seed=<path>` provided: copy seed file to `{out}/_source/` (read-only cross-reference).
 4. Enumerate legacy codebase: top-level dirs, file types, total file count, total size, language breakdown.
 5. Persist enumeration to `{out}/knowledge-base/.scan-meta.json` (used by later waves for file selection).
-6. Confirm with user if `--auto` not set; show file count + estimated parallel-agent dispatch count.
+6. **Run** `bash <plugin-root>/scripts/build-extract-static.sh --kb-dir={out}/knowledge-base --plugin-root=<plugin-root> --no-glossary` — writes `.dispatch-static.md` (idiom slice only; `--no-glossary` keeps a prior run's glossary from leaking in as a stale index). The stdout JSON's `stacks` + `stack_source` also feed the CONTEXT block's legacy-stack line.
+7. Confirm with user if `--auto` not set; show file count + estimated parallel-agent dispatch count.
 
-Gate before Wave 1: skeleton dirs exist, seed copied (if provided).
+Gate before Wave 1: skeleton dirs exist, seed copied (if provided), `.dispatch-static.md` exists. If the builder failed instead, its stderr already carries the remedy (e.g. the resolve-python guidance on Windows) — fix and re-run it; never dispatch without the file.
 
 ---
 
@@ -204,7 +173,9 @@ ROLE: Legacy code archaeologist for system overview.
 
 SCOPE: Produce 4 files in {out}/knowledge-base/00-overview/:
   - system-purpose.md (2-3 paragraphs; what the system does in business terms)
-  - glossary.md (40+ terms; every domain term + system term used elsewhere in KB)
+  - glossary.md (40+ terms; every domain term + system term used elsewhere in KB.
+    FORMAT MANDATE: one `## <term>` heading per term — the dispatch-static index
+    builder parses exactly that shape, and the Wave-1 gate FAILS on zero such headings)
   - module-classification.md (table: domain → Master|Workflow|Reporting|Integration|Reference + rationale)
   - actors-and-roles.md (every role found in legacy auth/RBAC code + role × module access matrix)
 
@@ -248,8 +219,15 @@ GATE=0
 for f in 00-overview/*.md 30-data-model/*.md 20-workflows/*.md; do
   [[ -f "$f" ]] || { echo "MISSING: $f"; GATE=1; }
 done
-# Glossary completeness check
-grep -c '^## ' 00-overview/glossary.md  # ≥40 entries expected
+# Glossary format gate (HARD) + completeness (advisory). The index builder and the
+# downstream citation discipline both require one `## <term>` heading per term; ZERO
+# such headings must fail HERE — where the documented re-dispatch remedy still applies —
+# because the post-Wave-1 `## GLOSSARY INDEX` verify below would otherwise dead-end the
+# whole run with no stated cause. The ≥40-entries expectation stays ADVISORY (a small
+# legacy can legitimately have fewer terms).
+GC=$(grep -c '^## ' 00-overview/glossary.md)
+[[ "$GC" -ge 1 ]] || { echo "GLOSSARY FORMAT FAIL: zero '## <term>' headings"; GATE=1; }
+echo "glossary terms: $GC (≥40 expected)"
 # Tech-leak scan (per-stack, advisory) — replaces the old hardcoded PHP/SQL grep.
 # Detects the legacy stack from .scan-meta.json (or pass --stack=<x>) and flags any
 # stack-specific token leaking into a tech-agnostic domain body. Advisory: prints +
@@ -266,6 +244,8 @@ bash "$PLUGIN_ROOT/scripts/kb-leak-scan.sh" --kb-dir="$(pwd)" --stack=all || tru
 ```
 
 If FAIL → re-dispatch the failing agent with the gate output as feedback. Halt if same gate fails twice.
+
+**After GATE 1 PASS, before any Wave 2 dispatch:** re-run `bash <plugin-root>/scripts/build-extract-static.sh --kb-dir={out}/knowledge-base --plugin-root=<plugin-root>` — the glossary now exists, so `.dispatch-static.md` gains its `## GLOSSARY INDEX` section. Verify: `grep -q '^## GLOSSARY INDEX' {out}/knowledge-base/.dispatch-static.md` — dispatch no Wave 2/3/4 agent until it passes.
 
 ---
 
@@ -321,7 +301,7 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 - §6 Business Rules: extract IMPLICIT rules (coded as conditionals) as explicitly named rules. Format: "**BR-{domain}-{N}**: {rule in business language}. [marker] (`file:line`)".
 - §8 Edge Cases: minimum 3 entries per workflow domain. Look for: empty-collection edge cases, boundary values (0, max, null), race conditions between concurrent users, timezone/date-boundary issues.
 - §9 Rebuild Recommendations: for each edge case, explicitly state: replicate (it's a real business rule) / do-not-replicate (it's a bug) / open question (unclear).
-- §8 State Machine — apply **P1 provenance** (see DEEP DISCIPLINES in the generic prompt): for every transition you document from a state WRITE, also locate the READ that consumes that state; flag write-only / inherited-cross-domain values rather than silently assuming a transition the read-side never honors. Apply **P2** to any classifier/gate in the flow (enumerate all sites; capture distinct entry-point initial states separately).
+- §8 State Machine — apply **P1 provenance** (see §Deep disciplines in `agents/domain-extractor.md`): for every transition you document from a state WRITE, also locate the READ that consumes that state; flag write-only / inherited-cross-domain values rather than silently assuming a transition the read-side never honors. Apply **P2** to any classifier/gate in the flow (enumerate all sites; capture distinct entry-point initial states separately).
 
 **Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥3 entries per workflow file (≥1 was too lenient — shallow extraction passed the gate with trivial entries).
 

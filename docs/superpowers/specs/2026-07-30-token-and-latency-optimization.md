@@ -326,7 +326,9 @@ a call takes 1–4 of them.
 **Gain — RE-DERIVED from the shipped procedure. The published "22 → 7–13 stops (`--auto`, N=8);
 25–42 interactive" is corrected at the FLOOR only; the delivered work MEETS the published claim.**
 
-Assumptions, on the outside: N = 8 OQs; a clean vault (the conditional LOCKED-unlock prompt is
+Assumptions, on the outside: N = 8 OQs, **all P1** — the `--auto` column requires this, because
+`--auto` defaults Step 0.6 to `p1-only`, so a mixed-priority N = 8 would put fewer than 8 OQs in the
+queue and the closed form below would not be walking all 8; a clean vault (the conditional LOCKED-unlock prompt is
 excluded from both columns); mix **5 Answer / 1 Defer / 1 Out-of-scope / 1 Skip**, one of the 5
 Answers cross-cutting. Fixed logistical prompts per run = Step 0 vault + Step 0.6 scope
 (+ Step 0.5 resume, which fires only when a prior round exists) = **2 interactive on a first pass,
@@ -527,7 +529,56 @@ both downstream phases are forked (`routing-rules.md:92` + `scan-procedure.md:49
 - **5c — intent-leg phase-advisor seed bundle.** The shipped fix was wired to the **bind leg only**.
   15–50K per dispatch. **Invariant: a slice is a SEED the consumer expands from, never a CAP** —
   ship a seed-not-boundary CONFLICT test.
-- **5d — lens-prompt template / invariant-first ordering** (~150K per extract run).
+- **5d — extract-intelligence dispatch: invariant into the agent body, injections into a script.
+  SHIPPED v5.18.0 (2026-08-01).** The research row's premise held (no template; the invariant was
+  model-typed per dispatch) but its **~150K/run (~129K output) figure did NOT reproduce and is
+  superseded by the measurements below** — same rule as Phase 0: the measured number replaces the
+  estimate, whichever direction it moves.
+
+  **What shipped.** (1) The invariant contract — DISCIPLINE deltas, EXTRACTION DEPTH, DEEP
+  DISCIPLINES P1–P4+P6, REPORT BACK + both self-check rails, glossary-index usage, tech-agnostic
+  output scoping — moved wholesale into `agents/domain-extractor.md`, the subagent's SYSTEM prompt:
+  it loads on every `domain-extractor` dispatch by construction — extract-intelligence is its sole
+  dispatcher, and that agent choice remains prose-stated, not validator-enforced — so a hurried
+  controller can no longer truncate the contract the way a typed block could be (the delivery moved
+  UP the gates>rules ladder); it is byte-identical across all ~15 dispatches (the strongest cache
+  position), and the model types none of it. (2) The two mechanical injections —
+  the `<STACK_IDIOM_ROWS>` slice and the `<GLOSSARY_INDEX>` — are derived by
+  `scripts/build-extract-static.sh` into `<kb>/.dispatch-static.md` (run at Wave 0, re-run after
+  the Wave 1 gate; atomic; fail-closed exit 2; the MASTER idiom table is PARSED out of
+  `wave-dispatch-templates.md` at run time so the single-copy rule is structural; the glossary
+  `short_def` is a verbatim word-boundary prefix — the model-paraphrase surface is gone). Every B1
+  slicing rule is preserved and now script-enforced. (3) The typed dispatch is the variable core
+  only: ROLE/CONTEXT/SEED/READ-FIRST/FILES/OUTPUT/TEMPLATE + the wave SCOPE blocks (wave depth
+  deltas deliberately stay model-typed prose — the script owns mechanical derivations only).
+
+  **Measured (2026-08-01, against the shipped tree; 4 B/tok both sides):**
+  - Skeleton fence, old → new: **9,836 B → 772 B = 9,064 B/dispatch** of invariant the controller
+    no longer types. This is a FLOOR for the typed reduction: the old flow additionally typed the
+    idiom slice (**820 B** measured at 2 detected stacks / **920 B** full-table fallback, per
+    dispatch × ~15) and the glossary index (project-dependent, ×12 — format overhead measured at
+    ~95–112 B/term; an 80-term glossary ⇒ ~8 KB × 12) ON TOP of the fence.
+  - Per 15-dispatch run, fence term alone: 9,064 × 15 = 135,960 B ≈ **34.0K output tok ≈ 170K
+    cost-units at the 5.0× output weight**. With the slice term: +12.3–13.8 KB/run ≈ +3.1–3.4K tok.
+    The glossary-index term is published as a formula (`index_bytes × 12 ÷ 4`), not a constant —
+    no field glossary exists in this repo to measure one honestly.
+  - Also removed from the MAIN thread: the 80–120 KB glossary read (the script reads it now, in a
+    subprocess — the bytes never enter any model context).
+  - **The trade, stated:** the agent body grew 3,589 → 13,920 B (**+10,331 B ≈ 2.6K tok**) of
+    subagent INPUT. Worst corner (all 15 dispatches cache-miss at 1.25×): ~48K cost-units — still
+    ~3.5× cheaper than the 170K output-side floor it replaces. Realistic corner (1× creation +
+    14× cache_read 0.1×): ~6.8K cost-units, ~25×. The `.dispatch-static.md` Read per subagent is
+    a near-wash — the same bytes previously arrived as prompt input.
+  - Wall-clock: ~136 KB/run of serial main-thread generation removed ≈ **34K tok ÷ 50–150 tok/s =
+    3.8–11.3 min per extract run**; builder runtime is one python spawn ~2×/run (constant, no
+    per-item fan-out).
+
+  **Pinned by:** `tests/token-efficiency/test-extract-dispatch-static.sh` (script: parse/slice/
+  gloss/atomicity/leak-scan-exclusion), the rewritten `test-b1-wave-dispatch-diet.sh` (relocation
+  1:1 — every moved block present verbatim in the agent body; the fence carries the variable core
+  only), and `tests/fixtures/iter80-extract-deepening/verify.sh` (disciplines reach every subagent
+  — now by construction). Amended into the tech-agnostic spec (2026-08-01 note under the B1
+  amendment).
 - **5e — FSD + PRD builder scripts** (SIT/UAT already have them). Highest effort; do last.
 
 **Explicitly deprioritised (measured ceilings, not worth the effort):** the always-on surface
@@ -587,7 +638,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a → 2b → 3a → 5d → 5b → 5c → 2a/2c/2d → 4 → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b → 5c → 2a/2c/2d → 4 → 5e → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now
