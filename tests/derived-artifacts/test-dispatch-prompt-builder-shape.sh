@@ -552,7 +552,7 @@ done
 [ -z "$D_MISS" ] && ok "D3: ZERO marker lines for absent sections (16 markers checked)" \
                  || fail "D3: fabricated marker(s) present:$D_MISS"
 
-$PY - "$WORK/bare.json" <<'PY' && ok "D4: all 9 absent sections listed in sections_omitted with a cited, input-naming reason" || fail "D4: an absent section is unlisted or its reason does not cite the missing input"
+$PY - "$WORK/bare.json" <<'PY' && ok "D4: all 10 absent sections listed in sections_omitted with a cited, input-naming reason" || fail "D4: an absent section is unlisted or its reason does not cite the missing input"
 import json, sys
 d = json.load(open(sys.argv[1]))
 om = {o["section"]: o["reason"] for o in d["sections_omitted"]}
@@ -560,6 +560,7 @@ want = {
     "starterkit_slice":      "no starterkit-context.yaml at",
     "map_patterns":          "no codebase-map.md",
     "reuse_slice":           "reuse-index.yaml absent at",
+    "symbol_slice":          "symbol-index.json absent at",
     # The reason now names the FILTER, not just the file: a run that matches
     # neither the unit id nor any target-file basename is DROPPED, and zero
     # matches omits the section (it used to emit every run under a header that

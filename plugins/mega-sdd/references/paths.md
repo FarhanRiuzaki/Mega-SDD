@@ -69,7 +69,8 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── 00-overview/, 10-domains/, etc.
 │   │   └── .scan-meta.json
 │   ├── codebase/                                  # Codebase analysis outputs
-│   │   └── codebase-map.md                        # scan-codebase output
+│   │   ├── codebase-map.md                        # scan-codebase output
+│   │   └── symbol-index.json                      # build-symbol-index.sh output (reuse substrate; recomputable, advisory)
 │   ├── memory/                                    # PROJECT-scope memory
 │   │   ├── decisions.md                           # OQ resolutions, CONFLICT actions
 │   │   ├── conventions.md                         # Detected conventions
@@ -104,6 +105,7 @@ Every writer skill resolves output paths via this protocol:
 | `extract-intelligence` | knowledge-base/ | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
 | `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
 | `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | `docs/codebase/starterkit-context.yaml` (legacy back-compat probe only) |
+| `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |
 | `generate-intent` | vault/ | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` |
 | `bind-codebase` | binding.md + bound/ | `<vault>/binding.md` + `<vault>/bound/` | `<vault>/binding.md` + `<vault>-bound/` |
 | `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |

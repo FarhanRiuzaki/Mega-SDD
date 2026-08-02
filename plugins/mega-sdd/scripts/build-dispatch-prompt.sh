@@ -2340,6 +2340,88 @@ else:
     omit("reuse_slice", "no reuse-index entry overlaps target_files or reuse_candidates")
 
 
+# ── Priority 3b — symbol slice (R2, spec 2026-08-02-reuse-first-grounding-index.md) ──
+# The full-repo symbol index (script-built, .mega-sdd/codebase/symbol-index.json).
+# Retrieval is a DETERMINISTIC rule — (a) symbols defined IN target_files, then
+# (b) symbols in the SAME directories — never model-chosen search terms.
+# Freshness is the controller's batch-level step (SKILL.md §Step 4.5 runs
+# scripts/build-symbol-index.sh once per run); this body spawns NOTHING (the
+# zero-subprocess law above), so it trusts head_commit as provenance, not verdict.
+SYM_PATH = os.path.join(CWD, ".mega-sdd", "codebase", "symbol-index.json")
+_symtext = read_text(SYM_PATH)
+sym_rows = []
+sym_meta = None
+if _symtext is not None:
+    try:
+        _symdoc = json.loads(_symtext)
+    except ValueError:
+        _symdoc = None
+    if isinstance(_symdoc, dict) and isinstance(_symdoc.get("symbols"), list):
+        sym_meta = {"head": str(_symdoc.get("head_commit") or "")[:8] or "?",
+                    "count": _symdoc.get("symbol_count", len(_symdoc["symbols"]))}
+        _tset = {nslash(tp) for tp in TARGET_PATHS}
+        _tdirs = {os.path.dirname(nslash(tp)) for tp in TARGET_PATHS}
+        def _one_line(v):
+            # the index is UNGUARDED derived state: a newline or backtick in a
+            # field must never mint its own markdown line/fence inside the
+            # dispatch prompt (round-2 finding B5)
+            t = "" if v is None else str(v)
+            t = t.splitlines()[0] if t.splitlines() else ""
+            return t.replace("`", "'")
+        _a, _b = [], []
+        for _sy in _symdoc["symbols"]:
+            if not isinstance(_sy, dict):
+                continue
+            _f = nslash(_one_line(_sy.get("file")))
+            if not _f:
+                continue
+            row = "- %s:%s %s `%s` — %s" % (_f, _one_line(_sy.get("line")), _one_line(_sy.get("kind")),
+                                            _one_line(_sy.get("name")), _one_line(_sy.get("signature"))[:120])
+            if _f in _tset:
+                _a.append(row)
+            elif os.path.dirname(_f) in _tdirs:
+                _b.append(row)
+        sym_rows = _a + _b
+
+SYM_HEAD = "### Existing symbols (REUSE — extend, don't recreate)\n\n"
+
+
+def _render_symbols(n):
+    if not sym_rows:
+        return ""
+    body = ["index@%s · %s symbols · built by scripts/build-symbol-index.sh"
+            % (sym_meta["head"], sym_meta["count"])]
+    body.extend(sym_rows[:n])
+    left = len(sym_rows) - min(n, len(sym_rows))
+    if left > 0:
+        body.append("+%d more — query via scripts/query-symbol-index.sh" % left)
+    return SYM_HEAD + "\n".join(body)
+
+
+SYM_FLOOR = (SYM_HEAD + "+%d more — query via scripts/query-symbol-index.sh" % len(sym_rows))
+if sym_rows:
+    # LEVEL 0 already carries the V1 cap (spec R2: "Cap 40 rows AT LEVEL 0") —
+    # an under-budget dispatch still emits at most 40 rows + the pointer.
+    _slv, _srl = [_render_symbols(40)], []
+    for cap in (20, 10):
+        cand = _render_symbols(cap)
+        if len(cand) < len(_slv[-1]):
+            _slv.append(cand)
+            _srl.append("top %d symbols (target-file rows first)" % cap)
+    # DROP FLOOR: mirrors reuse_slice — when the index exists and overlaps,
+    # at minimum the query-pointer hint line survives.
+    if len(_slv[-1]) > len(SYM_FLOOR):
+        _slv.append(SYM_FLOOR)
+        _srl.append("hint line only — never fully dropped (drop floor)")
+    add_section("symbol_slice", 3, _slv, _srl)
+elif _symtext is None:
+    omit("symbol_slice", "symbol-index.json absent at %s (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)" % SYM_PATH)
+elif sym_meta is None:
+    omit("symbol_slice", "symbol-index.json unparseable — rebuild via scripts/build-symbol-index.sh")
+else:
+    omit("symbol_slice", "no indexed symbol in or beside target_files")
+
+
 # ── Priority 8a — starterkit slice (own 7-step internal ladder) ──────────────
 SK_PATH = os.path.join(CWD, ".mega-sdd", "codebase", "starterkit-context.yaml")
 sk = None
@@ -3098,8 +3180,9 @@ else:
 
 # EMIT ORDER is the TEMPLATE's order, which is NOT the priority order.
 EMIT_ORDER = ["depends_on_summaries", "framework_pack_rules", "constitution_clauses",
-              "kb_anti_patterns", "historical_memory", "reuse_slice", "map_patterns",
-              "starterkit_slice", "design_slice", "confidence_labels", "validation_hints"]
+              "kb_anti_patterns", "historical_memory", "reuse_slice", "symbol_slice",
+              "map_patterns", "starterkit_slice", "design_slice", "confidence_labels",
+              "validation_hints"]
 # Tier 8 carries THREE rows and the table now enumerates all three
 # (context-enrichment.md, amended 2026-07-31): 8a `starterkit_slice`, 8b
 # `map_patterns`, 8c `design_slice`. The order below IS that pinned order. 8b has
@@ -3109,7 +3192,8 @@ EMIT_ORDER = ["depends_on_summaries", "framework_pack_rules", "constitution_clau
 CASCADE_ORDER = sorted(
     SECTIONS.values(),
     key=lambda s: (s.priority,
-                   {"starterkit_slice": 0, "map_patterns": 1, "design_slice": 2}.get(s.key, 0),
+                   {"reuse_slice": 0, "symbol_slice": 1,
+                    "starterkit_slice": 0, "map_patterns": 1, "design_slice": 2}.get(s.key, 0),
                    s.key))
 
 
@@ -3429,7 +3513,7 @@ constitution_nontruncatable = bool(_const and _const.text().strip())
 halt = None
 if all_1_to_8_at_floor and total_bytes > CAP_HARD and constitution_nontruncatable:
     # `warnings` here IS running_budget.warnings — the truncation-event list the
-    # halt payload is specified to carry (context-enrichment.md:167). Free-text
+    # halt payload is specified to carry (context-enrichment.md:168, the never-drop row). Free-text
     # log lines live in the top-level `warnings` key of the JSON, not in here.
     #
     # `truncation_exhausted` is DERIVED from term (a), never asserted as a
