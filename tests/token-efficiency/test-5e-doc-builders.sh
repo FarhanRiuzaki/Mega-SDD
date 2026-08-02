@@ -51,7 +51,7 @@ printf '%s' "$OUT" | grep -q 'mode=pre-dev' && ok "pre-dev mode detected" || fai
 F="$V/fsd/FSD.md"
 if grep -qE '\{\{[a-z0-9_-]+\}\}' "$F"; then fail "leftover slots in FSD.md"; else ok "slot scan clean (Step 4.5 grammar)"; fi
 grep -q '| FR-001 | Login | HIGH | Specified |' "$F" && ok "FR table row" || fail "FR table wrong"
-grep -q 'CONFIRMED (per \`binding.md\` claim C-001)' "$F" && ok "binding verdict wired into FR detail" || fail "binding verdict missing"
+grep -qF 'CONFIRMED (per `binding.md` claim C-001)' "$F" && ok "binding verdict wired into FR detail" || fail "binding verdict missing"
 grep -q '| OQ-001 | Limit? | P1 | business |' "$F" && ok "OQ row with bolded fields parsed" || fail "OQ row wrong"
 if grep -q 'OQ-002' "$F"; then fail "resolved OQ leaked into §10"; else ok "resolved OQ filtered"; fi
 grep -qF '**As a** API consumer' "$F" && ok "user-story scope fallback (BE -> API consumer)" || fail "as_a fallback wrong"
@@ -143,7 +143,7 @@ printf -- '- squad: Dev\n  lead_name: Budi\n  responsibility: koding\n- squad: A
 bash "$FSD" --vault="$VH" --cwd="$PH" </dev/null >/dev/null 2>&1 || fail "hard vault builder rc"
 FH="$VH/fsd/FSD.md"
 grep -qE '\| FR-001 \| Kecil \| MEDIUM \| Specified \(no unit\) \|' "$FH" && ok "F1: FR-001 NOT stolen by FR-0010's unit/bolt (prefix-immune)" || fail "F1 regressed: $(grep '| FR-001 ' "$FH")"
-grep -q 'CONFLICT (per \`binding.md\` claim C-002)' "$FH" && ok "F1: FR-001 verdict = CONFLICT from ITS line (not C-001's CONFIRMED)" || fail "F1 verdict regressed"
+grep -qF 'CONFLICT (per `binding.md` claim C-002)' "$FH" && ok "F1: FR-001 verdict = CONFLICT from ITS line (not C-001's CONFIRMED)" || fail "F1 verdict regressed"
 grep -q '| FR-0010 | Besar | LOW | Implemented |' "$FH" && ok "F3: #### FR heading parsed with its own priority" || fail "F3 regressed"
 grep -q '\[Source: units/U-010/unit.md' "$FH" && ok "F2: nested unit cited at its REAL path" || fail "F2 regressed"
 bash "$CMAP" --vault="$VH" --cwd="$PH" --mode=post-dev </dev/null >/dev/null 2>&1 && ok "F2: citation map resolves the nested-unit citation (exit 0)" || fail "F2 downstream regressed"
@@ -177,7 +177,7 @@ grep -q '| login | login(email) | app/L.php |' "$FR2" && ok "ADV-008: numbered m
 if grep -q '| File | fn |' "$FR2"; then fail "ADV-008: header row leaked as data"; else ok "ADV-008: header row skipped"; fi
 if grep -q '^- Slot semantics' "$FR2"; then fail "ADV-014: template-internal ToC leaked into the FSD"; else ok "ADV-014: no template ToC in the emitted doc"; fi
 OUT=$(bash "$PRD" --out-root="$VR" --cwd="$PR2" --mode=forward </dev/null 2>&1)
-grep -q '| OQ-R-1 | Kebijakan carry-over? | P1 | \`vault.json\` |' "$VR/prd/PRD.md" && ok "ADV-009: PRD §6 falls back to vault.json.open_questions[]" || fail "ADV-009 regressed"
+grep -qF '| OQ-R-1 | Kebijakan carry-over? | P1 | `vault.json` |' "$VR/prd/PRD.md" && ok "ADV-009: PRD §6 falls back to vault.json.open_questions[]" || fail "ADV-009 regressed"
 # ADV-004: a bolt-report with NO bolt_status must never read as completed
 mkdir -p "$VR/units" "$VR/bolts/U-001"
 printf -- '---\nunit_id: U-001\nimplements_claim: FR-001\n---\n# U-001\n\n## Acceptance\n\n- command: make t\n- expected: pass\n' > "$VR/units/U-001.md"
@@ -206,7 +206,7 @@ bash "$MRK" --prd="$PRM" --cwd="$KM" --kb="$KM/.mega-sdd/knowledge-base" </dev/n
 note "== WIRING pins =="
 grep -q 'build-fsd-core.sh --vault=' "${ROOT}/plugins/mega-sdd/skills/emit-fsd/SKILL.md" && ok "emit-fsd SKILL instructs the builder" || fail "emit-fsd not rewired"
 grep -q 'build-prd-core.sh --out-root=' "${ROOT}/plugins/mega-sdd/skills/emit-prd/SKILL.md" && ok "emit-prd SKILL instructs the builder" || fail "emit-prd not rewired"
-grep -q 'EXECUTED BY \`scripts/build-fsd-core.sh\`' "${ROOT}/plugins/mega-sdd/skills/emit-fsd/references/section-mapping.md" && ok "section-mapping declares the builder contract" || fail "mapping note missing"
+grep -qF 'EXECUTED BY `scripts/build-fsd-core.sh`' "${ROOT}/plugins/mega-sdd/skills/emit-fsd/references/section-mapping.md" && ok "section-mapping declares the builder contract" || fail "mapping note missing"
 grep -q 'fsd-template.md' "$FSD" && ! grep -q '## 1. Overview' "$FSD" && ok "builder parses the template (no hand-duplicated skeleton)" || fail "skeleton duplicated in builder"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 5E DOC-BUILDER PROOFS OK"; else note "5e proofs FAILED"; fi
