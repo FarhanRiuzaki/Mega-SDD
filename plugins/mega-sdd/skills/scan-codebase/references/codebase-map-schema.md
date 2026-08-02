@@ -16,16 +16,19 @@ languages_detected: ["typescript", "php", "javascript"]
 package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
 # engine + precision metadata
-engine: tree-sitter | regex
-precision_tier: ast | regex
-# downgrade record — present ONLY when the Step 5 spawn-cost gate's `--auto` lane traded
-# tree-sitter for regex (references/scan-procedure.md §Spawn-cost gate, lane 3). One line
-# carrying four facts: estimate, N_total (N_hash + N_extract), OS, budget. Its ABSENCE means
-# `precision_tier` is the tier the invocation selected; its PRESENCE means the tier was lowered
-# unattended and says exactly why — the durable half of the "record, not the action" rail.
+engine: tree-sitter | ast-grep | regex
+precision_tier: ast | regex                    # BOTH AST engines stamp `ast`
+# downgrade record — present when ANY ladder fall happened: (a) Step-0 per-language falls
+# (`lang:reason -> tier` pairs from the probe digest — grammar_compile_killed etc.;
+# references/scan-procedure.md §Step 0), and/or (b) the Step 5 spawn-cost gate's UNATTENDED
+# lane trading tree-sitter for a cheaper tier (lane 3 — ast-grep when present, precision
+# stays ast; else regex — with estimate, N_total, OS, budget). Its ABSENCE means every
+# language extracted at the tier the invocation selected; its PRESENCE says exactly what
+# fell and why — the durable half of the "record, not the action" rail.
 precision_downgrade_reason: "step-5 spawn budget: N_total=2000 (N_hash=0 + N_extract=2000) x 0.22s/spawn (os=windows-bash) = ~440s > 60s budget; --auto lane downgraded tree-sitter -> regex"
-tree_sitter_version: <version-string>          # only when engine=tree-sitter
-grammars_used: ["typescript", "php"]            # only when engine=tree-sitter
+tree_sitter_version: <version-string>          # only when the tier-1 binary was found
+astgrep_version: <version-string>               # only when the tier-2 binary was found
+grammars_used: ["typescript", "php"]            # languages that extracted at an AST tier
 # staleness stamp — verified git HEAD at scan time (omit when the repo has no .git OR
 # `git rev-parse --verify 'HEAD^{commit}'` fails, e.g. a fresh zero-commit repo; consumers
 # treat a stamp equal to the literal string "HEAD" as missing)
@@ -100,7 +103,7 @@ For each vault claim referencing code (endpoint, field, file path), `bind-codeba
 
 ## Detection precision
 
-The scan is **heuristic** (AST captures when `engine: tree-sitter`, regex + file traversal otherwise). Either engine will miss:
+The scan is **heuristic** (AST captures when `engine: tree-sitter` or `engine: ast-grep`, regex + file traversal otherwise). Either engine will miss:
 - Dynamic routes generated at runtime
 - Magic methods / metaprogramming
 - Out-of-tree dependencies

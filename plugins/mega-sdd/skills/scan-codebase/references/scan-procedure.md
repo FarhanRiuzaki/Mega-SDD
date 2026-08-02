@@ -2,12 +2,12 @@
 
 ## Contents
 - Incremental mode (`--changed-only`)
-- Step 0 — Engine detection (tree-sitter multi-binary probe + regex fallback)
+- Step 0 — Engine detection (probe-scan-engine.sh — the 3-tier ladder digest)
 - Step 1 — Detect repo root
 - Step 2 — Detect package manager / language
 - Step 3 — Detect test framework
 - Step 4 — Build tree (depth-limited) + persist the enumeration (`.scan/files.z`)
-- Step 5 — Extract public interfaces (per-file invalidation gate; tree-sitter; regex/ripgrep)
+- Step 5 — Extract public interfaces (per-file invalidation gate; tree-sitter; ast-grep; regex/ripgrep)
 - Step 6 — Extract routes
 - Step 7 — Extract data models
 - Step 8 — Detect naming conventions
@@ -51,22 +51,61 @@ Apply the default exclusion globs to the union (a journaled `node_modules/` writ
 
 **Anti-halu rail (STRUCTURAL since the deriver):** carried-forward rows keep their original `Last_Scanned_Sha256` — they are byte-copies the script emits, never rows the model retyped; ONLY delta rows get new hashes. A prior map the deriver cannot parse section-by-section is **exit 3 `fallback_full`** — nothing is written; re-run as a full scan (the documented fallback, now enforced at the exact point the merge happens).
 
-## Step 0 — Engine detection (multi-binary probe)
+## Step 0 — Engine detection (ONE probe-script spawn, never prose-driven probes)
 
-Probe for tree-sitter via TWO binary names (different package managers ship under different names):
+Run the deterministic resolver — **one spawn resolves the whole 3-tier ladder**
+(`tree-sitter → ast-grep → regex`, `references/tree-sitter-integration.md §The 3-tier
+ladder` is the owner):
 
 ```bash
-command -v tree-sitter || command -v tree-sitter-cli
+# <plugin-root> = the mega-sdd plugin directory (resolve it the same way every
+# other scripts/ invocation in this skill does)
+<plugin-root>/scripts/probe-scan-engine.sh \
+  [--engine=tree-sitter|ast-grep|regex] [--timeout=30] \
+  --lang=<lang>:<one-real-source-file> ... [--lang=<scaffold-only-lang>]
 ```
 
-- `tree-sitter` — typically when installed via `brew install tree-sitter-cli` or `cargo install tree-sitter-cli` (binary name is just `tree-sitter`).
-- `tree-sitter-cli` — typically when installed via `npm install -g tree-sitter-cli` (binary may keep the package name).
+Pass every Step-2-detected language with ONE real source file (`--lang=php:app/Models/User.php`);
+a language with zero source files yet (scaffold-only repo — a first-class scan-first mode) is
+passed WITHOUT a file and recorded as SKIPPED, not failed. The script probes both tree-sitter
+binary names (`tree-sitter` — brew/cargo; `tree-sitter-cli` — npm), runs the per-language
+**grammar smoke tests SERIALLY with a hard per-probe timeout** (binary presence ≠ working grammars — a default install ships ZERO grammars configured) (the smoke test is also a clang
+compile step — parallel probes have OOM-killed clang: `killed: 9`, live incident 2026-08-02,
+which is WHY detection is a script and not prose), probes `ast-grep`, and prints ONE compact
+JSON digest:
 
-Resolution:
-- Found (either) → run the **grammar smoke test** BEFORE claiming the engine (binary presence ≠ working grammars — a default `brew install tree-sitter-cli` ships the CLI with ZERO grammars configured, and every query would fail "No language found"): for each detected language with a `queries/tags-<lang>.scm` AND at least one source file, invoke the Step 5 query once against one real source file. A language with zero source files yet (scaffold-only repo — a first-class scan-first mode) is SKIPPED, not counted as failed. A language whose invocation errors falls back to regex FOR THAT LANGUAGE and is excluded from `grammars_used`. At least one language passes → `engine: tree-sitter` (precision_tier `ast`); `grammars_used` lists exactly the languages that passed. ALL testable languages fail → downgrade to `engine: regex` with the same chat warning as the not-found path plus the grammar-install pointer (`queries/VERSIONS.md §Installation`). NO language was testable (scaffold-only) → keep `engine: tree-sitter` per binary presence with `grammars_used: []` (nothing was extracted either way). Stash the actual binary name found for subsequent invocations.
-- Not found AND `--engine=tree-sitter` flag set → halt `dep_missing` with install commands.
-- Not found AND no flag → fall back to `engine: regex`; emit chat warning: "⚠️ tree-sitter not found (probed: tree-sitter, tree-sitter-cli); using regex engine (lower precision). Install: brew install tree-sitter-cli / cargo install tree-sitter-cli / npm install -g tree-sitter-cli — or run `/mega-sdd:install-deps` to install automatically".
-- Override via `--engine=tree-sitter|regex` flag.
+```json
+{"engine": "...", "precision_tier": "...", "binary_name": "...",
+ "tree_sitter_version": "...", "astgrep_version": "...",
+ "grammars_used": ["<tier-1 langs>"], "astgrep_langs": ["<tier-2 langs>"],
+ "fallbacks": [{"lang": "...", "tier": "...", "reason": "..."}], "halt": null}
+```
+
+Resolution (computed by the script; the skill CONSUMES the digest, it never re-probes):
+- `grammars_used` non-empty → `engine: tree-sitter`, `precision_tier: ast`; those languages
+  extract via the tier-1 lane below. Languages in `astgrep_langs` extract via the tier-2 lane
+  in the SAME run (per-language ladder). `binary_name` is the stashed binary for Step-5
+  invocations — do not re-probe.
+- `grammars_used` empty, `astgrep_langs` non-empty → `engine: ast-grep`, `precision_tier: ast`
+  (zero-compilation tier — grammars are EMBEDDED in the static binary, so the clang-OOM class
+  cannot occur). Emit one chat line naming the per-language `fallbacks[].reason`
+  (`grammar_compile_killed` = retryable OOM, NOT an install problem; `grammar_missing` =
+  install problem → `queries/VERSIONS.md §Installation`).
+- Both empty → `engine: regex`, `precision_tier: regex`; emit the loud warning: "⚠️ AST engines
+  unavailable (tree-sitter: <reason>, ast-grep: not found); using regex engine (lower
+  precision). Install: brew install ast-grep / scoop install ast-grep — or run
+  `/mega-sdd:install-deps`".
+- `halt` non-null (exit 3) → a forced `--engine=` names a binary that is absent → emit the
+  `dep_missing` blocker verbatim (`references/tree-sitter-integration.md` owns the YAML shape;
+  `required_binary` comes from the digest). Never fall through silently on a forced engine.
+- Scaffold-only repo (no testable language, tree-sitter binary present) → the script keeps
+  `engine: tree-sitter` per binary presence with `grammars_used: []` (nothing extracts either way).
+- **Durable record:** any non-empty `fallbacks[]` (skips excluded) is ALSO stamped into the
+  map's `precision_downgrade_reason` — one line joining `lang:reason` pairs, e.g.
+  `step-0 ladder: python:grammar_compile_killed -> ast-grep; kotlin:no_query_file -> regex` —
+  so the chat line is the ephemeral half and the map carries the durable half (same rail as
+  the Step-5 spawn-gate record).
+- Override via `--engine=tree-sitter|ast-grep|regex` (passed through to the script).
 
 ## Step 1 — Detect repo root
 
@@ -210,6 +249,7 @@ difference — not file count — is what decides whether a scan finishes:
 | engine | invocations |
 |---|---|
 | `tree-sitter` | **one per FILE** |
+| `ast-grep` | **ONE total** — inline rules are language-tagged (+~1 per 20k paths if argv re-splits) |
 | `regex` (ripgrep) | **one per LANGUAGE** |
 
 On POSIX a spawn costs ~18 ms and the difference is invisible. On a Windows box with
@@ -237,8 +277,9 @@ N_hash    = spawns the invalidation gate itself costs:
                 gate exists to catch; see §Order of operations
 N_total   = N_hash + N_extract
 per_spawn = 0.22s on OS=windows-bash, else 0.02s
-estimate  = N_total × per_spawn  # tree-sitter only; regex extraction is
-                                 # ~n_languages × per_spawn, but N_hash still counts
+estimate  = N_total × per_spawn  # tree-sitter only; ast-grep extraction is ~1
+                                 # spawn and regex ~n_languages, but N_hash
+                                 # still counts on every engine
 ```
 
 - `estimate` ≤ 60 s → proceed silently.
@@ -249,7 +290,7 @@ estimate  = N_total × per_spawn  # tree-sitter only; regex extraction is
 |---|---|---|---|
 | 1 | **Decided** | an explicit `--engine=` (either value) OR an explicit `--include=` on the invocation | Proceed. The caller already made the precision-vs-latency call; log the estimate as a one-line note, no blocker, no downgrade. |
 | 2 | **Undecided STANDALONE** | a DIRECT user invocation: no explicit `--engine=`/`--include=`, and NONE of lane 3's unattended signals | Emit `scan_spawn_budget_exceeded` and STOP before extracting (YAML shape: `references/halts-flags-handoff.md`). A human invoked this run and reads its output; the precision choice is theirs. |
-| 3 | **UNATTENDED — the chain lane, and every forked run** | ANY of: `--auto`; the body is running FORKED; or an orchestrator (`orchestrate-flow`, `/mega-sdd`, `/mega-sdd:sync`) dispatched this phase — which is how the Mode-D `--changed-only` sync hop arrives | **Downgrade to `--engine=regex` and RECORD it loudly** (three surfaces, below). Neither a halt nor a stall. |
+| 3 | **UNATTENDED — the chain lane, and every forked run** | ANY of: `--auto`; the body is running FORKED; or an orchestrator (`orchestrate-flow`, `/mega-sdd`, `/mega-sdd:sync`) dispatched this phase — which is how the Mode-D `--changed-only` sync hop arrives | **Downgrade to the highest OOM-safe tier and RECORD it loudly** (three surfaces, below): tier 2 (`ast-grep`) when the Step-0 digest carries `astgrep_version` — extraction collapses to ~ONE spawn and `precision_tier` STAYS `ast`, so nothing downstream degrades; `regex` only when ast-grep is absent. Neither a halt nor a stall. |
 
 **Lane 2 vs lane 3 — the test is UNATTENDED-ness, and ties go to lane 3.** `--auto` alone is
 NOT a sufficient discriminator and must never be read as one: **ZERO**
@@ -362,7 +403,39 @@ is ever reached.
   grammars. Verify on a box with working grammars before changing the invocation.)
 - Parse capture output (line + col + capture name + symbol text) into the interface table.
 - Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them) — `generate-units` re-runs the same queries itself to build its file-level symbol graph (pagerank-targeting §Build), cached at `<vault>/.internal/symbol-graph.json`.
-- Languages without `.scm` file → fall back to regex (graceful per-language degradation).
+- Languages without `.scm` file, or whose grammar failed the Step-0 smoke test → fall to the tier-2 ast-grep lane below when the digest lists them in `astgrep_langs`, else regex (graceful per-language degradation).
+
+### If `engine: ast-grep` (tier 2 — zero-compilation AST; also serves per-language fallbacks)
+
+Runs for every language the Step-0 digest lists in `astgrep_langs` — whether the map's
+`engine:` is `ast-grep` (tier-1 empty) or `tree-sitter` (mixed per-language ladder).
+
+- Rule packs: `queries/astgrep/<lang>.yml` (kind-based definition rules, one pack per
+  language; header comments carry the per-pack contract).
+- Invoke ONCE for ALL tier-2 languages together — rules are language-tagged, so this is
+  **one process for the whole non-REUSE set** (verified against ast-grep 0.42.3):
+
+```bash
+# The awk seam inserts the YAML document separator BETWEEN pack files —
+# back-to-back concatenation without it breaks the multi-doc parse.
+# <plugin-root> resolves as in Step 0.
+ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' \
+  <plugin-root>/skills/scan-codebase/queries/astgrep/*.yml)" \
+  --json=compact <non-REUSE paths...>
+```
+
+- Parse the JSON array — verified contract facts (do NOT assume):
+  - `range.start.line` is **0-BASED** → +1 before writing any map anchor.
+  - `lines` is the FULL node text (body included) → the §2 signature is its FIRST line.
+  - Kind-based rules match nested definitions too (methods inside classes — wanted) and can
+    double-match some constructs → **dedupe rows by `(file, range.start.line, ruleId)`** (a one-line `class X { m() {} }` legitimately yields a class row AND a method row at the same start line — the ruleId keeps both; without it a real definition is dropped).
+  - Symbol name = parsed from the AST-bounded signature line (the node kind is known from
+    `ruleId`, so the parse is deterministic; the node BOUNDARY — what regex gets wrong —
+    came from the AST, so `precision_tier: ast` holds).
+- `name.reference.*` captures do NOT exist in this lane → `generate-units` PageRank
+  self-skips with its loud record (`generate-units/references/pagerank-targeting.md
+  §Detection prerequisites`); binding precision is unaffected.
+- Languages with no `queries/astgrep/<lang>.yml` pack → regex lane below, per language.
 
 ### If `engine: regex` (fallback)
 

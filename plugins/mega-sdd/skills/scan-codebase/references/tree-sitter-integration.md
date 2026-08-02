@@ -1,34 +1,64 @@
-# Tree-sitter Integration
+# Tree-sitter Integration (owner of the 3-tier engine ladder)
 
 ## Contents
-- Detection
+- The 3-tier ladder
+- Detection (`scripts/probe-scan-engine.sh`)
 - Installation guidance (`dep_missing` blocker)
 - Query files (`queries/tags-<lang>.scm`) — schema + per-language coverage
+- Tier-2 rule packs (`queries/astgrep/<lang>.yml`)
 - Invocation
 - Precision tier in codebase-map.md frontmatter
 - Grammar pinning
 - Fallback behavior
 - Performance characteristics
 
-`scan-codebase` uses tree-sitter for precise AST-level symbol extraction. Replaces regex-based extraction (which is preserved as fallback when tree-sitter is unavailable).
+`scan-codebase` uses AST-level symbol extraction with a 3-tier engine ladder; regex extraction is preserved as the loud last resort.
+
+## The 3-tier ladder
+
+```
+tier 1  tree-sitter   .scm tag queries; one spawn per FILE; grammars compiled LOCALLY (clang)
+tier 2  ast-grep      queries/astgrep rule packs; ONE spawn total; grammars EMBEDDED — zero compilation
+tier 3  regex         v1 patterns; one spawn per LANGUAGE; loud warning; precision_tier: regex
+```
+
+The ladder is resolved **per language**: a language whose tree-sitter grammar fails falls to
+tier 2 for that language; a language with no tier-2 rule pack falls to tier 3. Tiers 1 and 2
+both stamp `precision_tier: ast` (ast-grep node boundaries are AST-determined), so every
+downstream consumer of the tier (bind-codebase field-level diff) is unaffected by a 1→2 fall.
+
+Why tier 2 exists (live incident 2026-08-02): `tree-sitter query` compiles the grammar's
+shared library with clang on first use — on a memory-tight machine that compile is
+OOM-killed (`clang: … Killed: 9` on stderr, tree-sitter exits rc=1 "Parser compilation
+failed"). ast-grep is a static binary with embedded grammars: the clang-OOM class cannot
+occur at tier 2, and on `OS=windows-bash` its one-spawn profile also erases the per-file
+spawn tax (scan-procedure.md §Spawn-cost gate).
 
 ## Detection
 
-At skill startup, probe for tree-sitter via BOTH binary names (package managers ship under different names — see SKILL.md Step 0):
+Engine detection is a DETERMINISTIC SCRIPT, not prose: `scripts/probe-scan-engine.sh`
+(scan-procedure.md §Step 0 has the invocation + digest schema). It probes both tree-sitter
+binary names (`tree-sitter` — brew/cargo; `tree-sitter-cli` — npm), runs the per-language
+grammar smoke tests **SERIALLY with a hard per-probe timeout** (the smoke test is also the
+clang compile step — serializing it inside the script prevents the parallel-compile OOM by
+construction), probes `ast-grep`, and emits one JSON digest. Per-language fallback reasons
+are first-class: `grammar_compile_killed` (the OOM class — retryable, NOT an install
+problem), `grammar_compile_failed`, `grammar_missing`, `query_error`, `probe_timeout`,
+`binary_unrunnable` (found on PATH but not executable — e.g. npm's sh shim under Windows
+CreateProcess), `no_query_file`, `tree_sitter_absent`, `engine_forced` (a forced
+`--engine=ast-grep` routing past a present tier 1), and the non-fallback skip record
+`no_source_file` (scaffold-only language — skipped, never failed).
 
-```bash
-command -v tree-sitter || command -v tree-sitter-cli
-```
+- Binary presence alone proves nothing — the CLI installs with zero grammars configured.
+  Only languages that pass the smoke test extract at tier 1 and appear in `grammars_used`.
+- User can force a tier via `--engine=tree-sitter|ast-grep|regex`; a forced engine whose
+  binary is absent HALTS `dep_missing` (never a silent fall-through).
 
-- Found (either) → run the per-language **grammar smoke test** (SKILL.md Step 0): one Step-5 query against one real source file per detected language. Binary presence alone proves nothing — the CLI installs with zero grammars configured. Only languages that pass extract via tree-sitter and appear in `grammars_used`; a failing language falls back to regex; ALL failing → engine downgrades to `regex` with the grammar-install pointer.
-- Not found → fall back to regex engine (precision tier: `regex`); emit one-line warning in chat
-- User can force engine via `--engine=tree-sitter` (halts if absent) or `--engine=regex` (skip detection)
-
-`precision_tier: ast` is therefore a **verified** claim: it is stamped only when at least one language actually extracted through a working grammar, never from binary presence alone.
+`precision_tier: ast` is therefore a **verified** claim: it is stamped only when at least one language actually extracted through a working grammar or a tier-2 rule pack, never from binary presence alone.
 
 ## Installation guidance
 
-If tree-sitter not on PATH and `--engine=tree-sitter` is set OR halt-strict mode active, emit `dep_missing` blocker:
+If a FORCED engine's binary is not on PATH (`--engine=tree-sitter` without tree-sitter, `--engine=ast-grep` without ast-grep) OR halt-strict mode active, emit `dep_missing` blocker (`required_binary` + `install_commands` name the forced binary — the ast-grep variant installs via `brew install ast-grep` / `scoop install ast-grep` / `cargo install ast-grep` / `npm install -g @ast-grep/cli`):
 
 ```yaml
 blocker:
@@ -71,7 +101,18 @@ Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public 
 - `tags-java.scm` — Java classes, interfaces, enums, records, methods
 - `tags-csharp.scm` — C# classes, interfaces, records, structs, methods
 
-Languages without `.scm` file → fall back to regex (graceful degradation).
+Languages without `.scm` file → fall to tier 2 (rule pack present) else tier 3 (graceful degradation).
+
+## Tier-2 rule packs (`queries/astgrep/<lang>.yml`)
+
+Kind-based ast-grep definition rules mirroring the `.scm` coverage, one pack per language
+(typescript incl. tsx, javascript, php, python, rust, go, ruby, java, csharp), verified
+against ast-grep 0.42.3 (`queries/VERSIONS.md §ast-grep`). The extraction invocation, the
+verified JSON contract (0-based lines, `lines` = full node text, dedupe by
+`(file, start.line)`), and the `---`-separator concatenation seam live in
+scan-procedure.md §Step 5 "If `engine: ast-grep`". Reference captures
+(`@name.reference.*`) do NOT exist at tier 2 — PageRank self-skips
+(`generate-units/references/pagerank-targeting.md §Detection prerequisites`).
 
 ## Invocation
 
@@ -89,9 +130,10 @@ Output is structured (line + column + capture name + symbol text). Skill parses 
 ---
 generated_by: mega-sdd:scan-codebase
 generated_at: <ISO8601>
-engine: tree-sitter | regex
+engine: tree-sitter | ast-grep | regex
 precision_tier: ast | regex
 tree_sitter_version: <version>
+astgrep_version: <version>
 grammars_used: ["typescript", "php"]
 ---
 ```
@@ -110,9 +152,11 @@ Tree-sitter grammars evolve; bleeding-edge syntax may not parse correctly. Mitig
 
 ## Fallback behavior
 
-When falling back to regex:
+A tier-1 → tier-2 fall keeps `precision_tier: ast` and is recorded per language in the
+Step-0 digest's `fallbacks[]` (reason named in one chat line). Falling all the way to
+tier 3 (regex):
 
-1. Emit chat line: "⚠️ scan-codebase using regex engine (tree-sitter not found). Precision tier: regex. Consider installing tree-sitter for AST-precise extraction."
+1. Emit chat line: "⚠️ scan-codebase using regex engine (tree-sitter: <reason>, ast-grep: not found). Precision tier: regex. Install ast-grep (zero-compilation) or tree-sitter for AST-precise extraction."
 2. Run v1 regex extraction (preserved unchanged from v1.2)
 3. `precision_tier: regex` stamped in codebase-map.md frontmatter
 4. Downstream skills (bind-codebase) treat as lower-confidence ground truth
@@ -123,7 +167,9 @@ Backward-compat: v1.2 codebase-map files (without `precision_tier` field) treate
 
 | Engine | Time per 1000 files | Memory |
 |---|---|---|
-| Tree-sitter | ~2-5s (incremental, sub-ms per file) | ~50MB peak |
+| Tree-sitter | ~2-5s (incremental, sub-ms per file) | ~50MB peak (+ clang grammar compile on first use — the OOM point) |
+| ast-grep | ~1-3s (ONE process, parallel in-process) | ~100MB peak; NO compile step ever |
 | Regex (v1) | ~5-15s (file traversal + multi-pattern match) | ~30MB peak |
 
-Tree-sitter is FASTER on typical repos AND more precise. Trade-off is install step.
+AST tiers are FASTER on typical repos AND more precise. Trade-off is an install step —
+and only tier 1 ever compiles anything locally.

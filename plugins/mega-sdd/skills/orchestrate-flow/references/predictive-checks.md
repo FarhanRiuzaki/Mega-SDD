@@ -56,12 +56,12 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 
 ## scan-codebase preflight checks
 
-- **check_id: `tree_sitter_present`**
-  command: `command -v tree-sitter || command -v tree-sitter-cli`
+- **check_id: `ast_engine_present`**
+  command: `command -v tree-sitter || command -v tree-sitter-cli || command -v ast-grep`
   expected: exit 0
-  on_fail: "tree-sitter not installed; scan-codebase will fall back to regex engine (lower precision). Install: brew install tree-sitter / cargo install tree-sitter-cli / npm install -g tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install."
+  on_fail: "no AST engine installed (tree-sitter AND ast-grep both absent); scan-codebase will fall back to the regex engine (lower precision). Install: brew install ast-grep (zero-compilation tier) / brew install tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install. tree-sitter absent but ast-grep present is only a WARN: extraction runs at the ast-grep tier, precision stays ast."
   fatal: no
-  predicts_halt: dep_missing (avoided if user OK with regex fallback OR installs binary)
+  predicts_halt: dep_missing (only under a forced `--engine=`; avoided if user OK with the fallback tier OR installs a binary)
 
 - **check_id: `framework_pack_present`**
   command: `test -f plugins/mega-sdd/references/framework-conventions/<detected-framework>.md`

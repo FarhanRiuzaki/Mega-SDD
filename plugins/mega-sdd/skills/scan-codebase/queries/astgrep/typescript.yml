@@ -1,0 +1,52 @@
+# Tier-2 (ast-grep) definition rules — TypeScript (.ts) + TSX (.tsx).
+# Mirrors tags-typescript.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Consumer contract (scan-procedure.md §Step 5): --json=compact output;
+# range.start.line is 0-BASED (+1 for map anchors); `lines` is the full node
+# text (signature = first line); dedupe rows by (file, start.line, ruleId).
+id: typescript-function
+language: typescript
+rule: {kind: function_declaration}
+---
+id: typescript-class
+language: typescript
+rule: {kind: class_declaration}
+---
+id: typescript-interface
+language: typescript
+rule: {kind: interface_declaration}
+---
+id: typescript-type-alias
+language: typescript
+rule: {kind: type_alias_declaration}
+---
+id: typescript-enum
+language: typescript
+rule: {kind: enum_declaration}
+---
+id: typescript-method
+language: typescript
+rule: {kind: method_definition}
+---
+id: tsx-function
+language: tsx
+rule: {kind: function_declaration}
+---
+id: tsx-class
+language: tsx
+rule: {kind: class_declaration}
+---
+id: tsx-interface
+language: tsx
+rule: {kind: interface_declaration}
+---
+id: tsx-type-alias
+language: tsx
+rule: {kind: type_alias_declaration}
+---
+id: tsx-enum
+language: tsx
+rule: {kind: enum_declaration}
+---
+id: tsx-method
+language: tsx
+rule: {kind: method_definition}

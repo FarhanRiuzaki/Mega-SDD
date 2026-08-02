@@ -173,12 +173,12 @@ All triggers fire. Output exists, schema-compliant, no hallucinations. Increment
 
 ## Iter 33 — Predictive checks (consumed by orchestrate-flow Step 3.5)
 
-### SC-PH1 — tree_sitter_present predictive check entry
+### SC-PH1 — ast_engine_present predictive check entry
 
 **Setup:** N/A — this is a documentation test verifying scan-codebase catalog entry exists in `predictive-checks.md`
 
 **Verify:**
 - Grep `references/predictive-checks.md` for `## scan-codebase preflight checks` section
-- Confirm `check_id: tree_sitter_present` entry present
+- Confirm `check_id: ast_engine_present` entry present (fires only when tree-sitter AND ast-grep are BOTH absent; ts-absent-but-ast-grep-present is the softer `tree_sitter_present` WARN from validate-preflight.sh)
 - Confirm command, expected, on_fail, fatal=no, predicts_halt=dep_missing
 - Confirm catalog entry matches behavior in scan-codebase SKILL.md Step 0 engine detection (consistent message + install hint)

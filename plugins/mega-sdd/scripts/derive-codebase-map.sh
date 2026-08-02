@@ -514,7 +514,8 @@ FM_ORDER = ["generated_by", "generated_at", "repo_root", "scan_depth",
             "scan_includes", "scan_excludes", "languages_detected",
             "package_managers", "test_frameworks", "engine", "precision_tier",
             "precision_downgrade_reason", "tree_sitter_version",
-            "grammars_used", "last_scanned_commit", "truncated_sections"]
+            "astgrep_version", "grammars_used", "last_scanned_commit",
+            "truncated_sections"]
 SCRIPT_OWNED = {"generated_by", "generated_at", "repo_root", "last_scanned_commit"}
 
 fm = {}

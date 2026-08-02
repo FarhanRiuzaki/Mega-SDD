@@ -1,0 +1,26 @@
+# Tier-2 (ast-grep) definition rules — C# (.cs).
+# Mirrors tags-csharp.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
+id: csharp-class
+language: csharp
+rule: {kind: class_declaration}
+---
+id: csharp-interface
+language: csharp
+rule: {kind: interface_declaration}
+---
+id: csharp-struct
+language: csharp
+rule: {kind: struct_declaration}
+---
+id: csharp-record
+language: csharp
+rule: {kind: record_declaration}
+---
+id: csharp-enum
+language: csharp
+rule: {kind: enum_declaration}
+---
+id: csharp-method
+language: csharp
+rule: {kind: method_declaration}

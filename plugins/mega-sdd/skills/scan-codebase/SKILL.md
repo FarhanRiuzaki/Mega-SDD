@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.22.0
+version: 2.23.0
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md consumed by bind-codebase as ground truth. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -44,9 +44,9 @@ The full default exclusion list, the override flags, and the anti-bias rationale
 
 ## Procedure (compact skeleton)
 
-Detailed per-step logic — including the tree-sitter multi-binary probe, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. Tree-sitter query usage, precision tiers, and graceful regex fallback are in **`references/tree-sitter-integration.md`**.
+Detailed per-step logic — including the probe-scan-engine.sh engine digest, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. Tree-sitter query usage, precision tiers, and graceful regex fallback are in **`references/tree-sitter-integration.md`**.
 
-0. **Engine detection.** Probe tree-sitter via TWO binary names (`command -v tree-sitter || command -v tree-sitter-cli`). Found → run the per-language grammar smoke test (binary presence ≠ working grammars), then `engine: tree-sitter` (precision_tier `ast`) with `grammars_used` = the languages that passed; all fail → downgrade to regex. Not found + `--engine=tree-sitter` → halt `dep_missing`. Not found + no flag → fall back to `engine: regex` (precision_tier `regex`) with a one-line chat warning. Override via `--engine=`.
+0. **Engine detection.** Run `scripts/probe-scan-engine.sh` — ONE spawn resolves the 3-tier ladder (`tree-sitter → ast-grep → regex`) and prints a JSON digest; consume the digest, never re-probe. The script runs the per-language grammar smoke tests SERIALLY with a hard timeout (the smoke test compiles grammars with clang — parallel probes have been OOM-killed, `killed: 9`) and classifies each fallback by reason (`grammar_compile_killed` = retryable OOM, `grammar_missing` = install problem). Tier 1 or 2 → `precision_tier: ast`; tier 3 → `regex` with a loud warning. A forced `--engine=` whose binary is absent → halt `dep_missing`. Details + digest schema: `references/scan-procedure.md` Step 0.
 1. **Detect repo root.** Walk up to `.git`; else treat CWD as root and warn.
 2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle` (full per-ecosystem table: `references/scan-procedure.md §Step 2`). Multiple → record all.
 3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
@@ -90,7 +90,7 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 
 ## Specialist references (load on demand)
 
-- **`references/scan-procedure.md`** — full surface scan (Steps 0–10): engine multi-binary probe, per-file invalidation gate, tree-sitter + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
+- **`references/scan-procedure.md`** — full surface scan (Steps 0–10): probe-scan-engine.sh engine digest, per-file invalidation gate, tree-sitter + ast-grep + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
 - **`references/deep-scan-gate.md`** — deep-scan hot side (Steps 10.5.0, 10.5.1, 10.5.4, 10.6): trigger check, per-slice cache check, concurrency guard, shared snapshot. Always loaded when Step 10.5 runs.
 - **`references/deep-scan-dispatch.md`** — deep-scan cold side (Steps 10.5.1.5 → 10.5.3): manifest pre-parse, parallel selective subagent dispatch, pack-driven deep-read of code patterns, consolidation + the complete `starterkit-context.yaml` schema. Load ONLY on non-empty `stale_slices`.
 - **`references/deep-scan-prompts.md`** — the five deep-scan subagent prompt templates (auth / authz / ui-ux / libs / reuse), variable substitution, `<MANIFEST_FACTS>` injection, and cross-cutting anti-halu rails.
