@@ -586,6 +586,7 @@ def collect_probes(cwd):
         "codebase_map": probe_codebase_map(cwd, git_info.get("head")),
         "knowledge_base": probe_knowledge_base(cwd),
         "dirty_journal_rows": probe_dirty_journal(cwd),
+        "profile": probe_profile(cwd),
         "foreign_sdd": probe_foreign_sdd(cwd),
         "preflight_predicates": {
             "has_vault": has_vault(cwd),
@@ -609,6 +610,22 @@ POSITIONS = (
     "binding_resolved_no_rebind", "bound_no_units",
     "units_pending_bolts", "all_units_executed", "pipeline_complete",
 )
+
+
+def probe_profile(cwd):
+    """`profile:` from .mega-sdd/config.yaml — "lean" or "full" (default).
+    Tranche E: lean is a NAMED opt-in that trims advisory/second-opinion
+    surfaces only; no gate, validator, or hook-deny path reads this value."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
+                  encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = re.match(r"^profile:\s*[\"']?(lean|full)[\"']?\s*(?:#.*)?$", ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return "full"
 
 
 def _primary_vault(vaults):
@@ -641,8 +658,10 @@ def derive(probes):
 
     foreign_sdd = probes.get("foreign_sdd") or []
 
+    profile = probes.get("profile", "full")
     derived = {
         "vault": vault["name"] if vault else None,
+        "profile": profile,
         "vault_path": vault["path"] if vault else None,
         "position": None,
         "proposed_next": [],
@@ -672,6 +691,15 @@ def derive(probes):
 
     def finish(position, chain):
         derived["position"] = position
+        if profile == "lean":
+            # Tranche E cut 1: the advisor legs already ship --no-advisor with
+            # the honest `advisor: skipped` provenance — lean only routes it.
+            chain = [
+                (h + " --no-advisor")
+                if (h.split()[0] in ("generate-intent", "bind-codebase")
+                    and "--no-advisor" not in h) else h
+                for h in chain
+            ]
         if derived["manifest_derive_needed"] and chain:
             # P0 unification: bare vault docs → derive the manifest FIRST,
             # never hand-write it, before any phase that reads vault.json.

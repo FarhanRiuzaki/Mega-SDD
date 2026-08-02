@@ -498,7 +498,11 @@ echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
 # by PostToolUse validators during this session. Cheap (no re-run — aggregate
 # only), reliable (Stop hook fires deterministically at turn end, not prose).
 # Only runs when ≥1 validator state file exists (some validator fired this chain).
-if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
+# Tranche E: `profile: lean` in config.yaml skips this ADVISORY aggregate (the
+# reports are re-derivable on demand via /mega-sdd:analyze; no gate reads them
+# — the four outputs are already pruned from both scan probes).
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \
+   ! { grep -m1 -E "^profile:" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null | grep -qE "^profile:[[:space:]]*[\"']?lean[\"']?[[:space:]]*(\r)?(#.*)?$"; }; then
   STATE_COUNT=$(find "${PROJECT_ROOT}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$STATE_COUNT" -gt 0 ]; then
     SCRIPT_DIR_AZ="$(cd "$(dirname "$0")" && pwd)"

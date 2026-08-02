@@ -28,7 +28,7 @@ Cost-weighted, against a real pipeline run's shape (cache_creation + cache_read 
 | C | Phase 3 collapse human round trips | each turn re-bills the whole resident context at 0.1× | none |
 | D | Phase 5c/H6 seed slicing on the remaining full-corpus dispatches | every fresh subagent seed is CREATED (1.25–2.0×), never read | none |
 | **A–D total** | | **~60–70%** | **none** |
-| E | `--lean` profile: drop optional phases, drop review lenses to `minimal`, skip non-mandated emissions | the remaining ~20–30% | **real** — this is the trade |
+| E | `--lean` profile: drop optional phases, ~~drop review lenses to `minimal`~~ (lens cut KILLED in audit — panel tiering is never-touch; see Phase E), skip non-mandated emissions | the remaining ~20–30% | **real** — this is the trade |
 
 **Tranche E is where the last 20–30% lives, and it is a product decision, not an engineering one.**
 It must be opt-in, must name exactly what it turns off, and must never weaken a gate or an invariant
@@ -1193,6 +1193,52 @@ taxonomy, the no-fabrication rule, the B1–B4 artifact gates, anti-self-bypass,
 blindness, **and the review-panel risk tiering**. A lean run must still be a *correct* run; it is
 allowed to be a less thorough one.
 
+> **DESIGN 2026-08-02 (tranche E — the `--lean` profile ships as configuration over EXISTING
+> levers; no new skip machinery).** Audit of the four allowed cuts against the shipped tree:
+> the honest surprise is that half the work was already done, and the design records that
+> instead of re-building it.
+>
+> - **Activation:** `profile: lean` in `.mega-sdd/config.yaml` (persistent, deterministic —
+>   the channel hooks/scripts already grep, `dirty_journal:` precedent) OR `--lean` on
+>   `/mega-sdd` / `orchestrate-flow` (this run only; `--full` overrides a lean config for a
+>   run). Named and opt-in, never a silent default.
+> - **Cut 1 — advisor legs:** BOTH legs already ship `--no-advisor` with the honest
+>   `advisor: skipped` provenance (never reported clean). Lean = the STATE ENGINE
+>   (`state_probes.py`) appends `--no-advisor` to the `generate-intent` and `bind-codebase`
+>   hops it proposes, and `derived.profile` surfaces `lean` (the 2a lesson: the engine is
+>   edited WITH `routing-rules.md`).
+> - **Cut 2 — optional emissions:** ALREADY the default. `emit-fsd` in the chain requires
+>   `--with-fsd` (perf-audit opt-in); `emit-prd` is never auto-chained (mention-only routing
+>   row). Nothing to cut — recorded so nobody re-cuts it into the moat.
+> - **Cut 3 — extract wave depth: DEFERRED, deliberately.** The KB feeds binding; a shallower
+>   KB degrades verdict quality invisibly downstream — the exact silent-capability-loss shape
+>   this profile exists to avoid. A depth cut needs its own design (which slices are provably
+>   skippable) + its own round. Shipping lean without it loses the smallest of the four cuts.
+> - **Cut 4 — advisory surfaces:** the chain's auto-integrated ADVISORY diagnostics
+>   (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are skipped under
+>   lean (each is re-runnable on demand); the Stop hook's auto-analyze aggregate
+>   (`run-analyze.sh --aggregate-only`) is skipped when the config carries `profile: lean`.
+>   The hybrid `detect-drift` gate after execute-bolts KEEPS running (it has its own opt-out
+>   and is not an advisory surface).
+> **ROUND-1 (2026-08-02) — FIX-FIRST, all folded:** engine/hook config-parse mismatch (hook
+> grep was prefix-anchored + any-line: `leanish` and a duplicate-key file silently cut the
+> aggregate with NO valid opt-in — now end-anchored AND first-`profile:`-line, parity-pinned on
+> a 12-spelling matrix's hostile cases); the `--lean` FLAG path honestly re-scoped (the engine
+> transform is CONFIG-keyed; a bare flag is orchestrator-applied prose, and `--full` does NOT
+> restore the config-governed Stop aggregate — both docs now say so); the front door gained the
+> flag; the phase-summary table's stale "lenses to minimal" line struck through; two free
+> hardenings taken — the derive digest NAMES `profile=lean` (omitted when full: every pre-E
+> fixture stays byte-stable) and the summary-naming rule is test-pinned. Verified clean: zero
+> profile reads on any enforcement path (census), all `proposed_next` consumers green, both
+> legs leave durable skip records, and the "already done" claims (emissions opt-in,
+> extract-depth deferral) held under audit.
+>
+> - **The never-touch list is enforced by construction:** every lean edit is a routing/config
+>   change on an advisory or second-opinion surface; NO gate, validator, hook-deny, artifact
+>   writer, or panel path reads the profile. A lean run is a correct run that is less thorough
+>   — and each skipped surface leaves an honest record (`advisor: skipped`, absent report
+>   files, the chain summary naming the profile).
+>
 > **Review-panel tiering is explicitly out of scope for `--lean`, and this is deliberate.** Forcing
 > the panel to `minimal` is the most tempting remaining lever and it was already evaluated: Batch-4
 > measured the risk tiering and **kept** it because cutting it dulls the moat, and the plugin
@@ -1225,7 +1271,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (memo REJECTED; batching) ✅ v5.24.0 → 5e ✅ v5.25.0 → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (memo REJECTED; batching) ✅ v5.24.0 → 5e ✅ v5.25.0 → E(--lean) ✅ v5.26.0 — SPEC COMPLETE except the 5a flip (RUN 1+2) and the deferred extract-depth cut`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now
