@@ -50,3 +50,27 @@ rule: {kind: enum_declaration}
 id: tsx-method
 language: tsx
 rule: {kind: method_definition}
+---
+id: typescript-arrow-binding
+language: typescript
+rule:
+  kind: variable_declarator
+  has: {kind: arrow_function}
+---
+id: typescript-function-expr-binding
+language: typescript
+rule:
+  kind: variable_declarator
+  has: {kind: function_expression}
+---
+id: tsx-arrow-binding
+language: tsx
+rule:
+  kind: variable_declarator
+  has: {kind: arrow_function}
+---
+id: tsx-function-expr-binding
+language: tsx
+rule:
+  kind: variable_declarator
+  has: {kind: function_expression}

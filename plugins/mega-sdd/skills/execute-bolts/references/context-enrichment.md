@@ -12,6 +12,7 @@ Implements the 10 AI-executor principles. Populates the T1/T2/T3 sections of the
 - Halt path + soft-budget warnings
 - TIER 2 (conditional)
 - Reuse slice: build
+- Symbol slice (3b): build
 - Map §6 fallback (starterkit-context absent)
 - Design slice: build + inject (INDEPENDENT of starterkit — the greenfield pipe)
 - TIER 3 (reference-only)
@@ -155,7 +156,8 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 |---|---|---|---|
 | 1 | `validation_hints` | drop expected-output patterns; keep test commands only | drop section entirely |
 | 2 | `historical_memory` | last 5 → last 3 → last 1 → drop | drop section |
-| 3 | `reuse_slice` | trim to top 5 entries by target_files overlap → top 3 → top 1 | "+N more — read reuse-index.yaml directly" (never fully dropped — at minimum 1 hint line survives) |
+| 3a | `reuse_slice` | trim to top 5 entries by target_files overlap → top 3 → top 1 | "+N more — read reuse-index.yaml directly" (never fully dropped — at minimum 1 hint line survives) |
+| 3b | `symbol_slice` | LEVEL 0 already caps at 40 rows (spec R2) → top 20 → top 10 | "+N more — query via scripts/query-symbol-index.sh" (never fully dropped when the index exists and overlaps; index absent/unparseable/no-overlap → section OMITTED, recorded) |
 | 4 | `kb_anti_patterns` | top 3 → top 1 → drop | drop section (see the join-key note below — currently ALWAYS omitted) |
 | 5 | `confidence_labels` | per-claim → aggregate ("HIGH×N / MEDIUM×N / LOW×N") | drop section |
 | 6 | `depends_on_summaries` | N most-recently-touched files only | keep at least 1 upstream |
@@ -165,14 +167,14 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 | 8c | `design_slice` | full verbatim → lead clauses + High-only ux → drop ux → system+style only | system+style only (never drops to empty) |
 | 9 (NEVER drop) | `constitution_clauses` | NEVER truncate — LOCKED security/compliance content | n/a — if it alone exceeds → halt `dispatch_prompt_too_large` |
 
-**Amended 2026-07-31 (contract completeness, separate from the cap amendment):** tier 8 always carried THREE sections but listed one. `map_patterns` (the Map §6 fallback) and `design_slice` were emitted at tier 8 with no row, so a section sat outside the contract — and a rowless `map_patterns` that is permanently `at_floor()` could outrank `design_slice` while `design_slice` was truncated around it. The nine PRIORITIES are unchanged; rows 1–7 and 9 are unchanged verbatim; tier 8 is now enumerated 8a/8b/8c in its already-pinned order. **`map_patterns` is kept, not removed** — it is the only pattern source a regex-tier scan produces (see §Map §6 fallback), so deleting it would drop real content on exactly the projects with the least context.
+**Amended 2026-07-31 (contract completeness, separate from the cap amendment):** tier 8 always carried THREE sections but listed one. `map_patterns` (the Map §6 fallback) and `design_slice` were emitted at tier 8 with no row, so a section sat outside the contract — and a rowless `map_patterns` that is permanently `at_floor()` could outrank `design_slice` while `design_slice` was truncated around it. The nine PRIORITIES are unchanged; rows 1–7 and 9 are unchanged verbatim; tier 8 is now enumerated 8a/8b/8c in its already-pinned order. **Amended 2026-08-02 (R2):** tier 3 is likewise enumerated 3a/3b — `symbol_slice` joins at the same priority as `reuse_slice`, stepped after it (3a first) one rung per pass, same tie discipline as tier 8. **`map_patterns` is kept, not removed** — it is the only pattern source a regex-tier scan produces (see §Map §6 fallback), so deleting it would drop real content on exactly the projects with the least context.
 
 **Cascade notes (spec ↔ builder parity — read before amending a row):**
 
 - **Row order within tier 8** is pinned `starterkit_slice` (8a) → `map_patterns` (8b) → `design_slice` (8c); the builder steps ONE rung per pass in that order, re-measuring after each. 8b has no rung to step, so a pass over it is a no-op by contract, not by accident.
 - **Row 4 is currently unsatisfiable and its section is ALWAYS OMITTED.** "domain tags" is a **phantom field** — no unit schema, validator, or writer defines it, so there is no join key from a unit to a KB anti-pattern. Emitting the section (or the template's `DO NOT REPLICATE:` line) would require inventing the join → invariant #5 violation. The row stays because the cascade is the contract; it activates the day a real join key ships. Do not delete it, and do not populate the section from a guess.
 - **Row 7's "keep top 1 always" floor is vacuous on an empty set.** The pack HARD_RULEs in `_universal.md` carry `<…>` placeholder globs; the builder skips sentinel globs, and an empty filtered set OMITS the section rather than inventing a rule to satisfy the floor. Floor semantics: "never truncate BELOW 1 when ≥1 matched", not "always emit ≥1".
-- **`reuse_slice`, `depends_on_summaries`, `framework_pack_rules` and `design_slice` never reach `""`** — their drop floor is a real surviving payload (`reuse_slice`'s floor is the literal `+N more — read reuse-index.yaml directly` line; `design_slice`'s is system+style only). `validation_hints`, `historical_memory` and `confidence_labels` do drop to empty. (Sections are named here rather than numbered — the old "rows 3, 6, 7, 8b" form silently re-pointed when tier 8 was enumerated.)
+- **`reuse_slice`, `symbol_slice`, `depends_on_summaries`, `framework_pack_rules` and `design_slice` never reach `""`** — their drop floor is a real surviving payload (`reuse_slice`'s floor is the literal `+N more — read reuse-index.yaml directly` line; `design_slice`'s is system+style only). `validation_hints`, `historical_memory` and `confidence_labels` do drop to empty. (Sections are named here rather than numbered — the old "rows 3, 6, 7, 8b" form silently re-pointed when tier 8 was enumerated.)
 
 ## Halt path + soft-budget warnings
 
@@ -228,6 +230,35 @@ IF reuse-index.yaml exists:
     <IF truncated:> +N more — read reuse-index.yaml directly </IF>
 IF reuse-index.yaml absent: skip slice.reuse (the T1 path line above still instructs the bolt to check)
 ```
+
+## Symbol slice (3b): build
+
+Source: `.mega-sdd/codebase/symbol-index.json` — the script-built full-repo symbol index
+(`scripts/build-symbol-index.sh`; ONE bounded ast-grep pass, zero model tokens). The slice
+closes the reuse-coverage hole: `reuse-index.yaml` carries only the deep-scan slices, so
+generic helpers — the symbols agents most often reinvent — reached no dispatch before this.
+
+- **Retrieval is a DETERMINISTIC rule, never model-chosen search terms** (a model-chosen
+  query finds what it expects — the fabrication vector): (a) every symbol whose `file` IS
+  one of the unit's `target_files` ("you are editing next to these — extend them"), then
+  (b) symbols whose file sits in the SAME directory as any target file. Order: group (a)
+  first, then (b); index order within each group. Header: `### Existing symbols (REUSE —
+  extend, don't recreate)`; first body line is the provenance stamp
+  `index@<head8> · <N> symbols · built by scripts/build-symbol-index.sh`.
+- **Freshness is the CONTROLLER'S batch-level step** (SKILL.md batch-setup item 5 runs
+  `scripts/build-symbol-index.sh` once per execute-bolts run, BEFORE the per-unit loop;
+  its exit 3 = ast-grep not installed → proceed, the builder records the omission). The
+  builder itself spawns NOTHING for this slice (its zero-subprocess law), so `head_commit`
+  in the stamp is provenance, not a verdict — symbols committed by earlier bolts of the
+  SAME batch may lag until the next run, which is acceptable for advisory reuse material
+  and visible in the stamp.
+- Absent index → omit with the build command in the reason; unparseable → omit naming the
+  rebuild; parseable but zero overlap → omit "no indexed symbol in or beside target_files".
+- **Known bounded noise:** a target file at the repo ROOT makes group (b) the entire root
+  directory — per-spec-correct ("same directory") and bounded by the 40-row level-0 cap.
+- **Sanitize on render:** every interpolated index field is collapsed to ONE line with
+  backticks replaced — the index is unguarded derived state, and a hostile
+  signature/name must never mint its own markdown line or fence inside the prompt.
 
 ## Map §6 fallback (starterkit-context absent)
 

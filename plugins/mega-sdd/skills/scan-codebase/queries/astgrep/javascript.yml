@@ -16,3 +16,15 @@ rule: {kind: class_declaration}
 id: javascript-method
 language: javascript
 rule: {kind: method_definition}
+---
+id: javascript-arrow-binding
+language: javascript
+rule:
+  kind: variable_declarator
+  has: {kind: arrow_function}
+---
+id: javascript-function-expr-binding
+language: javascript
+rule:
+  kind: variable_declarator
+  has: {kind: function_expression}

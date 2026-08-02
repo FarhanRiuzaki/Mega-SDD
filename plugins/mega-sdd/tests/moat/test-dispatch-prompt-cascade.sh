@@ -149,6 +149,7 @@ jf, fallback_prompt, varf, rulef = sys.argv[1], sys.argv[2], sys.argv[3], sys.ar
 # assertion below must fail loudly instead of silently agreeing with the drift.
 PRI = {
     "validation_hints": 1, "historical_memory": 2, "reuse_slice": 3,
+    "symbol_slice": 3,  # tier 3 enumerated 3a/3b (R2 amendment 2026-08-02)
     "kb_anti_patterns": 4, "confidence_labels": 5, "depends_on_summaries": 6,
     "framework_pack_rules": 7, "starterkit_slice": 8, "map_patterns": 8,
     "design_slice": 8, "constitution_clauses": 9,
