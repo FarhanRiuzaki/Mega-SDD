@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.6.1
+version: 1.7.0
 description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts with sha256-stamped citations per .citation-map.json; pre/post-development mode auto-detect; missing source emits [Pending — X], never fabrication. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -51,54 +51,18 @@ Full preflight catalog: `mega-sdd:orchestrate-flow/references/predictive-checks.
 
 ## Procedure
 
-### Step 0: Mode detection
+### Steps 0–4: Build the document body — SCRIPT-RUN, one call (tranche 5e)
 
-Inspect CWD state per `references/section-mapping.md §Mode determination` (`<vault>/bolts/` with a `U-*/bolt-report.md` → post-dev; `<vault>/units/` with a `U-*.md` → pre-dev with breakdown; else vault-only pre-dev).
+Run `bash <plugin-root>/scripts/build-fsd-core.sh --vault=<vault> --cwd=<project-root> [--mode=pre-dev|post-dev] [--sections=<csv>]` — the deterministic builder that executes `references/section-mapping.md` §1–§10 end-to-end and writes `<vault>/fsd/FSD.md` with EVERY slot pre-filled (`model_slots=0` — the FSD lane is fully mechanical). It performs, in one spawn: mode detection (§Mode determination; `--mode` forwards the user override), doc-metadata resolution (`FSD.styling.yaml` seeded from `references/styling-config.yaml` when absent; PDF look stays `md2pdf.sh` + `github.css`, never LaTeX), the prior-emit drift check (it runs `check-citation-drift.sh` itself and INSERTS the drift callout block quotes with the script's `old12`/`new12` verbatim), per-section extraction with the `[Pending — <source> not yet generated]` discipline, the LITERAL `(sha256: pending)` stamps, and template assembly (the fenced skeletons are parsed from `references/fsd-template.md` at run time — single source of truth).
 
-User flag `--mode={pre-dev|post-dev|auto}` overrides detection. `auto` (default) uses detection result.
-
-Emit detected mode + reasoning to chat: `"FSD mode: <mode> (detected via: <CWD state evidence>)"`.
-
-### Step 1: Resolve doc metadata (NOT PDF styling)
-
-PDF **visual** styling is `scripts/md2pdf.sh` + `references/github.css` (GitHub/VS Code look), NOT LaTeX — see Step 5. This step only resolves the **doc-metadata** variables used inside `FSD.md`'s title block:
-
-1. Check `<vault>/fsd/FSD.styling.yaml` — if exists, load (metadata overrides only; any LaTeX `variable`/font/margin fields it carries are now IGNORED).
-2. Else, copy `references/styling-config.yaml` to `<vault>/fsd/FSD.styling.yaml` and load.
-3. If `--styling=<path>` flag passed, load that path instead (overrides both).
-4. Resolve: `project_name` from `vault.json.project_name` if styling has null; `vault_version` from `vault.json.vault_version`; `generation_date_*` from current ISO8601.
-5. **PDF look override (optional):** if a human wants to customize the PDF appearance, they drop a `<vault>/fsd/github.css` — `md2pdf.sh` uses it instead of the shipped default. This replaces the old LaTeX-variable knob.
-
-### Step 2: Prior-emit drift check (script-run)
-
-1. Run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<project-root>` and capture stdout.
-2. `NO_PRIOR` or `PRIOR_UNREADABLE` → first emit; no drift callouts.
-3. Otherwise each `DRIFT <section> <path> <old12> <new12>` / `GONE <section> <path> <old12>` line marks that section for a drift callout in Step 3, using `old12`/`new12` in the callout text. (`UNVERIFIED <section> <path>` is informational — a prior entry that cannot be re-verified; no callout.) No output = nothing drifted.
-4. NEVER Read `.citation-map.json` directly — the script is its only sanctioned reader; the model consumes ONLY the script's drift lines.
-
-### Step 3: Per-section emission loop
-
-For each section N in 1-10 (filter by `styling.include_sections` if not "all"):
-
-a. Look up extraction rules in `references/section-mapping.md §Section N`.
-b. For each declared source artifact: check existence + read content.
-c. Apply extraction rules to produce slot content.
-d. If any source artifact absent: emit `[Pending — <source> not yet generated]` placeholder per anti-hallucination rule.
-e. If Step 2 script output flagged this section (a `DRIFT`/`GONE` line): insert the drift callout block quote BEFORE section content, using that line's `old12`/`new12` prefixes in the callout text (per fsd-template.md drift callout format).
-f. Substitute slot in `references/fsd-template.md §Section N` template.
-
-**Stamp rule (mandatory):** every citation stamp in emitted text is the LITERAL `(sha256: pending)` — the model MUST NOT write hash characters. Step 4.6's script replaces `pending` with the real 12-char prefix computed from file bytes.
-
-### Step 4: Assemble FSD.md
-
-1. Start from `references/fsd-template.md` (full template).
-2. For each `{{slot_name}}` marker: replace with computed slot content from Step 3.
-3. Add YAML frontmatter at top (per fsd-template.md §Document control header) with resolved styling + vault metadata.
-4. Write to `<vault>/fsd/FSD.md`.
+- **Exit 0:** FSD.md written. The summary line reports `mode=… sections=… pending=… drift=…`; announce the mode to chat (`"FSD mode: <mode> (script-detected)"`). The drift lines printed after the summary are the input to Step 6.5's change-note derivation — do NOT run the drift script a second time. A `LEFTOVER_SLOTS=` field on the summary line is an internal bug — treat as Step 4.5's halt.
+- **Exit 2:** usage / vault / template problem — fix the invocation; nothing was written.
+- The model NEVER edits builder-derived section content except to DELETE a row that is provably wrong (delete/reformat-only authority — a RULE, not a gate: Step 4.6 catches an unresolvable PATH, not a plausibly-cited invented row; adding one is fabrication regardless). NEVER replace a `[Pending — …]` marker with invented content.
+- NEVER Read `.citation-map.json` directly — `check-citation-drift.sh` (inside the builder) is its only sanctioned reader.
 
 ### Step 4.5: Post-emission unfilled-slot scan
 
-After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...}}` slot markers (defensive check — should be impossible if Step 3 extracted all slots correctly).
+After Step 4 writes `<vault>/fsd/FSD.md`, scan the file for any remaining `{{...}}` slot markers (defensive check — the builder fills every slot; a leftover is an internal bug, surfaced on its summary line as LEFTOVER_SLOTS).
 
 ```bash
 # Defensive scan:
@@ -135,7 +99,7 @@ The PDF is rendered by the shared pipeline `scripts/md2pdf.sh` (frontmatter → 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/md2pdf.sh" <vault>/fsd/FSD.md <vault>/fsd/FSD.pdf --toc
    ```
-   The transforms run on a throwaway copy — **`FSD.md` is never modified**, so its citation sha256 (Step 3) stays intact.
+   The transforms run on a throwaway copy — **`FSD.md` is never modified**, so its citation sha256 stamps (Step 4.6) stay intact.
 2. Interpret the exit code:
    - **0** → `FSD.pdf` written. Log `"✓ FSD.pdf rendered (GitHub style)"`. Proceed to Step 6.
    - **3** → Chrome absent (or print failed): `FSD.html` was written (same `github.css`). Log `"⚠ Chrome absent — emitted GitHub-styled FSD.html; print-to-PDF from a browser, or install Chrome. (FSD.md is the source of truth.)"`. Proceed to Step 6 — this is an accepted fallback, NOT a halt.
@@ -153,7 +117,7 @@ Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=fsd 
 
 The doc-control block, the `version`/`status` fields, and the **Riwayat Revisi** region are SCRIPT-OWNED — the model never types any of them. Exit 2 → internal bug (FSD.md missing; re-check Step 4). Between full emissions, orchestrate-flow refreshes the `position` field at chain boundaries via the same script (~0 tokens — no re-emission needed for a state refresh).
 
-**Change-note derivation (mandatory, never free prose):** build the note from Step 2's drift output — `NO_PRIOR` → `Emisi awal`; otherwise `Regenerasi §<list of DRIFT/GONE sections> — <n> sumber berubah` (e.g. `Regenerasi §2, §4 — 3 sumber berubah`); no drift lines at all → `Re-emisi tanpa perubahan sumber`. Version `1.0`/`2.0` + `status: approved` are minted ONLY by a human running `--approve --approver="Nama, Peran"` — the model NEVER passes `--approve`.
+**Change-note derivation (mandatory, never free prose):** build the note from the drift lines the BUILDER printed (Steps 0–4 — never a second drift run) — `NO_PRIOR` → `Emisi awal`; otherwise `Regenerasi §<list of DRIFT/GONE sections> — <n> sumber berubah` (e.g. `Regenerasi §2, §4 — 3 sumber berubah`); no drift lines at all → `Re-emisi tanpa perubahan sumber`. Version `1.0`/`2.0` + `status: approved` are minted ONLY by a human running `--approve --approver="Nama, Peran"` — the model NEVER passes `--approve`.
 
 ### Step 7: Emit handoff (when --auto flag)
 

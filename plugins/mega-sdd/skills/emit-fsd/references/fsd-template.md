@@ -4,6 +4,17 @@
 > Each section has: section header, slot marker `{{section-N-content}}`, citation footer slot `{{section-N-citations}}`.
 > Section content is filled at emit-time from source artifacts per `section-mapping.md`.
 
+## Contents
+
+- Document control header
+- Section 1 — Overview … Section 10 — Risks & Open Issues (the 10 fenced skeletons)
+- Slot semantics · Citation footer format · Drift callout format
+
+> The ToC above navigates THIS reference file. It sits OUTSIDE the fenced
+> skeletons on purpose (5e ADV-014): anything inside the ```markdown fences is
+> copied VERBATIM into every emitted FSD — a template-internal ToC in the fence
+> shipped bogus section lists into real documents.
+
 **Document control header (always emitted, not numbered):**
 
 ```markdown
@@ -18,33 +29,6 @@ mega_sdd_version: "{{plugin_version}}"
 ---
 
 # {{project_name}}
-## Contents
-
-- Functional Specification Document
-- Section 1 — Overview
-- 1. Overview
-- Section 2 — Goals & Non-Goals
-- 2. Goals & Non-Goals
-- Section 3 — Stakeholders / Owners
-- 3. Stakeholders & Owners
-- Section 4 — User Stories
-- 4. User Stories
-- Section 5 — Functional Requirements
-- 5. Functional Requirements
-- Section 6 — Non-Functional Requirements
-- 6. Non-Functional Requirements
-- Section 7 — Design / Architecture
-- 7. Design & Architecture
-- Section 8 — API & Data Contracts
-- 8. API & Data Contracts
-- Section 9 — Test Plan & UAT
-- 9. Test Plan & UAT
-- 9. Test Plan & UAT
-- Section 10 — Risks & Open Issues
-- 10. Risks & Open Issues
-- Slot semantics
-- Citation footer format
-- Drift callout format (when re-emit detects sha256 change)
 
 ## Functional Specification Document
 

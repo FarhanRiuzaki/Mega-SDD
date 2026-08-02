@@ -229,7 +229,12 @@ then ok "9: next build overwrites the forged value with the hashlib-true hash"
 else fail "9: forged hash survived a rebuild"; fi
 
 # ── 10: doc pins ──
-STEP3=$(sed -n '/^### Step 3:/,/^### Step 4:/p' "$SKILL")
+# 5e: Steps 0–4 collapsed into ONE script-run heading (build-fsd-core.sh); the
+# pinned property is unchanged — the emission body must never tell the model to
+# compute a hash. Extract the collapsed section (falls back to the old anchors
+# so the pin can never go vacuous on either wording).
+STEP3=$(sed -n '/^### Steps 0–4:/,/^### Step 4.5:/p' "$SKILL")
+[ -n "$STEP3" ] || STEP3=$(sed -n '/^### Step 3:/,/^### Step 4:/p' "$SKILL")
 # guard the extraction: an empty $STEP3 (renamed heading) would make the
 # negative grep below pass vacuously
 if [ -n "$STEP3" ]; then

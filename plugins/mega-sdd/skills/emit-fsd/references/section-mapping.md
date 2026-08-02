@@ -1,8 +1,19 @@
 # Section Mapping — Source Artifact → FSD Section
 
 > **Per-section: source artifact path(s), extraction rules, citation format.**
-> Consumed by `emit-fsd/SKILL.md` Step 4 (per-section emission loop).
+> **EXECUTED BY `scripts/build-fsd-core.sh`** (tranche 5e) — the deterministic
+> builder runs every rule below in one spawn and writes `FSD.md` pre-filled;
+> the model reviews (delete/reformat-only authority) and never re-derives a
+> section by hand. Editing a rule here MUST be mirrored in the builder — the
+> two are one contract (the 2a routing-table lesson: this file DOCUMENTS what
+> the script executes).
 > Every slot in `fsd-template.md` MUST have an extraction rule here.
+>
+> **§6 amendment (5e):** the old "de-dup if both sources mention same
+> constraint (prefer constitution)" was model judgment; the builder instead
+> emits BOTH sources under labeled sub-blocks (`_Dari 02-functional §NFR:_` /
+> `_Dari constitution [LOCKED]:_`) — over-complete + labeled is deterministic,
+> and a duplicate is not fabrication.
 >
 > This file is the FSD doc-pack's **section map** for the shared emission engine
 > (`plugins/mega-sdd/references/emission-engine.md` §What a doc-pack supplies) —
@@ -47,15 +58,15 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 ## Section 1 — Overview
 
 **Slot:** `{{section-1-content}}`
-**Source:** `<vault>/01-overview.md` §Purpose + §Scope
-**Extraction:** Read entire §Purpose block + §Scope block; preserve markdown formatting; strip vault-internal anchors.
+**Source:** `<vault>/01-overview.md` §Purpose/§Product + §Scope/§Target users (the generate-intent template emits §Product/§Problem/§Success criteria/§Out of Scope — the builder accepts BOTH vocabularies, numbered headings tolerated)
+**Extraction:** Read entire §Purpose|§Product block + §Scope|§Target-users block; preserve markdown formatting; strip vault-internal anchors.
 **Citation:** `[¹] Source: vault/01-overview.md:L<purpose_start>-L<scope_end> (sha256: pending)`
 **Missing source:** emit `[Pending — vault/01-overview.md not yet generated]`
 
 ## Section 2 — Goals & Non-Goals
 
 **Slots:** `{{section-2-goals-content}}`, `{{section-2-non-goals-content}}`
-**Source:** `<vault>/01-overview.md` §Goals + §Non-Goals
+**Source:** `<vault>/01-overview.md` §Goals/§Success criteria + §Non-Goals/§Out of Scope (both vocabularies accepted)
 **Extraction:** Per §Goals: extract bulleted/numbered list as-is. Per §Non-Goals: same.
 **Citation:** inline footnote per sub-section.
 **Missing source:** emit per sub-section `[Pending — vault/01-overview.md §Goals not yet generated]`
@@ -122,7 +133,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Extraction:**
 - From 02-functional NFR section: extract per sub-category
 - From constitution.md: filter LOCKED clauses by category tag; extract clause body
-- De-dup if both sources mention same constraint (prefer constitution.md as canonical)
+- ~~De-dup if both sources mention same constraint (prefer constitution.md as canonical)~~ **AMENDED (5e, see header):** both sources are emitted under labeled sub-blocks — deterministic, duplicates are not fabrication
 
 **Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/_meta/constitution.md §LOCKED:<category>`
 **Missing source:** per sub-category emit `(not specified)` line; do NOT halt.
