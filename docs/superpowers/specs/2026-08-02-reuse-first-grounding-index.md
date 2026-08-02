@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02
 **Status:** DESIGN — umbrella spec; ships tranche-per-release
-**Ship order:** `R1+R2 ✅ v5.28.0 (b53d007) → D1 ✅ v5.29.0 (PageRank removal) → R3 (dup sweep hardening) → D2 (ast-grep primary)`
+**Ship order:** `R1+R2 ✅ v5.28.0 (b53d007) → D1 ✅ v5.29.0 (8cc9f0b) → R3 ✅ v5.30.0 (dup sweep hardening) → D2 (ast-grep primary)`
 **Horizon (own spec later, not this one):** D3 scan-as-a-service — bind-codebase consuming
 the index claim-scoped instead of loading the whole map; deliberately NOT designed here.
 
@@ -17,9 +17,9 @@ intent only partially, and pays for the wrong things:
   but its **coverage is the deep-scan slices only** (auth/authz/ui/libs). Generic helpers —
   the symbols agents most often reinvent — are in NO index that reaches a bolt dispatch.
   `codebase-map.md` §2 has them, but §2 feeds binding, never dispatches.
-- The post-write duplication check is **exact-name match** against the slice index only
-  (`getUserBalance` reinvented as `fetchUserBalance` passes), surfaced only via
-  `/mega-sdd:analyze` (which the lean profile skips).
+- (pre-R3, was) The post-write duplication check WAS **exact-name match** against the slice
+  index only (`getUserBalance` reinvented as `fetchUserBalance` passed), surfaced only via
+  `/mega-sdd:analyze` (which the lean profile skips) — fixed by R3, v5.30.0.
 - **PageRank targeting never served the goal**: file-level (not symbol), advisory (bolts
   ignore it), human-promoted, requires `engine: tree-sitter` — and tier 1 is dead on both
   real operator environments (macOS: grammar compile OOM, live incident 2026-08-02;
@@ -105,6 +105,27 @@ output stays ADVISORY but is additionally handed to the code-quality review lens
 mechanical evidence rows in its dispatch (the panel's duplication mandate finally gets
 data instead of hope). Never a hook (doctrine: gates > rules > hooks; duplication is
 judgment-adjacent — a reviewer decision, not a deterministic block).
+
+Implementation truths (v5.30.0, round folds included): four match classes — exact,
+case-shape, **same-suffix-root** (bare root ↔ verb-prefixed, BOTH directions —
+`userBalance` ↔ `getUserBalance`), verb-synonym — with verb roots required ≥3 chars
+(noise guard); rows class-sorted strongest-first and **capped at 40** (+`truncated` count
+— parity with R2's level-0 cap; the lens prompt is never flooded); `--range=<a>..<b>`
+(default HEAD~1..HEAD — the pre-R3 contract; on a merge commit that default is the
+first-parent diff — the panel always passes an explicit range) + `--json` evidence mode
+whose envelope holds on EVERY path incl. skips and unknown flags; positional `<cwd>` kept
+for the run-analyze caller; rc is ALWAYS 0 on every path; the just-committed symbol (same
+file + same name) is never reported; diff runs config-pinned
+(`core.quotepath=false`, `diff.noprefix=false`, `--no-ext-diff` — each a field-verified
+defeat vector); non-code file diffs (.md/.yaml/…) never mint "added symbols" (a fenced
+code block in a doc is prose); index absent → the old reuse-index.yaml name lane with an
+honest slice-coverage note; both absent → recorded skip. HONEST ASYMMETRY (accepted,
+disclosed): the added-side regex catches keyword-led definitions only — keyword-less
+method styles (C#/Java/Kotlin members) are invisible on the added side even though the
+index sees them; closing it needs per-language added-side parsing (a future tranche if
+telemetry shows it matters). The evidence heading in the quality lens prompt is OMITTED
+on zero rows, never emitted empty, and is RE-RUN on re-dispatch; the lens instruction is
+verify-each-row (a match is a lead, not a verdict).
 
 ## DESIGN — D1: PageRank targeting removal (own tranche)
 
@@ -210,3 +231,33 @@ Verified held: flag-compat (nothing mechanically rejects `--skip-pagerank`); leg
 unknown-section whitelist); CI's find-based discovery drops the deleted suite cleanly and
 picks up the successor; 20+ adjacent suites green; the replacement (`symbol_slice`) is
 real and every tombstone qualifies it honestly as a different-layer replacement.
+
+### Tranche R3 round (dual-blind — 1 ship-blocking + 5 important + 8 minor, ALL folded)
+
+Ship-blocking (lens A): the spec-promised **same-suffix-root** class was silently absent —
+`userBalance` ↔ `getUserBalance` produced NO row in either direction, exactly the
+reinvention pattern R3 exists for, and the Implementation-truths paragraph had omitted the
+narrowing (spec-loosened-to-fit-code, third consecutive round it was hunted and found).
+Folded: bare-root ↔ verb-prefixed now matches both directions as its own class.
+
+Important: **no row cap** — a realistic `__init__`+`main` commit against a 250-symbol
+index pasted 250 rows / 47KB into the quality-lens prompt, contradicting R2's own 40-cap
+in the same spec (now class-sorted strongest-first, capped 40, `truncated` counted);
+`diff.noprefix=true` defeated the self-guard (the just-added definition reported itself —
+diff is now config-pinned: quotepath/noprefix/`--no-ext-diff`, each a verified defeat
+vector); **markdown fences and YAML prose minted phantom "added symbols"** handed to the
+reviewer as machine fact (non-code extensions now never mint symbols); a mis-shaped index
+leaked a raw traceback into CONSISTENCY-REPORT and broke the `--json` envelope (recorded
+skip now, envelope holds on every path); the SKILL pointer lacked `--cwd`; re-dispatch
+now re-runs the rows like fresh L0 (stale attempt-1 evidence can never ride a re-review).
+
+Minor: verb roots <3 chars are noise-guarded (`getId`≁`findId`); unknown flags honor
+`--json`; the yaml-fallback rows point at `reuse-index.yaml (see _source)` instead of
+`(?:?)`; merge-commit first-parent semantics + the keyword-less-method added-side
+asymmetry (C#/Java/Kotlin members invisible to the diff regex though the index sees
+them) are DISCLOSED, not hidden; the spec's Motivation was retensed to (pre-R3, was).
+
+Held: rc 0 + valid JSON on every hostile path (injection-safe argv, git absent, unicode,
+30k×60 in 0.5s); advisory census clean (never a hook — both census tests pin it);
+run-analyze end-to-end compatible; blind-review moat intact (rows are machine fact into
+ONE lens; NEVER-contains list untouched).
