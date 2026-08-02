@@ -1,6 +1,6 @@
 ---
 description: THE mega-sdd front door — any SDD lane phrase routes here. No arg → derive-state status view (position, vault, counts, staleness, foreign-SDD/adoption notices) + propose the next chain with ONE upfront confirmation. With an artifact arg (PRD / legacy dir / vault / brief) → input-shape detection + the adoption lane. Every gated phase stays Skill-dispatched. Deprecated /mega-sdd:<command> aliases resolve through 5.x.
-argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--no-telemetry] [--plan|--act|--plan-then-act]"
+argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--no-telemetry] [--plan|--act|--plan-then-act]"
 ---
 
 > **The 5.0.0 surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or a deprecated alias that keeps resolving through the 5.x cycle.
@@ -8,6 +8,8 @@ argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step
 This command THINLY WRAPS the orchestrate-flow machinery — it detects the input shape, renders state, and dispatches; it never duplicates chain logic. **Every gated phase is dispatched via the Skill tool (`mega-sdd:orchestrate-flow` and its sub-skills) — NEVER offloaded to the Agent tool.** The PreToolUse moat gates key on Skill calls; an Agent-tool offload would bypass them (matcher excludes `Agent`), so it is forbidden.
 
 User arguments: $ARGUMENTS
+
+> `--lean` / `--full` — the tranche-E profile switch (opt-in): lean trims the advisor legs (`--no-advisor`, recorded as `advisor: skipped`) + the advisory chain diagnostics; persistent form `profile: lean` in `.mega-sdd/config.yaml` (also governs the Stop-hook analyze aggregate — the flag alone does not). Never touches any gate. → orchestrate-flow SKILL §Auto-integrated diagnostics.
 
 ## Lane 0 — no argument: status view + next-chain proposal
 

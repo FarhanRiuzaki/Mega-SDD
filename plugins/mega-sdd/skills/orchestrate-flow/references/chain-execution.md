@@ -167,6 +167,12 @@ Only if the chain includes execute-bolts:
 
 ## Auto-integrated diagnostics
 
+> **`--lean` profile:** the ADVISORY rows below (`lint-units`, `analyze-parallelism`,
+> `list-modules`, `emit-agents-md`) are SKIPPED when the profile is lean (`--lean` flag or
+> `profile: lean` in config.yaml) — each is re-runnable on demand. `detect-drift` (the hybrid
+> gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
+
+
 Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY invokes diagnostic commands at appropriate phases — user does NOT run these separately:
 
 | Phase | Auto-runs | Output integration |

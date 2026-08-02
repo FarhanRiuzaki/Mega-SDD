@@ -110,12 +110,15 @@ fsdd = d.get("foreign_sdd") or []
 fsdd_tok = (
     " foreign_sdd=" + ",".join(sorted({h["tool"] for h in fsdd})) if fsdd else ""
 )
+# Tranche E (F5 hardening): a lean run NAMES itself in the digest — profile=full
+# is omitted so every pre-E fixture stays byte-stable.
+prof_tok = " profile=lean" if d.get("profile") == "lean" else ""
 print(
     "mega-sdd state: position=%s vault=%s units=%d bolts=%d oq_p0p1_open=%d "
     "map=%s dirty=%d%s next: %s%s"
     % (
         d["position"], vault, units, bolts, oq,
-        cs["map_stamp_matches_head"], cs["dirty_journal_rows"], fsdd_tok, nxt,
+        cs["map_stamp_matches_head"], cs["dirty_journal_rows"], fsdd_tok + prof_tok, nxt,
         "" if state_file else "  [state.json not written: no .mega-sdd/]",
     )
 )

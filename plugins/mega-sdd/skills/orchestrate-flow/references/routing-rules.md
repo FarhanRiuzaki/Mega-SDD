@@ -2,6 +2,8 @@
 
 `orchestrate-flow` inspects CWD and proposes a chain of skills based on detected state. This document specifies the decision matrix.
 
+> **`--lean` profile (tranche E):** when `.mega-sdd/config.yaml` carries `profile: lean`, the state engine (`scripts/_lib/state_probes.py`, `derived.profile`) appends `--no-advisor` (a `--lean` FLAG without the config key is applied by the orchestrator at dispatch time — the engine reads only the config) to the `generate-intent` and `bind-codebase` hops in every proposed chain below — the engine and this table are one contract (the 2a lesson). No other row changes; no gate reads the profile.
+
 ## Contents
 
 - [CWD inspection (deterministic, in order)](#cwd-inspection-deterministic-in-order)
