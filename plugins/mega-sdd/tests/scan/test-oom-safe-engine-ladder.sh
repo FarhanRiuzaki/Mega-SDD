@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# test-oom-safe-engine-ladder.sh — T1 (spec 2026-08-02-oom-safe-ast-engine-ladder.md).
-# Proves the 3-tier ladder: probe-scan-engine.sh resolves tree-sitter → ast-grep →
-# regex deterministically, SERIALLY, bounded, with the clang-OOM class named
+# test-oom-safe-engine-ladder.sh — T1 + D2 (specs 2026-08-02-oom-safe-ast-engine-ladder.md
+# + 2026-08-02-reuse-first-grounding-index.md §D2).
+# Proves the D2 ladder: AUTO = ast-grep → regex with tree-sitter NEVER invoked
+# (the clang-OOM class structurally unreachable unattended); --engine=tree-sitter
+# is the explicit opt-in lane where the T1 smoke tests run SERIALLY, bounded,
+# with the clang-OOM class named
 # (`grammar_compile_killed` — BOTH spellings: stderr "Killed: 9" at rc=1, and the
 # probe itself SIGKILLed), forced engines halt dep_missing instead of falling
 # through, and the doc/consumer wiring is pinned. All engine arms run through PATH
@@ -73,13 +76,13 @@ echo "clang: error: unable to execute command: Killed: 9" >&2
 exit 1
 SH
 chmod +x "$W/shim/tree-sitter"; mk_astgrep
-OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py)
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --lang=python:b.py)
 printf '%s' "$OUT" | grep -q '"reason":"grammar_compile_killed"' \
-  && ok "rc=1 + stderr 'Killed: 9' classified grammar_compile_killed (live-incident spelling)" \
+  && ok "rc=1 + stderr 'Killed: 9' classified grammar_compile_killed (live-incident spelling; opt-in lane)" \
   || fail "stderr spelling not classified: $OUT"
-printf '%s' "$OUT" | grep -q '"engine":"ast-grep"' && printf '%s' "$OUT" | grep -q '"precision_tier":"ast"' \
-  && ok "OOM-killed grammar falls to tier 2 with precision_tier ast intact" \
-  || fail "tier-2 fall wrong: $OUT"
+printf '%s' "$OUT" | grep -q '"tier":"regex"' \
+  && ok "D2: forced tree-sitter failure falls to REGEX — never a silent ast-grep detour" \
+  || fail "opt-in fall wrong: $OUT"
 # spelling 2: the probe process itself SIGKILLed
 cat > "$W/shim/tree-sitter" <<'SH'
 #!/bin/sh
@@ -87,7 +90,7 @@ cat > "$W/shim/tree-sitter" <<'SH'
 kill -9 $$
 SH
 chmod +x "$W/shim/tree-sitter"
-OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py)
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --lang=python:b.py)
 printf '%s' "$OUT" | grep -q '"reason":"grammar_compile_killed"' \
   && ok "probe SIGKILLed (rc -9/137) classified grammar_compile_killed" \
   || fail "sigkill spelling not classified: $OUT"
@@ -100,7 +103,7 @@ sleep 30
 SH
 chmod +x "$W/shim/tree-sitter"
 START=$(date +%s)
-OUT=$(run_probe --cwd="$W/repo" --timeout=1 --lang=python:b.py)
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --timeout=1 --lang=python:b.py)
 ELAPSED=$(( $(date +%s) - START ))
 printf '%s' "$OUT" | grep -q '"reason":"probe_timeout"' \
   && ok "hung probe -> probe_timeout (reachable, recorded)" || fail "timeout arm: $OUT"
@@ -117,7 +120,7 @@ rmdir "$W/probe.lock"
 exit 0
 SH
 chmod +x "$W/shim/tree-sitter"
-OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py --lang=javascript:a.js)
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --lang=python:b.py --lang=javascript:a.js)
 if printf '%s' "$OUT" | grep -q 'query_error'; then
   fail "probes overlapped (lock tripped rc 99): $OUT"
 else
@@ -130,13 +133,13 @@ echo "== ladder resolution arms =="
 if [ "$SANDBOX_CLEAN" = "1" ]; then
 rm_shims  # nothing installed at all
 OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py)
-printf '%s' "$OUT" | grep -q '"engine":"regex"' && printf '%s' "$OUT" | grep -q '"precision_tier":"regex"' \
-  && ok "no AST binary at all -> tier 3 regex" || fail "bare arm: $OUT"
+printf '%s' "$OUT" | grep -q '"engine":"regex"' && printf '%s' "$OUT" | grep -q '"reason":"astgrep_absent"' \
+  && ok "no ast-grep -> regex with the astgrep_absent reason (D2 auto)" || fail "bare arm: $OUT"
 mk_astgrep  # ast-grep only (the locked-down-laptop shape: scoop static binary, no cargo/brew)
 OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py --lang=javascript:a.js)
 printf '%s' "$OUT" | grep -q '"engine":"ast-grep"' \
   && printf '%s' "$OUT" | grep -q '"astgrep_version":"0.42.3"' \
-  && ok "ast-grep only -> tier 2 engine with version captured" || fail "ag-only arm: $OUT"
+  && ok "D2: ast-grep alone IS tier 1 (engine + version captured)" || fail "ag-only arm: $OUT"
 fi
 # scaffold-only language: skipped, never failed
 cat > "$W/shim/tree-sitter" <<'SH'
@@ -146,8 +149,11 @@ exit 0
 SH
 chmod +x "$W/shim/tree-sitter"
 OUT=$(run_probe --cwd="$W/repo" --lang=go)
-printf '%s' "$OUT" | grep -q '"reason":"no_source_file"' && printf '%s' "$OUT" | grep -q '"engine":"tree-sitter"' \
-  && ok "scaffold-only lang skipped; engine kept per binary presence" || fail "scaffold arm: $OUT"
+printf '%s' "$OUT" | grep -q '"reason":"no_source_file"' && printf '%s' "$OUT" | grep -q '"engine":"ast-grep"' \
+  && ok "scaffold-only lang skipped; AUTO keeps the ast-grep claim per binary presence (D2)" || fail "scaffold arm: $OUT"
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --lang=go)
+printf '%s' "$OUT" | grep -q '"engine":"tree-sitter"' \
+  && ok "opt-in scaffold keeps the tree-sitter claim" || fail "opt-in scaffold arm: $OUT"
 
 echo "== round regression arms (dual-blind 2026-08-02, all folded) =="
 # B1: non-UTF-8 probe output must not crash the resolver — digest on every path
@@ -158,9 +164,9 @@ head -c 64 /dev/urandom >&2
 exit 1
 SH
 chmod +x "$W/shim/tree-sitter"; mk_astgrep
-OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py); RC=$?
+OUT=$(run_probe --cwd="$W/repo" --engine=tree-sitter --lang=python:b.py); RC=$?
 [ "$RC" = "0" ] && printf '%s' "$OUT" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
-  && ok "B1: raw-bytes stderr -> rc 0, valid JSON digest (errors=replace)" \
+  && ok "B1: raw-bytes stderr -> rc 0, valid JSON digest (errors=replace; opt-in lane)" \
   || fail "B1: rc=$RC out=$OUT"
 # B4: version token = first X.Y match, not the trailing "(sha)"
 cat > "$W/shim/tree-sitter" <<'SH'
@@ -175,8 +181,8 @@ printf '%s' "$OUT" | grep -q '"tree_sitter_version":"0.25.4"' \
 # B2: a no_query_file language must NOT inflate engine/precision to ast
 printf 'fun main() {}\n' > "$W/repo/k.kt"
 OUT=$(run_probe --cwd="$W/repo" --lang=kotlin:k.kt)
-printf '%s' "$OUT" | grep -q '"engine":"regex"' && printf '%s' "$OUT" | grep -q '"reason":"no_query_file"' \
-  && ok "B2: kotlin-only (no .scm, no pack) -> regex engine, never a fake ast stamp" \
+printf '%s' "$OUT" | grep -q '"engine":"regex"' && printf '%s' "$OUT" | grep -q '"reason":"no_astgrep_pack"' \
+  && ok "B2/D2: kotlin-only (no pack) -> regex engine + no_astgrep_pack, never a fake ast stamp" \
   || fail "B2: $OUT"
 # A5: scaffold skip holds on the tier-2 path too (tree-sitter absent locally is
 # emulated by --engine=ast-grep forcing past tier 1)
@@ -195,6 +201,37 @@ OUT=$(run_probe --cwd="$W/repo" --engine=ast-grep --lang=python:b.py --lang=pyth
 N=$(printf '%s' "$OUT" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['astgrep_langs']))")
 [ "$N" = "1" ] && ok "B6: duplicate --lang deduped" || fail "B6: astgrep_langs count=$N"
 rm_shims
+
+# D2: AUTO must NEVER exec tree-sitter — canary shim proves zero invocations
+cat > "$W/shim/tree-sitter" <<SH
+#!/bin/sh
+[ "\$1" = "--version" ] && { echo "tree-sitter 0.26.9"; exit 0; }
+touch "$W/ts-invoked.canary"
+exit 0
+SH
+chmod +x "$W/shim/tree-sitter"; mk_astgrep
+rm -f "$W/ts-invoked.canary"
+OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py --lang=javascript:a.js); RC=$?
+if [ "$RC" != "0" ] || ! printf '%s' "$OUT" | grep -q '"engine":"ast-grep"'; then
+  fail "D2 canary run itself failed (rc=$RC) — the canary claim would be vacuous"
+elif [ -e "$W/ts-invoked.canary" ]; then
+  fail "D2: AUTO invoked tree-sitter (clang path reachable unattended)"
+else
+  ok "D2: AUTO never invokes tree-sitter (canary untouched — the OOM class is unreachable)"
+fi
+# the MOST LIKELY regression cell: ts present + ast-grep ABSENT + real sample —
+# a mutant that "helpfully" falls back to tree-sitter there shipped green before
+# this arm existed (round-3 ship-blocker B1)
+rm -f "$W/shim/ast-grep" "$W/ts-invoked.canary"
+OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py); RC=$?
+if [ -e "$W/ts-invoked.canary" ]; then
+  fail "D2: ag-absent AUTO invoked tree-sitter (the no-ast-grep machine class is exposed to clang)"
+elif [ "$RC" = "0" ] && printf '%s' "$OUT" | grep -q '"reason":"astgrep_absent"'; then
+  ok "D2: ag-absent AUTO -> regex/astgrep_absent, tree-sitter STILL never invoked"
+else
+  fail "D2 ag-absent arm digest wrong: rc=$RC $OUT"
+fi
+mk_astgrep
 
 echo "== tier-2 rule packs: present, multi-doc, kind-based =="
 PACKS=(typescript javascript php python rust go ruby java csharp)
@@ -231,7 +268,7 @@ grep -qF "FNR==1 && NR!=1" "$SP" \
   && ok "the ---separator concatenation seam is written down" || fail "concat seam missing"
 grep -qF "ONE total" "$SP" && ok "spawn table carries the ast-grep row" || fail "spawn row missing"
 TI="$PLUG/skills/scan-codebase/references/tree-sitter-integration.md"
-grep -qF "The 3-tier ladder" "$TI" && grep -qF "grammar_compile_killed" "$TI" \
+grep -qF "The ladder (D2" "$TI" && grep -qF "grammar_compile_killed" "$TI" \
   && ok "tree-sitter-integration owns the ladder + names the OOM class" || fail "ladder owner missing"
 grep -qE '^\s*type: dep_missing$' "$TI" \
   && ok "dep_missing YAML shape intact (fork test pins it)" || fail "dep_missing shape broken"

@@ -103,7 +103,7 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 4. **Implementation state** — IMPLEMENTED / NEW / PARTIAL_FIELDS_MISSING / UNKNOWN per claim
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
-7. **AST-precise extraction** — tree-sitter (no regex guessing of structure)
+7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn; tree-sitter as an explicit opt-in lane — no regex guessing of structure)
 8. **Memory** — suggestion-only, with a mandatory audit log
 9. **Drift detection** — committed code reconciled against the vault
 10. **Interface lock** — cross-squad consumed interfaces must be locked
@@ -148,7 +148,7 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 
 | Tool | Used by | Fallback |
 |---|---|---|
-| `tree-sitter` | scan-codebase (AST extraction) | regex engine (lower precision) |
+| `tree-sitter` | scan-codebase OPT-IN lane (`--engine=tree-sitter`; auto uses ast-grep) | auto is unaffected — ast-grep serves tier `ast` |
 | `ast-grep` | execute-bolts / generate-units (Hard Rules v2) | v1 5-type grammar |
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |

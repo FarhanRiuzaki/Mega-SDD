@@ -181,7 +181,7 @@ flowchart TD
 
     %% Brownfield path
     MODE -->|brownfield| SCAN
-    CODE --> SCAN[scan-codebase<br/>🌲 tree-sitter AST<br/>+ deep-scan stage]:::phase
+    CODE --> SCAN[scan-codebase<br/>ast-grep AST<br/>+ deep-scan stage]:::phase
     SCAN --> MAP[(🗺️ codebase-map.md<br/>precision: ast)]:::artifact
     SCAN --> STARTERKIT[(📐 starterkit-context.yaml<br/>auth · authz · ui_ux · libs · reuse<br/>5 parallel subagents)]:::artifact
     MAP --> BIND[bind-codebase<br/>CONFIRMED / CONFLICT / OQ<br/>+ impl-state + Suggested Hard Rules]:::phase

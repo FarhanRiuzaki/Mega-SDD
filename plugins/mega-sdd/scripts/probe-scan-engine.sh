@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # probe-scan-engine.sh — deterministic scan-codebase Step-0 engine resolution.
 #
-# Resolves the 3-tier extraction ladder (tree-sitter → ast-grep → regex) and runs
-# the per-language grammar smoke tests SERIALLY with a hard per-probe timeout.
-# `tree-sitter query` compiles the grammar locally (clang) on first use, so the
-# smoke test is also a compile step: parallel probes have OOM-killed clang on a
-# memory-tight machine (`killed: 9`, live incident 2026-08-02). Running them one
-# at a time inside this script prevents that by construction — the model never
-# gets the chance to batch them.
+# D2 ladder (spec 2026-08-02-reuse-first-grounding-index.md §D2, v5.31.0):
+#   AUTO    ast-grep → regex. tree-sitter is NEVER probed in auto, so the clang
+#           grammar-compile OOM class (`killed: 9`, live incident 2026-08-02) is
+#           structurally unreachable on any unattended run.
+#   OPT-IN  --engine=tree-sitter — the T1 grammar smoke tests run HERE only,
+#           SERIALLY with a hard per-probe timeout (the smoke test is also a
+#           clang compile step; serial-by-construction is what makes the lane
+#           safe for the rare hand-configured-grammar machine).
 #
 # Usage:
 #   probe-scan-engine.sh [--cwd=<dir>] [--engine=tree-sitter|ast-grep|regex]
@@ -18,9 +19,12 @@
 #                              (scaffold-only → probe SKIPPED, not failed)
 #
 # Output: ONE compact JSON digest on stdout:
-#   { engine, precision_tier, binary_name, tree_sitter_version, astgrep_version,
-#     grammars_used: [tier-1 langs], astgrep_langs: [tier-2 langs],
+#   { engine, precision_tier, binary_name (opt-in-lane relevance only — stamped
+#     in auto too, purely informational), tree_sitter_version, astgrep_version,
+#     grammars_used: [opt-in tree-sitter langs], astgrep_langs: [auto primary langs],
 #     fallbacks: [{lang, tier, reason}], halt }
+# A forced --engine with ZERO --lang args resolves from an empty language set
+# (engine falls out as regex) — the SKILL always passes the detected languages.
 # Exit: 0 resolved · 2 usage · 3 dep_missing (forced engine absent; digest still
 # printed with halt populated so the SKILL can emit the blocker verbatim).
 
@@ -42,7 +46,7 @@ for arg in "$@"; do
 done
 [ -d "$CWD" ] || { echo "probe-scan-engine.sh: --cwd not a directory: $CWD" >&2; exit 2; }
 case "$FORCED" in ""|tree-sitter|ast-grep|regex) : ;; *) echo "probe-scan-engine.sh: bad --engine=$FORCED" >&2; exit 2 ;; esac
-case "$TIMEOUT" in ''|*[!0-9]*) echo "probe-scan-engine.sh: --timeout must be a positive integer, got '$TIMEOUT'" >&2; exit 2 ;; esac
+case "$TIMEOUT" in ''|*[!0-9]*|0) echo "probe-scan-engine.sh: --timeout must be a positive integer, got '$TIMEOUT'" >&2; exit 2 ;; esac
 
 # Query files live next to the scan-codebase skill, resolved relative to this script.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -126,15 +130,17 @@ for a in lang_args:
     _seen.add(lang)
     langs.append((lang, sample or None))
 
-def tier2_or_3(lang, reason):
-    if forced != "tree-sitter" and ag_bin and lang in ASTGREP_LANGS:
-        digest["astgrep_langs"].append(lang)
-        digest["fallbacks"].append({"lang": lang, "tier": "ast-grep", "reason": reason})
-    else:
-        digest["fallbacks"].append({"lang": lang, "tier": "regex", "reason": reason})
+def fall_to_regex(lang, reason):
+    # D2: every recorded fall lands on regex — the opt-in tree-sitter lane never
+    # detours to ast-grep (the caller chose tree-sitter), and the auto primary
+    # route is recorded in astgrep_langs, never here.
+    digest["fallbacks"].append({"lang": lang, "tier": "regex", "reason": reason})
 
-# ── tier-1 smoke tests: SERIAL, one bounded probe per language ──────────────
-use_ts = ts_bin and forced in ("", "tree-sitter")
+# ── lane resolution (D2): auto NEVER probes tree-sitter ─────────────────────
+# use_ts is true ONLY under the explicit --engine=tree-sitter opt-in; the
+# grammar smoke tests below are unreachable in auto, so no clang compile can
+# ever run on an unattended invocation.
+use_ts = bool(ts_bin) and forced == "tree-sitter"
 for lang, sample in langs:
     if not sample:
         # scaffold-only language: nothing to probe, nothing to extract —
@@ -142,47 +148,55 @@ for lang, sample in langs:
         digest["fallbacks"].append({"lang": lang, "tier": "skipped", "reason": "no_source_file"})
         continue
     if not use_ts:
-        tier2_or_3(lang, "tree_sitter_absent" if not ts_bin else "engine_forced")
+        if ag_bin and lang in ASTGREP_LANGS:
+            # the PRIMARY route, not a fallback — no fallbacks[] row, so the
+            # map's precision_downgrade_reason stays clean on the happy path
+            digest["astgrep_langs"].append(lang)
+        elif ag_bin:
+            digest["fallbacks"].append({"lang": lang, "tier": "regex", "reason": "no_astgrep_pack"})
+        else:
+            digest["fallbacks"].append({"lang": lang, "tier": "regex", "reason": "astgrep_absent"})
         continue
     scm = os.path.join(queries_dir, "tags-%s.scm" % lang)
     if not os.path.isfile(scm):
-        tier2_or_3(lang, "no_query_file")
+        fall_to_regex(lang, "no_query_file")
         continue
     rc, out, err = run([ts_bin, "query", scm, sample], timeout_s, cwd=cwd)
     blob = err + "\n" + out
     if rc == 0:
         digest["grammars_used"].append(lang)
     elif rc is None:
-        tier2_or_3(lang, "probe_timeout")
+        fall_to_regex(lang, "probe_timeout")
     elif rc < 0 or rc == 137 or "Killed: 9" in blob:
         # The clang-OOM class, BOTH spellings (verified live 2026-08-02):
         # tree-sitter itself SIGKILLed → rc -9/137; or tree-sitter exits rc=1
         # with the OOM-killed clang child's "Killed: 9" in stderr. Retryable,
         # NOT an install problem.
-        tier2_or_3(lang, "grammar_compile_killed")
+        fall_to_regex(lang, "grammar_compile_killed")
     elif rc == 127:
         # the binary resolved on PATH but could not be executed (OSError /
         # command-not-found at exec time — e.g. npm's extensionless sh shim
         # under Windows CreateProcess)
-        tier2_or_3(lang, "binary_unrunnable")
+        fall_to_regex(lang, "binary_unrunnable")
     elif "compilation failed" in blob.lower():
-        tier2_or_3(lang, "grammar_compile_failed")
+        fall_to_regex(lang, "grammar_compile_failed")
     elif "No language found" in blob or "Failed to load language" in blob:
-        tier2_or_3(lang, "grammar_missing")
+        fall_to_regex(lang, "grammar_missing")
     else:
-        tier2_or_3(lang, "query_error")
+        fall_to_regex(lang, "query_error")
 
 # ── ladder resolution: highest tier that extracted ≥1 language ──────────────
 if digest["grammars_used"]:
     digest["engine"], digest["precision_tier"] = "tree-sitter", "ast"
 elif digest["astgrep_langs"]:
     digest["engine"], digest["precision_tier"] = "ast-grep", "ast"
-elif use_ts and langs and all(f.get("tier") == "skipped" for f in digest["fallbacks"]):
-    # scaffold-only repo, binary present: keep tree-sitter per binary presence
-    # (existing rule — nothing was extracted either way). Guarded on ALL
-    # entries being skips: a no_query_file/regex fallback here would stamp
-    # `ast` on a map that extracted via regex.
-    digest["engine"], digest["precision_tier"] = "tree-sitter", "ast"
+elif langs and all(f.get("tier") == "skipped" for f in digest["fallbacks"]) and (use_ts or ag_bin):
+    # scaffold-only repo, an AST binary present: keep the AST engine claim per
+    # binary presence (nothing was extracted either way — the pre-D2 rule,
+    # re-homed to the D2 ladder). Guarded on ALL entries being skips: a real
+    # fallback here would stamp `ast` on a map that extracted via regex.
+    digest["engine"] = "tree-sitter" if use_ts else "ast-grep"
+    digest["precision_tier"] = "ast"
 else:
     digest["engine"], digest["precision_tier"] = "regex", "regex"
 emit(0)

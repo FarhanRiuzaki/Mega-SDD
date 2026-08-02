@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.31.0] - 2026-08-03 — D2: ast-grep is tier 1 — the reuse-first spec closes
+
+Final tranche of [`docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md`](docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md): the scan engine ladder flipped. **AUTO = `ast-grep → regex`; tree-sitter is never probed in auto** — the clang grammar-compile OOM class (`killed: 9`) is structurally unreachable on any unattended run, on any machine. **`--engine=tree-sitter` remains a fully supported explicit opt-in lane** carrying the whole T1 machinery (serial bounded grammar smoke tests, named fallback reasons, dep_missing) — and its failures fall to REGEX, never a silent ast-grep detour. The primary ast-grep route is recorded in `astgrep_langs`, never as a fallback, so `precision_downgrade_reason` stays clean on the happy path; true degradations are named (`no_astgrep_pack`, `astgrep_absent`). Scaffold claims follow binary presence per lane. tree-sitter absence is now the NORMAL state — validate-preflight no longer warns on it.
+- **Doc plane fully flipped** (the round's main catch — the code was right, the docs half-taught the old ladder): tree-sitter-integration (ladder owner), scan-procedure Step 0 + lanes + spawn-gate wording + recovery paths, SKILL Step 0/5, halts-flags, schema comments, READMEs, tool-matrix, VERSIONS, e2e narrative; the T1 spec carries a superseded-ladder banner.
+- **Round-1 (dual-blind, ~20 findings ALL folded, §disclosure):** lens B proved with a live mutant that the canary test couldn't catch the likeliest regression (ts fallback when ast-grep absent) — that matrix cell now has its own arm; lens A caught the half-flipped docs incl. a preflight WARN firing on the D2 happy path.
+- Skill: scan-codebase 2.25.0 → 2.26.0. Both-tree suite green.
+
 ## [5.30.0] - 2026-08-02 — R3: the duplication sweep grows teeth — and its findings finally reach a reviewer
 
 Third tranche of [`docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md`](docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md). Pre-R3, the post-write duplication check was exact-name-only against the deep-scan slice index, surfaced only via `/mega-sdd:analyze` — `getUserBalance` reinvented as `fetchUserBalance` passed clean.

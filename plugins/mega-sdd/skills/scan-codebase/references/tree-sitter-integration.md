@@ -1,7 +1,7 @@
-# Tree-sitter Integration (owner of the 3-tier engine ladder)
+# Tree-sitter Integration (owner of the engine ladder — D2: ast-grep leads, tree-sitter is the opt-in lane)
 
 ## Contents
-- The 3-tier ladder
+- The ladder (D2 — ast-grep is tier 1)
 - Detection (`scripts/probe-scan-engine.sh`)
 - Installation guidance (`dep_missing` blocker)
 - Query files (`queries/tags-<lang>.scm`) — schema + per-language coverage
@@ -12,42 +12,51 @@
 - Fallback behavior
 - Performance characteristics
 
-`scan-codebase` uses AST-level symbol extraction with a 3-tier engine ladder; regex extraction is preserved as the loud last resort.
+`scan-codebase` uses AST-level symbol extraction (ast-grep in auto; tree-sitter via explicit opt-in); regex extraction is preserved as the loud last resort.
 
-## The 3-tier ladder
+## The ladder (D2, v5.31.0 — ast-grep is tier 1)
 
 ```
-tier 1  tree-sitter   .scm tag queries; one spawn per FILE; grammars compiled LOCALLY (clang)
-tier 2  ast-grep      queries/astgrep rule packs; ONE spawn total; grammars EMBEDDED — zero compilation
-tier 3  regex         v1 patterns; one spawn per LANGUAGE; loud warning; precision_tier: regex
+AUTO    tier 1  ast-grep      queries/astgrep rule packs; ONE spawn total; grammars EMBEDDED — zero compilation
+        tier 2  regex         v1 patterns; one spawn per LANGUAGE; loud warning; precision_tier: regex
+OPT-IN  --engine=tree-sitter  .scm tag queries; one spawn per FILE; grammars compiled LOCALLY (clang);
+                              grammar smoke tests run HERE ONLY — serial, bounded, kill-classified
 ```
 
-The ladder is resolved **per language**: a language whose tree-sitter grammar fails falls to
-tier 2 for that language; a language with no tier-2 rule pack falls to tier 3. Tiers 1 and 2
-both stamp `precision_tier: ast` (ast-grep node boundaries are AST-determined), so every
-downstream consumer of the tier (bind-codebase field-level diff) is unaffected by a 1→2 fall.
+Resolution is **per language**: a packed language extracts via ast-grep at
+`precision_tier: ast`; a language with no rule pack falls to regex (`no_astgrep_pack`,
+recorded). **tree-sitter is never probed in auto** — the clang grammar-compile OOM class
+(`clang: … Killed: 9` on stderr at rc=1, live incident 2026-08-02, reproduced again at
+the D2 flip) is structurally unreachable on any unattended run. The explicit
+`--engine=tree-sitter` lane keeps full T1 behavior for hand-configured-grammar machines:
+serial bounded smoke tests, `grammars_used`, per-language regex fallback with named
+reasons — and never a silent detour to ast-grep (the caller chose tree-sitter).
 
-Why tier 2 exists (live incident 2026-08-02): `tree-sitter query` compiles the grammar's
-shared library with clang on first use — on a memory-tight machine that compile is
-OOM-killed (`clang: … Killed: 9` on stderr, tree-sitter exits rc=1 "Parser compilation
-failed"). ast-grep is a static binary with embedded grammars: the clang-OOM class cannot
-occur at tier 2, and on `OS=windows-bash` its one-spawn profile also erases the per-file
-spawn tax (scan-procedure.md §Spawn-cost gate).
+Why ast-grep leads: default tree-sitter installs ship ZERO grammars (manual clone +
+config nobody does); grammar compiles OOM the machine class this plugin actually runs on;
+one-spawn-per-FILE is the Windows/EDR hang class — while ast-grep is a static binary,
+embedded grammars, ONE spawn for the whole set, and `precision_tier` stays `ast` so
+bind-codebase field-level diff is untouched (scan-procedure.md §Spawn-cost gate).
 
 ## Detection
 
 Engine detection is a DETERMINISTIC SCRIPT, not prose: `scripts/probe-scan-engine.sh`
-(scan-procedure.md §Step 0 has the invocation + digest schema). It probes both tree-sitter
-binary names (`tree-sitter` — brew/cargo; `tree-sitter-cli` — npm), runs the per-language
-grammar smoke tests **SERIALLY with a hard per-probe timeout** (the smoke test is also the
-clang compile step — serializing it inside the script prevents the parallel-compile OOM by
-construction), probes `ast-grep`, and emits one JSON digest. Per-language fallback reasons
-are first-class: `grammar_compile_killed` (the OOM class — retryable, NOT an install
-problem), `grammar_compile_failed`, `grammar_missing`, `query_error`, `probe_timeout`,
+(scan-procedure.md §Step 0 has the invocation + digest schema). In AUTO it probes
+`ast-grep` and resolves the ladder without ever invoking tree-sitter (both tree-sitter
+binary names are still version-probed for provenance — a bounded `--version`, no
+compile). Under `--engine=tree-sitter` it runs the per-language grammar smoke tests
+**SERIALLY with a hard per-probe timeout** (the smoke test is also the clang compile
+step — serializing it inside the script is what makes the opt-in lane safe), and emits
+one JSON digest either way. Per-language fallback reasons
+are first-class. Auto lane: `no_astgrep_pack` (language without a rule pack → regex),
+`astgrep_absent` (no ast-grep → regex, loud warning). Opt-in tree-sitter lane:
+`grammar_compile_killed` (the OOM class — retryable, NOT an install problem),
+`grammar_compile_failed`, `grammar_missing`, `query_error`, `probe_timeout`,
 `binary_unrunnable` (found on PATH but not executable — e.g. npm's sh shim under Windows
-CreateProcess), `no_query_file`, `tree_sitter_absent`, `engine_forced` (a forced
-`--engine=ast-grep` routing past a present tier 1), and the non-fallback skip record
-`no_source_file` (scaffold-only language — skipped, never failed).
+CreateProcess), `no_query_file`. Non-fallback record on every lane: `no_source_file`
+(scaffold-only language — skipped, never failed; the primary ast-grep route is recorded
+in `astgrep_langs`, never as a fallback — the map's downgrade field stays clean on the
+happy path).
 
 - Binary presence alone proves nothing — the CLI installs with zero grammars configured.
   Only languages that pass the smoke test extract at tier 1 and appear in `grammars_used`.
@@ -101,7 +110,7 @@ Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public 
 - `tags-java.scm` — Java classes, interfaces, enums, records, methods
 - `tags-csharp.scm` — C# classes, interfaces, records, structs, methods
 
-Languages without `.scm` file → fall to tier 2 (rule pack present) else tier 3 (graceful degradation).
+Languages without a `.scm` file under the opt-in lane → fall to regex (never a silent ast-grep detour); in AUTO the `.scm` files are simply unused.
 
 ## Tier-2 rule packs (`queries/astgrep/<lang>.yml`)
 
@@ -153,11 +162,11 @@ Tree-sitter grammars evolve; bleeding-edge syntax may not parse correctly. Mitig
 
 ## Fallback behavior
 
-A tier-1 → tier-2 fall keeps `precision_tier: ast` and is recorded per language in the
-Step-0 digest's `fallbacks[]` (reason named in one chat line). Falling all the way to
-tier 3 (regex):
+In AUTO the only fall is to regex (`no_astgrep_pack` per unpacked language, or
+`astgrep_absent` for the whole run) — recorded in the Step-0 digest's `fallbacks[]`
+and stamped into `precision_downgrade_reason`. Falling to regex:
 
-1. Emit chat line: "⚠️ scan-codebase using regex engine (tree-sitter: <reason>, ast-grep: not found). Precision tier: regex. Install ast-grep (zero-compilation) or tree-sitter for AST-precise extraction."
+1. Emit chat line: "⚠️ ast-grep not installed; using regex engine (lower precision). Install: brew install ast-grep / scoop install ast-grep — or run `/mega-sdd:install-deps`" (the Step-0 warning — one wording, owned there).
 2. Run v1 regex extraction (preserved unchanged from v1.2)
 3. `precision_tier: regex` stamped in codebase-map.md frontmatter
 4. Downstream skills (bind-codebase) treat as lower-confidence ground truth
@@ -172,5 +181,5 @@ Backward-compat: v1.2 codebase-map files (without `precision_tier` field) treate
 | ast-grep | ~1-3s (ONE process, parallel in-process) | ~100MB peak; NO compile step ever |
 | Regex (v1) | ~5-15s (file traversal + multi-pattern match) | ~30MB peak |
 
-AST tiers are FASTER on typical repos AND more precise. Trade-off is an install step —
-and only tier 1 ever compiles anything locally.
+AST engines are FASTER on typical repos AND more precise. Trade-off is an install step —
+and only the opt-in tree-sitter lane ever compiles anything locally; the auto path never does.

@@ -62,7 +62,7 @@ details:
   per_spawn_sec: <0.22 on windows-bash, else 0.02>
   estimate_sec: <int>
   budget_sec: 60
-next_action: "Re-run with ONE of — (a) `--engine=ast-grep`: SATU proses untuk seluruh set (grammar embedded, tanpa kompilasi clang), presisi TETAP tier `ast`; (b) `--engine=regex`: satu panggilan per bahasa, selesai dalam detik, presisi turun ke tier `regex` dan peta mencatatnya di `precision_tier`; (c) `--engine=tree-sitter`: lanjut dengan presisi AST penuh dan bayar ~<estimate_sec>s; (d) `--include=<glob>`: persempit himpunan file sehingga n_extract turun. Presisi adalah properti yang DILAPORKAN peta, jadi pilihannya milik pengguna — skill tidak menurunkan engine diam-diam."
+next_action: "Re-run with ONE of — (a) `--engine=ast-grep` (tier-1 D2): SATU proses untuk seluruh set (grammar embedded, tanpa kompilasi clang), presisi TETAP tier `ast`; (b) `--engine=regex`: satu panggilan per bahasa, selesai dalam detik, presisi turun ke tier `regex` dan peta mencatatnya di `precision_tier`; (c) `--engine=tree-sitter` (lane opt-in): presisi AST penuh dengan biaya SATU proses per FILE — jauh di atas estimasi ini di mesin ber-EDR; (d) `--include=<glob>`: persempit himpunan file sehingga n_extract turun. Presisi adalah properti yang DILAPORKAN peta, jadi pilihannya milik pengguna — skill tidak menurunkan engine diam-diam."
 ```
 
 Recovery: caller re-runs with one of the four flags. An explicit `--engine=`/`--include=` suppresses this gate, so the remedy always terminates. The `--auto` lane's recovery command (`--engine=tree-sitter` / `--include=<glob>`) terminates for the same reason.
@@ -145,7 +145,7 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
 
 | Site | Deterministic behavior (never prompts, never waits) |
 |---|---|
-| Step 0 (engine) | Run `scripts/probe-scan-engine.sh` — ONE spawn: serial bounded smoke tests + ast-grep probe → the 3-tier ladder digest; no AST binary at all → `engine: regex` with a chat note. A forced `--engine=` whose binary is absent → `dep_missing` |
+| Step 0 (engine) | Run `scripts/probe-scan-engine.sh` — ONE spawn: D2 ladder digest (AUTO `ast-grep → regex`, tree-sitter never invoked; `--engine=tree-sitter` opt-in runs the serial bounded smoke tests); ast-grep absent → `engine: regex` with a chat note. A forced `--engine=` whose binary is absent → `dep_missing` |
 | Step 2 (monorepo primary app) | Precedence: explicit `--include` > owning root manifest > single app-root manifest; residual ambiguity → `scan_primary_app_ambiguous` |
 | Step 4 (repo > 100k files) | `--force-large` passed → proceed; else → `scan_repo_too_large` |
 | Step 5 (spawn-cost gate, `estimate` > 60 s) — **the one lane-dependent row** | **Lane 1** explicit `--engine=`/`--include=` → proceed, log the estimate. **Lane 2** undecided STANDALONE (a direct user invocation) → `scan_spawn_budget_exceeded`, STOP. **Lane 3** UNATTENDED (`--auto` / forked / orchestrator-dispatched — ties go here) → downgrade to the highest OOM-safe tier (ast-grep when the Step-0 digest has `astgrep_version` — `precision_tier` stays `ast`; else regex) and RECORD it (map `precision_downgrade_reason`, `precision_tier: regex` only on the regex fall, one chat line, AST-recovery command in `next_action.rationale`), `status: completed`. **Never** an UNRECORDED downgrade — `precision_tier` is a property the map reports, so lane 2 keeps the choice with the caller and lane 3 keeps the map honest about the tier it delivered |
@@ -168,7 +168,7 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
   - User explicit `--out=<path>` always respected
 - `--auto`: **selects the CHAIN LANE — it is not semantically empty.** There are no prompts left to skip (§Deterministic behavior above is the only behavior), but the flag still carries meaning: it declares that nobody is on the other end (an `orchestrate-flow` / `/mega-sdd` / `sync` hop, or a forked body), which is what lets the Step 5 spawn-cost gate take the RECORDED downgrade (ast-grep when present, else regex) instead of halting phase 1 of the chain. Without it the run is STANDALONE and that gate emits `scan_spawn_budget_exceeded` instead. Every other outcome is identical either way, and its absence never suppresses the handoff
 - `--force-large`: accept the cost on >100k file repos (without it, that condition emits `scan_repo_too_large`)
-- `--engine=tree-sitter|ast-grep|regex`: force a ladder tier; default auto-detect via `scripts/probe-scan-engine.sh` (the Step-0 digest)
+- `--engine=tree-sitter|ast-grep|regex`: force a lane; default auto = `ast-grep → regex` via `scripts/probe-scan-engine.sh` (tree-sitter is reachable ONLY through this flag since D2/v5.31.0)
 - `--shallow-scan`: two coupled fast-path semantics — (a) skip the Step 10.5 deep-scan stage (emit only the surface codebase-map.md), and (b) enable the Step 5 per-file invalidation gate (reuse prior §2 rows whose `Last_Scanned_Sha256` matches the file's current hash; only changed files re-extract — per `references/scan-procedure.md` §Step 5)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
 - `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
@@ -215,8 +215,8 @@ handoff:
     # APPEND to `rationale` when the Step 5 `--auto` lane downgraded the engine (map carries
     # precision_downgrade_reason; precision_tier: regex only when the fall went ALL the way to
     # regex — an ast-grep fall keeps tier ast): the estimate / N_total / OS / budget, the
-    # tier-1-recovery command (`/mega-sdd:scan-codebase --engine=tree-sitter`, or
-    # `--include=<glob>` to narrow), and the consequence — ONLY at regex tier does
+    # AST-recovery path (install ast-grep + re-scan — the D2 tier-1; `--engine=tree-sitter`
+    # remains the opt-in alternative — or `--include=<glob>` to narrow), and the consequence — ONLY at regex tier does
     # bind-codebase Step 2.5 implementation-state fall back to BINARY. This is the handoff
     # third of that lane's record (the other two: the map frontmatter and one chat line).
     # Status stays `completed`.
