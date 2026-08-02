@@ -104,18 +104,19 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
 7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn; tree-sitter as an explicit opt-in lane — no regex guessing of structure)
-8. **Memory** — suggestion-only, with a mandatory audit log
-9. **Drift detection** — committed code reconciled against the vault
-10. **Interface lock** — cross-squad consumed interfaces must be locked
-11. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
-12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time
-13. **Framework convention packs** — stack conventions inject into Suggested Unit Hard Rules
-14. **Predictive preflight** — upcoming halts surfaced *before* a skill runs
-15. **Handoff schema validation** — handoff YAML type-checked at emission
-16. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency, cross-cutting registration, render-test, ui-quality) hard-block `execute-bolts`; signatures from the framework pack, SKIP off-stack
-17. **Pipeline-intelligence gates** — fan-out parity, UI-deferral, the de-vacuoused conflict-classification gate, a typed `next_action.confidence`
-18. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff, or `execute-bolts` is blocked
-19. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
+8. **Reuse-first write loop** — a script-built full-repo symbol index feeds every bolt dispatch an "Existing symbols — REUSE, don't recreate" slice at write time, and a post-write duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) hands mechanical evidence rows to the code-quality review lens
+9. **Memory** — suggestion-only, with a mandatory audit log
+10. **Drift detection** — committed code reconciled against the vault
+11. **Interface lock** — cross-squad consumed interfaces must be locked
+12. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
+13. **Constitution layer** — project invariants enforced as Hard Rules at bolt time
+14. **Framework convention packs** — stack conventions inject into Suggested Unit Hard Rules
+15. **Predictive preflight** — upcoming halts surfaced *before* a skill runs
+16. **Handoff schema validation** — handoff YAML type-checked at emission
+17. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency, cross-cutting registration, render-test, ui-quality) hard-block `execute-bolts`; signatures from the framework pack, SKIP off-stack
+18. **Pipeline-intelligence gates** — fan-out parity, UI-deferral, the de-vacuoused conflict-classification gate, a typed `next_action.confidence`
+19. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff, or `execute-bolts` is blocked
+20. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 
 > The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); `/mega-sdd:analyze` surfaces the advisory ones.
 

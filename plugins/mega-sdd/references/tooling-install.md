@@ -64,14 +64,15 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 If you have **Homebrew** (macOS / Linux):
 
 ```bash
-brew install tree-sitter-cli ast-grep ripgrep jd
+brew install ast-grep ripgrep jd
+brew install tree-sitter-cli   # optional — only for the --engine=tree-sitter opt-in lane
 npm install -g markdownlint-cli2     # optional; vault prose lint
 ```
 
 If you have **cargo** (cross-platform Rust):
 
 ```bash
-cargo install tree-sitter-cli ast-grep ripgrep
+cargo install ast-grep ripgrep   # add tree-sitter-cli only for the opt-in lane
 go install github.com/josephburnett/jd/v2/jd@latest
 npm install -g markdownlint-cli2
 ```
@@ -89,14 +90,14 @@ If you are on **Windows** (git-bash / MSYS2):
 
 ```powershell
 # Scoop (jd is in the 'extras' bucket, not Main):
-scoop install tree-sitter ast-grep ripgrep pandoc
+scoop install ast-grep ripgrep pandoc   # add tree-sitter only for the opt-in lane
 scoop bucket add extras && scoop install jd
 npm install -g @mermaid-js/mermaid-cli    # mermaid render for the PDF lane
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
 # winget (covers all five native tools):
 winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
-winget install tree-sitter.tree-sitter-cli ast-grep.ast-grep josephburnett.jd
+winget install ast-grep.ast-grep josephburnett.jd   # add tree-sitter.tree-sitter-cli only for the opt-in lane
 
 # or the cross-platform runtime fallbacks:
 cargo install tree-sitter-cli ast-grep   # if Rust present
@@ -128,7 +129,7 @@ Mega-sdd works WITHOUT any of these. You get:
 - diff-vault: skill-internal compare
 - lint-units: internal heuristic checks
 
-For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least `tree-sitter` + `ast-grep` + `ripgrep`.
+For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — since 5.31.0 ast-grep IS the auto AST tier (zero-compilation, one spawn); add `tree-sitter` only if you intend to use the `--engine=tree-sitter` opt-in lane (it additionally needs manually configured grammars).
 
 ## License notes
 

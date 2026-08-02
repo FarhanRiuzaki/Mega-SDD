@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.31.1] - 2026-08-03 — docs: install guidance + READMEs catch up with the D2 world
+
+Docs-only patch. `install-deps` was already FUNCTIONALLY sufficient post-D2 (the ast-grep matrix rows and routes were web-audited at v5.3.1) — what lagged was the EMPHASIS: `recommended_minimum` and every quick-start block still listed tree-sitter first as if it were the AST tier.
+
+- `tool-matrix.yaml` `recommended_minimum` → `[ast-grep, ripgrep]` (tree-sitter = opt-in-lane-only, stated); `tooling-install.md` quick-start blocks (brew/cargo/scoop/winget) reordered with tree-sitter marked optional; the brownfield recommendation sentence rewritten (ast-grep IS the auto AST tier; tree-sitter additionally needs manually configured grammars).
+- READMEs refreshed: root README install-deps blurb + "How" row speak the D2 ladder; plugin README gains feature 8 — the reuse-first write loop (symbol index → dispatch `symbol_slice` → duplication sweep evidence to the quality lens) — and the feature list renumbered cleanly 1–20.
+
 ## [5.31.0] - 2026-08-03 — D2: ast-grep is tier 1 — the reuse-first spec closes
 
 Final tranche of [`docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md`](docs/superpowers/specs/2026-08-02-reuse-first-grounding-index.md): the scan engine ladder flipped. **AUTO = `ast-grep → regex`; tree-sitter is never probed in auto** — the clang grammar-compile OOM class (`killed: 9`) is structurally unreachable on any unattended run, on any machine. **`--engine=tree-sitter` remains a fully supported explicit opt-in lane** carrying the whole T1 machinery (serial bounded grammar smoke tests, named fallback reasons, dep_missing) — and its failures fall to REGEX, never a silent ast-grep detour. The primary ast-grep route is recorded in `astgrep_langs`, never as a fallback, so `precision_downgrade_reason` stays clean on the happy path; true degradations are named (`no_astgrep_pack`, `astgrep_absent`). Scaffold claims follow binary presence per lane. tree-sitter absence is now the NORMAL state — validate-preflight no longer warns on it.

@@ -88,7 +88,7 @@ For higher precision (optional, recommended), let the OS-aware installer set up 
 /mega-sdd:install-deps
 ```
 
-It detects your OS + package manager and installs `tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) with safety rails — and detects Google Chrome for the GitHub-style PDF render (never LaTeX; GitHub-styled HTML fallback if absent) (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+It detects your OS + package manager and installs `ast-grep` (the auto AST engine since 5.31.0), `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) — plus `tree-sitter` if you want the `--engine=tree-sitter` opt-in lane — with safety rails — and detects Google Chrome for the GitHub-style PDF render (never LaTeX; GitHub-styled HTML fallback if absent) (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
 ### 2. Keep it updated
 
@@ -315,7 +315,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts a mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
-| **How** | Layered anti-hallucination defense; execution via first-class bolt agents (two-stage review: spec compliance then code quality), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (tree-sitter + ast-grep + ripgrep + jd); markdown-driven memory with mandatory audit log + rollback. |
+| **How** | Layered anti-hallucination defense; execution via first-class bolt agents (two-stage review: spec compliance then code quality), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (ast-grep + ripgrep + jd; tree-sitter as an opt-in lane); markdown-driven memory with mandatory audit log + rollback. |
 
 ### Folder layout
 
