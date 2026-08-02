@@ -23,7 +23,14 @@ PageRank ranks files by their "centrality" to a set of seed files (the binding c
 
 ## Detection prerequisites
 
-Requires `engine: tree-sitter` in `codebase-map.md` frontmatter. If precision tier is `regex`, PageRank is SKIPPED — fallback to binding-only target_files.
+Requires `engine: tree-sitter` in `codebase-map.md` frontmatter — the symbol graph is built
+from `@name.reference.*` captures that only the `.scm` queries produce. Under
+`engine: ast-grep` (tier-2 extraction, no reference captures) OR `precision_tier: regex`,
+PageRank is SKIPPED — fallback to binding-only target_files, recorded with the SAME two
+loud surfaces as the `--auto` skip (unit-body section + closing Hand-off line, stating the
+reason `engine: ast-grep — no reference captures` / `precision_tier: regex`). Note the
+asymmetry: an ast-grep map keeps `precision_tier: ast`, so ONLY this advisory pass is lost —
+binding precision is unaffected.
 
 ## Spawn-cost gate (MANDATORY before building the symbol graph)
 
@@ -270,7 +277,7 @@ Symbol graph is cached at `<vault>/.internal/symbol-graph.json` (canonical per p
 - User must MANUALLY promote to `target_files` (no silent add)
 - `execute-bolts` ignores suggestions section; only target_files frontmatter is enforced
 - `--skip-pagerank` flag disables entirely (graceful degradation)
-- PageRank requires `engine: tree-sitter` (skips on regex codebase-map)
+- PageRank requires `engine: tree-sitter` (skips on ast-grep and regex codebase-maps — recorded, never silent)
 
 ## References
 

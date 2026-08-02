@@ -48,11 +48,15 @@ if [ ! -d "${CWD}/.mega-sdd" ]; then
   exit 0
 fi
 
-# Probe tree-sitter availability for the scan warn-check (cheap; no file scan).
+# Probe AST-engine availability for the scan warn-check (cheap; no file scan).
+# 3-tier ladder: tree-sitter OR ast-grep gives precision_tier ast; regex only
+# when BOTH are absent.
 TS_PRESENT=0
 if command -v tree-sitter >/dev/null 2>&1 || command -v tree-sitter-cli >/dev/null 2>&1; then
   TS_PRESENT=1
 fi
+AG_PRESENT=0
+command -v ast-grep >/dev/null 2>&1 && AG_PRESENT=1
 
 # P1 (v4.93.0, decision 8): the probe predicates live in the SHARED library
 # scripts/_lib/state_probes.py — one probe set for preflight AND the routing
@@ -63,7 +67,7 @@ fi
 # pre-migration project whose map bind would happily consume).
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
-CWD="$CWD" SKILL="$SKILL" TS_PRESENT="$TS_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
+CWD="$CWD" SKILL="$SKILL" TS_PRESENT="$TS_PRESENT" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
 import json, os, sys
 from datetime import datetime, timezone
 
@@ -78,6 +82,7 @@ from state_probes import (
 cwd = os.environ["CWD"]
 skill = os.environ.get("SKILL", "")
 ts_present = os.environ.get("TS_PRESENT", "0") == "1"
+ag_present = os.environ.get("AG_PRESENT", "0") == "1"
 quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -126,12 +131,19 @@ elif name == "execute-bolts":
     checks.append({"check": "units_directory_present", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "scan-codebase":
-    if not ts_present:
+    if not ts_present and not ag_present:
+        warnings.append({"check_id": "ast_engine_present",
+                         "detail": "no AST engine installed (tree-sitter AND ast-grep both absent); "
+                                   "scan-codebase falls back to the regex engine (lower precision; "
+                                   "bind-codebase field-level diff will degrade). Install via "
+                                   "/mega-sdd:install-deps or `brew install ast-grep` (zero-compilation "
+                                   "tier) / `brew install tree-sitter-cli`."})
+    elif not ts_present:
         warnings.append({"check_id": "tree_sitter_present",
-                         "detail": "tree-sitter not installed; scan-codebase falls back to the regex engine "
-                                   "(lower precision; bind-codebase field-level diff will degrade). Install via "
-                                   "/mega-sdd:install-deps or `brew install tree-sitter-cli`."})
-    checks.append({"check": "tree_sitter_present", "status": "WARN" if warnings else "PASS"})
+                         "detail": "tree-sitter not installed; scan-codebase extracts via the ast-grep "
+                                   "tier (precision stays ast; PageRank suggestions self-skip — no "
+                                   "reference captures). Install tree-sitter for the full tier-1 lane."})
+    checks.append({"check": "ast_engine_present", "status": "WARN" if warnings else "PASS"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")
 report = {

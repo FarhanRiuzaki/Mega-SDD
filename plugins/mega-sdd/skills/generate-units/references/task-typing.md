@@ -121,7 +121,7 @@ When binding state is **PARTIAL_FIELDS_BOTH**:
 
 ## Step 7.5 — PageRank target_files suggestions
 
-When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan):
+When `codebase-map.md` frontmatter has `engine: tree-sitter` (the tier-1 scan — `precision_tier: ast` alone is NOT sufficient: an ast-grep map is also `ast` but carries no reference captures):
 
 - **Spawn-cost gate FIRST (mandatory).** Building the graph re-runs `tree-sitter query` one process per FILE over the WHOLE source set — every member of `N`, not just the files that changed (`scan-codebase` does not persist the `name.reference.*` captures) — so estimate `N x per_spawn`, `per_spawn` = 0.22 s on windows-bash else 0.02 s, and above 60 s ASK before building. **`N` has ONE definition, owned by the §Spawn-cost gate section of the pagerank-targeting reference (listed in the skill router); read it there rather than restating it.** That section also names its source (this skill has no walk of its own, and sizing the walk must never cost the walk): Tier 1 is `scan-codebase`'s persisted enumeration `.mega-sdd/codebase/.scan/files.z` — one spawn, EXACT; only when that file is absent do you fall back to `codebase-map.md` §2, and then the count **is a FLOOR**, and `truncated_sections` containing `2` means §2 is capped → take the >60 s branch REGARDLESS of the count. It also carries the `--auto` policy (above 60 s: skip the pass, DECLARE the skip in the unit body and in the closing Hand-off summary line, never re-scan at regex tier, never prompt). Outside `--auto`, never silently skip the pass or drop the tier.
 - Build/load symbol-reference graph per the PageRank algorithm in the pagerank-targeting reference (listed in the skill router)
@@ -129,7 +129,7 @@ When `codebase-map.md` frontmatter has `precision_tier: ast` (tree-sitter scan):
 - Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
 - User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
 
-Skipped when `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to binding-only target_files. Symbol graph cached at `<vault>/.internal/symbol-graph.json`, built by generate-units on first use (pagerank-targeting §Build — scan-codebase does NOT persist reference captures); reused across all units, invalidated when `codebase-map.md` is regenerated.
+Skipped when `engine: ast-grep` (no reference captures — record the skip like the `--auto` policy) or `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to binding-only target_files. Symbol graph cached at `<vault>/.internal/symbol-graph.json`, built by generate-units on first use (pagerank-targeting §Build — scan-codebase does NOT persist reference captures); reused across all units, invalidated when `codebase-map.md` is regenerated.
 
 ## Step 7.6 — Per-unit target_files collision check
 

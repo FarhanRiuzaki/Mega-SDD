@@ -22,7 +22,7 @@
 
 **Assertions:**
 - Step 2.7 routing preflight runs but skips recommendation (no routing-outcomes.md file)
-- Step 3.5 predictive preflight runs; tree_sitter_present passes (no warning)
+- Step 3.5 predictive preflight runs; ast_engine_present passes (no warning)
 - Chain executes: scan-codebase → generate-intent → bind-codebase → generate-units → execute-bolts
 - Each handoff passes Step 6.b schema validation (all REQUIRED + CONDITIONAL fields present per Phase A1 sweep)
 - Each handoff passes Step 6.b.i type-check (no shape drift)
@@ -72,7 +72,7 @@ brew uninstall tree-sitter
 
 **Assertions:**
 - Step 3.5 predictive preflight runs
-- tree_sitter_present check fails; fatal=NO → warning only
+- ast_engine_present check fails (tree-sitter AND ast-grep both absent); fatal=NO → warning only
 - Chain proceeds; scan-codebase fails with dep_missing AFTER (as expected — predictive check was correct)
 
 ### Step 6: Force a validation halt (simulated)

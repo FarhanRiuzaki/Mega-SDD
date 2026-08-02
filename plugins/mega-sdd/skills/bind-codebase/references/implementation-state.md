@@ -45,7 +45,7 @@ For each claim marked CONFIRMED, classify implementation readiness per `binding-
 For each CONFIRMED claim that specifies fields/params explicitly:
 
 1. **Extract V** = field set asserted by the vault claim.
-2. **Extract C** = field set from the codebase-map (tree-sitter signature extraction at `precision_tier: ast`; regex fallback = lower confidence — run `/mega-sdd:install-deps --tools=tree-sitter` then re-scan for AST precision).
+2. **Extract C** = field set from the codebase-map (AST signature extraction — tree-sitter or ast-grep — at `precision_tier: ast`; regex fallback = lower confidence — run `/mega-sdd:install-deps --tools=ast-grep` (zero-compilation) or `--tools=tree-sitter` then re-scan for AST precision).
 3. **Compute diff:** `ADD = V \ C` (missing in code), `KEEP = V ∩ C` (shared), `REMOVE = C \ V` (surplus in code).
 4. **Assign state:** `V == C` → `IMPLEMENTED`; `C ⊂ V` (ADD non-empty, REMOVE empty) → `PARTIAL_FIELDS_MISSING`; `V ⊂ C` (REMOVE non-empty, ADD empty) → `PARTIAL_FIELDS_SURPLUS`; both non-empty → `PARTIAL_FIELDS_BOTH` (rare; semantic mismatch); `V ∩ C` empty but symbol exists → `UNKNOWN`.
 5. **Record** the diff in the Implementation State Map's `field_diff` column.

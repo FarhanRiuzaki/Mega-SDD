@@ -1,0 +1,22 @@
+# Tier-2 (ast-grep) definition rules — Java (.java).
+# Mirrors tags-java.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
+id: java-class
+language: java
+rule: {kind: class_declaration}
+---
+id: java-interface
+language: java
+rule: {kind: interface_declaration}
+---
+id: java-enum
+language: java
+rule: {kind: enum_declaration}
+---
+id: java-record
+language: java
+rule: {kind: record_declaration}
+---
+id: java-method
+language: java
+rule: {kind: method_declaration}

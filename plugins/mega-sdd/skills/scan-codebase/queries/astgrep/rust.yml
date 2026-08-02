@@ -1,0 +1,24 @@
+# Tier-2 (ast-grep) definition rules — Rust (.rs).
+# Mirrors tags-rust.scm coverage (fn/struct/enum/trait/impl; visibility is NOT
+# filtered here — §2 rendering decides what is public, same as the .scm lane).
+# Kind names verified against ast-grep 0.42.3.
+# Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
+id: rust-function
+language: rust
+rule: {kind: function_item}
+---
+id: rust-struct
+language: rust
+rule: {kind: struct_item}
+---
+id: rust-enum
+language: rust
+rule: {kind: enum_item}
+---
+id: rust-trait
+language: rust
+rule: {kind: trait_item}
+---
+id: rust-impl
+language: rust
+rule: {kind: impl_item}

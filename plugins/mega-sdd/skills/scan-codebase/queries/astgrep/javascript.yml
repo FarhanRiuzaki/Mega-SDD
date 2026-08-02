@@ -1,0 +1,18 @@
+# Tier-2 (ast-grep) definition rules — JavaScript (.js/.jsx/.mjs/.cjs).
+# Mirrors tags-javascript.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
+id: javascript-function
+language: javascript
+rule: {kind: function_declaration}
+---
+id: javascript-generator
+language: javascript
+rule: {kind: generator_function_declaration}
+---
+id: javascript-class
+language: javascript
+rule: {kind: class_declaration}
+---
+id: javascript-method
+language: javascript
+rule: {kind: method_definition}

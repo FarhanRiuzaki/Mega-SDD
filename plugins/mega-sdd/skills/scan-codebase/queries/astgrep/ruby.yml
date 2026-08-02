@@ -1,0 +1,18 @@
+# Tier-2 (ast-grep) definition rules — Ruby (.rb, not .erb templates).
+# Mirrors tags-ruby.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
+id: ruby-method
+language: ruby
+rule: {kind: method}
+---
+id: ruby-singleton-method
+language: ruby
+rule: {kind: singleton_method}
+---
+id: ruby-class
+language: ruby
+rule: {kind: class}
+---
+id: ruby-module
+language: ruby
+rule: {kind: module}

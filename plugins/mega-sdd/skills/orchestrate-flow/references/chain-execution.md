@@ -151,12 +151,12 @@ d. **First-run pre-flight special case:** the execute-bolts-specific first-run p
 type: predictive_check_failed
 source_skill: orchestrate-flow
 details:
-  failing_check_id: tree_sitter_present
+  failing_check_id: ast_engine_present
   failing_skill: scan-codebase
   command_run: "command -v tree-sitter || command -v tree-sitter-cli"
   expected: "exit 0"
   actual: "exit 1 (binary not found)"
-next_action: "Install tree-sitter (brew install tree-sitter OR cargo install tree-sitter-cli OR npm install -g tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex flag to bypass tree-sitter."
+next_action: "Install an AST engine (brew install ast-grep — zero-compilation tier — OR brew install tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex to accept the regex tier."
 ```
 
 ## First-run pre-flight (execute-bolts)

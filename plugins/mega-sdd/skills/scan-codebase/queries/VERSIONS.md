@@ -30,11 +30,28 @@ tree-sitter init-config         # create ~/.config/tree-sitter/config.json
 # the config's "parser-directories" list (the CLI does NOT auto-download).
 ```
 
-If a needed grammar is not installed, that language falls back to regex extraction — the scan never breaks, but precision drops to `regex` tier.
+If a needed grammar is not installed, that language falls to the tier-2 ast-grep lane when ast-grep is present (precision stays `ast`), else to regex extraction — the scan never breaks.
+
+## ast-grep (tier 2 — `astgrep/<lang>.yml` rule packs)
+
+The tier-2 rule packs in `astgrep/` are tested against **ast-grep 0.42.3**. ast-grep embeds
+its grammars in the static binary — there is nothing to configure or compile, which is the
+point of the tier (the clang grammar-compile OOM class cannot occur).
+
+```bash
+brew install ast-grep            # macOS
+scoop install ast-grep           # Windows (Git Bash boxes — no cargo/brew needed)
+winget install ast-grep.ast-grep # Windows alternative
+cargo install ast-grep           # Cross-platform
+npm install -g @ast-grep/cli     # Cross-platform alternative
+```
+
+Kind names in the packs are grammar-version-sensitive the same way `.scm` queries are; if a
+pack stops matching after an ast-grep upgrade, report it like a grammar-drift issue below.
 
 ## Coverage gaps
 
-These inputs fall back to regex extraction regardless of grammar availability:
+These inputs fall back to regex extraction regardless of grammar/rule-pack availability:
 - Blade templates (.blade.php), ERB templates (.erb)
 - Kotlin (.kt) and F# (.fs) — extract via the dedicated Kotlin/F# regex rows in `references/scan-procedure.md` Step 5
 - Vue / Svelte single-file components
