@@ -233,10 +233,10 @@ has "$PROC" 'The failure modes are not symmetric' \
   && pass "the ambiguous case is resolved toward lane 3, with the asymmetry stated" \
   || fail "no fail-safe tie-break between lane 2 and lane 3"
 # Lane 3 must exist AND be recorded in all three surfaces.
-if has "$SKILL" 'downgrade to `--engine=regex` and RECORD it loudly' \
+if has "$SKILL" 'downgrade to the highest OOM-safe tier and RECORD it loudly' \
    && has "$SKILL" 'precision_downgrade_reason' \
    && has "$SKILL" 'next_action.rationale'; then
-  pass "SKILL.md --auto lane downgrades to regex and records it (frontmatter + chat + handoff)"
+  pass "SKILL.md --auto lane downgrades to the highest OOM-safe tier and records it (frontmatter + chat + handoff)"
 else
   fail "SKILL.md has no recorded --auto downgrade lane — a chain halts at phase 1 or stalls for hours"
 fi
@@ -257,24 +257,23 @@ has "$PROC" 'IS the caller' && has "$HFH" 'already IS the caller' \
 # multi-hour stall nor a phase-1 chain halt; (b) this does not break the no-silent-downgrade
 # rail, because that rail protects the RECORD, not the action.
 if has "$PROC" 'the SAFEST option' \
-   && has "$PROC" 'pagerank-targeting.md`' \
    && has "$PROC" 'phase-1 chain halt'; then
   pass "lane-3 rationale (a): --auto takes the safest option, and a phase-1 halt is not it"
 else
-  fail "lane-3 rationale (a) is missing — the --auto safest-option precedent is not cited"
+  fail "lane-3 rationale (a) is missing — the --auto safest-option principle is not stated"
 fi
-has "$PROC" "\"The \`--auto\` skip is not a SILENT skip — 'silently' is about the record," \
-  && pass "lane-3 rationale (b): the governing 'record, not the action' sentence is quoted verbatim" \
-  || fail "the pagerank 'silently is about the record, not the action' quote is missing"
-has "$PROC" 'The record here is STRONGER' \
-  && pass "the rationale states the record is stronger than the precedent it inherits" \
-  || fail "the rationale does not compare its record to the precedent's"
-# The producer/consumer distinction — without it pagerank's "under --auto the regex tier is
-# never picked" reads as a direct contradiction of this lane.
-if has "$PROC" 'producer vs consumer' && has "$PROC" 'the two rails agree'; then
-  pass "the producer-vs-consumer reconciliation with pagerank's own rail is written down"
+has "$PROC" 'is about the record, not the action' \
+  && pass "lane-3 rationale (b): the 'record, not the action' sentence is scan's own (post-5.29.0 owner)" \
+  || fail "the 'record, not the action' sentence is missing"
+# Since 5.29.0 the pagerank consumer rail is gone; the legitimacy argument is
+# producer-stamps-own-output, stated in scan's own words.
+has "$PROC" 'Producer-stamps-own-output' \
+  && pass "the producer-stamps-own-output legitimacy line is written down" \
+  || fail "the producer-stamps-own-output line is missing"
+if has "$PROC" 'pagerank-targeting.md'; then
+  fail "scan-procedure still cites the REMOVED pagerank-targeting.md"
 else
-  fail "no reconciliation with pagerank-targeting's 'regex tier is never picked' rail"
+  pass "no dangling citation of the removed pagerank-targeting.md"
 fi
 # The no-silent-downgrade paragraph must NAME the lane split, or it reads as contradicted.
 if has "$PROC" 'The no-silent-downgrade rail, restated WITH the lane split' \

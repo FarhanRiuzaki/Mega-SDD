@@ -43,7 +43,7 @@ SCS="$P/references/starterkit-context-schema.md"
 PTH="$P/references/paths.md"
 PRT="$P/skills/generate-units/references/pagerank-targeting.md"
 MEM="$P/skills/memory/SKILL.md"
-for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$PRT" "$MEM"; do
+for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$MEM"; do  # PRT removed 5.29.0 (D1) — its ABSENCE is asserted below
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -71,8 +71,8 @@ if grep -qF 'reuse_index: { path:' "$DSG" "$DSD"; then fail "INT-4: phantom reus
 
 # ── INT-6 ──
 grep -qF 'NOT persisted by scan-codebase' "$SP" && ok "INT-6: scan-procedure — reference captures not persisted" || fail "INT-6: scan-procedure still claims a symbol-graph channel"
-grep -qF 'built by `generate-units` itself' "$PRT" && ok "INT-6: pagerank-targeting — generate-units owns the build" || fail "INT-6: pagerank cache still scan-attributed"
-grep -qE '^\| .generate-units. \| symbol-graph \|' "$PTH" && ok "INT-6: paths.md symbol-graph owner → generate-units" || fail "INT-6: paths.md owner not fixed"
+if [ -e "$PRT" ]; then fail "INT-6: pagerank-targeting.md resurrected (removed 5.29.0 §D1)"; else ok "INT-6: pagerank-targeting.md removed — the build-attribution question is moot"; fi
+if grep -v 'inert' "$PTH" | grep -q 'symbol-graph'; then fail "INT-6: paths.md still registers the removed symbol-graph artifact"; else ok "INT-6: paths.md symbol-graph registration removed (only the inert-cache note remains)"; fi
 # round-2: sibling generate-units surface (task-typing) must not re-attribute to scan
 if grep -qF 'per scan-codebase run' "$P/skills/generate-units/references/task-typing.md"; then
   fail "r2: task-typing.md still says 'per scan-codebase run'"

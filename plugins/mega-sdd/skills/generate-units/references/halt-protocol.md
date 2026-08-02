@@ -185,22 +185,7 @@ Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt ren
 These STOP to ask, then continue on the user's answer. They emit NO blocker envelope and add
 no member to the halt enum.
 
-- **Step 7.5 spawn-cost gate — estimated symbol-graph build > 60 s.** Building the PageRank
-  symbol graph spawns one `tree-sitter query` process per source FILE (`scan-codebase` does
-  not persist `name.reference.*` captures). Estimate `N x per_spawn` with `per_spawn` =
-  0.22 s on windows-bash, else 0.02 s; above 60 s ask before building, offering
-  `--skip-pagerank` (recommended) / continue / re-scan at regex tier. Fires at ~272 source
-  files on Windows-with-EDR, where a 10,000-source-file repo is ~37 min.
-  **`N` is defined in exactly one place** — the §Spawn-cost gate section of the
-  pagerank-targeting reference listed in the skill router — which also names its zero-spawn
-  source (`codebase-map.md` §2). Read it there; this file deliberately does not restate it.
-  Same section carries the full wording + per-option keterangan.
-  - **Under `--auto` this gate does NOT prompt and does NOT halt.** Above 60 s it takes the
-    safest option — skip the suggestion pass, RECORD the skip in the unit body's
-    `## PageRank suggestions` section and in the closing Hand-off summary line, and never
-    re-scan at regex tier (that would mutate shared `precision_tier` state unattended). No
-    `blockers[]` entry, `status` stays `completed`. Detail: §`--auto` policy in the same
-    reference.
+- **Step 7.5 spawn-cost gate — (REMOVED 5.29.0 — spec `2026-08-02-reuse-first-grounding-index.md` §D1: the advisory PageRank pass was file-level, human-promoted, ignored by execute-bolts, and dead on both real environment classes — macOS grammar-compile OOM, Windows/EDR one-spawn-per-file; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)** No confirm gate remains at Step 7.5.
 
 ## Halt-vs-warning summary
 
@@ -208,4 +193,4 @@ Hard halts (STOP): `cycle_detected`, `cross_squad_dep_invalid`, `interface_ref_m
 
 Soft (proceed, surface a WARNING): anchor file missing / line out of bounds (Step 12.3); Implementation-steps bullet-only (Step 12.5 c); module ≥10% unassigned; target_files collision force-create (option 4). The full halt-vs-warning matrix is in the defensive-generation reference listed in the skill router.
 
-Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): the Step 7.5 spawn-cost gate (§Confirm gates above).
+Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): none remain since 5.29.0 (the sole member — the Step 7.5 spawn-cost gate — was removed with the PageRank pass; tombstone in §Confirm gates above).

@@ -192,7 +192,7 @@ flowchart TD
     BOUND --> GEN
 
     %% Greenfield path
-    MODE -->|greenfield| GEN[generate-units<br/>+ PageRank symbol-graph<br/>+ defensive checks]:::phase
+    MODE -->|greenfield| GEN[generate-units<br/>+ defensive checks]:::phase
 
     %% starterkit context flows into consumers
     STARTERKIT -.Anchors + Hard Rules with citations.-> GEN
@@ -329,7 +329,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 │   │   ├── _meta/squads.yaml, modules.yaml  # multi-squad + modules
 │   │   ├── interfaces/                      # cross-squad contracts
 │   │   ├── .memory/                         # vault-scope memory
-│   │   └── .internal/                       # checkpoints + symbol-graph
+│   │   └── .internal/ # checkpoints
 │   ├── knowledge-base/                      # legacy KB (extract-intelligence)
 │   ├── codebase/codebase-map.md             # scan output
 │   ├── memory/                              # project memory

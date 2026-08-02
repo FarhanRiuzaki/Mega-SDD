@@ -240,9 +240,11 @@ grep -qF "engine: tree-sitter | ast-grep | regex" "$PLUG/skills/scan-codebase/re
   && ok "map schema enum + astgrep_version" || fail "schema not updated"
 grep -qF '"astgrep_version"' "$PLUG/scripts/derive-codebase-map.sh" \
   && ok "deriver FM_ORDER accepts astgrep_version" || fail "deriver FM_ORDER missing key"
-grep -qF 'engine: ast-grep' "$PLUG/skills/generate-units/references/pagerank-targeting.md" \
-  && ok "pagerank prerequisite names the ast-grep skip (recorded, precision intact)" \
-  || fail "pagerank prerequisite stale"
+if [ -e "$PLUG/skills/generate-units/references/pagerank-targeting.md" ]; then
+  fail "pagerank-targeting.md resurrected (removed 5.29.0 §D1)"
+else
+  ok "D1: pagerank-targeting.md stays removed; reuse rides the dispatch symbol_slice"
+fi
 grep -qF "ast-grep 0.42.3" "$PLUG/skills/scan-codebase/queries/VERSIONS.md" \
   && ok "VERSIONS.md pins the tested ast-grep" || fail "VERSIONS pin missing"
 
