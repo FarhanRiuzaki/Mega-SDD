@@ -59,7 +59,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `ast_engine_present`**
   command: `command -v tree-sitter || command -v tree-sitter-cli || command -v ast-grep`
   expected: exit 0
-  on_fail: "no AST engine installed (tree-sitter AND ast-grep both absent); scan-codebase will fall back to the regex engine (lower precision). Install: brew install ast-grep (zero-compilation tier) / brew install tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install. tree-sitter absent but ast-grep present is only a WARN: extraction runs at the ast-grep tier, precision stays ast."
+  on_fail: "no AST engine installed (tree-sitter AND ast-grep both absent); scan-codebase will fall back to the regex engine (lower precision). Install: brew install ast-grep (zero-compilation tier) / brew install tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install. tree-sitter absent with ast-grep present is the NORMAL D2 state (no warning): auto extraction runs at the ast-grep tier, precision stays ast; tree-sitter is an explicit --engine opt-in."
   fatal: no
   predicts_halt: dep_missing (only under a forced `--engine=`; avoided if user OK with the fallback tier OR installs a binary)
 

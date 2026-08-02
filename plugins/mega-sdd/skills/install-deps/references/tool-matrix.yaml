@@ -61,8 +61,8 @@ tools:
 
   - id: tree-sitter
     used_by: [scan-codebase]
-    purpose: "AST-precise symbol extraction (scan-codebase)"
-    fallback_behavior: "Regex engine (lower precision)"
+    purpose: "scan-codebase OPT-IN lane only (--engine=tree-sitter; auto uses ast-grep since 5.31.0)"
+    fallback_behavior: "auto is unaffected — ast-grep serves tier ast; without it, regex"
     matrix:
       - os: macos
         pkg_mgr: brew

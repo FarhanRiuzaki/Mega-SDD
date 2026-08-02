@@ -1,4 +1,4 @@
-# Tree-sitter Grammar Versions (tested compatibility)
+# Tree-sitter Grammar Versions (tested compatibility — the `--engine=tree-sitter` OPT-IN lane; auto uses ast-grep since 5.31.0)
 
 The query files in this directory are tested against these tree-sitter grammar versions. If your installed grammars differ significantly, expect parse warnings or fallback to regex.
 
@@ -30,9 +30,9 @@ tree-sitter init-config         # create ~/.config/tree-sitter/config.json
 # the config's "parser-directories" list (the CLI does NOT auto-download).
 ```
 
-If a needed grammar is not installed, that language falls to the tier-2 ast-grep lane when ast-grep is present (precision stays `ast`), else to regex extraction — the scan never breaks.
+If a needed grammar is not installed under the opt-in lane, that language falls to regex extraction (the opt-in lane never silently detours to ast-grep — the caller chose tree-sitter); the scan never breaks. In AUTO, grammars are irrelevant: ast-grep's embedded grammars serve every packed language.
 
-## ast-grep (tier 2 — `astgrep/<lang>.yml` rule packs)
+## ast-grep (tier 1 since 5.31.0 — `astgrep/<lang>.yml` rule packs)
 
 The tier-2 rule packs in `astgrep/` are tested against **ast-grep 0.42.3**. ast-grep embeds
 its grammars in the static binary — there is nothing to configure or compile, which is the

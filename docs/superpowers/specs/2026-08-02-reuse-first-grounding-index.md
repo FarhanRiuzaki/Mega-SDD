@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02
 **Status:** DESIGN — umbrella spec; ships tranche-per-release
-**Ship order:** `R1+R2 ✅ v5.28.0 (b53d007) → D1 ✅ v5.29.0 (8cc9f0b) → R3 ✅ v5.30.0 (dup sweep hardening) → D2 (ast-grep primary)`
+**Ship order:** `R1+R2 ✅ v5.28.0 (b53d007) → D1 ✅ v5.29.0 (8cc9f0b) → R3 ✅ v5.30.0 (03984e5) → D2 ✅ v5.31.0 (ast-grep primary) — SPEC COMPLETE (horizon D3 = its own spec)`
 **Horizon (own spec later, not this one):** D3 scan-as-a-service — bind-codebase consuming
 the index claim-scoped instead of loading the whole map; deliberately NOT designed here.
 
@@ -141,11 +141,20 @@ time). Removal is a behavior change: spec note per surface, trigger-test updates
 With PageRank gone, `.scm` reference captures have no consumer; tree-sitter's remaining
 value over ast-grep is zero for this pipeline while its costs remain (manual grammar
 setup nobody does — default installs ship ZERO grammars; local clang compiles — the OOM
-class; one-spawn-per-file — the EDR hang class). Ladder becomes
-`ast-grep → tree-sitter (opt-in) → regex` or tree-sitter drops to explicit `--engine=`
-only. T1's probe script, packs, dep_missing parity and regex fallback all survive; the
-grammar smoke-test machinery is what dies. Decision deferred to its own tranche AFTER D1
-proves no `.scm` consumer remains.
+class; one-spawn-per-file — the EDR hang class). D1 proved the precondition (zero `.scm`
+consumers). **DECIDED (v5.31.0): the AUTO path is `ast-grep → regex` — tree-sitter is
+never probed in auto, so clang is structurally unreachable there (the OOM class cannot
+occur on any unattended run). `--engine=tree-sitter` remains a fully supported EXPLICIT
+opt-in lane** — the T1 grammar smoke-test machinery (serial, bounded, kill-classified)
+survives ONLY there, out of the hot path; a passing opt-in run still stamps
+`engine: tree-sitter`, `precision_tier: ast`, `grammars_used`. Auto resolution:
+ast-grep present → packed languages extract at tier `ast` (`engine: ast-grep`); unpacked
+languages → regex rows (`no_astgrep_pack`); ast-grep absent → regex with a loud warning
+naming BOTH installs (`astgrep_absent`); scaffold-only repo with ast-grep present keeps
+`engine: ast-grep` per binary presence (nothing extracts either way — the pre-D2 scaffold
+rule, re-homed). The probe still captures `tree_sitter_version` when the binary exists
+(a bounded `--version`, no compile) — provenance, not a lane. T1's probe script, packs,
+dep_missing parity (both forced engines) and the regex floor all survive unchanged.
 
 ## Rejected / bounded (do not relitigate)
 
@@ -261,3 +270,25 @@ Held: rc 0 + valid JSON on every hostile path (injection-safe argv, git absent, 
 30k×60 in 0.5s); advisory census clean (never a hook — both census tests pin it);
 run-analyze end-to-end compatible; blind-review moat intact (rows are machine fact into
 ONE lens; NEVER-contains list untouched).
+
+### Tranche D2 round (dual-blind — the script held, the PROOF and the DOC PLANE didn't; ALL folded)
+
+Lens B's ship-blocker was about the TEST, not the code: the canary arm could not detect
+the most likely regression — a mutant that falls back to tree-sitter in auto when
+ast-grep is ABSENT shipped green (proven with a live mutant against a mirrored tree).
+The matrix cell (ts-present + ag-absent + real sample) now has its own canary arm, and
+the canary run asserts its own rc/digest (a dead probe can no longer make the claim
+vacuous). Lens A's ship-blockers were the half-flipped doc plane: the Step-0 opener and
+the ts-lane section still TAUGHT the pre-D2 ladder (incl. an "ast-grep detour" route the
+code forbids), and validate-preflight WARNED on the D2 happy path (ts absent + ag
+present) prescribing a tree-sitter install — all reversed. Also folded: ~14 residue
+sites (tier-1/tier-2 labels inverted, dead anchors, stale warning strings, spawn-gate
+estimate/recovery wording, e2e narrative engine, READMEs + tool-matrix +
+implementation-state remedy, T1-spec superseded banner); `--timeout=0` rejected;
+`tier2_or_3` simplified to `fall_to_regex` (its ast-grep branch was dead code that, if
+ever reached, would emit the outlawed detour row); ask-class sweep caught the word
+"asked" in new prose (reworded — scan is non-interactive); SP-7's literal
+"grammar smoke test" phrase restored. Held: the full 28-assertion lane matrix, zero
+non-version tree-sitter invocations across every auto arm (argv-logging shim), the REAL
+kill path classified in 1s bounded, consumers untouched (bind keys off precision_tier
+only).

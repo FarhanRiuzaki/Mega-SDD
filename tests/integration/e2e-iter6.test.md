@@ -18,7 +18,7 @@ End-to-end integration test validating all 5 Iter 6 swaps working together in a 
 ```
 Proposed pipeline (--deep):
   1. generate-intent → vault
-  2. scan-codebase → codebase-map.md (engine: tree-sitter)
+  2. scan-codebase → codebase-map.md (engine: ast-grep)
   3. bind-codebase → binding.md + bound-vault
   4. generate-units → units/ (target_files from binding citations; the PageRank pass was removed 5.29.0 — reuse rides the execute-bolts dispatch symbol_slice)
   5. execute-bolts → bolts (with ast-grep v2 Hard Rules)
@@ -40,10 +40,10 @@ User confirms.
 
 **Verify** `codebase-map.md` frontmatter:
 ```yaml
-engine: tree-sitter
+engine: ast-grep
 precision_tier: ast
 tree_sitter_version: <version>
-grammars_used: ["php"]
+astgrep_langs: ["php"]
 ```
 
 ### Step 3: Phase 4 (generate-units) — no PageRank pass (removed 5.29.0)

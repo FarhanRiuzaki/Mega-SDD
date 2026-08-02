@@ -49,8 +49,8 @@ if [ ! -d "${CWD}/.mega-sdd" ]; then
 fi
 
 # Probe AST-engine availability for the scan warn-check (cheap; no file scan).
-# 3-tier ladder: tree-sitter OR ast-grep gives precision_tier ast; regex only
-# when BOTH are absent.
+# D2 ladder: auto = ast-grep -> regex (tree-sitter is an explicit opt-in lane);
+# the warn fires only when NO AST engine is present at all.
 TS_PRESENT=0
 if command -v tree-sitter >/dev/null 2>&1 || command -v tree-sitter-cli >/dev/null 2>&1; then
   TS_PRESENT=1
@@ -138,11 +138,8 @@ elif name == "scan-codebase":
                                    "bind-codebase field-level diff will degrade). Install via "
                                    "/mega-sdd:install-deps or `brew install ast-grep` (zero-compilation "
                                    "tier) / `brew install tree-sitter-cli`."})
-    elif not ts_present:
-        warnings.append({"check_id": "tree_sitter_present",
-                         "detail": "tree-sitter not installed; scan-codebase extracts via the ast-grep "
-                                   "tier (precision stays ast). Install tree-sitter for the "
-                                   "full tier-1 lane."})
+    # tree-sitter absence is the NORMAL D2 happy path (auto = ast-grep -> regex;
+    # tree-sitter is an explicit opt-in lane) — not warn-worthy.
     checks.append({"check": "ast_engine_present", "status": "WARN" if warnings else "PASS"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")

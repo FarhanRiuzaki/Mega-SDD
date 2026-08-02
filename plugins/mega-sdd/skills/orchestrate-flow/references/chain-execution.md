@@ -141,7 +141,7 @@ a. For each skill in the proposed chain (in order):
    - On match → pass; continue.
    - On mismatch: `fatal: no` → accumulate warning (surface to user before chain start); `fatal: yes` → emit halt `predictive_check_failed` with check_id + skill in details; STOP chain (do NOT invoke any skill).
 b. After all skills checked:
-   - If ≥1 warning accumulated → display warnings via a single message before chain start (e.g., "⚠️ tree-sitter not installed; chain will use regex engine").
+   - If ≥1 warning accumulated → display warnings via a single message before chain start (e.g., "⚠️ no AST engine installed; chain will use regex engine").
    - If chain halted with `predictive_check_failed` → output halt YAML envelope + exit (no first-run pre-flight, no execution).
 c. Wall-clock budget: ≤2 sec total (lightweight bash checks only); if exceeded → log warning + proceed (graceful degradation).
 d. **First-run pre-flight special case:** the execute-bolts-specific first-run pre-flight (below) runs AFTER this generic loop. It covers execute-bolts behaviors the generic catalog doesn't capture.

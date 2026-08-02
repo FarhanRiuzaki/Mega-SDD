@@ -1,7 +1,13 @@
 # OOM-Safe AST Engine Ladder (T1)
 
 **Date:** 2026-08-02
-**Status:** DESIGN → shipping as one tranche (v5.27.0)
+**Status:** SHIPPED v5.27.0. **Ladder ORDER superseded at v5.31.0** by
+`2026-08-02-reuse-first-grounding-index.md` §D2 (an unrelated heading named "D2" also
+exists below — that one is this spec's own numbering, not the superseding section):
+AUTO is now `ast-grep → regex` and tree-sitter is an explicit `--engine=tree-sitter`
+opt-in lane. Everything else here — the probe script, the packs, the dep_missing parity,
+the serial bounded smoke tests (now opt-in-lane-only), the OOM classification — still
+ships as designed.
 **Owner surfaces:** `scan-codebase` (engine detection + Step 5 extraction), `generate-units` (PageRank prerequisite wording), `derive-codebase-map.sh` (frontmatter contract)
 
 ## Motivation — a real incident, not a hypothetical
