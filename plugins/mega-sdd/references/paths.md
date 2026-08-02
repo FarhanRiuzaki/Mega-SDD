@@ -63,7 +63,6 @@ Every writer skill resolves output paths via this protocol:
 │   │   │   └── citation-failures.jsonl            # citation-failure audit log (emit-fsd)
 │   │   └── .internal/                             # Vault-internal state
 │   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
-│   │       └── symbol-graph.json                  # PageRank symbol-graph cache
 │   ├── knowledge-base/                            # Legacy KB extraction (extract-intelligence)
 │   │   ├── README.md
 │   │   ├── 00-overview/, 10-domains/, etc.
@@ -112,7 +111,6 @@ Every writer skill resolves output paths via this protocol:
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
-| `generate-units` | symbol-graph | `<vault>/.internal/symbol-graph.json` | `<vault>/.mega-sdd/symbol-graph.json` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
 | `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat) |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
@@ -225,7 +223,7 @@ For project repo `.gitignore`:
 ```
 # Mega-SDD ephemeral state (per-project decision; uncomment what you want untracked)
 # .mega-sdd/memory/outcomes.md          # noisy per-dev run logs
-# .mega-sdd/vaults/*/.internal/          # checkpoints + symbol-graph cache
+# .mega-sdd/vaults/*/.internal/          # checkpoints (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/bolts/              # bolt reports (regenerable)
 # .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)

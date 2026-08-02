@@ -20,7 +20,7 @@ Proposed pipeline (--deep):
   1. generate-intent → vault
   2. scan-codebase → codebase-map.md (engine: tree-sitter)
   3. bind-codebase → binding.md + bound-vault
-  4. generate-units → units/ (with PageRank suggestions)
+  4. generate-units → units/ (target_files from binding citations; the PageRank pass was removed 5.29.0 — reuse rides the execute-bolts dispatch symbol_slice)
   5. execute-bolts → bolts (with ast-grep v2 Hard Rules)
   6. emit-agents-md → AGENTS.md (auto-emit at chain end)
 ```
@@ -46,21 +46,11 @@ tree_sitter_version: <version>
 grammars_used: ["php"]
 ```
 
-### Step 3: Phase 4 (generate-units) emits PageRank suggestions
+### Step 3: Phase 4 (generate-units) — no PageRank pass (removed 5.29.0)
 
-**Expect** units have a new `## PageRank suggestions` section:
-```markdown
-## PageRank suggestions (review)
-
-Files ranked highly relevant by symbol-graph analysis:
-- `app/Http/Middleware/Authenticate.php` (rank: 0.42, refs to: User model)
-- `tests/Feature/AuthTest.php` (rank: 0.31, refs to: existing auth tests)
-...
-
-ACTION: Review each. To promote any to `target_files`, edit the unit's `target_files:` frontmatter list manually.
-```
-
-**Verify** suggestions did NOT auto-add to `target_files` frontmatter (anti-halu rail).
+**Expect** units carry NO `## PageRank suggestions` section and no symbol-graph build runs
+(spec 2026-08-02-reuse-first-grounding-index.md §D1); `--skip-pagerank` is accepted as a
+no-op. `target_files` come from binding citations only.
 
 ### Step 4: Phase 5 (execute-bolts) validates ast-grep v2 rules
 
@@ -117,13 +107,13 @@ rule:
 
 ### V1: All 5 swaps active end-to-end
 - ✅ tree-sitter precision_tier in codebase-map.md
-- ✅ PageRank suggestions block in unit body
+- ✅ NO PageRank suggestions block (pass removed 5.29.0)
 - ✅ ast-grep v2 Hard Rule pre/post-flight in bolt-report.md
 - ✅ AGENTS.md generated at repo root
 - ✅ Checkpoint JSONL files in `<vault>/.mega-sdd/checkpoints/`
 
 ### V2: Anti-halu rails preserved
-- ✅ No silent rewrites (PageRank suggestions never auto-added)
+- ✅ No silent rewrites of target_files
 - ✅ Hard Rule violations halt the run detect-after (bolt commit already landed; every further `execute-bolts` blocked until fixed-forward or reverted)
 - ✅ AGENTS.md does NOT invent info absent from vault
 - ✅ Tree-sitter parses are deterministic (re-run same scan → same output)
@@ -137,7 +127,7 @@ rule:
 ### V4: Graceful degradation
 - ✅ Tree-sitter not installed → regex fallback with warning
 - ✅ ast-grep not installed AND unit has v2 rules → halt with install commands
-- ✅ PageRank skipped when precision_tier: regex (no halt; warning only)
+- ✅ `--skip-pagerank` accepted as a no-op (no halt, no unknown-flag error)
 - ✅ AGENTS.md emission skipped when config flag `defaults.emit_agents_md: false`
 
 ## Pass criteria

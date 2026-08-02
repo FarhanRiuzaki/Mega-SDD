@@ -214,7 +214,7 @@ Modules:
   M-auth-rbac        (2 units)   — Sanctum auth + role middleware (extends Laravel scaffold)
 ```
 
-47 units is substantial but manageable. PageRank suggested target_files for each unit; binding citations referenced KB sections.
+47 units is substantial but manageable. target_files came from binding citations (which referenced KB sections); at bolt time each dispatch carried its symbol_slice of nearby existing code.
 
 ## Step 7 — Phase 6: Execute bolts (~1-3 hours)
 

@@ -141,8 +141,8 @@ elif name == "scan-codebase":
     elif not ts_present:
         warnings.append({"check_id": "tree_sitter_present",
                          "detail": "tree-sitter not installed; scan-codebase extracts via the ast-grep "
-                                   "tier (precision stays ast; PageRank suggestions self-skip — no "
-                                   "reference captures). Install tree-sitter for the full tier-1 lane."})
+                                   "tier (precision stays ast). Install tree-sitter for the "
+                                   "full tier-1 lane."})
     checks.append({"check": "ast_engine_present", "status": "WARN" if warnings else "PASS"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")

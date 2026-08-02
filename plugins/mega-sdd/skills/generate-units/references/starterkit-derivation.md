@@ -28,7 +28,7 @@ IF file present:
 
 ## 7.7.b — Compute starterkit relevance per unit
 
-For each unit being generated, inspect `unit.target_files` (finalized by Steps 7, 7.5, 7.6) and unit body content. Determine which starterkit slices apply:
+For each unit being generated, inspect `unit.target_files` (finalized by Steps 7 and 7.6) and unit body content. Determine which starterkit slices apply:
 
 ```
 starterkit_relevance = []

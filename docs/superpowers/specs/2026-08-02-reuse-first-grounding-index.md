@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-02
 **Status:** DESIGN — umbrella spec; ships tranche-per-release
-**Ship order:** `R1+R2 (index + dispatch retrieval) → D1 (PageRank removal) → R3 (dup sweep hardening) → D2 (ast-grep primary)`
+**Ship order:** `R1+R2 ✅ v5.28.0 (b53d007) → D1 ✅ v5.29.0 (PageRank removal) → R3 (dup sweep hardening) → D2 (ast-grep primary)`
 **Horizon (own spec later, not this one):** D3 scan-as-a-service — bind-codebase consuming
 the index claim-scoped instead of loading the whole map; deliberately NOT designed here.
 
@@ -180,3 +180,33 @@ Held attacks worth recording: spaces/quotes/unicode/newline filenames; worktree
 `.git`-file; symlink loops; 10k-file build 1.95s / 30k-symbol dispatch 0.24s;
 truncations[] names symbol_slice; nslash parity on `.\`-style target paths;
 bash-3.2 clean; test idempotent, litter-free, green with ast-grep fully hidden.
+
+### Tranche D1 round (dual-blind, 2 reviewers — 9 distinct findings, ALL folded; the two lenses CONVERGED independently on the same core set)
+
+Ship-blocking (both lenses, independently): **scan-codebase SKILL.md Step 5 still TAUGHT
+the removed pass** ("generate-units builds its own symbol graph from the same queries") —
+the tranche had fixed both of that skill's references but missed the always-loaded SKILL
+body itself, and the removal test could not see it (its sweep was filename-literal).
+Folding it surfaced a BONUS stale survivor in the same paragraph: the Step-5 lane-3 prose
+still carried the PRE-v5.27.0 contract ("downgrade to --engine=regex", "either value") —
+now aligned with the ladder.
+
+Important: the halt-vs-warning summary re-asserted the confirm gate two paragraphs below
+its own tombstone; the new INT-6 paths.md detector was a TAUTOLOGY (`grep -q` piped into
+`grep -v` — the fail branch was unreachable; proven against a resurrected fixture — the
+detector-as-no-op class, caught by the round exactly as designed); README's architecture
+Mermaid + layout tree still advertised the pass; the 5.29.0 version cited by every
+tombstone must land in the same ship commit (manifests + CHANGELOG — release mechanics,
+by design).
+
+Minor: task-typing/starterkit-derivation stale step lists (7.5 in routing lines); the
+removal test hardened — extensionless `pagerank-targeting` spelling, commands/ + agents/
+in the sweep, and a PROSE sweep (no live surface may TEACH the pass; tombstones exempt by
+wording, historical records out of scope); scan-codebase skill version bumped for its
+reference edits.
+
+Verified held: flag-compat (nothing mechanically rejects `--skip-pagerank`); legacy
+`## PageRank suggestions` sections in existing vaults pass every validator (no
+unknown-section whitelist); CI's find-based discovery drops the deleted suite cleanly and
+picks up the successor; 20+ adjacent suites green; the replacement (`symbol_slice`) is
+real and every tombstone qualifies it honestly as a different-layer replacement.

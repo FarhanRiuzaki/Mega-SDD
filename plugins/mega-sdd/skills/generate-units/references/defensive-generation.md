@@ -166,6 +166,5 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 ## References
 
 - tree-sitter scan extracts signature details (leveraged for field diff)
-- PageRank target_files suggestions (surface in Step 7.5; Step 7.6 cross-checks the picks)
 - `bind-codebase/SKILL.md` — Implementation State Map (which Step 7.6 reads to decide prompt content)
 - `bind-codebase/references/binding-contract.md` — six-state classification table

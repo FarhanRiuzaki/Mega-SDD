@@ -347,34 +347,29 @@ They are remedies, NOT options awaiting a reply:
 
 **Why `--auto` downgrades instead of halting — written down, not implied.**
 
-*(a) The house rule is that `--auto` takes the SAFEST option.* Precedent:
-`generate-units/references/pagerank-targeting.md` §`--auto` policy — *"`--auto` runs with
-nobody watching — exactly where a 37-minute stall strands someone."* Unattended, "safest" is
-neither of the alternatives. A full tree-sitter pass is a multi-hour stall (100k files ×
-0.22 s ≈ 6.1 h on Windows). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1
-of nearly every brownfield row in `orchestrate-flow/references/routing-rules.md`, and **ZERO**
+*(a) The house rule is that `--auto` takes the SAFEST option* — `--auto` runs with nobody
+watching, exactly where a multi-hour stall strands someone. Unattended, "safest" is neither
+of the alternatives. A full tree-sitter pass is a multi-hour stall (100k files × 0.22 s ≈
+6.1 h on Windows). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1 of
+nearly every brownfield row in `orchestrate-flow/references/routing-rules.md`, and **ZERO**
 routing rows carry `--engine`/`--include`/`--force-large`, so a chain cannot pre-resolve this
 gate the way it pre-resolves `bind-codebase <vault>` — the blocker would strand the whole
 chain before a single artifact exists. On Windows the gate fires at only ~272 files, so this
 is the common case, not a corner case. Safest here is finishing in seconds at a precision the
-map states honestly.
+map states honestly. (These principles were first written down for the retired generate-units
+PageRank spawn gate, removed 5.29.0 §D1 — this section now owns them.)
 
 *(b) This does NOT violate the no-silent-downgrade rail — that rail protects the RECORD, not
-the action.* The governing sentence is `generate-units/references/pagerank-targeting.md`
-§`--auto` policy: *"The `--auto` skip is not a SILENT skip — 'silently' is about the record,
-not the action."* The record here is STRONGER than the one that sentence blesses: map
-frontmatter (durable, machine-readable, read by every downstream consumer) + a chat line + the
-handoff rationale, versus pagerank's unit body + closing summary line. Nothing is hidden, and
-the map never claims a tier it did not deliver.
+the action.* The `--auto` downgrade is not a SILENT downgrade: "silently" is about the record, not the action.
+The record is durable and machine-readable — map frontmatter
+(`precision_downgrade_reason`, read by every downstream consumer) + a chat line + the
+handoff rationale. Nothing is hidden, and the map never claims a tier it did not deliver.
 
-*(c) Why this does NOT port back to pagerank's own rail — producer vs consumer.*
-`pagerank-targeting.md` §`--auto` policy forbids ITS `--auto` lane from re-scanning at regex
-tier, and that stays correct: `generate-units` is a **CONSUMER** — a regex re-scan there
-MUTATES `precision_tier` inside an already-written `codebase-map.md`, shared upstream state
-every other consumer reads (`bind-codebase` anchors included), unrecoverable without a full
-re-scan. `scan-codebase` is the **PRODUCER** of `precision_tier`: it stamps its own output, on
-this run, in the same write, with the reason beside it. Producer-stamps-own-output and
-consumer-mutates-upstream-state are different acts; the two rails agree.
+*(c) Producer-stamps-own-output is what makes the unattended call legitimate.*
+`scan-codebase` is the **PRODUCER** of `precision_tier`: it stamps its own output, on this
+run, in the same write, with the reason beside it. An unattended CONSUMER mutating shared
+upstream state it did not write would be a different act — that is the line this lane never
+crosses.
 
 **The no-silent-downgrade rail, restated WITH the lane split so it cannot read as
 contradicted.** Do NOT downgrade the engine without a record: precision is a property the map
@@ -402,7 +397,7 @@ is ever reached.
   output format could not be verified — the dev machine's tree-sitter ships no compiled
   grammars. Verify on a box with working grammars before changing the invocation.)
 - Parse capture output (line + col + capture name + symbol text) into the interface table.
-- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them) — `generate-units` re-runs the same queries itself to build its file-level symbol graph (pagerank-targeting §Build), cached at `<vault>/.internal/symbol-graph.json`.
+- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them; their only former consumer — the generate-units PageRank pass — was removed 5.29.0, so nothing downstream needs them).
 - Languages without `.scm` file, or whose grammar failed the Step-0 smoke test → fall to the tier-2 ast-grep lane below when the digest lists them in `astgrep_langs`, else regex (graceful per-language degradation).
 
 ### If `engine: ast-grep` (tier 2 — zero-compilation AST; also serves per-language fallbacks)
@@ -432,9 +427,9 @@ ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' \
   - Symbol name = parsed from the AST-bounded signature line (the node kind is known from
     `ruleId`, so the parse is deterministic; the node BOUNDARY — what regex gets wrong —
     came from the AST, so `precision_tier: ast` holds).
-- `name.reference.*` captures do NOT exist in this lane → `generate-units` PageRank
-  self-skips with its loud record (`generate-units/references/pagerank-targeting.md
-  §Detection prerequisites`); binding precision is unaffected.
+- `name.reference.*` captures do NOT exist in this lane — and since 5.29.0 nothing
+  consumes them (the PageRank pass was removed, §D1 of the reuse-first spec); binding
+  precision is unaffected.
 - Languages with no `queries/astgrep/<lang>.yml` pack → regex lane below, per language.
 
 ### If `engine: regex` (fallback)

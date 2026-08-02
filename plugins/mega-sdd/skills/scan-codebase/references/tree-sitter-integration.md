@@ -111,8 +111,9 @@ against ast-grep 0.42.3 (`queries/VERSIONS.md §ast-grep`). The extraction invoc
 verified JSON contract (0-based lines, `lines` = full node text, dedupe by
 `(file, start.line)`), and the `---`-separator concatenation seam live in
 scan-procedure.md §Step 5 "If `engine: ast-grep`". Reference captures
-(`@name.reference.*`) do NOT exist at tier 2 — PageRank self-skips
-(`generate-units/references/pagerank-targeting.md §Detection prerequisites`).
+(`@name.reference.*`) do NOT exist at tier 2 — and since 5.29.0 nothing consumes them
+(the generate-units PageRank pass was removed; reuse now rides the write-time
+`symbol_slice` in execute-bolts dispatches).
 
 ## Invocation
 

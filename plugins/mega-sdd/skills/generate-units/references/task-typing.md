@@ -8,10 +8,10 @@
 - `extend` activation + Migration-notes auto-population
 - Reconcile pass (`--reconcile` — living-vault sync lane)
 - Step 7 — target_files whitelist
-- Step 7.5 — PageRank target_files suggestions
+- Step 7.5 — (removed 5.29.0)
 - Step 7.6 — Per-unit target_files collision check
 
-Loaded by `generate-units/SKILL.md` Steps 2.5 / 7 / 7.5 / 7.6. The BODY keeps the moat-critical skeleton (read Implementation State Map → assign `task_type: create | verify`, the CONFLICT block, OQ-ID carry, anchors-mandatory rule); this file carries the full state matrix and the brownfield target_files mechanics. Emitted halt YAML lives in the halt-protocol reference listed in the skill router.
+Loaded by `generate-units/SKILL.md` Steps 2.5 / 7 / 7.6. The BODY keeps the moat-critical skeleton (read Implementation State Map → assign `task_type: create | verify`, the CONFLICT block, OQ-ID carry, anchors-mandatory rule); this file carries the full state matrix and the brownfield target_files mechanics. Emitted halt YAML lives in the halt-protocol reference listed in the skill router.
 
 ## Full task_type table (Step 2.5)
 
@@ -119,17 +119,7 @@ When binding state is **PARTIAL_FIELDS_BOTH**:
 - Brownfield: list bound-vault citations (specific file paths from binding)
 - If a unit can't determine target_files: halt — vault too vague
 
-## Step 7.5 — PageRank target_files suggestions
-
-When `codebase-map.md` frontmatter has `engine: tree-sitter` (the tier-1 scan — `precision_tier: ast` alone is NOT sufficient: an ast-grep map is also `ast` but carries no reference captures):
-
-- **Spawn-cost gate FIRST (mandatory).** Building the graph re-runs `tree-sitter query` one process per FILE over the WHOLE source set — every member of `N`, not just the files that changed (`scan-codebase` does not persist the `name.reference.*` captures) — so estimate `N x per_spawn`, `per_spawn` = 0.22 s on windows-bash else 0.02 s, and above 60 s ASK before building. **`N` has ONE definition, owned by the §Spawn-cost gate section of the pagerank-targeting reference (listed in the skill router); read it there rather than restating it.** That section also names its source (this skill has no walk of its own, and sizing the walk must never cost the walk): Tier 1 is `scan-codebase`'s persisted enumeration `.mega-sdd/codebase/.scan/files.z` — one spawn, EXACT; only when that file is absent do you fall back to `codebase-map.md` §2, and then the count **is a FLOOR**, and `truncated_sections` containing `2` means §2 is capped → take the >60 s branch REGARDLESS of the count. It also carries the `--auto` policy (above 60 s: skip the pass, DECLARE the skip in the unit body and in the closing Hand-off summary line, never re-scan at regex tier, never prompt). Outside `--auto`, never silently skip the pass or drop the tier.
-- Build/load symbol-reference graph per the PageRank algorithm in the pagerank-targeting reference (listed in the skill router)
-- For each unit, compute personalized PageRank with seed = current `target_files` + binding citations
-- Surface top-K (default K=5) non-seed file suggestions in unit body's `## PageRank suggestions` section
-- User reviews + manually promotes to `target_files` frontmatter (NEVER silent rewrite per anti-halu)
-
-Skipped when `engine: ast-grep` (no reference captures — record the skip like the `--auto` policy) or `precision_tier: regex` or `--skip-pagerank` flag set. Falls back to binding-only target_files. Symbol graph cached at `<vault>/.internal/symbol-graph.json`, built by generate-units on first use (pagerank-targeting §Build — scan-codebase does NOT persist reference captures); reused across all units, invalidated when `codebase-map.md` is regenerated.
+## Step 7.5 — (REMOVED 5.29.0 — spec `2026-08-02-reuse-first-grounding-index.md` §D1: the advisory PageRank pass was file-level, human-promoted, ignored by execute-bolts, and dead on both real environment classes — macOS grammar-compile OOM, Windows/EDR one-spawn-per-file; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)
 
 ## Step 7.6 — Per-unit target_files collision check
 
