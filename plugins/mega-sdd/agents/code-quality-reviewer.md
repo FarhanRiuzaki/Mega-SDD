@@ -14,7 +14,7 @@ Inspect the actual change (`git diff <base>..<head>`) and read the files it touc
 
 ## What to check — the defects generated code measurably produces, first
 
-- **Duplication / failure-to-reuse** — the signature AI defect. Did the change re-implement logic that already exists (check the reuse-index and grep for analogous helpers/services)? Copy-paste blocks instead of extraction?
+- **Duplication / failure-to-reuse** — the signature AI defect. Did the change re-implement logic that already exists (check the reuse-index and grep for analogous helpers/services)? Copy-paste blocks instead of extraction? When the prompt carries a `## Reuse-duplication evidence (mechanical, advisory)` block, VERIFY each row against the actual code — the rows are deterministic index matches (exact / case-shape / verb-synonym), leads to check, never verdicts to copy; a confirmed row is a graded Issue with both locations, a refuted row is silence.
 - **Tests that don't test** — tautological assertions, mock-only verification, missing failure paths. Tests must verify real behavior and be comprehensive for the change.
 - **Over-engineering** — abstractions, options, or dependencies the unit didn't ask for; dead code; speculative generality. Tag each such finding so the fix is unambiguous: `delete:` (dead/speculative — nothing replaces it), `stdlib:` (hand-rolled what the standard library ships — name it), `native:` (a dep or code doing what the platform/framework already does — name the feature), `yagni:` (abstraction with one caller — inline it), `shrink:` (same logic, fewer lines — show the shorter form).
 - Clear, readable code; names match what things *do*, not how they work.
