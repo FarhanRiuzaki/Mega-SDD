@@ -1,8 +1,13 @@
 # PRD Section Mapping — Source Artifact → PRD Section
 
 > **Per-section: source artifact(s) per mode, extraction rules, citation format, missing-source placeholders.**
-> Consumed by `emit-prd/SKILL.md` Step 2. This file is the PRD doc-pack's **section map** for the shared
-> emission engine (`plugins/mega-sdd/references/emission-engine.md §What a doc-pack supplies`).
+> Consumed by `emit-prd/SKILL.md` Steps 2–3. **The MECHANICAL rules below are EXECUTED BY
+> `scripts/build-prd-core.sh`** (tranche 5e) — it pre-fills those slots and leaves the
+> genuinely-synthetic ones (`section-1-*` narrative, reverse-mode `section-2-actors-table`,
+> diagram-less `journey-<slug>` slots) as `{{…}}` markers for the model. Editing a mechanical rule
+> here MUST be mirrored in the builder — the two are one contract. This file is the PRD doc-pack's
+> **section map** for the shared emission engine
+> (`plugins/mega-sdd/references/emission-engine.md §What a doc-pack supplies`).
 
 ## Contents
 
@@ -89,7 +94,7 @@ with the KB citation:
 
 ## Section 5 — Kebutuhan Non-Fungsional
 
-**Slots:** `{{section-5-nfr-content}}`
+**Slots:** `{{section-5-performance}}`, `{{section-5-security}}`, `{{section-5-availability}}`, `{{section-5-other}}` (the four category slots — template + builder)
 **Forward source:** `<vault>/02-functional.md` §NFR + `_meta/constitution.md` LOCKED clauses
 **Reverse source:** KB NFR/constraint claims (performance, security, compliance observations — usually `[INFERRED]` from code)
 **Extraction:** per kategori (Performance / Security / Availability / Compliance); reverse rows keep markers.

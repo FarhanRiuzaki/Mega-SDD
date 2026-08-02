@@ -1094,6 +1094,80 @@ both downstream phases are forked (`routing-rules.md:92` + `scan-procedure.md:49
   amendment).
 - **5e — FSD + PRD builder scripts** (SIT/UAT already have them). Highest effort; do last.
 
+> **DESIGN 2026-08-02 (tranche 5e — the FSD/PRD emission bodies become script-derived; the seam
+> is STRONGER than the SIT/UAT precedent).** The SIT/UAT builders write a fragment the model
+> re-types into the doc — the derivation cost went to the script but the mechanical bytes still
+> transit model OUTPUT (the 5.0× lane) at assembly. 5e closes that too: the builders PRE-FILL the
+> template's mechanical slots and write the draft document DIRECTLY; the model's remaining work is
+> the few genuinely-synthetic slots, filled via targeted Edits. Mechanical bytes never appear in
+> model output at all.
+>
+> - **`scripts/build-fsd-core.sh --vault= --cwd= [--mode=] [--sections=] [--quiet]`** executes
+>   `section-mapping.md` §1–§10 deterministically (the mapping was always written as extraction
+>   rules — every FSD slot is mechanical) and writes `<vault>/fsd/FSD.md` with EVERY slot filled:
+>   overview/goals copies, stakeholders table, user stories (frontmatter fields with the mapping's
+>   documented fallback derivations, `acceptance_test_summary` = `command (expects: expected)`),
+>   FR table + details (heading parse, priority, mode-keyed status aggregation over
+>   units/bolt-reports, binding-verdict scan), NFR (when BOTH `02-functional §NFR` and
+>   constitution LOCKED clauses exist, the builder emits BOTH under labeled sub-blocks — the old
+>   prose "de-dup, prefer constitution" was model judgment; over-complete + labeled is
+>   deterministic and duplicates are not fabrication — mapping amended), entities/modules/
+>   confirmed-claims, API table, test plan (both modes), OQ/concerns/out-of-scope, and every
+>   per-section citation footer. `model_slots=0` for the FSD lane.
+> - **`scripts/build-prd-core.sh --out-root= --cwd= --mode=forward|reverse [--kb=] [--quiet]`**
+>   fills the mechanical PRD slots (journeys carried VERBATIM from vault 04-flows / KB workflow
+>   diagrams — never redrawn; §6 open-items table; §5 NFR categories + constitution clauses;
+>   forward §3 = FR id/title + the FR body's FIRST paragraph verbatim — extraction, not
+>   model summarization; reverse §3 = the per-domain MARKER-CARRYING claim harvest, over-complete
+>   by design; forward §2 actor rows from squads.yaml) and leaves the genuinely-synthetic slots
+>   as `{{…}}` markers the model fills via Edit: `section-1-background` + `section-1-purpose`
+>   (Indonesian narrative weaving) always, `section-2-actors-table` in reverse mode (actor
+>   identification from prose is judgment). The builder prints `model_slots=<n> (<names>)`.
+> - **Editing authority over builder-derived content is DELETE/REFORMAT-only.** The reverse
+>   harvest is deliberately over-complete; the model prunes rows that are not requirement-shaped.
+>   ADDING an uncited row is fabrication — policed deterministically on the PRD reverse lane
+>   (marker check) and for path-invalid citations (citation map); a plausibly-cited invented FSD
+>   row is caught by NO gate — there the delete-only rule is a RULE, stated honestly as such.
+> - **Drift callouts are builder-inserted** — the builder runs `check-citation-drift.sh` itself
+>   and splices the callout block quotes with the script's `old12`/`new12` verbatim (hash
+>   prefixes are exactly the value class a model mistypes); it prints the drift lines so the
+>   SKILL's change-note derivation consumes them without a second drift run.
+> - **Templates stay the single source of truth:** the builders PARSE the `fsd-template.md` /
+>   `prd-template.md` fenced skeletons at run time — no hand-duplicated doc constants in the
+>   scripts (the 2a routing-table lesson).
+> - **Downstream is byte-unchanged:** the unfilled-slot scan (4.5), `build-citation-map.sh`
+>   stamping (4.6), `check-prd-markers.sh` (4.7), md2pdf render, and `refresh-doc-stamps.sh`
+>   doc-control all run exactly as before — the `(sha256: pending)` literals, `[Pending — …]`
+>   discipline, and `missing_sources[]` derivation are builder-emitted in the same grammar.
+> - **Gain basis:** research row 8's ~42K cost-units per FSD emit (±40%, structural projection)
+>   was the model deriving AND typing the body; after 5e the model output is a handful of Edit
+>   calls (PRD narrative) or none (FSD). No new constant is claimed pre-measurement.
+>
+> **ROUND-1 (dual blind, 2026-08-02) — both reviewers FIX-FIRST, 28 findings folded pre-ship.**
+> Execution (10): FR-id prefix containment fabricated Implemented/CONFIRMED over a real CONFLICT
+> (CLOSED: `\b…(?!\d)` + per-line verdict scan); nested `units/U-*/unit.md` cited a nonexistent
+> flat path → `citation_unresolvable` on a first-class layout (CLOSED: cite the path actually
+> read — units AND `bound/binding.md`); `####` FR depth silently swallowed + priority bleed;
+> fence-quoted KB markers harvested as requirements (NO downstream rail catches that class);
+> squads.yaml cross-entry field bleed (both builders); journey slug collisions; sourced "(none)"
+> over an unparsed OQ file; slot re-substitution of vault content; unit-id crash; marker
+> undercount. Static (18): the frozen-rot class — the mapping hard-coded section names the REAL
+> producers never emit (§Purpose vs §Product, `02-functional.md`, flat map headings), so a real
+> vault yielded a placeholder document (CLOSED: synonym+numbered-heading tolerance, name-mapped
+> §8 columns, vault.json OQ fallback in the PRD, mappings amended — proven END-TO-END on
+> `examples/timeoff/vault`); reverse journeys' file-level KB citations tripped `MARKER_MISSING`
+> on any marker-carrying workflow (CLOSED: line-anchored); absent `bolt_status` defaulted to
+> completed (CLOSED: unknown, never success); FR↔unit link narrowed to the documented fields;
+> KB probe order re-canonicalized (4 candidates, parity with the markers rail); loose commit-hex
+> match anchored to its own field/trailer; emit-prd's contradictory standalone drift step
+> deleted; the delete-only "caught by 4.6" overclaim restated honestly (a plausibly-cited
+> invented FSD row is caught by NO gate — it is a rule, not a gate); template-internal ToC
+> leaked into every emitted FSD (template fixed + builder strips defensively); label-keyed
+> sub-template fences; pending= now counts the document's actual markers; stale step
+> back-references + engine-spine note; README-less KB fallback; §3 no-owner warning callout;
+> §1 span covers purpose..scope. Test fixtures rebuilt against the REAL producer contracts
+> (the round's meta-finding: fixtures authored to the builder's assumptions ship green rot).
+
 **Explicitly deprioritised (measured ceilings, not worth the effort):** the always-on surface
 (**0.16–0.31%** of a long run) and the output lane as a whole (**~3%** of a single-pass run — its
 leverage is write *multiplicity*, not artifact size).
@@ -1151,7 +1225,7 @@ p99 gap 22.8 h, max 3.7 days).
 
 ## Ship order
 
-`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (memo REJECTED; batching) ✅ v5.24.0 → 5e → E(--lean)`
+`0 ✅ → 5a(readiness ✅ v5.15.0; FLIP blocked on RUN 1+2) → 2b ✅ v5.16.0 → 3a ✅ v5.17.0 → 5d ✅ v5.18.0 → 5b ✅ v5.19.0 → 5c ✅ v5.20.0 → 2a/2c/2d ✅ v5.21.0 → 4-first (4a/4b/4c) ✅ v5.22.0 → 4-second (4d/4e) ✅ v5.23.0 → 4f (memo REJECTED; batching) ✅ v5.24.0 → 5e ✅ v5.25.0 → E(--lean)`
 
 **Re-ordered after operator feedback (2026-07-30):** the original order front-loaded latency and
 left the biggest *token* levers last. The goal is real e2e token consumed, so the order is now
