@@ -165,6 +165,67 @@ The express lane emits the IDENTICAL `binding.md` grammar — specifically the l
 4. **Flag parity**: `--express` present in front-door hint + §Flag handling (forwarded verbatim, the `--converge` pattern) + orchestrate-flow §Flags + bind SKILL — keeping the ghost-flag guard green.
 5. **Fallback honesty**: index rc 3 ⇒ standard-bind fallback prose pin.
 
+---
+
+## P2 — GROUND step + express default (design, 2026-08-03)
+
+Ships as **5.35.0**. The front door defaults to the spine: GROUND (script) replaces scan-as-phase in every default chain, and `bind-codebase` hops dispatch with `--express` by default. Opt-out restores today's behavior exactly: `--classic` flag (front door + orchestrate-flow, forwarded verbatim) or persistent `spine: classic` in `.mega-sdd/config.yaml` (probe cloned from `profile:` — top-level, first-match-wins, default `express`). **Demote ≠ delete:** scan-codebase stays fully invocable — it is the ONLY map producer (`derive-codebase-map.sh` is an assembler over a model-written delta, not a standalone deriver), the on-demand map seam, and the sync lane's producer on map-bearing projects.
+
+### P2.1 GROUND = the probe engine, extended — not a new phase
+
+Anti-fork doctrine: the sniff lives in `_lib/state_probes.py` (the ONE probe engine routing + preflight + session-start already share), surfaced by `derive-state.sh` — which is ALREADY the zero-token script step at front-door Lane 0 step 1. A thin `scripts/ground.sh` wrapper gives the verb a name: `derive-state.sh` (extended) + `build-symbol-index.sh`. Two spawns, seconds, zero model tokens.
+
+New in the engine:
+- **`MANIFEST_SIGNALS` widened** to the ecosystems the pack registry + scan Step 2 already enumerate (`*.csproj`/`*.sln` globs, `Package.swift`, `mix.exs`, `pubspec.yaml`, `Pipfile`, `build.gradle.kts`, `build.sbt`) — today a .NET repo with two `ready` packs still halts `no_starterkit_detected`.
+- **`probe_framework_pack()` — the genuinely new piece:** a deterministic manifest→pack matcher executing the `detection_signature` frontmatter all 25 packs already carry (data-complete, code-absent — the mapping ran model-side in scan Step 8.5 until now). Precedence via a new OPTIONAL `detection_priority:` frontmatter key (default 100; lower wins — starterkit variants and meta-frameworks set lower; linted by `validate-pack.sh`), because `extends:` depth cannot encode remix>express. No match → `_universal`, same as today. Result lands in `derived.framework_pack`.
+- **`probe_symbol_index()`**: `{present, head_commit, matches_head}` — the change-signal substrate for express-born projects.
+- **`probe_spine()`**: the config read.
+- `resolve-framework-pack.sh` gains **source #0 = `state.json` `derived.framework_pack`** (never a second sniff — one matcher, one grammar), cache meta bumped `packres-v2` with the state file in the `-nt` validity loop.
+
+GROUND must NOT: write `starterkit-context.yaml` (cache-keyed deep-scan artifact — a script stub reads as a false warm cache and a Hard-rule citation trap), or move `build-symbol-index.sh` out of execute-bolts batch setup (bolt commits land after GROUND; the batch rebuild keeps `symbol_slice` honest).
+
+### P2.2 Chains without scan (the flip)
+
+- `finish()` in the state engine appends `--express` to every `bind-codebase` hop (the lean-injection pattern — one site) unless spine=classic.
+- `prd_no_vault`: `[generate-intent <prd>, bind-codebase --express, generate-units]` — no scan hop, no `--scan=` arg.
+- `vault_no_map`: redefined → `[bind-codebase --express, generate-units]` (as written it becomes an unreachable trap once the map never exists).
+- Starterkit Modes A/B collapse into the scan-free shape (Mode C was always scan-free); the "scan di depan" rationale row is rewritten, not just the table — the fabrication risk it guarded ("vault gen'd without code awareness") is now carried by intent's index-grounding + bind --express verification instead of a 25-minute inventory phase.
+- Deep-chain matrix + Lane 1 directory route: scan hops dropped under express; `--classic` renders today's rows verbatim.
+
+### P2.3 The resurrect-vectors (each closed explicitly)
+
+1. **`validate-preflight.sh` FATAL `binding_input_map_missing`** — the one map-hard gate with no carve-out: gains `--express` awareness (the PreToolUse hook forwards it when the bind dispatch args carry `--express`); vault arm stays FATAL.
+2. **chain-optimization `no-snapshot` → "keep scan"** (chain-execution) — express stamps `no-snapshot` ALWAYS, so this branch would re-add scan to every express chain: branch now keys on the lane (`binding_metadata.retrieval` present ⇒ scan stays out; classic keeps today's logic).
+3. **generate-units Step 0.5 auto-run** of scan under `--auto` — must not fire when the map is intentionally absent (express binding present ⇒ proceed).
+4. **generate-intent brownfield prompt** ("Run scan-codebase first?") — deleted; map-less brownfield is the default branch. `--scan=` stays for classic/map-present runs.
+
+### P2.4 The oq_gate trap (map 1's blocker-class finding)
+
+Tech-OQ `scan_query` is keyed literally on `codebase-map §…`; without a map at intent time those P1 OQs stay open and `oq_gate` inserts an interactive `resolve-oq` BEFORE bind — a hard stop on the default path. Fix that preserves the gate's meaning (chosen over exempting `resolution_mode: scan` from the count, which weakens it): **the intent Step 3.5 classifier + bind Step 2.6 resolve `tech/scan` OQs from `state.json` (manifests, framework_pack) + symbol-index queries + targeted file probes**, citing real `file:line`; `vault-contract` re-words `scan_query` to name probe targets, not map sections. Same auto-resolve confidence rules; no gate arithmetic changes.
+
+### P2.5 Sync on express-born projects (no map, ever)
+
+Today all four change-signal links are map-gated — an express-born project NEVER hears "code moved" and `/sync` reports a false all-clear. Fixes:
+- Dirty journal gate (post-tool-use) re-keys from map-presence to `.mega-sdd/codebase/` presence.
+- `derived.change_signal` gains `index_stamp_matches_head` (from `probe_symbol_index`); session-start staleness notice + Lane 0 status view fire on EITHER map-stale OR index-stale OR dirty rows.
+- Mode D guard accepts (map present OR index present) + binding.
+- Changed-set producer for map-less Mode D: new `scripts/derive-changed-paths.sh` — `git diff --name-only <index.head_commit>..HEAD` ∪ dirty-journal rows → `<vault>/.sync-changed-paths.txt` (same consumer contract: `detect-drift --scope=@`, `bind-codebase --paths=@ --express`). Map-bearing projects keep `scan-codebase --changed-only` unchanged.
+
+### P2.6 Honest degradations (recorded, never silent)
+
+- execute-bolts loses BOTH pattern-signature legs on express-born projects (no starterkit-context, no map §6) — the dispatch builder's existing `omit(...)` records it; the enrichment doc states the new truth.
+- emit-fsd renders `[Pending — codebase-map.md not yet generated]` rows — already honest; the on-demand answer is "run `/mega-sdd:scan-codebase` when you want the map".
+- Guard 7 / shared-snapshot / scan SKILL prose updated to the demoted reality.
+
+### P2.7 P2 proof tests
+
+1. Chain renders: default express (no scan hop, `--express` on bind) per position; `--classic`/`spine: classic` renders today's rows byte-for-byte; fixtures for prd_no_vault / vault_no_map / Mode D both breeds.
+2. `probe_framework_pack`: fixture manifests per ecosystem (incl. `*.csproj` glob + laravel-base-26>laravel + remix>express precedence + `_universal` fallback); parity with the resolver source #0.
+3. oq_gate: a tech/scan OQ vault + no map must NOT land `oq_gate` on the express path (classifier re-key), and MUST still gate under classic-with-no-map as today.
+4. Sync signals: express-born fixture (index present, HEAD moved) → change_signal fires, Mode D proposed, `derive-changed-paths.sh` writes the changed set; map-bearing fixture unchanged.
+5. Resurrect-vector pins: preflight express carve-out; chain-optimization branch; units Step 0.5; intent prompt gone.
+6. validate-pack lints `detection_priority` when present.
+
 ## Round disclosure
 
 ### P1 round (2026-08-03, dual-blind, deep — moat-touching)
