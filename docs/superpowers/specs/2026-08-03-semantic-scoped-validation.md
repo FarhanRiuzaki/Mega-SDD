@@ -1,7 +1,7 @@
 # Semantic-scoped validation — analyze freshness ledger + changed-only lint
 
 **Date:** 2026-08-03
-**Status:** IMPLEMENTED, round-folded — shipping as v5.32.0
+**Status:** SHIPPED v5.32.0 (fb1c267, CI green) — round-folded
 **Target release:** v5.32.0
 **Mandate:** the operator's proportionality directive (2026-08-03): "next nya hal2 kaya gini yg perlu jadi concern di skills mega-sdd — agar efisien jalan, ga sweep semua sekaligus tapi semantic sesuai kebutuhan dan context." Validation surfaces must scope to what actually changed, not sweep the whole project every invocation.
 
