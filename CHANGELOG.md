@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.31.3] - 2026-08-03 — docs: the root README diagram becomes an HLD
+
+The 94-line per-artifact/per-gate flowchart is replaced by a 43-line component HLD — seven layers (3-verb surface → orchestration+memory → pipeline phases → execution agents with the blind panel → grounded artifacts incl. the symbol index → enforcement moat → emissions + the sync loop). Heading renamed "Architecture (HLD)", legend rewritten to the new classes, per-phase detail delegated to the plugin README + the deep-dive section.
+
 ## [5.31.2] - 2026-08-03 — docs: README audit folded + the plugin gets its icon
 
 An adversarial README audit (17 findings) folded into both READMEs, plus the new mega-sdd logo (`docs/mega-sdd/mega-sdd.png` — intent → binding → done) installed as the header image of both.
