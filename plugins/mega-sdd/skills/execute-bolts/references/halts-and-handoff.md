@@ -146,6 +146,13 @@ Auto-generated AFTER every batch (overwrite-safe; idempotent regen) at `<vault>/
 ## Self-assessment summary (uncertain decisions across batch)
 - U-XXX: "<decision>" — fallback: <safer alternative>
 
+## Deferred open questions (N)
+<P3/A6 re-surface — a pure read of vault.json open_questions[] where
+status == deferred: one line per OQ (tag, priority, reason, defer_to);
+close with the re-run command `/mega-sdd:resolve-oq`. N=0 -> omit the
+section. A defer that never resurfaces is a silent assumption — this
+section and the chain summary are the resurface.>
+
 ## Next steps
 - Resolve <N> halts: `/mega-sdd --resume`
 - After all green: detect-drift will auto-run (hybrid gate; --no-drift-check opt-out)

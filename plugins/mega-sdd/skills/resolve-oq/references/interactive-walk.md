@@ -107,6 +107,8 @@ carries it verbatim. Render it and the `AskUserQuestion` together.
 
 ### Step 2b — The single prompt (ONE `AskUserQuestion` per OQ)
 
+> **Express-batched variant (P3 — chain-routed express path only).** The SAME per-OQ question shape (4 slots + Other, every keterangan rule below intact, exactly one `(recommended)` per question) packs up to **4 blocking-tier OQs into ONE `AskUserQuestion` call** (the tool takes 1–4 questions per call — the contract SKILL.md §Flags already states). >4 open P1s → ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). Slot semantics, write-back, and the derive-per-outcome contract are UNCHANGED — batching changes the round-trip count, never the grammar. Esc ends the whole walk as usual; the no-recommendation 3-option shape applies per question independently. This variant never fires on a standalone/classic invocation.
+
 > **The common path costs exactly ONE human round trip.** The action choice, the answer text, and
 > the destination confirmation are the SAME surface: picking an option IS answering, and IS
 > confirming where that answer lands. **Never** emit a separate "what is your answer?" prompt, and

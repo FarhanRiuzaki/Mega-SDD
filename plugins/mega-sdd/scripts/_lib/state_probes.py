@@ -703,8 +703,11 @@ def probe_binding(vdir):
 
 
 def probe_oq_counts(vdir):
-    """Probe 9 — P0/P1 OQ counts split open-vs-deferred (routing-rules §OQ
-    counting note). vault.json first (the derived manifest); fallback: the
+    """Probe 9 — blocking-tier OQ counts split open-vs-deferred (routing-rules
+    §OQ counting note). HONESTY NOTE (P3): the OQ grammar has NO P0 — the
+    field name pending_p0_p1 is kept for consumers, but the filter
+    effectively counts open P1s ("Sprint-0 blocker" — THE blocking tier;
+    the v6 prose's "P0"). vault.json first (the derived manifest); fallback: the
     shared vault_md OQ grammar over the numbered docs. `pending` and a
     missing status read as open (back-compat rule)."""
     rows = None

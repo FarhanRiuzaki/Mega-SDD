@@ -47,7 +47,7 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | `legacy_code_only` | code, no PRD/KB/vault — rebuild-intent rows need the user's word | `[]` + note |
 | `prd_no_vault` | PRD, no vault (starterkit rows; absent starterkit → halt `no_starterkit_detected` note) | **express (default):** intent → bind `--express` → units (GROUND already ran as a script — no scan hop, no `--scan=`); **classic:** scan → intent → bind → units |
 | `kb_no_vault` | `knowledge_base: present` + no vault | `generate-intent --kb=<kb>` |
-| `oq_gate` | unresolved P0/P1 OQs, status != deferred | `resolve-oq` |
+| `oq_gate` | unresolved blocking-tier OQs, status != deferred (field `pending_p0_p1`; the grammar has NO P0 — P1 "Sprint-0 blocker" IS the blocking tier) | `resolve-oq` (express chain + `--auto`: the P3 batched walk — P1 asked ≤4-per-call, P2/P3 auto-defer RECORDED; standalone/classic: full interactive walk) |
 | `prd_revision` | new PRD revision (file newer than vault) | `diff-vault <prd>` |
 | `maintenance_sync` | Mode D row (freshness substrate = map OR symbol-index) | the full sync chain (below); express-born (index, no map) swaps hop 1 for `scripts/derive-changed-paths.sh` |
 | `vault_greenfield_no_units` | vault mode=greenfield, no units | `generate-units` |
