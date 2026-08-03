@@ -99,6 +99,84 @@ echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier'
 bash "$RT" --unit "$WORK/nonexistent.md" >/dev/null 2>&1
 [ $? -eq 2 ] && pass "unreadable unit -> exit 2 (caller falls back to standard, never minimal)" || fail "unreadable rc"
 
+# ── 1b. Round-folded negative-recall fixtures ────────────────────────────────
+cat > "$WORK/pack2.md" <<'EOF2'
+---
+framework: fake
+auth_hints:
+  - "**/auth*"
+  - "**/login*"
+---
+EOF2
+mkunit "$WORK/u-caps.md" create "" "app/Http/Controllers/Auth/LoginController.php" "Implement the user authentication flow with authorization middleware."
+OUT=$(bash "$RT" --unit "$WORK/u-caps.md" --pack "$WORK/pack2.md")
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and ('auth_globs' in d['signals_fired'] or 'vocabulary' in d['signals_fired']), d" \
+  && pass "round-1: capitalized Auth path + derived words -> full (case-folded globs + stems)" || fail "caps arm: $OUT"
+
+mkunit "$WORK/u-plural.md" create "" "app/S.php" "Store hashed passwords and refresh tokens; sessions expire nightly."
+T=$(bash "$RT" --unit "$WORK/u-plural.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "full" ] && pass "round-4: plural vocabulary fires" || fail "plural tier=$T"
+
+mkunit "$WORK/u-id.md" create "" "app/S.php" "Simpan sandi pengguna untuk alur autentikasi; manajer menyetujui pengajuan."
+T=$(bash "$RT" --unit "$WORK/u-id.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "full" ] && pass "round-3: sandi/autentikasi/menyetujui fire (doc-verbatim list + stems)" || fail "id-vocab tier=$T"
+
+printf '\xef\xbb\xbf' > "$WORK/u-bom.md"
+cat >> "$WORK/u-bom.md" <<'EOF2'
+---
+unit_id: U-020
+task_type: create
+risk: critical
+target_files:
+  - path: app/One.php
+    operation: create
+---
+
+# Unit
+Netral.
+EOF2
+T=$(bash "$RT" --unit "$WORK/u-bom.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "full" ] && pass "round-2: BOM does not blank the frontmatter (risk still fires)" || fail "bom tier=$T"
+
+cat > "$WORK/u-flow.md" <<'EOF2'
+---
+unit_id: U-021
+task_type: create
+target_files: [app/A.php, app/B.php, app/C.php, app/D.php, composer.json]
+---
+
+# Unit
+Netral.
+EOF2
+OUT=$(bash "$RT" --unit "$WORK/u-flow.md")
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'manifest' in d['signals_fired'] and d['target_files']==5, d" \
+  && pass "round-doc4: inline-flow target_files parsed (manifest + count fire)" || fail "flow arm: $OUT"
+
+mkunit "$WORK/u-zero.md" create "" "" "Netral tanpa file."
+T=$(bash "$RT" --unit "$WORK/u-zero.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "standard" ] && pass "round-2: zero declared files on create -> standard, never minimal" || fail "zero tier=$T"
+
+cat > "$WORK/u-cb.md" <<'EOF2'
+---
+unit_id: U-022
+task_type: create
+target_files:
+  - path: app/One.php
+    operation: create
+binding_refs:
+  - C-B-001
+---
+
+# Unit
+Netral.
+EOF2
+T=$(bash "$RT" --unit "$WORK/u-cb.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "minimal" ] && pass "round-10: composite id C-B-001 does NOT false-fire constitution_b" || fail "cb tier=$T"
+
+mkunit "$WORK/u-author.md" create "" "app/One.php" "Track the author of each post."
+T=$(bash "$RT" --unit "$WORK/u-author.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
+[ "$T" = "minimal" ] && pass "round: 'author' still does not fire 'auth' (boundary intact)" || fail "author tier=$T"
+
 # false-positive guard: 'akseskan'-style word-boundary (access inside a longer word)
 mkunit "$WORK/u-fp.md" create "" "app/One.php" "Proses aksesibilitas laporan."
 T=$(bash "$RT" --unit "$WORK/u-fp.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")

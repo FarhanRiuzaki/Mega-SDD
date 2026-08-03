@@ -152,8 +152,14 @@ handoff:
   metrics:
     items_processed: <N OQs/CONFLICTs walked>
     items_resolved: <N actions taken>
+    # STATUS RULE (P3 pin): express auto-defers ALONE never flip status to
+    # `paused` — a fully-executed express-batched walk (every P1 answered or
+    # explicitly skipped, P2/P3 auto-deferred on the record) ends
+    # `completed`; `paused` remains for mid-walk abandonment and low-conf
+    # auto-accept deferrals awaiting manual resolution. Without this pin the
+    # chain would stop after resolve-oq on EVERY express run.
     items_deferred:              # P3: an ID LIST, never a bare count — a count cannot re-surface
-      - {tag: OQ-AR-7, priority: P2, reason: "auto-deferred (P2, express) — bukan blocker delivery pertama"}
+      - {tag: OQ-AR-7, priority: P2, reason: "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report"}
     items_blocked: <N>                    # canonical handoff metric per handoff-contract.md
   scope:                                  # when vault has scope_metadata
     id: <scope id>

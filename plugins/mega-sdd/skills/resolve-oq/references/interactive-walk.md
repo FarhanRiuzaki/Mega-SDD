@@ -107,7 +107,7 @@ carries it verbatim. Render it and the `AskUserQuestion` together.
 
 ### Step 2b — The single prompt (ONE `AskUserQuestion` per OQ)
 
-> **Express-batched variant (P3 — chain-routed express path only).** The SAME per-OQ question shape (4 slots + Other, every keterangan rule below intact, exactly one `(recommended)` per question) packs up to **4 blocking-tier OQs into ONE `AskUserQuestion` call** (the tool takes 1–4 questions per call — the contract SKILL.md §Flags already states). >4 open P1s → ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). Slot semantics, write-back, and the derive-per-outcome contract are UNCHANGED — batching changes the round-trip count, never the grammar. Esc ends the whole walk as usual; the no-recommendation 3-option shape applies per question independently. This variant never fires on a standalone/classic invocation.
+> **Express-batched variant (P3 — chain-routed express path only).** The SAME per-OQ question shape (4 slots + Other, every keterangan rule below intact, exactly one `(recommended)` per question) packs up to **4 blocking-tier OQs into ONE `AskUserQuestion` call** (the tool takes 1–4 questions per call — the contract SKILL.md §Flags already states). >4 open P1s → ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). Slot semantics, write-back, and the derive-per-outcome contract are UNCHANGED — batching changes the round-trip count, never the grammar. Esc ends the whole walk as usual — and in a BATCHED call it discards EVERY answer in the interrupted call (AskUserQuestion is atomic); those OQs stay open. The no-recommendation 3-option shape applies per question independently. This variant never fires on a standalone/classic invocation.
 
 > **The common path costs exactly ONE human round trip.** The action choice, the answer text, and
 > the destination confirmation are the SAME surface: picking an option IS answering, and IS
@@ -480,7 +480,7 @@ closed two-value set with **no declared default**):
 **The sub-target and the reason are collected in ONE `AskUserQuestion` CALL carrying TWO questions.**
 The platform's 4-option cap is **per question**, not per call: `AskUserQuestion` takes a `questions`
 array of 1–4 questions, each with its own ≤4 options plus its own automatic "Other". So the Defer
-follow-up costs ONE round trip while collecting both values. **Neither field may ever be defaulted
+follow-up costs ONE round trip while collecting both values. *(Express-chain auto-defer carve-out, P3: the AUTO-defer of P2/P3 on the chain-routed express path supplies both fields mechanically — `defer_to: stakeholder` + the fixed reason format — with 0 prompts; invariant #5 governs answer CONTENT and an auto-defer invents none; the 2-prompt budget applies to the INTERACTIVE Defer only.)* **Neither field may ever be defaulted
 or derived** — an unasked `deferred_reason` is an invariant-#5 breach. Apply this same
 one-call-many-questions shape anywhere else a follow-up needs more than one value.
 
