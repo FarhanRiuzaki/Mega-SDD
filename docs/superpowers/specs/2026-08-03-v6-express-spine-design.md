@@ -1,7 +1,8 @@
 # v6 — the Express Spine: speed with hard gates
 
 **Date:** 2026-08-03
-**Status:** DESIGN — awaiting per-phase gas
+**Status:** DESIGN — research-grounded, awaiting per-phase gas
+**Research grounding:** `research/2026-08-03-v6-express-spine-best-practices.md` (2026-08-03, 4 lanes: SDD landscape / Anthropic guidance / context-engineering evidence / verification-speed economics). Every spine element CONFIRMED against the 2025–2026 evidence base; amendments A1–A7 from that document are folded into the rails below.
 **Mandate (operator, 2026-08-03, verbatim goals):** "tujuan utamanya skills ini itu standarisasi code, reuse code, percepatan development, dan anti fabricated. yang paling utama itu speed development dengan standar yg udah di set atau hard gate." — a MAJOR update; cut everything that does not serve these four. **Speed is the tie-breaker; the hard gates are non-negotiable.**
 
 **Field evidence driving this:** on `training-nextjs`, scan alone cost ~25 minutes + 3.1M cost-equiv tokens before a single line of code; the full PRD→code path fronts 1–2 hours of ceremony. Plain Claude Code starts delivering in minutes with comparable output for small/mid features. v6's honest answer: *match that start speed, keep the proof.*
@@ -72,6 +73,12 @@ Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/meg
 3. **The ledger is the AI plane; docs are the human plane.** Ledger stays terse and machine-checked; no human-prose creep back onto the path.
 4. **Deterministic work in scripts** (ground, index, derive) — model tokens only where judgment lives (claims, verdicts, code).
 5. **Sync compatibility:** the sync lane keys on the ledger + binding the same way it keyed on the vault; existing vault projects get a one-time `migrate` derive (vault → ledger), read-side compatible.
+6. **(A1) PLAN anti-rot protocol:** binding contract + Hard rules anchored at context START; running verdict table maintained at context END; raw evidence reads shed after each claim's verdict lands (self-slice = compact the evidence, keep the verdicts). If a pass runs long, escalate to factored per-claim re-verification in clean context — never silently degrade. (Context-rot literature: degradation starts well before the window limit; mid-context is the dead zone.)
+7. **(A2) The merge is safe BECAUSE the pass never grades itself:** binding.md + units are validated by scripts (recompute-at-gate) and fresh-context review — the independent grader, per the "agent doing the work isn't the one grading it" doctrine.
+8. **(A3) Query, never inject:** GROUND's index is a navigation substrate the PLAN pass queries; never front-loaded wholesale. Index rows route to targeted reads; verdicts anchor to READ evidence, not index rows.
+9. **(A4) Protect the acceptance test:** authored/frozen before implementation; the implementer may not modify it; the gate recomputes against the frozen test. (59.4% of SWE-bench Verified failures were defective tests — a weak test is a fabrication vector.)
+10. **(A5) Deterministic risk router:** the review tier is chosen by deterministic evidence (paths touched, diff size, security surface), never the model's self-assessment; the low tier's single lens is spec-conformance sitting on top of the executed acceptance test.
+11. **(A6) Deferred OQs must re-surface:** auto-deferred P1–P3 OQs are RECORDED in the artifact AND re-listed in the delivery report; a defer that never resurfaces is a silent assumption.
 
 ## Phasing (each phase = spec section → implement → tests → dual-blind round → ship)
 
@@ -79,7 +86,7 @@ Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/meg
 - **P2 — GROUND step + express default.** scan demoted; map derive-on-demand; front door defaults to the spine.
 - **P3 — OQ auto-defer + risk-tier default + lean-by-default diagnostics.**
 - **P4 — surface cull** (alias removal per policy + docs-on-demand completion + README/major migration guide).
-- **P5 — measure.** End-to-end wall-clock + cost-weighted tokens on training-nextjs, before/after, published in the README. The <10-minute claim lives or dies here.
+- **P5 — measure.** End-to-end wall-clock + cost-weighted tokens on training-nextjs, before/after, published in the README. The <10-minute claim lives or dies here. **(A7) Protocol:** endpoint = acceptance-VERIFIED bolt (never first diff); human-wait time explicitly in or out of the clock; speed paired with a quality counterweight (revert/rework); same repo, comparable task class; never self-reported. (METR RCT: devs were 19% slower while believing +20% faster — perception is inadmissible.)
 
 Version: **6.0.0** at P4 (the breaking-surface release); P1–P3 ship as 5.x pre-major tranches where back-compatible, behind `--express` until P2 flips the default.
 
