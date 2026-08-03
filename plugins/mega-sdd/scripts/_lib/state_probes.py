@@ -67,10 +67,26 @@ KB_README_GENERATIONS = (
 
 # Framework/package manifests (session-start Guard-1 list == auto.md starterkit
 # probe superset). `.git` is probed separately via probe_git.
+# P2 widened to the ecosystems the pack registry + scan Step 2 already
+# enumerate — a .NET repo with two `ready` packs must not halt
+# no_starterkit_detected because the probe never looked for *.csproj.
 MANIFEST_SIGNALS = (
     "composer.json", "package.json", "Gemfile", "Cargo.toml", "go.mod",
     "build.gradle", "pom.xml", "requirements.txt", "pyproject.toml",
+    "build.gradle.kts", "build.sbt", "Package.swift", "mix.exs",
+    "pubspec.yaml", "Pipfile",
 )
+# Root-only glob manifests (fnmatch against root dirlist; matched REAL
+# filenames are reported, so consumers keep list-of-files semantics).
+MANIFEST_GLOB_SIGNALS = ("*.csproj", "*.sln")
+
+# A pack may declare one canonical manifest while real repos use a sibling
+# (the prose Step-2 table always allowed both) — deterministic alternates,
+# checked ONLY when the canonical file is absent.
+MANIFEST_ALTERNATES = {
+    "pyproject.toml": ("requirements.txt", "Pipfile"),
+    "build.gradle": ("build.gradle.kts",),
+}
 
 # Code-file extensions for greenfield/brownfield detection (routing-rules
 # §Greenfield vs brownfield detection: ".{php,js,ts,py,rs,go,rb} etc." —
@@ -273,8 +289,180 @@ def probe_git(cwd):
 
 
 def probe_manifests(cwd):
-    """Probe 6b — package/framework manifests present at root."""
-    return [m for m in MANIFEST_SIGNALS if os.path.isfile(os.path.join(cwd, m))]
+    """Probe 6b — package/framework manifests present at root (fixed names +
+    root-only globs; glob hits report the REAL filenames)."""
+    found = [m for m in MANIFEST_SIGNALS if os.path.isfile(os.path.join(cwd, m))]
+    try:
+        root_files = sorted(os.listdir(cwd))
+    except OSError:
+        root_files = []
+    import fnmatch
+    for pat in MANIFEST_GLOB_SIGNALS:
+        for fn in root_files:
+            if fnmatch.fnmatch(fn, pat) and os.path.isfile(os.path.join(cwd, fn)):
+                found.append(fn)
+    return found
+
+
+# ── P2 GROUND: the manifest→pack fingerprint matcher ─────────────────────────
+# Executes the `detection_signature` frontmatter every pack already carries
+# (data-complete since the packs shipped; until P2 the mapping ran MODEL-side
+# in scan Step 8.5). ONE matcher, here in the shared probe engine — the
+# resolver and routing both read its state.json output; never a second sniff.
+
+_PACK_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "references", "framework-conventions",
+)
+_FM_KEY_RE = {
+    "framework": re.compile(r"(?m)^framework:\s*(\S+)\s*$"),
+    "package_manifest": re.compile(r"(?m)^\s{2}package_manifest:\s*(.+)$"),
+    "dependency_marker": re.compile(r"(?m)^\s{2}dependency_marker:\s*(.+)$"),
+    "fallback_dependency_marker": re.compile(
+        r"(?m)^\s{2}fallback_dependency_marker:\s*(.+)$"),
+    "detection_priority": re.compile(r"(?m)^detection_priority:\s*(\d+)\s*(?:#.*)?$"),
+}
+
+
+def _fm_scalar(raw):
+    """Strip a YAML scalar: quoted span wins; else cut a trailing comment."""
+    raw = raw.strip()
+    if raw[:1] in ("'", '"'):
+        q = raw[0]
+        end = raw.find(q, 1)
+        if end > 0:
+            return raw[1:end]
+    return raw.split(" #", 1)[0].strip()
+
+
+def _read_pack_signatures():
+    """[{framework, package_manifest, markers[], priority}] from every pack
+    frontmatter carrying a detection_signature. Read-only; parse failures
+    skip the pack (never fabricate a match)."""
+    sigs = []
+    try:
+        names = sorted(os.listdir(_PACK_DIR))
+    except OSError:
+        return sigs
+    for fn in names:
+        if not fn.endswith(".md") or fn.startswith("_") or fn == "README.md":
+            continue
+        try:
+            with open(os.path.join(_PACK_DIR, fn), encoding="utf-8",
+                      errors="replace") as f:
+                head = f.read(4096)
+        except OSError:
+            continue
+        if "detection_signature:" not in head:
+            continue
+        fm_end = head.find("\n---", 4)
+        fm = head[:fm_end] if fm_end > 0 else head
+        vals = {}
+        for key, rx in _FM_KEY_RE.items():
+            m = rx.search(fm)
+            if m:
+                vals[key] = _fm_scalar(m.group(1))
+        if not vals.get("framework") or not vals.get("package_manifest"):
+            continue
+        markers = [vals[k] for k in
+                   ("dependency_marker", "fallback_dependency_marker")
+                   if vals.get(k)]
+        sigs.append({
+            "framework": vals["framework"],
+            "package_manifest": vals["package_manifest"],
+            "markers": markers,
+            "priority": int(vals.get("detection_priority") or 100),
+        })
+    return sigs
+
+
+def probe_framework_pack(cwd, manifests):
+    """P2 GROUND — deterministic manifest→pack resolution.
+
+    Match = the pack's manifest (or a MANIFEST_ALTERNATES sibling, canonical
+    absent) exists at root AND any declared marker substring appears in it
+    (markers absent → manifest presence alone, weakest). Winner = lowest
+    detection_priority, then name sort; every match is reported in
+    candidates[] for honesty. No match → `_universal`, same as scan Step 8.5.
+    """
+    import fnmatch
+    out = {"pack": "_universal", "manifest": None, "candidates": []}
+    if not manifests:
+        return out
+    mset = list(manifests)
+    content_cache = {}
+
+    def _content(fn):
+        if fn not in content_cache:
+            try:
+                with open(os.path.join(cwd, fn), encoding="utf-8",
+                          errors="replace") as f:
+                    content_cache[fn] = f.read(262144)
+            except OSError:
+                content_cache[fn] = ""
+        return content_cache[fn]
+
+    matches = []
+    for sig in _read_pack_signatures():
+        pat = sig["package_manifest"]
+        if any(ch in pat for ch in "*?["):
+            files = [m for m in mset if fnmatch.fnmatch(m, pat)]
+        else:
+            files = [pat] if pat in mset else [
+                alt for alt in MANIFEST_ALTERNATES.get(pat, ()) if alt in mset
+            ][:1]
+        for fn in files:
+            if not sig["markers"] or any(mk in _content(fn) for mk in sig["markers"]):
+                matches.append((sig["priority"], sig["framework"], fn))
+                break
+    if not matches:
+        return out
+    matches.sort()
+    out["pack"] = matches[0][1]
+    out["manifest"] = matches[0][2]
+    out["candidates"] = ["%s(%s,p%d)" % (m[1], m[2], m[0]) for m in matches]
+    return out
+
+
+_INDEX_HEAD_RE = re.compile(r'"head_commit"\s*:\s*(?:"([0-9a-f]{7,40})"|null)')
+
+
+def probe_symbol_index(cwd, head=None):
+    """P2 — symbol-index presence + freshness stamp (the change-signal
+    substrate for express-born projects that never grow a codebase-map)."""
+    p = os.path.join(cwd, ".mega-sdd", "codebase", "symbol-index.json")
+    out = {"present": False, "head_commit": None, "matches_head": "n/a"}
+    if not os.path.isfile(p):
+        return out
+    out["present"] = True
+    try:
+        with open(p, encoding="utf-8", errors="replace") as f:
+            head_chunk = f.read(512)  # head_commit lives in the envelope keys
+    except OSError:
+        return out
+    m = _INDEX_HEAD_RE.search(head_chunk)
+    stamp = m.group(1) if m else None
+    out["head_commit"] = stamp
+    if stamp and head:
+        out["matches_head"] = "yes" if stamp == head else "no"
+    return out
+
+
+def probe_spine(cwd):
+    """`spine:` from .mega-sdd/config.yaml — "express" (default) or
+    "classic". P2 flip: express is the default spine; classic restores the
+    scan-first chains verbatim. Same contract as probe_profile: top-level
+    key only, first match wins, absent/unreadable → default."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
+                  encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = re.match(r"^spine:\s*[\"']?(express|classic)[\"']?\s*(?:#.*)?$", ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return "express"
 
 
 def probe_code_files(cwd, limit=4000):
@@ -633,16 +821,20 @@ def probe_vaults(cwd):
 def collect_probes(cwd):
     """The full probes object — plain data, no policy."""
     git_info = probe_git(cwd)
+    manifests = probe_manifests(cwd)
     return {
         "prd": probe_prd_candidates(cwd),
         "vaults": probe_vaults(cwd),
         "git": git_info,
-        "manifests": probe_manifests(cwd),
+        "manifests": manifests,
         "code": probe_code_files(cwd),
         "codebase_map": probe_codebase_map(cwd, git_info.get("head")),
+        "symbol_index": probe_symbol_index(cwd, git_info.get("head")),
+        "framework_pack": probe_framework_pack(cwd, manifests),
         "knowledge_base": probe_knowledge_base(cwd),
         "dirty_journal_rows": probe_dirty_journal(cwd),
         "profile": probe_profile(cwd),
+        "spine": probe_spine(cwd),
         "foreign_sdd": probe_foreign_sdd(cwd),
         "preflight_predicates": {
             "has_vault": has_vault(cwd),
@@ -699,6 +891,8 @@ def derive(probes):
     git_repo = probes["git"]["is_repo"]
     has_code = probes["code"]["has_code_files"]
     cmap = probes["codebase_map"]
+    sindex = probes.get("symbol_index") or {
+        "present": False, "head_commit": None, "matches_head": "n/a"}
     notes = []
 
     if not git_repo and not manifests and not has_code:
@@ -710,14 +904,25 @@ def derive(probes):
     change_signal = {
         "dirty_journal_rows": probes["dirty_journal_rows"],
         "map_stamp_matches_head": cmap["matches_head"],
+        # P2: the freshness stamp an express-born project HAS — without it,
+        # every change-signal surface is map-gated and sync goes silent
+        # forever on projects that never grow a map.
+        "index_stamp_matches_head": sindex["matches_head"],
     }
 
     foreign_sdd = probes.get("foreign_sdd") or []
 
     profile = probes.get("profile", "full")
+    spine = probes.get("spine", "express")
+    fpack = probes.get("framework_pack") or {"pack": "_universal",
+                                             "manifest": None,
+                                             "candidates": []}
     derived = {
         "vault": vault["name"] if vault else None,
         "profile": profile,
+        "spine": spine,
+        "framework_pack": fpack["pack"],
+        "framework_pack_manifest": fpack["manifest"],
         "vault_path": vault["path"] if vault else None,
         "position": None,
         "proposed_next": [],
@@ -756,6 +961,16 @@ def derive(probes):
                     and "--no-advisor" not in h) else h
                 for h in chain
             ]
+        if spine == "express":
+            # P2 flip: every bind hop retrieves claim-scoped by default (the
+            # lean-injection pattern — ONE site, never per return). classic
+            # renders today's chains verbatim.
+            chain = [
+                (h + " --express")
+                if (h.split()[0] == "bind-codebase" and "--express" not in h)
+                else h
+                for h in chain
+            ]
         if derived["manifest_derive_needed"] and chain:
             # P0 unification: bare vault docs → derive the manifest FIRST,
             # never hand-write it, before any phase that reads vault.json.
@@ -776,6 +991,15 @@ def derive(probes):
         if probes["prd"]["present"]:
             prd = probes["prd"]["candidates"][0]
             if starterkit == "detected":
+                if spine == "express":
+                    # P2 default: GROUND already ran as a script (derive-state
+                    # + build-symbol-index); no scan phase, no --scan= arg —
+                    # intent grounds via the index, bind verifies --express.
+                    return finish("prd_no_vault", [
+                        "generate-intent %s" % prd,
+                        "bind-codebase",
+                        "generate-units",
+                    ])
                 return finish("prd_no_vault", [
                     "scan-codebase",
                     "generate-intent %s --scan=<codebase-map>" % prd,
@@ -819,14 +1043,30 @@ def derive(probes):
                                or probes["prd"]["candidates"][0]),
         ])
 
-    # 3. Mode D — maintenance/sync: map + binding exist AND change signal.
-    if cmap["present"] and binding["binding_md"] and (
+    # 3. Mode D — maintenance/sync: a freshness substrate (map OR symbol
+    # index — P2: express-born projects never grow a map) + binding exist
+    # AND a change signal fired.
+    if (cmap["present"] or sindex["present"]) and binding["binding_md"] and (
         change_signal["dirty_journal_rows"] > 0
         or change_signal["map_stamp_matches_head"] == "no"
+        or change_signal["index_stamp_matches_head"] == "no"
     ):
         vp = vault["path"]
+        if cmap["present"]:
+            # Map-bearing project: today's chain, unchanged — scan
+            # --changed-only refreshes the map AND writes the changed set.
+            return finish("maintenance_sync", [
+                "scan-codebase --changed-only",
+                "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
+                "bind-codebase --paths=@%s/.sync-changed-paths.txt" % vp,
+                "generate-units --reconcile",
+                "execute-bolts",
+            ])
+        # Express-born (index, no map): the changed set derives from git
+        # (index head_commit..HEAD) ∪ the dirty journal — a script, zero
+        # model tokens; same downstream consumer contract.
         return finish("maintenance_sync", [
-            "scan-codebase --changed-only",
+            "scripts/derive-changed-paths.sh --vault %s" % vp,
             "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
             "bind-codebase --paths=@%s/.sync-changed-paths.txt" % vp,
             "generate-units --reconcile",
@@ -838,6 +1078,11 @@ def derive(probes):
         if units == 0:
             return finish("vault_greenfield_no_units", ["generate-units"])
     if not cmap["present"] and not vault["bound_present"] and units == 0:
+        if spine == "express":
+            # P2: without the flip this position is an unreachable trap —
+            # the map never exists on the express spine, so every brownfield
+            # vault would demand a scan forever. Express bind needs no map.
+            return finish("vault_no_map", ["bind-codebase", "generate-units"])
         return finish("vault_no_map", [
             "scan-codebase", "bind-codebase", "generate-units",
         ])

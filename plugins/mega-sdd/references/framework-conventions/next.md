@@ -3,6 +3,7 @@ framework: next
 framework_version_range: "14.x — 15.x"
 last_verified_against: 2026-06-10
 maintainer: mega-sdd
+detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
   package_manifest: package.json
   dependency_marker: "next"

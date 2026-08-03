@@ -3,6 +3,7 @@ framework: laravel-base-26
 framework_version_range: "Laravel 12.x | base-laravel-26 starterkit"
 last_verified_against: 2026-05-22
 maintainer: mega-sdd (extracted from /Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/base-laravel-26 CLAUDE.md + structure audit)
+detection_priority: 10  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
   package_manifest: composer.json
   dependency_marker: "pixinvent/vuexy-laravel-bootstrap-jetstream"  # uniquely identifies this starterkit (Vuexy + Jetstream + Bootstrap)

@@ -3,6 +3,7 @@ framework: aspnetcore
 framework_version_range: "ASP.NET Core 6+ (LTS 8.x baseline)"
 last_verified_against: 2026-06-24
 maintainer: mega-sdd
+detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
   package_manifest: "*.csproj"
   dependency_marker: "Microsoft.AspNetCore."
