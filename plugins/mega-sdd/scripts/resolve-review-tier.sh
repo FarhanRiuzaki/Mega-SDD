@@ -40,37 +40,61 @@ try:
 except OSError as e:
     print("FAIL: cannot read unit: %s" % e, file=sys.stderr)
     sys.exit(2)
+text = text.lstrip("\ufeff")  # a BOM must not blank the whole frontmatter
 
-# frontmatter block
+# frontmatter block (body starts AFTER the closing --- line)
 fm = ""
+body = text
 if text.startswith("---"):
     end = text.find("\n---", 3)
     if end > 0:
         fm = text[3:end]
-body = text[len(fm):]
+        body = text[end + 4:]
 
-task_type = (re.search(r"(?m)^task_type:\s*(\S+)", fm) or [None, ""])[1] if fm else ""
 m = re.search(r"(?m)^task_type:\s*[\"']?(\w+)", fm)
 task_type = m.group(1) if m else ""
 m = re.search(r"(?m)^risk:\s*[\"']?(\w+)", fm)
 risk = (m.group(1).lower() if m else "")
 
-# target_files paths (list items with `path:` under target_files, plus simple
-# `- path` bullets) — tolerant of both mapping and scalar-list shapes
+# target_files paths — block mapping, scalar-list, AND inline-flow shapes;
+# quoted paths (spaces) captured whole. A parse-MISS is never a small unit
+# (round doc-4): tf_key_present + zero parsed => standard, marked.
+tf_key_present = bool(re.search(r"(?m)^target_files:", fm))
 tf_block = ""
 m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm)
 if m:
     tf_block = m.group(1)
-paths = re.findall(r"(?m)^[ \t]*-?[ \t]*path:\s*[\"']?([^\s\"'#]+)", tf_block)
+
+def _cap(rx, s):
+    out = []
+    for g in re.findall(rx, s):
+        if isinstance(g, tuple):
+            g = next((x for x in g if x), "")
+        if g:
+            out.append(g)
+    return out
+
+paths = _cap(r"(?m)^[ \t]*-?[ \t]*path:\s*(?:\"([^\"]+)\"|'([^']+)'|([^\s#]+))", tf_block)
 if not paths:
-    paths = re.findall(r"(?m)^[ \t]*-[ \t]+[\"']?([^\s\"'#:]+)[\"']?\s*$", tf_block)
+    paths = _cap(r"(?m)^[ \t]*-[ \t]+(?:\"([^\"]+)\"|'([^']+)'|([^\s#:]+))[ \t]*$", tf_block)
+if not paths:
+    fm_inline = re.search(r"(?m)^target_files:\s*\[([^\]]*)\]", fm)
+    if fm_inline:
+        paths = [p.strip().strip("\"'") for p in fm_inline.group(1).split(",")
+                 if p.strip()]
 n_files = len(paths)
+parse_note = None
+if tf_key_present and n_files == 0 and task_type != "verify":
+    parse_note = "target_files_unparsed"
 
 signals_evaluated = ["auth_globs", "manifest", "file_count", "vocabulary",
                     "constitution_b", "risk_field"]
 fired = []
 
-# 1. pack auth/authz globs
+# 1. pack auth/authz globs — CASEFOLDED both sides (round blocker: posix
+# fnmatch is case-sensitive; `**/auth*` never matched `Auth/LoginController`),
+# with a stripped-prefix basename leg so `**/auth*` also reaches a root-level
+# `auth.php`.
 globs = []
 if pack_path and os.path.isfile(pack_path):
     ptxt = open(pack_path, encoding="utf-8", errors="replace").read()
@@ -78,8 +102,16 @@ if pack_path and os.path.isfile(pack_path):
         gm = re.search(r"(?ms)^%s:\s*\n((?:[ \t]+-[ \t]+.*\n?)*)" % key, ptxt)
         if gm:
             globs += re.findall(r"(?m)^[ \t]+-[ \t]+[\"']?([^\s\"'#]+)", gm.group(1))
-if any(fnmatch.fnmatch(p, g) or fnmatch.fnmatch(os.path.basename(p), g)
-       for p in paths for g in globs):
+
+def _glob_hit(p, g):
+    pl, gl = p.lower(), g.lower()
+    bl = os.path.basename(pl)
+    gtail = gl.split("/")[-1]
+    return (fnmatch.fnmatch(pl, gl) or fnmatch.fnmatch(bl, gl)
+            or (gtail and fnmatch.fnmatch(bl, gtail))
+            or any(fnmatch.fnmatch(seg, gtail) for seg in pl.split("/")))
+
+if any(_glob_hit(p, g) for p in paths for g in globs):
     fired.append("auth_globs")
 
 # 2. dependency manifest in target_files
@@ -94,21 +126,33 @@ if any(os.path.basename(p) in MANIFESTS for p in paths):
 if n_files >= 4:
     fired.append("file_count")
 
-# 4. body vocabulary — whole words; approv- is the sole deliberate prefix
+# 4. body vocabulary — the review-panel.md signal-4 list VERBATIM (round
+# doc-3: the script must never drift from the doc it implements). Whole
+# words with an optional plural suffix (passwords/tokens/sessions — round
+# code-4); multi-word phrases tolerate any whitespace incl. soft wraps;
+# derived-form STEMS matched as substrings (the model era handled
+# morphology implicitly — authentication/authorization/oauth/menyetujui).
 VOCAB = ("auth", "session", "token", "crypto", "password", "payment",
          "upload", "role", "permission", "access", "admin", "acl",
-         # Indonesian equivalents (review-panel.md signal 4)
-         "otentikasi", "otorisasi", "kata sandi", "pembayaran", "unggah",
-         "peran", "izin", "akses", "persetujuan")
+         # Indonesian (review-panel.md signal 4, verbatim)
+         "kata sandi", "sandi", "pembayaran", "unggah", "hak akses",
+         "peran", "izin", "otorisasi", "autentikasi", "otentikasi",
+         "persetujuan")
+STEMS = ("approv", "authenticat", "authoriz", "oauth", "setuju")
 body_l = body.lower()
-hit = any(re.search(r"(?<![a-z0-9_])%s(?![a-z0-9_])" % re.escape(w), body_l)
-          for w in VOCAB) or re.search(r"(?<![a-z0-9_])approv", body_l)
+
+def _word_hit(w):
+    pat = r"\s+".join(re.escape(part) for part in w.split())
+    return re.search(r"(?<![a-z0-9_])%s(?:e?s)?(?![a-z0-9_])" % pat, body_l)
+
+hit = any(_word_hit(w) for w in VOCAB) or any(st in body_l for st in STEMS)
 if hit:
     fired.append("vocabulary")
 
-# 5. constitution §B clause in binding_refs
+# 5. constitution §B clause in binding_refs — anchored to a list-item token
+# so a composite claim id (C-B-001) never false-fires (round code-10)
 brefs = re.search(r"(?ms)^binding_refs:\s*\n((?:[ \t]+.*\n?)*)", fm)
-if brefs and re.search(r"\bB-\d{3}\b", brefs.group(1)):
+if brefs and re.search(r"(?m)^[ \t]*-[ \t]+[\"']?B-\d{3}\b", brefs.group(1)):
     fired.append("constitution_b")
 
 # 6. risk field — alone forces full
@@ -117,14 +161,26 @@ if risk in ("high", "critical"):
 
 if fired:
     tier = "full"
-elif task_type == "verify" or n_files <= 2:
+elif parse_note:
+    # a parse-miss is UNKNOWN, and unknown is never a LOW tier (doctrine) —
+    # zero-parsed target_files on a non-verify unit lands standard, marked
+    tier = "standard"
+elif task_type == "verify" or (1 <= n_files <= 2 and task_type != ""):
+    # zero DECLARED files on a non-verify unit is unknown scope, not a small
+    # unit (round code-2) — only verify may be minimal file-less
     tier = "minimal"
+elif task_type == "":
+    # unparseable frontmatter (no task_type at all) — same unknown rule
+    tier = "standard"
+    parse_note = parse_note or "frontmatter_unparsed"
 else:
     tier = "standard"
 
-print(json.dumps({"tier": tier, "signals_fired": fired,
-                  "signals_evaluated": signals_evaluated,
-                  "target_files": n_files, "task_type": task_type},
-                 separators=(",", ":")))
+out = {"tier": tier, "signals_fired": fired,
+       "signals_evaluated": signals_evaluated,
+       "target_files": n_files, "task_type": task_type}
+if parse_note:
+    out["parse_note"] = parse_note
+print(json.dumps(out, separators=(",", ":")))
 sys.exit(0)
 PYEOF

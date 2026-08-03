@@ -55,8 +55,11 @@ mkdir -p "$P1/.mega-sdd/memory" "$P2/.mega-sdd/memory"
 : > "$P1/.mega-sdd/memory/telemetry.jsonl"; : > "$P2/.mega-sdd/memory/telemetry.jsonl"
 mkstop "$P1" | bash "$STP" >/dev/null 2>&1
 mkstop "$P2" | bash "$STP" >/dev/null 2>&1
+# P3 lean-by-default: ABSENT config = express spine = aggregate SKIPS (the
+# opt-in is spine: classic | profile: full — proven in the P3 arms below).
 if [ -f "$P1/.mega-sdd/.analyze-state.json" ] || [ -f "$P1/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
-  ok "full: auto-analyze aggregate ran"; else fail "full: aggregate did not run"; fi
+  fail "P3: absent config fired the aggregate (lean-by-default regressed)"; else
+  ok "P3: absent config skips the aggregate (lean-by-default)"; fi
 if [ -f "$P2/.mega-sdd/.analyze-state.json" ] || [ -f "$P2/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
   fail "lean: aggregate ran anyway"; else ok "lean: aggregate skipped"; fi
 
@@ -85,13 +88,36 @@ CH=$(chain "$PH")
 printf '%s' "$CH" | grep -q '"profile": "full"' && ok "F1: 'leanish' rejected by the engine" || fail "F1 engine: $CH"
 seed_state "$PH"; mkdir -p "$PH/.mega-sdd/memory"; : > "$PH/.mega-sdd/memory/telemetry.jsonl"
 mkstop "$PH" | bash "$STP" >/dev/null 2>&1
+# P3 lean-by-default: the aggregate is OPT-IN (spine: classic | profile: full).
+# 'leanish' is neither — it behaves like ABSENT (skip), while the ENGINE still
+# rejects it for the advisor axis (full). The parity now proven: hostile
+# spellings are never read as an explicit opt-in OR as lean.
 if [ -f "$PH/.mega-sdd/.analyze-state.json" ] || [ -f "$PH/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
-  ok "F1: hook parity — 'leanish' does NOT skip the aggregate (end-anchored grep)"; else fail "F1 regressed: hook read 'leanish' as lean"; fi
+  fail "F1/P3: 'leanish' fired the aggregate (must read as absent -> skip)"; else
+  ok "F1/P3: hook — 'leanish' = absent = skip (aggregate is classic|full opt-in)"; fi
+PF3="$W/optin-full"; mkproj "$PF3" "profile: full"
+seed_state "$PF3"; mkdir -p "$PF3/.mega-sdd/memory"; : > "$PF3/.mega-sdd/memory/telemetry.jsonl"
+mkstop "$PF3" | bash "$STP" >/dev/null 2>&1
+if [ -f "$PF3/.mega-sdd/.analyze-state.json" ] || [ -f "$PF3/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
+  ok "P3: explicit profile: full fires the aggregate"; else fail "P3: profile: full did not fire"; fi
+PC3="$W/optin-classic"; mkproj "$PC3" "spine: classic"
+seed_state "$PC3"; mkdir -p "$PC3/.mega-sdd/memory"; : > "$PC3/.mega-sdd/memory/telemetry.jsonl"
+mkstop "$PC3" | bash "$STP" >/dev/null 2>&1
+if [ -f "$PC3/.mega-sdd/.analyze-state.json" ] || [ -f "$PC3/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
+  ok "P3: spine: classic fires the aggregate (classic keeps today's behavior)"; else fail "P3: classic did not fire"; fi
+PCL="$W/classic-lean"; mkproj "$PCL" "$(printf 'spine: classic\nprofile: lean')"
+seed_state "$PCL"; mkdir -p "$PCL/.mega-sdd/memory"; : > "$PCL/.mega-sdd/memory/telemetry.jsonl"
+mkstop "$PCL" | bash "$STP" >/dev/null 2>&1
+if [ -f "$PCL/.mega-sdd/.analyze-state.json" ] || [ -f "$PCL/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
+  fail "P3: classic+lean fired (lean must always win)"; else
+  ok "P3: classic+lean skips (lean always wins)"; fi
 PD="$W/dup"; mkproj "$PD" "$(printf 'profile: full\nprofile: lean')"
 CD2=$(chain "$PD")
 printf '%s' "$CD2" | grep -q '"profile": "full"' && ok "F1: duplicate keys — engine first-match wins (full)" || fail "F1 dup engine: $CD2"
 seed_state "$PD"; mkdir -p "$PD/.mega-sdd/memory"; : > "$PD/.mega-sdd/memory/telemetry.jsonl"
 mkstop "$PD" | bash "$STP" >/dev/null 2>&1
+# duplicate keys: first line `profile: full` wins for the opt-in grep (-m1) —
+# aggregate fires; the second `profile: lean` line is never reached.
 if [ -f "$PD/.mega-sdd/.analyze-state.json" ] || [ -f "$PD/.mega-sdd/CONSISTENCY-REPORT.md" ]; then
   ok "F1: hook parity on duplicate keys — first profile line wins (full -> aggregate ran)"; else fail "F1 dup: hook read the SECOND profile line"; fi
 

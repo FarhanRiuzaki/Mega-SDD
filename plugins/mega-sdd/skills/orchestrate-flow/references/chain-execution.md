@@ -170,7 +170,7 @@ Only if the chain includes execute-bolts:
 ## Auto-integrated diagnostics
 
 > **`--lean` profile:** the ADVISORY rows below (`lint-units`, `analyze-parallelism`,
-> `list-modules`, `emit-agents-md`) are SKIPPED when the profile is lean (`--lean` flag or
+> `list-modules`, `emit-agents-md`) are SKIPPED on express-spine chains (the P3 default) AND when the profile is lean; classic-spine chains keep them (`--lean` flag or
 > `profile: lean` in config.yaml) — each is re-runnable on demand. `detect-drift` (the hybrid
 > gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
 
