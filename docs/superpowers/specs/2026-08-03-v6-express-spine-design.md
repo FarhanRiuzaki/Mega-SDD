@@ -226,6 +226,49 @@ Today all four change-signal links are map-gated — an express-born project NEV
 5. Resurrect-vector pins: preflight express carve-out; chain-optimization branch; units Step 0.5; intent prompt gone.
 6. validate-pack lints `detection_priority` when present.
 
+---
+
+## P3 — OQ auto-defer + deterministic risk-tier + lean-by-default diagnostics (design, 2026-08-04)
+
+Ships as **5.36.0**. Three halves, each with its fork decision stated.
+
+### P3.1 Terminology mapping (kills a standing ambiguity)
+
+The v6 prose said "P0 blocks; P1–P3 defer" — but **P0 has never existed in the OQ grammar** (`OQ_PRIORITY_RE` is `P[123]`; `by_priority` is a closed P1/P2/P3 dict; nothing ever writes P0). The repo's **P1 = "Sprint-0 blocker"** IS the v6 prose's "P0". Mapping, binding from here on: **the BLOCKING tier = P1** (asked, batched); **the DEFER tier = P2/P3** (auto-defer, recorded). Fork A-ii chosen over minting a real P0: the gate (`pending_p0_p1` counts open P1s) needs ZERO arithmetic change, no vault migration, no grammar widening — the work is entirely in the producer. Docstrings/routing notes gain the honesty note; the field name `pending_p0_p1` stays (renaming breaks consumers).
+
+### P3.2 The OQ flow under express (the default)
+
+When the chain routes `resolve-oq` (oq_gate) under the express spine + `--auto`:
+
+1. **Blocking tier (P1) — ONE batched AskUserQuestion**: up to 4 OQs per call (the tool's cap — the per-question shape keeps the existing 4-slot + Other contract and the keterangan rules verbatim); >4 open P1s chunk into ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). The interview-pattern consolidation: all human decisions in one stop, not N stops.
+2. **Defer tier (P2/P3) — auto-defer, RECORDED, never silent**: the shipped Defer plumbing verbatim (`[ ]` + `**Deferred (v{X.Y})**` marker, `status: deferred`, `defer_to: stakeholder`, script-stamped `deferred_at`) with a MECHANICAL reason — `auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report`. The invariant-#5 clause ("recorded state may never be defaulted") is amended to permit the mechanical reason STRING while the defer FACT stays fully recorded — the disclosure is the point, and fabrication risk is zero (no content is invented, a decision is postponed on the record).
+3. **The interactivity rails re-scope, not die**: "the walk stays interactive on EVERY OQ" + "'answer all OQs for me' → refuse" now govern (a) the BLOCKING tier always, and (b) EVERY tier when resolve-oq is invoked standalone/explicitly or under classic — the interactive walk is unchanged there. Auto-defer applies ONLY on the chain-routed express path.
+
+**A6 re-surfacing (three additive surfaces, all pure reads of `vault.json status == deferred`):** `resolve-oq` handoff `metrics.items_deferred` upgraded from a count to an id list (tag, priority, reason); execute-bolts `_summary.md` gains `## Deferred open questions (N)`; the orchestrate final summary (Step 9 AND the --deep appendix, modeled on the acceptance-test-concerns bullet) lists them with the re-run command (`/mega-sdd:resolve-oq`). A defer that never resurfaces is a silent assumption — these are the resurface.
+
+### P3.3 Deterministic risk router (A5) + the 1-lens common case
+
+Fork B-i: tier resolves PRE-dispatch from unit-declared evidence (no topology change); "diff size" is proxied by declared `target_files` count — the real-diff variant (post-L0 tier resolution) is explicitly DEFERRED with its contradiction noted (review-panel.md:27 "resolve BEFORE dispatch").
+
+- **New `scripts/resolve-review-tier.sh`** — the first machine evaluation of the six risk signals (previously model-judged prose): reads unit frontmatter (`target_files[].path/.operation`, `risk:`, `mutability:`, `binding_refs:`, `task_type:`), the GROUND-resolved pack's `auth_hints`/`authz_hints` globs (nothing in scripts/ read them before), and the body vocabulary list. Prints `{"tier", "signals_fired": [...], "signals_evaluated": [...]}`. Override chain unchanged (`--review-panel=` > config > auto); a forced-minimal-with-signals warning stays.
+- **Predicate rewrite making `minimal` reachable** (it was near-unreachable — the `no operation: create` clause excluded every create/extend-with-new-file unit): `minimal` (spec lens only) = `task_type: verify` OR (≤2 target files AND zero risk signals). The dropped clause's protection is carried by the signals themselves + the executed acceptance test + L0 gates under every tier (the research-validated pairing: the 1 lens sits ON TOP of executed evidence, never instead of it). Tier NAMES stay `minimal|standard|full` (test-pinned).
+- **Audit trail**: bolt-report `## Review panel` now REQUIRES `signals_fired[]` beside the tier — a LOW-tier default is defensible only with the router's evidence on the record.
+- The six signals themselves are UNCHANGED — no security-surface weakening; the change is WHO evaluates them (script, not model) and the minimal predicate.
+
+### P3.4 Lean-by-default diagnostics — WITH one deliberate spec deviation
+
+**Deviation, stated:** the v6 cut table listed "advisor legs" in the opt-in-only row. **P3 keeps the advisor legs DEFAULT-ON.** Rail 1 ("speed cuts inventory, never verification") outranks the cut table: the advisor hunts false-CONFIRMED — it IS verification, and it is precisely the recall safety-net for claim-scoped express retrieval. It is also cheap post-P7 (slice-first bundle). What goes lean-by-default is the ADVISORY DIAGNOSTICS only:
+
+- Under the express spine: `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md` are SKIPPED in-chain (each re-runnable on demand; `--full` restores for a run); the Stop-hook auto-analyze aggregate fires only under `spine: classic` or an explicit `profile: full` in config. Classic renders today's behavior verbatim.
+- `--lean` (advisor cut) stays an opt-in profile exactly as shipped; the "Lean NEVER touches" list survives intact (review-panel tiering is now profile-INDEPENDENT — deterministic script — so that clause stays true by construction).
+- P5 measures whether the advisor's cost justifies revisiting the deviation; until measured, verification stays.
+
+### P3.5 P3 proof tests
+
+1. Router fixtures: verify-unit → minimal; ≤2-file clean create → minimal (the newly-reachable case); auth-glob / manifest / ≥4-files / vocab / `risk: critical` / §B-clause → full; signals_fired echoed; override chain honored; tier names unchanged (wired test stays green).
+2. OQ pins: batched-P1 prompt shape + chunking rule; auto-defer records marker+status+reason+defer_to; rails re-scoped (standalone walk unchanged); A6 surfaces present (metrics id-list, `_summary` section, Step 9 + appendix bullets).
+3. Lean default: express chain skips diagnostics / classic keeps them; Stop-aggregate condition pinned; `--full` restore.
+
 ## Round disclosure
 
 ### P2 round (2026-08-03, dual-blind, deep)
