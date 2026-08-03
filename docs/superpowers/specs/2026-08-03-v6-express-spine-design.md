@@ -1,7 +1,7 @@
 # v6 — the Express Spine: speed with hard gates
 
 **Date:** 2026-08-03
-**Status:** P1 SHIPPED v5.34.0 (96923c0) · P2 SHIPPED v5.35.0 (68273bd + 96ab87b, CI green, suite 200) — THE EXPRESS SPINE IS THE DEFAULT; P3–P5 awaiting per-phase gas
+**Status:** P1 v5.34.0 · P2 v5.35.0 · P3 SHIPPING v5.36.0 — THE EXPRESS SPINE IS THE DEFAULT; P4–P5 awaiting per-phase gas
 **Research grounding:** `research/2026-08-03-v6-express-spine-best-practices.md` (2026-08-03, 4 lanes: SDD landscape / Anthropic guidance / context-engineering evidence / verification-speed economics). Every spine element CONFIRMED against the 2025–2026 evidence base; amendments A1–A7 from that document are folded into the rails below.
 **Mandate (operator, 2026-08-03, verbatim goals):** "tujuan utamanya skills ini itu standarisasi code, reuse code, percepatan development, dan anti fabricated. yang paling utama itu speed development dengan standar yg udah di set atau hard gate." — a MAJOR update; cut everything that does not serve these four. **Speed is the tie-breaker; the hard gates are non-negotiable.**
 
@@ -271,6 +271,17 @@ Fork B-i: tier resolves PRE-dispatch from unit-declared evidence (no topology ch
 3. Lean default: express chain skips diagnostics / classic keeps them; Stop-aggregate condition pinned; `--full` restore.
 
 ## Round disclosure
+
+### P3 round (2026-08-04, dual-blind)
+
+Two blind agents (code lane live-fixture attacks on the router + Stop-hook matrix; doc/contract lane). **3 blockers + majors, ALL folded:**
+
+- **BLOCKER (code): security-shaped units landed `minimal`** — case-sensitive fnmatch (`**/auth*` never matched `Auth/LoginController.php`) + derived words (`authentication` ⊄ `auth`); the deleted `no operation: create` clause had been the backstop for exactly these units. Fold: case-folded globs + basename/segment legs, derived-form stems, plural suffixes; 8 negative-recall fixtures pin the class.
+- **BLOCKER (doc): the Stop-hook rewrite landed with its own parity test red** (`test-e-lean-profile.sh` pinned "hostile spelling ≠ lean" = aggregate fires; new semantics = opt-in) — caught pre-push. Fold: the test now proves the OPT-IN matrix (absent/leanish → skip; full/classic → fire; lean always wins).
+- **MAJORs folded:** vocab list drift from the doc it implements (sandi/autentikasi missing — the S7-TIER-5 motivating sentence regressed to minimal); zero-target-files/BOM/inline-flow parse-misses treated as "small" (now `standard` + `parse_note`, unknown ≠ low); `defer_to: stakeholder` unrecordable via the prescribed event-only mechanics (patch lane now mandated); the paused-status trap (one pin: express auto-defers end `completed`); 4 operative references contradicting the SKILL body (the P2 standing-round class AGAIN — auto-memory-handoff --auto table, interactive-walk §Defer invariant clause + Esc atomicity, chain-execution phase note, project-config default); composite-id false positive (C-B-001); execute-bolts version bump.
+- **Held:** resurface loop closure (deferred OQs re-enter the standalone walk), oq_gate arithmetic untouched, handoff validator tolerant of the id-list metrics shape, CI discovery, batching cap claims, blind-dispatch rails.
+
+**Lesson (3rd occurrence → the round rule is now: grep the touched skills' FULL references/ trees for the changed concept BEFORE the round, and run every EXECUTING test that names the edited file):** fix-in-body-not-operative-reference recurred despite the P2 rule; the parity-test breakage shows edited hooks need their executing tests run pre-round, not post.
 
 ### P2 round (2026-08-03, dual-blind, deep)
 
