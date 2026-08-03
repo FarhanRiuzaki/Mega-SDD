@@ -159,109 +159,56 @@ Most AI-dev tools take a PRD → spit code in one shot. **Mega-sdd inserts struc
 
 ---
 
-## Pipeline overview
+## Architecture (HLD)
 
 ```mermaid
-flowchart TD
-    %% Inputs
-    LEG([📦 Legacy codebase]):::input
-    PRD([📄 PRD / brief / Figma]):::input
-    CODE([💻 Existing code]):::input
+flowchart TB
+    classDef surface fill:#1a73e8,color:#fff,stroke:none
+    classDef phase fill:#e8f0fe,stroke:#1a73e8,color:#174ea6
+    classDef agent fill:#fef7e0,stroke:#f9ab00,color:#7f5c00
+    classDef art fill:#e6f4ea,stroke:#188038,color:#0d652d
+    classDef moat fill:#fce8e6,stroke:#d93025,color:#a50e0e
+    classDef out fill:#188038,color:#fff,stroke:none
 
-    %% Optional KB extraction branch
-    LEG -->|extract-intelligence| KB[(🧠 knowledge-base/<br/>tech-agnostic markers<br/>via domain-extractor agents)]:::artifact
+    CMD["🎛️ Surface — 3 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat"]:::surface
 
-    %% Intent generation
-    KB -.->|--kb| INT
-    PRD --> INT[generate-intent<br/>+ OQ auto-classifier]:::phase
-    INT --> VAULT[(📚 vault/<br/>7 .md + vault.json<br/>OQs: business / tech)]:::artifact
+    subgraph ORCH["🧭 Orchestration layer"]
+        OF["orchestrate-flow<br/>state engine · smart routing · predictive preflight · --lean profile"]:::phase
+        MEM[("🧩 Memory (user / project / vault)<br/>suggestion-only + audit log")]:::art
+    end
 
-    %% OQ gate
-    VAULT --> OQGATE{P1 business<br/>OQs pending?}:::decision
-    OQGATE -->|yes| RESOLVE[resolve-oq<br/>+ recommendations]:::phase
-    RESOLVE -.-> VAULT
-    OQGATE -->|no| MODE{brownfield<br/>or greenfield?}:::decision
+    subgraph PIPE["⚙️ Pipeline phases"]
+        EXTRACT["extract-intelligence<br/>(legacy → KB)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
+        INTENT --> GROUND["scan + bind<br/>ast-grep AST · CONFIRMED/CONFLICT/OQ"]:::phase
+        GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>pre/post-flight + L0 gates"]:::phase
+    end
 
-    %% Brownfield path
-    MODE -->|brownfield| SCAN
-    CODE --> SCAN[scan-codebase<br/>ast-grep AST<br/>+ deep-scan stage]:::phase
-    SCAN --> MAP[(🗺️ codebase-map.md<br/>precision: ast)]:::artifact
-    SCAN --> STARTERKIT[(📐 starterkit-context.yaml<br/>auth · authz · ui_ux · libs · reuse<br/>5 parallel subagents)]:::artifact
-    MAP --> BIND[bind-codebase<br/>CONFIRMED / CONFLICT / OQ<br/>+ impl-state + Suggested Hard Rules]:::phase
-    VAULT --> BIND
-    BIND --> BGATE{CONFLICT?}:::decision
-    BGATE -->|blocks units| RESOLVE
-    BGATE -->|clean| BOUND[(🔒 bound/<br/>+ binding.md)]:::artifact
-    BOUND --> GEN
+    subgraph EXEC["🤖 Execution agents"]
+        IMPL["bolt-implementer (TDD)"]:::agent --> PANEL["blind review panel — parallel, risk-tiered<br/>spec · quality · security · standards · design"]:::agent
+    end
 
-    %% Greenfield path
-    MODE -->|greenfield| GEN[generate-units<br/>+ defensive checks]:::phase
+    ART[("📚 Grounded artifacts — .mega-sdd/<br/>vault · binding.md · units · bolts<br/>codebase-map · symbol-index (reuse) · graph.json")]:::art
+    MOAT["🛡️ Enforcement — hooks + deterministic validators<br/>CONFLICT gate · B1–B4 evidence gates · quality gates<br/>anti-self-bypass · recompute-at-gate"]:::moat
+    DOCS["📄 Emissions<br/>PRD · FSD · SIT · UAT (SEOJK) · AGENTS.md · PDF"]:::phase
+    OUT(["✅ tested atomic commits"]):::out
+    SYNC["🔁 /mega-sdd:sync — the loop never ends<br/>ambient change capture → scoped re-sync → PENDING queue"]:::phase
 
-    %% starterkit context flows into consumers
-    STARTERKIT -.Anchors + Hard Rules with citations.-> GEN
-    STARTERKIT -.T2 starterkit slice.-> BOLTS
-
-    %% Units → bolts
-    GEN --> UNITS[(⚙️ units/U-*.md<br/>atomic + Anchors<br/>+ Hard Rules ast-grep<br/>+ starterkit citations)]:::artifact
-    UNITS --> HGATE{{🛡️ PreToolUse gate<br/>binding · flow-coverage · render-test<br/>sibling · ui-quality · cross-cutting}}:::gate
-    HGATE -->|fail| UNITS
-    HGATE -->|pass| BOLTS[execute-bolts controller<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules]:::phase
-    SYMIDX[(🔎 symbol-index.json<br/>full-repo reuse substrate<br/>script-built, zero tokens)]:::artifact
-    SYMIDX -.reuse slice per dispatch.-> BOLTS
-    BOLTS --> IMPL[bolt-implementer agent<br/>TDD · writes code + tests]:::agent
-    IMPL --> PANEL[blind review panel — parallel, risk-tiered<br/>spec · quality · security · standards<br/>+ design for UI units]:::agent
-    PANEL --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
-
-    %% End-of-chain emissions
-    COMMITS --> AGENTS[emit-agents-md]:::phase
-    AGENTS --> AGENTSMD([📋 AGENTS.md<br/>tool-agnostic interop]):::output
-
-    %% Cross-cutting layers
-    MEMORY[(🧩 Memory layer<br/>user / project / vault)]:::cross
-    MEMORY -.suggests / records.-> INT
-    MEMORY -.-> BIND
-    MEMORY -.-> RESOLVE
-    MEMORY -.-> BOLTS
-
-    %% Intelligence layer (orchestrator = smart router)
-    ROUTING[(🧭 routing-outcomes.md<br/>chain learning)]:::intel
-    PREDICT[\📋 predictive-checks.md<br/>preflight catalog\]:::intel
-    GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks}}:::gate
-
-    %% Orchestrator with intelligence layer
-    AUTO([🚀 /mega-sdd --deep<br/>single confirm + auto-continue<br/>+ checkpoints + smart routing]):::primary
-    AUTO <-.reads + writes.-> ROUTING
-    AUTO -.consults pre-invoke.-> PREDICT
-    AUTO -.validates every handoff.-> GATE
-    GATE -.invalid_handoff halt.-> AUTO
-    AUTO -.orchestrates.-> INT
-    AUTO -.orchestrates.-> SCAN
-    AUTO -.orchestrates.-> BIND
-    AUTO -.orchestrates.-> GEN
-    AUTO -.orchestrates.-> BOLTS
-    AUTO -.orchestrates.-> AGENTS
-
-    %% Periodic
-    COMMITS -.detect-drift.-> VAULT
-    PRD -.diff-vault.-> VAULT
-
-    classDef input fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a
-    classDef phase fill:#d4f1f4,stroke:#0a7e8c,stroke-width:1.5px,color:#0c4a52
-    classDef artifact fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
-    classDef output fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#064e3b
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px,color:#7c2d12
-    classDef cross fill:#fafafa,stroke:#525252,stroke-width:1px,color:#262626
-    classDef primary fill:#fef2f2,stroke:#dc2626,stroke-width:3px,color:#7f1d1d
-    classDef intel fill:#f3e8ff,stroke:#7c3aed,stroke-width:1.5px,color:#4c1d95
-    classDef gate fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63
-    classDef agent fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+    CMD --> OF --> PIPE
+    MEM -.suggests, never acts alone.-> OF
+    BOLTS --> IMPL
+    PANEL --> OUT
+    PIPE <-->|write / ground| ART
+    ART -.reuse slice per dispatch.-> IMPL
+    MOAT -.blocks on breach.-> PIPE
+    MOAT -.blocks on breach.-> EXEC
+    ART --> DOCS
+    OUT --> SYNC -.-> PIPE
 ```
 
 **Legend**:
-- 🟦 inputs (PRD, code, legacy) · 🟨 artifacts produced · 🟩 outputs · 🟧 decisions · 🟫 cross-cutting (memory) · 🟥 orchestrator
-- 🟪 **intelligence layer**: routing-outcomes, predictive-checks · 🟦 **validation gate** (schema + type-check)
-- 📐 **starterkit-context**: auto-detected feature inventory feeding both generate-units (Anchors+Rules) + execute-bolts (T2 slice)
-- **Solid arrows** = pipeline flow · **Dotted arrows** = orchestration + cross-cutting + intelligence-layer consults
+- 🟦 **surface & phases** (the 3 verbs; pipeline skills) · 🟨 **execution agents** (implementer + blind panel) · 🟩 **grounded artifacts & outputs** · 🟥 **enforcement** (hooks + deterministic validators)
+- **Solid arrows** = pipeline flow · **Dotted arrows** = cross-cutting (memory suggestions, reuse slices, gate blocks)
+- Detail per phase (per-artifact flow, gates, deep-scan, starterkit): [plugin README](plugins/mega-sdd/README.md) + [architecture deep dive](#architecture-deep-dive) below.
 
 All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that the orchestrator validates (schema + types) before continuing; the intelligence layer consults past routing outcomes at chain start, runs predictive preflight before each skill, and records the run's outcome at chain end. Halts only on real issues (CONFLICT, P1 business OQ, Hard Rule violation, invalid handoff); auto-continues otherwise.
 
