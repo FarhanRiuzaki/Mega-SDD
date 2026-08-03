@@ -226,6 +226,122 @@ grep -qF 'the DEFAULT since the P2 spine flip' "$P/skills/bind-codebase/referenc
   && pass "express-bind.md states the default flip" \
   || fail "express-bind default note missing"
 
+# ══ 4b. Round-folded arms (P2 dual-blind) ════════════════════════════════════
+# F1 — ground.sh must NOT clobber the sync baseline: with a sync pending, the
+# index rebuild is DEFERRED so derive-changed-paths keeps its diff baseline.
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' "$OLD_HEAD" \
+  > "$SY/.mega-sdd/codebase/symbol-index.json"
+rm -f "$SY/.mega-sdd/vaults/demo/.sync-changed-paths.txt"
+bash "$P/scripts/ground.sh" --cwd="$SY" 2>&1 | grep -q "rebuild DEFERRED" \
+  && pass "F1: ground.sh defers the index rebuild while a sync is pending" \
+  || fail "F1: ground.sh did not defer"
+STAMP_AFTER=$(python3 -c "import re;print(re.search(r'\"head_commit\"\s*:\s*\"([0-9a-f]+)\"',open('$SY/.mega-sdd/codebase/symbol-index.json').read()).group(1))")
+[ "$STAMP_AFTER" = "$OLD_HEAD" ] \
+  && pass "F1: the baseline stamp survived GROUND" \
+  || fail "F1: stamp advanced to $STAMP_AFTER"
+bash "$P/scripts/derive-changed-paths.sh" --cwd="$SY" --vault "$SY/.mega-sdd/vaults/demo" >/dev/null 2>&1
+grep -q "app.py" "$SY/.mega-sdd/vaults/demo/.sync-changed-paths.txt" 2>/dev/null \
+  && pass "F1: post-GROUND changed set is NON-empty (false-in-sync closed)" \
+  || fail "F1: changed set empty after ground"
+
+# F6 — a failed output write must NOT consume the journal
+printf '{"ts":"t","path":"lib/precious.py","tool":"write","session":"s"}\n' \
+  > "$SY/.mega-sdd/codebase/.dirty-paths.jsonl"
+RO="$SY/.mega-sdd/vaults/rovault"; mkdir -p "$RO"; chmod 555 "$RO"
+bash "$P/scripts/derive-changed-paths.sh" --cwd="$SY" --vault "$RO" >/dev/null 2>&1
+RC=$?
+chmod 755 "$RO"
+[ "$RC" -eq 3 ] && [ -f "$SY/.mega-sdd/codebase/.dirty-paths.jsonl" ] \
+  && pass "F6: failed write -> exit 3, journal NOT consumed" \
+  || fail "F6: rc=$RC journal_present=$([ -f "$SY/.mega-sdd/codebase/.dirty-paths.jsonl" ] && echo yes || echo no)"
+
+# F2 — marker word-boundary: i18next / next-themes must NOT route to next
+MB="$WORK/mb"; mkdir -p "$MB"
+printf '{"dependencies": {"i18next": "^23.0", "next-themes": "^0.3", "react": "^18.0"}}' > "$MB/package.json"
+GOT=$(py_probe "$MB" "d['probes']['framework_pack']['pack']")
+[ "$GOT" != "next" ] \
+  && pass "F2: i18next/next-themes do NOT match the bare 'next' marker (got $GOT)" \
+  || fail "F2: substring misroute to next survives"
+MB2="$WORK/mb2"; mkdir -p "$MB2"
+printf '{"dependencies": {"next": "^14.0", "react": "^18.0"}}' > "$MB2/package.json"
+GOT=$(py_probe "$MB2" "d['probes']['framework_pack']['pack']")
+[ "$GOT" = "next" ] \
+  && pass "F2: a REAL next dependency still routes to next (boundary keeps true positives)" \
+  || fail "F2: true positive lost: $GOT"
+
+# F7 — tool-config-only pyproject + deps in requirements.txt
+F7="$WORK/f7"; mkdir -p "$F7"
+printf '[tool.black]\nline-length = 88\n' > "$F7/pyproject.toml"
+printf 'django>=4.2\n' > "$F7/requirements.txt"
+GOT=$(py_probe "$F7" "d['probes']['framework_pack']['pack']")
+[ "$GOT" = "django" ] \
+  && pass "F7: alternates fire even when the canonical manifest exists markerless" \
+  || fail "F7: picked $GOT"
+
+# F4 — classic parity: fresh map + stale index must NOT trigger Mode D
+F4="$WORK/f4"; mkdir -p "$F4/.mega-sdd/codebase"
+( cd "$F4" && git init -q . && git config user.email t@t && git config user.name t \
+  && printf 'x\n' > a.py && git add a.py && git commit -qm one )
+H=$(git -C "$F4" rev-parse HEAD)
+printf -- '---\nlast_scanned_commit: %s\n---\n# map\n' "$H" > "$F4/.mega-sdd/codebase/codebase-map.md"
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"0000000000000000000000000000000000000000","symbols":[]}' \
+  > "$F4/.mega-sdd/codebase/symbol-index.json"
+SIG=$(py_probe "$F4" "d['derived']['change_signal']['index_stamp_matches_head']")
+[ "$SIG" = "n/a" ] \
+  && pass "F4: index leg is n/a on a map-bearing project (substrate rule — no livelock)" \
+  || fail "F4: index leg fired beside a fresh map: $SIG"
+
+# doc-6 — express unviable (no index, no ast-grep) -> classic render, loudly
+UV="$WORK/uv"; mkdir -p "$UV"
+( cd "$UV" && git init -q . )
+printf '{"require": {"laravel/framework": "^11.0"}}' > "$UV/composer.json"
+printf '# PRD\n' > "$UV/prd.md"
+UV_OUT=$(CWD="$UV" LIB="$LIB" python3 - <<'PY'
+import json, os, sys
+sys.path.insert(0, os.environ["LIB"])
+import state_probes
+state_probes._ASTGREP_CACHE = False  # simulate ast-grep absent
+d = state_probes.collect_state(os.environ["CWD"])
+print(json.dumps({"chain": d["derived"]["proposed_next"],
+                  "notes": d["derived"]["notes"]}))
+PY
+)
+echo "$UV_OUT" | grep -q "scan-codebase" \
+  && echo "$UV_OUT" | grep -q "express unavailable" \
+  && pass "doc-6: no index + no ast-grep -> CLASSIC chain + loud note (no dead-end)" \
+  || fail "doc-6: unviable-express render: $UV_OUT"
+
+# F3 — session-start staleness fires on an express-born project (index, no map)
+SS_OUT=$(STATE="$SY/.mega-sdd/state.json" python3 - <<'PY'
+import json, os
+s = json.load(open(os.environ["STATE"]))
+p = s["probes"]
+dirty = p.get("dirty_journal_rows", 0)
+cmap = p.get("codebase_map") or {}
+stamp = cmap.get("last_scanned_commit")
+head = (p.get("git") or {}).get("head")
+sidx = p.get("symbol_index") or {}
+istamp = sidx.get("head_commit") if not cmap.get("present") else None
+moved = (dirty > 0 or bool(stamp and head and head != stamp)
+         or bool(istamp and head and head != istamp))
+print("MOVED" if moved else "CLEAN")
+PY
+)
+bash "$P/scripts/derive-state.sh" --cwd="$SY" >/dev/null 2>&1
+SS_OUT=$(STATE="$SY/.mega-sdd/state.json" python3 -c "
+import json, os
+s = json.load(open(os.environ['STATE'])); p = s['probes']
+cmap = p.get('codebase_map') or {}
+sidx = p.get('symbol_index') or {}
+istamp = sidx.get('head_commit') if not cmap.get('present') else None
+head = (p.get('git') or {}).get('head')
+print('MOVED' if (istamp and head and head != istamp) else 'CLEAN')")
+[ "$SS_OUT" = "MOVED" ] \
+  && grep -q 'LV_IDX' "$P/hooks/session-start" \
+  && grep -qF 'if { [ -f "$LV_MAP" ] || [ -f "$LV_IDX" ]; }' "$P/hooks/session-start" \
+  && pass "F3: index substrate opens the staleness gate (dead-code leg revived)" \
+  || fail "F3: session-start gate still map-only or signal dead ($SS_OUT)"
+
 # ══ 5. Lint + wrapper ════════════════════════════════════════════════════════
 BADPACK="$WORK/badpack.md"
 cat > "$BADPACK" <<'EOF'

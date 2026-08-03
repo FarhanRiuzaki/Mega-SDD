@@ -1,5 +1,5 @@
 ---
-description: Reconcile mega-sdd state with the latest code — the never-ending-development lane. Detects what changed since the last scan (in-session AI edits via the dirty journal + manual/external edits via git), then chains incremental re-scan → drift detect → re-bind → unit reconcile. Use after manual edits, AI-prompted changes outside the pipeline, hotfixes, or a git pull — whenever "the code moved on" and the vault/map/binding/units must catch up.
+description: Reconcile mega-sdd state with the latest code — the never-ending-development lane. Detects what changed since the last scan (in-session AI edits via the dirty journal + manual/external edits via git), then chains changed-set derivation (incremental re-scan on map-bearing projects; a zero-token script on express-born ones) → drift detect → re-bind → unit reconcile. Use after manual edits, AI-prompted changes outside the pipeline, hotfixes, or a git pull — whenever "the code moved on" and the vault/map/binding/units must catch up.
 argument-hint: "[--dry-run] [--auto] [--auto-apply=safe] [--memory-off] [--no-drift-check]"
 ---
 
@@ -32,3 +32,4 @@ Hard rails:
 - The binding CONFLICT gate applies unchanged — sync never bypasses the moat.
 - The dirty journal is a HINT; git is always consulted too. Journal consumed via rotate-and-delete (per scan-procedure §Incremental step 4): rotated before processing, consumed file deleted only after a successful map write — never truncated in place (concurrent-session appends land in the fresh journal).
 - No change signal detected → report "in sync" and stop (no vacuous re-runs).
+- Express-born changed-set derivation failing (script exit 3 — no baseline stamp / git unavailable / write failed) → full re-bind fallback (`bind-codebase <vault> --auto --express`), detect-drift skipped; the journal is NEVER consumed on a failed write.

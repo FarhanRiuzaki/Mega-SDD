@@ -13,6 +13,8 @@ All three annotate verdicts and surface OQs; none relaxes the CONFLICT gate.
 
 For each vault OQ with `category: tech` AND `resolution_mode: scan` AND `classification_confidence: high` (only high-confidence auto-resolves):
 
+> **`--express` override (the default spine):** every "codebase-map" evidence surface in this file re-targets to GROUND truth — `state.json` (manifests, `derived.framework_pack`), `scripts/query-symbol-index.sh` queries, and targeted file Reads — with real `file:line` citations; a `scan_query` written as `codebase-map §X` re-targets to that section's underlying source (the manifest/config/symbol itself). Applies to BOTH the tech-OQ scan (2.6) AND the deferred-OQ step (2.11) below. The map is consulted only on the classic lane. Confidence rules unchanged on both lanes.
+
 a. Read the OQ's `scan_query` (a codebase-map section reference or grep pattern).
 b. Execute the scan against the codebase-map (and KB if present).
 c. Apply the outcome (markdown is the write surface; the Step-6 derive carries it into `vault.json`):

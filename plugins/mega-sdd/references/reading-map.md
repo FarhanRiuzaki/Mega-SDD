@@ -59,7 +59,7 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/`
 | Open questions | `vault.json` `oqs[]` | What needs answering |
 | Phase manifest | `vault.json` `phase` + `phase_total` | Which phase this vault covers (v3.26+) |
 
-## Stage 3 — After scan-codebase
+## Stage 3 — After scan-codebase (on-demand / classic spine — the express default binds without this stage)
 
 Path root: `<project>/.mega-sdd/codebase/`
 

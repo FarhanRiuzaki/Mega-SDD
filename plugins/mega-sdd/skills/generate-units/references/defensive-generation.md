@@ -44,16 +44,17 @@ Before vault parsing (Step 1), detect missing upstream signals:
 | codebase_map | binding | vault_mode | Action |
 |---|---|---|---|
 | present | present | any | ✅ Proceed (current behavior; HIGH confidence) |
+| any | present with `binding_metadata.retrieval` (EXPRESS binding — P2 default) | any | ✅ **Proceed (HIGH confidence)** — an express binding was produced WITHOUT a map by design (claim-scoped retrieval, read-evidence anchors); a missing map beside it is NOT a missing artifact and MUST NOT demote confidence, prompt, or auto-run scan-codebase |
 | absent | absent | greenfield | ✅ Proceed (no codebase context expected; MEDIUM confidence labeled) |
-| absent | absent | existing | ⚠️ INTERACTIVE prompt — "Brownfield vault but no codebase-map/binding. Options: (1) auto-run scan-codebase + bind-codebase first (recommended), (2) proceed with reduced precision (LOW confidence), (3) cancel" |
+| absent | absent | existing | ⚠️ INTERACTIVE prompt — "Brownfield vault but no codebase-map/binding. Options: (1) auto-run bind-codebase --express first (recommended — needs no map), (2) classic: scan-codebase + bind-codebase, (3) proceed with reduced precision (LOW confidence), (4) cancel" |
 | present | absent | existing | ⚠️ INTERACTIVE prompt — "Codebase-map present but no binding. Options: (1) run bind-codebase first (recommended), (2) proceed with file-existence checks only (MEDIUM confidence), (3) cancel" |
-| absent | present | any | Warn — binding exists but no codebase-map (likely stale or mismatched); proceed with MEDIUM confidence |
+| absent | present WITHOUT the retrieval key (classic binding, map deleted) | any | Warn — binding exists but its map is gone (likely stale or mismatched); proceed with MEDIUM confidence |
 
 ### Auto-route action
 
 If user picks "auto-run upstream":
-- For codebase-map missing: invoke `mega-sdd:scan-codebase` first (per orchestrate-flow's auto-route pattern)
-- For binding missing: invoke `mega-sdd:bind-codebase <vault>` next
+- Default (express): invoke `mega-sdd:bind-codebase <vault> --express` — no scan needed
+- Classic spine only, map missing: invoke `mega-sdd:scan-codebase` first (per orchestrate-flow's auto-route pattern), then `mega-sdd:bind-codebase <vault>`
 - After auto-routes complete, return to generate-units Step 1
 
 Both routes can short-circuit on halt (CONFLICT in binding, etc.) — same protocol as orchestrate-flow.

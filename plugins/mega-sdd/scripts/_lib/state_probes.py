@@ -81,11 +81,14 @@ MANIFEST_SIGNALS = (
 MANIFEST_GLOB_SIGNALS = ("*.csproj", "*.sln")
 
 # A pack may declare one canonical manifest while real repos use a sibling
-# (the prose Step-2 table always allowed both) — deterministic alternates,
-# checked ONLY when the canonical file is absent.
+# (the prose Step-2 table always allowed both) — deterministic alternates.
+# Checked when the canonical file is absent OR present without a marker hit
+# (round F7: a tool-config-only pyproject.toml beside a requirements.txt
+# carrying django is the dominant modern Python layout).
 MANIFEST_ALTERNATES = {
     "pyproject.toml": ("requirements.txt", "Pipfile"),
     "build.gradle": ("build.gradle.kts",),
+    "pom.xml": ("build.gradle", "build.gradle.kts"),
 }
 
 # Code-file extensions for greenfield/brownfield detection (routing-rules
@@ -402,25 +405,47 @@ def probe_framework_pack(cwd, manifests):
                 content_cache[fn] = ""
         return content_cache[fn]
 
+    def _marker_hit(mk, content):
+        # Bare single-word markers get WORD-BOUNDARY matching (round F2 —
+        # REPRODUCED misroute: substring "next" ⊂ "i18next"/"next-themes"
+        # routed Laravel/Vite repos onto Next.js conventions, feeding the
+        # Hard-rule surface). Markers carrying structure ("laravel/framework",
+        # "@remix-run/", '<Project Sdk=...>') keep substring semantics.
+        if re.fullmatch(r"[A-Za-z0-9_.]+", mk):
+            return re.search(
+                r"(?<![A-Za-z0-9_@/.-])" + re.escape(mk) + r"(?![A-Za-z0-9_.-])",
+                content) is not None
+        return mk in content
+
     matches = []
+    truncated = []
     for sig in _read_pack_signatures():
         pat = sig["package_manifest"]
         if any(ch in pat for ch in "*?["):
             files = [m for m in mset if fnmatch.fnmatch(m, pat)]
         else:
-            files = [pat] if pat in mset else [
+            # canonical first, then alternates — ALSO when the canonical file
+            # exists but carries no marker (round F7).
+            files = ([pat] if pat in mset else []) + [
                 alt for alt in MANIFEST_ALTERNATES.get(pat, ()) if alt in mset
-            ][:1]
+            ]
         for fn in files:
-            if not sig["markers"] or any(mk in _content(fn) for mk in sig["markers"]):
+            content = _content(fn)
+            if not sig["markers"] or any(_marker_hit(mk, content)
+                                         for mk in sig["markers"]):
                 matches.append((sig["priority"], sig["framework"], fn))
                 break
+            if len(content) >= 262144 and fn not in truncated:
+                truncated.append(fn)  # honest note: a late marker may be cut
+    if truncated:
+        out["candidates"] = ["truncated:%s" % fn for fn in truncated]
     if not matches:
         return out
     matches.sort()
     out["pack"] = matches[0][1]
     out["manifest"] = matches[0][2]
-    out["candidates"] = ["%s(%s,p%d)" % (m[1], m[2], m[0]) for m in matches]
+    out["candidates"] = (["%s(%s,p%d)" % (m[1], m[2], m[0]) for m in matches]
+                         + out["candidates"])
     return out
 
 
@@ -446,6 +471,21 @@ def probe_symbol_index(cwd, head=None):
     if stamp and head:
         out["matches_head"] = "yes" if stamp == head else "no"
     return out
+
+
+def probe_astgrep():
+    """Is ast-grep on PATH? Express viability leg (round doc-6: an express
+    chain on an ast-grep-less machine with no index dead-ends — E0 falls back
+    to the standard lane, which needs the map the express chain never
+    produced). Cached per process."""
+    global _ASTGREP_CACHE
+    try:
+        return _ASTGREP_CACHE
+    except NameError:
+        pass
+    import shutil
+    _ASTGREP_CACHE = shutil.which("ast-grep") is not None
+    return _ASTGREP_CACHE
 
 
 def probe_spine(cwd):
@@ -835,6 +875,7 @@ def collect_probes(cwd):
         "dirty_journal_rows": probe_dirty_journal(cwd),
         "profile": probe_profile(cwd),
         "spine": probe_spine(cwd),
+        "astgrep_available": probe_astgrep(),
         "foreign_sdd": probe_foreign_sdd(cwd),
         "preflight_predicates": {
             "has_vault": has_vault(cwd),
@@ -906,14 +947,32 @@ def derive(probes):
         "map_stamp_matches_head": cmap["matches_head"],
         # P2: the freshness stamp an express-born project HAS — without it,
         # every change-signal surface is map-gated and sync goes silent
-        # forever on projects that never grow a map.
-        "index_stamp_matches_head": sindex["matches_head"],
+        # forever on projects that never grow a map. SUBSTRATE RULE (round
+        # F4 — classic-parity breach + livelock REPRODUCED): the index leg
+        # is a change SIGNAL only when the index is the ONLY substrate — a
+        # map-bearing project keys freshness on the map (execute-bolts
+        # rebuilds the index every batch, so a fresh-map project with a
+        # briefly-stale index would otherwise loop Mode D forever).
+        "index_stamp_matches_head": (
+            sindex["matches_head"] if not cmap["present"] else "n/a"
+        ),
     }
 
     foreign_sdd = probes.get("foreign_sdd") or []
 
     profile = probes.get("profile", "full")
     spine = probes.get("spine", "express")
+    if spine == "express" and not sindex["present"] \
+            and not probes.get("astgrep_available", True):
+        # Express is not VIABLE here (no index and no way to build one) —
+        # an express chain would dead-end at bind E0's fallback (which needs
+        # the map this chain never produces). Render classic, loudly.
+        spine = "classic"
+        notes.append(
+            "express unavailable: ast-grep not installed and no symbol index "
+            "-> rendering the CLASSIC (scan-first) chain; /mega-sdd:install-deps "
+            "adds ast-grep to enable the express spine"
+        )
     fpack = probes.get("framework_pack") or {"pack": "_universal",
                                              "manifest": None,
                                              "candidates": []}
@@ -1045,8 +1104,12 @@ def derive(probes):
 
     # 3. Mode D — maintenance/sync: a freshness substrate (map OR symbol
     # index — P2: express-born projects never grow a map) + binding exist
-    # AND a change signal fired.
-    if (cmap["present"] or sindex["present"]) and binding["binding_md"] and (
+    # AND a change signal fired. The index-only substrate is EXPRESS-spine
+    # territory (round F12: under classic the map-absent branch would propose
+    # a bind --paths chain that FATALs on the missing map — classic falls
+    # through to the scan-first repair rows instead).
+    if (cmap["present"] or (sindex["present"] and spine == "express")) \
+            and binding["binding_md"] and (
         change_signal["dirty_journal_rows"] > 0
         or change_signal["map_stamp_matches_head"] == "no"
         or change_signal["index_stamp_matches_head"] == "no"
