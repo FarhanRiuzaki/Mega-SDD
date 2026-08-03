@@ -1,6 +1,6 @@
 ---
 description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
-argument-hint: "<vault-path> [<codebase-map-path>] [--strict] [--auto] [--kb=<path>] [--no-kb] [--no-framework-pack] [--framework-pack=<path>] [--strict-constitution] [--no-advisor] [--memory-off] [--paths=<csv|@file>]"
+argument-hint: "<vault-path> [<codebase-map-path>] [--strict] [--auto] [--kb=<path>] [--no-kb] [--no-framework-pack] [--framework-pack=<path>] [--strict-constitution] [--no-advisor] [--memory-off] [--paths=<csv|@file>] [--express]"
 ---
 
 > ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:bind-codebase` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
