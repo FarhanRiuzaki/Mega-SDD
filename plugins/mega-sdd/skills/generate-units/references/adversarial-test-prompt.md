@@ -67,7 +67,7 @@ adversarial_review:
 
 ## Opt-in subagent mode (`--adversarial-subagent` flag)
 
-When user passes `--adversarial-subagent` to `/mega-sdd:generate-units`, OR when unit frontmatter declares `risk: high`, dispatch a SEPARATE subagent for the adversarial review. Separate LLM context = stronger blind-spot coverage at the cost of one extra dispatch per high-risk unit.
+When user passes `--adversarial-subagent` to `generate-units`, OR when unit frontmatter declares `risk: high`, dispatch a SEPARATE subagent for the adversarial review. Separate LLM context = stronger blind-spot coverage at the cost of one extra dispatch per high-risk unit.
 
 > **Who writes `risk:`** — generate-units Step 2.5 stamps the frontmatter field when a unit's target_files/binding_refs hit the risk signals (auth/authn/authz surfaces, payment/money movement, PII/regulated data, `[LOCKED]`-claim refs, security-sensitive packs). Without the stamp, escalation only fires via the manual `--adversarial-subagent` flag.
 

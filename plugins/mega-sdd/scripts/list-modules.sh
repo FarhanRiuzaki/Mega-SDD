@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # list-modules.sh — deterministic per-module status rollup for a mega-sdd vault.
 #
-# The DETERMINISTIC core extracted from commands/list-modules.md Steps 1-4 (audit
+# The DETERMINISTIC core extracted from skills/orchestrate-flow/references/diagnostics-procedures.md section list-modules Steps 1-4 (audit
 # batch E). Reads objective signals ONLY — never inferred:
 #   - <vault>/_meta/modules.yaml          → module ids, names, dod, priority, blocked_by
 #   - <vault>/units/U-*.md frontmatter    → each unit's `module:` (membership)
@@ -15,7 +15,7 @@
 #     read-only diagnostic NEVER shells out to a DoD item — it reports the marked
 #     state (`[x]`) only. The command re-runs auto-runnable items when the user
 #     drives --mark-dod.
-#   - Step 6 hand-off SUGGESTIONS ("→ Run: /mega-sdd:execute-bolts --module=…").
+#   - Step 6 hand-off SUGGESTIONS ("→ Run: execute-bolts --module=…").
 #     The script surfaces the deterministic `actionable` set; the command phrases
 #     the recommendation.
 #

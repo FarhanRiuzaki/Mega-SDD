@@ -242,7 +242,7 @@ An earlier audit flagged ~33 halts firing cold (no anticipating predictive-check
 - **check_id: `units_have_acceptance_tests`** (anticipates `unit_underspecified`)
   command: `for f in <vault-path>/units/U-*.md; do grep -q "^acceptance_test:" "$f" || { echo "no acceptance_test: $f"; exit 1; }; done`
   expected: exit 0 (every unit has acceptance_test field)
-  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run /mega-sdd:generate-units --strict."
+  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run generate-units --strict."
   fatal: yes
   predicts_halt: unit_underspecified
 
@@ -291,7 +291,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 - **check_id: `vault_present_for_fsd`**
   command: `test -f <vault-path>/vault.json`
   expected: file exists
-  on_fail: "emit-fsd requires a vault. Run /mega-sdd:generate-intent first."
+  on_fail: "emit-fsd requires a vault. Run generate-intent first."
   fatal: yes
   predicts_halt: dep_missing (chain order error)
 

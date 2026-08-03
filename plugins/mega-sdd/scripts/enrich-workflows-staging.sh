@@ -113,7 +113,7 @@ if not kb_root or not os.path.isdir(kb_root):
     print(json.dumps(result, indent=2))
     sys.exit(2)
 
-# ── Auto-discover the legacy root when --legacy-root is omitted (for /mega-sdd:auto) ──
+# ── Auto-discover the legacy root when --legacy-root is omitted (for /mega-sdd) ──
 # Probe order: (1) the KB README's recorded "source codebase path", (2) common legacy dirs
 # under the project root. Lets orchestrate-flow call this without hand-feeding the path.
 if not legacy_root:
@@ -379,7 +379,7 @@ for p in proposals:
 result["applied"] = applied
 result["applied_count"] = len([a for a in applied if a.get("patched") or a.get("propagated")])
 result["next_action"] = ("KB patched + propagated where _kb_source matched. Re-run "
-                         "/mega-sdd:generate-units only after reviewing the inserted stages: blocks. "
+                         "generate-units only after reviewing the inserted stages: blocks. "
                          "Re-save 04-flows.md to let validate-vault-flow-staging confirm non-loss.")
 if not quiet:
     print(json.dumps(result, indent=2))

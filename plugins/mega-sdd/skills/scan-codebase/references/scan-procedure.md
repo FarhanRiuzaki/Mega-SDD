@@ -343,8 +343,8 @@ They are remedies, NOT options awaiting a reply:
 
 2. **One chat line**, same four facts plus the recovery command.
 3. **The handoff.** `next_action.rationale` carries the exact re-run command that recovers AST
-   precision — `/mega-sdd:scan-codebase --engine=tree-sitter` (pay the estimate in full) or
-   `/mega-sdd:scan-codebase --include=<glob>` (narrow the set so tree-sitter fits the budget).
+   precision — `scan-codebase --engine=tree-sitter` (pay the estimate in full) or
+   `scan-codebase --include=<glob>` (narrow the set so tree-sitter fits the budget).
    `status: completed`, `blockers: []` — this is a finished scan at a stated tier, not a halt.
 
    Name the downstream consequence in BOTH the chat line and the rationale: at
@@ -647,4 +647,4 @@ The map can be committed or shared; symbol/route extraction can capture a hardco
   Write the `file:line` + pattern class ONLY — **never the matched value**; this is a rotation worklist, not a secret store. The same durable channel is used by every scrub site (Step 10a's `codebase-map.md` and Step 10.5.3's `starterkit-context.yaml` / `reuse-index.yaml`). List the file in the handoff `artifacts[]` when it was written this run.
 - This gate redacts the ARTIFACT — it never edits repo source files.
 - Empty `secret_findings` (the normal case) → nothing to route, no chat output.
-- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): the temp-file + rename write does not fire the PostToolUse `Write|Edit` dispatch, so the chained call keeps `.codebase-map-state.json` fresh for `/mega-sdd:analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.
+- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): the temp-file + rename write does not fire the PostToolUse `Write|Edit` dispatch, so the chained call keeps `.codebase-map-state.json` fresh for `analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.

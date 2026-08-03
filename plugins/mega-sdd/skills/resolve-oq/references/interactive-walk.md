@@ -647,7 +647,7 @@ Output to chat (no file generation needed at this step):
 5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up. To lock the vault for sprint implementation, edit `00-index.md` Vault Lock Status manually (`Status: 🔒 LOCKED for <scope>`, fill `Locked at` / `Locked by`, append a Changelog entry).
 
 After completion, if any OQs were deferred to binding, suggest:
-- For brownfield: `/mega-sdd:bind-codebase <vault> --express` (default — auto-resolves deferred OQs from index/manifest probes, no scan needed; classic spine: `/mega-sdd:scan-codebase && /mega-sdd:bind-codebase <vault>`)
+- For brownfield: `bind-codebase <vault> --express` (default — auto-resolves deferred OQs from index/manifest probes, no scan needed; classic spine: `scan-codebase && bind-codebase <vault>`)
 - For greenfield: warn the user — deferred OQs in greenfield have no resolution path (no binding phase will run)
 
 Do NOT pad with "I have resolved..." preamble. Just report numbers and surface remaining blockers.

@@ -114,7 +114,7 @@ if units_with_starterkit_rules > 0:
         "detail": f"generate-units handoff reports units_with_starterkit_rules={units_with_starterkit_rules} but starterkit-context.yaml has partial: true",
         "units_with_starterkit_rules": units_with_starterkit_rules,
         "starterkit_partial": True,
-        "next_action": "Run /mega-sdd:scan-codebase --force-deep then regenerate units (units may cite incomplete framework slice).",
+        "next_action": "Run scan-codebase --force-deep then regenerate units (units may cite incomplete framework slice).",
     }
     with open(state_file, "w") as f:
         json.dump(state, f, indent=2)

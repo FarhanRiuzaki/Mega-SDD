@@ -25,7 +25,7 @@ Every plugin needs a "see it in action" example. Mega Rencana smoke tests in `co
 Inside Claude Code, with the plugin installed:
 
 ```text
-/mega-sdd:generate-intent
+/mega-sdd (route: generate-intent)
 ```
 
 When prompted by the skill:
@@ -61,9 +61,9 @@ After running the skill, the vault should illustrate:
 
 Once the vault exists, the companion skills can be exercised against it:
 
-- **`/mega-sdd:resolve-oq`** — walk the OQs that were surfaced. Try resolving Q1 (half-day leave) and observe how the answer lands in the vault.
-- **`/mega-sdd:diff-vault`** — when (hypothetically) the PRD revises (e.g., team decides Slack integration is in scope after all), use this to evolve the vault without losing what's already resolved.
-- **`/mega-sdd:detect-drift`** — does NOT apply here, because TimeOff is `mode=new`. To exercise drift-detect, an `mode=existing` example is needed (Mega Rencana-style).
+- **"resolve OQ" (the resolve-oq skill)** — walk the OQs that were surfaced. Try resolving Q1 (half-day leave) and observe how the answer lands in the vault.
+- **"PRD revisi" (the diff-vault skill)** — when (hypothetically) the PRD revises (e.g., team decides Slack integration is in scope after all), use this to evolve the vault without losing what's already resolved.
+- **"cek drift" (the detect-drift skill)** — does NOT apply here, because TimeOff is `mode=new`. To exercise drift-detect, an `mode=existing` example is needed (Mega Rencana-style).
 
 ## Notes for contributors
 

@@ -2,7 +2,7 @@
 
 Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and propagated deferred-OQ entries from a `binding.md` file produced by `bind-codebase`, and writes resolutions back to `binding.md` + the `vault.json` changelog. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
 
-**Invocation:** `/mega-sdd:resolve-oq --binding <path-to-binding.md>`
+**Invocation:** `resolve-oq --binding <path-to-binding.md>`
 
 ## Procedure
 
@@ -78,8 +78,8 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    - `decisions.md` (memory layer) — each resolution recorded durably (survives re-binds; per resolve-oq's auto-memory-handoff reference)
 
 5. **Hand-off (S4 — differs per action mix; a blanket re-bind LOOPS on KEEP_VAULT).**
-   - **Any KEEP_CODE or SPLIT chosen** (the vault was edited) → suggest `/mega-sdd:bind-codebase` re-run: the edited claims now match code and re-bind cleanly.
-   - **Only KEEP_VAULT / DEFER chosen** (vault AND code unchanged) → do NOT suggest a re-bind: bind Step 2 re-derives verdicts from the unchanged vault-vs-code contradiction, so a re-bind RE-RAISES the same CONFLICT (by design — bind never consumes a prior resolution as evidence; memory only SUGGESTS). The resolved-marked `binding.md` already passes `validate-handoff-binding-units.sh`, so proceed to `/mega-sdd:generate-units`. For KEEP_VAULT, `<vault>/bound/` is produced only by a future re-bind AFTER the code change lands (typically via execute-bolts on the units carrying the CONFLICT-N reference).
+   - **Any KEEP_CODE or SPLIT chosen** (the vault was edited) → suggest `bind-codebase` re-run: the edited claims now match code and re-bind cleanly.
+   - **Only KEEP_VAULT / DEFER chosen** (vault AND code unchanged) → do NOT suggest a re-bind: bind Step 2 re-derives verdicts from the unchanged vault-vs-code contradiction, so a re-bind RE-RAISES the same CONFLICT (by design — bind never consumes a prior resolution as evidence; memory only SUGGESTS). The resolved-marked `binding.md` already passes `validate-handoff-binding-units.sh`, so proceed to `generate-units`. For KEEP_VAULT, `<vault>/bound/` is produced only by a future re-bind AFTER the code change lands (typically via execute-bolts on the units carrying the CONFLICT-N reference).
    - Mixed → re-bind (for the vault edits); expect KEEP_VAULT conflicts to re-raise and re-mark them (decisions.md carries the prior call as a suggestion).
 
 ## Hard rails

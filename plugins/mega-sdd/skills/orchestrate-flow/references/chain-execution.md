@@ -175,14 +175,14 @@ Only if the chain includes execute-bolts:
 > gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
 
 
-Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY invokes diagnostic commands at appropriate phases — user does NOT run these separately:
+Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs these diagnostics at appropriate phases — user does NOT run these separately. The operative procedures for `lint-units` / `analyze-parallelism` / `list-modules` / `enrich-semantics` live in `references/diagnostics-procedures.md` (relocated from their 5.x command files in the surface cull):
 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
-| After `extract-intelligence` completes (or whenever a KB is present) AND `.mega-sdd/.kb-flows-state.json` carries a `kb_flow_staging_missing` advisory | `enrich-semantics` in **propose** mode (`scripts/enrich-workflows-staging.sh --vault=<vault> --semantic=staged-input`; `--legacy-root` AUTO-DISCOVERED from the KB README's "source codebase path" + common legacy dirs, or pass it explicitly) | Writes `<vault>/ENRICHMENT-PROPOSALS.md` and **PAUSES the chain** (`status: paused`) with a one-line summary: "staging-missing in N workflow(s) → proposals at ENRICHMENT-PROPOSALS.md; review + `/mega-sdd:enrich-semantics --apply`, then `--resume`". NEVER auto-applies. |
-| After `generate-units` completes | `lint-units --changed-only` (per `commands/lint-units.md` Procedure §Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
-| Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `commands/analyze-parallelism.md`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --parallel` (the routing/handoff rows carry the flag — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
-| After `execute-bolts` completes | `list-modules` (per `commands/list-modules.md` table format) | Per-module status table in chain end summary |
+| After `extract-intelligence` completes (or whenever a KB is present) AND `.mega-sdd/.kb-flows-state.json` carries a `kb_flow_staging_missing` advisory | `enrich-semantics` in **propose** mode (`scripts/enrich-workflows-staging.sh --vault=<vault> --semantic=staged-input`; `--legacy-root` AUTO-DISCOVERED from the KB README's "source codebase path" + common legacy dirs, or pass it explicitly) | Writes `<vault>/ENRICHMENT-PROPOSALS.md` and **PAUSES the chain** (`status: paused`) with a one-line summary: "staging-missing in N workflow(s) → proposals at ENRICHMENT-PROPOSALS.md; review + `enrich-semantics --apply`, then `--resume`". NEVER auto-applies. |
+| After `generate-units` completes | `lint-units --changed-only` (per `references/diagnostics-procedures.md §lint-units` Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
+| Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `references/diagnostics-procedures.md §analyze-parallelism`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --parallel` (the routing/handoff rows carry the flag — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
+| After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |
 | After all phases complete | `emit-agents-md` (per the `emit-agents-md` skill, respecting `config.yaml defaults.emit_agents_md: true\|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc + Chrome md2pdf render + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
 | After all phases complete | Memory review check (per the `memory` skill review op if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
@@ -193,9 +193,9 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 
 These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
-**Exception — staged-input enrichment PAUSES.** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `/mega-sdd:enrich-semantics --apply` → `/mega-sdd --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging`.
+**Exception — staged-input enrichment PAUSES.** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `enrich-semantics --apply` → `/mega-sdd --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging`.
 
-**Manual override**: users invoking individual commands directly (`/mega-sdd:lint-units` etc.) still works for debugging/one-off use. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on `auto`/`orchestrate-flow`.
+**Manual override**: each diagnostic remains runnable on demand for debugging/one-off use — the user asks by phrase through the front door ("lint units", "cek parallelism", "status module") and the orchestrator runs the matching procedure from `references/diagnostics-procedures.md`. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on the front door / `orchestrate-flow`.
 
 ## Hybrid drift gate phase
 
@@ -230,7 +230,7 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 
 ### On-demand drift (separate from auto-gate)
 
-`/mega-sdd:detect-drift` standalone (no chain context) → fresh full scan; ignores bolt snapshots. The auto-gate path uses snapshot reuse per `plugins/mega-sdd/references/shared-snapshot-schema.md`.
+`detect-drift` standalone (no chain context) → fresh full scan; ignores bolt snapshots. The auto-gate path uses snapshot reuse per `plugins/mega-sdd/references/shared-snapshot-schema.md`.
 
 ## End-of-chain routing-outcomes write
 
@@ -256,8 +256,8 @@ In `--deep` mode, append to the final summary:
   - Per-module status from auto list-modules (X/Y modules completed)
   - AGENTS.md emission confirmation (file path + section count)
   - Memory review prompt if pending suggestions exist
-  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run /mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>)."`
-  - Deferred open questions (P3/A6): IF the vault carries `open_questions[] status == deferred` (incl. express auto-defers), surface as: `"⏸ N OQ deferred (auto-deferred P2/P3 di jalur express + defer manual) — <tag list>. Jawab kapan saja: /mega-sdd:resolve-oq."` — the defer is recorded state; this line is its mandated resurface (also in execute-bolts `_summary.md §Deferred open questions` and the non-deep Step 9 summary).
+  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run generate-units --regenerate --adversarial-subagent --units=<list>)."`
+  - Deferred open questions (P3/A6): IF the vault carries `open_questions[] status == deferred` (incl. express auto-defers), surface as: `"⏸ N OQ deferred (auto-deferred P2/P3 di jalur express + defer manual) — <tag list>. Jawab kapan saja: resolve-oq."` — the defer is recorded state; this line is its mandated resurface (also in execute-bolts `_summary.md §Deferred open questions` and the non-deep Step 9 summary).
   - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit fsd."`
 - **Predictive preflight metrics:**
   ```yaml
@@ -266,7 +266,7 @@ In `--deep` mode, append to the final summary:
     predictive_halts_count: <int>        # count of fatal predictive halts (always ≤1 since fatal halts STOP)
   ```
 - **Phase context** (appended when vault.json has a `phase` field):
-  - IF `vault.phase < vault.phase_total`: "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>` OR run `/mega-sdd:generate-intent --kb=<KB> --phase=<N+1>`."
+  - IF `vault.phase < vault.phase_total`: "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>` OR run `generate-intent --kb=<KB> --phase=<N+1>`."
   - IF `vault.phase == vault.phase_total`: "Phase <N> of <M> complete. All phases finished."
   - IF `phase` field absent (single-phase project OR pre-phasing vault): omit the phase context section.
 

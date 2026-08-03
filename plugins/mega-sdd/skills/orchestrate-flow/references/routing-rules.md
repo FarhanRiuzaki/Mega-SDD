@@ -107,7 +107,7 @@ The original directive "scan code base harusnya di atur di depan ... starterkit 
 - **Cache-warm the graph (non-blocking).** After `SYNC-REPORT.md` is written,
   `Run: scripts/build-graph.sh --root <project>` to refresh `.mega-sdd/graph.json`.
   This is cache-warming only — a failure here NEVER blocks sync and emits no halt
-  YAML (the graph is rebuilt lazily on next `/mega-sdd:graph` query regardless).
+  YAML (the graph is rebuilt lazily on next `graph` query regardless).
 
 **Mode D change-signal inspection (from the digest — same two probes, script-run):** read `derived.change_signal` in `state.json` — `dirty_journal_rows` (non-empty lines of `.mega-sdd/codebase/.dirty-paths.jsonl`) and `map_stamp_matches_head` (map frontmatter `last_scanned_commit` vs `git rev-parse HEAD`). `dirty_journal_rows > 0` OR `map_stamp_matches_head: no` → Mode D candidate. Mode D NEVER fires on a repo without an existing map+binding (that's a normal brownfield first-run, rows above). Precedence: the P0/P1 OQ intent gate still runs first; a new PRD revision (diff-vault row) outranks sync.
 

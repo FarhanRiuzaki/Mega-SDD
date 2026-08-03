@@ -85,10 +85,10 @@ In the chat message:
 4. Path to the vault: `<OUTPUT_DIR>` (absolute).
 5. If `OUTPUT_MODE=compact`, mention once that a prose-rich version is available: *"Re-run with `OUTPUT_MODE=full` if you need the prose-rich version for non-technical readers."*
 6. **Suggested next steps** — point to companion skills:
-   - *"After stakeholder triage, run `/mega-sdd:resolve-oq` to walk the OQ list interactively and capture answers back into the vault."*
+   - *"After stakeholder triage, run `resolve-oq` to walk the OQ list interactively and capture answers back into the vault."*
    - If `PRD_STATUS=final` and OQ count > 10: *"Bring the P1 list to a stakeholder meeting first; resolve-oq picks up from current state when you re-run."*
-   - If `IMPLEMENTATION_MODE=existing`: *"Run `/mega-sdd:detect-drift` to reconcile this vault against the live codebase — flags entity/flow/decision drift between target and current reality."*
-   - When the PRD eventually revises: *"Use `/mega-sdd:diff-vault` to evolve the vault against the new PRD without losing resolved OQs or ADR history."*
+   - If `IMPLEMENTATION_MODE=existing`: *"Run `detect-drift` to reconcile this vault against the live codebase — flags entity/flow/decision drift between target and current reality."*
+   - When the PRD eventually revises: *"Use `diff-vault` to evolve the vault against the new PRD without losing resolved OQs or ADR history."*
 
 Do NOT pad with "I have created..." preamble. Just deliver and surface blockers.
 

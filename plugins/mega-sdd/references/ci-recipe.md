@@ -18,7 +18,7 @@ How to run mega-sdd gates in CI (GitHub Actions / GitLab / any runner) and in he
 # .github/workflows/megasdd-drift.yml (sketch)
 - uses: anthropics/claude-code-action@v1
   with:
-    prompt: "/mega-sdd:detect-drift --auto"   # findings queue to PENDING-SYNC.md; report at <vault>/DRIFT-REPORT.md
+    prompt: "use the mega-sdd detect-drift skill: detect-drift --auto"   # findings queue to PENDING-SYNC.md; report at <vault>/DRIFT-REPORT.md
 - name: Gate on binding state (deterministic)
   run: |
     bash plugins/mega-sdd/scripts/validate-handoff-binding-units.sh --cwd="$PWD" --quiet

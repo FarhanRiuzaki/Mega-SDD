@@ -414,7 +414,8 @@ grep -qF 'NOT optional and NOT scoped' "$EB" \
 FD="$P/commands/mega-sdd.md"
 OF="$P/skills/orchestrate-flow/SKILL.md"
 BS="$P/skills/bind-codebase/SKILL.md"
-BC="$P/commands/bind-codebase.md"
+# (6.0.0 cull: the bind-codebase command alias is gone — the typed --express
+# surface is the front door, asserted below.)
 grep -q -- '--express' <(grep 'argument-hint:' "$FD") \
   && pass "--express in the front-door argument-hint" \
   || fail "--express missing from front-door hint"
@@ -433,9 +434,7 @@ grep -qF -- '`--express` (claim-scoped retrieval lane' "$BS" \
 grep -qF 'references/express-bind.md' "$BS" \
   && pass "SKILL.md routes to express-bind.md (one level deep)" \
   || fail "express-bind.md not routed from SKILL.md"
-grep -q -- '--express' "$BC" \
-  && pass "bind command alias hint carries --express" \
-  || fail "bind command alias missing --express"
+# (bind command alias removed in the 6.0.0 cull — no typed-alias hint to pin.)
 
 # ══ 5. Fallback honesty + registrations ══════════════════════════════════════
 grep -qF 'fall back to the' "$EB" && grep -qF 'standard-fallback' "$EB" \

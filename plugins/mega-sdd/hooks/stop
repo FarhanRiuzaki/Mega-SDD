@@ -502,7 +502,7 @@ echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
 # Only runs when ≥1 validator state file exists (some validator fired this chain).
 # P3 lean-by-default: this ADVISORY aggregate fires only when the config
 # explicitly opts back in — `spine: classic` OR `profile: full` (the reports
-# are re-derivable on demand via /mega-sdd:analyze; no gate reads them — the
+# are re-derivable on demand via analyze; no gate reads them — the
 # four outputs are already pruned from both scan probes). The old opt-OUT
 # (`profile: lean` skips) is subsumed: absent config = express spine = skip.
 if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \

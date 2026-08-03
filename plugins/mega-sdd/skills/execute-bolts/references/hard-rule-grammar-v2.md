@@ -148,7 +148,7 @@ Same as grammar v1 — `hard_rule_violated` blocker; detect-after (the bolt comm
 
 ## Migration command (per ITER6-OQ-2 resolved explicit)
 
-`/mega-sdd:migrate-rules --vault=<path>` walks the vault's units and offers to migrate v1 → v2:
+`migrate-rules --vault=<path>` walks the vault's units and offers to migrate v1 → v2:
 
 ```
 Walking ./vault/units/...

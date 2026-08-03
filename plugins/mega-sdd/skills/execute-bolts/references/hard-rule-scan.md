@@ -34,7 +34,7 @@ What the script executes, for each unit with a non-empty `## Hard rules` body se
 
 - YAML code blocks under `## Hard rules` → **v2 grammar** (ast-grep YAML; the grammar spec is the v2 Hard-rule-grammar ref listed in SKILL.md).
 - Bulleted line items (`- DO NOT modify ...`) → **v1 grammar** (the 5-type legacy set).
-- Mixed (both forms in one unit) → halt `hard_rule_mixed_grammar` (user migrates via `/mega-sdd:migrate-rules`).
+- Mixed (both forms in one unit) → halt `hard_rule_mixed_grammar` (user migrates via `migrate-rules`).
 - Override via the script flag `--grammar=v1|v2` (the controller forwards the user-level `--hard-rule-grammar=v1|v2` value as `--grammar=<v>` on the script invocation — the script itself accepts only `--grammar`).
 
 **For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via parse-via-scan (`ast-grep test --validate` does NOT exist in the CLI — the snippet is in `hard-rule-grammar-v2.md` §Pre-flight, the single owner of the parse-check mechanics). Unparseable → halt `hard_rule_unparseable`.

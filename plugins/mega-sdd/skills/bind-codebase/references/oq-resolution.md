@@ -45,7 +45,7 @@ c. **Surface in `binding.md`** under `## Tech-OQ Recommendations (review require
    **Fallback if wrong**: If RFC 7807 doesn't fit, consider JSON:API error format.
    **User actions**: [ACCEPT] flip to resolved · [OVERRIDE] own resolution · [REJECT] flip to blocking
    ```
-d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via the standard `/mega-sdd:resolve-oq` walk — the OQ stays `open` in `vault.json` until then.
+d. **Recommendations are NOT auto-resolved.** They appear for one-pass user review; the bind run does NOT block on them (they don't block downstream). User accepts later via the standard `resolve-oq` walk — the OQ stays `open` in `vault.json` until then.
 e. **Low confidence** tech-recommend OQs → skip surfacing; pass through UNCHANGED (`resolution_mode` is never mutated on confidence grounds — per `binding-contract.md` §Confidence gate; they are already in "## Auto-Classification Review").
 
 **Anti-halu rails:** NEVER auto-accept a recommendation (always user-in-the-loop for `recommend` mode). NEVER pass a recommendation with unverifiable citations downstream (citation verification is mandatory). `rationale` + `fallback_if_wrong` are the audit trail — if either is missing, the recommendation can't be trusted → halt.
@@ -65,7 +65,7 @@ c. **High-confidence match** (single unambiguous hit) — record it where the OQ
    |---|---|---|---|
    | OQ-DATA-001 | ... | §4 entry: User table line 42 | auto-resolved |
    ```
-d. **No match / ambiguous** (multiple hits or low confidence): do NOT modify the OQ (markdown untouched — status stays `deferred`); propagate to `binding.md` `## Open Questions` with `Auto-resolve attempted: no match found`. The user walks these via `/mega-sdd:resolve-oq --binding <binding.md>`.
+d. **No match / ambiguous** (multiple hits or low confidence): do NOT modify the OQ (markdown untouched — status stays `deferred`); propagate to `binding.md` `## Open Questions` with `Auto-resolve attempted: no match found`. The user walks these via `resolve-oq --binding <binding.md>`.
 e. **Conservative threshold:** when in doubt, fall back to manual resolution (d). Never silently auto-resolve a deferred OQ that could be wrong; never write an evidence string that doesn't exist in the codebase-map.
 
 Update aggregate counts (`claims_total` / `confirmed` / `conflict` / `oq`) to include any newly auto-resolved deferred OQs in `confirmed`.

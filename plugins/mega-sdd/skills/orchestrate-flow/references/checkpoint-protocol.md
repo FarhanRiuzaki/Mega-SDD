@@ -39,7 +39,7 @@ Format: **JSONL** (one JSON object per line; append-only; race-tolerant per memo
 ### Per-checkpoint schema
 
 ```json
-{"checkpoint_schema": 1, "skill": "bind-codebase", "step": "claim_validation", "step_id": "claim-45", "cursor": {"claim_index": 45, "claim_id": "C-045"}, "state": {"confirmed": 30, "conflict": 1, "oq": 14}, "next_step": "claim-46", "artifacts_so_far": ["binding.md.partial"], "resume_command": "/mega-sdd:bind-codebase ./vault --resume-from=claim-46", "timestamp": "2026-05-21T11:00:00Z"}
+{"checkpoint_schema": 1, "skill": "bind-codebase", "step": "claim_validation", "step_id": "claim-45", "cursor": {"claim_index": 45, "claim_id": "C-045"}, "state": {"confirmed": 30, "conflict": 1, "oq": 14}, "next_step": "claim-46", "artifacts_so_far": ["binding.md.partial"], "resume_command": "bind-codebase ./vault --resume-from=claim-46", "timestamp": "2026-05-21T11:00:00Z"}
 ```
 
 ## Skill responsibilities
@@ -60,9 +60,9 @@ Skills that complete in <5s SHOULD NOT emit checkpoints (overhead > value). Exam
 
 Each checkpoint write is a single fs.append. Concurrent skill invocations on same vault (rare) do NOT corrupt the JSONL file. Reader (resume command) scans lines, takes most recent for each step_id.
 
-## Resume command
+## Resume invocation
 
-`/mega-sdd:<skill> --resume-from=<step-id>`:
+A skill re-dispatched with `--resume-from=<step-id>` (via the front door `/mega-sdd --resume`, or a standalone phrase invocation carrying the flag):
 
 1. Walk checkpoints in chronological order
 2. Find latest checkpoint matching this skill's invocation context
@@ -96,7 +96,7 @@ handoff:
   checkpoints:
     latest_step_id: claim-45
     checkpoint_file: <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl
-    resume_command: "/mega-sdd:bind-codebase --resume-from=claim-46"
+    resume_command: "bind-codebase --resume-from=claim-46"
 ```
 
 When skill emits `status: halted` with active checkpoints, orchestrator surfaces the resume command in chat:

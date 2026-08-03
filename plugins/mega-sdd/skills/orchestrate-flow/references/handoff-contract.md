@@ -2,7 +2,7 @@
 
 When mega-sdd skills run under `--auto` (i.e., dispatched by `orchestrate-flow --deep` or `/mega-sdd`), they MUST emit a structured **handoff record** at the end of their chat output. The orchestrator parses this record to decide whether to auto-continue the chain, pause on blocker, or stop.
 
-This contract is required ONLY when `--auto` is in effect. Standalone skill invocations (user typed `/mega-sdd:<specific-skill>`) MAY emit the YAML but it is informational — no orchestrator consumes it.
+This contract is required ONLY when `--auto` is in effect. Standalone skill invocations (the user asked for one skill by phrase, outside a chain) MAY emit the YAML but it is informational — no orchestrator consumes it.
 
 > **Precedence (anti-drift rule):** each skill's OWN handoff reference (e.g. `scan-codebase/references/halts-flags-handoff.md`, `execute-bolts/references/halts-and-handoff.md`) is the OPERATIVE emission spec — it loads with the emitting skill at runtime. The per-skill blocks below are a cross-skill INDEX for the orchestrator/consumer side; when they disagree with a skill's own reference, the skill's reference wins and the block here is the bug. Top-level field names/types in §Handoff YAML schema remain binding for everyone (the validator enforces those).
 
@@ -46,7 +46,7 @@ handoff:
   checkpoints:                          # checkpoint protocol; optional
     latest_step_id: <string>            # e.g., "claim-45" for bind-codebase, "wave-3" for extract-intelligence
     checkpoint_file: <absolute-path>    # <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl (canonical per paths.md)
-    resume_command: <string>            # e.g., "/mega-sdd:bind-codebase --resume-from=claim-46"
+    resume_command: <string>            # e.g., "bind-codebase --resume-from=claim-46"
   constitution:                         # when constitution.md exists
     constitution_hash: <sha256>         # of <vault>/constitution.md at handoff emission time
     clauses_referenced: []              # clause IDs cited in this skill's output (e.g., ["A-001", "B-002"])

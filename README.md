@@ -216,7 +216,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 ## Commands
 
-`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) stay as typed commands; every pre-v5 command still resolves as a deprecation alias through the 5.x cycle.
+`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) stay as typed commands; the pre-v5 stage commands were removed in 6.0.0 — a typed legacy form still routes as plain text to its skill.
 
 **Full per-command reference: [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
@@ -226,18 +226,18 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Scenario | Commands |
 |---|---|
 | **One-shot end-to-end** (recommended) | `/mega-sdd ./prd.md` · `/mega-sdd ./legacy/ --out=./new/` · `/mega-sdd "brief"` |
-| Phase-by-phase greenfield | `/mega-sdd:generate-intent "your idea"` then `/mega-sdd` |
-| Phase-by-phase brownfield | `/mega-sdd:generate-intent ./prd.md` then `/mega-sdd` |
+| Phase-by-phase greenfield | `/mega-sdd "your idea" --to=generate-intent`, lanjut `/mega-sdd` per phase |
+| Phase-by-phase brownfield | `/mega-sdd ./prd.md --to=generate-intent`, lanjut `/mega-sdd` per phase |
 | Legacy rebuild | `/mega-sdd ./legacy/ --out=./rebuild/` |
-| Unresolved P1 business OQs | `/mega-sdd:resolve-oq` |
+| Unresolved P1 business OQs | say "resolve OQ" / "walk open questions" |
 | Bolt halted on Hard Rule | Review `<vault>/bolts/U-XXX/postflight.json`; revert OR edit unit's Hard rules; re-run unit |
 | Resume after halt | `/mega-sdd --resume` |
-| Module-filtered execution | `/mega-sdd:execute-bolts --module=M-auth` *(alias)* |
-| Squad-filtered execution | `/mega-sdd:execute-bolts --squad=squad-be` *(alias)* (multi-squad mode) |
-| Per-squad parallel | `/mega-sdd:execute-bolts --per-squad --parallel` *(alias)* |
+| Module-filtered execution | say "eksekusi bolt module M-auth" (execute-bolts `--module=`) |
+| Squad-filtered execution | say "eksekusi bolt squad squad-be" (execute-bolts `--squad=`, multi-squad mode) |
+| Per-squad parallel | say "eksekusi bolt per squad, parallel" (execute-bolts `--per-squad --parallel`) |
 | Inspect memory | `/mega-sdd:memory show <topic>` |
 | Review pending learning suggestions | `/mega-sdd:memory review` |
-| Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` *(alias)* (auto-runs at chain end by default) |
+| Generate AGENTS.md manually | say "generate AGENTS.md" (auto-runs at chain end on the classic spine) |
 | Generate Confluence FSD manually | `/mega-sdd:emit fsd` (chain-end auto-emit is opt-in via `--with-fsd`) |
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
@@ -245,11 +245,13 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
-| Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` *(alias)* |
+| Migrate Hard Rules grammar (one-time) | say "migrate hard rules ./vault" |
 | Privacy-sensitive run | `/mega-sdd ./prd.md --memory-off` |
 | Disable auto-diagnostic flags | `/mega-sdd ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md` |
-| PRD revision arrived | `/mega-sdd:diff-vault ./new-prd.md` |
-| Code drift periodic check | `/mega-sdd:detect-drift` |
+| PRD revision arrived | `/mega-sdd ./new-prd.md` (routes to diff-vault) — or say "PRD revisi" |
+| Code drift periodic check | say "cek drift" |
+
+> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the 3 verbs + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](plugins/mega-sdd/references/upgrade-from-old-version.md).
 
 </details>
 
@@ -262,7 +264,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; the 5.x deprecation aliases were removed in 6.0.0 (typed legacy forms route as plain text). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -355,7 +357,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # 20 skills (lean routers + progressive disclosure) + _vendored/
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
-│   ├── commands/                           # 3 public verbs + 4 maintenance one-timers + 24 deprecation aliases (resolve through 5.x)
+│   ├── commands/                           # exactly 7: 3 public verbs + 4 maintenance one-timers (the 24 5.x aliases were removed in 6.0.0)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
 │   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations + validators

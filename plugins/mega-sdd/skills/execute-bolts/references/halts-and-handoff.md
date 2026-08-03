@@ -16,7 +16,7 @@ Everything downstream of the per-unit gates: the halt protocol (blocker envelope
 
 ## Halt protocol
 
-Per the bolt-contract failure modes (the bolt-contract ref listed in SKILL.md). BEFORE the envelope YAML, render the keterangan block per `plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` step 0 — resolve the cause/unit to actual text (which Hard rule, which test, quoted), one line of why the bolt stopped, and gloss each `next_action` code with its consequence (this applies on STANDALONE `/mega-sdd:execute-bolts` runs too, not only under the orchestrator). Then emit the blocker YAML:
+Per the bolt-contract failure modes (the bolt-contract ref listed in SKILL.md). BEFORE the envelope YAML, render the keterangan block per `plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` step 0 — resolve the cause/unit to actual text (which Hard rule, which test, quoted), one line of why the bolt stopped, and gloss each `next_action` code with its consequence (this applies on STANDALONE `execute-bolts` runs too, not only under the orchestrator). Then emit the blocker YAML:
 
 ```yaml
 blocker:
@@ -60,7 +60,7 @@ After `bolt-report.md` is written, scan the `bolt_self_report` block (and adjace
 3. After all bolts complete (`--all`), assemble the aggregate into handoff `metrics.acceptance_test_concerns: [{unit, concern}]`.
 4. Also surfaced via `_summary.md` (a new "## Acceptance-test concerns" sub-section).
 
-No new halt type — concerns are warnings, not blockers. The re-validation path is `/mega-sdd:generate-units --regenerate --adversarial-subagent --units=<list>` to author stronger acceptance tests, then re-run the affected bolts. orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
+No new halt type — concerns are warnings, not blockers. The re-validation path is `generate-units --regenerate --adversarial-subagent --units=<list>` to author stronger acceptance tests, then re-run the affected bolts. orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
 
 ## Provenance trailer enforcement
 
@@ -149,7 +149,7 @@ Auto-generated AFTER every batch (overwrite-safe; idempotent regen) at `<vault>/
 ## Deferred open questions (N)
 <P3/A6 re-surface — a pure read of vault.json open_questions[] where
 status == deferred: one line per OQ (tag, priority, reason, defer_to);
-close with the re-run command `/mega-sdd:resolve-oq`. N=0 -> omit the
+close with the re-run command `resolve-oq`. N=0 -> omit the
 section. A defer that never resurfaces is a silent assumption — this
 section and the chain summary are the resurface.>
 
@@ -191,7 +191,7 @@ The handoff YAML may include a `scope:` block per `orchestrate-flow/references/h
 
 ## Hand-off + end-of-chain phasing
 
-After the last unit: suggest `/mega-sdd:detect-drift` to verify all bolts honored the vault; show a summary (N units done, M failed, P skipped).
+After the last unit: suggest `detect-drift` to verify all bolts honored the vault; show a summary (N units done, M failed, P skipped).
 
 **End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`.
 
@@ -203,7 +203,7 @@ next_action:
   suggested_skill: mega-sdd:detect-drift
   suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata (mirror §Handoff emission `suggested_args` + the contract execute-bolts routing row)
   rationale: "All bolts executed; recommend a periodic drift check."
-  hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): /mega-sdd:generate-intent --kb=<KB-path-from-vault.json.kb_source> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
+  hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): generate-intent --kb=<KB-path-from-vault.json.kb_source> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
 ```
 
 IF `vault.phase == vault.phase_total` (final phase) OR `phase_total == 1`:

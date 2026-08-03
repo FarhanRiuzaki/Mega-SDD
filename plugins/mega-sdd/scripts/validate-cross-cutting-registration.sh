@@ -201,7 +201,7 @@ def tokenize(s):
 #   target_decl_regex — capture group 1 = the container a target (model) binds to
 # A has_column concern missing either key is NOT silently passed: it is
 # recorded `not_evaluable` and the overall status degrades to SKIP (never PASS)
-# so /mega-sdd:analyze surfaces the gap. Add a stack = add the keys to its pack.
+# so analyze surfaces the gap. Add a stack = add the keys to its pack.
 CLASS_RE = re.compile(r"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 

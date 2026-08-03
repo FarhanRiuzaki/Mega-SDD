@@ -22,7 +22,7 @@ echo "== install-deps Step 4 keterangan contract pins (F1-5) =="
 
 ID="$P/skills/install-deps/SKILL.md"
 
-has "$ID" 'version: 1.7.0' && ok "SKILL frontmatter version pinned at 1.7.0" || fail "version not bumped"
+has "$ID" 'version: 1.7.1' && ok "SKILL frontmatter version pinned at 1.7.1" || fail "version not bumped"
 
 has "$ID" '§Prompt surfaces' && ok "Step 4 cites the keterangan contract (output-language.md §Prompt surfaces)" || fail "Step 4: contract citation missing"
 

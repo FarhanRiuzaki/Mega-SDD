@@ -59,10 +59,11 @@ HK="$REPO_ROOT/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contr
 grep -qF "FRONT-DOOR" "$HK" && grep -qF "rendered to --to=" "$HK" \
   && pass "handoff-contract flag surface carries the render note" \
   || fail "handoff-contract §flag surface missing the render note"
-AM="$REPO_ROOT/plugins/mega-sdd/commands/auto.md"
-grep -qF -- 'dirender ke `--to=`' "$AM" \
-  && pass "auto.md alias keterangan carries the render exception" \
-  || fail "auto.md still claims verbatim forwarding for every flag"
+# 6.0.0 cull: auto.md removed — the render exception's typed-surface home is the
+# front door itself (its §Flag handling rows), asserted here.
+grep -qF -- 'renders as `--to=<phase>`' "$FD" \
+  && pass "front door carries the --stop-after → --to render exception" \
+  || fail "front door lost the --stop-after render exception"
 
 # ── 2. ghost-flag guard ──────────────────────────────────────────────────────
 GHOSTS=$(FD="$FD" python3 - <<'PY'

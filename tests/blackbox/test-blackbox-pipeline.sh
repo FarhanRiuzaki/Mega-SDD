@@ -69,7 +69,10 @@ cmp -s "$VAULT/vault.json" "$WORK/v1.json" && ok "re-derive byte-identical (gene
 
 # ── S4 consumer guide ────────────────────────────────────────────────────────
 stage "S4 copy-consumer-guide"
-OUT="$(bash "$SCR/copy-consumer-guide.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
+# HOME isolated: resolve-plugin-root.sh prefers the newest LOCAL plugin cache
+# (~/.claude/plugins/cache), which can lag this repo — the blackbox proof must
+# pin THIS repo's bytes, not whatever version the machine has cached
+OUT="$(HOME="$WORK" bash "$SCR/copy-consumer-guide.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
 SHIPPED="$PLG/skills/generate-intent/references/templates/ai-consumer-guide.md"
 if [ $RC -eq 0 ] && [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
    && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ]; then

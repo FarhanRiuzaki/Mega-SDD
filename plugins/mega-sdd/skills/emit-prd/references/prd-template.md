@@ -134,7 +134,7 @@ Per-journey format (MERMAID MANDATE — never prose-only, never ASCII):
 ```markdown
 ## 6. Open Items
 
-> Bagian ini VIEW read-only — resolusi berjalan via `/mega-sdd:resolve-oq` (forward) atau Q&A `generate-intent --kb` (reverse); emisi berikutnya memantulkan hasilnya.
+> Bagian ini VIEW read-only — resolusi berjalan via `resolve-oq` (forward) atau Q&A `generate-intent --kb` (reverse); emisi berikutnya memantulkan hasilnya.
 
 | ID | Pertanyaan / Item | Prioritas | Sumber |
 |---|---|---|---|

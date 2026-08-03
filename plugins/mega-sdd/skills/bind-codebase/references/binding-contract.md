@@ -104,7 +104,7 @@ carry two enrichment fields so downstream review can triage by kind and
 effort. A resolved conflict is exempt — resolved means the heading carries `✅` or
 the word `RESOLVED` immediately AFTER the conflict ID, or a dedicated
 `- **Resolution**:` line whose VALUE starts with the marker (written by
-`/mega-sdd:resolve-oq --binding`); the word "resolved" in a TITLE or in prose, and a
+`resolve-oq --binding`); the word "resolved" in a TITLE or in prose, and a
 negated `Status: NOT RESOLVED` line, do NOT count (S4 — the validators key on the
 structural marker only).
 
@@ -193,8 +193,8 @@ Invoked by `orchestrate-flow --sync` (spec `2026-06-10-living-vault-continuous-s
 
 When binding blocks:
 
-1. User runs `/mega-sdd:resolve-oq --binding ./binding.md` — interactive walker; writes structural ✅ RESOLVED markers into binding.md (+ binding.json `resolution:`), patches the vault for KEEP_CODE/SPLIT
-2. KEEP_CODE / SPLIT chosen → re-run `/mega-sdd:bind-codebase` — the edited claims re-bind cleanly; conflicts=0 produces the bound-vault
+1. User runs `resolve-oq --binding ./binding.md` — interactive walker; writes structural ✅ RESOLVED markers into binding.md (+ binding.json `resolution:`), patches the vault for KEEP_CODE/SPLIT
+2. KEEP_CODE / SPLIT chosen → re-run `bind-codebase` — the edited claims re-bind cleanly; conflicts=0 produces the bound-vault
 3. KEEP_VAULT / DEFER only → NO re-bind (it re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — bind never consumes a prior resolution as evidence). The resolved-marked binding.md passes the handoff validator → proceed to generate-units; bound/ arrives via a re-bind AFTER the code change lands
 4. Alternative: user edits vault manually + re-runs binding
 

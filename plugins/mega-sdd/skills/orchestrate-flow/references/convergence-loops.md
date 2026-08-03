@@ -107,7 +107,7 @@ blocker:
       - cycle: 2, halt: bind_conflict (different conflicts), auto-resolved: yes
       - cycle: 3, halt: bind_conflict (recurring), auto-resolved: no — recommendation confidence dropped to 0.65
     last_halt: bind_conflict (C-019, auth-related; memory has 2 conflicting patterns)
-  next_action: "Recurring conflict detected after 5 cycles. Run /mega-sdd:resolve-oq --binding manually OR re-configure vault claim. Memory has 2 conflicting patterns for this conflict type — review via /mega-sdd:memory show patterns"
+  next_action: "Recurring conflict detected after 5 cycles. Run resolve-oq --binding manually OR re-configure vault claim. Memory has 2 conflicting patterns for this conflict type — review via /mega-sdd:memory show patterns"
 ```
 
 ## Anti-halu rails

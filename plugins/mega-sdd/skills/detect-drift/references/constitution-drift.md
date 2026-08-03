@@ -23,7 +23,7 @@ blocker:
     constitution_hash_current: <sha256>
     binding_dated: <ISO8601 from binding.md>
     constitution_modified_at: <ISO8601 from fs mtime>
-  next_action: "Constitution.md modified since last binding. Re-run /mega-sdd:bind-codebase to refresh binding under the new constitution, OR revert constitution.md to match the binding state."
+  next_action: "Constitution.md modified since last binding. Re-run bind-codebase to refresh binding under the new constitution, OR revert constitution.md to match the binding state."
 ```
 
 After emit, the skill stops; no report is generated for the mismatched scope.

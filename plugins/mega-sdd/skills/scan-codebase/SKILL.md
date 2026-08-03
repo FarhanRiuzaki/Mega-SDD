@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.28.0
+version: 2.28.1
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md; runs ON-DEMAND or on the classic spine (the only codebase-map producer — emissions and the classic bind lane consume the map), not as a default-chain phase. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -16,7 +16,7 @@ Builds a structured map of an existing repository for use by the SDD binding gat
 
 ## When to use
 
-- User runs `/mega-sdd:scan-codebase`
+- User runs `scan-codebase`
 - `orchestrate-flow` detects a brownfield project + missing `codebase-map.md`
 - **`orchestrate-flow` Mode A/B — starterkit detected:** scan runs FIRST in the pipeline (before generate-intent) so vault generation is pack-aware from the start
 - User asks "siapkan context buat AI dev di repo ini" or paraphrases
@@ -69,7 +69,7 @@ After Step 10 populates §7 Framework, run the deep-scan stage automatically (op
 - **Failure:** one slice fails → `partial: true` + `partial_slices`; all fail → halt `deep_scan_subagent_all_failed` (preserve prior YAML).
 - **Step 10.6 — Shared snapshot:** also write `.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` so `bind-codebase` can cheaply attest map freshness — one sha compare, a freshness attestation NOT a parsing shortcut (per `references/deep-scan-gate.md`).
 
-11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `/mega-sdd:bind-codebase <vault-path>`; no vault yet (starterkit-first) → `/mega-sdd:generate-intent --scan=<map>`; sync lane (`--changed-only`, incremental merge ran) → `/mega-sdd:detect-drift --scope=@<vault>/.sync-changed-paths.txt` (the durable changed set — the forked detect-drift can't re-resolve it once the journal is consumed); sync lane on the step-2 full-scan fallback OR the deriver's exit-3 `fallback_full` re-run (no changed set to scope — same branch) → SKIP detect-drift, `/mega-sdd:bind-codebase <vault-path> --auto` (a FULL re-bind — a scope-less detect-drift self-classifies STANDALONE and null-terminates the Mode D chain before the re-bind; §3.8(b)(1)).
+11. **Suggest next step (CWD-conditional, mirrors the handoff `next_action`):** a vault exists → `bind-codebase <vault-path>`; no vault yet (starterkit-first) → `generate-intent --scan=<map>`; sync lane (`--changed-only`, incremental merge ran) → `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (the durable changed set — the forked detect-drift can't re-resolve it once the journal is consumed); sync lane on the step-2 full-scan fallback OR the deriver's exit-3 `fallback_full` re-run (no changed set to scope — same branch) → SKIP detect-drift, `bind-codebase <vault-path> --auto` (a FULL re-bind — a scope-less detect-drift self-classifies STANDALONE and null-terminates the Mode D chain before the re-bind; §3.8(b)(1)).
 
 ## Mandatory rails
 
@@ -80,9 +80,9 @@ After Step 10 populates §7 Framework, run the deep-scan stage automatically (op
 
 ## Hand-off
 
-On completion, announce: "Codebase map written to `<path>`." + the CWD-conditional next step (vault exists → `/mega-sdd:bind-codebase <vault>`; none yet → `/mega-sdd:generate-intent --scan=<map>`).
+On completion, announce: "Codebase map written to `<path>`." + the CWD-conditional next step (vault exists → `bind-codebase <vault>`; none yet → `generate-intent --scan=<map>`).
 
-Emit a handoff YAML record per your local template on **every** invocation — chain (`--auto`, typically from `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is NOT `--auto`-gated: a direct `/mega-sdd:scan-codebase` run never injects `--auto`, and the caller of a non-interactive skill has no other channel for `next_action` / `artifacts[]` / `blockers[]`. The record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`** (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
+Emit a handoff YAML record per your local template on **every** invocation — chain (`--auto`, typically from `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is NOT `--auto`-gated: a direct `scan-codebase` run never injects `--auto`, and the caller of a non-interactive skill has no other channel for `next_action` / `artifacts[]` / `blockers[]`. The record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`** (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
 
 ## Memory layer
 

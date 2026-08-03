@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.18.0
+version: 1.18.1
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild — wave-based extraction produces .mega-sdd/knowledge-base/ with [VERIFIED]/[INFERRED]/[OPEN] + [LOCKED]/[INTENT]/[ARTIFACT] markers, consumed by generate-intent --kb and bind-codebase. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -161,7 +161,7 @@ A workflow that collects its inputs across MORE THAN ONE step / page / role is *
 - If staging is genuinely ambiguous (sequential flows exist but no explicit stage concept in code), still author §3a with `[INFERRED]` stages + an `[OPEN]` note — do NOT silently flatten.
 - **Progressive-disclosure deltas (OPTIONAL / best-effort):** when a stage's form clearly differs from the prior stage, capture the delta in §3a — which fields are NEW here (`new_fields_vs_prior`), which were shown earlier but are gone (`hidden_fields_vs_prior`), which were promoted to mutable (`promoted_to_mutable_vs_prior`, e.g. display-only → dual-key re-entry), and any within-stage show/hide (`dynamic_disclosures`). Use the enriched object form of `input_fields` (`{name, mutability, visibility, conditional}`) when you can read per-field mutability/visibility; bare strings remain valid. Schema: `references/knowledge-base-schema.md §3a`. This deepens the staging capture (the user's "fields A,B,C at maker; D,E,F appear at the next stage" case) — but it is NOT validator-blocking; absence never fails a gate.
 
-> Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `/mega-sdd:enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
+> Walking-skeleton scope: only the staged-input dimension is required this iter. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
 
 ### Deep extraction disciplines (P1–P4 + P6)
 
@@ -189,7 +189,7 @@ After each wave, run the grep checks from `references/wave-dispatch-templates.md
 - Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections — run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-leak-scan.sh" --kb-dir=<kb> --stack=all` (unions every stack's tokens — a tech-agnostic KB must be neutral to BOTH the legacy AND the target stack, so `all` beats auto-detecting only the legacy language; detects C#/Java/Go/Rust leaks the old PHP/SQL grep missed; advisory)
 - Frontmatter present with required keys
 - **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). `validate-kb-flows.sh` enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
-- **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `/mega-sdd:enrich-semantics`
+- **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. `validate-kb-flows.sh` raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `enrich-semantics`
 - **P1 provenance** — a workflow agent reporting `provenance_anomalies > 0` (per `agents/domain-extractor.md` §Report back) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` (a MANUAL between-wave grep nudge — NOT a validator-emitted state signal, unlike `kb_flow_staging_missing`) when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
 
 If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
@@ -276,7 +276,7 @@ The contract makes extraction *falsifiable*: it summarizes how well each of the 
 After extraction, suggest one of:
 
 1. **Manual rebuild planning** — use `99-rebuild-architecture/suggested-phasing.md` as the phase plan.
-2. **Continue in mega-sdd pipeline** — run `/mega-sdd:generate-intent --kb=<knowledge-base-path>` to bootstrap a per-phase vault from the KB README + relevant domain files. From there: `generate-units` → `execute-bolts`.
+2. **Continue in mega-sdd pipeline** — run `generate-intent --kb=<knowledge-base-path>` to bootstrap a per-phase vault from the KB README + relevant domain files. From there: `generate-units` → `execute-bolts`.
 
 If the rebuild lives in a different directory: copy `knowledge-base/` to the new project under `old-reference/`. Mark the distinction in the new project's CLAUDE.md:
 - `old-reference/knowledge-base/` → REFERENCE liberally
@@ -306,7 +306,7 @@ Resolution algorithm:
 
 On completion, announce:
 
-> "Knowledge base written to `<out>/knowledge-base/`. Critical findings: N. Open questions: N total (P1: …, P2: …, P3: …). Source citations: N. Next: review `<out>/knowledge-base/README.md`, then `/mega-sdd:generate-intent --kb=<out>/knowledge-base/` to bootstrap a vault."
+> "Knowledge base written to `<out>/knowledge-base/`. Critical findings: N. Open questions: N total (P1: …, P2: …, P3: …). Source citations: N. Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to bootstrap a vault."
 
 ## Handoff emission
 

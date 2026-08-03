@@ -23,7 +23,7 @@ AM="${ROOT}/plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md
 BF="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md"
 EB="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 EX="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
-XC="${ROOT}/plugins/mega-sdd/commands/extract-intelligence.md"
+XC="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 PC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md"
 TT="${ROOT}/tests/skill-triggering/orchestrate-flow.test.md"
 for f in "$RR" "$CE" "$HC" "$OF" "$AM" "$BF" "$EB" "$EX" "$XC" "$PC" "$TT"; do
@@ -64,7 +64,7 @@ grep -qF -- '--base=<its-commit>^ --head=<its-commit>' "$BF" && ok "per-unit gat
 grep -qF 'dispatch only units not yet completed' "$BF" && ok "consumed waves skip completed units (resume-safe)" || fail "completed-skip rule missing from wave consumption"
 grep -qF 'index.lock' "${ROOT}/plugins/mega-sdd/agents/bolt-implementer.md" && ok "implementer contract: transient index.lock is retried, never BLOCKED" || fail "index.lock retry contract missing from the implementer body"
 grep -qF 'run the batch with `--worktree`' "$BF" && ok "shared-test-state valve named (--worktree or drop the flag) — never a silent hazard" || fail "test-state valve missing"
-AP="${ROOT}/plugins/mega-sdd/commands/analyze-parallelism.md"
+AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
 grep -qF 'never suggest the halting form' "$AP" && ok "analyze-parallelism suggestion is squad-count-conditional (--per-squad halts on single-squad)" || fail "analyze-parallelism still suggests the halting --per-squad form unconditionally"
 
 note "== 2a: failure semantics at the wave boundary =="
@@ -77,7 +77,7 @@ grep -qF 'On any failure: halt the entire `--all` run (no skip-ahead)' "$BF" && 
 note "== 2a: the flag default stays off for standalone runs =="
 grep -qF 'the flag DEFAULT stays off for standalone invocations' "$EB" && ok "execute-bolts SKILL: chain passes the flag; standalone default unchanged" || fail "standalone-default line missing"
 grep -qF 'Execute in order (default sequential)' "$BF" && ok "batch-and-fanout: sequential default sentence intact" || fail "sequential default sentence lost"
-grep -qF 'Suggested next: `/mega-sdd:execute-bolts --all` to execute in order' "${ROOT}/plugins/mega-sdd/skills/generate-units/SKILL.md" \
+grep -qF 'Suggested next: `execute-bolts --all` to execute in order' "${ROOT}/plugins/mega-sdd/skills/generate-units/SKILL.md" \
   && ok "generate-units standalone suggestion deliberately stays plain --all" || fail "standalone suggestion drifted"
 
 note "== 2a: trigger fixtures updated with the routing =="
@@ -85,7 +85,7 @@ grep -q -- 'execute-bolts --all --parallel' "$TT" && ok "orchestrate-flow trigge
 
 note "== 2d: --max-parallel default is 5, supersession clean =="
 grep -qF 'default 5' "$EX" && ok "extract SKILL.md states default 5" || fail "SKILL.md default not 5"
-grep -qF '(default 5, soft-warn >5, hard cap 8)' "$XC" && ok "command doc states default 5 with both rails" || fail "command doc default not 5"
+grep -qF 'soft warn at >5; hard cap 8' "$XC" && ok "the skill (the surviving home post-6.0.0-cull) states default 5 with both rails" || fail "max-parallel rails lost their home"
 if grep -q 'empirical optimum is 3' "$PC"; then fail "predictive-checks still claims optimum 3"; else ok "superseded optimum-3 claim removed from predictive-checks"; fi
 if grep -qF '(the default).0+' "$PC"; then fail "garbled '.0+ per audit' fragment survives"; else ok "garbled on_fail fragment cleaned"; fi
 grep -qF 'max-parallel ≤ 5' "$PC" && ok "soft-warn threshold 5 intact" || fail "soft-warn threshold drifted"

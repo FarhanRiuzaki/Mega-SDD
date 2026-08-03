@@ -1,6 +1,6 @@
 ---
 name: emit-prd
-version: 1.1.0
+version: 1.1.1
 description: Generate a PRD from mega-sdd state — forward (vault to PRD prose) or REVERSE (KB, no vault) with [VERIFIED]/[INFERRED]/[OPEN] markers carried verbatim; journeys as Mermaid; reviewed/final maturity human-set. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
 ---
 
@@ -85,8 +85,8 @@ Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<out-root> --doc=p
 ```
 PRD generated (<forward|reverse>, maturity: draft-from-legacy):
   Sections: 6 · Citations: <N> · Markers carried: <V> [VERIFIED] / <I> [INFERRED] / <O> [OPEN]
-  Open items (§6): <K> — resolve via /mega-sdd:resolve-oq (PRD is an output, not a decision surface)
-  Next: review → human sets maturity 'reviewed' · reverse mode: lanjut /mega-sdd:generate-intent --kb=<kb>
+  Open items (§6): <K> — resolve via resolve-oq (PRD is an output, not a decision surface)
+  Next: review → human sets maturity 'reviewed' · reverse mode: lanjut generate-intent --kb=<kb>
 ```
 
 ## Halt protocol

@@ -57,12 +57,12 @@ blocker:
       - <absolute path to candidate vault 1>
       - <absolute path to candidate vault 2>
     context: "<e.g. 'Step 0: 2 vaults under .mega-sdd/vaults/ and no --vault/positional arg'>"
-  next_action: "Re-invoke with an explicit vault: /mega-sdd:bind-codebase <vault> [--auto]"
+  next_action: "Re-invoke with an explicit vault: bind-codebase <vault> [--auto]"
   # next_action per reason:
   #   vault_ambiguous          → re-invoke with an explicit --vault=<path>/positional (list candidates above)
-  #   not_found                → run /mega-sdd:generate-intent (no vault yet), or pass --vault=<path>
+  #   not_found                → run generate-intent (no vault yet), or pass --vault=<path>
   #   vault_outside_glob_root  → run /mega-sdd:migrate-paths (legacy layout → canonical .mega-sdd/vaults/)
-  #   codebase_map (missing)   → run /mega-sdd:scan-codebase first
+  #   codebase_map (missing)   → run scan-codebase first
   #   vault_index (malformed)  → repair <vault>/00-index.md / vault.json, then re-bind
 ```
 
@@ -93,8 +93,8 @@ The `bind` event is appended by **running** `derive-vault-json.sh --vault <vault
 
 **Emitted at the end of output on EVERY invocation** — chain (`--auto`, typically
 `orchestrate-flow --deep` / `/mega-sdd`) *and* standalone. It is deliberately NOT `--auto`-gated:
-a direct `/mega-sdd:bind-codebase <vault>` run never injects `--auto` (`commands/bind-codebase.md`
-does not add it), and this skill is non-interactive by contract (`SKILL.md` §Anti-hallucination
+a direct `bind-codebase <vault>` run never injects `--auto` (a standalone dispatch
+adds no flags), and this skill is non-interactive by contract (`SKILL.md` §Anti-hallucination
 rails) — so the handoff is the ONLY channel by which the caller learns `next_action`,
 `artifacts[]` and `blockers[]`. Gating it on `--auto` would make a standalone run emit nothing at
 all, and that is exactly the defect the scan side already closed (`scan-codebase/references/halts-flags-handoff.md`

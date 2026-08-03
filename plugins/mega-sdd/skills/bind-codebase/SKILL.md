@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.16.0
+version: 2.17.0
 description: Validate a vault against codebase-map.md (+ KB secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim + an Implementation State Map; BLOCKS unit generation while conflicts remain. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -18,7 +18,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 - After `scan-codebase` produced `codebase-map.md` and a vault exists.
 - `orchestrate-flow` auto-routes here for brownfield projects.
-- Explicit: `/mega-sdd:bind-codebase <vault> [<codebase-map>]`.
+- Explicit: `bind-codebase <vault> [<codebase-map>]`.
 
 ## Inputs
 
@@ -44,7 +44,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 
 ## Procedure
 
-**1. Load inputs.** `VAULT_DIR` is already resolved by §Inputs **Step 0** — use it as-is; never re-resolve or widen it here. **`--express` set → this step and Step 2's retrieval are replaced by `references/express-bind.md`** (ledger + symbol-index + targeted Reads, zero map load; falls back HERE loudly when the index or ledger is unavailable) — Steps 2.5–2.12 and 3–6 then continue below unchanged. Otherwise (standard lane): read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, emitting `bind_inputs_missing` (`missing: codebase_map`) whose `next_action` instructs the user to run `scan-codebase` first (shape → `references/auto-memory-handoff.md`). Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first. **External-map provenance check:** also read `.mega-sdd/.codebase-map-state.json` (written by `validate-codebase-map.sh`); if it records `status: FAIL` or a `codebase_map_fm_missing` issue (an externally-authored map without writer-provenance frontmatter), the bind PROCEEDS but WARN with keterangan: "peta codebase ini ditulis di luar mega-sdd (frontmatter provenance hilang/invalid) — presisi binding turun ke klasifikasi biner; jalankan /mega-sdd:scan-codebase untuk map ber-provenance" and record `binding_metadata.codebase_map_provenance: "unverified-external"` — NEVER `"snapshot-verified"` for such a map. Propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
+**1. Load inputs.** `VAULT_DIR` is already resolved by §Inputs **Step 0** — use it as-is; never re-resolve or widen it here. **`--express` set → this step and Step 2's retrieval are replaced by `references/express-bind.md`** (ledger + symbol-index + targeted Reads, zero map load; falls back HERE loudly when the index or ledger is unavailable) — Steps 2.5–2.12 and 3–6 then continue below unchanged. Otherwise (standard lane): read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, emitting `bind_inputs_missing` (`missing: codebase_map`) whose `next_action` instructs the user to run `scan-codebase` first (shape → `references/auto-memory-handoff.md`). Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first. **External-map provenance check:** also read `.mega-sdd/.codebase-map-state.json` (written by `validate-codebase-map.sh`); if it records `status: FAIL` or a `codebase_map_fm_missing` issue (an externally-authored map without writer-provenance frontmatter), the bind PROCEEDS but WARN with keterangan: "peta codebase ini ditulis di luar mega-sdd (frontmatter provenance hilang/invalid) — presisi binding turun ke klasifikasi biner; jalankan scan-codebase untuk map ber-provenance" and record `binding_metadata.codebase_map_provenance: "unverified-external"` — NEVER `"snapshot-verified"` for such a map. Propagate `scope_metadata` when the vault is scoped. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
 
 **2. Per claim, produce a verdict** (per `references/binding-contract.md`). **This is the moat:**
 
@@ -100,7 +100,7 @@ mengikuti `references/binding-md-template.md`, atau re-generate via pipeline (re
 
 **5. Decision gate — non-negotiable:**
 
-- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>/bound/`** by **Running** `scripts/make-bound.sh --vault <vault>` (append `--strict` when the flag is set) — the deterministic deriver: it re-checks binding.md↔binding.json parity, REFUSES (exit 2) while any CONFLICT verdict exists, then copies the vault docs into `bound/`, injects the `<!-- BIND: -->` annotations from binding.json `vault_source` cells, and mirrors `binding.md`. NEVER hand-write bound/ files — a non-zero exit means fix the bind write, not bypass the script. Announce clean + next step `/mega-sdd:generate-units <vault>/`.
+- If `conflict == 0` AND (`oq == 0` OR `--strict` not set): **produce `<vault>/bound/`** by **Running** `scripts/make-bound.sh --vault <vault>` (append `--strict` when the flag is set) — the deterministic deriver: it re-checks binding.md↔binding.json parity, REFUSES (exit 2) while any CONFLICT verdict exists, then copies the vault docs into `bound/`, injects the `<!-- BIND: -->` annotations from binding.json `vault_source` cells, and mirrors `binding.md`. NEVER hand-write bound/ files — a non-zero exit means fix the bind write, not bypass the script. Announce clean + next step `generate-units <vault>/`.
 - If `conflict > 0` OR (`--strict` AND `oq > 0`): **DO NOT write `<vault>/bound/`.** (make-bound.sh independently refuses while any CONFLICT verdict is in binding.json — never work around it by hand-writing files.) Announce the blocker, emit the `bind_conflict` halt YAML (below), route to `resolve-oq`. Per-conflict recovery (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT) and the bind ↔ resolve-oq sequence → `references/conflict-resolution.md`.
 
 ```yaml
@@ -116,7 +116,7 @@ blocker:
         vault_claim: <verbatim from the ### CONFLICT-N detail block's `- **Vault claim**:` line>
         codebase_reality: <verbatim from the detail block's `- **Codebase reality**:` line (incl. the evidence anchor)>
         suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
-  next_action: "Run /mega-sdd:resolve-oq --binding <binding.md>"
+  next_action: "Run resolve-oq --binding <binding.md>"
 ```
 
 This YAML is the canonical halt artifact (for orchestrate-flow consumption); the prose announcement is for human readability.
@@ -141,7 +141,7 @@ Vault unresolvable / ambiguous / not a direct child of `.mega-sdd/vaults/` → `
 
 ## Hand-off
 
-Clean binding → `/mega-sdd:generate-units <vault>/` (the bound-vault is the nested `<vault>/bound/`). Blocked → `/mega-sdd:resolve-oq --binding <binding.md>`. Emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — on **every** invocation, chain (`--auto`, typically `orchestrate-flow --deep` / `/mega-sdd`) *and* standalone. It is NOT `--auto`-gated: a direct `/mega-sdd:bind-codebase <vault>` run never injects `--auto`, and this skill is non-interactive, so the handoff is the only channel by which the caller receives `next_action` / `artifacts[]` / `blockers[]` — gating it would leave a `bind_conflict` or Step-0 `bind_inputs_missing` stop routed nowhere on exactly the lane that has no chain to fall back on. Also participate in the memory layer. Both → `references/auto-memory-handoff.md`.
+Clean binding → `generate-units <vault>/` (the bound-vault is the nested `<vault>/bound/`). Blocked → `resolve-oq --binding <binding.md>`. Emit the handoff YAML — with conditional `scope:` / `mutability:` / `constitution:` blocks — on **every** invocation, chain (`--auto`, typically `orchestrate-flow --deep` / `/mega-sdd`) *and* standalone. It is NOT `--auto`-gated: a direct `bind-codebase <vault>` run never injects `--auto`, and this skill is non-interactive, so the handoff is the only channel by which the caller receives `next_action` / `artifacts[]` / `blockers[]` — gating it would leave a `bind_conflict` or Step-0 `bind_inputs_missing` stop routed nowhere on exactly the lane that has no chain to fall back on. Also participate in the memory layer. Both → `references/auto-memory-handoff.md`.
 
 ## Specialist references (load on demand)
 
@@ -154,3 +154,4 @@ Clean binding → `/mega-sdd:generate-units <vault>/` (the bound-vault is the ne
 - `references/auto-memory-handoff.md` — extraction-scorecard preflight, snapshot reuse, scope propagation, handoff YAML, memory layer.
 - `references/conflict-resolution.md` — per-conflict-type recovery + the bind ↔ resolve-oq interaction.
 - `references/express-bind.md` — the `--express` claim-scoped retrieval lane (ledger + index + targeted Reads, zero map load, fail-closed ladder, honest fallback).
+- `references/handoff-validation.md` — the manual binding→units handoff-integrity surface (`validate-handoff-binding-units.sh`): drop types + per-type resolution; relocated from `commands/validate-handoff.md` in the surface cull.

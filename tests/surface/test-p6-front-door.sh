@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
-# test-p6-front-door.sh — P6 surface collapse (5.0.0), v5 spec P6 row +
-# decisions 1/2 + sequencing #3.
+# test-p6-front-door.sh — the public-surface contract: P6 collapse (5.0.0)
+# + the P4 alias removal (6.0.0, v6 spec §P4.1).
 #
 # Pins:
 #   A  the three public verbs exist; the front door WRAPS the orchestrate-flow
-#      machinery (Skill dispatch) instead of forking it; auto.md's brain moved
-#      (one home) — the alias points at the front door, no duplicated detector.
+#      machinery (Skill dispatch) instead of forking it and carries the
+#      input-shape detector (one home).
 #   B  /mega-sdd:emit — dispatch table to the three P5 doc-pack skills + the
 #      no-arg doc-control maturity listing.
-#   C  all 24 deprecation aliases: file still resolves, description carries
-#      DEPRECATED, body prints the Indonesian keterangan first AND still
-#      dispatches its old target (skill or vetted script) — behavior unbroken.
+#   C  6.0.0 alias cull: ZERO deprecation-alias files remain; the kept-7
+#      enumerate exactly; every relocated procedure lives at its new home with
+#      its old dispatch marker intact AND is routed from its host SKILL.md;
+#      no runtime surface names a dead /mega-sdd:<alias> typed form.
 #   D  the 4 maintenance one-timers + sync are NOT aliased.
 #   E  always-on description-byte math is DOWN vs the captured 4.97.0 baseline.
-#   F  MOAT SEAM (sequencing #3): the UserPromptExpansion matcher gained the
+#   F  MOAT SEAM (sequencing #3): the UserPromptExpansion matcher covers the
 #      front-door verb — proven s6-style: matcher matches a /mega-sdd prompt
 #      exactly like /mega-sdd:execute-bolts (and does NOT match the other
 #      verbs), and the driven hook blocks on FAIL moat / stays silent on PASS.
-#   G  CLAUDE.md carries the decision-2 amendment; both manifests 5.0.0 match.
+#   G  CLAUDE.md carries the decision-2 amendment; both manifests 6.x match.
 #
 # CI-safe: bash + python3 only. Run with </dev/null.
 set -uo pipefail
@@ -48,11 +49,11 @@ has "$FD" "--from-prompt"              && ok "front door keeps Mode B (free-text
 # the moat sentence: Skill-dispatched, never Agent-offloaded
 grep -qiE 'NEVER (be )?(offloaded to the Agent|dispatch.*Agent|Agent-offload)' "$FD" \
   && ok "front door states Skill-dispatch-only (never Agent-offload)" || fail "front door missing the never-Agent-offload rule"
-# one home for the brain: auto.md no longer carries the input-detector, it points here
-has "$C/auto.md" "commands/mega-sdd.md" && ok "auto.md alias points at the front door" || fail "auto.md does not reference the front door"
-grep -qF 'Is `<input>` a path to a directory?' "$C/auto.md" \
-  && fail "auto.md still carries the input-shape detector (brain duplicated, not moved)" \
-  || ok "auto.md no longer duplicates the input-shape detector (brain moved)"
+# one home for the brain: the detector lives in the front door (auto.md removed 6.0.0)
+grep -qF 'Is `<input>` a path to a directory?' "$FD" \
+  && ok "front door carries the input-shape detector (the one home)" \
+  || fail "front door lost the input-shape detector"
+[ ! -f "$C/auto.md" ] && ok "auto.md removed (6.0.0 cull)" || fail "auto.md still present (cull incomplete)"
 
 echo "── B: /mega-sdd:emit dispatch table + maturity listing ──"
 EM="$C/emit.md"
@@ -64,51 +65,59 @@ has "$EM" "doc-control" && has "$EM" "maturity" \
   && ok "emit no-arg lane lists docs + maturity from doc-control stamps" || fail "emit no-arg maturity listing missing"
 grep -qiF "never invent" "$EM" && ok "emit listing: maturity never invented" || fail "emit listing anti-fabrication line missing"
 
-echo "── C: the 24 deprecation aliases (DEPRECATED + old dispatch intact) ──"
-# name → dispatch marker that MUST survive in the body (skill or vetted script)
-ALIASES="
-analyze:run-analyze.sh
-analyze-parallelism:analyze-parallelism.sh
-auto:mega-sdd:orchestrate-flow
-bind-codebase:mega-sdd:bind-codebase
-detect-drift:mega-sdd:detect-drift
-diff-vault:mega-sdd:diff-vault
-emit-agents-md:mega-sdd:emit-agents-md
-emit-fsd:mega-sdd:emit-fsd
-emit-prd:mega-sdd:emit-prd
-emit-sit:mega-sdd:emit-sit
-enrich-semantics:enrich-workflows-staging.sh
-execute-bolts:mega-sdd:execute-bolts
-extract-intelligence:mega-sdd:extract-intelligence
-generate-intent:mega-sdd:generate-intent
-generate-units:mega-sdd:generate-units
-graph:mega-sdd:graph
-lint-units:validate-unit-spec.sh
-list-modules:list-modules.sh
-migrate-rules:migrate-v1-rules.sh
-orchestrate-flow:mega-sdd:orchestrate-flow
-replay:replay.sh
-resolve-oq:mega-sdd:resolve-oq
-scan-codebase:mega-sdd:scan-codebase
-validate-handoff:validate-handoff-binding-units
+echo "── C: 6.0.0 alias cull — zero aliases, kept-7 exact, relocations intact ──"
+# C1: no deprecation-alias file survives
+if grep -l "DEPRECATED (5.x alias)" "$C"/*.md >/dev/null 2>&1; then
+  fail "deprecation-alias file(s) still present: $(grep -l 'DEPRECATED (5.x alias)' "$C"/*.md | tr '\n' ' ')"
+else
+  ok "zero DEPRECATED (5.x alias) files remain"
+fi
+# C2: the kept-7 enumerate exactly
+n_cmd=$(ls "$C"/*.md | wc -l | tr -d ' ')
+[ "$n_cmd" -eq 7 ] && ok "exactly 7 command files (3 verbs + 4 one-timers)" || fail "command count wrong: $n_cmd (expected 7)"
+for f in mega-sdd.md sync.md emit.md install-deps.md memory.md migrate-paths.md update-plugin.md; do
+  [ -f "$C/$f" ] || fail "kept command MISSING: $f"
+done
+# C3: relocated procedures — new home exists + old dispatch marker survived
+RELOC="
+skills/orchestrate-flow/references/diagnostics-procedures.md:validate-unit-spec.sh
+skills/orchestrate-flow/references/diagnostics-procedures.md:analyze-parallelism.sh
+skills/orchestrate-flow/references/diagnostics-procedures.md:list-modules.sh
+skills/orchestrate-flow/references/diagnostics-procedures.md:enrich-workflows-staging.sh
+skills/orchestrate-flow/references/diagnostics-procedures.md:--mark-dod
+skills/orchestrate-flow/references/diagnostics-procedures.md:changed ∪ dependents
+skills/bind-codebase/references/handoff-validation.md:validate-handoff-binding-units
+skills/execute-bolts/references/replay.md:replay.sh
+skills/execute-bolts/references/migrate-rules.md:migrate-v1-rules.sh
+skills/analyze/SKILL.md:run-analyze.sh
 "
-n_alias=0
 while IFS= read -r row; do
   [ -n "$row" ] || continue
-  name="${row%%:*}"; marker="${row#*:}"
-  f="$C/$name.md"
-  if [ ! -f "$f" ]; then fail "alias file MISSING (typed /mega-sdd:$name broken): $name.md"; continue; fi
-  n_alias=$((n_alias + 1))
-  grep -q '^description:.*DEPRECATED' "$f" \
-    && ok "alias $name: DEPRECATED description" || fail "alias $name: description not DEPRECATED"
-  has "$f" "dilebur ke" \
-    && ok "alias $name: Indonesian keterangan notice" || fail "alias $name: keterangan notice missing"
-  has "$f" "$marker" \
-    && ok "alias $name: still dispatches $marker" || fail "alias $name: old dispatch LOST ($marker) — behavior broken"
+  rf="${row%%:*}"; marker="${row#*:}"
+  if [ ! -f "$P/$rf" ]; then fail "relocated home MISSING: $rf"; continue; fi
+  has "$P/$rf" "$marker" \
+    && ok "relocation: $(basename "$rf") carries $marker" \
+    || fail "relocation LOST its dispatch marker: $rf ($marker)"
 done <<EOF
-$ALIASES
+$RELOC
 EOF
-[ "$n_alias" -eq 24 ] && ok "exactly 24 aliases enumerated" || fail "alias count wrong: $n_alias (expected 24)"
+# C4: each new reference is routed from its host SKILL.md (one-level-deep rule)
+has "$P/skills/orchestrate-flow/SKILL.md" "references/diagnostics-procedures.md" \
+  && ok "orchestrate-flow routes diagnostics-procedures.md" || fail "diagnostics-procedures.md unrouted"
+has "$P/skills/bind-codebase/SKILL.md" "references/handoff-validation.md" \
+  && ok "bind-codebase routes handoff-validation.md" || fail "handoff-validation.md unrouted"
+has "$P/skills/execute-bolts/SKILL.md" "references/replay.md" \
+  && ok "execute-bolts routes replay.md" || fail "replay.md unrouted"
+has "$P/skills/execute-bolts/SKILL.md" "references/migrate-rules.md" \
+  && ok "execute-bolts routes migrate-rules.md" || fail "migrate-rules.md unrouted"
+# C5: phantom sweep — no runtime surface names a dead /mega-sdd:<alias> form
+DEAD_RX='/mega-sdd:(analyze-parallelism|auto|bind-codebase|detect-drift|diff-vault|emit-agents-md|emit-fsd|emit-prd|emit-sit|enrich-semantics|execute-bolts|extract-intelligence|generate-intent|generate-units|graph|lint-units|list-modules|migrate-rules|orchestrate-flow|replay|resolve-oq|scan-codebase|validate-handoff|analyze)\b'
+PHANTOMS=$(grep -rn -E "$DEAD_RX" "$P/skills" "$P/hooks" "$P/scripts" "$P/references" "$P/agents" "$P/commands" 2>/dev/null | grep -v '\.mega-sdd/' || true)
+if [ -n "$PHANTOMS" ]; then
+  fail "phantom typed forms remain in runtime surfaces:"; printf '%s\n' "$PHANTOMS" | head -10
+else
+  ok "phantom sweep clean — no dead /mega-sdd:<alias> form in runtime surfaces"
+fi
 
 echo "── D: maintenance one-timers + sync stay first-class ──"
 for f in memory install-deps migrate-paths update-plugin sync; do
@@ -188,9 +197,9 @@ grep -qiF "telemetry review" "$P/CLAUDE.md" \
   && ok "CLAUDE.md carries the decision-2 alias/removal amendment" || fail "CLAUDE.md amendment missing"
 V1=$(grep -oE '"version": "[^"]+"' "$P/.claude-plugin/plugin.json" | head -1)
 V2=$(grep -oE '"version": "[^"]+"' "$ROOT/.claude-plugin/marketplace.json" | head -1)
-# The surface collapse landed in the 5.x MAJOR; assert major==5 (not a frozen
+# The alias removal landed in the 6.x MAJOR; assert major>=6 (not a frozen
 # minor — that is the version-archaeology anti-pattern) + the two manifests agree.
-echo "$V1" | grep -qE '"version": "5\.[0-9]+\.[0-9]+"' && ok "plugin.json is on the 5.x surface major ($V1)" || fail "plugin.json not 5.x: $V1"
+echo "$V1" | grep -qE '"version": "[6-9][0-9]*\.[0-9]+\.[0-9]+"' && ok "plugin.json is on the 6.x+ surface major ($V1)" || fail "plugin.json not >=6.x: $V1"
 [ "$V1" = "$V2" ] && ok "marketplace.json matches plugin.json" || fail "manifest mismatch: $V1 vs $V2"
 
 echo

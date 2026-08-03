@@ -220,21 +220,20 @@ M_LED2=$(_mtime "$LEDGER")
 [ "$(_state scope_mode)" = "aggregate" ] && pass "aggregate run reports scope_mode=aggregate" || fail "aggregate scope_mode=$(_state scope_mode)"
 
 # ── 10. Doc pins ─────────────────────────────────────────────────────────────
-LU="$PLUGIN_ROOT/commands/lint-units.md"
+LU="$PLUGIN_ROOT/skills/orchestrate-flow/references/diagnostics-procedures.md"
 grep -qF -- "--changed-only" "$LU" \
   && grep -qF "changed ∪ dependents" "$LU" \
   && grep -qF "no freshness ledger — full sweep" "$LU" \
-  && pass "lint-units.md pins --changed-only + closure rule + honest fallback" \
-  || fail "lint-units.md missing a --changed-only contract element"
+  && pass "diagnostics-procedures.md (lint-units' post-cull home) pins --changed-only + closure rule + honest fallback" \
+  || fail "diagnostics-procedures.md missing a --changed-only contract element"
 grep -qF -- "lint-units --changed-only" "$PLUGIN_ROOT/skills/orchestrate-flow/references/chain-execution.md" \
   && pass "chain auto-lint row passes --changed-only" \
   || fail "chain-execution.md auto-lint row not scoped"
-grep -qF -- "--fresh" "$PLUGIN_ROOT/commands/analyze.md" \
-  && grep -qF -- "--fresh" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
-  && grep -qF "Scoped by default" "$PLUGIN_ROOT/commands/analyze.md" \
+grep -qF -- "--fresh" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
+  && grep -qF "Scoped by default" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
   && grep -qF "Semantic-scoped by default" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
-  && pass "analyze surfaces document --fresh + the scoped default" \
-  || fail "analyze doc plane missing --fresh or the scoped-default prose"
+  && pass "analyze SKILL.md (the surviving doc plane post-6.0.0-cull) documents --fresh + both scoped-default phrasings" \
+  || fail "analyze SKILL.md missing --fresh or the scoped-default prose"
 grep -qF -- "lint-units --changed-only" "$PLUGIN_ROOT/commands/mega-sdd.md" \
   && pass "front-door diagnostics table row scoped (--changed-only)" \
   || fail "mega-sdd.md auto-lint row not scoped"

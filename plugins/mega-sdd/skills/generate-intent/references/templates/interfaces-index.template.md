@@ -10,7 +10,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/interfaces-index"]
 
 > Every cross-squad coupling MUST be represented by an interface note in this folder.
 > Status `locked` is required before consumer-squad units can execute via
-> `/mega-sdd:execute-bolts --squad=<consumer>`.
+> `execute-bolts --squad=<consumer>`.
 
 ## Rules
 
@@ -43,7 +43,7 @@ When stakeholders approve a draft interface:
 1. Set `status: locked` in frontmatter
 2. Set `locked_at: YYYY-MM-DD` (today)
 3. Update this index table's Status column to `locked`
-4. Re-run `/mega-sdd:execute-bolts --per-squad` to unblock consumer squads
+4. Re-run `execute-bolts --per-squad` to unblock consumer squads
 
 ## Anti-hallucination
 

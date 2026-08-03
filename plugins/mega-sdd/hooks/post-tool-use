@@ -283,7 +283,7 @@ try:
     d = json.load(open(os.environ["STATE_SKM"]))
     payload = {
         "halt_type": "starterkit_metrics_inconsistent",
-        "fix_applied": "detection only; suggest /mega-sdd:scan-codebase --force-deep + regenerate units",
+        "fix_applied": "detection only; suggest scan-codebase --force-deep + regenerate units",
         "original_emit_site": "PostToolUse-Skill-validate-starterkit-metrics",
         "logged_at_chat": False,
         "quality_gate_subtype": "starterkit_metrics_inconsistent",
@@ -423,7 +423,7 @@ for h in sorted(hits):
     # about spawns multiplied INSIDE one logical operation, and per-bolt firing
     # is the only cadence that survives a 40-unit run halting at unit 12.
     # Advisory (S6 EB-HONEST-3): nothing in PreToolUse reads
-    # .dispatch-prompt-state.json — it is surfaced via /mega-sdd:analyze.
+    # .dispatch-prompt-state.json — it is surfaced via analyze.
     if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -q "build-dispatch-prompt\.sh"; then
       SCRIPT_DIR_BDP="$(cd "$(dirname "$0")" && pwd)"
       VALIDATOR_DP_B="${SCRIPT_DIR_BDP}/../scripts/validate-dispatch-prompt.sh"
@@ -571,7 +571,7 @@ except Exception:
         # Fan-out parity (Iter-79 A2): presence-parity of deliverable obligations
         # (UI contract, render test) across VIEW-BEARING siblings — catches "LC is
         # always the survivor". SKIPs when the pack declares no view_glob. Writes
-        # .fanout-parity-state.json. ADVISORY ONLY — surfaced via /mega-sdd:analyze;
+        # .fanout-parity-state.json. ADVISORY ONLY — surfaced via analyze;
         # the PreToolUse aggregator does NOT read this state file (no blocking gate).
         # (Per CLAUDE.md: fan-out-parity is advisory, not a hard block.)
         VALIDATOR_FOP="${SCRIPT_DIR}/../scripts/validate-fanout-parity.sh"
@@ -635,7 +635,7 @@ except Exception:
     # + a view/component exemplar; it self-SKIPs when the pack omits `## UI quality
     # signatures` (no view_glob) or no ui_ux prompt exists. Writes
     # .dispatch-prompt-state.json. ADVISORY (S6 EB-HONEST-3): nothing in PreToolUse
-    # reads this state — it is surfaced via /mega-sdd:analyze, per the demotion list.
+    # reads this state — it is surfaced via analyze, per the demotion list.
     # NOTE: the shipped writer is now scripts/build-dispatch-prompt.sh, which writes
     # from Python and fires no Write event — see the Bash-leg twin of this dispatch
     # in the Bash) branch above. This leg stays for hand/agent edits of an emitted
@@ -784,7 +784,7 @@ except Exception:
     # lie to a gate: NONE of the four states is read by PreToolUse (ui-deferral
     # + vault-flow-staging are demoted-advisory; the other two appear at zero
     # of the gate aggregator's L() sites) and every gate-read state is
-    # re-derived at the gate itself (S4/S5/S6); /mega-sdd:analyze re-runs the
+    # re-derived at the gate itself (S4/S5/S6); analyze re-runs the
     # validators fresh. Probe prunes = derived OUTPUTS only (state files, both
     # scan stamps, memory/, .cache/, analyze reports, and .dirty-paths.jsonl —
     # the journal THIS hook appends on every source write in a mapped repo;
@@ -845,7 +845,7 @@ except Exception:
     # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
     # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
     # bolt-reports / no pack UI signatures. ADVISORY (S6 EB-HONEST-2): nothing in
-    # PreToolUse reads .ui-deferral-state.json — it is surfaced via /mega-sdd:analyze.
+    # PreToolUse reads .ui-deferral-state.json — it is surfaced via analyze.
     if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
       "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
@@ -886,7 +886,7 @@ except Exception:
     # the vault flow dropped it. Project-wide scan; self-skips when no KB / no
     # `_kb_source` (backward-compatible).
     #
-    # ADVISORY — surfaced via /mega-sdd:analyze, NOT a blocking gate. This comment
+    # ADVISORY — surfaced via analyze, NOT a blocking gate. This comment
     # previously claimed "PreToolUse Branch 14 gates execute-bolts on its
     # status==FAIL", which was false in both directions: `pre-tool-use:405` lists
     # vault-flow-staging among the states DEMOTED to advisory, and the gate's state

@@ -184,7 +184,7 @@ else:
 # >5 inputs) but carries no `## 3a` stages: block. NEVER flips status (rides a
 # separate advisories[] channel per the Iter-78.1 invariant). Pairs with the
 # extract-intelligence §3a staged-input detection guidance; points the user to
-# /mega-sdd:enrich-semantics. See knowledge-base-schema.md §3a.
+# enrich-semantics. See knowledge-base-schema.md §3a.
 # ──────────────────────────────────────────────────────────────────────────
 def _frontmatter(text):
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
@@ -242,7 +242,7 @@ if _multistep and not _has_stages_block:
                    ") but carries no `## 3a` stages: block — staging may be lost downstream "
                    "(single-form bolt instead of multi-step wizard)"),
         "suggested_fix": ("author the `## 3a. Staged inputs` stages: block (knowledge-base-schema.md §3a), "
-                          "or retro-fit via `/mega-sdd:enrich-semantics --vault=<vault> "
+                          "or retro-fit via `enrich-semantics --vault=<vault> "
                           "--legacy-root=<legacy> --semantic=staged-input`"),
     })
 
@@ -252,7 +252,7 @@ _summary = (
     if issues else "all flows use Mermaid; heuristic syntax checks pass"
 )
 if advisories:
-    _summary += f" | {len(advisories)} staging advisory(ies) — run /mega-sdd:enrich-semantics"
+    _summary += f" | {len(advisories)} staging advisory(ies) — run enrich-semantics"
 result = {
     "status": "FAIL" if has_fail else "PASS",
     "checked_file": os.path.relpath(file_path, cwd),
@@ -261,7 +261,7 @@ result = {
     "advisories": advisories,   # v3.71.0+ semantic-depth — non-blocking
     "summary": _summary,
     "next_action": (
-        "Advisory: workflow looks multi-step but has no stages: block. Run /mega-sdd:enrich-semantics to retro-fit staging."
+        "Advisory: workflow looks multi-step but has no stages: block. Run enrich-semantics to retro-fit staging."
         if advisories else None
     ),
 }

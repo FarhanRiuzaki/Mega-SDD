@@ -134,7 +134,7 @@ source_skill: scan-codebase
 details:
   failed_domains: [auth, authz, ui_ux, libs, reuse]
   common_failure_reason: <"api_outage" | "rate_limited" | "unknown">
-next_action: "Re-run /mega-sdd:scan-codebase later (likely API outage; user retry required). Existing starterkit-context.yaml (if any) preserved untouched."
+next_action: "Re-run scan-codebase later (likely API outage; user retry required). Existing starterkit-context.yaml (if any) preserved untouched."
 ```
 
 Recovery: user re-runs scan-codebase later. Chain halts.
@@ -177,11 +177,11 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
 
 ## Hand-off announcement
 
-On completion, announce: "Codebase map written to `<path>`." followed by the CWD-conditional next step (a vault exists → `/mega-sdd:bind-codebase <vault>`; none yet → `/mega-sdd:generate-intent --scan=<map>`).
+On completion, announce: "Codebase map written to `<path>`." followed by the CWD-conditional next step (a vault exists → `bind-codebase <vault>`; none yet → `generate-intent --scan=<map>`).
 
 ## Handoff YAML emission
 
-**UNCONDITIONAL — emitted at the end of skill output on EVERY invocation**, chain (`--auto`, typically `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is deliberately NOT `--auto`-gated: a direct `/mega-sdd:scan-codebase` run never injects `--auto`, and this skill is non-interactive, so the handoff is the only channel by which the caller learns `next_action`, `artifacts[]` and `blockers[]`. Gating it on `--auto` would make a standalone run emit nothing at all. Template below is the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
+**UNCONDITIONAL — emitted at the end of skill output on EVERY invocation**, chain (`--auto`, typically `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is deliberately NOT `--auto`-gated: a direct `scan-codebase` run never injects `--auto`, and this skill is non-interactive, so the handoff is the only channel by which the caller learns `next_action`, `artifacts[]` and `blockers[]`. Gating it on `--auto` would make a standalone run emit nothing at all. Template below is the OPERATIVE spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index):
 
 ```yaml
 handoff:

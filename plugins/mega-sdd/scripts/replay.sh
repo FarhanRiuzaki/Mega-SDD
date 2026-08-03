@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # replay.sh — capture a bolt-state snapshot for one unit + classify divergence
 # vs the latest prior snapshot. Read-only diagnostic (audit batch E / finding F4,
-# extracted from commands/replay.md Steps 2-5 — self-labeled DETERMINISTIC).
+# extracted from skills/execute-bolts/references/replay.md Steps 2-5 — self-labeled DETERMINISTIC).
 #
-# The genuine LLM-judgment / hand-off interpretation (Step 6 table) stays in the
-# command; this script does ONLY the deterministic part: read bolt artifacts →
+# The genuine LLM-judgment / hand-off interpretation (the Step 5 hand-off table) stays in the
+# reference (execute-bolts/references/replay.md); this script does ONLY the deterministic part: read bolt artifacts →
 # build a snapshot → diff vs prior → classify by the fixed severity table → render.
 #
 # GROUNDING (moat invariant #5 — no fabrication). Snapshot fields are sourced
@@ -254,7 +254,7 @@ fi
 
 # --------------------------------------------------------------------------
 # Steps 4 + 5 — classify divergence by the FIXED severity table, render.
-# Severity rules (from commands/replay.md Step 4), gated on field presence so
+# Severity rules (from skills/execute-bolts/references/replay.md Step 3), gated on field presence so
 # aspirational fields only count when present on BOTH snapshots:
 #   HIGH  : target sha differs on same path | hard-rule verdict changed |
 #           halt null<->populated | postflight_status changed |

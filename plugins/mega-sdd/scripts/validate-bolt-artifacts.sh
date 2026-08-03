@@ -1235,7 +1235,7 @@ state = {
 }
 
 # Telemetry-only single-slot state (the PreToolUse aggregator never reads it —
-# /mega-sdd:analyze surfaces it); current-truth overwrite per written file.
+# analyze surfaces it); current-truth overwrite per written file.
 try:
     _tmp = state_file + ".tmp.%d" % os.getpid()
     with open(_tmp, "w") as f:

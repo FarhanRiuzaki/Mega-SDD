@@ -609,12 +609,12 @@ if os.path.isfile(starterkit_path):
             rel_corrupt = os.path.relpath(corrupt_path, cwd)
             emit_event(
                 "deep_scan_cache_corrupt",
-                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the next ON-DEMAND /mega-sdd:scan-codebase run rebuilds it (scan is not in the default express chain)",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the next ON-DEMAND scan-codebase run rebuilds it (scan is not in the default express chain)",
                 original_path=rel_orig,
                 corrupt_path=rel_corrupt,
                 reason=str(e),
             )
-            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; an on-demand /mega-sdd:scan-codebase run rebuilds it")
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; an on-demand scan-codebase run rebuilds it")
     except Exception:
         pass
 

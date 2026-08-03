@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.7.0
+version: 1.7.1
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -219,7 +219,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/fix-windows-path.sh" --probe=<binary>
 - rc 4 / rc 6 → mark `unverified` with "restart terminal and re-run".
 - rc 7 → the interpreter is an MSYS2/Cygwin build with no `winreg`; nothing was read or written. Mark `unverified` and name the remedy (install Python via winget or scoop).
 
-Full triage table, the per-installer binary locations, and the destructive methods that must never be used: `references/windows-path.md`.
+Full triage table, the per-installer binary locations, and the destructive methods that must never be used: `references/windows-path.md`. Manual per-tool install commands (the non-skill path, e.g. `markdownlint-cli2`): `plugins/mega-sdd/references/tooling-install.md`.
 
 Emit chat output:
 

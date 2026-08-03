@@ -29,7 +29,7 @@ Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The 7-fil
 
 ## Operator-workflow-UX capture + Design-Source OQ
 
-> `validate-vault-oqs.sh` re-validates every vault doc write (PostToolUse) and surfaces a capture-stage miss as **advisory** via `/mega-sdd:analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks `mega-sdd:execute-bolts`). This prose is the real win — get it right at generation time.
+> `validate-vault-oqs.sh` re-validates every vault doc write (PostToolUse) and surfaces a capture-stage miss as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks `mega-sdd:execute-bolts`). This prose is the real win — get it right at generation time.
 
 **Rule 1 — model the operator surface when the flows show a workflow.** When the flows in `04-flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
 
@@ -201,7 +201,7 @@ When `phase_total > 1` AND `N < phase_total`, additionally emit:
 **To start the next phase** (after this phase's bolts complete):
 
 \`\`\`bash
-/mega-sdd:generate-intent --kb=<KB-path> --phase=<N+1>
+generate-intent --kb=<KB-path> --phase=<N+1>
 \`\`\`
 
 **Full phased plan:** `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`

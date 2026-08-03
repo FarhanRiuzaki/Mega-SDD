@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # analyze-parallelism.sh — deterministic DAG analysis of a mega-sdd vault's units.
 #
-# This is the DETERMINISTIC core extracted from commands/analyze-parallelism.md
+# This is the DETERMINISTIC core extracted from skills/orchestrate-flow/references/diagnostics-procedures.md section analyze-parallelism
 # (audit batch E / finding F4). The command self-labels its DAG math
 # "DETERMINISTIC" (anti-halu rail) — depth / width / topological-wave layering /
 # critical path / speedup / forks / joins / per-squad + per-module sub-DAGs /

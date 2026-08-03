@@ -46,7 +46,7 @@ Field notes (S4):
   straight off a capped map section). Optional/null for self-evident states. Sourced
   from the State Map Anchor cell's `[reason: <enum>]` token; the derive FAILS (exit 2)
   on an unknown token or on a truncation-citing Anchor cell with no token.
-- `resolution` — set by `/mega-sdd:resolve-oq --binding` when a CONFLICT claim is
+- `resolution` — set by `resolve-oq --binding` when a CONFLICT claim is
   resolved (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT); null until then. resolve-oq
   writes the structural RESOLVED markers + the `- **Claim**: C-NNN` line into
   `binding.md`, then refreshes this sidecar by re-running

@@ -791,7 +791,7 @@ state = {
     "next_action": (
         "Unit spec passes integrity checks."
         if status == "PASS"
-        else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via /mega-sdd:generate-units --regenerate or amend manually."
+        else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually."
     ),
 }
 

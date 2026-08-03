@@ -12,7 +12,7 @@
 
 ## What the KB sub-mode is
 
-Invocation: `/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/`. Consumes a `mega-sdd:extract-intelligence` knowledge base as the legacy-rebuild brief.
+Invocation: `generate-intent --kb=.mega-sdd/knowledge-base/`. Consumes a `mega-sdd:extract-intelligence` knowledge base as the legacy-rebuild brief.
 
 The KB is treated as **ANALYSIS INPUT, not a 1:1 spec.** Vault output emphasizes REENGINEERING goals + business intent; legacy detail surfaces only when the `[LOCKED]` tier requires preservation. Per the governing directive: "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1" (code and ERD may change as long as the reengineering goals are met; ERD need not be 1:1 unless a rule requires it).
 
@@ -25,7 +25,7 @@ Before reading KB content, check whether `<kb-dir>/.shared-snapshots/extracted-k
 1. If the snapshot exists, read `source_files_sha256_map`.
 2. For each `<repo-relative-path>` in the map, compute the current sha256 of that file in the legacy source codebase.
 3. If ALL files match → log `"KB freshness: confirmed (<N> source files unchanged since extraction at <generated_at>)"`. Proceed.
-4. If SOME files drifted → log a warning: `"KB may be stale: <drifted-count> of <total> source files changed since extraction (<generated_at>). Consider \`/mega-sdd:extract-intelligence --force\` to refresh KB before generating vault."`. **DO NOT halt** — the user retains agency to proceed (legacy stale-KB warnings should not block reengineering work).
+4. If SOME files drifted → log a warning: `"KB may be stale: <drifted-count> of <total> source files changed since extraction (<generated_at>). Consider \`extract-intelligence --force\` to refresh KB before generating vault."`. **DO NOT halt** — the user retains agency to proceed (legacy stale-KB warnings should not block reengineering work).
 5. If the snapshot is absent (older KBs OR snapshot write failed) → log advisory `"KB has no freshness snapshot; treating as fresh."`. Proceed.
 
 KB consumption correctness is unchanged whether the check confirms / warns / skips.
