@@ -128,7 +128,7 @@ When invoked with `--reuse-bolt-snapshots` (auto-set when chained after execute-
 4. For files NOT in any bolt postflight: fall back to fresh scan (typically small remainder)
 5. Performance gain: skip Read + ast-extract for files already captured by bolts
 
-When invoked standalone (`/mega-sdd:detect-drift` no chain context):
+When invoked standalone (`detect-drift` no chain context):
 
 - Behave as v1.2.x: fresh full scan; ignore bolt snapshots (avoid stale data)
 
@@ -150,7 +150,7 @@ Before reading `<kb-dir>`:
 1. Check if `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` exists
 2. For each path in `source_files_sha256_map`: compute current sha256 of the file in repo
 3. If ALL files unchanged → KB freshness confirmed; log "KB freshness: confirmed (X source files unchanged since extraction)"
-4. If SOME files drifted → log warning: "KB may be stale: <N> of <M> source files changed since extraction. Consider `/mega-sdd:extract-intelligence --force` to refresh." DO NOT halt — user decides
+4. If SOME files drifted → log warning: "KB may be stale: <N> of <M> source files changed since extraction. Consider `extract-intelligence --force` to refresh." DO NOT halt — user decides
 5. If snapshot absent → log advisory; behave as today (assume KB fresh)
 
 ## Anti-halu rails

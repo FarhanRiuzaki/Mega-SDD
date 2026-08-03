@@ -186,7 +186,7 @@ for bound_dir in slice5_dirs:
 # lacking a binding entry, or a unit lacking a bolt-report pre-execution, are expected
 # transient states — not failures). So advisory issues surface as WARN (exit 0), never
 # FAIL (exit 1) — aligning with the sibling advisory validators' PASS|SKIP|WARN)exit 0
-# contract instead of worsening the /mega-sdd:analyze rollup with a hard FAIL.
+# contract instead of worsening the analyze rollup with a hard FAIL.
 status = "PASS" if not issues else "WARN"
 report = {
     "ts": ts,

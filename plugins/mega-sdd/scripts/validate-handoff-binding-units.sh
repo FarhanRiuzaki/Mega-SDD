@@ -242,7 +242,7 @@ if units_paths and unit_conflict_citations and not binding_paths:
             "units cite CONFLICT-IDs but no binding doc exists under .mega-sdd/vaults/ — "
             "deleting/moving binding.md erases active CONFLICTs without resolution "
             "(invariant #2) and breaks unit citation resolution (invariant #3). "
-            "Restore the binding doc or re-run /mega-sdd:bind-codebase."
+            "Restore the binding doc or re-run bind-codebase."
         ),
     })
 for oq_id in sorted(binding_oqs.keys()):
@@ -377,10 +377,10 @@ for bp in binding_paths:
                     "source_binding": os.path.relpath(bp, cwd),
                     "heading": head.lstrip("# ").strip(),
                     "expected": (
-                        "resolve the CONFLICT via /mega-sdd:resolve-oq --binding (writes the "
+                        "resolve the CONFLICT via resolve-oq --binding (writes the "
                         "✅/RESOLVED marker into the heading or a `- **Resolution**:` line — "
                         "prose mentions of the word elsewhere in the block do NOT count), "
-                        "or re-run /mega-sdd:bind-codebase until conflicts=0, before "
+                        "or re-run bind-codebase until conflicts=0, before "
                         "generating units or running bolts"
                     ),
                 })
@@ -430,7 +430,7 @@ for oq_id in sorted(binding_oqs_pending.keys()):
             "warning": (
                 "pending Open-Questions OQ not cited by any unit — advisory only "
                 "(an unresolved OQ has no resolution to trace; resolve it via "
-                "/mega-sdd:resolve-oq, after which affected units must cite it)"
+                "resolve-oq, after which affected units must cite it)"
             ),
         })
 
@@ -605,7 +605,7 @@ if _inside_git is not None and _inside_git.strip() == "true":
                     "oleh commit DI LUAR pipeline unit (commit non-unit; commit bolt "
                     "ber-atribusi unit sudah dijaga gate B1/B3 dan tidak dihitung): "
                     + ", ".join(_hits) + ". Jalankan /mega-sdd:sync (incremental) atau "
-                    "re-bind via /mega-sdd:bind-codebase sebelum generate-units/"
+                    "re-bind via bind-codebase sebelum generate-units/"
                     "execute-bolts — verdict lama tidak lagi menggambarkan kode saat ini."
                 ),
             })
@@ -632,8 +632,8 @@ def _next_action(drops):
     parts = []
     if types & {"conflict_unresolved", "binding_missing"}:
         parts.append(
-            "conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding <binding.md> "
-            "(human-in-the-loop) or re-run /mega-sdd:bind-codebase until conflicts=0"
+            "conflict/binding drops: resolve via resolve-oq --binding <binding.md> "
+            "(human-in-the-loop) or re-run bind-codebase until conflicts=0"
         )
     if types & {"oq_id_dropped", "conflict_id_dropped"}:
         parts.append(
@@ -642,7 +642,7 @@ def _next_action(drops):
         )
     if types & {"binding_stale_recertify"}:
         parts.append(
-            "binding basi (stale): jalankan /mega-sdd:sync atau /mega-sdd:bind-codebase "
+            "binding basi (stale): jalankan /mega-sdd:sync atau bind-codebase "
             "ulang — file yang di-anchor binding berubah sejak binding_metadata.head "
             "oleh commit di luar pipeline unit (daftar file ada di field `expected` "
             "pada drop-nya)"

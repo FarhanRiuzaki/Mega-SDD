@@ -174,7 +174,7 @@ for vault_dir in vault_dirs:
                                "steps) but has no stages: block AND no _kb_source back-reference — staging "
                                "likely flattened wholesale (or PRD-only multi-step). Non-blocking signal."),
                     "suggested_fix": ("author a **Stages** block (+ _kb_source if KB-derived) per "
-                                      "vault-contract.md §stages-propagation, or run /mega-sdd:enrich-semantics"),
+                                      "vault-contract.md §stages-propagation, or run enrich-semantics"),
                 })
             continue  # no back-reference -> blocking drop-check N/A; advisory handled above
         flows_with_kb_source += 1
@@ -221,7 +221,7 @@ report = {
     "advisories": advisories,   # v3.71.0 — non-blocking (flatten-without-backref / PRD-only)
     "next_action": (
         (f"{len(advisories)} flow(s) look multi-step but carry no staging AND no _kb_source "
-         f"(advisory — likely wholesale flatten). Consider /mega-sdd:enrich-semantics."
+         f"(advisory — likely wholesale flatten). Consider enrich-semantics."
          if advisories else
          "Staged-input preserved across KB->vault boundary (or no staged workflows present).")
         if status == "PASS"

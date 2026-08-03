@@ -47,7 +47,7 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 <!-- properties_validated: <N total invariants across units that hold properties: blocks; from vault.json properties_summary> -->
 <!-- replay_snapshot_count: <N replay snapshots recorded; from vault.json replay_state> -->
 <!-- convergence_cycle_count: <N successful convergence cycles since vault inception; from vault.json convergence_state> -->
-<!-- DO NOT EDIT BELOW THIS LINE — regenerate via /mega-sdd:emit-agents-md -->
+<!-- DO NOT EDIT BELOW THIS LINE — regenerate via emit-agents-md -->
 ```
 
 > Header declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
@@ -255,7 +255,7 @@ Header HTML comments declare vault-state fields. Each field renders ONLY when it
 | `scope_name` | `vault.json` `scope_metadata.name` | vault has `scope` field (multi-scope vault); OMIT line otherwise |
 | `constitution_hash` | `binding.md` frontmatter `constitution_hash` | `<vault>/constitution.md` exists AND binding.md has been written  |
 | `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block  |
-| `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `/mega-sdd:replay`  |
+| `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `replay`  |
 | `replay_snapshot_count` value 0 | omit field entirely | new vault, never replayed |
 | `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd --converge` has run ≥1 successful cycle  |
 | `convergence_cycle_count` value 0 | omit field entirely | no convergence runs |
@@ -281,7 +281,7 @@ When `--mode=append` AND existing AGENTS.md detected:
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- BEGIN MEGA-SDD GENERATED SECTIONS — DO NOT EDIT MANUALLY        -->
-<!-- Regenerate via /mega-sdd:emit-agents-md                          -->
+<!-- Regenerate via emit-agents-md                          -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <!-- generated_by: mega-sdd:emit-agents-md {{generator_version}} -->

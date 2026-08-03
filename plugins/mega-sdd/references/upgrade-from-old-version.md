@@ -6,6 +6,7 @@
 
 ## Contents
 
+- Upgrading to 6.0.0 (the alias-removal major)
 - TL;DR — two paths
 - Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
 - Recommended upgrade paths
@@ -16,6 +17,20 @@
 - Per-iter behavior changes (what changed between iters affects you)
 - Pre-flight checklist before upgrade
 - See also
+
+## Upgrading to 6.0.0 (the alias-removal major)
+
+**What broke (the ONLY break):** the 24 `/mega-sdd:<stage>` typed deprecation aliases no longer register as slash commands (`generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault`, `analyze`, `graph`, `lint-units`, `list-modules`, `replay`, `migrate-rules`, `validate-handoff`, `enrich-semantics`, `analyze-parallelism`, `extract-intelligence`, `orchestrate-flow`, `auto`, `emit-fsd`, `emit-prd`, `emit-sit`, `emit-agents-md`). Removal per policy: demoted at 5.0.0, removable the following major after telemetry review (performed 2026-08-04; honest scope: the telemetry corpus records skill events + ref-loads and has NO channel that logs typed command invocations, so it can attest no alias usage — the review is discharged procedurally, and the field floor is covered by this guide, not by the corpus).
+
+**What did NOT break:** every artifact (vault, binding.md, units, bolts), every gate and hook contract, the classic spine (`--classic` / `spine: classic`), all legacy read-side paths (`docs/mega-sdd/…`, `.mega-sdd-memory/` — deliberately KEPT, they cost one glob each), and all four maintenance one-timers. **Typing an old form still works in practice:** an unregistered legacy form (say, the old typed analyze alias) arrives as plain text and routes to the matching skill — you lose only the registered slash-command autocompletion.
+
+**The 6.0.0 surface:** `/mega-sdd` (front door) · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>` + one-timers `install-deps` / `update-plugin` / `memory` / `migrate-paths`. Everything else: natural-language phrase ("cek konsistensi", "lint units", "replay U-001", "cek drift", "blast radius"). The full 24-row old-form → new-way map lives in the plugin `README.md §Commands you'll actually use`.
+
+**Where the alias content went (nothing was deleted blind):** `lint-units`/`analyze-parallelism`/`list-modules`/`enrich-semantics` procedures → `skills/orchestrate-flow/references/diagnostics-procedures.md`; `validate-handoff` → `skills/bind-codebase/references/handoff-validation.md`; `replay` + `migrate-rules` → `skills/execute-bolts/references/`; `analyze` modes → `skills/analyze/SKILL.md`.
+
+**Office-floor path (v5.9.0 laptops):** `/mega-sdd:update-plugin` → `/plugin marketplace update mega-sdd` → restart/`/reload-plugins`. No project migration needed — 6.0.0 changes the COMMAND surface only; a 5.x vault/binding/units tree is consumed unchanged, and the express spine has been the default since 5.35.0.
+
+**Also in 6.0.0:** the on-demand doc pack now derives fully from the modern vault generation (FSD §5 from `04-flows.md` when `02-functional.md` is absent, §6 from `06-constraints.md`, §10/PRD §6 accept the `tag`/`text` vault.json OQ shape) — older vaults keep their legacy sources via first-hit-wins.
 
 ## TL;DR — two paths
 
@@ -83,7 +98,8 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 /mega-sdd:memory migrate
 
 # 3. Migrate Hard Rules v1 grammar → v2 ast-grep YAML (per-unit confirm)
-/mega-sdd:migrate-rules <vault-path>
+#    (not a slash command since 6.0.0 — ask by phrase:)
+#    "/mega-sdd" → "migrate hard rules <vault-path>"
 ```
 
 All three are idempotent — safe to re-run.
@@ -107,7 +123,7 @@ All three are idempotent — safe to re-run.
 **Halt envelope shows:** `details.failing_skill` + `details.missing_field` + `details.field_severity` + `next_action.hint` (the exact skill template to edit).
 
 **Recovery — two options:**
-- **Easy (Path A):** regenerate vault — `/mega-sdd:generate-intent --kb=<KB>` (or your PRD) → fresh handoff schema. ~5 min.
+- **Easy (Path A):** regenerate vault — `generate-intent --kb=<KB>` (or your PRD) → fresh handoff schema. ~5 min.
 - **Surgical (Path B):** manually add the missing block to your skill's handoff template per `handoff-contract.md §schema`. Re-run chain.
 
 ### `memory_schema_mismatch`
@@ -129,7 +145,7 @@ All three are idempotent — safe to re-run.
 **Recovery:** only fires on RE-running old bolts. New bolts emit trailer automatically. Options:
 - Skip the re-run (use existing bolt outputs)
 - Add provenance trailer to old file manually
-- Full bolt re-run via `/mega-sdd:execute-bolts --unit=U-XXX` (regenerates everything)
+- Full bolt re-run via `execute-bolts --unit=U-XXX` (regenerates everything)
 
 ### `bind_conflict` (existing since v0.x)
 
@@ -180,10 +196,10 @@ For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce
 ## Pre-flight checklist before upgrade
 
 1. ✅ Commit your current work (`git status`; commit any uncommitted changes)
-2. ✅ Note current plugin version (was v3.X.Y; will be v3.26.1 after)
+2. ✅ Note current plugin version (compare against the latest in `CHANGELOG.md` after)
 3. ✅ Decide: Path A (regenerate) OR Path B (preserve)
 4. ✅ If Path B: backup `~/.mega-sdd/memory/` to a safe location (memory migrate creates its own backup but extra safety is cheap)
-5. ✅ Update plugin: in Claude Code → `/plugin update mega-sdd`
+5. ✅ Update plugin: `/mega-sdd:update-plugin` → `/plugin marketplace update mega-sdd` → restart / `/reload-plugins`
 6. ✅ Run the migration sequence per above
 
 ## See also
@@ -193,4 +209,4 @@ For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce
 - `CHANGELOG.md` — per-iter behavior changes
 - `tests/scenarios/scenario-6-recovery-from-halt.md` — generic halt recovery walkthrough
 - `plugins/mega-sdd/commands/migrate-paths.md` — path migration command details
-- `plugins/mega-sdd/commands/migrate-rules.md` — Hard Rules grammar migration
+- `plugins/mega-sdd/skills/execute-bolts/references/migrate-rules.md` — Hard Rules grammar migration

@@ -16,7 +16,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/index"]
 - **History**: full version log in "## Changelog" at the end of this doc (newest entry first).
 - **Project shape**: `mobile-app` | `web-app` | `api-only` | `multi-platform` | `data-pipeline` | `custom: <description>`
 - **Implementation mode**: `new` | `existing`
-- **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `/mega-sdd:diff-vault`).
+- **Mode migration trigger**: `<event>` (e.g., "first commit on main" / "first prod deploy" / "sprint-1 demo") — applies to `mode=new` only; set to `null` for `mode=existing`. After trigger fires, flip mode to `existing` (manual edit + Changelog entry, or run `diff-vault`).
 - **PRD status**: `final` (signed-off by stakeholder) | `draft` (still in flux)
 - **Output mode**: `compact` (default — table-first, prose-cut) | `full` (verbose — prose-rich for cross-functional review)
 - **Locked at**: YYYY-MM-DD HH:MM (TZ)

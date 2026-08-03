@@ -24,7 +24,7 @@ blocker:
     codebase_reality: "<verbatim from codebase-map>"
     constitution_clause: "§B-001 — All API endpoints MUST use Sanctum auth middleware"
     violation_severity: high
-  next_action: "Constitution clause §B-001 takes precedence. Either: (1) update codebase to satisfy the constitution (recommended; preserves the invariant), (2) update the constitution clause if no longer applicable (rare; requires user sign-off), (3) accept the conflict via /mega-sdd:resolve-oq --binding."
+  next_action: "Constitution clause §B-001 takes precedence. Either: (1) update codebase to satisfy the constitution (recommended; preserves the invariant), (2) update the constitution clause if no longer applicable (rare; requires user sign-off), (3) accept the conflict via resolve-oq --binding."
 ```
 
 ## Backward compatibility

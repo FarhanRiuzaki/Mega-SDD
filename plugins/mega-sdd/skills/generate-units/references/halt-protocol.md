@@ -110,7 +110,7 @@ blocker:
       - "If existing files are unrelated (name collision), rename the unit's target_files."
       - "If existing files SHOULD be modified, edit unit frontmatter: task_type=extend + fill Migration notes."
       - "If existing files SHOULD be replaced (rebuild scenario), confirm via the Step 7.6 interactive prompt (option 4 force-create) — the recorded acceptance carries through 12.6; there is no flag route."
-  next_action: "Resolve manually then re-run /mega-sdd:generate-units."
+  next_action: "Resolve manually then re-run generate-units."
 ```
 
 **Second trigger (reconcile lane):** `--reconcile`'s claim↔unit matching reuses this halt type when a refreshed claim matches MULTIPLE existing units ambiguously (per the canonical registry entry in `generate-intent/references/vault-contract.md`). Its details block differs: `candidate_units: [U-XXX, U-YYY]` + `claim: <id>`; resolution = user picks the canonical unit OR confirms creating a new one (the rename-target_files resolutions above do NOT apply). A SPLIT pair sharing one `vault_source` is matched by `binding_refs` first (the primary reconcile match key), `vault_source` as fallback — so normal SPLIT output does not false-trigger this.
@@ -126,7 +126,7 @@ blocker:
     unit_id: U-XXX
     reason: "task_type=verify assigned but no anchor exists — neither a binding State-Map anchor nor a Step 2.5 direct-probe result. A verify unit certifies EXISTING code; without an anchor there is nothing to certify against."
     fired_in: "Step 2.5 (task_type assignment)"
-  next_action: "Fix the binding anchor (re-run /mega-sdd:bind-codebase) OR record the probe anchor in the unit's ## Anchors; a claim with NO anchor from any source types as create, never verify."
+  next_action: "Fix the binding anchor (re-run bind-codebase) OR record the probe anchor in the unit's ## Anchors; a claim with NO anchor from any source types as create, never verify."
 ```
 
 ## `unit_underspecified`
@@ -175,7 +175,7 @@ details:
   rule_text: "<text of offending rule>"
   missing_citation: "starterkit-context.yaml §<expected path>"
   rule_index: <int>
-next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run /mega-sdd:generate-units."
+next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run generate-units."
 ```
 
 Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass. This halt is ALWAYS STOP — never a soft warning. Do NOT write the unit while the citation is missing.

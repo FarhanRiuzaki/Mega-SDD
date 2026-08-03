@@ -30,7 +30,7 @@ cross_scope_dependencies: []
 # PRD — <Nama Produk / Fitur>
 
 > **Cara pakai template ini (hapus blok ini sebelum publish):**
-> 1. **Eksplisit > implisit.** Downstream (dev team / AI pipeline `/mega-sdd:generate-intent`) hanya boleh mengimplementasikan apa yang TERTULIS. Yang tidak tertulis akan jadi Open Question, bukan ditebak.
+> 1. **Eksplisit > implisit.** Downstream (dev team / AI pipeline `/mega-sdd` → generate-intent) hanya boleh mengimplementasikan apa yang TERTULIS. Yang tidak tertulis akan jadi Open Question, bukan ditebak.
 > 2. **Jangan kosongkan section.** Kalau belum tahu, tulis `TBD — confirm with <owner>` atau pindahkan ke §13 Open Questions. Section kosong = ambigu.
 > 3. **Semua flow WAJIB Mermaid** (flowchart / sequenceDiagram / stateDiagram) — bukan prosa panjang atau ASCII art. Sertakan happy path DAN error path.
 > 4. **Out of Scope (§12) wajib diisi eksplisit** — minimal `TBD — confirm with PO`, tidak boleh kosong.

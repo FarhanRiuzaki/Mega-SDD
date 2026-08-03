@@ -44,6 +44,10 @@ Old-phase essence map: scan → GROUND (script); intent → PLAN's internal clai
 moat invariant 1 demands the verdict artifact, not a separate phase); resolve-oq →
 a gate condition inside PLAN (one batched prompt); units → PLAN pass 2.
 
+> **Realization note (P4, 2026-08-04):** PLAN is REALIZED as the express chain
+> segment (one upfront confirmation, inline Skill dispatch, warm context) — not as
+> a structural single-skill merge, which is rejected on the record in §P4.4.
+
 Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/mega-sdd:emit …`), derived from the ledger + binding + units + code — never stations on the code path. (This completes the v5 direction "docs as dynamic emissions" instead of half-keeping the vault in the middle.)
 
 ## Keep — the four goals' load-bearing parts (unchanged behavior)
@@ -58,7 +62,7 @@ Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/meg
 | Surface | v6 fate | Reason vs the four goals |
 |---|---|---|
 | `scan-codebase` full inventory (120KB map + deep-scan subagents + starterkit deep context) | **Demoted to on-demand.** GROUND = manifest sniff + symbol-index only. The map derives on demand when an emission or a human asks. | Its two real consumers are bind (replaced by claim-scoped queries) and reuse (already served by the index, in seconds, zero model tokens). 25 min + 27% of scan cost bought inventory, not delivery. |
-| Vault as 7 human docs mid-path | **Replaced by the claims ledger** (one terse file). Vault docs = emission. | Downstream consumes claims+anchors, not architecture prose + mermaid. |
+| Vault as 7 human docs mid-path | **Replaced by the claims ledger** (one terse file) as the CONSUMPTION plane. Vault docs = emission for human rendering (`full` mode); the compact markdown stays the authoring/verification substrate — honest realization in §P4.2. | Downstream consumes claims+anchors, not architecture prose + mermaid. |
 | Full-vault bind sweep | **Claim-scoped bind (D3).** Fail-closed: index query → targeted read → still ungrounded ⇒ OQ, never a guess. | A 5-claim feature paid for 40 claims. |
 | OQ ceremony (interactive per-OQ walkthrough) | **Only P0 blocks.** P1–P3 auto-defer with disclosure in the ledger. | Speed; anti-fabrication is preserved by the defer being RECORDED, never silent. |
 | Advisor legs, analyze-parallelism, list-modules, emit-agents-md in-chain | **Opt-in only** (the `--lean` cuts become the default; `--full` restores). | Advisory, re-runnable, not delivery. |
@@ -85,7 +89,7 @@ Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/meg
 - **P1 — claims ledger + claim-scoped bind (D3 core).** ✅ **SHIPPED v5.34.0** (2026-08-03, behind `--express`; deep dual-blind round — disclosure below). Deliverable delivered: bind works from ledger + completeness sweep + index with zero map load.
 - **P2 — GROUND step + express default.** ✅ **SHIPPED v5.35.0** (2026-08-03; deep dual-blind round — disclosure below). scan demoted (on-demand map seam); the front door defaults to the spine; `--classic` / `spine: classic` restores scan-first verbatim.
 - **P3 — OQ auto-defer + risk-tier default + lean-by-default diagnostics.** ✅ **SHIPPED v5.36.0** (2026-08-04; dual-blind round — disclosure below; advisor legs kept default-on, the stated rail-1 deviation).
-- **P4 — surface cull** (alias removal per policy + docs-on-demand completion + README/major migration guide).
+- **P4 — surface cull** (alias removal per policy + docs-on-demand completion + README/major migration guide). Design §P4 below: telemetry review discharged; relocate-then-delete for the dangling-8; emit-lane source repair; PLAN merge rejected on the record.
 - **P5 — measure.** End-to-end wall-clock + cost-weighted tokens on training-nextjs, before/after, published in the README. The <10-minute claim lives or dies here. **(A7) Protocol:** endpoint = acceptance-VERIFIED bolt (never first diff); human-wait time explicitly in or out of the clock; speed paired with a quality counterweight (revert/rework); same repo, comparable task class; never self-reported. (METR RCT: devs were 19% slower while believing +20% faster — perception is inadmissible.)
 
 Version: **6.0.0** at P4 (the breaking-surface release); P1–P3 ship as 5.x pre-major tranches where back-compatible, behind `--express` until P2 flips the default.
@@ -270,7 +274,95 @@ Fork B-i: tier resolves PRE-dispatch from unit-declared evidence (no topology ch
 2. OQ pins: batched-P1 prompt shape + chunking rule; auto-defer records marker+status+reason+defer_to; rails re-scoped (standalone walk unchanged); A6 surfaces present (metrics id-list, `_summary` section, Step 9 + appendix bullets).
 3. Lean default: express chain skips diagnostics / classic keeps them; Stop-aggregate condition pinned; `--full` restore.
 
+## P4 — 6.0.0 surface cull + docs-on-demand completion (design, 2026-08-04)
+
+Ships as **6.0.0** — the breaking-surface release the phasing plan reserved. The break is the **typed alias surface only**; every artifact grammar, gate, hook contract, and the classic spine ship byte-compatible. Four deliverables: (A) alias removal with content relocation, (B) docs-on-demand completion — an honest realization record plus the emit-lane repair, (C) README + the 5.x→6.0.0 migration guide, (D) the PLAN-merge decision record.
+
+### P4.0 Telemetry review (the policy clause, discharged)
+
+CLAUDE.md policy: a demoted pipeline command may be removed "only in the FOLLOWING major after telemetry review." Review performed 2026-08-04 on the only telemetry corpus available (this repo's `.mega-sdd/memory/telemetry.jsonl` — ~22k events since 2026-05-27, the blackbox + live-dev corpus). **Honest instrument scope (round-folded):** the corpus's event classes are ref-loads, halt markers, and turn/subagent markers — it has NO channel that records typed slash-command invocations, so "zero alias strings in the corpus" is absence-of-instrument, not evidence-of-absence, and is not claimed as usage evidence. The review is discharged on its procedural substance: the aliases spent the full 5.x cycle demoted with a printed deprecation notice, the only known field installs (two office laptops, v5.9.0) cross the major via `update-plugin` and are covered by the migration guide (C), and every typed legacy form still routes as plain text after removal (zero hard breakage for a habituated user). Verdict: removal proceeds.
+
+### P4.1 Alias cull (24 files) — relocate first, delete second
+
+The 24 `DEPRECATED (5.x alias)` files split into two populations with different blast radii (census 2026-08-04):
+
+- **Safe-16** (a live `skills/<name>/` backs them): only the typed slash form dies; natural-language routing + Skill dispatch survive untouched. `analyze`, `bind-codebase`, `detect-drift`, `diff-vault`, `emit-agents-md`, `emit-fsd`, `emit-prd`, `emit-sit`, `execute-bolts`, `extract-intelligence`, `generate-intent`, `generate-units`, `graph`, `orchestrate-flow`, `resolve-oq`, `scan-codebase`.
+- **Dangling-8** (no backing skill): `analyze-parallelism`, `auto`, `enrich-semantics`, `lint-units`, `list-modules`, `migrate-rules`, `replay`, `validate-handoff`. Seven of the eight carry the ONLY copy of an operative procedure — several surviving scripts cite the command file as their spec (`replay.sh` "extracted from commands/replay.md", `list-modules.sh`, `migrate-v1-rules.sh`). Deleting without relocation would mint eight new instances of the phantom-command defect `AUDIT.md:298` already adjudicated.
+
+**Relocation map (before any deletion):**
+
+| Alias file | Judgment content | New home |
+|---|---|---|
+| `lint-units.md` (107 ln) | §Step 1b `--changed-only` scope-set (changed ∪ dependents + honest full-sweep fallback), cross-unit grounding checks, halt roster | `skills/orchestrate-flow/references/diagnostics-procedures.md` (NEW — the chain rows at `chain-execution.md:183-186` are its only invoker) |
+| `analyze-parallelism.md` (62 ln) | over-coupling interpretation, exit-code halts, "never suggest the halting form" rail (test-pinned) | same NEW ref (chain row :184; cross-cited from `execute-bolts/references/batch-and-fanout.md`) |
+| `list-modules.md` (58 ln) | `--mark-dod=<module>` interactive flow (sole home) | same NEW ref (chain row :185; cited by `batch-and-fanout.md:41`, `modules-schema.md:243`) |
+| `enrich-semantics.md` (29 ln) | the `--semantic=staged-input` / `--apply` two-phase contract (10 runtime citers incl. a chain pause) | same NEW ref (chain pause :196) — extract-intelligence + vault-staging validators re-point here |
+| `validate-handoff.md` (101 ln) | drop-type resolution table (§Scope relocates VERBATIM — the round verified it against the current validator: slice 2 ✅ matches shipped behavior; an earlier census note claiming `AUDIT.md:226` recorded it stale was itself wrong and is retracted) | `skills/bind-codebase/references/handoff-validation.md` (NEW; bind owns the binding grammar) |
+| `replay.md` (98 ln) | snapshot grounding + severity table (`replay.sh:4,:257` cite it as spec) | `skills/execute-bolts/references/replay.md` (NEW) |
+| `migrate-rules.md` (61 ln) | the 6-step v1→v2 transform (the shell script is detector-only and defers to this prose) | `skills/execute-bolts/references/migrate-rules.md` (NEW — its script already lives under execute-bolts) |
+| `analyze.md` (71 ln) | auto/manual mode split, `--fresh`, "Scoped by default" (test-pinned in both planes) | merge into `skills/analyze/SKILL.md` (skill exists) |
+| `auto.md` (17 ln) | nothing — the `--stop-after`→`--to=` render exception is already duplicated at `orchestrate-flow/SKILL.md` + `handoff-contract.md:396` | no relocation |
+
+**Reference rewrite buckets** (runtime surfaces only; dated records — specs/plans/audits/research/CHANGELOG — stay verbatim per the in-repo doctrine `test-2a2d-chain-parallel.sh:93-95`): R1 front door `/mega-sdd`, R2 `/mega-sdd:sync`, R3 `/mega-sdd:emit <doc>` (mechanical for the emit family — `emit-uat` already lives alias-free, the proven end-state), R4 Skill-dispatch prose (`mega-sdd:<name>`), R5 relocated-reference pointers. Hard sites: 2 live PreToolUse deny strings (`hooks/pre-tool-use:504,518` → point at `scripts/validate-handoff-binding-units.sh` + `/mega-sdd`), ~14 validator advisory strings (`validate-kb-flows.sh`, `validate-vault-flow-staging.sh`, `run-preflight-scan.sh`, `migrate-v1-rules.sh`), the always-loaded `skills/graph/SKILL.md` description (phantom slash form), both READMEs, `upgrade-from-old-version.md`. Manifests need nothing (`plugin.json` has no `commands` array; marketplace lists none). The user-level front-door wrapper (`~/.claude/commands/mega-sdd.md`) is untouched.
+
+**Test plan for the cull:** `tests/surface/test-p6-front-door.sh` §C (the "exactly 24 aliases" contract) is REWRITTEN into the 6.0.0 contract — zero `DEPRECATED (5.x alias)` files exist, the kept-7 enumerate exactly, and no runtime surface (skills/ + commands/ + hooks/ + scripts/ + top-level references/) names a dead `/mega-sdd:<alias>` slash form (the census's phantom-command sweep, now a standing pin). Two hard-abort guards (`test-4d-contract-truth.sh:34`, `test-2a2d-chain-parallel.sh:26`) and 7 assertion pins re-point to the relocated homes — each pinned CONTRACT survives; only its address changes.
+
+### P4.2 Docs-on-demand completion — the honest record + the emit repair
+
+**Realization record.** The cut-table line "Vault as 7 human docs mid-path → replaced by the claims ledger" is DELIVERED in its load-bearing sense, and the remainder is deliberately refused:
+
+- *Consumption* left the docs in P1–P3: bind retrieves ledger + targeted reads (zero whole-vault load), diagnostics + agents-md skip in-chain, FSD opt-in, scan on-demand. Nothing bulk-reads the 7 docs on the express path.
+- *Production* is already the terse plane: `OUTPUT_MODE: compact` (the default) writes tables + DoD + citations, no narrative scaffolding; `full` remains the on-demand human rendering.
+- *Removing the docs themselves is REJECTED* (census 2026-08-04): the vault markdown is the **verification substrate** — the drift baseline `detect-drift` diffs against code, the OQ authoring surface `resolve-oq` edits, the byte-copy source of `bound/` (`make-bound.sh` exit 3 without it), the sha256 target of citation discipline (`build-citation-map.sh`), the anchor space of every unit's `vault_source`, and the single grammar (`_lib/vault_md.py`) both derive scripts + validators share. Cutting it cuts verification, not inventory — rail 1 forbids exactly this. The ledger remains the CONSUMPTION plane; the markdown remains the AUTHORING plane (md-authoritative rail, P1.1 unchanged).
+
+**The emit repair (the real completion gap).** Census finding: `build-fsd-core.sh` sources §5 FR + §6 NFR from `02-functional.md` and §10 from `03-open-questions.md`; `build-prd-core.sh` §6 likewise — file names from an older vault generation that today's `generate-intent` (and every template + fixture) never produces, so on every modern vault those sections emit `[Pending — …]` slots. "Docs on demand" is only complete if the on-demand docs actually derive from what exists. Repair, bounded to source re-pointing (modern-first, legacy name kept as read-side fallback so old vaults keep working):
+
+- §6 NFR → `06-constraints.md ## Non-functional requirements` (the pipe table `vault_md.py` already parses).
+- §10 / PRD §6 OQs → the `00-index.md` OQ roll-up / `vault.json open_questions[]` (the derived mirror).
+- §5 FR table → enumerate `04-flows.md` `### F-*` (+ per-flow DoD) joined with unit `implements` + the existing `binding.md` per-line verdict scan — flows are the modern vault's functional enumeration (SIT already builds from exactly this).
+- Citation strings + `[Pending]` keterangan updated to name the real sources; `.citation-map.json` entries follow automatically (it resolves whatever the builders cite).
+
+Plus one latent-defect fix from the census: `vault_md.parse_rollup_categories` matches only `## Open Questions roll-up` while the template emits `## Open Questions (roll-up)` — the parser accepts both forms (one-line + test); category fallback on template-shaped vaults starts working.
+
+Held (recorded, not done): `doc_shas` in the ledger stays write-only — E1 re-derives the ledger on every express bind, so staleness has no consumer today; wiring a staleness gate is P5-measurement-driven, not speculative.
+
+### P4.3 README + migration guide (5.x → 6.0.0)
+
+- `plugins/mega-sdd/README.md`: the alias table rows become a **migration table** (old typed form → the 6.0.0 way: front-door phrase / `sync` / `emit <doc>` / natural language); the surface statement becomes "3 public verbs + 4 maintenance one-timers — nothing else."
+- `plugins/mega-sdd/references/upgrade-from-old-version.md` gains the 6.0.0 section: what broke (typed aliases), what did not (artifacts, gates, classic spine, legacy read-side paths — deliberately KEPT, they are one glob each), the office-floor path (v5.9.0 → `/mega-sdd:update-plugin` → reload), and the alias→verb map.
+- Root `README.md` command examples sweep to the 6.0.0 forms.
+
+### P4.4 PLAN-merge decision record
+
+The spine diagram's "PLAN (ONE model phase absorbing intent+bind+oq+units)" is **realized as the express chain segment**, not as a structural skill merge — and the merge is REJECTED for 6.0.0 with reasons on the record: (1) the gates key on per-Skill dispatch (preflight, binding→units, anti-self-bypass matchers) — re-keying them is a moat-surface rewrite bought with zero verification gain; (2) the sync lane and partial re-runs REQUIRE the standalone verbs (re-bind without re-intent, units --reconcile without either); (3) the chain already delivers the merge's substance — ONE upfront confirmation, inline Skill dispatch in the same context (no subagent handoff, no context reload; the MAST 36.9% handoff-loss finding applies to lossy handoffs, which the inline chain does not perform), binding context warm at units time; (4) the residual cost is skill-body loads (~200 lean lines each), addressable later without a breaking change. The pipeline diagram gains a one-line realization note; nothing else moves.
+
+### P4.5 P4 proof tests
+
+1. Surface contract: zero alias files; kept-7 exact; phantom-slash sweep over runtime surfaces green (the rewritten `test-p6-front-door.sh`).
+2. Relocation parity: every test-pinned clause (`--changed-only` scope-set, "never suggest the halting form", `--fresh` + "Scoped by default", `whitelist-scan`, `--express` hint, `dirender ke --to=`) asserts at its NEW address.
+3. Emit repair: modern-vault fixture emits FSD §5/§6/§10 + PRD §6 with real content (no `[Pending — 02-functional…]`); legacy-name fallback still honored; rollup-heading both-forms parse.
+4. Hook strings: the two deny remediations name only living surfaces.
+
 ## Round disclosure
+
+### P4 round (2026-08-04, dual-blind)
+
+Two blind agents (code lane: live emit-fixture attacks + hook drives + relocation audit; doc/contract lane: CLAUDE.md/README/spec-honesty + relocation fidelity). **6 blockers (3+3, one shared) + 13 majors + minors — ALL folded or dispositioned:**
+
+- **BLOCKER (code): the §5 flows fallback FABRICATED citations** — `FR_TPL` hardcodes `[Source: vault/02-functional.md:…]`, so every modern FSD stamped a nonexistent file with 04-flows line numbers, then `build-citation-map.sh` failed its own `citation_unresolvable` gate on exactly the vault shape the repair was built for. Fold: the flows branch rewrites the Source path + the `FR-` id prefix in the rendered detail; the proof test now pins the per-FR stamps (the round also named the test's blind spot — it had never inspected them).
+- **BLOCKER (code): staging skew** — the index held only the 24 deletions while all four relocation homes were untracked; a bare commit would have shipped the cull with ZERO relocation. Fold: everything added together at commit time (this disclosure's commit).
+- **BLOCKER (both lanes): the RC's own surface test red** — the upgrade guide's migration sentence quoted a dead typed form verbatim and tripped the new zero-phantom sweep. Fold: the guide rephrases (the sweep stays absolute — no exemption list).
+- **BLOCKER (doc): CLAUDE.md described the culled surface** in five places ("every other command file is a deprecation alias that keeps resolving"; `/mega-sdd:analyze` as the advisory surface). Fold: the living contract now states the 7-file surface + the completed policy ladder + the relocate-then-delete precedent.
+- **BLOCKER (doc): the advertised new-user walkthrough taught the dead surface** — `tests/scenarios/README.md` (linked from both READMEs as the chooser) verified installs by `/mega-sdd:auto` autocomplete and listed 12+ removed names. Fold: swept to the 6.0.0 surface; a banner marks older per-scenario walkthroughs (typed legacy text still routes).
+- **MAJOR (code): verdict/claim fabrication** — the flows branch promoted the prose word "OQ" to a binding verdict and extracted claim `C-12` from the token `SEC-12`. Fold: a verdict is accepted only from a line that also carries a word-bounded claim id. **MAJOR: flow-id prefix collision** (`F-U-001` matched inside `F-U-001-B` via the digit-only guard → false "Implemented"). Fold: `(?![\w-])` suffix guard + drop-not-truncate heading ids. **MAJOR: `FR-F-*` heading mangling** — folded with the citation fix. **MINOR: DoD DOTALL over-capture** (description swallowed the mermaid body) — folded.
+- **MAJOR (code): the rollup-heading widening reaches `validate-vault-oqs`** — the newly-live `(roll-up)` branch lets roll-up headings mint categories on template-shaped vaults. First fold attempt (enum normalization) was itself REVERTED by the suite: the derive fixture pins free-text categories ("PRD inconsistencies") flowing into vault.json — roll-up categories are a free-text contract, not an enum. Final disposition: free-text stays; **disclosed behavior change** — a bracketless OQ under a `Tech*` roll-up heading now receives its category, so one without `resolution_mode` surfaces `oq_tech_missing_mode`, a TRUE positive per the validator's own documented intent ("startswith('tech') tolerates a roll-up-header form") and ADVISORY only (vault-oqs is hook-demoted, never blocking). Repo fixtures byte-identical (A/B verified by the round + the derive suite).
+- **MAJOR (doc): the telemetry-review verdict overstated a structurally blind corpus** — no event class records typed command invocations, so "zero recorded alias invocations" was absence-of-instrument framed as evidence-of-absence. Fold: §P4.0 + CHANGELOG + the upgrade guide now state the honest instrument scope; the review stands on its procedural substance (full-cycle demotion notice, the v5.9.0 field floor covered by the migration guide, typed text still routing after removal).
+- **MAJOR (doc): the spec cited a correction that never happened** — "§Scope relocates CORRECTED, AUDIT.md:226 records it stale" was inherited from a census error (the line is blank; the relocation is verbatim and verified current). Fold: retracted in place — the prose-asserts-closed-breach class our own round doctrine names.
+- **MAJOR (doc): version archaeology I introduced myself** — "6.0.0" narration in ~10 runtime-prose sites incl. the front door's always-loaded description (CLAUDE.md bans time-sensitive info there). Fold: de-archaeology sweep — runtime surfaces carry the functional statement only; versions live in CHANGELOG/spec/upgrade guide. **MAJORS (doc): routing violations** (bare cross-skill `modules-schema.md` cite; `tooling-install.md` left with no first-level route — now routed from install-deps), a dead `§Auto-invocation matrix` anchor, the checkpoint-protocol resume section teaching a per-skill typed form, and a phantom `/mega-sdd:audit-rules` stamp (a form that NEVER existed) in every generated gap report — all folded.
+- **Dispositioned, not changed:** (a) ~25 validator `next_action` strings now carry bare skill names — model-facing, and bare names route (the two USER-facing hook denies + the CI-recipe prompt were made concrete instead); (b) `tests/integration/` + `tests/skill-triggering/` narrative fixtures keep typed forms — they remain semantically valid because typed legacy text still routes, per the using-mega-sdd rule; (c) NFR rows sourced from 06-constraints render under the template's "Other Constitution Constraints" heading with an honest `_Dari 06-constraints_` label — heading text is template-frozen; (d) repo-only citations (audits/, spec names) in relocated refs stay as provenance.
+- **Held attacks (both lanes, verified clean):** relocation fidelity for all 24 files clause-by-clause (zero operative loss; only `## References` link lists dropped), hooks.json byte-identical, anti-self-bypass blocked all three forgery routes live, recompute-at-gate overwrote a planted forged state, deny truncation pointer survives JSON encoding and names a living surface, all 12 changed skill frontmatters valid + keyword-complete + version-bumped, 71+ relative links resolve, repo fixtures' derive outputs byte-identical.
+
+**P4 lessons:** (1) a template a fallback reuses is part of the fallback's blast radius — grep the TEMPLATE for hardcoded source paths before re-pointing a builder; (2) a proof test written by the author inherits the author's blind spots — the round must attack the test's assertions, not just the code; (3) when you widen a dead parser branch, everything downstream of the field it populates is new behavior — enumerate the field's consumers before shipping the widening; (4) migration prose that QUOTES a dead form verbatim will trip your own phantom sweep — teach with placeholders.
 
 ### P3 round (2026-08-04, dual-blind)
 

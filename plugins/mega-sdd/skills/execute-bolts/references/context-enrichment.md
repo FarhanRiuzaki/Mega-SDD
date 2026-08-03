@@ -262,7 +262,7 @@ generic helpers — the symbols agents most often reinvent — reached no dispat
 
 ## Map §6 fallback (starterkit-context absent)
 
-**Express-born projects (P2 default spine, no scan ever run) have NEITHER leg** — no starterkit-context.yaml AND no codebase-map §6; the builder's `omit("map_patterns", …)` records the honest omission and the bolt proceeds on pack conventions + the symbol/reuse slices. Running `/mega-sdd:scan-codebase` on demand restores both legs.
+**Express-born projects (P2 default spine, no scan ever run) have NEITHER leg** — no starterkit-context.yaml AND no codebase-map §6; the builder's `omit("map_patterns", …)` records the honest omission and the bolt proceeds on pack conventions + the symbol/reuse slices. Running `scan-codebase` on demand restores both legs.
 
 Codebase pattern signatures travel even WITHOUT a deep scan. When `starterkit-context.yaml` is absent (regex-tier / shallow / no-deep-scan runs — i.e. exactly when `starterkit-enrichment.md` is NOT loaded), `codebase-map.md §6 Pattern signatures` is the only pattern source the scan produced — deliver it instead of letting the bolt re-invent generic defaults:
 
@@ -530,7 +530,7 @@ The controller reads exactly five things: `status`, `halt`, `inline_core`, `prom
 | flag | stdout | who uses it |
 |---|---|---|
 | *(none — default)* | the controller-consumed keys above | the execute-bolts controller. This is the shipping path. |
-| `--explain` | the default keys **plus** `sections_omitted[]` and any other forensic keys | a human or `/mega-sdd:analyze` debugging one bolt |
+| `--explain` | the default keys **plus** `sections_omitted[]` and any other forensic keys | a human or `analyze` debugging one bolt |
 | `--quiet` | **nothing** — existing flag, existing meaning, unchanged | **FORBIDDEN for the controller.** It suppresses the JSON entirely and therefore `inline_core` and `design_slice_path`, which are the only reason the controller runs the builder. |
 
 `--explain` ADDS forensics back; `--quiet` removes everything. They are not two settings of one verbosity dial and must never be combined.

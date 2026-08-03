@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.33.0
+version: 2.34.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -15,7 +15,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 ## When to use
 
 - After `generate-units` wrote `<vault>/units/U-*.md`.
-- User explicit: `/mega-sdd:execute-bolts <unit-id>` or `--all`.
+- User explicit: `execute-bolts <unit-id>` or `--all`.
 - `orchestrate-flow` auto-routes here once units are ready.
 
 ## Inputs
@@ -165,7 +165,7 @@ Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure S
 
 ## Hand-off
 
-After the last unit: suggest `/mega-sdd:detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block) and participate in the memory layer. End-of-chain phase advancement (multi-phase rebuild), the full handoff YAML schema, and the memory-layer read/write tables → `references/halts-and-handoff.md`.
+After the last unit: suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block) and participate in the memory layer. End-of-chain phase advancement (multi-phase rebuild), the full handoff YAML schema, and the memory-layer read/write tables → `references/halts-and-handoff.md`.
 
 ## Specialist references (load on demand)
 
@@ -184,7 +184,9 @@ After the last unit: suggest `/mega-sdd:detect-drift` to verify the bolts honore
 - `references/halts-and-handoff.md` — halt protocol (blocker envelope), streaming + `_summary.md` formats, outputs detail, handoff YAML + the canonical bolt-halt enum + end-of-chain phasing, and the memory layer.
 - `references/halt-recovery.md` — full halt YAMLs (`test_fail`, `review_critical_unresolved`), propose-and-confirm UX + config, new-halt-types table, and the Property-Based Testing flow; load ONLY when a halt fires or a `properties:` unit is batched.
 - `references/bolt-contract.md` — bolt failure modes + the canonical blocker YAML envelope.
+- `references/replay.md` — replay + divergence detection for bolt outcomes (`scripts/replay.sh`: snapshot grounding, the fixed severity table, hand-off); relocated from `commands/replay.md` in the surface cull.
+- `references/migrate-rules.md` — the Hard Rule v1→v2 grammar migration procedure (`scripts/migrate-v1-rules.sh` detects; the skill transforms + validates per unit); relocated from `commands/migrate-rules.md` in the surface cull.
 
 ## Related skills
 
-Units come from `generate-units` (unit schema, modules schema, PBT integration, adversarial-test provenance). Bridges to superpowers `executing-plans` / `subagent-driven-development` / `test-driven-development`. Halt envelope + handoff template: `references/halts-and-handoff.md` (operative; base schema + routing index in `../orchestrate-flow/references/handoff-contract.md`). The anti-bypass policy cites the bind-codebase constitution clauses. After a clean batch the detect-drift auto-gate runs (DEFAULT-ON in the chain; `--no-drift-check` opts out per `references/halts-and-handoff.md`); standalone runs can invoke `/mega-sdd:detect-drift` manually.
+Units come from `generate-units` (unit schema, modules schema, PBT integration, adversarial-test provenance). Bridges to superpowers `executing-plans` / `subagent-driven-development` / `test-driven-development`. Halt envelope + handoff template: `references/halts-and-handoff.md` (operative; base schema + routing index in `../orchestrate-flow/references/handoff-contract.md`). The anti-bypass policy cites the bind-codebase constitution clauses. After a clean batch the detect-drift auto-gate runs (DEFAULT-ON in the chain; `--no-drift-check` opts out per `references/halts-and-handoff.md`); standalone runs can invoke `detect-drift` manually.

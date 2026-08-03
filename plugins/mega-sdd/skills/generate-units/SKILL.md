@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.20.0
+version: 2.20.1
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -14,7 +14,7 @@ Turns intent into actionable atomic specs for AI dev execution. Each unit corres
 
 - After `bind-codebase` produced a bound-vault (brownfield) OR directly after `generate-intent` (greenfield)
 - `orchestrate-flow` auto-routes here once the vault is ready
-- User explicit: `/mega-sdd:generate-units <vault>/` (the vault dir; reads the nested `bound/` + `binding.md` when present)
+- User explicit: `generate-units <vault>/` (the vault dir; reads the nested `bound/` + `binding.md` when present)
 
 Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — that is a hard block (see The hard gate below); re-run binding first.
 
@@ -139,7 +139,7 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 
 ## Hand-off
 
-"Generated N units. Suggested next: `/mega-sdd:execute-bolts --all` to execute in order, or `/mega-sdd:execute-bolts U-001` to start with the first."
+"Generated N units. Suggested next: `execute-bolts --all` to execute in order, or `execute-bolts U-001` to start with the first."
 
 Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
 

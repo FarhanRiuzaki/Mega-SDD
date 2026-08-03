@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.23.0
+version: 2.24.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -93,7 +93,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 
 8. **Iter classifier EP2** — after the chain completes, classify again and compare to EP1; surface scope drift in the summary (per `references/chain-execution.md`).
 
-9. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. express auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: /mega-sdd:resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then (skipped if `--memory-off`): write the end-of-chain routing-outcomes memory entry; run the **extract-learnings pass** (Step 7.6 — the ONE owned threshold evaluation over rows touched this chain, appending threshold-crossers to `## Pending suggestions`, nothing applied); regenerate touched scopes' `_index.md`. Mode D additionally appends the `kind: sync` outcomes row. Protocol: `references/memory-layer.md §Chain end`.
+9. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. express auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then (skipped if `--memory-off`): write the end-of-chain routing-outcomes memory entry; run the **extract-learnings pass** (Step 7.6 — the ONE owned threshold evaluation over rows touched this chain, appending threshold-crossers to `## Pending suggestions`, nothing applied); regenerate touched scopes' `_index.md`. Mode D additionally appends the `kind: sync` outcomes row. Protocol: `references/memory-layer.md §Chain end`.
 
 10. **Resume support (`--resume`, CWD-driven, no state file).**
     - Skip the upfront confirmation (chain was already approved last run).
@@ -167,6 +167,7 @@ When memory is enabled (default; opt-out `--memory-off`), the orchestrator does 
 - `references/factory-routing.md` — read-whole-ledger forward/backward routing + convergence/cap termination (`--factory` / `--deep`).
 - **`references/routing-rules.md`** — CWD inspection order, the default + `--deep` decision matrices, starterkit-first ordering, multi-squad detection, greenfield/brownfield detection, `--from`/`--to`/`--resume` mechanics.
 - **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, memory-informed routing, model-tier resolution, iter-classifier EP1/EP2, Plan/Act gating, chain optimization), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, end-of-chain memory write, final-summary appendix.
+- **`references/diagnostics-procedures.md`** — the operative procedures for the four auto-integrated diagnostics (`lint-units`, `analyze-parallelism`, `list-modules`, `enrich-semantics`) — relocated from their 5.x command files in the surface cull; load when a chain row or an on-demand phrase invokes one.
 - **`references/predictive-checks.md`** — per-skill preflight check catalog consulted before chain start.
 - **`references/handoff-consumption.md`** — orchestrator-side handoff validation gate (presence / type / schema / artifact / cross-metric) with halt envelopes, plus the consumption control loop.
 - **`references/handoff-contract.md`** — producer-side handoff YAML schema, field TYPE annotations, per-skill expected emissions, memory-layer integration.

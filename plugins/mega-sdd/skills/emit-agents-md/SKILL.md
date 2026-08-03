@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.6.1
+version: 1.6.2
 description: Flatten vault + binding + units into AGENTS.md (AAIF standard) for tool-agnostic interop; idempotent write-out. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -14,7 +14,7 @@ Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.
 
 ## When to use
 
-- Explicit: `/mega-sdd:emit-agents-md`
+- Explicit: `emit-agents-md`
 - Auto: `orchestrate-flow --deep` runs this at chain end (config-controlled per ITER6-OQ-4)
 - Opt-out per chain: `--no-agents-md` flag
 - Opt-out per project: `<project>/.mega-sdd/config.yaml` `defaults.emit_agents_md: false`

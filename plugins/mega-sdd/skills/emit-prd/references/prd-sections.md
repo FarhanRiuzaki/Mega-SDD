@@ -105,7 +105,7 @@ with the KB citation:
 **Slot:** `{{section-6-open-items}}`
 **Forward source:** `<vault>/03-open-questions.md` / `vault.json.open_questions[]` — unresolved only
 **Reverse source:** every KB `[OPEN]` claim + KB open-questions section
-**Extraction:** table `| ID | Pertanyaan / Item | Prioritas | Sumber |`. **READ-ONLY VIEW** — the PRD is an output, never a decision surface: resolution happens via `/mega-sdd:resolve-oq` (forward) or during `generate-intent --kb` Q&A (reverse); the next emission reflects it.
+**Extraction:** table `| ID | Pertanyaan / Item | Prioritas | Sumber |`. **READ-ONLY VIEW** — the PRD is an output, never a decision surface: resolution happens via `resolve-oq` (forward) or during `generate-intent --kb` Q&A (reverse); the next emission reflects it.
 **Missing:** `_(tidak ada open item di sumber)_`
 
 ## Citation map notes

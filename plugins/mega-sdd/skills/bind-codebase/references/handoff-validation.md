@@ -1,12 +1,6 @@
----
-description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
----
+# Handoff-integrity validation (binding→units) — the manual surface
 
-> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:validate-handoff` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
-
-# /mega-sdd:validate-handoff
-
-Manually invoke the deterministic handoff-integrity validator. This ships ONE slice — binding→units OQ-ID propagation. Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out.
+The deterministic handoff-integrity validator, invoked manually. This ships ONE slice — binding→units OQ-ID propagation (+ the CONFLICT slices below). Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out. Until 5.x this procedure lived in `commands/validate-handoff.md`; the surface cull relocated it here — invoke by phrase through the front door (`/mega-sdd` → "validate handoff") or run the script directly.
 
 ## What it does
 
@@ -22,11 +16,11 @@ This validator + `PreToolUse` hook on `mega-sdd:execute-bolts` is the [HOOK-VALI
 
 ## Usage
 
-```
-/mega-sdd:validate-handoff
+```bash
+bash <plugin-root>/scripts/validate-handoff-binding-units.sh --cwd="$(pwd)"
 ```
 
-No arguments. The current project root (CWD) is auto-detected.
+No other arguments. The current project root (CWD) is auto-detected.
 
 ## Expected outputs
 
@@ -61,16 +55,16 @@ No arguments. The current project root (CWD) is auto-detected.
       ...
     }
   ],
-  "next_action": "propagation drops: append the listed OQ-/CONFLICT-IDs to the relevant unit's frontmatter binding_refs; conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding ..."
+  "next_action": "propagation drops: append the listed OQ-/CONFLICT-IDs to the relevant unit's frontmatter binding_refs; conflict/binding drops: resolve via resolve-oq --binding ..."
 }
 ```
 
 ## How to resolve drops (per drop type — S4)
 
 - `oq_id_dropped` / `conflict_id_dropped` (propagation): add the missing ID to the relevant unit's frontmatter `binding_refs:` (below).
-- `conflict_unresolved` (the moat's invariant #2): frontmatter edits can NEVER clear this — resolve the CONFLICT via `/mega-sdd:resolve-oq --binding <binding.md>` (writes the structural ✅ RESOLVED marker the validator reads), or re-run `/mega-sdd:bind-codebase` until conflicts=0.
-- `binding_missing` (units cite CONFLICT-IDs but no binding doc exists): restore the deleted/moved binding.md or re-run `/mega-sdd:bind-codebase`.
-- `binding_stale_recertify` (freshness RECERTIFY, P0 v4.92.0 — binding basi): a file the binding ANCHORS was changed between `binding_metadata.head` and current HEAD by an **OUT-OF-PIPELINE commit** (unit-attributed bolt commits — `feat(U-XXX):` / `(bolt): U-XXX` / `Unit:` trailer, the shared B1 `unit_of()` grammar — are excluded: they touch anchored files by design and are governed by the B1/B3 gates), so the recorded verdicts no longer describe the code. Frontmatter edits can NEVER clear this — jalankan `/mega-sdd:sync` (incremental) atau re-bind via `/mega-sdd:bind-codebase`; the changed files are named in the drop's `expected` keterangan. Legacy head-less bindings / missing binding.json / HEAD-moved-without-out-of-pipeline-anchor-hit surface as advisory extras only (`binding_head_absent` / `binding_json_absent` / `binding_head_mismatch`), never a block.
+- `conflict_unresolved` (the moat's invariant #2): frontmatter edits can NEVER clear this — resolve the CONFLICT via `resolve-oq --binding <binding.md>` (writes the structural ✅ RESOLVED marker the validator reads), or re-run `bind-codebase` until conflicts=0.
+- `binding_missing` (units cite CONFLICT-IDs but no binding doc exists): restore the deleted/moved binding.md or re-run `bind-codebase`.
+- `binding_stale_recertify` (freshness RECERTIFY, P0 v4.92.0 — binding basi): a file the binding ANCHORS was changed between `binding_metadata.head` and current HEAD by an **OUT-OF-PIPELINE commit** (unit-attributed bolt commits — `feat(U-XXX):` / `(bolt): U-XXX` / `Unit:` trailer, the shared B1 `unit_of()` grammar — are excluded: they touch anchored files by design and are governed by the B1/B3 gates), so the recorded verdicts no longer describe the code. Frontmatter edits can NEVER clear this — jalankan `/mega-sdd:sync` (incremental) atau re-bind via `bind-codebase`; the changed files are named in the drop's `expected` keterangan. Legacy head-less bindings / missing binding.json / HEAD-moved-without-out-of-pipeline-anchor-hit surface as advisory extras only (`binding_head_absent` / `binding_json_absent` / `binding_head_mismatch`), never a block.
 
 For each `oq_id_dropped` entry: open the unit(s) that implement the OQ's resolution (use the binding doc's Resolution Table to find which unit consumes the decision), and add the OQ-ID to its frontmatter `binding_refs:` list:
 
@@ -88,7 +82,7 @@ Save the file. `PostToolUse` will auto-re-validate; the state file updates autom
 
 ## Implementation
 
-This command invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`. The script is deterministic bash + python, no LLM judgment. Same script runs from the `PostToolUse` hook when units are saved.
+The procedure invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`. The script is deterministic bash + python, no LLM judgment. Same script runs from the `PostToolUse` hook when units are saved.
 
 ## Scope
 

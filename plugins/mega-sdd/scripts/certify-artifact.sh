@@ -214,7 +214,7 @@ elif unreadable or (sections_fail and not megasdd_authored):
         lines.append("Section wajib yang hilang: %s." % ", ".join(missing))
     lines += [
         "Tawaran DEMOTE ke rung scan: buang peta ini dan jalankan",
-        "`/mega-sdd:scan-codebase` — men-generate ulang codebase-map ber-provenance",
+        "`scan-codebase` — men-generate ulang codebase-map ber-provenance",
         "langsung dari repo (deterministik, bukan menebak isi peta lama).",
     ]
 elif sections_fail and megasdd_authored:
@@ -223,7 +223,7 @@ elif sections_fail and megasdd_authored:
         "Peta ber-provenance mega-sdd tapi section wajibnya tidak lengkap —",
         "kemungkinan terpotong / teredit manual. Migration guarantee: artefak",
         "buatan mega-sdd tidak pernah REJECTED; floor-nya CERTIFIED_DEGRADED.",
-        "Selanjutnya: jalankan `/mega-sdd:scan-codebase` untuk restamp peta utuh.",
+        "Selanjutnya: jalankan `scan-codebase` untuk restamp peta utuh.",
     ]
 else:
     # Sections present; frontmatter/provenance missing → the P0
@@ -235,7 +235,7 @@ else:
         "Bind TETAP jalan, tapi presisi binding turun ke klasifikasi biner dan",
         "binding.md akan mencatat `codebase_map_provenance: \"unverified-external\"`",
         "(tidak pernah `snapshot-verified` untuk peta seperti ini).",
-        "Selanjutnya: jalankan `/mega-sdd:scan-codebase` untuk map ber-provenance",
+        "Selanjutnya: jalankan `scan-codebase` untuk map ber-provenance",
         "dengan presisi penuh (field-level diff).",
     ]
 
@@ -319,13 +319,13 @@ Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
       (\`generate-intent\` per dokumen / gabungan). Konsekuensi: burn token dan
       hasilnya artefak BARU — di --auto selalu halt C2 \`adoption_demote_confirm\`.
   (b) RE-EXTRACT — kalau sumber aslinya codebase legacy, jalankan
-      \`/mega-sdd:extract-intelligence <legacy>\` untuk KB ber-grammar mega-sdd.
+      \`extract-intelligence <legacy>\` untuk KB ber-grammar mega-sdd.
 EOF
     else
       emit "REJECTED" 4 <<EOF
 Bukan knowledge base — tidak ada satu pun file markdown di bawah direktori ini.
 Selanjutnya: tunjuk direktori KB yang benar, atau bangun KB via
-\`/mega-sdd:extract-intelligence <legacy>\`.
+\`extract-intelligence <legacy>\`.
 EOF
     fi
   fi
@@ -360,7 +360,7 @@ Struktur folder mirip KB, tapi SEMUA domain file ($TOTAL file) tanpa frontmatter
 KB mega-sdd — grammar-nya asing (KB ini ditulis tool lain).
 Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
   (a) RE-INGEST — dokumen-dokumen ini masuk sebagai rung PRD via \`generate-intent\`.
-  (b) RE-EXTRACT — \`/mega-sdd:extract-intelligence <legacy>\` untuk KB ber-grammar
+  (b) RE-EXTRACT — \`extract-intelligence <legacy>\` untuk KB ber-grammar
       mega-sdd (dengan marker [VERIFIED]/[INFERRED]/[OPEN]).
 EOF
   elif [ "$FAILED" -eq 0 ]; then
@@ -428,7 +428,7 @@ if no_frontmatter:
         "File ini bukan unit spec mega-sdd — tidak ada blok frontmatter YAML",
         "(--- ... ---) sama sekali, jadi tidak ada id/task_type/target_files yang",
         "bisa dibaca dispatcher bolt.",
-        "Selanjutnya: generate unit yang benar via `/mega-sdd:generate-units`",
+        "Selanjutnya: generate unit yang benar via `generate-units`",
         "(dari vault ter-bind), atau kalau ini dokumen kebutuhan, masuk lewat",
         "rung PRD (`certify-artifact --rung=prd`).",
     ]
@@ -449,7 +449,7 @@ else:
     lines += [
         "Konsekuensi: execute-bolts akan halt di pre-flight untuk field yang hilang.",
         "Selanjutnya: lengkapi field wajib (unit_id/title/task_type/target_files/",
-        "vault_source + acceptance_test) atau re-generate via `/mega-sdd:generate-units`.",
+        "vault_source + acceptance_test) atau re-generate via `generate-units`.",
     ]
 
 print("VERDICT: %s units %s" % (verdict, path))

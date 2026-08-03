@@ -52,7 +52,7 @@
 #           the rule was not validated, and a baseline missing a rule's matched_files
 #           is a FALSE baseline, so the run halts rather than snapshot a lie)
 #       4 = halt hard_rule_mixed_grammar (bulleted v1 rules + YAML fences coexist;
-#           force one grammar with --grammar=v1|v2, or /mega-sdd:migrate-rules)
+#           force one grammar with --grammar=v1|v2, or run the migrate-rules procedure)
 #       5 = halt hard_rule_unanchored (SIGNATURE_RULE symbol not in tracked source)
 #       6 = halt dep_missing (v2 grammar present, ast-grep not on PATH)
 #       7 = post-hoc refusal — bolt commits already exist for this unit and no
@@ -185,7 +185,7 @@ for _i, unit_id in enumerate(unit_ids):
         lines = []
     elif lines and v2_rules:
         die(4, "MIXED GRAMMAR: unit %s carries both bulleted v1 rules and YAML-fenced v2 "
-               "rules — halt hard_rule_mixed_grammar (migrate via /mega-sdd:migrate-rules "
+               "rules — halt hard_rule_mixed_grammar (migrate via the migrate-rules procedure — ask: \"migrate hard rules\" "
                "or force one grammar with --grammar=v1|v2)" % unit_id)
     grammar = "v2" if v2_rules else "v1"
 

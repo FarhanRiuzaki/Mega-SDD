@@ -98,13 +98,15 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - `acceptance_test_summary`: 1-line condensation of `unit.acceptance_test.command` + expected outcome
 
 **Citation:** per-story footer `[Source: units/U-NNN.md (sha256: pending)]`
-**Missing source (no units/):** emit `[Pending — units/ directory not yet generated. Run /mega-sdd:generate-units after vault stabilizes.]`
+**Missing source (no units/):** emit `[Pending — units/ directory not yet generated. Run generate-units after vault stabilizes.]`
 
 ## Section 5 — Functional Requirements
 
 **Slots:** `{{section-5-fr-table}}`, `{{section-5-fr-details}}`
-**Source:** `<vault>/02-functional.md` — every FR-NNN heading
-**Extraction:**
+**Source priority (P4 repair — modern-first via legacy-first-hit):**
+1. `<vault>/02-functional.md` — every FR-NNN heading (the legacy vault generation; wins when the file exists)
+2. `<vault>/04-flows.md` — every `### F-*` flow heading (the MODERN vault generation — today's generate-intent emits no 02-functional.md; the flows + per-flow DoD are its functional enumeration, the same substrate SIT builds from). Description = the flow's Definition-of-Done bullets; **priority stays an honest `—`** (flows carry no Priority field — never default one).
+**Extraction (legacy branch):**
 - Parse markdown headings matching `^#{2,3}\s+FR-\d+` pattern
 - Per FR: extract title (text after FR-NNN), description (body until next heading), priority (look for `**Priority:**` line; default `MEDIUM`)
 - Status determination:
@@ -120,22 +122,24 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 
 **Detail block:** emit per-FR detail block from `fsd-template.md` Section 5 template.
 
-**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: pending)]`
-**Missing source:** emit `[Pending — vault/02-functional.md not yet generated]`
+**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: pending)]` — or `vault/04-flows.md:L<start>-L<end>` on the flows branch
+**Missing source (NEITHER file yields rows):** emit `[Pending — vault/02-functional.md (legacy) / vault/04-flows.md not yet generated]`
 
 ## Section 6 — Non-Functional Requirements
 
 **Slots:** `{{section-6-performance-content}}`, `{{section-6-security-content}}`, `{{section-6-availability-content}}`, `{{section-6-other-constitution-content}}`
 **Source priority:**
-1. `<vault>/02-functional.md` §NFR (if section exists)
-2. `<vault>/_meta/constitution.md` LOCKED clauses (filter by category: performance / security / availability / compliance)
+1. `<vault>/02-functional.md` §NFR (if section exists — the legacy generation)
+2. `<vault>/06-constraints.md` `## Non-functional requirements` table (the MODERN generation — P4 repair; rows keyword-routed per category, an unmatched row lands in Other, never dropped; labeled `_Dari 06-constraints §Non-functional requirements:_`)
+3. `<vault>/_meta/constitution.md` LOCKED clauses (filter by category: performance / security / availability / compliance)
 
 **Extraction:**
 - From 02-functional NFR section: extract per sub-category
+- From the 06-constraints table: keyword-route each row (performance/latency/throughput · security/auth/encrypt · availability/uptime/sla; ID + EN keywords) into the matching slot
 - From constitution.md: filter LOCKED clauses by category tag; extract clause body
 - ~~De-dup if both sources mention same constraint (prefer constitution.md as canonical)~~ **AMENDED (5e, see header):** both sources are emitted under labeled sub-blocks — deterministic, duplicates are not fabrication
 
-**Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/_meta/constitution.md §LOCKED:<category>`
+**Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/06-constraints.md` AND/OR `[³] vault/_meta/constitution.md §LOCKED:<category>`
 **Missing source:** per sub-category emit `(not specified)` line; do NOT halt.
 
 ## Section 7 — Design / Architecture
@@ -152,7 +156,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - Confirmed Claims: from binding.md `## Confirmed Claims` section — emit each as bulleted item with `[C-NNN]` ID prefix
 
 **Citation:** per source `[¹] binding.md:L<line>` AND `[²] codebase-map.md §Entities (sha256: pending)`
-**Missing source:** if binding.md absent → emit `[Pending — binding.md not yet generated. Run /mega-sdd:bind-codebase.]`; if codebase-map absent → `[Pending — codebase-map.md not yet generated. Run /mega-sdd:scan-codebase.]`
+**Missing source:** if binding.md absent → emit `[Pending — binding.md not yet generated. Run bind-codebase.]`; if codebase-map absent → `[Pending — codebase-map.md not yet generated. Run scan-codebase.]`
 
 ## Section 8 — API & Data Contracts
 

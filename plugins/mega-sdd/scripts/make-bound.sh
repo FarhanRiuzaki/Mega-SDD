@@ -73,7 +73,7 @@ conflict_ids = [str(c.get("id")) for c in claims
 if conflict_ids:
     print("REFUSE: CONFLICT verdict(s) in binding.json — bound/ is never "
           "produced while any conflict is active: " + ", ".join(conflict_ids))
-    print("REFUSE: resolve via /mega-sdd:resolve-oq --binding " + md_path +
+    print("REFUSE: resolve via resolve-oq --binding " + md_path +
           " and re-bind; filesystem untouched (a previously-clean bound/ stays)")
     sys.exit(2)
 if strict:

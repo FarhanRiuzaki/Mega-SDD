@@ -58,7 +58,7 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   # tokens anchors the view to the design system. design_tokens is MID-priority in the
   # truncation cascade (truncated before code_examples, NOT first-dropped). validate-dispatch-prompt.sh
   # asserts the emitted prompt carries a `Design tokens:` line for ui_ux units — ADVISORY:
-  # its state is surfaced via /mega-sdd:analyze, nothing in PreToolUse reads it (per the
+  # its state is surfaced via analyze, nothing in PreToolUse reads it (per the
   # demotion list); this prose is the operative rail WHEN THE INPUT EXISTS. On a greenfield
   # repo there is no starterkit-context.yaml and therefore no design_tokens at all: the line is
   # legitimately absent and the advisory validator records `tokens_not_injected`. That is an
@@ -166,7 +166,7 @@ FOR each (category, source_list) in [
     log "starterkit.<category>._source not found on disk: <full_example_path>"
 ```
 
-**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via /mega-sdd:analyze, not a PreToolUse block; this prose is the operative rail **whenever a real `_source` exemplar exists**. When none does (greenfield, or a `_source` path absent on disk) the section is omitted and the validator records `exemplar_missing` — the honest absent-input report; the alternative is inventing an exemplar path, which the anti-halu rail below forbids outright. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
+**Scope:** controller + view + component categories. For a `ui_ux`-relevance unit whose `target_files` include views/components, the view/component exemplar is the load-bearing one. `validate-dispatch-prompt.sh` asserts the emitted ui_ux prompt carries a view/component exemplar (`exemplar_missing` otherwise) — ADVISORY: surfaced via analyze, not a PreToolUse block; this prose is the operative rail **whenever a real `_source` exemplar exists**. When none does (greenfield, or a `_source` path absent on disk) the section is omitted and the validator records `exemplar_missing` — the honest absent-input report; the alternative is inventing an exemplar path, which the anti-halu rail below forbids outright. The remaining categories (data_model / request_validator / business_logic / test / schema_migration / route) stay deferred — identical pattern, extend the loop once telemetry confirms.
 
 **Anti-halu rail:** `slice.code_examples.<category>.path` MUST equal the file actually read (provenance); never invent or substitute. The chosen exemplar must be a real `_source` entry — selecting by linter-clean re-ORDERS the real candidates, it never fabricates one.
 

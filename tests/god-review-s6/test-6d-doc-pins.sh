@@ -142,7 +142,8 @@ grep -q "risk: high" "$EB/references/review-panel.md" && ok "unit risk: frontmat
 echo "── whitelist observer documented where it exists ──"
 grep -q "whitelist-scan" "$EB/SKILL.md" && grep -q "whitelist_violation" "$EB/SKILL.md" \
   && ok "SKILL.md documents the B3 observer" || fail "SKILL.md whitelist wording stale"
-grep -q "whitelist-scan" "$P/commands/execute-bolts.md" && ok "command doc documents the B3 observer" || fail "command doc whitelist wording stale"
+# (6.0.0 cull: the execute-bolts command alias is gone — the SKILL.md leg above
+# is the surviving doc plane for the B3 observer.)
 grep -q "B3" "$P/CLAUDE.md" && grep -q "whitelist_violation" "$P/CLAUDE.md" \
   && ok "CLAUDE.md enforcement inventory carries B3" || fail "CLAUDE.md inventory stale"
 

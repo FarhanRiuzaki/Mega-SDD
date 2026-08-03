@@ -11,7 +11,7 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
 **Last sync run**: <ISO8601> · **Open items**: N
 
 ## 1. CONFLICTs (BLOCKING — gate closed for affected units)
-- [ ] CONFLICT-7 — <one-line> → resolve via `/mega-sdd:resolve-oq --binding <vault>/binding.md`
+- [ ] CONFLICT-7 — <one-line> → resolve via `resolve-oq --binding <vault>/binding.md`
       (source: binding.md §CONFLICT-7; affected units: U-004, U-009)
 
 ## 2. Drift direction calls (vault stale vs code regressed — your call)
@@ -59,5 +59,5 @@ Consumers: the session-start staleness notice points HERE (instead of suggesting
 ## Lifecycle (the queue must not rot)
 
 - **Archive resolved rows:** when PENDING-SYNC.md exceeds 100 KB OR carries >50 `✅ RESOLVED` rows, the next sync run moves resolved rows to `PENDING-SYNC.archive.md` (append; audit trail preserved) and rewrites the live file with open items only.
-- **Open-queue pressure:** >50 OPEN items → the sync summary says so loudly ("queue needs a triage session — consider `/mega-sdd:resolve-oq --binding` batch") instead of quietly appending more.
+- **Open-queue pressure:** >50 OPEN items → the sync summary says so loudly ("queue needs a triage session — consider `resolve-oq --binding` batch") instead of quietly appending more.
 - **Stale-decision check:** an open item older than the vault's current version (vault bumped since it was queued) gets a `⚠ stale?` marker — the underlying finding may have been mooted; re-verify before deciding.

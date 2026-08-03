@@ -18,7 +18,7 @@
 #     default range: HEAD~1..HEAD (the pre-R3 behavior)
 #     --json: machine rows for the code-quality lens prompt (review-panel.md —
 #             machine fact like the L0 block; empty rows → "rows": [])
-# Human mode keeps the pre-R3 "[reuse-dup]" line contract for /mega-sdd:analyze.
+# Human mode keeps the pre-R3 "[reuse-dup]" line contract for analyze.
 #
 # Honest bounds: the ADDED-side regex catches keyword-led definitions
 # (function/def/fn/func/class/const-arrow); keyword-less method styles

@@ -13,7 +13,7 @@ binding.md written with CONFLICT table
    ▼
 User chooses resolution path:
    │
-   ├─ Path 1: /mega-sdd:resolve-oq --binding ./binding.md
+   ├─ Path 1: resolve-oq --binding ./binding.md
    │            (interactive walker prompts per conflict)
    │            For each conflict, ONE of:
    │             a. KEEP_VAULT — update code (out of band)
@@ -24,14 +24,14 @@ User chooses resolution path:
    └─ Path 2: Manual vault edit + re-run bind-codebase
    │
    ▼
-KEEP_CODE / SPLIT (vault edited) → re-run /mega-sdd:bind-codebase <vault> <codebase-map>
+KEEP_CODE / SPLIT (vault edited) → re-run bind-codebase <vault> <codebase-map>
    │        → conflicts = 0: bound-vault produced; pipeline unblocks
    │        → conflicts > 0: repeat
    │
 KEEP_VAULT / DEFER (vault + code unchanged) → NO re-bind (it would re-raise the
    same CONFLICT — bind re-derives verdicts from the unchanged contradiction).
    The resolved-marked binding.md passes the handoff validator → proceed to
-   /mega-sdd:generate-units; bound/ arrives via a re-bind AFTER the code change lands.
+   generate-units; bound/ arrives via a re-bind AFTER the code change lands.
 ```
 
 ## Resolution actions (per conflict)
@@ -63,7 +63,7 @@ Never auto-resolve. `bind-codebase` MUST NOT silently downgrade CONFLICT to OQ o
 
 ## Resolve-oq integration
 
-`/mega-sdd:resolve-oq --binding <path>` switches resolve-oq into binding mode:
+`resolve-oq --binding <path>` switches resolve-oq into binding mode:
 - Items walked: CONFLICT entries from binding.md (in addition to/before regular OQs)
 - Each item shows: vault claim + codebase evidence + action menu (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT)
 - Resolutions written back to binding.md (structural ✅ RESOLVED markers), binding.json (`resolution:` field), vault.json changelog, and decisions.md (durable across re-binds)

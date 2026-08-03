@@ -125,7 +125,7 @@ next_action: "<one-line prose string>"         # plain string form
 - `re_run_producer` — re-run the producer skill standalone to reproduce
 - `edit_skill_template` — fix skill body template emission (producer bug)
 - `user_install_dep` — user installs missing native binary
-- `user_resolve_oq` — user runs `/mega-sdd:resolve-oq` interactively
+- `user_resolve_oq` — user runs `resolve-oq` interactively
 - `user_review` — user inspects artifact + decides
 - `invoke_skill` — orchestrator auto-invokes recovery skill
 - `chain_complete` — terminal; no further action
@@ -205,7 +205,7 @@ These halt types are emitted by producers as `→ halt <name>` or `type: <name>`
 
 - `oq_scan_missing_query` — generate-intent: an OQ marked `resolution_mode: scan` lacks the `scan_query` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_query: codebase-map §<section>` or `scan_query: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
 
-- `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `/mega-sdd:resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
+- `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
 
 - `no_starterkit_detected` — orchestrate-flow: starterkit-first mode default but no framework manifest detected (no composer.json / package.json / Gemfile / etc.) AND user did NOT pass `--greenfield` flag. ALWAYS STOP. Details `{cwd, detected_manifests, suggestions}`. Resolution: user picks (a) scaffold starterkit, (b) re-run with `--greenfield`, or (c) cancel. Source skill: `orchestrate-flow`.
 

@@ -17,7 +17,7 @@ IF framework.confidence in {high, medium}:      # string enum — the ONLY gramm
                                                 # (codebase-map §7: high | medium | low | fallback)
   → proceed to Step 10.5.1 (cache check)
 ELSE (low OR fallback):
-  → log "framework confidence <low|fallback>; deep-scan skipped — detection ambiguous, run /mega-sdd:scan-codebase --force-deep to override"
+  → log "framework confidence <low|fallback>; deep-scan skipped — detection ambiguous, run scan-codebase --force-deep to override"
   → skip Step 10.5 entirely; proceed to Step 11
 ```
 

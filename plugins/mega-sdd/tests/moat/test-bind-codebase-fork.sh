@@ -271,6 +271,10 @@ ALLOW = [
   "descriptive: names the token the gate + validator READ when materializing advisor findings"),
  ("references/binding-contract.md", "see exactly the same surface as a full re-bind",
   "descriptive: a claim-scoped re-bind rewrites binding.md whole so the READERS see the full set"),
+ ("references/handoff-validation.md", "OVERWRITE-NOT-APPEND",
+  "descriptive: the relocated validate-handoff manual (6.0.0 cull) names the "
+  "VALIDATOR's state file — validate-handoff-binding-units.sh is its only "
+  "writer; the procedure only runs the script, never writes the file"),
 ]
 used, bad = set(), []
 files = [os.path.join(root, "SKILL.md")] + sorted(glob.glob(os.path.join(root, "references", "*.md")))

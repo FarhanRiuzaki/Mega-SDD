@@ -45,12 +45,12 @@ In your Claude Code session, type:
 /mega-sdd:
 ```
 
-You should see autocomplete with `/mega-sdd:auto` as primary command + other phase commands. If you see "command not found", restart Claude Code session OR run `/plugin marketplace update`.
+You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, and the four maintenance one-timers (`install-deps`, `update-plugin`, `memory`, `migrate-paths`) — since 6.0.0 the surface is exactly these plus the bare `/mega-sdd` front door (the SessionStart hook installs its wrapper on your first session; before that, `/mega-sdd:mega-sdd` works). If NOTHING autocompletes, restart the Claude Code session OR run `/plugin marketplace update`.
 
 ## The ONE command (most users)
 
 ```bash
-/mega-sdd:auto ./your-prd.md
+/mega-sdd ./your-prd.md
 ```
 
 Replace `./your-prd.md` with your input. Mega-sdd detects:
@@ -62,21 +62,21 @@ Replace `./your-prd.md` with your input. Mega-sdd detects:
 
 Single upfront confirmation; then runs end-to-end. Halts on real issues (conflicts, missing OQs); auto-continues otherwise.
 
-## What about all the other commands?
+## What about all the other stages?
 
-Most users never type them. They're auto-invoked by `/mega-sdd:auto`. Available for advanced/manual use:
+Most users never invoke them directly. They're auto-invoked by the `/mega-sdd` chain, and since 6.0.0 the per-stage typed commands no longer register — ask by phrase instead (a typed legacy form still arrives as plain text and routes to the same skill):
 
-- Phase commands: `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`
-- Event-driven: `resolve-oq`, `diff-vault`, `detect-drift`
-- Diagnostic (auto-invoked): `lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`
-- Maintenance: `memory`, `migrate-rules`, `migrate-paths`
+- Phase skills (chain-run): `generate-intent`, `scan-codebase` (on-demand), `bind-codebase`, `generate-units`, `execute-bolts`
+- Event-driven: "resolve OQ", "PRD revisi" (diff-vault), "cek drift"
+- Diagnostics (auto-run on classic; on-demand otherwise): "lint units", "cek parallelism", "status module", "generate AGENTS.md"
+- Maintenance verbs (still typed): `/mega-sdd:memory`, `/mega-sdd:migrate-paths` — plus "migrate hard rules" by phrase
 
-Full reference: [`../../README.md`](../../README.md) Advanced commands section.
+Full migration map: [plugin README §Commands](../../plugins/mega-sdd/README.md#commands-youll-actually-use).
 
 ## If something goes wrong
 
-1. **Pipeline halts mid-chain** → mega-sdd surfaces a YAML blocker with `next_action` field telling you exactly what to run. Resolve, then `/mega-sdd:auto --resume`.
-2. **Confused about state** → run `/mega-sdd:list-modules` to see per-module status.
+1. **Pipeline halts mid-chain** → mega-sdd surfaces a YAML blocker with `next_action` field telling you exactly what to run. Resolve, then `/mega-sdd --resume`.
+2. **Confused about state** → say "status module" (the list-modules rollup) or just run `/mega-sdd` with no args for the state view.
 3. **Bolt fails** → check `<vault>/bolts/U-XXX/bolt-report.md` for details. Often acceptance test needs adjustment.
 4. **Want to undo** → bolts produce atomic git commits; `git revert <commit>` rolls back a unit.
 
@@ -84,7 +84,7 @@ For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ## Feedback + questions
 
-Scenarios assume mega-sdd v4.0.0+. If steps don't match your behavior:
+Scenario walkthroughs written before 6.0.0 may show `/mega-sdd:<stage>` typed forms — those still route as plain text, but the registered commands are only the 3 verbs + 4 one-timers. If steps don't match your behavior:
 1. Check your installed version: type `/plugin` in Claude Code (works in any project)
 2. Update plugin: `/mega-sdd:update-plugin`
 3. Report mismatches with concrete steps reproduced

@@ -73,7 +73,7 @@ The vault is a **lock against requirements** (PRD/BRD), not against an existing 
 
 3. **Do NOT ask** for codebase path, repo URL, or existing entity names — that is the downstream consumer's job. This skill stays focused on requirement → vault.
 
-4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture in Vault Lock Status field `mode_migrate_after`. Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit `00-index.md` + Changelog + bump version) OR runs `/mega-sdd:diff-vault` with `mode=existing`. After the flip, `/mega-sdd:detect-drift` becomes applicable. For `mode=existing`, set `mode_migrate_after = null`.
+4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture in Vault Lock Status field `mode_migrate_after`. Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit `00-index.md` + Changelog + bump version) OR runs `diff-vault` with `mode=existing`. After the flip, `detect-drift` becomes applicable. For `mode=existing`, set `mode_migrate_after = null`.
 
 > Never proceed to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
 
@@ -109,7 +109,7 @@ Two verbosity tiers of the same vault. **Compact is the default** — token-effi
 
 After project shape and implementation mode are decided, ask:
 
-> **Q (squad count):** "How many development squads will work on this project? Single-squad (1) = current default; multi-squad (≥2) enables per-squad execution via `/mega-sdd:execute-bolts --per-squad` (a main-thread loop over squads — concurrent depth-1 bolt dispatch, no squad subagent)."
+> **Q (squad count):** "How many development squads will work on this project? Single-squad (1) = current default; multi-squad (≥2) enables per-squad execution via `execute-bolts --per-squad` (a main-thread loop over squads — concurrent depth-1 bolt dispatch, no squad subagent)."
 
 If answer is `1`: skip remaining squad questions; do NOT emit `_meta/squads.yaml` or `interfaces/`; set `multi_squad_mode: false` in `vault.json`.
 

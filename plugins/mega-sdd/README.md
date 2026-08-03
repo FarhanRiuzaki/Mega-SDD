@@ -20,7 +20,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 
 ## Commands you'll actually use
 
-`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. The pre-v5 stage commands below still resolve as 5.x deprecation aliases.
+`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. **6.0.0 removed the 5.x deprecation aliases** — everything below the kept table is reachable by natural-language phrase through the front door (a typed legacy form still arrives as plain text and routes to its skill).
 
 > **How the bare verb works**: Claude Code registers plugin commands only as `/mega-sdd:<command>`, so `/mega-sdd` itself is a user-level wrapper (`~/.claude/commands/mega-sdd.md`) that the SessionStart hook auto-installs on your first session and keeps current across plugin updates (`scripts/install-front-door.sh`, version-marker idempotent — a hand-edited wrapper without the marker is never touched). Before that first session, use `/mega-sdd:mega-sdd`.
 
@@ -32,18 +32,20 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 | `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
-| **Manual stage entry points — 5.x deprecation aliases (keep resolving; print a one-line notice)** | |
-| `/mega-sdd:generate-intent <prd>` | PRD or idea → vault (entities, flows, decisions, open questions) |
-| `/mega-sdd:scan-codebase [path]` | AST-scan an existing repo → `codebase-map.md` |
-| `/mega-sdd:bind-codebase <vault>` | Validate vault claims against the real code → CONFIRMED / CONFLICT / OQ |
-| `/mega-sdd:generate-units <vault>` | Vault → atomic, grounded work units |
-| `/mega-sdd:execute-bolts --all` | Units → tested commits (fresh subagent + spec & code review per unit) |
-| `/mega-sdd:resolve-oq <vault>` | Walk the open questions interactively |
-| `/mega-sdd:detect-drift` | Compare committed code against the vault |
-| `/mega-sdd:analyze` | One consistency report across all artifacts |
-| `/mega-sdd:extract-intelligence <legacy>` | Legacy codebase → knowledge base (the rebuild lane) |
+| **Migration table — the 5.x typed forms → how to do it in 6.0.0** | |
+| ~~`/mega-sdd:generate-intent <prd>`~~ | `/mega-sdd ./prd.md` — or say "pecah PRD ini" |
+| ~~`/mega-sdd:scan-codebase`~~ | on-demand: ask "scan codebase ini" (the express spine needs no map) |
+| ~~`/mega-sdd:bind-codebase`~~ | in-chain by default; standalone: "bind vault ini ke code" |
+| ~~`/mega-sdd:generate-units`~~ | in-chain by default; standalone: "generate units" |
+| ~~`/mega-sdd:execute-bolts --all`~~ | in-chain by default; standalone: "eksekusi bolt" |
+| ~~`/mega-sdd:resolve-oq`~~ | "walk open questions" / "resolve OQ" |
+| ~~`/mega-sdd:detect-drift`~~ | "cek drift" |
+| ~~`/mega-sdd:analyze`~~ | "cek konsistensi" |
+| ~~`/mega-sdd:extract-intelligence <dir>`~~ | `/mega-sdd <legacy-dir>` — or "pecah legacy ini" |
+| ~~`/mega-sdd:emit-fsd`~~ (and prd/sit) | `/mega-sdd:emit <fsd\|prd\|sit\|uat>` |
+| ~~`/mega-sdd:lint-units`, `:list-modules`, `:replay`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "replay U-001", "blast radius") |
 
-Full surface: **3 public verbs + 4 maintenance one-timers**; the other 24 files in [`commands/`](./commands/) are deprecation aliases that keep resolving through the whole 5.x cycle. Run any command with no args to see its usage.
+Full surface: **3 public verbs + 4 maintenance one-timers** — exactly the 7 files in [`commands/`](./commands/). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after telemetry review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
 
 ## First time? Start with a scenario
 
@@ -93,7 +95,7 @@ plugins/mega-sdd/
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
 │   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
-├── commands/                     # 3 public verbs (mega-sdd · sync · emit) + 4 maintenance one-timers + 24 deprecation aliases (resolve through 5.x)
+├── commands/                     # exactly 7: 3 public verbs (mega-sdd · sync · emit) + 4 maintenance one-timers (5.x aliases removed in 6.0.0)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts
@@ -126,7 +128,7 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 19. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff, or `execute-bolts` is blocked
 20. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 
-> The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); `/mega-sdd:analyze` surfaces the advisory ones.
+> The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); the analyze skill ("cek konsistensi") surfaces the advisory ones.
 
 ## Memory
 
@@ -172,6 +174,8 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
+**v6.0.0** — *The surface cull (MAJOR):* the 24 5.x deprecation aliases are removed (policy-ladder complete: demoted 5.0.0 → telemetry review → removed); the surface is exactly 3 verbs + 4 one-timers, everything else by phrase; all operative alias content relocated into skill references; the on-demand doc pack now derives fully from the modern vault generation (flows/constraints/vault.json sources). Migration: `references/upgrade-from-old-version.md`.
+**v5.34.0–v5.36.0** — *The Express Spine:* GROUND (script, seconds) → claim-scoped express bind (ledger + symbol index, zero map load) → batched blocking-OQ prompt + recorded auto-defers → deterministic risk-tiered review; the express spine is the DEFAULT (`--classic` restores scan-first).
 **v5.31.x** — *ast-grep is the auto AST engine:* the scan ladder is `ast-grep → regex` (one spawn, zero compilation — the clang grammar-compile OOM class is structurally unreachable unattended); `--engine=tree-sitter` stays as a fully supported explicit opt-in lane. Install guidance follows (`recommended_minimum: ast-grep + ripgrep`).
 **v5.30.0** — *Duplication sweep with teeth:* newly-added symbols matched against the FULL symbol index (exact / camel-snake / same-suffix-root / verb-synonym), capped evidence rows handed to the code-quality review lens — advisory by doctrine, never a hook.
 **v5.29.0** — *PageRank targeting removed* (−832 lines): file-level, advisory-only, dead on real machines; replaced at the right layer by the write-time symbol slice. `--skip-pagerank` stays an accepted no-op through 5.x.

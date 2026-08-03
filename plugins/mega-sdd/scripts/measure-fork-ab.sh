@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # measure-fork-ab.sh — friction-guarded driver for the detect-drift context:fork A/B.
 #
-# WHY: the A/B itself is two MANUAL harness runs of /mega-sdd:detect-drift (one with
+# WHY: the A/B itself is two MANUAL harness runs of detect-drift (one with
 # `context: fork`, one without) — no script can automate them, and no script closes the
 # real open blocker, which is a METHODOLOGY constraint (the baseline must come from a
 # representative session; see the procedure doc). What a script CAN do is remove the two
@@ -111,7 +111,7 @@ cache_read = btt.get("cache_read_input_tokens", 0)
 if not have or not isinstance(turns, int) or turns <= 0:
     sys.stderr.write(
         "measure-fork-ab: the current telemetry has no usable turns (have_telemetry=%r, turns=%r).\n"
-        "  Did /mega-sdd:detect-drift actually run to completion with telemetry on, AFTER you reset\n"
+        "  Did detect-drift actually run to completion with telemetry on, AFTER you reset\n"
         "  telemetry.jsonl for this arm? Nothing captured.\n" % (have, turns))
     sys.exit(2)
 

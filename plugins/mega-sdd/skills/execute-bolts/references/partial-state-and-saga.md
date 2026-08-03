@@ -57,7 +57,7 @@ details:
   partial_state_path: "<vault>/bolts/U-007/partial-state.json"
   parse_error: "json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 18 (char 87)"
   corrupt_backup_path: "<vault>/bolts/U-007/partial-state.json.corrupt-2026-05-25T14:32:00Z"
-next_action: "Rename partial-state.json to the suggested corrupt_backup_path (preserves forensics) then re-run `/mega-sdd:execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for a skill-author bug."
+next_action: "Rename partial-state.json to the suggested corrupt_backup_path (preserves forensics) then re-run `execute-bolts U-007 --resume` (will start fresh — corrupt file moved aside). Likely cause: bolt subagent crashed mid-write to partial-state.json (rare); inspect corrupt content for a skill-author bug."
 ```
 
 ## Saga compensating actions (`--rollback`)

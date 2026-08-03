@@ -1,27 +1,20 @@
----
-description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
-argument-hint: <unit-id> [--vault=<path>] [--capture-only] [--diff-against=<replay-id>] [--format=table|json]
----
+# Replay + divergence detection (bolt outcomes)
 
-> ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:replay` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
+Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel, which validate replay as a missing primitive for agentic-dev debugging. Until 5.x this procedure lived in `commands/replay.md` (the script cites that provenance); the surface cull relocated it here — invoke by phrase through the front door (`/mega-sdd` → "replay U-001") or run the script directly.
 
-Replay + divergence detection for `execute-bolts` outcomes. Grounded in IBM DFAH (2026) + LangGraph time-travel, which validate replay as a missing primitive for agentic-dev debugging.
+The whole deterministic loop — capture a snapshot, select the latest prior, diff, classify by the fixed severity table, render — is a single script: `scripts/replay.sh`. This procedure runs it and turns the verdict into the hand-off recommendation.
 
-User arguments: $ARGUMENTS
+Flags: `<unit-id> [--vault=<path>] [--capture-only] [--diff-against=<replay-id>] [--format=table|json]`.
 
-The whole deterministic loop — capture a snapshot, select the latest prior, diff, classify by the fixed severity table, render — is a single script: `plugins/mega-sdd/scripts/replay.sh`. This command runs it and turns the verdict into the hand-off recommendation.
-
-## Procedure
-
-### Step 1 — Run replay
+## Step 1 — Run replay
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/replay.sh" $ARGUMENTS --cwd="$(pwd)"
+bash <plugin-root>/scripts/replay.sh <unit-id> <flags> --cwd="$(pwd)"
 ```
 
 `<unit-id>` is the required positional (e.g. `U-001`). The script resolves the vault (`--vault=<path>`, else auto-probe `.mega-sdd/vaults/` then legacy), validates the unit, captures the snapshot, and (unless `--capture-only`) diffs against the latest prior. Relay its output.
 
-### Step 2 — What the snapshot actually records (grounding — moat invariant #5)
+## Step 2 — What the snapshot actually records (grounding — moat invariant #5)
 
 The script sources snapshot fields **only** from artifacts `execute-bolts` actually writes — it never fabricates:
 
@@ -35,7 +28,7 @@ Fields a richer execute-bolts *could* record but **no current artifact does** �
 
 Each run persists one snapshot to `<vault>/.internal/replays/<unit>-<timestamp>Z-<pid>.json` — a **per-run file** (the timestamp+PID stem makes concurrent runs collision-free). It is **not** a JSON-Lines append log; "latest prior" is the newest such snapshot file, excluding the `<unit>-divergence.json` diff artifact.
 
-### Step 3 — Severity table (what the script classifies on)
+## Step 3 — Severity table (what the script classifies on)
 
 The classification is deterministic — a fixed table, no LLM judgment. The signals are the fields that **exist**:
 
@@ -51,7 +44,7 @@ The classification is deterministic — a fixed table, no LLM judgment. The sign
 
 Any HIGH → exit **1** (serves the CI use-case). Otherwise exit **0**.
 
-### Step 4 — Render (what the script prints)
+## Step 4 — Render (what the script prints)
 
 `--format=table` (default), e.g. a clean re-run:
 
@@ -68,7 +61,7 @@ Verdict: REPRODUCIBLE
 
 …and a regression cites the exact fields under `[HIGH]` and prints `Verdict: REGRESSION`. `--format=json` emits the same as a structured object.
 
-### Step 5 — Hand-off
+## Step 5 — Hand-off
 
 | Outcome | Suggested action |
 |---|---|

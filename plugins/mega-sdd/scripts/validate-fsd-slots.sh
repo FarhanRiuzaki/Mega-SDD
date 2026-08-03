@@ -101,7 +101,7 @@ state = {
     "next_action": (
         "FSD template slots all filled."
         if status == "PASS"
-        else f"Unfilled slot(s) detected: {unique_slots}. Skill-author bug in section-mapping.md OR template emission. Re-run /mega-sdd:emit-fsd with --sections=<subset> to skip affected sections OR file plugin bug."
+        else f"Unfilled slot(s) detected: {unique_slots}. Skill-author bug in section-mapping.md OR template emission. Re-run /mega-sdd:emit fsd with --sections=<subset> to skip affected sections OR file plugin bug."
     ),
 }
 try:

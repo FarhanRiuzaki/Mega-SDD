@@ -24,7 +24,7 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 
 ## `--per-squad`
 
-1. **Load `_meta/squads.yaml`.** If absent or single-squad → halt with an informative message: "`--per-squad` requires ≥2 squads declared in `_meta/squads.yaml`. Run `/mega-sdd:generate-intent` to add squad config, or use plain `/mega-sdd:execute-bolts --all` for single-squad."
+1. **Load `_meta/squads.yaml`.** If absent or single-squad → halt with an informative message: "`--per-squad` requires ≥2 squads declared in `_meta/squads.yaml`. Run `generate-intent` to add squad config, or use plain `execute-bolts --all` for single-squad."
 2. **Read the squad list.** Build a list of declared squad IDs.
 3. **Main-thread squad loop (NOT a squad subagent).** The controller stays in the main thread and runs each squad's units through the per-unit panel flow directly (depth-1) — see `squad-subagent.md`. A forked squad subagent would have to dispatch the bolt agents = depth-2 (forbidden) and would silently lose the review panel.
 4. **Parallelize across squads.** Independent units — including units from different squads — are dispatched **concurrently** (multiple `bolt-implementer` Agent calls in one message), bounded by an in-flight cap. **Independent = no `depends_on` edge AND pairwise-disjoint `target_files`** — cross-squad units carry no dependency edges by design, so the whitelist-overlap check is the ONLY thing standing between two squads and a silent clobber of a shared file (routes, config). Same mechanism as `--all --parallel`; `--per-squad` only changes the filter + the consolidation.
@@ -32,13 +32,13 @@ Procedures for executing more than one unit: `--all`, `--per-squad`, `--squad=<i
 
 ## `--module=<id>` + `module_blocked_by` halt
 
-1. **Load `_meta/modules.yaml`.** If absent BUT `_meta/modules.yaml.auto` exists → instruct: "review `_meta/modules.yaml.auto` and promote it: `mv _meta/modules.yaml.auto _meta/modules.yaml`". If neither exists → halt: "`--module=` requires `_meta/modules.yaml`. Run `/mega-sdd:generate-units` (Step 4.5 auto-derives `modules.yaml.auto`), review, then promote it."
+1. **Load `_meta/modules.yaml`.** If absent BUT `_meta/modules.yaml.auto` exists → instruct: "review `_meta/modules.yaml.auto` and promote it: `mv _meta/modules.yaml.auto _meta/modules.yaml`". If neither exists → halt: "`--module=` requires `_meta/modules.yaml`. Run `generate-units` (Step 4.5 auto-derives `modules.yaml.auto`), review, then promote it."
 2. **Validate `<id>` exists** in declared modules.
 3. **Check blocked_by**: for each `blocked_by` entry, verify that module is `status: completed` (per memory). Incomplete → halt `module_blocked_by` listing pending prerequisites.
 4. **Filter units**: working set = units where `module: <id>` AND not yet completed.
 5. **Topologically sort** within the module by `depends_on`.
 6. **Proceed** with sequential or `--parallel` execution on the filtered set.
-7. **After all units complete**: probe the module's DoD checklist (`modules.yaml.modules[<id>].dod`). Surface incomplete DoD items in chat; the user marks them via `/mega-sdd:list-modules --mark-dod=<module>` or edits modules.yaml manually.
+7. **After all units complete**: probe the module's DoD checklist (`modules.yaml.modules[<id>].dod`). Surface incomplete DoD items in chat; the user marks them via `list-modules --mark-dod=<module>` or edits modules.yaml manually.
 
 ```yaml
 blocker:
@@ -49,7 +49,7 @@ blocker:
     requested_module: M-leave-mgmt
     blocked_by_modules: [M-auth]
     blocker_status: M-auth has 2/5 units complete
-  next_action: "Complete the prerequisite module first via /mega-sdd:execute-bolts --module=M-auth"
+  next_action: "Complete the prerequisite module first via execute-bolts --module=M-auth"
 ```
 
 ## `--squad=<id>` + `cross_squad_interface_draft` halt

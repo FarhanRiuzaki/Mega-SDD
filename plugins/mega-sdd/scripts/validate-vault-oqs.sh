@@ -663,7 +663,7 @@ if active_vault_dir:
             })
 
 # Soft advisories (a "couldn't verify" or low-confidence signal) surface as WARN, not
-# FAIL, so they contribute WARN-at-most to the /mega-sdd:analyze rollup — vault_oqs sits
+# FAIL, so they contribute WARN-at-most to the analyze rollup — vault_oqs sits
 # in the non-advisory bucket, where a FAIL flips the overall report status. Hard issues
 # (missing mode/query, an unmodeled operator surface, a mis-tagged OQ, a bad citation)
 # stay FAIL. This keeps an Indonesian "uncheckable" or a lone defaulted-standard hint
@@ -684,10 +684,10 @@ state = {
         else (
             f"{len(issues)} vault-OQ issue(s) detected (OQ-citation integrity and/or "
             "operator_surface_missing / design_source_oq_missing). Re-run "
-            "/mega-sdd:generate-intent to model the operator surface grounded in the "
+            "generate-intent to model the operator surface grounded in the "
             "flows, emit a Design-Source OQ where UI exists but design source is "
             "missing (never default WCAG/Material values), or fix OQ citations via "
-            "/mega-sdd:resolve-oq."
+            "resolve-oq."
         )
     ),
 }

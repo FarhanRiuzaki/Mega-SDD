@@ -376,8 +376,13 @@ def parse_rollup_categories(index_md):
     out = {}
     in_sec = False
     cur_cat = None
+    # both heading spellings: the template emits `## Open Questions (roll-up)`,
+    # older vaults `## Open Questions roll-up` (P4 latent-defect fix — the
+    # template form never matched, so the category fallback was dead on
+    # template-shaped vaults)
+    _sec_re = re.compile(r"^##\s+Open Questions\s*(?:\(roll-up\)|roll-up|\(roll-?up\))", re.I)
     for line in index_md.splitlines():
-        if line.strip().startswith("## Open Questions roll-up"):
+        if _sec_re.match(line.strip()):
             in_sec = True
             continue
         if in_sec:
@@ -385,6 +390,14 @@ def parse_rollup_categories(index_md):
                 break
             hm = re.match(r"^###\s+(.+?)\s*(?:\(PRIORITY-\d+\))?\s*$", line)
             if hm:
+                # roll-up categories are FREE-TEXT groupings by contract (the
+                # derive fixture pins "PRD inconsistencies" flowing through) —
+                # never enum-normalized here. Note the deliberate downstream
+                # join: validate-vault-oqs reads startswith("tech") on the
+                # lowered value BY DESIGN, so a "Technical*" heading's
+                # bracketless OQs are checked for resolution_mode — with the
+                # (roll-up) spelling now matching, that advisory check newly
+                # reaches template-shaped vaults (P4 disclosure).
                 cur_cat = hm.group(1).strip().strip("{}").strip()
                 continue
             if cur_cat:

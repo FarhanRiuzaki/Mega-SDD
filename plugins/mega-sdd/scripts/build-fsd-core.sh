@@ -340,7 +340,7 @@ if units:
         cite(4, u["rel"])
     slots["section-4-user-stories-content"] = "\n\n".join(blocks)
 else:
-    slots["section-4-user-stories-content"] = "[Pending — units/ directory not yet generated. Run /mega-sdd:generate-units after vault stabilizes.]"
+    slots["section-4-user-stories-content"] = "[Pending — units/ directory not yet generated. Run generate-units after vault stabilizes.]"
     pending_count += 1
 
 # ── §5 Functional requirements ──
@@ -398,7 +398,80 @@ if fn:
         fr_details.append(d.strip())
     cite(5, "vault/02-functional.md")
 if not fr_rows:
-    p = pend("vault/02-functional.md")
+    # Modern-vault fallback (P4 repair): today's generate-intent emits no
+    # 02-functional.md — the functional enumeration of a modern vault is its
+    # flows (04-flows.md `### F-*` + per-flow DoD; SIT already builds from
+    # exactly this). Legacy FR-heading vaults keep the branch above.
+    fl = read(os.path.join(vault, "04-flows.md"))
+    if fl:
+        # id must END at the match (round: `F-U_002` half-matched as id "F-U";
+        # a heading the grammar cannot parse whole is DROPPED, never truncated)
+        fheads = list(re.finditer(r"(?m)^(#{2,4})\s+(F-[A-Z0-9]+(?:-[A-Z0-9]+)*)(?!\w)\s*[—:-]?\s*(.*)$", fl))
+        for i, h in enumerate(fheads):
+            fid, title = h.group(2), h.group(3).strip() or "(untitled)"
+            body_start = h.end()
+            body_end = fheads[i + 1].start() if i + 1 < len(fheads) else len(fl)
+            body = fl[body_start:body_end]
+            # suffix guard covers ALPHANUMERIC-AND-DASH ids (round: the numeric
+            # `(?!\d)` guard let F-U-001 match inside F-U-001-B — false
+            # "Implemented" status from another flow's unit)
+            fid_rx = re.compile(r"\b%s(?![\w-])" % re.escape(fid))
+            refs = [u for u in units if fid_rx.search(u["implements"] or "")]
+            if mode == "pre-dev":
+                status, ev = "Specified", "pre-dev"
+            elif not refs:
+                status, ev = "Specified (no unit)", "no referencing unit"
+            else:
+                sts = [bolts.get(u["id"], {}).get("status") for u in refs]
+                if any(s and s.startswith("halted") for s in sts):
+                    status, ev = "In Progress (halted)", "a bolt halted"
+                elif sts and all(s == "completed" for s in sts):
+                    status, ev = "Implemented", "all referenced bolts completed"
+                else:
+                    status, ev = "In Progress", "bolts pending"
+            verdict, claim_id = "(not bound)", "(none)"
+            if binding:
+                # a verdict is accepted ONLY from a line that also carries a
+                # word-bounded claim id (round: prose "unresolved OQ tracking"
+                # promoted to a verdict; `SEC-12` yielded claim C-12) — no
+                # claim id on the line ⇒ not a verdict row ⇒ keep (not bound)
+                for bline in binding.splitlines():
+                    if fid_rx.search(bline):
+                        vm = re.search(r"\b(CONFIRMED|CONFLICT|OQ)\b", bline)
+                        cm = re.search(r"(?<![A-Za-z0-9])(C-\d+)\b", bline)
+                        if vm and cm:
+                            verdict, claim_id = vm.group(1), cm.group(1)
+                            break
+            # no DOTALL: the bullet group must stop at the first non-bullet
+            # line (round: `(?s)` swallowed the whole flow body incl. mermaid)
+            dod = re.search(r"(?m)^\*\*Definition of Done\*\*[^\n]*\n((?:[ \t]*[-*] .*\n)+)", body + "\n")
+            desc = (dod.group(1).strip() if dod
+                    else "(flow spec — see vault/04-flows.md)")
+            ln1 = fl[:h.start()].count("\n") + 1
+            ln2 = fl[:body_end].count("\n") + 1
+            # priority stays honest: flows carry no Priority field — never default one
+            fr_rows.append("| %s | %s | — | %s |" % (fid, title, status))
+            d = FR_TPL
+            for k, v in (("fr_id", fid), ("fr_title", title),
+                         ("fr_description", desc),
+                         ("fr_priority", "— (flows carry no priority field)"),
+                         ("fr_status", status), ("status_evidence", ev),
+                         ("binding_verdict", verdict), ("claim_id", claim_id),
+                         ("unit_ids_csv", ", ".join(u["id"] for u in refs) or "(none)"),
+                         ("bolt_status_summary", ", ".join(sorted({bolts.get(u["id"], {}).get("status", "pending") for u in refs})) or "n/a"),
+                         ("fr_line_start", str(ln1)), ("fr_line_end", str(ln2))):
+                d = d.replace("{{%s}}" % k, v)
+            # the template hardcodes the legacy source path + an FR- id prefix;
+            # the flows branch MUST rewrite both (round blocker: every modern
+            # FSD stamped [Source: vault/02-functional.md:<04-flows line>] — a
+            # fabricated citation the citation gate then failed on)
+            d = d.replace("vault/02-functional.md", "vault/04-flows.md")
+            d = d.replace("FR-%s" % fid, fid)
+            fr_details.append(d.strip())
+        if fr_rows:
+            cite(5, "vault/04-flows.md")
+if not fr_rows:
+    p = pend("vault/02-functional.md (legacy) / vault/04-flows.md")
     fr_rows, fr_details = ["| — | %s | — | — |" % p], [p]
     pending_count -= 1  # counted once, not twice
     pending_count += 1
@@ -407,6 +480,10 @@ slots["section-5-fr-details"] = "\n\n".join(fr_details)
 
 # ── §6 NFR (over-complete: both sources labeled; duplicates are not fabrication) ──
 nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
+# Modern-vault fallback (P4 repair): the modern NFR home is
+# 06-constraints.md `## Non-functional requirements` (the table vault_md parses)
+cons_doc = read(os.path.join(vault, "06-constraints.md"))
+nfr_cons = md_section(cons_doc, "Non-functional requirements|Non-Functional Requirements") if cons_doc else None
 def const_clauses(cat_words):
     if not const:
         return None
@@ -415,6 +492,31 @@ def const_clauses(cat_words):
         if any(w in m.group(0).lower() for w in cat_words):
             out.append(m.group(0).strip())
     return "\n".join(out) or None
+# the constraints-table rows, keyword-routed per category; a row matching no
+# category lands in Other (never dropped — honesty over tidiness)
+def _cons_rows_by_cat():
+    if not nfr_cons:
+        return {}
+    rows = [ln for ln in nfr_cons.splitlines()
+            if ln.strip().startswith("|") and not re.match(r"^\s*\|[\s:|-]+\|\s*$", ln)]
+    body = [r for r in rows[1:]] if rows else []
+    cats = {"Performance": [], "Security": [], "Availability": [], "Other": []}
+    kw = {"Performance": ("performance", "performa", "latency", "latensi", "throughput", "response", "load"),
+          "Security": ("security", "keamanan", "auth", "encrypt", "enkripsi", "audit"),
+          "Availability": ("availability", "ketersediaan", "uptime", "sla", "backup", "recovery")}
+    for r in body:
+        low = r.lower()
+        placed = False
+        for cat, words in kw.items():
+            if any(w in low for w in words):
+                cats[cat].append(r)
+                placed = True
+                break
+        if not placed:
+            cats["Other"].append(r)
+    hdr = rows[0] + "\n" + "|" + "---|" * (rows[0].count("|") - 1) if rows else ""
+    return {c: (hdr + "\n" + "\n".join(v)) for c, v in cats.items() if v}
+cons_by_cat = _cons_rows_by_cat()
 for slot, cat, words in (("section-6-performance-content", "Performance", ("performance", "latency", "throughput")),
                          ("section-6-security-content", "Security", ("security", "auth", "encrypt")),
                          ("section-6-availability-content", "Availability", ("availability", "uptime", "sla")),
@@ -424,12 +526,16 @@ for slot, cat, words in (("section-6-performance-content", "Performance", ("perf
         sub = md_section("## X\n" + nfr, cat) or None
         if sub:
             parts.append("_Dari 02-functional §NFR:_\n\n" + sub)
+    if cons_by_cat.get(cat):
+        parts.append("_Dari 06-constraints §Non-functional requirements:_\n\n" + cons_by_cat[cat])
     cc = const_clauses(words)
     if cc:
         parts.append("_Dari constitution [LOCKED]:_\n\n" + cc)
     slots[slot] = "\n\n".join(parts) if parts else "(not specified)"
 if nfr:
     cite(6, "vault/02-functional.md")
+if cons_by_cat:
+    cite(6, "vault/06-constraints.md")
 if const and any("[LOCKED]" in (slots[s] or "") or "constitution" in (slots[s] or "") for s in
                  ("section-6-performance-content", "section-6-security-content",
                   "section-6-availability-content", "section-6-other-constitution-content")):
@@ -439,9 +545,9 @@ if const and any("[LOCKED]" in (slots[s] or "") or "constitution" in (slots[s] o
 ents = md_section(cbmap, "Entities|Data models / Schemas|Data models") if cbmap else None
 mods = md_section(cbmap, "Modules|Top-level structure") if cbmap else None
 conf = md_section(binding, "Confirmed Claims") if binding else None
-slots["section-7-entities-content"] = ents or ("[Pending — codebase-map.md not yet generated. Run /mega-sdd:scan-codebase.]" if not cbmap else "(no entities recorded)")
-slots["section-7-modules-content"] = mods or ("[Pending — codebase-map.md not yet generated. Run /mega-sdd:scan-codebase.]" if not cbmap else "(no modules recorded)")
-slots["section-7-binding-confirmed-content"] = conf or "[Pending — binding.md not yet generated. Run /mega-sdd:bind-codebase.]"
+slots["section-7-entities-content"] = ents or ("[Pending — codebase-map.md not yet generated. Run scan-codebase.]" if not cbmap else "(no entities recorded)")
+slots["section-7-modules-content"] = mods or ("[Pending — codebase-map.md not yet generated. Run scan-codebase.]" if not cbmap else "(no modules recorded)")
+slots["section-7-binding-confirmed-content"] = conf or "[Pending — binding.md not yet generated. Run bind-codebase.]"
 if not cbmap or not binding:
     pending_count += 1
 if cbmap:
@@ -521,10 +627,26 @@ if oq:
         pending_count += 1
 elif isinstance(vj.get("open_questions"), list):
     for q in vj["open_questions"]:
-        if str(q.get("status", "")) == "resolved":
+        # resolved + out_of_scope are closed decisions; `deferred` stays LISTED
+        # (A6: a defer that never resurfaces is a silent assumption)
+        if str(q.get("status", "")) in ("resolved", "out_of_scope"):
             continue
-        rows10.append("| %s | %s | %s | %s |" % (q.get("id", "—"), q.get("question", ""), q.get("priority", "—"), q.get("category", "—")))
+        # both OQ shapes: the derive-vault-json schema uses tag/text; an older
+        # authored shape used id/question (P4 repair — tag/text vaults rendered
+        # empty rows here); null/absent fields render an honest em-dash
+        rows10.append("| %s | %s | %s | %s |" % (
+            q.get("id") or q.get("tag") or "—",
+            q.get("question") or q.get("text") or "—",
+            q.get("priority") or "—", q.get("category") or "—"))
     cite(10, "vault.json")
+if not rows10:
+    # honesty backstop (round doc-16): a vault whose OQs live only in the
+    # 00-index roll-up (no 03-open-questions.md, no readable vault.json) must
+    # never render a sourced-looking "(none)" — surface the gap instead
+    idx10 = read(os.path.join(vault, "00-index.md")) or ""
+    if re.search(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b", idx10):
+        rows10.append("| — | [Pending — OQ ada di 00-index roll-up tetapi vault.json tidak terbaca — jalankan derive-vault-json.sh lalu re-emit] | — | — |")
+        pending_count += 1
 slots["section-10-oq-table"] = "\n".join(rows10) if rows10 else "| — | (none) | — | — |"
 bc = ["**%s:** %s (raised by %s)" % (uid, b["concern"], b["agent"]) for uid, b in sorted(bolts.items()) if b["concern"]]
 slots["section-10-bolt-concerns-content"] = "\n".join(bc) if bc else "(none)"

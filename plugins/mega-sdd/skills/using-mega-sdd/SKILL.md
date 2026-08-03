@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 3.2.0
+version: 3.3.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -10,7 +10,7 @@ Route SDD work through mega-sdd phases, not inline answers. This anchor decides 
 
 ## When this applies
 
-Invoke a mega-sdd skill BEFORE responding when ANY hold: **(a)** the prompt types `/mega-sdd` or any `/mega-sdd:<verb>` (deprecated typed forms resolve as aliases through 5.x); **(b)** it carries an SDD trigger keyword — the full EN + Indonesian keyword census lives in this skill's always-loaded description (intent/unit/bolt/vault/PRD/binding/extract-intelligence/rebuild/sync/auto, plus `pecah PRD`, `buat dev`, `lanjut`, `kode berubah`, …); or **(c)** the CWD shows SDD signals: `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` (back-compat `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`).
+Invoke a mega-sdd skill BEFORE responding when ANY hold: **(a)** the prompt types `/mega-sdd` or any `/mega-sdd:<verb>` (typed stage verbs retired — arrive as text; route to the skill); **(b)** it carries an SDD trigger keyword — the full EN + Indonesian keyword census lives in this skill's always-loaded description (intent/unit/bolt/vault/PRD/binding/extract-intelligence/rebuild/sync/auto, plus `pecah PRD`, `buat dev`, `lanjut`, `kode berubah`, …); or **(c)** the CWD shows SDD signals: `.mega-sdd/`, `.mega-sdd/vaults/`, `.mega-sdd/knowledge-base/`, `.mega-sdd/codebase/codebase-map.md` (back-compat `docs/mega-sdd/`, `vaults/`, `bound-vault/`, `units/`, `binding.md`, `codebase-map.md`).
 
 ### Auto-trigger on a strong signal
 

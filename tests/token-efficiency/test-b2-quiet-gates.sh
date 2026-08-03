@@ -129,8 +129,8 @@ _orphan_issues "$S4/.bolt-whitelist-state.json" 3
 python3 -c 'import json,sys; json.dump({"status":"FAIL","halt_type":"batch_suite_red","detail":"tests red: "+"; ".join("suite_%02d::case_%02d failed with assertion mismatch"%(i,i) for i in range(18))}, open(sys.argv[1],"w"))' "$S4/.batch-suite-gate-state.json"
 OUT=$(drive_pre "$F4" "Skill" '{"skill": "mega-sdd:execute-bolts"}')
 MSG=$(printf '%s' "$OUT" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("hookSpecificOutput",{}).get("permissionDecisionReason","") or d.get("permissionDecisionReason",""))')
-if echo "$MSG" | grep -q "truncated" && echo "$MSG" | grep -qF "/mega-sdd:analyze" && echo "$MSG" | grep -q "gates are failing"; then
-  ok "M-07b: overflow deny (>2500) stays truncated + keeps prefix + /mega-sdd:analyze pointer (len=${#MSG})"
+if echo "$MSG" | grep -q "truncated" && echo "$MSG" | grep -qF "the analyze skill" && echo "$MSG" | grep -q "gates are failing"; then
+  ok "M-07b: overflow deny (>2500) stays truncated + keeps prefix + analyze pointer (len=${#MSG})"
 else
   fail "M-07b: overflow deny lost truncation/pointer/prefix (len=${#MSG}): ${MSG:0:160}"
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Detect v1 Hard Rule grammar candidates for migration → v2 ast-grep YAML rules.
-# Invoked by /mega-sdd:migrate-rules command
+# Invoked by migrate-rules command
 #
 # Usage: migrate-v1-rules.sh <vault-path> [--dry-run] [--auto-confirm] [--to=v2]
 #
@@ -8,7 +8,7 @@
 #
 # HONEST SCOPE (S6 EB-HONEST-1): this script is a DETECTOR/SCAFFOLD — it walks
 # units, identifies v1 rules, and logs what it found. The actual v1 → v2 YAML
-# transformation is performed by the /mega-sdd:migrate-rules skill invocation
+# transformation is performed by the migrate-rules procedure (skills/execute-bolts/references/migrate-rules.md)
 # (Claude-driven pattern mapping per hard-rule-grammar-v2.md §Mapping v1 → v2).
 # This script modifies NO unit file and its log says `detected`, never
 # `migrated` — a "migrated" claim with byte-identical files is a fabricated
@@ -53,7 +53,7 @@ trap 'rm -f "$LOG_FILE.tmp"' EXIT
   echo "# Hard Rule Grammar v1 → v2 Migration Log"
   echo ""
   echo "**Detection started**: $TIMESTAMP"
-  echo "**Tool**: migrate-v1-rules.sh (detector — the v2 transform runs in the /mega-sdd:migrate-rules skill)"
+  echo "**Tool**: migrate-v1-rules.sh (detector — the v2 transform runs per the migrate-rules procedure (execute-bolts reference))"
   echo "**Mode**: $([ $DRY_RUN -eq 1 ] && echo dry-run || echo detect)"
   echo ""
 } > "$LOG_FILE.tmp"
@@ -95,10 +95,10 @@ for UNIT_FILE in "$VAULT_PATH"/units/U-*.md; do
     esac
   fi
 
-  # The v1 → v2 YAML transformation runs in the mega-sdd:migrate-rules skill
+  # The v1 → v2 YAML transformation runs in the migrate-rules procedure (execute-bolts reference)
   # (Claude-driven); this scaffold only detects + queues. It writes NOTHING
   # into the unit — do not log otherwise.
-  echo "  → detected; transform delegated to /mega-sdd:migrate-rules (skill invocation)"
+  echo "  → detected; transform delegated to the migrate-rules procedure (execute-bolts reference)"
   UNITS_DETECTED=$((UNITS_DETECTED + 1))
 
   {
@@ -117,7 +117,7 @@ done
   echo "- Units skipped: $UNITS_SKIPPED"
   echo ""
   echo "> This log records DETECTION only. A unit counts as migrated when the"
-  echo "> /mega-sdd:migrate-rules skill has emitted its v2 YAML blocks in place"
+  echo "> the migrate-rules procedure has emitted its v2 YAML blocks in place"
   echo "> (v1 rules preserved as HTML comments) and the unit re-validates."
   echo ""
   echo "**Detection ended**: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -133,7 +133,7 @@ else
   mv "$LOG_FILE.tmp" "$LOG_FILE"
   echo ""
   echo "Detection log: $LOG_FILE"
-  echo "No unit files were modified — run the /mega-sdd:migrate-rules skill step to emit the v2 YAML."
+  echo "No unit files were modified — run the migrate-rules procedure (ask: 'migrate hard rules <vault-path>') to emit the v2 YAML."
 fi
 trap - EXIT
 

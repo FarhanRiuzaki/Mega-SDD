@@ -188,7 +188,7 @@ Modules can have `blocks` / `blocked_by` for inter-module ordering. Example:
 
 ## Module-level DoD validation
 
-`/mega-sdd:list-modules` command (or `execute-bolts --module=<id>` completion check) probes each DoD item:
+The list-modules diagnostic (`orchestrate-flow/references/diagnostics-procedures.md §list-modules`, or the `execute-bolts --module=<id>` completion check) probes each DoD item:
 
 - Checklist items (Markdown `- [ ] / [x]`) → toggleable; user marks done
 - Test commands → can be auto-run: detect command string; invoke via Bash; pass/fail logged to memory
@@ -197,7 +197,7 @@ Modules can have `blocks` / `blocked_by` for inter-module ordering. Example:
 ## Filtered execution (`execute-bolts --module=<id>`)
 
 ```bash
-/mega-sdd:execute-bolts --module=M-auth
+execute-bolts --module=M-auth
 ```
 
 Runs only units where `module: M-auth`. Topologically sorted within module. Respects cross-module `blocked_by` declarations — halts with `module_blocked_by` blocker if dependencies not done.
@@ -208,7 +208,7 @@ After each unit completes:
 
 - `<vault>/.memory/bolt-outcomes.json` already tracks per-unit outcomes (existing)
 - Module progress derived: `units in module M-X where status=completed / total units in M-X`
-- `/mega-sdd:list-modules` reads this for live progress display
+- `list-modules` reads this for live progress display
 
 ## Halt protocol additions
 
@@ -231,8 +231,8 @@ After each unit completes:
 
 Existing v3.4 vaults can opt into modules by:
 
-1. Adding `_meta/modules.yaml` — manually, OR by promoting the auto-derivation output: any `/mega-sdd:generate-units` run's Step 4.5 writes `_meta/modules.yaml.auto`; review it, then `mv _meta/modules.yaml.auto _meta/modules.yaml` (execute-bolts' `--module=` halt accepts only the promoted name)
-2. Re-running `/mega-sdd:generate-units --reconcile` — refreshes Step 5 module assignment against the existing unit set without regenerating unit bodies
+1. Adding `_meta/modules.yaml` — manually, OR by promoting the auto-derivation output: any `generate-units` run's Step 4.5 writes `_meta/modules.yaml.auto`; review it, then `mv _meta/modules.yaml.auto _meta/modules.yaml` (execute-bolts' `--module=` halt accepts only the promoted name)
+2. Re-running `generate-units --reconcile` — refreshes Step 5 module assignment against the existing unit set without regenerating unit bodies
 3. Optional: edit `modules.yaml` to refine grouping; re-run `--reconcile`
 
 ## References
@@ -240,4 +240,4 @@ Existing v3.4 vaults can opt into modules by:
 - The atomic unit definition (the unit-schema reference listed in the skill router) — unchanged by this layer
 - `squads.yaml` — the social partition (orthogonal to modules)
 - This file — the semantic grouping layer above atomic units
-- `commands/list-modules.md` — module progress query command
+- `orchestrate-flow/references/diagnostics-procedures.md §list-modules` — module progress query procedure (relocated from `commands/list-modules.md` in the surface cull)

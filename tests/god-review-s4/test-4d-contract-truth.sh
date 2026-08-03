@@ -31,7 +31,7 @@ OQR="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md"
 BC="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md"
 BMT="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md"
 COQ="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/constitution-and-oq.md"
-VH="${ROOT}/plugins/mega-sdd/commands/validate-handoff.md"
+VH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/handoff-validation.md"
 for f in "$VBJ" "$PA" "$HC" "$BM" "$CR" "$BJS" "$OQR" "$BC" "$BMT" "$COQ" "$VH"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done

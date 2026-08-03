@@ -121,7 +121,7 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 When Phase 1 vault's bolts complete:
 
 1. Read `<KB>/99-rebuild-architecture/suggested-phasing.md` §Phase 2
-2. Run `/mega-sdd:generate-intent --kb=<KB> --phase=2` to bootstrap Phase 2 vault (v3.26+)
+2. Run `generate-intent --kb=<KB> --phase=2` to bootstrap Phase 2 vault (v3.26+)
 3. Pipeline proceeds: bind-codebase → generate-units → execute-bolts (for Phase 2 scope)
 4. Repeat for Phase 3+
 

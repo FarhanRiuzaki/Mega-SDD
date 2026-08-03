@@ -6,7 +6,7 @@
 #      aggregator below — the binding->units moat gate + the kept code-delivery
 #      quality gates). The DEMOTED code-delivery checks (dispatch-prompt,
 #      operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are advisory
-#      only and surface via /mega-sdd:analyze — they do NOT block here.
+#      only and surface via analyze — they do NOT block here.
 #   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite guard state
 #      files (.validation-blockers.json, .plan-pending, .replan-budget,
 #      .iter-classifier.json).
@@ -218,8 +218,9 @@ EOF
 case "${TOOL_NAME:-}" in
   Skill)
     # Branch 1c: scope flag validation for orchestrate-flow (the /mega-sdd front
-    # door) / generate-intent; the mega-sdd:auto case arm stays for 5.x alias
-    # back-compat. Reads transcript_path to find user's most recent message +
+    # door) / generate-intent; the mega-sdd:auto case arm is inert since the
+    # 6.0.0 alias cull (no auto skill exists) — kept as a harmless dead match.
+    # Reads transcript_path to find user's most recent message +
     # extract --scope=X flag (args not in tool_input). Validates against PRD scopes.
     case "${SKILL_NAME:-}" in
       mega-sdd:auto|mega-sdd:generate-intent|mega-sdd:orchestrate-flow)
@@ -429,7 +430,7 @@ except Exception as e:
     # Multi-fail surfacing is built in: when >1 gate fails, all names are listed up
     # front so the agent fixes them together instead of one-at-a-time.
     #
-    # DEMOTED to /mega-sdd:analyze advisory (NOT blocking here): dispatch-prompt,
+    # DEMOTED to analyze advisory (NOT blocking here): dispatch-prompt,
     # operator-UX (vault-oqs), fan-out-parity, ui-deferral, vault-flow-staging.
     if [ "${SKILL_NAME:-}" = "mega-sdd:execute-bolts" ]; then
       # ── S4 BC-GATE-1 self-heal: the moat-state writer used to fire on UNIT
@@ -501,7 +502,7 @@ if os.path.exists(moat_path):
         d = json.load(open(moat_path))
     except Exception as e:
         d = None
-        fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run /mega-sdd:validate-handoff (or bind-codebase) to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
+        fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run the handoff validator (bash scripts/validate-handoff-binding-units.sh --cwd=<root>) or bind-codebase to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
     if d and d.get("status") == "FAIL":
         drops = d.get("drops", [])
         n = len(drops)
@@ -510,12 +511,12 @@ if os.path.exists(moat_path):
         # can NEVER be cleared by adding OQ-IDs to frontmatter.
         rem = []
         if any(t in ("conflict_unresolved", "binding_missing") for t in types):
-            rem.append("conflict/binding drops: resolve via /mega-sdd:resolve-oq --binding <binding.md> (human-in-the-loop), or re-run /mega-sdd:bind-codebase until conflicts=0")
+            rem.append("conflict/binding drops: resolve via resolve-oq --binding <binding.md> (human-in-the-loop), or re-run bind-codebase until conflicts=0")
         if any(t in ("oq_id_dropped", "conflict_id_dropped") for t in types):
             rem.append("propagation drops: add the missing OQ-/CONFLICT-IDs to the relevant unit frontmatter binding_refs")
         if any(t == "binding_stale_recertify" for t in types):
-            rem.append("binding basi (stale): file yang di-anchor binding berubah sejak binding_metadata.head oleh commit di luar pipeline unit — jalankan /mega-sdd:sync atau /mega-sdd:bind-codebase ulang (daftar file ada di field expected pada drop-nya)")
-        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run /mega-sdd:validate-handoff for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
+            rem.append("binding basi (stale): file yang di-anchor binding berubah sejak binding_metadata.head oleh commit di luar pipeline unit — jalankan /mega-sdd:sync atau bind-codebase ulang (daftar file ada di field expected pada drop-nya)")
+        fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run bash scripts/validate-handoff-binding-units.sh --cwd=<root> for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run
 # gap, clinic-project audit 2026-06-12). The Stop hook writes this state on every
@@ -636,7 +637,7 @@ if fails:
         prefix = "[%d execute-bolts gates are failing: %s — fix ALL before re-running] " % (len(fails), ", ".join(n for n, _ in fails))
         body = " ||| ".join("(%s) %s" % (n, m) for n, m in fails)
         if len(body) > 2500:
-            body = body[:2500] + "… [truncated — run /mega-sdd:analyze for the full list]"
+            body = body[:2500] + "… [truncated — run the analyze skill (\"cek konsistensi\") for the full list]"
         print("mega-sdd:execute-bolts is blocked — " + prefix + body)
     else:
         print("mega-sdd:execute-bolts is blocked — " + fails[0][1])
@@ -728,7 +729,7 @@ if d and d.get("status") == "FAIL":
     issues = d.get("issues", [])
     sec = next((i for i in issues if i.get("halt_type") == "codebase_map_sections_incomplete"), None)
     if sec and "7 sections" in (sec.get("detail") or "") or (sec and len(sec.get("missing", [])) >= 7):
-        print("mega-sdd:bind-codebase is blocked — codebase-map.md is structurally DEGENERATE (all content sections missing per the map validator). Binding against an empty map produces false CONFIRMED/CONFLICT verdicts (invariant #1: spec-to-code grounding). Re-run /mega-sdd:scan-codebase to produce a real map, then bind. State: %s" % p)
+        print("mega-sdd:bind-codebase is blocked — codebase-map.md is structurally DEGENERATE (all content sections missing per the map validator). Binding against an empty map produces false CONFIRMED/CONFLICT verdicts (invariant #1: spec-to-code grounding). Re-run scan-codebase to produce a real map, then bind. State: %s" % p)
 ' 2>/dev/null)
       # S4 round-2: restore the canonical-map state BEFORE acting on the custom
       # verdict — the shared state must never carry a custom-file verdict.

@@ -326,9 +326,16 @@ if mode == "forward":
         except Exception:
             pass
         for q in (vj6.get("open_questions") or []):
-            if str(q.get("status", "")) == "resolved":
+            # resolved + out_of_scope are closed; `deferred` stays listed (A6)
+            if str(q.get("status", "")) in ("resolved", "out_of_scope"):
                 continue
-            rows6.append("| %s | %s | %s | `vault.json` |" % (q.get("id", "—"), q.get("question", ""), q.get("priority", "—")))
+            # both OQ shapes: derive-vault-json emits tag/text; an older authored
+            # shape used id/question (P4 repair — tag/text vaults rendered empty);
+            # null/absent fields render an honest em-dash
+            rows6.append("| %s | %s | %s | `vault.json` |" % (
+                q.get("id") or q.get("tag") or "—",
+                q.get("question") or q.get("text") or "—",
+                q.get("priority") or "—"))
         if rows6:
             cite(6, "vault.json")
 else:

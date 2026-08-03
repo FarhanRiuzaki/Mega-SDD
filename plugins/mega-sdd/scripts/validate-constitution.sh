@@ -123,7 +123,7 @@ for const_path in const_files:
     # clause is injected into each unit's `## Hard rules` at execute-bolts as a
     # severity:error BLOCKING gate, so an uncited/defaulted clause (e.g. an invented
     # NFR "median < 200ms") would enforce fabrication as ground truth — the moat
-    # inverts. FAIL (advisory-surfaced via /mega-sdd:analyze, never a hot-path block)
+    # inverts. FAIL (advisory-surfaced via analyze, never a hot-path block)
     # any clause whose block carries no source token. Clause-ID + source-token are
     # language-invariant, so this holds on an Indonesian constitution too.
     const_lines = const_content.split("\n")
