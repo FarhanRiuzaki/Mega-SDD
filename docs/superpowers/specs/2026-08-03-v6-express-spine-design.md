@@ -12,26 +12,36 @@
 
 Target (measured, not aspirational — P5 measures it on training-nextjs): **PRD → first delivered bolt < 10 minutes** on a mid-size brownfield repo, with all gates live.
 
-## The v6 default pipeline (the spine)
+## The v6 default pipeline (the spine) — 2 steps before code
+
+Operator refinement (2026-08-03): scan→intent→bind→oq→units as SEPARATE processes is
+itself the burden — each phase pays dispatch + context reload + confirmation + handoff.
+The VALUE lives in the artifacts, not the phase boundaries. v6 keeps the artifacts and
+merges the processes:
 
 ```
 /mega-sdd <prd>
-  1. GROUND   (script, seconds)  manifest sniff → framework pack resolve;
-                                 build-symbol-index.sh (full-repo, deterministic).
-                                 NO full codebase-map, NO deep-scan, NO model tokens.
-  2. CLAIMS   (model, terse)     extract claims from the PRD into ONE terse
-                                 AI-plane ledger (id | claim | type | target
-                                 surface) — never a 7-doc human vault.
-  3. BIND     (claim-scoped)     per claim: query the symbol index + targeted
-                                 file reads → CONFIRMED/CONFLICT/OQ + anchors.
-                                 The CONFLICT gate BLOCKS, unchanged (this is D3,
-                                 finally as the default — not map-load binding).
-  4. UNITS                       PR-sized contracts: acceptance criteria + Hard
-                                 rules from the framework pack (standarisasi) +
-                                 the reuse slice injected (symbol_slice).
-  5. BOLTS                       implement → acceptance test → B1–B4 gates →
-                                 review (risk-tiered: low = 1 lens, high = panel).
+  1. GROUND (script, seconds, zero model tokens)
+       manifest sniff → framework pack resolve; build-symbol-index.sh.
+       NO codebase-map, NO deep-scan (both on-demand).
+  2. PLAN   (ONE model phase — absorbs intent + bind + oq + units)
+       pass 1 (bind): extract claims from the PRD as an internal working table;
+         per claim query the symbol index + targeted file reads →
+         CONFIRMED/CONFLICT/OQ + anchors → EMIT `binding.md` (compact — the SAME
+         artifact + grammar the CONFLICT gate and validators read today).
+       gate stop: all P0 OQs batched into ONE AskUserQuestion; P1–P3 auto-defer,
+         RECORDED in the artifact (never silent). CONFLICT still BLOCKS.
+       pass 2 (units): generate unit contracts with the binding context still
+         warm — no handoff, no context reload between bind and units.
+       For large PRDs PLAN self-slices per scope INTERNALLY; slicing is an
+       implementation detail, never a public phase.
+  3. BOLTS  (unchanged) implement → acceptance → B1–B4 → risk-tiered review.
 ```
+
+Old-phase essence map: scan → GROUND (script); intent → PLAN's internal claims table
+(vault docs = emission); bind → PLAN pass 1 (the `binding.md` ARTIFACT survives —
+moat invariant 1 demands the verdict artifact, not a separate phase); resolve-oq →
+a gate condition inside PLAN (one batched prompt); units → PLAN pass 2.
 
 Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/mega-sdd:emit …`), derived from the ledger + binding + units + code — never stations on the code path. (This completes the v5 direction "docs as dynamic emissions" instead of half-keeping the vault in the middle.)
 
