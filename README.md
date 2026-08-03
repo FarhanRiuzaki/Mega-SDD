@@ -1,12 +1,14 @@
 <div align="center">
 
+<img src="docs/mega-sdd/mega-sdd.png" width="160" alt="mega-sdd — intent → binding → done" />
+
 # mega-sdd
 
 ### Spec-driven AI development pipeline. One command. Working code.
 
 *PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
 
-**Plugin:** `mega-sdd` · **Version:** 5.2.7 · **License:** MIT
+**Plugin:** `mega-sdd` · **Version:** [`plugin.json`](plugins/mega-sdd/.claude-plugin/plugin.json) (single source of truth) · **License:** MIT
 
 </div>
 
@@ -88,7 +90,7 @@ For higher precision (optional, recommended), let the OS-aware installer set up 
 /mega-sdd:install-deps
 ```
 
-It detects your OS + package manager and installs `ast-grep` (the auto AST engine since 5.31.0), `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) — plus `tree-sitter` if you want the `--engine=tree-sitter` opt-in lane — with safety rails — and detects Google Chrome for the GitHub-style PDF render (never LaTeX; GitHub-styled HTML fallback if absent) (never auto-sudo, never `curl|bash`, always verify). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
+It detects your OS + package manager and installs `ast-grep` (the auto AST engine), `ripgrep`, `jd`, `pandoc`, `mmdc` (mermaid) — plus `tree-sitter` if you want the `--engine=tree-sitter` opt-in lane. Safety rails throughout: never auto-sudo, never `curl|bash`, always verify after install. Google Chrome is detect-only, powering the GitHub-style PDF render (never LaTeX; GitHub-styled HTML fallback when absent). Every tool is optional — mega-sdd has a graceful fallback for each. Tool-by-tool table: [plugin README](plugins/mega-sdd/README.md#optional-native-tools); manual per-platform one-liners (incl. Windows): [`tooling-install.md`](plugins/mega-sdd/references/tooling-install.md).
 
 ### 2. Keep it updated
 
@@ -130,7 +132,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 > **Without it**: PRD → "build this" handoff → AI agent invents entities/files/patterns → drift cascades → expensive rework.
 > **With it**: PRD → intent vault (cited claims) → bound to live codebase (AST precise) → atomic units shaped as polished prompts → bolts via TDD with pre/post-flight Hard Rule validation → memory accumulates across runs → drift detected early.
 
-Every handoff is contracted and grounded. The six layers that matter most:
+Every handoff is contracted and grounded. The seven layers that matter most:
 
 1. **Uncertain claims become Open Questions** — anything the spec can't prove from its sources is promoted to a question for you, never a guess.
 2. **The binding gate blocks** — vault claims are validated against the live codebase; unresolved CONFLICTs stop the pipeline before any code is generated.
@@ -138,8 +140,9 @@ Every handoff is contracted and grounded. The six layers that matter most:
 4. **Hard Rules are enforced, not suggested** — ast-grep validates constraints at bolt time, wired to deterministic hooks. The doctrine: *prose that says HALT enforces nothing.*
 5. **Handoffs are typed contracts** — every cross-phase handoff YAML is schema- and type-validated at the producer side, so shape drift halts the moment it happens.
 6. **Memory never acts alone** — learning across runs is suggestion-only (explicit ACCEPT), with a mandatory audit log + rollback; drift detection reconciles code vs spec early.
+7. **Reuse before reinvention** — a script-built full-repo symbol index puts existing code in front of the implementer at write time ("Existing symbols — REUSE, don't recreate"), and a post-write duplication sweep hands mechanical evidence to the review panel.
 
-The full defense in depth (19 layers, including the code-delivery quality gates): [plugin README — How it prevents hallucination](plugins/mega-sdd/README.md#how-it-prevents-hallucination).
+The full defense in depth (20 layers, including the code-delivery quality gates): [plugin README — How it prevents hallucination](plugins/mega-sdd/README.md#how-it-prevents-hallucination).
 
 ## What makes mega-sdd special
 
@@ -203,10 +206,11 @@ flowchart TD
     UNITS --> HGATE{{🛡️ PreToolUse gate<br/>binding · flow-coverage · render-test<br/>sibling · ui-quality · cross-cutting}}:::gate
     HGATE -->|fail| UNITS
     HGATE -->|pass| BOLTS[execute-bolts controller<br/>--per-squad --parallel<br/>+ pre/post-flight Hard Rules]:::phase
+    SYMIDX[(🔎 symbol-index.json<br/>full-repo reuse substrate<br/>script-built, zero tokens)]:::artifact
+    SYMIDX -.reuse slice per dispatch.-> BOLTS
     BOLTS --> IMPL[bolt-implementer agent<br/>TDD · writes code + tests]:::agent
-    IMPL --> SREV[spec-reviewer agent<br/>spec compliance]:::agent
-    SREV --> QREV[code-quality-reviewer agent]:::agent
-    QREV --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
+    IMPL --> PANEL[blind review panel — parallel, risk-tiered<br/>spec · quality · security · standards<br/>+ design for UI units]:::agent
+    PANEL --> COMMITS([✅ atomic git commits<br/>tests passing]):::output
 
     %% End-of-chain emissions
     COMMITS --> AGENTS[emit-agents-md]:::phase
@@ -221,7 +225,7 @@ flowchart TD
 
     %% Intelligence layer (orchestrator = smart router)
     ROUTING[(🧭 routing-outcomes.md<br/>chain learning)]:::intel
-    PREDICT[\\📋 predictive-checks.md<br/>preflight catalog\\]:::intel
+    PREDICT[\📋 predictive-checks.md<br/>preflight catalog\]:::intel
     GATE{{🛡️ Handoff validation gate<br/>REQUIRED + TYPE checks}}:::gate
 
     %% Orchestrator with intelligence layer
@@ -281,19 +285,20 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Unresolved P1 business OQs | `/mega-sdd:resolve-oq` |
 | Bolt halted on Hard Rule | Review `<vault>/bolts/U-XXX/postflight.json`; revert OR edit unit's Hard rules; re-run unit |
 | Resume after halt | `/mega-sdd --resume` |
-| Module-filtered execution | `/mega-sdd:execute-bolts --module=M-auth` |
-| Squad-filtered execution | `/mega-sdd:execute-bolts --squad=squad-be` (multi-squad mode) |
-| Per-squad parallel | `/mega-sdd:execute-bolts --per-squad --parallel` |
+| Module-filtered execution | `/mega-sdd:execute-bolts --module=M-auth` *(alias)* |
+| Squad-filtered execution | `/mega-sdd:execute-bolts --squad=squad-be` *(alias)* (multi-squad mode) |
+| Per-squad parallel | `/mega-sdd:execute-bolts --per-squad --parallel` *(alias)* |
 | Inspect memory | `/mega-sdd:memory show <topic>` |
 | Review pending learning suggestions | `/mega-sdd:memory review` |
-| Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` (auto-runs at chain end by default) |
+| Generate AGENTS.md manually | `/mega-sdd:emit-agents-md` *(alias)* (auto-runs at chain end by default) |
 | Generate Confluence FSD manually | `/mega-sdd:emit fsd` (chain-end auto-emit is opt-in via `--with-fsd`) |
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
+| Generate UAT doc-pack (incl. SEOJK berita acara) | `/mega-sdd:emit uat` |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
-| Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` |
+| Migrate Hard Rules grammar (one-time) | `/mega-sdd:migrate-rules ./vault` *(alias)* |
 | Privacy-sensitive run | `/mega-sdd ./prd.md --memory-off` |
 | Disable auto-diagnostic flags | `/mega-sdd ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md` |
 | PRD revision arrived | `/mega-sdd:diff-vault ./new-prd.md` |
@@ -304,18 +309,18 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 ---
 
 <details>
-<summary><b>🏗️ Architecture deep dive</b></summary>
+<summary><a id="architecture-deep-dive"></a><b>🏗️ Architecture deep dive</b></summary>
 
 ### Who · What · When · Where · Why · How
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, domain-extractor, phase-advisor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; every pre-v5 command resolves as a deprecation alias through 5.x. |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts a mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules + memory-driven suggestions that learn from past patterns without auto-applying them. |
-| **How** | Layered anti-hallucination defense; execution via first-class bolt agents (two-stage review: spec compliance then code quality), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (ast-grep + ripgrep + jd; tree-sitter as an opt-in lane); markdown-driven memory with mandatory audit log + rollback. |
+| **How** | Layered anti-hallucination defense; execution via first-class bolt agents (risk-tiered blind review panel: spec / quality / security / standards, + design for UI units), with superpowers TDD as optional technique; halt-on-blocker protocol; deterministic tech (ast-grep + ripgrep + jd; tree-sitter as an opt-in lane); markdown-driven memory with mandatory audit log + rollback. |
 
 ### Folder layout
 
@@ -332,6 +337,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 │   │   └── .internal/ # checkpoints
 │   ├── knowledge-base/                      # legacy KB (extract-intelligence)
 │   ├── codebase/codebase-map.md             # scan output
+│   ├── codebase/symbol-index.json    # script-built reuse substrate (v5.28.0+)
 │   ├── memory/                              # project memory
 │   └── exports/                             # future tool-agnostic exports
 ├── AGENTS.md                                 # tool-agnostic interop (root)
@@ -361,7 +367,7 @@ Full halt protocol + recovery: [Scenario 6](tests/scenarios/scenario-6-recovery-
 
 ### Versioning
 
-- **Plugin**: SemVer; `plugin.json` is the single source of truth (`marketplace.json` matches it; the version badge at the top of this README mirrors it). Major bump for breaking renames, rails changes, or marketplace incompatibility. History: [`CHANGELOG.md`](CHANGELOG.md).
+- **Plugin**: SemVer; `plugin.json` is the single source of truth (`marketplace.json` matches it; this README links it rather than restating it — a restated badge rots). Major bump for breaking renames, rails changes, or marketplace incompatibility. History: [`CHANGELOG.md`](CHANGELOG.md).
 - **Skills**: Per-skill `version:` in frontmatter. Bump on any content change.
 - **Vault**: Internal `version` in `vault.json`, increments on `diff-vault` and `resolve-oq` events.
 - **Unit IDs**: Zero-padded (`U-001`), stable across regenerations.
@@ -385,6 +391,7 @@ Single-confirm pipeline-end execution with auto-continue, progress indication, C
 /mega-sdd --no-analyze                # skip auto analyze-parallelism
 /mega-sdd --no-agents-md              # skip auto AGENTS.md emit
 /mega-sdd --with-fsd                  # opt-in FSD emit at chain end (off by default)
+/mega-sdd --lean                      # lean profile: skip advisory legs + diagnostics (every gate untouched)
 ```
 
 ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, conflict resolutions, hard-rule violations). Otherwise silent + auto-progresses.
@@ -399,7 +406,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
-│   ├── skills/                             # 19 skills (lean routers + progressive disclosure) + _vendored/
+│   ├── skills/                             # 20 skills (lean routers + progressive disclosure) + _vendored/
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
 │   ├── commands/                           # 3 public verbs + 4 maintenance one-timers + 24 deprecation aliases (resolve through 5.x)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)

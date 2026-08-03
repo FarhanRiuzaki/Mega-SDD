@@ -1,8 +1,10 @@
+<p align="center"><img src="../../docs/mega-sdd/mega-sdd.png" width="140" alt="mega-sdd — intent → binding → done" /></p>
+
 # mega-sdd
 
 Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
 
-**Version:** 5.2.7 · **License:** MIT
+**Version:** see [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) (single source of truth) · **License:** MIT
 
 > **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
@@ -51,18 +53,24 @@ A canonical example PRD (the standard frontmatter + `§`-section format) lives a
 
 ## The pipeline
 
-```
-[legacy → extract-intelligence] → PRD/idea → generate-intent → (scan + bind, brownfield) → generate-units → execute-bolts → emit-agents-md / emit-fsd
+```mermaid
+flowchart LR
+    LEG[legacy] --> EXT[extract-intelligence]
+    EXT --> PRD[PRD / idea] --> GI[generate-intent]
+    GI --> SB[scan + bind<br/>brownfield] --> GU[generate-units] --> EB[execute-bolts]
+    EB --> EMIT[emit-agents-md<br/>+ emit prd / fsd / sit / uat]
 ```
 
 `/mega-sdd` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs insert `scan-codebase` + `bind-codebase`; the legacy-rebuild lane starts from `extract-intelligence`.
 
 **And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + the map's git stamp), surfaced as a one-line session-start notice, and reconciled by `/mega-sdd:sync`:
 
-```
-code moves (any way) → system notices → /mega-sdd:sync [--auto]
-  → scan --changed-only → drift (scoped) → bind --paths → units --reconcile → bolts (stale/new only)
-  → SYNC-REPORT.md (+ PENDING-SYNC.md queue for the decisions only a human may make) → repeat forever
+```mermaid
+flowchart LR
+    MOVE[code moves<br/>any way] --> NOTICE[system notices<br/>journal + git stamp] --> SYNC["/mega-sdd:sync [--auto]"]
+    SYNC --> CHAIN[scan --changed-only → drift scoped<br/>→ bind --paths → units --reconcile<br/>→ bolts stale/new only]
+    CHAIN --> REPORT[SYNC-REPORT.md<br/>+ PENDING-SYNC.md queue]
+    REPORT -.repeat forever.-> MOVE
 ```
 
 Under `--auto`: one upfront confirmation, zero mid-chain questions — human-required decisions (drift direction calls, vault patches, CONFLICTs) are QUEUED, never auto-resolved. Walkthrough: [scenario 12](../../tests/scenarios/scenario-12-continuous-sync.md) · design: [`living-vault spec`](../../docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md).
@@ -72,12 +80,12 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 ```
 plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest (version SSOT)
-├── skills/                       # 19 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
+├── skills/                       # 20 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
 │   ├── generate-units/  execute-bolts/          # the core pipeline
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
-│   ├── memory/  emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  install-deps/
+│   ├── memory/  emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
 ├── agents/                       # 8 first-class subagents
 │   ├── bolt-implementer.md       # execute-bolts implementer
@@ -150,10 +158,10 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 | Tool | Used by | Fallback |
 |---|---|---|
 | `tree-sitter` | scan-codebase OPT-IN lane (`--engine=tree-sitter`; auto uses ast-grep) | auto is unaffected — ast-grep serves tier `ast` |
-| `ast-grep` | execute-bolts / generate-units (Hard Rules v2) | v1 5-type grammar |
+| `ast-grep` | scan-codebase (the auto AST engine) / execute-bolts + generate-units (Hard Rules v2) / the reuse symbol index + duplication sweep | scan falls to regex tier; rules fall to the v1 5-type grammar |
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
-| `pandoc` | emit-fsd / emit-prd / emit-sit (PDF rendering) | Markdown-only output |
+| `pandoc` | emit-fsd / emit-prd / emit-sit / emit-uat (PDF rendering) | Markdown-only output |
 | `mmdc` | emit lanes — mermaid→SVG for the md2pdf PDF (Chrome-print, GitHub style) | mermaid stays code |
 | Google Chrome | emit lanes — the PDF printer (detect-only, not installed) | GitHub-styled HTML fallback |
 | `markdownlint-cli2` | lint-units (vault prose) | skill-internal heuristics |
@@ -164,6 +172,12 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
+**v5.31.x** — *ast-grep is the auto AST engine:* the scan ladder is `ast-grep → regex` (one spawn, zero compilation — the clang grammar-compile OOM class is structurally unreachable unattended); `--engine=tree-sitter` stays as a fully supported explicit opt-in lane. Install guidance follows (`recommended_minimum: ast-grep + ripgrep`).
+**v5.30.0** — *Duplication sweep with teeth:* newly-added symbols matched against the FULL symbol index (exact / camel-snake / same-suffix-root / verb-synonym), capped evidence rows handed to the code-quality review lens — advisory by doctrine, never a hook.
+**v5.29.0** — *PageRank targeting removed* (−832 lines): file-level, advisory-only, dead on real machines; replaced at the right layer by the write-time symbol slice. `--skip-pagerank` stays an accepted no-op through 5.x.
+**v5.28.0** — *Reuse-first symbol index:* `build-symbol-index.sh` (script-built, byte-deterministic, zero model tokens) + every bolt dispatch carries "Existing symbols — REUSE, don't recreate" (target-file rows first, capped 40, provenance-stamped).
+**v5.26.0** — *`--lean` profile:* opt-in configuration over existing levers — advisory legs + diagnostics skipped, every gate untouched (census-pinned); a lean run names itself in the digest and chain summary.
+**v5.3.0** — *UAT doc-pack + doc versioning:* `emit uat` (4th doc, SEOJK berita acara, zero-dep xlsx) + human-only `--bump/--approve` versioning sidecar with Riwayat Revisi.
 **v5.2.7** — *`mega-sdd-trace` observability tag:* the single-token AI-gateway/Langfuse log-filter contract. `mega-sdd-trace:session` (session-start, both injection blocks — rides every request body via history), `mega-sdd-trace:turn` (user-prompt-submit, fresh per iteration in mega-sdd projects; opt-out `trace_tag: false` in `.mega-sdd/config.yaml`), `mega-sdd-trace:<skill>` (every announce line + every subagent dispatch prompt — subagents run fresh-context). Filter gateway logs with `contains "mega-sdd-trace"`; prefix-match for per-phase breakdown.
 **v5.2.6** — *Mandatory routing by default:* installing the plugin makes mega-sdd the default dev workflow in EVERY session — no-signal CWDs no longer exit silently; the SessionStart hook injects a slim routing rule (route dev tasks via `using-mega-sdd`, propose `/mega-sdd <input>` init before production code; casual Q&A exempt). Full anchor stays signal-gated (token diet). Opt-out: `~/.claude/.mega-sdd-routing-off` or `MEGA_SDD_ROUTING=off`.
 **v5.2.5** — *The bare `/mega-sdd` verb actually registers:* Claude Code namespaces plugin commands (`/mega-sdd:<command>`), so the advertised bare front door never resolved. The SessionStart hook now auto-installs a thin user-level wrapper (`~/.claude/commands/mega-sdd.md` via `scripts/install-front-door.sh`, version-marker idempotent, user-authored files respected) that forwards verbatim to the plugin's front-door command.
