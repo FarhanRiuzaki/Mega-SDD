@@ -36,6 +36,7 @@ Every writer skill resolves output paths via this protocol:
 │   ├── vaults/<slug>/                             # Vault content + per-vault state
 │   │   ├── 00-index.md ... 06-constraints.md     # 7-file vault
 │   │   ├── vault.json                             # Manifest
+│   │   ├── claims-ledger.json                     # Derived claim index (derive-claims-ledger.sh — bind --express input)
 │   │   ├── binding.md                             # Binding manifest (after bind-codebase)
 │   │   ├── bound/                                 # Bound-vault (after binding clean)
 │   │   ├── units/U-*.md, _index.md                # Atomic units
@@ -107,6 +108,7 @@ Every writer skill resolves output paths via this protocol:
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |
 | `generate-intent` | vault/ | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` |
 | `bind-codebase` | binding.md + bound/ | `<vault>/binding.md` + `<vault>/bound/` | `<vault>/binding.md` + `<vault>-bound/` |
+| `derive-claims-ledger.sh` (script) | claims-ledger | `<vault>/claims-ledger.json` | — (new artifact, no legacy location) |
 | `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |

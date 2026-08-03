@@ -280,6 +280,7 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
           \( -name memory -o -name .cache \) -prune -o \
           \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
              -o -name .analyze-freshness.json \
+             -o -name claims-ledger.json \
              -o -name TOKEN-COST-REPORT.md -o -name .token-cost-state.json \
              -o -name '.*-state.json' -o -name .validation-blockers.json \
              -o -name .ui-quality-blockers.json -o -name .stop-scan-stamp \

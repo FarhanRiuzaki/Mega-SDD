@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.20.0
+version: 2.21.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -123,6 +123,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--with-fsd` / `--no-fsd`, `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`, `--no-drift-check`, `--no-enrich-staging`: diagnostic opt-outs (see `references/chain-execution.md`)
 - `--sync`: force the Mode D maintenance chain (incremental scan → drift → re-bind → unit reconcile) regardless of other inference — the `/mega-sdd:sync` front-door (per `references/routing-rules.md` §Mode D)
 - `--factory` — enable state-driven factory routing: read the whole checkpoint ledger and route forward OR backward to re-run an unresolved phase, looping to convergence under the retry cap (`references/factory-routing.md`). Implied by `--deep`.
+- `--express`: the v6 P1 claim-scoped retrieval lane — the orchestrator appends `--express` to the `bind-codebase` hop it dispatches (bind enumerates claims from the script-derived `claims-ledger.json` and retrieves evidence via symbol-index queries + targeted Reads, zero codebase-map load; honest fallback to the standard lane when the index/ledger is unavailable — `bind-codebase/references/express-bind.md`). Affects retrieval ONLY: no gate, verdict grammar, or chain-composition change; every other hop dispatches identically.
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
 - `--no-telemetry`: disable telemetry event emission for this chain
 - Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
