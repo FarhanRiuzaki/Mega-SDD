@@ -106,7 +106,7 @@ D2 ladder: AUTO = ast-grep → regex, tree-sitter is an EXPLICIT opt-in lane):
   with nothing extracted either way.
 - **Durable record:** any non-empty `fallbacks[]` (skips excluded) is ALSO stamped into the
   map's `precision_downgrade_reason` — one line joining `lang:reason` pairs, e.g.
-  `step-0 ladder: kotlin:no_astgrep_pack -> regex` (or, opt-in lane, `python:grammar_compile_killed -> regex`) —
+  `step-0 ladder: fortran:no_astgrep_pack -> regex` (or, opt-in lane, `python:grammar_compile_killed -> regex`) —
   so the chat line is the ephemeral half and the map carries the durable half (same rail as
   the Step-5 spawn-gate record).
 - Override via `--engine=tree-sitter|ast-grep|regex` (passed through to the script).
@@ -138,7 +138,10 @@ Probe in order (record ALL hits — multi-language projects are normal):
 - `Gemfile` → ruby/bundler
 - `pom.xml` / `build.gradle` / `build.gradle.kts` → java/kotlin (jvm)
 - `*.csproj` / `*.sln` / `*.fsproj` → csharp/fsharp (.NET; nuget) — `Directory.Packages.props` for central package mgmt
+- `Package.swift` → swift (SwiftPM); `pubspec.yaml` → dart (Flutter/pub); `mix.exs` → elixir (hex); `build.sbt` → scala (sbt); `*.cabal` / `stack.yaml` → haskell; `CMakeLists.txt` / `Makefile` with `.c`/`.cpp` sources → c/cpp
 - Multiple → multi-language project; record all.
+
+**Language KEYS for the Step-0 probe (the routing seam — define it, don't infer it).** The detected-language set passed as `--lang=` keys is the union of (a) the manifest rows above and (b) **per-extension keys from the Step-4 file walk, named by ast-grep language id**: `.tsx → tsx`, `.jsx → jsx`, `.ts → typescript`, `.js/.mjs/.cjs → javascript`, `.kt/.kts → kotlin`, `.swift → swift`, `.scala → scala`, `.c/.h → c`, `.cpp/.cc/.cxx/.hpp/.hh → cpp`, `.dart → dart`, `.ex/.exs → elixir`, `.lua → lua`, `.sh/.bash → bash`, `.hs → haskell`. Compound manifest labels expand to their member keys (jvm → `java` AND `kotlin`, each only if its extension appears in the walk; .NET → `csharp`, and `fsharp` stays a regex-lane key). Each key gets ONE real sample file from the walk. This seam is exactly where the v5.33.0 tsx regression lived — a detected key with no same-named pack file falls to regex, so keys MUST be ast-grep language ids, never file extensions or marketing names.
 
 ## Step 3 — Detect test framework
 
@@ -435,7 +438,7 @@ ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' \
 - `name.reference.*` captures do NOT exist in this lane — and since 5.29.0 nothing
   consumes them (the PageRank pass was removed, §D1 of the reuse-first spec); binding
   precision is unaffected.
-- Languages with no `queries/astgrep/<lang>.yml` pack → regex lane below, per language.
+- Languages with no `queries/astgrep/<lang>.yml` pack → regex lane below, per language. One pack per ast-grep language, filename == language key (lane law — tsx has its OWN pack; rules parked in another file are invisible to Step-0 routing). Exception: `jsx` routes through the javascript lane via the probe's `ASTGREP_ALIASES` map (ast-grep's js grammar parses JSX; a jsx.yml would double-count every .jsx symbol). Full glossary registry: `queries/VERSIONS.md`.
 
 ### If `engine: regex` (fallback)
 

@@ -1,4 +1,4 @@
-# Tier-2 (ast-grep) definition rules — Rust (.rs).
+# Tier-1 AUTO-lane (ast-grep) definition rules — Rust (.rs).
 # Mirrors tags-rust.scm coverage (fn/struct/enum/trait/impl; visibility is NOT
 # filtered here — §2 rendering decides what is public, same as the .scm lane).
 # Kind names verified against ast-grep 0.42.3.

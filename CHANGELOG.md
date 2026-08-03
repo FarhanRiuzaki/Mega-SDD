@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.33.0] - 2026-08-03 — the ast-grep language glossary: 182 .tsx files come home to AST tier
+
+Field-triggered by the operator's `training-nextjs` test: the map disclosed `tsx:no_astgrep_pack -> regex` — the tsx rules EXISTED inside typescript.yml, but the Step-0 router derives lanes from pack FILENAMES, so they were invisible. Spec: `docs/superpowers/specs/2026-08-03-astgrep-language-glossary.md` (dual-blind round folded pre-ship — disclosure inside).
+
+- **Lane law:** one pack per ast-grep language, filename == language key == every rule's `language:` field. `tsx.yml` split out (proof on the trigger repo: probe routes tsx with `fallbacks: []`, 350 symbols at AST tier). `jsx` is a router ALIAS to the javascript lane (the js grammar parses JSX; a jsx.yml would double-count every .jsx symbol — pinned both ways).
+- **10 new language lanes**, every kind verified live against ast-grep 0.42.3: kotlin, swift, scala (incl. Scala 3 enum/given), c, cpp, dart, elixir, lua, bash, haskell. Registry: `queries/VERSIONS.md`.
+- **Noise-proofed by the round:** body-guards on c/cpp struct/enum (bare kinds match every USAGE site), kotlin property guarded out of function bodies (locals are property_declaration nodes), haskell `function` guarded out of signatures (it is also the arrow-TYPE node), dart function/method un-double-rowed; the symbol-index name deriver gained per-ruleId branches (typedef/enum-class/objects/protocols/lua dotted names/out-of-line C++ members) — 0 `name:"?"` rows on the 9-language fixture.
+- Step-2 detection rows added for the new ecosystems (SwiftPM/pub/mix/sbt/cabal/CMake) + the probe language-KEY contract written down (the prose-undefined seam the regression lived in).
+- Tests: `tests/scan/test-astgrep-pack-glossary.sh` (lane law, alias, dup guard, every-rule-fires, EXACT-set noise pins); ladder test's unpacked-language arm moved to fortran. Suite 197.
+
 ## [5.32.0] - 2026-08-03 — semantic-scoped validation: analyze stops sweeping the whole house
 
 The operator's proportionality mandate ("ga sweep semua sekaligus tapi semantic sesuai kebutuhan dan context") lands in the plugin runtime. Spec: `docs/superpowers/specs/2026-08-03-semantic-scoped-validation.md` (dual-blind round run, all findings folded pre-ship — disclosure inside).

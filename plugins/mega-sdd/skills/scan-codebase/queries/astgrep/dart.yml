@@ -1,0 +1,39 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Dart (.dart; Flutter). dart-function excludes method-wrapped
+# nodes: method_signature WRAPS function_signature in tree-sitter-dart, so an
+# unguarded pair double-rowed every method (round IM-1)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab + round, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: dart-function
+language: dart
+rule:
+  kind: function_signature
+  not: {inside: {kind: method_signature}}
+---
+id: dart-method
+language: dart
+rule: {kind: method_signature}
+---
+id: dart-constructor
+language: dart
+rule: {kind: constructor_signature}
+---
+id: dart-class
+language: dart
+rule: {kind: class_declaration}
+---
+id: dart-enum
+language: dart
+rule: {kind: enum_declaration}
+---
+id: dart-mixin
+language: dart
+rule: {kind: mixin_declaration}
+---
+id: dart-extension
+language: dart
+rule: {kind: extension_declaration}

@@ -1,0 +1,36 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Scala (.scala; Scala 2 + 3). function_definition = concrete def;
+# function_declaration = abstract def (trait members)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab + round, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: scala-function
+language: scala
+rule: {kind: function_definition}
+---
+id: scala-abstract-function
+language: scala
+rule: {kind: function_declaration}
+---
+id: scala-class
+language: scala
+rule: {kind: class_definition}
+---
+id: scala-object
+language: scala
+rule: {kind: object_definition}
+---
+id: scala-trait
+language: scala
+rule: {kind: trait_definition}
+---
+id: scala-enum
+language: scala
+rule: {kind: enum_definition}
+---
+id: scala-given
+language: scala
+rule: {kind: given_definition}

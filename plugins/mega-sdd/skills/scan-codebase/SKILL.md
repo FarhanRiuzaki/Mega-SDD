@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.26.0
+version: 2.27.0
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md consumed by bind-codebase as ground truth. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -98,7 +98,7 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 - **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.
 - **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.
 - **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, the `--auto` handoff YAML, and the memory layer.
-- **`queries/`** — tree-sitter `tags-<lang>.scm` capture queries (9 languages: TS/JS/PHP/Python/Go/Rust/Ruby/Java/C#) consumed by Step 5; tested grammar versions in `queries/VERSIONS.md`.
+- **`queries/`** — `astgrep/<lang>.yml` rule packs (20 languages — the AUTO tier-1 glossary Step 5 consumes; one pack per ast-grep language, `jsx` aliases to the javascript lane) + tree-sitter `tags-<lang>.scm` capture queries (9 languages: TS/JS/PHP/Python/Go/Rust/Ruby/Java/C# — opt-in `--engine=tree-sitter` lane only); registry + tested versions in `queries/VERSIONS.md`.
 
 ## Related skills
 

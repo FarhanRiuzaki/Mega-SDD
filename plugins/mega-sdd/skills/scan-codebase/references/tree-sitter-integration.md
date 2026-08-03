@@ -112,11 +112,18 @@ Mega-sdd's scan-codebase consumes these to populate codebase-map.md §2 (public 
 
 Languages without a `.scm` file under the opt-in lane → fall to regex (never a silent ast-grep detour); in AUTO the `.scm` files are simply unused.
 
-## Tier-2 rule packs (`queries/astgrep/<lang>.yml`)
+## Tier-1 AUTO-lane rule packs (`queries/astgrep/<lang>.yml`)
 
-Kind-based ast-grep definition rules mirroring the `.scm` coverage, one pack per language
-(typescript incl. tsx, javascript, php, python, rust, go, ruby, java, csharp), verified
-against ast-grep 0.42.3 (`queries/VERSIONS.md §ast-grep`). The extraction invocation, the
+Kind-based ast-grep definition rules, ONE pack per ast-grep language — 20 packs since the
+v5.33.0 glossary (ts, tsx, js, php, python, rust, go, ruby, java, csharp, kotlin, swift,
+scala, c, cpp, dart, elixir, lua, bash, haskell), verified against ast-grep 0.42.3
+(`queries/VERSIONS.md` — the glossary registry). **Lane law:** the Step-0 router derives
+language lanes from pack FILENAMES, so every rule's `language:` must equal its pack's
+basename (tsx once lived inside typescript.yml and was invisible to routing — 182 .tsx
+files fell to regex). `jsx` is an ALIAS to the javascript lane (the js grammar parses JSX;
+a jsx.yml would double-count every .jsx symbol). Only the original 9 languages have a
+`.scm` mirror in the opt-in tree-sitter lane; the other 11 extract at AST tier in AUTO
+only. The extraction invocation, the
 verified JSON contract (0-based lines, `lines` = full node text, dedupe by
 `(file, start.line)`), and the `---`-separator concatenation seam live in
 scan-procedure.md §Step 5 "If `engine: ast-grep`". Reference captures

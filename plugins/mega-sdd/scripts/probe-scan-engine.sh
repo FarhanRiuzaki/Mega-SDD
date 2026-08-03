@@ -68,11 +68,16 @@ lang_args = sys.argv[7:]
 
 # Languages with a shipped tier-2 rule pack — derived from the pack files
 # themselves so a new pack enables its lane without touching this script.
-# (The typescript pack also carries the tsx rules; "typescript" is the
-# Step-2 language key either way.)
+# LANE LAW: one pack file per ast-grep language, filename == language key
+# (glossary fix 2026-08-03: tsx rules parked inside typescript.yml were
+# invisible to this filename-derived set — 182 .tsx files fell to regex).
 import glob as _glob
 ASTGREP_LANGS = {os.path.splitext(os.path.basename(f))[0]
                  for f in _glob.glob(os.path.join(queries_dir, "astgrep", "*.yml"))}
+# Detected-language keys whose files are parsed by ANOTHER pack's grammar.
+# jsx: ast-grep's javascript grammar parses JSX — a jsx.yml would double-count
+# every .jsx symbol in the index, so jsx routes through the javascript lane.
+ASTGREP_ALIASES = {"jsx": "javascript"}
 
 def run(cmd, tmo, cwd=None):
     """One bounded child process (repo law: every child gets a hard timeout)."""
@@ -148,7 +153,7 @@ for lang, sample in langs:
         digest["fallbacks"].append({"lang": lang, "tier": "skipped", "reason": "no_source_file"})
         continue
     if not use_ts:
-        if ag_bin and lang in ASTGREP_LANGS:
+        if ag_bin and (lang in ASTGREP_LANGS or ASTGREP_ALIASES.get(lang) in ASTGREP_LANGS):
             # the PRIMARY route, not a fallback — no fallbacks[] row, so the
             # map's precision_downgrade_reason stays clean on the happy path
             digest["astgrep_langs"].append(lang)

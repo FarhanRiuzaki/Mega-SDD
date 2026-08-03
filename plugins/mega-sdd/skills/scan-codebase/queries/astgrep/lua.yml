@@ -1,0 +1,15 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Lua (.lua). function_declaration
+# covers global, local, and table-method (M.f / M:f) statement forms ONLY.
+# Assignment-form functions (`M.f = function() end`) are deliberately NOT
+# matched: the function_definition node is anonymous, and a nameless row is
+# dead weight in the capped dispatch slice (round decision, ACCEPTED tradeoff)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: lua-function
+language: lua
+rule: {kind: function_declaration}

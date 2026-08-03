@@ -1,0 +1,23 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Swift (.swift). class_declaration covers class/struct/enum/actor/extension in tree-sitter-swift
+# Kind names verified live against ast-grep 0.42.3 (glossary lab, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: swift-function
+language: swift
+rule: {kind: function_declaration}
+---
+id: swift-class
+language: swift
+rule: {kind: class_declaration}
+---
+id: swift-protocol
+language: swift
+rule: {kind: protocol_declaration}
+---
+id: swift-init
+language: swift
+rule: {kind: init_declaration}
