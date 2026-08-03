@@ -102,7 +102,7 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 
 | Phase | Auto-invokes | Why |
 |---|---|---|
-| After `generate-units` | `lint-units` | Quality gate before bolt execution |
+| After `generate-units` | `lint-units --changed-only` | Quality gate before bolt execution (scoped: changed ∪ dependent units; honest full sweep when no freshness ledger exists) |
 | Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
 | After `execute-bolts` | `list-modules` | Per-module status in chain summary |
 | At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.32.0] - 2026-08-03 — semantic-scoped validation: analyze stops sweeping the whole house
+
+The operator's proportionality mandate ("ga sweep semua sekaligus tapi semantic sesuai kebutuhan dan context") lands in the plugin runtime. Spec: `docs/superpowers/specs/2026-08-03-semantic-scoped-validation.md` (dual-blind round run, all findings folded pre-ship — disclosure inside).
+
+- **S1 — `/mega-sdd:analyze` FULL mode is scoped by default.** A freshness ledger (`.mega-sdd/.analyze-freshness.json`, single writer: run-analyze FULL mode) lets per-file validators reuse recorded verdicts spawn-free for unchanged files: 4 pure families key on file sha + plugin version; `kb_output` additionally on a new `kb_fingerprint` (the whole KB md tree — it resolves `depends_on` against siblings); `vault_oqs` additionally on `kb_fingerprint` + a hardened `code_fingerprint` (`-z -uall`, toplevel-relative) + the sibling `vault.json` sha. `--fresh` forces a ground-up re-run; `--aggregate-only` (the Stop hook path, already cheap) is untouched; the report/state disclose the re-run/reused split honestly. Report-layer only — no gate reads the ledger; recompute-at-gate stays byte-identical.
+- **The O(n²) collapse:** `validate-unit-spec.sh` scans ALL units per invocation (S5 GU-HOOK-1), so the per-unit loop was N×N — now ONE project-wide invocation per FULL run (proven by a spawn-count pin).
+- **Masking fix (pre-existing bug):** the per-file boundary status was overridden by the single-slot state file's LAST verdict — a FAIL in any earlier file reported PASS. FULL mode now takes severity-max across per-file statuses for all eight per-file loops (`bolt_artifacts`/`kb_citations` included).
+- **S2 — `lint-units --changed-only`:** scope-set = changed-vs-`unit_baseline` ∪ transitive reverse-dependents; global cross-unit checks still cover all frontmatter; the chain's auto-lint leg passes it (front door + chain-execution rows aligned). Manual default stays the full pre-bolt sweep.
+- **Round-folded:** two proven stale-PASS launderings (vault_oqs KB reads, kb_output sibling reads → the `kb_fingerprint` key), the IFS TAB-collapse that silently killed sibling-sha reuse, untracked-dir + subdir-repo fingerprint blindness, ledger added to the Stop/PTU prune lists + `.gitignore`, and a foreign stray-keystroke shebang corruption in `run-full-suite.sh` reverted.
+- Tests: `tests/analyze-scoped/test-analyze-freshness.sh` (28 assertions incl. the laundering, TAB-collapse, spawn-count, and verdict-flip pins). Suite 196.
+
 ## [5.31.3] - 2026-08-03 — docs: the root README diagram becomes an HLD
 
 The 94-line per-artifact/per-gate flowchart is replaced by a 43-line component HLD — seven layers (3-verb surface → orchestration+memory → pipeline phases → execution agents with the blind panel → grounded artifacts incl. the symbol index → enforcement moat → emissions + the sync loop). Heading renamed "Architecture (HLD)", legend rewritten to the new classes, per-phase detail delegated to the plugin README + the deep-dive section.

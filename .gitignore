@@ -28,6 +28,7 @@ test-output/
 **/.mega-sdd/.replan-budget
 **/.mega-sdd/.iter-classifier.json
 **/.mega-sdd/.analyze-state.json
+**/.mega-sdd/.analyze-freshness.json
 **/.mega-sdd/CONSISTENCY-REPORT.md
 **/.mega-sdd/RULE-GAP-REPORT.md
 **/.mega-sdd/memory/hook-debug.log
