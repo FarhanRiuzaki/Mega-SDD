@@ -1,0 +1,36 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Kotlin (.kt/.kts; jvm lane of the Step-2 manifest table).
+# property_declaration is GUARDED out of function bodies: locals ARE
+# property_declaration nodes in tree-sitter-kotlin (round SB-2 — unguarded,
+# every local val/var rows into the index)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab + round, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: kotlin-function
+language: kotlin
+rule: {kind: function_declaration}
+---
+id: kotlin-class
+language: kotlin
+rule: {kind: class_declaration}
+---
+id: kotlin-object
+language: kotlin
+rule: {kind: object_declaration}
+---
+id: kotlin-companion-object
+language: kotlin
+rule: {kind: companion_object}
+---
+id: kotlin-typealias
+language: kotlin
+rule: {kind: type_alias}
+---
+id: kotlin-property
+language: kotlin
+rule:
+  kind: property_declaration
+  not: {inside: {kind: function_body, stopBy: end}}

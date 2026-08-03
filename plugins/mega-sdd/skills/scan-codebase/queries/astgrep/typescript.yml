@@ -1,4 +1,5 @@
-# Tier-2 (ast-grep) definition rules — TypeScript (.ts) + TSX (.tsx).
+# Tier-1 AUTO-lane (ast-grep) definition rules — TypeScript (.ts ONLY — .tsx is its own
+# ast-grep language and lives in tsx.yml; typescript rules never match .tsx).
 # Mirrors tags-typescript.scm coverage. Kind names verified against ast-grep 0.42.3.
 # Consumer contract (scan-procedure.md §Step 5): --json=compact output;
 # range.start.line is 0-BASED (+1 for map anchors); `lines` is the full node
@@ -27,30 +28,6 @@ id: typescript-method
 language: typescript
 rule: {kind: method_definition}
 ---
-id: tsx-function
-language: tsx
-rule: {kind: function_declaration}
----
-id: tsx-class
-language: tsx
-rule: {kind: class_declaration}
----
-id: tsx-interface
-language: tsx
-rule: {kind: interface_declaration}
----
-id: tsx-type-alias
-language: tsx
-rule: {kind: type_alias_declaration}
----
-id: tsx-enum
-language: tsx
-rule: {kind: enum_declaration}
----
-id: tsx-method
-language: tsx
-rule: {kind: method_definition}
----
 id: typescript-arrow-binding
 language: typescript
 rule:
@@ -59,18 +36,6 @@ rule:
 ---
 id: typescript-function-expr-binding
 language: typescript
-rule:
-  kind: variable_declarator
-  has: {kind: function_expression}
----
-id: tsx-arrow-binding
-language: tsx
-rule:
-  kind: variable_declarator
-  has: {kind: arrow_function}
----
-id: tsx-function-expr-binding
-language: tsx
 rule:
   kind: variable_declarator
   has: {kind: function_expression}

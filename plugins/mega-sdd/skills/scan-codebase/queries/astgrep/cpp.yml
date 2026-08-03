@@ -1,0 +1,38 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — C++ (.cpp/.cc/.cxx/.hpp/.hh). class/struct/enum are BODY-GUARDED
+# (forward declarations `class Fwd;` are usage-shaped noise, round finding)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab + round, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: cpp-function
+language: cpp
+rule: {kind: function_definition}
+---
+id: cpp-class
+language: cpp
+rule:
+  kind: class_specifier
+  has: {kind: field_declaration_list, field: body}
+---
+id: cpp-struct
+language: cpp
+rule:
+  kind: struct_specifier
+  has: {kind: field_declaration_list, field: body}
+---
+id: cpp-enum
+language: cpp
+rule:
+  kind: enum_specifier
+  has: {kind: enumerator_list, field: body}
+---
+id: cpp-template
+language: cpp
+rule: {kind: template_declaration}
+---
+id: cpp-namespace
+language: cpp
+rule: {kind: namespace_definition}

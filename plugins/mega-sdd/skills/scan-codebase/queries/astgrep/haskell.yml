@@ -1,0 +1,31 @@
+# Tier-1 AUTO-lane (ast-grep) definition rules — Haskell (.hs). `function` is GUARDED out of signature nodes:
+# tree-sitter-haskell reuses the kind for arrow TYPES, so every `a -> b` in a
+# type signature minted a match (round SB-3a)
+# Kind names verified live against ast-grep 0.42.3 (glossary lab + round, 2026-08-03).
+# Contract (scan-procedure.md §Step 5): --json=compact; range.start.line is
+# 0-BASED (+1 for map anchors); `lines` = full node text (signature = first
+# line); dedupe rows by (file, start.line, ruleId).
+# LANE LAW: every rule's `language:` MUST equal this file's basename — the
+# Step-0 router derives its language lanes from pack FILENAMES (the tsx
+# regression class: rules parked in another file are invisible to routing).
+id: haskell-function
+language: haskell
+rule:
+  kind: function
+  not: {inside: {kind: signature, stopBy: end}}
+---
+id: haskell-signature
+language: haskell
+rule: {kind: signature}
+---
+id: haskell-data
+language: haskell
+rule: {kind: data_type}
+---
+id: haskell-newtype
+language: haskell
+rule: {kind: newtype}
+---
+id: haskell-class
+language: haskell
+rule: {kind: class}

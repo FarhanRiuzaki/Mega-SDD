@@ -178,11 +178,13 @@ chmod +x "$W/shim/tree-sitter"
 OUT=$(run_probe --cwd="$W/repo" --lang=python:b.py)
 printf '%s' "$OUT" | grep -q '"tree_sitter_version":"0.25.4"' \
   && ok "B4: sha-suffixed --version parses to 0.25.4" || fail "B4: $OUT"
-# B2: a no_query_file language must NOT inflate engine/precision to ast
-printf 'fun main() {}\n' > "$W/repo/k.kt"
-OUT=$(run_probe --cwd="$W/repo" --lang=kotlin:k.kt)
+# B2: a no-pack language must NOT inflate engine/precision to ast.
+# (kotlin gained a pack in the v5.33.0 glossary — fortran stays a real
+# ast-grep-supported-nowhere language, so the unpacked lane keeps a live arm.)
+printf 'program hello\nend program hello\n' > "$W/repo/h.f90"
+OUT=$(run_probe --cwd="$W/repo" --lang=fortran:h.f90)
 printf '%s' "$OUT" | grep -q '"engine":"regex"' && printf '%s' "$OUT" | grep -q '"reason":"no_astgrep_pack"' \
-  && ok "B2/D2: kotlin-only (no pack) -> regex engine + no_astgrep_pack, never a fake ast stamp" \
+  && ok "B2/D2: fortran-only (no pack) -> regex engine + no_astgrep_pack, never a fake ast stamp" \
   || fail "B2: $OUT"
 # A5: scaffold skip holds on the tier-2 path too (tree-sitter absent locally is
 # emulated by --engine=ast-grep forcing past tier 1)
@@ -234,14 +236,18 @@ fi
 mk_astgrep
 
 echo "== tier-2 rule packs: present, multi-doc, kind-based =="
-PACKS=(typescript javascript php python rust go ruby java csharp)
+PACKS=(typescript tsx javascript php python rust go ruby java csharp \
+       kotlin swift scala c cpp dart elixir lua bash haskell)
 MISS=0
 for L in "${PACKS[@]}"; do
   [ -f "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" ] || { fail "missing pack $L.yml"; MISS=1; }
 done
-[ "$MISS" = "0" ] && ok "all 9 rule packs shipped"
-grep -q "language: tsx" "$PLUG/skills/scan-codebase/queries/astgrep/typescript.yml" \
-  && ok "typescript pack covers tsx (its own ast-grep language)" || fail "tsx rules missing"
+[ "$MISS" = "0" ] && ok "all ${#PACKS[@]} rule packs shipped (glossary)"
+# Lane law (the tsx regression class): tsx has its OWN pack — rules parked in
+# typescript.yml are invisible to the filename-derived Step-0 router.
+grep -q "language: tsx" "$PLUG/skills/scan-codebase/queries/astgrep/tsx.yml" \
+  && ! grep -q "language: tsx" "$PLUG/skills/scan-codebase/queries/astgrep/typescript.yml" \
+  && ok "tsx rules live in tsx.yml only (lane law)" || fail "tsx lane law broken"
 for L in "${PACKS[@]}"; do
   grep -q "^id: " "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" && \
   grep -q "kind: " "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" || fail "pack $L.yml not kind-based"
