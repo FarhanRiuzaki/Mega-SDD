@@ -41,10 +41,15 @@ PY
 }
 
 # ══ 1. Chain renders — express default vs classic ════════════════════════════
-PROJ="$WORK/p1"; mkdir -p "$PROJ/.mega-sdd"
+PROJ="$WORK/p1"; mkdir -p "$PROJ/.mega-sdd/codebase"
 ( cd "$PROJ" && git init -q . )
 printf '{"require": {"laravel/framework": "^11.0"}}' > "$PROJ/composer.json"
 printf '# PRD\nfitur cuti\n' > "$PROJ/prd.md"
+# host-independent viability: an index file makes express viable whether or
+# not the runner has ast-grep (CI has none — the viability fallback would
+# otherwise flip these arms to classic)
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"abc","symbols":[]}' \
+  > "$PROJ/.mega-sdd/codebase/symbol-index.json"
 
 CHAIN=$(py_probe "$PROJ" "d['derived']['proposed_next']")
 echo "$CHAIN" | grep -q "scan-codebase" \
