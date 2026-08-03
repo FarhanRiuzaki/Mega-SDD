@@ -271,7 +271,7 @@ got=$(state_field "$WORK/f5-binding-conflicts" "str(d['probes']['vaults'][0]['bi
 [ "$got" = "1/1" ] && ok "f5: conflict counts active=1 resolved=1 (binding_md grammar)" \
   || fail "f5: conflict counts expected 1/1, got '$got'"
 got=$(state_field "$WORK/f5-binding-conflicts" "d['derived']['proposed_next']")
-[ "$got" = "['bind-codebase']" ] && ok "f5: proposed_next=[bind-codebase]" || fail "f5: chain wrong: $got"
+[ "$got" = "['bind-codebase --express']" ] && ok "f5: proposed_next=[bind-codebase --express] (P2 spine default)" || fail "f5: chain wrong: $got"
 
 run_ds "$WORK/f5b-binding-kv-defer" >/dev/null 2>&1
 got=$(state_field "$WORK/f5b-binding-kv-defer" "d['derived']['position']")

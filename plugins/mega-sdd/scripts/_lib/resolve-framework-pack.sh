@@ -111,8 +111,10 @@ fi
 # modified in the same second AFTER the cache write.
 _SK_FILE="${CWD}/.mega-sdd/codebase/starterkit-context.yaml"
 _CM_FILE="${CWD}/.mega-sdd/codebase/codebase-map.md"
+_ST_FILE="${CWD}/.mega-sdd/state.json"
 _SK_F=0; [ -f "$_SK_FILE" ] && _SK_F=1
 _CM_F=0; [ -f "$_CM_FILE" ] && _CM_F=1
+_ST_F=0; [ -f "$_ST_FILE" ] && _ST_F=1
 _SEC_KEY="${SECTION:-_chain}"
 _SEC_KEY_SAFE=""
 while [ -n "$_SEC_KEY" ]; do
@@ -135,8 +137,8 @@ if [ -n "$_CACHE_FILE" ] && [ -f "$_CACHE_FILE" ]; then
   IFS= read -r _META < "$_CACHE_FILE" 2>/dev/null || _META=""
   _META="${_META%$'\r'}"   # a CRLF-written meta (Windows python) must not poison the parse
   case "$_META" in
-    "# packres-v1 rc="*" sk=${_SK_F} cm=${_CM_F} chain="*)
-      _RC_PART="${_META#\# packres-v1 rc=}"; _RC="${_RC_PART%% *}"
+    "# packres-v2 rc="*" sk=${_SK_F} cm=${_CM_F} st=${_ST_F} chain="*)
+      _RC_PART="${_META#\# packres-v2 rc=}"; _RC="${_RC_PART%% *}"
       _CHAIN_PART="${_META#* chain=}"
       _VALID=1
       # a resolver-CODE change must bust the cache too (F5): $0 is an input
@@ -144,6 +146,7 @@ if [ -n "$_CACHE_FILE" ] && [ -f "$_CACHE_FILE" ]; then
       [ "$_CACHE_FILE" -nt "$PACK_ROOT" ] || _VALID=0
       if [ "$_SK_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_SK_FILE" ]; then _VALID=0; fi
       if [ "$_CM_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_CM_FILE" ]; then _VALID=0; fi
+      if [ "$_ST_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_ST_FILE" ]; then _VALID=0; fi
       if [ "$_VALID" = "1" ] && [ -n "$_CHAIN_PART" ]; then
         for _PK in $_CHAIN_PART; do
           _PK_PATH="${PACK_ROOT}/${_PK}"
@@ -186,7 +189,7 @@ if [ -z "${MEGA_SDD_PY:-}" ]; then
 fi
 
 CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" \
-PACKRES_CACHE="$_CACHE_FILE" PACKRES_SK="$_SK_F" PACKRES_CM="$_CM_F" $MEGA_SDD_PY <<'PYEOF'
+PACKRES_CACHE="$_CACHE_FILE" PACKRES_SK="$_SK_F" PACKRES_CM="$_CM_F" PACKRES_ST="$_ST_F" $MEGA_SDD_PY <<'PYEOF'
 import os
 import re
 import sys
@@ -212,8 +215,9 @@ def finish(rc, body):
     if cache:
         try:
             os.makedirs(os.path.dirname(cache), exist_ok=True)
-            meta = "# packres-v1 rc=%d sk=%s cm=%s chain=%s" % (
+            meta = "# packres-v2 rc=%d sk=%s cm=%s st=%s chain=%s" % (
                 rc, os.environ.get("PACKRES_SK", "0"), os.environ.get("PACKRES_CM", "0"),
+                os.environ.get("PACKRES_ST", "0"),
                 " ".join("%s.md" % n for n in chain))
             tmp = cache + ".tmp"
             with open(tmp, "w", newline="\n") as f:
@@ -276,7 +280,18 @@ def detect_pack_name():
         if m and m.group(1).strip() not in ("", "null", "~"):
             return strip_md(m.group(1)), "codebase-map.md framework: (nested name)"
 
-    # 3. fallback
+    # 3. state.json derived.framework_pack — the P2 GROUND matcher's output
+    # (ONE matcher, in _lib/state_probes.py; never a second sniff here).
+    # Deliberately BELOW the scan artifacts: when scan ran, its deep-scan
+    # verified detection wins; express-born projects have neither and land here.
+    st = os.path.join(cwd, ".mega-sdd", "state.json")
+    txt = read_text(st)
+    if txt:
+        m = re.search(r'"framework_pack"\s*:\s*"([A-Za-z0-9._-]+)"', txt)
+        if m and m.group(1) not in ("", "_universal"):
+            return m.group(1), "state.json derived.framework_pack (GROUND matcher)"
+
+    # 4. fallback
     return "_universal", "fallback (no manifest)"
 
 
