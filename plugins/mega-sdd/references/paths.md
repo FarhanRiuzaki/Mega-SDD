@@ -229,11 +229,12 @@ For project repo `.gitignore`:
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/bolts/              # bolt reports (regenerable)
 # .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)
+# .mega-sdd/vaults/*/claims-ledger.json  # derived claim index (regenerable; re-derived on every express bind)
 ```
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
-**Multi-dev note:** `vault.json` and `binding.md` are whole-file regenerated state — git line-merge of either after two devs ran the pipeline concurrently produces a corrupt file (the SessionStart guard detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
+**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the SessionStart guard detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
 
 ## References
 

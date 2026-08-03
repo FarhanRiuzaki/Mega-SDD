@@ -104,7 +104,9 @@ Ships as **5.34.0**, behind `--express`. Deliverable: bind produces a byte-compa
 
 ### P1.1 The claims ledger — `<vault>/claims-ledger.json`
 
-**Script-derived, never model-written** (`scripts/derive-claims-ledger.sh`), honoring the md-authoritative rail: the vault markdown stays the single grammar; the ledger is a derived index of it, exactly like `vault.json` — a NEW derived lane, not a patch lane (the script rejects any hand-set derived key the same way `derive-vault-json.sh` does).
+**Script-derived, never model-written** (`scripts/derive-claims-ledger.sh`), honoring the md-authoritative rail: the vault markdown stays the single grammar; the ledger is a derived index of it, exactly like `vault.json` — a PURE derive lane with NO patch surface at all: every run is a full overwrite reconstructed from the markdown (anti-laundering by reconstruction; E1 re-derives on every express bind, so a hand-edited ledger never survives to be consumed).
+
+**The ledger is a SKELETON, never the claim boundary (round-folded — the round's ship-blocker):** a template-conformant vault carries claims the deterministic grammar cannot see (named-H2 component sections, prose constraints, naming conventions). Express bind therefore runs a MANDATORY model completeness sweep over the vault docs (small — the express saving is the map, not the vault) and APPENDS the missed claims with ids continuing each doc's ordinal stream; the `binding-contract.md` claim-categories table is the sweep's checklist, and every category with vault content must yield ≥1 claim or an explicit empty-category note. Without the sweep, express narrows what gets VERIFIED — the cut the mandate forbids.
 
 Schema (terse, machine-checked):
 
@@ -127,8 +129,8 @@ Schema (terse, machine-checked):
 }
 ```
 
-- **Extraction is deterministic**, reusing the vault grammar `derive-vault-json.sh` already parses: DBML `Table` + `// Purpose:` (03 → entity), `### F-*-NNN:` + DoD (04 → flow), `### D-NNN:` (05 → decision), `## §<id>` sections (02 → component), NFR/naming table rows (06 → constraint), mode (01).
-- **IDs**: `C-<DOCCODE>-<NN>`, per-doc ordinal in document order — deterministic given the vault bytes. Stability across vault edits is the SAME class as today's model-minted ids (none guaranteed); the `--paths` fallback condition "vault regenerated → full re-bind" already covers renumbering.
+- **Extraction is deterministic**, reusing the shared `_lib/vault_md.py` grammar: DBML `Table` + `// Purpose:` (03 → entity, grammar-marginal shapes fail LOUD with exit 2 — never silently narrowed), `### F-*-NNN:` (04 → flow), `### D-NNN:` (05 → decision), `## §<id>` sections (any doc 01–06 → component), NFR table rows (06 → constraint), implementation mode from the 00-index Vault Lock SECTION (id `C-MODE-01`). A cross-count guard against the shared lib makes a grammar fork exit 2 on a clean lib parse.
+- **IDs**: `C-<DOCCODE>-<NN>` (`MODE` for the lock claim), per-doc ordinal — deterministic given the vault bytes; the `vault` field records the SLUG (never the caller's path argument), so abs/rel invocation cannot change the artifact's bytes. Stability across vault edits is the SAME class as today's model-minted ids (none guaranteed); the `--paths` fallback condition "vault regenerated → full re-bind" already covers renumbering.
 - `source` is exactly `NN-name.md:LINE` (the `make-bound.sh` `SRC_RE` form) so BIND annotations keep working.
 - `hints` are **advisory retrieval seeds** (name-case variants, endpoint terms), NEVER a retrieval boundary.
 - Registrations: `references/paths.md` layout + per-skill table; `hooks/stop` + `hooks/post-tool-use` prune lists (derived output); state_probes NOT in P1 (express is flag-driven; routing lands in P2).
@@ -139,7 +141,7 @@ Procedure lives in a new `bind-codebase/references/express-bind.md` (one level d
 
 1. **Index query** — `scripts/query-symbol-index.sh` (its first real consumer) by each hint symbol/name variant, then by target dir.
 2. **Targeted Read** of candidate files at the returned anchors — **verdicts anchor to READ evidence, not index rows** (rail A3).
-3. **Collision sweep** (moat-critical): for entity/component/naming claims, a repo-WIDE index name-query for the claim's symbol — the index is unsliced, so the sweep is global by construction; a hit outside the claim's expected home is evaluated as potential CONFLICT, never skipped.
+3. **Collision sweep** (moat-critical, round-hardened): for entity/component/naming claims, TWO mandatory legs — a repo-WIDE index name-query AND one bounded repo-wide Grep (the index covers only tracked files with covered extensions; the Grep leg closes untracked/uncovered surfaces); a hit outside the claim's expected home is evaluated as potential CONFLICT, never skipped.
 4. **Bounded repo Grep** for claim terms when 1–3 are silent.
 5. Still ungrounded ⇒ **OQ (or CONFLICT when evidence contradicts), never CONFIRMED-by-absence** (rail 2).
 

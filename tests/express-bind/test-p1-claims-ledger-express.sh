@@ -109,6 +109,77 @@ RC=$?
 bash "$P/scripts/derive-claims-ledger.sh" --vault "$WORK/nope" >/dev/null 2>&1
 [ $? -eq 3 ] && pass "missing vault dir -> exit 3" || fail "missing vault dir rc != 3"
 
+# ── 1b. Round-folded adversarial arms ────────────────────────────────────────
+# abs vs rel vs trailing-slash invocation -> byte-identical ledger (the vault
+# field records the slug, never the caller's argument)
+S_ABS=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
+( cd "$WORK/proj1" && bash "$P/scripts/derive-claims-ledger.sh" --vault .mega-sdd/vaults/demo >/dev/null 2>&1 )
+bash "$P/scripts/derive-claims-ledger.sh" --vault "$V1/" >/dev/null 2>&1
+S_REL=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
+[ "$S_ABS" = "$S_REL" ] \
+  && pass "abs/rel/trailing-slash invocations are byte-identical (vault = slug)" \
+  || fail "invocation form changed ledger bytes"
+grep -qF '"vault": "demo"' "$V1/claims-ledger.json" \
+  && pass "vault field is the slug, not the caller path" \
+  || fail "vault field leaks the invocation path"
+
+# mode claim comes from the Vault Lock SECTION, never a prose decoy line
+V4="$WORK/proj4/.mega-sdd/vaults/decoy"
+mkdir -p "$V4"; cp "$FIX"/0*.md "$V4/"
+python3 - "$V4/00-index.md" <<'PY'
+import sys
+p = sys.argv[1]
+c = open(p, encoding="utf-8").read()
+open(p, "w", encoding="utf-8").write("# Vault\n\n- **Implementation mode**: `WRONG-decoy`\n\n" + c)
+PY
+bash "$P/scripts/derive-claims-ledger.sh" --vault "$V4" >/dev/null 2>&1
+python3 - "$V4/claims-ledger.json" <<'PY' && pass "mode claim scoped to the Vault Lock section (decoy ignored)" || fail "mode claim harvested from a prose decoy line"
+import json, sys
+d = json.load(open(sys.argv[1]))
+m = [c for c in d["claims"] if c["type"] == "mode"]
+sys.exit(0 if m and "WRONG-decoy" not in m[0]["text"] else 1)
+PY
+
+# grammar-marginal DBML fails LOUD (exit 2), never a silently narrowed universe
+V5="$WORK/proj5/.mega-sdd/vaults/marginal"
+mkdir -p "$V5"; cp "$FIX"/0*.md "$V5/"
+printf '# DM\n\n```dbml\nTable caf\303\251_orders {\n  id int\n}\n```\n' > "$V5/03-data-model.md"
+bash "$P/scripts/derive-claims-ledger.sh" --vault "$V5" >/dev/null 2>&1
+[ $? -eq 2 ] && pass "unparseable Table name -> exit 2 (no silent entity drop)" \
+  || fail "unparseable Table name did not fail loud"
+printf '# DM\n\n```dbml\nTable inline { id int }\nTable after {\n  id int\n}\n```\n' > "$V5/03-data-model.md"
+bash "$P/scripts/derive-claims-ledger.sh" --vault "$V5" >/dev/null 2>&1
+[ $? -eq 2 ] && pass "one-line Table block -> exit 2 (depth desync fails loud)" \
+  || fail "one-line Table did not fail loud"
+
+# constraint (NFR table, incl. escaped pipe) + component (## §) claim types
+V6="$WORK/proj6/.mega-sdd/vaults/full"
+mkdir -p "$V6"; cp "$FIX"/0*.md "$V6/"
+cat > "$V6/06-constraints.md" <<'EOF'
+# Constraints
+
+## §tech-constraints Technical constraints
+
+## Non-functional requirements
+
+| Category | Requirement | Source |
+|----------|-------------|--------|
+| Performance | p95 API \| latency < 300ms | PRD §7 |
+| Scalability | Support 10k concurrent users | PRD §8 |
+EOF
+bash "$P/scripts/derive-claims-ledger.sh" --vault "$V6" >/dev/null 2>&1
+python3 - "$V6/claims-ledger.json" <<'PY' && pass "constraint + component types extracted; escaped pipe unescaped verbatim" || fail "constraint/component extraction or escaped-pipe handling wrong"
+import json, sys
+d = json.load(open(sys.argv[1]))
+types = {c["type"] for c in d["claims"]}
+cons = [c for c in d["claims"] if c["type"] == "constraint"]
+comp = [c for c in d["claims"] if c["type"] == "component"]
+ok = ("constraint" in types and "component" in types
+      and any(c["text"] == "p95 API | latency < 300ms" for c in cons)
+      and any(c.get("native_id") == "tech-constraints" for c in comp))
+sys.exit(0 if ok else 1)
+PY
+
 # ══ 2. Grammar byte-compat (express-shaped binding through the real chain) ═══
 PROJ="$WORK/proj3"
 EV="$PROJ/.mega-sdd/vaults/demo"
@@ -288,6 +359,43 @@ grep -qF 'Collision sweep (moat-critical' "$EB" \
   && grep -qF 'repo-WIDE' "$EB" \
   && pass "express-bind.md mandates the repo-wide collision sweep" \
   || fail "collision sweep mandate missing"
+grep -qF 'two
+   legs, BOTH mandatory' "$EB" && grep -qF 'the index sees only tracked files' "$EB" \
+  && pass "collision sweep carries the mandatory Grep leg (index-coverage residual closed)" \
+  || fail "Grep leg / index-coverage disclosure missing"
+grep -qF 'completeness sweep' "$EB" && grep -qF 'SKELETON, never the claim
+   boundary' "$EB" \
+  && pass "E2 mandates the completeness sweep (ledger = skeleton)" \
+  || fail "completeness sweep mandate missing"
+grep -qF 'this-category-is-empty note' "$EB" \
+  && pass "per-category coverage obligation pinned" \
+  || fail "category coverage obligation missing"
+grep -qF 'sanctioned read' "$EB" && grep -qF 'LEDGER ids' "$EB" \
+  && pass "--paths composition: prior binding sanctioned + id-space mapping rules" \
+  || fail "--paths composition rules missing"
+grep -qF 'constrain claim validation to the scope' "$EB" \
+  && pass "scope_metadata propagation preserved in express" \
+  || fail "scope paragraph missing"
+grep -qF 'Never mint `regex_tier` in this lane' "$EB" \
+  && pass "regex_tier honestly excluded (no tier signal without the map)" \
+  || fail "regex_tier instruction still underivable"
+grep -qF 'an unknown rc is never treated as pass' "$EB" \
+  && pass "unknown-rc catch-all on the E1 fallback" \
+  || fail "rc taxonomy still open"
+
+# sibling contracts carry the express carve-outs
+PC="$P/skills/orchestrate-flow/references/predictive-checks.md"
+grep -qF 'express_carve_out' "$PC" && grep -qF 'run ONLY the vault.json arm' "$PC" \
+  && pass "predictive-checks binding_input_complete carries the express carve-out" \
+  || fail "predictive-check would falsely halt a mapless express chain"
+AMH="$P/skills/bind-codebase/references/auto-memory-handoff.md"
+grep -qF -- '--express` override' "$AMH" && grep -qF 'never `"snapshot-verified"` on an express bind' "$AMH" \
+  && pass "auto-memory-handoff snapshot check carries the express override" \
+  || fail "provenance precedence still points the wrong way"
+BCON="$P/skills/bind-codebase/references/binding-contract.md"
+grep -qF -- '`--express` provenance variant' "$BCON" \
+  && pass "binding-contract field-diff precondition amended for express" \
+  || fail "field-diff ast-tier contradiction unamended"
 grep -qF 'CONFIRMED-by-absence' "$EB" \
   && pass "never-CONFIRMED-by-absence rail present" \
   || fail "CONFIRMED-by-absence rail missing"
@@ -313,7 +421,7 @@ grep -q -- '--express' <(grep 'argument-hint:' "$FD") \
 grep -qF -- '`--express` — forwarded VERBATIM' "$FD" \
   && pass "front door forwards --express verbatim (translation law satisfied)" \
   || fail "front-door --express bullet missing"
-grep -qF -- '`--express`: the v6 P1 claim-scoped retrieval lane' "$OF" \
+grep -qF -- '`--express`: the claim-scoped retrieval lane' "$OF" \
   && pass "orchestrate-flow §Flags owns --express" \
   || fail "orchestrate-flow §Flags missing --express"
 grep -qF 'appends `--express` to the `bind-codebase` hop' "$OF" \
