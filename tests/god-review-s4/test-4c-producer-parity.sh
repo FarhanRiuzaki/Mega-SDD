@@ -100,10 +100,18 @@ printf '%s\n' "$VALID_MAP" > "$F1/codebase-map.md"
 bash "$VPF" --cwd="$F1" --skill="mega-sdd:bind-codebase" --quiet >/dev/null 2>&1
 S=$(python3 -c "import json; print(json.load(open('$F1/.mega-sdd/.preflight-state.json')).get('status'))" 2>/dev/null)
 [ "$S" != "FATAL" ] && ok "BC-PREFLIGHT-LEGACY: legacy <root>/codebase-map.md accepted (status=$S)" || fail "BC-PREFLIGHT-LEGACY: legacy map still FATAL-blocks bind"
+# P2 spine flip: on the DEFAULT (express) spine, bind reads no map — no-map
+# is PASS by design; the FATAL guard is the CLASSIC lane's and stays intact
+# there. Both lanes pinned (mirrors the derive-state f4 split).
 F2="$WORK/nomap"; mkvault "$F2"
 bash "$VPF" --cwd="$F2" --skill="mega-sdd:bind-codebase" --quiet >/dev/null 2>&1
 S=$(python3 -c "import json; print(json.load(open('$F2/.mega-sdd/.preflight-state.json')).get('status'))" 2>/dev/null)
-[ "$S" = "FATAL" ] && ok "BC-PREFLIGHT-LEGACY: NO map anywhere still FATAL (guard intact)" || fail "BC-PREFLIGHT-LEGACY: no-map case regressed (status=$S)"
+[ "$S" != "FATAL" ] && ok "BC-PREFLIGHT-LEGACY: no-map PASSes on the express default (bind reads no map)" || fail "BC-PREFLIGHT-LEGACY: express no-map falsely FATALs (status=$S)"
+printf 'spine: classic\n' > "$F2/.mega-sdd/config.yaml"
+bash "$VPF" --cwd="$F2" --skill="mega-sdd:bind-codebase" --quiet >/dev/null 2>&1
+S=$(python3 -c "import json; print(json.load(open('$F2/.mega-sdd/.preflight-state.json')).get('status'))" 2>/dev/null)
+[ "$S" = "FATAL" ] && ok "BC-PREFLIGHT-LEGACY: NO map still FATAL under classic (guard intact)" || fail "BC-PREFLIGHT-LEGACY: classic no-map guard regressed (status=$S)"
+rm -f "$F2/.mega-sdd/config.yaml"
 
 # ── BC-MAPARG-1: explicit map positional is gated ──
 F3="$WORK/customdegen"; mkvault "$F3"; mkdir -p "$F3/maps" "$F3/.git"
