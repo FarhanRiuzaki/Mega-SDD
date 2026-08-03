@@ -138,6 +138,10 @@ printf '{}\n' > "$F/composer.json"; printf '<?php\n' > "$F/src/app.php"
 vault_docs "$F/.mega-sdd/vaults/v1"; mkvj "$F/.mega-sdd/vaults/v1" existing
 gitinit "$F"
 write_map "$F/.mega-sdd/codebase/codebase-map.md" "$(git -C "$F" rev-parse HEAD)"
+# express viability is host-independent in fixtures: an index present makes
+# the spine viable whether or not the runner has ast-grep (CI has none)
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' \
+  "$(git -C "$F" rev-parse HEAD)" > "$F/.mega-sdd/codebase/symbol-index.json"
 printf '%s' "$BINDING_ACTIVE" > "$F/.mega-sdd/vaults/v1/binding.md"
 
 F="$WORK/f5b-binding-kv-defer"; mkdir -p "$F/src" "$F/.mega-sdd/codebase"
