@@ -1,7 +1,7 @@
 # v6 — the Express Spine: speed with hard gates
 
 **Date:** 2026-08-03
-**Status:** P1 v5.34.0 · P2 v5.35.0 · P3 SHIPPED v5.36.0 (0342579, CI green, suite 201) — THE EXPRESS SPINE IS THE DEFAULT; P4–P5 awaiting per-phase gas
+**Status:** P1 v5.34.0 · P2 v5.35.0 · P3 v5.36.0 · P4 SHIPPED v6.0.0 (194b1b3, CI green, suite 202) — THE EXPRESS SPINE IS THE DEFAULT AND THE SURFACE IS 3 VERBS + 4 ONE-TIMERS; P5 (measure) awaiting gas
 **Research grounding:** `research/2026-08-03-v6-express-spine-best-practices.md` (2026-08-03, 4 lanes: SDD landscape / Anthropic guidance / context-engineering evidence / verification-speed economics). Every spine element CONFIRMED against the 2025–2026 evidence base; amendments A1–A7 from that document are folded into the rails below.
 **Mandate (operator, 2026-08-03, verbatim goals):** "tujuan utamanya skills ini itu standarisasi code, reuse code, percepatan development, dan anti fabricated. yang paling utama itu speed development dengan standar yg udah di set atau hard gate." — a MAJOR update; cut everything that does not serve these four. **Speed is the tie-breaker; the hard gates are non-negotiable.**
 
@@ -89,7 +89,7 @@ Human documents (vault docs, PRD/FSD/SIT/UAT) are **emissions on demand** (`/meg
 - **P1 — claims ledger + claim-scoped bind (D3 core).** ✅ **SHIPPED v5.34.0** (2026-08-03, behind `--express`; deep dual-blind round — disclosure below). Deliverable delivered: bind works from ledger + completeness sweep + index with zero map load.
 - **P2 — GROUND step + express default.** ✅ **SHIPPED v5.35.0** (2026-08-03; deep dual-blind round — disclosure below). scan demoted (on-demand map seam); the front door defaults to the spine; `--classic` / `spine: classic` restores scan-first verbatim.
 - **P3 — OQ auto-defer + risk-tier default + lean-by-default diagnostics.** ✅ **SHIPPED v5.36.0** (2026-08-04; dual-blind round — disclosure below; advisor legs kept default-on, the stated rail-1 deviation).
-- **P4 — surface cull** (alias removal per policy + docs-on-demand completion + README/major migration guide). Design §P4 below: telemetry review discharged; relocate-then-delete for the dangling-8; emit-lane source repair; PLAN merge rejected on the record.
+- **P4 — surface cull.** ✅ **SHIPPED v6.0.0** (2026-08-04, 194b1b3; deep dual-blind round — disclosure below). Alias removal per policy (telemetry review discharged, honestly scoped); relocate-then-delete for the dangling-8; emit-lane source repair (modern-vault FSD/PRD); PLAN merge + vault-as-emission rejected on the record.
 - **P5 — measure.** End-to-end wall-clock + cost-weighted tokens on training-nextjs, before/after, published in the README. The <10-minute claim lives or dies here. **(A7) Protocol:** endpoint = acceptance-VERIFIED bolt (never first diff); human-wait time explicitly in or out of the clock; speed paired with a quality counterweight (revert/rework); same repo, comparable task class; never self-reported. (METR RCT: devs were 19% slower while believing +20% faster — perception is inadmissible.)
 
 Version: **6.0.0** at P4 (the breaking-surface release); P1–P3 ship as 5.x pre-major tranches where back-compatible, behind `--express` until P2 flips the default.
