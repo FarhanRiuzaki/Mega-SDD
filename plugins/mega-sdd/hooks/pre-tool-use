@@ -340,7 +340,10 @@ print(
       mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)
         PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
         if [ -x "$PREFLIGHT" ]; then
-          bash "$PREFLIGHT" --cwd="$PROJECT_ROOT" --skill="$SKILL_NAME" --quiet >/dev/null 2>&1 || true
+          # P2: the dispatch args ride along (b64; decoded inside the script's
+          # python) so the bind map-check can honor the --express lane without
+          # an extra spawn here.
+          bash "$PREFLIGHT" --cwd="$PROJECT_ROOT" --skill="$SKILL_NAME" --args-b64="${SKILL_ARGS_B64:-}" --quiet >/dev/null 2>&1 || true
           PF_STATE="${PROJECT_ROOT}/.mega-sdd/.preflight-state.json"
           if [ -f "$PF_STATE" ]; then
             PF_STATUS=$(python3 -c "

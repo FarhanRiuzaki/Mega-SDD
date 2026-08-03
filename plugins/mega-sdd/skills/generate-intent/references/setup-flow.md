@@ -145,11 +145,11 @@ Vault generation produces fewer fabricated entities + tighter OQ classification 
 | Probe result | Action |
 |---|---|
 | All artifacts present | Load as context for Step 2 extraction; auto-resolve `tech/scan` OQs immediately |
-| Codebase-map missing, brownfield indicators present (e.g., `.git` + existing code files) | INTERACTIVE prompt: "Brownfield repo detected but no codebase-map. Run scan-codebase first? (recommended)" — Y → auto-invoke; N → proceed with reduced precision |
+| Codebase-map missing, brownfield indicators present (e.g., `.git` + existing code files) | **DEFAULT (express spine, P2): proceed map-less** — ground against `state.json` (manifests, `derived.framework_pack`) + symbol-index queries (`scripts/query-symbol-index.sh`) + targeted file probes; the `[CODEBASE: exists]` annotation and tech/scan OQ resolution come from those probes with real `file:line` citations. NO prompt, NO scan auto-invoke (scan is on-demand — the demoted phase must not be resurrected here). Under `spine: classic` only: the old prompt applies ("Run scan-codebase first?" — Y → auto-invoke; N → reduced precision). |
 | Codebase-map missing, greenfield (no code) | Proceed without scan (current behavior) |
 | Knowledge-base present + `--kb` flag | Already handled (KB sub-mode); KB feeds Step 2 |
 
-**Auto-route action:** when the user accepts pre-scan, invoke `mega-sdd:scan-codebase` per orchestrate-flow's auto-route pattern; return to Step 1 after the scan completes. `--no-pre-scan` skips this step entirely.
+**Auto-route action (classic spine only):** when the user accepts pre-scan, invoke `mega-sdd:scan-codebase` per orchestrate-flow's auto-route pattern; return to Step 1 after the scan completes. `--no-pre-scan` skips this step entirely.
 
 **Scan context usage in subsequent steps:**
 
@@ -157,7 +157,7 @@ Vault generation produces fewer fabricated entities + tighter OQ classification 
 |---|---|
 | Step 2 (PRD/brief extraction) | Cross-reference PRD-mentioned entities against the codebase entity list; mark existing entities with `[CODEBASE: exists]` annotation in the vault body |
 | Step 3 (write 7 files) | Conventions section in `06-constraints.md` auto-populated from `conventions.md` memory; tech stack pre-filled (see the generation guide via the SKILL router) |
-| Step 3.5 (OQ auto-classifier) | OQs matching codebase signals (test framework, naming, file location, error format) auto-resolved as `tech/scan` with `status: resolved` + citation; NOT surfaced as open |
+| Step 3.5 (OQ auto-classifier) | OQs matching codebase signals (test framework, naming, file location, error format) auto-resolved as `tech/scan` with `status: resolved` + citation; NOT surfaced as open. **Map-less (express default): the SAME resolution runs from manifest/index/file probes** — `scan_query` names the probe target (e.g. `manifest phpunit.xml`, `symbol-index LeaveRequest`), citations are real `file:line`. This matters beyond quality: an unresolved P1 tech/scan OQ trips the `oq_gate` position and inserts an interactive resolve-oq ahead of bind — the classifier resolving from probes is what keeps the express path non-stop. |
 | Step 4 (self-check) | Validate entity claims don't fabricate new entities for already-existing codebase entities |
 
 **Anti-halu rails:** scan-aware mode is OPT-IN via prompt OR auto-route, never silent; PRD precedence preserved (PRD claims OVERRIDE codebase reality — CONFLICT surfaces in the binding phase, not silenced); existing-entity awareness ADDS an annotation, does NOT replace the vault claim (architect can override); `--no-pre-scan` preserves the architect-only workflow.

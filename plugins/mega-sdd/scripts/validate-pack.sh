@@ -129,6 +129,15 @@ _validate_pack() {
       violations=$((violations + 1))
     fi
   done
+  # detection_priority (OPTIONAL, P2 GROUND matcher precedence): when present
+  # it must be a bare integer — a malformed value silently falls back to the
+  # default 100 in the matcher, which reorders detection for real repos.
+  if printf '%s\n' "$frontmatter" | grep -q "^detection_priority:"; then
+    if ! printf '%s\n' "$frontmatter" | grep -qE "^detection_priority:[[:space:]]*[0-9]+[[:space:]]*(#.*)?$"; then
+      echo "VIOLATION: detection_priority present but not a bare integer"
+      violations=$((violations + 1))
+    fi
+  fi
 
   # ---- Extract pack's own framework value --------------------------------
   local pack_framework

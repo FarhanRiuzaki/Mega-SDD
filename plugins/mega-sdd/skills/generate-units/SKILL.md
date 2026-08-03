@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.19.0
+version: 2.20.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -42,7 +42,7 @@ This gate is checked before any candidate is atomized. A CONFLICT that somehow s
 
 The step skeleton is below with every gate/rail inline. Heavy detail (full state tables, halt YAML, schemas, templates) lives in the specialist references — each step names the file to load.
 
-**0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode` — and act per the decision matrix in `references/defensive-generation.md §Step 0.5`. Both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
+**0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode` — and act per the decision matrix in `references/defensive-generation.md §Step 0.5`. **Express-lane rule (P2):** a `binding.md` whose frontmatter carries `binding_metadata.retrieval` was produced WITHOUT a map by design — a missing `codebase-map.md` beside it is NOT a missing artifact; proceed with the binding's grounding (never prompt for, and under `--auto` never auto-run, `scan-codebase` to "repair" an intentionally map-less express project). Otherwise: both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
 
 **1. Load vault.** Read the 7 vault files + vault.json. If `<vault>/binding.md` + `<vault>/bound/` exist (brownfield), read them too.
 

@@ -505,15 +505,18 @@ except Exception:
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
     # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
-    # Source-file writes in a MAPPED repo (codebase-map.md exists) are journaled so
-    # /mega-sdd:sync + scan-codebase --changed-only know what moved without git
-    # archaeology — covers in-session AI edits even before they are committed.
-    # Append-only JSONL, fail-silent, a HINT not ground truth (consumers union it
-    # with the git channel). Never journals mega-sdd's own outputs.
+    # Source-file writes in a GROUNDED repo are journaled so /mega-sdd:sync +
+    # the changed-set producers (scan --changed-only, derive-changed-paths.sh)
+    # know what moved without git archaeology — covers in-session AI edits even
+    # before they are committed. P2 rekey: the gate is `.mega-sdd/codebase/`
+    # presence (map OR symbol-index) — the old map-only gate silenced the
+    # journal forever on express-born projects that never grow a map.
+    # Append-only JSONL, fail-silent, a HINT not ground truth (consumers union
+    # it with the git channel). Never journals mega-sdd's own outputs.
     case "$FILE_PATH" in
       *"/.mega-sdd/"*) : ;;  # own outputs — never journal (anti-feedback-loop)
       *)
-        if [ -f "${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md" ] && \
+        if [ -d "${PROJECT_ROOT}/.mega-sdd/codebase" ] && \
            ! grep -qE "^\s*dirty_journal:\s*false" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null; then
           DIRTY_JOURNAL="${PROJECT_ROOT}/.mega-sdd/codebase/.dirty-paths.jsonl"
           # Runaway guard: stop appending past 1 MB — the git channel still covers

@@ -97,6 +97,8 @@ Write to `<vault>/_drift-baseline.json` after `bind-codebase` (Iter 30+ when no 
 
 ### scan-codebase (codebase-map snapshot — v2.7.1+, Iter 46)
 
+> **Express-spine note (P2):** on the default spine this snapshot has no producer (scan runs on-demand only) and no consumer (bind `--express` skips the currency check, provenance fixed `no-snapshot` — `bind-codebase/references/auto-memory-handoff.md`). The lane stays fully live for classic-spine and on-demand scan runs.
+
 Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` after Step 10 codebase-map.md write:
 
 - `snapshot_type: "codebase-map"`

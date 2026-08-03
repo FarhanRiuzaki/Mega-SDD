@@ -1,6 +1,6 @@
 ---
 description: THE mega-sdd front door — any SDD lane phrase routes here. No arg → derive-state status view (position, vault, counts, staleness, foreign-SDD/adoption notices) + propose the next chain with ONE upfront confirmation. With an artifact arg (PRD / legacy dir / vault / brief) → input-shape detection + the adoption lane. Every gated phase stays Skill-dispatched. Deprecated /mega-sdd:<command> aliases resolve through 5.x.
-argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express] [--no-telemetry] [--plan|--act|--plan-then-act]"
+argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--no-telemetry] [--plan|--act|--plan-then-act]"
 ---
 
 > **The 5.0.0 surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or a deprecated alias that keeps resolving through the 5.x cycle.
@@ -15,7 +15,7 @@ User arguments: $ARGUMENTS
 
 When `<input>` is empty:
 
-1. `Run: scripts/derive-state.sh --cwd=<root>` (pre-init CWDs: add `--json-only` and read stdout), then read `.mega-sdd/state.json`.
+1. `Run: scripts/ground.sh --cwd=<root>` — the GROUND step (P2): `derive-state.sh` (probes incl. the manifest→pack matcher, spine, symbol-index freshness) + `build-symbol-index.sh` (seconds, zero model tokens; an absent ast-grep is recorded honestly — bind `--express` then falls back to the standard lane). Pre-init CWDs: run `scripts/derive-state.sh --cwd=<root> --json-only` alone and read stdout. Then read `.mega-sdd/state.json`.
 2. Render the **status view** from the digest — compact, Indonesian narrative + English technical terms:
    - **Position** — `derived.position` + `derived.mode_inferred` + starterkit mode.
    - **Vault(s)** — per vault: docs present, units count, bolts count, OQ P0/P1 open, binding state (CONFIRMED/CONFLICT/OQ counts), drift-report / PENDING-SYNC presence.
@@ -32,7 +32,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
    - Does it contain code files (`.{js,ts,php,py,rs,go,java,…}`) but NO vault at any of these paths: `.mega-sdd/vaults/*/vault.json` (canonical), `docs/mega-sdd/vaults/*/vault.json` (legacy), `vaults/*/vault.json` (oldest legacy)?
      - YES → legacy codebase. Propose chain starting with `extract-intelligence <input>` (REQUIRES `--out=<path>` per AUTONOMY-OQ-7 — conflating extract output with rebuild project dir is dangerous; `--out` is the OUTPUT_ROOT / parent dir, default `--out=.mega-sdd/` → KB at `<out>/knowledge-base/`).
    - Does it contain a vault at any of these paths (priority order): `.mega-sdd/vaults/*/vault.json` (canonical) → `docs/mega-sdd/vaults/*/vault.json` (legacy)?
-     - YES → existing vault. Propose chain starting with `scan-codebase` (if no codebase-map at `.mega-sdd/codebase/codebase-map.md` or legacy `codebase-map.md`) or `bind-codebase` (if codebase-map exists) or `generate-units` (if bound-vault exists).
+     - YES → existing vault. Propose chain starting with `bind-codebase` (express default — no map needed; classic with no codebase-map at `.mega-sdd/codebase/codebase-map.md` or legacy `codebase-map.md` → start with `scan-codebase`) or `generate-units` (if bound-vault exists).
    - Otherwise → halt; ask user to clarify directory purpose.
 
 2. **Is `<input>` a path to a file?**
@@ -53,7 +53,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
    - `--step-after=<phase>` — review checkpoint: **renders to orchestrate-flow as `--to=<phase>`** (orchestrate-flow has NO `--step-after` flag — forwarding it verbatim is silently ignored and `--deep` runs to pipeline end). After the review, continue with `/mega-sdd --resume` WITHOUT `--auto` (manual per-phase handoffs) or `--from=<next-phase>` to resume auto.
    - `--stop-after=<phase>` — alias of the same render: **renders as `--to=<phase>`** (halt after that phase even with no blocker).
    - **Translation law:** a front-door flag that is not in orchestrate-flow's §Flags list MUST be translated at render time, never forwarded verbatim — an unknown flag is silently dropped by the router, which for chain-bounding flags means the chain does NOT stop where the user asked.
-   - `--express` — forwarded VERBATIM (orchestrate-flow owns it): the orchestrator appends `--express` to the `bind-codebase` hop it dispatches — bind then retrieves claim-scoped (script-derived claims ledger + model completeness sweep of the vault docs + symbol-index queries + targeted Reads, zero codebase-map load) with an honest fallback to the standard lane when the index/ledger is unavailable. No gate changes; verdict grammar identical.
+   - `--express` / `--classic` — forwarded VERBATIM (orchestrate-flow owns them). **Express is the DEFAULT spine (P2):** chains render without a scan phase (GROUND ran as a script at Lane step 1) and bind hops retrieve claim-scoped (script-derived claims ledger + model completeness sweep of the vault docs + symbol-index queries + targeted Reads, zero codebase-map load) with an honest fallback to the standard lane when the index/ledger is unavailable. `--classic` (or persistent `spine: classic` in `.mega-sdd/config.yaml`) restores the scan-first chains verbatim. No gate changes on either spine; verdict grammar identical.
    - `--converge` / `--no-converge` / `--max-cycles=N` — forwarded VERBATIM (orchestrate-flow owns them; convergence is default ON under `--deep`). Note the interaction with review checkpoints: `bind_conflict` is cycle-eligible, so a converging `--deep` chain auto-invokes `resolve-oq --binding` INSIDE the bind phase — `--to=bind-codebase` alone does not prevent that; reviewing CONFLICTs yourself requires `--no-converge`.
    - `--resume` — re-enter a paused/halted chain; CWD inspection (a fresh `derive-state.sh` digest) rebuilds cursor; halts re-fire if blockers unresolved.
    - `--manual` — disable autonomy entirely; **renders as omitting `--auto` AND not entering the auto-continue loop**: dispatch ONLY the next phase, then stop and print the follow-up command (each skill's chat hint replaces auto-continue; `--deep` under `--manual` widens the PROPOSED chain, not the auto-run).
@@ -63,11 +63,11 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes per `orchestrate-flow/references/routing-rules.md` §Decision matrix:
 
-| Mode | Trigger | Pipeline ordering |
-|---|---|---|
-| **A — Starterkit-first** (DEFAULT) | Framework manifest detected + pack match found in `references/framework-conventions/` | scan-codebase FIRST → generate-intent --scan=<map> (pack-aware vault, dual-citation format) → bind → units → bolts |
-| **B — Framework-detected** (universal fallback) | Manifest detected but no pack match | scan-codebase FIRST → generate-intent --scan=<map> (universal conventions from `_universal.md`) → bind → units → bolts |
-| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent --greenfield (stack-agnostic vault) → user scaffolds later → re-run scan to bind |
+| Mode | Trigger | Pipeline ordering (express spine — DEFAULT) | Classic (`--classic` / `spine: classic`) |
+|---|---|---|---|
+| **A — Starterkit-first** (DEFAULT) | Framework manifest detected + pack match (`derived.framework_pack` from the GROUND matcher) | generate-intent (pack + index aware via state.json/symbol-index) → bind `--express` → units → bolts — GROUND already loaded the code-awareness, no scan phase | scan-codebase FIRST → generate-intent --scan=<map> → bind → units → bolts |
+| **B — Framework-detected** (universal fallback) | Manifest detected but no pack match (`derived.framework_pack: _universal`) | same as A with `_universal` conventions | scan-codebase FIRST → generate-intent --scan=<map> (`_universal.md`) → bind → units → bolts |
+| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent --greenfield (stack-agnostic vault) → user scaffolds later → bind when code exists | same (Mode C was always scan-free) |
 
 When neither manifest nor `--greenfield` set → halt `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel).
 

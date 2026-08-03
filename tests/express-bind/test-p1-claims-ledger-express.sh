@@ -418,14 +418,14 @@ BC="$P/commands/bind-codebase.md"
 grep -q -- '--express' <(grep 'argument-hint:' "$FD") \
   && pass "--express in the front-door argument-hint" \
   || fail "--express missing from front-door hint"
-grep -qF -- '`--express` — forwarded VERBATIM' "$FD" \
-  && pass "front door forwards --express verbatim (translation law satisfied)" \
+grep -qF -- '`--express` / `--classic` — forwarded VERBATIM' "$FD" \
+  && pass "front door forwards --express/--classic verbatim (translation law satisfied)" \
   || fail "front-door --express bullet missing"
-grep -qF -- '`--express`: the claim-scoped retrieval lane' "$OF" \
-  && pass "orchestrate-flow §Flags owns --express" \
+grep -qF -- '`--express` / `--classic`: the spine switch' "$OF" \
+  && pass "orchestrate-flow §Flags owns the spine switch" \
   || fail "orchestrate-flow §Flags missing --express"
-grep -qF 'appends `--express` to the `bind-codebase` hop' "$OF" \
-  && pass "orchestrator appends --express to the bind hop only" \
+grep -qF 'appends `--express` to every `bind-codebase` hop' "$OF" \
+  && pass "orchestrator appends --express to bind hops (P2 default)" \
   || fail "bind-hop append rule missing"
 grep -qF -- '`--express` (claim-scoped retrieval lane' "$BS" \
   && pass "bind SKILL declares --express" \

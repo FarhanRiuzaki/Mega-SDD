@@ -125,7 +125,9 @@ Stale-plan check: if `.plan-pending` exists from a prior session AND classifier 
 
 ## Chain optimization via binding provenance
 
-After the chain is built, if it includes `scan-codebase` AND `<vault-path>/binding.md` already exists from a recent bind-codebase run, read the binding header for `binding_metadata.codebase_map_provenance` (written by bind-codebase per its SKILL.md):
+**Express-lane short-circuit (P2 — evaluated FIRST):** if the prior `binding.md` frontmatter carries `binding_metadata.retrieval` (an express bind), this whole optimization is INAPPLICABLE — express stamps `no-snapshot` unconditionally because it reads no map, and the express-spine chains contain no `scan-codebase` hop to remove or retain in the first place. Applying the `no-snapshot` branch below to an express binding would re-add the demoted scan phase to every express chain — the exact resurrect-vector P2 closes. Skip to the preflight loop.
+
+Otherwise (classic lane): after the chain is built, if it includes `scan-codebase` AND `<vault-path>/binding.md` already exists from a recent bind-codebase run, read the binding header for `binding_metadata.codebase_map_provenance` (written by bind-codebase per its SKILL.md):
 
 - IF `snapshot-verified` AND `<project>/.mega-sdd/codebase/codebase-map.md` mtime is newer than every tracked source file mtime → REMOVE scan-codebase from the chain; log: `"⊘ scan-codebase skipped: binding.md attests snapshot-verified + source files unchanged"`.
 - IF `snapshot-stale` → keep scan-codebase; prepend log: `"⚠ scan-codebase retained: binding.md flagged snapshot-stale; codebase changed since last binding"`.

@@ -262,6 +262,8 @@ generic helpers — the symbols agents most often reinvent — reached no dispat
 
 ## Map §6 fallback (starterkit-context absent)
 
+**Express-born projects (P2 default spine, no scan ever run) have NEITHER leg** — no starterkit-context.yaml AND no codebase-map §6; the builder's `omit("map_patterns", …)` records the honest omission and the bolt proceeds on pack conventions + the symbol/reuse slices. Running `/mega-sdd:scan-codebase` on demand restores both legs.
+
 Codebase pattern signatures travel even WITHOUT a deep scan. When `starterkit-context.yaml` is absent (regex-tier / shallow / no-deep-scan runs — i.e. exactly when `starterkit-enrichment.md` is NOT loaded), `codebase-map.md §6 Pattern signatures` is the only pattern source the scan produced — deliver it instead of letting the bolt re-invent generic defaults:
 
 ```

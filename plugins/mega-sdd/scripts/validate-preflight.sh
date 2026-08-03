@@ -26,10 +26,12 @@ set -uo pipefail
 CWD=""
 SKILL=""
 QUIET=0
+ARGS_B64=""
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --skill=*) SKILL="${arg#*=}" ;;
+    --args-b64=*) ARGS_B64="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
   esac
 done
@@ -67,8 +69,8 @@ command -v ast-grep >/dev/null 2>&1 && AG_PRESENT=1
 # pre-migration project whose map bind would happily consume).
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
-CWD="$CWD" SKILL="$SKILL" TS_PRESENT="$TS_PRESENT" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
-import json, os, sys
+CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" TS_PRESENT="$TS_PRESENT" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
+import base64, json, os, re, sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
@@ -77,6 +79,7 @@ from state_probes import (
     has_bound_or_vault as _has_bound_or_vault,
     has_units as _has_units,
     has_codebase_map as _has_codebase_map,
+    probe_spine as _probe_spine,
 )
 
 cwd = os.environ["CWD"]
@@ -85,6 +88,23 @@ ts_present = os.environ.get("TS_PRESENT", "0") == "1"
 ag_present = os.environ.get("AG_PRESENT", "0") == "1"
 quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+# P2: the express lane reads NO codebase-map — the map arm of the bind check
+# must not falsely FATAL a valid express dispatch. Express is detected from
+# the dispatch args (--express token, word-boundary; --no-express/--classic
+# override it off) falling back to the config spine (express is the P2
+# default). The vault arm stays FATAL either way.
+try:
+    _args = base64.b64decode(os.environ.get("ARGS_B64", "")).decode(
+        "utf-8", errors="replace")
+except Exception:
+    _args = ""
+if re.search(r"(?:^|\s)--(?:no-express|classic)(?:\s|$)", _args):
+    express = False
+elif re.search(r"(?:^|\s)--express(?:\s|$|=)", _args):
+    express = True
+else:
+    express = _probe_spine(cwd) == "express"
 
 
 def has_vault():
@@ -113,10 +133,13 @@ if name == "bind-codebase":
     if not has_vault():
         fatal = {"check_id": "binding_input_vault_missing",
                  "on_fail": "bind-codebase needs a vault (.mega-sdd/vaults/<vault>/) — run generate-intent first."}
-    elif not has_codebase_map():
+    elif not express and not has_codebase_map():
+        # classic lane only: express reads no map (express-bind.md), so a
+        # map-missing FATAL here would falsely block the default P2 spine.
         fatal = {"check_id": "binding_input_map_missing",
                  "on_fail": "bind-codebase needs a codebase-map.md (.mega-sdd/codebase/codebase-map.md) — run scan-codebase first."}
-    checks.append({"check": "binding_input_complete", "status": "FAIL" if fatal else "PASS"})
+    checks.append({"check": "binding_input_complete", "status": "FAIL" if fatal else "PASS",
+                   "lane": "express" if express else "classic"})
 
 elif name == "generate-units":
     if not has_bound_or_vault():
