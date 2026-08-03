@@ -11,7 +11,7 @@ Loaded when `resolve-oq` runs under `--auto`, as an `orchestrate-flow` chain pha
 
 ## --auto flag
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive on the BLOCKING tier (P1), and on EVERY tier in a standalone/classic invocation.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses. **P3 express-chain carve-out:** P2/P3 OQs on the chain-routed express path auto-defer WITHOUT a prompt — no answer is invented (invariant #5 governs answer CONTENT; the defer fact, reason string, and re-surface obligations are all recorded mechanically), and `metrics.items_deferred` carries the full id list so the chain summary re-surfaces them.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -152,7 +152,8 @@ handoff:
   metrics:
     items_processed: <N OQs/CONFLICTs walked>
     items_resolved: <N actions taken>
-    items_deferred: <N kept as deferred>
+    items_deferred:              # P3: an ID LIST, never a bare count — a count cannot re-surface
+      - {tag: OQ-AR-7, priority: P2, reason: "auto-deferred (P2, express) — bukan blocker delivery pertama"}
     items_blocked: <N>                    # canonical handoff metric per handoff-contract.md
   scope:                                  # when vault has scope_metadata
     id: <scope id>
