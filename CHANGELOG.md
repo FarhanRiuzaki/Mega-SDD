@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [5.31.2] - 2026-08-03 — docs: README audit folded + the plugin gets its icon
+
+An adversarial README audit (17 findings) folded into both READMEs, plus the new mega-sdd logo (`docs/mega-sdd/mega-sdd.png` — intent → binding → done) installed as the header image of both.
+
+- **WRONG fixed:** version badges frozen at 5.2.7 (29 releases stale — now a rot-proof LINK to plugin.json, and the versioning section's mirror-promise amended to match); "19 skills" → 20 everywhere (`emit-uat` was uncounted and missing from the skills tree); the dead `#architecture-deep-dive` anchor now has a real target.
+- **STALE fixed:** "What's new" jumped from v5.2.7 straight past 29 releases — rewritten with the 5.3.0→5.31.x arc; the root README's review stage redrawn from the old two-reviewer chain to the risk-tiered blind panel (5 lenses); the ast-grep/pandoc tool-table rows carry their current roles.
+- **MISSING added:** the reuse-first loop enters the root README (seventh layer + a symbol-index node in the pipeline mermaid + the folder tree); `--lean` joins the flag list; `emit uat` joins the cheat-sheet.
+- **NITs:** version archaeology dropped from orientation prose; the install run-on sentence restructured; the plugin README's two ASCII flows converted to Mermaid (the user-mandated flow rule) naming the full emit set; deprecated aliases in the cheat-sheet now marked *(alias)*; a doubled-backslash mermaid shape fixed.
+
 ## [5.31.1] - 2026-08-03 — docs: install guidance + READMEs catch up with the D2 world
 
 Docs-only patch. `install-deps` was already FUNCTIONALLY sufficient post-D2 (the ast-grep matrix rows and routes were web-audited at v5.3.1) — what lagged was the EMPHASIS: `recommended_minimum` and every quick-start block still listed tree-sitter first as if it were the AST tier.
