@@ -78,6 +78,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   on_fail: "bind-codebase requires both vault.json AND codebase-map.md. Run scan-codebase first if codebase-map.md absent; run generate-intent first if vault.json absent."
   fatal: yes
   predicts_halt: bind_conflict (vault.json absent) OR dep_missing (codebase-map absent)
+  express_carve_out: when the bind hop carries `--express`, run ONLY the vault.json arm (`test -f <vault-path>/vault.json`, still fatal) — the express lane reads NO codebase-map (`bind-codebase/references/express-bind.md`), so the map arm would falsely halt a valid express chain.
 
 - **check_id: `constitution_file_check`**
   command: `test -f <vault-path>/constitution.md`

@@ -70,6 +70,8 @@ The `vault_outside_glob_root` branch is a **moat-visibility** rail, not a tidine
 
 ## Codebase-map shared-snapshot reuse (Step 1)
 
+> **`--express` override:** the express lane reads NO codebase-map, so this whole snapshot/currency check is SKIPPED and the provenance is FIXED at `"no-snapshot"` (`express-bind.md §Frontmatter + audit recording`) — never `"snapshot-verified"` on an express bind, even when a fresh snapshot exists on disk (this binding attests nothing about a map it did not read).
+
 Check `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` (per `plugins/mega-sdd/references/shared-snapshot-schema.md`). Parse and compare its `codebase_map_sha256` to the just-read codebase-map's actual sha256, THEN check map currency against the repo (S4 — the sha256 alone proves only that the map FILE is unchanged, not that the CODE hasn't moved):
 - **Currency check**: read the map frontmatter's `last_scanned_commit`. If `git rev-parse HEAD` resolves and differs from the stamp → the code moved since the scan; provenance is `"snapshot-stale"` REGARDLESS of the sha256 match, and the bind surfaces a warning recommending `/mega-sdd:sync` (or `scan-codebase --changed-only`) first. Stamp missing / literal `HEAD` / not a git repo → currency is UNKNOWN: never stamp `snapshot-verified`; use `"no-snapshot"` semantics for the provenance and note why.
 - **MATCH + current** → record `binding_metadata.codebase_map_provenance = "snapshot-verified"`. Downstream consumers can trust the map is current; orchestrate-flow may remove scan-codebase from the chain when verified AND source files unchanged.

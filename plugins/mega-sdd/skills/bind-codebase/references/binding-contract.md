@@ -49,6 +49,8 @@ For each CONFIRMED claim, additionally classify implementation readiness. This s
 
 The per-claim-type probe rules, the deterministic field-level diff (ADD/KEEP/REMOVE set ops), the disjoint-set check, and the worked example live in the implementation-state reference listed in `bind-codebase/SKILL.md` §Specialist references.
 
+**`--express` provenance variant:** in the express lane there is no map and no `precision_tier` — the ast-tier precondition on the `PARTIAL_FIELDS_*` rows is replaced by **read-evidence**: a field diff is permitted ONLY when the entity's source file was actually Read this run (the ledger supplies the vault field set, the Read supplies the code field set); file unreachable → `UNKNOWN`/low, Field diff `n/a`. Full rules: `express-bind.md §Verdict + state semantics`.
+
 ### Confidence labeling
 
 Every classification carries a confidence tag:
