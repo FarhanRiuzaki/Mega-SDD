@@ -96,6 +96,73 @@ Version: **6.0.0** at P4 (the breaking-surface release); P1–P3 ship as 5.x pre
 - No rebuild of what native Claude Code covers (agentic search/LSP stay native).
 - The doc pack (PRD/FSD/SIT/UAT emissions incl. SEOJK UAT) is NOT cut — it moves fully to on-demand, same quality bar.
 
+---
+
+## P1 — claims ledger + claim-scoped bind (design, 2026-08-03)
+
+Ships as **5.34.0**, behind `--express`. Deliverable: bind produces a byte-compatible `binding.md` from **ledger + symbol-index + targeted source reads, with zero codebase-map load**. Nothing outside the express lane changes behavior.
+
+### P1.1 The claims ledger — `<vault>/claims-ledger.json`
+
+**Script-derived, never model-written** (`scripts/derive-claims-ledger.sh`), honoring the md-authoritative rail: the vault markdown stays the single grammar; the ledger is a derived index of it, exactly like `vault.json` — a NEW derived lane, not a patch lane (the script rejects any hand-set derived key the same way `derive-vault-json.sh` does).
+
+Schema (terse, machine-checked):
+
+```json
+{
+  "schema": 1,
+  "generated_by": "derive-claims-ledger@1.0.0",
+  "generated_at": "<ISO>",
+  "vault": "<vault path>",
+  "doc_shas": {"01-overview.md": "<sha256>", "...": "..."},
+  "claims": [
+    {
+      "id": "C-DM-01",
+      "type": "entity|flow|decision|component|constraint|mode",
+      "text": "<verbatim from the vault doc>",
+      "source": "03-data-model.md:42",
+      "hints": {"symbols": ["LeaveRequest", "leave_request"], "terms": ["cuti"]}
+    }
+  ]
+}
+```
+
+- **Extraction is deterministic**, reusing the vault grammar `derive-vault-json.sh` already parses: DBML `Table` + `// Purpose:` (03 → entity), `### F-*-NNN:` + DoD (04 → flow), `### D-NNN:` (05 → decision), `## §<id>` sections (02 → component), NFR/naming table rows (06 → constraint), mode (01).
+- **IDs**: `C-<DOCCODE>-<NN>`, per-doc ordinal in document order — deterministic given the vault bytes. Stability across vault edits is the SAME class as today's model-minted ids (none guaranteed); the `--paths` fallback condition "vault regenerated → full re-bind" already covers renumbering.
+- `source` is exactly `NN-name.md:LINE` (the `make-bound.sh` `SRC_RE` form) so BIND annotations keep working.
+- `hints` are **advisory retrieval seeds** (name-case variants, endpoint terms), NEVER a retrieval boundary.
+- Registrations: `references/paths.md` layout + per-skill table; `hooks/stop` + `hooks/post-tool-use` prune lists (derived output); state_probes NOT in P1 (express is flag-driven; routing lands in P2).
+
+### P1.2 Claim-scoped bind (`bind-codebase --express`)
+
+Procedure lives in a new `bind-codebase/references/express-bind.md` (one level deep); SKILL.md gains the flag row + a short section. Per ledger claim, the **fail-closed retrieval ladder**:
+
+1. **Index query** — `scripts/query-symbol-index.sh` (its first real consumer) by each hint symbol/name variant, then by target dir.
+2. **Targeted Read** of candidate files at the returned anchors — **verdicts anchor to READ evidence, not index rows** (rail A3).
+3. **Collision sweep** (moat-critical): for entity/component/naming claims, a repo-WIDE index name-query for the claim's symbol — the index is unsliced, so the sweep is global by construction; a hit outside the claim's expected home is evaluated as potential CONFLICT, never skipped.
+4. **Bounded repo Grep** for claim terms when 1–3 are silent.
+5. Still ungrounded ⇒ **OQ (or CONFLICT when evidence contradicts), never CONFIRMED-by-absence** (rail 2).
+
+Boundary posture (why this passes the seed-not-boundary obligation that killed the precomputed slice): the searchable universe is the **entire repo** (index is repo-wide; Grep/Read unrestricted) — nothing is removed from searchable, so there is no slice whose recall needs proving. The codebase-map is simply **not read** (ground truth is the source itself).
+
+- **Index freshness is the controller's step** (R2 lesson): express Step 0.x runs `build-symbol-index.sh` when the index is absent or `head_commit` ≠ HEAD (seconds). ast-grep missing (rc 3) ⇒ **fall back to the standard full-read bind with a one-line note** — never a silently degraded express.
+- **Tech-OQ scan resolution** in express cites actual files (`phpunit.xml:1`) via manifest/index probes instead of map§ — already the template's citation form.
+- **Vault text**: claim text comes verbatim from the ledger (script-derived from the vault), satisfying the "no paraphrasing" rail; the model reads specific vault lines only when a verdict needs surrounding context.
+- `--paths` composes: `--paths` keeps selecting WHICH claims re-verdict (anchor reverse-index, active CONFLICTs always), `--express` selects HOW evidence is retrieved for the affected set.
+- Steps 2.5–2.12 (state classification, hard rules, constitution, advisor) unchanged.
+
+### P1.3 Byte-compat obligations (the frozen grammar)
+
+The express lane emits the IDENTICAL `binding.md` grammar — specifically the load-bearing surfaces mapped 2026-08-03: frontmatter `binding_metadata.codebase_map_provenance` (indent-optional) + `head` (indent-REQUIRED), the `## Implementation State Map` 6-column table with the closed `[reason:]` enum trailing in the Anchor cell, 4-field `## Confirmed Claims` lines, canonical `### CONFLICT-N` headings with structural resolution markers, the H2 OQ-section heading substrings (`Tech-OQ Auto-Resolved` / `Open Questions` / …), ` + ` multi-anchor separator, `- **Vault claim**:` / `- **Claim**:` detail lines. Express adds ONE additive frontmatter key `binding_metadata.retrieval: express-index@<head8>` — line-regex parsers are proven blind to unknown keys. `codebase_map:` keeps the canonical path; provenance uses the existing closed enum (`no-snapshot` when no map exists — chain optimization then keeps scan, which is correct until P2).
+
+### P1.4 P1 proof tests
+
+1. **Ledger determinism**: fixture vault → ledger; re-derive byte-identical (minus `generated_at`); malformed vault → honest exit 2; `source` matches `SRC_RE`.
+2. **Grammar byte-compat**: an express-shaped `binding.md` fixture (incl. the `retrieval:` key) through the FULL chain — stamp → derive-binding-json → validate-binding-json → validate-handoff-binding-units → make-bound (refuses on CONFLICT, produces `bound/` when clean); binding.json equality with/without the additive key.
+3. **Seed-not-boundary (reachability arm)**: fixture repo where the colliding symbol lives OUTSIDE the claim's expected dir; `query-symbol-index.sh --name=<entity>` MUST surface it; prose pins that express-bind.md mandates the collision sweep + the fail-closed ladder + never-CONFIRMED-by-absence.
+4. **Flag parity**: `--express` present in front-door hint + §Flag handling (forwarded verbatim, the `--converge` pattern) + orchestrate-flow §Flags + bind SKILL — keeping the ghost-flag guard green.
+5. **Fallback honesty**: index rc 3 ⇒ standard-bind fallback prose pin.
+
 ## Round disclosure
 
 *(per phase, filled AFTER each round runs — never pre-written)*
