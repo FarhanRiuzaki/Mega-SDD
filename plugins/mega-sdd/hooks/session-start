@@ -609,12 +609,12 @@ if os.path.isfile(starterkit_path):
             rel_corrupt = os.path.relpath(corrupt_path, cwd)
             emit_event(
                 "deep_scan_cache_corrupt",
-                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; next scan-codebase rebuilds",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the next ON-DEMAND /mega-sdd:scan-codebase run rebuilds it (scan is not in the default express chain)",
                 original_path=rel_orig,
                 corrupt_path=rel_corrupt,
                 reason=str(e),
             )
-            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; scan-codebase will rebuild")
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; an on-demand /mega-sdd:scan-codebase run rebuilds it")
     except Exception:
         pass
 
@@ -776,10 +776,18 @@ dirty = p.get("dirty_journal_rows", 0)
 cmap = p.get("codebase_map") or {}
 stamp = cmap.get("last_scanned_commit")
 head = (p.get("git") or {}).get("head")
+# P2: express-born projects have no map — the symbol-index head_commit is
+# their freshness stamp; without this leg the staleness notice NEVER fires
+# on the default spine and sync goes silent forever.
+sidx = p.get("symbol_index") or {}
+istamp = sidx.get("head_commit")
 detail = "%d journaled write(s)" % dirty
 if stamp and head and head != stamp:
     detail += "; map stamp %s ≠ HEAD %s" % (stamp[:8], head[:8])
-moved = dirty > 0 or bool(stamp and head and head != stamp)
+if istamp and head and head != istamp:
+    detail += "; index stamp %s ≠ HEAD %s" % (istamp[:8], head[:8])
+moved = (dirty > 0 or bool(stamp and head and head != stamp)
+         or bool(istamp and head and head != istamp))
 open_n = 0
 pending = ""
 for v in p.get("vaults") or []:

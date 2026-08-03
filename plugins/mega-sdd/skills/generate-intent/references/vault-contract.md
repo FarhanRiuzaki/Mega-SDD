@@ -249,7 +249,7 @@ Every OQ carries `category`:
 
 Tech OQs carry a `resolution_mode` describing how the OQ is answered without blocking human review:
 
-- `scan` — answer deterministically found by probing codebase-map / KB. Requires `scan_query`. `bind-codebase` auto-resolves on single unambiguous match.
+- `scan` — answer deterministically found by probing ground truth. Requires `scan_query`, which names the PROBE TARGET: on the express spine (default) that is a manifest / symbol-index / file probe (`manifest phpunit.xml`, `symbol-index LeaveRequest`, `file config/auth.php`); on the classic spine a codebase-map section (`codebase-map §test_frameworks`) or KB. `bind-codebase` auto-resolves on single unambiguous match — express re-targets a `codebase-map §` hint to its underlying ground truth (the manifest/config file itself) rather than a map it did not read.
 - `recommend` — AI picks with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation). `bind-codebase` surfaces in `binding.md` review section; user ACCEPTS / OVERRIDES / REJECTS.
 - `hard_rule` — encoded as bolt-time constraint. Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
 - `blocking` — explicit "no auto-resolve; still needs human". Rare for tech (used when scan is inconclusive AND no safe default).

@@ -9,8 +9,8 @@ User arguments: $ARGUMENTS
 
 What this does (per `orchestrate-flow/references/routing-rules.md` §Mode D and spec `docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md`):
 
-1. **Detect change** — union of two channels: `.mega-sdd/codebase/.dirty-paths.jsonl` (in-session Write/Edit journal, even uncommitted) + `git diff --name-only <last_scanned_commit>..HEAD` + uncommitted working-tree changes.
-2. **Incremental re-scan** — `scan-codebase --changed-only` merges only the changed paths into the existing map (full scan fallback when preconditions absent).
+1. **Detect change** — union of two channels: `.mega-sdd/codebase/.dirty-paths.jsonl` (in-session Write/Edit journal, even uncommitted) + git movement against the project's freshness stamp — the map's `last_scanned_commit` on map-bearing projects, the symbol-index `head_commit` on express-born projects (P2: the default spine never grows a map; without this leg sync would report a false "in sync" forever there).
+2. **Changed-set + substrate refresh** — map-bearing: `scan-codebase --changed-only` merges only the changed paths into the existing map AND writes the changed set (full scan fallback when preconditions absent). Express-born: `scripts/derive-changed-paths.sh --vault <vault>` derives the same `.sync-changed-paths.txt` from git diff ∪ journal (zero model tokens); the symbol index refreshes at the next bind `--express` E0.
 3. **Drift triage** — `detect-drift` scoped to the changed paths; findings stay direction-neutral (code right vs vault stale).
 4. **Re-bind + reconcile** — `bind-codebase --paths=@<changed-paths>` re-verdicts only affected claims (active CONFLICTs always re-validated, never carried silently); `generate-units --reconcile` updates existing unit IDs in place (task_type flips, `status` recomputed via `scripts/compute-unit-staleness.sh`, vanished claims → `superseded`, never duplicates); `execute-bolts` runs only stale/new units (`superseded` skipped).
 

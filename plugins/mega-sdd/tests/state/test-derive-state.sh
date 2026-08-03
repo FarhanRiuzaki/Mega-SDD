@@ -346,7 +346,13 @@ for fx in f1-empty f2-legacy-code f3-prd-only; do
     || fail "parity $fx: no-project lane changed (rc=$rc out=${out:0:80})"
 done
 
+# P2 spine flip: on the DEFAULT (express) spine bind reads no map, so the
+# map-missing arm no longer FATALs; forcing classic (config) restores the
+# pre-P2 FATAL verbatim. Both lanes pinned.
+expect_pf f4-vault-md-no-json bind-codebase  0 PASS  -
+printf 'spine: classic\n' > "$WORK/f4-vault-md-no-json/.mega-sdd/config.yaml"
 expect_pf f4-vault-md-no-json bind-codebase  1 FATAL binding_input_map_missing
+rm -f "$WORK/f4-vault-md-no-json/.mega-sdd/config.yaml"
 expect_pf f4-vault-md-no-json generate-units 0 PASS  -
 expect_pf f4-vault-md-no-json execute-bolts  1 FATAL bolts_units_missing
 expect_pf f5-binding-conflicts bind-codebase  0 PASS -
