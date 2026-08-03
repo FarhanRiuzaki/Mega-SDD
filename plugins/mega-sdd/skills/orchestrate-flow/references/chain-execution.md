@@ -23,11 +23,11 @@ Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield": a
 
 Three modes determined by inspection:
 
-| Mode | Trigger | Pipeline ordering |
-|---|---|---|
-| **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` | scan-codebase FIRST (loads pack into context) → generate-intent (pack-aware vault) → bind → units → bolts |
-| **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | scan-codebase FIRST (universal conventions from `_universal.md`) → generate-intent → bind → units → bolts |
-| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent (stack-agnostic) → user scaffolds later → re-run with scan to bind |
+| Mode | Trigger | Express spine (DEFAULT) | Classic (`--classic` / `spine: classic`) |
+|---|---|---|---|
+| **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` (`derived.framework_pack` from the GROUND matcher) | generate-intent (pack + index aware via state.json/symbol-index) → bind `--express` → units → bolts | scan-codebase FIRST (loads pack into context) → generate-intent (pack-aware vault) → bind → units → bolts |
+| **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | same as A with `_universal` conventions | scan-codebase FIRST (`_universal.md`) → generate-intent → bind → units → bolts |
+| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent (stack-agnostic) → user scaffolds later → bind when code exists | same (Mode C was always scan-free) |
 
 **Default behavior** when starterkit absent AND `--greenfield` NOT set → halt with `no_starterkit_detected`:
 
@@ -37,7 +37,7 @@ halt:
   reason: "Mega-sdd default workflow requires a framework starterkit (composer.json / package.json / Gemfile / etc.) for delivery-grade output. Vault generation produces stack-agnostic designs without it."
   options:
     a: "Scaffold a starterkit first (recommended). For Laravel: clone base-laravel-26. For Django: django-admin startproject. For Rails: rails new. Then re-run."
-    b: "Proceed as greenfield with --greenfield flag (vault stays stack-agnostic; you scaffold + re-run scan/bind later)"
+    b: "Proceed as greenfield with --greenfield flag (vault stays stack-agnostic; you scaffold, then bind when code exists — express needs no scan)"
     c: "Cancel"
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 3.1.1
+version: 3.2.0
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -43,7 +43,7 @@ Narrate (chat, halts, recommendations) in **Indonesian + English technical terms
 ## The pipeline
 
 ```
-generate-intent → (scan-codebase + bind-codebase if brownfield) → generate-units → execute-bolts
+generate-intent → (bind-codebase --express if brownfield — claim-scoped, zero map load; scan-codebase is ON-DEMAND / classic-spine only) → generate-units → execute-bolts
 ```
 
 Legacy-rebuild upstream lane (code is the only spec):
@@ -70,7 +70,7 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 |---|---|---|
 | Legacy → knowledge-base | extract-intelligence | read-only |
 | Brief → vault | generate-intent | not required (consumes KB if `--kb`) |
-| Codebase scan | scan-codebase | read-only |
+| Codebase scan (on-demand map producer; classic-spine chain phase) | scan-codebase | read-only |
 | Validation gate | bind-codebase | read-only |
 | Vault → units | generate-units | read-only |
 | Unit → code | execute-bolts | write |

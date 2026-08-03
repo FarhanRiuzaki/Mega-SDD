@@ -4,14 +4,26 @@
 # the map AND writes this file); projects that never grew a map (express
 # spine) derive the durable changed set deterministically instead:
 #   changed = git diff --name-only <symbol-index head_commit>..HEAD
-#           ∪ dirty-journal rows (.mega-sdd/codebase/.dirty-paths.jsonl —
-#             in-session edits not yet committed)
+#           ∪ git status --porcelain (working tree — uncommitted/untracked;
+#             half of sync's purpose, round P2 blocker 1a)
+#           ∪ dirty-journal rows + leftover .consumed-* files (crashed prior
+#             runs re-unioned — round P2 blocker 1b)
+#           ∪ the existing .sync-changed-paths.txt (re-entry while the stamp
+#             is unadvanced must never NARROW the durable set — blocker 1c)
+# Baseline honesty (round F1): the stamp is read from state.json's probe-time
+# snapshot FIRST — ground.sh rebuilds the live index AFTER derive-state, so
+# the live file's head_commit may already equal HEAD by the time this hop
+# runs; the probe-time stamp is the true baseline. Live index is fallback.
+# git runs with -c core.quotepath=false (round F5 — the repo's own lesson:
+# unicode paths must never enter the set C-quoted).
+# The journal is rotated to .consumed-<ts> ONLY AFTER the output write
+# succeeds (round F6 — a failed write must not consume the hints); consumed
+# files are deleted after their rows land in a successful write.
 # Output: <vault>/.sync-changed-paths.txt (one path per line, repo-relative,
 # sorted, deduped) — the SAME consumer contract detect-drift --scope=@ and
-# bind-codebase --paths=@ already read. The journal is rotated to
-# .consumed-<ts> exactly like scan --changed-only does (never truncated).
-# Exit 0 = written; 2 = usage; 3 = no freshness stamp (index absent/unreadable
-# or not a git repo) — the caller falls back to a full re-bind, never guesses.
+# bind-codebase --paths=@ already read.
+# Exit 0 = written; 2 = usage; 3 = no baseline stamp / git unavailable /
+# write failed — the caller falls back to a full re-bind, never guesses.
 set -u
 CWD="."
 VAULT=""
@@ -26,31 +38,42 @@ esac; done
 [ -d "$VAULT" ] || { echo "FAIL: vault dir not found: $VAULT" >&2; exit 2; }
 
 V_CWD="$CWD" V_VAULT="$VAULT" python3 <<'PYEOF'
-import json, os, re, subprocess, sys, time
+import glob, json, os, re, subprocess, sys, time
 
 cwd = os.path.abspath(os.environ["V_CWD"])
 vault = os.environ["V_VAULT"]
-idx_path = os.path.join(cwd, ".mega-sdd", "codebase", "symbol-index.json")
 
-# 1. Freshness stamp from the index envelope.
+# 1. Baseline stamp: state.json probe-time snapshot first (pre-GROUND-rebuild
+# truth), live index envelope as fallback.
 stamp = None
 try:
-    with open(idx_path, encoding="utf-8", errors="replace") as f:
-        m = re.search(r'"head_commit"\s*:\s*"([0-9a-f]{7,40})"', f.read(512))
-    stamp = m.group(1) if m else None
-except OSError:
+    st = json.load(open(os.path.join(cwd, ".mega-sdd", "state.json"),
+                        encoding="utf-8"))
+    stamp = ((st.get("probes") or {}).get("symbol_index") or {}).get("head_commit")
+except Exception:
     pass
 if not stamp:
-    print("FAIL: no symbol-index head_commit stamp — cannot derive a changed "
-          "set; fall back to a full re-bind (bind-codebase <vault> --auto).",
-          file=sys.stderr)
+    try:
+        idx = os.path.join(cwd, ".mega-sdd", "codebase", "symbol-index.json")
+        with open(idx, encoding="utf-8", errors="replace") as f:
+            m = re.search(r'"head_commit"\s*:\s*"([0-9a-f]{7,40})"', f.read(512))
+        stamp = m.group(1) if m else None
+    except OSError:
+        pass
+if not stamp:
+    print("FAIL: no symbol-index head_commit baseline (state.json or live "
+          "index) — cannot derive a changed set; fall back to a full re-bind "
+          "(bind-codebase <vault> --auto).", file=sys.stderr)
     sys.exit(3)
 
-# 2. git diff stamp..HEAD (committed movement).
-try:
-    r = subprocess.run(
-        ["git", "-C", cwd, "diff", "--name-only", "%s..HEAD" % stamp],
+def _git(*args):
+    return subprocess.run(
+        ["git", "-C", cwd, "-c", "core.quotepath=false"] + list(args),
         capture_output=True, text=True, timeout=30)
+
+# 2a. Committed movement: stamp..HEAD.
+try:
+    r = _git("diff", "--name-only", "%s..HEAD" % stamp)
     if r.returncode != 0:
         print("FAIL: git diff %s..HEAD failed: %s" % (stamp, r.stderr.strip()[:200]),
               file=sys.stderr)
@@ -60,45 +83,81 @@ except Exception as e:
     print("FAIL: git unavailable (%s)" % e, file=sys.stderr)
     sys.exit(3)
 
-# 3. Union the dirty journal (uncommitted in-session edits), then rotate it —
-# same consume semantics as scan --changed-only (rotate, never truncate).
-journal = os.path.join(cwd, ".mega-sdd", "codebase", ".dirty-paths.jsonl")
+# 2b. Working tree (uncommitted + untracked) — porcelain, rename-aware.
+try:
+    r = _git("status", "--porcelain")
+    if r.returncode == 0:
+        for ln in r.stdout.splitlines():
+            if len(ln) > 3:
+                p = ln[3:]
+                if " -> " in p:
+                    p = p.split(" -> ", 1)[1]
+                p = p.strip().strip('"')
+                if p:
+                    changed.add(p)
+except Exception:
+    pass  # porcelain is additive; the diff leg already succeeded
+
+# 3. Union the dirty journal + leftover consumed files (crashed prior runs).
+# Rotation/deletion is DEFERRED to after the successful write.
+jdir = os.path.join(cwd, ".mega-sdd", "codebase")
+journal = os.path.join(jdir, ".dirty-paths.jsonl")
+sources = ([journal] if os.path.isfile(journal) else []) + \
+    sorted(glob.glob(os.path.join(jdir, ".dirty-paths.consumed-*")))
 rows = 0
-if os.path.isfile(journal):
+for src in sources:
     try:
-        with open(journal, encoding="utf-8", errors="replace") as f:
+        with open(src, encoding="utf-8", errors="replace") as f:
             for ln in f:
                 ln = ln.strip()
                 if not ln:
                     continue
                 try:
-                    d = json.loads(ln)
-                    p = d.get("path")
+                    p = json.loads(ln).get("path")
                 except Exception:
                     p = None
                 if p:
+                    p = str(p).replace("\\", "/")
                     rel = os.path.relpath(p, cwd) if os.path.isabs(p) else p
-                    if not rel.startswith(".."):
+                    if rel != ".." and not rel.startswith("../"):
                         changed.add(rel)
                         rows += 1
     except OSError:
-        pass
-    else:
-        try:
-            os.replace(journal, journal.replace(
-                ".dirty-paths.jsonl",
-                ".dirty-paths.consumed-%d" % int(time.time())))
-        except OSError:
-            pass
+        continue
 
-# 4. Drop mega-sdd state paths (never sync-relevant) + write atomically.
+# 4. Re-entry safety: union the EXISTING durable set (never narrow it while
+# the stamp is unadvanced), drop mega-sdd state paths, write atomically.
+out = os.path.join(vault, ".sync-changed-paths.txt")
+try:
+    with open(out, encoding="utf-8", errors="replace") as f:
+        changed |= {ln.strip() for ln in f if ln.strip()}
+except OSError:
+    pass
 changed = sorted(p for p in changed
                  if not p.startswith(".mega-sdd/") and "/.mega-sdd/" not in p)
-out = os.path.join(vault, ".sync-changed-paths.txt")
 tmp = out + ".tmp"
-with open(tmp, "w", encoding="utf-8") as f:
-    f.write("\n".join(changed) + ("\n" if changed else ""))
-os.replace(tmp, out)
-print("PASS: %d changed path(s) (%d from journal) -> %s" % (len(changed), rows, out))
+try:
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write("\n".join(changed) + ("\n" if changed else ""))
+    os.replace(tmp, out)
+except OSError as e:
+    print("FAIL: cannot write %s (%s) — journal NOT consumed; fall back to a "
+          "full re-bind." % (out, e), file=sys.stderr)
+    sys.exit(3)
+
+# 5. NOW consume: rotate the live journal; delete consumed files whose rows
+# are safely inside the just-written set (scan --changed-only parity).
+for src in sources:
+    try:
+        if src == journal:
+            os.replace(src, os.path.join(
+                jdir, ".dirty-paths.consumed-%d" % int(time.time())))
+        else:
+            os.remove(src)
+    except OSError:
+        pass
+
+print("PASS: %d changed path(s) (%d from journal/consumed) -> %s"
+      % (len(changed), rows, out))
 sys.exit(0)
 PYEOF

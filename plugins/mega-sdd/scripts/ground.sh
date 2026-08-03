@@ -20,12 +20,38 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 bash "$SCRIPT_DIR/derive-state.sh" --cwd="$CWD"
 STATE_RC=$?
 
+# Pre-init CWD: probes only, never mint .mega-sdd/ from a status view (the
+# EB-GATE-6 phantom-root doctrine; round F10 — build-symbol-index would
+# otherwise makedirs .mega-sdd/codebase/ and arm the dirty journal on a
+# repo the user never adopted).
+if [ ! -d "${CWD}/.mega-sdd" ]; then
+  echo "GROUND: pre-init (no .mega-sdd/) — probes only, no artifacts minted"
+  exit 0
+fi
+
+# Sync-pending guard (round F1 — REPRODUCED false 'in sync'): rebuilding the
+# index HERE re-stamps head_commit to HEAD BEFORE derive-changed-paths.sh
+# consumes the old stamp as its diff baseline — the changed set would derive
+# empty and the sync would reconcile nothing. Defer; bind --express E0
+# rebuilds AFTER the re-verdict, advancing the stamp at the correct point.
+POSITION=$(python3 -c "
+import json
+try:
+    print(json.load(open('${CWD}/.mega-sdd/state.json')).get('derived', {}).get('position', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+if [ "$POSITION" = "maintenance_sync" ]; then
+  echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; bind --express E0 rebuilds after the re-verdict)"
+  exit 0
+fi
+
 bash "$SCRIPT_DIR/build-symbol-index.sh" --cwd="$CWD"
 IDX_RC=$?
 case "$IDX_RC" in
   0) INDEX="built" ;;
-  3) INDEX="absent (ast-grep not installed — bind --express will fall back to the standard lane)" ;;
-  *) INDEX="absent (build failed rc=$IDX_RC — bind --express will fall back to the standard lane)" ;;
+  3) INDEX="absent (ast-grep not installed — the chain renders CLASSIC; /mega-sdd:install-deps adds ast-grep)" ;;
+  *) INDEX="absent (build failed rc=$IDX_RC — the chain renders CLASSIC)" ;;
 esac
 echo "GROUND: state rc=$STATE_RC · index: $INDEX"
 exit 0

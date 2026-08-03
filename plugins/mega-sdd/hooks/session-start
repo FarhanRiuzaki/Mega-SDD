@@ -756,7 +756,11 @@ fi
 # runs unchanged (byte-identical notice strings).
 STALENESS_NOTICE=""
 LV_MAP="${project_root}/.mega-sdd/codebase/codebase-map.md"
-if [ -f "$LV_MAP" ] && \
+# P2 (round F3 — the index leg was DEAD CODE behind a map-only gate):
+# express-born projects have an index and no map; either substrate opens
+# the staleness computation.
+LV_IDX="${project_root}/.mega-sdd/codebase/symbol-index.json"
+if { [ -f "$LV_MAP" ] || [ -f "$LV_IDX" ]; } && \
    ! grep -qE "^[[:space:]]*staleness_notice:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
   LV_FROM_DIGEST=0
   LV_DS="${SCRIPT_DIR}/../scripts/derive-state.sh"
@@ -777,10 +781,11 @@ cmap = p.get("codebase_map") or {}
 stamp = cmap.get("last_scanned_commit")
 head = (p.get("git") or {}).get("head")
 # P2: express-born projects have no map — the symbol-index head_commit is
-# their freshness stamp; without this leg the staleness notice NEVER fires
-# on the default spine and sync goes silent forever.
+# their freshness stamp. SUBSTRATE RULE (round F4): the index leg counts
+# ONLY when the map is absent — map-bearing projects key on the map (the
+# index is rebuilt every execute-bolts batch and briefly-stale by design).
 sidx = p.get("symbol_index") or {}
-istamp = sidx.get("head_commit")
+istamp = sidx.get("head_commit") if not cmap.get("present") else None
 detail = "%d journaled write(s)" % dirty
 if stamp and head and head != stamp:
     detail += "; map stamp %s ≠ HEAD %s" % (stamp[:8], head[:8])
