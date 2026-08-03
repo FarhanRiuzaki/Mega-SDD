@@ -228,6 +228,18 @@ Today all four change-signal links are map-gated — an express-born project NEV
 
 ## Round disclosure
 
+### P2 round (2026-08-03, dual-blind, deep)
+
+Two blind general-purpose agents (code lane, live mktemp experiments; doc/contract lane). **3 SHIP-BLOCKERS + 13 MAJORs; ALL folded pre-ship:**
+
+- **BLOCKER (code, REPRODUCED end-to-end): GROUND destroyed its own sync baseline.** `ground.sh` rebuilt the symbol index at Lane 0 — re-stamping `head_commit` to HEAD BEFORE `derive-changed-paths.sh` consumed the old stamp as its diff baseline — so the flagship express-born sync derived an EMPTY changed set and reconciled nothing (false "in sync"). Fold: GROUND defers the rebuild while `derived.position == maintenance_sync` (bind E0 rebuilds after the re-verdict — the correct stamp-advance point) + the producer prefers the probe-time stamp from state.json.
+- **BLOCKER (code, REPRODUCED): substring markers misrouted mainstream repos into the Hard-rule surface.** `"next" ⊂ "i18next"/"next-themes"` routed React/Vite AND Laravel repos onto Next.js conventions, propagating through the resolver into every downstream validator. Fold: word-boundary matching for bare single-word markers (structured markers keep substring); both directions pinned.
+- **BLOCKER (doc): the express-born changed-set producer silently narrowed the changed set** vs the scan `--changed-only` contract it claimed parity with — no working-tree leg, no consumed-file re-union, re-entry clobbered the durable set narrower. Fold: porcelain leg + consumed re-union + union-with-existing + rotate-only-after-successful-write (a failed write no longer consumes the journal — also a code-lane MAJOR, REPRODUCED with an unwritable vault).
+- **MAJORs folded:** the session-start index-staleness leg was DEAD CODE behind a map-only outer gate (REPRODUCED — the exact silence it claimed to fix); classic-parity breach + Mode D livelock (fresh map + briefly-stale index triggered sync forever → the substrate rule: the index leg counts only when it is the ONLY substrate, and index-only Mode D is express-spine territory); express dead-end on ast-grep-less machines (the Windows floor) → unviable-express renders CLASSIC loudly; quotepath (unicode paths entered the set C-quoted — the repo's own documented lesson); operative references un-swept while SKILL bodies were fixed (chain-execution Mode A/B table, the session-injected anchor skill, oq-resolution's deferred-OQ leg, defensive-generation's Step 0.5 matrix — the P1 round's mirror class, again); spec↔impl drift (resolver source order); the script hop's rc-3 routing undocumented; version bumps missing; tool-config-only pyproject resolving `_universal`; spring-on-gradle undisclosed; predictive carve-out flag-only vs flag-or-spine.
+- **Held:** the moat surfaces (CONFLICT gate, B1–B4, verdict grammar) untouched by the tranche; preflight vault arm FATAL on both lanes; single-site injection; carve-out precedence symmetric (`--express` beats classic config, `--no-express` beats express config); packres-v2 busting; greenfield chains never gain `--express`; CI discovery of the new suite.
+
+**Lesson recorded (2nd occurrence — now a standing round rule):** fix-lands-in-the-SKILL-body-but-not-the-operative-reference is a recurring fold class; every tranche touching a skill MUST grep its full `references/` tree for the demoted concept before the round, not after.
+
 ### P1 round (2026-08-03, dual-blind, deep — moat-touching)
 
 Two blind general-purpose agents (code lane with live mktemp experiments; doc/contract lane), run in parallel read-only over the pre-round commits. **1 SHIP-BLOCKER + 8 MAJORs found; ALL folded pre-ship** (fold commit follows the pre-round commit):
