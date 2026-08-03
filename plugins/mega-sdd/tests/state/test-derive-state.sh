@@ -126,6 +126,11 @@ gitinit "$F"
 
 F="$WORK/f3-prd-only"; mkdir -p "$F"; printf '# PRD\n' > "$F/prd.md"
 
+# f3b — the PRD lives one level down (PRD/prd-simkredit.md), NO root prd.md.
+# Field finding 2026-08-03 (training-nextjs): the root-only probe missed it,
+# mis-deriving the position AND false-failing the generate-intent preflight.
+F="$WORK/f3b-prd-subdir"; mkdir -p "$F/PRD"; printf '# PRD simkredit\n' > "$F/PRD/prd-simkredit.md"
+
 F="$WORK/f4-vault-md-no-json"; vault_docs "$F/.mega-sdd/vaults/v1"
 
 F="$WORK/f5-binding-conflicts"; mkdir -p "$F/src" "$F/.mega-sdd/codebase"
@@ -190,7 +195,7 @@ run_ds() { bash "$DS" --cwd="$1" </dev/null; }
 note "== 1. derive-state: routing decision table =="
 
 # f1/f2/f3 have NO .mega-sdd — digest comes from --json-only stdout; no dir minted.
-for fx in f1-empty:empty f2-legacy-code:legacy_code_only f3-prd-only:prd_no_vault; do
+for fx in f1-empty:empty f2-legacy-code:legacy_code_only f3-prd-only:prd_no_vault f3b-prd-subdir:prd_no_vault; do
   name="${fx%%:*}"; want="${fx##*:}"
   J=$(bash "$DS" --cwd="$WORK/$name" --json-only </dev/null 2>/dev/null)
   got=$(printf '%s' "$J" | python3 -c "import json,sys; print(json.load(sys.stdin)['derived']['position'])" 2>/dev/null)
@@ -198,6 +203,42 @@ for fx in f1-empty:empty f2-legacy-code:legacy_code_only f3-prd-only:prd_no_vaul
   [ -d "$WORK/$name/.mega-sdd" ] && fail "$name: derive-state MINTED .mega-sdd/ (SDD-signal pollution)" \
     || ok "$name: no .mega-sdd/ minted"
 done
+# f3c (round CL-F1): prd_revision must diff the NEWEST candidate, not
+# candidates[0] — an old root prd.md + a newer docs/ revision otherwise loops
+# (diff-vault of the unchanged file never advances the vault mtime).
+F="$WORK/f3c-prd-newest"; mkdir -p "$F/docs" "$F/.mega-sdd/codebase"
+vault_docs "$F/.mega-sdd/vaults/v1"; mkvj "$F/.mega-sdd/vaults/v1" existing
+printf '# old PRD\n' > "$F/prd.md"
+printf '# new revision\n' > "$F/docs/prd-v2.md"
+python3 -c "
+import os, time
+old = time.time() - 86400
+os.utime('$F/prd.md', (old, old))
+for r, _d, fs in os.walk('$F/.mega-sdd/vaults'):
+    for fn in fs:
+        p = os.path.join(r, fn); os.utime(p, (old + 3600, old + 3600))
+"
+J=$(bash "$DS" --cwd="$WORK/f3c-prd-newest" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+assert d['derived']['position']=='prd_revision', d['derived']['position']
+nxt=' '.join(d['derived']['proposed_next'])
+assert 'diff-vault docs/prd-v2.md' in nxt, nxt
+assert d['probes']['prd']['newest']=='docs/prd-v2.md', d['probes']['prd']
+" 2>/dev/null && ok "f3c: prd_revision diffs the NEWEST candidate (docs/prd-v2.md)" \
+  || fail "f3c: prd_revision still acts on candidates[0] (round CL-F1 regression)"
+
+# f3b: the subdir candidate is reported WITH its dir prefix (the probe scans one
+# level inside the fixed PRD//prd//docs//documents//requirements/ set — never a walk)
+J=$(bash "$DS" --cwd="$WORK/f3b-prd-subdir" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+p=json.load(sys.stdin)['probes']['prd']
+assert p['present'] is True, p
+assert 'PRD/prd-simkredit.md' in p['candidates'], p['candidates']
+" 2>/dev/null && ok "f3b: probes.prd finds PRD/prd-simkredit.md (prefix kept)" \
+  || fail "f3b: subdir PRD candidate missing from probes.prd"
 # flag-/intent-conditioned rows: empty chain + a note (the script never invents intent)
 J=$(bash "$DS" --cwd="$WORK/f2-legacy-code" --json-only </dev/null 2>/dev/null)
 printf '%s' "$J" | python3 -c "

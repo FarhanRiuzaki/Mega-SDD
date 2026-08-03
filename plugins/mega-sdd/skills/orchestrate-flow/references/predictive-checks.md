@@ -105,11 +105,12 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 ## generate-intent preflight checks
 
 - **check_id: `prd_or_kb_input_present`**
-  command: `test -f <project>/prd.md || test -d <project>/.mega-sdd/knowledge-base/`
+  command: when the chain's generate-intent hop carries a POSITIONAL input → `test -f <positional-input>` (generate-intent Rule 2 — a positional that resolves to a file IS the input; the root probe below is Rule-7 territory and only applies when no positional exists). Otherwise: `test -f <project>/prd.md || test -d <project>/.mega-sdd/knowledge-base/` OR the derive-state digest's `probes.prd.present` (which scans root + one level inside dirs whose name case-insensitively matches `PRD`/`docs`/`documents`/`requirements`).
   expected: at least one input
-  on_fail: "generate-intent requires PRD (prd.md) OR knowledge-base (extract-intelligence output). Provide one OR run extract-intelligence first."
+  on_fail: "generate-intent requires an input — a positional PRD path, root prd.md, a PRD candidate in PRD//docs/, OR a knowledge-base (extract-intelligence output). Provide one OR run extract-intelligence first."
   fatal: yes
   predicts_halt: (chain order error)
+  note: a root-only probe against an explicitly-supplied positional PRD is a FALSE FAIL predicting a halt generate-intent would never raise (field finding, training-nextjs 2026-08-03).
 
 ## detect-drift preflight checks
 

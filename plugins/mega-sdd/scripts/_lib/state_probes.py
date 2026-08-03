@@ -165,36 +165,92 @@ def has_codebase_map(cwd):
 # ── Layer 2: rich probes (routing-rules §CWD inspection, all generations) ────
 
 
+# One level inside dirs whose name case-insensitively matches this FIXED set is
+# scanned in addition to the root — teams routinely keep the PRD in a PRD/ or
+# docs/ folder (field finding 2026-08-03: a root-only probe missed
+# PRD/prd-simkredit.md, mis-deriving the position AND false-failing the
+# generate-intent preflight check on the same assumption). Fixed set, one
+# level, never a repo walk — determinism over completeness. Matching is done
+# against os.listdir's ON-DISK names (round CL-F3: probing constant-cased
+# names made macOS find `Docs/` while Linux missed it, AND emitted a
+# wrong-case prefix that breaks case-sensitive consumers).
+_PRD_SUBDIR_NAMES = {"prd", "docs", "documents", "requirements"}
+
+
 def probe_prd_candidates(cwd):
-    """Probe 1 — PRD/seed detection: root-level `prd.md`, `seed-PRD.md`, or
-    `*.md` PRD candidates (basename carries a prd/brd token). Returns
-    {"present", "candidates": [names], "newest_mtime": iso|None}."""
+    """Probe 1 — PRD/seed detection: `prd.md`, `seed-PRD.md`, or `*.md` PRD
+    candidates (basename carries a prd/brd token) at the ROOT plus one level
+    inside dirs whose name case-insensitively matches _PRD_SUBDIR_NAMES.
+    Returns {"present", "candidates": [relative names], "newest": relname|None,
+    "newest_mtime": iso|None}; subdir hits keep their ON-DISK dir prefix
+    ("PRD/prd-simkredit.md"); `newest` is the argmax-mtime candidate (the
+    prd_revision row must diff the NEW file, not candidates[0] — round CL-F1)."""
     candidates = []
-    newest = None
+    newest = [None, None]  # [mtime, relname]
+
+    def _scan(dirpath, prefix):
+        try:
+            names = sorted(os.listdir(dirpath))
+        except OSError:
+            return
+        for name in names:
+            if not name.lower().endswith(".md"):
+                continue
+            path = os.path.join(dirpath, name)
+            if not os.path.isfile(path):
+                continue
+            low = name.lower()
+            stem = low[:-3]
+            if low in ("prd.md", "seed-prd.md") or _PRD_NAME_RE.search(stem):
+                rel = prefix + name
+                candidates.append(rel)
+                try:
+                    mt = os.path.getmtime(path)
+                    if newest[0] is None or mt > newest[0]:
+                        newest[0] = mt
+                        newest[1] = rel
+                except OSError:
+                    pass
+
+    # Dedupe scanned dirs by (st_dev, st_ino): on a case-insensitive
+    # filesystem (macOS default, Windows) PRD/ and prd/ resolve to the SAME
+    # directory and a naive loop lists every candidate twice — realpath()
+    # does NOT canonicalize case, so inode identity is the key. st_ino == 0
+    # means the filesystem reports no inodes (FAT/exFAT, some SMB shares) —
+    # never dedupe on it, or every subdir would false-collide with the root
+    # and silently regress to the root-only bug (round CL-F5).
+    def _dir_id(p):
+        try:
+            st = os.stat(p)
+            if st.st_ino == 0:
+                return None
+            return (st.st_dev, st.st_ino)
+        except OSError:
+            return None
+
+    seen_dirs = {_dir_id(cwd)} - {None}
+    _scan(cwd, "")
     try:
-        names = sorted(os.listdir(cwd))
+        entries = sorted(os.listdir(cwd))
     except OSError:
-        names = []
-    for name in names:
-        if not name.lower().endswith(".md"):
+        entries = []
+    for name in entries:
+        if name.lower() not in _PRD_SUBDIR_NAMES:
             continue
-        path = os.path.join(cwd, name)
-        if not os.path.isfile(path):
+        sub = os.path.join(cwd, name)
+        if not os.path.isdir(sub):
             continue
-        low = name.lower()
-        stem = low[:-3]
-        if low in ("prd.md", "seed-prd.md") or _PRD_NAME_RE.search(stem):
-            candidates.append(name)
-            try:
-                mt = os.path.getmtime(path)
-                if newest is None or mt > newest:
-                    newest = mt
-            except OSError:
-                pass
+        did = _dir_id(sub)
+        if did is not None:
+            if did in seen_dirs:
+                continue
+            seen_dirs.add(did)
+        _scan(sub, name + "/")
     return {
         "present": bool(candidates),
         "candidates": candidates,
-        "newest_mtime": _iso(newest) if newest else None,
+        "newest": newest[1],
+        "newest_mtime": _iso(newest[0]) if newest[0] else None,
     }
 
 
@@ -738,7 +794,7 @@ def derive(probes):
                 "(generate-intent --from-prompt); routing table decides"
             )
             return finish("legacy_code_only", [])
-        notes.append("no inputs found: provide a PRD/brief or run inside a codebase")
+        notes.append("no inputs found (scanned the root + one level inside PRD//docs//documents//requirements dirs): provide a PRD/brief or run inside a codebase")
         return finish("empty", [])
 
     # ── Vault present: precedence gates first ────────────────────────────
@@ -756,7 +812,11 @@ def derive(probes):
         and vault["mtime"] and probes["prd"]["newest_mtime"] > vault["mtime"]
     ):
         return finish("prd_revision", [
-            "diff-vault %s" % probes["prd"]["candidates"][0],
+            # the NEW revision, not candidates[0] — with subdir scanning a
+            # newer docs/ PRD would otherwise trigger the position while the
+            # unchanged root file got diffed, forever (round CL-F1)
+            "diff-vault %s" % (probes["prd"]["newest"]
+                               or probes["prd"]["candidates"][0]),
         ])
 
     # 3. Mode D — maintenance/sync: map + binding exist AND change signal.
