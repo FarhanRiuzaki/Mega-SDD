@@ -74,7 +74,7 @@ loop:
   parse handoff YAML from skill output
   if handoff.status == completed:
     log: "✓ Phase {N} of {M} completed: {skill}"
-    if --deep AND no --stop-after match:
+    if --deep AND current phase != the `--to=` bound (the front door renders --step-after/--stop-after INTO --to before dispatch — this loop never sees those names):
       # Confidence-aware auto-continue: next_action.confidence is a TYPED field
       # (handoff-contract §next_action.confidence) — consume it, don't just type-check it.
       if handoff.next_action.confidence is present AND < confidence_minimum (config, default 0.80):

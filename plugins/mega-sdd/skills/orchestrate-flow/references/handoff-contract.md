@@ -392,5 +392,7 @@ Precedence is unambiguous because the levels never overlap: CWD inspection first
 
 ```
 /mega-sdd [input] [--deep|--shallow] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual]
-                # NEW — one-shot autonomous pipeline
+                # NEW — one-shot autonomous pipeline. --step-after/--stop-after are FRONT-DOOR
+                # aliases rendered to --to= before dispatch (commands/mega-sdd.md §Flag handling);
+                # orchestrate-flow itself accepts only --to.
 ```

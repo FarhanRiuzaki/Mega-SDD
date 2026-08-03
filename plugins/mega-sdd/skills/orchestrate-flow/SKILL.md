@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.19.0
+version: 2.20.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -112,7 +112,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 ## Flags
 
 - `--from=<phase>`: resume from a specific phase (skip earlier phases even if state says they're needed)
-- `--to=<phase>`: stop at a specific phase (do not chain beyond it)
+- `--to=<phase>`: stop at a specific phase (do not chain beyond it). The front door's `--step-after=<phase>` / `--stop-after=<phase>` are ALIASES that render to this flag (commands/mega-sdd.md §Flag handling) — this skill itself accepts only `--to=`.
 - `--dry-run`: show the proposed chain without executing
 - `--deep`: lift the 3-skill cap; chain to pipeline-end via handoff-YAML auto-continue
 - `--resume`: re-enter a paused/halted chain; skip upfront confirmation; CWD inspection rebuilds cursor position; halts re-fire if blockers unresolved

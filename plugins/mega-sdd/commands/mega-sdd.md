@@ -50,10 +50,12 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 4. **Flag handling**:
    - `--deep` (default true; opt-out via `--shallow` to revert to 3-skill cap).
    - `--greenfield` — EXPLICIT opt-in for stack-agnostic vault generation. REQUIRED when CWD has no framework manifest (package.json / composer.json / Gemfile / pyproject.toml / go.mod / Cargo.toml). Without this flag AND no manifest detected → halt `no_starterkit_detected`.
-   - `--step-after=<phase>` — switch to manual handoffs after this phase (e.g., `--step-after=bind-codebase` to review binding before continuing).
-   - `--stop-after=<phase>` — halt after this phase even if no blocker.
+   - `--step-after=<phase>` — review checkpoint: **renders to orchestrate-flow as `--to=<phase>`** (orchestrate-flow has NO `--step-after` flag — forwarding it verbatim is silently ignored and `--deep` runs to pipeline end). After the review, continue with `/mega-sdd --resume` WITHOUT `--auto` (manual per-phase handoffs) or `--from=<next-phase>` to resume auto.
+   - `--stop-after=<phase>` — alias of the same render: **renders as `--to=<phase>`** (halt after that phase even with no blocker).
+   - **Translation law:** a front-door flag that is not in orchestrate-flow's §Flags list MUST be translated at render time, never forwarded verbatim — an unknown flag is silently dropped by the router, which for chain-bounding flags means the chain does NOT stop where the user asked.
+   - `--converge` / `--no-converge` / `--max-cycles=N` — forwarded VERBATIM (orchestrate-flow owns them; convergence is default ON under `--deep`). Note the interaction with review checkpoints: `bind_conflict` is cycle-eligible, so a converging `--deep` chain auto-invokes `resolve-oq --binding` INSIDE the bind phase — `--to=bind-codebase` alone does not prevent that; reviewing CONFLICTs yourself requires `--no-converge`.
    - `--resume` — re-enter a paused/halted chain; CWD inspection (a fresh `derive-state.sh` digest) rebuilds cursor; halts re-fire if blockers unresolved.
-   - `--manual` — disable autonomy entirely; reverts to per-skill explicit-command behavior (each skill's chat hint replaces auto-continue).
+   - `--manual` — disable autonomy entirely; **renders as omitting `--auto` AND not entering the auto-continue loop**: dispatch ONLY the next phase, then stop and print the follow-up command (each skill's chat hint replaces auto-continue; `--deep` under `--manual` widens the PROPOSED chain, not the auto-run).
    - `--out=<path>` — REQUIRED when starting phase is `extract-intelligence` (legacy rebuild scenario). Specifies the OUTPUT_ROOT (parent dir), default `.mega-sdd/`; the KB is written to `<out>/knowledge-base/`.
 
 ## Starterkit detection

@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.14.0
+version: 2.14.1
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 7-file anti-hallucination vault; Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -62,7 +62,7 @@ When the user invokes `/mega-sdd:generate-intent <arg>`, evaluate rules **in ord
 | 4 | Positional arg contains whitespace OR is quoted OR is longer than 80 chars | **B** (treat as brief) |
 | 5 | Positional arg has no path separators (`/`, `\`) AND no recognized extension | **B** |
 | 6 | No positional arg AND CWD has a KB README (priority: `.mega-sdd/knowledge-base/README.md` → `docs/knowledge-base/README.md` → `docs/mega-sdd/knowledge-base/README.md` → `old-reference/knowledge-base/README.md`) | **B (KB sub-mode)** — auto-detect, confirm with user |
-| 7 | No positional arg AND no KB | CWD scan for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates. 1 hit → confirm Mode A; 0 or >1 → prompt user |
+| 7 | No positional arg AND no KB | CWD scan for `prd.md` / `seed-PRD.md` / `*.md` PRD candidates — at the ROOT plus one level inside dirs whose name case-insensitively matches `PRD`/`docs`/`documents`/`requirements` (the same set as derive-state's `probes.prd`; fixed set, never a repo walk). 1 hit → confirm Mode A; 0 or >1 → prompt user |
 
 `--from-prompt` remains supported for explicit invocation; new users typically won't need it. When detection is ambiguous (Rule 3 with a missing file, Rule 6 with multiple candidates), **always confirm with the user**; detect silently only when high-confidence. **Announce any suppressed input:** whenever a higher-priority rule discards a lower-priority flag or positional (Rule 0 suppressing a co-present `--from-prompt`/positional; Rule 1 suppressing the positional), say so — "ignoring X because Y took precedence" — never drop a user's steering input silently. Edge cases (quoted single word, looks-like-path-but-missing, bare single word, flag+positional conflict) → `references/detection-and-shapes.md`.
 

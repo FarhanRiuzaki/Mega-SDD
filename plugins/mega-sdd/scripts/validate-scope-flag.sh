@@ -83,15 +83,42 @@ if scope_requested.lower() == "all":
         print(json.dumps(state))
     sys.exit(0)
 
-# Find PRD file in CWD
+# Find PRD file in CWD — root + one level inside dirs whose name
+# case-insensitively matches the same fixed set the routing probe scans
+# (state_probes._PRD_SUBDIR_NAMES; v5.33.1 round DL-F2: with the PRD in PRD/,
+# this gate took the graceful-skip branch and --scope went unvalidated while
+# the front door routed the whole pipeline on that very file).
 prd_candidates = []
-for pattern in ["prd.md", "seed-PRD.md", "*PRD*.md", "*prd*.md"]:
-    prd_candidates.extend(glob.glob(os.path.join(cwd, pattern)))
+_scan_dirs = [cwd]
+try:
+    for _e in sorted(os.listdir(cwd)):
+        if _e.lower() in ("prd", "docs", "documents", "requirements") \
+                and os.path.isdir(os.path.join(cwd, _e)):
+            _scan_dirs.append(os.path.join(cwd, _e))
+except OSError:
+    pass
+for _d in _scan_dirs:
+    for pattern in ["prd.md", "seed-PRD.md", "*PRD*.md", "*prd*.md"]:
+        prd_candidates.extend(glob.glob(os.path.join(_d, pattern)))
 # Also check .mega-sdd/ subdirs
 prd_candidates.extend(glob.glob(os.path.join(cwd, ".mega-sdd", "seed-prd.md")))
 prd_candidates.extend(glob.glob(os.path.join(cwd, ".mega-sdd", "prd.md")))
-# Dedupe + filter to real files
-prd_candidates = sorted(set(p for p in prd_candidates if os.path.isfile(p)))
+# Dedupe by inode-identity where available (PRD/ vs prd/ on a case-insensitive
+# filesystem lists the same files twice), then filter to real files
+_seen_files, _uniq = set(), []
+for p in sorted(set(prd_candidates)):
+    if not os.path.isfile(p):
+        continue
+    try:
+        st = os.stat(p)
+        key = (st.st_dev, st.st_ino) if st.st_ino else p
+    except OSError:
+        key = p
+    if key in _seen_files:
+        continue
+    _seen_files.add(key)
+    _uniq.append(p)
+prd_candidates = _uniq
 
 if not prd_candidates:
     # No PRD found — graceful skip (NOT a block; we can't validate without PRD)
@@ -99,7 +126,9 @@ if not prd_candidates:
         "ts": ts, "status": "PASS",
         "reason": "no PRD file found in cwd; cannot validate scope (graceful skip)",
         "scope_requested": scope_requested,
-        "searched_patterns": ["prd.md", "seed-PRD.md", "*PRD*.md", ".mega-sdd/{seed-,}prd.md"],
+        "searched_patterns": ["prd.md", "seed-PRD.md", "*PRD*.md",
+                              "{PRD,docs,documents,requirements}/(same patterns)",
+                              ".mega-sdd/{seed-,}prd.md"],
     }
     with open(state_file, "w") as f:
         json.dump(state, f, indent=2)
