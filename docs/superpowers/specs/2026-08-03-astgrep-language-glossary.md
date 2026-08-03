@@ -1,7 +1,7 @@
 # ast-grep language glossary — the tsx fix + full built-in coverage
 
 **Date:** 2026-08-03
-**Status:** IMPLEMENTED — shipping as v5.33.0
+**Status:** SHIPPED v5.33.0 (b3caa2f, CI green) — round-folded
 **Trigger:** field finding on `training-nextjs` (operator's live test): the map header disclosed `tsx:no_astgrep_pack -> regex` — **182 `.tsx` files (the majority of a Next.js app's surface) extracted at regex tier** while only 131 `.ts` files got AST tier. Secondary symptom: the s2 `const` bucket hit its 200-row anti-halu cap because regex-tier extraction dumps every arrow-component into `const`.
 
 ## Root cause (not a missing rule — a routing blind spot)
