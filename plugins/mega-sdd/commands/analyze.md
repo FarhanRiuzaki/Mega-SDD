@@ -16,19 +16,19 @@ Fires automatically via:
 
 The report updates silently; user sees it in `.mega-sdd/CONSISTENCY-REPORT.md`.
 
-## Manual mode (user-invoked — full re-run)
+## Manual mode (user-invoked — semantic-scoped re-run)
 
 ```
-/mega-sdd:analyze
+/mega-sdd:analyze [--fresh]
 ```
 
-Re-runs the full validator suite fresh + vault internal consistency checks, and surfaces every code-delivery gate read-only from its state file. Use when:
+Re-runs the validator suite + vault internal consistency checks, and surfaces every code-delivery gate read-only from its state file. **Scoped by default** (spec 2026-08-03-semantic-scoped-validation.md): per-file validators re-run only for files changed since the last analyze (freshness ledger `.mega-sdd/.analyze-freshness.json`); unchanged files reuse their recorded verdict spawn-free, and the report's `Scope:` line discloses the split. `--fresh` forces a ground-up re-run. Report-layer only — no gate reads the ledger. Use when:
 - Starting a new session (state files may be stale from prior session)
 - After resolving CONFLICTs or OQs — verify resolution propagated correctly
 - Before execute-bolts — comprehensive pre-flight
 - Periodic health check
 
-## Validators orchestrated (core set, re-run fresh)
+## Validators orchestrated (core set — scoped re-run; unchanged files reuse their ledgered verdict, `--fresh` re-runs all)
 
 | # | Validator | Boundary |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 description: "DEPRECATED — folded into /mega-sdd; alias resolves through 5.x"
-argument-hint: "[vault-path] [--module=<id>] [--squad=<id>] [--strict] [--format=table|json]"
+argument-hint: "[vault-path] [--module=<id>] [--squad=<id>] [--changed-only] [--strict] [--format=table|json]"
 ---
 
 > ⚠️ **DEPRECATED (5.x alias)** — cetak dulu SATU baris keterangan ini ke user sebelum melakukan apa pun: "Perintah `/mega-sdd:lint-units` sudah dilebur ke `/mega-sdd` — alias ini tetap berfungsi selama siklus 5.x; ke depannya cukup pakai `/mega-sdd`." Setelah itu jalankan persis seperti sebelumnya — flags diteruskan tanpa perubahan.
@@ -16,6 +16,20 @@ The unit-spec integrity checks that gate at edit time are owned by a single hook
 ### Step 1 — Resolve vault + load context
 
 Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the codebase map (probe both new + legacy paths), and `.memory/bolt-outcomes.json` (for context).
+
+### Step 1b — `--changed-only` scope-set (semantic scoping, spec 2026-08-03-semantic-scoped-validation.md)
+
+Default is the FULL sweep — lint-units' stated purpose is the comprehensive pre-bolt pass. `--changed-only` scopes the **expensive legs** (Step 2 validator spawns, Step 3 per-unit checks, Step 4 per-unit narration, Step 5 markdownlint file list) to:
+
+> **scope-set = changed ∪ dependents** — units whose current sha256 differs from (or is absent in) `unit_baseline` of `.mega-sdd/.analyze-freshness.json` (written by `/mega-sdd:analyze`, the ledger's single writer — lint only READS it), **plus the transitive reverse-dependents** of those units (BFS over `depends_on` edges across ALL units' frontmatter — a changed unit can invalidate its dependents' interface assumptions).
+
+Compute the current shas in ONE batch invocation (never per-file spawns): `Run: shasum -a 256 <all unit files>` (`sha256sum` where shasum is absent — the ledger records content sha256, NOT git blob shas, so `git hash-object` does not match), then compare against the `unit_baseline` keys (repo-relative paths).
+
+Rails:
+- **No ledger, unparseable ledger, or `unit_baseline` absent/empty** → run the FULL sweep and say so in one line: `--changed-only: no freshness ledger — full sweep (run /mega-sdd:analyze to establish one)`. Never silently lint nothing.
+- **The cheap global checks still cover ALL units** — cross-unit dependency resolution, module/squad assignment, and dangling-`depends_on` detection read every unit's frontmatter regardless of scope (loading frontmatter is cheap; only validator spawns + narration scope down).
+- **Never claim project-wide cleanliness from a scoped run**: the summary reports `N of M units linted (changed ∪ dependents)` and labels aggregate metrics as scoped.
+- Combines with `--module=`/`--squad=` (intersection).
 
 ### Step 2 — Per-unit spec integrity (delegated to the validator)
 
@@ -53,7 +67,7 @@ These are NOT in the validator — run them here, per unit, from the loaded cont
 
 Aggregate: total units; by `task_type`; by `grounding_confidence` (HIGH/MEDIUM/LOW); anchors verified / total; units with ≥1 Hard Rule; module + squad coverage; cross-module `depends_on` edge count; average `target_files`/unit. Emit a per-unit table (`--format=table`, default) or structured JSON (`--format=json`), then **prioritized** recommendations that cite the specific unit + the specific check that failed (LOW grounding, missing anchors, bare Hard Rules, etc.).
 
-`--module=<id>` / `--squad=<id>` scope the sweep; `--strict` promotes SOFT warnings to a halt-equivalent exit (CI mode).
+`--module=<id>` / `--squad=<id>` / `--changed-only` scope the sweep (Step 1b); `--strict` promotes SOFT warnings to a halt-equivalent exit (CI mode).
 
 ### Step 5 — Optional markdownlint-cli2 prose pass
 
@@ -62,6 +76,8 @@ If `markdownlint-cli2` is available (`command -v markdownlint-cli2`), run a pros
 ```bash
 markdownlint-cli2 '<vault>/*.md' '<vault>/units/*.md'
 ```
+
+Under `--changed-only`, replace the `'<vault>/units/*.md'` glob with the scope-set unit files explicitly (Step 1b) — the vault-doc glob stays.
 
 This relies on markdownlint-cli2's own config discovery (`.markdownlint-cli2.{jsonc,yaml}` / `.markdownlint.{jsonc,json,yaml}` at the repo root). mega-sdd-friendly overrides to put in that config: MD013 (line-length) off, MD041 (first-line-h1) off, MD033 (inline-HTML) off — vault files lead with frontmatter and use long citations + HTML-comment markers. Install: `plugins/mega-sdd/references/tooling-install.md`.
 

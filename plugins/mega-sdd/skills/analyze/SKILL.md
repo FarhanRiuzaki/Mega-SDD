@@ -1,7 +1,7 @@
 ---
 name: analyze
-version: 2.2.2
-description: Unified cross-artifact consistency analysis — runs all validators + vault checks; produces CONSISTENCY-REPORT.md + cost-weighted TOKEN-COST-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
+version: 2.3.0
+description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md + cost-weighted TOKEN-COST-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
 ---
 
 # mega-sdd:analyze — Unified Consistency Analyzer
@@ -28,6 +28,8 @@ Parse the JSON output:
 ```json
 {"state_path": "<path>", "report_path": "<path>", "overall": "PASS|WARN|FAIL"}
 ```
+
+**Semantic-scoped by default:** per-file validators re-run only for files changed since the last analyze (freshness ledger `.mega-sdd/.analyze-freshness.json`); unchanged files fold their recorded verdict without a spawn, and the report's `Scope:` line says exactly how many were re-run vs reused. Pass `--fresh` (user asks for a forced/ground-up re-check, or after a suspected ledger problem) to re-run everything. Scoping is report-layer only — the execute-bolts gate re-derives its states from ground truth regardless, so a stale ledger can never open a gate.
 
 ### Step 3: Read and present the report
 
