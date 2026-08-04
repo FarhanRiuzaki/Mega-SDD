@@ -1,7 +1,7 @@
 # v6.0.1 — field-test hardening (simkredit findings)
 
 **Date:** 2026-08-04
-**Status:** DESIGN — implementation in progress
+**Status:** SHIPPED v6.0.1 (2026-08-04, c6ecc9a, CI green, suite 203) — dual-blind round disclosure folded inline per section (2 blockers + 5 majors)
 **Source:** first real-project run of 6.0.0 (simkredit, Next.js + NestJS pnpm monorepo, vault `simkredit-v1`, 2026-08-04). The operator's session verified every analyze FAIL against its source; five findings survived verification — 4 plugin defects + 1 deriver gap. This spec fixes all five. Patch release: no surface change, no grammar break, no gate weakened; every fix REDUCES false signal without opening a gate.
 
 ## F1 — dirty journal records out-of-repo writes → false `maintenance_sync`
