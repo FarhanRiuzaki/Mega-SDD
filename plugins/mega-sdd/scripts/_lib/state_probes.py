@@ -607,12 +607,31 @@ def probe_foreign_sdd(cwd, cap=20):
 
 
 def probe_dirty_journal(cwd):
-    """Mode D signal — `.dirty-paths.jsonl` row count (non-empty lines;
-    `grep -c .` parity)."""
+    """Mode D signal — `.dirty-paths.jsonl` row count of IN-REPO rows.
+
+    6.0.1 F1 (consumer half): a row whose "path" is ABSOLUTE is by
+    construction a pre-fix out-of-repo write (scratchpad / ~/.claude memory —
+    the old writer's prefix-strip no-op'd on those) and must not signal a
+    change; counting only relative-path rows heals existing poisoned journals
+    without manual cleanup. Unparseable rows count (fail-closed: unknown is
+    never silently ignored)."""
     path = os.path.join(cwd, DIRTY_JOURNAL_REL)
+    n = 0
     try:
         with open(path, encoding="utf-8", errors="replace") as f:
-            return sum(1 for ln in f if ln.strip("\n"))
+            for ln in f:
+                ln = ln.strip()
+                if not ln:
+                    continue
+                try:
+                    p = json.loads(ln).get("path", "")
+                except (ValueError, AttributeError):
+                    n += 1
+                    continue
+                if not (isinstance(p, str) and (p.startswith("/") or
+                                                re.match(r"^[A-Za-z]:[\\/]", p))):
+                    n += 1
+        return n
     except OSError:
         return 0
 

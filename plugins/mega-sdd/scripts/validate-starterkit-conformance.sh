@@ -56,6 +56,7 @@ cwd = os.environ["CWD"]
 sk_file = os.environ["SK_FILE"]
 
 violations = []
+skipped_locations = {}  # pattern -> prose location skipped by the F3 guard
 checks = []
 
 # Parse starterkit-context.yaml (simple key:value extraction — no yaml lib dependency)
@@ -181,6 +182,32 @@ for uf in unit_files:
     # Check each target path against patterns
     # Strategy: classify file by its DIRECTORY (not substring match) to avoid
     # false positives like "tests/models/user.test.ts" matching model pattern.
+    #
+    # 6.0.1 F3 (field-test hardening spec): a pack `location` may carry PROSE
+    # ("colocated — a module with a test lives ...") or a multi-root
+    # alternation ("apps/web/... (Next proxy) | apps/api/... (NestJS)").
+    # startswith(prose) can never match, so EVERY file used to be flagged —
+    # including files that satisfy the convention. A location participates in
+    # the path check ONLY when it is path-shaped (no spaces / em-dash); `|`
+    # alternations split and pass on ANY matching root. Non-path-shaped →
+    # SKIP with an honest note, never a violation, never silent.
+    def _path_shaped(v):
+        return bool(v) and not re.search(r"[ —|]", v)
+
+    def _loc_ok(tp, loc, pattern_name, substr=True):
+        """True = conforms OR check inapplicable (prose location -> skip+note).
+        substr=False keeps a check startswith-only (round fold: the shared
+        helper silently ADDED substring tolerance to the data_model check,
+        flipping a previously-correct violation — each site keeps its
+        pre-guard matching semantics)."""
+        alts = [a.strip() for a in loc.split("|")] if "|" in loc else [loc]
+        if not alts or not all(_path_shaped(a) for a in alts):
+            skipped_locations.setdefault(pattern_name, loc)
+            return True
+        if substr:
+            return any(tp.startswith(a) or a in tp for a in alts)
+        return any(tp.startswith(a) for a in alts)
+
     for tp in target_paths:
         tp_dir = os.path.dirname(tp) + "/"
         tp_base = os.path.basename(tp)
@@ -197,7 +224,7 @@ for uf in unit_files:
                 if ctrl_loc and ctrl_loc != "null":
                     is_ctrl = ("controller" in tp_dir.lower() or "handler" in tp_dir.lower()
                                or "Controller" in tp_base or "controller" in tp_base.lower())
-                    if is_ctrl and not tp.startswith(ctrl_loc) and ctrl_loc not in tp:
+                    if is_ctrl and not _loc_ok(tp, ctrl_loc, "controller.location"):
                         violations.append({
                             "unit": unit_id, "file": tp,
                             "pattern": "controller.location", "expected": ctrl_loc,
@@ -214,7 +241,7 @@ for uf in unit_files:
                     # Only flag if the file IS in a models/entities dir but the WRONG one
                     in_models_dir = (tp_dir.rstrip("/").endswith("/models")
                                      or tp_dir.rstrip("/").endswith("/entities"))
-                    if in_models_dir and not tp.startswith(mdl_loc):
+                    if in_models_dir and not _loc_ok(tp, mdl_loc, f"{mdl_key}.location", substr=False):
                         violations.append({
                             "unit": unit_id, "file": tp,
                             "pattern": f"{mdl_key}.location", "expected": mdl_loc,
@@ -232,7 +259,7 @@ for uf in unit_files:
                               or "schema" in tp_dir.lower()
                               or "Request" in tp_base or "Validator" in tp_base
                               or ".schema." in tp_base)
-                    if is_req and not tp.startswith(req_loc) and req_loc not in tp:
+                    if is_req and not _loc_ok(tp, req_loc, f"{req_key}.location"):
                         violations.append({
                             "unit": unit_id, "file": tp,
                             "pattern": f"{req_key}.location", "expected": req_loc,
@@ -243,7 +270,7 @@ for uf in unit_files:
         if is_test and "test" in patterns:
             tst = patterns["test"]
             tst_loc = tst.get("location", "")
-            if tst_loc and not tp.startswith(tst_loc) and tst_loc not in tp:
+            if tst_loc and tst_loc != "null" and not _loc_ok(tp, tst_loc, "test.location"):
                 violations.append({
                     "unit": unit_id, "file": tp,
                     "pattern": "test.location", "expected": tst_loc,
@@ -264,6 +291,7 @@ result = {
     "units_checked": len(unit_files),
     "violations_count": len(violations),
     "violations": violations[:10],
+    "location_checks_skipped": skipped_locations,
     "checks": checks,
     "summary": (
         f"{len(violations)} conformance violations across {len(unit_files)} units"

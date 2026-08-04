@@ -135,6 +135,14 @@ try:
                 continue
             seen_tags[oq["tag"]] = fn
             skeletons.append(oq)
+    # 6.0.1 F5: md-hint fallback for the five patch-lane OQ fields — collected
+    # per doc, applied LAST in the per-OQ merge (setdefault only; patch and
+    # prior carry-forward always win)
+    md_hints = {}
+    for fn in DOCS[1:]:
+        for t, fields in vault_md.parse_oq_field_hints(docs.get(fn, "")).items():
+            md_hints.setdefault(t, {}).update(
+                {k: v for k, v in fields.items() if k not in md_hints.get(t, {})})
     rollup_cats = vault_md.parse_rollup_categories(docs["00-index.md"])
     for oq in skeletons:
         if not oq.get("category") and oq["tag"] in rollup_cats:
@@ -319,6 +327,13 @@ try:
         pt = patch_oqs.get(tag)
         if pt:
             entry.update(pt)
+        # F5 md-hints: lowest precedence — fill only what skeleton + prior +
+        # patch left absent OR null (round fold: a carried `"scan_query": null`
+        # — the very shape the category:null precedent predicts — blocked the
+        # setdefault and the fix was inert; null is absence, not a value)
+        for k, v in md_hints.get(tag, {}).items():
+            if entry.get(k) is None:
+                entry[k] = v
         prior_status = p.get("status")
         if entry.get("status") == "resolved":
             if prior_status == "resolved":

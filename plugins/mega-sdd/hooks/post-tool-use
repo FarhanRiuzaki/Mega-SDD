@@ -515,7 +515,10 @@ except Exception:
     # it with the git channel). Never journals mega-sdd's own outputs.
     case "$FILE_PATH" in
       *"/.mega-sdd/"*) : ;;  # own outputs — never journal (anti-feedback-loop)
-      *)
+      "$PROJECT_ROOT"/*)
+        # 6.0.1 F1: only IN-REPO writes are journaled — an out-of-tree path
+        # (scratchpad, ~/.claude memory) used to survive the prefix-strip as an
+        # ABSOLUTE path and fabricate a maintenance_sync change signal
         if [ -d "${PROJECT_ROOT}/.mega-sdd/codebase" ] && \
            ! grep -qE "^\s*dirty_journal:\s*false" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null; then
           DIRTY_JOURNAL="${PROJECT_ROOT}/.mega-sdd/codebase/.dirty-paths.jsonl"

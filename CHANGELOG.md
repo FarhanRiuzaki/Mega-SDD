@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.0.1] - 2026-08-04 — field-test hardening (simkredit findings)
+
+First real-project run of 6.0.0 surfaced 4 validator defects + 1 deriver gap (spec `2026-08-04-v6-field-test-hardening.md`); every fix REDUCES false signal without opening a gate. Dual-blind round: 2 blockers (one per lane, same root — the F2 spec justification was logically unsound) + 5 majors, ALL folded pre-ship.
+
+- **F1** — the dirty journal records only IN-REPO writes (out-of-tree scratchpad/memory writes used to fabricate `maintenance_sync`); both consumers ignore absolute-path rows (POSIX + Windows drive), healing poisoned journals without cleanup.
+- **F2** — bolt-orphans generation scoping: a unit-attributed commit whose NON-SANCTIONED files overlap none of the current unit's `target_files` (glob-aware, B3's matcher) is an advisory `bolt_commit_generation_mismatch` extra, never a FAIL — prior-vault id collisions stop blocking execute-bolts. Round-corrected fail-closed edges: extras-only commits, empty targets, and empty touched-sets all stay BLOCKING (the extras-only dodge was a live regression in the first cut). Disclosed residual: B3 still blocks prior-generation commits touching non-sanctioned files (relaxing a blocking gate needs its own spec); renumbering remains that shape's remedy.
+- **F3** — starterkit-conformance: prose/multi-root `location` values skip with an honest `location_checks_skipped` note instead of flagging every file; `a | b` alternations split; per-site matching semantics preserved (round: the shared helper had silently loosened the data_model check).
+- **F4** — constitution-propagation: binding ids count as clauses only when defined in constitution.md (census on the definition-line grammar — round: prose cross-references re-poisoned a bare findall); §-style constitutions get an honest SKIP instead of phantom obligations.
+- **F5** — derive-vault-json falls back to md hint lines for the five patch-lane OQ fields (anchored + fence-aware — round: question-text prose and fenced examples were captured; null-valued carried fields count as absent — round: the fix was inert on the exact `category: null` precedent shape). Patch/carried values always win.
+- NEW proof test `tests/surface/test-p4b-field-hardening.sh` (incl. the round's dodge-shape arms).
+
 ## [6.0.0] - 2026-08-04 — v6 P4: the surface cull (MAJOR — alias removal)
 
 The fourth Express Spine tranche (spec §P4) and the breaking-surface release the phasing plan reserved. **The break is the typed alias surface ONLY** — every artifact grammar, gate, hook contract, and the classic spine ship byte-compatible. Migration guide: `references/upgrade-from-old-version.md §Upgrading to 6.0.0`. Deep dual-blind round: 6 blockers + 13 majors found, ALL folded pre-ship (disclosure in the spec — including a fabricated-citation class in the emit fallback that failed its own citation gate, and the round-fixed honesty of this entry's telemetry sentence).

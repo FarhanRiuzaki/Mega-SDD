@@ -82,9 +82,25 @@ clause_pattern = re.compile(r"\b([A-F]-\d{3})\b")
 # (supersession discussion is good practice), but units must NOT be required to
 # cite a clause that no longer binds; demanding it would force noise citations.
 retired_clauses = set()
-for cf in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md")):
+# 6.0.1 F4 (field-test hardening spec): an X-NNN id in binding.md counts as a
+# constitution clause ONLY if it exists in the vault's constitution.md (the
+# clause CENSUS). Binding CLAIM ids share the C-NNN shape — without the census
+# gate, 19 claim ids were demanded from units as "constitution clauses" on a
+# §-style-constitution project (pure namespace collision).
+clause_census = set()
+census_files = 0
+for cf in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.md")) + \
+           glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "_meta", "constitution.md")):
+    census_files += 1
     try:
-        for line in open(cf):
+        text = open(cf).read()
+        # census keys on the clause-DEFINITION grammar (list item / heading /
+        # bold at line start, id followed by a separator) — round fold: a bare
+        # findall let one prose cross-reference ("see binding C-009 for …")
+        # re-poison the census with a claim id
+        clause_census.update(re.findall(
+            r"(?m)^[ \t]*(?:[-*][ \t]+|#{1,6}[ \t]+|\*\*)?([A-F]-\d{3})\*{0,2}[ \t]*[:.—-]", text))
+        for line in text.splitlines():
             m = re.match(r"\s*-\s*([A-F]-\d{3}):\s*(.*)", line)
             if m and re.search(r"\((?:dropped|retired|superseded)\b", m.group(2), re.IGNORECASE):
                 retired_clauses.add(m.group(1))
@@ -97,15 +113,23 @@ for bf in binding_files:
         content = open(bf).read()
     except Exception:
         continue
-    clauses = set(clause_pattern.findall(content)) - retired_clauses
+    # census-gated (F4): ids not present in constitution.md are claim ids or
+    # other same-shaped tokens, never propagation obligations
+    clauses = (set(clause_pattern.findall(content)) & clause_census) - retired_clauses
     for c in clauses:
         all_binding_clauses.add(c)
         binding_clause_sources.setdefault(c, set()).add(os.path.relpath(bf, cwd))
 
 if not all_binding_clauses:
+    detail = ("binding docs exist but contain no constitution clause IDs (A-NNN..F-NNN)"
+              if clause_census else
+              ("constitution.md carries no X-NNN clause ids (e.g. a §-style grammar) — "
+               "nothing this validator can key on; X-NNN-shaped ids in binding.md are "
+               "claim ids, not clauses" if census_files else
+               "no constitution.md found — no clause census to key on"))
     print(json.dumps({
         "status": "SKIP",
-        "detail": "binding docs exist but contain no constitution clause IDs (A-NNN..F-NNN)",
+        "detail": detail,
         "drops": [],
         "summary": {"binding_docs": len(binding_files), "binding_clauses": 0, "unit_clauses": 0, "drops": 0}
     }))

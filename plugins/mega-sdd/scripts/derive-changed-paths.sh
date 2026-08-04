@@ -118,6 +118,11 @@ for src in sources:
                     p = None
                 if p:
                     p = str(p).replace("\\", "/")
+                    # 6.0.1 F1: a Windows drive path is absolute even when this
+                    # runs on POSIX (os.path.isabs says no there) — a pre-fix
+                    # poisoned row must never become a phantom changed path
+                    if re.match(r"^[A-Za-z]:/", p):
+                        continue
                     rel = os.path.relpath(p, cwd) if os.path.isabs(p) else p
                     if rel != ".." and not rel.startswith("../"):
                         changed.add(rel)
