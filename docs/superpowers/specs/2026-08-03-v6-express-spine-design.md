@@ -1,7 +1,7 @@
 # v6 — the Express Spine: speed with hard gates
 
 **Date:** 2026-08-03
-**Status:** P1 v5.34.0 · P2 v5.35.0 · P3 v5.36.0 · P4 SHIPPED v6.0.0 (194b1b3, CI green, suite 202) — THE EXPRESS SPINE IS THE DEFAULT AND THE SURFACE IS 3 VERBS + 4 ONE-TIMERS; P5 (measure) awaiting gas
+**Status:** P1 v5.34.0 · P2 v5.35.0 · P3 v5.36.0 · P4 SHIPPED v6.0.0 (194b1b3, CI green, suite 202) — THE EXPRESS SPINE IS THE DEFAULT AND THE SURFACE IS 3 VERBS + 4 ONE-TIMERS; P5 IN PROGRESS — baseline arm MEASURED (classic 5.9.0-era run: net 1h53m / 28.2M cost-weighted to first acceptance-backed bolt; runbook + extractor: `research/2026-08-04-p5-measurement-runbook.md`), express arm awaits the interactive user run in `TRAINING/p5-express-arm/`
 **Research grounding:** `research/2026-08-03-v6-express-spine-best-practices.md` (2026-08-03, 4 lanes: SDD landscape / Anthropic guidance / context-engineering evidence / verification-speed economics). Every spine element CONFIRMED against the 2025–2026 evidence base; amendments A1–A7 from that document are folded into the rails below.
 **Mandate (operator, 2026-08-03, verbatim goals):** "tujuan utamanya skills ini itu standarisasi code, reuse code, percepatan development, dan anti fabricated. yang paling utama itu speed development dengan standar yg udah di set atau hard gate." — a MAJOR update; cut everything that does not serve these four. **Speed is the tie-breaker; the hard gates are non-negotiable.**
 
