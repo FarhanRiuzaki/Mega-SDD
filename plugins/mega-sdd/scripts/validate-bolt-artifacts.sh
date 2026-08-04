@@ -20,7 +20,10 @@
 # prose-only Step-0/Step-5 obligation was skipped by a terse controller and no
 # file-scoped validator ever fired (absence of an artifact is invisible to a
 # written-file validator). Flags a unit ONLY when it still exists under some
-# vault's units/ (no false positives from retired vaults). Writes
+# vault's units/ (no false positives from retired vaults). 6.0.1 F2: a commit
+# whose NON-SANCTIONED files overlap none of the current unit's targets
+# (glob-aware) is a prior-generation id collision -> advisory extras entry,
+# never a FAIL; empty targets / extras-only commits stay BLOCKING. Writes
 # .mega-sdd/.bolt-orphans-state.json; the PreToolUse gate blocks the NEXT
 # execute-bolts on FAIL.
 #
@@ -278,14 +281,95 @@ if [ "$ORPHAN_SCAN" = "1" ]; then
 $PY_COMMON
 state_file = os.environ["ORPHAN_STATE"]
 
-bolted = {}  # unit_id -> first (newest) commit sha
+bolted = {}   # unit_id -> first (newest) commit sha
+touched = {}  # unit_id -> union of files its attributed commits touched,
+              # PROJECT-relative (walk_log emits git-root-relative names; the
+              # B3 block strips PREFIX the same way — without the strip a
+              # monorepo subproject would zero-intersect EVERYTHING and the
+              # F2 advisory class would swallow real orphans, fail-open)
 for sha, subj, uid, _files in walk_log(300):  # S7-VAL-2: same window as B1/B2/B3
     if uid:
         bolted.setdefault(uid, sha)
+        touched.setdefault(uid, set()).update(
+            (f[len(PREFIX):] if PREFIX and f.startswith(PREFIX) else f)
+            for f in (_files or []))
+
+# 6.0.1 F2 twin of the B3 heredoc's targets_of (field-test hardening spec) —
+# kept local so the S7-hardened B3 block stays byte-untouched.
+def _targets_of(uid):
+    uf = vault_layouts.find_unit_file(cwd, uid)
+    if not uf:
+        return None
+    try:
+        body = open(uf).read()
+    except OSError:
+        return None
+    m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
+    if not m:
+        return []
+    out = []
+    in_block = False
+    for ln in m.group(1).split("\n"):
+        if re.match(r"^target_files[ \t]*:", ln):
+            in_block = True
+            continue
+        if in_block:
+            if ln and ln[0] not in " \t":
+                break
+            pm = re.search(r"path:\s*(\S+)", ln)
+            if pm:
+                out.append(pm.group(1).strip().strip("'\""))
+            elif re.match(r"^\s*-\s+[^:\s]+\s*$", ln):
+                out.append(ln.strip().lstrip("-").strip().strip("'\""))
+    return [t[2:] if t.startswith("./") else t for t in out]
+
+# 6.0.1 F2 round folds: (a) the intersection MATCHES like B3 does (glob-
+# declared targets via postflight_rules._glob_match — exact-string compare
+# turned a glob-target real orphan into an advisory); (b) the twin of B3's
+# sanctioned-extras set — a commit touching ONLY extras (tests/, .mega-sdd/,
+# vault trees) is B3-clean with zero target overlap, so it MUST stay in the
+# blocking class (round blocker: extras-only commits dodged the gate; the
+# original spec claim "a legit bolt commit always intersects targets" was
+# logically unsound — B3 guarantees subset-of, not intersects).
+import postflight_rules
+_TEST_PAT_O = re.compile(
+    r"(?:^|/)(?:tests?|spec|specs|__tests__)/|_test\.go$|Test\.php$|(?:^|/)test_[^/]+\.py$|\.(?:spec|test)\.[jt]sx?$")
+def _sanctioned_o(p):
+    if p.startswith(".mega-sdd/") or p.startswith("docs/mega-sdd/"):
+        return True
+    if _in_bound_vault(p):
+        return True
+    if _TEST_PAT_O.search(p):
+        return True
+    return False
+def _hits_target(p, targets):
+    return any(p == t or postflight_rules._glob_match(p, t, basename_fallback=False)
+               for t in targets)
 
 orphans = []
+generation_mismatches = []
 for uid in sorted(bolted):
     if vault_layouts.find_unit_file(cwd, uid) and not vault_layouts.find_bolt_artifact(cwd, uid, "bolt-report.md"):
+        # Generation scoping: unit ids restart per vault generation, so a
+        # commit from a DELETED prior vault can collide with a current id.
+        # Advisory mismatch ONLY when the commit touched real NON-EXTRA files
+        # and NONE of them hits the current unit's targets (glob-aware) —
+        # positive evidence of different work. Empty targets, empty touched
+        # sets, and extras-only commits all stay BLOCKING (unknown != mismatch).
+        targets = _targets_of(uid) or []
+        files = touched.get(uid, set())
+        nonextra = {f for f in files if not _sanctioned_o(f)}
+        if targets and nonextra and not any(_hits_target(f, targets) for f in nonextra):
+            generation_mismatches.append({
+                "type": "bolt_commit_generation_mismatch",
+                "unit_id": uid,
+                "commit": bolted[uid],
+                "detail": ("commit %s is attributed to %s but its non-sanctioned files "
+                           "overlap none of the current unit's target_files — "
+                           "consistent with a PRIOR vault generation (unit ids restart "
+                           "per vault); advisory, not gated" % (bolted[uid][:8], uid)),
+            })
+            continue
         orphans.append({
             "halt_type": "bolt_artifacts_missing",
             "unit_id": uid,
@@ -300,10 +384,14 @@ state = {
     "bolt_commits_seen": len(bolted),
     "issues_count": len(orphans),
     "issues": orphans,
+    "extras": generation_mismatches,
     "next_action": ("%d bolt commit(s) have no bolt-report.md — the audit trail is missing. "
                     "Backfill <vault>/bolts/U-XXX/bolt-report.md (mark retroactive: true) for each "
                     "listed unit, or re-run the unit; execute-bolts is gated until resolved."
-                    % len(orphans)) if orphans else "Every bolt commit has its bolt-report.md.",
+                    % len(orphans)) if orphans else
+                   ("Every current-generation bolt commit has its bolt-report.md"
+                    + (" (%d prior-generation id collision(s) noted as advisory extras)"
+                       % len(generation_mismatches) if generation_mismatches else ".")),
 }
 tmp = state_file + ".tmp"
 with open(tmp, "w") as f:

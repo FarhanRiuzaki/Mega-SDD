@@ -488,6 +488,69 @@ def parse_open_questions(doc_name, md, errors):
     return oqs
 
 
+# 6.0.1 F5 (field-test hardening spec): the five patch-lane OQ fields, when
+# they appear as hint lines INSIDE an OQ's markdown block (backticked or bare
+# `field: value`). Parsed as the LOWEST-precedence source — the deriver applies
+# them via setdefault AFTER prior carry-forward and the authored patch, so a
+# patched/carried value always wins and the anti-laundering lanes are
+# untouched. scan_citations splits on commas into the schema's array shape.
+# Anchored to line start (only whitespace/blockquote/bullet + an optional
+# backtick may precede the field name) — round fold: unanchored, the word
+# "recommendation:" inside a QUESTION TEXT was captured as an authored field.
+OQ_FIELD_HINT_RE = re.compile(
+    r"^[ \t>]*(?:[-*][ \t]+)?`?"
+    r"(scan_query|recommendation|rationale|scan_citations|fallback_if_wrong)"
+    r"`?\s*:\s*(.+)$", re.M
+)
+
+
+def parse_oq_field_hints(md):
+    """{tag: {field: value}} for the five JSON-only OQ fields found inside
+    each OQ's markdown block (same block boundaries as parse_open_questions —
+    next OQ anchor or next ##/### heading). Values are stripped of wrapping
+    backticks/quotes; empty values are omitted (absence stays honest)."""
+    lines = md.splitlines()
+    anchors = []
+    for i, line in enumerate(lines):
+        if OQ_LINE_RE.match(line):
+            anchors.append(i)
+    out = {}
+    for n, i in enumerate(anchors):
+        j = anchors[n + 1] if n + 1 < len(anchors) else len(lines)
+        for k in range(i + 1, j):
+            if lines[k].startswith("## ") or lines[k].startswith("### "):
+                j = k
+                break
+        m = OQ_LINE_RE.match(lines[i])
+        tag = m.group(2)
+        # code-fence tracking (round fold: a ```-fenced EXAMPLE inside the
+        # block beat the real hint) — fenced lines never carry hints
+        block_lines = []
+        in_fence = False
+        for bl in lines[i:j]:
+            if bl.lstrip().startswith("```"):
+                in_fence = not in_fence
+                continue
+            if not in_fence:
+                block_lines.append(bl)
+        block = "\n".join(block_lines)
+        fields = {}
+        for fm in OQ_FIELD_HINT_RE.finditer(block):
+            val = fm.group(2).strip().strip("`").strip().strip('"').strip("'").strip()
+            if not val:
+                continue
+            if fm.group(1) == "scan_citations":
+                parts = [p.strip().strip("`") for p in val.split(",")]
+                parts = [p for p in parts if p]
+                if parts:
+                    fields.setdefault("scan_citations", parts)
+            else:
+                fields.setdefault(fm.group(1), val)
+        if fields:
+            out[tag] = fields
+    return out
+
+
 def summarize_oqs(oqs):
     """open_questions_summary recompute: total, by_priority (P1/P2/P3),
     by_status over the unified vocabulary open/resolved/deferred/out_of_scope
