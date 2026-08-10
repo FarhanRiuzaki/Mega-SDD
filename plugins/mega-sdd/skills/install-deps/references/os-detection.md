@@ -13,6 +13,8 @@
 
 ## Detection algorithm (canonical)
 
+> **OWNED by `scripts/detect-os.sh` — run the script; never transcribe this block.** The bash below remains as the script's readable spec (keep the two in sync when either changes).
+
 ```bash
 # === Step 1: Detect OS family ===
 OS=""

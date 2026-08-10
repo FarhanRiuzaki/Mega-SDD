@@ -23,10 +23,11 @@ grep -qF 'ONLY when an overlay applies' "$OF" \
   && grep -qF 'IS the default chain' "$OF" \
   && pass "D1b: Step 4 declares the engine authoritative; routing-rules is overlay-only" \
   || fail "D1b: Step-4 overlay condition missing"
-grep -qF 'ONLY the §sections of skills actually in the proposed chain' "$OF" \
-  && grep -qF '§Cold-halt anticipation checks whenever `execute-bolts` is chained' "$OF" \
-  && pass "D1c: predictive-checks read is chain-scoped (+Cold-halt carve-out, round fold)" \
-  || fail "D1c: predictive-checks condition or Cold-halt carve-out missing"
+grep -qF 'predictive-preflight.sh' "$OF" \
+  && grep -qF 'never to hand-run the loop' "$OF" \
+  && grep -qF '§Cold-halt anticipation set whenever `execute-bolts` is chained' "$OF" \
+  && pass "D1c: predictive preflight is script-run (2b S1 wiring; catalog = maintainer source of truth)" \
+  || fail "D1c: predictive-preflight script wiring missing"
 grep -qF 'b.iv conditional-field check' "$OF" \
   && grep -qF 'or for §Resume mechanics' "$OF" \
   && pass "D1d: handoff-contract WHEN carries the b.iv + resume carve-outs (round fold)" \
