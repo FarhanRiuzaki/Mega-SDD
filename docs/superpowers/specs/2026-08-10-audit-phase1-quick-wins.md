@@ -1,7 +1,7 @@
 # Audit Phase 1 — Quick Wins (contradiction batch, front-door diet, trace tags, infra)
 
 **Date:** 2026-08-10
-**Status:** DRAFT
+**Status:** SHIPPED v6.2.0 (2026-08-10, 43c4b8a, CI green, suite 209/209 both trees) — dual-blind round: 1 blocker + 5 majors + 6 minors, ALL folded pre-ship (§Round disclosure)
 **Source:** `docs/superpowers/audits/2026-08-10-skills-audit.md` (14-agent read-only audit, post-6.1.1). This spec ships the audit's Phase-1 roadmap: recommendations #1 (contradiction batch), #6 (front-door diet), #7 (trace-tag completion), #10 (infra batch, trimmed — see Non-goals).
 **Version:** 6.2.0 (minor — behavior *clarifications* + content relocation-to-owner + hook latency fix; no gate, grammar, or surface change).
 
