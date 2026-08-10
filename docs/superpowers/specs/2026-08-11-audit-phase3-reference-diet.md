@@ -1,7 +1,7 @@
 # Audit Phase 3 — reference diet (archaeology purge, context-enrichment split, mega-line reflow)
 
 **Date:** 2026-08-11
-**Status:** DRAFT
+**Status:** SHIPPED v6.5.0 (2026-08-11, 7d60c8c, CI green, suite 216/216 both trees; net −194 lines) — dual-blind round: 0 blockers / 1 major / 8 minors, ALL folded (§Round disclosure)
 **Source:** audit recommendation #8 + the P2/P3 items (docs/superpowers/audits/2026-08-10-skills-audit.md). Third ship train of the audit roadmap (P1=6.2.0, 2a=6.3.0, 2b=6.4.0).
 **Version:** 6.5.0 (minor — prose relocation/reformat only: NO rule, gate, grammar, halt, or loading-contract change).
 
