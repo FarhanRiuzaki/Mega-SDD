@@ -1,6 +1,6 @@
 ---
 name: memory
-version: 1.7.1
+version: 1.7.2
 description: Memory + self-learning layer across user / project / vault scopes; suggestion-only, never enforcement. Operations — list / show / search / review / prune / promote / diff / export / import / clear. Triggers — "show memory", "review patterns", "lihat memory", "review pattern", "apa yang mega-sdd pelajari", "prune memory", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Memory + self-learning layer across user / project / vault scopes; 
 
 Markdown-driven memory that persists pipeline outcomes across sessions. Skills WRITE outcomes to memory at natural checkpoints; skills READ memory for informed suggestions at decision points. Self-learning surfaces threshold-based suggestions to the user — never auto-applied without explicit ACCEPT.
 
-**Announce at start:** "I'm using the memory skill to inspect / manage mega-sdd's persistent memory."
+**Announce at start:** "I'm using the memory skill to inspect / manage mega-sdd's persistent memory. `mega-sdd-trace:memory`"
 
 **Core principle:** Memory is SUGGESTION-ONLY, never enforcement. Every suggestion cites its source. Current evidence wins over memory. Cross-project propagation requires explicit user `promote` action.
 
@@ -97,7 +97,7 @@ The canonical mega-sdd concurrent-write lock, cited across the plugin as "memory
 
 ## Self-learning mechanism (suggestion-only)
 
-After N consistent observations (thresholds configurable per `~/.mega-sdd/config.yaml`), pending suggestions accumulate in `~/.mega-sdd/memory/patterns.md` under `## Pending suggestions`. Default thresholds in `references/learning-rules.md`.
+After N consistent observations (thresholds configurable per `~/.mega-sdd/memory/config.yaml`), pending suggestions accumulate in `~/.mega-sdd/memory/patterns.md` under `## Pending suggestions`. Default thresholds in `references/learning-rules.md`.
 
 **Review flow** (`/mega-sdd:memory review`): an ACCEPT / REJECT / DEFER walk-through per pending suggestion — full procedure (ACCEPT writes `learning-log.md` + updates the target heuristic; REJECT filters re-triggers; DEFER auto-prunes after 3) in `references/learning-rules.md` §3 (Suggestion review flow).
 

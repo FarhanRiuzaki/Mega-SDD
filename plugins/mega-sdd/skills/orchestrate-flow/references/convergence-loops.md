@@ -1,6 +1,6 @@
 # Convergence Loops — Auto-Recovery Cycling
 
-Formalizes iteration cycles between skills that were previously manual (`--resume` driven) — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via memory-pre-filled recommendations and re-run, up to `--max-cycles`. Every other halt always stops the chain (human required).
+Formalizes iteration cycles between skills that were previously manual (`--resume` driven) — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via memory-pre-filled recommendations and re-run, up to `--max-cycles`. Every other halt follows its taxonomy class (`halt-taxonomy.md`: always-stop = human required; self-resolve C1 = handled without stopping; soft = warn-only).
 
 ## Contents
 
@@ -154,4 +154,4 @@ Per-halt-type override allowed (set to `pause` to disable propose for that type)
 
 ## See also
 
-SKILL.md §Specialist references indexes the related orchestrate-flow references: halt-taxonomy (full halt classification — cycle-eligible / always-stop / soft) and handoff-consumption (how the orchestrator parses handoff status to drive the loop).
+SKILL.md §Specialist references indexes the related orchestrate-flow references: halt-taxonomy (full halt classification — cycle-eligible / always-stop / self-resolve C1 / soft) and handoff-consumption (how the orchestrator parses handoff status to drive the loop).

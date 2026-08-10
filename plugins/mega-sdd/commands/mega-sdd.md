@@ -61,13 +61,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 ## Starterkit detection
 
-Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes per `orchestrate-flow/references/routing-rules.md` §Decision matrix:
-
-| Mode | Trigger | Pipeline ordering (express spine — DEFAULT) | Classic (`--classic` / `spine: classic`) |
-|---|---|---|---|
-| **A — Starterkit-first** (DEFAULT) | Framework manifest detected + pack match (`derived.framework_pack` from the GROUND matcher) | generate-intent (pack + index aware via state.json/symbol-index) → bind `--express` → units → bolts — GROUND already loaded the code-awareness, no scan phase | scan-codebase FIRST → generate-intent --scan=<map> → bind → units → bolts |
-| **B — Framework-detected** (universal fallback) | Manifest detected but no pack match (`derived.framework_pack: _universal`) | same as A with `_universal` conventions | scan-codebase FIRST → generate-intent --scan=<map> (`_universal.md`) → bind → units → bolts |
-| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent --greenfield (stack-agnostic vault) → user scaffolds later → bind when code exists | same (Mode C was always scan-free) |
+Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes: **A — starterkit-first** (manifest + pack match via the GROUND matcher, DEFAULT), **B — framework-detected** (manifest but `derived.framework_pack: _universal`), **C — greenfield** (EXPLICIT `--greenfield`, or empty CWD + user confirms via the halt). The per-mode, per-spine chain orderings are owned by `orchestrate-flow/references/chain-execution.md` §Starterkit detection + mode classification (single owner — this front door adds no rows); the state-based chain proposals live in `routing-rules.md` §Decision matrix.
 
 When neither manifest nor `--greenfield` set → halt `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel).
 
@@ -101,20 +95,7 @@ See `tests/scenarios/scenario-7-multi-architect.md` for walkthrough.
 
 ## Auto-integrated diagnostics
 
-The chain transparently invokes diagnostic skills at appropriate phases — the user does NOT need to run them separately:
-
-| Phase | Auto-invokes | Why |
-|---|---|---|
-| After `generate-units` | `lint-units --changed-only` | Quality gate before bolt execution (scoped: changed ∪ dependent units; honest full sweep when no freshness ledger exists) |
-| Before `execute-bolts` | `analyze-parallelism` | Compute optimal wave plan for `--parallel` |
-| After `execute-bolts` | `list-modules` | Per-module status in chain summary |
-| At chain end | `emit-agents-md` | Tool-agnostic interop file refreshed |
-| At chain end | `emit-fsd` (**OPT-IN** — requires `--with-fsd` flag; pandoc + Chrome md2pdf render) | Hybrid Confluence FSD (PDF + Markdown) at `<vault>/fsd/` with sha256-grounded citations — only when `--with-fsd` passed |
-| At chain end | `emit-sit` **PROPOSAL** (one line, never auto-run) when ≥1 `bolts/U-*/acceptance.json` exists | "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan SIT dengan tabel bukti §4 script-derived" |
-| At chain end | `emit-uat` **MENTION** (one line, never auto-run) when SIT.md exists | "Tim UAT butuh test script? `/mega-sdd:emit uat` menghasilkan skenario bisnis 1:1 dari flow + berita acara" |
-| At chain end | `emit-prd` reverse-lane **MENTION** (one line, never auto-run) when a KB exists but no vault | Team-readable PRD draft from the KB, markers `[VERIFIED]/[INFERRED]/[OPEN]` carried verbatim |
-| At EACH chain boundary | Doc-control stamp refresh for existing emitted docs (`scripts/refresh-doc-stamps.sh --doc=<fsd\|prd\|sit\|uat> --position=…` — script-lane, ~0 tokens, `--position` only; never a maturity bump) | Doc-control blocks stay current between full emissions |
-| At chain end | Memory review prompt | Surface pending learning suggestions |
+The chain transparently invokes diagnostic skills at appropriate phases — the user does NOT need to run them separately. The phase table (what auto-runs where, including the scoped lint pass, the wave-plan step, and the emit proposals/mentions with their keterangan lines) is owned by `orchestrate-flow/references/chain-execution.md` §Auto-integrated diagnostics (single owner — this front door adds no rows).
 
 **Opt-out per diagnostic**: `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags available for debugging or non-standard workflows.
 
@@ -128,27 +109,7 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 
 ## Convergence loops
 
-In `--deep` mode, the chain auto-loops eligible halts up to `--max-cycles` (default 5) instead of stopping on first halt. Cycle-eligible halts:
-
-- `bind_conflict` → auto-invoke `resolve-oq --binding` with memory-pre-filled recommendations → re-run binding
-- `module_blocked_by` → auto-run prerequisite module first
-- `cross_squad_interface_draft` → wait+retry for producer to lock interface
-- `oq_recommend_underspecified` → auto-regenerate recommendation fields
-
-Halts that ALWAYS STOP (no auto-loop; require human review): `hard_rule_violated`, `dedup_ambiguous`, `quality_gate_failed`, `oq_business_p1_unresolved`, `test_fail` (post-retries), `hard_rule_unparseable`, `cross_module_dep_invalid`, `memory_schema_mismatch`, `mode_migrate`.
-
-Per-cycle chat output:
-
-```
-⛔ Halt: bind_conflict (3 conflicts)
-🔁 Cycle 1/5: auto-resolving via resolve-oq...
-   ↳ C-007 → KEEP_CODE (memory 8/10; conf: 0.95) → ACCEPTED
-✓ Cycle 1 complete. Re-running bind-codebase...
-```
-
-Opt-out: `--no-converge` reverts to pre-v3.12 (stop on any halt). Adjust limit: `--max-cycles=10`.
-
-See `orchestrate-flow/SKILL.md` §Convergence loops for full algorithm + safety rails.
+In `--deep` mode, eligible halts auto-loop up to `--max-cycles` instead of stopping on first halt. The mechanics, the cycle-eligible list, the always-stop classification (canonical classes: `references/halt-protocol.md`, names-only mirror: `orchestrate-flow/references/halt-taxonomy.md`), the cap default, and the per-cycle chat output are owned by `orchestrate-flow/references/convergence-loops.md` (single owner — this front door adds no rows and no numbers). Opt-out: `--no-converge` (stop on any halt); the `--to=<phase>` interaction is in §Flag handling above.
 
 ## Hard rails:
 - **ONE upfront confirmation** showing the full proposed chain (per skill, per arguments). User picks Run / Edit / Cancel.

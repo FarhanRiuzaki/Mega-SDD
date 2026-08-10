@@ -1,6 +1,6 @@
 # Express bind (`--express`) — claim-scoped retrieval, zero map load
 
-The claim-scoped retrieval lane — **the DEFAULT since the P2 spine flip** (`--classic` / `spine: classic` restores the map lane). Design contract: `docs/superpowers/specs/2026-08-03-v6-express-spine-design.md §P1–P2`.
+The claim-scoped retrieval lane — **the lane the express spine dispatches by default** (the chain injects `--express`; `--classic` / `spine: classic` restores the map lane; a bare standalone invocation runs the classic lane unless `--express` is passed). Design contract: `docs/superpowers/specs/2026-08-03-v6-express-spine-design.md §P1–P2`.
 `--express` changes **retrieval only**: WHERE evidence comes from. The verdict grammar,
 the CONFLICT gate, Steps 2.5–2.12, and Steps 3–6 are the standard skill body, unchanged.
 The emitted `binding.md` is byte-compatible with every parser and gate.

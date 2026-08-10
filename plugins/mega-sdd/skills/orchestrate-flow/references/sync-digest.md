@@ -18,8 +18,8 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
 - [ ] DRIFT-N3 [HIGH] name-drift: vault `failed_debit_count` vs code `failed_attempts`
       (source: DRIFT-REPORT.md §N3; anchor app/models/account.rb:42)
 
-## 3. Write-back drafts awaiting ACCEPT
-- [ ] PATCH-2 → 03-data-model.md §Account — proposed_patch in DRIFT-ACTIONS.md
+## 3. Write-back drafts awaiting human triage
+- [ ] PATCH-2 → 03-data-model.md §Account — proposed_patch preserved on its PENDING-SYNC.md entry
       (provenance: a1b2c3 "hotfix rounding" — <author>, <date>)
 ```
 

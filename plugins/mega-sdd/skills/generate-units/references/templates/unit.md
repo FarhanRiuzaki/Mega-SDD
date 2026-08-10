@@ -2,6 +2,9 @@
 id: U-XXX
 title: <imperative title>
 vault_source: <e.g., 02-architecture.md#auth>
+task_type: create                  # create | extend | verify — from the binding Implementation State Map when present (unit-schema.md)
+grounding_confidence: HIGH         # HIGH | MEDIUM | LOW per unit-schema.md — required on newly generated units
+module: M-default                  # M-<kebab> per _meta/modules.yaml; M-default when no modules.yaml
 depends_on: []
 target_files:
   - path: <src/...>
@@ -23,11 +26,9 @@ binding_refs: []
 
 <1-2 sentences>
 
-## Context
+## Context (read first)
 
-- **Vault source:** <citation>
-- **Binding refs:** <C-XX, OQ-XX or "none">
-- **Why this scope:** <reasoning>
+<Conversational directive prose, NOT bullets — 2-4 sentences citing the vault sections, the binding entries (C-XX / OQ-XX, or "none"), and why this scope exists: the surrounding system, the user-visible outcome, what changes nothing. (Shape per unit-schema.md §Required body sections.)>
 
 ## Implementation steps
 

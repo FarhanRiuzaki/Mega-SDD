@@ -23,7 +23,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 | Step 5 (auto-resolved OQs batch confirm) | Ask "Apply all / one-by-one / skip" | Default to "Apply all". |
 | Step 5 (added/changed/removed batch confirm) | Ask | Auto-apply if total change count ≤ 50; otherwise pause and emit `blocker` (type=`diff_conflict`, tag=`OQ-FLOW-3-cap`, context="change count exceeds auto-apply cap"). |
 | Step 6 (apply changes Y/N) | Ask | Skip — apply approved (non-conflict) changes. |
-| Step 7 (vault version bump type) | Ask patch vs minor | Use heuristic: minor if any conflicts had user input OR added entities/flows ≥ 5; patch otherwise. |
+| Step 7 (vault version bump type) | Ask small vs scope bump | Apply the owner grammar's tiebreak (diff-procedure.md §Update vault metadata): scope bump (vX+1.0) if any conflicts had user input OR added entities/flows ≥ 5; small bump (vX.Y+1) otherwise. |
 
 ## What stays interactive even with `--auto`
 

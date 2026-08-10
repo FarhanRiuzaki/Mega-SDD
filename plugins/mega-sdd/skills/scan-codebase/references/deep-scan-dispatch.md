@@ -184,7 +184,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
 4. Merge fresh slices (from dispatched subagents) with cached slices (from prior YAML).
    NOTE: only auth/authz/ui_ux/libs slices are merged into starterkit-context.yaml; the reuse slice is consolidated separately (see step 3 EXCEPTION above).
    - Conflict resolution: fresh always wins over cached for same domain (cached is the fallback for non-stale domains).
-5. Build merged YAML structure (cache_signatures v2.0 schema):
+5. Build merged YAML structure (cache_signatures v2.1 schema):
 
      starterkit_context:
        schema_version: 3.1                          # v3.1 = neutral authz reshape (rbac block replaced by authz; entrypoints replaces routes; mechanism replaces guard); v3.0 added patterns:; v2.0 added per-slice cache; v1.0 was initial
@@ -305,4 +305,4 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
    - If second write also corrupts: drop deep-scan entirely; log warning; proceed to Step 11 without handoff starterkit_context: block
 ```
 
-**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 5 subagents; Step 10.5.3 writes the new v2.0 `cache_signatures:` schema. One-time migration cost per project; no user action required.
+**Backward compatibility:** if existing starterkit-context.yaml has `cache_key:` (v1.0), step 2 treats prior as fully-stale (no cached slices reused); Step 10.5.2 dispatches all 5 subagents; Step 10.5.3 writes the new v2.1 `cache_signatures:` schema. One-time migration cost per project; no user action required.

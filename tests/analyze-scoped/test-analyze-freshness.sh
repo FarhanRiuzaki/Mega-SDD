@@ -234,9 +234,9 @@ grep -qF -- "--fresh" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
   && grep -qF "Semantic-scoped by default" "$PLUGIN_ROOT/skills/analyze/SKILL.md" \
   && pass "analyze SKILL.md (the surviving doc plane post-6.0.0-cull) documents --fresh + both scoped-default phrasings" \
   || fail "analyze SKILL.md missing --fresh or the scoped-default prose"
-grep -qF -- "lint-units --changed-only" "$PLUGIN_ROOT/commands/mega-sdd.md" \
-  && pass "front-door diagnostics table row scoped (--changed-only)" \
-  || fail "mega-sdd.md auto-lint row not scoped"
+grep -qF -- "lint-units --changed-only" "$PLUGIN_ROOT/skills/orchestrate-flow/references/chain-execution.md" \
+  && pass "auto-lint row scoped (--changed-only) at its single owner (chain-execution)" \
+  || fail "chain-execution auto-lint row not scoped"
 
 echo
 if [ "$fails" -eq 0 ]; then

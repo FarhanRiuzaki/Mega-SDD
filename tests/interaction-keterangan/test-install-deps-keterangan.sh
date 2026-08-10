@@ -22,7 +22,10 @@ echo "== install-deps Step 4 keterangan contract pins (F1-5) =="
 
 ID="$P/skills/install-deps/SKILL.md"
 
-has "$ID" 'version: 1.7.1' && ok "SKILL frontmatter version pinned at 1.7.1" || fail "version not bumped"
+# Intent: the keterangan changes shipped WITH a version bump (past 1.7.0) — never pin an exact version (every later bump broke the old pin).
+if has "$ID" 'version: 1.7.0'; then fail "version not bumped past the pre-keterangan 1.7.0"
+elif grep -qE '^version: 1\.([7-9]|[0-9]{2,})\.[0-9]+' "$ID" || grep -qE '^version: [2-9]\.' "$ID"; then ok "SKILL frontmatter version bumped past 1.7.0"
+else fail "version field missing or below 1.7"; fi
 
 has "$ID" '§Prompt surfaces' && ok "Step 4 cites the keterangan contract (output-language.md §Prompt surfaces)" || fail "Step 4: contract citation missing"
 

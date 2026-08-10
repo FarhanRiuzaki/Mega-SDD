@@ -6,7 +6,7 @@
 - Step 10.5.4 — Concurrency guard
 - Step 10.6 — Emit codebase-map shared snapshot
 
-Loaded by `scan-codebase` after Step 10 writes `codebase-map.md`. DEFAULT-ON when a framework is detected at MEDIUM+ confidence. No user flag required; opt-out via `--shallow-scan`. The four subagent prompt templates are a separate reference the SKILL.md router links to. The output schema lives in `plugins/mega-sdd/references/starterkit-context-schema.md`. This stage runs because §7 Framework is fully populated by Step 10.
+Loaded by `scan-codebase` after Step 10 writes `codebase-map.md`. DEFAULT-ON when a framework is detected at MEDIUM+ confidence. No user flag required; opt-out via `--shallow-scan`. The five subagent prompt templates are a separate reference the SKILL.md router links to. The output schema lives in `plugins/mega-sdd/references/starterkit-context-schema.md`. This stage runs because §7 Framework is fully populated by Step 10.
 
 The dispatch-side steps (10.5.1.5 manifest pre-parse → 10.5.2 subagent dispatch → 10.5.2.5 deep-read → 10.5.3 consolidation + full schema) live in the sibling **`references/deep-scan-dispatch.md`** — load it ONLY when Step 10.5.1 yields a non-empty `stale_slices`.
 
@@ -77,10 +77,10 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
      (NOT lock files — reuse tracks first-party source, not deps; output written to reuse-index.yaml, separate from starterkit-context.yaml)
    - auth_signature = sha256(auth_sig_input); similarly for authz/ui_ux/libs/reuse
 4. IF <project>/.mega-sdd/codebase/starterkit-context.yaml exists:
-     a. Read its `cache_signatures:` block (v2.0 schema) OR `cache_key:` block (v1.0 schema, backward-compat).
-     b. IF v1.0 schema detected → treat as "all slices stale" (full re-dispatch); migrate to v2.0 on next write.
+     a. Read its `cache_signatures:` block (v2.1 schema) OR `cache_key:` block (v1.0 schema, backward-compat).
+     b. IF v1.0 schema detected → treat as "all slices stale" (full re-dispatch); migrate to v2.1 on next write.
      - IF a cached starterkit-context.yaml has schema_version < 3.1 (pre-authz `rbac:` shape) → treat the authz slice as STALE and regenerate it in the neutral shape (the rbac->authz reshape is not cache-compatible).
-     c. IF v2.0 schema → per-slice diff:
+     c. IF v2.x schema (v2.1 current; a v2.0-era php/js-only block diffs the same way — its signature inputs changed, so its slices come out stale) → per-slice diff:
         - stale_slices = []
         - For each slice in [auth, authz, ui_ux, libs, reuse]:
             IF prior.cache_signatures.per_slice[<slice>].signature_sha256 != current_<slice>_signature:

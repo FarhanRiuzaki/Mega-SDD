@@ -180,7 +180,7 @@ tools:
         size_mb: 5
 
   - id: jd
-    used_by: [diff-vault, replay]
+    used_by: [diff-vault, execute-bolts]
     purpose: "Canonical JSON/YAML diff with RFC-6902 patches"
     fallback_behavior: "Manual Read+compare via skill body"
     matrix:
@@ -264,7 +264,7 @@ tools:
         size_mb: 15
 
   - id: markdownlint-cli2
-    used_by: [lint-units]
+    used_by: [orchestrate-flow]
     purpose: "Vault prose lint (optional)"
     fallback_behavior: "Skill-internal heuristic checks"
     matrix:

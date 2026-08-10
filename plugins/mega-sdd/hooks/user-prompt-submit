@@ -12,6 +12,37 @@
 set -uo pipefail
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
+# ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ───────
+# This hook fires on EVERY user prompt in EVERY project; resolve cwd + project
+# root in pure shell and exit 0 BEFORE paying a python3 cold-start (~30-150ms;
+# ~220ms+/spawn on EDR-scanned Windows) when there is no .mega-sdd ancestor —
+# the common case. Same builtin last-match cwd extraction + resolve_project_root
+# walk-up as hooks/pre-tool-use, so the .mega-sdd decision is byte-identical;
+# when the cwd can't be extracted OR the resolver helper is absent, it does NOT
+# short-circuit — it falls through to the authoritative python parse below.
+# Context-neutral: the fast path exits silently only on non-mega-sdd projects,
+# where this hook printed nothing anyway.
+SC_CWD=""
+SC_REST="$STDIN_JSON"
+while [[ "$SC_REST" =~ \"cwd\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+  SC_CWD="${BASH_REMATCH[1]}"
+  SC_REST="${BASH_REMATCH[2]}"
+done
+if [ -n "$SC_CWD" ]; then
+  SC_SCRIPT_DIR="${0%/*}"
+  case "$SC_SCRIPT_DIR" in
+    /*) ;;
+    *) SC_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+  esac
+  SC_RPR="${SC_SCRIPT_DIR}/../scripts/_lib/resolve-project-root.sh"
+  if [ -f "$SC_RPR" ]; then
+    # shellcheck disable=SC1090
+    . "$SC_RPR"
+    SC_ROOT=$(resolve_project_root "$SC_CWD")
+    if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+  fi
+fi
+
 # shlex.quote() is load-bearing: the consumer is `eval`, which re-parses a bare
 # `KEY=value` — dropping any value with a space, eating backslashes (so a Windows
 # cwd arrived as `C:proj`), and executing an embedded $(…).

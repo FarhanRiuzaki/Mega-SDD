@@ -1,12 +1,12 @@
 ---
 name: install-deps
-version: 1.7.1
+version: 1.7.2
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
 # Install-Deps — OS-Aware Dependency Installer
 
-**Announce at start:** "I'm using the install-deps skill to audit + install missing native deps."
+**Announce at start:** "I'm using the install-deps skill to audit + install missing native deps. `mega-sdd-trace:install-deps`"
 
 > **Instruction language:** this skill reasons in English. Narrate (the announce, the install-plan proposal, confirmation) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens — tool names, package-manager names, shell commands — stay English (→ `plugins/mega-sdd/references/output-language.md`). *(Greenfield-reachable: "pasang tools" runs with no `.mega-sdd/` signal, so it carries the policy itself.)*
 

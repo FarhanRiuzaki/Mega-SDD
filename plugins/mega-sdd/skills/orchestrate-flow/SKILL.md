@@ -1,12 +1,12 @@
 ---
 name: orchestrate-flow
-version: 2.24.1
+version: 2.24.2
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
 # Orchestrate-Flow — Lifecycle Orchestrator
 
-**Announce at start:** "I'm using the orchestrate-flow skill to inspect CWD and propose the next phases."
+**Announce at start:** "I'm using the orchestrate-flow skill to inspect CWD and propose the next phases. `mega-sdd-trace:orchestrate-flow`"
 
 The orchestrator inspects the working directory, infers where you are in the mega-sdd pipeline, proposes a chain of sub-skills, confirms once, then dispatches them with `--auto`. It generates no content itself — it routes. Heavy detail (decision matrices, preflight catalogs, handoff validation, convergence, halt taxonomy) lives in the references below; this file is the router.
 

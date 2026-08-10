@@ -47,9 +47,9 @@ grep -q "Scope hint received" "$P/skills/detect-drift/SKILL.md" \
   || fail "D6: scope-hint log line missing"
 
 # D7 — mode-dependent artifact documented
-grep -q "DRIFT-ACTIONS.md\` is the INTERACTIVE" "$P/skills/orchestrate-flow/references/routing-rules.md" \
-  && pass "D7: DRIFT-ACTIONS auto-mode absence documented" \
-  || fail "D7: DRIFT-ACTIONS mode note missing"
+grep -q "DRIFT-ACTIONS.md\` is the RETIRED" "$P/skills/orchestrate-flow/references/routing-rules.md" \
+  && pass "D7: DRIFT-ACTIONS documented as retired in every mode (PENDING-SYNC is the only queue)" \
+  || fail "D7: DRIFT-ACTIONS retirement note missing"
 
 # D8 — validator scope-args seam (FUNCTIONAL — runs the real validator 3 ways)
 T=$(mktemp -d)

@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.20.2
+version: 2.20.3
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task
 
 Turns intent into actionable atomic specs for AI dev execution. Each unit corresponds to one bolt — one PR-sized code commit handed off to `execute-bolts`.
 
-**Announce at start:** "I'm using the generate-units skill to decompose the vault into atomic units."
+**Announce at start:** "I'm using the generate-units skill to decompose the vault into atomic units. `mega-sdd-trace:generate-units`"
 
 ## When to use
 

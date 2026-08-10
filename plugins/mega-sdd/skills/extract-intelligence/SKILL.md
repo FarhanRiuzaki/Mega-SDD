@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.18.1
+version: 1.18.2
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild — wave-based extraction produces .mega-sdd/knowledge-base/ with [VERIFIED]/[INFERRED]/[OPEN] + [LOCKED]/[INTENT]/[ARTIFACT] markers, consumed by generate-intent --kb and bind-codebase. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Tech-agnostic domain extractor for legacy codebases targeted for re
 
 Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowledge base organized by **business domain**, not by code structure. Output describes WHAT the system does in tech-agnostic terms, not HOW the legacy stack implements it. Source-of-truth for rebuild planning on a different stack.
 
-**Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase."
+**Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase. `mega-sdd-trace:extract-intelligence`"
 
 > **Skill instruction language:** this skill reasons in English; KB content stays tech-agnostic per the `[VERIFIED]`/`[INFERRED]`/`[OPEN]` schema. Narrate (the announce, wave progress, summaries) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens (markers, citations, `sha256:`) stay English (→ `plugins/mega-sdd/references/output-language.md`).
 
@@ -213,11 +213,11 @@ After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, 
 2. Compute current sha256 for each source file.
 3. Build source_files_sha256_map:
    { "<repo-relative-path>": "<sha256-hex>", ... }
-4. Write atomically to <kb-dir>/.shared-snapshots/extracted-kb.snapshot.json:
+4. Write atomically to <kb-dir>/.shared-snapshots/extracted-kb.snapshot.json (every `<...>` is a fill-in; `<skill-version>` = this SKILL.md frontmatter `version:`):
    {
      "snapshot_schema_version": "1.1",
      "snapshot_type": "extracted-kb",
-     "generated_by": "extract-intelligence@1.6.0",
+     "generated_by": "extract-intelligence@<skill-version>",
      "generated_at": "<ISO8601 at extraction completion>",
      "scope": null,
      "files": [],
@@ -248,13 +248,13 @@ The contract makes extraction *falsifiable*: it summarizes how well each of the 
 
 **`overall_status`:** `PASS` = all six COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
 
-**Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure.
+**Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure. (In the JSON below every `<...>` is a fill-in; `<skill-version>` = this SKILL.md frontmatter `version:`.)
 
 ```json
 {
   "version": "1.1",
   "extracted_at": "<ISO8601>",
-  "extractor_version": "extract-intelligence@1.11.0",
+  "extractor_version": "extract-intelligence@<skill-version>",
   "scope": { "legacy_root": "<path>", "files_in_scope": 0, "files_read_fully": 0 },
   "principles": {
     "P1_state_provenance":        { "status": "COVERED|PARTIAL|MISSING", "anomalies_count": 0, "anomalies": [] },

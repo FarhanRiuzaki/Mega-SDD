@@ -125,7 +125,8 @@ a jsx.yml would double-count every .jsx symbol). Only the original 9 languages h
 `.scm` mirror in the opt-in tree-sitter lane; the other 11 extract at AST tier in AUTO
 only. The extraction invocation, the
 verified JSON contract (0-based lines, `lines` = full node text, dedupe by
-`(file, start.line)`), and the `---`-separator concatenation seam live in
+`(file, range.start.line, ruleId)` — never the 2-tuple, which drops a real
+definition), and the `---`-separator concatenation seam live in
 scan-procedure.md §Step 5 "If `engine: ast-grep`". Reference captures
 (`@name.reference.*`) do NOT exist at tier 2 — and since 5.29.0 nothing consumes them
 (the generate-units PageRank pass was removed; reuse now rides the write-time

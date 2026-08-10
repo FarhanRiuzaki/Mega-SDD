@@ -3,10 +3,9 @@
 ## Contents
 - DRIFT-REPORT.md structure
 - Per-finding examples (decisions, schema, flow)
-- DRIFT-ACTIONS.md structure
 - Vault write-back protocol (Step 5.5)
 
-Loaded by `detect-drift` Steps 4–6. The report IS the artifact. Since v3.0.0 detect-drift is forked + non-interactive: Step 5 **queues** direction calls to `PENDING-SYNC.md` (no walkthrough); only the `--auto-apply=safe` class is written back. `DRIFT-ACTIONS.md` and the batch-confirm ACCEPT UX below are **deprecated (v3.0.0)** — retained for reference / historical artifacts only.
+Loaded by `detect-drift` Steps 4–6. The report IS the artifact. Since v3.0.0 detect-drift is forked + non-interactive: Step 5 **queues** direction calls to `PENDING-SYNC.md` (no walkthrough); only the `--auto-apply=safe` class is written back. `DRIFT-ACTIONS.md` and the batch-confirm ACCEPT UX are **deprecated (v3.0.0)** — no step writes them anymore; historical copies may exist in old vaults.
 
 ## DRIFT-REPORT.md structure
 
@@ -132,30 +131,11 @@ In the **sync lane** (Mode D) the chain auto-continues to claim-scoped re-bind (
 - Record which dirs were scanned vs excluded.
 - If a framework was mis-detected, re-run with an explicit `SCOPE_DIRS` override.
 
-## DRIFT-ACTIONS.md structure
-
-Written only when the interactive walkthrough (Step 5) captures decisions. The skill records choices; it does not execute them.
-
-```markdown
-# Drift Actions — chosen YYYY-MM-DD
-
-## Code-side actions (assign to engineering)
-- **D-007 violation**: extend `app/Services/SourceAccountFilter.php` to match D-007. Owner: <BE Lead>.
-- **Type drift `failed_debit_count`**: new migration to rename + change type. Owner: <BE>.
-
-## Vault-side actions
-- **Decision unwritten (idempotency)**: promote to a new ADR — edit `05-decisions.md`, or run `resolve-oq` if an `OQ-DC-N` is open.
-- **Missing flow `RecalculateInterestJob`**: append `F-S-{next}` to `04-flows.md`.
-
-## Deferred
-- <findings marked "review later">
-```
-
 ## Vault write-back protocol (Step 5.5 — living-vault S5)
 
-Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-only" boundary for VAULT-side actions, with guardrails. Code-side remains untouched: the skill never edits app source (`FIX_CODE` actions stay out-of-band, tracked in `DRIFT-ACTIONS.md`).
+Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-only" boundary for VAULT-side actions, with guardrails. Code-side remains untouched: the skill never edits app source (`FIX_CODE` directions stay out-of-band, queued in `PENDING-SYNC.md` for human follow-up).
 
-**Per-category patch shapes** (drafted per accepted `UPDATE_VAULT` action):
+**Per-category patch shapes** (drafted per `--auto-apply=safe`-eligible `UPDATE_VAULT` finding):
 
 | Drift category | Vault patch drafted |
 |---|---|
@@ -168,10 +148,10 @@ Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-o
 **Provenance line (MANDATORY on every patch):** appended to the patched section as
 `(synced from code: <short-sha> "<commit subject>" — <author>, <date>)` derived from `git log -1 --format='%h|%s|%an|%ad' -- <anchor file>`. Working-tree-only changes (no commit yet) → `(synced from working tree, uncommitted — drift session <date>)`. The provenance is the citation — a patch the skill cannot source to the finding's code evidence MUST NOT be drafted.
 
-**Batch-confirm UX:** all drafts presented as ONE diff (per-file hunks); user choices are ACCEPT ALL / pick per-patch / REJECT ALL. Nothing is written before the explicit ACCEPT. Rejected drafts are preserved in `DRIFT-ACTIONS.md` as `proposed_patch:` blocks for later manual use.
+**Selection is deterministic (non-interactive):** ONLY the `--auto-apply=safe` class from Step 5 is applied — there is no diff presentation and no ACCEPT prompt (a fork cannot confirm). Every out-of-class draft is preserved as a `proposed_patch:` block on its `PENDING-SYNC.md` entry for later manual use; nothing outside the safe class is ever written.
 
-**On ACCEPT:** apply the patches; append a `00-index.md` Changelog entry listing every patched section + provenance; bump the vault version (minor); refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (W5: the script re-derives the structural mirror from the patched markdown and holds the `vault.json.lock` itself — exit 4 → `memory_in_use` halt; never hand-write vault.json). The next `bind-codebase` run then re-verdicts the patched claims (in the sync lane, `--paths` covers them automatically since their vault sections changed).
+**On apply (per auto-applied patch):** apply the patches; append a `00-index.md` Changelog entry listing every patched section + provenance; bump the vault version (small bump vX.Y+1 — grammar per diff-vault's `references/diff-procedure.md`); refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (W5: the script re-derives the structural mirror from the patched markdown and holds the `vault.json.lock` itself — exit 4 → `memory_in_use` halt; never hand-write vault.json). The next `bind-codebase` run then re-verdicts the patched claims (in the sync lane, `--paths` covers them automatically since their vault sections changed).
 
-**Rails:** never auto-accept; never patch from inference (only from the finding's cited code evidence); LOW-confidence findings are NOT write-back eligible (report-only); `[LOCKED]`-tier claims are NEVER patched from code (a CRITICAL drift on a locked claim is a compliance escalation, not a sync) — surface and stop.
+**Rails:** the safe class is the ONLY write path — never widen it; never patch from inference (only from the finding's cited code evidence); LOW-confidence findings are NOT write-back eligible (report-only); `[LOCKED]`-tier claims are NEVER patched from code (a CRITICAL drift on a locked claim is a compliance escalation, not a sync) — surface and stop.
 
-**No write-back path (user declines / report-only run):** behavior is unchanged from the historical boundary — the Changelog entry records the drift *session* only, the vault version stays put, `vault.json` is untouched, and `DRIFT-ACTIONS.md` keeps the tentative-vs-landed boundary explicit.
+**No write-back applied (nothing in the safe class / `--auto-apply` not set):** the Changelog entry records the drift *session* only, the vault version stays put, and `vault.json` is untouched — every direction call waits in `PENDING-SYNC.md`.

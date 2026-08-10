@@ -27,6 +27,7 @@ All 5 subagents follow this contract:
 - **Output format:** structured YAML matching the assigned slice in `starterkit-context-schema.md`
 - **Anti-halu rail:** if a lib is not detected in manifests OR not found in code probes, emit `lib: not_detected` — NEVER guess
 - **Citation rail:** every output field MUST be backed by `_source: [<file>, ...]` companion field
+- **Observability tag:** the dispatcher appends `mega-sdd-trace:scan-codebase` as the final line of every assembled dispatch prompt (fresh-context subagents never see the session anchor, so the tag must ride the prompt — one token, verbatim, no variants)
 
 ## Variable substitution
 
