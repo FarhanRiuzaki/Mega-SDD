@@ -1,7 +1,7 @@
 # P5 — measurement runbook (A7 protocol) + baseline arm results
 
 **Date:** 2026-08-04
-**Status:** BASELINE MEASURED · express arm PENDING (requires an interactive user run — P0 OQs need AskUserQuestion; a headless arm is invalid per `2026-07-20-fork-ab-headless-attempt.md`)
+**Status:** COMPLETE — both arms measured; published in the repo README §"Measured: classic vs express spine" (2026-08-10). Convention AMENDMENT (2026-08-10, applied to BOTH arms identically): the extractor gained an idle rule — any inter-record gap > 10 min counts as wait regardless of the next record's type (the machine cannot work without appending records; the first cut missed a ~21h overnight gap whose next record was a resume record, and an ASK-open interval is never double-billed as USER/IDLE). Classic ep2 net moved 3h30m21s → 3h09m53s under the amended rule; classic ep1 unchanged.
 **Protocol source:** spec `2026-08-03-v6-express-spine-design.md` §P5 + amendment A7 (`2026-08-03-v6-express-spine-best-practices.md`): endpoint = acceptance-VERIFIED bolt (never first diff); human-wait explicitly in or out of the clock; speed paired with a quality counterweight; same repo, comparable task class; **never self-reported** (METR RCT: devs 19% slower while believing +20% faster — perception is inadmissible; every number below comes from transcript timestamps, transcript `usage` fields, and git commit timestamps — deterministic channels the model cannot narrate into existence).
 
 ## Arms
@@ -52,6 +52,23 @@ Phase timeline (UTC): scan 06:53 → generate-intent 07:22 → resolve-oq 07:56�
 4. Start the run with a plain request to build from `PRD/prd-simkredit.md` (e.g. "jalankan mega-sdd dari PRD/prd-simkredit.md sampai bolt pertama"). Answer OQs as they come — answer time is measured as human-wait, so answer at natural pace.
 5. Stop condition: at minimum the FIRST unit commit (primary endpoint); continuing to all bolts gives the secondary number.
 6. Afterwards: run `/mega-sdd:analyze` (counterweight), then hand the session back for extraction — the transcript filename + `git log --format="%h %cI %s"` are the only inputs needed.
+
+## Arm B — EXPRESS (measured 2026-08-10 from sessions `23cdaf7b` + `15315fdd` + git; run 2026-08-04 → 2026-08-06, plugin 6.0.1, claude-opus-5 100% both sessions)
+
+Two sequential sessions (gap 59s, counted as wait). Session A active span 4h38m03s, wait 218.3 min → net 59m46s; session B to each endpoint per the extractor. Combined:
+
+| Metric | → first `feat(U-001)` commit (`7e6f49b`, 2026-08-05T04:11:38Z) | → all 10 units (`f60ca04`, 2026-08-06T09:25:19Z) |
+|---|---|---|
+| Gross wall-clock | 20h 50m (2 overnights) | 50h 04m |
+| Human-wait + idle | 19h 05m | 42h 16m |
+| **Net machine time** | **1h 44m 52s** | 7h 47m 55s |
+| Raw tokens | 99.8M | 251.1M |
+| **Cost-weighted tokens** | **18.6M** | 39.7M |
+| Rework | 0 fix commits in window | 8 `fix(U-*)` commits (incl. 1 panel-caught Critical: fail-open DTI) |
+
+**Comparability ruling (A7):** the PRIMARY endpoint is task-class comparable (scaffolding-class first unit on the same repo/commit/PRD/model) — express: net −7%, cost-weighted −34%. The FULL-RUN figures are NOT task-class comparable (7 chore units vs 10 feature units incl. an engine with 23→55 tests) and are published with that statement, never normalized into a per-unit claim. The express run predates v6.1.0 — its measured attempt-loop churn (3 attempts on U-001/U-002, full re-panels, 8 fix rounds) is exactly what v6.1.0 redesigned; the 6.1.0 effect is to be measured by this same procedure on a post-6.1.0 run.
+
+**Verdict on the target:** "<10 minutes PRD → first bolt" **FAILED** (floor ≈ 1h45m net with all gates live). Published as such in the README.
 
 ## Publication
 
