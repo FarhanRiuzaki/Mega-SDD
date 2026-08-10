@@ -329,7 +329,8 @@ if units:
         as_a = u["as_a"] or SCOPE_AS_A.get(u["scope"].upper(), "User of %s" % (u["scope"] or "the system"))
         i_want = u["i_want"] or u["title"]
         so_that = u["so_that"] or u["business_value"] or "(unspecified)"
-        ats = ("`%s` (expects: %s)" % (u["cmd"], u["expected"] or "pass")) if u["cmd"] else "(no acceptance_test declared)"
+        # empty expects = exit-code criterion; never fabricate a "pass" token the unit doesn't carry
+        ats = (("`%s` (expects: %s)" % (u["cmd"], u["expected"])) if u["expected"] else ("`%s` (exit-code criterion)" % u["cmd"])) if u["cmd"] else "(no acceptance_test declared)"
         b = US_TPL
         for k, v in (("unit_id_short", u["id"].replace("U-", "")), ("unit_title", u["title"]),
                      ("as_a", as_a), ("i_want", i_want), ("so_that", so_that),
@@ -586,7 +587,7 @@ slots["section-8-entities-content"] = ents or (pend(cb_rel) if not cbmap else "(
 if mode == "pre-dev":
     r9 = []
     for u in units:
-        r9.append("| %s | `%s` (expects: %s) | Pending |" % (u["id"], u["cmd"] or "—", u["expected"] or "pass"))
+        r9.append("| %s | `%s`%s | Pending |" % (u["id"], u["cmd"] or "—", (" (expects: %s)" % u["expected"]) if u["expected"] else ""))
         cite(9, u["rel"])
     slots["section-9-pre-dev-table"] = "\n".join(r9) if r9 else "| — | Pending — units/ not yet generated | — |"
 else:

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.1.1] - 2026-08-10 — field patch (express-vault OQ declarations, expects contract)
+
+Two defects measured in the P5 express field run:
+
+- **F1** — `validate-handoff-binding-units.sh`: vault.json OQ ids (`tag` or `id`) now count as declarations — an express-born vault has NO binding.md, so every unit-cited OQ produced a false `oq_id_extra` (25 measured, `binding_docs_checked: 0`). Mechanism proven by the p8 live fixture arms (corroborated against a copy of the field vault, which is outside this repo), with the negative arm intact (an id in neither binding nor vault.json still flags) and fail-closed on unreadable vault.json (contributes nothing, never widens). CONFLICT ids stay binding-only. Summary gains `oq_ids_in_vault`.
+- **F2** — `unit-schema.md` taught the defect: its own example read `expects: "passes"`, a description — but the acceptance matcher passes on `exit==0 AND (expects empty OR expects LITERALLY in output)`, and jest never prints that word (4 field units needed fix commits). The schema now states the substring contract and both examples use the empty form.
+- Proof: `tests/surface/test-p8-field-patch-611.sh` (live fixture arms: vault-declared pass, ghost-id still flagged, unreadable-vault fail-closed; schema pins).
+
 ## [6.1.0] - 2026-08-10 — bolt-loop efficiency (attempt rounds, lens returns, churn cuts)
 
 The attempt cycle (implement → FULL lens re-panel → gates → evidence) was measured as the dominant context burner on the P5 express arm (research `2026-08-06-bolt-loop-context-efficiency.md`; spec `2026-08-06-v6.1-bolt-loop-efficiency.md`). Every deterministic gate keeps running FULL-HEAD on every attempt — this release redistributes the judgment tier's rounds and the controller↔subagent byte-channels only. Dual-blind round: 5 blockers (D5 half-landed in SKILL+code-gates; two test suites red against the spec's own update claim; the emitted ai-consumer-guide template taught the comment citations D6 bans) + 4 majors (escape-hatch ledger deadlock; verifier one-Glob path breach — fixed structurally; stale catalog roll-up; two untraceable field numbers) — ALL folded pre-ship, disclosure in the spec.

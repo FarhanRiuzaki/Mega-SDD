@@ -13,7 +13,7 @@ existing_interfaces:
 acceptance_test:
   - type: test
     command: <command>
-    expects: passes
+    expects: ""                # substring the runner LITERALLY prints, or EMPTY (exit-0 criterion) — never a description (unit-schema.md)
 binding_refs: []
 ---
 
