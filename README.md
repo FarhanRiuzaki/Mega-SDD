@@ -144,6 +144,20 @@ Every handoff is contracted and grounded. The seven layers that matter most:
 
 The full defense in depth (20 layers, including the code-delivery quality gates): [plugin README — How it prevents hallucination](plugins/mega-sdd/README.md#how-it-prevents-hallucination).
 
+## Measured: classic vs express spine (P5, 2026-08)
+
+Both arms: the SAME repo at the SAME commit, the same PRD, the same model (claude-opus-5, 100% of API calls in every session), run interactively by the same operator. Numbers come from deterministic channels only — transcript timestamps + `usage` fields and git commit times, extracted by `research/2026-08-04-p5-extract.py` with identical conventions for both arms (human-wait = ASK gaps + >30s pre-input gaps + any >10min inter-record idle; subtracted for the net figure). Protocol + full detail: `research/2026-08-04-p5-measurement-runbook.md`.
+
+| PRD → first acceptance-backed unit commit | classic (v5.9-era) | express (v6.0.1) | Δ |
+|---|---|---|---|
+| Net machine time | 1h 53m | **1h 45m** | −7% |
+| Cost-weighted tokens | 28.2M | **18.6M** | **−34%** |
+| Rework in window | 0 fix commits | 0 fix commits | — |
+
+Full-run figures are published but NOT task-class comparable and are stated as such: classic delivered 7 monorepo-conversion chore units (net 3h10m, 32.5M cw, 0 fix commits); express delivered 10 feature units — auth module, credit-calculation engine (tests 23→55), CRUD + audit trail, dashboard — at net 7h48m, 39.7M cw, with 8 in-run fix commits including a panel-caught Critical (fail-open DTI check). The fix-round churn measured in that run is what v6.1.0 redesigned (`docs/superpowers/specs/2026-08-06-v6.1-bolt-loop-efficiency.md`); its effect will be measured the same way, not asserted.
+
+**The honest verdict:** the original "<10 minutes to first bolt" target FAILED — the pipeline's floor to a verified first delivery on this repo is ~1¾ hours of machine time with all gates live. The express spine's real, measured wins are the −34% cost and the collapse of interactive OQ ceremony; the quality counterweight (acceptance tests executed per unit, review panel catching a real Critical in-run) is what the remaining time buys.
+
 ## What makes mega-sdd special
 
 Most AI-dev tools take a PRD → spit code in one shot. **Mega-sdd inserts structured intermediate artifacts** (vault → binding → units → bolts) so every layer is auditable, every handoff is contracted, and the AI agent has explicit constraints to respect at each step.

@@ -12,6 +12,11 @@ Conventions (pinned in research/2026-08-04-p5-measurement-runbook.md):
 - clock start = first record timestamp of the session
 - human-wait  = AskUserQuestion open->result gap, plus any >30s gap preceding
   a human text input; reported separately, subtracted for the net number
+- idle rule (amended 2026-08-10, applied to BOTH arms identically): ANY
+  inter-record gap > 10 min counts as idle regardless of the next record's
+  type — the machine cannot work without appending records, so a long silent
+  gap is wait even when the next record is a resume/meta record rather than
+  typed human input (the first cut missed a ~21h overnight gap this way)
 - cost weights = report-token-cost.sh Opus ratios (input x1, cache_creation
   x1.25 @5m / x2.0 @1h, cache_read x0.1, output x5)
 """
@@ -92,6 +97,15 @@ def main():
                 if t <= ep:
                     acc[0] += raw_of(u)
                     acc[1] += cw_of(u)
+        # gap check FIRST, against the ask-state at record START — while an
+        # AskUserQuestion is open its ASK event carries the whole interval;
+        # counting USER/IDLE gaps too would double-bill the wait
+        if prev is not None and ask_open is None:
+            gap = (t - prev).total_seconds()
+            if is_human_input(r) and gap > 30:
+                wait_events.append((t, "USER", gap))
+            elif gap > 600:
+                wait_events.append((t, "IDLE", gap))
         c = m.get("content")
         if isinstance(c, list):
             for item in c:
@@ -104,10 +118,6 @@ def main():
                     if gap > 5:
                         wait_events.append((t, "ASK", gap))
                     ask_open = None
-        if prev is not None and is_human_input(r):
-            gap = (t - prev).total_seconds()
-            if gap > 30:
-                wait_events.append((t, "USER", gap))
         prev = t
 
     print("session_start=%s  records=%d  models=%s" % (start.isoformat(), len(recs), models))
