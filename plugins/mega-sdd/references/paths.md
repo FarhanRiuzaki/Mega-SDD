@@ -44,7 +44,9 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
 │   │   ├── bolts/U-*/acceptance.json              # B4 acceptance evidence (run-acceptance-tests.sh)
 │   │   ├── bolts/U-*/dispatch-prompt.md           # Assembled bolt dispatch (build-dispatch-prompt.sh)
+│   │   ├── bolts/U-*/findings.json                # Review-panel finding ledger (controller-written; review-panel.md §Attempt rounds)
 │   │   ├── lens-inputs/U-*/design-slice.md        # Controller-written REVIEW-LENS inputs ONLY — never implementer/reviewer output (review-panel.md §Blind dispatch)
+│   │   ├── lens-inputs/U-*/l0-results.json        # L0 code-gate results for the panel (controller-written, overwritten per round)
 │   │   ├── interfaces/                            # Multi-squad interface notes
 │   │   ├── fsd/                                   # Confluence FSD output (emit-fsd)
 │   │   │   ├── FSD.md                             # Markdown source

@@ -34,7 +34,7 @@ This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read 
 
 - **Do not inject requirements** that aren't in the vault. If a new requirement is needed → STOP, append it to `## Open Questions` in the relevant doc and ask the user.
 - **Do not skip Definition of Done**. For each flow you implement, validate DoD before marking it complete.
-- **Cite the vault** in commit messages or code comments when touching business logic — e.g., `// Per vault 04-flows.md F-U-001 step 5`.
+- **Cite the vault** in commit messages when touching business logic — e.g., `feat: cap tenor per vault 04-flows.md F-U-001 step 5`. Never put a vault claim/flow/OQ id in a CODE COMMENT — those id strings rot into misinformation and no validator consumes them there; trace lives in commits, unit specs, and reports.
 
 ## When you encounter an inconsistency
 

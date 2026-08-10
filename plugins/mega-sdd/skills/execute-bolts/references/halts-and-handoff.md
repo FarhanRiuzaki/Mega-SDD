@@ -172,6 +172,9 @@ Per unit:
   `scripts/compute-unit-staleness.sh` later compares these to the working tree — a mismatch marks the unit `stale` for the sync lane. Older bolt-reports without the field → staleness is `unknown` (treated as not-stale; never guessed).
 - `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff (script-written by `run-preflight-scan.sh`; hook-guarded).
 - `<vault>/bolts/U-XXX/postflight.json` — Hard rule post-flight check results (per-rule pass/fail + evidence).
+- `<vault>/bolts/U-XXX/findings.json` — the review-panel finding ledger (controller-written working state; `review-panel.md §Attempt rounds`).
+
+**Evidence-commit batching (spec D7).** When the project versions `.mega-sdd/` in git: ALL state-file refreshes + bolt artifacts produced by one unit's attempt cycle are staged into ONE evidence commit at unit completion (`chore(sdd): evidence U-XXX — …`). A standalone gate-state-refresh commit (`chore(sdd): refresh gate state`) is never emitted — the measured field run landed such commits seconds apart, pure history spam. Projects that gitignore `.mega-sdd/` are unaffected; the unit's CODE commit stays atomic and separate per the bolt contract.
 
 Global:
 - Update `<vault>/vault.json` changelog: `{ "event": "bolt_completed", "unit": "U-XXX", "commits": [...] }`.

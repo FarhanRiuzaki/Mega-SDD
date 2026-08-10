@@ -1,6 +1,6 @@
 ---
 name: code-quality-reviewer
-description: Reviews a bolt's code for quality — duplication and failure-to-reuse, test quality, over-engineering, maintainability, single-responsibility files following the unit's intended structure. Read-only. Runs as one lens of the execute-bolts review panel, blind to the other lenses. Returns Strengths, Issues graded Critical/Important/Minor with file:line references, and an overall Assessment.
+description: Reviews a bolt's code for quality — duplication and failure-to-reuse, test quality, over-engineering, maintainability, single-responsibility files following the unit's intended structure. Read-only. Runs as one lens of the execute-bolts review panel, blind to the other lenses. Returns severity-graded findings with file:line evidence.
 tools: Read, Grep, Glob, Bash
 model: opus
 color: purple
@@ -37,12 +37,18 @@ Out of your lane (other panel lenses or machines own these — do not duplicate)
 
 Be specific: every issue gets a `file:line` reference and a concrete suggestion for the fix. Don't invent problems to look thorough — if the code is good, say so.
 
-## Report
+## Report — findings only, no narrative (return-size contract)
 
-- **Strengths** — what's genuinely well done.
-- **Issues** — grouped Critical / Important / Minor, each with `file:line` + a fix.
-- For duplication / over-engineering findings, lead the line with its tag: `file:line: <tag> <what>. <replacement>.` When the change could be meaningfully shorter, close the Assessment with `net: −N lines possible.`
-- **Assessment** — one paragraph: is this mergeable as-is, mergeable after the Important fixes, or blocked on Criticals?
+Your final text is parsed by the controller's merge and lands verbatim in the orchestrator's context — return EXACTLY this shape (target ≤2k tokens), nothing else:
+
+```
+FINDINGS:
+- Critical | file:line | <title ≤80 chars, duplication/over-engineering findings lead with their tag> | <issue + fix, ≤3 sentences>
+(or `FINDINGS: none`)
+SUMMARY: <≤2 sentences — mergeable as-is / after Important fixes / blocked on Criticals; append `net: −N lines possible.` when the change could be meaningfully shorter>
+```
+
+A finding without a real `file:line` anchor is dropped at merge — do not emit it. No Strengths section, no Assessment paragraph, no restating the unit or the diff: your full reasoning stays in your own (disposable) context; the return is the distilled verdict.
 
 ## Read-only discipline
 

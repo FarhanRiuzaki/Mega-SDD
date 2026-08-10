@@ -24,7 +24,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
 | 6 | Dep authorization (ADVISORY) | `scripts/check-dep-authorization.sh --unit= --base= --head=` | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
-**Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller no longer runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned — on a blocking run it does strictly less work than the per-turn flow it replaced), and emits ONE merged JSON on stdout — the exact `## Deterministic scan results` payload. It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in SKILL.md Procedure step 3 — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
+**Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller no longer runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned — on a blocking run it does strictly less work than the per-turn flow it replaced), and emits ONE merged JSON on stdout — the payload the controller Writes to `<vault>/lens-inputs/U-XXX/l0-results.json` for the panel (spec D5). It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in SKILL.md Procedure step 3 — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
 
 ```
 bash <plugin-root>/scripts/run-code-gates.sh \
@@ -90,7 +90,7 @@ halt:
 
 ## Feeding results into the panel
 
-The wrapper's stdout JSON — gate results, skips, `not_run[]` — is the merged L0 JSON, appended verbatim to each review-panel lens prompt as a `## Deterministic scan results` block (the controller pastes it; it never re-assembles or summarizes the per-gate results). Lenses do NOT re-report machine-caught findings; the security lens verifies blockers were addressed and hunts what scanners can't see (authz semantics, architectural drift). This keeps the blind protocol intact — L0 output is machine fact, not another lens's opinion.
+The wrapper's stdout JSON — gate results, skips, `not_run[]` — is the merged L0 JSON. The controller Writes it ONCE, verbatim, to `<vault>/lens-inputs/U-XXX/l0-results.json` and puts that PATH in each review-panel lens/verifier prompt (it never re-assembles, summarizes, or pastes the per-gate results per lens; a re-round OVERWRITES the file with the fresh run — `review-panel.md §Blind dispatch`). Lenses do NOT re-report machine-caught findings; the security lens verifies blockers were addressed and hunts what scanners can't see (authz semantics, architectural drift). This keeps the blind protocol intact — L0 output is machine fact, not another lens's opinion.
 
 ## Config + opt-out
 

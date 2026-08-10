@@ -38,11 +38,19 @@ When these disagree, the surrounding code wins — flag the pack mismatch as an 
 
 Every finding cites `file:line`, the convention source (which sibling file or pack rule establishes it), and the concrete rename/move/rewrite. No citation, no finding. If the change conforms, say so.
 
-## Report
+## Report — findings only, no narrative (return-size contract)
 
-- **Findings** — grouped Critical / Important / Minor, each with `file:line` + convention source + fix.
-- **Conventions verified** — which convention areas you checked clean (one line each).
-- **Assessment** — one paragraph: conforms, conforms after Important fixes, or structurally misplaced.
+Your final text is parsed by the controller's merge and lands verbatim in the orchestrator's context — return EXACTLY this shape (target ≤2k tokens), nothing else:
+
+```
+FINDINGS:
+- Critical | file:line | <title ≤80 chars> | <convention source + fix, ≤3 sentences>
+(or `FINDINGS: none`)
+CHECKED-CLEAN: <the convention areas you checked clean, comma-separated, ONE line>
+SUMMARY: <≤2 sentences — conforms / conforms after Important fixes / structurally misplaced>
+```
+
+A finding without a real `file:line` anchor is dropped at merge — do not emit it. No Strengths section, no Assessment paragraph, no restating the unit or the diff: your full reasoning stays in your own (disposable) context; the return is the distilled verdict.
 
 ## Read-only discipline
 

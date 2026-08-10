@@ -23,6 +23,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
    - `mega-sdd:security-reviewer` — reviews security: input validation, authz vs spec, secrets, new deps, drift (read-only).
    - `mega-sdd:standards-reviewer` — reviews convention conformance vs pack + surrounding code (read-only).
    - `mega-sdd:design-reviewer` — reviews modern UI quality vs the vault design system (read-only; UI-bearing units only).
+   - `mega-sdd:resolution-verifier` — fix rounds only: verifies each open ledger finding at the new head + delta-reviews the fix range (read-only; replaces the lens re-panel per `review-panel.md §Attempt rounds`).
 
    `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh implementer per unit, then the **review panel** (parallel blind lenses per `references/review-panel.md`). Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 
@@ -90,16 +91,19 @@ DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-o
    (+ Goal/Out-of-scope for the quality lens; the design slice unchanged),
    NOT the Implementation-steps narrative and NOT Goal/Context/Out-of-scope
    for security/standards — per `review-panel.md §Blind dispatch`)
-   + base/head SHAs + its lens-specific context.
+   + base/head SHAs + the lens-inputs/U-XXX/l0-results.json path + its
+   lens-specific context. Returns are findings-only (return-size contract).
    NEVER the implementer's report, NEVER another lens's verdict.
    ▼
-MERGE in the controller (main thread)
+MERGE in the controller (main thread) → finding ledger bolts/U-XXX/findings.json
    evidence-or-drop (no file:line → discarded) → dedup, max severity → consensus marks
-   ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer with the merged
-   │  issue list (shared cap: --max-retries, default 3); the re-dispatch
-   │  RE-ENTERS at "RUN L0 code gates" (fresh scans against the new head;
-   │  re-review prompts carry the NEW results); re-review stays blind, diff
-   │  range keeps the ORIGINAL bolt base.
+   ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer BY POINTER
+   │  (findings.json path + open finding IDs — never inlined; shared cap:
+   │  --max-retries, default 3); the re-dispatch
+   │  RE-ENTERS at "RUN L0 code gates" (fresh scans against the new head),
+   │  then the FIX ROUND is reviewed by ONE resolution-verifier dispatch
+   │  (verify each open finding + delta-review the fix range; full re-panel
+   │  only via the logged escape hatch) — review-panel.md §Attempt rounds.
    │  Retries EXHAUSTED with a Critical still open OR spec still ❌
    │  → halt review_critical_unresolved
    ▼ clean (only Minor/Important remain — recorded in bolt-report ## Review panel)
@@ -107,10 +111,11 @@ run post-flight scan (run-postflight-scan.sh), write bolt-report.md, mark unit D
    └─ tests still failing after retries → halt, bolt-report with failure analysis, surface to user
 ```
 
-The agent never inherits session history; it gets exactly what the controller passes. **Two different constructions:**
+The agent never inherits session history; it gets exactly what the controller passes. **Three different constructions:**
 
 - **`bolt-implementer`** — the controller does NOT construct its prompt. It runs `scripts/build-dispatch-prompt.sh` (SKILL.md §Step 4.5), which writes the full tiered T1/T2 prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`, and dispatches with the returned `inline_core` VERBATIM — a ≤700B pointer the implementer follows to Read that file. The controller never re-types or paraphrases the assembled prompt. Emitted shape → `references/bolt-dispatch-prompt.md`; spec → `references/context-enrichment.md`.
 - **The review lenses** — still controller-constructed, per `references/review-panel.md §Blind dispatch` (per-lens unit-body slices + lens-specific context). They are NOT given `inline_core`, never read the implementer's report, and **are never given a path that reaches another lens's verdict or the implementer's self-report** — which forbids `<vault>/bolts/U-XXX/` (it holds `bolt-report.md`) and permits `<vault>/lens-inputs/U-XXX/` (controller-written lens inputs only). The design lens's rubric arrives as the builder's `design_slice_path`, pointing at `<vault>/lens-inputs/U-XXX/design-slice.md`.
+- **The resolution-verifier** (fix rounds) — controller-constructed: the UNIT FILE path (`<vault>/units/U-XXX.md`, never `dispatch-prompt.md`), base/prev/new SHAs, the `l0-results.json` path, and the `findings.json` path + open finding IDs. It sees prior findings BY DESIGN (its function is verifying their resolution); `findings.json` is the ONLY file it may read inside `bolts/U-XXX/` — its contract forbids Glob of that directory and every other file there (`review-panel.md §Attempt rounds`).
 
 > Post-flight Hard Rule validation (ast-grep) still runs per `references/hard-rule-scan.md` regardless of dispatch path. The spec-reviewer's Hard-rule check is defense-in-depth, not a replacement for the deterministic scan + the PreToolUse gate.
 
@@ -172,7 +177,11 @@ scope: <scope-id>              # only when vault.json carries scope_metadata
 HALTED review_critical_unresolved (an open Critical or a still-❌ spec lens at
 cap exhaustion; the halt is terminal, the bolt never "proceeds" over it) — the
 halt ref.
-Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.>
+Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.
+Derived from the finding ledger (`findings.json`, review-panel.md §Attempt
+rounds) at unit completion AND on any halt; carries per-round outcomes:
+advisory findings, resolution-verifier verdicts per round, and any
+escape-hatch full re-panel with its stated cause.>
 
 ## Failures (if any)
 <test output, error messages, hypothesis>

@@ -32,7 +32,16 @@ You are read-only: never Write/Edit, and never run a Bash command that mutates t
 
 **Verify by reading code and the `base..head` diff — your evidence is the repo, nothing else.**
 
-## Report
+## Report — findings only, no narrative (return-size contract)
 
-- **✅ Spec compliant** — if everything matches after independent code inspection, OR
-- **❌ Issues found** — list specifically what is missing, extra, or wrong, each with a `file:line` reference, and call out any Hard-rule violation as **Critical** (it must be fixed before the bolt can be accepted).
+Your final text is parsed by the controller's merge and lands verbatim in the orchestrator's context — return EXACTLY this shape (target ≤2k tokens), nothing else:
+
+```
+VERDICT: pass|fail
+FINDINGS:
+- Critical | file:line | <title ≤80 chars> | <what is missing/extra/wrong + WHY, ≤3 sentences>
+(or `FINDINGS: none`)
+SUMMARY: <≤2 sentences>
+```
+
+`VERDICT: fail` = any requirement missing, misread, or unrequested extra, or any Hard-rule violation (a Hard-rule violation is always `Critical`). A finding without a real `file:line` anchor is dropped at merge — do not emit it. Do NOT write a Strengths section, an Assessment paragraph, or restate the unit/diff: your full reasoning stays in your own (disposable) context; the return is the distilled verdict.

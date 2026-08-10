@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.1.0] - 2026-08-10 — bolt-loop efficiency (attempt rounds, lens returns, churn cuts)
+
+The attempt cycle (implement → FULL lens re-panel → gates → evidence) was measured as the dominant context burner on the P5 express arm (research `2026-08-06-bolt-loop-context-efficiency.md`; spec `2026-08-06-v6.1-bolt-loop-efficiency.md`). Every deterministic gate keeps running FULL-HEAD on every attempt — this release redistributes the judgment tier's rounds and the controller↔subagent byte-channels only. Dual-blind round: 5 blockers (D5 half-landed in SKILL+code-gates; two test suites red against the spec's own update claim; the emitted ai-consumer-guide template taught the comment citations D6 bans) + 4 majors (escape-hatch ledger deadlock; verifier one-Glob path breach — fixed structurally; stale catalog roll-up; two untraceable field numbers) — ALL folded pre-ship, disclosure in the spec.
+
+- **D1 attempt rounds** — round 1 keeps the tier-routed blind panel verbatim; fix rounds dispatch ONE new read-only `mega-sdd:resolution-verifier` agent (fix-guided verification of each open finding — `resolved` REQUIRES new-head `file:line` evidence, never the implementer's claim — plus a delta review of the fix range + one dependency hop) instead of a 4–6-lens re-panel. Full re-panel survives as a logged escape hatch (fix >2 files outside the findings, manifest change, spec-❌ round, stated cause). Gate condition unchanged in strength: open Critical/spec-❌ at cap → `review_critical_unresolved`.
+- **D2 finding ledger** — `bolts/U-XXX/findings.json` (schema 1): stable finding IDs, open/resolved/advisory, resolution only from verifier evidence; feeds the bolt-report `## Review panel` section (which stays MANDATORY).
+- **D3 pointer re-dispatch** — fix dispatches stay ≤700B (ledger path + open finding IDs); findings are never inlined into prompts (measured growth 800B→9KB eliminated); the dispatch builder is not re-run on a fix round.
+- **D4 lens return contract** — all 5 reviewer agents + the verifier return structured findings-only blocks (target ≤2k tokens; no Strengths/Assessment narrative — measured 8–15KB verbatim reports were 4–8× the documented subagent return budget).
+- **D5 L0 as lens-input file** — `lens-inputs/U-XXX/l0-results.json` written once by the controller, path in each lens prompt; replaces 4–5 verbatim pastes per full-tier attempt; re-rounds overwrite (attempt-1 results can never ride into a re-review).
+- **D6 citation churn out of the inner loop** — code comments never carry claim/flow/OQ-id citations (implementer iron rule); non-behavioral citation-string corrections fold into the next substantive commit (field case: a dedicated fix commit + a full re-verification round for a comment-only id fix). Claim-side citation obligations (emit-fsd sha256, binding anchors, PBT cites) unchanged.
+- **D7 evidence-commit batching** — one evidence commit per unit completion; standalone `refresh gate state` commits are never emitted (field run landed them seconds apart).
+- Proof: `tests/surface/test-p7-bolt-loop-efficiency.sh` (agent contracts, round-policy pins, ledger schema parse, moat guards: halt name + L0 full-range re-entry wording).
+
 ## [6.0.1] - 2026-08-04 — field-test hardening (simkredit findings)
 
 First real-project run of 6.0.0 surfaced 4 validator defects + 1 deriver gap (spec `2026-08-04-v6-field-test-hardening.md`); every fix REDUCES false signal without opening a gate. Dual-blind round: 2 blockers (one per lane, same root — the F2 spec justification was logically unsound) + 5 majors, ALL folded pre-ship.

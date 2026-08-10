@@ -8,7 +8,7 @@
 # detection, per-tool format/lint/typecheck commands, then the four gate
 # scripts) — re-run in full on every panel re-dispatch. This wrapper runs the
 # SAME sequence in ONE call and emits ONE merged JSON: the exact payload the
-# controller pastes verbatim as the `## Deterministic scan results` block into
+# controller writes verbatim to <vault>/lens-inputs/U-XXX/l0-results.json for
 # every review-panel lens prompt.
 #
 # WHAT IT DOES NOT DO: reimplement any gate. The five gate scripts are invoked

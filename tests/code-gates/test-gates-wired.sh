@@ -12,7 +12,7 @@ tpl="plugins/mega-sdd/references/framework-conventions/_template.md"
 
 [ -f "$cg" ] || { echo "missing code-gates.md"; err=1; }
 if [ -f "$cg" ]; then
-  for t in secret_in_code sast_critical_finding dep_not_found detect-toolchain "never impose" "Deterministic scan results"; do
+  for t in secret_in_code sast_critical_finding dep_not_found detect-toolchain "never impose" "l0-results.json"; do
     grep -qi "$t" "$cg" || { echo "code-gates.md missing: $t"; err=1; }
   done
   # the critical pair is never disableable
@@ -32,8 +32,8 @@ if [ -f "$sb" ]; then
   awk '/RUN L0 code gates/{if(!l0)l0=NR} /SELECT panel tier/{if(!p)p=NR} END{exit !(l0 && p && l0<p)}' "$sb" \
     || { echo "bridge: L0 must run before panel tier selection"; err=1; }
 fi
-# panel prompts carry the L0 results
-grep -q 'Deterministic scan results' "$rp" || { echo "review-panel.md missing L0 injection"; err=1; }
+# panel prompts carry the L0 results — as the lens-input FILE path (spec D5, 6.1.0)
+grep -q 'l0-results.json' "$rp" || { echo "review-panel.md missing L0 lens-input file"; err=1; }
 # config key + always-run carve-out documented
 grep -q 'code_gates' "$pc" || { echo "project-config.md missing code_gates key"; err=1; }
 # install-deps matrix carries the code-gate tools (secret + SAST). osv-scanner
