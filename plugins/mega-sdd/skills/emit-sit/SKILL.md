@@ -1,6 +1,6 @@
 ---
 name: emit-sit
-version: 1.0.2
+version: 1.0.3
 description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid verbatim), TC traceability matrix, script-derived executed-evidence tables, sign-off rows as placeholder literals; maturity computed from evidence. Triggers — "generate SIT", "emit SIT", "buat SIT", "dokumen SIT", "SIT untuk UAT", "bukti eksekusi test", or paraphrases.
 ---
 
@@ -62,7 +62,7 @@ Run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<p
 For each section 1–5, follow `references/sit-sections.md §Section N`:
 
 - **The §1–§5 tables, TS scenario blocks (Mermaid + DoD), evidence rows, and sign-off tables come VERBATIM from `.sit-evidence.md`** (between its `<!-- sit-evidence:§N -->` delimiters). The model writes ONLY the surrounding Indonesian narrative (one short paragraph per section — apa yang diuji, bagaimana membaca tabelnya). Never edit a fragment cell; never add/remove a row; never redraw a Mermaid diagram.
-- Absent source → the fragment already carries the `[Pending — …]` placeholder; keep it — NEVER replace a Pending marker with invented content (per decision 9, unknown/absent runner evidence is recorded raw or Pending, counts never fabricated).
+- Absent source → the fragment already carries the `[Pending — …]` placeholder; keep it — NEVER replace a Pending marker with invented content (unknown/absent runner evidence is recorded raw or Pending, counts never fabricated).
 - **§5 Sign-off body rows stay placeholder LITERALS** (`__________` / `[ ] Diterima · [ ] Ditolak`). Filling one = fabricated record (deterministically blocked in Step 4.7).
 
 **Stamp rule (engine-invariant):** every citation stamp is the LITERAL `(sha256: pending)` — the model MUST NOT write hash characters (Step 4.6's script stamps real prefixes).
@@ -88,7 +88,7 @@ Run `bash <plugin-root>/scripts/build-citation-map.sh --vault=<vault> --cwd=<pro
 Run `bash <plugin-root>/scripts/build-sit-evidence.sh --check-signoff --vault=<vault>`.
 
 - Exit 0 → sign-off rows are still placeholder literals. Proceed.
-- Exit 1 → halt `quality_gate_failed` subtype `signoff_fabricated` with the script's `SIGNOFF_*` lines + keterangan verbatim; STOP — a model-filled sign-off row is a fabricated approval record (decision 5) and must never render.
+- Exit 1 → halt `quality_gate_failed` subtype `signoff_fabricated` with the script's `SIGNOFF_*` lines + keterangan verbatim; STOP — a model-filled sign-off row is a fabricated approval record and must never render.
 
 ### Step 5: Render PDF via md2pdf (optional)
 
@@ -150,7 +150,7 @@ Out of scope: emit-sit does NOT participate in the memory layer. SIT generation 
 
 ## Anti-hallucination rails
 
-1. §4 evidence is SCRIPT-DERIVED (`build-sit-evidence.sh` reading the hook-guarded `acceptance.json`/`postflight.json`/`_batch-suite.json`) — the model NEVER authors an evidence cell; absent evidence stays `[Pending — bolt U-XXX belum dieksekusi]`, counts never fabricated (decision 9: unknown runner output recorded raw).
+1. §4 evidence is SCRIPT-DERIVED (`build-sit-evidence.sh` reading the hook-guarded `acceptance.json`/`postflight.json`/`_batch-suite.json`) — the model NEVER authors an evidence cell; absent evidence stays `[Pending — bolt U-XXX belum dieksekusi]`, counts never fabricated (unknown runner output recorded raw).
 2. TS scenarios carry the vault flow's Mermaid VERBATIM — never redrawn, never summarized into prose (the Mermaid-flows hard rule extends to SIT).
 3. §5 sign-off body rows are placeholder LITERALS; a filled row = fabricated record → deterministic `signoff_fabricated` halt (Step 4.7) — never a prose-trusted check.
 4. Every section traces to sources via the SCRIPT-COMPUTED citation map (`--doc=sit`); the model emits only the literal `(sha256: pending)`.

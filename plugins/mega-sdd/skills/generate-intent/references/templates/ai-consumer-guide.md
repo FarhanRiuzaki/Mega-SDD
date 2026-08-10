@@ -86,9 +86,9 @@ blockers:
 
 The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See the mega-sdd plugin's `references/halt-protocol.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).
 
-> **Backward compat note (v0.11→v0.14)**: vaults generated under v0.13 emit `oq_blocker:` (legacy form). AI consumers should accept both `oq_blocker:` and `blocker: type: oq_blocker` shapes for one release cycle.
+> **Backward compat note**: older vaults may emit the bare `oq_blocker:` (legacy form). AI consumers should accept both `oq_blocker:` and `blocker: type: oq_blocker` shapes.
 
-## Parallel-work guidance while P1s are unresolved (v0.11)
+## Parallel-work guidance while P1s are unresolved
 
 If your task is fully blocked by P1 OQs but you want to make incremental progress, work on artifacts that don't depend on the unresolved decisions:
 
@@ -124,10 +124,10 @@ Generic cross-doc terms and acronyms (product-specific PRD terms live in `00-ind
 | RTO | Recovery Time Objective |
 | RPO | Recovery Point Objective |
 | SLO | Service Level Objective |
-| design tokens (v0.6, cond.) | Named design values (color, typography, spacing) shared across components. Source-mirrored from Figma variables / tokens.json / PRD. |
-| design system (v0.6, cond.) | Set of components + tokens + a11y + voice rules that constrain UI implementation. |
-| WCAG (v0.6, cond.) | Web Content Accessibility Guidelines — international standard for a11y. Vault uses a level only if source explicitly states it. |
-| a11y (v0.6, cond.) | Numeronym for "accessibility" (a + 11 letters + y). |
-| semantic HTML (v0.6, cond.) | Use of meaningful HTML elements (`<button>`, `<nav>`, `<main>`, etc.) for accessibility and structure. |
+| design tokens (cond.) | Named design values (color, typography, spacing) shared across components. Source-mirrored from Figma variables / tokens.json / PRD. |
+| design system (cond.) | Set of components + tokens + a11y + voice rules that constrain UI implementation. |
+| WCAG (cond.) | Web Content Accessibility Guidelines — international standard for a11y. Vault uses a level only if source explicitly states it. |
+| a11y (cond.) | Numeronym for "accessibility" (a + 11 letters + y). |
+| semantic HTML (cond.) | Use of meaningful HTML elements (`<button>`, `<nav>`, `<main>`, etc.) for accessibility and structure. |
 
-> Rows marked `(v0.6, cond.)` are relevant only when the vault carries design-system sections (`02-architecture#UI components & patterns` / `06-constraints#Design System`); ignore them otherwise. This table is static — it never varies per vault.
+> Rows marked `(cond.)` are relevant only when the vault carries design-system sections (`02-architecture#UI components & patterns` / `06-constraints#Design System`); ignore them otherwise. This table is static — it never varies per vault.

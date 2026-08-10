@@ -15,7 +15,7 @@
 ## Contents
 
 - Maturity ladder (always draft at emit)
-- Multi-scope rules (decision 10)
+- Multi-scope rules
 - Section 1 — Ruang Lingkup & Kriteria
 - Section 2 — Skenario UAT
 - Section 3 — Matriks Traceability (RTM)
@@ -34,7 +34,7 @@ The upper rungs are HUMAN-set only, via `refresh-doc-stamps.sh --maturity=ready-
 fabricates an approval state — the worst failure in a bank UAT context. The model passes `--maturity=draft`
 in SKILL Step 6 and nothing higher; it NEVER passes `--approve`.
 
-## Multi-scope rules (decision 10, locked)
+## Multi-scope rules (locked)
 
 ONE merged UAT for a multi-scope project: `--vaults=<v1>,<v2>` → `build-uat-scaffold.sh --vault=<v1> --vault=<v2>`.
 

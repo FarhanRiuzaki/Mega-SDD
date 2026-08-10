@@ -1,6 +1,6 @@
 ---
 name: emit-prd
-version: 1.1.2
+version: 1.1.3
 description: Generate a PRD from mega-sdd state — forward (vault to PRD prose) or REVERSE (KB, no vault) with [VERIFIED]/[INFERRED]/[OPEN] markers carried verbatim; journeys as Mermaid; reviewed/final maturity human-set. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 
 **Announce at start:** "I'm using the emit-prd skill to generate the PRD (mode: <forward|reverse>). `mega-sdd-trace:emit-prd`"
 
-> **Output language (Tier-3 artifact):** PRD body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — KB claim text, vault excerpts, constitution clauses — and every `[Source: sha256:…]` citation are reproduced in their source language, never translated** (citation discipline, moat invariant #3). Terse/technical source notation is quoted verbatim in code spans with an Indonesian gloss — never translated in place (decision 4). Tier-1 structural tokens stay English — including the `[VERIFIED]/[INFERRED]/[OPEN]` markers. Full rules → `plugins/mega-sdd/references/output-language.md`.
+> **Output language (Tier-3 artifact):** PRD body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — KB claim text, vault excerpts, constitution clauses — and every `[Source: sha256:…]` citation are reproduced in their source language, never translated** (citation discipline, moat invariant #3). Terse/technical source notation is quoted verbatim in code spans with an Indonesian gloss — never translated in place. Tier-1 structural tokens stay English — including the `[VERIFIED]/[INFERRED]/[OPEN]` markers. Full rules → `plugins/mega-sdd/references/output-language.md`.
 
 > **Doc-pack contract:** emit-prd is the PRD **doc-pack** of the shared emission engine — `plugins/mega-sdd/references/emission-engine.md` owns the doc-agnostic spine; this skill + `references/prd-sections.md` + `references/prd-template.md` bind it to every PRD-specific rule. The PRD is a **document the team reads — an OUTPUT, never a decision surface**: OQ resolution stays in-skill (resolve-oq); open items surface in §6 read-only.
 
@@ -35,7 +35,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 └── .citation-map.json          # script-written by build-citation-map.sh --doc=prd
 ```
 
-**`<out-root>`** = the vault path in forward mode (`<vault>/prd/` — decision 6 sibling of `fsd/`/`sit/`); `<project>/.mega-sdd` in reverse mode (no vault exists yet → `<project>/.mega-sdd/prd/PRD.md`; the shared scripts take `--vault=<project>/.mega-sdd`, under which KB citations like `knowledge-base/…` resolve naturally). When generate-intent later creates a vault, the next forward emission moves the PRD home to `<vault>/prd/` (the old draft stays as an inert file).
+**`<out-root>`** = the vault path in forward mode (`<vault>/prd/` — sibling of `fsd/`/`sit/`); `<project>/.mega-sdd` in reverse mode (no vault exists yet → `<project>/.mega-sdd/prd/PRD.md`; the shared scripts take `--vault=<project>/.mega-sdd`, under which KB citations like `knowledge-base/…` resolve naturally). When generate-intent later creates a vault, the next forward emission moves the PRD home to `<vault>/prd/` (the old draft stays as an inert file).
 
 ## Pre-flight checks
 
@@ -48,7 +48,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 
 Per `references/prd-sections.md §Mode determination`: vault present → **forward**; KB present + no vault → **reverse**; `--mode` overrides. Announce mode + evidence. Maturity at emit time is ALWAYS `draft-from-legacy` (the machine-draft rung) — `reviewed`/`final` are HUMAN-set later via `refresh-doc-stamps.sh`; the model never stamps them.
 
-### Steps 1–3: Drift check + mechanical body (ONE script call), then fill ONLY the model slots (tranche 5e)
+### Steps 1–3: Drift check + mechanical body (ONE script call), then fill ONLY the model slots
 
 1. Run `bash <plugin-root>/scripts/build-prd-core.sh --out-root=<out-root> --cwd=<project-root> --mode=<forward|reverse> [--vault=<vault>] [--kb=<kb-root>]`. It writes `<out-root>/prd/PRD.md` with every MECHANICAL slot pre-filled per `references/prd-sections.md` — journeys carried VERBATIM (never redrawn when a diagram exists), the reverse-mode per-domain claim harvest with `[VERIFIED]/[INFERRED]/[OPEN]` markers VERBATIM, forward §3 = FR id/title + the FR body's FIRST paragraph verbatim, §5 NFR categories + constitution `[LOCKED]` clauses, §6 open-items table, the `[Pending — …]` discipline, the LITERAL `(sha256: pending)` stamps, and drift callouts (it runs `check-citation-drift.sh --doc=prd` itself; the drift lines it prints feed Step 6's change-note — do not run the drift script again). Exit 2 → fix the invocation; nothing written.
 2. The summary line reports `model_slots=<n> (<names>)` — fill EXACTLY those `{{…}}` slots via targeted Edits, nothing else: `section-1-background` + `section-1-purpose` (narasi Indonesia yang menganyam klaim sumber — reverse mode: claim lines keep their markers), `section-2-actors-table` when listed (one row per actor actually NAMED in a source — never invent an actor; no actor found → `[Pending — belum ada aktor teridentifikasi di sumber]`), and any `journey-<slug>` slot (a KB workflow with NO diagram: draw a NEW Mermaid flowchart STRICTLY from the quoted recorded steps above the slot — steps not in the KB may not appear).

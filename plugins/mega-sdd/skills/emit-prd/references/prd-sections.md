@@ -2,7 +2,7 @@
 
 > **Per-section: source artifact(s) per mode, extraction rules, citation format, missing-source placeholders.**
 > Consumed by `emit-prd/SKILL.md` Steps 2–3. **The MECHANICAL rules below are EXECUTED BY
-> `scripts/build-prd-core.sh`** (tranche 5e) — it pre-fills those slots and leaves the
+> `scripts/build-prd-core.sh`** — it pre-fills those slots and leaves the
 > genuinely-synthetic ones (`section-1-*` narrative, reverse-mode `section-2-actors-table`,
 > diagram-less `journey-<slug>` slots) as `{{…}}` markers for the model. Editing a mechanical rule
 > here MUST be mirrored in the builder — the two are one contract. This file is the PRD doc-pack's

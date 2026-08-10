@@ -92,6 +92,6 @@ When vault has NO scope metadata (legacy single-scope PRD), 00-index.md header o
 
 ### Backward compatibility
 
-- Pre-v1.12 vaults (no `scope` field) → consumed unchanged by bind-codebase + generate-units
+- Vaults without a `scope` field → consumed unchanged by bind-codebase + generate-units
 - Mixed vaults (some scoped, some legacy) permitted in same project — orchestrate-flow handles both
-- diff-vault reads `prd_sha256` to detect PRD changes; pre-v1.12 vaults skip this check gracefully
+- diff-vault reads `prd_sha256` to detect PRD changes; vaults without `prd_sha256` skip this check gracefully

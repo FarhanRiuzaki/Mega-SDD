@@ -60,7 +60,7 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
      dirs (the same dirs/globs the subagent prompt's INPUTS-TO-READ names): one line per file,
      `<repo-relative-path>\t<mtime-epoch-seconds>`, sorted, newline-joined. Recursive so nested
      edits invalidate; listing+mtime (not content hashes) so it stays cheap; same mechanism the
-     reuse slice already uses. S3 DS-1: slice OUTPUTS are source-derived (auth entrypoints,
+     reuse slice already uses. Slice OUTPUTS are source-derived (auth entrypoints,
      authz declarations with file:line, ui tokens/config, libs usage_hint grep results), so a
      source-only edit (a controller, a policy, tailwind.config) MUST invalidate the slice —
      lock digests alone served stale slices as FULL CACHE HIT forever.
@@ -89,7 +89,7 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
               partial_slices — failed slices get no per_slice entry, see deep-scan-dispatch.md
               Step 10.5.3 step 5):
               stale_slices.append(<slice>)
-        - stale_slices ∪= prior.partial_slices   # S3 DS-2: a slice that failed last run must
+        - stale_slices ∪= prior.partial_slices   # a slice that failed last run must
           # re-dispatch — otherwise `partial: true` never self-heals (the prior signature was
           # written fresh while the OUTPUT is missing).
         - IF stale_slices is empty → FULL CACHE HIT: skip Steps 10.5.1.5 + 10.5.2 + 10.5.3 entirely

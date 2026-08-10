@@ -1,6 +1,6 @@
 ---
 name: emit-fsd
-version: 1.7.1
+version: 1.7.2
 description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/bolts with sha256-stamped citations per .citation-map.json; pre/post-development mode auto-detect; missing source emits [Pending — X], never fabrication. Triggers — "generate FSD", "emit FSD", "buat FSD", "FSD untuk confluence", or paraphrases.
 ---
 
@@ -51,7 +51,7 @@ Full preflight catalog: `mega-sdd:orchestrate-flow/references/predictive-checks.
 
 ## Procedure
 
-### Steps 0–4: Build the document body — SCRIPT-RUN, one call (tranche 5e)
+### Steps 0–4: Build the document body — SCRIPT-RUN, one call
 
 Run `bash <plugin-root>/scripts/build-fsd-core.sh --vault=<vault> --cwd=<project-root> [--mode=pre-dev|post-dev] [--sections=<csv>]` — the deterministic builder that executes `references/section-mapping.md` §1–§10 end-to-end and writes `<vault>/fsd/FSD.md` with EVERY slot pre-filled (`model_slots=0` — the FSD lane is fully mechanical). It performs, in one spawn: mode detection (§Mode determination; `--mode` forwards the user override), doc-metadata resolution (`FSD.styling.yaml` seeded from `references/styling-config.yaml` when absent; PDF look stays `md2pdf.sh` + `github.css`, never LaTeX), the prior-emit drift check (it runs `check-citation-drift.sh` itself and INSERTS the drift callout block quotes with the script's `old12`/`new12` verbatim), per-section extraction with the `[Pending — <source> not yet generated]` discipline, the LITERAL `(sha256: pending)` stamps, and template assembly (the fenced skeletons are parsed from `references/fsd-template.md` at run time — single source of truth).
 

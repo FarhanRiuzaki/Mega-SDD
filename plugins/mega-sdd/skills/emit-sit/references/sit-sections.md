@@ -14,7 +14,7 @@
 ## Contents
 
 - Maturity determination (Step 0)
-- Multi-scope rules (decision 10)
+- Multi-scope rules
 - Section 1 — Ruang Lingkup Uji
 - Section 2 — Skenario Uji
 - Section 3 — Matriks Test Case
@@ -38,7 +38,7 @@ The verdict rides the script's stdout line (`maturity=<rung>`) and the fragment 
 `refresh-doc-stamps.sh --maturity=` (SKILL Step 6) and the doc frontmatter. The model never computes or
 overrides it.
 
-## Multi-scope rules (decision 10, locked)
+## Multi-scope rules (locked)
 
 ONE merged SIT for a multi-scope project: `--vaults=<v1>,<v2>` → `build-sit-evidence.sh --vault=<v1> --vault=<v2>`.
 
@@ -80,7 +80,7 @@ fallback on a numeric collision (deterministic, script-owned).
 **Slot:** `{{section-4-narrative}}` + fragment block §4 — **THE UNFAKEABLE SECTION**
 **Source (hook-guarded evidence artifacts, script-read only):**
 
-1. `<vault>/bolts/U-*/acceptance.json` (B4, written by `run-acceptance-tests.sh`) → §4.1 per-entry rows: status / rc / retried / `output_head` RAW (decision 9 — unknown runner output recorded raw as evidence, counts never fabricated) + §4.2 `pending_manual` entries as manual-test rows awaiting human execution.
+1. `<vault>/bolts/U-*/acceptance.json` (B4, written by `run-acceptance-tests.sh`) → §4.1 per-entry rows: status / rc / retried / `output_head` RAW (unknown runner output recorded raw as evidence, counts never fabricated) + §4.2 `pending_manual` entries as manual-test rows awaiting human execution.
 2. `<vault>/bolts/U-*/postflight.json` (B1, written by `run-postflight-scan.sh`) → §4.3 per-unit verdict rows.
 3. `<vault>/bolts/_batch-suite.json` (B2, written by `run-full-suite.sh`) → §4.4 vault-level suite line.
 
@@ -91,7 +91,7 @@ fallback on a numeric collision (deterministic, script-owned).
 ## Section 5 — Sign-off
 
 **Slot:** `{{section-5-narrative}}` + fragment block §5
-**Source:** none — **paper-out** (decision 5, locked). The fragment emits one bank-style table per scope (`| Peran | Nama | Tanggal | Tanda tangan | Status |`) whose body rows are placeholder LITERALS:
+**Source:** none — **paper-out** (locked). The fragment emits one bank-style table per scope (`| Peran | Nama | Tanggal | Tanda tangan | Status |`) whose body rows are placeholder LITERALS:
 
 - Nama / Tanggal / Tanda tangan: `__________`
 - Status: `[ ] Diterima · [ ] Ditolak`

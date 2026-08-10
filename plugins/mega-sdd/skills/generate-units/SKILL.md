@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.21.0
+version: 2.21.1
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -80,7 +80,7 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
 
 **7. Fill `target_files` whitelist.** Greenfield → expected files from vault component definitions; brownfield → bound-vault citations (specific paths from binding). Can't determine target_files → halt (vault too vague).
 
-**7.5. (REMOVED 5.29.0 — spec `2026-08-02-reuse-first-grounding-index.md` §D1: the advisory PageRank pass was file-level, human-promoted, ignored by execute-bolts, and dead on both real environment classes — macOS grammar-compile OOM, Windows/EDR one-spawn-per-file; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)** `target_files` come from binding citations (Step 7) — the only path `execute-bolts` ever enforced.
+**7.5. (REMOVED 5.29.0 — the advisory PageRank pass; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)** `target_files` come from binding citations (Step 7) — the only path `execute-bolts` ever enforced.
 
 **7.6. Per-unit target_files collision check.** Before writing each unit, for each `operation: create` entry that already exists on disk → INTERACTIVE prompt (convert to `verify`/`extend`, rename, force-create, or skip). Fires ONLY on genuine collision; `--auto` picks the safest default; `--collision-policy` overrides. Detail: `references/task-typing.md §Step 7.6` (single owner).
 

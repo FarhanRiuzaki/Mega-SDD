@@ -41,7 +41,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
    - **Other extension / unrecognized shape → the adoption lane (P2), no more dead end.** `Run: scripts/certify-artifact.sh --cwd=<root> --rung=prd --path=<input>` (the shape sniffer — classifies only, gates nothing downstream) and surface its keterangan verbatim (it explains WHAT was detected: PRD-shaped / arbitrary text / source-code-looking / binary):
      - `CERTIFIED` → proceed `generate-intent <input>` (Mode A).
      - `CERTIFIED_DEGRADED` → proceed `generate-intent <input>`, keterangan already warns the vault will be OQ-heavy and offers Mode B (`--from-prompt`) as the alternative.
-     - `DEMOTE` → C2 halt `adoption_demote_confirm` (decision 7: ALWAYS confirmed under `--auto` — keterangan first, ONE AskUserQuestion `RE_INGEST`/`MANUAL_FIX`/`CANCEL`, then proceed per the answer).
+     - `DEMOTE` → C2 halt `adoption_demote_confirm` (ALWAYS confirmed under `--auto` — keterangan first, ONE AskUserQuestion `RE_INGEST`/`MANUAL_FIX`/`CANCEL`, then proceed per the answer).
      - `REJECTED` (binary/non-text) → halt with the certify keterangan verbatim; ask for a text document or the file's intent.
 
 3. **Is `<input>` quoted free-text** (e.g., `"build a clinic appointment system"`)?
