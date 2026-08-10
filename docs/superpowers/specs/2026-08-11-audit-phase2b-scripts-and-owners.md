@@ -1,7 +1,7 @@
 # Audit Phase 2b — script-ification, sync short-circuit, single-owner sweeps, moat-takeout cases
 
 **Date:** 2026-08-11
-**Status:** DRAFT
+**Status:** SHIPPED v6.4.0 (2026-08-11, a633a19 + CI-portability fix 4a1eeb0, CI green, suite 215/215 both trees) — dual-blind round: 2 blockers / 7 majors / 7 minors combined, ALL folded (§Round disclosure); post-ship CI lesson: `timeout`-exercising test arms must serve BOTH host classes (bounded ubuntu CI vs unbounded stock macOS — a builtin first word is unexecutable under real GNU timeout)
 **Source:** `docs/superpowers/audits/2026-08-10-skills-audit.md` recommendations #3 (script-ify), #4 (sync short-circuit), #5 (single-owner sweeps + parity tests) — the second Phase-2 ship train (2a = v6.3.0). Also applies the user's 2026-08-10 moat-takeout amendment ("klo moat tidak efisien bisa di takeout") with the recorded interpretation: evidence-based per-item cases; gates with a defect-catch record are proposal-first, never cut here.
 **Version:** 6.4.0 (minor).
 
