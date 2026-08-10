@@ -1,7 +1,7 @@
 # Audit Phase 2a — WHEN-triggered reference loading (true progressive disclosure)
 
 **Date:** 2026-08-10
-**Status:** DRAFT
+**Status:** SHIPPED v6.3.0 (2026-08-10, f45e9d6, CI green, suite 210/210 both trees) — dual-blind round: 0 blockers / 15 majors / 18 minors combined, ALL folded (§Round disclosure)
 **Source:** `docs/superpowers/audits/2026-08-10-skills-audit.md` recommendation #2 (Phase-2 roadmap). Phase 2 is split into two ship trains for round quality: **2a (this spec, 6.3.0)** = the loading contract; **2b (next, own spec)** = script-ification (predictive-preflight, probe-tool, detect-os), the sync claim-intersection short-circuit, and the single-owner sweeps + parity tests.
 **Version:** 6.3.0 (minor — loading-contract change only: pointer sentences gain deterministic WHEN conditions; NO reference body changes, NO gate/grammar/halt change, NO file moves).
 
