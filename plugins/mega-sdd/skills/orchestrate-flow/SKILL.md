@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.24.2
+version: 2.25.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -22,7 +22,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 
 1. **Parse args.** Persist `WORK_DIR`, optional `--from=<phase>`, `--to=<phase>`, `--deep`, `--resume`, `--auto`. Full flag list in [Flags](#flags).
 
-2. **Deterministic CWD inspection** — `Run: scripts/derive-state.sh --cwd=<WORK_DIR>` (the ONE probe engine; shared library with `validate-preflight.sh` so probe sets never diverge), then read the printed digest + `<root>/.mega-sdd/state.json` and apply the decision table per `references/routing-rules.md §CWD inspection`. Never re-probe by hand. Output a state snapshot (fields sourced from `state.json`):
+2. **Deterministic CWD inspection** — `Run: scripts/derive-state.sh --cwd=<WORK_DIR>` (the ONE probe engine; shared library with `validate-preflight.sh` so probe sets never diverge), then read the printed digest + `<root>/.mega-sdd/state.json` — the engine has already applied the inspection order (its documented contract: `references/routing-rules.md §CWD inspection`; open it ONLY to audit a digest that looks wrong). Never re-probe by hand. Output a state snapshot (fields sourced from `state.json`):
    ```
    prd: present | absent
    vault: present | absent (path: ...)
@@ -52,15 +52,14 @@ The orchestrator inspects the working directory, infers where you are in the meg
    - **Starterkit detection + mode classification** — starterkit is REQUIRED by default; greenfield only on explicit `--greenfield` (Mode A starterkit-first / Mode B framework-detected / Mode C greenfield). Starterkit absent AND no `--greenfield` → halt `no_starterkit_detected`.
    - **Memory-informed routing preflight** — fingerprint CWD; if past-run history converges, recommend that chain; if it failed, warn. Falls through to routing-rules default otherwise.
    - **Model-tier override resolution** — resolve model tier per subagent role (CLI > project > user > catalog); emit into handoff metadata. Unknown role → SOFT halt `model_tier_unknown` (warn-only).
-   - **Iter classifier EP1** — classify iter as PATCH | MINOR | MAJOR for downstream complexity gating.
-   - **Plan/Act gating** — PATCH/MINOR → Act; MAJOR → Plan mode FIRST (write `.plan-pending`, STOP for user review). `--act` / `--plan-then-act` override.
+   - **Plan/Act gating** — `--plan` → Plan mode FIRST (write `.plan-pending`, STOP for user review); `--plan-then-act` → two-phase; default → Act. (The automatic PATCH|MINOR|MAJOR iter classifier is PARKED — not wired into the live chain; design note in `references/chain-execution.md` — so gating is flag-driven.)
 
-4. **Build proposed chain** per `references/routing-rules.md §Decision matrix`.
+4. **Build proposed chain.** `derived.proposed_next` (from the Step-2 digest) IS the default chain — the engine is authoritative and needs no table read. Open `references/routing-rules.md §Decision matrix` ONLY when an overlay applies: a routing flag (`--greenfield` / `--brownfield` / `--sync` / `--from` / `--to` / `--resume`), rebuild/adoption intent, multi-squad, or the user edits the proposal.
    - Default mode (no `--deep`): hard cap **3 sub-skills** (legacy behavior, backward-compatible).
-   - **`--deep` mode:** cap LIFTED — chain extends to pipeline-end per `references/routing-rules.md §Deep-chain decision matrix`. Auto-continue between phases via the handoff YAML protocol (consumed per `references/handoff-consumption.md`; producer schema in `references/handoff-contract.md`).
+   - **`--deep` mode:** cap LIFTED — the engine's proposal already extends to pipeline-end; `references/routing-rules.md §Deep-chain decision matrix` opens under the same overlay-only rule as Step 4. Auto-continue between phases via the handoff YAML protocol (consumed per `references/handoff-consumption.md` — per hop; `references/handoff-contract.md` opens at the b.iv conditional-field check — its schema owns the CONDITIONAL roster — on a validation failure, or for §Resume mechanics; never for the rest of a clean hop).
    - **Chain optimization:** if the chain includes `scan-codebase` but `binding.md` attests a verified, unchanged snapshot → skip scan-codebase (per `references/chain-execution.md §Chain optimization via binding provenance`).
 
-5. **Predictive preflight** per `references/predictive-checks.md` catalog — runs BEFORE invoking any skill in the proposed chain. For each chained skill, run its lightweight checks: `fatal: no` mismatch → accumulate warning (surfaced before chain start); `fatal: yes` mismatch → halt `predictive_check_failed`, STOP chain. Then the execute-bolts-specific **first-run pre-flight** runs (superpowers OR `_vendored/` availability; if neither → propose install, halt). Detail in `references/chain-execution.md`.
+5. **Predictive preflight** per `references/predictive-checks.md` — read ONLY the §sections of skills actually in the proposed chain, plus §Cold-halt anticipation checks whenever `execute-bolts` is chained; never the whole catalog. Runs BEFORE invoking any skill in the chain. For each chained skill, run its lightweight checks: `fatal: no` mismatch → accumulate warning (surfaced before chain start); `fatal: yes` mismatch → halt `predictive_check_failed`, STOP chain. Then the execute-bolts-specific **first-run pre-flight** runs (superpowers OR `_vendored/` availability; if neither → propose install, halt). Detail in `references/chain-execution.md`.
 
 6. **Present plan + single `AskUserQuestion`** (Run / Edit / Cancel). Edit supports `skip step N` and `stop after step N` only. Include a "Halts may re-engage you" line so users have accurate expectations:
    ```
@@ -86,16 +85,14 @@ The orchestrator inspects the working directory, infers where you are in the meg
    b. **Validation gate** — validate the received handoff against the schema (presence → type-check → schema → artifact existence → cross-metric consistency). Full gate ordering + halt envelopes (`handoff_missing`, `handoff_type_mismatch`, `invalid_handoff`, `artifact_missing`) in `references/handoff-consumption.md`.
    c. **Propagate** validated handoff metadata to the next skill.
    d. **Progress indicators** — before each invocation: `▶ Phase {current} of {total}: invoking {skill} ({args})`; after completion: `{✓|⏸|⛔} Phase {current} of {total}: {skill} → status: {status}, items: {n}, blocked: {n}`.
-   e. **Halt-check** — `status==halted` → exit loop; proceed to Step 9.
+   e. **Halt-check** — `status==halted` → exit loop; proceed to the Emit-final-summary step.
    f. **Continue-loop** — `status==completed` → continue to next sub-skill.
 
    **Auto-integrated diagnostics + drift gate run transparently inside this loop** (lint-units `--changed-only`, analyze-parallelism, list-modules, emit-agents-md, optional emit-fsd, enrich-semantics PAUSE, and the DEFAULT-ON hybrid `detect-drift` gate after `execute-bolts`). User does NOT run these separately; opt-outs (`--no-lint`, `--no-drift-check`, etc.) and the full phase table are in `references/chain-execution.md`. **Diagnostics are LEAN-BY-DEFAULT on the express spine (P3):** the ADVISORY diagnostics in this loop (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are SKIPPED on express-spine chains — each re-runnable on demand; `--full` restores them for a run; classic-spine chains keep them (today's behavior verbatim). The Stop hook's auto-analyze aggregate fires only under `spine: classic` or an explicit `profile: full` in config. **The advisor legs stay DEFAULT-ON on every spine** — rail 1 (speed cuts inventory, never verification): the advisor hunts false-CONFIRMED and is the recall safety-net for claim-scoped express retrieval; cutting it stays an explicit `--lean` opt-in. **`--lean` profile (tranche E — the advisor-cut opt-in):** active when the user passes `--lean` (this run — the ORCHESTRATOR applies the cuts below to the hops it dispatches; the state engine transform is CONFIG-keyed only) or `.mega-sdd/config.yaml` carries `profile: lean` (persistent — the engine appends the flags itself and the Stop-hook aggregate skip engages; `--full` restores the advisor legs + diagnostics for a run but does NOT restore the config-governed Stop aggregate — remove the config key for that). Under lean: the `generate-intent`/`bind-codebase` hops carry `--no-advisor` (each records the honest `advisor: skipped` provenance), the ADVISORY diagnostics in this loop (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are SKIPPED (each re-runnable on demand), and the Stop hook's auto-analyze aggregate does not fire. The `detect-drift` gate keeps running. **Lean NEVER touches:** the CONFLICT gate, binding verdicts, citation discipline, the halt taxonomy, no-fabrication, the B1–B4 artifact gates, anti-self-bypass, review-lens blindness, or the review-panel risk tiering — a lean run is a correct run that is less thorough, and the chain summary MUST name the profile (`profile: lean — advisor legs + advisory diagnostics skipped`).
 
-8. **Iter classifier EP2** — after the chain completes, classify again and compare to EP1; surface scope drift in the summary (per `references/chain-execution.md`).
+8. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. express auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then (skipped if `--memory-off`): write the end-of-chain routing-outcomes memory entry; run the **extract-learnings pass** (Step 7.6 — the ONE owned threshold evaluation over rows touched this chain, appending threshold-crossers to `## Pending suggestions`, nothing applied); regenerate touched scopes' `_index.md`. Mode D additionally appends the `kind: sync` outcomes row. Protocol: `references/memory-layer.md §Chain end`.
 
-9. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. express auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`). Then (skipped if `--memory-off`): write the end-of-chain routing-outcomes memory entry; run the **extract-learnings pass** (Step 7.6 — the ONE owned threshold evaluation over rows touched this chain, appending threshold-crossers to `## Pending suggestions`, nothing applied); regenerate touched scopes' `_index.md`. Mode D additionally appends the `kind: sync` outcomes row. Protocol: `references/memory-layer.md §Chain end`.
-
-10. **Resume support (`--resume`, CWD-driven, no state file).**
+9. **Resume support (`--resume`, CWD-driven, no state file).**
     - Skip the upfront confirmation (chain was already approved last run).
     - Re-run CWD inspection (Step 2) — fresh state snapshot.
     - Build chain per routing-rules; skip phases whose artifacts already exist; cursor lands on the next un-done phase.
@@ -119,6 +116,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--deep`: lift the 3-skill cap; chain to pipeline-end via handoff-YAML auto-continue
 - `--resume`: re-enter a paused/halted chain; skip upfront confirmation; CWD inspection rebuilds cursor position; halts re-fire if blockers unresolved
 - `--auto`: run the chain autonomously (sub-skills dispatched with `--auto`; substance prompts still surface)
+- `--plan` / `--act` / `--plan-then-act`: Plan/Act gating — flag-driven (the automatic iter classifier is PARKED; see the Step-3 bullet)
 - `--converge` / `--no-converge` / `--max-cycles=N`: auto-recovery cycling controls (default ON in `--deep`; see `references/convergence-loops.md`)
 - `--memory-off`: disable the memory layer (no reads, no writes) for this chain
 - `--greenfield` / `--brownfield`: override starterkit/mode inference
@@ -165,12 +163,12 @@ When memory is enabled (default; opt-out `--memory-off`), the orchestrator does 
 
 - `references/factory-ledger-contract.md` — the derived checkpoint ledger schema each phase appends to.
 - `references/factory-routing.md` — read-whole-ledger forward/backward routing + convergence/cap termination (`--factory` / `--deep`).
-- **`references/routing-rules.md`** — CWD inspection order, the default + `--deep` decision matrices, starterkit-first ordering, multi-squad detection, greenfield/brownfield detection, `--from`/`--to`/`--resume` mechanics.
-- **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, memory-informed routing, model-tier resolution, iter-classifier EP1/EP2, Plan/Act gating, chain optimization), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, end-of-chain memory write, final-summary appendix.
+- **`references/routing-rules.md`** — CWD inspection order, the default + `--deep` decision matrices, starterkit-first ordering, multi-squad detection, greenfield/brownfield detection, `--from`/`--to`/`--resume` mechanics. *Open ONLY on a Step-4 overlay (flag / rebuild-adoption intent / multi-squad / user edit) — the engine's `derived.proposed_next` is the default.*
+- **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, memory-informed routing, model-tier resolution, iter-classifier EP1/EP2 (PARKED), Plan/Act gating, chain optimization), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, end-of-chain memory write, final-summary appendix.
 - **`references/diagnostics-procedures.md`** — the operative procedures for the four auto-integrated diagnostics (`lint-units`, `analyze-parallelism`, `list-modules`, `enrich-semantics`) — relocated from their 5.x command files in the surface cull; load when a chain row or an on-demand phrase invokes one.
 - **`references/predictive-checks.md`** — per-skill preflight check catalog consulted before chain start.
 - **`references/handoff-consumption.md`** — orchestrator-side handoff validation gate (presence / type / schema / artifact / cross-metric) with halt envelopes, plus the consumption control loop.
-- **`references/handoff-contract.md`** — producer-side handoff YAML schema, field TYPE annotations, per-skill expected emissions, memory-layer integration.
+- **`references/handoff-contract.md`** — producer-side handoff YAML schema, field TYPE annotations, per-skill expected emissions, memory-layer integration. *Open at the b.iv conditional-field check (its schema owns the CONDITIONAL roster), on a validation failure, or for §Resume mechanics — `handoff-consumption.md` owns the rest of the per-hop loop.*
 - **`references/convergence-loops.md`** — auto-recovery cycling: eligible halts, algorithm, `--converge` flags, bolt propose-and-confirm bridge.
 - **`references/halt-taxonomy.md`** — every halt type classified (cycle-eligible / always-stop / soft).
 - **`references/memory-layer.md`** — single-memory-I/O-point read/write batching across the chain.

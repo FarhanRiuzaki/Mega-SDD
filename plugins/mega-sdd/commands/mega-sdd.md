@@ -103,9 +103,9 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 - `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; pandoc + Chrome md2pdf render; user can invoke `/mega-sdd:emit fsd` manually for one-off)
 - `--no-fsd` — legacy alias / no-op (FSD is opt-in via `--with-fsd`)
 - `--no-telemetry` — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
-- `--plan` — force Plan mode regardless of classifier output. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via the `--act` flag (`/mega-sdd --act`).
-- `--act` — force direct Act mode regardless of classifier. For MAJOR iter, requires confirmation prompt (safety gate). Used in Plan-then-Act transition.
-- `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. Overrides classifier default for any iter type.
+- `--plan` — Plan mode FIRST. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via the `--act` flag (`/mega-sdd --act`).
+- `--act` — direct Act mode (the default). Used in the Plan-then-Act transition.
+- `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. (Gating is flag-driven — the automatic iter classifier is PARKED.)
 
 ## Convergence loops
 

@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.28.2
+version: 2.29.0
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md; runs ON-DEMAND or on the classic spine (the only codebase-map producer — emissions and the classic bind lane consume the map), not as a default-chain phase. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 
@@ -36,7 +36,7 @@ When invoked as the FIRST phase (`orchestrate-flow` decision matrix Mode A/B):
 - `--include=<glob>` (repeatable; default infers from package manager)
 - `--exclude=<glob>` (repeatable; defaults cover dependency/build/cache/IDE noise across major ecosystems). User flags are **appended** to defaults (not replacing); use `--no-default-excludes` to opt out entirely.
 
-The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**. Incremental mode (`--changed-only` — re-extract only changed paths from the dirty journal ∪ git delta, merge into the prior map, consume the journal via rotate-and-delete, never truncate-in-place) is specified at the top of **`references/scan-procedure.md`**.
+The full default exclusion list, the override flags, and the anti-bias rationale for excluding SDD outputs live in **`references/exclusions.md`**. The complete flag catalog is in **`references/halts-flags-handoff.md`**. Incremental mode (`--changed-only` — re-extract only changed paths from the dirty journal ∪ git delta, merge into the prior map, consume the journal via rotate-and-delete, never truncate-in-place) is specified at the top of **`references/scan-procedure.md`** — **on the sync hop, read §Incremental mode plus ONLY the full-scan steps it names for the changed slice (Step 0's engine probe, Steps 5–7 extraction logic, Step 8.5 on manifest change, Step 10's deriver delta contract); the rest of the full-scan procedure does not apply to the hop.**
 
 ## Output
 

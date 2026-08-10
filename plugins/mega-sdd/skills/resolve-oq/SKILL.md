@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.10.1
+version: 2.11.0
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
 ---
 
@@ -84,7 +84,7 @@ No invention; tag preservation; full auditability (Changelog + per-OQ markers = 
 
 - **`references/interactive-walk.md`** — the full Step 0–5 procedure and the **canonical shape of the single per-OQ prompt**: vault location + lock check, resume, scope, parse, per-OQ display + the one collapsed `AskUserQuestion` (4 slots + Other + Esc, keterangan rules, the alternatives-as-prose rule, the no-recommendation shape, the "Other" parse order, Esc = end the walk), the Defer two-question follow-up and the OOS rationale follow-up verbatim, per-action state transitions, Resolve/Skip/Defer/OOS apply logic, cross-cutting multi-doc landing by disclosure, promoted-entry formatting per target doc, the per-action derive `--event`/`--patch` args, the version + Changelog template, the self-check list, and the summary format.
 - **`references/binding-mode.md`** — the `--binding <binding.md>` flow: CONFLICT detail-block walk (KEEP_VAULT / KEEP_CODE / DEFER / SPLIT), propagated deferred-OQ walk, write-back to `binding.md` + `vault.json`, hand-off, and hard rails.
-- **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, what the recommendation contributes to the single prompt (slot `[1]` + its description, and how the considered alternatives are written as question-text prose; the shape itself is owned by `interactive-walk.md` and is not restated there), the high-stakes marker, audit trail, and the override self-correction loop.
+- **`references/recommendation-context.md`** — context-aware `(recommended)` answers per OQ: source priority (KB `[VERIFIED]` → memory → vault → codebase-map → silent fallback), anti-halu invariants, citation probe, what the recommendation contributes to the single prompt (slot `[1]` + its description, and how the considered alternatives are written as question-text prose; the shape itself is owned by `interactive-walk.md` and is not restated there), the high-stakes marker, audit trail, and the override self-correction loop. *Open per-OQ at slot-`[1]` build time — the walk attempts a recommendation for every OQ (`resolution_mode: recommend` REQUIRES it; silent no-yield per the walk stays canonical); never pre-load it for the whole walk.*
 - **`references/auto-memory-handoff.md`** — non-interactive machinery: the `--auto` interactive-vs-auto step table, the memory layer reads/writes, the `--auto-accept-from-memory` / `--confidence-min` / `--non-interactive` flags (convergence-loop use), scope-context surfacing, and the handoff YAML emitted under `--auto`.
 
 ## Related skills
