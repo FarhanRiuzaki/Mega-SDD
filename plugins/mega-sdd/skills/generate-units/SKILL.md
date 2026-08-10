@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.20.3
+version: 2.21.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -40,9 +40,9 @@ This gate is checked before any candidate is atomized. A CONFLICT that somehow s
 
 ## Procedure
 
-The step skeleton is below with every gate/rail inline. Heavy detail (full state tables, halt YAML, schemas, templates) lives in the specialist references — each step names the file to load.
+The step skeleton is below with every gate/rail inline, and **the inline skeleton is authoritative for the unambiguous path**. Heavy detail (full state tables, halt YAML, schemas, templates) lives in the specialist references — each step names its file WITH the condition under which to open it; a pointer without its condition met is not a read command. (`references/unit-schema.md` and `references/templates/unit.md` stay unconditional — they are the authoring contract.)
 
-**0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode` — and act per the decision matrix in `references/defensive-generation.md §Step 0.5`. **Express-lane rule (P2):** a `binding.md` whose frontmatter carries `binding_metadata.retrieval` was produced WITHOUT a map by design — a missing `codebase-map.md` beside it is NOT a missing artifact; proceed with the binding's grounding (never prompt for, and under `--auto` never auto-run, `scan-codebase` to "repair" an intentionally map-less express project). Otherwise: both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
+**0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode`. Open the decision matrix in `references/defensive-generation.md §Step 0.5` ONLY when a probe is missing/stale/contradictory — the all-present path is inline below. **Express-lane rule (P2):** a `binding.md` whose frontmatter carries `binding_metadata.retrieval` was produced WITHOUT a map by design — a missing `codebase-map.md` beside it is NOT a missing artifact; proceed with the binding's grounding (never prompt for, and under `--auto` never auto-run, `scan-codebase` to "repair" an intentionally map-less express project). Otherwise: both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
 
 **1. Load vault.** Read the 7 vault files + vault.json. If `<vault>/binding.md` + `<vault>/bound/` exist (brownfield), read them too.
 
@@ -72,7 +72,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
    Emission rules + flag behavior: `references/decomposition-rails.md §Dependency-graph`. Halt YAML: `references/halt-protocol.md`.
 
-**4.5. Module assignment.** Semantic grouping ABOVE atomic units (units stay atomic). Load `_meta/modules.yaml` (auto-derive `.auto` when absent); match each candidate's `vault_source` to a module; unmatched → `M-unassigned` (warn at ≥10%). Cross-module `depends_on` requires explicit `blocked_by` → else halt `cross_module_dep_invalid`; module DAG cycle → halt `module_cycle_detected`. Detail: `references/decomposition-rails.md §Module assignment` + `references/modules-schema.md`.
+**4.5. Module assignment.** Semantic grouping ABOVE atomic units (units stay atomic). Load `_meta/modules.yaml` (auto-derive `.auto` when absent); match each candidate's `vault_source` to a module; unmatched → `M-unassigned` (warn at ≥10%). Cross-module `depends_on` requires explicit `blocked_by` → else halt `cross_module_dep_invalid`; module DAG cycle → halt `module_cycle_detected`. Detail: `references/decomposition-rails.md §Module assignment`; open `references/modules-schema.md` at Step 4.5 whenever auto-deriving `.auto` (`_meta/modules.yaml` absent — §Auto-derivation rules + the `.auto` format live there) or when a present modules.yaml needs schema validation; the no-modules back-compat path (`M-default`) is inline.
 
 **5. Squad assignment.** No `_meta/squads.yaml` or single squad → all units `squad: default`, skip multi-squad validations. ≥2 squads → route by `vault_source` with precedence `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`; unrouted → warn + `default`; two squads claim one artifact at the same precedence → halt `cross_squad_ambiguous`. Detail: `references/decomposition-rails.md §Squad assignment`.
 
@@ -98,7 +98,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
 
 **11. Write `_index.md`** — total unit + module counts, units grouped by module (status, priority, DoD, units table), per-module + cross-module dependency DAGs (Mermaid), suggested topological execution order; falls back to a flat list when only `M-default` exists. Detail: `references/auto-and-memory.md §_index.md`.
 
-**12. Post-write validation + audit.** The 12.x sub-procedures run in declared order, then step 13 logs. Full procedures + anti-halu rails: `references/validation-passes.md`. Halt YAML: `references/halt-protocol.md`.
+**12. Post-write validation + audit.** The 12.x sub-procedures run in declared order (the inline list below is the authoritative order), then step 13 logs. Open `references/validation-passes.md` ONLY when a pass fires or an edge is ambiguous (its full procedures + anti-halu rails). Halt YAML: `references/halt-protocol.md` (on halt only).
    - **12.3 Per-anchor verification (runs FIRST).** Probe each `## Anchors` entry; missing file / out-of-bounds line → SOFT WARNING in body footer (anchors may be aspirational). Never halts.
    - **12.4 Inject constitution clauses.** Read `<vault>/constitution.md`; inject relevant clauses into `## Hard rules` (severity `error`); surface non-translatable clauses as informational warnings. Constitution drift between gen and bolt → halt `constitution_drift_detected`.
    - **12.4.5 Framework pack provenance citation.** Emit each pack-derived Hard Rule (from binding §Suggested Unit Hard Rules) WITH an explicit `source:` citation to the specific pack file; rules whose `path_glob` doesn't match the unit's target_files are skipped.
@@ -110,6 +110,7 @@ The step skeleton is below with every gate/rail inline. Heavy detail (full state
      - **(e) Anti-patterns harvesting (suggestion):** auto-populate `## Anti-patterns` from binding CONFLICTs + KB `Edge Cases & Gotchas` for domains the unit covers — guidance only, no halt.
      - **(f) Starterkit citation check:** any starterkit-derived Hard Rule missing its `Citation:` → halt `starterkit_rule_citation_missing` (ALWAYS STOP; do not write the unit).
      - **(g) OQ-ID propagation check (MOAT-CRITICAL — the binding→units handoff):** every implementation-relevant OQ (resolution touches the unit's files/body, or `priority: P1`) MUST appear in the unit's `binding_refs:` frontmatter; any missing → halt `unit_oq_trace_missing`. CONFLICTs already propagate this way; this rail extends the discipline to OQs so the design decision stays traceable to its source OQ.
+     - **(h) PBT properties citation check:** every `properties[].cites` must resolve to a real vault section / entity / constitution clause — an uncited property is an INVENTED invariant → reject the unit write (full procedure: `references/validation-passes.md`).
    - **12.6 Deduplication check.** A `create` unit whose `target_files` ALL already exist → halt `dedup_ambiguous` (NEVER silent-rewrite the task_type).
    - **12.7 Sibling-consistency sweep.** Reason about siblings TOGETHER (grouped by module + scope): every sibling a pack-declared cross-cutting concern applies to MUST declare the SAME mechanism (no fan-out divergence); every FK column MUST declare its derived relation accessor. Enforced by `validate-sibling-consistency.sh`.
 
@@ -141,12 +142,12 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 
 "Generated N units. Suggested next: `execute-bolts --all` to execute in order, or `execute-bolts U-001` to start with the first."
 
-Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md`.
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md` (its §Scope propagation and §_index.md sections are every-run reads at Steps 10–11; the memory layer is default-on).
 
 ## Specialist references (load on demand)
 
 - **`references/unit-schema.md`** — the full unit frontmatter + body section schema, the 5-type Hard rule grammar (EBNF + validation table), per-task_type contracts, atomicity / multi-squad / interface-resolution / scope-field rules.
-- **`references/task-typing.md`** — SINGLE OWNER of task_type assignment: the full binding-state → task_type table, the six-state Implementation State Map + `field_diff` consumption, `verify` specifics, `extend` Migration-notes auto-population, and Step 7 / 7.6 target_files mechanics (whitelist, collision check + prompts).
+- **`references/task-typing.md`** — SINGLE OWNER of task_type assignment: the full binding-state → task_type table, the six-state Implementation State Map + `field_diff` consumption, `verify` specifics, `extend` Migration-notes auto-population, and Step 7 / 7.6 target_files mechanics (whitelist, collision check + prompts). *Open ONLY when the State Map carries `PARTIAL_*` / `UNKNOWN` / `CONFLICT` rows, `field_diff` needs consuming, or a 7.6 collision fires — all-IMPLEMENTED/NEW maps follow the inline Step-2.5 rules.*
 - **`references/decomposition-rails.md`** — flow-step → artifact derivation, the `depends_on` emission rules + cycle/cross-squad rejection, module + squad assignment, ID allocation, render test + UI contract for view-bearing units, and the adversarial test review pass.
 - **`references/validation-passes.md`** — the Step 12.x post-write passes in order (per-anchor verification, constitution inject, framework-pack citation, polished-prompt render pass a–g, dedup, sibling-consistency).
 - **`references/halt-protocol.md`** — every blocker's emitted YAML + recovery action, with a "which step fires which halt" index.

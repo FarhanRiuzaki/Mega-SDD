@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 1.18.2
+version: 1.19.0
 description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild — wave-based extraction produces .mega-sdd/knowledge-base/ with [VERIFIED]/[INFERRED]/[OPEN] + [LOCKED]/[INTENT]/[ARTIFACT] markers, consumed by generate-intent --kb and bind-codebase. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -54,7 +54,7 @@ Naming: this is the mega-sdd-flavored take on the legacy reverse-engineering pat
 
 **Secret-scan gate (mirrors scan-codebase Step 10a):** before EACH KB file is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact <assembled-file>` — legacy code routinely hardcodes credentials, and KB citations would otherwise carry them verbatim. Findings → value replaced with `[REDACTED-SECRET]` in the KB artifact (the legacy SOURCE is never edited) + one chat warning citing source file:line.
 
-Per `references/knowledge-base-schema.md` (read this file before generating any wave output) — see its **§Directory layout** for the full `{out}/` tree: the optional `_source/` seed, the `knowledge-base/` numbered tree (`00-overview` … `99-rebuild-architecture`) with each directory's sub-files, the `50-integrations` external-contract (conceptual, not protocol) convention, and the legacy `--out` probe order.
+Per `references/knowledge-base-schema.md` — **before any wave dispatch read §Directory layout + §Per-domain file frontmatter + §Per-domain 11-section template (incl. §3a) + §Marker conventions + §Anti-hallucination invariants; the Wave-5-only sections (§ERD Quality Rails, §`data-mutation-policy.md` template + its sub-sections, §README roll-up structure, §99-rebuild-architecture templates) are read AT Wave 5, not before** — see its **§Directory layout** for the full `{out}/` tree: the optional `_source/` seed, the `knowledge-base/` numbered tree (`00-overview` … `99-rebuild-architecture`) with each directory's sub-files, the `50-integrations` external-contract (conceptual, not protocol) convention, and the legacy `--out` probe order.
 
 Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intelligence`, classification, criticality, verified/inferred/open counts, citation count). Consumed by `bind-codebase` as secondary ground truth.
 
