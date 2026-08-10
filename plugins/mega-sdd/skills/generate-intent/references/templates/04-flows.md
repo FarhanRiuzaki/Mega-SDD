@@ -59,7 +59,7 @@ flowchart TD
      do NOT re-flatten it. If the KB used the ENRICHED form (`input_fields` as objects
      with name/mutability/visibility/conditional, plus per-stage delta fields new_fields_vs_prior /
      hidden_fields_vs_prior / promoted_to_mutable_vs_prior / dynamic_disclosures), preserve THAT
-     form; do NOT downgrade enriched objects to bare strings (AUDIT L8 — they carry the
+     form; do NOT downgrade enriched objects to bare strings (they carry the
      progressive-disclosure intent consumed at UI/bolt time per the ui-ux-design-intelligence
      integration). Then render the state diagram and stamp `_kb_source`. Omit all three
      blocks for single-step flows. validate-vault-flow-staging.sh follows `_kb_source` to prove the

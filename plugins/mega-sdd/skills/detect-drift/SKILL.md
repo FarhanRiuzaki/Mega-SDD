@@ -1,13 +1,13 @@
 ---
 name: detect-drift
-version: 3.1.4
+version: 3.1.5
 context: fork
 description: Non-interactive drift diagnostic — compares a mode=existing vault against the live codebase; writes DRIFT-REPORT.md, queues direction calls to PENDING-SYNC.md (never prompts). Use when the user says "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", "is the code in sync?", or paraphrases.
 ---
 
 # Drift Detect — vault vs live codebase reconciliation
 
-> **Forked, non-interactive (token-reset pilot, `context: fork`).** This skill runs as a forked subagent with no conversation history, so it **NEVER calls `AskUserQuestion`** — the former `--auto` behavior is now the *only* behavior. It detects + reports + queues direction calls to `PENDING-SYNC.md`; a human resolves them later via `resolve-oq` / `sync`. Inputs are resolved deterministically from `$ARGUMENTS` (`--vault=…`, `--code=…`, `--scope=…`) or the CWD; if a required input can't be resolved it emits a blocker (it never asks). Rationale + the full design: `research/2026-06-26-context-reset-fork-feasibility.md`. Standalone interactive resolution was removed in v3.0.0 — drift resolution lives in `resolve-oq`/`sync`.
+> **Forked, non-interactive (token-reset pilot, `context: fork`).** This skill runs as a forked subagent with no conversation history, so it **NEVER calls `AskUserQuestion`** — the former `--auto` behavior is now the *only* behavior. It detects + reports + queues direction calls to `PENDING-SYNC.md`; a human resolves them later via `resolve-oq` / `sync`. Inputs are resolved deterministically from `$ARGUMENTS` (`--vault=…`, `--code=…`, `--scope=…`) or the CWD; if a required input can't be resolved it emits a blocker (it never asks). Standalone interactive resolution was removed — drift resolution lives in `resolve-oq`/`sync`.
 
 For revamp / extension projects (`mode=existing`), the vault is the target spec and the live codebase is current reality. They drift apart silently: a field renamed in code but not the vault, a flow step that violates a vault decision, an endpoint shipped without an ADR. This skill scans the codebase, compares it to the vault, and produces a structured drift report. Findings are heuristic (high recall, decent precision) — the report is a **starting point for review, not a verdict**.
 

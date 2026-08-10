@@ -61,7 +61,7 @@ tools:
 
   - id: tree-sitter
     used_by: [scan-codebase]
-    purpose: "scan-codebase OPT-IN lane only (--engine=tree-sitter; auto uses ast-grep since 5.31.0)"
+    purpose: "scan-codebase OPT-IN lane only (--engine=tree-sitter; auto uses ast-grep)"
     fallback_behavior: "auto is unaffected — ast-grep serves tier ast; without it, regex"
     matrix:
       - os: macos

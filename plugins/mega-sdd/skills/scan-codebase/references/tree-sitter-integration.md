@@ -26,8 +26,7 @@ OPT-IN  --engine=tree-sitter  .scm tag queries; one spawn per FILE; grammars com
 Resolution is **per language**: a packed language extracts via ast-grep at
 `precision_tier: ast`; a language with no rule pack falls to regex (`no_astgrep_pack`,
 recorded). **tree-sitter is never probed in auto** — the clang grammar-compile OOM class
-(`clang: … Killed: 9` on stderr at rc=1, live incident 2026-08-02, reproduced again at
-the D2 flip) is structurally unreachable on any unattended run. The explicit
+(`clang: … Killed: 9` on stderr at rc=1) is structurally unreachable on any unattended run. The explicit
 `--engine=tree-sitter` lane keeps full T1 behavior for hand-configured-grammar machines:
 serial bounded smoke tests, `grammars_used`, per-language regex fallback with named
 reasons — and never a silent detour to ast-grep (the caller chose tree-sitter).
@@ -128,7 +127,7 @@ verified JSON contract (0-based lines, `lines` = full node text, dedupe by
 `(file, range.start.line, ruleId)` — never the 2-tuple, which drops a real
 definition), and the `---`-separator concatenation seam live in
 scan-procedure.md §Step 5 "If `engine: ast-grep`". Reference captures
-(`@name.reference.*`) do NOT exist at tier 2 — and since 5.29.0 nothing consumes them
+(`@name.reference.*`) do NOT exist at tier 2 — and nothing consumes them
 (the generate-units PageRank pass was removed; reuse now rides the write-time
 `symbol_slice` in execute-bolts dispatches).
 

@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.8.0
+version: 1.8.1
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -96,7 +96,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 
    **`timeout` is not universal, and its absence is not a fact about the probed tool.** Git Bash ships MSYS2 coreutils `timeout` and Linux ships GNU coreutils, but **stock macOS ships neither `timeout` nor `gtimeout`** — `gtimeout` only appears after `brew install coreutils`. A literal prefix there makes every probe exit 127 and, under the verdict table below, reports every *installed* tool as `missing`. When `BOUND` resolves empty, state it once in the audit output and continue; probes run unbounded on that machine. **A missing bounding utility degrades the protection — it must NEVER be converted into a verdict about the probed tool.**
 
-   **Write the flag BEFORE the duration** — the reverse order is a parse error that exits 127. GNU `timeout` sends SIGTERM at expiry and then *waits* for the child; `-k 2` escalates to SIGKILL 2 s later, so the ceiling is an explicit ~12 s. Under Git Bash (MSYS2) SIGTERM **does** reach a native `.exe`: the MSYS2 runtime injects a thread that calls `ExitProcess`, then escalates to `TerminateProcess` after ~10 s (cygwin `kill` docs; `git-for-windows/msys2-runtime` PR#15, PR#16, commit `c967bd8`). The unescalated form is therefore a **bounded ~10 s overshoot on top of the bound, not an unbounded hang**. `-k 2` is still worth keeping: it makes the ceiling a number this procedure owns and states, instead of one that depends on an MSYS2 runtime implementation detail.
+   **Write the flag BEFORE the duration** — the reverse order is a parse error that exits 127. GNU `timeout` sends SIGTERM at expiry and then *waits* for the child; `-k 2` escalates to SIGKILL 2 s later, so the ceiling is an explicit ~12 s. Under Git Bash (MSYS2) SIGTERM **does** reach a native `.exe`: the MSYS2 runtime injects a thread that calls `ExitProcess`, then escalates to `TerminateProcess` after ~10 s. The unescalated form is therefore a **bounded ~10 s overshoot on top of the bound, not an unbounded hang**. `-k 2` is still worth keeping: it makes the ceiling a number this procedure owns and states, instead of one that depends on an MSYS2 runtime implementation detail.
 
    **Never run `verify_cmd` unbounded when a bound resolves.** `command -v` is a builtin and cannot hang; an execution probe can, and on a corporate network a tool that checks for updates on startup will block until the proxy gives up. Measured cost of the exec probes, macOS warm — Windows + EDR is roughly an order of magnitude worse: `semgrep --version` **3.9 s**, `mmdc --version` 384 ms, `markdownlint-cli2 --version` 366 ms, everything else under 150 ms.
    - Exit 0 → mark `present`; capture the version from stdout best-effort.

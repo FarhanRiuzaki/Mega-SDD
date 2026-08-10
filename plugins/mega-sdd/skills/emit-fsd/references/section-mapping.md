@@ -1,7 +1,7 @@
 # Section Mapping — Source Artifact → FSD Section
 
 > **Per-section: source artifact path(s), extraction rules, citation format.**
-> **EXECUTED BY `scripts/build-fsd-core.sh`** (tranche 5e) — the deterministic
+> **EXECUTED BY `scripts/build-fsd-core.sh`** — the deterministic
 > builder runs every rule below in one spawn and writes `FSD.md` pre-filled;
 > the model reviews (delete/reformat-only authority) and never re-derives a
 > section by hand. Editing a rule here MUST be mirrored in the builder — the

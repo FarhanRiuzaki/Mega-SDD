@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.3.2
+version: 2.4.0
 description: Evolves an existing vault when its PRD/BRD/Figma source changes — structured diff, preserves resolved OQs, flags contradictions with resolved decisions. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 
@@ -49,13 +49,18 @@ The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR
 
 **Step 0.5 — Diff scope (MANDATORY).** `full` (default — diff every doc; for significant revisions) | `oq-only` (only check whether open OQs are now answered; skip entity/flow/decision diff; fast pass for minor clarifications) | `specific-docs` (user lists docs, e.g. "just `04-flows.md` and `06-constraints.md`"). Persist `DIFF_SCOPE`. Echo the plan. **Scope honesty:** if the user picks `oq-only`, do NOT secretly diff entities/flows.
 
-**Step 1 — Read both states.** Read the entire current vault (all 7 files). Read every new source fully (PDF → `pdf-reading` skill, DOCX → `docx` skill, etc.). Read the OLD source if available — ask once: *"Path to the old source the current vault was generated from? (optional — improves conflict detection)"*. Without it, the diff uses `vault state vs new source` rather than `old source vs new source vs vault`; both work, old source improves precision on which OQs were *already* gaps vs newly-introduced.
+**Step 1 — Read both states (read width follows `DIFF_SCOPE`).**
+
+- `full` | `specific-docs` — read the entire current vault (all 7 files) and every new source fully (PDF → `pdf-reading` skill, DOCX → `docx` skill, etc.).
+- `oq-only` — fast pass. Read ONLY: the `00-index.md` Open Questions roll-up, each vault doc's Open Questions section, and the new-source sections targeted by those open OQs (resolve each open OQ row's cited § / topic in the new source by heading match; no heading match → scan the source's heading outline once to locate the topic, never the whole document). Do NOT load the full 7-file vault or the full source under this scope — the read width matches the diff width (same Scope honesty rule as Step 0.5).
+
+Read the OLD source if available — ask once: *"Path to the old source the current vault was generated from? (optional — improves conflict detection)"*. Without it, the diff uses `vault state vs new source` rather than `old source vs new source vs vault`; both work, old source improves precision on which OQs were *already* gaps vs newly-introduced.
 
 **Step 1.5 — PRD change detection.** When `vault.json` has a `prd_sha256` field, compute the sha256 of the current PRD at `vault.json.prd_path_at_generation` and compare; emit `prd_sha256_changed: yes | no | n/a` in the report header. If the recorded path no longer exists → **halt `prd_path_missing`** (ALWAYS STOP). Legacy vault (no `prd_sha256`) → skip gracefully with an advisory note. Full logic + the scope handoff block: `references/diff-procedure.md`.
 
-**Step 2 — Re-extract from new source.** Run the same extraction logic as `generate-intent` Step 2 — build an internal model of the new source's components, entities, flows, decisions, constraints, gaps. Persist the four design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) for the new source so design-system sections can also diff.
+**Step 2 — Re-extract from new source (full | specific-docs; under `oq-only` skip this step — the OQ axis needs no full source model, only the targeted sections Step 1 read).** Run the same extraction logic as `generate-intent` Step 2 — build an internal model of the new source's components, entities, flows, decisions, constraints, gaps. Persist the four design-system flags (`HAS_UI_COMPONENTS`, `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND`) for the new source so design-system sections can also diff.
 
-**Step 3 — Compute structured diff.** Per axis (entities, flows, decisions, OQs, constraints/overview/architecture, design-system), classify each item into the categories above. Resolved-OQ conflicts and Decision conflicts ALWAYS require user resolution. Removed flows get a `> **Removed in v{X.Y}**` banner — never deleted. Per-axis matching rules: `references/diff-procedure.md`.
+**Step 3 — Compute structured diff (full | specific-docs axes; under `oq-only` diff ONLY the OQ axis — answered/unanswered per the targeted reads).** Per axis (entities, flows, decisions, OQs, constraints/overview/architecture, design-system), classify each item into the categories above. Resolved-OQ conflicts and Decision conflicts ALWAYS require user resolution. Removed flows get a `> **Removed in v{X.Y}**` banner — never deleted. Per-axis matching rules: `references/diff-procedure.md`.
 
 **Step 4 — Generate `VAULT-DIFF.md`.** Write the structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites). Conflicts go in a PRIORITY-1 section at the top. This persistent artifact is what the user reviews offline. Full template + per-section examples: `references/report-format.md`.
 

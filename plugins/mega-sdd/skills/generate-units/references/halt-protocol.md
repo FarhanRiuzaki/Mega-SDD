@@ -183,9 +183,8 @@ Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt ren
 ## Confirm gates (not halts — no blocker YAML)
 
 These STOP to ask, then continue on the user's answer. They emit NO blocker envelope and add
-no member to the halt enum.
-
-- **Step 7.5 spawn-cost gate — (REMOVED 5.29.0 — spec `2026-08-02-reuse-first-grounding-index.md` §D1: the advisory PageRank pass was file-level, human-promoted, ignored by execute-bolts, and dead on both real environment classes — macOS grammar-compile OOM, Windows/EDR one-spawn-per-file; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)** No confirm gate remains at Step 7.5.
+no member to the halt enum. None remain — the sole former member (the Step 7.5 spawn-cost
+gate) was removed with the PageRank pass.
 
 ## Halt-vs-warning summary
 
@@ -193,4 +192,4 @@ Hard halts (STOP): `cycle_detected`, `cross_squad_dep_invalid`, `interface_ref_m
 
 Soft (proceed, surface a WARNING): anchor file missing / line out of bounds (Step 12.3); Implementation-steps bullet-only (Step 12.5 c); module ≥10% unassigned; target_files collision force-create (option 4). The full halt-vs-warning matrix is in the defensive-generation reference listed in the skill router.
 
-Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): none remain since 5.29.0 (the sole member — the Step 7.5 spawn-cost gate — was removed with the PageRank pass; tombstone in §Confirm gates above).
+Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): none remain (the sole member — the Step 7.5 spawn-cost gate — was removed with the PageRank pass; §Confirm gates above).

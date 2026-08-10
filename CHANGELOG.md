@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.5.0] - 2026-08-11 — audit phase-3: reference diet (archaeology purge, context-enrichment split, mega-line reflow)
+
+Ships Phase 3 (spec `2026-08-11-audit-phase3-reference-diet.md`). Prose relocation/reformat only — no rule, gate, grammar, or halt change; ONE flagged loading-contract change (diff-vault oq-only fast pass). Dual-blind round: 0 blockers / 1 major / 8 minors combined, ALL folded; post-fold battery 31/31, suites green both trees.
+
+- **Archaeology purge** (~60 runtime-prose sites): version/date/round tags (`removed 5.29.0`, `tranche 5b/5e/2b`, `S3/P0/P4/P7` markers, `decision N`, `AUDIT L8`, `(v0.6/v0.11)` template tags + the v0.11→v0.14 compat note, research-file citations in rule text, msys2 PR provenance, `60k+ repos`) — history lives in CHANGELOG/specs; every operative clause stayed; test-pinned phrases (`REMOVED 5.29.0`, `deprecated (v3.0.0)`, `AMENDMENT 2026-07-31`) kept verbatim; editor anti-regression pins → HTML comments.
+- **context-enrichment.md split** (reopens deferred R6 with the audit's evidence): 96,414 → 75,887 B (−21%); the amendment/measurement corpus (177 lines, byte-verified verbatim) → `docs/superpowers/specs/2026-08-11-context-enrichment-amendment-archive.md`; every operative table, rail, Known-open row, and reproduce-defect-as-written annotation stays; cascade moat suite 266/266.
+- **Mega-line reflow** (byte-preserving wording): routing-rules Mode D row → a §Mode D detail subsection; bind Step 1, execute-bolts B1 paragraph, resolve-oq :51/:55, generate-intent Step 3.7 → seam-split bullets.
+- **Measured items**: styling-config.yaml 73→14 lines (only the 4 keys `build-fsd-core.sh` reads; dead knobs no longer silently no-op; parity suite unchanged — re-baseline verified unnecessary); diff-vault `oq-only` scope-guarded across Steps 1–3; NEW `tests/skill-triggering/graph.test.md`; NEW `tests/surface/test-emit-ladder-parity.sh` (owner-ladder set-comparison, mutation-proved both directions).
+- Skill bumps ×15 (diff-vault minor for the loading-contract change; 14 patch); manifests 6.5.0.
+
 ## [6.4.0] - 2026-08-11 — audit phase-2b: script-ification, sync short-circuit, single-owner outcomes
 
 Ships Phase 2b (spec `2026-08-11-audit-phase2b-scripts-and-owners.md`). Four new deterministic scripts convert prose-compliance risk into structure; the sync lane gains a deterministic nothing-to-re-verdict short-circuit; the proven-drift grammars get owner outcomes + parity pins. Applies the user's moat-takeout amendment with rigor: **zero moat cuts shipped** — all three candidates failed their own evidence bar on inspection (cases in spec §S7); real takeout candidates go to the morning-proposals doc. Dual-blind round: 2 blockers (a FALSE-in_sync verification-loss bug on slash-less binding anchors — the schema's own canonical form; and 5 plugin-tree test pins broken by the S5b compression — the both-trees lesson repeated) + 7 majors + 7 minors combined, ALL folded (disclosure in spec).

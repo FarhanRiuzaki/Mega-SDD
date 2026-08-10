@@ -272,7 +272,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
            libs: { signature_sha256: <hex>, generated_at: <ISO8601> }
            reuse: { signature_sha256: <hex>, generated_at: <ISO8601> }
        # NOTE: cached slices keep their original generated_at; fresh slices get current ISO8601.
-       # NOTE (S3 DS-2 — failed slices): do NOT write a per_slice entry for a domain listed in
+       # NOTE (failed slices): do NOT write a per_slice entry for a domain listed in
        #   partial_slices. A failed slice has no output to cache; writing its (fresh) signature
        #   anyway made the next run diff it as unchanged → FULL CACHE HIT serving the partial
        #   YAML forever. No entry → deep-scan-gate.md Step 10.5.1.4c marks it stale → it

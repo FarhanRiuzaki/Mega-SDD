@@ -452,7 +452,7 @@ Constitution version pinned to vault:
 - Constitution updates require explicit user action; never auto-edited
 - `generate-intent` extracts INITIAL constitution from PRD/KB; user MUST review + sign before vault locks
 - Constitution overrides codebase reality: if existing code violates constitution, bolt FAILS pre-flight (intentional rail strengthening)
-- `--no-constitution` flag opt-out preserves pre-v1.8 behavior (rare; for one-off greenfield demos)
+- `--no-constitution` flag opt-out skips constitution emission entirely (rare; for one-off greenfield demos)
 
 ### Backward compatibility
 
@@ -512,7 +512,7 @@ Within each affected section, every architectural decision gets TWO sub-fields:
 
 ### Backward compatibility
 
-- Pre-v1.11 vaults (no Starterkit binding fields) → consumed unchanged by bind-codebase + generate-units; conventions resolved from binding step instead.
+- Vaults without Starterkit binding fields → consumed unchanged by bind-codebase + generate-units; conventions resolved from binding step instead.
 - Mixed vaults (some sections have Starterkit binding, others don't) → permitted; downstream skills handle absence gracefully.
 - `bind-codebase` reading a vault with Starterkit binding fields: they supplement Hard Rule emission (clauses cited inline as `source: vault §02-architecture > Starterkit binding > Authentication strategy`).
 

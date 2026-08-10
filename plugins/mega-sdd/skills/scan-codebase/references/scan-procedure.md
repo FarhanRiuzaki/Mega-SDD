@@ -71,7 +71,7 @@ passed WITHOUT a file and recorded as SKIPPED, not failed. The script probes bot
 binary names (`tree-sitter` — brew/cargo; `tree-sitter-cli` — npm), probes `ast-grep` and resolves
 the D2 ladder (AUTO never invokes tree-sitter); under `--engine=tree-sitter` it runs the
 per-language **grammar smoke tests SERIALLY with a hard per-probe timeout** (binary presence ≠ working grammars — a default install ships ZERO grammars configured; the smoke test is also a clang
-compile step — parallel probes have OOM-killed clang: `killed: 9`, live incident 2026-08-02,
+compile step — parallel probes have OOM-killed clang: `killed: 9`,
 which is WHY detection is a script and not prose). Either way it prints ONE compact
 JSON digest:
 
@@ -365,7 +365,7 @@ gate the way it pre-resolves `bind-codebase <vault>` — the blocker would stran
 chain before a single artifact exists. On Windows the gate fires at only ~272 files, so this
 is the common case, not a corner case. Safest here is finishing in seconds at a precision the
 map states honestly. (These principles were first written down for the retired generate-units
-PageRank spawn gate, removed 5.29.0 §D1 — this section now owns them.)
+PageRank spawn gate — that pass was removed; this section now owns them.)
 
 *(b) This does NOT violate the no-silent-downgrade rail — that rail protects the RECORD, not
 the action.* The `--auto` downgrade is not a SILENT downgrade: "silently" is about the record, not the action.
@@ -394,7 +394,7 @@ The existing `>100k files` halt stays, but note it is a POSIX-era guard: at 220 
 100k-file repo is **6.1 hours**, so on Windows this gate fires long before that halt
 is ever reached.
 
-### If `engine: tree-sitter` (the `--engine=tree-sitter` OPT-IN lane — never auto since D2/v5.31.0)
+### If `engine: tree-sitter` (the `--engine=tree-sitter` OPT-IN lane — never auto)
 
 - For each detected language, locate `queries/tags-<lang>.scm` in the plugin dir.
 - For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue.
@@ -405,10 +405,10 @@ is ever reached.
   output format could not be verified — the dev machine's tree-sitter ships no compiled
   grammars. Verify on a box with working grammars before changing the invocation.)
 - Parse capture output (line + col + capture name + symbol text) into the interface table.
-- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them; their only former consumer — the generate-units PageRank pass — was removed 5.29.0, so nothing downstream needs them).
+- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them; their only former consumer — the generate-units PageRank pass — was removed, so nothing downstream needs them).
 - Languages without a `.scm` file, or whose grammar failed the opt-in smoke test → fall to REGEX with the named reason — never a silent ast-grep detour (the caller chose tree-sitter; D2).
 
-### If `engine: ast-grep` (TIER 1 since D2/v5.31.0 — zero-compilation AST, the auto default)
+### If `engine: ast-grep` (TIER 1 — zero-compilation AST, the auto default)
 
 Runs for every language the Step-0 digest lists in `astgrep_langs` — the auto primary
 route (`engine: ast-grep`).
@@ -435,7 +435,7 @@ ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' \
   - Symbol name = parsed from the AST-bounded signature line (the node kind is known from
     `ruleId`, so the parse is deterministic; the node BOUNDARY — what regex gets wrong —
     came from the AST, so `precision_tier: ast` holds).
-- `name.reference.*` captures do NOT exist in this lane — and since 5.29.0 nothing
+- `name.reference.*` captures do NOT exist in this lane — and nothing
   consumes them (the PageRank pass was removed, §D1 of the reuse-first spec); binding
   precision is unaffected.
 - Languages with no `queries/astgrep/<lang>.yml` pack → regex lane below, per language. One pack per ast-grep language, filename == language key (lane law — tsx has its OWN pack; rules parked in another file are invisible to Step-0 routing). Exception: `jsx` routes through the javascript lane via the probe's `ASTGREP_ALIASES` map (ast-grep's js grammar parses JSX; a jsx.yml would double-count every .jsx symbol). Full glossary registry: `queries/VERSIONS.md`.

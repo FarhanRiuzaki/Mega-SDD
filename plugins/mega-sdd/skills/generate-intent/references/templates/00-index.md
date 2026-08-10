@@ -69,7 +69,7 @@ Examples (adjust to `PROJECT_SHAPE`):
 - **PM / Business Owner**: [[00-index]] → [[01-overview]] → [[05-decisions]]
 - **<UI/UX or other UI-relevant role, if the project has UI>**: [[01-overview]] → [[04-flows#<user-flow-anchor>]]
 
-- **UI/UX or FE Dev** (v0.6, conditional): [[01-overview]] → [[02-architecture#UI components & patterns]] → [[06-constraints#Design System]] → [[04-flows]]
+- **UI/UX or FE Dev** (conditional): [[01-overview]] → [[02-architecture#UI components & patterns]] → [[06-constraints#Design System]] → [[04-flows]]
 
   > **Conditional**: appears only if the vault has at least one of [[02-architecture#UI components & patterns]] or [[06-constraints#Design System]] (i.e., Step 2 detection found explicit source). If both are absent, remove this reading path.
 

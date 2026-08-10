@@ -8,7 +8,6 @@
 - `extend` activation + Migration-notes auto-population
 - Reconcile pass (`--reconcile` — living-vault sync lane)
 - Step 7 — target_files whitelist
-- Step 7.5 — (removed 5.29.0)
 - Step 7.6 — Per-unit target_files collision check
 
 Loaded by `generate-units/SKILL.md` Steps 2.5 / 7 / 7.6. The BODY keeps the moat-critical skeleton (read Implementation State Map → assign `task_type: create | verify`, the CONFLICT block, OQ-ID carry, anchors-mandatory rule); this file carries the full state matrix and the brownfield target_files mechanics. Emitted halt YAML lives in the halt-protocol reference listed in the skill router.
@@ -118,8 +117,6 @@ When binding state is **PARTIAL_FIELDS_BOTH**:
 - Greenfield: list expected files (from vault component definitions)
 - Brownfield: list bound-vault citations (specific file paths from binding)
 - If a unit can't determine target_files: halt — vault too vague
-
-## Step 7.5 — (REMOVED 5.29.0 — spec `2026-08-02-reuse-first-grounding-index.md` §D1: the advisory PageRank pass was file-level, human-promoted, ignored by execute-bolts, and dead on both real environment classes — macOS grammar-compile OOM, Windows/EDR one-spawn-per-file; its write-time replacement is execute-bolts' dispatch `symbol_slice`.)
 
 ## Step 7.6 — Per-unit target_files collision check
 
