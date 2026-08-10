@@ -52,7 +52,9 @@ printf '%s' "$OUT" | grep -q '^probe-inconclusive .* rc=127$' \
   || fail "--tool + 127 verdict wrong: $OUT"
 
 # ── other nonzero rc -> missing (WindowsApps stub exit-49 class) ──
-run --tool=sh --verify-cmd='exit 49'
+# `||` forces the bounded `sh -c` wrap: `exit` is a shell BUILTIN, and real GNU
+# timeout (bounded hosts, e.g. ubuntu CI) cannot exec a builtin directly (rc 127).
+run --tool=sh --verify-cmd='exit 49 || exit 49'
 printf '%s' "$OUT" | grep -q '^missing .* rc=49$' \
   && pass "rc 49 (stub class) -> missing" || fail "rc 49 verdict wrong: $OUT"
 run --verify-cmd='false'
