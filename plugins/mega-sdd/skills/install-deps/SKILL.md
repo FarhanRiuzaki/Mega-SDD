@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.7.2
+version: 1.8.0
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -45,7 +45,7 @@ Plus chat-only output: detected OS, tool inventory, install plan, per-tool verif
 
 ### Step 1: Detect environment
 
-Run the canonical detection algorithm per `references/os-detection.md`. Emit chat output:
+**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-os.sh"` — the canonical detection algorithm, script-owned (never transcribe it; outcome table + special cases live in `references/os-detection.md`, open on an odd result). Emit chat output:
 
 ```
 Detecting environment...
@@ -64,7 +64,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 2. **Pre-filter with `command -v` FIRST — this ordering is mandatory, not an optimisation.**
    - Not on PATH → mark `missing` immediately. **Do not run the exec probe.** A name absent from PATH is conclusively missing, and `command -v` is a shell builtin: zero forks, ~5 ms for all tools combined.
    - On PATH → continue to the exec probe below. Only tools that are actually present pay its cost.
-3. **Usability is the only thing that can mark a tool `present`** — but the probe MUST be bounded. **Resolve the bounding prefix; never type it literally at a probe site.** The resolver is the prelude of the *same* Bash invocation that runs the probe loop:
+3. **Usability is the only thing that can mark a tool `present`** — and the probe is SCRIPT-OWNED: **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/probe-tool.sh" --verify-cmd='<verify_cmd>' --tool=<id>` per tool. It owns the bound resolution, the `sh -c` wrapping, and the verdict map; its ONE output line (`<verdict> bound=<N>s rc=<rc>`) IS the verdict — NEVER hand-run a bounded probe. The contract it implements (reference — do not execute by hand): the probe MUST be bounded; resolve the bounding prefix, never type it literally at a probe site. The resolver is the prelude of the *same* Bash invocation that runs the probe loop:
 
    ```bash
    # Prelude — same Bash invocation as the probes below. Shell state does NOT
@@ -190,7 +190,7 @@ If ANY install fails:
 
 For each successfully-installed tool:
 
-1. Run `verify_cmd` from matrix entry, **bounded exactly as in Step 2**. Shell state does not survive between tool calls, so **re-run the resolver prelude here** rather than reusing Step 2's variable — and never hard-code the prefix, for the same stock-macOS reason:
+1. Run `verify_cmd` from the matrix entry via the SAME script as Step 2 — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/probe-tool.sh" --verify-cmd='<verify_cmd>' --tool=<id>` — its verdict line is final; NEVER hand-run the prelude (the block below is the script's contract, kept for reference — shell state does not survive between tool calls and the prefix is never hard-coded, for the same stock-macOS reason):
 
    ```bash
    if   command -v timeout  >/dev/null 2>&1; then BOUND="timeout -k 2 10"

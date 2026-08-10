@@ -1,0 +1,56 @@
+# Audit Phase 2b — script-ification, sync short-circuit, single-owner sweeps, moat-takeout cases
+
+**Date:** 2026-08-11
+**Status:** DRAFT
+**Source:** `docs/superpowers/audits/2026-08-10-skills-audit.md` recommendations #3 (script-ify), #4 (sync short-circuit), #5 (single-owner sweeps + parity tests) — the second Phase-2 ship train (2a = v6.3.0). Also applies the user's 2026-08-10 moat-takeout amendment ("klo moat tidak efisien bisa di takeout") with the recorded interpretation: evidence-based per-item cases; gates with a defect-catch record are proposal-first, never cut here.
+**Version:** 6.4.0 (minor).
+
+**Doctrine anchor:** "Deterministic logic belongs in scripts/" (plugins/mega-sdd/CLAUDE.md). Every item converts prose-compliance risk into structural impossibility, or collapses multi-home rules to their canonical owner + pointers. No gate weakened; the sync short-circuit adds a DETERMINISTIC freshness proof, it does not skip verification (empty intersection = nothing to re-verdict — proportional-verification).
+
+## S1 — `scripts/predictive-preflight.sh` (audit P1)
+
+`predictive-checks.md` is ~20KB of prose entries that are literally bash probes + expected exit codes, hand-executed by the model each chain. Ship `scripts/predictive-preflight.sh --cwd=<root> --chain=<skill,skill,...>`: runs each chained skill's checks (probe library shared with `scripts/_lib/state_probes.py` / `derive-state.sh` — probe sets never diverge), prints a JSON verdict `{skill, check, status: ok|warn|fatal, hint}` per check + a summary line; exit 0 = clean/warn-only, exit 3 = ≥1 `fatal` mismatch. orchestrate-flow Step 5 becomes: `Run: scripts/predictive-preflight.sh …` → read the JSON; `fatal` → halt `predictive_check_failed` (unchanged halt, unchanged semantics). `predictive-checks.md` stays as the maintainer catalog (checks + `on_fail` wording; the script header names it as its source-of-truth) — the model stops loading it on the happy path. §Cold-halt checks ride the script under `execute-bolts` membership (the 6.3.0 carve-out becomes structural).
+
+## S2 — `scripts/probe-tool.sh` (audit P1)
+
+install-deps' probe ladder (BOUND resolver, `sh -c` wrapping, exit 124/137/127 verdicts, `-k 2` MSYS2 escalation, resolve-python carve-out) is stated 4× as prose. Ship `scripts/probe-tool.sh --verify-cmd='<cmd>' [--tool=<id>]`: owns the ladder, emits ONE verdict line `present|missing|slow-verify|probe-inconclusive bound=<Ns>`. SKILL Steps 2/6 + rails 12–13 collapse to the invocation + a two-sentence WHY; the false-`missing` class becomes structurally impossible. Field lessons (WindowsApps stub exit-49, `||`-escapes-the-bound) move into the script + its header.
+
+## S3 — `scripts/detect-os.sh` (audit P1)
+
+`os-detection.md:16-119` is 120 lines of canonical bash the model transcribes by hand. Ship it as a script emitting the existing `OS/PKG_MGR/FALLBACKS` contract; the ref shrinks to the outcome table + special-case notes + fallback-chain policy (the judgment-bearing half).
+
+## S4 — sync claim-intersection short-circuit (audit P1, sim S2)
+
+The sync chain has no trivial-delta short-circuit: ANY change signal dispatches the full 4-hop reconcile (~285KB of skill bodies) even when the changed set intersects zero binding claims. Extend the changed-set derivation with `scripts/sync-intersect.sh --cwd=<root> --vault=<vault>`: changed paths ∩ (binding.json anchor paths ∪ units' `target_files`). **Empty intersection → stamp freshness (map/index stamp advance), write a one-line SYNC-REPORT.md ("in sync — N changed paths, 0 intersect binding anchors/unit targets"), END the chain** before detect-drift/bind/generate-units load. Non-empty → chain proceeds unchanged. Zero verification loss: there is nothing to re-verdict (the moat re-blocks downstream regardless if a later bind finds a CONFLICT). Wire: `commands/sync.md` step list + `routing-rules.md` Mode D row + `orchestrate-flow` --sync flag row name the gate. Fail-closed: script errors / unparseable binding.json → NO short-circuit (full chain runs).
+
+## S5 — single-owner sweeps (audit P1; the proven-drift grammars)
+
+**Implemented outcome (each candidate re-inspected against its CONSUMERS — the 2a round lesson applied up front; several audit "N homes" counts dissolved):**
+- **UAT step-row derivation contract — RELOCATED.** Owner corrected on inspection to `emit-uat/references/uat-sections.md §Section 2` (the fullest home: row shape, numbering, Pending-row literal — NOT the SKILL as the audit guessed). SKILL Step 2 keeps a 2-line digest (the two absolutes: never-invent-a-step, exact placeholder literals) + "follow it THERE, never improvise"; uat-template.md drops its re-enumeration ("this template adds no rules of its own").
+- **Spawn-cost gate — SKILL restatement COMPRESSED.** `scan-codebase/SKILL.md` Step 5's 3,354-char near-full-fidelity lane restatement → the lane skeleton + "OWNED in full by `scan-procedure.md §Spawn-cost gate` … never improvise from this summary" (~475 tok/run off the always path; the two Windows-pinned phrases `ONE batched invocation` + `N_hash + N_extract` kept verbatim). halts-flags-handoff untouched (blocker YAML home).
+- **CONFLICT block + ✅ RESOLVED grammar — NO relocation; parity-pinned instead.** Inspection: `binding-contract.md §CONFLICT entry format` already DEFERS the grammar ("P2 grammar per binding-md-template.md") and owns only the advisory classification enrichment (a different rule); `resolve-oq/binding-mode.md` holds the marker strings AT THE ONLY WRITER (the 6.1.1 teach-at-the-writer principle argues FOR that copy); `handoff-validation.md` is a one-line consumer pointer. The real risk is the writer↔template pair drifting → p11 parity pin (binding-mode's two marker shapes must match binding-md-template's).
+- **Builder exit-code contract + blind rail — NO consolidation; parity-pinned.** The SKILL and superpowers-bridge copies are OPERATIONAL at their surfaces (the controller executes the exit-code branch from the flow; the per-agent dispatch-construction rules are not rationale restatements). The rationale-heavy third copies live in `context-enrichment.md` and fall out of the Phase-3 split (task #60), not this release. p11 pins the SKILL↔bridge exit-code discriminator sentence pair.
+
+## S6 — parity tests (audit #5's enforcement half)
+
+`tests/surface/test-p11-owner-parity.sh`: (a) the four hand-synchronized agent↔ref contracts (findings-only return block, step_type enum, provenance-trailer shape, verifier bolt-dir scoping) — assert the agent copy contains the owner's canonical lines; (b) the S5 owners still carry their grammar and the demoted homes carry pointers, not copies (negative pins on the killed restatements).
+
+## S7 — moat-takeout cases (per the 2026-08-10 amendment; each with its case)
+
+**Outcome: ZERO cuts ship here — all three candidates failed their own evidence bar on inspection (the amendment is satisfied by rigor, not forced cuts):**
+- **T1 detect-drift never-prompt 6→4 — DROPPED.** The trim value (~150 tok/run) does not cover the pin-surgery risk on fork-viability armor with a MEASURED bulldozing history (prose-halt bulldozed 1/4 headless runs — `research/2026-07-20-fork-ab-headless-attempt.md` lineage); the 6 restatements exist for cause.
+- **T2 parallel-batch re-scan — ESCALATED to proposal-first.** `batch-and-fanout.md:77`'s rationale is not pure redundancy: "the explicit re-scan makes the gate state deterministic regardless of concurrent write ordering" is plausibly load-bearing for between-batch halt decisions under `--parallel` (async PostToolUse interleaving). Cutting it needs a trace of between-batch state consumers + the spawn count saved — morning-proposals doc, never an overnight cut.
+- **T3 design-system no-default 5 homes → DROPPED.** The homes dissolve under inspection into DISTINCT surfaces: SKILL rail (author-time), generation-guide (guide-time), self-check (check-time), `templates/06-constraints.md:67` (the EMITTED-artifact guard — the 6.1.1 "template = blast radius" lesson says this one matters MOST), and vault-contract:116 is the Design-Source OQ escape hatch, a different rule. Nothing here is a fifth copy of one sentence.
+**Proposal-first (morning-proposals doc, task #61):** T2 above; advisor default-on opus per bind; B1 recompute cadence; any deterministic gate. These have defect-catch records or live concurrency rationale; "tidak efisien" needs the user's cost/value call.
+
+## Round disclosure (dual-blind, 2 reviewers, read-only + mktemp, scripts sandbox-executed)
+
+Reviewer 1 (fidelity+moat): 1 blocker / 6 majors / 3 minors. Reviewer 2 (breakage; 70 referencing suites run, 27/27 hostile-input probes, 22/22 p11 mutation pins fired, CI discovery of the new test dirs verified): 1 blocker / 1 major / 4 minors. ALL folded pre-ship. The two blockers: (a) **slash-less binding anchors** (the schema's own canonical form `UserController.php:45`) normalized to basenames that never match repo-relative changed paths → sync-intersect could stamp a FALSE `in_sync` — fixed with conservative basename matching + a widened file-ish filter + three new test arms (a verification-loss bug the round existed to catch); (b) **five pins in the PLUGIN-tree scan-fork suite** broke on the S5b compression — the repeat of the "local suite is only top-level" lesson; pins moved WITH the phrases (two repointed to the owner `scan-procedure.md`, recording the decision that a forked body Reads its refs — the suite's old inline-only assumption is retired). Other folds: probe-tool rc-127 → `probe-inconclusive` unconditionally (the SKILL table is the source of truth; the builder's `--tool`-conditioned split was a sketch artifact), + stderr silencing for crashing probes + `--bound` validation; `prd_or_kb_input_present` moved to the script's skip-list (the catalog's own note brands the root-only arm a false-fail on positional PRDs); the three flag-dependent checks explicitly MODEL-RUN via a Step-5 clause; the emit-uat compression's dangling Pending-fragment deleted; "any other unexpected exit → full chain" added at all three sync-gate surfaces (unknown gate rc ≠ pass); vacuous stand-ins (`framework_pack_present`, `superpowers_available` vendored-half) declared in the script header. **Implemented-outcome corrections to this spec (the 2a lesson, applied to itself):** §S1's "probe sets never diverge" holds only for the two imported probes (the rest are re-implementations; divergence direction is safe — the hook still blocks); §S2/§S3 shipped as ADDITIVE demotion ("script-owned; the prose block remains the script's readable spec — keep in sync"), NOT as deletion — the byte diet of the demoted blocks lands with Phase 3's reference diet.
+
+## Proof
+
+`tests/surface/test-p11-owner-parity.sh` (S5/S6/S7 pins) + `tests/scripts/test-predictive-preflight.sh`, `test-probe-tool.sh`, `test-detect-os.sh` (contract + mutation probes), `tests/sync/test-sync-intersect.sh` (empty-intersection stamps + ends; non-empty proceeds; unreadable binding.json → full chain — fail-closed). Existing suites both trees.
+
+## Non-goals
+
+Reference-body rewrites beyond the S5 relocations + S7 cases (Phase 3); the front-door/orchestrator behavior beyond naming the S4 gate; any gate/verdict/halt change; build-dispatch-prompt surgery; free-text delta lane (proposals doc).

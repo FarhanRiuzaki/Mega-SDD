@@ -107,7 +107,7 @@ ALLOW = [
   "the prohibition rail itself (assertion 1 asserts its presence)"),
  ("SKILL.md", 'User asks "siapkan context buat AI dev di repo ini"',
   "a When-to-use TRIGGER phrase — the user asking the assistant, not the skill asking the user"),
- ("SKILL.md", "Never ASK, and never downgrade WITHOUT that record",
+ ("SKILL.md", "never ASK, never downgrade without the record",
   "B2 prohibition rail on the spawn-cost gate, lane-split form"),
  ("SKILL.md", "creates confirmation bias",
   "'confirmation bias' — the anti-bias rationale for excluding .mega-sdd/, not a confirmation prompt"),
@@ -210,7 +210,7 @@ NEXT_N="$(grep -c '^next_action:' "$HFH")"
 hasnt "$SKILL" 'ASK before' \
   && pass "SKILL.md no longer says 'ASK before' at the spawn-cost gate" \
   || fail "SKILL.md still carries an 'ASK before' directive (B2 not landed in the body)"
-has "$SKILL" 'emit the **`scan_spawn_budget_exceeded`** blocker and STOP' \
+has "$SKILL" '`scan_spawn_budget_exceeded` blocker + STOP' \
   && pass "SKILL.md Step 5 emits scan_spawn_budget_exceeded and STOPs" \
   || fail "SKILL.md Step 5 does not emit the spawn-budget blocker"
 # Lane 2 must be scoped to STANDALONE in the always-loaded body, or the fork prompt still
@@ -222,7 +222,7 @@ has "$SKILL" 'undecided STANDALONE' \
 # render `--auto` on the SCAN hop (phase 1 is bare `scan-codebase` / `scan-codebase
 # --changed-only`; only downstream hops carry the flag), so "no --auto ⇒ standalone" would put
 # every chain-dispatched scan back in lane 2 — the regression, re-created inside the fix.
-if has "$SKILL" '**`--auto` alone is not the discriminator**' \
+if has "$SKILL" '`--auto` alone is never the discriminator' \
    && has "$PROC" 'the test is UNATTENDED-ness, and ties go to lane 3' \
    && has "$PROC" 'rows render `--auto` on the *scan* hop'; then
   pass "lane 3 keys on unattended-ness, not on the --auto literal (routing rows do not render it)"
@@ -235,12 +235,12 @@ has "$PROC" 'The failure modes are not symmetric' \
 # Lane 3 must exist AND be recorded in all three surfaces.
 if has "$SKILL" 'downgrade to the highest OOM-safe tier and RECORD it loudly' \
    && has "$SKILL" 'precision_downgrade_reason' \
-   && has "$SKILL" 'next_action.rationale'; then
+   && has "$PROC" 'next_action.rationale'; then
   pass "SKILL.md --auto lane downgrades to the highest OOM-safe tier and records it (frontmatter + chat + handoff)"
 else
   fail "SKILL.md has no recorded --auto downgrade lane — a chain halts at phase 1 or stalls for hours"
 fi
-has "$SKILL" 'on lane 2 the precision-vs-latency choice belongs to the user' \
+has "$PROC" 'choice belongs to the user' \
   && pass "the rail survives, lane-scoped: precision choice stays with the user where there IS one" \
   || fail "SKILL.md lost the no-unrecorded-downgrade rationale"
 has "$PROC" 'never a question' \

@@ -68,10 +68,9 @@ callout block quote (see `references/uat-sections.md §Section 1`).
 
 `{{section-2-fragment}}` = the `<!-- uat-scaffold:§2 -->` block — one `### UAT-NNN` block per F-* flow:
 metadata table + Mermaid diagram verbatim + DoD items verbatim + the step-table skeleton. The model replaces
-each `<!-- uat-steps:UAT-NNN -->` marker with numbered step rows (Aksi from the flow's Mermaid nodes in business
-language; Expected Result = DoD verbatim; execution cells the EXACT placeholder literals — Actual Result / Defect /
-Bukti = `__________`, Status = `[ ] Pass · [ ] Fail · [ ] Blocked`; numbering from 1 per scenario; Pending-row rule
-for flows with nothing to derive). See `references/uat-sections.md §Section 2`.
+each `<!-- uat-steps:UAT-NNN -->` marker with numbered step rows — the step-row grammar (Aksi/Expected wording,
+the exact placeholder literals, row shape, numbering, Pending-row rule) is OWNED by `references/uat-sections.md
+§Section 2`; this template adds no rules of its own.
 
 ## Section 3 — Matriks Traceability (RTM)
 

@@ -1,6 +1,6 @@
 ---
 name: emit-uat
-version: 1.0.1
+version: 1.1.0
 description: Generate a UAT test-script document for the business UAT team — business-language scenarios 1:1 per F-* flow (aligned to SIT TS ids), step tables with placeholder execution columns, compact RTM, berita acara UAT page (SEOJK 21/2017), plus a zero-dep xlsx workbook for testers. Triggers — "generate UAT", "emit UAT", "buat UAT", "dokumen UAT", "test script UAT", "skrip uji UAT", "UAT script", "berita acara UAT", or paraphrases.
 ---
 
@@ -66,7 +66,7 @@ Run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<p
 For each section 1–4, follow `references/uat-sections.md §N`:
 
 - **The §1–§4 tables, RTM rows, berita acara, and sign-off table come VERBATIM from `.uat-scaffold.md`** (between its `<!-- uat-scaffold:§N -->` delimiters). The model writes the surrounding Indonesian narrative AND — the ONE sanctioned in-fragment edit — replaces each `<!-- uat-steps:UAT-NNN -->` marker with step rows.
-- **Step-row derivation (§2 only):** Aksi = business language derived 1:1 from the flow's Mermaid nodes/edges (one step per meaningful node — NEVER an invented step); Expected Result = the DoD items VERBATIM; the execution cells are the EXACT placeholder literals (Actual Result / Defect / Bukti = `__________`, Status = `[ ] Pass · [ ] Fail · [ ] Blocked`). A flow with no derivable steps → ONE row whose Aksi cell is `[Pending — flow <F-id> belum punya diagram/DoD untuk diturunkan]` (execution cells still the exact placeholders).
+- **Step-row derivation (§2 only)** — the ONE sanctioned in-fragment edit. Two absolutes ride here: NEVER an invented step (Aksi derives 1:1 from the flow's Mermaid nodes) and the execution cells are EXACT placeholder literals the model never fills. The FULL grammar (Aksi/Expected wording, the literals, the 7-cell row shape, numbering, the Pending-row rule) is OWNED by `references/uat-sections.md §Section 2` — follow it there, never improvise from this summary.
 - Never edit a fragment cell; never add/remove an RTM/berita-acara/sign-off row; never redraw a Mermaid diagram; never fill an execution or sign-off cell (that is a fabricated record, blocked in Step 4.7).
 
 **Stamp rule (engine-invariant):** every citation stamp is the LITERAL `(sha256: pending)` — the model MUST NOT write hash characters (Step 4.6's script stamps real prefixes).
