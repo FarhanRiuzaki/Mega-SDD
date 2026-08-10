@@ -41,11 +41,19 @@ Out of your lane: spec completeness (spec lens), security (security lens), namin
 
 Every finding gets `file:line`, the violated contract line (which non-negotiable / which tell / which design_system field), and a concrete fix. No citation, no finding. If the UI is genuinely well-designed, say so — name the 2–3 moves that make it distinctive.
 
-## Report
+## Report — findings only, no narrative (return-size contract)
 
-- **Findings** — grouped Critical / Important / Minor, each with `file:line` + contract reference + fix.
-- **Contract verified** — which non-negotiables you checked clean (one line each).
-- **Assessment** — one paragraph: ships as a designed product, ships after Important fixes, or is an undesigned scaffold (blocked).
+Your final text is parsed by the controller's merge and lands verbatim in the orchestrator's context — return EXACTLY this shape (target ≤2k tokens), nothing else:
+
+```
+FINDINGS:
+- Critical | file:line | <title ≤80 chars> | <contract reference + fix, ≤3 sentences>
+(or `FINDINGS: none`)
+CHECKED-CLEAN: <the non-negotiables you verified clean, comma-separated, ONE line>
+SUMMARY: <≤2 sentences — ships as a designed product / after Important fixes / undesigned scaffold (blocked)>
+```
+
+A finding without a real `file:line` anchor is dropped at merge — do not emit it. No Strengths section, no Assessment paragraph, no restating the unit or the diff: your full reasoning stays in your own (disposable) context; the return is the distilled verdict.
 
 ## Read-only discipline
 
