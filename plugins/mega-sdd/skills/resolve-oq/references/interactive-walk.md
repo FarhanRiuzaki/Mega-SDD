@@ -597,7 +597,7 @@ platform's 4-option cap is per QUESTION, not per CALL.
 After the loop completes (or the user bails out with progress to save):
 
 1. **Bump vault version** in `00-index.md` Vault Lock Status:
-   - Patch bump for resolution-only rounds (e.g., v1.0 → v1.1).
+   - Small bump (vX.Y+1) for resolution-only rounds (e.g., v1.0 → v1.1) — vault version grammar per diff-vault's `references/diff-procedure.md` §Update vault metadata (single owner).
    - The bump is shared across the round — every OQ resolved/OOS/deferred in this session gets the same `v{X.Y}` marker.
 2. **Append Changelog entry** to `00-index.md`:
 
@@ -647,7 +647,7 @@ Output to chat (no file generation needed at this step):
 5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up. To lock the vault for sprint implementation, edit `00-index.md` Vault Lock Status manually (`Status: 🔒 LOCKED for <scope>`, fill `Locked at` / `Locked by`, append a Changelog entry).
 
 After completion, if any OQs were deferred to binding, suggest:
-- For brownfield: `bind-codebase <vault> --express` (default — auto-resolves deferred OQs from index/manifest probes, no scan needed; classic spine: `scan-codebase && bind-codebase <vault>`)
+- For brownfield: `bind-codebase <vault> --express` (the express-spine lane — auto-resolves deferred OQs from index/manifest probes, no scan needed; classic spine: `scan-codebase && bind-codebase <vault>`)
 - For greenfield: warn the user — deferred OQs in greenfield have no resolution path (no binding phase will run)
 
 Do NOT pad with "I have resolved..." preamble. Just report numbers and surface remaining blockers.

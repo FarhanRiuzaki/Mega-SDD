@@ -63,7 +63,8 @@ flowchart TD
      progressive-disclosure intent consumed at UI/bolt time per the ui-ux-design-intelligence
      integration). Then render the state diagram and stamp `_kb_source`. Omit all three
      blocks for single-step flows. validate-vault-flow-staging.sh follows `_kb_source` to prove the
-     KB's staging was preserved here (a drop is a `vault_flow_staging_drop` halt). -->
+     KB's staging was preserved here (a drop is an advisory `vault_flow_staging_drop`
+     finding, surfaced via `analyze` — it does not block). -->
 **Stages** (multi-step workflows only):
 ```yaml
 stages:

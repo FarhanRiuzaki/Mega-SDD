@@ -492,6 +492,48 @@ PY
   expect_fail "$YOUT" "F" "probe(f): same mutation, defaults.code_gates not a subset of tool ids"
 fi
 
+# Check h (audit phase-1) — every used_by entry resolves to a live skill dir
+# (or the 'hooks' layer). Rot class: the v5.3.1 lesson resurfaced at the
+# 2026-08-10 audit — jd pointed at the removed 'replay', markdownlint-cli2 at
+# the removed 'lint-units'.
+SKILLS_DIR="${ROOT}/plugins/mega-sdd/skills"
+usedby_scan() {
+  python3 - "$1" "$SKILLS_DIR" <<'PY'
+import os, re, sys
+tm, skills = sys.argv[1], sys.argv[2]
+live = {d for d in os.listdir(skills) if os.path.isdir(os.path.join(skills, d))}
+live.add("hooks")  # the hook layer is a legitimate non-skill consumer
+bad = []
+for m in re.finditer(r'used_by:\s*\[([^\]]*)\]', open(tm, encoding='utf-8').read()):
+    for name in m.group(1).split(','):
+        name = name.strip()
+        if name and name not in live:
+            bad.append(name)
+print(("H-FAIL " + " ".join(sorted(set(bad)))) if bad else "H-OK")
+PY
+}
+HOUT="$(usedby_scan "$TM")"
+case "$HOUT" in
+  H-OK) ok "h: every used_by entry resolves to a live skill dir (or hooks)" ;;
+  *)    fail "h: used_by names nonexistent skill(s): ${HOUT#H-FAIL }" ;;
+esac
+
+# Probe 7 (h) — replay the historical rot on a TEMP COPY; the detector must fire.
+cp "$TM" "$WORK/probe-usedby.yaml"
+python3 - "$WORK/probe-usedby.yaml" <<'PY'
+import sys
+p = sys.argv[1]
+t = open(p, encoding='utf-8').read()
+old = "used_by: [diff-vault, execute-bolts]"
+assert old in t, "fixture used_by row not found - jd row shape changed"
+open(p, 'w', encoding='utf-8').write(t.replace(old, "used_by: [diff-vault, replay]", 1))
+PY
+HOUT2="$(usedby_scan "$WORK/probe-usedby.yaml")"
+case "$HOUT2" in
+  H-FAIL*) ok "probe(h): reintroduced 'replay' rot detected" ;;
+  *)       fail "probe(h): rot NOT detected — check h is inert" ;;
+esac
+
 note ""
 if [ "$FAILED" -eq 0 ]; then note "PASS: tool-matrix.yaml structural + parse test"; exit 0
 else note "FAIL: tool-matrix.yaml structural + parse test"; exit 1

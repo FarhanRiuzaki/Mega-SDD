@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.3.1
+version: 2.3.2
 description: Evolves an existing vault when its PRD/BRD/Figma source changes — structured diff, preserves resolved OQs, flags contradictions with resolved decisions. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 
@@ -65,7 +65,7 @@ The skill never proceeds past Step 0 without verified inputs. Re-echo `VAULT_DIR
 
 **Step 6.5 — Refresh `vault.json`.** After applying, **Run** `bash <plugin>/scripts/derive-vault-json.sh --vault <VAULT_DIR> --patch <sources-patch>` — the script re-derives the structural arrays from the now-updated markdown per `../generate-intent/references/vault-contract.md §schema`; the patch carries the replaced `source_documents` entry + updated `prd_sha256`/`prd_path_at_generation` when the PRD changed (the ONLY fields diff-vault still authors). The script holds the `vault.json.lock` itself (exit 4 → halt `memory_in_use`). Re-running against an unchanged source is a byte-identical no-op (`generated_at` preserved). Detail: `references/diff-procedure.md`.
 
-**Step 7 — Update vault metadata.** Bump the vault version in `00-index.md` Vault Lock Status (patch = minor changes/no scope shift; minor = significant additions, e.g. new feature scope; skill suggests, user confirms). Append a Changelog entry (counts per category + conflicts resolved + source). Update `Last updated`. Update the PRD source reference (old → new; prior version moves into Changelog history). Changelog template: `references/diff-procedure.md`.
+**Step 7 — Update vault metadata.** Bump the vault version in `00-index.md` Vault Lock Status (small bump vX.Y+1 = minor changes/no scope shift; scope bump vX+1.0 = significant additions, e.g. new feature scope; skill suggests, user confirms — grammar + tiebreak per `references/diff-procedure.md` §Update vault metadata, single owner). Append a Changelog entry (counts per category + conflicts resolved + source). Update `Last updated`. Update the PRD source reference (old → new; prior version moves into Changelog history). Changelog template: `references/diff-procedure.md`.
 
 **Step 8 — Self-check before delivery:** every diff item ended in applied / user-skipped / deferred (nothing silently dropped); every conflict had explicit user input (no auto-supersede); every Removed item still exists with a `> **Removed in v{X.Y}**` banner (content not deleted); every Added entry follows the vault's `OUTPUT_MODE`; OQ identifiers still unique; vault version bumped + Changelog appended + `Last updated` set; `git status` run if available; `vault.json` regenerated and its arrays match the markdown; `open_questions_summary.total` equals the `00-index.md` roll-up count; `vault_version` equals Step 7's new version with `generated_at` updated; `source_documents[]` reflects the new PRD.
 

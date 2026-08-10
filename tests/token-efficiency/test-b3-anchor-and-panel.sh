@@ -75,7 +75,7 @@ grep -qF 'HOOK_SOURCE" != "resume"' "$HOOK" && ok "M-13b: fail-open excludes res
 
 # ── M-13a: anchor-core slim, Hard rule + Output language kept ──
 CORE_CHARS=$(awk 'BEGIN{d=0;b=0} /^---[[:space:]]*$/{d++; if(d==2)b=1; next} b==0{next} /ANCHOR-CORE ends/{exit} {print}' "$ANCHOR" | wc -c | tr -d ' ')
-[ "$CORE_CHARS" -lt 3600 ] && ok "M-13a: injected core slimmed (<3600 chars, was 3886; now $CORE_CHARS)" || fail "M-13a: core not slimmed ($CORE_CHARS)"
+[ "$CORE_CHARS" -lt 3450 ] && ok "M-13a: injected core slimmed (<3450 chars — headroom enforced after the phase-1 diet; now $CORE_CHARS)" || fail "M-13a: core not slimmed ($CORE_CHARS)"
 # the unioned keywords must live in the always-loaded description (not the core)
 DESC=$(awk 'BEGIN{d=0} /^---[[:space:]]*$/{d++; next} d==1 && /^description:/{print} d>=2{exit}' "$ANCHOR")
 for kw in "bound-vault" "legacy intelligence" "source of truth dari legacy"; do

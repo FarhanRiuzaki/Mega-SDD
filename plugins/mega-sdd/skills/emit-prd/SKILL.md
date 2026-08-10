@@ -1,12 +1,12 @@
 ---
 name: emit-prd
-version: 1.1.1
+version: 1.1.2
 description: Generate a PRD from mega-sdd state — forward (vault to PRD prose) or REVERSE (KB, no vault) with [VERIFIED]/[INFERRED]/[OPEN] markers carried verbatim; journeys as Mermaid; reviewed/final maturity human-set. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
 ---
 
 # Emit-PRD — Product Requirements Document Generator
 
-**Announce at start:** "I'm using the emit-prd skill to generate the PRD (mode: <forward|reverse>)."
+**Announce at start:** "I'm using the emit-prd skill to generate the PRD (mode: <forward|reverse>). `mega-sdd-trace:emit-prd`"
 
 > **Output language (Tier-3 artifact):** PRD body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — KB claim text, vault excerpts, constitution clauses — and every `[Source: sha256:…]` citation are reproduced in their source language, never translated** (citation discipline, moat invariant #3). Terse/technical source notation is quoted verbatim in code spans with an Indonesian gloss — never translated in place (decision 4). Tier-1 structural tokens stay English — including the `[VERIFIED]/[INFERRED]/[OPEN]` markers. Full rules → `plugins/mega-sdd/references/output-language.md`.
 

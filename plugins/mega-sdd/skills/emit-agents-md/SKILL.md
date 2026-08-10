@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.6.2
+version: 1.6.3
 description: Flatten vault + binding + units into AGENTS.md (AAIF standard) for tool-agnostic interop; idempotent write-out. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 
@@ -8,7 +8,7 @@ description: Flatten vault + binding + units into AGENTS.md (AAIF standard) for 
 
 Generates `AGENTS.md` at repo root from vault + binding + units context. AGENTS.md is the [Linux Foundation AAIF](https://agents.md/) emerging standard for AI-coding-tool interop — adopted by 60k+ repos as of mid-2026.
 
-**Announce at start:** "I'm using the emit-agents-md skill to flatten vault into AGENTS.md format."
+**Announce at start:** "I'm using the emit-agents-md skill to flatten vault into AGENTS.md format. `mega-sdd-trace:emit-agents-md`"
 
 **Core principle:** Pure transformation. No inference. No invention. Just project vault → AGENTS.md schema.
 

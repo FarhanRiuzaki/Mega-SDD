@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 3.1.3
+version: 3.1.4
 context: fork
 description: Non-interactive drift diagnostic — compares a mode=existing vault against the live codebase; writes DRIFT-REPORT.md, queues direction calls to PENDING-SYNC.md (never prompts). Use when the user says "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", "is the code in sync?", or paraphrases.
 ---
@@ -67,7 +67,7 @@ Log the scope explicitly — `Scope hint received: <scope.id|changed-paths(N)>` 
 
 **Step 5.5 — Vault write-back (`--auto-apply=safe` ONLY; living-vault S5).** Write-back is **non-interactive** — there is no batch-diff ACCEPT prompt (a fork can't confirm). ONLY the narrow `--auto-apply=safe` class from Step 5 is written back: for each, DRAFT the exact vault patch with git provenance (`git log -1 --format='%h %s — %an, %ad' -- <code anchor file>` cited inline) and apply it. Everything outside the safe class stays queued in `PENDING-SYNC.md` for `resolve-oq`/`sync` — never auto-applied. Full protocol (per-category patch shapes, provenance line, the rails) → `references/report-format.md §Vault write-back protocol`.
 
-**Step 6 — Update vault metadata.** Walkthrough captured actions but NO write-back applied → append a Changelog entry to `00-index.md` recording the drift *session* only (version unchanged, `vault.json` untouched). Write-back APPLIED (Step 5.5 ACCEPT) → append the Changelog entry listing each patched section + provenance, bump the vault version (minor), and refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (script-held lock; exit 4 → `memory_in_use` halt). Boundary rules → `references/report-format.md §Vault write-back protocol`.
+**Step 6 — Update vault metadata.** No write-back applied → append a Changelog entry to `00-index.md` recording the drift *session* only (version unchanged, `vault.json` untouched). Write-back applied (`--auto-apply=safe`, Step 5.5) → append the Changelog entry listing each patched section + provenance, bump the vault version (small bump vX.Y+1 — grammar per diff-vault's `references/diff-procedure.md`), and refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (script-held lock; exit 4 → `memory_in_use` halt). Boundary rules → `references/report-format.md §Vault write-back protocol`.
 
 **Step 6.5 — Memory layer (skipped under `--memory-off`).** Append to `<vault>/.memory/drift-history.md` via Bash `>>` heredoc — **always a direct on-disk write, even when forked/orchestrated.** Before appending, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact` on the composed block (write it to a scratch file first) — this is memory-schema §6's condition for a tolerated raw-`>>` site, and a fork cannot reach §6/§8.5 to learn it, so it is stated here. (A fork's `metadata.memory_writes` would land in invisible subagent chat and be dropped, so detect-drift persists drift-history *itself* rather than handing it off — it has `Bash` and a fixed vault path, and writes only its own side-lane memory, no moat state.) Write: one run-summary block (findings by category × confidence, scope, source_run) and, per finding auto-applied via `--auto-apply=safe`, one `## Direction calls` row — fingerprint (`<category>:<vault-section>:<normalized-name>`), direction (`code_right | vault_stale | deferred`), provenance. Deferred findings (the common case now) are recorded as the run-summary only. Schema: `memory/references/memory-schema.md §drift-history`. Memory writes happen AFTER the report/PENDING-SYNC artifacts are written — memory is derivative, never the source.
 
@@ -97,7 +97,7 @@ Heuristic detection, not static analysis — it greps and reads, no AST or type-
 
 ## Specialist references (load on demand)
 
-- **`references/report-format.md`** — full `DRIFT-REPORT.md` + `DRIFT-ACTIONS.md` templates, section ordering, per-finding examples, and the `vault.json` reconciliation boundary.
+- **`references/report-format.md`** — the full `DRIFT-REPORT.md` template, section ordering, per-finding examples, the non-interactive vault write-back protocol, and the `vault.json` reconciliation boundary.
 - **`references/constitution-drift.md`** — when `<vault>/constitution.md` exists, validate code against constitution clauses (§A–§F), the `constitution_drift_detected` halt, and the report's `## Constitution Findings` section.
 - **`references/auto-and-chain.md`** — `--auto` behavior table, `drift_framework_mismatch` blocker YAML, handoff YAML emission, snapshot reuse, per-bolt incremental mode, suggested-next-actions block, and scope-aware scanning.
 

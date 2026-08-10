@@ -227,8 +227,9 @@ grep -qF 'keeps the express path non-stop' "$SF" \
 grep -qF 'symbol-index LeaveRequest' "$P/skills/generate-intent/references/vault-contract.md" \
   && pass "vault-contract scan_query re-keyed to probe targets" \
   || fail "scan_query re-key missing"
-grep -qF 'the DEFAULT since the P2 spine flip' "$P/skills/bind-codebase/references/express-bind.md" \
-  && pass "express-bind.md states the default flip" \
+grep -qF 'the lane the express spine dispatches by default' "$P/skills/bind-codebase/references/express-bind.md" \
+  && grep -qF 'Lane default:' "$P/skills/bind-codebase/SKILL.md" \
+  && pass "express-bind.md states the spine-dispatch default (+ SKILL lane-default sentence)" \
   || fail "express-bind default note missing"
 
 # ══ 4b. Round-folded arms (P2 dual-blind) ════════════════════════════════════

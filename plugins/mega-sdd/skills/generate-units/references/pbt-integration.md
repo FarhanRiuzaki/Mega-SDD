@@ -28,7 +28,7 @@ target_files: [...]
 acceptance_test:                       # existing
   - type: test
     command: ./vendor/bin/phpunit --filter=LoginExtensionTest
-    expected_exit_code: 0
+    expects: ""                        # empty = exit-0 criterion (the matcher: rc==0 AND (expects empty OR literal substring in output))
 
 # OPTIONAL property-based invariants
 properties:

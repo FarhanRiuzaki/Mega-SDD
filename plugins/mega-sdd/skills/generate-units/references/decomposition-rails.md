@@ -161,12 +161,12 @@ When `generate-units --regenerate` re-encounters a unit:
 acceptance_test:
   _authored_by: adversarial-reviewed (+2 gaps merged)   # provenance
   - type: test
-    description: "..."
     command: "..."
-  - type: test
-    description: "<gap 1 merged from adversarial pass>"
+    expects: ""            # literal output substring, or EMPTY (exit-0 criterion) — never a description
+  - type: test             # gap 1 merged from adversarial pass
     command: "..."
-  - type: test
-    description: "<gap 2 merged from adversarial pass>"
+    expects: ""
+  - type: test             # gap 2 merged from adversarial pass
     command: "..."
+    expects: ""
 ```

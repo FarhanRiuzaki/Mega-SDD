@@ -622,7 +622,7 @@ derived: true
 ## 9. Privacy + opt-out
 
 - `--memory-off` flag on ANY skill disables both reads and writes
-- Global opt-out via `~/.mega-sdd/config.yaml` `defaults.memory_enabled: false`
+- Global opt-out via `~/.mega-sdd/memory/config.yaml` `defaults.memory_enabled: false` (the single memory-layer config — §4 above)
 - Per-scope opt-out via `<project>/.mega-sdd/memory/.disabled` (empty file; canonical)
 - Per-vault opt-out via `<vault>/.memory/.disabled` (empty file)
 - USER scope memory is plain markdown (per MEMORY-OQ-3 resolved) — do NOT run mega-sdd on shared infra without opt-out if patterns are sensitive
