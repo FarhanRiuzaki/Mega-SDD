@@ -68,7 +68,7 @@ grep -qF 'no longer written; legacy units carrying it are tolerated' "$DG" && ok
 # ── (b) ears: roadmap pins survive + sharpened emission guidance ──
 grep -q 'ears:' "$US" && ok "roadmap pin: \`ears:\` key survives (optional tier)" || fail "roadmap pin lost: ears: key"
 grep -qF 'OPTIONAL (additive, backward-compatible)' "$US" && ok "roadmap pin: EARS optionality phrase survives" || fail "roadmap pin lost: OPTIONAL (additive, backward-compatible)"
-grep -qF 'Absent → prose `expects:` remains the criterion' "$US" && ok "roadmap pin: absent-ears backward-compat phrase survives" || fail "roadmap pin lost: absent-ears phrase"
+grep -qF 'Absent → `expects:` (a literal output substring, or empty' "$US" && ok "roadmap pin: absent-ears backward-compat phrase survives" || fail "roadmap pin lost: absent-ears phrase"
 grep -qF 'NEVER a restatement of expects' "$US" && grep -qF 'nothing parses ears downstream' "$US" && ok "ears: emitted only where it adds precision (never restating expects:)" || fail "ears emission guidance missing"
 
 # ── (b) acceptance criteria written once — per-task_type body rule ──

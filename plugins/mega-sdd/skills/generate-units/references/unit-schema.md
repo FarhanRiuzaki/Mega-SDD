@@ -102,17 +102,25 @@ allowed_new_deps: []               # OPTIONAL (v5 P9) — the ALLOWLIST of new t
 acceptance_test:                   # how to verify the bolt succeeded
   - type: test                     # test | manual | lint | typecheck | render
     command: "npm test -- auth"
-    expects: "passes"
+    expects: ""                    # SUBSTRING MATCHER, not a description: run-acceptance-tests.sh
+                                   # passes an entry when exit==0 AND (expects is EMPTY OR expects
+                                   # appears LITERALLY in the runner's output). Fill it ONLY with a
+                                   # literal string the runner actually prints (e.g. jest prints
+                                   # "passed", never "passes"); when you cannot cite one, LEAVE IT
+                                   # EMPTY — exit code 0 is the criterion. A description here makes
+                                   # every run fail (field defect: 4 units needed fix commits because
+                                   # this very example used to be the description-shaped poison).
     ears: "WHEN a login request carries an expired token THE SYSTEM SHALL respond 401 with problem+json"
                                    # OPTIONAL (additive, backward-compatible) — an EARS-shaped statement
                                    # ("WHEN <trigger> THE SYSTEM SHALL <response>" / "WHILE <state> ..." /
                                    # "IF <condition> THEN THE SYSTEM SHALL ...") making the criterion
                                    # machine-checkable. Emit ONLY when the EARS statement adds behavioral
-                                   # precision absent from `expects:` (e.g. expects is a bare "passes");
+                                   # precision absent from `expects:` (e.g. expects is empty);
                                    # NEVER a restatement of expects — nothing parses ears downstream.
                                    # When present the bolt's TDD test MUST assert exactly this statement
                                    # (and PBT properties MAY be derived from it).
-                                   # Absent → prose `expects:` remains the criterion (no behavior change);
+                                   # Absent → `expects:` (a literal output substring, or empty =
+                                   # exit-code criterion) remains the criterion (no behavior change);
                                    # validators tolerate absence everywhere.
   - type: manual
     desc: "Hit /login with valid creds, expect 200 + token"
@@ -123,7 +131,9 @@ acceptance_test:                   # how to verify the bolt succeeded
                                    # smoke test misses. Derived from the active framework
                                    # pack `## Test patterns` -> detail_view_render template.
     command: "php artisan test --filter WidgetShowRendersTest"
-    expects: "GET detail route 200 + asserts a real display field renders"
+    expects: ""                    # same substring contract — the render REQUIREMENT (route 200 +
+                                   # real display field asserted) lives in the TEST's own assertions,
+                                   # never as prose in expects
 binding_refs:                      # binding manifest IDs this unit honors
   - C-001
   - OQ-012

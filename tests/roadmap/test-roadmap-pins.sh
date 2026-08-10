@@ -49,7 +49,7 @@ grep -q "Don't auto-resolve PENDING-SYNC.md in CI" "$P/references/ci-recipe.md" 
 # E — EARS optional tier (backward-compatible)
 grep -q 'ears:' "$P/skills/generate-units/references/unit-schema.md" \
   && grep -q 'OPTIONAL (additive, backward-compatible)' "$P/skills/generate-units/references/unit-schema.md" \
-  && grep -q 'Absent → prose `expects:` remains the criterion' "$P/skills/generate-units/references/unit-schema.md" \
+  && grep -q 'Absent → `expects:` (a literal output substring, or empty' "$P/skills/generate-units/references/unit-schema.md" \
   && pass "E: EARS tier optional + backward-compatible" \
   || fail "E: EARS tier missing or not optional"
 

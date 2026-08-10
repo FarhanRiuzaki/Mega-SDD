@@ -206,6 +206,30 @@ for o in list(binding_oqs_resolved):
     if o in binding_oqs or o in binding_oqs_pending:
         del binding_oqs_resolved[o]
 
+# Vault-declared OQ ids (6.1.1): on an express-born vault the OQ authority is
+# vault.json — a unit citing a vault-declared OQ is NOT an "extra" even when no
+# binding doc mentions it (the field run emitted 25 false oq_id_extra warnings
+# with binding_docs_checked=0). Entries carry `tag` or `id` (both shapes, per
+# the 6.0.1 F5 precedent). Unreadable/absent vault.json contributes NOTHING
+# (fail-closed: behavior degrades to the binding-only universe, never wider).
+# CONFLICT ids stay binding-only — conflicts exist nowhere else.
+vault_oq_ids = set()
+for vj in sorted(
+    glob.glob(os.path.join(vault_dir, "vault.json")) +
+    glob.glob(os.path.join(vault_dir, "*", "vault.json"))
+):
+    try:
+        with open(vj) as f:
+            vdata = json.load(f)
+        for entry in (vdata.get("open_questions") or []):
+            if isinstance(entry, dict):
+                oid = entry.get("tag") or entry.get("id")
+                if isinstance(oid, str) and oid.strip():
+                    vault_oq_ids.add(oid.strip())
+    except Exception as e:
+        if not quiet:
+            print(f"WARN: cannot read {vj}: {e}", file=sys.stderr)
+
 # --- Pass 2: for each unit, parse FRONTMATTER ONLY and collect citations ---
 unit_oq_citations = {}      # oq_id → [unit_file_paths]
 unit_conflict_citations = {}  # conflict_id → [unit_file_paths]
@@ -391,12 +415,12 @@ for bp in binding_paths:
 # --- Pass 4: extras (cited by units but not in binding) ---
 extras = []
 for oq_id, cites in sorted(unit_oq_citations.items()):
-    if oq_id not in binding_oqs:
+    if oq_id not in binding_oqs and oq_id not in vault_oq_ids:
         extras.append({
             "type": "oq_id_extra",
             "oq_id": oq_id,
             "cited_in": [os.path.relpath(p, cwd) for p in cites],
-            "warning": "OQ-ID cited in unit frontmatter but not declared in any binding doc",
+            "warning": "OQ-ID cited in unit frontmatter but not declared in any binding doc or vault.json",
         })
 for conflict_id, cites in sorted(unit_conflict_citations.items()):
     if conflict_id not in binding_conflicts:
@@ -660,6 +684,7 @@ report = {
         "binding_docs_checked": len(binding_paths),
         "units_checked": len(units_paths),
         "oq_ids_in_binding": len(binding_oqs),
+        "oq_ids_in_vault": len(vault_oq_ids),
         "conflict_ids_in_binding": len(binding_conflicts),
         "oq_ids_cited_by_some_unit": len(unit_oq_citations),
         "conflict_ids_cited_by_some_unit": len(unit_conflict_citations),

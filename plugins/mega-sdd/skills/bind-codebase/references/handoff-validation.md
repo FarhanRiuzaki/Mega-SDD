@@ -4,7 +4,7 @@ The deterministic handoff-integrity validator, invoked manually. This ships ONE 
 
 ## What it does
 
-Walks `<cwd>/.mega-sdd/vaults/binding*.md` Resolution Tables, collects all `OQ-*` IDs, then walks `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` frontmatter. Reports every OQ-ID declared in any binding doc that is NOT cited in any unit's frontmatter as a `oq_id_dropped` blocker.
+Walks the binding docs (`binding.md` / `binding-*.md`, container + per-vault) Resolution Tables, collects all `OQ-*` IDs, then walks the vaults' `units/U-*.md` frontmatter. Reports every OQ-ID declared in a binding LIVE section that is NOT cited in any unit's frontmatter as a `oq_id_dropped` blocker. **OQ declaration universe for the reverse (extras) check:** binding docs ∪ `vault.json` `open_questions[]` ids (`tag` or `id`) — an express-born vault has NO binding doc, and its vault.json is the OQ authority (a unit citing a vault-declared OQ is not an "extra"; an id in NEITHER source still flags `oq_id_extra`). The summary carries both counts (`oq_ids_in_binding`, `oq_ids_in_vault`).
 
 State file: `<cwd>/.mega-sdd/.validation-blockers.json` (OVERWRITE-NOT-APPEND — reflects current truth, not history).
 
