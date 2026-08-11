@@ -1,0 +1,14 @@
+# T05-resolve-oq-walk optimized commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
+plugins/mega-sdd/skills/resolve-oq/SKILL.md
+plugins/mega-sdd/skills/resolve-oq/references/interactive-walk.md
+plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md
+plugins/mega-sdd/skills/resolve-oq/references/auto-memory-handoff.md

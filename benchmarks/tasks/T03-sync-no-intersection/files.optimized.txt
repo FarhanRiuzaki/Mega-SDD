@@ -1,0 +1,14 @@
+# T03-sync-no-intersection optimized commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md [SECTION:decision-matrix+mode-D]
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/commands/sync.md
+plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
+plugins/mega-sdd/skills/scan-codebase/SKILL.md
+plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md [SECTION:incremental+named-steps]

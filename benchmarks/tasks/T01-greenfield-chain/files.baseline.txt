@@ -1,0 +1,42 @@
+# T01-greenfield-chain baseline commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md
+plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md
+plugins/mega-sdd/commands/mega-sdd.md
+plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md
+plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md
+plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md
+plugins/mega-sdd/skills/generate-intent/SKILL.md
+plugins/mega-sdd/skills/generate-intent/references/vault-contract.md
+plugins/mega-sdd/skills/generate-intent/references/setup-flow.md
+plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md
+plugins/mega-sdd/skills/generate-intent/references/generation-guide.md
+plugins/mega-sdd/skills/generate-intent/references/self-check.md
+plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md
+plugins/mega-sdd/skills/generate-intent/references/templates/00-index.md
+plugins/mega-sdd/skills/generate-intent/references/templates/01-overview.md
+plugins/mega-sdd/skills/generate-intent/references/templates/02-architecture.md
+plugins/mega-sdd/skills/generate-intent/references/templates/03-data-model.md
+plugins/mega-sdd/skills/generate-intent/references/templates/04-flows.md
+plugins/mega-sdd/skills/generate-intent/references/templates/05-decisions.md
+plugins/mega-sdd/skills/generate-intent/references/templates/06-constraints.md
+plugins/mega-sdd/skills/generate-units/SKILL.md
+plugins/mega-sdd/skills/generate-units/references/defensive-generation.md
+plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md
+plugins/mega-sdd/skills/generate-units/references/task-typing.md
+plugins/mega-sdd/skills/generate-units/references/modules-schema.md
+plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
+plugins/mega-sdd/skills/generate-units/references/templates/unit.md
+plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md
+plugins/mega-sdd/skills/generate-units/references/validation-passes.md
+plugins/mega-sdd/skills/generate-units/references/unit-schema.md
+plugins/mega-sdd/skills/execute-bolts/SKILL.md
+plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md
+plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md

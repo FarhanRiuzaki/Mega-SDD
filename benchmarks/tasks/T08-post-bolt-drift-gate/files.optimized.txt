@@ -1,0 +1,4 @@
+# T08-post-bolt-drift-gate optimized commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/detect-drift/SKILL.md
+plugins/mega-sdd/skills/detect-drift/references/report-format.md
+plugins/mega-sdd/skills/detect-drift/references/auto-and-chain.md

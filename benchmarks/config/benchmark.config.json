@@ -1,0 +1,38 @@
+{
+  "baseline": {
+    "commit": "91a944a",
+    "commit_full_note": "docs(spec): stamp field patch SHIPPED v6.1.1 — the last commit before audit Phase 1 (43c4b8a, v6.2.0)",
+    "version": "6.1.1",
+    "recreate": "git worktree add --detach <dir> 91a944a"
+  },
+  "optimized": {
+    "commit": "a09e430",
+    "commit_full_note": "feat(platform): v6.6.0 — audit phase-4; e0b33e5 (docs-only spec stamp) is equivalent for measurement",
+    "version": "6.6.0"
+  },
+  "token_estimator": {
+    "method": "chars / 4",
+    "evidence_class": "ESTIMATED",
+    "note": "No tokenizer dependency; chars/4 is the standard heuristic. All byte/char figures are MEASURED; every token figure derived from them is ESTIMATED."
+  },
+  "instruction_plane_globs": [
+    "plugins/mega-sdd/skills/**/*.md",
+    "plugins/mega-sdd/commands/**/*.md",
+    "plugins/mega-sdd/agents/**/*.md",
+    "plugins/mega-sdd/references/**/*.md"
+  ],
+  "executed_plane_globs": [
+    "plugins/mega-sdd/scripts/**",
+    "plugins/mega-sdd/hooks/**"
+  ],
+  "duplication": {
+    "min_line_chars": 60,
+    "method": "exact match of whitespace-trimmed lines appearing in >1 distinct file (lower bound; no fuzzy matching to avoid false positives)",
+    "known_deliberate": "parity-pinned copies (CONFLICT-marker pair, exit-code tables, blind rails) are DELIBERATE per v6.4.0 §S5 — annotated in the report, not auto-excluded"
+  },
+  "quality_gate": {
+    "runner": "scripts/quality-gate.sh <arm-root>",
+    "exclusions": "3 long pack suites (validate-pack, test-pack-lint, test-packs-golden) excluded IDENTICALLY in both arms for runtime; CI runs them separately",
+    "pass_definition": "QUALITY_PASS = every discovered suite in BOTH test trees exits 0"
+  }
+}

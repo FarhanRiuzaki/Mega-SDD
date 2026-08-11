@@ -1,0 +1,13 @@
+# T06-emit-fsd-control baseline commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md
+plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md [SECTION:emit-fsd-preflight]
+plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
+plugins/mega-sdd/skills/emit-fsd/SKILL.md
