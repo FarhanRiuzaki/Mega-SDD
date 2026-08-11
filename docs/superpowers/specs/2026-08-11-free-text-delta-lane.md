@@ -1,7 +1,7 @@
 # Free-text delta lane — chat ticket → scoped vault patch → claim-scoped re-bind
 
 **Date:** 2026-08-11
-**Status:** DRAFT
+**Status:** SHIPPED v6.7.0 (2026-08-12, a6b8c45, CI green, suite 219/219 both trees) — dual-blind round: 0 blockers / 5 majors / 9 minors, ALL folded (§Round disclosure)
 **Source:** proposals doc `2026-08-11-morning-proposals.md §(b)` (USER: "gas") + audit S4 (`2026-08-10-skills-audit.md §13`) + benchmark T07 (`benchmarks/results/comparison/REPORT.md`: negative control — a one-field ticket still commands ~120k est tok in v6.6.0, the largest remaining per-run cost). Recon: 4-reader workflow `wf_3e40c6f3-bb0` (raw digests preserved in the session transcript; every seam below is a recon-cited line).
 **Version:** 6.7.0 (minor — a NEW input mode + one new script + one new halt; NO existing gate weakened, NO existing chain re-shaped).
 
