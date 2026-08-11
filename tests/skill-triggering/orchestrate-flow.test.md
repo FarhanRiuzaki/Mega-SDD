@@ -45,6 +45,14 @@
 - **State:** `prd.md` mtime > vault.json mtime
 - **Expect:** Propose `diff-vault ./prd.md` first
 
+### R8b: PRD revision outranks the delta overlay (guard)
+- **State:** `prd.md` mtime > vault.json mtime AND the user hands a chat brief ("tambah kolom npwp")
+- **Expect:** the `prd_revision` row wins — propose `diff-vault ./prd.md` (file lane), NOT `diff-vault --from-prompt`; the delta row fires only when no PRD revision is present (routing-rules §Decision matrix: prd_revision OUTRANKS the delta row)
+
+### R8c: Delta lane is overlay-only (guard)
+- **State:** vault + binding present, no flags, no chat brief handed over — derived state alone
+- **Expect:** the engine NEVER proposes `diff-vault --from-prompt` from derived state (routing-rules: "NEVER fired from derived state alone"); the normal rows apply
+
 ### R9: Mode mismatch
 - **State:** vault says greenfield, CWD has .git + package.json
 - **Expect:** Halt with mode-migration prompt

@@ -6,7 +6,8 @@
 - Apply mechanics (Step 6)
 - `vault.json` refresh (Step 6.5) — derive script + sources-patch
 - Vault metadata update (Step 7)
-- Halts: `prd_path_missing`, `memory_in_use`
+- From-prompt delta lane (`--from-prompt`)
+- Halts: `prd_path_missing`, `memory_in_use`, `delta_too_large`
 
 Loaded by Steps 1.5 and 3–7. The SKILL.md body holds the step skeleton + rails; this file holds the mechanics each axis and the apply phase need.
 
@@ -112,6 +113,34 @@ Vault diff applied from <new source filename + version>.
 4. **Update PRD source reference** in Vault Lock Status:
    - From: `**PRD source**: <old filename, version, date> — <FINAL | DRAFT>`
    - To: `**PRD source**: <new filename, version, date> — <FINAL | DRAFT>` (prior version moved into Changelog history).
+
+## From-prompt delta lane (`--from-prompt "<brief>"`)
+
+The delta lane's entry (spec `2026-08-11-free-text-delta-lane.md`): a ticket-scale chat requirement against an existing vault. The brief is the comparison input; everything below the diff computation is the NORMAL diff-vault machinery.
+
+**Brief extraction (Step 2 variant).** Parse the brief with the same extraction grammar as `generate-intent`'s Mode B (`../../generate-intent/references/from-prompt-mode.md` owns it — reuse by pointer, incl. its output-language carriage), but capped **≤ 3 adaptive Q&A questions** (sized-to-delta; the full lane's ≤10 is for a whole vault). Unanswerable gaps → `[ ]` OQ rows via the NORMAL New-OQ category, never guesses.
+
+**Provenance (Steps 1.5 / 6.5).** A chat ticket is NOT a PRD revision:
+- Step 1.5 emits `prd_sha256_changed: n/a`; the recorded `prd_sha256` / `prd_path_at_generation` are NOT re-baselined (that re-baseline is the file lane's deliberate act).
+- The Step 6.5 sources-patch APPENDS a `source_documents[]` entry — `{type: brief, excerpt: <first ~80 chars>, date}` — instead of replacing the PRD entry; the Vault-Lock "PRD source" line is NOT rewritten.
+- The report header reads `New source: chat brief (--from-prompt)`.
+- The Step 7 Changelog `**Source**:` line records `chat brief: "<excerpt>"`.
+
+**Cap guard (Step 3, computed BEFORE apply).** From-prompt diffs are ticket-scale by contract. Exceeding ANY of:
+- new entities + new flows **> 2**
+- total changed rows (all categories except Unchanged) **> 12**
+- ANY new scope/squad surface
+- the existing major-scope-shift push-back thresholds (SKILL §When to push back)
+
+→ halt **`delta_too_large`** (ALWAYS STOP; registry + envelope: `plugins/mega-sdd/references/halt-protocol.md`). Nothing is applied; the vault is untouched. The user picks `full_lane` (epic via `generate-intent`), `split_ticket`, or `cancel` — each option carries keterangan. The cap is the no-gimmick guard: an epic may not masquerade as a delta.
+
+**Version bump.** A from-prompt apply is a Small bump by construction of the cap (the scope-bump tiebreak thresholds are unreachable under it); the bump grammar owner above is unchanged.
+
+**Scope derivation (Step 7.5).** After Step 7, **Run** `bash <plugin>/scripts/derive-delta-paths.sh --vault=<VAULT_DIR>` — touched VAULT-DIFF docs → affected claims' anchor paths → `<VAULT_DIR>/.delta-changed-paths.txt`. Exit 3 = unbound vault (no `binding.json`) → the router proposes the normal chain; exit 2 = FAIL-CLOSED → the router proposes a FULL re-bind (the script never converts uncertainty into a scoped bind). The downstream hop is the EXISTING claim-scoped machinery: `bind-codebase --paths=@<VAULT_DIR>/.delta-changed-paths.txt` (+ the vault-section leg of `binding-contract.md §Claim-scoped re-bind`, which reads VAULT-DIFF.md) → `generate-units --reconcile` → stale/new bolts.
+
+## Halt — `delta_too_large`
+
+Triggered at Step 3 when a `--from-prompt` diff exceeds the cap above. ALWAYS STOP (even under `--auto`); nothing applied. Envelope + `{code, keterangan}` options (`full_lane` / `split_ticket` / `cancel`): the canonical registry `plugins/mega-sdd/references/halt-protocol.md`.
 
 ## Halt — `prd_path_missing`
 

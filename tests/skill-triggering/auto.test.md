@@ -25,6 +25,7 @@ The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/meg
 - **Expect:** input detected as PRD; chain proposes `generate-intent ./prd-feature-x.md → scan → bind → units → bolts`
 
 ### A5: Quoted free-text → Mode B brief
+- **Setup:** NO vault in CWD (the front door's free-text row is vault-conditional — with an owned vault present the delta lane branch applies instead; see diff-vault.test.md DV5/DV8)
 - **Prompt:** `/mega-sdd "build a clinic appointment system"`
 - **Expect:** input detected as Mode B brief; chain proposes `generate-intent --from-prompt "build a clinic appointment system" → generate-units → bolts` (3 phases — no codebase, no scan/bind)
 

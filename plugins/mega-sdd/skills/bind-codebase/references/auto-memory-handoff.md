@@ -120,7 +120,10 @@ handoff:
     #   full re-bind                         → ["--auto"]
     #     (a plain --auto run, OR a --paths run that DEGRADED to the full re-bind
     #      fallback per binding-contract.md "Fallback to full re-bind": prior
-    #      binding.md unparseable / vault regenerated since last bind / changed
+    #      binding.md unparseable / vault regenerated since last bind WITHOUT a
+    #      diff-vault patch record (a diff-vault apply's bump + present
+    #      VAULT-DIFF.md + no post-patch doc edit is a PATCH — it does NOT fire
+    #      this trigger; the delta lane depends on that) / changed
     #      paths >40% of anchored files / a carried-forward anchor file vanished —
     #      each rewrites binding.md WHOLE, identical to a plain full re-bind)
     #   claim-scoped re-bind executed (no fallback fired; S4 living-vault sync lane

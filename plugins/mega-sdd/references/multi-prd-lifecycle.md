@@ -18,8 +18,9 @@ When a doc arrives or the project moves, route by **what actually changed**, nev
 | The SAME source doc was **revised** (PRD v1 → v1.1; a BRD edit) | **`diff-vault`** | One vault evolves; resolved OQs + ADR history preserved; conflicts surfaced. |
 | A **new epic / feature-set** on top of shipped work (PRD 2, a genuinely new doc) | **new vault** via `generate-intent`, then `bind-codebase` **brownfield** | PRD 2 is grounded against the codebase that now contains PRD 1; the binding gate catches any contradiction with shipped reality + the project constitution. |
 | **Code moved** outside the pipeline (manual edit, hotfix, git pull) | **`sync`** | Reconcile map → drift → binding → units for the affected vault(s). |
+| A **ticket-scale chat requirement** against an existing vault ("tambah kolom npwp di form nasabah" — no doc at all) | **delta lane**: `diff-vault --from-prompt` | The brief IS the comparison input; scoped patch → claim-scoped re-bind → `--reconcile` units; the `delta_too_large` cap forces an epic-in-disguise to the new-vault row. |
 
-**Disambiguation signal:** if the incoming doc's title/scope matches an existing vault's `source` (same product, same epic) → it's a revision → `diff-vault`. If it introduces a new feature area not owned by any existing vault → new vault. When unsure, the router ASKS (it must not guess between evolve-in-place and new-epic — they diverge hard).
+**Disambiguation signal:** if the incoming doc's title/scope matches an existing vault's `source` (same product, same epic) → it's a revision → `diff-vault`. If it introduces a new feature area not owned by any existing vault → new vault. **Prompt-scale signal (no doc, just a sentence):** the sentence names an entity/flow/screen an existing vault's docs own (heading/entity match on its `00-index.md` roll-up) → delta lane; it names a feature area no vault owns → new vault. When unsure, the router ASKS (it must not guess between evolve-in-place and new-epic — they diverge hard).
 
 ## Project index — `.mega-sdd/project.md`
 
@@ -35,4 +36,4 @@ Per-vault constitutions (`<vault>/constitution.md`) carry the locked rules of TH
 
 ## Doc-type agnosticism
 
-`generate-intent` already accepts PRD / BRD / Figma / free-text brief / KB (`--kb`). The lifecycle above is **doc-type agnostic** — "a new doc" means any of these. A BRD for epic 2 and a free-text brief for epic 3 each become a new vault, both bound against the accumulating codebase + the one project constitution.
+`generate-intent` already accepts PRD / BRD / Figma / free-text brief / KB (`--kb`). The lifecycle above is **doc-type agnostic** — "a new doc" means any of these. An EPIC-SCALE brief (a BRD for epic 2, a free-text brief for epic 3) becomes a new vault, bound against the accumulating codebase + the one project constitution; a TICKET-SCALE brief naming content an existing vault owns takes the delta lane (`diff-vault --from-prompt`) instead — the cap decides honestly when a "ticket" is really an epic.
