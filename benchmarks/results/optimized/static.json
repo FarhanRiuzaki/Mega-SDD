@@ -1,0 +1,1419 @@
+{
+ "arm": "optimized",
+ "instruction_plane": {
+  "files": 225,
+  "bytes": 2741717,
+  "chars": 2715233,
+  "est_tokens": 678808,
+  "avg_chars": 12068,
+  "median_chars": 9349,
+  "largest": {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md",
+   "chars": 75146
+  },
+  "smallest": {
+   "path": "plugins/mega-sdd/references/lib-patterns/django/generic-libs.md",
+   "chars": 104
+  }
+ },
+ "skill_md_only": {
+  "files": 24,
+  "bytes": 408317,
+  "chars": 403838,
+  "est_tokens": 100960,
+  "avg_chars": 16827,
+  "median_chars": 14574,
+  "largest": {
+   "path": "plugins/mega-sdd/skills/execute-bolts/SKILL.md",
+   "chars": 44917
+  },
+  "smallest": {
+   "path": "plugins/mega-sdd/skills/graph/SKILL.md",
+   "chars": 2464
+  }
+ },
+ "skill_references_only": {
+  "files": 114,
+  "bytes": 1404115,
+  "chars": 1388458,
+  "est_tokens": 347114,
+  "avg_chars": 12179,
+  "median_chars": 8516,
+  "largest": {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md",
+   "chars": 75146
+  },
+  "smallest": {
+   "path": "plugins/mega-sdd/skills/generate-units/references/templates/unit.md",
+   "chars": 1553
+  }
+ },
+ "executed_plane": {
+  "files": 144,
+  "bytes": 2138391,
+  "chars": 2111953,
+  "est_tokens": 527988,
+  "avg_chars": 14666,
+  "median_chars": 9226,
+  "largest": {
+   "path": "plugins/mega-sdd/scripts/build-dispatch-prompt.sh",
+   "chars": 187226
+  },
+  "smallest": {
+   "path": "plugins/mega-sdd/hooks/run-hook.sh",
+   "chars": 1407
+  }
+ },
+ "per_file": [
+  {
+   "path": "plugins/mega-sdd/agents/bolt-implementer.md",
+   "bytes": 19033,
+   "chars": 18900,
+   "est_tokens": 4725
+  },
+  {
+   "path": "plugins/mega-sdd/agents/code-quality-reviewer.md",
+   "bytes": 4975,
+   "chars": 4905,
+   "est_tokens": 1226
+  },
+  {
+   "path": "plugins/mega-sdd/agents/design-reviewer.md",
+   "bytes": 6713,
+   "chars": 6640,
+   "est_tokens": 1660
+  },
+  {
+   "path": "plugins/mega-sdd/agents/domain-extractor.md",
+   "bytes": 13929,
+   "chars": 13807,
+   "est_tokens": 3452
+  },
+  {
+   "path": "plugins/mega-sdd/agents/phase-advisor.md",
+   "bytes": 2422,
+   "chars": 2411,
+   "est_tokens": 603
+  },
+  {
+   "path": "plugins/mega-sdd/agents/resolution-verifier.md",
+   "bytes": 3904,
+   "chars": 3862,
+   "est_tokens": 966
+  },
+  {
+   "path": "plugins/mega-sdd/agents/security-reviewer.md",
+   "bytes": 4906,
+   "chars": 4854,
+   "est_tokens": 1214
+  },
+  {
+   "path": "plugins/mega-sdd/agents/spec-reviewer.md",
+   "bytes": 3937,
+   "chars": 3897,
+   "est_tokens": 974
+  },
+  {
+   "path": "plugins/mega-sdd/agents/standards-reviewer.md",
+   "bytes": 4330,
+   "chars": 4284,
+   "est_tokens": 1071
+  },
+  {
+   "path": "plugins/mega-sdd/commands/emit.md",
+   "bytes": 2634,
+   "chars": 2596,
+   "est_tokens": 649
+  },
+  {
+   "path": "plugins/mega-sdd/commands/install-deps.md",
+   "bytes": 1923,
+   "chars": 1905,
+   "est_tokens": 476
+  },
+  {
+   "path": "plugins/mega-sdd/commands/mega-sdd.md",
+   "bytes": 15367,
+   "chars": 15186,
+   "est_tokens": 3796
+  },
+  {
+   "path": "plugins/mega-sdd/commands/memory.md",
+   "bytes": 2747,
+   "chars": 2733,
+   "est_tokens": 683
+  },
+  {
+   "path": "plugins/mega-sdd/commands/migrate-paths.md",
+   "bytes": 4829,
+   "chars": 4777,
+   "est_tokens": 1194
+  },
+  {
+   "path": "plugins/mega-sdd/commands/sync.md",
+   "bytes": 6038,
+   "chars": 5953,
+   "est_tokens": 1488
+  },
+  {
+   "path": "plugins/mega-sdd/commands/update-plugin.md",
+   "bytes": 3019,
+   "chars": 3001,
+   "est_tokens": 750
+  },
+  {
+   "path": "plugins/mega-sdd/references/advisor-findings-schema.md",
+   "bytes": 1898,
+   "chars": 1885,
+   "est_tokens": 471
+  },
+  {
+   "path": "plugins/mega-sdd/references/ci-recipe.md",
+   "bytes": 3268,
+   "chars": 3240,
+   "est_tokens": 810
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/ATTRIBUTION.md",
+   "bytes": 1440,
+   "chars": 1432,
+   "est_tokens": 358
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/modern-baseline.md",
+   "bytes": 7051,
+   "chars": 6988,
+   "est_tokens": 1747
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/palette-principles.md",
+   "bytes": 18224,
+   "chars": 18224,
+   "est_tokens": 4556
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/style-principles.md",
+   "bytes": 35543,
+   "chars": 35511,
+   "est_tokens": 8878
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/typography-pairings.md",
+   "bytes": 24114,
+   "chars": 24114,
+   "est_tokens": 6028
+  },
+  {
+   "path": "plugins/mega-sdd/references/design-intelligence/ux-rules.md",
+   "bytes": 11008,
+   "chars": 11008,
+   "est_tokens": 2752
+  },
+  {
+   "path": "plugins/mega-sdd/references/emission-engine.md",
+   "bytes": 14057,
+   "chars": 13866,
+   "est_tokens": 3466
+  },
+  {
+   "path": "plugins/mega-sdd/references/fork-a-recovery-map.md",
+   "bytes": 10886,
+   "chars": 10784,
+   "est_tokens": 2696
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/README.md",
+   "bytes": 4048,
+   "chars": 4017,
+   "est_tokens": 1004
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/_lint.md",
+   "bytes": 4586,
+   "chars": 4546,
+   "est_tokens": 1136
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/_registry.md",
+   "bytes": 1769,
+   "chars": 1754,
+   "est_tokens": 438
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/_template.md",
+   "bytes": 20848,
+   "chars": 20725,
+   "est_tokens": 5181
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/_universal.md",
+   "bytes": 17763,
+   "chars": 17663,
+   "est_tokens": 4416
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/actix.md",
+   "bytes": 16713,
+   "chars": 16601,
+   "est_tokens": 4150
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/aspnetcore.md",
+   "bytes": 14593,
+   "chars": 14511,
+   "est_tokens": 3628
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/axum.md",
+   "bytes": 15891,
+   "chars": 15801,
+   "est_tokens": 3950
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/django.md",
+   "bytes": 13045,
+   "chars": 12981,
+   "est_tokens": 3245
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/dotnet.md",
+   "bytes": 13327,
+   "chars": 13273,
+   "est_tokens": 3318
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/echo.md",
+   "bytes": 14592,
+   "chars": 14508,
+   "est_tokens": 3627
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/express.md",
+   "bytes": 13356,
+   "chars": 13266,
+   "est_tokens": 3316
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/fastapi.md",
+   "bytes": 12162,
+   "chars": 12092,
+   "est_tokens": 3023
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/fastify.md",
+   "bytes": 14390,
+   "chars": 14306,
+   "est_tokens": 3576
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/fiber.md",
+   "bytes": 16019,
+   "chars": 15929,
+   "est_tokens": 3982
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/flask.md",
+   "bytes": 14094,
+   "chars": 14016,
+   "est_tokens": 3504
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/gin.md",
+   "bytes": 14090,
+   "chars": 14006,
+   "est_tokens": 3502
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/laravel-base-26.md",
+   "bytes": 26713,
+   "chars": 26590,
+   "est_tokens": 6648
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/laravel.md",
+   "bytes": 32706,
+   "chars": 32524,
+   "est_tokens": 8131
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/nestjs.md",
+   "bytes": 15099,
+   "chars": 15015,
+   "est_tokens": 3754
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/next.md",
+   "bytes": 14470,
+   "chars": 14378,
+   "est_tokens": 3594
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/nuxt.md",
+   "bytes": 15634,
+   "chars": 15526,
+   "est_tokens": 3882
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/rails.md",
+   "bytes": 16778,
+   "chars": 16694,
+   "est_tokens": 4174
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/remix.md",
+   "bytes": 15535,
+   "chars": 15443,
+   "est_tokens": 3861
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/rocket.md",
+   "bytes": 16170,
+   "chars": 16086,
+   "est_tokens": 4022
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/sinatra.md",
+   "bytes": 15573,
+   "chars": 15445,
+   "est_tokens": 3861
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/slim.md",
+   "bytes": 19069,
+   "chars": 18961,
+   "est_tokens": 4740
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/spring.md",
+   "bytes": 15646,
+   "chars": 15556,
+   "est_tokens": 3889
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/sveltekit.md",
+   "bytes": 15199,
+   "chars": 15111,
+   "est_tokens": 3778
+  },
+  {
+   "path": "plugins/mega-sdd/references/framework-conventions/symfony.md",
+   "bytes": 24199,
+   "chars": 24075,
+   "est_tokens": 6019
+  },
+  {
+   "path": "plugins/mega-sdd/references/halt-protocol.md",
+   "bytes": 44682,
+   "chars": 44291,
+   "est_tokens": 11073
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/README.md",
+   "bytes": 2122,
+   "chars": 2119,
+   "est_tokens": 530
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/django/auth-libs.md",
+   "bytes": 368,
+   "chars": 368,
+   "est_tokens": 92
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/django/generic-libs.md",
+   "bytes": 104,
+   "chars": 104,
+   "est_tokens": 26
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/django/rbac-libs.md",
+   "bytes": 326,
+   "chars": 326,
+   "est_tokens": 82
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/django/ui-libs.md",
+   "bytes": 223,
+   "chars": 223,
+   "est_tokens": 56
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/laravel/auth-libs.md",
+   "bytes": 6441,
+   "chars": 6424,
+   "est_tokens": 1606
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/laravel/generic-libs.md",
+   "bytes": 4864,
+   "chars": 4856,
+   "est_tokens": 1214
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/laravel/rbac-libs.md",
+   "bytes": 4241,
+   "chars": 4232,
+   "est_tokens": 1058
+  },
+  {
+   "path": "plugins/mega-sdd/references/lib-patterns/laravel/ui-libs.md",
+   "bytes": 7018,
+   "chars": 6976,
+   "est_tokens": 1744
+  },
+  {
+   "path": "plugins/mega-sdd/references/mermaid-emission-rules.md",
+   "bytes": 10489,
+   "chars": 10387,
+   "est_tokens": 2597
+  },
+  {
+   "path": "plugins/mega-sdd/references/model-tiers.md",
+   "bytes": 9945,
+   "chars": 9896,
+   "est_tokens": 2474
+  },
+  {
+   "path": "plugins/mega-sdd/references/multi-prd-lifecycle.md",
+   "bytes": 3749,
+   "chars": 3703,
+   "est_tokens": 926
+  },
+  {
+   "path": "plugins/mega-sdd/references/output-language.md",
+   "bytes": 8906,
+   "chars": 8825,
+   "est_tokens": 2206
+  },
+  {
+   "path": "plugins/mega-sdd/references/paths.md",
+   "bytes": 15175,
+   "chars": 14539,
+   "est_tokens": 3635
+  },
+  {
+   "path": "plugins/mega-sdd/references/plugin-root-resolution.md",
+   "bytes": 2660,
+   "chars": 2642,
+   "est_tokens": 660
+  },
+  {
+   "path": "plugins/mega-sdd/references/project-config.md",
+   "bytes": 4789,
+   "chars": 4743,
+   "est_tokens": 1186
+  },
+  {
+   "path": "plugins/mega-sdd/references/reading-map.md",
+   "bytes": 7234,
+   "chars": 7155,
+   "est_tokens": 1789
+  },
+  {
+   "path": "plugins/mega-sdd/references/reuse-index-schema.md",
+   "bytes": 2341,
+   "chars": 2337,
+   "est_tokens": 584
+  },
+  {
+   "path": "plugins/mega-sdd/references/shared-snapshot-schema.md",
+   "bytes": 9288,
+   "chars": 9222,
+   "est_tokens": 2306
+  },
+  {
+   "path": "plugins/mega-sdd/references/starterkit-context-schema.md",
+   "bytes": 21818,
+   "chars": 21693,
+   "est_tokens": 5423
+  },
+  {
+   "path": "plugins/mega-sdd/references/telemetry-schema.md",
+   "bytes": 12264,
+   "chars": 12188,
+   "est_tokens": 3047
+  },
+  {
+   "path": "plugins/mega-sdd/references/tooling-install.md",
+   "bytes": 10945,
+   "chars": 10832,
+   "est_tokens": 2708
+  },
+  {
+   "path": "plugins/mega-sdd/references/ui-design-heuristics.md",
+   "bytes": 4826,
+   "chars": 4796,
+   "est_tokens": 1199
+  },
+  {
+   "path": "plugins/mega-sdd/references/upgrade-from-old-version.md",
+   "bytes": 18106,
+   "chars": 17903,
+   "est_tokens": 4476
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/ATTRIBUTION.md",
+   "bytes": 1671,
+   "chars": 1663,
+   "est_tokens": 416
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/executing-plans/SKILL.md",
+   "bytes": 2469,
+   "chars": 2469,
+   "est_tokens": 617
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/subagent-driven-development/SKILL.md",
+   "bytes": 12546,
+   "chars": 12526,
+   "est_tokens": 3132
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/subagent-driven-development/code-quality-reviewer-prompt.md",
+   "bytes": 1080,
+   "chars": 1078,
+   "est_tokens": 270
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/subagent-driven-development/implementer-prompt.md",
+   "bytes": 4258,
+   "chars": 4256,
+   "est_tokens": 1064
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/subagent-driven-development/spec-reviewer-prompt.md",
+   "bytes": 1999,
+   "chars": 1995,
+   "est_tokens": 499
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/test-driven-development/SKILL.md",
+   "bytes": 9867,
+   "chars": 9857,
+   "est_tokens": 2464
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/test-driven-development/testing-anti-patterns.md",
+   "bytes": 8251,
+   "chars": 8221,
+   "est_tokens": 2055
+  },
+  {
+   "path": "plugins/mega-sdd/skills/_vendored/using-git-worktrees/SKILL.md",
+   "bytes": 7983,
+   "chars": 7977,
+   "est_tokens": 1994
+  },
+  {
+   "path": "plugins/mega-sdd/skills/analyze/SKILL.md",
+   "bytes": 8065,
+   "chars": 7995,
+   "est_tokens": 1999
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/SKILL.md",
+   "bytes": 26764,
+   "chars": 26421,
+   "est_tokens": 6605
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md",
+   "bytes": 1933,
+   "chars": 1901,
+   "est_tokens": 475
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+   "bytes": 16327,
+   "chars": 16184,
+   "est_tokens": 4046
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md",
+   "bytes": 16710,
+   "chars": 16556,
+   "est_tokens": 4139
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-json-schema.md",
+   "bytes": 3810,
+   "chars": 3792,
+   "est_tokens": 948
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md",
+   "bytes": 7983,
+   "chars": 7905,
+   "est_tokens": 1976
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/conflict-resolution.md",
+   "bytes": 4837,
+   "chars": 4739,
+   "est_tokens": 1185
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/constitution-and-oq.md",
+   "bytes": 2020,
+   "chars": 2003,
+   "est_tokens": 501
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/express-bind.md",
+   "bytes": 13388,
+   "chars": 13216,
+   "est_tokens": 3304
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/handoff-validation.md",
+   "bytes": 6085,
+   "chars": 6006,
+   "est_tokens": 1502
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md",
+   "bytes": 6484,
+   "chars": 6412,
+   "est_tokens": 1603
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md",
+   "bytes": 5880,
+   "chars": 5776,
+   "est_tokens": 1444
+  },
+  {
+   "path": "plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md",
+   "bytes": 8613,
+   "chars": 8520,
+   "est_tokens": 2130
+  },
+  {
+   "path": "plugins/mega-sdd/skills/detect-drift/SKILL.md",
+   "bytes": 16817,
+   "chars": 16602,
+   "est_tokens": 4150
+  },
+  {
+   "path": "plugins/mega-sdd/skills/detect-drift/references/auto-and-chain.md",
+   "bytes": 9224,
+   "chars": 9135,
+   "est_tokens": 2284
+  },
+  {
+   "path": "plugins/mega-sdd/skills/detect-drift/references/constitution-drift.md",
+   "bytes": 3558,
+   "chars": 3516,
+   "est_tokens": 879
+  },
+  {
+   "path": "plugins/mega-sdd/skills/detect-drift/references/report-format.md",
+   "bytes": 11028,
+   "chars": 10923,
+   "est_tokens": 2731
+  },
+  {
+   "path": "plugins/mega-sdd/skills/diff-vault/SKILL.md",
+   "bytes": 15676,
+   "chars": 15510,
+   "est_tokens": 3878
+  },
+  {
+   "path": "plugins/mega-sdd/skills/diff-vault/references/auto-and-chain.md",
+   "bytes": 8291,
+   "chars": 8245,
+   "est_tokens": 2061
+  },
+  {
+   "path": "plugins/mega-sdd/skills/diff-vault/references/diff-procedure.md",
+   "bytes": 9378,
+   "chars": 9286,
+   "est_tokens": 2322
+  },
+  {
+   "path": "plugins/mega-sdd/skills/diff-vault/references/report-format.md",
+   "bytes": 6353,
+   "chars": 6305,
+   "est_tokens": 1576
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-agents-md/SKILL.md",
+   "bytes": 9367,
+   "chars": 9287,
+   "est_tokens": 2322
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-agents-md/references/agents-md-schema.md",
+   "bytes": 10797,
+   "chars": 10459,
+   "est_tokens": 2615
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-fsd/SKILL.md",
+   "bytes": 16248,
+   "chars": 15981,
+   "est_tokens": 3995
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-fsd/references/fsd-template.md",
+   "bytes": 6483,
+   "chars": 6425,
+   "est_tokens": 1606
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-fsd/references/section-mapping.md",
+   "bytes": 17161,
+   "chars": 16924,
+   "est_tokens": 4231
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-prd/SKILL.md",
+   "bytes": 11494,
+   "chars": 11310,
+   "est_tokens": 2828
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-prd/references/prd-sections.md",
+   "bytes": 7655,
+   "chars": 7516,
+   "est_tokens": 1879
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-prd/references/prd-template.md",
+   "bytes": 4140,
+   "chars": 4079,
+   "est_tokens": 1020
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-sit/SKILL.md",
+   "bytes": 11621,
+   "chars": 11437,
+   "est_tokens": 2859
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-sit/references/sit-sections.md",
+   "bytes": 7932,
+   "chars": 7775,
+   "est_tokens": 1944
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-sit/references/sit-template.md",
+   "bytes": 3739,
+   "chars": 3678,
+   "est_tokens": 920
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-uat/SKILL.md",
+   "bytes": 13852,
+   "chars": 13637,
+   "est_tokens": 3409
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-uat/references/uat-sections.md",
+   "bytes": 9562,
+   "chars": 9382,
+   "est_tokens": 2346
+  },
+  {
+   "path": "plugins/mega-sdd/skills/emit-uat/references/uat-template.md",
+   "bytes": 5210,
+   "chars": 5152,
+   "est_tokens": 1288
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/SKILL.md",
+   "bytes": 45418,
+   "chars": 44917,
+   "est_tokens": 11229
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md",
+   "bytes": 16029,
+   "chars": 15883,
+   "est_tokens": 3971
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/bolt-contract.md",
+   "bytes": 3560,
+   "chars": 3534,
+   "est_tokens": 884
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md",
+   "bytes": 24729,
+   "chars": 23636,
+   "est_tokens": 5909
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/code-gates.md",
+   "bytes": 11669,
+   "chars": 11548,
+   "est_tokens": 2887
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md",
+   "bytes": 75876,
+   "chars": 75146,
+   "est_tokens": 18786
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/halt-recovery.md",
+   "bytes": 10033,
+   "chars": 9932,
+   "est_tokens": 2483
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md",
+   "bytes": 23613,
+   "chars": 23187,
+   "est_tokens": 5797
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/hard-rule-grammar-v2.md",
+   "bytes": 8936,
+   "chars": 8873,
+   "est_tokens": 2218
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/hard-rule-scan.md",
+   "bytes": 19653,
+   "chars": 19486,
+   "est_tokens": 4872
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/migrate-rules.md",
+   "bytes": 3868,
+   "chars": 3835,
+   "est_tokens": 959
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/partial-state-and-saga.md",
+   "bytes": 7269,
+   "chars": 7198,
+   "est_tokens": 1800
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/propose-and-confirm-prompt.md",
+   "bytes": 8851,
+   "chars": 8512,
+   "est_tokens": 2128
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/replay.md",
+   "bytes": 5992,
+   "chars": 5890,
+   "est_tokens": 1472
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/review-panel.md",
+   "bytes": 27627,
+   "chars": 27358,
+   "est_tokens": 6840
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md",
+   "bytes": 4826,
+   "chars": 4612,
+   "est_tokens": 1153
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/starterkit-enrichment.md",
+   "bytes": 21235,
+   "chars": 21066,
+   "est_tokens": 5266
+  },
+  {
+   "path": "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+   "bytes": 15000,
+   "chars": 14763,
+   "est_tokens": 3691
+  },
+  {
+   "path": "plugins/mega-sdd/skills/extract-intelligence/SKILL.md",
+   "bytes": 35532,
+   "chars": 35160,
+   "est_tokens": 8790
+  },
+  {
+   "path": "plugins/mega-sdd/skills/extract-intelligence/references/handoff.md",
+   "bytes": 2297,
+   "chars": 2282,
+   "est_tokens": 570
+  },
+  {
+   "path": "plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md",
+   "bytes": 26883,
+   "chars": 26463,
+   "est_tokens": 6616
+  },
+  {
+   "path": "plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md",
+   "bytes": 33329,
+   "chars": 33012,
+   "est_tokens": 8253
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/SKILL.md",
+   "bytes": 25636,
+   "chars": 25261,
+   "est_tokens": 6315
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/advisor-checklist.md",
+   "bytes": 2394,
+   "chars": 2357,
+   "est_tokens": 589
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md",
+   "bytes": 9459,
+   "chars": 9395,
+   "est_tokens": 2349
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md",
+   "bytes": 5417,
+   "chars": 5381,
+   "est_tokens": 1345
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/from-prompt-mode.md",
+   "bytes": 14531,
+   "chars": 14356,
+   "est_tokens": 3589
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+   "bytes": 31191,
+   "chars": 30840,
+   "est_tokens": 7710
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/kb-submode.md",
+   "bytes": 7910,
+   "chars": 7842,
+   "est_tokens": 1960
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/legacy-retrofit-prompt.md",
+   "bytes": 5345,
+   "chars": 5307,
+   "est_tokens": 1327
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/multi-scope.md",
+   "bytes": 4948,
+   "chars": 4907,
+   "est_tokens": 1227
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/scope-picker.md",
+   "bytes": 5622,
+   "chars": 5569,
+   "est_tokens": 1392
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/self-check.md",
+   "bytes": 10651,
+   "chars": 10558,
+   "est_tokens": 2640
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/setup-flow.md",
+   "bytes": 22823,
+   "chars": 22613,
+   "est_tokens": 5653
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/squad-partition.md",
+   "bytes": 2802,
+   "chars": 2790,
+   "est_tokens": 698
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/00-index.md",
+   "bytes": 8417,
+   "chars": 8308,
+   "est_tokens": 2077
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/01-overview.md",
+   "bytes": 1720,
+   "chars": 1710,
+   "est_tokens": 428
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/02-architecture.md",
+   "bytes": 6212,
+   "chars": 5966,
+   "est_tokens": 1492
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/03-data-model.md",
+   "bytes": 2556,
+   "chars": 2543,
+   "est_tokens": 636
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/04-flows.md",
+   "bytes": 6429,
+   "chars": 6402,
+   "est_tokens": 1600
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/05-decisions.md",
+   "bytes": 1927,
+   "chars": 1902,
+   "est_tokens": 476
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/06-constraints.md",
+   "bytes": 3811,
+   "chars": 3787,
+   "est_tokens": 947
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/ai-consumer-guide.md",
+   "bytes": 9214,
+   "chars": 9136,
+   "est_tokens": 2284
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/interface-note.template.md",
+   "bytes": 2269,
+   "chars": 2243,
+   "est_tokens": 561
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/templates/interfaces-index.template.md",
+   "bytes": 1958,
+   "chars": 1944,
+   "est_tokens": 486
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-intent/references/vault-contract.md",
+   "bytes": 40985,
+   "chars": 40591,
+   "est_tokens": 10148
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/SKILL.md",
+   "bytes": 27436,
+   "chars": 27118,
+   "est_tokens": 6780
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md",
+   "bytes": 5906,
+   "chars": 5884,
+   "est_tokens": 1471
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md",
+   "bytes": 7147,
+   "chars": 7109,
+   "est_tokens": 1777
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md",
+   "bytes": 15325,
+   "chars": 15223,
+   "est_tokens": 3806
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/defensive-generation.md",
+   "bytes": 11287,
+   "chars": 11163,
+   "est_tokens": 2791
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/halt-protocol.md",
+   "bytes": 10883,
+   "chars": 10836,
+   "est_tokens": 2709
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/modules-schema.md",
+   "bytes": 10137,
+   "chars": 10013,
+   "est_tokens": 2503
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/pbt-integration.md",
+   "bytes": 9427,
+   "chars": 9349,
+   "est_tokens": 2337
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/starterkit-derivation.md",
+   "bytes": 10097,
+   "chars": 10019,
+   "est_tokens": 2505
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/task-typing.md",
+   "bytes": 15056,
+   "chars": 14884,
+   "est_tokens": 3721
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/templates/unit.md",
+   "bytes": 1567,
+   "chars": 1553,
+   "est_tokens": 388
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/unit-schema.md",
+   "bytes": 27119,
+   "chars": 26957,
+   "est_tokens": 6739
+  },
+  {
+   "path": "plugins/mega-sdd/skills/generate-units/references/validation-passes.md",
+   "bytes": 13202,
+   "chars": 13053,
+   "est_tokens": 3263
+  },
+  {
+   "path": "plugins/mega-sdd/skills/graph/SKILL.md",
+   "bytes": 2476,
+   "chars": 2464,
+   "est_tokens": 616
+  },
+  {
+   "path": "plugins/mega-sdd/skills/graph/references/graph-schema.md",
+   "bytes": 3077,
+   "chars": 3051,
+   "est_tokens": 763
+  },
+  {
+   "path": "plugins/mega-sdd/skills/install-deps/SKILL.md",
+   "bytes": 24612,
+   "chars": 24363,
+   "est_tokens": 6091
+  },
+  {
+   "path": "plugins/mega-sdd/skills/install-deps/references/os-detection.md",
+   "bytes": 8432,
+   "chars": 8396,
+   "est_tokens": 2099
+  },
+  {
+   "path": "plugins/mega-sdd/skills/install-deps/references/windows-path.md",
+   "bytes": 6610,
+   "chars": 6558,
+   "est_tokens": 1640
+  },
+  {
+   "path": "plugins/mega-sdd/skills/memory/SKILL.md",
+   "bytes": 12340,
+   "chars": 12221,
+   "est_tokens": 3055
+  },
+  {
+   "path": "plugins/mega-sdd/skills/memory/references/instincts.md",
+   "bytes": 4256,
+   "chars": 4206,
+   "est_tokens": 1052
+  },
+  {
+   "path": "plugins/mega-sdd/skills/memory/references/learning-rules.md",
+   "bytes": 12516,
+   "chars": 12440,
+   "est_tokens": 3110
+  },
+  {
+   "path": "plugins/mega-sdd/skills/memory/references/memory-schema.md",
+   "bytes": 25446,
+   "chars": 25268,
+   "est_tokens": 6317
+  },
+  {
+   "path": "plugins/mega-sdd/skills/memory/references/routing-outcomes.md",
+   "bytes": 4155,
+   "chars": 4117,
+   "est_tokens": 1029
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+   "bytes": 24460,
+   "chars": 24211,
+   "est_tokens": 6053
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+   "bytes": 27478,
+   "chars": 27193,
+   "est_tokens": 6798
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md",
+   "bytes": 6587,
+   "chars": 6539,
+   "est_tokens": 1635
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/convergence-loops.md",
+   "bytes": 8169,
+   "chars": 8052,
+   "est_tokens": 2013
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md",
+   "bytes": 21360,
+   "chars": 21117,
+   "est_tokens": 5279
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md",
+   "bytes": 2529,
+   "chars": 2522,
+   "est_tokens": 630
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md",
+   "bytes": 3848,
+   "chars": 3795,
+   "est_tokens": 949
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/halt-taxonomy.md",
+   "bytes": 4048,
+   "chars": 3965,
+   "est_tokens": 991
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+   "bytes": 8673,
+   "chars": 8579,
+   "est_tokens": 2145
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+   "bytes": 33585,
+   "chars": 33311,
+   "est_tokens": 8328
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md",
+   "bytes": 6981,
+   "chars": 6922,
+   "est_tokens": 1730
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md",
+   "bytes": 20613,
+   "chars": 20554,
+   "est_tokens": 5138
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md",
+   "bytes": 29178,
+   "chars": 28805,
+   "est_tokens": 7201
+  },
+  {
+   "path": "plugins/mega-sdd/skills/orchestrate-flow/references/sync-digest.md",
+   "bytes": 4499,
+   "chars": 4429,
+   "est_tokens": 1107
+  },
+  {
+   "path": "plugins/mega-sdd/skills/resolve-oq/SKILL.md",
+   "bytes": 18608,
+   "chars": 18411,
+   "est_tokens": 4603
+  },
+  {
+   "path": "plugins/mega-sdd/skills/resolve-oq/references/auto-memory-handoff.md",
+   "bytes": 13140,
+   "chars": 13020,
+   "est_tokens": 3255
+  },
+  {
+   "path": "plugins/mega-sdd/skills/resolve-oq/references/binding-mode.md",
+   "bytes": 9490,
+   "chars": 9373,
+   "est_tokens": 2343
+  },
+  {
+   "path": "plugins/mega-sdd/skills/resolve-oq/references/interactive-walk.md",
+   "bytes": 50140,
+   "chars": 49553,
+   "est_tokens": 12388
+  },
+  {
+   "path": "plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md",
+   "bytes": 16567,
+   "chars": 16412,
+   "est_tokens": 4103
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/SKILL.md",
+   "bytes": 20912,
+   "chars": 20685,
+   "est_tokens": 5171
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md",
+   "bytes": 6830,
+   "chars": 6782,
+   "est_tokens": 1696
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/codebase-map-schema.md",
+   "bytes": 7269,
+   "chars": 7220,
+   "est_tokens": 1805
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md",
+   "bytes": 24968,
+   "chars": 24791,
+   "est_tokens": 6198
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md",
+   "bytes": 10611,
+   "chars": 10507,
+   "est_tokens": 2627
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-prompts.md",
+   "bytes": 19882,
+   "chars": 19769,
+   "est_tokens": 4942
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/exclusions.md",
+   "bytes": 3990,
+   "chars": 3964,
+   "est_tokens": 991
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md",
+   "bytes": 27548,
+   "chars": 27339,
+   "est_tokens": 6835
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md",
+   "bytes": 56646,
+   "chars": 56049,
+   "est_tokens": 14012
+  },
+  {
+   "path": "plugins/mega-sdd/skills/scan-codebase/references/tree-sitter-integration.md",
+   "bytes": 10224,
+   "chars": 10126,
+   "est_tokens": 2532
+  },
+  {
+   "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+   "bytes": 8118,
+   "chars": 8018,
+   "est_tokens": 2004
+  }
+ ]
+}

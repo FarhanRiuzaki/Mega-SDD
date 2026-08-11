@@ -1,0 +1,28 @@
+# T04-sync-with-intersection optimized commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md [SECTION:decision-matrix+mode-D]
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/commands/sync.md
+plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
+plugins/mega-sdd/skills/orchestrate-flow/references/sync-digest.md
+plugins/mega-sdd/skills/scan-codebase/SKILL.md
+plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md [SECTION:incremental+named-steps]
+plugins/mega-sdd/skills/detect-drift/SKILL.md
+plugins/mega-sdd/skills/detect-drift/references/report-format.md
+plugins/mega-sdd/skills/detect-drift/references/auto-and-chain.md
+plugins/mega-sdd/skills/memory/references/memory-schema.md [SECTION:drift-history]
+plugins/mega-sdd/skills/bind-codebase/SKILL.md
+plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md [SECTION:claim-scoped-re-bind]
+plugins/mega-sdd/skills/bind-codebase/references/express-bind.md
+plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md
+plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md
+plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md
+plugins/mega-sdd/references/framework-conventions/laravel.md
+plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md
+plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md

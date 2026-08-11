@@ -1,0 +1,263 @@
+{
+ "arm": "optimized",
+ "min_line_chars": 60,
+ "duplicate_line_variants": 143,
+ "duplicate_chars": 29385,
+ "duplicate_est_tokens": 7346,
+ "instruction_plane_chars": 2715233,
+ "duplicate_pct_of_plane": 1.08,
+ "top20": [
+  {
+   "occurrences": 24,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/actix.md",
+    "plugins/mega-sdd/references/framework-conventions/aspnetcore.md",
+    "plugins/mega-sdd/references/framework-conventions/axum.md",
+    "plugins/mega-sdd/references/framework-conventions/django.md",
+    "plugins/mega-sdd/references/framework-conventions/dotnet.md",
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/express.md",
+    "plugins/mega-sdd/references/framework-conventions/fastapi.md",
+    "plugins/mega-sdd/references/framework-conventions/fastify.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/flask.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md",
+    "plugins/mega-sdd/references/framework-conventions/laravel.md",
+    "plugins/mega-sdd/references/framework-conventions/nestjs.md",
+    "plugins/mega-sdd/references/framework-conventions/next.md",
+    "plugins/mega-sdd/references/framework-conventions/nuxt.md",
+    "plugins/mega-sdd/references/framework-conventions/rails.md",
+    "plugins/mega-sdd/references/framework-conventions/remix.md",
+    "plugins/mega-sdd/references/framework-conventions/rocket.md",
+    "plugins/mega-sdd/references/framework-conventions/sinatra.md",
+    "plugins/mega-sdd/references/framework-conventions/slim.md",
+    "plugins/mega-sdd/references/framework-conventions/spring.md",
+    "plugins/mega-sdd/references/framework-conventions/sveltekit.md",
+    "plugins/mega-sdd/references/framework-conventions/symfony.md"
+   ],
+   "line": "> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by"
+  },
+  {
+   "occurrences": 24,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/actix.md",
+    "plugins/mega-sdd/references/framework-conventions/aspnetcore.md",
+    "plugins/mega-sdd/references/framework-conventions/axum.md",
+    "plugins/mega-sdd/references/framework-conventions/django.md",
+    "plugins/mega-sdd/references/framework-conventions/dotnet.md",
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/express.md",
+    "plugins/mega-sdd/references/framework-conventions/fastapi.md",
+    "plugins/mega-sdd/references/framework-conventions/fastify.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/flask.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md",
+    "plugins/mega-sdd/references/framework-conventions/laravel.md",
+    "plugins/mega-sdd/references/framework-conventions/nestjs.md",
+    "plugins/mega-sdd/references/framework-conventions/next.md",
+    "plugins/mega-sdd/references/framework-conventions/nuxt.md",
+    "plugins/mega-sdd/references/framework-conventions/rails.md",
+    "plugins/mega-sdd/references/framework-conventions/remix.md",
+    "plugins/mega-sdd/references/framework-conventions/rocket.md",
+    "plugins/mega-sdd/references/framework-conventions/sinatra.md",
+    "plugins/mega-sdd/references/framework-conventions/slim.md",
+    "plugins/mega-sdd/references/framework-conventions/spring.md",
+    "plugins/mega-sdd/references/framework-conventions/sveltekit.md",
+    "plugins/mega-sdd/references/framework-conventions/symfony.md"
+   ],
+   "line": "> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named \u2014"
+  },
+  {
+   "occurrences": 8,
+   "files": [
+    "plugins/mega-sdd/references/plugin-root-resolution.md",
+    "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+    "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+    "plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md",
+    "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+    "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+    "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md"
+   ],
+   "line": "RESOLVER=\"$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)\""
+  },
+  {
+   "occurrences": 4,
+   "files": [
+    "plugins/mega-sdd/agents/code-quality-reviewer.md",
+    "plugins/mega-sdd/agents/design-reviewer.md",
+    "plugins/mega-sdd/agents/security-reviewer.md",
+    "plugins/mega-sdd/agents/standards-reviewer.md"
+   ],
+   "line": "A finding without a real `file:line` anchor is dropped at merge \u2014 do not emit it. No Strengths section, no Assessment paragraph, no restating the unit or the di"
+  },
+  {
+   "occurrences": 4,
+   "files": [
+    "plugins/mega-sdd/agents/code-quality-reviewer.md",
+    "plugins/mega-sdd/agents/design-reviewer.md",
+    "plugins/mega-sdd/agents/security-reviewer.md",
+    "plugins/mega-sdd/agents/standards-reviewer.md"
+   ],
+   "line": "You never modify anything: no Write/Edit, and no Bash command that mutates the working tree, index, or history \u2014 use `git diff` / `git log` / `git show` and rea"
+  },
+  {
+   "occurrences": 5,
+   "files": [
+    "plugins/mega-sdd/agents/code-quality-reviewer.md",
+    "plugins/mega-sdd/agents/design-reviewer.md",
+    "plugins/mega-sdd/agents/security-reviewer.md",
+    "plugins/mega-sdd/agents/spec-reviewer.md",
+    "plugins/mega-sdd/agents/standards-reviewer.md"
+   ],
+   "line": "Your final text is parsed by the controller's merge and lands verbatim in the orchestrator's context \u2014 return EXACTLY this shape (target \u22642k tokens), nothing el"
+  },
+  {
+   "occurrences": 8,
+   "files": [
+    "plugins/mega-sdd/references/plugin-root-resolution.md",
+    "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+    "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+    "plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md",
+    "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+    "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+    "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md"
+   ],
+   "line": "PLUGIN_ROOT=\"$([ -n \"$RESOLVER\" ] && bash \"$RESOLVER\" \"$DERIVED\" || echo \"$DERIVED\")\""
+  },
+  {
+   "occurrences": 6,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/aspnetcore.md",
+    "plugins/mega-sdd/references/framework-conventions/nestjs.md",
+    "plugins/mega-sdd/references/framework-conventions/next.md",
+    "plugins/mega-sdd/references/framework-conventions/nuxt.md",
+    "plugins/mega-sdd/references/framework-conventions/remix.md",
+    "plugins/mega-sdd/references/framework-conventions/sveltekit.md"
+   ],
+   "line": "detection_priority: 50  # P2 matcher: lower wins \u2014 starterkit variants/meta-frameworks precede their substrates"
+  },
+  {
+   "occurrences": 8,
+   "files": [
+    "plugins/mega-sdd/references/plugin-root-resolution.md",
+    "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+    "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+    "plugins/mega-sdd/skills/extract-intelligence/references/wave-dispatch-templates.md",
+    "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+    "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+    "plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md"
+   ],
+   "line": "DERIVED=\"<this reference file's absolute path, truncated before /skills/>\""
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/actix.md",
+    "plugins/mega-sdd/references/framework-conventions/axum.md",
+    "plugins/mega-sdd/references/framework-conventions/rocket.md"
+   ],
+   "line": "- **Password hashing** \u2014 the `argon2` crate (argon2id) or `bcrypt` crate via `PasswordHasher`/`verify_password`; hashing a password with `sha2` or comparing dig"
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "- **Secrets / config** \u2014 `os.Getenv` or viper-loaded config in `internal/config/`; the bypass is a hardcoded JWT secret or DSN literal in source, or a committed"
+  },
+  {
+   "occurrences": 6,
+   "files": [
+    "plugins/mega-sdd/skills/generate-intent/references/templates/01-overview.md",
+    "plugins/mega-sdd/skills/generate-intent/references/templates/02-architecture.md",
+    "plugins/mega-sdd/skills/generate-intent/references/templates/03-data-model.md",
+    "plugins/mega-sdd/skills/generate-intent/references/templates/04-flows.md",
+    "plugins/mega-sdd/skills/generate-intent/references/templates/05-decisions.md",
+    "plugins/mega-sdd/skills/generate-intent/references/templates/06-constraints.md"
+   ],
+   "line": "> **Note**: TL;DR placeholders shown in English. At runtime, render them in the PRD's language."
+  },
+  {
+   "occurrences": 5,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/actix.md",
+    "plugins/mega-sdd/references/framework-conventions/axum.md",
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "rationale: Handlers thin + services fat; inline business logic breaks testability and separation of concerns"
+  },
+  {
+   "occurrences": 5,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/actix.md",
+    "plugins/mega-sdd/references/framework-conventions/axum.md",
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "| Route path | kebab-case, noun-plural for collections | `/users`, `/user-profiles`, `/api/v1/orders` |"
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "- **Thin handlers, fat services** \u2014 handlers parse the request and call a service method; all business logic lives in `internal/service/`; handlers stay under ~"
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "- **Assertions**: standard `testing` package (`t.Errorf`, `t.Fatalf`); `testify/assert` and `testify/require` are widely used for cleaner assertion syntax (opti"
+  },
+  {
+   "occurrences": 4,
+   "files": [
+    "plugins/mega-sdd/skills/emit-fsd/references/fsd-template.md",
+    "plugins/mega-sdd/skills/emit-prd/references/prd-template.md",
+    "plugins/mega-sdd/skills/emit-sit/references/sit-template.md",
+    "plugins/mega-sdd/skills/emit-uat/references/uat-template.md"
+   ],
+   "line": "> \u26a0 **Updated since last emit** \u2014 `<source_path>` was sha256 `<old-prefix>`, now `<new-prefix>`. Section regenerated."
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "- **Table-driven tests**: idiomatic Go pattern \u2014 define a slice of `struct{ name, input, expected }` test cases and range over them in a single `t.Run(tc.name, "
+  },
+  {
+   "occurrences": 3,
+   "files": [
+    "plugins/mega-sdd/references/framework-conventions/echo.md",
+    "plugins/mega-sdd/references/framework-conventions/fiber.md",
+    "plugins/mega-sdd/references/framework-conventions/gin.md"
+   ],
+   "line": "- `services`: exported service interfaces and implementations; each service file exposes the domain API (e.g. `UserService.FindByID`, `OrderService.Create`)."
+  },
+  {
+   "occurrences": 6,
+   "files": [
+    "plugins/mega-sdd/agents/code-quality-reviewer.md",
+    "plugins/mega-sdd/agents/design-reviewer.md",
+    "plugins/mega-sdd/agents/resolution-verifier.md",
+    "plugins/mega-sdd/agents/security-reviewer.md",
+    "plugins/mega-sdd/agents/spec-reviewer.md",
+    "plugins/mega-sdd/agents/standards-reviewer.md"
+   ],
+   "line": "## Report \u2014 findings only, no narrative (return-size contract)"
+  }
+ ]
+}
