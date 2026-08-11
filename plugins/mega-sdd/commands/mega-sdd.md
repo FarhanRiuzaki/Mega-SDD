@@ -45,7 +45,9 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
      - `REJECTED` (binary/non-text) → halt with the certify keterangan verbatim; ask for a text document or the file's intent.
 
 3. **Is `<input>` quoted free-text** (e.g., `"build a clinic appointment system"`)?
-   - YES → Mode B brief. Propose chain starting with `generate-intent --from-prompt <input>`.
+   - YES, and NO vault exists in CWD → Mode B brief. Propose chain starting with `generate-intent --from-prompt <input>` (greenfield brief — unchanged).
+   - YES, and a vault EXISTS whose docs own an entity/flow/screen the sentence names (prompt-scale ownership signal: heading/entity match against the vault's `00-index.md` roll-up) → **delta lane**: propose chain `diff-vault --from-prompt <input>` → claim-scoped re-bind (`--paths=@<vault>/.delta-changed-paths.txt`) → `generate-units --reconcile` → `execute-bolts` (stale/new). An epic-scale brief is forced out by the `delta_too_large` cap inside diff-vault.
+   - YES, vault(s) present but ownership UNSURE (nothing matches, or several vaults match) → ASK, one `AskUserQuestion` with keterangan per option: `Delta ke vault <name>` — perubahan kecil di vault existing (delta lane); `Epic baru` — vault baru via generate-intent (Mode B); `Batal` — tidak ada yang dijalankan.
 
 4. **Flag handling**:
    - `--deep` (default true; opt-out via `--shallow` to revert to 3-skill cap).

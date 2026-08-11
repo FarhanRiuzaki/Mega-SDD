@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 3.3.1
+version: 3.3.2
 description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
 ---
 
@@ -60,6 +60,7 @@ Maintenance lane (never-ending development): after ANY out-of-pipeline change (m
 
 Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):
 - Same source **revised** (PRD v1 → v1.1) → `diff-vault` (one vault evolves; history preserved).
+- **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → claim-scoped re-bind → `--reconcile` units; the `delta_too_large` cap forces an epic-in-disguise to the next row).
 - **New epic** on top of shipped work → **new vault** via `generate-intent`, then `bind-codebase` **brownfield** against the codebase that now contains PRD 1 (+ the project constitution) — the binding gate catches contradictions with shipped reality.
 - **Code moved** → `sync`.
 When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; **when unsure, ASK** (evolve-in-place vs new-epic diverge hard). `.mega-sdd/project.md` (the project index) lists every vault + status so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.

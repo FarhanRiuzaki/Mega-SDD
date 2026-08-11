@@ -21,6 +21,7 @@ How to run: for each prompt, start a FRESH session in a repo matching the CWD st
 | N3 | "is the code in sync?" | map+binding, NO change signal | detect-drift standalone (informational), not the full sync chain |
 | N4 | "the PRD changed" | new PRD revision present | diff-vault (outranks sync per routing precedence) |
 | N5 | `/mega-sdd:sync` | map+binding, journal empty, HEAD == stamp | reports "in sync", stops — NO vacuous re-runs |
+| N6 | "tambah kolom npwp di form nasabah" (chat brief, code untouched) | map+binding, journal empty | NOT the sync lane — no change signal exists; the delta lane (diff-vault --from-prompt) is a front-door overlay with its OWN scope file (`.delta-changed-paths.txt`), never `.sync-changed-paths.txt`; sync surfaces stay untouched |
 
 ## Post-trigger contract checks
 

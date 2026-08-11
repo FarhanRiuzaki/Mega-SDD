@@ -10,7 +10,7 @@ Loaded by Steps 4–5. The diff report is the **artifact** the user reviews; Ste
 
 ## Output location & purpose
 
-Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exists). This artifact persists so the user can review carefully even after the chat session ends. The header carries `prd_sha256_changed: yes | no | n/a` (set during PRD change detection in Step 1.5).
+Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exists). This artifact persists so the user can review carefully even after the chat session ends. The header carries `prd_sha256_changed: yes | no | n/a` (set during PRD change detection in Step 1.5). Under `--from-prompt` the header's `**New source**:` line reads `chat brief (--from-prompt)` and the sha leg is `n/a` (a chat ticket is not a PRD revision — provenance rules in `diff-procedure.md §From-prompt delta lane`).
 
 ## Full `VAULT-DIFF.md` structure
 
@@ -60,7 +60,7 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 
 **Original**: "Target NoA = 4.197 — per bulan or cumulative?"
 **New PRD answer** (§E.2): "NoA target 4.197 cumulative by Q2 2026."
-**Action on apply**: mark `[x]`, append `→ Resolved v1.2 (auto, from new PRD §E.2): cumulative by Q2 2026`.
+**Action on apply**: mark `[x]` in `01-overview.md`, append `→ Resolved v1.2 (auto, from new PRD §E.2): cumulative by Q2 2026`.
 
 <...all auto-resolved OQs in this format...>
 
@@ -124,6 +124,10 @@ Table redemption_request {
 ```
 
 > The diff report is the **artifact** the user reviews. Step 5 walks through it interactively to capture decisions on conflicts + confirm changes.
+
+## Doc-literal mandate (delta-lane load-bearing)
+
+EVERY entry that applies a vault edit MUST name its target vault doc (`0N-*.md` literal) in its body — **in every category**: Added/Changed/Removed action lines already do; Auto-resolved-OQ action lines name the doc holding the OQ (e.g. "mark `[x]` in `01-overview.md`, append …"); Conflict entries carry the doc of the decision/OQ they rewrite (the resolved-as line's "captured as D-010 in `05-decisions.md`" form, or an explicit `**Applies to**: 05-decisions.md` line). `scripts/derive-delta-paths.sh` derives the claim-scoped re-bind scope from these literals (fence-stripped, section-based, Unchanged excluded) and `binding-contract.md §Claim-scoped re-bind` rule 4 reads the same rows — a row with no doc literal narrows verification.
 
 ## Interactive walkthrough (Step 5)
 

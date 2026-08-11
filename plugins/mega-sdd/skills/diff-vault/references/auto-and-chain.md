@@ -17,7 +17,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 |------|---------------------|-------------------|
 | Step 0 (vault path) | Auto-detect or ask | Use auto-detected if exactly 1 vault in CWD. |
 | Step 0 (git safety check) | Ask if uncommitted | Continue but record uncommitted state in the diff report's metadata. |
-| Step 0.5 (diff scope) | Ask | Default to `full`. |
+| Step 0.5 (diff scope) | Ask | Default to `full`; under `--from-prompt` ALWAYS the auto-derived `specific-docs` narrow scope (never `full` — SKILL Step 0.5). |
 | Step 1 (old source path) | Ask once | Skip — use vault-state-only. |
 | Step 5 (per-conflict resolution) | Ask Supersede/Keep/Both/Skip | **Emit `blocker` (type=`diff_conflict`)** per conflict and pause. Caller decides next steps. |
 | Step 5 (auto-resolved OQs batch confirm) | Ask "Apply all / one-by-one / skip" | Default to "Apply all". |
@@ -31,6 +31,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 - **Decision conflicts** — same.
 - **Major scope shift detection** — the push-back rule (e.g., >50% entity churn) still triggers.
 - **LOCKED vault confirmation** — destructive, audit-significant.
+- **`delta_too_large` (from-prompt cap, Step 3)** — ALWAYS STOP; nothing applied; the user picks full_lane / split_ticket / cancel (envelope: `plugins/mega-sdd/references/halt-protocol.md`).
 
 ## `diff_conflict` blocker emission
 
@@ -122,6 +123,9 @@ handoff:
     suggested_skill: mega-sdd:resolve-oq        # new open questions to walk
     suggested_args: ["--auto"]
     # (c) status completed AND diff clean: chain may resume to bind/units/bolts.
+    #     From-prompt variant (delta lane): Step 7.5 wrote <vault>/.delta-changed-paths.txt —
+    #     the same target skill; the router's §Delta lane row proposes the claim-scoped
+    #     re-bind from that file (this handoff never names the bind hop directly).
     suggested_skill: mega-sdd:orchestrate-flow  # diff clean
     suggested_args: ["--auto"]
     rationale: "<1-sentence — e.g., 'diff_conflict surfaced; re-run diff-vault interactively (no --auto) to resolve' OR 'N new OQs materialized; resolve-oq walks them' OR 'Diff clean; vault updated; binding may need re-run'>"
