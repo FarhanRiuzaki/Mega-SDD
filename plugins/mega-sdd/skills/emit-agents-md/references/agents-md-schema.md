@@ -6,28 +6,19 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 
 - Header
 - Section 1 — Project overview
-- Project overview
 - Section 2 — Build commands
-- Build commands
 - Section 3 — Test commands
-- Test commands
 - Section 4 — Code style + conventions
-- Code style + conventions
 - Section 5 — Architecture overview
-- Architecture overview
 - Section 6 — Key decisions
-- Key decisions
 - Section 7 — Open questions
-- Open questions (cautions for AI tools)
 - Section 7.5 — Constitution
-- Constitution (project-facing rules)
 - Section 8 — Mega-sdd interop notes
-- Mega-sdd interop notes
 - Conditional section presence
 - Conditional header field presence
 - Append mode
 - Sibling mode
-- Idempotent regeneration
+- Marker-based regeneration
 
 ## Header
 
@@ -44,14 +35,11 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 <!-- framework_pack_path: <relative path to plugins/mega-sdd/references/framework-conventions/<framework>.md> -->
 <!-- mutability_summary: locked=<N> intent=<N> artifact=<N> (counts from data-mutation-policy.md when KB-derived vault) -->
 <!-- constitution_hash: <sha256 of constitution.md content, if present; from binding.md frontmatter> -->
-<!-- properties_validated: <N total invariants across units that hold properties: blocks; from vault.json properties_summary> -->
-<!-- replay_snapshot_count: <N replay snapshots recorded; from vault.json replay_state> -->
-<!-- convergence_cycle_count: <N successful convergence cycles since vault inception; from vault.json convergence_state> -->
 <!-- DO NOT EDIT BELOW THIS LINE — regenerate via emit-agents-md -->
 ```
 
 > Header declares framework pack + mutability summary so tools consuming AGENTS.md can resolve which conventions apply + which vault claims are LOCKED vs free to redesign.
-> Header also declares `constitution_hash` (sha256 for staleness detection), `properties_validated` (PBT invariant count), `replay_snapshot_count` (regression baseline count), and `convergence_cycle_count` (auto-recovery cycle count). Tools consuming AGENTS.md can now surface these as caution badges (e.g., "this AGENTS.md was generated after N convergence cycles — vault has undergone semi-automated repair; review for divergence from human intent").
+> Header also declares `constitution_hash` (sha256 for staleness detection).
 > Header also declares `scope_id` and `scope_name` when vault is scope-tagged (multi-scope vault). A BE-scoped vault and FE-scoped vault now produce distinguishable AGENTS.md exports. Both lines omitted entirely for legacy single-scope vaults (back-compat).
 
 The generation marker (HTML comment) is MANDATORY. Re-emission detects existing mega-sdd output via this marker.
@@ -254,17 +242,11 @@ Header HTML comments declare vault-state fields. Each field renders ONLY when it
 | `scope_id` | `vault.json` `scope_metadata.id` | vault has `scope` field (multi-scope vault); OMIT line otherwise |
 | `scope_name` | `vault.json` `scope_metadata.name` | vault has `scope` field (multi-scope vault); OMIT line otherwise |
 | `constitution_hash` | `binding.md` frontmatter `constitution_hash` | `<vault>/constitution.md` exists AND binding.md has been written  |
-| `properties_validated` | `vault.json` `properties_summary.total` | vault has ≥1 unit with `properties:` block  |
-| `replay_snapshot_count` | `vault.json` `replay_state.snapshot_count` | vault has been replayed at least once via `replay`  |
-| `replay_snapshot_count` value 0 | omit field entirely | new vault, never replayed |
-| `convergence_cycle_count` | `vault.json` `convergence_state.cycles_completed` | `/mega-sdd --converge` has run ≥1 successful cycle  |
-| `convergence_cycle_count` value 0 | omit field entirely | no convergence runs |
 
 **Anti-halu rails:**
 
 - Each header field cites a SPECIFIC source location in vault.json or binding.md. NEVER invented; if the source is missing, the field is omitted.
 - `constitution_hash` is the canonical staleness signal — if AGENTS.md emit predates a constitution.md update, the hash differs and downstream tools flag this AGENTS.md as stale.
-- `convergence_cycle_count > 0` is a SOFT CAUTION signal to AI tools consuming AGENTS.md — vault has undergone semi-automated repair, so manual review is recommended.
 
 ## Append mode
 
@@ -294,9 +276,9 @@ When `--mode=sibling` (default safe when existing AGENTS.md detected and not use
 
 Output written to `<repo-root>/AGENTS.mega-sdd.md` instead. Both files coexist. Tools that look for AGENTS.md find user's; tools that also look for AGENTS.*.md find mega-sdd's.
 
-## Idempotent regeneration
+## Marker-based regeneration
 
-Subsequent runs:
+Regeneration is marker-guarded and safe, but the render itself is model-produced — NOT byte-idempotent. Subsequent runs:
 1. Detect existing AGENTS.md with mega-sdd marker
 2. Re-render from current vault state
 3. Replace mega-sdd sections (everything below the marker) with new output

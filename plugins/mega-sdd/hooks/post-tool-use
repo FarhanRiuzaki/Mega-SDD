@@ -13,8 +13,9 @@
 #    and emits one ref_loaded per detected path
 # 3. HONEST limitation: ref_loaded UNDER-COUNTS true loads — but NOT because
 #    subagent calls are invisible. PostToolUse DOES fire on subagent (fg+bg)
-#    tool calls (settled empirically by a 3-sentinel telemetry probe; see
-#    AUDIT.md Round-2 L1). The under-count is because emission is intentionally
+#    tool calls (settled empirically by a 3-sentinel telemetry probe; see the
+#    archived audit record docs/superpowers/audits/2026-06-05-audit-md-rounds-1-3-ARCHIVED.md
+#    Round-2 L1). The under-count is because emission is intentionally
 #    LOSSY: this hook is async (hooks.json) and every append is best-effort
 #    (`>> ... 2>/dev/null || true`, exit-0-always), so events can drop under
 #    load; the Bash branch also can't parse complex pipelines (redirection,
@@ -357,8 +358,9 @@ print(status)
     # - Only catches cat/head/tail/grep/less/more/rg as command verb
     # - Misses: shell redirection (`< file`), command substitution, awk/sed reading via stdin,
     #   complex pipelines, find-exec, xargs, anything in shell functions/aliases
-    # - (Subagent-internal Bash calls ARE visible — PostToolUse fires inside subagents; see
-    #   AUDIT.md L1. The under-count is async/lossy emission + the unparseable patterns above.)
+    # - (Subagent-internal Bash calls ARE visible — PostToolUse fires inside subagents; see the
+    #   archived audit record docs/superpowers/audits/2026-06-05-audit-md-rounds-1-3-ARCHIVED.md
+    #   Round-2 L1. The under-count is async/lossy emission + the unparseable patterns above.)
     # - This is a best-effort approximation; ref_loaded UNDER-COUNTS true reads.
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
