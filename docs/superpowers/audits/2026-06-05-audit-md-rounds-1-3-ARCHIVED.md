@@ -1,3 +1,9 @@
+> **ARCHIVED 2026-08-11** (was `plugins/mega-sdd/AUDIT.md`; relocated out of the runtime plugin namespace — audit Phase-4, spec `docs/superpowers/specs/2026-08-11-audit-phase4-platform-hygiene.md`).
+> **Its status lines are STALE**: Round-3's "14 gaps … NOT yet fixed" was fixed in v4.39.0 (per CHANGELOG); the document predates ~100 releases and is a point-in-time record — never retro-edited.
+> **Superseded as the live audit** by `docs/superpowers/audits/2026-08-10-skills-audit.md`.
+> **The method remains the house standard**: verify-before-record, severity buckets, adversarial dismissal of unproven leads, subagent output = leads not findings.
+> Everything below is verbatim as archived.
+
 # Mega-SDD Deep Audit (advisor-guided)
 
 > Living document. Findings are **verified against current code**, severity-bucketed.

@@ -14,11 +14,11 @@ Iter 6 Swap #4 — AGENTS.md emitter skill. Tool-agnostic interop via Linux Foun
 - **Prompt:** `/mega-sdd:emit-agents-md`
 - **Expect:** AskUserQuestion offers `overwrite / append / sibling`. Default selection `sibling`. User picks `sibling`. Mega-sdd writes `AGENTS.mega-sdd.md` instead of overwriting.
 
-### AM3: Idempotent regeneration
+### AM3: Safe regeneration (marker-based)
 - **Setup:** repo has mega-sdd-generated AGENTS.md (marker present)
 - **Run vault update** (e.g., resolve OQs; vault version bumps)
 - **Prompt:** `/mega-sdd:emit-agents-md`
-- **Expect:** Re-generation succeeds without prompt; AGENTS.md updated with new vault content; user-authored content above marker (if append mode) preserved unchanged
+- **Expect:** Re-generation succeeds without prompt (marker-detected); AGENTS.md updated with new vault content; user-authored content above marker (if append mode) preserved unchanged. NOTE: the render is model-produced — best-effort flatten, NOT byte-idempotent (same vault may render with cosmetic wording differences); the vault stays the sole source of truth
 
 ### AM4: Conditional section omission
 - **Setup:** vault is greenfield; no `05-decisions.md` ADRs yet; no detected test framework
@@ -27,4 +27,4 @@ Iter 6 Swap #4 — AGENTS.md emitter skill. Tool-agnostic interop via Linux Foun
 
 ## Pass criteria
 
-All AM1-AM4 succeed per `skills/emit-agents-md/SKILL.md` Procedure. Generated AGENTS.md is human-readable, machine-readable (Continue.dev import test), and idempotent.
+All AM1-AM4 succeed per `skills/emit-agents-md/SKILL.md` Procedure. Generated AGENTS.md is human-readable, machine-readable (Continue.dev import test), and safe to regenerate (marker-detected — best-effort flatten, not byte-idempotent).
