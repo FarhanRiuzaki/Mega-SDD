@@ -1,7 +1,7 @@
 # Audit Phase 4 — platform hygiene (emit-agents-md honest labeling, AUDIT.md lifecycle, teacher↔template parity harness)
 
 **Date:** 2026-08-11
-**Status:** DRAFT
+**Status:** SHIPPED v6.6.0 (2026-08-11, a09e430, CI green, suite 217/217 both trees) — dual-blind round: 0 blockers / 1 major / 2 minors, ALL folded (§Round disclosure)
 **Source:** `docs/superpowers/audits/2026-08-10-skills-audit.md` Phase-4 roadmap — "emit-agents-md engine migration or honest non-moat labeling" (honest labeling chosen; engine migration NOT taken — see Non-goals), "AUDIT.md lifecycle decision (refresh … or archive to docs/superpowers/audits/)" (archive chosen), and "standing schema↔template parity harness … as the permanent answer to the teacher/template class". Fourth ship train of the audit roadmap (P1=6.2.0, 2a=6.3.0, 2b=6.4.0, P3=6.5.0). **Companion:** `docs/superpowers/proposals/2026-08-11-morning-proposals.md` — the decision doc for the Phase-4 items that need the user's cost/value call (build-dispatch-prompt extraction, free-text delta lane, moat-takeout candidates with numbers, halt-protocol split, deferred roster); nothing in that doc is implemented here.
 **Version:** 6.6.0 (minor — honest-labeling prose + dead-field deletion + file relocation + a new CI harness; NO rule, gate, grammar, halt-envelope, or loading-contract change).
 
