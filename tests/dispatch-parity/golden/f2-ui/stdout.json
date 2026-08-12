@@ -66,7 +66,7 @@
       "reason": "unit has no binding_refs (greenfield / standalone generate-units)"
     }
   ],
-  "inline_core_bytes": 446,
+  "inline_core_bytes": @N@,
   "inline_core_degraded": [],
   "pack_chain": [
     "_universal.md"

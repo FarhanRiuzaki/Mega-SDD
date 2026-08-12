@@ -80,7 +80,7 @@
       "reason": "unit is not ui_bearing, so no design lens is dispatched for it \u2014 no lens-input file is written and the `design_slice_path` key is ABSENT (a rubric with no reader is a cost, not a contribution)"
     }
   ],
-  "inline_core_bytes": 438,
+  "inline_core_bytes": @N@,
   "inline_core_degraded": [],
   "pack_chain": [
     "_universal.md"

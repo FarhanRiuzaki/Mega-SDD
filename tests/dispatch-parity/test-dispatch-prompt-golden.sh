@@ -64,6 +64,11 @@ s = open(src, encoding="utf-8", errors="replace").read()
 s = s.replace(proj, "@PROJ@").replace(plug, "@PLUGIN@")
 s = re.sub(r"(file_total:\s*)\d+", r"\1@N@", s)
 s = re.sub(r"(\"file_bytes\":\s*)\d+", r"\1@N@", s)
+# inline_core embeds the ABSOLUTE dispatch path, so its byte counter is
+# path-LENGTH-sensitive too (CI red 53c16f3: mac and ubuntu mktemp paths
+# differ in LENGTH even when both normalize to @PROJ@ — the moved-copy proof
+# missed it because same-machine mktemp paths share a length).
+s = re.sub(r"(\"inline_core_bytes\":\s*)\d+", r"\1@N@", s)
 try:
     ver = json.load(open(os.path.join(plug, ".claude-plugin", "plugin.json")))["version"]
     s = s.replace("mega-sdd v%s" % ver, "mega-sdd v@VER@")
@@ -273,6 +278,25 @@ run_fixture f1-minimal U-001 >/dev/null 2>&1
 cmp -s "$WORK/first-run.md" "$WORK/out/f1-minimal/dispatch-prompt.md" \
   && pass "determinism: two independent f1 runs byte-identical" \
   || fail "determinism: consecutive runs diverge"
+
+# ── path-LENGTH independence: the CI-red class made a standing arm ───────────
+# Rebuild f1 under a project root of a DIFFERENT length; every normalized
+# artifact must equal the standard run's. This is what catches a counter that
+# measures un-normalized text (inline_core_bytes, 53c16f3) — a moved-copy or
+# second-machine check can silently share path lengths; this arm cannot.
+LP="$WORK/len-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+mkdir -p "$LP"
+cp -R "$WORK/f1-minimal/." "$LP/" 2>/dev/null
+rm -rf "$LP/.mega-sdd/vaults/v1/bolts"
+LOUT="$WORK/out/len-f1"; mkdir -p "$LOUT"
+bash "$BUILD" --cwd="$LP" --vault="$LP/.mega-sdd/vaults/v1" --unit=U-001 \
+     --plugin-root="$PLUGIN_ROOT" --explain >"$LOUT/stdout.raw" 2>/dev/null </dev/null
+normalize "$LOUT/stdout.raw" "$LOUT/stdout.json" "$LP"
+normalize "$LP/.mega-sdd/vaults/v1/bolts/U-001/dispatch-prompt.md" "$LOUT/dispatch-prompt.md" "$LP"
+cmp -s "$LOUT/stdout.json" "$WORK/out/f1-minimal/stdout.json" \
+  && cmp -s "$LOUT/dispatch-prompt.md" "$WORK/out/f1-minimal/dispatch-prompt.md" \
+  && pass "path-length independence: different-length root -> identical normalized outputs" \
+  || fail "path-length independence: a counter/field still measures un-normalized text — $(diff "$LOUT/stdout.json" "$WORK/out/f1-minimal/stdout.json" 2>/dev/null | head -3 | tr '\n' ' ')"
 
 # ── self-check: a tampered golden COPY must be caught (no vacuous pass) ──────
 TAMP="$WORK/tamper"; mkdir -p "$TAMP"
