@@ -1,6 +1,6 @@
 # UAT Template — Bank-Style User Acceptance Test Script
 
-> **Canonical 4-section structure.** Consumed by `emit-uat/SKILL.md` Step 3 (assembly).
+> **Canonical structure: 4 sections + the §5 automated-evidence annex (6.10.0).** Consumed by `emit-uat/SKILL.md` Step 3 (assembly).
 > Table / scenario-scaffold / RTM / berita-acara content comes VERBATIM from the script-written fragment
 > `<vault>/uat/.uat-scaffold.md` (`build-uat-scaffold.sh`); the `{{section-N-narrative}}` slots and the §2
 > step rows (replacing each `<!-- uat-steps:UAT-NNN -->` marker) are the ONLY model-written content
@@ -13,6 +13,7 @@
 - Section 2 — Skenario UAT
 - Section 3 — Matriks Traceability (RTM)
 - Section 4 — Berita Acara UAT
+- Section 5 — Lampiran Eksekusi Otomatis (pre-UAT, script-owned)
 - Slot semantics
 - Drift callout format
 
@@ -102,6 +103,20 @@ table(s) with placeholder-LITERAL body rows (`__________` cells; `[ ] Diterima �
 **The model never fills a cell, never resolves the decision, never adds a defect row** — enforced by
 `build-uat-scaffold.sh --check-execution` (SKILL Step 4.7). This is a HUMAN approval record (paper-out).
 
+```markdown
+## 5. Lampiran — Eksekusi Otomatis (pre-UAT)
+
+{{annex_eksekusi_otomatis}}
+```
+
+Grammar OWNED by `references/uat-sections.md §Section 5` — this template adds no rules of its own. The slot
+is ALWAYS present and ALWAYS filled: at assembly the model types EXACTLY the placeholder literal
+`_Belum ada eksekusi otomatis — lampiran ini terisi setelah uat-run.sh dijalankan._` (the same fixed-literal
+class as `(sha256: pending)`); ONLY `build-uat-e2e.sh --annex` may ever produce table content, and
+`check_execution` byte-compares the whole §5 body against a recompute (`ANNEX_FORGED`). Underscore slot
+name is header-style, deliberate (the section slots' hyphen convention marks narrative+fragment PAIRS;
+the annex has no narrative slot).
+
 ## Slot semantics
 
 All `{{slot_name}}` markers MUST be filled (frontmatter + header + narrative slots) or replaced by their
@@ -116,6 +131,8 @@ Slot inventory:
 - Per-section (model narrative + verbatim fragment): `{{section-1-narrative}}` / `{{section-1-fragment}}`,
   `{{section-2-narrative}}` / `{{section-2-fragment}}`, `{{section-3-narrative}}` / `{{section-3-fragment}}`,
   `{{section-4-narrative}}` / `{{section-4-fragment}}`.
+- Annex (script-owned, no narrative): `{{annex_eksekusi_otomatis}}` — model fills ONLY with the placeholder
+  literal; table content comes exclusively from `build-uat-e2e.sh --annex`.
 
 ## Drift callout format
 

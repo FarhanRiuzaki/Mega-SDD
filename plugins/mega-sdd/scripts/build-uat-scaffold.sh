@@ -123,14 +123,22 @@ def check_execution(uat_path):
         lines = open(uat_path, encoding="utf-8", errors="surrogateescape").read().split("\n")
     except OSError:
         return ["EXECUTION_UNREADABLE %s" % uat_path]
-    section = 0          # 0 = none, 2/3/4 = current numbered section
+    section = 0          # 0 = none, 2/3/4 = current numbered section (5 = annex)
     seen4 = False
+    seen5 = False        # §5 = the script-owned automated-evidence annex (6.10.0)
+    annex_body = []      # RAW §5 lines (fences included — nothing may hide in one)
     cur_uat = "?"        # current UAT-id within §2
     ba_table = None      # §4 table mode: 'info' | 'defects' | 'signoff' | None
     keputusan_seen = False
     in_fence = False     # ``` fence tracking — mermaid lines may start with '|'
     v = []
     for i, line in enumerate(lines, 1):
+        # §5 annex: collect RAW to EOF BEFORE fence logic — the annex is verified
+        # by BYTE-COMPARE against the shared renderer (_lib/uat_annex.py), so a
+        # fence-wrapped forged row must land in the compared body, not be skipped.
+        if section == 5:
+            annex_body.append(line)
+            continue
         if re.match(r"^\s*```", line):
             in_fence = not in_fence
             continue
@@ -142,6 +150,8 @@ def check_execution(uat_path):
             ba_table = None
             if section == 4:
                 seen4 = True
+            if section == 5:
+                seen5 = True
             continue
         # §2 — step tables + tester footer
         if section == 2:
@@ -238,6 +248,24 @@ def check_execution(uat_path):
         v.insert(0, "BA_SECTION_MISSING")
     elif not keputusan_seen:
         v.append("BA_FILLED keputusan")
+    # §5 annex byte-compare (recompute-at-gate, B1 precedent): the doc's annex
+    # must equal _lib/uat_annex.render_annex() recomputed from on-disk evidence —
+    # the model can only ever type the placeholder literal; any other content
+    # that a recompute does not reproduce is a fabricated automated-evidence
+    # record. Pre-annex docs (no `## 5.` heading) are exempt (backward compat).
+    if seen5:
+        import uat_annex
+        vault_dir = os.path.dirname(os.path.dirname(uat_path))
+        expected = uat_annex.render_annex(vault_dir).strip("\n")
+        got = (uat_annex.ANNEX_HEADING + "\n" + "\n".join(annex_body)).strip("\n")
+        if got != expected:
+            g_lines, e_lines = got.split("\n"), expected.split("\n")
+            first_diff = next(
+                (g for g, e in zip(g_lines, e_lines) if g != e),
+                g_lines[len(e_lines)] if len(g_lines) > len(e_lines)
+                else (e_lines[len(g_lines)] if len(e_lines) > len(g_lines) else "?"),
+            )
+            v.append("ANNEX_FORGED %s" % first_diff.strip()[:120])
     return v
 
 def print_execution_keterangan(violations):
@@ -250,6 +278,12 @@ def print_execution_keterangan(violations):
     print("build-uat-scaffold.sh --check-execution). Kembalikan sel Actual Result/Defect/Bukti")
     print("ke `%s`, Status ke `%s`, baris sign-off Nama/Tanggal/Tanda" % (PLACEHOLDER, EXEC_STATUS))
     print("tangan ke `%s` & Status ke `%s`, dan baris keputusan ke `%s`." % (PLACEHOLDER, BA_STATUS, DECISION))
+    if any(x.startswith("ANNEX_FORGED") for x in violations):
+        print("Khusus ANNEX_FORGED: §5 Lampiran Eksekusi Otomatis adalah wilayah SCRIPT —")
+        print("isinya harus byte-identik dengan recompute dari result.json di disk.")
+        print("Jalankan `build-uat-e2e.sh --annex` untuk me-render ulang lampiran dari")
+        print("bukti nyata; model/AI DILARANG mengetik baris lampiran (hanya placeholder")
+        print("literal saat belum ada eksekusi).")
 
 if check_only:
     uat_path = os.path.join(vaults[0], "uat", "UAT.md")
