@@ -13,7 +13,8 @@ Ships spec `2026-08-12-graph-assisted-reconcile.md` (USER audit: "graph jadi paj
 
 - **D1 — NEW `scripts/derive-transitive-impact.sh`**: reverse-`depends_on` closure over the derived graph (same hash-checked lazy rebuild as query-graph; accepts bare unit ids, vault-prefix-aware). The reconcile pass (task-typing.md **step 2.6**, generate-units **2.22.0**) surfaces dependents of changed units — the class the hash-deterministic staleness check is blind to — as **"verify-recommended (transitive impact)"** in SYNC-REPORT / the delta handoff (routing-rules delta-lane sentence, orchestrate-flow **2.27.0**). ADVISORY by contract: never writes `status:`, never gates, **fail-open** (`graph_available:false` → empty list, lane never blocks; negative pin z7 guards against a status-enum leak).
 - **D2 — sync drift triage** processes changed paths in descending blast-radius order when the graph is available (advisory ordering; document order when absent).
-- NEW `tests/graph-impact/test-derive-transitive-impact.sh` (13 arms: closure + input-exclusion, isolated unit, fail-open on unbuildable graph, usage, determinism, doc pins z2–z7).
+- NEW `tests/graph-impact/test-derive-transitive-impact.sh` (16 arms: closure + input-exclusion, isolated unit, fail-open on unbuildable graph, usage, determinism, multi-vault scoping, cycle termination, doc pins z2–z7).
+- **Round (executed INLINE — subagent API 529-overloaded ×3, disclosed): 1 MAJOR live-proven + folded** — bare unit ids cross-contaminated vaults (two vaults both carrying U-001 → the other vault's dependents leaked into the closure; `--vault` was accepted but never scoped). Fix: vault-basename-scoped resolve first, suffix fallback; arms f1/f2 (no leak + own-vault intact) + g1 (depends_on cycle terminates). Freshness auto-rebuild live-proven (mutated depends_on picked up without manual rebuild).
 
 ## [6.11.0] - 2026-08-12 — Playwright embed P3: design lens interactive capture
 
