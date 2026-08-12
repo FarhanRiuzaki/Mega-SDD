@@ -152,6 +152,13 @@ out=$(run_bash "rm $ROOT/scratch-notes.txt")
 denied "$out" && { fail "B4: anti-self-bypass blocked a benign rm (over-broad)"; echo "    out=[$out]"; } \
   || pass "B4: rm of a non-protected file is allowed (guard is precise)"
 
+# B5 — P2 v6.10.0: rm of a vault UAT evidence result.json => BLOCKED (both-tree
+# behavioral coverage; the full evasion battery lives in
+# tests/postflight-evidence/test-uat-evidence-guard.sh).
+out=$(run_bash "rm $ROOT/.mega-sdd/vaults/app/uat/evidence/UAT-001/20260812T100000Z/result.json")
+denied "$out" && pass "B5: rm of uat evidence result.json is blocked" \
+  || { fail "B5: uat evidence guard did NOT block rm"; echo "    out=[$out]"; }
+
 echo
 if [ "$fails" -eq 0 ]; then
   echo "test-moat-gates-wired: ALL PASS"

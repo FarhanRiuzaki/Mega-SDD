@@ -1,7 +1,7 @@
 ---
 name: emit-uat
 version: 1.2.0
-description: Generate a UAT test-script document for the business UAT team — business-language scenarios 1:1 per F-* flow (aligned to SIT TS ids), step tables with placeholder execution columns, compact RTM, berita acara UAT page (SEOJK 21/2017), plus a zero-dep xlsx workbook for testers. Triggers — "generate UAT", "emit UAT", "buat UAT", "dokumen UAT", "test script UAT", "skrip uji UAT", "UAT script", "berita acara UAT", or paraphrases.
+description: Generate a UAT test-script document for the business UAT team — business-language scenarios 1:1 per F-* flow (aligned to SIT TS ids), step tables with placeholder execution columns, compact RTM, berita acara UAT page (SEOJK 21/2017), plus a zero-dep xlsx workbook for testers. Triggers — "generate UAT", "emit UAT", "buat UAT", "dokumen UAT", "test script UAT", "skrip uji UAT", "UAT script", "berita acara UAT", "lampiran eksekusi otomatis", "refresh lampiran UAT", or paraphrases.
 ---
 
 # Emit-UAT — User Acceptance Test Script Generator
@@ -32,7 +32,7 @@ description: Generate a UAT test-script document for the business UAT team — b
 
 ```
 <vault-path>/uat/
-├── UAT.md                      # 4-section UAT script (see references/uat-template.md)
+├── UAT.md                      # 4 sections + §5 annex (see references/uat-template.md)
 ├── UAT.pdf                     # GitHub-style PDF via scripts/md2pdf.sh (Chrome; UAT.html fallback if Chrome absent)
 ├── UAT-v<version>.xlsx         # tester fill-in workbook (build-uat-xlsx.sh; version from .doc-history.json)
 ├── .uat-scaffold.md            # script-written fragment (build-uat-scaffold.sh) — the §1–§4 tables/scaffold
@@ -121,7 +121,7 @@ Run `bash <plugin-root>/scripts/build-uat-e2e.sh --vault=<vault> --cwd=<project-
 
 OFFER `bash <plugin-root>/scripts/uat-run.sh --vault=<vault> --cwd=<project-root> [--url=<preview>]` via AskUserQuestion with keterangan (butuh dev-server URL — `preview_url:` di `.mega-sdd/config.yaml` atau operator; opsi: jalankan sekarang / lewati / jalankan manual nanti). Every missing prereq is a graceful SKIP with a reason (no specs / no node / no URL / server down / browser absent / npm-install blocked / TIMEOUT — bounded, default 120s). After a run, refresh the annex per §Annex refresh below. In `--auto`, record `uat_run: offered-skipped` — the run is NEVER auto-executed.
 
-## Annex refresh (standalone lane — after uat-run.sh produced evidence)
+### Annex refresh (standalone lane — after uat-run.sh produced evidence)
 
 `bash <plugin-root>/scripts/build-uat-e2e.sh --vault=<vault> --cwd=<project-root> --annex` rewrites ONLY the §5 region from `result.json` on disk (stale-sha evidence renders the `STALE` marker; the model never types annex rows), then `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=uat --bump --change-note="Lampiran eksekusi otomatis diperbarui — <n> skenario"` (note derived from the run output, never free prose; NO `--maturity` flag → a human-set rung is never demoted; Step 6.6 xlsx is NOT re-run — no workbook proliferation while testers fill the previous version). This lane is annex-only: no re-emission, no fragment regeneration.
 

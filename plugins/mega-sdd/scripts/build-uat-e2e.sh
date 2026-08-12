@@ -162,7 +162,11 @@ if mode == "generate":
 
 if mode == "check":
     violations = 0
-    ACTION_RE = re.compile(r"^\s*(?:await\s+(?:page|expect)|(?:page|expect)\.)")
+    # SEARCH, not line-anchored (round M2: `const btn = page.locator('#x')` —
+    # variable indirection — escaped the anchored form). Any non-fixme line that
+    # produces or asserts on a locator needs its anchor; the chained use of a
+    # variable is covered because the DEFINITION line carries the selector.
+    ACTION_RE = re.compile(r"\b(?:page\s*\.|expect\s*\()")
     ANCHOR_RE = re.compile(r"//\s*source:\s*(\S+?):(\d+)\s*$")
     if not os.path.isdir(e2e_dir):
         sys.exit(0)  # nothing generated yet — nothing to lint
@@ -171,7 +175,8 @@ if mode == "check":
             continue
         spec = os.path.join(e2e_dir, name)
         for i, line in enumerate(open(spec, encoding="utf-8"), 1):
-            if "test.fixme(" in line or not ACTION_RE.match(line):
+            if ("test.fixme(" in line or "import " in line.strip()[:7]
+                    or not ACTION_RE.search(line)):
                 continue
             m = ANCHOR_RE.search(line)
             if not m:

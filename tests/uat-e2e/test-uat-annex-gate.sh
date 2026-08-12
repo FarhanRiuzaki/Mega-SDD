@@ -155,6 +155,29 @@ grep -qiE 'always.?(present|filled)|selalu (ada|terisi)' "$TEACHER" && ok "p5 al
 grep -qF 'adds no rules of its own' "$TEMPLATE" && ok "p6 template pointer literal survives (p12 d2)" || fail "p6 pointer literal broken"
 grep -qF '| 1 | <Aksi> | <Expected Result> |' "$TEMPLATE" && fail "p7 killed row literal reappeared (p12 d3)" || ok "p7 killed row literal absent"
 
+echo "── m: malformed-heading fail-closed (round BLOCKER — live-proven escapes) ──"
+FORGED_TABLE='| Skenario | Status | Run | Bukti |
+|---|---|---|---|
+| UAT-001 | 5/0/0 | 20260812T000000Z | x |'
+for HD in '## 5 . Lampiran — Eksekusi Otomatis (pre-UAT)' '##  5. Lampiran — Eksekusi Otomatis (pre-UAT)' '## 5 Lampiran — Eksekusi Otomatis (pre-UAT)' '## **5.** Lampiran — Eksekusi Otomatis (pre-UAT)'; do
+  write_doc "$HD
+
+$FORGED_TABLE"
+  OUT=$(gate); RC=$?
+  [ "$RC" -eq 1 ] && echo "$OUT" | grep -q "ANNEX" && ok "m: '$HD' → fail-closed" || fail "m: '$HD' ESCAPED (rc=$RC)"
+done
+# malformed detector must NOT false-positive a pre-annex doc
+write_doc ""
+OUT=$(gate); RC=$?
+[ "$RC" -eq 0 ] && ok "m5 pre-annex doc still exempt (no false positive)" || fail "m5 rc=$RC: $OUT"
+
+echo "── n: heading-text spoof (round M1 — canonical constant never substituted) ──"
+write_doc "## 5. Hasil Eksekusi Otomatis — SEMUA SKENARIO LULUS (100% PASS)
+
+$ANNEX_PLACEHOLDER"
+OUT=$(gate); RC=$?
+[ "$RC" -eq 1 ] && echo "$OUT" | grep -q "ANNEX_FORGED" && ok "n1 spoofed heading text → ANNEX_FORGED" || fail "n1 rc=$RC"
+
 echo "── s: SKILL + registry doc pins (T6 wiring) ──"
 SKILL="$P/skills/emit-uat/SKILL.md"
 grep -q "Step 6.7" "$SKILL" && grep -q "build-uat-e2e.sh" "$SKILL" && ok "s1 Step 6.7 generation wired" || fail "s1 Step 6.7 missing"

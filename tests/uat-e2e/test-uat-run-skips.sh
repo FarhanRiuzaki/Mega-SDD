@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # test-uat-run-skips.sh — pins scripts/uat-run.sh: the graceful-skip ladder
 # (no e2e / no URL / unreachable), bounded-timeout validation, run-dir
-# non-overwrite, and the GATED live arm (UAT_RUN_LIVE=1 + node + browser —
+# non-overwrite (suffix loop inspected + double-run proof in the live arm), and
+# the GATED live arm (UAT_RUN_LIVE=1 + node + browser —
 # spec §D2 open-constraint 4: the dep-less-repo npx run is proven live, not
 # assumed; CI always exercises the skip arms). Run </dev/null.
 set -u
@@ -88,7 +89,6 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({ use: { baseURL: process.env.PREVIEW_URL } });
 EOF
   OUT_L=$(bash "$SCRIPT" --vault="$V" --cwd="$WORK" --url="http://127.0.0.1:$PORT" --timeout=180 </dev/null 2>&1); RC=$?
-  kill "$SRV" 2>/dev/null
   RJ=$(find "$V/uat/evidence/UAT-001" -name result.json 2>/dev/null | head -1)
   [ "$RC" -eq 0 ] && [ -n "$RJ" ] && ok "L1 live run exit 0 + result.json written" || fail "L1 rc=$RC out=$(echo "$OUT_L" | tail -3)"
   if [ -n "$RJ" ]; then
@@ -99,7 +99,13 @@ assert d['written_by']=='uat-run.sh', d
 assert 'status' in d and 'uat_md_sha256' in d and 'spec_sha256' in d, d
 assert d['status']['pass'] >= 1, d
 " 2>/dev/null && ok "L2 result.json shape + pass count" || fail "L2 result.json shape wrong: $(cat "$RJ")"
+    # L3: run-dir non-overwrite — an immediate second run mints a DISTINCT dir
+    N_BEFORE=$(find "$V/uat/evidence/UAT-001" -name result.json | wc -l | tr -d ' ')
+    bash "$SCRIPT" --vault="$V" --cwd="$WORK" --url="http://127.0.0.1:$PORT" --timeout=180 </dev/null >/dev/null 2>&1
+    N_AFTER=$(find "$V/uat/evidence/UAT-001" -name result.json | wc -l | tr -d ' ')
+    [ "$N_AFTER" -gt "$N_BEFORE" ] && ok "L3 second run mints a new evidence dir (audit trail preserved)" || fail "L3 evidence overwritten ($N_BEFORE → $N_AFTER)"
   fi
+  kill "$SRV" 2>/dev/null
 else
   echo "  skip: live arm gated off (UAT_RUN_LIVE!=1 or no node/browser)"
 fi
