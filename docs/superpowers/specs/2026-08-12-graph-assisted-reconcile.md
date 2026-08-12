@@ -1,7 +1,7 @@
 # Graph-assisted reconcile — the graph becomes a chain input (transitive dependents + triage ordering)
 
 **Date:** 2026-08-12
-**Status:** DESIGN — user "gas" on the audit recommendation (#1 + #2); adversarial round executed INLINE (subagent API 529-overloaded ×3 — disclosed, not skipped): multi-vault cross-contamination MAJOR live-proven + folded (vault-scoped resolve), cycle termination + freshness auto-rebuild live-proven
+**Status:** SHIPPED v6.12.0 (2026-08-12, 33dd278, CI green, suite 227/227) — user "gas" on the audit recommendation (#1 + #2); adversarial round executed INLINE (subagent API 529-overloaded ×3 — disclosed, not skipped): multi-vault cross-contamination MAJOR live-proven + folded (vault-scoped resolve), cycle termination + freshness auto-rebuild live-proven
 **Source:** USER audit question "penggunaan graph di mega-sdd sudah optimize belum? apakah hanya jadi pajangan? harusnya digunakan untuk membantu Claude" → inline audit verdict: graph engineering sound (lazy hash-checked rebuild, zero inferred edges, behavior tests) but its ONLY decision consumer is the user-invoked `/graph` skill — **no chain decision reads it**. This ship gives it two chain consumers.
 **Version:** 6.12.0 (minor).
 
