@@ -3,7 +3,7 @@
 **Date:** 2026-08-12
 **Status:** DESIGN — user "gas" on the presented design (post-6.8.0 dialog)
 **Source:** USER — "btw bisa pasang embed di mega-sdd?" after the Context7 explainer; rides the D0 packaging lane the Playwright embed opened (`2026-08-12-playwright-embed-design.md`).
-**Version:** 6.9.0 (minor). **Renumbering side-effect:** Playwright P2 (UAT evidence) shifts 6.9.0→6.10.0, P3 shifts 6.10.0→6.11.0 — the playwright spec's version-plan line is amended in this ship so it cannot rot.
+**Version:** 6.9.0 (minor). **Renumbering side-effect:** Playwright P2/P3 are renumbered OFF their drafted 6.9.0/6.10.0 slots — each takes the next free minor at its own ship time (no pinned future numbers here either; the playwright spec's version-plan line was amended to the same floating form in this ship).
 
 ## Why (no-gimmick)
 
