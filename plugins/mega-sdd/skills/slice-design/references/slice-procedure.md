@@ -16,6 +16,7 @@ Derive the component list (e.g. navbar, hero, card grid, form). Ask AT MOST 3 qu
 - Design floor comes from the corpus: tokens/spacing/typography per `ui-design-heuristics.md`; interaction + a11y floor per `design-intelligence/ux-rules.md`; composition per `style-principles.md`.
 - Vault `design_system` tokens (when a vault exists): prefer them over invented values — enrichment only, no vault read is required to proceed.
 - Reuse-first: check the symbol index / existing components before authoring a new one (never rebuild an existing button).
+- Current docs beat trained recall: when Context7 MCP tools are available (ToolSearch), consult the current framework docs before writing against fast-moving/unfamiliar APIs; absent → proceed normally (never load-bearing).
 
 ## 4. Render-compare rounds (≤3)
 
