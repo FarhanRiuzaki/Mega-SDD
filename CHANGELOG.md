@@ -13,7 +13,7 @@ Ships spec `docs/superpowers/specs/2026-08-12-context7-embed.md` (USER "gas"; ri
 
 - **D0**: `.mcp.json` gains `context7` → `@upstash/context7-mcp@4.0.2` (pinned exact, web-verified 2026-08-12; keyless free tier — `--api-key ${VAR:-}` REJECTED as contractually undocumented; Node ≥20.18.1). Duplicate-plugin safety CONFIRMED from docs (per-plugin namespacing); `/mcp` disable = the two-process mitigation. CLAUDE.md §Versioning MCP-pin line now covers EVERY bundled server.
 - **D1**: optional non-gating consult wiring — bolt-implementer ("current docs beat trained recall", never load-bearing, never blocks a bolt) + slice-procedure §3 (slice-design **1.0.1**). Deliberately NOT in `build-dispatch-prompt.sh` — golden corpus byte-identical, zero regen (arm E4 pins the firewall).
-- Contract arms: A2 re-pinned to exactly {playwright, context7}, NEW A5 (context7 exact pin) + section E (E1–E4). Playwright spec version-plan line amended (P2/P3 renumber — 6.9.0 taken by this ship).
+- Contract arms: A2 re-pinned to exactly {playwright, context7}, NEW A5 (context7 exact pin) + section E (E1–E4 + round-folded E3b; E4 existence-guarded). Playwright spec version-plan line amended to floating form (P2/P3 renumber — 6.9.0 taken by this ship). Round (1 blind lens, 0B/1M/3m ALL folded): E3b slice-surface non-gating pin, E4 fail-open guard, spec renumber wording de-pinned, install-deps .mcp.json sentence pluralized (1.9.1).
 
 ## [6.8.0] - 2026-08-12 — Playwright embed P1: bundled MCP + /mega-sdd:slice
 

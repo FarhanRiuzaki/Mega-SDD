@@ -118,10 +118,16 @@ SP="$P/skills/slice-design/references/slice-procedure.md"
 # E1/E2: both code-emitting surfaces carry the optional consult guidance
 grep -qi "context7" "$BI" && ok "E1 bolt-implementer carries the Context7 consult guidance" || fail "E1 bolt-implementer guidance missing"
 grep -qi "context7" "$SP" && ok "E2 slice-procedure carries the Context7 consult guidance" || fail "E2 slice-procedure guidance missing"
-# E3: the guidance is non-gating on the agent surface
+# E3/E3b: the guidance is non-gating on BOTH wired surfaces
 grep -qF "never load-bearing" "$BI" && ok "E3 bolt-implementer guidance is non-gating (never load-bearing)" || fail "E3 non-gating wording missing"
+grep -qF "never load-bearing" "$SP" && ok "E3b slice-procedure guidance is non-gating" || fail "E3b non-gating wording missing on slice surface"
 # E4: the dispatch builder is context7-FREE — the golden-corpus firewall
-grep -qi "context7" "$P/scripts/build-dispatch-prompt.sh" && fail "E4 context7 leaked into build-dispatch-prompt.sh (golden corpus firewall breach)" || ok "E4 dispatch builder context7-free"
+# (existence-guarded: grep of a missing path would land in the ok branch — fail-open)
+if [ -f "$P/scripts/build-dispatch-prompt.sh" ]; then
+  grep -qi "context7" "$P/scripts/build-dispatch-prompt.sh" && fail "E4 context7 leaked into build-dispatch-prompt.sh (golden corpus firewall breach)" || ok "E4 dispatch builder context7-free"
+else
+  fail "E4 build-dispatch-prompt.sh missing (firewall arm cannot run — re-point it at the builder's new home)"
+fi
 
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"

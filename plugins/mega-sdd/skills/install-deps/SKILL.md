@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.9.0
+version: 1.9.1
 description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -37,7 +37,7 @@ Plus chat-only output: detected OS, tool inventory, install plan, per-tool verif
 
 ## Playwright browser (detect-and-offer — deliberately NO tool-matrix row)
 
-The plugin bundles the Playwright MCP server (`plugins/mega-sdd/.mcp.json`, pinned); the ~130MB Chromium binary is NOT bundled and is never auto-installed. This lane follows the Chrome detect-only precedent (a matrix row would need an exec `verify_cmd`, and `npx playwright --version` auto-fetches from the npm registry when absent — the unbounded-network-probe class; spec 2026-08-12):
+The plugin bundles the Playwright MCP server (one of the two pinned servers in `plugins/mega-sdd/.mcp.json` — the other is Context7, 6.9.0); the ~130MB Chromium binary is NOT bundled and is never auto-installed. This lane follows the Chrome detect-only precedent (a matrix row would need an exec `verify_cmd`, and `npx playwright --version` auto-fetches from the npm registry when absent — the unbounded-network-probe class; spec 2026-08-12):
 
 1. **Detect** (filesystem-only, offline, bounded): the browser cache dir exists and is non-empty —
    - macOS: `~/Library/Caches/ms-playwright/`
