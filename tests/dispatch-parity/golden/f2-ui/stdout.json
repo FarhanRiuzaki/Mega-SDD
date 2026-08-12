@@ -1,0 +1,76 @@
+{
+  "status": "ok",
+  "unit": "U-002",
+  "prompt_path": "@PROJ@/.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md",
+  "t1_bytes": 3827,
+  "t2_bytes": 5427,
+  "total_bytes": 9254,
+  "file_bytes": @N@,
+  "truncations": [],
+  "soft_halts": [],
+  "warnings": [],
+  "halt": null,
+  "inline_core": "mega-sdd-trace:execute-bolts:U-002\nUNIT: U-002 \"Render the nasabah detail view\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): resources/views/nasabah/show.blade.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
+  "design_slice_path": "@PROJ@/.mega-sdd/vaults/v1/lens-inputs/U-002/design-slice.md",
+  "caps": {
+    "cap_hard": 12288,
+    "cap_target": 9216,
+    "cap_t1": 12288,
+    "cap_t2": 10240
+  },
+  "sections_emitted": [
+    "t1.acceptance_test_note",
+    "t1.anti_context",
+    "starterkit_slice",
+    "validation_hints"
+  ],
+  "sections_omitted": [
+    {
+      "section": "t1.anti_context.do_not_modify.data_mutation_policy",
+      "reason": "no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) \u2014 this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it"
+    },
+    {
+      "section": "depends_on_summaries",
+      "reason": "unit has no depends_on entries"
+    },
+    {
+      "section": "framework_pack_rules",
+      "reason": "no pack rule path_glob matched this unit's target_files (chain: _universal.md) \u2014 the 'keep top 1' floor is vacuous on an empty set, no rule invented"
+    },
+    {
+      "section": "constitution_clauses",
+      "reason": "no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)"
+    },
+    {
+      "section": "kb_anti_patterns",
+      "reason": "the join key 'domain tags' (context-enrichment.md:76) is a phantom field \u2014 no unit schema, validator or writer defines it; substituting module:/vault_source would be a fabricated inclusion. Section omitted until the spec designates a join key."
+    },
+    {
+      "section": "historical_memory",
+      "reason": "no outcomes.md run passed the relevance filter (unit id / target-file basename overlap), no matching bolt-outcomes.json entry and no eligible instinct. Memory files are gitignored-by-default post-run artifacts, so absent is the normal state; an unfiltered dump under a header that says 'relevant' is not the alternative."
+    },
+    {
+      "section": "reuse_slice",
+      "reason": "reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the UNCONDITIONAL T1 path line still ships)"
+    },
+    {
+      "section": "symbol_slice",
+      "reason": "symbol-index.json absent at @PROJ@/.mega-sdd/codebase/symbol-index.json (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)"
+    },
+    {
+      "section": "design_slice",
+      "reason": "starterkit ui_ux slice already built \u2014 template is AUTHORITATIVE"
+    },
+    {
+      "section": "confidence_labels",
+      "reason": "unit has no binding_refs (greenfield / standalone generate-units)"
+    }
+  ],
+  "inline_core_bytes": 446,
+  "inline_core_degraded": [],
+  "pack_chain": [
+    "_universal.md"
+  ],
+  "pack_resolver_exit": 0,
+  "interpreter": "python3"
+}

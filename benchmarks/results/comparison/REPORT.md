@@ -181,4 +181,17 @@ mix saves more (T03 −53%); a chat-delta-heavy mix saves less (T07 −8%).
 10. **What next?** (a) Run the velocity A/B runbook (highest-value missing number). (b) Collect the DX survey from the office fleet after updating it. (c) Ship the free-text delta lane from the proposals doc — T07 shows the largest remaining per-run cost sitting exactly where the audit said it is. (d) If runtime context telemetry becomes available, replace the PROXY trace with measured cache-write deltas (P5 extractor pattern).
 
 ---
+
+## ADDENDUM (2026-08-12) — T09: the delta lane shipped, measured
+
+Question 10(c) of the verdict ("ship the free-text delta lane") was acted on: v6.7.0 shipped `diff-vault --from-prompt` (spec `2026-08-11-free-text-delta-lane.md`). Re-traced with the same method and the same chain boundary as T07 (`tasks/T09-delta-lane/`):
+
+| Route | est tokens | Δ |
+|---|---:|---:|
+| T07 optimized (v6.6.0 full re-vault detour) | 119,820 | — |
+| **T09 delta lane (v6.7.0)** | **95,035** | **−20.7%** |
+
+Evidence: MEASURED sizes over the PROXY trace, upper-bound conservative — 4 `[SECTION:]` reads counted whole-file, two of them plugin-largest (`routing-rules.md`, `binding-contract.md`), so the true per-run figure is lower; the spec's ~60–80k estimate is plausible at section granularity but NOT CONFIRMED by this method. Measured at `a6b8c45` (outside the frozen commit pair — labeled addendum, no baseline arm). The negative control is now a fixed control: T07's gap was the benchmark's largest remaining per-run cost, and the trace shows the generate-intent full-generation segment (14 files) replaced by a 4-file diff segment.
+
+---
 *Raw data: `results/{baseline,optimized}/*.json`, tracer reports in `results/*/context-trace-raw.md`, machine-readable summary in `results.json`. Benchmark harness: `benchmarks/scripts/` — reproducible per `benchmarks/README.md`.*

@@ -1,0 +1,93 @@
+{
+  "status": "ok",
+  "unit": "U-003",
+  "prompt_path": "@PROJ@/.mega-sdd/vaults/v1/bolts/U-003/dispatch-prompt.md",
+  "t1_bytes": 3637,
+  "t2_bytes": 119,
+  "total_bytes": 3756,
+  "file_bytes": @N@,
+  "truncations": [],
+  "soft_halts": [],
+  "warnings": [],
+  "halt": null,
+  "inline_core": "mega-sdd-trace:execute-bolts:U-003\nUNIT: U-003 \"Refactor the interest calculator with locked signatures\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-003/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): app/Services/InterestCalculator.php, app/Services/RateTable.php, tests/Unit/InterestCalculatorTest.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
+  "caps": {
+    "cap_hard": 12288,
+    "cap_target": 9216,
+    "cap_t1": 12288,
+    "cap_t2": 10240
+  },
+  "sections_emitted": [
+    "t1.anti_context",
+    "validation_hints"
+  ],
+  "sections_omitted": [
+    {
+      "section": "provenance.vault_sha256",
+      "reason": "vault.json absent or unreadable at @PROJ@/.mega-sdd/vaults/v1/vault.json \u2014 value OMITTED, never placeholder-filled"
+    },
+    {
+      "section": "t1.acceptance_test_note",
+      "reason": "_authored_by=adversarial-reviewed has strong provenance \u2014 NOTE omitted per bolt-dispatch-prompt.md:96-97"
+    },
+    {
+      "section": "t1.anti_context.do_not_modify.data_mutation_policy",
+      "reason": "no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) \u2014 this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it"
+    },
+    {
+      "section": "depends_on_summaries",
+      "reason": "unit has no depends_on entries"
+    },
+    {
+      "section": "framework_pack_rules",
+      "reason": "no pack rule path_glob matched this unit's target_files (chain: _universal.md) \u2014 the 'keep top 1' floor is vacuous on an empty set, no rule invented"
+    },
+    {
+      "section": "constitution_clauses",
+      "reason": "no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)"
+    },
+    {
+      "section": "kb_anti_patterns",
+      "reason": "the join key 'domain tags' (context-enrichment.md:76) is a phantom field \u2014 no unit schema, validator or writer defines it; substituting module:/vault_source would be a fabricated inclusion. Section omitted until the spec designates a join key."
+    },
+    {
+      "section": "historical_memory",
+      "reason": "no outcomes.md run passed the relevance filter (unit id / target-file basename overlap), no matching bolt-outcomes.json entry and no eligible instinct. Memory files are gitignored-by-default post-run artifacts, so absent is the normal state; an unfiltered dump under a header that says 'relevant' is not the alternative."
+    },
+    {
+      "section": "reuse_slice",
+      "reason": "reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the UNCONDITIONAL T1 path line still ships)"
+    },
+    {
+      "section": "symbol_slice",
+      "reason": "symbol-index.json absent at @PROJ@/.mega-sdd/codebase/symbol-index.json (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)"
+    },
+    {
+      "section": "starterkit_slice",
+      "reason": "no starterkit-context.yaml at @PROJ@/.mega-sdd/codebase/starterkit-context.yaml \u2014 the Map \u00a76 fallback applies instead"
+    },
+    {
+      "section": "map_patterns",
+      "reason": "no codebase-map.md \u00a76 Pattern signatures"
+    },
+    {
+      "section": "design_slice",
+      "reason": "unit is not ui_bearing (no target_files path matched the pack view_glob or any universal frontend shape)"
+    },
+    {
+      "section": "confidence_labels",
+      "reason": "unit has no binding_refs (greenfield / standalone generate-units)"
+    },
+    {
+      "section": "design_slice_path",
+      "reason": "unit is not ui_bearing, so no design lens is dispatched for it \u2014 no lens-input file is written and the `design_slice_path` key is ABSENT (a rubric with no reader is a cost, not a contribution)"
+    }
+  ],
+  "inline_core_bytes": 542,
+  "inline_core_degraded": [],
+  "pack_chain": [
+    "_universal.md"
+  ],
+  "pack_resolver_exit": 0,
+  "interpreter": "python3"
+}

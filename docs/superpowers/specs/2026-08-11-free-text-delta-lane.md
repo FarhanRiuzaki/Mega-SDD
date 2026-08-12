@@ -86,4 +86,4 @@ Reviewer 1 (fidelity+moat): 0 blockers / 4 majors / 6 minors. Reviewer 2 (breaka
 
 ## Est. effect (labeled)
 
-T07-class ticket: ~120k (benchmark T07, MEASURED trace) → **~60–80k est** (router block + diff-vault narrow-scope segment + claim-scoped bind segment + reconcile segment; the generate-intent full-generation segment ~40k and the full-bind delta leave the path). The real number lands when the benchmark gains a T09 delta-lane trace after ship.
+T07-class ticket: ~120k (benchmark T07, MEASURED trace) → **~60–80k est** (router block + diff-vault narrow-scope segment + claim-scoped bind segment + reconcile segment; the generate-intent full-generation segment ~40k and the full-bind delta leave the path). **MEASURED post-ship (benchmark T09, 2026-08-12): 95,035 est tok upper bound = −20.7% vs the T07 route** — above the estimate band because 4 `[SECTION:]` reads (incl. the two largest files) are counted whole-file by the method; the 60–80k band stays plausible at true section granularity but is NOT CONFIRMED without runtime telemetry. Disclosure in `benchmarks/tasks/T09-delta-lane/TASK.md`.
