@@ -1,7 +1,7 @@
 # Context7 embed — second bundled MCP server + implementer consult wiring
 
 **Date:** 2026-08-12
-**Status:** DESIGN — user "gas" on the presented design (post-6.8.0 dialog)
+**Status:** SHIPPED v6.9.0 (2026-08-12, 1edaa04 + folds fd779a6, CI green, suite 221/221) — round 0B/1M/3m ALL folded (E3b slice non-gating pin, E4 existence guard, de-pinned renumber wording, install-deps 1.9.1); golden corpus verified byte-identical (dispatch-parity ALL PASS)
 **Source:** USER — "btw bisa pasang embed di mega-sdd?" after the Context7 explainer; rides the D0 packaging lane the Playwright embed opened (`2026-08-12-playwright-embed-design.md`).
 **Version:** 6.9.0 (minor). **Renumbering side-effect:** Playwright P2/P3 are renumbered OFF their drafted 6.9.0/6.10.0 slots — each takes the next free minor at its own ship time (no pinned future numbers here either; the playwright spec's version-plan line was amended to the same floating form in this ship).
 
