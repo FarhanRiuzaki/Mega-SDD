@@ -1,7 +1,7 @@
 # build-dispatch-prompt.sh `_lib` extraction — phase 0: the golden parity harness
 
 **Date:** 2026-08-12
-**Status:** DRAFT
+**Status:** P0 SHIPPED v6.7.1 (2026-08-12, 53c16f3 + CI-fix e714b55, CI green BOTH host classes, suite 220/220) — round 2B/2M/3m + the post-round CI catch, ALL folded (§Round disclosure); P1+ extraction ladder OPEN, gated on this harness
 **Source:** proposals doc `2026-08-11-morning-proposals.md §(a)` (USER: "gas" on the recommendation — Option 2, opportunistic extraction **with the parity harness built FIRST**; precedent: `_lib/postflight_rules.py`, B1 recompute v4.62.0).
 **Version:** 6.7.1 (patch — a NEW test surface + goldens; ZERO builder-code change in this phase).
 
