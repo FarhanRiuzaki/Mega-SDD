@@ -36,12 +36,12 @@ Two DISTINCT unavailability rungs, both named (recon MAJOR — the office case i
       "playwright": {
         "type": "stdio",
         "command": "npx",
-        "args": ["-y", "@playwright/mcp@<PINNED>", "--headless"]
+        "args": ["-y", "@playwright/mcp@0.0.79", "--headless", "--isolated"]
       }
     }
   }
   ```
-  - **Version PINNED exact, never `@latest`** (install-deps audit lesson: registry facts rot; a bump is a deliberate release decision, not a surprise at the user's session start). Exact version + the headless flag name are **web-verified at P1 implementation** (the flag was UNCONFIRMED in research; if no headless flag exists, ship without it and record the headed default).
+  - **Version PINNED exact, never `@latest`** (install-deps audit lesson: registry facts rot; a bump is a deliberate release decision, not a surprise at the user's session start). Web-verified at P1 implementation (2026-08-12): `0.0.79` latest on registry.npmjs.org (Node >=18); `--headless` + `--isolated` flags confirmed at github.com/microsoft/playwright-mcp. `--isolated` (in-memory profile) added beyond the draft JSON: the user runs parallel sessions on one tree, and persistent profiles cannot be shared between concurrent instances.
   - One server, stdio, no `env`, no `alwaysLoad` (deferred tool-search keeps context cost to names only).
   - The pin joins the release checklist in `plugins/mega-sdd/CLAUDE.md §Versioning` (reviewed at each bump, like marketplace.json parity) — a second registry-rot surface needs a cadence hook (recon minor).
   - P1 ship-gate includes a one-time **registration smoke check**: the server appears in `/mcp` on a fresh enable (the "auto-registers" claim gets exercised once, not just asserted).
