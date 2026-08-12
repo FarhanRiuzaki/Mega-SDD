@@ -20,6 +20,7 @@
 - Section 2 — Skenario UAT
 - Section 3 — Matriks Traceability (RTM)
 - Section 4 — Berita Acara UAT
+- Section 5 — Lampiran Eksekusi Otomatis (pre-UAT, script-owned)
 - Citation notes
 - Drift callouts
 
@@ -125,11 +126,34 @@ written by HUMANS during execution; SEOJK: the user-approved berita acara UAT is
 **Narrative (model):** 1–2 kalimat — tabel diisi TANGAN oleh penanggung jawab saat/ setelah pelaksanaan; keputusan
 Go/No-Go + outstanding defects dituangkan manusia; baris placeholder tidak boleh diisi digital.
 
+## Section 5 — Lampiran Eksekusi Otomatis (pre-UAT)
+
+**Slot:** `{{annex_eksekusi_otomatis}}` (no narrative slot — the annex is 100% script-owned)
+**Source:** `uat/evidence/**/result.json` on disk — **zero VAULT source, paper-out mirror of §4** (the annex
+cites no vault artifacts; its ground truth is the evidence packs `uat-run.sh` wrote).
+**Fragment carries:** heading `## 5. Lampiran — Eksekusi Otomatis (pre-UAT)` + either the placeholder literal
+(below) or the evidence table `| Skenario | Status | Run | Bukti |` rendered EXCLUSIVELY by
+`build-uat-e2e.sh --annex` from `result.json` (newest run per scenario; sha-mismatched evidence renders the
+`STALE — bukti dari versi dokumen sebelumnya, jalankan ulang` marker; unreadable evidence renders
+`UNREADABLE — jalankan ulang` — fail closed, never guessed).
+**Narrative (model):** NONE. The slot is ALWAYS present and ALWAYS filled (selalu ada, selalu terisi): at
+assembly the model types EXACTLY the literal
+`_Belum ada eksekusi otomatis — lampiran ini terisi setelah uat-run.sh dijalankan._` and NOTHING else — `check_execution` byte-compares the whole §5 body against a recompute of the
+shared renderer (`_lib/uat_annex.py`); any divergence = `ANNEX_FORGED` (`execution_fabricated` halt).
+**Missing source:** no evidence dirs → the placeholder literal above, verbatim (this IS the no-evidence render).
+
+Pre-UAT semantics (binding): the annex is automated PRE-UAT evidence — it never substitutes for §2 human
+execution, never implies a maturity rung, and deliberately does NOT appear in the tester xlsx workbook
+(the workbook is the HUMAN execution surface). Position is load-bearing: §5 is APPENDED after §4, never
+inserted earlier (section-number-keyed parsers). The annex is the LAST section; nothing may follow it.
+
 ## Citation notes
 
 - The fragment already carries per-section `**Sources for this section:**` footers with `(sha256: \`pending\`)`
   literals — `build-citation-map.sh --doc=uat` (SKILL Step 4.6) stamps them and writes `<vault>/uat/.citation-map.json`.
   §4 (berita acara) cites no source artifacts — it is a human approval record (paper-out).
+  §5 (lampiran eksekusi otomatis) likewise cites no vault artifacts — its ground truth is the on-disk
+  evidence packs, verified by byte-compare recompute, not by citation shas.
 - `[Pending — …]` markers land in the map's `missing_sources[]` (script-derived; surfaced by orchestrate-flow's final summary).
 
 ## Drift callouts
