@@ -55,8 +55,14 @@ normalize() {  # normalize <in> <out> <proj>
   # tokenized (round B1/B2, both live-proven): byte counters that measure the
   # UN-normalized file (file_total / file_bytes — their value shifts with the
   # absolute-path length of the checkout), and the plugin version stamp (would
-  # redden the corpus on every release). t1/t2/total_bytes are path-independent
-  # and stay pinned.
+  # redden the corpus on every release).
+  # v6.10.0 catch (the length-sensitive-counter class, VERSION flavor): tier
+  # content embeds the "mega-sdd v<version>" stamp, so t1/total counters are
+  # version-LENGTH-sensitive — 6.7.1→6.10.0 grew t1_bytes by exactly 1 and
+  # reddened the corpus; the B2 fake-9.9.9 proof had missed it because 9.9.9
+  # and 6.7.1 share a LENGTH (the same shape as the mktemp path-length miss).
+  # Those counters are tokenized too; intra-version drift stays covered by the
+  # determinism arm (two live runs must be byte-identical INCLUDING counters).
   $PY - "$1" "$2" "$3" "$PLUGIN_ROOT" <<'EOF'
 import json, os, re, sys
 src, dst, proj, plug = sys.argv[1:5]
@@ -69,6 +75,10 @@ s = re.sub(r"(\"file_bytes\":\s*)\d+", r"\1@N@", s)
 # differ in LENGTH even when both normalize to @PROJ@ — the moved-copy proof
 # missed it because same-machine mktemp paths share a length).
 s = re.sub(r"(\"inline_core_bytes\":\s*)\d+", r"\1@N@", s)
+s = re.sub(r"(\"t1_bytes\":\s*)\d+", r"\1@N@", s)
+s = re.sub(r"(\"total_bytes\":\s*)\d+", r"\1@N@", s)
+s = re.sub(r"(consumed_t1:\s*)\d+", r"\1@N@", s)
+s = re.sub(r"(consumed_total:\s*)\d+", r"\1@N@", s)
 try:
     ver = json.load(open(os.path.join(plug, ".claude-plugin", "plugin.json")))["version"]
     s = s.replace("mega-sdd v%s" % ver, "mega-sdd v@VER@")

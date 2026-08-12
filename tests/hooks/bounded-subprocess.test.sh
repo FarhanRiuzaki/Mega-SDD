@@ -334,6 +334,17 @@ for d in sys.argv[1:]:
                                "parseable Python (%s) -- NOT SCANNED"
                                % (name, start, label, e.msg))
                 continue
+            # A Popen with NO timeout kwarg (Popen never accepts one) is bounded
+            # iff the SAME block also calls .communicate(timeout=...) — the
+            # process-group-kill pattern (Popen + communicate(timeout) + killpg)
+            # is MORE bounded than run(timeout), which cannot killpg orphans
+            # (v6.10.0 uat-run.sh). Block-scoped, controlled below.
+            block_has_bounded_communicate = any(
+                isinstance(nn, ast.Call) and isinstance(nn.func, ast.Attribute)
+                and nn.func.attr == "communicate"
+                and any(k.arg == "timeout" for k in nn.keywords)
+                for nn in ast.walk(tree)
+            )
             for node in ast.walk(tree):
                 f = getattr(node, "func", None)
                 if not (isinstance(node, ast.Call) and isinstance(f, ast.Attribute)
@@ -342,6 +353,8 @@ for d in sys.argv[1:]:
                     continue
                 total += 1
                 if not any(k.arg == "timeout" for k in node.keywords):
+                    if f.attr == "Popen" and block_has_bounded_communicate:
+                        continue
                     # node.lineno is 1-indexed WITHIN the block body; -1 folds the
                     # two 1-indexed origins into one .sh-file line number.
                     unbounded.append("%s:%d" % (name, start + node.lineno - 1))
@@ -431,6 +444,11 @@ L = [
     "subprocess.check_output([\"e\"])",                           # 29 UNBOUNDED
     "# a shell-escaped quote: don'\"'\"'t trip on this",         # 30
     "'",                                                         # 31
+    "python3 - <<'FFF'",                                         # 32
+    "import subprocess",                                         # 33
+    "p = subprocess.Popen(['f'], start_new_session=True)",       # 34 bounded via 35
+    "p.communicate(timeout=5)",                                  # 35
+    "FFF",                                                       # 36
     "",
 ]
 open(sys.argv[1], "w").write("\n".join(L))
@@ -440,13 +458,15 @@ fx_st=$?
 fx_lines=$(printf '%s\n' "$fx_out" | sed -n 's/^UNBOUNDED //p' | tr '\n' ' ')
 fx_insp=$(printf '%s\n' "$fx_out" | sed -n 's/^INSPECTED //p')
 fx_skip=$(printf '%s\n' "$fx_out" | grep -c '^SKIPPED ')
+# line 21's bare Popen (NO communicate in its block) must STAY flagged; line 34's
+# Popen + communicate(timeout=) in the SAME block must NOT be flagged.
 FX_WANT="fixture.sh:9 fixture.sh:17 fixture.sh:21 fixture.sh:29 "
 if [ "$fx_lines" = "$FX_WANT" ] \
-   && [ "$fx_insp" = "5" ] && [ "$fx_skip" = "1" ] && [ "$fx_st" = "1" ]; then
-  pass "control: 4 unbounded at the exact lines, 1 bounded call ignored, 1 loud skip"
+   && [ "$fx_insp" = "6" ] && [ "$fx_skip" = "1" ] && [ "$fx_st" = "1" ]; then
+  pass "control: 4 unbounded at the exact lines (bare Popen still flagged), bounded run + bounded-Popen-via-communicate ignored, 1 loud skip"
 else
   printf '%s\n' "$fx_out" | sed 's/^/  /'
-  fail "control: extractor gave lines=[$fx_lines] inspected=$fx_insp skipped=$fx_skip rc=$fx_st (want [$FX_WANT] 5 1 1)"
+  fail "control: extractor gave lines=[$fx_lines] inspected=$fx_insp skipped=$fx_skip rc=$fx_st (want [$FX_WANT] 6 1 1)"
 fi
 
 echo "── CONTROL: a truncated 'single-quoted block is reported, not scanned ──"

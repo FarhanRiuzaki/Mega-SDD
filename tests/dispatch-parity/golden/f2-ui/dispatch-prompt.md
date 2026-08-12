@@ -193,9 +193,9 @@ T2 BUDGET TRACKER (informational)
 
 ```
 ### T2 budget tracker
-consumed_t1: 3827 bytes (cap 12288)
+consumed_t1: @N@ bytes (cap 12288)
 consumed_t2: 5427 bytes (cap 10240, hard 12288)
-total: 9254 bytes  # T1 + T2 ONLY — the budgeted, truncatable content
+total: 9255 bytes  # T1 + T2 ONLY — the budgeted, truncatable content
 file_total: @N@    bytes  # THIS WHOLE FILE. The difference from `total` is
                             # exactly four blocks plus the blank lines joining
                             # them: the TIER 2 banner, this tracker block, the
