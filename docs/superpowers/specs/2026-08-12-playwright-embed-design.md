@@ -1,7 +1,7 @@
 # Playwright embed — MCP bundling, /slice verb, UAT automated-evidence lane, interactive design lens
 
 **Date:** 2026-08-12
-**Status:** DESIGN — user-approved (§1–§5 dialog, 2026-08-12); D2 shape corrected post-approval against the emit-uat moat (see §D2 header note); 4-lens blind recon folded (3 BLOCKER roots + 8 MAJOR + 10 minor — §Recon disclosure)
+**Status:** P1 SHIPPED v6.8.0 (2026-08-12, 64dfdd0, CI green, suite 221/221) — implementation round 0B/5M/8m ALL folded (4-verb doc sweep, --rounds + paths.md on-record, compact-core anchor guard C1b/C2b); registration smoke check (/mcp on fresh enable) + office npx cold-cache verification = PENDING USER. P2 (D2 UAT evidence) + P3 (D3 design lens) NOT started. Design provenance: user-approved §1–§5 dialog 2026-08-12; D2 shape corrected post-approval against the emit-uat moat (§D2 header note); 4-lens blind recon folded pre-implementation (3 BLOCKER roots + 8 MAJOR + 10 minor — §Recon disclosure)
 **Source:** USER mandate — "gue pengen embed playwright di mega-sdd"; Q&A locked: hybrid MCP+script; `/mega-sdd:slice` standalone verb (user decision, on record); UAT generate+run+attach; design lens interactive upgrade.
 **Version plan:** P1 = 6.8.0 (D0+D1), P2 = 6.9.0 (D2), P3 = 6.10.0 (D3) — minor each; every phase ships through the full cadence (spec → proof tests → blind round → fold → both-tree suite → ship).
 
