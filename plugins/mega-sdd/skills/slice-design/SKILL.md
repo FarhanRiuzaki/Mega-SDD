@@ -1,6 +1,6 @@
 ---
 name: slice-design
-version: 1.0.0
+version: 1.0.1
 description: Standalone UI slicing — implement components from a design reference (Figma export, reference URL, or image file) and verify the render via the bundled Playwright MCP; works with or without a vault. Command-invocation only (/mega-sdd:slice) — this skill never auto-triggers off free text.
 ---
 

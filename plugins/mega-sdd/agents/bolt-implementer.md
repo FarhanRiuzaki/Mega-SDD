@@ -135,6 +135,10 @@ Hard Rules active: <the rule TEXT verbatim, one rule per entry — NOT ids>
 
 Post-flight scan VERIFIES presence. Missing → halt `provenance_missing`.
 
+## Current docs beat trained recall (Context7, optional)
+
+When Context7 MCP tools are available in your session (load via ToolSearch — `resolve-library-id` + docs query), consult the CURRENT library documentation BEFORE writing code against fast-moving or unfamiliar framework APIs, and prefer what the current docs say over your trained recall — a hallucinated or deprecated API in a bolt is a defect the review panel will catch anyway. When the tools are absent, proceed normally: Context7 availability is never load-bearing and never blocks a bolt.
+
 ## Code organization
 
 You reason best about code you can hold in context at once. Keep each file to one clear responsibility with a well-defined interface. If a file you're creating grows beyond the unit's intent, stop and report `DONE_WITH_CONCERNS` — don't split files on your own without guidance. If an existing file you're modifying is already large or tangled, work carefully and note it as a concern.

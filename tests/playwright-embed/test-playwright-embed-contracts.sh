@@ -18,26 +18,32 @@ if [ -f "$MCP" ] && python3 -c "import json;json.load(open('$MCP'))" 2>/dev/null
 else
   fail "A1 .mcp.json missing or invalid JSON"
 fi
-# A2: exactly one server, named playwright, stdio via npx
+# A2: exactly two servers — playwright + context7 (6.9.0) — both stdio via npx
 if python3 - "$MCP" <<'PY' 2>/dev/null
 import json,sys
 d=json.load(open(sys.argv[1]))
 s=d.get("mcpServers",{})
-assert list(s.keys())==["playwright"], s.keys()
-pw=s["playwright"]
-assert pw.get("type")=="stdio" and pw.get("command")=="npx", pw
-assert "env" not in pw and "alwaysLoad" not in pw
+assert sorted(s.keys())==["context7","playwright"], s.keys()
+for name,srv in s.items():
+    assert srv.get("type")=="stdio" and srv.get("command")=="npx", (name,srv)
+    assert "env" not in srv and "alwaysLoad" not in srv, (name,srv)
 PY
 then
-  ok "A2 exactly one stdio server 'playwright' via npx"
+  ok "A2 exactly two stdio servers (playwright + context7) via npx"
 else
-  fail "A2 server shape wrong"
+  fail "A2 server set/shape wrong"
 fi
 # A3: version pinned EXACT — a floating tag is the registry-rot class
 if grep -qE '@playwright/mcp@[0-9]+\.[0-9]+\.[0-9]+"' "$MCP" 2>/dev/null && ! grep -qE '@(latest|next|beta|alpha)"' "$MCP" 2>/dev/null; then
   ok "A3 @playwright/mcp pinned to an exact version (no floating tag)"
 else
   fail "A3 pin is floating or malformed"
+fi
+# A5: context7 pinned EXACT (6.9.0; the A3 floating-tag grep covers the whole file)
+if grep -qE '@upstash/context7-mcp@[0-9]+\.[0-9]+\.[0-9]+"' "$MCP" 2>/dev/null; then
+  ok "A5 @upstash/context7-mcp pinned to an exact version"
+else
+  fail "A5 context7 pin missing or floating"
 fi
 # A4: the release checklist reviews the pin at each bump
 if grep -qF ".mcp.json" "$P/CLAUDE.md"; then
@@ -105,6 +111,17 @@ has "$ID" "ms-playwright" && ok "D3 cache-path probe documented" || fail "D3 bro
 grep -qE '^  - id: *playwright' "$P/skills/install-deps/references/tool-matrix.yaml" \
   && fail "D4 a playwright tool-matrix row appeared (spec forbids it — ==10 pins + verify_cmd registry-fetch hazard)" \
   || ok "D4 no playwright tool-matrix row"
+
+echo "── E: context7 consult wiring (6.9.0) ──"
+BI="$P/agents/bolt-implementer.md"
+SP="$P/skills/slice-design/references/slice-procedure.md"
+# E1/E2: both code-emitting surfaces carry the optional consult guidance
+grep -qi "context7" "$BI" && ok "E1 bolt-implementer carries the Context7 consult guidance" || fail "E1 bolt-implementer guidance missing"
+grep -qi "context7" "$SP" && ok "E2 slice-procedure carries the Context7 consult guidance" || fail "E2 slice-procedure guidance missing"
+# E3: the guidance is non-gating on the agent surface
+grep -qF "never load-bearing" "$BI" && ok "E3 bolt-implementer guidance is non-gating (never load-bearing)" || fail "E3 non-gating wording missing"
+# E4: the dispatch builder is context7-FREE — the golden-corpus firewall
+grep -qi "context7" "$P/scripts/build-dispatch-prompt.sh" && fail "E4 context7 leaked into build-dispatch-prompt.sh (golden corpus firewall breach)" || ok "E4 dispatch builder context7-free"
 
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"

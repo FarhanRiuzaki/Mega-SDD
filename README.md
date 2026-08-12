@@ -73,7 +73,7 @@ That's genuinely all the Claude Code knowledge mega-sdd assumes. For a hand-held
 
 This is the canonical install reference — other docs link here.
 
-> **Bundled MCP (6.8.0):** installing mega-sdd auto-registers the Playwright MCP server (`@playwright/mcp`, pinned, headless + isolated). First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable anytime per-server via `/mcp` without uninstalling the plugin. A browser is never load-bearing: every consumer degrades gracefully without it.
+> **Bundled MCPs (6.8.0/6.9.0):** installing mega-sdd auto-registers TWO MCP servers — **Playwright** (`@playwright/mcp`, pinned, headless + isolated; Node ≥18) for browser render checks, and **Context7** (`@upstash/context7-mcp`, pinned, keyless free tier; Node ≥20.18.1) for current library docs during implementation. First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable either per-server via `/mcp` without uninstalling the plugin (also the fix if you already run a standalone context7 plugin and don't want two processes — they're namespaced, no conflict). Neither server is ever load-bearing: every consumer degrades gracefully without it.
 
 ```bash
 # In Claude Code:
