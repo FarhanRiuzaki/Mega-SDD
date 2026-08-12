@@ -52,6 +52,9 @@ _GUARDED = (
 EVID = re.compile(
     r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)"
     r"/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance)\.json|_batch-suite\.json)$")
+UAT_EVID = re.compile(
+    r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)"
+    r"/uat/evidence/(?:[^/]+/)*result\.json$")
 
 
 def _rel(mod, fp, root, normalize):
@@ -72,6 +75,8 @@ def bypass_guard(mod, fp, root, normalize):
     if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUARDED):
         return "protected"
     if EVID.search(rel):
+        return "evidence"
+    if UAT_EVID.search(rel):
         return "evidence"
     return ""
 
@@ -98,6 +103,8 @@ CASES = [
     ("forged B2 batch-suite",    "/proj/.mega-sdd/vaults/v1/bolts/_batch-suite.json", r"C:\proj\.mega-sdd\vaults\v1\bolts\_batch-suite.json", "evidence"),
     ("forged B4 acceptance",     "/proj/.mega-sdd/vaults/v1/bolts/U-002/acceptance.json", r"C:\proj\.mega-sdd\vaults\v1\bolts\U-002\acceptance.json", "evidence"),
     ("legacy -bound evidence",   "/proj/v1-bound/bolts/U-003/postflight.json",        r"C:\proj\v1-bound\bolts\U-003\postflight.json",     "evidence"),
+    ("forged UAT evidence",      "/proj/.mega-sdd/vaults/v1/uat/evidence/UAT-001/20260812T100000Z/result.json", r"C:\proj\.mega-sdd\vaults\v1\uat\evidence\UAT-001\20260812T100000Z\result.json", "evidence"),
+    ("unrelated uat evidence",   "/proj/myapp/uat/evidence/UAT-001/x/result.json",    r"C:\proj\myapp\uat\evidence\UAT-001\x\result.json", ""),
     ("ordinary source file",     "/proj/src/app/Foo.php",                             r"C:\proj\src\app\Foo.php",                          ""),
     ("unrelated bolts json",     "/proj/other/bolts/x/postflight.json",               r"C:\proj\other\bolts\x\postflight.json",            ""),
     ("tests/ exemption",         "/proj/tests/fx/.mega-sdd/.validation-blockers.json", r"C:\proj\tests\fx\.mega-sdd\.validation-blockers.json", "exempt"),

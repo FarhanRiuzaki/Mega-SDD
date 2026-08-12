@@ -55,6 +55,8 @@ wired '\.validation-blockers\.json'       "protected: validation-blockers"
 wired '\.plan-pending'                    "protected: plan-pending"
 wired '\.replan-budget'                   "protected: replan-budget"
 wired '\.iter-classifier\.json'           "protected: iter-classifier"
+# P2 v6.10.0: UAT automated-evidence artifact joins the roster (both lanes)
+wired 'uat/evidence/'                     "protected: uat evidence result.json"
 # Syntax of the edited surface
 bash -n "$HOOK" && pass "pre-tool-use: bash -n clean" || fail "pre-tool-use: syntax error"
 
