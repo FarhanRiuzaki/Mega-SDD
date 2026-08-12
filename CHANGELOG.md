@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.8.0] - 2026-08-12 — Playwright embed P1: bundled MCP + /mega-sdd:slice
+
+Ships D0+D1 of spec `docs/superpowers/specs/2026-08-12-playwright-embed-design.md` (USER mandate "embed playwright di mega-sdd"; 4-lens blind recon folded pre-implementation):
+
+- **D0 — bundled Playwright MCP**: NEW `plugins/mega-sdd/.mcp.json` auto-registers `@playwright/mcp@0.0.79` (pinned exact — web-verified 2026-08-12; `--headless --isolated`, isolated because parallel sessions share one tree) on plugin enable. Pin joins the CLAUDE.md §Versioning release checklist. install-deps **1.9.0** gains the Playwright browser detect-and-offer (filesystem cache probe + `npx playwright install chromium` offer, never auto-run — Chrome notes-line precedent, deliberately NO tool-matrix row: the ==10 pins stay and `npx playwright --version` is the registry-fetch probe class).
+- **D1 — `/mega-sdd:slice`**: 4th public verb (deliberate on-record surface growth; user decision). NEW `skills/slice-design` **1.0.0** — design reference (Figma export / URL / image) → UI code per framework pack + design-intelligence corpus → Playwright-MCP render-compare (cap 3 rounds) → honest `slice-report.md` under `.mega-sdd/slices/<slug>/`. Containment: command-invocation only, zero census keywords, anchor-core byte-baseline guard (3415, session-start awk method); never writes vault/binding; never starts a dev server (operator-owned). using-mega-sdd **3.3.3** (body-only bullet, anchor core untouched).
+- Surface pins amended same-commit as the new file: test-p6 §C2 7→8 + roster + §D loop, CLAUDE.md ×2 sentences, mega-sdd.md blockquote, both READMEs.
+- NEW `tests/playwright-embed/test-playwright-embed-contracts.sh` (21 arms, sections A–D) + `tests/skill-triggering/slice.test.md` (SL1–SL7 incl. free-text containment).
+
 ## [6.7.1] - 2026-08-12 — dispatch-prompt golden parity harness (extraction phase 0) + benchmark T09
 
 Test-and-docs-only patch; ZERO plugin-runtime edits. Ships proposals §(a) phase 0 (spec `2026-08-12-dispatch-prompt-lib-extraction.md`) + the delta lane's measured follow-up.

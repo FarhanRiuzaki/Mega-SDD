@@ -73,6 +73,8 @@ That's genuinely all the Claude Code knowledge mega-sdd assumes. For a hand-held
 
 This is the canonical install reference — other docs link here.
 
+> **Bundled MCP (6.8.0):** installing mega-sdd auto-registers the Playwright MCP server (`@playwright/mcp`, pinned, headless + isolated). First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable anytime per-server via `/mcp` without uninstalling the plugin. A browser is never load-bearing: every consumer degrades gracefully without it.
+
 ```bash
 # In Claude Code:
 /plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git

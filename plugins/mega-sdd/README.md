@@ -16,6 +16,8 @@ Canonical install, update, and uninstall instructions live in the **[root README
 /mega-sdd ./prd.md
 ```
 
+> **Bundled MCP (6.8.0):** installing mega-sdd auto-registers the Playwright MCP server (`@playwright/mcp`, pinned, headless + isolated). First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable anytime per-server via `/mcp` without uninstalling the plugin. A browser is never load-bearing: every consumer degrades gracefully without it.
+
 Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md).
 
 ## Commands you'll actually use
