@@ -134,23 +134,33 @@ RP="$P/skills/execute-bolts/references/review-panel.md"
 DR="$P/agents/design-reviewer.md"
 # F1: the MCP rung sits at the TOP of the capture ladder
 grep -q "Playwright MCP" "$RP" && ok "F1a review-panel names the MCP rung" || fail "F1a MCP rung missing"
-python3 - "$RP" <<'PY' && ok "F1b ladder order: MCP rung precedes the static drivers" || fail "F1b ladder order wrong"
+python3 - "$RP" <<'PY' && ok "F1b ladder order: MCP rung precedes the static drivers (region-scoped)" || fail "F1b ladder order wrong"
 import sys
 s = open(sys.argv[1], encoding="utf-8").read()
-i_mcp = s.find("Playwright MCP")
-i_chrome = s.find("system Chrome/Chromium first")
+# scope to §Live-app capture (round minor: a whole-file find goes vacuous the
+# moment 'Playwright MCP' is mentioned anywhere above the ladder)
+start = s.find("**Live-app capture")
+end = s.find("Named candidate", start)
+assert 0 <= start < end, (start, end)
+region = s[start:end]
+i_mcp = region.find("Playwright MCP")
+i_chrome = region.find("system Chrome/Chromium first")
 assert 0 <= i_mcp < i_chrome, (i_mcp, i_chrome)
 PY
 # F2: the naming contract extension (state-suffixed, route+width keyed — no collisions)
 grep -qF -- '<slug>-<state>-<width>.png' "$RP" && ok "F2a naming contract literal present" || fail "F2a naming contract missing"
 grep -qE 'base\|hover\|focus\|error|base \| hover \| focus \| error' "$RP" && ok "F2b state enum present" || fail "F2b state enum missing"
-# F3: the controller synthesizes the SAME JSON record → one consumer contract
-grep -qF 'synthesizes the same JSON' "$RP" && ok "F3 JSON shots-record synthesis pinned" || fail "F3 JSON record pin missing"
+# F3: the controller synthesizes the SAME envelope; shot entries extend per rung
+# (round MAJOR: the static script never emits `state` — identity was a misattribution)
+grep -qF 'record ENVELOPE' "$RP" && grep -qF 'One envelope, per-rung shot extension' "$RP" \
+  && ok "F3 envelope-identity + per-rung shot extension pinned honestly" || fail "F3 envelope wording missing"
 # F4: doctrine survives — capture never a gate (verbatim), honest no-render statement
 grep -qF 'Capture is never a gate; an un-captured render is never reported as fine.' "$RP" \
   && ok "F4 never-a-gate sentence verbatim" || fail "F4 never-a-gate sentence lost"
-# F5: design-reviewer input contract notes the state-capture classes
-grep -qE 'hover|focus' "$DR" && grep -qi "interaction state" "$DR" && ok "F5 design-reviewer notes interaction-state captures" || fail "F5 reviewer input note missing"
+# F5: design-reviewer input contract notes the state-capture classes + naming literal
+# (the hover|focus clause alone was vacuous — pre-D3 text already matched it)
+grep -qi "interaction state" "$DR" && grep -qF -- '<slug>-<state>-<width>.png' "$DR" \
+  && ok "F5 design-reviewer notes state captures + naming contract" || fail "F5 reviewer input note missing"
 # F6: the lens-inputs known-open candidate is still carried (NOT bundled into D3)
 grep -qF 'deliberately NOT changed here' "$RP" && ok "F6 lens-inputs known-open note untouched" || fail "F6 known-open note lost"
 
