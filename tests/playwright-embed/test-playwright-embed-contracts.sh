@@ -68,6 +68,23 @@ else
   fail "B1 slice-design SKILL.md missing (B2-B4 skipped)"
 fi
 
+echo "── C: anchor-core budget guard (D1 containment) ──"
+UMS="$P/skills/using-mega-sdd/SKILL.md"
+CORE=$(awk 'BEGIN{dash=0;body=0}
+  /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
+  body==0{next}
+  /ANCHOR-CORE ends/{exit}
+  {print}' "$UMS")
+# C1: the anchor core does NOT grow for /slice — byte baseline captured at 6.8.0
+# with the SAME awk hooks/session-start uses for the full-core injection.
+# Re-baseline ONLY with a recorded decision (this is the census-budget moat).
+n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
+[ "$n" -eq 3415 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3415)"
+# C2: no slice mention above the marker
+printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
+# C3: the body mention exists (below the marker)
+grep -qF "/mega-sdd:slice" "$UMS" && ok "C3 body mentions /mega-sdd:slice" || fail "C3 body mention missing"
+
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]
