@@ -70,6 +70,21 @@ if grep -qF "$ROWLIT" "$USK" || grep -qF "$ROWLIT" "$UTM"; then
   fail "d3: a killed row-literal enumeration re-grew in SKILL or uat-template (negative pin)"
 else pass "d3: neither SKILL nor uat-template re-enumerates the step-row literal"; fi
 
+# ── (f) §5 annex pair (6.10.0): teacher owns the grammar; template + SKILL point ──
+ANNEX_SLOT='{{annex_eksekusi_otomatis}}'
+ANNEX_PH='_Belum ada eksekusi otomatis — lampiran ini terisi setelah uat-run.sh dijalankan._'
+ANNEX_HD='## 5. Lampiran — Eksekusi Otomatis (pre-UAT)'
+grep -qF "$ANNEX_SLOT" "$UO" && grep -qF "$ANNEX_PH" "$UO" && grep -qF 'byte-compare' "$UO" \
+  && pass "f1: uat-sections §Section 5 owns the annex grammar (slot + placeholder + byte-compare rule)" \
+  || fail "f1: teacher lost part of the §5 annex grammar"
+grep -qF "$ANNEX_SLOT" "$UTM" && grep -qF "$ANNEX_PH" "$UTM" && grep -qF "$ANNEX_HD" "$UTM" \
+  && grep -qF 'OWNED by `references/uat-sections.md §Section 5`' "$UTM" \
+  && pass "f2: uat-template carries the §5 block + slot + placeholder + owner pointer" \
+  || fail "f2: template lost part of the §5 annex pair"
+grep -qF "$ANNEX_PH" "$USK" && grep -qF 'ANNEX_FORGED' "$USK" \
+  && pass "f3: SKILL carries the placeholder literal + ANNEX_FORGED wiring" \
+  || fail "f3: SKILL lost the §5 wiring"
+
 # ── (e) binding marker pair: template + the ONLY writer (binding-mode) ──
 BT="$P/skills/bind-codebase/references/binding-md-template.md"
 BM="$P/skills/resolve-oq/references/binding-mode.md"

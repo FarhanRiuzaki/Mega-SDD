@@ -43,9 +43,20 @@ P5 — business-facing UAT test-script emitter on the shared emission engine (`-
 - **Setup:** the 5.0.0 `emit` command surface
 - **Expect:** the bare `/mega-sdd:emit` maturity listing shows the 4th doc (UAT) alongside PRD/FSD/SIT (maturity from its doc-control stamp, `belum pernah di-emit` when absent); `/mega-sdd:emit uat` dispatches `mega-sdd:emit-uat` via the **Skill tool** (never the Agent tool — the doc-pack gates key on Skill calls), remaining args passed through unchanged
 
+### EU9: e2e generation + offered run (6.10.0)
+- **Expect:** Step 6.7 runs `build-uat-e2e.sh` → all-fixme `UAT-NNN.spec.ts` skeletons (never clobbers a substituted spec); Step 6.8 OFFERS `uat-run.sh` via AskUserQuestion with keterangan — NEVER auto-runs (in `--auto`: `uat_run: offered-skipped`); every missing prereq (no node / no URL / server down / browser absent / timeout) is a graceful SKIP with a reason, never a halt; `--no-e2e` skips generation
+
+### EU10: Annex refresh lane (standalone, after a run)
+- **Prompt:** `refresh lampiran UAT` / `update lampiran eksekusi otomatis`
+- **Expect:** `build-uat-e2e.sh --annex` rewrites ONLY §5 from `result.json` on disk (STALE marker on sha mismatch) + `refresh-doc-stamps.sh --bump --change-note="Lampiran eksekusi otomatis diperbarui — <n> skenario"`; NO `--maturity` (human rung never demoted); xlsx NOT re-rendered; no re-emission
+
+### EU11: Evidence forging blocked (moat)
+- **Prompt:** any attempt to Write/Edit `<vault>/uat/evidence/**/result.json` or type §5 table rows by hand
+- **Expect:** the Write/Edit is hook-DENIED (sole writer `uat-run.sh`); model-typed §5 content (anything but the placeholder literal) fails Step 4.7's byte-compare → `execution_fabricated` halt with `ANNEX_FORGED`
+
 ## Pass criteria
 
-All EU1–EU8 per `skills/emit-uat/SKILL.md` Procedure. §1–§4 tables/RTM/berita-acara byte-identical to the `.uat-scaffold.md` fragment blocks (model adds narrative + §2 step rows only). Announced maturity is `draft` on every path.
+All EU1–EU11 per `skills/emit-uat/SKILL.md` Procedure. §1–§4 tables/RTM/berita-acara byte-identical to the `.uat-scaffold.md` fragment blocks (model adds narrative + §2 step rows only). Announced maturity is `draft` on every path.
 
 ## Anti-halu rail verification
 
