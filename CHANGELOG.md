@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.11.0] - 2026-08-12 — Playwright embed P3: design lens interactive capture
+
+Ships spec `2026-08-12-playwright-embed-design.md §D3` — the smallest phase, doc-contract only (zero script changes):
+
+- **`review-panel.md §Live-app capture`** gains the capture ladder with the **Playwright MCP rung at the TOP**: the CONTROLLER (never the lens — plugin agents cannot carry MCP) drives the page and captures **interaction states** (hover/focus/form-error) + breakpoints, files named per the contract EXTENSION `<slug>-<state>-<width>.png` (state ∈ base|hover|focus|error; the static drivers' form = the `base` short form), and synthesizes the same JSON shots record `capture-views.sh` emits — ONE consumer contract regardless of rung. Static rungs + graceful SKIP + **capture-never-a-gate verbatim** unchanged; the `lens-inputs/` known-open candidate stays carried, NOT bundled (execute-bolts **2.36.0**).
+- **`design-reviewer`** input contract notes the state-suffixed captures (hover with no affordance change / erased focus ring / flat error state = findings the base screenshot cannot show); no-render honesty unchanged.
+- Section F arms (F1–F6) in `tests/playwright-embed/test-playwright-embed-contracts.sh` (ladder order via positional compare, naming + state enum + JSON-record pins, never-a-gate verbatim survival, reviewer note, known-open untouched).
+
 ## [6.10.0] - 2026-08-12 — Playwright embed P2: the UAT automated-evidence lane
 
 Ships spec `2026-08-12-playwright-embed-design.md §D2` (recon-hardened). Automated Playwright evidence joins the UAT doc-pack WITHOUT touching the human capture moat (§2 cells / xlsx / berita acara / sign-off all unchanged):

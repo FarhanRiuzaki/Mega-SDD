@@ -129,6 +129,31 @@ else
   fail "E4 build-dispatch-prompt.sh missing (firewall arm cannot run — re-point it at the builder's new home)"
 fi
 
+echo "── F: design lens interactive capture (D3, 6.11.0) ──"
+RP="$P/skills/execute-bolts/references/review-panel.md"
+DR="$P/agents/design-reviewer.md"
+# F1: the MCP rung sits at the TOP of the capture ladder
+grep -q "Playwright MCP" "$RP" && ok "F1a review-panel names the MCP rung" || fail "F1a MCP rung missing"
+python3 - "$RP" <<'PY' && ok "F1b ladder order: MCP rung precedes the static drivers" || fail "F1b ladder order wrong"
+import sys
+s = open(sys.argv[1], encoding="utf-8").read()
+i_mcp = s.find("Playwright MCP")
+i_chrome = s.find("system Chrome/Chromium first")
+assert 0 <= i_mcp < i_chrome, (i_mcp, i_chrome)
+PY
+# F2: the naming contract extension (state-suffixed, route+width keyed — no collisions)
+grep -qF -- '<slug>-<state>-<width>.png' "$RP" && ok "F2a naming contract literal present" || fail "F2a naming contract missing"
+grep -qE 'base\|hover\|focus\|error|base \| hover \| focus \| error' "$RP" && ok "F2b state enum present" || fail "F2b state enum missing"
+# F3: the controller synthesizes the SAME JSON record → one consumer contract
+grep -qF 'synthesizes the same JSON' "$RP" && ok "F3 JSON shots-record synthesis pinned" || fail "F3 JSON record pin missing"
+# F4: doctrine survives — capture never a gate (verbatim), honest no-render statement
+grep -qF 'Capture is never a gate; an un-captured render is never reported as fine.' "$RP" \
+  && ok "F4 never-a-gate sentence verbatim" || fail "F4 never-a-gate sentence lost"
+# F5: design-reviewer input contract notes the state-capture classes
+grep -qE 'hover|focus' "$DR" && grep -qi "interaction state" "$DR" && ok "F5 design-reviewer notes interaction-state captures" || fail "F5 reviewer input note missing"
+# F6: the lens-inputs known-open candidate is still carried (NOT bundled into D3)
+grep -qF 'deliberately NOT changed here' "$RP" && ok "F6 lens-inputs known-open note untouched" || fail "F6 known-open note lost"
+
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]
