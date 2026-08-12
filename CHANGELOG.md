@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.12.0] - 2026-08-12 — graph-assisted reconcile: the graph becomes a chain input
+
+Ships spec `2026-08-12-graph-assisted-reconcile.md` (USER audit: "graph jadi pajangan?" — verdict: engineering sound, zero chain consumers; this gives it two):
+
+- **D1 — NEW `scripts/derive-transitive-impact.sh`**: reverse-`depends_on` closure over the derived graph (same hash-checked lazy rebuild as query-graph; accepts bare unit ids, vault-prefix-aware). The reconcile pass (task-typing.md **step 2.6**, generate-units **2.22.0**) surfaces dependents of changed units — the class the hash-deterministic staleness check is blind to — as **"verify-recommended (transitive impact)"** in SYNC-REPORT / the delta handoff (routing-rules delta-lane sentence, orchestrate-flow **2.27.0**). ADVISORY by contract: never writes `status:`, never gates, **fail-open** (`graph_available:false` → empty list, lane never blocks; negative pin z7 guards against a status-enum leak).
+- **D2 — sync drift triage** processes changed paths in descending blast-radius order when the graph is available (advisory ordering; document order when absent).
+- NEW `tests/graph-impact/test-derive-transitive-impact.sh` (13 arms: closure + input-exclusion, isolated unit, fail-open on unbuildable graph, usage, determinism, doc pins z2–z7).
+
 ## [6.11.0] - 2026-08-12 — Playwright embed P3: design lens interactive capture
 
 Ships spec `2026-08-12-playwright-embed-design.md §D3` — the smallest phase, doc-contract only (zero script changes):
