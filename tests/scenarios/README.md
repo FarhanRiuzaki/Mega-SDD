@@ -45,7 +45,7 @@ In your Claude Code session, type:
 /mega-sdd:
 ```
 
-You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, and the four maintenance one-timers (`install-deps`, `update-plugin`, `memory`, `migrate-paths`) — since 6.0.0 the surface is exactly these plus the bare `/mega-sdd` front door (the SessionStart hook installs its wrapper on your first session; before that, `/mega-sdd:mega-sdd` works). If NOTHING autocompletes, restart the Claude Code session OR run `/plugin marketplace update`.
+You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, `/mega-sdd:slice` (6.8.0+), and the four maintenance one-timers (`install-deps`, `update-plugin`, `memory`, `migrate-paths`) — the surface is exactly these plus the bare `/mega-sdd` front door (the SessionStart hook installs its wrapper on your first session; before that, `/mega-sdd:mega-sdd` works). If NOTHING autocompletes, restart the Claude Code session OR run `/plugin marketplace update`.
 
 ## The ONE command (most users)
 
@@ -84,7 +84,7 @@ For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ## Feedback + questions
 
-Scenario walkthroughs written before 6.0.0 may show `/mega-sdd:<stage>` typed forms — those still route as plain text, but the registered commands are only the 3 verbs + 4 one-timers. If steps don't match your behavior:
+Scenario walkthroughs written before 6.0.0 may show `/mega-sdd:<stage>` typed forms — those still route as plain text, but the registered commands are only the 4 verbs + 4 one-timers. If steps don't match your behavior:
 1. Check your installed version: type `/plugin` in Claude Code (works in any project)
 2. Update plugin: `/mega-sdd:update-plugin`
 3. Report mismatches with concrete steps reproduced

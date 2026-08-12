@@ -25,7 +25,7 @@ Playwright availability is NEVER load-bearing. Ladder: Playwright MCP (interacti
 
 Two DISTINCT unavailability rungs, both named (recon MAJOR — the office case is the design case):
 1. **Browser binary absent** (~130MB Chromium): never bundled, never auto-installed — `install-deps` DETECTS and OFFERS (`npx playwright install chromium`), the human decides (Chrome detect-only doctrine, extended).
-2. **MCP server itself unavailable**: `npx -y @playwright/mcp@<PINNED>` must fetch the *package* from the npm registry on cold cache — on the gov network that may be blocked; offline = the server fails to start; CrowdStrike taxes the npx→node spawn chain at every session start; Windows `"command": "npx"` stdio spawn (cmd shim, Git Bash floor) is UNVERIFIED until run on the user's office machine. A failed server start degrades to the static rungs; the office mitigation for repeated startup failures is the `/mcp` per-server disable. **P1 ships with a verification step on the user's office machine** (npx cold + warm cache, Git Bash) before the floor version is raised.
+2. **MCP server itself unavailable**: `npx -y @playwright/mcp@0.0.79` (the §D0 pin) must fetch the *package* from the npm registry on cold cache — on the gov network that may be blocked; offline = the server fails to start; CrowdStrike taxes the npx→node spawn chain at every session start; Windows `"command": "npx"` stdio spawn (cmd shim, Git Bash floor) is UNVERIFIED until run on the user's office machine. A failed server start degrades to the static rungs; the office mitigation for repeated startup failures is the `/mcp` per-server disable. **P1 ships with a verification step on the user's office machine** (npx cold + warm cache, Git Bash) before the floor version is raised.
 
 ## D0 — Packaging: bundle the Playwright MCP (P1)
 
@@ -55,12 +55,13 @@ Two DISTINCT unavailability rungs, both named (recon MAJOR — the office case i
 - `--figma=<url>` — consumed via the user's own Figma MCP when present; absent → ask for an exported image instead (never scrape).
 - `--url=<web>` — reference site, captured via Playwright MCP.
 - `--image=<path>` — exported design file.
+- `--rounds=<n>` — compare-round override, hard cap 3 (cap semantics unchanged; recorded post-draft at P1, same on-record style as `--isolated`).
 
 **Loop (cap: 3 compare rounds, then report honestly):**
 1. Reference intake → component inventory (≤3 clarifying questions max — where in the repo, which route, which framework — with keterangan per the OQ rule).
 2. Implement following the ACTIVE framework pack + the design-intelligence corpus (REUSE: `ui-design-heuristics.md`, `design-intelligence/{style-principles,ux-rules}.md`). If a vault exists, its `design_system` tokens are an optional enrichment — **`/slice` NEVER writes the vault or binding**; it is a code-emission verb only.
 3. Render via Playwright MCP against a dev-server URL (`.mega-sdd/config.yaml` `preview_url:` or operator-supplied) → screenshot → model-judged compare vs reference (NO pixel-diff dependency — no new tooling) → iterate.
-4. Emit `slice-report.md` under the mega-sdd output root — `.mega-sdd/slices/<slug>/slice-report.md` (recon minor: plugin artifacts never land in the user's source tree): files created, reference mapping, remaining deltas (honest), and — when MCP/browser/server was absent — the literal statement that the render was NOT verified. Code generation still happens without a browser; only the compare loop degrades.
+4. Emit `slice-report.md` under the mega-sdd output root — `.mega-sdd/slices/<slug>/slice-report.md` (recon minor: plugin artifacts never land in the user's source tree; `references/paths.md` gains the `slices/` entry + a slice-design per-skill row): files created, reference mapping, remaining deltas (honest), and — when MCP/browser/server was absent — the literal statement that the render was NOT verified. Code generation still happens without a browser; only the compare loop degrades.
 
 **Dev-server ownership (binding, recon MAJOR):** the dev server is OPERATOR-owned — `/slice` NEVER starts, installs, or backgrounds a server process (the unbounded-spawn class; also a zombie hazard under Git Bash/EDR). Unreachable `preview_url` → compare rounds = 0 + the honest-skip statement, mirroring `capture-views.sh`'s "start it, then re-run" contract. The sentence is pinned by a D1 contract test.
 

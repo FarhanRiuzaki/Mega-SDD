@@ -258,6 +258,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
 | Generate UAT doc-pack (incl. SEOJK berita acara) | `/mega-sdd:emit uat` |
+| Slice a design reference (Figma export / URL / image) into UI code | `/mega-sdd:slice --image=./ref.png` (6.8.0 — works without a vault) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
@@ -267,7 +268,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | PRD revision arrived | `/mega-sdd ./new-prd.md` (routes to diff-vault) — or say "PRD revisi" |
 | Code drift periodic check | say "cek drift" |
 
-> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the 3 verbs + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](plugins/mega-sdd/references/upgrade-from-old-version.md).
+> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the public verbs (4 since 6.8.0) + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](plugins/mega-sdd/references/upgrade-from-old-version.md).
 
 </details>
 

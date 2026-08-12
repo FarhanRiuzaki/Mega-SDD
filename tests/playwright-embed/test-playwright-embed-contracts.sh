@@ -80,8 +80,19 @@ CORE=$(awk 'BEGIN{dash=0;body=0}
 # Re-baseline ONLY with a recorded decision (this is the census-budget moat).
 n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 [ "$n" -eq 3415 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3415)"
-# C2: no slice mention above the marker
+# C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
+# no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
+# 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without
+# moving C1's (round finding, guard-scope gap).
+CCORE=$(awk 'BEGIN{take=0}
+  /^## Hard rule/{take=1}
+  /ANCHOR-CORE ends/{exit}
+  take==1{print}' "$UMS")
+cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
+[ "$cn" -eq 1187 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1187)"
+# C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
+printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"
 # C3: the body mention exists (below the marker)
 grep -qF "/mega-sdd:slice" "$UMS" && ok "C3 body mentions /mega-sdd:slice" || fail "C3 body mention missing"
 

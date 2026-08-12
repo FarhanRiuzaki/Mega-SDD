@@ -77,6 +77,7 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 | Validation gate | bind-codebase | read-only |
 | Vault → units | generate-units | read-only |
 | Unit → code | execute-bolts | write |
+| Design reference → UI code (standalone lane, command-only — not a pipeline phase) | slice-design | write (code + `.mega-sdd/slices/`; never the vault) |
 
 ## Red flags (STOP — rationalizations)
 
