@@ -155,6 +155,17 @@ grep -qiE 'always.?(present|filled)|selalu (ada|terisi)' "$TEACHER" && ok "p5 al
 grep -qF 'adds no rules of its own' "$TEMPLATE" && ok "p6 template pointer literal survives (p12 d2)" || fail "p6 pointer literal broken"
 grep -qF '| 1 | <Aksi> | <Expected Result> |' "$TEMPLATE" && fail "p7 killed row literal reappeared (p12 d3)" || ok "p7 killed row literal absent"
 
+echo "── s: SKILL + registry doc pins (T6 wiring) ──"
+SKILL="$P/skills/emit-uat/SKILL.md"
+grep -q "Step 6.7" "$SKILL" && grep -q "build-uat-e2e.sh" "$SKILL" && ok "s1 Step 6.7 generation wired" || fail "s1 Step 6.7 missing"
+grep -q "Step 6.8" "$SKILL" && grep -q "offered-skipped" "$SKILL" && ok "s2 Step 6.8 offer (never auto) wired" || fail "s2 Step 6.8 missing"
+grep -q "Annex refresh" "$SKILL" && grep -qF 'Lampiran eksekusi otomatis diperbarui' "$SKILL" && ok "s3 annex-refresh lane + derived change-note" || fail "s3 refresh lane missing"
+grep -qF 'NO `--maturity` flag' "$SKILL" && ok "s4 refresh never demotes maturity" || fail "s4 maturity guard missing"
+grep -q "ANNEX_FORGED" "$SKILL" && ok "s5 halt sentence carries ANNEX_FORGED" || fail "s5 halt sentence missing"
+grep -qF 'OWNED by `references/uat-sections.md §Section 2`' "$SKILL" && ok "s6 p12 d2 literal survives" || fail "s6 d2 literal broken"
+grep -q "ANNEX_FORGED" "$P/references/halt-protocol.md" && grep -q "execution_fabricated" "$P/references/halt-protocol.md" && ok "s7 halt-protocol registry row present" || fail "s7 registry row missing"
+grep -q "evidence/<UAT-id>/<run-ts>/" "$P/references/paths.md" && ok "s8 paths.md uat subtree updated" || fail "s8 paths.md missing evidence line"
+
 echo
 echo "uat-annex-gate: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]

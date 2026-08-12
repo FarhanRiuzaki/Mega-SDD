@@ -58,6 +58,8 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── prd/                                   # PRD output (emit-prd): PRD.md, PRD.pdf, .citation-map.json, .doc-history.json
 │   │   ├── sit/                                   # SIT output (emit-sit): SIT.md, SIT.pdf, .sit-evidence.md, .citation-map.json, .doc-history.json
 │   │   ├── uat/                                   # UAT output (emit-uat): UAT.md, UAT.pdf, UAT-v<version>.xlsx, .uat-scaffold.md, .citation-map.json, .doc-history.json
+│   │   │   ├── e2e/                               # Playwright skeletons (build-uat-e2e.sh, 6.10.0): UAT-NNN.spec.ts + config + package.json + .gitignore
+│   │   │   └── evidence/<UAT-id>/<run-ts>/        # auditor evidence packs (uat-run.sh, sole hook-guarded writer): result.json + screenshots/ + trace.zip
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
 │   │   ├── .memory/                               # Vault-scope memory
 │   │   │   ├── classifier-accuracy.json

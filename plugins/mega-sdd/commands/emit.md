@@ -14,7 +14,7 @@ User arguments: $ARGUMENTS
 | `prd` | `mega-sdd:emit-prd` | Product Requirements Document (forward from vault / REVERSE from KB) | `<vault>/prd/PRD.md` |
 | `fsd` | `mega-sdd:emit-fsd` | Hybrid Confluence FSD | `<vault>/fsd/FSD.md` (+ PDF/HTML) |
 | `sit` | `mega-sdd:emit-sit` | Bank-style SIT with script-derived evidence | `<vault>/sit/SIT.md` |
-| `uat` | `mega-sdd:emit-uat` | UAT test script untuk tim bisnis (skenario 1:1 F-*, berita acara, xlsx) | `<vault>/uat/UAT.md` (+ PDF/xlsx) |
+| `uat` | `mega-sdd:emit-uat` | UAT test script untuk tim bisnis (skenario 1:1 F-*, berita acara, xlsx) + Playwright e2e skeletons & offered run (6.10.0) | `<vault>/uat/UAT.md` (+ PDF/xlsx/e2e) |
 
 Strip the first positional (`prd|fsd|sit|uat`) and pass EVERY remaining argument through to the dispatched skill unchanged — each doc-pack skill owns its own flag parsing, rails, and halt taxonomy (this command adds none).
 
