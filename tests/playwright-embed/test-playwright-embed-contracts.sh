@@ -46,6 +46,28 @@ else
   fail "A4 release checklist missing the .mcp.json pin review"
 fi
 
+echo "── B: slice-design containment (D1) ──"
+SD="$P/skills/slice-design/SKILL.md"
+# B1: skill exists
+if [ -f "$SD" ]; then
+  ok "B1 slice-design SKILL.md exists"
+  # B2: description declares command-invocation-only and carries NO census list
+  DESC=$(grep '^description:' "$SD" | head -1)
+  echo "$DESC" | grep -qF "Command-invocation only" && ok "B2a description declares command-invocation only" || fail "B2a missing command-only declaration"
+  echo "$DESC" | grep -qF "never auto-triggers" && ok "B2b description disclaims auto-trigger" || fail "B2b missing auto-trigger disclaimer"
+  echo "$DESC" | grep -qF 'Triggers —' && fail "B2c description carries a trigger census (census leak)" || ok "B2c no trigger census in description"
+  # B3: the binding containment sentences exist in the body
+  has "$SD" "NEVER writes the vault" && ok "B3a no-vault-write pin" || fail "B3a no-vault-write sentence missing"
+  has "$SD" "NEVER starts, installs, or backgrounds a dev server" && ok "B3b server-ownership pin" || fail "B3b server-ownership sentence missing"
+  has "$SD" "cap: 3 compare rounds" && ok "B3c compare-round cap pin" || fail "B3c round-cap sentence missing"
+  has "$SD" "render was NOT verified" && ok "B3d honest-skip wording pin" || fail "B3d honest-skip sentence missing"
+  has "$SD" ".mega-sdd/slices/" && ok "B3e report-location pin" || fail "B3e report location missing"
+  # B4: reference routed one level deep
+  has "$SD" "references/slice-procedure.md" && ok "B4 slice-procedure routed from SKILL" || fail "B4 reference unrouted"
+else
+  fail "B1 slice-design SKILL.md missing (B2-B4 skipped)"
+fi
+
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]
