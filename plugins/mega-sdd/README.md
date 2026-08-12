@@ -30,7 +30,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 |---|---|
 | `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
 | `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
-| `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity |
+| `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity. The uat lane (6.10.0) also generates Playwright e2e skeletons + OFFERS an automated evidence run (§5 annex — human execution surfaces untouched) |
 | `/mega-sdd:slice <ref>` | Standalone UI slicing (6.8.0) — Figma export / URL / image → UI code per your framework conventions + Playwright-MCP render check; works without a vault, never writes vault/binding |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |

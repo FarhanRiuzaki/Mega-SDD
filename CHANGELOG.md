@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.10.0] - 2026-08-12 — Playwright embed P2: the UAT automated-evidence lane
+
+Ships spec `2026-08-12-playwright-embed-design.md §D2` (recon-hardened). Automated Playwright evidence joins the UAT doc-pack WITHOUT touching the human capture moat (§2 cells / xlsx / berita acara / sign-off all unchanged):
+
+- **NEW `scripts/build-uat-e2e.sh`** — generation: one all-fixme `<vault>/uat/e2e/UAT-NNN.spec.ts` per §2 scenario (xlsx-builder grammar; sha-stamped headers; self-contained `playwright.config.ts` + `package.json` + `.gitignore` — target repo's package.json never touched; substituted specs never clobbered). `--check` = the zero-invented-selector GATE (every non-fixme action line needs a resolving `// source: <path>:<line>` anchor). `--annex` = §5 rewrite from evidence on disk.
+- **NEW `scripts/uat-run.sh`** — the offered bounded run (default 120s, `--timeout=`, `</dev/null`; graceful SKIP ladder: no specs/node/URL/server/browser/npm-blocked/TIMEOUT; browser-build mismatch = SKIP, never fail-count evidence — live-proven failure class): writes run-stamped `evidence/<UAT-id>/<run-ts>/{result.json, screenshots/, trace.zip}` atomically; SOLE hook-guarded writer. **Dep-less-repo provisioning live-proven** (real Playwright run: pass 1/0/0, evidence pack + shas verified).
+- **NEW `scripts/_lib/uat_annex.py`** — the single §5 renderer (B1 recompute precedent): `--annex` WRITES it, `check_execution` BYTE-COMPARES it (`ANNEX_FORGED`; fences cannot hide content); STALE marker on doc-sha mismatch; UNREADABLE fail-closed; placeholder literal when no evidence.
+- **UAT.md gains `## 5. Lampiran — Eksekusi Otomatis (pre-UAT)`** — script-owned, ALWAYS-present ALWAYS-filled slot `{{annex_eksekusi_otomatis}}` (model may only type the placeholder literal); teacher/template pair + p12 arm f (mutation-proved ×3); pre-annex docs pass untouched (backward compat); deliberately absent from the tester xlsx.
+- **Moat**: `<vault>/uat/evidence/**/result.json` joins the anti-self-bypass guard — Write/Edit elif (vault-anchored, EB-VAL-7), Bash PROTECTED + GUARD_SKIP tandem, deny messages name `uat-run.sh`; arms in BOTH trees + Windows-parity CASES rows. `halt-protocol.md` gains the missing `execution_fabricated` registry row (pre-existing gap), now covering §2–§4 + §5.
+- **emit-uat 1.2.0**: Step 6.7 (generation, `--no-e2e` opt-out), Step 6.8 (run OFFERED via AskUserQuestion + keterangan — never auto; `--auto` records `offered-skipped`), §Annex refresh standalone lane (`--annex` + `--bump` derived change-note `Lampiran eksekusi otomatis diperbarui — <n> skenario`; NO maturity demotion; no xlsx proliferation). paths.md + emit.md updated.
+- NEW `tests/uat-e2e/` (4 suites, 67 CI arms + 2 gated live arms) + `tests/postflight-evidence/test-uat-evidence-guard.sh` + p12 arm f + EU9–EU11 fixture cases.
+
 ## [6.9.0] - 2026-08-12 — Context7 embed: second bundled MCP + implementer consult wiring
 
 Ships spec `docs/superpowers/specs/2026-08-12-context7-embed.md` (USER "gas"; rides the 6.8.0 packaging lane):
