@@ -3,12 +3,12 @@
 # + the P4 alias removal (6.0.0, v6 spec §P4.1).
 #
 # Pins:
-#   A  the three public verbs exist; the front door WRAPS the orchestrate-flow
+#   A  the four public verbs exist; the front door WRAPS the orchestrate-flow
 #      machinery (Skill dispatch) instead of forking it and carries the
 #      input-shape detector (one home).
 #   B  /mega-sdd:emit — dispatch table to the three P5 doc-pack skills + the
 #      no-arg doc-control maturity listing.
-#   C  6.0.0 alias cull: ZERO deprecation-alias files remain; the kept-7
+#   C  6.0.0 alias cull: ZERO deprecation-alias files remain; the kept-8
 #      enumerate exactly; every relocated procedure lives at its new home with
 #      its old dispatch marker intact AND is routed from its host SKILL.md;
 #      no runtime surface names a dead /mega-sdd:<alias> typed form.
@@ -33,8 +33,8 @@ ok()   { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
 has()  { grep -qF -- "$2" "$1"; }
 
-echo "── A: the three public verbs + the front door wraps, not forks ──"
-for f in mega-sdd.md sync.md emit.md; do
+echo "── A: the four public verbs + the front door wraps, not forks ──"
+for f in mega-sdd.md sync.md emit.md slice.md; do
   [ -f "$C/$f" ] && ok "public verb file: $f" || fail "public verb MISSING: $f"
 done
 FD="$C/mega-sdd.md"
