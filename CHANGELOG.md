@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.7.1] - 2026-08-12 — dispatch-prompt golden parity harness (extraction phase 0) + benchmark T09
+
+Test-and-docs-only patch; ZERO plugin-runtime edits. Ships proposals §(a) phase 0 (spec `2026-08-12-dispatch-prompt-lib-extraction.md`) + the delta lane's measured follow-up.
+
+- **NEW `tests/dispatch-parity/test-dispatch-prompt-golden.sh` + committed golden corpus** (3 framework-less fixtures: minimal / ui+design-slice / hardrules+whitelist): cross-version byte-identity gate for `build-dispatch-prompt.sh` — the mandatory precondition for any `_lib` extraction (P1 ladder: extraction accompanied by a regen = red flag). Corpus is machine- and version-independent by construction (path/counter/version tokenization — the round's two live-proven BLOCKERS), regen is manual all-or-nothing, and the full emitted-paths tree is itself a golden. Round: 1 blind reviewer, 2B/2M/3m all folded (disclosure in spec).
+- **Benchmark ADDENDUM T09**: the delta lane measured at the same T07 boundary — **95,035 est tok upper bound = −20.7%** vs the v6.6.0 route (−27.1% vs baseline); the spec's 60–80k band plausible at section granularity, NOT CONFIRMED without runtime telemetry (labeled in `benchmarks/tasks/T09-delta-lane/TASK.md` + REPORT addendum).
+- Manifests 6.7.1 (no skill bumps — no skill content changed).
+
 ## [6.7.0] - 2026-08-11 — the free-text delta lane (chat ticket → scoped vault patch → claim-scoped re-bind)
 
 Ships proposals §(b) (spec `2026-08-11-free-text-delta-lane.md`; USER "gas"). A ticket-scale chat requirement ("tambah kolom npwp di form nasabah") against an existing vault finally has a cheap route: benchmark T07 measured ~120k est tok for the old full-lane detour; the delta lane targets ~60–80k by ADAPTING existing machinery, not adding surface — diff-vault owns the patch, the claim-scoped `--paths` re-bind + `generate-units --reconcile` + stale/new bolts were already there.

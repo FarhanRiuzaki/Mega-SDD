@@ -1,0 +1,3 @@
+./.mega-sdd/.cache/pack-resolver/_chain.out
+./.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md
+./.mega-sdd/vaults/v1/lens-inputs/U-002/design-slice.md
