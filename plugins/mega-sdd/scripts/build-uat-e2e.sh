@@ -145,9 +145,19 @@ if mode == "generate":
             "import { defineConfig } from '@playwright/test';\n"
             "export default defineConfig({\n"
             "  use: { baseURL: process.env.PREVIEW_URL, trace: 'on', screenshot: 'on' },\n"
-            "  reporter: [['json', { outputFile: 'test-results/report.json' }]],\n"
             "});\n"
         ))
+    pkg = os.path.join(e2e_dir, "package.json")
+    if not os.path.isfile(pkg):
+        # Own package.json — the run provisions @playwright/test HERE, never in
+        # the target repo (live-proven 2026-08-12: a dep-less dir cannot resolve
+        # @playwright/test from the npx cache; -p does not help the config's
+        # require). Pin EXACT (registry-rot lesson); browser build must match —
+        # uat-run.sh maps a mismatch to a SKIP with the install instruction.
+        atomic_write(pkg, json.dumps({
+            "name": "uat-e2e", "private": True,
+            "devDependencies": {"@playwright/test": "1.62.1"},
+        }, indent=2) + "\n")
     sys.exit(0)
 
 if mode == "check":
