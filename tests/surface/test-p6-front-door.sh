@@ -65,17 +65,19 @@ has "$EM" "doc-control" && has "$EM" "maturity" \
   && ok "emit no-arg lane lists docs + maturity from doc-control stamps" || fail "emit no-arg maturity listing missing"
 grep -qiF "never invent" "$EM" && ok "emit listing: maturity never invented" || fail "emit listing anti-fabrication line missing"
 
-echo "── C: 6.0.0 alias cull — zero aliases, kept-7 exact, relocations intact ──"
+echo "── C: 6.0.0 alias cull — zero aliases, kept-8 exact, relocations intact ──"
 # C1: no deprecation-alias file survives
 if grep -l "DEPRECATED (5.x alias)" "$C"/*.md >/dev/null 2>&1; then
   fail "deprecation-alias file(s) still present: $(grep -l 'DEPRECATED (5.x alias)' "$C"/*.md | tr '\n' ' ')"
 else
   ok "zero DEPRECATED (5.x alias) files remain"
 fi
-# C2: the kept-7 enumerate exactly
+# C2: the kept-8 enumerate exactly (slice.md ADDED 6.8.0 — deliberate on-record
+# surface growth, spec 2026-08-12-playwright-embed-design.md; never re-shrink
+# this count without its own recorded decision)
 n_cmd=$(ls "$C"/*.md | wc -l | tr -d ' ')
-[ "$n_cmd" -eq 7 ] && ok "exactly 7 command files (3 verbs + 4 one-timers)" || fail "command count wrong: $n_cmd (expected 7)"
-for f in mega-sdd.md sync.md emit.md install-deps.md memory.md migrate-paths.md update-plugin.md; do
+[ "$n_cmd" -eq 8 ] && ok "exactly 8 command files (4 verbs + 4 one-timers)" || fail "command count wrong: $n_cmd (expected 8)"
+for f in mega-sdd.md sync.md emit.md slice.md install-deps.md memory.md migrate-paths.md update-plugin.md; do
   [ -f "$C/$f" ] || fail "kept command MISSING: $f"
 done
 # C3: relocated procedures — new home exists + old dispatch marker survived
@@ -120,7 +122,7 @@ else
 fi
 
 echo "── D: maintenance one-timers + sync stay first-class ──"
-for f in memory install-deps migrate-paths update-plugin sync; do
+for f in memory install-deps migrate-paths update-plugin sync slice; do
   if grep -q '^description:.*DEPRECATED' "$C/$f.md"; then
     fail "$f.md wrongly aliased (must stay first-class)"
   else

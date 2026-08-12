@@ -45,7 +45,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | ~~`/mega-sdd:emit-fsd`~~ (and prd/sit) | `/mega-sdd:emit <fsd\|prd\|sit\|uat>` |
 | ~~`/mega-sdd:lint-units`, `:list-modules`, `:replay`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "replay U-001", "blast radius") |
 
-Full surface: **3 public verbs + 4 maintenance one-timers** — exactly the 7 files in [`commands/`](./commands/). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after telemetry review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
+Full surface: **4 public verbs + 4 maintenance one-timers** — exactly the 8 files in [`commands/`](./commands/) (`/mega-sdd:slice` added 6.8.0 — standalone UI slicing, command-only). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after telemetry review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
 
 ## First time? Start with a scenario
 
@@ -95,7 +95,7 @@ plugins/mega-sdd/
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
 │   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
-├── commands/                     # exactly 7: 3 public verbs (mega-sdd · sync · emit) + 4 maintenance one-timers (5.x aliases removed in 6.0.0)
+├── commands/                     # exactly 8: 4 public verbs (mega-sdd · sync · emit · slice) + 4 maintenance one-timers (5.x aliases removed in 6.0.0)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts

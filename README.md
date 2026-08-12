@@ -184,7 +184,7 @@ flowchart TB
     classDef moat fill:#fce8e6,stroke:#d93025,color:#a50e0e
     classDef out fill:#188038,color:#fff,stroke:none
 
-    CMD["🎛️ Surface — 3 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat"]:::surface
+    CMD["🎛️ Surface — 4 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat · /mega-sdd:slice"]:::surface
 
     subgraph ORCH["🧭 Orchestration layer"]
         OF["orchestrate-flow<br/>state engine · smart routing · predictive preflight · --lean profile"]:::phase
@@ -220,7 +220,7 @@ flowchart TB
 ```
 
 **Legend**:
-- 🟦 **surface & phases** (the 3 verbs; pipeline skills) · 🟨 **execution agents** (implementer + blind panel) · 🟩 **grounded artifacts & outputs** · 🟥 **enforcement** (hooks + deterministic validators)
+- 🟦 **surface & phases** (the 4 verbs; pipeline skills) · 🟨 **execution agents** (implementer + blind panel) · 🟩 **grounded artifacts & outputs** · 🟥 **enforcement** (hooks + deterministic validators)
 - **Solid arrows** = pipeline flow · **Dotted arrows** = cross-cutting (memory suggestions, reuse slices, gate blocks)
 - Detail per phase (per-artifact flow, gates, deep-scan, starterkit): [plugin README](plugins/mega-sdd/README.md) + [architecture deep dive](#architecture-deep-dive) below.
 
@@ -371,7 +371,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # 20 skills (lean routers + progressive disclosure) + _vendored/
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
-│   ├── commands/                           # exactly 7: 3 public verbs + 4 maintenance one-timers (the 24 5.x aliases were removed in 6.0.0)
+│   ├── commands/                           # exactly 8: 4 public verbs + 4 maintenance one-timers (slice added 6.8.0; the 24 5.x aliases were removed in 6.0.0)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
 │   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations + validators
