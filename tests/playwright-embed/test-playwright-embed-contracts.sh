@@ -85,6 +85,16 @@ printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the ancho
 # C3: the body mention exists (below the marker)
 grep -qF "/mega-sdd:slice" "$UMS" && ok "C3 body mentions /mega-sdd:slice" || fail "C3 body mention missing"
 
+echo "── D: install-deps Playwright detect-and-offer (D0) ──"
+ID="$P/skills/install-deps/SKILL.md"
+has "$ID" "npx playwright install chromium" && ok "D1 offer command present" || fail "D1 offer command missing"
+has "$ID" "never auto-run" && ok "D2 offer-only wording present" || fail "D2 offer-only wording missing"
+has "$ID" "ms-playwright" && ok "D3 cache-path probe documented" || fail "D3 browser cache probe missing"
+# D4: NO tool-matrix row for playwright — the Chrome notes-line precedent holds
+grep -qE '^  - id: *playwright' "$P/skills/install-deps/references/tool-matrix.yaml" \
+  && fail "D4 a playwright tool-matrix row appeared (spec forbids it — ==10 pins + verify_cmd registry-fetch hazard)" \
+  || ok "D4 no playwright tool-matrix row"
+
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]
