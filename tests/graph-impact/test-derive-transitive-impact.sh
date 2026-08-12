@@ -72,6 +72,21 @@ echo "── e: determinism ──"
 OUT_E1=$(run "U-001"); OUT_E2=$(run "U-001")
 [ "$OUT_E1" = "$OUT_E2" ] && ok "e1 two runs byte-equal" || fail "e1 nondeterministic"
 
+echo "── f: multi-vault scoping (inline-round catch — no cross-contamination) ──"
+V2="$PRJ/.mega-sdd/vaults/pay"; mkdir -p "$V2/units"
+printf '{"vault_version": "1.0"}\n' > "$V2/vault.json"; printf '# i\n' > "$V2/00-index.md"
+printf -- '---\nid: U-001\ntask_type: create\ntarget_files:\n  - path: p.py\n    operation: create\n---\n# g\n' > "$V2/units/U-001.md"
+printf -- '---\nid: U-009\ntask_type: create\ndepends_on:\n  - U-001\ntarget_files:\n  - path: q.py\n    operation: create\n---\n# g\n' > "$V2/units/U-009.md"
+OUT_F=$(run "U-001")
+echo "$OUT_F" | grep -q "U-009" && fail "f1 cross-vault leak: pay's U-009 in app's closure" || ok "f1 bare id scoped to --vault (no cross-vault leak)"
+echo "$OUT_F" | grep -q "U-002" && ok "f2 own-vault dependents still found" || fail "f2 own-vault closure lost: $OUT_F"
+
+echo "── g: cycle termination ──"
+printf -- '---\nid: U-005\ntask_type: create\ndepends_on:\n  - U-006\ntarget_files:\n  - path: e.py\n    operation: create\n---\n# g\n' > "$V/units/U-005.md"
+printf -- '---\nid: U-006\ntask_type: create\ndepends_on:\n  - U-005\ntarget_files:\n  - path: f.py\n    operation: create\n---\n# g\n' > "$V/units/U-006.md"
+OUT_G=$(run "U-005"); RC=$?
+[ "$RC" -eq 0 ] && echo "$OUT_G" | grep -q '"U-006"' && ok "g1 depends_on cycle terminates (seen-set BFS)" || fail "g1 rc=$RC out=$OUT_G"
+
 echo "── z: syntax + doc pins ──"
 bash -n "$SCRIPT" 2>/dev/null && ok "z1 bash -n clean" || fail "z1 syntax"
 TT="$P/skills/generate-units/references/task-typing.md"

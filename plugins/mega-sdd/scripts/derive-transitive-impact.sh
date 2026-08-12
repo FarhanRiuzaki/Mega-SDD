@@ -67,7 +67,7 @@ if [ "$NEED_BUILD" -eq 1 ]; then
 fi
 [ -f "$G" ] || fail_open "graph.json absent after rebuild — proceeding without transitive expansion"
 
-G="$G" UNITS="$UNITS" python3 <<'PYEOF' || fail_open "graph.json unreadable"
+G="$G" UNITS="$UNITS" VAULT_BASE="$(basename "${VAULT:-}")" python3 <<'PYEOF' || fail_open "graph.json unreadable"
 import json, os
 from collections import defaultdict, deque
 
@@ -75,11 +75,17 @@ g = json.load(open(os.environ["G"]))
 inputs = [u.strip() for u in os.environ["UNITS"].split(",") if u.strip()]
 
 # graph unit ids are VAULT-PREFIXED ("app:U-001"); the reconcile pass speaks
-# bare local ids — accept both, traverse prefixed, emit bare.
+# bare local ids — accept both, traverse prefixed, emit bare. A bare id is
+# scoped to --vault's basename FIRST (inline-round catch: two vaults both
+# carrying U-001 cross-contaminated the closure without this); suffix match
+# is the fallback only when the vault yields no hit.
 unit_ids = {n["id"] for n in g.get("nodes", []) if n.get("type") == "unit"}
+vault_base = os.environ.get("VAULT_BASE", "")
 def resolve(u):
     if u in unit_ids:
         return [u]
+    if vault_base and (vault_base + ":" + u) in unit_ids:
+        return [vault_base + ":" + u]
     return [gid for gid in unit_ids if gid.endswith(":" + u)]
 start = set()
 for u in inputs:
