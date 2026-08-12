@@ -126,7 +126,12 @@ def check_execution(uat_path):
     section = 0          # 0 = none, 2/3/4 = current numbered section (5 = annex)
     seen4 = False
     seen5 = False        # §5 = the script-owned automated-evidence annex (6.10.0)
+    annex_heading = None # the doc's ACTUAL §5 heading line (spoof-compared, round M1)
     annex_body = []      # RAW §5 lines (fences included — nothing may hide in one)
+    annexish = False     # fail-closed detector: annex-shaped content under a
+                         # MALFORMED heading must never silently skip the gate
+                         # (round BLOCKER: '## 5 Lampiran' / '##  5.' / '## **5.**'
+                         # all escaped the ^## (\d+)\. transition)
     cur_uat = "?"        # current UAT-id within §2
     ba_table = None      # §4 table mode: 'info' | 'defects' | 'signoff' | None
     keputusan_seen = False
@@ -152,7 +157,15 @@ def check_execution(uat_path):
                 seen4 = True
             if section == 5:
                 seen5 = True
+                annex_heading = line
             continue
+        # fail-closed: a MALFORMED annex heading ('## 5 Lampiran', '##  5.',
+        # '## **5.**' …) must arm the gate, never exempt it — any heading-ish
+        # line naming the annex or numbered 5 counts (backward compat holds:
+        # pre-annex docs contain neither token).
+        if not seen5 and ("Lampiran — Eksekusi Otomatis" in line
+                          or re.match(r"^\s*##\s*\**\s*5\b", line)):
+            annexish = True
         # §2 — step tables + tester footer
         if section == 2:
             um = re.match(r"^###\s+(UAT-\S+)\s+—", line)
@@ -253,11 +266,17 @@ def check_execution(uat_path):
     # the model can only ever type the placeholder literal; any other content
     # that a recompute does not reproduce is a fabricated automated-evidence
     # record. Pre-annex docs (no `## 5.` heading) are exempt (backward compat).
+    if annexish and not seen5:
+        v.append("ANNEX_HEADING_MALFORMED — annex content under a heading the parser "
+                 "cannot key ('## 5. ' exact form required); fail-closed, never exempt")
     if seen5:
         import uat_annex
         vault_dir = os.path.dirname(os.path.dirname(uat_path))
         expected = uat_annex.render_annex(vault_dir).strip("\n")
-        got = (uat_annex.ANNEX_HEADING + "\n" + "\n".join(annex_body)).strip("\n")
+        # spoof guard (round M1): compare the doc's ACTUAL heading line, never
+        # substitute the canonical constant — a fabricated pass-claim in the
+        # heading text must mismatch.
+        got = ((annex_heading or "") + "\n" + "\n".join(annex_body)).strip("\n")
         if got != expected:
             g_lines, e_lines = got.split("\n"), expected.split("\n")
             first_diff = next(

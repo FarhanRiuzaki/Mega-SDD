@@ -3,8 +3,15 @@
 `build-uat-e2e.sh --annex` WRITES render_annex()'s output into UAT.md;
 `build-uat-scaffold.sh check_execution()` RECOMPUTES the same render and
 byte-compares the document's §5 body against it (violation `ANNEX_FORGED`).
-One renderer, two consumers — the B1 recompute-at-gate precedent
-(`_lib/postflight_rules.py`). Spec: 2026-08-12-playwright-embed-design.md §D2.
+One renderer, two consumers (shared-module pattern of `_lib/postflight_rules.py`).
+
+HONEST SCOPE (round-corrected): this recomputes the RENDER of result.json,
+never the evidence itself — result.json integrity rests on the anti-self-bypass
+WRITE GUARD (sole writer uat-run.sh), whose documented os.replace /
+variable-indirection residual is therefore load-bearing here (unlike B1, whose
+gate recomputes from git/fs ground truth and overwrites a forged artifact).
+The written_by/run_ts sanity floor below narrows, but does not close, that
+residual. Spec: 2026-08-12-playwright-embed-design.md §D2.
 
 Contract (deterministic; every row derived from on-disk evidence, never prose):
 - No `<vault>/uat/evidence/UAT-*/` dirs → heading + blank + PLACEHOLDER literal.
@@ -78,6 +85,12 @@ def render_annex(vault_dir):
         try:
             with open(result_path, encoding="utf-8") as f:
                 data = json.load(f)
+            # writer-stamp sanity (round fold): a result.json missing the sole
+            # writer's stamp or whose run_ts does not match its dir is treated
+            # UNREADABLE (fail closed) — a cheap floor UNDER the hook guard,
+            # not a substitute for it (see the module docstring's honest note).
+            if data.get("written_by") != "uat-run.sh" or data.get("run_ts") != newest:
+                raise ValueError("writer stamp / run_ts mismatch")
             st = data["status"]
             counts = "{}/{}/{}".format(
                 int(st["pass"]), int(st["fail"]), int(st["skip"])

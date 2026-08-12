@@ -125,6 +125,22 @@ printf 's\n' > "$V2/uat/.uat-scaffold.md"
 bash "$SCRIPT" --vault="$V2" --cwd="$WORK" </dev/null >/dev/null 2>&1
 [ -f "$V2/uat/e2e/UAT-BE-001.spec.ts" ] && ok "s1 scoped id spec name" || fail "s1 scoped spec missing"
 
+echo "── v: anchor lint — variable indirection (round M2) + pin parity (round M5) ──"
+cat > "$V/uat/e2e/UAT-002.spec.ts" <<'EOF'
+// generated-by: build-uat-e2e.sh
+import { test, expect } from '@playwright/test';
+test('1. indirected', async ({ page }) => {
+  const btn = page.locator('#totally-invented-selector');
+  await btn.click();
+});
+EOF
+OUT_V1=$(bash "$SCRIPT" --vault="$V" --cwd="$WORK" --check </dev/null 2>&1); RC=$?
+[ "$RC" -eq 1 ] && echo "$OUT_V1" | grep -q "ANCHOR_MISSING" && ok "v1 locator-variable indirection caught (definition line needs anchor)" || fail "v1 rc=$RC out=$OUT_V1"
+# the @playwright/test pin in the script matches the live-arm fixture pin (registry-rot parity)
+SCRIPT_PIN=$(grep -oE '@playwright/test": "[0-9.]+' "$SCRIPT" | grep -oE '[0-9.]+$')
+FIX_PIN=$(grep -oE '@playwright/test": "[0-9.]+' "$ROOT/tests/uat-e2e/test-uat-run-skips.sh" | grep -oE '[0-9.]+$' | head -1)
+[ -n "$SCRIPT_PIN" ] && [ "$SCRIPT_PIN" = "$FIX_PIN" ] && ok "v2 @playwright/test pin parity (script $SCRIPT_PIN == fixture)" || fail "v2 pin drift: script=$SCRIPT_PIN fixture=$FIX_PIN"
+
 bash -n "$SCRIPT" 2>/dev/null && ok "z1 bash -n clean" || fail "z1 syntax"
 
 echo

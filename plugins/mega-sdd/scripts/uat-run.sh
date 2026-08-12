@@ -68,12 +68,8 @@ done
 
 # self-contained deps: e2e/ has its own package.json (written by build-uat-e2e.sh);
 # a dep-less target repo cannot resolve @playwright/test from the npx cache
-# (live-proven), so first run provisions node_modules HERE — bounded, skip on fail.
-if [ -f "$E2E/package.json" ] && [ ! -d "$E2E/node_modules" ]; then
-  if ! ( cd "$E2E" && npm install --no-audit --no-fund --loglevel=error </dev/null >/dev/null 2>&1 ) ; then
-    skip "npm install failed in uat/e2e (registry blocked / offline?) — provision @playwright/test manually, then re-run"
-  fi
-fi
+# (live-proven). The bounded npm-install rung moved INTO the python below
+# (round M3: everything after the prereq ladder shares script-owned bounds).
 
 export _UAT_RUN_VAULT="$VAULT" _UAT_RUN_URL="$URL" _UAT_RUN_TIMEOUT="$TIMEOUT" _UAT_RUN_SPEC="$SPEC_FILTER"
 
@@ -114,21 +110,53 @@ if not specs:
     sys.exit(0)
 
 env = dict(os.environ, PREVIEW_URL=url, CI="1")
+
+# bounded npm-install rung (self-contained deps; wall-clock bound = max(300, timeout))
+if os.path.isfile(os.path.join(e2e, "package.json")) and not os.path.isdir(os.path.join(e2e, "node_modules")):
+    try:
+        npm = subprocess.run(
+            ["npm", "install", "--no-audit", "--no-fund", "--loglevel=error"],
+            cwd=e2e, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+            timeout=max(300, timeout_s),
+        )
+        if npm.returncode != 0:
+            print(json.dumps({"skipped": True, "reason": "npm install failed in uat/e2e (registry blocked / offline?) — provision @playwright/test manually, then re-run"}))
+            sys.exit(0)
+    except (subprocess.TimeoutExpired, OSError):
+        print(json.dumps({"skipped": True, "reason": "npm install timed out / failed to spawn in uat/e2e — provision manually, then re-run"}))
+        sys.exit(0)
+
 t0 = datetime.datetime.now()
+# process-GROUP spawn (round M3: a timeout must never orphan node/browser
+# children holding the pipes — killpg the whole group, then drain).
 try:
-    proc = subprocess.run(
+    proc_p = subprocess.Popen(
         ["npx", "--yes", "playwright", "test", "--reporter=json"],
         cwd=e2e, env=env, stdin=subprocess.DEVNULL,
-        capture_output=True, text=True, timeout=timeout_s,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        start_new_session=True,
     )
-    pw_exit = proc.returncode
-    report_raw = proc.stdout
-except subprocess.TimeoutExpired:
-    print(json.dumps({"skipped": True, "reason": "TIMEOUT after %ds — raise --timeout= or check the server" % timeout_s}))
-    sys.exit(0)
 except OSError as e:
     print(json.dumps({"skipped": True, "reason": "npx spawn failed: %s (registry blocked / offline?)" % e}))
     sys.exit(0)
+try:
+    report_raw, err_raw = proc_p.communicate(timeout=timeout_s)
+    pw_exit = proc_p.returncode
+except subprocess.TimeoutExpired:
+    import signal
+    try:
+        os.killpg(os.getpgid(proc_p.pid), signal.SIGKILL)
+    except (OSError, ProcessLookupError):
+        proc_p.kill()
+    try:
+        proc_p.communicate(timeout=10)
+    except Exception:
+        pass
+    print(json.dumps({"skipped": True, "reason": "TIMEOUT after %ds — raise --timeout= or check the server" % timeout_s}))
+    sys.exit(0)
+
+class _P: pass
+proc = _P(); proc.stderr = err_raw
 duration = (datetime.datetime.now() - t0).total_seconds()
 
 # Provisioning failure ≠ test result: a browser-build mismatch (installed
