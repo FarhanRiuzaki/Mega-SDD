@@ -16,7 +16,7 @@ Each scenario:
 | First time trying mega-sdd; want minimum viable run | [Scenario 1 — Greenfield from idea](scenario-1-greenfield-from-idea.md) | 15 min |
 | Have a PRD; existing project | [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md) | 30 min |
 | Field-level gap (PRD says X, code has Y) | [Scenario 3 — Field-level extension](scenario-3-field-extension.md) | 20 min |
-| Legacy codebase → modern rebuild (single phase) | [Scenario 4 — Legacy rebuild](scenario-4-legacy-rebuild.md) | 4 hr |
+| Legacy codebase → modern rebuild (single phase) | [Scenario 4 — Legacy rebuild](scenario-4-legacy-rebuild.md) · concept guide: [Revamp Journey](../../docs/mega-sdd/revamp-journey.md) | 4 hr |
 | Multi-team coordination | [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md) | 45 min |
 | Something halted; need to recover | [Scenario 6 — Recovery from halt](scenario-6-recovery-from-halt.md) | 15 min |
 | Multi-architect (BE/FE/MW shared PRD) | [Scenario 7 — Multi-architect](scenario-7-multi-architect.md) | 60 min |

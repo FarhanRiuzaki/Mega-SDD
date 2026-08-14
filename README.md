@@ -112,6 +112,7 @@ The full scenario chooser (13 walkthroughs, each with copy-paste inputs, expecte
 - Never used Claude Code → [Scenario 0 — Zero to first run](tests/scenarios/scenario-0-zero-to-first-run.md) (20 min)
 - Want the minimum viable demo → [Scenario 1 — Greenfield from idea](tests/scenarios/scenario-1-greenfield-from-idea.md) (15 min)
 - Have a PRD + an existing project → [Scenario 2 — PRD-driven feature](tests/scenarios/scenario-2-prd-driven-feature.md) (30 min)
+- Revamping a legacy app to a new stack → the end-to-end concept guide [Revamp Journey](docs/mega-sdd/revamp-journey.md) (extraction → build → hand-off → sync), with walkthroughs [Scenario 4](tests/scenarios/scenario-4-legacy-rebuild.md) (single-phase) and [Scenario 10](tests/scenarios/scenario-10-phased-rebuild-walkthrough.md) (multi-phase)
 
 A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/scenarios/sample-prd-clinic.md).
 
@@ -119,7 +120,7 @@ A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/s
 
 ```bash
 /mega-sdd ./prd.md                   # PRD → working code (5 phases)
-/mega-sdd ./legacy-php/ --out=./new/ # Legacy KB → vault → code (6 phases)
+/mega-sdd ./legacy-php/ --out=./new/ # Legacy KB → vault → code (5 phases, express)
 /mega-sdd "build a clinic system"    # Free-text brief → code (3 phases)
 /mega-sdd                            # no arg → status view, then proposes next chain
 /mega-sdd --resume                   # Continue paused/halted chain
