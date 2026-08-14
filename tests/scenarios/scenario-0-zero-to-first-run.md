@@ -80,7 +80,7 @@ In the Claude Code session, type:
 /mega-sdd:
 ```
 
-You should see an autocomplete list with `/mega-sdd:auto` at the top plus other commands. If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
+You should see an autocomplete list with `/mega-sdd` at the top plus its companion verbs (`/mega-sdd:sync`, `/mega-sdd:emit`, `/mega-sdd:slice`). If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
 
 Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`tree-sitter`, `ast-grep`, `ripgrep`, …) for higher precision. Mega-sdd works fine without them — every tool has a graceful fallback.
 
@@ -89,7 +89,7 @@ Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs n
 Still inside the Claude Code session, in your empty practice folder:
 
 ```
-/mega-sdd:auto "build a simple todo API — create a task, list tasks, mark a task complete"
+/mega-sdd "build a simple todo API — create a task, list tasks, mark a task complete"
 ```
 
 What you'll see, in order:
@@ -99,7 +99,7 @@ What you'll see, in order:
 3. **Work units** — the spec gets broken into small, reviewable tasks (each about the size of one pull request).
 4. **Code + tests + commits** — each unit is implemented with tests and committed to git automatically.
 
-If it pauses mid-run, that's a **halt** — a deliberate safety stop, not a crash. It tells you exactly what it needs (usually an answer from you) and how to continue (`/mega-sdd:auto --resume`).
+If it pauses mid-run, that's a **halt** — a deliberate safety stop, not a crash. It tells you exactly what it needs (usually an answer from you) and how to continue (`/mega-sdd --resume`).
 
 ## What just happened — the vocabulary
 

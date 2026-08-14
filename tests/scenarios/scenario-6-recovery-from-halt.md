@@ -5,6 +5,8 @@
 
 Halts are mega-sdd's safety net — they fire when anti-hallucination rails detect real issues. Knowing how to interpret + recover is essential for production use.
 
+> **Command forms in this catalog** — `/mega-sdd` and `/mega-sdd --resume` are the registered front door. Bare skill invocations shown in recovery steps (e.g. `execute-bolts U-001`, `resolve-oq --binding`) are typed as plain text in the session — they phrase-route to their skill (the typed `/mega-sdd:<skill>` command forms were removed at 6.0.0).
+
 ## Common halt types you'll encounter
 
 | Halt | What it means | When |
@@ -29,9 +31,9 @@ For any halt:
 1. Read the blocker YAML in chat
 2. Understand what triggered it
 3. Resolve the underlying issue
-4. Run `/mega-sdd:auto --resume`
+4. Run `/mega-sdd --resume`
 
-Mega-sdd's `--resume` is CWD-driven (Iter 4) + checkpoint-aware (Iter 6). It detects where you stopped + continues forward.
+Mega-sdd's `--resume` is CWD-driven + checkpoint-aware. It detects where you stopped + continues forward.
 
 ## Scenario walkthrough — `hard_rule_violated`
 
@@ -60,7 +62,7 @@ message: ALL response() calls are locked  # ← intentionally over-strict
 This will cause the bolt to fail because it adds the new error response. Re-run:
 
 ```
-/mega-sdd:execute-bolts U-001
+execute-bolts U-001
 ```
 
 ### The halt fires
@@ -87,7 +89,7 @@ blocker:
     files_modified:
       - app/Http/Controllers/Api/LoginController.php
   next_action: "Review the flagged bolt commit; `git revert` it OR
-                edit unit's Hard rules + re-run /mega-sdd:execute-bolts U-001"
+                edit unit's Hard rules + re-run execute-bolts U-001"
 ```
 
 Detect-after: the bolt commit already landed; the post-flight scan halted the run and the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or `git revert`ed. User reviews + decides.
@@ -119,7 +121,7 @@ Now the rule only locks the success path; new 401 error is allowed.
 Resume bolt:
 
 ```bash
-/mega-sdd:execute-bolts U-001
+execute-bolts U-001
 # Re-runs pre/post-flight; rule passes; commits
 ```
 
@@ -133,7 +135,7 @@ git checkout app/Http/Controllers/Api/LoginController.php
 
 # Re-think the unit's task — maybe Migration notes were wrong
 # Edit unit body, then:
-/mega-sdd:execute-bolts U-001
+execute-bolts U-001
 ```
 
 ### Option C: Force commit + accept risk (last resort)
@@ -141,7 +143,7 @@ git checkout app/Http/Controllers/Api/LoginController.php
 If you know the rule was wrong but don't want to edit it:
 
 ```bash
-/mega-sdd:execute-bolts U-001 --force-skip-postflight
+execute-bolts U-001 --force-skip-postflight
 ```
 
 ⚠️ Warning logged to memory. Use sparingly — bypasses the safety rail.
@@ -153,7 +155,7 @@ If unit isn't critical:
 ```bash
 git checkout app/Http/Controllers/Api/LoginController.php   # revert
 echo "U-001: skipped per user; recovery 2026-05-21" >> .mega-sdd/vaults/login-extension/.memory/bolt-outcomes.json
-/mega-sdd:auto --resume    # continues from next unit
+/mega-sdd --resume    # continues from next unit
 ```
 
 ## Scenario walkthrough — `bind_conflict`
@@ -180,13 +182,13 @@ blocker:
           - KEEP_CODE — preserve session auth; update vault
           - DEFER — flag as future work; mark this claim deferred
           - SPLIT — Sanctum for /api/*; sessions for web
-  next_action: "Run /mega-sdd:resolve-oq --binding"
+  next_action: "Run resolve-oq --binding"
 ```
 
 ### Recovery
 
 ```
-/mega-sdd:resolve-oq --binding
+resolve-oq --binding
 ```
 
 Interactive walker:
@@ -216,7 +218,7 @@ CONFLICT C-007:
 Pick (1). Memory writes the decision. Resume:
 
 ```
-/mega-sdd:auto --resume
+/mega-sdd --resume
 ```
 
 Chain continues from `bind-codebase` (re-runs with conflict resolved).
@@ -248,15 +250,15 @@ blocker:
 Option A: Re-dispatch the wave (one more try):
 
 ```
-/mega-sdd:auto --resume
+/mega-sdd --resume
 ```
 
-Iter 6 checkpoints let it re-run only Wave 3 (not start from Wave 1).
+Wave checkpoints let it re-run only Wave 3 (not start from Wave 1).
 
 Option B: Accept partial coverage:
 
 ```
-/mega-sdd:extract-intelligence ~/projects/legacy/ --allow-gaps --resume
+extract-intelligence ~/projects/legacy/ --allow-gaps --resume
 ```
 
 Wave proceeds with thinner citations. Surface in chat as warning; user reviews KB README for gaps.
@@ -274,13 +276,13 @@ If acceptable: continue chain. If not: investigate why scan didn't find more sou
 
 ## Universal `--resume` rules
 
-`/mega-sdd:auto --resume` does the right thing:
+`/mega-sdd --resume` does the right thing:
 
 1. Re-inspects CWD state (artifact presence)
 2. Reads checkpoints if any
 3. Identifies the latest incomplete phase
 4. Re-runs that phase if needed (idempotent for clean states)
-5. Continues forward per Iter 4 handoff YAML protocol
+5. Continues forward per the handoff YAML protocol
 
 It's safe to run `--resume` multiple times. If issue still exists, same halt fires.
 
@@ -310,7 +312,7 @@ JSON detail of Hard Rule state before/after.
 
 If you `git checkout .` to discard ALL bolt changes, you also discarded `.mega-sdd/vaults/<slug>/.internal/checkpoints/*.jsonl`. Recovery cursor lost.
 
-Fix: re-run with `/mega-sdd:auto --resume` (CWD-driven cursor will rebuild from artifact presence; just slower than checkpoint-driven).
+Fix: re-run with `/mega-sdd --resume` (CWD-driven cursor will rebuild from artifact presence; just slower than checkpoint-driven).
 
 ### Recovery loop
 
@@ -325,7 +327,7 @@ Same halt fires after `--resume`. You haven't fixed the underlying issue. Read t
 If `memory_schema_mismatch` halts the chain + you don't want to run migration immediately:
 
 ```
-/mega-sdd:auto --resume --memory-off
+/mega-sdd --resume --memory-off
 ```
 
 Disables memory layer for this run. Chain proceeds. Migrate later via `mega-sdd:memory` skill.
@@ -333,20 +335,20 @@ Disables memory layer for this run. Chain proceeds. Migrate later via `mega-sdd:
 ### Force-commit after `hard_rule_violated`
 
 ```bash
-/mega-sdd:execute-bolts U-XXX --force-skip-postflight
+execute-bolts U-XXX --force-skip-postflight
 ```
 
 ⚠️ Bypasses safety rail. Use ONLY when you've manually verified the code change is intentional + acceptable. Logged to memory for audit.
 
 ---
 
-# Additional halt walkthroughs (v3.33.0+, Iter 49 — closes audit D3-006)
+# Additional halt walkthroughs
 
-Iter 49 added 10 high-frequency halt walkthroughs to cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+These 10 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
 
-## Scenario walkthrough — `handoff_missing` (Iter 40 + 43 fix-forward)
+## Scenario walkthrough — `handoff_missing`
 
-**When you'll see it.** A sub-skill in an `--auto` chain exits without emitting a `handoff:` YAML block in its chat output. Orchestrator can't decide auto-continue / pause / stop without that block. Per Iter 43 fix-forward: the check looks at the sub-skill's chat output (last assistant message), NOT a file on disk.
+**When you'll see it.** A sub-skill in an `--auto` chain exits without emitting a `handoff:` YAML block in its chat output. Orchestrator can't decide auto-continue / pause / stop without that block. The check looks at the sub-skill's chat output (last assistant message), NOT a file on disk.
 
 **Example halt envelope:**
 
@@ -362,11 +364,11 @@ next_action:
   hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML in chat. Inspect chat_tail_excerpt for crash logs / OS-level failures."
 ```
 
-**Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`/mega-sdd:bind-codebase <vault-path>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
+**Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`bind-codebase <vault-path>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
 
 Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §handoff_missing`; `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
 
-## Scenario walkthrough — `artifact_missing` (Iter 40)
+## Scenario walkthrough — `artifact_missing`
 
 **When you'll see it.** A sub-skill emits a handoff YAML with `artifacts: [paths]` listing files that don't exist on disk (because the producer crashed mid-write OR fabricated paths). Orchestrator's step `b.vii` existence-checks every path BEFORE consuming.
 
@@ -382,27 +384,27 @@ details:
   handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"
 next_action:
   type: re_run_producer
-  hint: "Producer declared 8 unit files but only wrote 6. Re-run /mega-sdd:generate-units standalone to reproduce. Likely cause: crash mid-loop."
+  hint: "Producer declared 8 unit files but only wrote 6. Re-run generate-units standalone to reproduce. Likely cause: crash mid-loop."
 ```
 
 **Recovery:** re-run the producer skill standalone; inspect chat for mid-write crash signals. If reproducible → file bug. If transient → re-run + retry chain.
 
-## Scenario walkthrough — `partial_state_corrupt` + saga rollback (Iter 40 + 45)
+## Scenario walkthrough — `partial_state_corrupt` + saga rollback
 
-**When you'll see it.** `execute-bolts --resume` reads `<vault>/bolts/U-XXX/partial-state.json` and JSON parse fails. Previously silent overwrite (Iter 30); now ALWAYS-STOP with forensics path suggestion.
+**When you'll see it.** `execute-bolts --resume` reads `<vault>/bolts/U-XXX/partial-state.json` and JSON parse fails. Previously silent overwrite; now ALWAYS-STOP with forensics path suggestion.
 
 **Recovery option 1 (forensics + restart):**
 
 ```bash
 mv <vault>/bolts/U-007/partial-state.json <vault>/bolts/U-007/partial-state.json.corrupt-$(date -u +%Y-%m-%dT%H:%M:%SZ)
-/mega-sdd:execute-bolts U-007 --resume   # starts fresh now that corrupt file is moved aside
+execute-bolts U-007 --resume   # starts fresh now that corrupt file is moved aside
 ```
 
-**Recovery option 2 (saga rollback — Iter 45 v2.0 partial-state):** if the corrupt file is actually v2.0 with intact `rollback_hints[]` despite parse failure (rare — JSON header valid but `rollback_hints` array malformed), use `--rollback` to undo prior non-idempotent steps before re-attempting:
+**Recovery option 2 (saga rollback — v2.0 partial-state):** if the corrupt file is actually v2.0 with intact `rollback_hints[]` despite parse failure (rare — JSON header valid but `rollback_hints` array malformed), use `--rollback` to undo prior non-idempotent steps before re-attempting:
 
 ```bash
-/mega-sdd:execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
-/mega-sdd:execute-bolts U-007              # fresh re-run from clean slate
+execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
+execute-bolts U-007              # fresh re-run from clean slate
 ```
 
 Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Saga compensating actions`.
@@ -414,14 +416,14 @@ Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §part
 **Recovery:**
 
 ```bash
-/mega-sdd:resolve-oq <vault-path>       # interactive Q&A walk through unresolved OQs
+resolve-oq <vault-path>       # interactive Q&A walk through unresolved OQs
 # OR
 # Edit 03-open-questions.md directly + add "status: resolved" + answer; then re-run upstream skill
 ```
 
 If the OQ is `category: tech` and can be auto-resolved via codebase scan: re-run `bind-codebase` (it auto-resolves tech OQs with HIGH classification_confidence).
 
-## Scenario walkthrough — `diff_conflict` (Iter 3)
+## Scenario walkthrough — `diff_conflict`
 
 **When you'll see it.** `diff-vault` detects that a new PRD revision conflicts with a vault Resolved-OQ or ADR Decision. Needs stakeholder input — never auto-overrides existing decisions.
 
@@ -439,9 +441,9 @@ options: ["supersede", "keep_vault", "capture_both"]
 
 **Recovery:** review the conflict context, pick one of the 3 options, then re-run `diff-vault` with `--resolve=<option>` OR edit vault markdown directly + re-run.
 
-## Scenario walkthrough — `dispatch_prompt_too_large` (Iter 30 + 44)
+## Scenario walkthrough — `dispatch_prompt_too_large`
 
-**When you'll see it.** Per Iter 44 v2.8.0+ semantics: fires ONLY when constitution_clauses alone exceeds 10KB after all disposable T2 sections truncated to drop floor. Real config issue, not bolt-fixable.
+**When you'll see it.** Current semantics: fires ONLY when constitution_clauses alone exceeds 10KB after all disposable T2 sections truncated to drop floor. Real config issue, not bolt-fixable.
 
 **Recovery:** the halt envelope shows `warnings: [{section, rule_applied, bytes_saved}, ...]` — review which sections truncated. If constitution_clauses is the bulk, consider:
 1. Splitting the unit (smaller scope = fewer constitution clauses referenced)
@@ -450,7 +452,7 @@ options: ["supersede", "keep_vault", "capture_both"]
 
 Cross-refs: `execute-bolts/SKILL.md §Step 4.5.a.5 T2 Section Priority + Truncation`.
 
-## Scenario walkthrough — `provenance_missing` (Iter 30)
+## Scenario walkthrough — `provenance_missing`
 
 **When you'll see it.** Bolt subagent committed code without the provenance trailer (`# mega-sdd: unit=U-XXX bolt=<sha>`). Post-flight scan catches this.
 
@@ -460,12 +462,12 @@ Cross-refs: `execute-bolts/SKILL.md §Step 4.5.a.5 T2 Section Priority + Truncat
 # In your editor, add trailer to top of each modified file
 git add <modified-files>
 git commit --amend --no-edit
-/mega-sdd:execute-bolts U-007 --resume   # post-flight will pass now
+execute-bolts U-007 --resume   # post-flight will pass now
 ```
 
 Cross-refs: `bolt-dispatch-prompt.md §Provenance trailer`.
 
-## Scenario walkthrough — `bind_conflict_constitution_violation` (Iter 20)
+## Scenario walkthrough — `bind_conflict_constitution_violation`
 
 **When you'll see it.** A claim being bound conflicts with a security/compliance clause in `<vault>/constitution.md` §B or §F. Constitution is non-negotiable — overrides binding gate.
 
@@ -486,7 +488,7 @@ details:
 2. If constitution is correct, the claim is wrong — fix the PRD/vault and re-run binding.
 3. Never bypass — constitution violations are blocking by design.
 
-## Scenario walkthrough — `cross_squad_dep_invalid` (Iter 25)
+## Scenario walkthrough — `cross_squad_dep_invalid`
 
 **When you'll see it.** A unit declares `consumes_interface: <ref>` from a different squad, but the producer squad hasn't locked that interface yet OR the ref points to a non-existent interface.
 
@@ -494,10 +496,10 @@ details:
 
 ```bash
 # Option A: producer squad locks the interface
-/mega-sdd:execute-bolts U-<producer-unit> --squad=producer-squad
+execute-bolts U-<producer-unit> --squad=producer-squad
 
 # Option B: consumer waits (orchestrate-flow auto-handles via convergence loop with backoff)
-/mega-sdd:orchestrate-flow --converge --max-cycles=3
+/mega-sdd --converge --max-cycles=3
 
 # Option C: fix the ref if it points to wrong interface
 # Edit unit's consumes_interface field; re-run generate-units --refresh
@@ -505,7 +507,7 @@ details:
 
 Cross-refs: `generate-units/references/cross-squad-interfaces.md`.
 
-## Scenario walkthrough — `memory_schema_mismatch` (Iter 5)
+## Scenario walkthrough — `memory_schema_mismatch`
 
 **When you'll see it.** A persisted memory file's `schema_version` doesn't match the current code's expected schema. Mega-sdd's memory subsystem detected the drift and refuses to read without explicit migration consent.
 
@@ -521,7 +523,7 @@ For new projects: this halt should never fire on first run. If it fires after a 
 
 ---
 
-## Scenario walkthrough — `install_failed` + `pkg_mgr_not_found` (Iter 55, scenario added Iter 58)
+## Scenario walkthrough — `install_failed` + `pkg_mgr_not_found`
 
 **When you'll see it.** `/mega-sdd:install-deps` ran but either (a) detected no compatible package manager (`pkg_mgr_not_found`) or (b) install command exited non-zero / post-install `verify_cmd` failed (`install_failed`).
 
@@ -601,11 +603,11 @@ which <tool>                  # verify path
 
 ---
 
-## Scenario walkthrough — `quality_gate_failed` subtypes (Iter 53/54, scenario added Iter 58)
+## Scenario walkthrough — `quality_gate_failed` subtypes
 
-Iter 53 + 54 extended the existing `quality_gate_failed` halt with a `subtype:` discriminator. Recovery forks on subtype.
+The `quality_gate_failed` halt carries a `subtype:` discriminator. Recovery forks on subtype.
 
-### `subtype: pdf_render_failed` (emit-fsd, Iter 54)
+### `subtype: pdf_render_failed` (emit-fsd)
 
 ```yaml
 blocker:
@@ -624,16 +626,16 @@ The emit lanes render PDFs via `scripts/md2pdf.sh` (pandoc HTML + Chrome print, 
 /mega-sdd:emit fsd <vault-path>              # retry the render
 ```
 
-### `subtype: template_slot_unfilled` (emit-fsd, Iter 54)
+### `subtype: template_slot_unfilled` (emit-fsd)
 
 Internal bug — fsd-template.md has a slot marker that section-mapping.md has no extraction rule for. File plugin bug. Meanwhile:
 
 ```bash
 # Skip affected section per styling override:
-/mega-sdd:emit-fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
+/mega-sdd:emit fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
 ```
 
-### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units, Iter 53)
+### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
 
 generate-units emitted `units_with_starterkit_rules > 0` BUT scan-codebase's starterkit-context.yaml flags `partial: true`. Rules may cite incomplete framework conventions.
 
@@ -641,21 +643,21 @@ Recovery:
 
 ```bash
 # Force-deep re-scan to complete starterkit slices:
-/mega-sdd:scan-codebase --force-deep
+scan-codebase --force-deep
 
 # Regenerate units against complete starterkit:
-/mega-sdd:generate-units --regenerate
+generate-units --regenerate
 ```
 
-### `subtype: wave_quality_threshold_unmet` or omitted (extract-intelligence, Iter 9 original)
+### `subtype: wave_quality_threshold_unmet` or omitted (extract-intelligence)
 
 Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) covers this case.
 
 ---
 
-## Scenario walkthrough — PRD-scope halts (Iter 28, walkthroughs added Iter 62 per A2-005)
+## Scenario walkthrough — PRD-scope halts
 
-Iter 28 added 3 halts for PRD multi-scope handling. Per Iter 62 audit closure, all 3 get explicit recovery walkthroughs.
+PRD multi-scope handling carries 3 halts; all 3 get explicit recovery walkthroughs.
 
 ### `scope_not_declared_in_prd`
 
@@ -675,7 +677,7 @@ Recovery:
 
 ```bash
 # Option 1: pick valid scope from declared list
-/mega-sdd:generate-intent ./prd.md --scope=FE
+generate-intent ./prd.md --scope=FE
 
 # Option 2: edit PRD frontmatter to add missing scope
 # Add to PRD frontmatter:
@@ -683,7 +685,7 @@ Recovery:
 #     - id: BE
 #       name: Backend
 # Then re-run
-/mega-sdd:generate-intent ./prd.md --scope=BE
+generate-intent ./prd.md --scope=BE
 ```
 
 ### `prd_no_scopes_block_user_rejected_retrofit`
@@ -703,13 +705,13 @@ Recovery: user explicitly rejected the AI retrofit (auto-add scopes block). 3 pa
 ```bash
 # Option 1: manually edit PRD frontmatter to add scopes block
 # Then re-run
-/mega-sdd:generate-intent ./prd.md
+generate-intent ./prd.md
 
 # Option 2: opt-out of multi-scope; run as single-scope (legacy)
-/mega-sdd:generate-intent ./prd.md --single-scope
+generate-intent ./prd.md --single-scope
 
 # Option 3: accept retrofit (changed mind)
-/mega-sdd:generate-intent ./prd.md --retrofit-scopes
+generate-intent ./prd.md --retrofit-scopes
 ```
 
 ### `prd_retrofit_low_confidence`
@@ -731,16 +733,16 @@ cat <project>/.mega-sdd/retrofit-preview.md
 
 # Then choose:
 # (a) Accept anyway despite LOW confidence:
-/mega-sdd:generate-intent ./prd.md --accept-low-confidence-retrofit
+generate-intent ./prd.md --accept-low-confidence-retrofit
 # (b) Fall back to single-scope:
-/mega-sdd:generate-intent ./prd.md --single-scope
+generate-intent ./prd.md --single-scope
 # (c) Cancel + manually retrofit PRD frontmatter:
 # Edit PRD; re-run
 ```
 
 ---
 
-## Scenario walkthrough — `drift_framework_mismatch` + `constitution_drift_detected` (Iter 12 + Iter 30, added Iter 62 per A2-006)
+## Scenario walkthrough — `drift_framework_mismatch` + `constitution_drift_detected`
 
 Both halts fire from `detect-drift` on real production drift scenarios.
 
@@ -761,10 +763,10 @@ Recovery options:
 
 ```bash
 # Option 1: code-supersede (codebase reality is correct; update vault)
-/mega-sdd:diff-vault ./new-prd-spring.md   # if new PRD reflects Spring
+diff-vault ./new-prd-spring.md   # if new PRD reflects Spring
 # OR re-extract intelligence + regenerate vault:
-/mega-sdd:extract-intelligence ./
-/mega-sdd:generate-intent --kb=<kb>
+extract-intelligence ./
+generate-intent --kb=<kb>
 
 # Option 2: vault-supersede (codebase regressed; revert to Laravel)
 git revert <commit-range>   # roll back framework migration
@@ -773,7 +775,7 @@ git checkout <pre-migration-tag>
 
 # Option 3: split — keep both as separate vault scopes
 # Manually retrofit PRD scopes block: scopes: [legacy-laravel, new-spring]
-/mega-sdd:generate-intent ./prd.md --scope=new-spring
+generate-intent ./prd.md --scope=new-spring
 ```
 
 ### `constitution_drift_detected`
@@ -801,19 +803,19 @@ cat <vault>/DRIFT-REPORT.md
 # Commit fix
 
 # Step 3: re-run drift detection
-/mega-sdd:detect-drift
+detect-drift
 
 # OPTION: if constitution clause itself is wrong (rare), update it:
 # Edit <vault>/_meta/constitution.md §B-007
-# Re-run: /mega-sdd:detect-drift
+# Re-run: detect-drift
 # (Constitution edits require sign-off per CLAUDE.md governance)
 ```
 
 ---
 
-## Scenario walkthrough — execute-bolts halts (Iter 30 closure, added Iter 62 per A2-007)
+## Scenario walkthrough — execute-bolts halts
 
-Three execute-bolts halts from Iter 30 lacked walkthroughs:
+Three more execute-bolts halts:
 
 ### `bolt_repeated_partial_failure`
 
@@ -843,7 +845,7 @@ cat <vault>/units/U-012.md
 # If acceptance_test wrong: edit acceptance_test field; re-run
 # If target_files too broad: tighten scope; re-run
 # If genuinely blocked: emit OQ-blocker for human review:
-/mega-sdd:resolve-oq --emit-blocker "U-012 cannot pass acceptance test as specified"
+resolve-oq --emit-blocker "U-012 cannot pass acceptance test as specified"
 ```
 
 ### `bolt_introduces_locked_drift`
@@ -870,12 +872,12 @@ git checkout <pre-bolt-state>
 # Option 2: amend constitution to allow drift (requires explicit user approval)
 # Edit <vault>/_meta/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
 # Re-run bolt:
-/mega-sdd:execute-bolts U-007 --confirm-locked-drift
+execute-bolts U-007 --confirm-locked-drift
 ```
 
 ### `self_assessment_missing`
 
-bolt-report.md lacks self-assessment YAML block (Iter 30 §10 mandatory).
+bolt-report.md lacks self-assessment YAML block.
 
 ```yaml
 blocker:
@@ -893,7 +895,7 @@ Recovery (bolt subagent skipped mandatory output):
 cat <vault>/bolts/U-009/bolt-report.md
 
 # Re-run bolt with explicit self-assessment instruction:
-/mega-sdd:execute-bolts U-009 --strict-self-assessment
+execute-bolts U-009 --strict-self-assessment
 
 # If repeat failure: likely bolt subagent prompt drift; file plugin bug
 ```
@@ -920,7 +922,7 @@ You've now covered all 6 scenarios:
 5. ✅ [Multi-squad parallel](scenario-5-multi-squad-parallel.md) — partition work across teams
 6. ✅ [Recovery from halt](scenario-6-recovery-from-halt.md) — when things go wrong
 
-Mega-sdd is now your friend for spec-driven AI development. The pipeline is opinionated, anti-hallucinating, and atomic. `/mega-sdd:auto` is THE command; everything else exists for power users.
+Mega-sdd is now your friend for spec-driven AI development. The pipeline is opinionated, anti-hallucinating, and atomic. `/mega-sdd` is THE command; everything else exists for power users.
 
 For deeper architecture details: see [`../../README.md`](../../README.md) advanced sections + [`docs/superpowers/specs/`](../../docs/superpowers/specs/) design docs.
 

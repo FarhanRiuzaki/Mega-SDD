@@ -150,7 +150,7 @@ OQ-CN-005 [P1] [business / blocking]:
   Recommendation: NO — fix the typo; correct field is "CFKDHL" (recommended)
   Rationale: KB marks the typo as [VERIFIED] critical finding. Legacy
     silently corrupted 3% of customer updates per audit log analysis.
-  Source: .mega-sdd/knowledge-base/10-domains/10-cif-customer.md §Gotcha 9 (v3.4+ canonical)
+  Source: .mega-sdd/knowledge-base/10-domains/10-cif-customer.md §Gotcha 9
   Mutability tier: [LOCKED] (regulatory citation: BI Reg 23/2/2021 §4 — field validation rule)
   → Pack-aware Hard Rule emitted into all customer-update units
   Fallback-if-wrong: If downstream systems depend on bug, add adapter

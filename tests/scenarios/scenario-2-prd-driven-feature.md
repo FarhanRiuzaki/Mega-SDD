@@ -27,24 +27,23 @@ cp /path/to/mega-sdd/tests/scenarios/sample-prd-clinic.md ./prd-clinic.md
 ## Step 2 — Kick off mega-sdd
 
 ```
-/mega-sdd:auto ./prd-clinic.md
+/mega-sdd ./prd-clinic.md
 ```
 
 Mega-sdd detects:
 - Input is `.md` file → PRD Mode A
 - Existing code present → brownfield
 - No vault → starts from `generate-intent`
-- Detects need for binding phase (scan-codebase + bind-codebase)
+- Express spine (default): GROUND already ran as a script (framework pack + symbol index) — no scan phase; add `--classic` for the full `codebase-map.md` lane
 
 Chain proposal:
 
 ```
 Proposed pipeline (--deep):
   1. generate-intent ./prd-clinic.md
-  2. scan-codebase                            → codebase-map.md (engine: tree-sitter)
-  3. bind-codebase                            → binding.md + bound vault
-  4. generate-units                           → atomic units with field-level diff
-  5. execute-bolts                            → code commits per unit
+  2. bind-codebase --express                  → binding.md + bound vault
+  3. generate-units                           → atomic units with field-level diff
+  4. execute-bolts                            → code commits per unit
 
 Halts may re-engage you on conflicts, business OQs, hard-rule violations.
 
@@ -58,12 +57,12 @@ Mega-sdd extracts vault from PRD. Most info auto-parsed; minimal Q&A. Outputs:
 - ~8 OQs (per PRD's "Open questions" section + auto-classifier additions)
 
 ```
-✓ Phase 1 of 5: generate-intent → vault: 9 OQs (4 P1 business, 3 P2 tech, 2 P3)
+✓ Phase 1 of 4: generate-intent → vault: 9 OQs (4 P1 business, 3 P2 tech, 2 P3)
 ```
 
 ## Step 4 — Resolve P1 business OQs
 
-Mega-sdd surfaces context-aware recommendations (Iter 7+). For PRD's listed OQs:
+Mega-sdd surfaces context-aware recommendations. For PRD's listed OQs:
 
 ```
 OQ-001 [P1] [business / blocking]:
@@ -93,8 +92,6 @@ After all P1 resolved:
 Mega-sdd inspects existing code:
 
 ```
-▶ Phase 2 of 5: invoking scan-codebase
-✓ Phase 2 of 5: scan-codebase → engine: tree-sitter, precision: ast
   Found: 47 classes, 142 methods, 12 routes, 6 models
   Test framework: vitest + playwright
   Naming: PascalCase classes; kebab-case routes
@@ -103,8 +100,8 @@ Mega-sdd inspects existing code:
 Then binding:
 
 ```
-▶ Phase 3 of 5: invoking bind-codebase
-✓ Phase 3 of 5: bind-codebase → 28 claims, 0 conflicts
+▶ Phase 2 of 4: invoking bind-codebase --express
+✓ Phase 2 of 4: bind-codebase → 28 claims, 0 conflicts
   Implementation State Map:
     NEW: 22 (greenfield additions for new feature)
     IMPLEMENTED: 4 (existing User model, Auth middleware)
@@ -114,13 +111,13 @@ Then binding:
   Tech-OQ recommendations surfaced: 1 (Better Auth vs Auth.js)
 ```
 
-Two PARTIAL_FIELDS_MISSING claims signal the field-level diff Iter 8 catches — e.g., your existing User model has `email + password` but PRD adds `phone` for patient role.
+Two PARTIAL_FIELDS_MISSING claims signal the field-level diff the binding pass catches — e.g., your existing User model has `email + password` but PRD adds `phone` for patient role.
 
 ## Step 6 — Generate units with module grouping
 
 ```
-▶ Phase 4 of 5: invoking generate-units
-✓ Phase 4 of 5: generate-units → 12 units
+▶ Phase 3 of 4: invoking generate-units
+✓ Phase 3 of 4: generate-units → 12 units
   [auto] lint-units: 11 HIGH | 1 MEDIUM | 0 LOW grounding; anchors 28/28 verified
   [auto] analyze-parallelism: max width 4 | speedup 2.4x
 
@@ -144,7 +141,7 @@ You'll see:
 id: U-001
 title: Extend User model with patient fields
 module: M-auth
-task_type: extend                        # ← key: Iter 8 PARTIAL_FIELDS_MISSING
+task_type: extend                        # ← key: PARTIAL_FIELDS_MISSING
 vault_source: 03-data-model.md#Patient
 grounding_confidence: HIGH
 target_files:
@@ -183,7 +180,7 @@ The unit knows exactly what fields to ADD (phone, role) while preserving existin
 ## Step 7 — Execute bolts
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts --per-squad --parallel
+▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel
   Wave 1 (4 parallel): U-001 U-005 U-008 U-010
   ✓ Wave 1 complete
   Wave 2 (3 parallel): U-002 U-006 U-009
@@ -192,7 +189,7 @@ The unit knows exactly what fields to ADD (phone, role) while preserving existin
   ✓ Wave 3 complete
   Wave 4 (2 sequential): U-004 U-012
   ✓ Wave 4 complete
-✓ Phase 5 of 5: execute-bolts → 12/12 complete (0 halts; 8 min total)
+✓ Phase 4 of 4: execute-bolts → 12/12 complete (0 halts; 8 min total)
   [auto] list-modules: 4/4 modules completed
   [auto] emit-agents-md: AGENTS.md regenerated
 ```
@@ -243,9 +240,9 @@ blocker:
           - SPLIT — keep NextAuth for now; migrate to Better Auth in a follow-up
 ```
 
-Run `/mega-sdd:resolve-oq --binding`. Walks each conflict interactively. Pick KEEP_VAULT if PRD trumps code; KEEP_CODE if existing pattern is canonical; SPLIT for nuanced cases.
+Say "resolve open questions --binding" (routes to resolve-oq; a converging `--deep` chain also enters it itself). Walks each conflict interactively. Pick KEEP_VAULT if PRD trumps code; KEEP_CODE if existing pattern is canonical; SPLIT for nuanced cases.
 
-After resolution: `/mega-sdd:auto --resume`.
+After resolution: `/mega-sdd --resume`.
 
 ### Phase 5 halts on hard_rule_violated
 
@@ -263,21 +260,21 @@ blocker:
 Options:
 1. Revert: `git checkout database/migrations/2014_10_12_create_users_table.php` + re-run unit
 2. Edit unit: change Hard Rule OR move logic to new migration
-3. Force: `/mega-sdd:execute-bolts U-001 --force` (accepts risk)
+3. Force: say "execute bolts U-001 --force" (accepts risk)
 
 ### grounding_confidence: LOW units
 
-If `/mega-sdd:auto` lint pass shows LOW units, review them before bolts. Reasons:
+If the chain lint pass shows LOW units, review them before bolts. Reasons:
 - Vault claim too vague
 - Codebase-map gaps (some files not indexed)
 - Anchors point to non-existent file
 
-Fix vault, re-run `/mega-sdd:bind-codebase` + `/mega-sdd:generate-units --refresh`.
+Fix vault, then say "bind vault to code" + "generate units --refresh".
 
 ## What you learned
 
 - PRD-driven flow detects existing code + binds against it
-- PARTIAL_FIELDS_MISSING (Iter 8) catches field-level gaps automatically
+- PARTIAL_FIELDS_MISSING catches field-level gaps automatically
 - Modules group units semantically (M-auth, M-booking, etc.)
 - Hard Rules protect existing code from unintended changes
 - Per-squad + per-wave parallelism speeds up execution
