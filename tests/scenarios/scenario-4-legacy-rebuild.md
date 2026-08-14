@@ -5,9 +5,11 @@
 
 This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-finance system → modern Laravel rebuild.
 
+> **The concept guide** for this whole journey — why each act exists, plus the handoff (doc-pack + UAT evidence) and life-after-rebuild (sync) acts this walkthrough only touches — is [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
+
 ## Prerequisites
 
-- Mega-sdd v3.40.0+
+- Mega-sdd v6+ (the public surface is 4 verbs; typed forms like `/mega-sdd:auto` were removed at 6.0.0 — the front door `/mega-sdd` replaces them)
 - Legacy codebase available (at least 50-100 files; ideally 500+ for meaningful extraction)
 - New target project directory ready
 - `tree-sitter` + `ast-grep` recommended for both legacy scan + new build
@@ -41,24 +43,23 @@ git add . && git commit -m "baseline: empty Laravel scaffold"
 ## Step 1 — Kick off extraction + rebuild
 
 ```
-/mega-sdd:auto ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/
+/mega-sdd ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/
 ```
 
-Mega-sdd detects:
-- Input is directory with code files → legacy codebase
-- `--out` provided → output goes there
+The front door detects:
+- Input is directory with code files, no vault → legacy codebase
+- `--out` provided (REQUIRED for this lane) → KB goes to `<out>/knowledge-base/`
 - No existing vault at target → starts from extract-intelligence
 
-Chain proposal (6 phases for legacy rebuild):
+Chain proposal (5 phases — the **express spine** is the default, so no separate scan phase; add `--classic` if you want the full `codebase-map.md` lane, which inserts scan-codebase before bind):
 
 ```
 Proposed pipeline (--deep):
   1. extract-intelligence ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/  ← ~3 hours
   2. generate-intent --kb=~/projects/rebuild-target/.mega-sdd/knowledge-base/                    ← ~30 min
-  3. scan-codebase ~/projects/rebuild-target/                                                     ← ~5 min
-  4. bind-codebase                                                                                  ← ~15 min
-  5. generate-units                                                                                  ← ~20 min
-  6. execute-bolts --per-squad --parallel                                                            ← variable (bolt count × ~1-3 min each)
+  3. bind-codebase --express                                                                       ← ~15 min
+  4. generate-units                                                                                  ← ~20 min
+  5. execute-bolts --per-squad --parallel                                                            ← variable (bolt count × ~1-3 min each)
 
 Total estimated: 4-6 hours
 Halts may re-engage you (extract-intelligence quality gates, bind conflicts, Hard Rule violations).
@@ -73,7 +74,7 @@ Click **Run**. Walk away for a few hours — Phase 1 will run in the background.
 Mega-sdd's extract-intelligence runs 5 waves of parallel-subagent extraction:
 
 ```
-▶ Phase 1 of 6: invoking extract-intelligence
+▶ Phase 1 of 5: invoking extract-intelligence
   Wave 0 (prep): skeleton dirs created
   Wave 1 (foundation): 3 parallel agents → 00-overview/, 30-data-model/, 20-workflows/cross-cutting
     ~30 min wall-clock
@@ -86,7 +87,7 @@ Mega-sdd's extract-intelligence runs 5 waves of parallel-subagent extraction:
   Wave 5 (synthesis): main thread → 99-rebuild-architecture/ + README + critical findings
     ~30 min wall-clock
 
-✓ Phase 1 of 6: extract-intelligence → 35 MD files + README + critical findings
+✓ Phase 1 of 5: extract-intelligence → 35 MD files + README + critical findings
    ~700 OQs identified (categorized: business / tech / scan-resolvable)
    ~2400 source citations to legacy code
    Quality gates: 5/5 passed
@@ -111,7 +112,7 @@ Each file marker-disciplined: `[VERIFIED]` (cross-referenced ≥2 source files),
 ## Step 3 — Phase 2: Generate intent from KB (~30 min)
 
 ```
-▶ Phase 2 of 6: invoking generate-intent --kb=.mega-sdd/knowledge-base/
+▶ Phase 2 of 5: invoking generate-intent --kb=.mega-sdd/knowledge-base/
 ```
 
 Mode B with KB sub-mode. Skill reads KB README + relevant domain files as PRD-equivalent source. Q&A (≤10 questions) extracts project shape, tech preferences, modes.
@@ -126,7 +127,7 @@ For legacy rebuild, typical answers:
 Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + regulatory questions from KB's `[OPEN]` items).
 
 ```
-✓ Phase 2 of 6: generate-intent → 30 OQs (12 P1 business, 10 P2 tech, 8 P3)
+✓ Phase 2 of 5: generate-intent → 30 OQs (12 P1 business, 10 P2 tech, 8 P3)
   + Auto-Classification Review section in 00-index.md (5 tech OQs flagged for review)
 ```
 
@@ -137,7 +138,7 @@ Often the biggest time in legacy rebuild — stakeholders need to decide:
 - Which regulatory constraints still apply
 - How to handle data migration cutover
 
-Run `/mega-sdd:resolve-oq`. Walks each P1 with KB-derived recommendations:
+The chain halts on P1 business OQs and invokes the resolve-oq skill (or say "jawab OQ list" / "resolve open questions" to enter it yourself). It walks each P1 with KB-derived recommendations:
 
 ```
 OQ-CN-005 [P1] [business / blocking]:
@@ -165,21 +166,16 @@ OQ-CN-005 [P1] [business / blocking]:
 Pick + memory captures. Resume:
 
 ```
-/mega-sdd:auto --resume
+/mega-sdd --resume
 ```
 
-## Step 5 — Phase 3-4: Scan + bind (~20 min)
+## Step 5 — Phase 3: Bind (~15 min, express spine)
+
+The GROUND step already ran as a script (framework pack matched from `composer.json`, symbol index built — zero model tokens), so the chain goes straight to bind:
 
 ```
-▶ Phase 3 of 6: invoking scan-codebase ~/projects/rebuild-target/
-✓ Phase 3 of 6: scan-codebase → engine: tree-sitter, precision: ast
-  Empty Laravel scaffold detected; minimal symbols (User model + base controllers)
-  Framework detected: laravel-base-26 (composer.json — pixinvent/vuexy-laravel-bootstrap-jetstream)
-    → pack_path: plugins/mega-sdd/references/framework-conventions/laravel-base-26.md
-    → extends: laravel → _universal
-
-▶ Phase 4 of 6: invoking bind-codebase
-✓ Phase 4 of 6: bind-codebase → 87 claims, 0 conflicts
+▶ Phase 3 of 5: invoking bind-codebase --express
+✓ Phase 3 of 5: bind-codebase → 87 claims, 0 conflicts
   Implementation State Map:
     NEW: 85 (greenfield-ish; building new on Laravel)
   Mutability tier distribution (from KB):
@@ -195,11 +191,11 @@ Pick + memory captures. Resume:
 
 Greenfield-ish — most claims are NEW since target is empty Laravel.
 
-## Step 6 — Phase 5: Generate units (~20 min)
+## Step 6 — Phase 4: Generate units (~20 min)
 
 ```
-▶ Phase 5 of 6: invoking generate-units
-✓ Phase 5 of 6: generate-units → 47 units in 8 modules
+▶ Phase 4 of 5: invoking generate-units
+✓ Phase 4 of 5: generate-units → 47 units in 8 modules
   [auto] lint-units: 44 HIGH | 3 MEDIUM | 0 LOW | anchors 89/89 verified
   [auto] analyze-parallelism: max width 7 | speedup 3.2x
 
@@ -216,10 +212,10 @@ Modules:
 
 47 units is substantial but manageable. target_files came from binding citations (which referenced KB sections); at bolt time each dispatch carried its symbol_slice of nearby existing code.
 
-## Step 7 — Phase 6: Execute bolts (~1-3 hours)
+## Step 7 — Phase 5: Execute bolts (~1-3 hours)
 
 ```
-▶ Phase 6 of 6: invoking execute-bolts --per-squad --parallel
+▶ Phase 5 of 5: invoking execute-bolts --per-squad --parallel
   Squad partition: single squad (no _meta/squads.yaml declared); intra-squad parallel
   
   Wave 1 (7 parallel): U-001 U-008 U-015 U-022 U-030 U-038 U-045
@@ -230,12 +226,12 @@ Modules:
   Wave 9 (1 final): U-047
   ✓ Wave 9 complete in 3 min
 
-✓ Phase 6 of 6: execute-bolts → 47/47 complete (3 halts resolved; total ~2 hr)
+✓ Phase 5 of 5: execute-bolts → 47/47 complete (3 halts resolved; total ~2 hr)
   [auto] list-modules: 8/8 modules completed
   [auto] emit-agents-md: AGENTS.md generated
 
 📋 Final summary:
-   Phases: 6/6 completed
+   Phases: 5/5 completed
    Quality: HIGH grounding throughout
    Parallelism: 3.2x speedup (real wall-clock 2 hr vs sequential ~6.5 hr)
    Memory: 4 learning suggestions pending → /mega-sdd:memory review
@@ -265,6 +261,18 @@ cat AGENTS.md
 # key decisions, open questions, mega-sdd interop notes
 ```
 
+## Step 9 — Hand off + keep it alive
+
+The rebuild isn't delivered until the team documents exist and the vault stays in sync with moving code:
+
+```
+/mega-sdd:emit fsd     # Confluence-ready FSD (md + PDF, sha256-stamped citations)
+/mega-sdd:emit uat     # UAT doc — then let it generate + run the Playwright evidence lane
+/mega-sdd:sync         # any time the code moves after "done" (hotfix, manual edit, git pull)
+```
+
+The why and the full hand-off/maintenance acts: [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md) §Babak 3–4.
+
 ## What you accomplished
 
 - Extracted 35-file knowledge base from legacy (no manual archaeology)
@@ -292,7 +300,7 @@ blocker:
 ```
 
 Options:
-- Re-dispatch wave with `/mega-sdd:auto --resume` (Iter 6 checkpoints let it re-run only that wave)
+- Re-dispatch wave with `/mega-sdd --resume` (wave checkpoints let it re-run only that wave)
 - Manually inspect the partial output; if good enough, accept gap with `--allow-gaps` flag (loses some rigor)
 
 ### Generate-intent --kb produces too many OQs
