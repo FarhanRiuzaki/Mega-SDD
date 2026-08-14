@@ -29,7 +29,7 @@ git init
 In Claude Code session at the new dir:
 
 ```
-/mega-sdd:auto "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
+/mega-sdd "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
 ```
 
 Mega-sdd detects:
@@ -84,10 +84,10 @@ If any P1 business OQs exist, mega-sdd pauses chain with:
 ⏸ Phase 1 paused: 2 P1 business OQs need resolution.
   OQ-FL-002: Should patients see other patients' names? (privacy)
   OQ-CN-001: HIPAA/GDPR compliance scope?
-Run: /mega-sdd:resolve-oq to walk these interactively.
+Say "resolve open questions" to walk these interactively.
 ```
 
-Run `/mega-sdd:resolve-oq`. Walks each P1 OQ:
+Say "resolve open questions" (or let the halted chain invoke resolve-oq itself). Walks each P1 OQ:
 
 ```
 OQ-FL-002 [P1] [business / blocking]:
@@ -109,7 +109,7 @@ OQ-FL-002 [P1] [business / blocking]:
 Pick (1). Memory writes decision. Resume:
 
 ```
-/mega-sdd:auto --resume
+/mega-sdd --resume
 ```
 
 Chain continues.
@@ -125,7 +125,7 @@ After OQ resolution, mega-sdd generates atomic units. For clinic system, expect 
   [auto] analyze-parallelism: max width 5 | speedup 2.8x | wave plan ready
 ```
 
-Mega-sdd auto-invokes lint + analyze (Iter 13 consolidation). Each unit:
+Mega-sdd auto-invokes lint + analyze. Each unit:
 - Atomic (~1 PR-sized commit; <300 LOC)
 - Has Anchors citing Next.js patterns
 - Has acceptance_test (Vitest/Playwright)
@@ -223,7 +223,7 @@ Common causes:
 - Database not migrated (run `bun run db:migrate`)
 - Test references file that doesn't exist (unit may be missing target_file dependency)
 
-Resolve, then `/mega-sdd:auto --resume`.
+Resolve, then `/mega-sdd --resume`.
 
 ### Wall-clock longer than 15 min
 
@@ -233,7 +233,7 @@ Acceptable for greenfield. Optimization targets:
 
 ## What you learned
 
-- `/mega-sdd:auto` runs the FULL pipeline from a single sentence
+- `/mega-sdd` runs the FULL pipeline from a single sentence
 - Auto-detect handles greenfield (no PRD, no code)
 - Memory + recommendations help with OQs
 - Anti-halu rails fire on real issues; auto-continues otherwise

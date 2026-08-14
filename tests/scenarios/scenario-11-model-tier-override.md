@@ -2,7 +2,7 @@
 
 **Time:** ~5 minutes
 **When to use:** override default model tiers per subagent role (cost control OR quality boost)
-**Prerequisites:** plugin v3.25.0+ (Iter 34)
+**Prerequisites:** plugin v6+
 
 ## What you'll learn
 
@@ -32,13 +32,13 @@ Distribution is sonnet-dominant by design (rubric in catalog file).
 You're testing a feature; don't need opus reviews. Override code-quality-reviewer to sonnet for THIS run:
 
 ```bash
-/mega-sdd:auto --model-tier=code-quality-reviewer:sonnet ./prd.md
+/mega-sdd --model-tier=code-quality-reviewer:sonnet ./prd.md
 ```
 
 Multiple overrides allowed:
 
 ```bash
-/mega-sdd:auto \
+/mega-sdd \
   --model-tier=intelligence-audit-probe:sonnet \
   --model-tier=extract-intelligence-wave-5:sonnet \
   ./prd.md
@@ -95,7 +95,7 @@ model_tiers:
   future-unreleased-role: opus
 ```
 
-Iter 34 Step 2.8 emits SOFT halt `model_tier_unknown` + log: "Role 'future-unreleased-role' not in catalog; override ignored. Chain proceeds." 
+The chain emits SOFT halt `model_tier_unknown` + log: "Role 'future-unreleased-role' not in catalog; override ignored. Chain proceeds." 
 
 Forward-compat: when a future iter adds `future-unreleased-role` to catalog, this override auto-applies on next run.
 

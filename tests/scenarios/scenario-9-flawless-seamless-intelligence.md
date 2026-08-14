@@ -1,13 +1,13 @@
 # Scenario 9 — Flawless Seamless Intelligence (full pipeline)
 
-> Integration scenario validating Iter 33 F1+F2+F3+F4 end-to-end. Tests orchestrator intelligence (memory-driven routing + predictive halts) + handoff solidity (schema validation + type-check) on a real Laravel starterkit project.
+> Integration scenario for orchestrator intelligence (memory-driven routing + predictive halts) + handoff solidity (schema validation + type-check) on a real Laravel starterkit project.
 
 **Time:** ~30-40 min (2 chain runs to demonstrate F1 cache hit)
-**When to use:** verify Iter 33 v3.24.0 end-to-end on user's `base-laravel-26` starterkit; field-test acceptance criterion
+**When to use:** verify the intelligence layer (memory-driven routing + predictive halts + handoff validation) end-to-end on the `base-laravel-26` starterkit; field-test acceptance criterion. Runs the **classic spine** (`--classic`) because Step 5's predictive-halt leg exercises the scan phase.
 
 ## Prerequisites
 
-- Plugin v3.24.0 installed
+- Plugin v6+ installed
 - Laravel starterkit project at `<project_root>` with composer.json + package.json + tailwind.config.js
 - tree-sitter installed (for predictive check pass demonstration)
 - PRD at `<project_root>/prd.md`
@@ -17,13 +17,13 @@
 ### Step 1: First chain run (no prior routing-outcomes)
 
 ```
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
 **Assertions:**
 - Step 2.7 routing preflight runs but skips recommendation (no routing-outcomes.md file)
 - Step 3.5 predictive preflight runs; ast_engine_present passes (no warning)
-- Chain executes: scan-codebase → generate-intent → bind-codebase → generate-units → execute-bolts
+- Chain executes (classic): scan-codebase → generate-intent → bind-codebase → generate-units → execute-bolts
 - Each handoff passes Step 6.b schema validation (all REQUIRED + CONDITIONAL fields present per Phase A1 sweep)
 - Each handoff passes Step 6.b.i type-check (no shape drift)
 - Step 7.5 creates `.mega-sdd/memory/routing-outcomes.md` + appends first row
@@ -31,7 +31,7 @@
 ### Step 2: Second chain run (routing-outcomes consulted)
 
 ```
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
 **Assertions:**
@@ -42,7 +42,7 @@
 ### Step 3: Third chain run (3 rows → recommendation triggers)
 
 ```
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
 **Assertions:**
@@ -51,7 +51,7 @@
 ### Step 4: After 3 successful runs, fourth run triggers recommendation
 
 ```
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
 **Assertions:**
@@ -66,8 +66,8 @@
 # Uninstall tree-sitter
 brew uninstall tree-sitter
 
-# Force tree-sitter engine
-/mega-sdd:scan-codebase --engine=tree-sitter
+# Force tree-sitter engine — say "scan codebase ini --engine=tree-sitter"
+# (typed skill commands were removed at 6.0.0; the phrase routes to scan-codebase)
 ```
 
 **Assertions:**
@@ -80,7 +80,7 @@ brew uninstall tree-sitter
 ```
 # Manually edit bind-codebase SKILL.md handoff template to REMOVE scope: block
 # Then run chain on vault with scope_metadata
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
 **Assertions:**
@@ -97,7 +97,7 @@ ALL of:
 - Predictive checks fire warnings non-fatally + fatal halt when fatal=yes
 - Schema validation gate halts on missing CONDITIONAL field
 - Type-check halts on type mismatch
-- Generated code matches starterkit patterns (Iter 32 carryover behavior — sanity)
+- Generated code matches starterkit patterns (deep-scan carryover behavior — sanity)
 
 ## Failure modes to watch
 

@@ -16,7 +16,7 @@ For solo developers or single-team: skip this scenario. Use default squad mode (
 
 ## Prerequisites
 
-- Mega-sdd v3.40.0+
+- Mega-sdd v6+
 - Existing project OR new project
 - Recommended: tree-sitter + ast-grep installed
 - Clear understanding of team partition (which team owns what)
@@ -49,7 +49,7 @@ squads:
     owns_feature_tags: [stripe, twilio, swift-messaging, ldap]
 ```
 
-Squad partition rules (per Iter 1.1 design):
+Squad partition rules:
 1. `owns_components` (most specific)
 2. `owns_flow_prefixes` (flow-level ownership)
 3. `owns_layers` (broad)
@@ -60,7 +60,7 @@ First match wins; ambiguity halts with `cross_squad_ambiguous` blocker.
 ## Step 1 — Run mega-sdd auto with multi-squad mode
 
 ```
-/mega-sdd:auto ./prd-clinic.md
+/mega-sdd ./prd-clinic.md
 ```
 
 When mega-sdd detects `_meta/squads.yaml`, it:
@@ -153,7 +153,7 @@ When `auto` invokes `execute-bolts`, multi-squad mode auto-fires:
     email-reminder-payload: status: draft → squad-integrations HALTS
 ```
 
-Interface lock gate (Iter 1.1 + Iter 13 preserved): consumer squads wait for producer squad to LOCK their interfaces. Otherwise consumer codes against draft contract → high churn risk.
+Interface lock gate: consumer squads wait for producer squad to LOCK their interfaces. Otherwise consumer codes against draft contract → high churn risk.
 
 ## Step 5 — Producer squad locks interfaces
 
@@ -185,7 +185,7 @@ contract:
 After locking all 3 interfaces, resume the chain:
 
 ```
-/mega-sdd:auto --resume
+/mega-sdd --resume
 ```
 
 Frontend + integrations subagents proceed:
@@ -219,8 +219,7 @@ git log --oneline | grep -E "U-(00[8-9]|01[0-3])" | head
 # Integrations commits
 git log --oneline | grep -E "U-(01[4-6])" | head
 
-# Module status
-/mega-sdd:list-modules
+# Module status — say "list modules" in Claude Code (typed skill commands were removed at 6.0.0)
 ```
 
 ```
@@ -240,11 +239,11 @@ In practice, each squad runs in their own Claude Code session on their own lapto
 ```bash
 # Backend dev's machine:
 cd ~/projects/clinic-app
-/mega-sdd:execute-bolts --squad=squad-be
+# in Claude Code: "execute bolts --squad=squad-be"
 
 # Frontend dev's machine (different person, different machine):
 cd ~/projects/clinic-app
-/mega-sdd:execute-bolts --squad=squad-fe-web
+# in Claude Code: "execute bolts --squad=squad-fe-web"
 
 # They merge via standard git workflow (PRs, rebase, etc.)
 ```

@@ -4,7 +4,7 @@
 **When to use**: Project where PRD is shared across multiple IT architects (BE, MW, FE) — each architect generates their own vault for their scope only
 
 **Prerequisites**:
-- Mega-sdd v3.20.0+ (Iter 28 multi-scope picker)
+- Mega-sdd v6+ (multi-scope picker)
 - Canonical PRD with `scopes:` frontmatter (or legacy PRD via retrofit bridge)
 - Three separate repos (BE, MW, FE) — or three separate folders within one monorepo
 - Each architect operating in their own session
@@ -34,7 +34,7 @@ cp ~/shared/order-mgmt-prd.md ./prd.md
 
 ```bash
 cd ~/projects/order-management-be/
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 Expected output:
@@ -60,21 +60,17 @@ User picks `[1] BE`.
   Filtering PRD to: §Backend + universal sections §1-§7
   Sibling scopes noted: MW, FE
 
-▶ Phase 0b: Starterkit detection (Iter 27)
-  ✓ composer.json → laravel-base-26 detected
+▶ Phase 0b: Starterkit detection
+  ✓ composer.json → laravel-base-26 detected (GROUND matcher; symbol index built — express spine, no scan phase)
 
-▶ Phase 1: scan-codebase ./
-  Output: .mega-sdd/codebase/codebase-map.md
-  §7 Framework: laravel-base-26 (pack loaded)
-
-▶ Phase 2: generate-intent --scope=BE --scan ./prd.md
+▶ Phase 1: generate-intent --scope=BE ./prd.md
   Output: .mega-sdd/vaults/order-management-be/
   - vault.json: scope=BE, scope_metadata declared, prd_sha256 recorded
   - 00-index.md: scope header + sibling scopes (MW, FE) noted + locked contracts listed
 
-▶ Phase 3: bind-codebase
-▶ Phase 4: generate-units
-▶ Phase 5: execute-bolts (auto, with halts on conflict)
+▶ Phase 2: bind-codebase --express
+▶ Phase 3: generate-units
+▶ Phase 4: execute-bolts (auto, with halts on conflict)
 ```
 
 BE architect's vault is at `.mega-sdd/vaults/order-management-be/`. 00-index.md shows:
@@ -105,7 +101,7 @@ Memory entry written:
 
 ```bash
 cd ~/projects/order-management-fe/
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 Same PRD, different cwd. Smart default suggests FE.
@@ -135,7 +131,7 @@ BE architect adds a unit, re-runs:
 
 ```bash
 cd ~/projects/order-management-be/
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 Expected:
@@ -157,7 +153,7 @@ MW architect arrives later, fresh session:
 
 ```bash
 cd ~/projects/order-management-mw/
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 User picks `[2] MW` (cwd basename matches).
@@ -190,7 +186,7 @@ PM updates PRD to add new endpoint:
 
 ```bash
 # Architect BE
-/mega-sdd:auto ./prd.md
+/mega-sdd ./prd.md
 ```
 
 Memory check:
@@ -201,7 +197,7 @@ Memory check:
    Run diff-vault to apply revisions? [Y/n]
 ```
 
-User runs `/mega-sdd:diff-vault ./prd.md` → revisions applied; bolts re-execute for changed units only.
+User says "PRD updated — diff the vault" (routes to diff-vault) → revisions applied; bolts re-execute for changed units only.
 
 ## Common questions
 
@@ -212,7 +208,7 @@ A: Mega-sdd halts `scope_not_declared_in_prd` IF cwd doesn't have BE manifest si
 A: Outside mega-sdd. Both vaults reference the contract section in PRD. When contract changes:
 1. BE + FE architects agree on new spec in rapat
 2. PM updates PRD §Cross-scope contracts > be-fe-orders-api
-3. Both architects run `/mega-sdd:auto --resume` → diff-vault detects PRD change → revisions applied per-scope
+3. Both architects run `/mega-sdd --resume` → diff-vault detects PRD change → revisions applied per-scope
 
 **Q: What if PRD has no scopes frontmatter?**
 A: Retrofit bridge fires (per `scope-picker.md` step 2). AI proposes scope partitioning. User accepts or rejects per scope. Retrofit written to `<prd>.retrofit.md` (preserves original).

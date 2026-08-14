@@ -1,11 +1,11 @@
 # Scenario 3 — Field-Level Extension
 
 **Time**: ~20 minutes
-**Goal**: Add a missing field to an existing model. Demonstrates Iter 8's PARTIAL_FIELDS_MISSING auto-detection — the "PRD says (nip, nama, password), code has (nip, password), skill should know to add `nama`" use case.
+**Goal**: Add a missing field to an existing model. Demonstrates PARTIAL_FIELDS_MISSING auto-detection — the "PRD says (nip, nama, password), code has (nip, password), skill should know to add `nama`" use case.
 
 ## Prerequisites
 
-- Mega-sdd v3.40.0+
+- Mega-sdd v6+
 - Existing PHP/Laravel project with at least one model + endpoint
 - `tree-sitter` + `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
 
@@ -95,7 +95,7 @@ All other login behavior unchanged.
 ## Step 1 — Run mega-sdd auto
 
 ```
-/mega-sdd:auto ./prd-login-extension.md
+/mega-sdd ./prd-login-extension.md
 ```
 
 Chain proposal: 5 phases (generate-intent → scan → bind → units → bolts). Click **Run**.
@@ -152,7 +152,7 @@ addition to existing nip + password.
 
 ## Context (read first)
 PRD requires three-field validation: nip + nama + password. Existing
-endpoint only validates two fields. Per Iter 8 PARTIAL_FIELDS_MISSING
+endpoint only validates two fields. Per PARTIAL_FIELDS_MISSING
 analysis, add `nama` to validated input; reject when name doesn't
 match stored user.name (case-insensitive).
 
@@ -271,15 +271,15 @@ Run tests:
 
 ## The "ngawang" prevention in action
 
-Without Iter 8 PARTIAL_FIELDS_MISSING detection, alternative outcomes would have been:
+Without PARTIAL_FIELDS_MISSING detection, alternative outcomes would have been:
 
-| Without Iter 8 | What would happen | Problem |
+| Without field-level detection | What would happen | Problem |
 |---|---|---|
 | Treat as IMPLEMENTED | task_type=verify, no code change | nama field never added (silent gap) |
 | Treat as NEW | task_type=create, rebuild whole login | Duplicates existing code; conflict |
 | Manual prompting needed | User has to write detailed prompt | Slow; error-prone |
 
-With Iter 8: skill DETECTS the gap, generates an extend unit that knows exactly what to ADD vs KEEP vs REMOVE. Bolt's prompt is precise. No "ngawang".
+With field-level detection: the skill DETECTS the gap, generates an extend unit that knows exactly what to ADD vs KEEP vs REMOVE. Bolt's prompt is precise. No "ngawang".
 
 ## Common pitfalls
 
@@ -293,13 +293,14 @@ head -10 .mega-sdd/codebase/codebase-map.md
 
 Need `precision_tier: ast` (tree-sitter engine). If `precision_tier: regex`, field-level analysis disabled; falls back to v1.6 binary (IMPLEMENTED or NEW).
 
-Install tree-sitter + re-run scan-codebase:
+Install tree-sitter, then re-run the scan → bind → units hops (typed skill commands were removed at 6.0.0 — use phrases, or `/mega-sdd --resume` to let the chain re-propose):
 
 ```bash
 brew install tree-sitter-cli
-/mega-sdd:scan-codebase --engine=tree-sitter
-/mega-sdd:bind-codebase
-/mega-sdd:generate-units --refresh
+# in Claude Code, in order:
+#   "scan codebase ini --engine=tree-sitter"
+#   "bind vault to code"
+#   "generate units --refresh"
 ```
 
 ### Hard rule violation in pre-flight
@@ -334,7 +335,7 @@ Sometimes adding new field validation breaks tests that expected old behavior. M
 
 ## What you learned
 
-- Iter 8 PARTIAL_FIELDS_MISSING auto-detects field gaps between PRD and code
+- PARTIAL_FIELDS_MISSING auto-detects field gaps between PRD and code
 - Generated unit's Migration notes EXPLICITLY list ADD / KEEP / REMOVE
 - Hard rules preserve untouched logic (token gen, error response format)
 - bolt's prompt is contextually precise — no "ngawang"

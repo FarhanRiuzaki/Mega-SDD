@@ -1,9 +1,9 @@
 # Scenario 8 — Starterkit-Aware Generation (full pipeline)
 
 **Time**: ~30 min
-**When to use**: Validate that Iter 32 v3.23.0 end-to-end pipeline correctly captures a Laravel starterkit's patterns and propagates them through generate-units (Anchors + Hard Rules) and execute-bolts (T2 slice injection) to produce code that matches the starterkit by default.
+**When to use**: Validate that the pipeline correctly captures a Laravel starterkit's patterns and propagates them through generate-units (Anchors + Hard Rules) and execute-bolts (T2 slice injection) to produce code that matches the starterkit by default.
 
-> Integration scenario covering scan-codebase deep-scan → generate-units consumption → execute-bolts T2 injection. Validates Iter 32 v3.23.0 end-to-end.
+> Integration scenario covering scan-codebase deep-scan → generate-units consumption → execute-bolts T2 injection. The deep-scan is a scan-codebase feature, so this scenario runs the **classic spine** (`--classic`); on the express default, pack matching happens via the GROUND matcher without a scan phase.
 
 ## Prerequisites
 
@@ -16,17 +16,17 @@
   - `app/Models/User.php` uses `HasRoles` trait (Spatie/permission)
   - `database/seeders/RoleSeeder.php` creates `admin` and `user` roles
 - PRD at `<project_root>/prd.md` describing "User management feature with CRUD page"
-- mega-sdd plugin v3.23.0 installed (the version this scenario validates)
+- mega-sdd plugin v6+ installed
 
 ## Scenario steps
 
-### Step 1: Invoke /mega-sdd:auto
+### Step 1: Invoke the front door on the classic spine
 
 ```
-/mega-sdd:auto
+/mega-sdd --classic
 ```
 
-Orchestrate-flow detects PRD + starterkit + no vault → starterkit-first chain (Phase 1: scan-codebase).
+The front door detects PRD + starterkit + no vault → classic starterkit-first chain (Phase 1: scan-codebase).
 
 ### Step 2: Verify scan-codebase deep-scan produced starterkit-context.yaml
 
@@ -92,7 +92,7 @@ grep "document.addEventListener('DOMContentLoaded'" resources/js/users.js
 
 ```bash
 mtime_before=$(stat -f %m .mega-sdd/codebase/starterkit-context.yaml)
-/mega-sdd:scan-codebase <project_root>
+# say "scan codebase ini" (phrase-routes to scan-codebase; typed skill commands were removed at 6.0.0)
 mtime_after=$(stat -f %m .mega-sdd/codebase/starterkit-context.yaml)
 echo "Before: $mtime_before; After: $mtime_after"
 ```
@@ -118,11 +118,11 @@ ALL of:
 
 ## Field test (real starterkit verification)
 
-After plugin v3.23.0 ships, run this scenario against the user's actual starterkit (spec §6.4 acceptance criterion #10):
+Run this scenario against the user's actual starterkit (spec §6.4 acceptance criterion #10):
 
 ```bash
 cd /Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/base-laravel-26
-/mega-sdd:scan-codebase .
+# in Claude Code: say "scan codebase ini"
 cat .mega-sdd/codebase/starterkit-context.yaml
 ```
 
