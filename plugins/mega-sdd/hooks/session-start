@@ -65,10 +65,12 @@ fi
 if [ -d "${project_root}/.mega-sdd" ]; then
   CONFIG_FILE="${project_root}/.mega-sdd/config.yaml"
   TELEMETRY_OFF=0
-  if [ -f "$CONFIG_FILE" ]; then
+  if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
     if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
       TELEMETRY_OFF=1
     fi
+  elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
+    TELEMETRY_OFF=1
   fi
   if [ "$TELEMETRY_OFF" -eq 0 ]; then
     TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
@@ -233,10 +235,14 @@ fi
 SELF_RESOLVE_NOTICES=""
 CONFIG_FILE="${cwd}/.mega-sdd/config.yaml"
 GUARD_ENABLED=1
-if [ -f "$CONFIG_FILE" ]; then
+# A7 precedence: project config.yaml telemetry line wins; else the install-time
+# userConfig default (CLAUDE_PLUGIN_OPTION_TELEMETRY) applies.
+if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
     GUARD_ENABLED=0
   fi
+elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
+  GUARD_ENABLED=0
 fi
 
 if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${cwd}/.mega-sdd" ]; then

@@ -203,10 +203,15 @@ fi
 
 # Opt-out: <project-root>/.mega-sdd/config.yaml `telemetry: false`
 CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
-if [ -f "$CONFIG_FILE" ]; then
+# Precedence (A7, spec 2026-08-17-a7-userconfig): project config.yaml `telemetry:`
+# ALWAYS wins; the install-time userConfig (CLAUDE_PLUGIN_OPTION_TELEMETRY) is the
+# user-global DEFAULT consulted only when the project file carries no telemetry line.
+if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
   if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
     exit 0
   fi
+elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
+  exit 0
 fi
 
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")

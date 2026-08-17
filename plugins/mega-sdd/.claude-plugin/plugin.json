@@ -1,7 +1,7 @@
 {
   "name": "mega-sdd",
-  "version": "6.17.0",
-  "description": "Spec-Driven Development as an autonomous agent pipeline: extract → intent → scan → bind → units → bolts. Anti-hallucination by construction — every claim cites its source, and spec↔code binding (CONFIRMED / CONFLICT / OQ verdicts) gates code generation. AST-precise codebase analysis (tree-sitter), ast-grep-validated Hard Rules, persistent memory, first-class subagents, and a consolidated /analyze consistency surface. Native binary deps (tree-sitter + ast-grep) with graceful regex fallback.",
+  "version": "6.18.0",
+  "description": "Spec-Driven Development as an autonomous agent pipeline: extract \u2192 intent \u2192 scan \u2192 bind \u2192 units \u2192 bolts. Anti-hallucination by construction \u2014 every claim cites its source, and spec\u2194code binding (CONFIRMED / CONFLICT / OQ verdicts) gates code generation. AST-precise codebase analysis (tree-sitter), ast-grep-validated Hard Rules, persistent memory, first-class subagents, and a consolidated /analyze consistency surface. Native binary deps (tree-sitter + ast-grep) with graceful regex fallback.",
   "author": {
     "name": "Farhan Riuzaki"
   },
@@ -15,5 +15,14 @@
     "anti-hallucination",
     "intent-unit-bolt",
     "superpowers"
-  ]
+  ],
+  "displayName": "Mega-SDD",
+  "userConfig": {
+    "telemetry": {
+      "type": "boolean",
+      "default": true,
+      "description": "User-global default for mega-sdd telemetry (telemetry.jsonl). Per-project .mega-sdd/config.yaml `telemetry:` always takes precedence.",
+      "title": "Telemetry (user-global default)"
+    }
+  }
 }
