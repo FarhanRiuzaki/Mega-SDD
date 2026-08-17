@@ -20,7 +20,7 @@ Auto-resolved in `--deep` when the safety condition holds; otherwise escalate. F
 
 ## Self-resolve (C1 — never an orchestrator stop)
 
-Per the canonical registry these never stop the chain (retry+skip, hook-enforced repair, or detection-only); `invalid_handoff` escalates to C2 user_review on the 2nd consecutive failure of the same skill+halt, and `mode_migrate`'s self-redetect is overridable by an explicit `--mode=<value>` flag on the next chain invocation (halt-protocol.md §mode_migrate):
+Per the canonical registry these never stop the chain (retry+skip, hook-enforced repair, or detection-only); `invalid_handoff` escalates to C2 user_review on the 2nd consecutive failure of the same skill+halt, and `mode_migrate`'s self-redetect is overridable by an explicit `--mode=<value>` flag on the next chain invocation (halt-families/flow.md §mode_migrate (routed from halt-protocol.md's registry index)):
 
 - `memory_in_use` · `mode_migrate` · `invalid_handoff` · `partial_state_corrupt` · `verify_unit_writable`
 
