@@ -1,5 +1,6 @@
 ---
 name: design-reviewer
+maxTurns: 25
 description: Reviews a bolt's UI code for modern design quality — design-token usage, layout composition, typography and spacing systems, interactive and feedback states, accessibility floor, and conformance to the vault's chosen design system. Read-only. Joins the execute-bolts review panel only for UI-bearing units, blind to the other lenses. Returns severity-graded findings with file:line evidence.
 tools: Read, Grep, Glob, Bash
 color: magenta

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.16.0] - 2026-08-17 — delta hygiene A1–A4 (adoption scan, release 1 of 4)
+
+Ships spec `2026-08-17-delta-hygiene-a1-a4.md` — the USER-GREENLIT hygiene batch from `research/2026-08-17-claude-code-delta-adoption-scan.md`.
+
+### Added
+- **A1 — CI validates the plugin manifests**: `claude plugin validate plugins/mega-sdd` (CLI pinned `@2.1.233`, joining the registry-rot review checklist). Plain mode, NOT `--strict` — amended on local proof: strict fails the baseline on the root-CLAUDE.md warning, and that file is the deliberate contributor contract.
+- **A3 — `statusMessage` on every synchronous hook** (SessionStart/PreToolUse/UserPromptSubmit/UserPromptExpansion/PreCompact): the slow gate shows a status line instead of a silent hang — the Windows/CrowdStrike fleet complaint class.
+- **A4 — `maxTurns` runaway backstops on all 9 plugin agents** (implementer 80 · extractor 60 · verifier 30 · lenses/advisor 25) — conservative ceilings, never budgets; adopted-best-effort (plugin-agent honoring unverified at runtime; worst case the field is ignored — `claude plugin validate` accepts it).
+
+### Fixed
+- **A2 — vendored skills instructed a DEAD tool**: Todo tools are disabled on Opus 4.8/Sonnet 5/Fable 5+; the 7 `TodoWrite` sites in `_vendored/{executing-plans,subagent-driven-development}` now name the current task tools (TaskCreate/TaskUpdate; legacy TodoWrite where available). Pin test backstops the next `sync-superpowers.sh` re-import.
+
+### Tests
+- NEW `tests/delta-hygiene/test-a1-a4.sh` (7 arms) incl. the `--strict`-crept-in negative and the bare-TodoWrite sync backstop.
+- Verification note (proportional-verification mandate): this batch is config/doc surface — verified by the full both-tree suite + the plugin validator; the full blind adversarial round is reserved for the moat-adjacent A5/A6 releases.
+
 ## [6.15.0] - 2026-08-17 — token-lard cuts P3: the bind advisor gets a scope gate (USER-DECIDED)
 
 Ships spec `2026-08-17-advisor-scope-gate.md`. The P3 decision of the pemangkasan audit, made by the user via AskUserQuestion (option "Scope: KB/CONFLICT lane saja") with the honest evidence on the table: advisor = the most expensive default-on pass (measured ~91–157k input tok per dispatch, opus, 7 samples), catch class real (false-CONFIRMED → fail-safe CONFLICT), field findings-per-bind unmeasured.

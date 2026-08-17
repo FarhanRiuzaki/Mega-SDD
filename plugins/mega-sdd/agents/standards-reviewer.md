@@ -1,5 +1,6 @@
 ---
 name: standards-reviewer
+maxTurns: 25
 description: Reviews a bolt's code for project-convention conformance — naming, file location, idioms, and structure versus the framework pack and the surrounding codebase. Judges only what a formatter or linter cannot auto-fix. Read-only. Runs as one lens of the execute-bolts review panel, blind to the other lenses. Returns severity-graded findings with file:line evidence.
 tools: Read, Grep, Glob, Bash
 model: sonnet

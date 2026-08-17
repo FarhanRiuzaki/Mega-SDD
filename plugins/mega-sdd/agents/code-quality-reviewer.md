@@ -1,5 +1,6 @@
 ---
 name: code-quality-reviewer
+maxTurns: 25
 description: Reviews a bolt's code for quality — duplication and failure-to-reuse, test quality, over-engineering, maintainability, single-responsibility files following the unit's intended structure. Read-only. Runs as one lens of the execute-bolts review panel, blind to the other lenses. Returns severity-graded findings with file:line evidence.
 tools: Read, Grep, Glob, Bash
 model: opus
