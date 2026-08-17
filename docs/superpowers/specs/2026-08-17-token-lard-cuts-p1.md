@@ -1,6 +1,6 @@
 # Token-lard cuts — P1: honest measurement + hygiene (v6.13.0)
 
-**Status:** DRAFT
+**Status:** SHIPPED v6.13.0 (2026-08-17, 51dc36e, CI green, both-tree suite 273/273). Round: 1 MAJOR (collateral ref orphan) + 3 MINOR folded; suite additionally caught the P6 refs pin live (`${CLAUDE_PLUGIN_ROOT}` in the new ref) + the usability test's location assumption (amended to the SKILL ∪ ref union, mutation controls all firing).
 **Source:** live audit 2026-08-17 (chat) over 27,507 telemetry rows / 27 sessions + measured file sizes; executes the user's mandate "audit apalagi yg bisa dipangkas… token use lebih kecil" with the moat-takeout amendment honored (evidence per item, proposal-first for anything with a defect-catch record).
 **Scope:** P1 only. P2a (halt-protocol family split) and P2b (hot-SKILL byte diet) are follow-up releases gated on this one's measurement being live. No gate, no moat state, no chain behavior changes.
 
