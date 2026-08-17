@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.15.0] - 2026-08-17 — token-lard cuts P3: the bind advisor gets a scope gate (USER-DECIDED)
+
+Ships spec `2026-08-17-advisor-scope-gate.md`. The P3 decision of the pemangkasan audit, made by the user via AskUserQuestion (option "Scope: KB/CONFLICT lane saja") with the honest evidence on the table: advisor = the most expensive default-on pass (measured ~91–157k input tok per dispatch, opus, 7 samples), catch class real (false-CONFIRMED → fail-safe CONFLICT), field findings-per-bind unmeasured.
+
+### Changed
+- **bind-codebase Step 2.12 gains a deterministic scope gate** (skill 2.18.0), evaluated from the draft verdict set + the KB probe BEFORE any bundle build. The advisor runs iff ANY of: KB lane resolved · ≥1 draft CONFLICT · ≥1 non-NEW draft claim (IMPLEMENTED / PARTIAL_* / UNKNOWN — even one is enough; fail-safe beats savings). Only an **all-NEW greenfield bind** skips, with the counted auditable provenance `advisor: skipped (scoped — all-NEW greenfield bind: conflicts=0, non_new_claims=0, kb=none)`. The spec records on the record that the chosen option's "mayoritas NEW" wording was NARROWED to ALL-NEW (strictly fewer skips).
+- **NEW `--advisor` flag** — forces the pass on a scoped-skip bind (mirror of `--no-advisor`); both together → refused as a contradiction.
+- Unchanged: the intent-side advisor leg, materialization contract (HIGH → CONFLICT, never auto-downgrade), model tier, `advisor: unavailable`, the lean profile.
+
+### Adversarial round (1 blind reviewer — 6 MAJOR + 3 minor, all folded; zero blocker)
+- The sharpest: `express-bind.md` still mandated the advisor "NOT skipped" — a live contradiction on the DEFAULT lane, exactly where the savings live (folded: the gate applies identically in both lanes). The rest: orchestrate-flow's stale DEFAULT-ON claim; the gate input made explicit as the FULL verdict set on `--paths` re-binds (fresh-only would skip past carried IMPLEMENTED claims and print a false zero); `--advisor` was silently EATEN by the front-door translation law (now plumbed through mega-sdd.md + orchestrate-flow); two mutation-proven-vacuous test arms re-pinned to gate literals; the provenance taxonomy gains the DISTINCT scoped-skip form (opt-out vs gate decision — the field counter this spec depends on); the contradiction refusal got a typed blocker (`bind_inputs_missing`/`flag_contradiction`).
+- Reviewer residual accepted as spec-inherent (on the record): a bind that mis-classifies existing code as NEW also skips its reviewer — the trade the user chose; the counted skip line is the instrument that surfaces it.
+- Full-suite additionally caught pre-commit: bind's non-interactive ask-class sweep flagged a bare "confirm" in the new gate prose (reworded to the enum form — the contract sweep works), and the express-default suite's superseded "DEFAULT-ON on every spine" pin was amended to the scope-gated form with the rail-1 rationale retained.
+
+### Tests
+- NEW `tests/phase-advisor/test-advisor-scope-gate.sh` (14 arms) — all three run-triggers (gate-paragraph literals, mutation-hardened), counted-skip shape + full-set input + distinct scoped form, ALL-NEW scope + fail-safe wording, force flag + typed contradiction blocker, and both prior advisor suites kept green (cwd-independent).
+
 ## [6.14.0] - 2026-08-17 — token-lard cuts P2a: the halt registry splits by family
 
 Ships spec `2026-08-17-halt-registry-family-split.md`. Evidence gate met by measurement (proposal (d) 2026-08-11 required it): `halt-protocol.md` loaded 165× / 27 sessions — NOT an exceptional path — at 46.3KB (~11.6k tok upper bound) per load.

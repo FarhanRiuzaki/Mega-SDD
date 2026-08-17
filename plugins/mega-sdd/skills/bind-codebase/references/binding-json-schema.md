@@ -60,7 +60,7 @@ one `claims[]` entry with the same `id`, `verdict`, and `state`, and vice-versa.
 Anchor and field_diff are NOT compared by the validator (the gate is the source
 of truth: it enforces id/verdict/state only). This does not mean anchor mismatches
 are acceptable — anchor accuracy is a **bind-time authoring obligation** (rules
-tier: the skill's anti-hallucination rails, plus the default-on phase-advisor pass
+tier: the skill's anti-hallucination rails, plus the scope-gated default-on phase-advisor pass (Step 2.12 — skipped only on all-NEW greenfield binds, with counted provenance)
 which samples anchors adversarially). No deterministic validator checks binding
 anchors themselves; the only deterministic anchor check downstream is
 `validate-unit-spec.sh`'s verify+HIGH grounding rail (A1), which covers unit

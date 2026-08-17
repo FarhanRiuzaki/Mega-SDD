@@ -220,8 +220,12 @@ grep -qF 'unknown rc is never a LOW tier' "$P/skills/execute-bolts/references/re
 OF="$P/skills/orchestrate-flow/SKILL.md"
 grep -qF 'Diagnostics are LEAN-BY-DEFAULT on the express spine (P3)' "$OF" \
   && pass "diagnostics lean-by-default under express" || fail "lean default missing"
-grep -qF 'The advisor legs stay DEFAULT-ON on every spine' "$OF" \
-  && pass "advisor stays default-on (rail 1 over the cut table — stated deviation)" || fail "advisor deviation missing"
+# 6.15.0 (USER-DECIDED, spec 2026-08-17-advisor-scope-gate.md): the bind leg is
+# now SCOPE-GATED — the stated-deviation rationale must survive in its new form
+# (rail 1 wording + the gate), not the superseded blanket DEFAULT-ON sentence.
+grep -qF 'advisor legs stay default-on on every spine, with the bind leg SCOPE-GATED' "$OF" \
+  && grep -qF 'speed cuts inventory, never verification' "$OF" \
+  && pass "advisor default-on rationale survives in scope-gated form (rail 1)" || fail "advisor deviation missing"
 grep -qF 'spine:' "$P/hooks/stop" && grep -qF 'profile:[[:space:]]*[\"'"'"']?full' "$P/hooks/stop" \
   && pass "Stop aggregate keyed to classic|full opt-in" || fail "stop condition missing"
 grep -qF 'HONESTY NOTE (P3)' "$P/scripts/_lib/state_probes.py" \
