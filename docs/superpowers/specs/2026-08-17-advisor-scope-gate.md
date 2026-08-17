@@ -1,6 +1,6 @@
 # Advisor scope gate — P3 of the token-lard cuts (v6.15.0)
 
-**Status:** DRAFT
+**Status:** SHIPPED v6.15.0 (2026-08-17, 6e6261a, CI green, both-tree suite 275/275). Round: 6 MAJOR + 3 minor folded, zero blocker (§Round amendments below); suite additionally caught the ask-class sweep + the superseded DEFAULT-ON pin. Closes the pemangkasan audit's last tranche.
 **Decision:** USER-DECIDED 2026-08-17 (AskUserQuestion, option "Scope: KB/CONFLICT lane saja") — the P3 item of the pemangkasan audit. Evidence at decision time: advisor = the most expensive default-on pass in the pipeline (measured ~91–157k input tok per dispatch across 7 runs, all opus); its catch class (false-CONFIRMED → fail-safe CONFLICT) is real but field findings-per-bind was unmeasurable (the 7 runs' playgrounds are gone). The user chose scoping over instrument-first / tier-down / keep.
 
 ## Design
