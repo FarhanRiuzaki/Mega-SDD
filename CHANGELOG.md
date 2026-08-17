@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.17.0] - 2026-08-17 — A6: the constitution rides the code paths it governs
+
+Ships spec `2026-08-17-constitution-claude-rules.md` (adoption scan A6, USER-GREENLIT; release 2 of the batches — A5 was REJECTED on measurement, `research/2026-08-17-a5-agent-scoped-gate-verdict.md`).
+
+### Added
+- **NEW `scripts/emit-claude-rules.sh`** — emits path-scoped `.claude/rules/mega-sdd-<vault>-<clause>.md` files from `<vault>/constitution.md`. The `paths:` frontmatter is GROUNDED: the union of `target_files` of the units whose Hard rules cite that clause (Step 12.4 injection is the evidence chain) — zero glob inference; uncited clauses are SKIPPED and listed, never fabricated. Verbatim clause text + provenance stamp (constitution version + sha256, do-not-hand-edit, refresh pointer). Dry-run by default; refresh deletes stale files ONLY within the vault's prefix (a foreign user rule is untouchable by construction — test-pinned).
+- **Offer-only wiring** — generate-units Step 13.5 (skill 2.23.0) proposes the emission with keterangan when a constitution exists and clauses are cited; under `--auto` it is QUEUED as a notice, never auto-run (writing to `.claude/` is user config territory). `/mega-sdd:sync` proposes a refresh when `constitution_hash` changed or units were reconciled.
+- Effect: constitution clauses now reach EVERY session (plain edits included) at zero context cost when irrelevant — the platform loads a rule only when a matching path is touched (Claude Code v2.1.211+).
+
+### Adversarial round (1 blind reviewer, live payloads — 1 BLOCKER + 4 MAJOR + 3 minor, all folded)
+- BLOCKER: the paths harvest read the WHOLE unit file — a fenced YAML example grounded a rule with `/etc/shadow`. Now frontmatter-only. The rest: §-section-scoped clause parse (a Revision-history line minted clauses), LEFT-bounded citations (`SUB-001` cited `B-001`), slug-EXACT stale deletion (vault `pay` could delete `pay-v2`'s rules), single-quoted YAML paths (spaced/quoted paths truncated or broke frontmatter), de-vacuoused never-auto arm, honest `skipped_ungrounded` key.
+
+### Tests
+- NEW `tests/claude-rules/test-emit-claude-rules.sh` (24 arms incl. the 6 round payload classes) — grounded union, uncited skip, verbatim + stamp, dry-run writes nothing, prefix-scoped stale removal with the foreign-rule-untouched arm, determinism, offer-only wiring incl. never-auto wording.
+
 ## [6.16.0] - 2026-08-17 — delta hygiene A1–A4 (adoption scan, release 1 of 4)
 
 Ships spec `2026-08-17-delta-hygiene-a1-a4.md` — the USER-GREENLIT hygiene batch from `research/2026-08-17-claude-code-delta-adoption-scan.md`.
