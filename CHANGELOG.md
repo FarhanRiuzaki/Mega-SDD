@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.18.0] - 2026-08-17 — A7 userConfig + the A8 verdict (adoption scan, final batch)
+
+Ships spec `2026-08-17-a7-userconfig.md`.
+
+### Added
+- **A7 (minimal, mechanism-verified):** `displayName: "Mega-SDD"` + `userConfig.telemetry` (boolean, default on) in plugin.json — a user-global telemetry default surfaced at install. Precedence wired at all THREE telemetry guard sites: a project `.mega-sdd/config.yaml` `telemetry:` line ALWAYS wins; `CLAUDE_PLUGIN_OPTION_TELEMETRY=false` applies only when the project file is silent. The plugin validator caught the missing required `title` field live — the A1 CI step proving itself. Spine/profile knobs deferred honestly (env second-source in skill prose needs its own design + field demand).
+- **A8 — FileChanged: EVALUATED, REJECTED on doc evidence** — the event watches LITERAL filenames (`.envrc|.env` matchers), not globs; the imagined third sync channel over source files is unsupported, and watching vault artifacts duplicates the gate re-derivation. On the record in the spec + scan doc.
+
+### Tests
+- NEW `tests/delta-hygiene/test-a7-userconfig.sh` (5 arms) — manifest shape (typed/titled/default-on), env read at both hooks, both session-start sites, presence-gated precedence.
+
 ## [6.17.0] - 2026-08-17 — A6: the constitution rides the code paths it governs
 
 Ships spec `2026-08-17-constitution-claude-rules.md` (adoption scan A6, USER-GREENLIT; release 2 of the batches — A5 was REJECTED on measurement, `research/2026-08-17-a5-agent-scoped-gate-verdict.md`).
