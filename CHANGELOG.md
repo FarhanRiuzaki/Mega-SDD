@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.14.0] - 2026-08-17 — token-lard cuts P2a: the halt registry splits by family
+
+Ships spec `2026-08-17-halt-registry-family-split.md`. Evidence gate met by measurement (proposal (d) 2026-08-11 required it): `halt-protocol.md` loaded 165× / 27 sessions — NOT an exceptional path — at 46.3KB (~11.6k tok upper bound) per load.
+
+### Changed
+- **`references/halt-protocol.md` 46,346 → 29,846 B (−36%).** The canonical registry keeps everything anchored and enum-bearing — `§halt-escalation-discipline`, the `§halt-protocol` envelope + schema + `next_action` shape + field rules, the type-specific YAML schemas, AND the restored `#### quality_gate_failed subtypes` section (enum + the MUST-branch-on-`details.subtype` dispatch rule) — and gains a **§Registry index**: one row per halt type grouped by family, subtype rows explicitly marked *(subtype of `quality_gate_failed`)*, C1/soft rows carrying their stop-class marker (a truncated row must never read as ALWAYS-STOP), the `execution_fabricated` row carrying its `ANNEX_FORGED` pin.
+- **NEW `references/halt-families/{intent-and-vault,extract,scan,bind,units,bolts,flow,emit}.md`** — the per-type guidance bodies relocated VERBATIM (byte-conservation asserted by the split script before writing), each under a `### <type>` heading, family = emitter; twin prose/one-liner entries merged into single sections. A halt now loads the registry (~7.5k tok) + ONE family (median ~0.5k) instead of the whole ~11.6k.
+- **NEW registry row: `pbt_property_violated`** — a REAL halt type (PBT post-flight, propose-and-confirm bridged) that had never been registered; caught by the round-hardened mirror guard the moment it grew teeth.
+- Citation repoints: `halt-taxonomy.md` §mode_migrate → `halt-families/flow.md`; `vault-contract.md` tombstone wording updated; no other consumer cites moved sections (round-swept).
+- No behavior change: halt semantics, stop classes, envelope fields byte-identical — a storage split.
+
+### Adversarial round (1 blind reviewer, live evidence — all folded)
+- **BLOCKER:** the split dismembered the `quality_gate_failed` subtype taxonomy — 9 subtype bullets promoted to standalone index rows under an over-claiming "every type is canonical-enum" preamble (a producer following it would emit `type: pdf_render_failed` and be rejected as `invalid_handoff`), the enum + dispatch rule orphaned in fragments across flow.md. Folded: canonical subtype section restored in the registry, rows marked, preamble scoped, fragments reunified (wave default → extract.md).
+- MAJOR ×6 folded: dangling §-citations (emit-fsd — resolved by the restore; halt-taxonomy §mode_migrate — repointed), stale vault-contract tombstone, 6 index rows whose truncation inverted the stop class (C1/soft markers restored), the toothless mirror guard (now asserts — and instantly caught the pre-existing `pbt_property_violated` registry gap), twin-entry drift seeds (merged) + 5 identical-body rows shrunk to summaries.
+- Minors folded: spec/tree drift (8 families incl. extract.md, real sizes), `dep_missing` multi-emitter note, flow banner names detect-drift, ALWAYS-STOP floor tripwire (59 markers, floor 55).
+- Proven clean: zero guidance lines lost (mechanical line-set diff), no runtime consumer reads moved bodies, envelope enum line byte-unchanged, 3d amendment preserves its invariant, suite spot-checks green.
+
+### Tests
+- NEW `tests/halt-registry/test-family-split.sh` (16 arms) — index↔family consistency both directions (subtype-marked rows included), size budgets (30,000/12,800), anchor + pin survival, ASSERTING taxonomy-mirror guard, subtype restoration arms, ALWAYS-STOP floor, edit-here banners, split-actually-happened probe.
+- `tests/god-review-s3/test-3d-cache-correctness.sh` amended: the relocated `starterkit_metrics_inconsistent` remediation is asserted in its new home (`halt-families/flow.md`) and the stale `--force-deep` negative now sweeps the family files too — existence pins, not location pins.
+
 ## [6.13.0] - 2026-08-17 — token-lard cuts P1: fix the ruler before the knife
 
 Ships spec `2026-08-17-token-lard-cuts-p1.md` — the measurement + hygiene tranche of the 2026-08-17 pemangkasan audit (27,507 telemetry rows / 27 sessions). No gate, no moat state, no chain behavior changes.

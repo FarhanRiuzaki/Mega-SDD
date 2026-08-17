@@ -94,9 +94,13 @@ grep -qF 'src_component(auth)' "$SCS" && ok "DS-1: schema comments mirror the ne
 # ── DS-2: failed slices re-dispatch; remediation corrected ──
 grep -qF 'stale_slices ∪= prior.partial_slices' "$DSG" && ok "DS-2: staleness diff unions prior partial_slices" || fail "DS-2: partial_slices not unioned"
 grep -qF 'do NOT write a per_slice entry for a domain listed in' "$DSD" && ok "DS-2: failed domains get no per_slice entry" || fail "DS-2: per_slice failed-domain rule missing"
-grep -qF 'belt-and-braces option' "$HPR" && grep -qF 'failed slices — they carry no per_slice cache signature' "$HPR" \
+# 6.14.0 family split: the starterkit_metrics_inconsistent guidance body moved
+# verbatim to halt-families/flow.md (registry keeps the index row) — the
+# invariant is EXISTENCE of the corrected remediation, not its file.
+HFR="${ROOT}/plugins/mega-sdd/references/halt-families/flow.md"
+grep -qF 'belt-and-braces option' "$HFR" && grep -qF 'failed slices — they carry no per_slice cache signature' "$HFR" \
   && ok "DS-2: remediation states the post-fix truth (plain re-run heals; --no-cache = belt-and-braces)" || fail "DS-2: remediation wording stale"
-if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
+if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR" || grep -rqF 're-run `scan-codebase --force-deep`' "${ROOT}/plugins/mega-sdd/references/halt-families/"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
 
 # ── DS-6: canonical schema documents 5 slices incl. reuse ──
 python3 - "$SCS" <<'PY' && ok "DS-6: schema per_slice block lists all 5 domains (incl. reuse)" || fail "DS-6: schema per_slice incomplete"
