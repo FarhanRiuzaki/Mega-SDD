@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.13.0] - 2026-08-17 — token-lard cuts P1: fix the ruler before the knife
+
+Ships spec `2026-08-17-token-lard-cuts-p1.md` — the measurement + hygiene tranche of the 2026-08-17 pemangkasan audit (27,507 telemetry rows / 27 sessions). No gate, no moat state, no chain behavior changes.
+
+### Changed
+- **`ref_loaded` records the ACTUAL Read range (D1).** `hooks/post-tool-use` now emits `read_offset` / `read_limit` (from the Read tool_input, `shlex.quote`-fenced like every eval-boundary field) and `est_read_tokens` — a line-proportional estimate, min-clamped to the full-file figure. `lines`/`bytes`/`estimated_tokens` keep their full-file meaning (additive schema; `report-token-cost.sh` verified unaffected). This is the prerequisite for P2: until now a §-scoped read of a 41KB contract logged 41KB, making every "§-reads are working" claim unfalsifiable. Bash-detected loads stay full-file by design (parsing ranges out of shell text is the input-boundary hazard class).
+- **Telemetry rotation (D2).** `hooks/session-start` rotates `telemetry.jsonl` past 20k rows to a single `.1` generation — once per session, never in the per-event append path; opt-out projects (`telemetry: false`) never reach it.
+- **install-deps SKILL diet (D3, skill 1.10.0).** Body 25,749 → 18,378 bytes (−29%): the Step-2 probe contract / verdict map and the Step-6 verify + Windows-PATH branch moved verbatim to NEW `references/audit-and-verify.md`; the body keeps the sharp carve-outs inline (124/137/127 never `missing`/`unverified`) and the test-pinned Playwright section verbatim. Spec records on the record that the original ≤15KB target was amended to ≤19KB rather than cut operative/pinned prose.
+
+### Adversarial round (1 blind reviewer, live attacks — all folded)
+- **MAJOR:** the diet orphaned `windows-path.md` + `tooling-install.md` TWO levels deep (their only route moved inside the new ref — the exact one-level-deep class the spec's own invariant guarded for the new file but not for collateral). Folded: direct SKILL.md routes restored at Step 6 + test arms 2b pin both.
+- MINOR: rotation into a pre-existing `.1` **directory** would bury the file inside it — folded: fail-open guard (`! -d`), arm r4 proves nothing is buried and the hook still exits 0.
+- MINOR: a 21-digit `limit` landed verbatim in the JSON row — folded: 10^9 sanity bound at the python gate (bool excluded), arm a6.
+- MINOR: the diet test could not catch the orphan it shipped with — folded into arms 2b.
+- Proven-clean surfaces: eval boundary (10 hostile payloads, no PWN, every row json-valid), est arithmetic edges (lines=0 / limit=0 / deleted file), rotation crash-resistance under `set -euo pipefail` (anchor injection survives every hostile state incl. the exact-20000 boundary), content-loss diff (zero facts lost), test honesty (mutation-proved arms).
+
+### Tests
+- NEW `tests/hooks/telemetry-range.test.sh` (11 arms) — range fields + proportional estimate + min-clamp, out-of-range limit, Bash-load null range, opt-out, rotation boundary/single-generation/dir-at-.1 fail-open, opt-out-skips-rotation.
+- NEW `tests/surface/test-install-deps-diet.sh` (20 arms) — byte cap 19,000, no-orphan routing (incl. the round's collateral-orphan class), relocated-content presence probes, inline carve-outs retained, fat blocks actually gone, playwright pins intact, ref ToC.
+- `tests/derived-artifacts/test-verify-cmd-usability.sh` amended to track the relocation: the probe-contract invariant now holds over the UNION of SKILL.md + `audit-and-verify.md` (mutation controls mutate the union); bound-resolver floor 2→1 and probe-site count 4→3 reflect the diet's REAL deduplication (the former Step-6 copy of the ladder now routes to the one canonical §Probe contract block instead of repeating it). Suite also caught a live P6 regression pre-commit: the new ref initially carried `${CLAUDE_PLUGIN_ROOT}` (4×) — replaced with `<plugin-root>` prose per the standing refs pin.
+
 ## [6.12.0] - 2026-08-12 — graph-assisted reconcile: the graph becomes a chain input
 
 Ships spec `2026-08-12-graph-assisted-reconcile.md` (USER audit: "graph jadi pajangan?" — verdict: engineering sound, zero chain consumers; this gives it two):

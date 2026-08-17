@@ -117,6 +117,14 @@ emit("TOOL_NAME", tool_name)
 
 if tool_name == "Read":
     emit("FILE_PATH", tool_input.get("file_path", ""))
+    # D1 (spec 2026-08-17-token-lard-cuts-p1): the ACTUAL read range, so
+    # ref_loaded can tell a §-scoped read from a full load. Empty when absent.
+    # Sanity bound 10^9 (round catch: a 21-digit int passes isinstance and the
+    # bash digit-guard, landing verbatim in the JSON row) — out-of-range = absent.
+    def _rng(v):
+        return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 10**9 else ""
+    emit("READ_OFFSET", _rng(tool_input.get("offset", "")))
+    emit("READ_LIMIT", _rng(tool_input.get("limit", "")))
 elif tool_name == "Skill":
     emit("SKILL_NAME", tool_input.get("skill", ""))
 elif tool_name == "Bash":
@@ -205,10 +213,16 @@ TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
 
 # Helper: emit one ref_loaded event for a path (computes lines/bytes/est_tokens).
+# D1 (spec 2026-08-17-token-lard-cuts-p1): optional $3=offset $4=limit record the
+# ACTUAL Read range; est_read_tokens is the line-proportional estimate so a
+# §-scoped read is distinguishable from a full load. lines/bytes/estimated_tokens
+# keep their full-file meaning (additive schema — existing consumers unbroken).
 emit_ref_loaded() {
   local file_path="$1"
   local source_tool="$2"  # "Read" or "Bash"
-  local lines bytes est_tokens file_path_json
+  local read_offset="${3:-}"
+  local read_limit="${4:-}"
+  local lines bytes est_tokens file_path_json off_json lim_json est_read
   if [ -f "$file_path" ]; then
     lines=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
     bytes=$(wc -c < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
@@ -216,9 +230,20 @@ emit_ref_loaded() {
   else
     lines=0; bytes=0; est_tokens=0
   fi
+  off_json="null"; lim_json="null"; est_read=$est_tokens
+  case "$read_offset" in (*[!0-9]*|"") ;; (*) off_json=$read_offset ;; esac
+  case "$read_limit" in
+    (*[!0-9]*|"") ;;
+    (*)
+      lim_json=$read_limit
+      if [ "$lines" -gt 0 ] && [ "$read_limit" -lt "$lines" ]; then
+        est_read=$((est_tokens * read_limit / lines))
+      fi
+      ;;
+  esac
   file_path_json=$(printf '%s' "$file_path" | sed 's|\\|\\\\|g; s|"|\\"|g')
   mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || return 0
-  echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"ref_loaded\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"file_path\":\"$file_path_json\",\"lines\":$lines,\"bytes\":$bytes,\"estimated_tokens\":$est_tokens,\"source_tool\":\"$source_tool\"}}" \
+  echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"ref_loaded\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"file_path\":\"$file_path_json\",\"lines\":$lines,\"bytes\":$bytes,\"estimated_tokens\":$est_tokens,\"read_offset\":$off_json,\"read_limit\":$lim_json,\"est_read_tokens\":$est_read,\"source_tool\":\"$source_tool\"}}" \
     >> "$TELEMETRY_FILE" 2>/dev/null || true
 }
 
@@ -236,7 +261,7 @@ case "${TOOL_NAME:-}" in
     FILE_PATH="${FILE_PATH:-}"
     [ -z "$FILE_PATH" ] && exit 0
     if is_megasdd_path "$FILE_PATH"; then
-      emit_ref_loaded "$FILE_PATH" "Read"
+      emit_ref_loaded "$FILE_PATH" "Read" "${READ_OFFSET:-}" "${READ_LIMIT:-}"
     fi
     ;;
 
