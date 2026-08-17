@@ -48,7 +48,7 @@ Konteks: di 2b, tiga kandidat takeout GAGAL evidence bar-nya sendiri (T1/T3 drop
 - **Problem.** Di bawah `--parallel`/`--per-squad`, controller re-invoke validator quality project-wide setelah TIAP batch. Ref-nya sendiri mengaku "defense-in-depth, not a fix for an invisible write" (PostToolUse sudah fire di subagent writes — AUDIT L1).
 - **Numbers.** Hemat jika dicut: ~6–7 validator spawns × N batch per run (flow-coverage, sibling-consistency, unit-spec, ui-quality, cross-cutting, dst.) — material di fleet Windows/CrowdStrike (~220ms/spawn, measured), kecil di macOS. Token: 0 (script plane).
 - **Rasional penahan:** "the explicit re-scan makes the gate state deterministic regardless of concurrent write ordering" — plausibly load-bearing untuk keputusan halt ANTAR-batch di bawah async PostToolUse interleaving.
-- **Recommendation.** Belum boleh dicut. Prasyarat: **consumer trace** — siapa yang MEMBACA gate state di antara batch? Kalau trace membuktikan tidak ada konsumen antar-batch (gate execute-bolts re-derive semuanya sendiri di fire berikutnya), cut jadi aman dan murah. Trace dulu, angka dulu, baru pisau.
+- **RESOLVED 2026-08-17 — KEEP** (`research/2026-08-17-c1-batch-rescan-trace.md`): trace done. Cut condition technically met (EB-GATE-1 re-derives at the next gate fire) TAPI angka aslinya salah dua arah — spawn cost cuma 2–3/batch (bukan 6–7), dan menghapus early mid-run halt mempertaruhkan wave sia-sia (10⁴–10⁵ tok) demi ~0.7s/batch. Trade terbalik ~3 orde. Jangan buka lagi tanpa telemetry lapangan.
 
 ### c2 — Advisor default-on (opus) per bind
 - **Problem.** Step 2.12 bind menjalankan `phase-advisor` (model: **opus**, read-only, default-on; `--no-advisor` opt-out) di TIAP bind — pass adversarial paling mahal per-run di pipeline.
