@@ -1,6 +1,6 @@
 # Constitution → `.claude/rules/` path-scoped emission (A6, v6.17.0)
 
-**Status:** DRAFT
+**Status:** SHIPPED v6.17.0 (2026-08-17, 4019de0, CI green, both-tree suite 277/277). Round: 1 BLOCKER + 4 MAJOR + 3 minor folded (§Round amendments).
 **Source:** adoption scan A6, USER-GREENLIT 2026-08-17. Platform capability: `.claude/rules/*.md` with `paths:` frontmatter globs load ON-DEMAND when Claude touches matching files (Claude Code v2.1.211+). Release 2 of the greenlit batches (A5 was rejected on measurement).
 
 ## Why
