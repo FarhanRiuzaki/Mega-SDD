@@ -1,5 +1,6 @@
 ---
 name: security-reviewer
+maxTurns: 25
 description: Reviews a bolt's code for security flaws — input validation, authn/authz gaps versus the unit spec, secrets, unvetted new dependencies, fail-open error handling, and architectural drift that bypasses a security control. Read-only. Runs as one lens of the execute-bolts review panel, blind to the other lenses. Returns severity-graded findings with file:line evidence.
 tools: Read, Grep, Glob, Bash
 model: opus

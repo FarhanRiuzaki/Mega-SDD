@@ -1,5 +1,6 @@
 ---
 name: phase-advisor
+maxTurns: 25
 description: Adversarial second-opinion reviewer for an upstream mega-sdd phase artifact (a binding or a vault) BEFORE it is finalized. Read-only. Reads the artifact AND its cited sources and reports evidence-backed findings (false-CONFIRMED, fabrication, missed OQ, mis-classification). The dispatching skill materializes findings; the advisor is read-only and never modifies artifacts. Phase-specific focus arrives in the dispatch prompt.
 tools: Read, Grep, Glob
 model: opus

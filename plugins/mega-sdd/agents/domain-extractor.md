@@ -1,5 +1,6 @@
 ---
 name: domain-extractor
+maxTurns: 60
 description: Extracts ONE domain or workflow slice of a legacy codebase into a tech-agnostic knowledge-base file with [VERIFIED]/[INFERRED]/[OPEN] confidence markers, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers, and disciplined citations. Use when extract-intelligence dispatches a wave subagent for a specific domain. It receives its domain assignment, the legacy paths to read, and the KB schema in its task prompt.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet

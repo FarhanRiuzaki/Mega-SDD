@@ -1,5 +1,6 @@
 ---
 name: spec-reviewer
+maxTurns: 25
 description: Verifies a bolt's implementation matches its unit spec exactly — nothing missing, nothing extra, no misread requirements, every Hard rule honored. Read-only. Runs as one lens of the execute-bolts review panel after bolt-implementer reports DONE, blind to the other lenses. It independently reads the actual code and does NOT trust the implementer's report.
 tools: Read, Grep, Glob, Bash
 model: sonnet

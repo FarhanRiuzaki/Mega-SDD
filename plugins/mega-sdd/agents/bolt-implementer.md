@@ -1,5 +1,6 @@
 ---
 name: bolt-implementer
+maxTurns: 80
 description: Implements ONE mega-sdd unit (a single PR-sized bolt) — writes the target files, writes and runs the acceptance test, and commits. Use when execute-bolts dispatches a unit for implementation in an isolated context. Its dispatch arrives as a pointer, so it Reads the full dispatch file (unit spec, anchors, hard rules, context) first and in full before any other action; it never inherits session history.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: inherit

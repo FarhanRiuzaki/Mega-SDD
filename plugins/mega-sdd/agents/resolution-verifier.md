@@ -1,5 +1,6 @@
 ---
 name: resolution-verifier
+maxTurns: 30
 description: Round-2+ reviewer of the execute-bolts panel — verifies whether each OPEN prior finding is actually resolved at the new head (fix-guided, evidence-required) AND delta-reviews the fix diff plus one hop of dependencies for new issues the fix introduced. Read-only. Replaces the full lens re-panel on fix rounds; it sees the finding ledger by design but never the implementer's report or bolt-report.
 tools: Read, Grep, Glob, Bash
 model: sonnet

@@ -7,7 +7,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" session-start",
-            "async": false
+            "async": false,
+            "statusMessage": "mega-sdd: anchor + state\u2026"
           }
         ]
       }
@@ -19,7 +20,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-tool-use",
-            "async": false
+            "async": false,
+            "statusMessage": "mega-sdd: gate checks\u2026"
           }
         ]
       }
@@ -67,7 +69,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-expansion",
-            "async": false
+            "async": false,
+            "statusMessage": "mega-sdd: prompt expansion\u2026"
           }
         ]
       }
@@ -79,7 +82,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-submit",
-            "async": false
+            "async": false,
+            "statusMessage": "mega-sdd: routing\u2026"
           }
         ]
       }
@@ -103,7 +107,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-compact",
-            "async": false
+            "async": false,
+            "statusMessage": "mega-sdd: compaction snapshot\u2026"
           }
         ]
       }
