@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.22.0
+version: 2.23.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -115,6 +115,8 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
    - **12.7 Sibling-consistency sweep.** Reason about siblings TOGETHER (grouped by module + scope): every sibling a pack-declared cross-cutting concern applies to MUST declare the SAME mechanism (no fan-out divergence); every FK column MUST declare its derived relation accessor. Enforced by `validate-sibling-consistency.sh`.
 
 **13. Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
+
+**13.5. Constitution rules offer (A6 — OFFERED, never silent).** When `<vault>/constitution.md` exists AND ≥1 written unit's Hard rules cite a clause ID: propose (with keterangan) running `bash <plugin-root>/scripts/emit-claude-rules.sh --vault=<vault> --cwd=<root> --write` — it emits path-scoped `.claude/rules/mega-sdd-<vault>-<clause>.md` files whose `paths:` are GROUNDED in the citing units' target_files (uncited clauses skipped, never fabricated globs; stamp + prefix-scoped refresh per the script). Writing to `.claude/` is user config territory: under `--auto` this is QUEUED as a notice in the summary, never auto-run.
 
 ## Anti-hallucination rails
 
