@@ -1,6 +1,6 @@
 # A7 userConfig + A8 FileChanged verdict (v6.18.0)
 
-**Status:** DRAFT
+**Status:** SHIPPED v6.18.0 (2026-08-17, 223f393, CI green, both-tree suite 278/278). Closes the adoption roadmap.
 **Source:** adoption scan A7+A8, USER-GREENLIT 2026-08-17. Release 3 of the batches (final).
 
 ## A7 — SHIPPED (minimal, mechanism-verified)
