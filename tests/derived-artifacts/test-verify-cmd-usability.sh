@@ -97,6 +97,14 @@ fi
 #     Because `-k` makes 137 reachable, 137 must share 124's verdict, and 127 must
 #     be excluded from the `missing` catch-all for BOTH reasons above.
 SKILL="$HERE/../../plugins/mega-sdd/skills/install-deps/SKILL.md"
+# 6.13.0 (spec 2026-08-17-token-lard-cuts-p1 D3): the probe contract was RELOCATED
+# verbatim to references/audit-and-verify.md; SKILL.md keeps routers + the inline
+# carve-outs. The invariant now holds over the UNION of the two files — a fact
+# deleted from BOTH is still a failure, and the mutation controls mutate the union.
+AV="$HERE/../../plugins/mega-sdd/skills/install-deps/references/audit-and-verify.md"
+UNION_DIR="$(mktemp -d)"   # cleaned by the shared EXIT trap set at §5 below
+UNION="$UNION_DIR/union.md"
+cat "$SKILL" "$AV" > "$UNION" 2>/dev/null || true
 
 # probe_skill <file> — runs every SKILL.md invariant against <file>, printing one
 # `OK:<id>` or `BAD:<id>` line per check. Returns 1 if any check failed. Written as
@@ -109,11 +117,14 @@ probe_skill() {
     if [ "$2" -eq 0 ]; then echo "OK:$1"; else echo "BAD:$1"; ps_rc=1; fi
   }
 
-  # the bound is RESOLVED via the 3-limb ladder, at BOTH probe invocations
+  # the bound is RESOLVED via the 3-limb ladder. Pre-6.13.0 the block appeared
+  # TWICE (Step 2 + a Step 6 copy); the D3 diet deduplicated it into ONE canonical
+  # §Probe contract block that §Verify after install explicitly routes back to —
+  # so the floor is ≥1, and deleting the ladder entirely still fails.
   n_t=$(grep -cF 'BOUND="timeout -k 2 10"'  "$ps_f")
   n_g=$(grep -cF 'BOUND="gtimeout -k 2 10"' "$ps_f")
   n_e=$(grep -cF 'BOUND=""'                 "$ps_f")
-  [ "$n_t" -ge 2 ] && [ "$n_g" -ge 2 ] && [ "$n_e" -ge 2 ]
+  [ "$n_t" -ge 1 ] && [ "$n_g" -ge 1 ] && [ "$n_e" -ge 1 ]
   ps_chk "bound-resolver(t=$n_t g=$n_g empty=$n_e)" $?
 
   # EVERY probe site uses the resolved prefix, never a literal. Counting the
@@ -121,10 +132,11 @@ probe_skill() {
   # python3 probe, whose command is `$BOUND bash -c '…resolve-python.sh…'` rather
   # than a matrix verify_cmd. Exact count, so a NEW unbounded probe site is a FAIL
   # rather than something a `-ge 2` threshold silently tolerates.
-  # 4 sites: Step 2 exec probe, Step 2 `sh -c` wrapper for compound verify_cmd,
-  # Step 2 item 5 (python3), Step 6 post-install.
+  # 3 sites post-6.13.0 dedup: §Probe contract exec probe, its `sh -c` wrapper
+  # for compound verify_cmd, and the python3 resolver probe (the former Step-6
+  # copy now routes to the same canonical block instead of repeating it).
   n_u=$(grep -cE '^[[:space:]]*\$BOUND ' "$ps_f")
-  [ "$n_u" -eq 4 ]; ps_chk "bound-not-literal(sites=$n_u/4)" $?
+  [ "$n_u" -eq 3 ]; ps_chk "bound-not-literal(sites=$n_u/3)" $?
 
   # A compound verify_cmd must be wrapped, or the shell parses `||` at the TOP level:
   # only the first limb is bounded, the fallback runs unbounded, and `||` returns the
@@ -158,31 +170,31 @@ probe_skill() {
   return $ps_rc
 }
 
-if [ -f "$SKILL" ]; then
+if [ -f "$SKILL" ] && [ -f "$AV" ]; then
   while IFS= read -r line; do
     case "$line" in
-      OK:*)  pass "SKILL.md ${line#OK:}" ;;
-      BAD:*) fail "SKILL.md ${line#BAD:}" ;;
+      OK:*)  pass "SKILL∪audit-and-verify ${line#OK:}" ;;
+      BAD:*) fail "SKILL∪audit-and-verify ${line#BAD:}" ;;
     esac
   done <<EOF
-$(probe_skill "$SKILL")
+$(probe_skill "$UNION")
 EOF
 else
-  fail "install-deps SKILL.md not found at $SKILL"
+  fail "install-deps SKILL.md or references/audit-and-verify.md not found"
 fi
 
 # ── 4-CONTROL: every check above must go RED on its own targeted mutation ─────
 # Without this a SKILL.md that stopped discussing bounds at all could satisfy the
 # negative checks vacuously. Each mutation removes exactly one property and must
 # be caught by exactly the check that owns it.
-if [ -f "$SKILL" ]; then
+if [ -f "$SKILL" ] && [ -f "$AV" ]; then
   TMPS="$(mktemp -d)"
   # id @ sed program @ check-id prefix that MUST turn BAD  (@ separates fields
   # because the sed programs themselves use / and | as their own delimiters)
   while IFS='@' read -r mid mprog mexpect; do
     [ -n "$mid" ] || continue
-    sed "$mprog" "$SKILL" > "$TMPS/m.md"
-    if cmp -s "$SKILL" "$TMPS/m.md"; then
+    sed "$mprog" "$UNION" > "$TMPS/m.md"
+    if cmp -s "$UNION" "$TMPS/m.md"; then
       fail "control[$mid]: mutation was a no-op — this control proves nothing"
       continue
     fi
@@ -206,7 +218,7 @@ fi
 # ── 5. CONTROL: the detector fires on the exact historical defect ────────────
 # Without this, a matrix that stopped containing verify_cmd at all would pass 1-3
 # silently. Replay the pre-2026-07-30 shape on a temp copy and require a catch.
-TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP" "$UNION_DIR"' EXIT
 sed 's/verify_cmd: "jd --version"/verify_cmd: "command -v jd"/' "$MATRIX" > "$TMP/mutated.yaml"
 if ! grep -q 'verify_cmd: "command -v jd"' "$TMP/mutated.yaml"; then
   fail "control: could not construct the mutation — this test proves nothing"

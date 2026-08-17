@@ -243,6 +243,21 @@ if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${cwd}/.mega-sdd" ]; then
   TELEMETRY_FILE="${cwd}/.mega-sdd/memory/telemetry.jsonl"
   mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || true
 
+  # D2 (spec 2026-08-17-token-lard-cuts-p1): rotate an unbounded telemetry file
+  # once per session — NOT in the per-event append path (that must stay O(1)).
+  # One generation survives (.1 clobbered in place, never a .2); opt-out projects
+  # never reach this block, matching the guard's existing scope.
+  if [ -f "$TELEMETRY_FILE" ]; then
+    TELEMETRY_ROWS=$(wc -l < "$TELEMETRY_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+    case "$TELEMETRY_ROWS" in (*[!0-9]*|"") TELEMETRY_ROWS=0 ;; esac
+    # Round catch: a pre-existing DIRECTORY at .1 would make mv bury the file
+    # INSIDE it (telemetry.jsonl.1/telemetry.jsonl) — fail open (skip rotation,
+    # file keeps growing) rather than silently break the single-generation shape.
+    if [ "$TELEMETRY_ROWS" -gt 20000 ] && [ ! -d "${TELEMETRY_FILE}.1" ]; then
+      mv -f "$TELEMETRY_FILE" "${TELEMETRY_FILE}.1" 2>/dev/null || true
+    fi
+  fi
+
   # Run C1 self-resolve guards via python (deterministic detection + fix).
   # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
   SELF_RESOLVE_NOTICES=$(CWD="$cwd" TELEMETRY_FILE="$TELEMETRY_FILE" python3 <<'PYEOF' 2>/dev/null
