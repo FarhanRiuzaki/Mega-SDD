@@ -1,6 +1,6 @@
 # Delta hygiene A1–A4 (v6.16.0)
 
-**Status:** DRAFT
+**Status:** SHIPPED v6.16.0 (2026-08-17, 09c6a84, CI green incl. the new A1 validate step, both-tree suite 276/276). Verification per the proportional mandate: suite + validator (blind round reserved for A5/A6).
 **Source:** adoption scan `research/2026-08-17-claude-code-delta-adoption-scan.md`, USER-GREENLIT 2026-08-17 (all four batches; this is release 1 of 4). Local Claude Code = 2.1.233 (all four capabilities present ≥2.1.229).
 
 ## A1 — `claude plugin validate --strict` in CI
