@@ -43,12 +43,45 @@ printf '%s' "\$(cat "$LOG/next-body" 2>/dev/null)"
 printf '\n%s' "\$resp"
 EOF
 chmod +x "$SHIM/curl"
+
+# mega-code shim + fake HOMEs (v6.19.1 office-rung detection). Every invocation
+# that must NOT hit the office rung runs under a scratch HOME **and USERPROFILE**
+# (round MAJOR-1: Windows python's expanduser never consults HOME) — a real
+# machine's ~/.claude/settings.json would otherwise arm rung 2 mid-suite.
+# clean() strips ambient rung-1/office env so a developer shell with the
+# publish pair exported can't turn hermetic arms red (round MINOR-9).
+clean() { env -u MEGA_SDD_PUBLISH_URL -u MEGA_SDD_PUBLISH_TOKEN -u MEGA_SDD_PUBLISH_MAX_MB -u ANTHROPIC_BASE_URL "$@"; }
+cat > "$SHIM/mega-code" <<'EOF'
+#!/bin/bash
+[ "$1" = "get-token" ] && { echo "office-tok-999"; exit 0; }
+exit 1
+EOF
+chmod +x "$SHIM/mega-code"
+# a REAL (shimmed) non-mega-code helper — f1b must fail via the signature CHECK,
+# not via the helper binary happening to not exist (mutation-proofing)
+cat > "$SHIM/other-helper" <<'EOF'
+#!/bin/bash
+echo "other-tok-777"
+EOF
+chmod +x "$SHIM/other-helper"
+HOMELESS="$TMP/home-none"; mkdir -p "$HOMELESS"
+HOME_OFF="$TMP/home-office"; mkdir -p "$HOME_OFF/.claude"
+printf '{"apiKeyHelper":"mega-code get-token","env":{"ANTHROPIC_BASE_URL":"https://gw-office.test"}}\n' > "$HOME_OFF/.claude/settings.json"
+HOME_PLAIN="$TMP/home-plain"; mkdir -p "$HOME_PLAIN/.claude"
+printf '{"model":"opus"}\n' > "$HOME_PLAIN/.claude/settings.json"
+HOME_NOURL="$TMP/home-nourl"; mkdir -p "$HOME_NOURL/.claude"
+printf '{"apiKeyHelper":"mega-code get-token"}\n' > "$HOME_NOURL/.claude/settings.json"
+HOME_OTHERHELPER="$TMP/home-otherhelper"; mkdir -p "$HOME_OTHERHELPER/.claude"
+printf '{"apiKeyHelper":"other-helper get","env":{"ANTHROPIC_BASE_URL":"https://gw-other.test"}}\n' > "$HOME_OTHERHELPER/.claude/settings.json"
+HOME_NOSCHEME="$TMP/home-noscheme"; mkdir -p "$HOME_NOSCHEME/.claude"
+printf '{"apiKeyHelper":"mega-code get-token","env":{"ANTHROPIC_BASE_URL":"gw-noscheme.test"}}\n' > "$HOME_NOSCHEME/.claude/settings.json"
+
 run() { PATH="$SHIM:$PATH" MEGA_SDD_PUBLISH_URL="${U:-https://gw.test}" MEGA_SDD_PUBLISH_TOKEN="${T:-sekrit-tok-123}" \
         bash "$SCRIPT" --cwd="$P" </dev/null 2>&1; }
 
 echo "── a1: inert without credentials (no curl, rc 0) ──"
 : > "$LOG/count"; echo 0 > "$LOG/count"
-OUT=$(PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+OUT=$(clean HOME="$HOMELESS" USERPROFILE="$HOMELESS" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
 [ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] && [ ! -f "$MS/.publish-state.json" ] \
   && ok "a1 inert: rc 0, zero curl, no state" || fail "a1 rc=$RC count=$(cat "$LOG/count")"
 
@@ -152,7 +185,7 @@ publish:
 telemetry: true
 YAML
 echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
-PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
+clean HOME="$HOMELESS" USERPROFILE="$HOMELESS" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
 grep -q 'DECOY-OTHER-SERVICE' "$LOG/last-argv" "$LOG"/last-body.tgz 2>/dev/null && fail "r2 decoy token leaked" || ok "r2 decoy token never used"
 [ "$(cat "$LOG/count")" = "1" ] && ok "r2b publish-block creds worked (1 push)" || fail "r2b config path dead: count=$(cat "$LOG/count")"
 
@@ -160,7 +193,7 @@ echo "── r3 (round M3): project_id normalization (creds/port/scp/remote-less
 norm() { ( cd "$P2" && git remote remove origin 2>/dev/null; git remote add origin "$1" )
   echo 200 > "$LOG/next-response"
   printf 'x%s\n' "$RANDOM" >> "$MS2/vaults/app/00-index.md"
-  PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
+  clean HOME="$HOMELESS" USERPROFILE="$HOMELESS" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
   "$PY" -c 'import tarfile,json,sys;print(json.load(tarfile.open("'"$LOG"'/last-body.tgz").extractfile("manifest.json"))["project_id"])'
 }
 [ "$(norm 'https://user:s3cret@scm.bankmegadev.com/grup/repo.git')" = "scm.bankmegadev.com/grup/repo" ] && ok "r3a creds stripped" || fail "r3a creds leaked into project_id"
@@ -170,7 +203,7 @@ norm() { ( cd "$P2" && git remote remove origin 2>/dev/null; git remote add orig
 echo "── r4 (round MINOR-5): over-cap bundle NOT sent ──"
 printf 'y\n' >> "$MS2/vaults/app/00-index.md"
 echo 0 > "$LOG/count"
-OUT=$(PATH="$SHIM:$PATH" MEGA_SDD_PUBLISH_MAX_MB=0 bash "$SCRIPT" --cwd="$P2" </dev/null 2>&1); RC=$?
+OUT=$(clean HOME="$HOMELESS" USERPROFILE="$HOMELESS" PATH="$SHIM:$PATH" MEGA_SDD_PUBLISH_MAX_MB=0 bash "$SCRIPT" --cwd="$P2" </dev/null 2>&1); RC=$?
 [ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] && echo "$OUT" | grep -q 'NOT sent' \
   && ok "r4 cap pre-check blocks POST, rc 0" || fail "r4 rc=$RC count=$(cat "$LOG/count")"
 
@@ -178,12 +211,71 @@ echo "── r5 (round MINOR-6): symlinks never collected ──"
 ln -s /etc/hosts "$MS2/vaults/app/leak.md" 2>/dev/null
 echo 200 > "$LOG/next-response"
 printf 'z\n' >> "$MS2/vaults/app/00-index.md"
-PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
+clean HOME="$HOMELESS" USERPROFILE="$HOMELESS" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
 "$PY" -c '
 import tarfile,json
 m=json.load(tarfile.open("'"$LOG"'/last-body.tgz").extractfile("manifest.json"))
 assert "vaults/app/leak.md" not in m["files"]
 ' && ok "r5 symlink excluded from manifest+bundle" || fail "r5 symlink shipped"
+
+echo "── f1 (v6.19.1): mega-code installed but session NOT managed → inert ──"
+printf 'f1\n' >> "$MS/vaults/app/00-index.md"
+echo 0 > "$LOG/count"
+OUT=$(clean HOME="$HOME_PLAIN" USERPROFILE="$HOME_PLAIN" ANTHROPIC_BASE_URL="https://evil.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] \
+  && ok "f1 vanilla session inert (binary on PATH alone never arms)" || fail "f1 rc=$RC count=$(cat "$LOG/count")"
+# f1b: URL present in settings but apiKeyHelper is NOT mega-code → still inert
+# (isolates the signature check from the URL checks)
+echo 0 > "$LOG/count"
+OUT=$(clean HOME="$HOME_OTHERHELPER" USERPROFILE="$HOME_OTHERHELPER" ANTHROPIC_BASE_URL="https://gw-other.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] \
+  && ok "f1b non-mega-code apiKeyHelper → inert despite settings URL" || fail "f1b rc=$RC count=$(cat "$LOG/count")"
+
+echo "── f2 (v6.19.1): mega-code-managed session (env matches settings) publishes ──"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"; rm -f "$LOG/next-body"
+OUT=$(clean HOME="$HOME_OFF" USERPROFILE="$HOME_OFF" ANTHROPIC_BASE_URL="https://gw-office.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "1" ] && grep -q 'gw-office.test/mega-sdd/ingest' "$LOG/last-argv" \
+  && ok "f2 office rung fires when session is routed through the gateway" || fail "f2 rc=$RC count=$(cat "$LOG/count")"
+grep -q 'office-tok-999' "$LOG/last-argv" && fail "f2b office token in argv" || ok "f2b office token absent from argv"
+# f2c (round MAJOR-2): signature present but process env ANTHROPIC_BASE_URL absent
+# → session is NOT routed through the gateway right now → inert
+printf 'f2c\n' >> "$MS/vaults/app/00-index.md"
+echo 0 > "$LOG/count"
+OUT=$(clean HOME="$HOME_OFF" USERPROFILE="$HOME_OFF" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] \
+  && ok "f2c provisioned machine, unrouted session → inert" || fail "f2c rc=$RC count=$(cat "$LOG/count")"
+
+echo "── f3 (v6.19.1 + round MAJOR-2): foreign env URL → inert, never a POST ──"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
+clean HOME="$HOME_OFF" USERPROFILE="$HOME_OFF" ANTHROPIC_BASE_URL="https://evil.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "0" ] && ok "f3 env≠settings → office rung disarmed (zero POST)" || fail "f3 count=$(cat "$LOG/count")"
+grep -q 'evil.test' "$LOG/last-argv" && fail "f3b token redirected to foreign URL" || ok "f3b foreign URL never in argv"
+
+echo "── f4 (v6.19.1): signature without usable settings URL → office rung disarmed ──"
+printf 'f4\n' >> "$MS/vaults/app/00-index.md"
+echo 0 > "$LOG/count"
+OUT=$(clean HOME="$HOME_NOURL" USERPROFILE="$HOME_NOURL" ANTHROPIC_BASE_URL="https://evil.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] \
+  && ok "f4 no settings URL → inert (env never substitutes)" || fail "f4 rc=$RC count=$(cat "$LOG/count")"
+# f4b (round MINOR-4): settings URL without an http(s) scheme → disarmed
+echo 0 > "$LOG/count"
+OUT=$(clean HOME="$HOME_NOSCHEME" USERPROFILE="$HOME_NOSCHEME" ANTHROPIC_BASE_URL="gw-noscheme.test" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P" </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "0" ] \
+  && ok "f4b scheme-less settings URL → inert" || fail "f4b rc=$RC count=$(cat "$LOG/count")"
+
+echo "── f5 (v6.19.1): unarmed office probe falls through to config.yaml ──"
+printf 'f5\n' >> "$MS2/vaults/app/00-index.md"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
+clean HOME="$HOME_PLAIN" USERPROFILE="$HOME_PLAIN" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "1" ] && grep -q 'gw2.test' "$LOG/last-argv" \
+  && ok "f5 config rung reachable past installed-but-inactive mega-code" || fail "f5 count=$(cat "$LOG/count")"
+# f5b (round MINOR-4): signature present but settings URL missing → STILL falls
+# through to config.yaml (armed-but-unsatisfied probe never dead-ends)
+printf 'f5b\n' >> "$MS2/vaults/app/00-index.md"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
+clean HOME="$HOME_NOURL" USERPROFILE="$HOME_NOURL" PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P2" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "1" ] && grep -q 'gw2.test' "$LOG/last-argv" \
+  && ok "f5b signature-without-URL falls through to config rung" || fail "f5b count=$(cat "$LOG/count")"
 
 echo
 echo "publish-artifacts: $PASS ok, $FAIL fail"
