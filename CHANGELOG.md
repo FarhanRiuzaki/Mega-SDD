@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.19.0] - 2026-08-20 — the artifact publisher: mega-sdd artifacts flow to the office AI gateway
+
+Ships spec `2026-08-17-artifact-publisher-gateway.md` (brainstorm-approved; wire format + all contracts pinned with the gateway team, who are building ingest/MCP/:8002 in parallel per `docs/mega-sdd/gateway-mcp-guide.md` + `keputusan-arsitek-gateway.md`).
+
+### Added
+- **`scripts/publish-artifacts.sh`** — fail-open publisher: collects graph/vault/binding/units/KB/codebase-map/symbol-index per vault, delta-by-sha (`.publish-state.json`), FULL manifest each push (gateway self-heals; `missing[]` evicts for resend), pinned wire format (raw `application/gzip`, `manifest.json` FIRST root tar entry), `POST <gateway>/mega-sdd/ingest`. Credential probe ladder: explicit env override → office path (`ANTHROPIC_BASE_URL` + bounded `mega-code get-token`) → config.yaml; no credentials → inert. Every failure exits 0 (401 → "run mega-code login" + queue; network → queue). Token never logged. No PII (work_dir = basename only).
+- **Stop-hook publisher leg** — unconditional-safe invocation (`|| true`, self-debouncing, inert without credentials).
+
+### Adversarial round (1 blind reviewer, live attacks — 4 MAJOR + 3 minor, all folded)
+- MAJOR: unscoped config probe could send ANOTHER service's secret as the gateway bearer (now awk-scoped to the `publish:` block); the per-NIP token was VISIBLE in `ps` argv (now a 0600 header file via `curl -H @file`); `project_id` leaked embedded remote credentials + split ssh/https identity (now creds-stripped, port-dropped, scp-normalized, remote-less → `local/<work_dir>`); `get-token` was unbounded on stock macOS (now bounded deterministically via python subprocess timeout, not the shell ladder).
+- Minors: 25 MB cap pre-check (an oversized bundle is never POSTed, let alone hammered every Stop), symlinks never collected/shipped, per-PID state tmp (parallel-session safe).
+- Proven clean: fail-open totality (rc 0 on git/python/curl absent, malformed graph, corrupt state), manifest-first wire format, multi-vault delta isolation, mutation-resistant tests.
+
+### Tests
+- NEW `tests/publisher/test-publish-artifacts.sh` (22 arms incl. the round's argv-leak, decoy-token scoping, project_id normalization, cap pre-check, symlink-exclusion arms) — inert/manifest-first wire/fields/full-first-delta, sha-debounce, delta+full-manifest, fail-open retry, 401 hint, token-leak negative (output + state), missing[] self-heal eviction, hook wiring.
+
 ## [6.18.0] - 2026-08-17 — A7 userConfig + the A8 verdict (adoption scan, final batch)
 
 Ships spec `2026-08-17-a7-userconfig.md`.
