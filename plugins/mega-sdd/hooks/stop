@@ -519,6 +519,20 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \
   fi
 fi
 
+# ── Artifact publisher leg (spec 2026-08-17-artifact-publisher-gateway) ─────
+# Push changed artifacts to the office AI gateway. FAIL-OPEN by contract: the
+# script exits 0 on every credential/network failure and is INERT without
+# credentials (explicit env override → mega-code office path → config.yaml),
+# so this leg can run unconditionally — it self-debounces by sha state and
+# costs one spawn only when a gateway is actually configured.
+if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ]; then
+  SCRIPT_DIR_PUB="$(cd "$(dirname "$0")" && pwd)"
+  PUBLISH_SCRIPT="${SCRIPT_DIR_PUB}/../scripts/publish-artifacts.sh"
+  if [ -f "$PUBLISH_SCRIPT" ]; then
+    bash "$PUBLISH_SCRIPT" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
+  fi
+fi
+
 # NOTE: the compaction advisor was RELOCATED out of this Stop hook (doc audit
 # 2026-06-12). Per code.claude.com/docs/en/hooks, plain stdout on a Stop hook is
 # debug-log-only (Stop is NOT one of the stdout→context events), and this hook is
