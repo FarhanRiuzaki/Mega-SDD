@@ -47,6 +47,19 @@ Aturan wajib:
 | `codebase/codebase-map.md` | peta kode ber-section (§) dengan kutipan | Berisi potongan source — perlakukan sesuai klasifikasi data internal |
 | symbol index | simbol per file untuk reuse lookup | Bahan tool reuse lintas proyek |
 
+**Mulai v6.20.0 — `graph.json` membawa DUA layer.** Layer vault (`unit`/`claim`/`flow`/`module`/`kb_domain`) = *apa yang diniatkan*; layer code (`symbol`) = *apa yang benar-benar ada di kode dan untuk apa*, diturunkan dari hasil scan. Keduanya bertemu di node `code_anchor` (id = path file relatif) yang sama:
+
+| Node/edge baru | Isi | Aturan penyajian |
+|---|---|---|
+| node `symbol` | `signature`, `purpose`, **`purpose_confidence`** (`stated`\|`inferred`), `category` (helpers/model_api/services/commands), `class`, `line` | **`purpose_confidence` WAJIB ikut tampil.** Mayoritas `purpose` bernilai `inferred` (ditulis AI saat scan, bukan dari dokumentasi). Menampilkan `purpose` tanpa markernya = kelas pelanggaran yang sama dengan `[INFERRED]` KB yang di-strip |
+| edge `symbol --defined_in--> code_anchor` | confidence `VERIFIED` (stated) / `INFERRED` | — |
+| edge `unit --touches--> code_anchor` | `operation`: `create`\|`modify` | Ini jembatan desain↔kode: "unit mana yang menyentuh fungsi ini" = symbol → code_anchor ← unit |
+| `_meta.code_layer` | `{symbols: N, truncated: bool}` | **`truncated: true` WAJIB tampil** di samping staleness — artinya scan meng-cap sebagian kategori dan peta fungsi ini TIDAK lengkap |
+
+Konsekuensi untuk MCP kalian: `graph.json` kini bisa menjawab pertanyaan level-kode ("fungsi apa yang mengurus matching?", "apa saja yang didefinisikan di file X?") tanpa membaca `codebase-map.md`. Pertimbangkan tool `search_symbols(project, q)` — hasilnya WAJIB membawa `purpose_confidence`.
+
+**Vault sentinel `_codebase` (butuh konfirmasi kalian).** Project yang baru tahap scan belum punya vault, tapi sudah punya layer code. Publisher mengirimnya sekali dengan `vault: "_codebase"` (hanya artifact SHARED: `graph.json`, `codebase-map.md`, symbol index, KB). Karena store kalian berkunci `project_id`/`vault`, ini vault sibling — bukan tabrakan. Mohon konfirmasi: (a) retensi `current`+5 per project/vault menerimanya, (b) `:8002/project/<work_dir>` merender vault yang punya graph tapi tanpa 7-file desain sebagai **layer peta kode**, bukan sebagai vault desain yang rusak.
+
 **Kontrak kejujuran (tidak boleh dilanggar oleh MCP kalian):** (1) read-only mutlak — tidak ada tool yang menulis balik; (2) selalu sertakan staleness (`git_head` + umur snapshot) di respons; (3) jangan menyembunyikan marker/status; (4) verdict binding disajikan sebagai informasi bertanggal, bukan kebenaran hidup.
 
 ## 3. Desain MCP server (rekomendasi)
@@ -133,6 +146,7 @@ Hard rule kantor: sesi mega-code wajib menjalankan mega-sdd (keputusan penuh + e
 | `mega-sdd-trace:turn` | pesan terbaru tiap prompt | hanya di project `.mega-sdd` | `trace_tag: false` di `.mega-sdd/config.yaml` |
 | `mega-sdd-trace:<skill>` | announce line + dispatch subagent | tiap invocation skill | tidak ada |
 | `plugin_version` (manifest publish, mulai v6.19.2) | `manifest.json` ingest | tiap push artifact | tidak ada (fail-open `""` hanya kalau plugin.json tak terbaca) |
+| `purpose_confidence` (node `symbol`, mulai v6.20.0) | `graph.json` | tiap simbol di layer code | tidak ada — **wajib disajikan**, lihat §2 |
 
 Aturan pakai: **hard check (warn→block) keyed ke `mega-sdd-trace:session` saja** — `:turn` dan `:<skill>` untuk dashboard per-turn/per-skill, `plugin_version` untuk version-floor report. String marker adalah KONTRAK STABIL dari sisi plugin (dipin test); jangan regex-longgar — substring match verbatim cukup dan murah.
 

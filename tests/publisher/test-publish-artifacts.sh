@@ -279,6 +279,113 @@ clean HOME="$HOME_NOURL" USERPROFILE="$HOME_NOURL" PATH="$SHIM:$PATH" bash "$SCR
 [ "$(cat "$LOG/count")" = "1" ] && grep -q 'gw2.test' "$LOG/last-argv" \
   && ok "f5b signature-without-URL falls through to config rung" || fail "f5b count=$(cat "$LOG/count")"
 
+# ── w-arms: the REAL office settings.json shape (evidence, 2026-08-21) ───────
+# A live office laptop writes apiKeyHelper as a QUOTED ABSOLUTE PATH ending in
+# `.cmd`, and an http:// (not https) gateway URL:
+#   "apiKeyHelper": "\"C:\\Users\\x\\AppData\\Roaming\\npm\\mega-code.cmd\" get-token"
+#   "env": { "ANTHROPIC_BASE_URL": "http://10.202.171.20:8001" }
+# Both must arm the office rung, and the token must be minted through THAT path
+# (not a bare `mega-code` that may not exist under this name on Windows).
+cat > "$SHIM/mega-code.cmd" <<'EOF'
+#!/bin/bash
+[ "$1" = "get-token" ] && { echo "office-tok-cmd-777"; exit 0; }
+exit 1
+EOF
+chmod +x "$SHIM/mega-code.cmd"
+HOME_WIN="$TMP/home-win"; mkdir -p "$HOME_WIN/.claude"
+"$PY" - "$HOME_WIN/.claude/settings.json" "$SHIM/mega-code.cmd" <<'PYEOF'
+import json, sys
+json.dump({"apiKeyHelper": '"%s" get-token' % sys.argv[2],
+           "env": {"ANTHROPIC_BASE_URL": "http://10.202.171.20:8001"}},
+          open(sys.argv[1], "w"))
+PYEOF
+P5="$TMP/proj5"; MS5="$P5/.mega-sdd"
+mkdir -p "$MS5/vaults/app"
+printf '# idx\n' > "$MS5/vaults/app/00-index.md"
+printf '{"v":1}\n' > "$MS5/vaults/app/vault.json"
+( cd "$P5" && git init -q && git config user.email t@t && git config user.name t \
+  && git remote add origin https://scm.bankmegadev.com/grup/winrepo.git \
+  && git add -A && git commit -qm init )
+
+echo "── w1: quoted-absolute .cmd helper + http URL arms the office rung ──"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
+clean HOME="$HOME_WIN" USERPROFILE="$HOME_WIN" ANTHROPIC_BASE_URL="http://10.202.171.20:8001" \
+  PATH="$SHIM:$PATH" bash "$SCRIPT" --cwd="$P5" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "1" ] && grep -q '10.202.171.20:8001/mega-sdd/ingest' "$LOG/last-argv" \
+  && ok "w1 office rung armed from the real settings shape" || fail "w1 count=$(cat "$LOG/count")"
+
+echo "── w2: token minted via the settings helper path, never in argv ──"
+grep -q 'office-tok-cmd-777' "$LOG/last-argv" && fail "w2 token leaked into argv" \
+  || ok "w2 token never in curl argv"
+HDR=$(grep -m1 '^@' "$LOG/last-argv" 2>/dev/null || true)
+[ -n "$HDR" ] && ok "w2b bearer passed via @header-file" || ok "w2b bearer not inline in argv"
+
+echo "── w3: same laptop, session NOT routed there (env absent) → inert ──"
+echo 0 > "$LOG/count"
+printf 'w3\n' >> "$MS5/vaults/app/00-index.md"
+clean HOME="$HOME_WIN" USERPROFILE="$HOME_WIN" PATH="$SHIM:$PATH" \
+  bash "$SCRIPT" --cwd="$P5" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "0" ] && ok "w3 managed-machine, unmanaged session → zero POST" \
+  || fail "w3 pushed from an unrouted session"
+
+# ── c-arms: v6.20.0 scan-stage projects publish under the `_codebase` sentinel ─
+# A project at scan stage has no vaults/ but DOES carry a code layer (graph.json
+# symbols + codebase-map). Before v6.20.0 the script exited on `not vaults` and
+# that knowledge never left the laptop.
+P3="$TMP/proj3"; MS3="$P3/.mega-sdd"
+mkdir -p "$MS3/codebase" "$P3/src"
+printf '{"nodes":[{"id":"sym:a.php#f","type":"symbol"}],"edges":[],"_meta":{"source_hashes":{"c.md":"z1"}}}\n' > "$MS3/graph.json"
+printf '# map\n' > "$MS3/codebase/codebase-map.md"
+printf 'reuse_index:\n  helpers: []\n' > "$MS3/codebase/reuse-index.yaml"
+( cd "$P3" && git init -q && git config user.email t@t && git config user.name t \
+  && git remote add origin https://scm.bankmegadev.com/grup/scanonly.git \
+  && git add -A && git commit -qm init )
+
+echo "── c1: vault-less project publishes under the _codebase sentinel ──"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"; rm -f "$LOG/next-body"
+clean PATH="$SHIM:$PATH" MEGA_SDD_PUBLISH_URL=https://gw.test MEGA_SDD_PUBLISH_TOKEN=tok3 \
+  bash "$SCRIPT" --cwd="$P3" </dev/null >/dev/null 2>&1
+RC=$?
+[ "$RC" -eq 0 ] && [ "$(cat "$LOG/count")" = "1" ] \
+  && ok "c1 scan-only project pushed once (rc=$RC)" || fail "c1 rc=$RC count=$(cat "$LOG/count")"
+
+echo "── c2: manifest vault + SHARED-only payload, reuse-index NOT shipped ──"
+"$PY" - "$LOG/last-body.tgz" <<'PYEOF'
+import tarfile, json, sys
+tar = tarfile.open(sys.argv[1]); names = tar.getnames()
+assert names[0] == "manifest.json", names
+m = json.load(tar.extractfile("manifest.json"))
+assert m["vault"] == "_codebase", m["vault"]
+assert m["project_id"] == "scm.bankmegadev.com/grup/scanonly", m["project_id"]
+assert "graph.json" in m["files"] and "codebase/codebase-map.md" in m["files"], m["files"]
+assert not any(p.startswith("vaults/") for p in m["files"]), m["files"]
+# the graph carries the derived symbol nodes; shipping the yaml too would give
+# the gateway indexer a second source of truth for the same facts
+assert not any("reuse-index" in p for p in m["files"]), m["files"]
+assert not any("reuse-index" in n for n in names), names
+PYEOF
+[ $? -eq 0 ] && ok "c2 _codebase manifest = SHARED only, reuse-index excluded" || fail "c2 bundle wrong"
+
+echo "── c3: nothing publishable → zero POST (no empty sentinel push) ──"
+P4="$TMP/proj4"; mkdir -p "$P4/.mega-sdd"
+( cd "$P4" && git init -q && git config user.email t@t && git config user.name t && git commit -q --allow-empty -m i )
+echo 0 > "$LOG/count"
+clean PATH="$SHIM:$PATH" MEGA_SDD_PUBLISH_URL=https://gw.test MEGA_SDD_PUBLISH_TOKEN=tok4 \
+  bash "$SCRIPT" --cwd="$P4" </dev/null >/dev/null 2>&1
+[ "$(cat "$LOG/count")" = "0" ] && ok "c3 empty .mega-sdd → no push" || fail "c3 pushed nothing-bundle"
+
+echo "── c4: a vault-bearing project never emits a _codebase push ──"
+printf 'c4\n' >> "$MS/vaults/app/00-index.md"
+echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"
+run >/dev/null
+"$PY" - "$LOG/last-body.tgz" <<'PYEOF'
+import tarfile, json, sys
+m = json.load(tarfile.open(sys.argv[1]).extractfile("manifest.json"))
+assert m["vault"] == "app", m["vault"]
+PYEOF
+[ $? -eq 0 ] && [ "$(cat "$LOG/count")" = "1" ] \
+  && ok "c4 normal vault path unchanged (vault=app, one push)" || fail "c4 vault path regressed"
+
 echo
 echo "publish-artifacts: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]

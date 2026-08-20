@@ -525,7 +525,10 @@ fi
 # credentials (explicit env override → mega-code office path → config.yaml),
 # so this leg can run unconditionally — it self-debounces by sha state and
 # costs one spawn only when a gateway is actually configured.
-if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ]; then
+# v6.20.0: a scan-stage project has no vaults/ but does have a graph carrying the
+# code layer — it publishes under the `_codebase` sentinel vault, so the gate can
+# no longer be vault-only.
+if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ] || [ -f "${PROJECT_ROOT}/.mega-sdd/graph.json" ]; then
   SCRIPT_DIR_PUB="$(cd "$(dirname "$0")" && pwd)"
   PUBLISH_SCRIPT="${SCRIPT_DIR_PUB}/../scripts/publish-artifacts.sh"
   if [ -f "$PUBLISH_SCRIPT" ]; then

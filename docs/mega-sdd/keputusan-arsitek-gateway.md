@@ -54,6 +54,30 @@ Publisher (`publish-artifacts.sh` + leg Stop-hook, fail-open, delta-by-sha + man
 
 Referensi: guide utama `docs/mega-sdd/gateway-mcp-guide.md` (kontrak ingest §1, makna artifact + kontrak kejujuran §2, desain MCP §3, registrasi §4, mega-code §5, checklist §6).
 
+## Layer code di graph + vault sentinel `_codebase` (keputusan arsitek, 2026-08-21)
+
+Hasil field test publisher pertama: tidak ada apa pun sampai di gateway. Akar masalahnya versi (sesi berjalan di plugin 6.18.0 — 13 menit sebelum publisher ada di laptop), tapi di belakangnya ada kekosongan desain nyata: **project tahap scan tidak menghasilkan pengetahuan apa pun.** `graph.json` hanya bersumber dari vault, jadi repo yang sudah di-scan (peta 145 fungsi lengkap dengan tujuannya) tetap menghasilkan graph 0 node dan publisher tidak mengirim apa-apa.
+
+**Keputusan:** hasil scan masuk graph sebagai layer kedua. Vault = *apa yang diniatkan*; code = *apa yang benar-benar ada dan untuk apa*. Keduanya bertemu di node `code_anchor` yang sama, sehingga graph bisa dipakai sebagai **sumber pengetahuan yang ditanyai** ("fungsi mana yang mengurus matching, unit mana yang menyentuhnya, klaimnya sudah CONFIRMED belum") — bukan sekadar gambar. Detail node/edge + kewajiban render ada di guide §2; spec: `docs/superpowers/specs/2026-08-21-graph-code-layer.md`.
+
+**Dua hal yang butuh jawaban tim gateway:**
+
+1. **Vault sentinel `_codebase`** — project tanpa vault dikirim dengan `vault: "_codebase"` (payload SHARED saja). Konfirmasi retensi `current`+5 per project/vault menerimanya, dan `:8002` merendernya sebagai layer peta kode, bukan vault desain yang rusak.
+2. **Dua mismatch kontrak dengan PUBLISHER-RUNBOOK.md** (keduanya tetap `200`, jadi tidak akan ketahuan dari respons):
+   - **Path symbol index** — kami menulis `codebase/symbol-index.json`; runbook §7 menyebut `symbols/index.json`. Kalau indexer kalian berkunci path, `reuse_candidates` tidak akan menemukan apa pun. Mana yang dipakai?
+   - **Bentuk `project_id`** — contoh §2 kalian menyertakan host (`scm.bankmegadev.com/grup/repo`), tapi sed §8 kalian **membuang** host untuk remote https dan **menyimpannya** untuk ssh. Karena `project_id` adalah kunci store, satu repo bisa terpecah dua kunci. Kami menyimpan host di kedua bentuk (konsisten dengan contoh §2 kalian) — mohon disepakati satu aturan.
+
+**Catatan untuk tim mega-code:** `mega-code` yang beredar di laptop arsitek adalah **0.2.0**, yang tidak punya subcommand `install` (hanya `login`/`logout`/`get-token`). Padahal `install` itu yang menulis `apiKeyHelper` + `ANTHROPIC_BASE_URL` ke `~/.claude/settings.json`, dan itulah syarat yang dipakai publisher untuk mengenali "sesi ini dikelola mega-code". **Versi berapa yang terpasang di laptop kantor?** Kalau masih 0.2.0, rung office tidak akan pernah aktif di lapangan.
+
+### Verifikasi terhadap `settings.json` laptop kantor sungguhan (2026-08-21)
+
+Satu file settings dari laptop tim dipakai sebagai referensi. Hasilnya:
+
+- **Rung office AKTIF pada bentuk itu** — `apiKeyHelper` berupa path absolut ber-quote berakhiran `.cmd` (`"C:\...\npm\mega-code.cmd" get-token`) + `env.ANTHROPIC_BASE_URL: http://10.202.171.20:8001`. Keduanya lolos syarat (a) dan (b); token di-mint lewat path yang sama persis. Dipin test arm w1–w3 memakai bentuk itu.
+- **Satu defect Windows ditemukan & diperbaiki di v6.20.0** — pra-syarat murah rung sebelumnya `command -v mega-code`, padahal artefak Windows bernama `mega-code.cmd`; laptop dengan settings sempurna bisa diam. Sekarang mem-probe `mega-code` / `.cmd` / `.exe`.
+- **Ops:** file itu memasang `HTTP_PROXY`/`HTTPS_PROXY` korporat TAPI `NO_PROXY` memuat `10.202.171.20`, jadi POST ingest melewati proxy dengan benar. **Laptop yang `NO_PROXY`-nya tidak memuat IP gateway akan mengarahkan push ke corpproxy** — publisher fail-open (mengantre, tidak merusak apa pun), tapi itu hal pertama yang dicek kalau satu laptop tidak pernah mendarat.
+- Endpoint field test: `http://10.202.171.20:8001/mega-sdd/ingest`.
+
 ## Governance kantor: sesi mega-code WAJIB menjalankan mega-sdd (mandat arsitek, 2026-08-20)
 
 **Hard rule:** setiap sesi Claude Code yang di-provision lewat mega-code (token per-NIP) wajib menjalankan plugin mega-sdd sebagai runtime. Plugin tidak bisa meng-enforce keberadaannya sendiri (plugin dicabut = kode kami tidak jalan), jadi enforcement hidup di dua titik yang SELALU jalan — mega-code dan gateway — dengan plugin menyediakan sinyal deteksi deterministik.

@@ -145,7 +145,10 @@ nodes, node_ids, edges = {}, set(), []
 src_hashes = {}
 GLOBS = [".mega-sdd/vaults/*/vault.json", ".mega-sdd/vaults/*/binding.json",
          ".mega-sdd/vaults/*/units/*.md", ".mega-sdd/vaults/*/_meta/modules.yaml",
-         ".mega-sdd/knowledge-base/**/*.md"]
+         ".mega-sdd/knowledge-base/**/*.md",
+         # v6.20.0 code layer — the scan's function map is graph input, so it must
+         # also drive freshness (query-graph re-globs THIS list from _meta).
+         ".mega-sdd/codebase/reuse-index.yaml"]
 
 def relp(p): return os.path.relpath(p, root)
 
@@ -178,6 +181,131 @@ def anchor_id(s):
     """Normalize file:line -> file path only."""
     return re.sub(r':\d+(-\d+)?$', '', s.strip())
 
+def flow_map(s):
+    """Parse ONE inline flow mapping — `{ k: v, k2: "v, with comma" }` -> dict.
+
+    Needed because the artifacts that carry the code layer use inline mappings,
+    and the two YAML paths disagree about them: with PyYAML they arrive as dicts,
+    with the hand-rolled fallback (the LIVE parser on any system python3 without
+    PyYAML) they arrive as the raw string. Both shapes must yield the same graph
+    — a silently empty code layer on half the fleet is the failure this prevents.
+    Commas inside quotes are NOT separators (signatures embed them:
+    `format_number($number, int $decimals = 0): string`).
+    """
+    if isinstance(s, dict):
+        return s
+    if not isinstance(s, str):
+        return {}
+    t = s.strip()
+    if t.startswith("{") and t.endswith("}"):
+        t = t[1:-1]
+    parts, buf, q = [], [], None
+    for ch in t:
+        if q:
+            if ch == q: q = None
+            buf.append(ch); continue
+        if ch in ('"', "'"):
+            q = ch; buf.append(ch); continue
+        if ch == ",":
+            parts.append("".join(buf)); buf = []; continue
+        buf.append(ch)
+    parts.append("".join(buf))
+    out = {}
+    for p in parts:
+        m = re.match(r'^\s*([A-Za-z0-9_]+)\s*:\s*(.*)$', p)
+        if not m:
+            continue
+        v = m.group(2).strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+            v = v[1:-1]
+        out[m.group(1)] = v
+    return out
+
+REUSE_CATEGORIES = ("helpers", "model_api", "services", "commands")
+
+def parse_reuse_index(path):
+    """Read codebase/reuse-index.yaml -> ({category: [entry, ...]}, truncated_flag).
+
+    A dedicated line parser rather than load_yaml(): the fallback parser flattens
+    this file's category mapping (losing which category an entry belongs to), and
+    two shapes exist in the wild that must both work —
+
+      references/reuse-index-schema.md      what deep-scan actually emits
+      ------------------------------       ----------------------------
+      truncated: { helpers: false }        reuse_index:
+      helpers:                               helpers:
+        - name: format_currency                - { signature: "...", purpose: "...",
+          path: app/Helpers/money.php              purpose_confidence: stated,
+          signature: "..."                         _source: "app/H/money.php:21" }
+                                             truncated: {}
+
+    so categories may sit at any indent (top level or nested under `reuse_index:`),
+    entries may be inline flow mappings or block mappings, the anchor may be
+    `_source: path:line` or `path:` (+ optional `line:`), and `truncated` may be
+    inline or a nested block. Only the four known category names are accepted as
+    a category, so a stray nested list elsewhere can never leak in as symbols.
+    """
+    cats, truncated = {}, {}
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines()
+    except Exception:
+        return cats, False
+    cur, item, item_indent = None, None, None
+
+    def flush():
+        nonlocal item
+        if cur and item:
+            e = flow_map(item[0]) if item[0].lstrip().startswith("{") else {}
+            if not e:
+                e = {}
+                for l in item:
+                    mm = re.match(r'^\s*-?\s*([A-Za-z0-9_]+)\s*:\s*(.*)$', l)
+                    if mm:
+                        v = mm.group(2).strip()
+                        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+                            v = v[1:-1]
+                        e[mm.group(1)] = v
+            if e:
+                cats[cur].append(e)
+        item = None
+
+    for ln in lines:
+        if re.match(r'^\s*#', ln) or not ln.strip():
+            continue
+        km = re.match(r'^(\s*)([A-Za-z0-9_]+):\s*(.*)$', ln)
+        is_item = re.match(r'^(\s*)-\s*(.*)$', ln)
+        if km and not is_item and (item_indent is None or len(km.group(1)) < item_indent):
+            key, rest = km.group(2), km.group(3).strip()
+            if key == "truncated":
+                flush(); cur = None
+                truncated = flow_map(rest) if rest else {}
+                if not rest:
+                    cur = "__truncated__"      # nested block form follows
+                continue
+            if key in REUSE_CATEGORIES:
+                flush()
+                cur = key; cats.setdefault(cur, []); item_indent = None
+            elif key != "reuse_index":
+                flush(); cur = None            # schema_version, generated_from, …
+            continue
+        if cur == "__truncated__":
+            tm = re.match(r'^\s+([A-Za-z0-9_]+)\s*:\s*(.*)$', ln)
+            if tm:
+                truncated[tm.group(1)] = tm.group(2).strip()
+                continue
+            cur = None
+        if is_item and cur:
+            flush()
+            item_indent = len(is_item.group(1))
+            item = [is_item.group(2)]      # content AFTER the "- " marker
+            continue
+        if item is not None:
+            item.append(ln)
+    flush()
+    def truthy(v):
+        return bool(v) and str(v).strip().lower() not in ("false", "0", "no", "{}", "")
+    return cats, any(truthy(v) for v in truncated.values())
+
 def add_edge(s, t, rel, conf, artifact, field):
     edges.append({"source": s, "target": t, "relation": rel, "confidence": conf,
                   "evidence": {"artifact": artifact, "field": field}})
@@ -196,7 +324,17 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
     # Build flow_doc_index for Resolution 1 (covers edge)
     # Maps basename(doc) -> namespaced flow id, to resolve vault_source references
     flow_doc_index = {}
-    for fl in vj.get("flows", []):
+    for fl in (vj.get("flows") or []):
+        # Real vaults carry BOTH shapes: objects, and a bare id list
+        # (["F-U-001", ...]). The id-only form used to raise TypeError and abort
+        # the whole build — no graph at all, for every layer. The graph is a
+        # derived, rebuildable artifact built at Stop/query time: it degrades,
+        # it does not crash. An id-only flow yields an id-only node, never an
+        # invented title or doc.
+        if isinstance(fl, str):
+            fl = {"id": fl}
+        if not isinstance(fl, dict) or not fl.get("id"):
+            continue
         fid = f"{vid}:{fl['id']}"
         add_node(fid, "flow", fl.get("title", fl["id"]), {"doc": fl.get("doc")},
                  relp(vault_json), "flows[]")
@@ -303,6 +441,23 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
             pending(mod, "module", relp(upath), "frontmatter.module")
             add_edge(uid, mod, "in_module", "VERIFIED", relp(upath), "frontmatter.module")
 
+        # v6.20.0 phase 2 — unit -> code_anchor. This is the cross-layer join:
+        # a symbol's file node is the SAME code_anchor a claim implements and a
+        # unit touches, so "which unit touches this function?" is one hop.
+        for tf in fm.get("target_files", []) or []:
+            e = flow_map(tf)
+            tp = (e.get("path") or "").strip()
+            op = (e.get("operation") or "").strip()
+            if not tp or op == "none":
+                continue
+            aid = anchor_id(tp)
+            if not aid:
+                continue
+            add_node(aid, "code_anchor", aid, {}, relp(upath), "frontmatter.target_files")
+            edges.append({"source": uid, "target": aid, "relation": "touches",
+                          "confidence": "VERIFIED", "operation": op or None,
+                          "evidence": {"artifact": relp(upath), "field": "frontmatter.target_files"}})
+
 # KB domains: kb_domain nodes + domain_dep edges
 for kbpath in sorted(glob.glob(os.path.join(mega, "knowledge-base", "**", "*.md"), recursive=True)):
     fm, _ = frontmatter(kbpath)
@@ -316,11 +471,69 @@ for kbpath in sorted(glob.glob(os.path.join(mega, "knowledge-base", "**", "*.md"
         pending(d, "kb_domain", relp(kbpath), "depends_on")
         add_edge(dom, d, "domain_dep", "VERIFIED", relp(kbpath), "frontmatter.depends_on")
 
+# ── Code layer (v6.20.0): the scan's function map as queryable nodes ─────────
+# "what actually exists and what it is for", complementing the vault layer's
+# "what was intended". Source is reuse-index.yaml ONLY: symbol-index.json is the
+# structural ast-grep tier with NO purpose, and purposeless nodes add payload
+# without adding answerable knowledge (rejected on record in the spec).
+code_layer = {"symbols": 0, "truncated": False}
+ri_path = os.path.join(mega, "codebase", "reuse-index.yaml")
+if os.path.exists(ri_path):
+    cats, ri_truncated = parse_reuse_index(ri_path)
+    code_layer["truncated"] = ri_truncated
+    seen_syms = {}
+    for cat in sorted(cats):
+        for e in cats[cat]:
+            sig = (e.get("signature") or "").strip()
+            # Anchor: `_source: path:line` (emitted form) or `path:` + optional
+            # `line:` (schema form). Both shapes exist in the wild.
+            src = (e.get("_source") or e.get("path") or "").strip()
+            if not sig or not src:
+                continue                      # no anchor / no signature -> no node
+            fpath = anchor_id(src)
+            line = src[len(fpath):].lstrip(":") or (e.get("line") or "").strip() or None
+            # Line-independent id: a line-keyed id churns on every edit above the
+            # symbol, which would defeat delta-by-sha on the publish side.
+            # Name rule covers both real forms in this file: a callable
+            # (`static similarity(string $s...` -> `similarity`, the LAST token
+            # before the paren, which also drops modifiers) and a console
+            # signature with no paren (`role:assign {role} {username}` ->
+            # `role:assign`, the FIRST token, since the rest is argument syntax).
+            name = (e.get("name") or "").strip()      # schema form states it
+            if not name:
+                head_ = sig.split("(")[0].strip()
+                toks = head_.split()
+                name = (toks[-1] if "(" in sig else toks[0]) if toks else ""
+            if not name:
+                continue
+            sid = "sym:%s#%s" % (fpath, name)
+            if sid in seen_syms:              # overload -> disambiguate by line
+                sid = "%s~%s" % (sid, line or seen_syms[sid])
+            seen_syms.setdefault(sid, line or "0")
+            conf = (e.get("purpose_confidence") or "").strip().lower()
+            attrs = {"signature": sig, "purpose": e.get("purpose"),
+                     # NON-STRIPPABLE: most purposes are `inferred`, and a purpose
+                     # rendered without its confidence is the unmarked-[INFERRED]
+                     # fabrication class on a surface we do not control.
+                     "purpose_confidence": conf or "unknown",
+                     "category": cat}
+            if e.get("class"):
+                attrs["class"] = e["class"]
+            if line:
+                attrs["line"] = line
+            add_node(sid, "symbol", name, attrs, relp(ri_path), "reuse_index.%s[]" % cat)
+            add_node(fpath, "code_anchor", fpath, {}, relp(ri_path), "reuse_index.%s[]._source" % cat)
+            add_edge(sid, fpath, "defined_in",
+                     "VERIFIED" if conf == "stated" else "INFERRED",
+                     relp(ri_path), "reuse_index.%s[]._source" % cat)
+    code_layer["symbols"] = sum(1 for n in nodes.values() if n["type"] == "symbol")
+
 graph = {
     "schema_version": "1.0",
     "_meta": {
         "derived": True,
-        "generated_by": "build-graph@1.0.0",
+        "code_layer": code_layer,
+        "generated_by": "build-graph@1.1.0",
         "built_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "head": head,
         "source_glob": GLOBS,

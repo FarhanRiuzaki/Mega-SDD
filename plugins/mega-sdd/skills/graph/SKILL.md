@@ -1,6 +1,6 @@
 ---
 name: graph
-version: 1.0.2
+version: 1.1.0
 description: Queries the derived mega-sdd graph — impact / blast-radius over units, claims, modules, flows, KB domains, traced to code anchors; rebuilt lazily when stale, never authored. Use when the user asks "what breaks if I change X", "blast radius", "impact of this code", "apa yang kena kalau ubah ini", "what depends on this unit", or asks for the graph / impact lens.
 ---
 
@@ -42,8 +42,11 @@ also warms `graph.json` at end-of-run, but that is convenience, not correctness.
 
 ## Scope (v1) & roadmap
 
-v1 node types: code_anchor, claim, unit, module, flow, kb_domain, oq, vault
-(`interface` deferred to multi-squad). Future lenses on the same graph.json:
+v1 node types: code_anchor, claim, unit, module, flow, kb_domain, oq, vault,
+symbol (`interface` deferred to multi-squad). `symbol` is the code layer — the
+scan's function map (signature + purpose + `purpose_confidence`, never stripped)
+joined to the vault layer through the shared code_anchor node; see
+`references/graph-schema.md`. Future lenses on the same graph.json:
 visualization (Mermaid/HTML) and a global cross-artifact validation gate
 (dangling refs, orphans, broken anchors). Optional v2 seam: ingest an external
 code graph (e.g. graphify) as EXTRACTED-only secondary evidence to enrich

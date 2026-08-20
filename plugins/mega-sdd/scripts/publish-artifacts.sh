@@ -56,7 +56,16 @@ GATEWAY_URL=""; TOKEN=""; MEGA_CODE_CMD="mega-code"
 if [ -n "${MEGA_SDD_PUBLISH_URL:-}" ] && [ -n "${MEGA_SDD_PUBLISH_TOKEN:-}" ]; then
   GATEWAY_URL="$MEGA_SDD_PUBLISH_URL"; TOKEN="$MEGA_SDD_PUBLISH_TOKEN"
 fi
-if [ -z "$GATEWAY_URL" ] && command -v mega-code >/dev/null 2>&1 && resolve_py; then
+# v6.20.0 (evidence: a real office settings.json, 2026-08-21): on Windows the
+# installed artifact is `mega-code.cmd` in the npm dir — `command -v mega-code`
+# alone can miss it, which would silently disarm the office rung on a laptop
+# whose settings are perfectly configured. Probe all three names (shell builtin,
+# no fork) before spending the python spawn.
+have_mega_code() {
+  command -v mega-code >/dev/null 2>&1 || command -v mega-code.cmd >/dev/null 2>&1 \
+    || command -v mega-code.exe >/dev/null 2>&1
+}
+if [ -z "$GATEWAY_URL" ] && have_mega_code && resolve_py; then
   # Office path — arms ONLY when THIS SESSION is mega-code-managed (v6.19.1 +
   # round MAJOR-2). Three conditions, all from/against ~/.claude/settings.json
   # (the file `mega-code install` writes):
@@ -193,8 +202,22 @@ except Exception:
     state = {}
 
 vaults = [d for d in sorted(glob.glob(os.path.join(ms, "vaults", "*"))) if os.path.isdir(d)]
-if not vaults:
-    sys.exit(0)
+if vaults:
+    vault_specs = [(os.path.basename(d), [f"vaults/{os.path.basename(d)}/*.md",
+                                          f"vaults/{os.path.basename(d)}/binding*.md",
+                                          f"vaults/{os.path.basename(d)}/bound/**/*",
+                                          f"vaults/{os.path.basename(d)}/units/*.md",
+                                          f"vaults/{os.path.basename(d)}/bolts/_summary.md",
+                                          f"vaults/{os.path.basename(d)}/vault.json"])
+                   for d in vaults]
+else:
+    # v6.20.0: a scan-stage project has no vault but DOES have a code layer
+    # (graph.json symbols + codebase-map). It publishes once under the reserved
+    # sentinel vault `_codebase` carrying only SHARED — the gateway keys its
+    # store project_id/vault, so this is a sibling vault, not a collision.
+    if not rel_files(SHARED):
+        sys.exit(0)                      # genuinely nothing to publish
+    vault_specs = [("_codebase", [])]
 
 graph_meta = {}
 try:
@@ -203,12 +226,9 @@ except Exception:
     pass
 
 changed_any = False
-for vdir in vaults:
-    vault = os.path.basename(vdir)
+for vault, extra in vault_specs:
     files = rel_files(SHARED)
-    files.update(rel_files([f"vaults/{vault}/*.md", f"vaults/{vault}/binding*.md",
-                            f"vaults/{vault}/bound/**/*", f"vaults/{vault}/units/*.md",
-                            f"vaults/{vault}/bolts/_summary.md", f"vaults/{vault}/vault.json"]))
+    files.update(rel_files(extra))
     manifest_files = {rp: sha(ap) for rp, ap in sorted(files.items())}
     prev = state.get(vault, {})
     delta = [rp for rp, s in manifest_files.items() if prev.get(rp) != s]
