@@ -46,8 +46,27 @@ by the builder. Safe to delete.
 
 ## Node types (v1)
 
-`code_anchor`, `claim`, `unit`, `module`, `flow`, `kb_domain`, `oq`, `vault`.
-(`interface` deferred.)
+`code_anchor`, `claim`, `unit`, `module`, `flow`, `kb_domain`, `oq`, `vault`,
+and `symbol` (the code layer). (`interface` deferred.)
+
+## `symbol` — the code layer
+
+The vault layer records what was INTENDED; the code layer records what actually
+exists and what it is for, derived from `codebase/reuse-index.yaml` (the scan's
+function map). Both layers meet on the SAME `code_anchor` node, which is what
+makes a cross-layer question one hop.
+
+- id `sym:<file-path>#<name>` — **line-independent by design**: a line-keyed id
+  churns on every edit above the symbol, which would defeat delta-by-sha on the
+  publish side. `~<line>` is appended only to disambiguate an overload.
+- attrs: `signature`, `purpose`, `purpose_confidence` (`stated`|`inferred`),
+  `category`, `class` (methods), `line`.
+- **`purpose_confidence` is non-strippable.** Most purposes are `inferred` — a
+  purpose surfaced without its marker is the unmarked-`[INFERRED]` fabrication
+  class. `_meta.code_layer.truncated` likewise flags a capped scan, so a partial
+  function map is never presented as complete.
+- Source is reuse-index ONLY. `codebase/symbol-index.json` (the structural
+  ast-grep tier) has no `purpose`; purposeless nodes add payload, not knowledge.
 
 ## ID namespacing
 
@@ -72,6 +91,8 @@ normalized to its file when minting/matching.
 | kb_source | flow → kb_domain | vault flow `_kb_source` |
 | domain_dep | kb_domain → kb_domain | KB frontmatter `depends_on` |
 | covers | claim → flow | binding.json `claims[].vault_source` |
+| defined_in | symbol → code_anchor | reuse-index `_source` (confidence mirrors `purpose_confidence`) |
+| touches | unit → code_anchor | unit frontmatter `target_files[]` (`operation: none` skipped; `operation` carried on the edge) |
 
 `covers` targets a `flow` only in v1: the builder emits it only when `vault_source`
 resolves to a known flow node, and omits it otherwise. A `vault-section` node type

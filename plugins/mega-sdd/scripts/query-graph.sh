@@ -14,11 +14,19 @@ MEGA="${ROOT}/.mega-sdd"; G="${MEGA}/graph.json"
 
 # --- Freshness: rebuild if missing, path-set changed, or any source hash moved ---
 NEED_BUILD=1
+# v6.20.0: a graph built by an OLDER builder carries that builder's source_glob,
+# so a newly-added source (the code layer) would never be globbed and the graph
+# would stay layer-blind forever. Read the builder's own version — single source
+# of truth, no duplicated constant — and force one rebuild when it moved.
+BUILDER_VER="$(grep -m1 -oE 'build-graph@[0-9]+\.[0-9]+\.[0-9]+' "${PLUGIN_ROOT}/scripts/build-graph.sh" 2>/dev/null || true)"
 if [ -f "$G" ]; then
-  ROOT="$ROOT" G="$G" python3 <<'PYEOF'
+  ROOT="$ROOT" G="$G" BUILDER_VER="$BUILDER_VER" python3 <<'PYEOF'
 import json,os,glob,hashlib,sys
 root=os.environ["ROOT"]; g=json.load(open(os.environ["G"]))
 meta=g.get("_meta",{}); old=meta.get("source_hashes",{})
+_bv=os.environ.get("BUILDER_VER","")
+if _bv and meta.get("generated_by") != _bv:
+    sys.exit(7)          # builder moved -> rebuild once (new sources may exist)
 def sh(p):
     h=hashlib.sha256()
     with open(p,"rb") as f:

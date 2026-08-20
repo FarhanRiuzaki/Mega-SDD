@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.20.0] - 2026-08-21 — graph code layer: the scan's function map becomes queryable knowledge
+
+User mandate: *"data scan codebase juga harus masuk ke graph sebagai fungsi mapping — di dalam codebase itu apa saja fungsinya dan untuk apa"*, so that *"data graph project itu bisa jadi source knowledge untuk gue tanya-tanya"*. Spec `docs/superpowers/specs/2026-08-21-graph-code-layer.md`.
+
+The graph now carries TWO layers that meet on one node id. Vault layer = what was intended (claims/units/flows); **code layer = what actually exists and what it is for**, derived from `codebase/reuse-index.yaml`. Both attach to the existing `code_anchor` node (repo-relative file path), so "which unit touches this function, and is its claim CONFIRMED?" is one hop.
+
+- **Node `symbol`** — `signature`, `purpose`, `purpose_confidence`, `category`, `class`, `line`; id `sym:<path>#<name>` is deliberately line-INDEPENDENT (a line-keyed id churns on every edit above the symbol and would defeat delta-by-sha on publish). Edge `symbol --defined_in--> code_anchor`.
+- **Edge `unit --touches--> code_anchor`** from unit `target_files[]` (`operation: none` skipped, operation carried on the edge) — the cross-layer join.
+- **`purpose_confidence` is non-strippable** (most real purposes are `inferred`, not `stated`) and **`_meta.code_layer.truncated`** surfaces a capped scan, so a partial function map can never render as complete. Both added to the gateway guide's marker table as render obligations.
+- **`reuse-index.yaml` is NOT published** — `graph.json` carries its derived nodes; shipping both would give the gateway indexer two sources of truth. `symbol-index.json` rejected as a node source on record (structural tier, no `purpose`).
+- **Scan-stage projects now publish.** Vault-less projects push once under the reserved sentinel vault `_codebase` (SHARED artifacts only); Stop leg gate widened from `vaults/` to `vaults/ || graph.json`. Multi-vault path unchanged.
+- **Fix (pre-existing, found live):** a `vault.json` whose `flows` is an id-only list (`["F-1", ...]`) raised `TypeError` and aborted the ENTIRE build — no graph at all, every layer. The graph is derived and rebuildable: it degrades to an id-only flow node, it does not crash. 1 of 10 real vaults on the author's machine hit this.
+- **Migration:** `generated_by` → `build-graph@1.1.0`, and `query-graph.sh` forces one rebuild when the builder version moved — a graph built by an older builder carries the older `source_glob` and would otherwise stay code-layer-blind forever.
+
+Tests: `tests/graph-impact/test-code-layer.sh` (23 arms, mutation-proved x4 — stripped confidence / line-keyed anchor / no `operation:none` skip / no version rebuild each turned arms red) and publisher 33 → 41 arms (mutation-proved x2).
+
+Also in this release, from a real office `settings.json` supplied the same day:
+
+- **Windows office-rung defect fixed** — the rung's precondition was `command -v mega-code`, but the installed artifact on Windows is `mega-code.cmd`; a laptop with perfect settings could stay disarmed. Now probes `mega-code`/`mega-code.cmd`/`mega-code.exe` (shell builtins, no extra fork). Arms w1–w3 are built from the real file's shape — quoted absolute `.cmd` path + `http://` internal URL — and confirm the rung arms, mints through that same path, keeps the token out of argv, and still stays inert when the session is not routed there.
+- **reuse-index parsing accepts BOTH shapes in the wild** — the documented schema form (top-level categories, block entries, `path`/`line`, top-level `truncated`) and the form deep-scan actually emits (nested `reuse_index:`, inline flow entries, `_source`). Reading only one silently produced an empty code layer on the other. `truncated: {..: false}` correctly reads as not-truncated.
+
+The field-test finding that triggered this release (the 2026-08-20 run produced nothing because the session was on 6.18.0 — 13 minutes before the publisher existed on that laptop), plus the open items for the office teams (mega-code version floor, `project_id` normalization rule, symbol-index path), are recorded in `docs/mega-sdd/keputusan-arsitek-gateway.md`.
+
 ## [6.19.2] - 2026-08-20 — office governance: mega-code sessions MUST run mega-sdd (detection contract + version-floor signal)
 
 User mandate (governance kantor): sesi yang di-provision mega-code wajib menjalankan plugin mega-sdd. The plugin cannot enforce its own presence, so enforcement lives at mega-code (`get-token` guard: verify → auto-repair → refuse) and the gateway (marker check, warn→block), with this release supplying the deterministic signals — spec §Amendment v6.19.2, keputusan doc §Governance, guide §8.
