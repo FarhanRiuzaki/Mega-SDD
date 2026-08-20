@@ -1,6 +1,8 @@
 # Graph code layer — scan output as queryable knowledge (design)
 
-**Status:** DESIGN APPROVED by the user 2026-08-21 ("gas semua", phase 1 + phase 2 in one release). Target: **v6.20.0**. Pairs with the publisher spec `2026-08-17-artifact-publisher-gateway.md`.
+**Status:** **SHIPPED v6.20.0** (2026-08-21, `ae1fa3e`, CI green run 32398704190, both-tree suite 281/281, both legs pushed). Phase 1 + phase 2 landed in one release per the user's approval ("gas semua"). Pairs with the publisher spec `2026-08-17-artifact-publisher-gateway.md`.
+
+**Live gateway probe on release day** (`http://10.202.171.20:8001`, the office URL from a real team `settings.json`): the ingest endpoint is UP and reachable from a dev laptop in 19 ms. `POST /mega-sdd/ingest` with no auth returns `401 {"error":true,"message":"missing bearer token"}` — exactly runbook §4. The publisher was then run end-to-end against it with a deliberately invalid token on a scan-stage project: the `_codebase` bundle built (431 KB raw — codebase-map 270 KB + graph 161 KB, far under the 25 MB cap), the POST went out, the 401 produced the `run mega-code login` hint, the script exited 0 (fail-open), and **`.publish-state.json` recorded ZERO entries** so the retry still resends everything (a 401 that poisoned state would mean the files never ship after login). Everything up to the auth boundary is proven; only a valid per-NIP token (`mega-code login`, user-interactive) remains for the first `200 ok`.
 
 **User mandate (verbatim intent):** *"data scan codebase juga harus masuk ke graph sebagai fungsi mapping — di dalam codebase itu apa saja fungsinya dan untuk apa"*, and the purpose behind it: *"data graph project itu bisa sebagai source knowledge untuk gue tanya-tanya sebagai knowledge AI."* The graph is not a picture — it is the **answer substrate** for questions asked through the gateway MCP.
 
