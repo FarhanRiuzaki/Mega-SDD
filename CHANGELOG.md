@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.19.1] - 2026-08-20 — publisher office-rung: "mega-code manages this SESSION", never "binary exists"
+
+User requirement folded same-day (spec §Amendment v6.19.1): vanilla Claude must never publish; mega-code-managed sessions publish automatically.
+
+### Changed
+- **`scripts/publish-artifacts.sh` credential rung 2** now arms only when ALL THREE hold against `~/.claude/settings.json` (the file `mega-code install` writes): (a) `apiKeyHelper` command basename is `mega-code` (quoted-path aware; the SAME helper string mints the token); (b) destination = settings `env.ANTHROPIC_BASE_URL` (http/https required, never the process env); (c) the PROCESS env `ANTHROPIC_BASE_URL` equals the settings URL — the session is routed through that gateway right now. Closes the v6.19.0 hole where mega-code-merely-installed + a foreign env URL would POST the per-NIP token to the wrong destination, AND the session-vs-machine gap where a vanilla session on a provisioned machine still published (round MAJOR-2).
+- Ladder is now fall-through (unsatisfied office probe reaches `config.yaml publish:`; disclosed: repo-committed publish creds reachable in more situations, always paired with their OWN token — never the per-NIP one). Python resolver lazy (no per-Stop spawn on non-publishing machines) + `MEGA_SDD_PY` expanded unquoted (`py -3` machines, resolver contract).
+
+### Adversarial round (1 blind security lens — NO BLOCKER, 2 MAJOR + 8 minor/nit, all folded/dispositioned)
+- MAJOR-1: test hermeticity was HOME-only — Windows python reads USERPROFILE → arms set both. MAJOR-2 → condition (c) above. Minors: f3 POST-count assertion (stale-argv false green), fall-through + scheme pins, quoted-helper parsing, same-helper minting, lazy resolver, unquoted `MEGA_SDD_PY`, `env -u` ambient-cleaning in arms, fall-through disclosure, `utf-8-sig` settings read.
+- Publisher suite 22 → 33 arms; the new office-rung logic mutation-proved ×3 (signature loosened / env-match removed / scheme check removed — each turns ≥1 arm red).
+
 ## [6.19.0] - 2026-08-20 — the artifact publisher: mega-sdd artifacts flow to the office AI gateway
 
 Ships spec `2026-08-17-artifact-publisher-gateway.md` (brainstorm-approved; wire format + all contracts pinned with the gateway team, who are building ingest/MCP/:8002 in parallel per `docs/mega-sdd/gateway-mcp-guide.md` + `keputusan-arsitek-gateway.md`).

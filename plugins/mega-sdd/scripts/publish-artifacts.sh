@@ -17,7 +17,9 @@
 #
 # Credential probe ladder (first hit wins):
 #   1. MEGA_SDD_PUBLISH_URL + MEGA_SDD_PUBLISH_TOKEN   (explicit override — CI/testing)
-#   2. ANTHROPIC_BASE_URL + `mega-code get-token`       (office path; bounded call)
+#   2. mega-code-MANAGED session (apiKeyHelper=mega-code in ~/.claude/settings.json,
+#      URL from that same file's env.ANTHROPIC_BASE_URL AND the process env must
+#      match it — the session is actually routed there; token `mega-code get-token`)
 #   3. .mega-sdd/config.yaml publish.gateway_url/.token (generic fallback)
 #   none → inert exit 0. The token is NEVER echoed/logged.
 # Usage: publish-artifacts.sh --cwd=<project-root>
@@ -34,16 +36,65 @@ done
 MS="$CWD/.mega-sdd"
 [ -d "$MS" ] || exit 0
 
-# ── credentials (probe ladder; inert without them) ───────────────────────────
-GATEWAY_URL=""; TOKEN=""
+PY_RESOLVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib/resolve-python.sh"
+resolve_py() {
+  # Lazy — called only when a rung can actually arm (round MINOR-7: a per-Stop
+  # python spawn on machines that will never publish is the v5.8.0 spawn-tax
+  # class). Round MINOR-8: MEGA_SDD_PY may be two words ("py -3") — the
+  # resolver contract says expand it UNQUOTED; probe the first word only.
+  [ -n "${MEGA_SDD_PY:-}" ] && return 0
+  if [ -f "$PY_RESOLVER" ]; then . "$PY_RESOLVER"; mega_sdd_python || return 1; else MEGA_SDD_PY=python3; fi
+  command -v ${MEGA_SDD_PY%% *} >/dev/null 2>&1
+}
+
+# ── credentials (probe ladder; first hit wins, fall-through; inert without them) ──
+GATEWAY_URL=""; TOKEN=""; MEGA_CODE_CMD="mega-code"
 if [ -n "${MEGA_SDD_PUBLISH_URL:-}" ] && [ -n "${MEGA_SDD_PUBLISH_TOKEN:-}" ]; then
   GATEWAY_URL="$MEGA_SDD_PUBLISH_URL"; TOKEN="$MEGA_SDD_PUBLISH_TOKEN"
-elif [ -n "${ANTHROPIC_BASE_URL:-}" ] && command -v mega-code >/dev/null 2>&1; then
-  # get-token is called INSIDE the python pass with subprocess timeout=10 —
-  # a deterministic bound on EVERY platform (round M4: the shell timeout
-  # ladder is empty on stock macOS and hazardous under System32 timeout.exe).
-  GATEWAY_URL="$ANTHROPIC_BASE_URL"; TOKEN="__MEGA_CODE_GET_TOKEN__"
-elif [ -f "$MS/config.yaml" ]; then
+fi
+if [ -z "$GATEWAY_URL" ] && command -v mega-code >/dev/null 2>&1 && resolve_py; then
+  # Office path — arms ONLY when THIS SESSION is mega-code-managed (v6.19.1 +
+  # round MAJOR-2). Three conditions, all from/against ~/.claude/settings.json
+  # (the file `mega-code install` writes):
+  #   (a) apiKeyHelper's command basename is mega-code — the management
+  #       signature; binary-on-PATH alone never arms (a vanilla-Claude session
+  #       must never POST the per-NIP token anywhere);
+  #   (b) the destination is settings env.ANTHROPIC_BASE_URL — never the
+  #       process env, so URL + token share one source of truth; AND
+  #   (c) the PROCESS env ANTHROPIC_BASE_URL equals that settings URL — the
+  #       session is routed through that gateway RIGHT NOW. A provisioned
+  #       machine running a vanilla/overridden session (ANTHROPIC_API_KEY
+  #       export, --settings, project-settings override) fails (c) → silent.
+  # Deliberate redirection = rung 1. Any parse error / missing piece → empty
+  # → fall through (fail-closed for the token, fail-open for the pipeline).
+  # get-token runs INSIDE the python pass with subprocess timeout=10 (round
+  # M4) using the SAME helper command the signature named (round MINOR-6).
+  PROBE=$($MEGA_SDD_PY - <<'PY' 2>/dev/null
+import json, os
+try:
+    p = os.path.join(os.path.expanduser("~"), ".claude", "settings.json")
+    s = json.load(open(p, encoding="utf-8-sig"))
+    h = str(s.get("apiKeyHelper", "")).strip()
+    if h.startswith('"'):                  # quoted absolute path (may hold spaces)
+        first = h[1:].split('"', 1)[0]
+    else:
+        first = h.split()[0] if h.split() else ""
+    base = os.path.basename(first).lower()
+    if base in ("mega-code", "mega-code.exe", "mega-code.cmd"):
+        url = str((s.get("env") or {}).get("ANTHROPIC_BASE_URL", "")).strip()
+        env_url = os.environ.get("ANTHROPIC_BASE_URL", "").strip()
+        if url.startswith(("https://", "http://")) and url.rstrip("/") == env_url.rstrip("/"):
+            print(url + "\t" + first)
+except Exception:
+    pass
+PY
+)
+  if [ -n "$PROBE" ]; then
+    IFS=$'\t' read -r GATEWAY_URL MEGA_CODE_CMD <<< "$PROBE"
+    TOKEN="__MEGA_CODE_GET_TOKEN__"
+  fi
+fi
+if [ -z "$GATEWAY_URL" ] && [ -f "$MS/config.yaml" ]; then
   # SCOPED to the publish: block only (round M1: an unscoped sed grabbed the
   # first token: anywhere in the file — another service's secret was sent
   # as the gateway bearer). awk: keys are read ONLY while inside publish:.
@@ -55,10 +106,7 @@ GATEWAY_URL="${GATEWAY_URL%/}"
 
 command -v curl >/dev/null 2>&1 || exit 0
 command -v git  >/dev/null 2>&1 || exit 0
-
-PY_RESOLVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib/resolve-python.sh"
-if [ -f "$PY_RESOLVER" ]; then . "$PY_RESOLVER"; mega_sdd_python || exit 0; else MEGA_SDD_PY=python3; fi
-command -v "$MEGA_SDD_PY" >/dev/null 2>&1 || exit 0
+resolve_py || exit 0
 
 # ── identity ─────────────────────────────────────────────────────────────────
 GIT_HEAD=$(git -C "$CWD" rev-parse HEAD 2>/dev/null) || exit 0
@@ -68,7 +116,8 @@ WORK_DIR_BASE=$(basename "$CWD")
 # ── everything else in one python pass (collect → delta → manifest → tar → POST per vault) ──
 CWD="$CWD" MS="$MS" GATEWAY_URL="$GATEWAY_URL" MEGA_SDD_TOKEN="$TOKEN" \
 GIT_HEAD="$GIT_HEAD" REMOTE="$REMOTE" WORK_DIR_BASE="$WORK_DIR_BASE" \
-"$MEGA_SDD_PY" - <<'PYEOF'
+MEGA_CODE_CMD="$MEGA_CODE_CMD" \
+$MEGA_SDD_PY - <<'PYEOF'
 import hashlib, json, os, subprocess, sys, tarfile, tempfile, glob, io, datetime
 
 ms   = os.environ["MS"]
@@ -76,10 +125,11 @@ url  = os.environ["GATEWAY_URL"] + "/mega-sdd/ingest"
 token = os.environ["MEGA_SDD_TOKEN"]          # env only — never printed
 if token == "__MEGA_CODE_GET_TOKEN__":
     # office path (round M4): bounded HERE — subprocess timeout works on every
-    # platform, unlike the shell timeout ladder (empty on stock macOS).
+    # platform, unlike the shell timeout ladder (empty on stock macOS). Round
+    # MINOR-6: mint with the SAME helper command the settings signature named.
     try:
-        gt = subprocess.run(["mega-code", "get-token"], capture_output=True,
-                            text=True, timeout=10)
+        gt = subprocess.run([os.environ.get("MEGA_CODE_CMD", "mega-code"), "get-token"],
+                            capture_output=True, text=True, timeout=10)
         token = gt.stdout.strip() if gt.returncode == 0 else ""
     except Exception:
         token = ""
