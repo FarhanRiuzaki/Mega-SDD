@@ -16,7 +16,9 @@ Balasan untuk *Arsitektur — Mega-SDD Artifact Gateway (ingest + MCP + graph :8
 ### 3. Disk & retensi ✅ APPROVED di `/data`
 - Layout `@<git_head>` + symlink `current` sesuai usulan.
 - **Retensi: `current` + 5 snapshot terakhir** per project/vault, prune cron harian.
-- **Cap push (`413`): 50 MB compressed.** Artifact kita teks — bundle normal jauh di bawah 5 MB; yang mendekati cap itu bug publisher, bukan alasan menaikkan cap. Laporkan ke kami, jangan longgarkan.
+- **Cap push (`413`): DIPERKETAT ke 25 MB compressed** (revisi dari 50 MB setelah fakta riwayat disk-full 100% kalian). Artifact kita teks — bundle delta normal berukuran KB, push perdana penuh biasanya < 5 MB compressed; yang mendekati 25 MB itu bug publisher — laporkan, jangan longgarkan cap.
+- **Estimasi volume** (untuk kapasitas): `repo × 6 snapshot × ukuran-snapshot`. Snapshot text-only, compressed at rest; asumsikan rata-rata 2–5 MB/snapshot → 30 repo ≈ 0,4–0,9 GB total. Store TIDAK tumbuh per push (idempoten + prune), hanya per git_head baru.
+- **Codebase-map**: simpan PENUH tapi gzip at rest (opsi "tak disimpan penuh" DITOLAK — dia sumber kutipan yang dirujuk anchor; menghilangkannya merusak kontrak kejujuran). Kompresi menyelesaikan masalah ukurannya.
 
 ### 4. Boundary konsumen MCP + klasifikasi ✅ v1 = internal-confidential, mirror scm
 - Semua token pegawai ter-autentikasi boleh membaca semua proyek; **semua akses di-log per token** (ingest + MCP + :8002).
@@ -31,6 +33,13 @@ Balasan untuk *Arsitektur — Mega-SDD Artifact Gateway (ingest + MCP + graph :8
 | Indexer jalan saat ingest | ✅ APPROVED, **dengan satu aturan tambahan**: **kegagalan indexer TIDAK BOLEH menggagalkan ingest** — tulis file = kontrak selesai (balas `200`); index rebuild di belakang. Korup/hilang → rebuild dari file, nol kehilangan |
 | Penempatan: route Fastify baru di `middleware-ai-gateway` sebelah `proxy.route`, auth JWT→VK sama, bukan Bifrost core | ✅ APPROVED — domain ops kalian; "never fork core" dihormati |
 | Validasi Bearer identik dengan traffic `/v1/*` | ✅ APPROVED — persis maksud kontrak §10 |
+
+## Jawaban 4 klarifikasi teknis (§12, bukan blocker)
+
+1. **Penempatan** — DIKONFIRMASI: route Fastify baru di `middleware-ai-gateway` sebelah `proxy.route`, auth JWT→VK sama, bukan Bifrost core. Sesuai ekspektasi.
+2. **Auth ingest vs MCP read** — **SAMA-SAMA token identitas pegawai** (per-NIP). Alasan: audit per-orang (bukan per-tim) lebih kuat untuk retrofit ACL, dan satu jalur mint lebih sedikit yang bisa salah. Token tim TIDAK dibuat. Kalau nanti muncul konsumen headless (service internal non-manusia), mint service-account token lewat mekanisme VK yang sama — tetap di-log; jangan bangun sekarang (YAGNI).
+3. **Atribusi** — DIKONFIRMASI: persis itu maksud guide §5.3 — NIP dari token ingest (mapping VK kalian), manifest bersih dari PII.
+4. **Transport MCP** — tidak ada ekspektasi streaming khusus di luar standar MCP: tools mengembalikan JSON kecil (cap respons ~100 KB, paginasi untuk sisanya); SSE hanya sebatas kebutuhan protokol. Concurrency = skala tim (puluhan koneksi), bukan ribuan — Fastify kalian lebih dari cukup.
 
 ## Yang terjadi berikutnya di sisi plugin
 
