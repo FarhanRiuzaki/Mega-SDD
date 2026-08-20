@@ -97,7 +97,14 @@ Publisher mega-sdd memakai persis dua kanal yang sudah ada itu: URL dari `ANTHRO
 3. Atribusi per NIP dari token (kalian sudah punya mapping-nya); manifest artifact tidak membawa NIP.
 4. Token expired → `get-token` gagal / ingest 401 → publisher antre + sarankan `mega-code login`; tidak perlu kanal recovery lain.
 
-## 6. Checklist keamanan & acceptance
+## 6. Observability (ClickHouse + Langfuse — stack existing)
+
+- Setiap announce/dispatch mega-sdd membawa tag `mega-sdd-trace:<skill>` di traffic inference → filter Langfuse per skill/fase sudah jalan hari ini.
+- Join dua dunia: trace Langfuse (aktivitas AI) ↔ artifact store (`project_id`/`work_dir` + `git_head`) — dasar panel :8002.
+- Log akses ingest/MCP/:8002 per token → ClickHouse; ini juga bukti audit untuk retrofit ACL per-repo nanti (keputusan blocker 4).
+- Metrik gratis: `generated_at` vs now per project = deteksi publisher mati / dev belum `mega-code login`, tanpa instrumentasi tambahan.
+
+## 7. Checklist keamanan & acceptance
 
 - [ ] Hanya jaringan internal; TLS; token per tim (revocable); ingest + MCP di-log per token.
 - [ ] Read-only terbukti: tidak ada endpoint/tool mutasi; store ditulis HANYA oleh ingest.
