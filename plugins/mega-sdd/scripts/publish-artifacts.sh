@@ -36,7 +36,11 @@ done
 MS="$CWD/.mega-sdd"
 [ -d "$MS" ] || exit 0
 
-PY_RESOLVER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_lib/resolve-python.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY_RESOLVER="$SCRIPT_DIR/_lib/resolve-python.sh"
+# v6.19.2 governance: the manifest carries the plugin's own version so the
+# gateway can audit the version floor per NIP/project. Fail-open to "".
+PLUGIN_JSON_PATH="$SCRIPT_DIR/../.claude-plugin/plugin.json"
 resolve_py() {
   # Lazy — called only when a rung can actually arm (round MINOR-7: a per-Stop
   # python spawn on machines that will never publish is the v5.8.0 spawn-tax
@@ -116,7 +120,7 @@ WORK_DIR_BASE=$(basename "$CWD")
 # ── everything else in one python pass (collect → delta → manifest → tar → POST per vault) ──
 CWD="$CWD" MS="$MS" GATEWAY_URL="$GATEWAY_URL" MEGA_SDD_TOKEN="$TOKEN" \
 GIT_HEAD="$GIT_HEAD" REMOTE="$REMOTE" WORK_DIR_BASE="$WORK_DIR_BASE" \
-MEGA_CODE_CMD="$MEGA_CODE_CMD" \
+MEGA_CODE_CMD="$MEGA_CODE_CMD" PLUGIN_JSON_PATH="$PLUGIN_JSON_PATH" \
 $MEGA_SDD_PY - <<'PYEOF'
 import hashlib, json, os, subprocess, sys, tarfile, tempfile, glob, io, datetime
 
@@ -138,6 +142,12 @@ if token == "__MEGA_CODE_GET_TOKEN__":
 head = os.environ["GIT_HEAD"]
 remote = os.environ["REMOTE"]
 work_dir = os.environ["WORK_DIR_BASE"]
+plugin_version = ""
+try:                                       # governance: version-floor audit signal
+    plugin_version = str(json.load(open(os.environ.get("PLUGIN_JSON_PATH", ""),
+                                        encoding="utf-8-sig")).get("version", ""))
+except Exception:
+    pass
 
 def norm_project_id(r):
     # Round M3: strip credentials/userinfo (a https remote can embed user:pass —
@@ -208,7 +218,8 @@ for vdir in vaults:
     manifest = {"schema": "mega-sdd-publish/1", "project_id": norm_project_id(remote),
                 "vault": vault, "git_head": head,
                 "generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "files": manifest_files, "graph_meta": graph_meta, "work_dir": work_dir}
+                "files": manifest_files, "graph_meta": graph_meta, "work_dir": work_dir,
+                "plugin_version": plugin_version}
     with tempfile.NamedTemporaryFile(suffix=".tgz", delete=False) as tf:
         bundle = tf.name
     with tarfile.open(bundle, "w:gz") as tar:

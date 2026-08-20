@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [6.19.2] - 2026-08-20 — office governance: mega-code sessions MUST run mega-sdd (detection contract + version-floor signal)
+
+User mandate (governance kantor): sesi yang di-provision mega-code wajib menjalankan plugin mega-sdd. The plugin cannot enforce its own presence, so enforcement lives at mega-code (`get-token` guard: verify → auto-repair → refuse) and the gateway (marker check, warn→block), with this release supplying the deterministic signals — spec §Amendment v6.19.2, keputusan doc §Governance, guide §8.
+
+### Added
+- **`plugin_version` in the publish manifest** (additive, schema stays `mega-sdd-publish/1`; read from the plugin's own `plugin.json`, fail-open `""`) — the gateway's version-floor audit signal per NIP/project.
+- **`tests/hooks/trace-governance-contract.test.sh`** — pins the STABLE GOVERNANCE CONTRACT: `mega-sdd-trace:turn` emitted verbatim in `.mega-sdd` projects, suppressed by `trace_tag: false`, absent outside mega-sdd projects; rename-tripwire on both marker strings in the emitting hooks (session-marker paths already pinned in `session-start.test.sh`). Hard checks at the gateway must key on `mega-sdd-trace:session` — `trace_tag: false` only kills `:turn`.
+- **Docs:** `keputusan-arsitek-gateway.md` §Governance (enforcement ladder + Mermaid flow + tegas: auto-repair before refuse, hard check keyed on `:session`, non-Claude-Code traffic out of scope) and `gateway-mcp-guide.md` §8 (marker table + opt-out semantics for the middleware/dashboard build). Verification scoped proportionally (additive fail-open field + doc/test pins): tests + mutation on the new arm, no blind round.
+
 ## [6.19.1] - 2026-08-20 — publisher office-rung: "mega-code manages this SESSION", never "binary exists"
 
 User requirement folded same-day (spec §Amendment v6.19.1): vanilla Claude must never publish; mega-code-managed sessions publish automatically.
