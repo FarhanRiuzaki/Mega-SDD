@@ -86,14 +86,16 @@ MCP gateway TIDAK dibundel di plugin mega-sdd (URL-nya spesifik kantor). Cara me
 
 (Token via mekanisme auth MCP kalian / header config sesuai platform gateway; jangan commit token ke repo.)
 
-## 5. Integrasi mega-code (provisioning kredensial publisher)
+## 5. Integrasi mega-code (TIDAK ADA kerjaan baru di sisi mega-code)
 
-Topologi tim: Claude Code dipakai LANGSUNG, dengan dua plugin — **mega-code = plugin login** (distribusi npm; dev login dengan NIP) dan **mega-sdd = plugin SDD**. mega-code TIDAK me-launch claude, jadi kanal kredensialnya adalah FILE. `mega-code login` (NIP) adalah tempat provisioning — dev tidak pernah mengisi config manual:
+Kontrak ini diverifikasi dari sumber `mega-code@0.5.0` (npm): `mega-code install` sudah menulis `~/.claude/settings.json` (`env.ANTHROPIC_BASE_URL` = gateway, `apiKeyHelper: "mega-code get-token"`), dan `mega-code get-token` mencetak access token per pegawai (di-mint dari login NIP, auto-refresh).
 
-1. Saat login, mega-code menukar NIP → **token publish per pegawai** ke gateway (revocable, ber-expiry).
-2. mega-code MENULIS `~/.mega-code/megasdd-publish.json` (`{"gateway_url": "…", "token": "…"}`, permission 600) — publisher mega-sdd membacanya di tiap push. (Env `MEGA_SDD_PUBLISH_URL`/`MEGA_SDD_PUBLISH_TOKEN` tersedia sebagai override generik untuk CI/testing, bukan kanal mega-code.)
-3. **Atribusi per NIP terjadi di gateway** (dari token) — manifest artifact tidak pernah membawa NIP (no PII in artifacts).
-4. Token expired → publisher menerima 401, antre, dan menyarankan `mega-code login`; jangan buat gateway mengirim token baru lewat kanal lain.
+Publisher mega-sdd memakai persis dua kanal yang sudah ada itu: URL dari `ANTHROPIC_BASE_URL` (endpoint ingest = `<ANTHROPIC_BASE_URL>/mega-sdd/ingest` — path baru di gateway yang SAMA), token dari `mega-code get-token`. Artinya:
+
+1. **Tim mega-code: tidak ada perubahan** — jangan bangun file kredensial/provisioning baru.
+2. **Tim gateway: expose `/mega-sdd/ingest`** di base URL yang sama dengan proxy inference, terima Bearer token yang sama yang kalian mint saat login (validasi sama seperti traffic inference).
+3. Atribusi per NIP dari token (kalian sudah punya mapping-nya); manifest artifact tidak membawa NIP.
+4. Token expired → `get-token` gagal / ingest 401 → publisher antre + sarankan `mega-code login`; tidak perlu kanal recovery lain.
 
 ## 6. Checklist keamanan & acceptance
 
