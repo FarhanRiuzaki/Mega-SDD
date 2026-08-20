@@ -88,10 +88,10 @@ MCP gateway TIDAK dibundel di plugin mega-sdd (URL-nya spesifik kantor). Cara me
 
 ## 5. Integrasi mega-code (provisioning kredensial publisher)
 
-`mega-code login` (NIP) adalah tempat provisioning kredensial publisher — dev tidak pernah mengisi config manual:
+Topologi tim: Claude Code dipakai LANGSUNG, dengan dua plugin — **mega-code = plugin login** (distribusi npm; dev login dengan NIP) dan **mega-sdd = plugin SDD**. mega-code TIDAK me-launch claude, jadi kanal kredensialnya adalah FILE. `mega-code login` (NIP) adalah tempat provisioning — dev tidak pernah mengisi config manual:
 
 1. Saat login, mega-code menukar NIP → **token publish per pegawai** ke gateway (revocable, ber-expiry).
-2. mega-code menyerahkan kredensial ke publisher lewat SALAH SATU kanal (plugin mendukung keduanya): set env `MEGA_SDD_PUBLISH_URL` + `MEGA_SDD_PUBLISH_TOKEN` saat me-launch `claude`, ATAU tulis `~/.mega-code/megasdd-publish.json` (`{"gateway_url": "…", "token": "…"}`, permission 600).
+2. mega-code MENULIS `~/.mega-code/megasdd-publish.json` (`{"gateway_url": "…", "token": "…"}`, permission 600) — publisher mega-sdd membacanya di tiap push. (Env `MEGA_SDD_PUBLISH_URL`/`MEGA_SDD_PUBLISH_TOKEN` tersedia sebagai override generik untuk CI/testing, bukan kanal mega-code.)
 3. **Atribusi per NIP terjadi di gateway** (dari token) — manifest artifact tidak pernah membawa NIP (no PII in artifacts).
 4. Token expired → publisher menerima 401, antre, dan menyarankan `mega-code login`; jangan buat gateway mengirim token baru lewat kanal lain.
 
