@@ -41,6 +41,13 @@ Balasan untuk *Arsitektur — Mega-SDD Artifact Gateway (ingest + MCP + graph :8
 3. **Atribusi** — DIKONFIRMASI: persis itu maksud guide §5.3 — NIP dari token ingest (mapping VK kalian), manifest bersih dari PII.
 4. **Transport MCP** — tidak ada ekspektasi streaming khusus di luar standar MCP: tools mengembalikan JSON kecil (cap respons ~100 KB, paginasi untuk sisanya); SSE hanya sebatas kebutuhan protokol. Concurrency = skala tim (puluhan koneksi), bukan ribuan — Fastify kalian lebih dari cukup.
 
+## Jawaban titik koordinasi rencana implementasi (§4 kalian, 2026-08-20)
+
+1. **Wire format ingest = opsi (b) APPROVED & DIPATOK**: body raw `Content-Type: application/gzip` — tar.gz dengan `manifest.json` sebagai **entri pertama di root tar**, lalu file berubah di path sesuai manifest. Tanpa multipart, nol dep baru di kedua sisi (publisher kami bash+curl `--data-binary`).
+2. **Ekstraksi tar via shell `tar`**: direstui — konsisten dengan kondisi box.
+3. **MCP SDK vs minimal impl**: direstui — coba SDK, fallback minimal JSON-RPC kalau proxy npm memblok; kontrak tools/staleness tidak berubah apa pun pilihannya.
+4. **Deploy di middleware saja + mulai Fase 1 di branch/worktree**: setuju penuh.
+
 ## Yang terjadi berikutnya di sisi plugin
 
 Publisher (`publish-artifacts.sh` + leg Stop-hook, fail-open, delta-by-sha + manifest lengkap + `work_dir`) dibangun setelah spec plugin final direview — kontraknya tidak akan berubah dari yang kalian pegang: `POST <ANTHROPIC_BASE_URL>/mega-sdd/ingest`, `Bearer` dari `mega-code get-token`, idempoten, self-heal via `missing`, `5xx` → antre + retry.
