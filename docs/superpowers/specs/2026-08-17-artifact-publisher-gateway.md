@@ -7,7 +7,7 @@
 
 1. **`scripts/publish-artifacts.sh`** — deterministic publisher:
    - Collects: `.mega-sdd/graph.json`, `vaults/*/` (7 docs, binding.md, `bound/`, `units/`, `bolts/_summary.md`), knowledge-base, `codebase/codebase-map.md`, symbol index.
-   - Emits `manifest.json`: `project_id` (normalized git remote), `vault`, `git_head`, `generated_at`, sha256 per file, `graph_meta` (the graph's `_meta.source_hashes` — staleness honesty).
+   - Emits `manifest.json`: `project_id` (normalized git remote), `vault`, `git_head`, `generated_at`, sha256 per file, `graph_meta` (the graph's `_meta.source_hashes` — staleness honesty), and OPTIONAL `work_dir` (BASENAME of the working folder only, never a full path — approved 2026-08-20 on the gateway team's request as a telemetry JOIN-HINT for the :8002 human reader; NEVER an identity key, `project_id` stays canonical).
    - Sends ONLY files whose sha changed since the last push (local stamp `.mega-sdd/.publish-state.json`) as tar.gz + the FULL manifest (gateway self-heals from the manifest).
    - Exit 0 ALWAYS on network failure (fail-open): queue in `.publish-state.json`, retry next trigger, one log line.
 2. **Stop-hook leg** — reuses the existing artifact-change detection + debounce; async; inert unless `publish.gateway_url` is configured.
@@ -25,3 +25,7 @@ Manifest determinism · delta-by-sha · fail-open (dead endpoint → rc 0 + queu
 
 ## Non-goals
 The gateway ingest service and the MCP server itself (the office team's build, per the guide). Cross-project reuse queries from mega-sdd sessions (future, once the office registers the read-side MCP in project repos).
+
+## Architect decisions on the gateway team's consolidation (2026-08-20)
+
+Their architecture doc (ingest + indexer + file-store-as-truth + SQLite derived index + MCP + :8002 human reader, Fastify middleware placement) is APPROVED. Decisions on their 4 blockers: (1) `work_dir` manifest field = optional, basename-only, join-hint never identity; (2) :8002 approved as read-only human consumer under the IDENTICAL honesty contract as MCP; (3) `/data` layout approved, retention = current + 5 snapshots per project/vault + daily prune, push cap 413 = 50 MB compressed (a bundle near that cap is a publisher bug, not a cap problem); (4) v1 access boundary = internal-confidential mirroring scm (all authenticated employee tokens read all projects, everything audit-logged per token; per-repo ACL deliberately deferred — the index's `project_id` key makes it retrofittable). Plus one added rule: **indexer failure must never fail ingest** — the file-store write completes the contract (200); the index is derived and rebuilds in the background.
