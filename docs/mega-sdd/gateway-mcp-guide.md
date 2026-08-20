@@ -122,3 +122,18 @@ Publisher mega-sdd memakai persis dua kanal yang sudah ada itu: URL dari `ANTHRO
 - [ ] Staleness tersaji di setiap jawaban tool.
 - [ ] Marker `[VERIFIED]/[INFERRED]/[OPEN]` + status unit tidak pernah di-strip.
 - [ ] Retensi & klasifikasi data disepakati dengan security (artifact memuat potongan source code).
+
+## 8. Governance: deteksi "sesi ini menjalankan mega-sdd" (kontrak marker)
+
+Hard rule kantor: sesi mega-code wajib menjalankan mega-sdd (keputusan penuh + enforcement ladder di `keputusan-arsitek-gateway.md` §Governance). Yang kalian butuhkan untuk middleware + dashboard:
+
+| Marker | Muncul di | Kapan | Opt-out yang mempengaruhi |
+|---|---|---|---|
+| `mega-sdd-trace:session` | request body (via history; re-inject pasca compaction; ikut `claude -p`) | setiap sesi dengan plugin aktif, SEMUA CWD | hilang HANYA jika user pasang `~/.claude/.mega-sdd-routing-off` / `MEGA_SDD_ROUTING=off` DAN CWD tanpa konteks SDD |
+| `mega-sdd-trace:turn` | pesan terbaru tiap prompt | hanya di project `.mega-sdd` | `trace_tag: false` di `.mega-sdd/config.yaml` |
+| `mega-sdd-trace:<skill>` | announce line + dispatch subagent | tiap invocation skill | tidak ada |
+| `plugin_version` (manifest publish, mulai v6.19.2) | `manifest.json` ingest | tiap push artifact | tidak ada (fail-open `""` hanya kalau plugin.json tak terbaca) |
+
+Aturan pakai: **hard check (warn→block) keyed ke `mega-sdd-trace:session` saja** — `:turn` dan `:<skill>` untuk dashboard per-turn/per-skill, `plugin_version` untuk version-floor report. String marker adalah KONTRAK STABIL dari sisi plugin (dipin test); jangan regex-longgar — substring match verbatim cukup dan murah.
+
+**Nuansa sidechain (WAJIB dipahami sebelum mode block):** subagent berjalan di konteks FRESH — request-nya TIDAK membawa history, jadi TIDAK membawa `:session`. Subagent yang di-dispatch pipeline mega-sdd tetap terdeteksi karena markernya DITANAM deterministik di dispatch prompt (`mega-sdd-trace:execute-bolts:<unit_id>` di-generate `build-dispatch-prompt.sh`, golden-pinned; skill lain via template dispatch) — tapi subagent generik non-mega-sdd (Explore/Agent bawaan Claude Code, plugin lain) sah dan TIDAK bermarker. Konsekuensi: **block per-REQUEST keyed `:session` akan membunuh sidechain traffic yang sah — jangan.** Bentuk yang benar: keputusan AGREGAT per NIP per window (mis. 15–30 menit): kalau SELURUH traffic Claude Code sebuah NIP dalam window tidak memuat satu pun `:session` → warn/block NIP tersebut; request sidechain tanpa marker dalam window yang punya `:session` = netral, bukan pelanggaran.

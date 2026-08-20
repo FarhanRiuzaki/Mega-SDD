@@ -89,7 +89,8 @@ echo "── a2: first push — manifest first entry, fields correct, full delta
 echo 200 > "$LOG/next-response"; echo 0 > "$LOG/count"; rm -f "$LOG/next-body"
 OUT=$(run); RC=$?
 [ "$RC" -eq 0 ] || fail "a2 rc=$RC"
-"$PY" - "$LOG/last-body.tgz" "$HEAD" <<'PYEOF'
+PLUGVER=$("$PY" -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$ROOT/plugins/mega-sdd/.claude-plugin/plugin.json")
+"$PY" - "$LOG/last-body.tgz" "$HEAD" "$PLUGVER" <<'PYEOF'
 import tarfile, json, sys
 tar = tarfile.open(sys.argv[1])
 names = tar.getnames()
@@ -99,6 +100,7 @@ assert m["schema"] == "mega-sdd-publish/1", m
 assert m["project_id"] == "scm.bankmegadev.com/grup/repo", m["project_id"]
 assert m["vault"] == "app" and m["git_head"] == sys.argv[2], m
 assert m["work_dir"] == "proj", m
+assert m["plugin_version"] == sys.argv[3] and m["plugin_version"], m  # governance version-floor signal
 assert m["graph_meta"]["source_hashes"] == {"a.md": "x1"}, m
 assert "graph.json" in m["files"] and "vaults/app/binding.md" in m["files"], m["files"]
 sent = set(names) - {"manifest.json"}
