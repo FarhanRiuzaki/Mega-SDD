@@ -97,6 +97,15 @@ Publisher mega-sdd memakai persis dua kanal yang sudah ada itu: URL dari `ANTHRO
 3. Atribusi per NIP dari token (kalian sudah punya mapping-nya); manifest artifact tidak membawa NIP.
 4. Token expired → `get-token` gagal / ingest 401 → publisher antre + sarankan `mega-code login`; tidak perlu kanal recovery lain.
 
+## 5b. Rendering graph di :8002 (untuk tim Reader)
+
+`graph.json` renderable langsung — tidak butuh transformasi berat:
+
+- **Node** bertipe (`unit`/`claim`/`module`/`flow`/`kb-domain`, id ber-prefix vault) → bentuk/warna per tipe; **edge** ber-relasi (`depends_on`, dll.) → panah DAG. Lib disarankan: Cytoscape.js (DAG interaktif) atau D3.
+- **Blast-radius view**: klik satu unit → highlight closure reverse-`depends_on` (query tabel `edges` di index kalian — logika sama dengan tool MCP `blast_radius`).
+- **Overlay verdict**: join node claim ↔ `binding.md` → CONFIRMED hijau / CONFLICT merah / OQ kuning; plus badge `superseded/stale` dari unit — ini yang membuat :8002 jadi dashboard review, bukan sekadar gambar.
+- Kontrak kejujuran tetap: tampilkan `git_head` + umur snapshot di header graph; jangan sembunyikan marker/status.
+
 ## 6. Observability (ClickHouse + Langfuse — stack existing)
 
 - Setiap announce/dispatch mega-sdd membawa tag `mega-sdd-trace:<skill>` di traffic inference → filter Langfuse per skill/fase sudah jalan hari ini.
