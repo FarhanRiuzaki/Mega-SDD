@@ -22,6 +22,9 @@ command -v "$PY" >/dev/null 2>&1 || { echo "SKIP (no python3)"; exit 0; }
 P="$TMP/proj"
 REF_DIR="$P/plugins/mega-sdd/skills/fixture-skill/references"
 mkdir -p "$P/.mega-sdd/memory" "$REF_DIR"
+# v7: arm the chain (spec 2026-08-21 §3.1) — the fan-out below is chain-scoped;
+# this test pins VALIDATOR/telemetry behavior, so the fixture session is armed.
+printf '{"session_id": "s", "chain_engaged": true, "entries": {}}' > "$P/.mega-sdd/.gateguard-state.json"
 # 100 lines × 40 bytes ≈ 4000 bytes → estimated_tokens = 1000 exactly.
 "$PY" -c "
 with open('$REF_DIR/big-ref.md','w') as f:

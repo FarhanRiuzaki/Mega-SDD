@@ -40,6 +40,55 @@ if [ -n "$SC_CWD" ]; then
     . "$SC_RPR"
     SC_ROOT=$(resolve_project_root "$SC_CWD")
     if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+
+    # ── v7 (spec §3.5): the trace tag moves to pure shell, and the O(session)
+    # transcript scan below becomes CHAIN-SCOPED. A tier-S prompt in a mega-sdd
+    # project now costs: 0 forks, ~6 tok (the tag). Fail-closed: extraction
+    # doubt falls through to the python path (which re-applies the same gates).
+    SC_CFG_C=""
+    [ -f "${SC_ROOT}/.mega-sdd/config.yaml" ] && { { SC_CFG_C="$(<"${SC_ROOT}/.mega-sdd/config.yaml")"; } 2>/dev/null || SC_CFG_C=""; }
+    # anchored to line start (review R-5): a commented/prefixed key must not match
+    SC_NL=$'\n'
+    if [[ ! "$SC_CFG_C" =~ (^|$SC_NL)[[:space:]]*trace_tag:[[:space:]]*false ]]; then
+      echo "mega-sdd-trace:turn"
+    fi
+    V7_TAG_DONE=1
+    if [[ "$SC_CFG_C" =~ (^|$SC_NL)[[:space:]]*telemetry:[[:space:]]*false ]] || [[ "$SC_CFG_C" =~ (^|$SC_NL)[[:space:]]*compaction_notice:[[:space:]]*false ]]; then
+      exit 0
+    fi
+    # Size cap (review R-6): a huge pasted prompt makes the bash scans below
+    # costlier than the python they avoid — take the classic path instead.
+    if [ "${#STDIN_JSON}" -gt 262144 ]; then SC_SKIP_ARMED=1; else SC_SKIP_ARMED=0; fi
+    if [ "$SC_SKIP_ARMED" -eq 0 ]; then
+    # armed check (same contract as pre/post-tool-use; subagent sentinels kept
+    # for symmetry although UserPromptSubmit is a main-session event)
+    case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) : ;; *)
+      if [ ! -f "${SC_ROOT}/.mega-sdd/.plan-pending" ]; then
+        SC_SID=""
+        SC_R="$STDIN_JSON"
+        while [[ "$SC_R" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+          SC_SID="${BASH_REMATCH[1]}"; SC_R="${BASH_REMATCH[2]}"
+        done
+        if [ -n "$SC_SID" ]; then
+          SC_GG="${SC_ROOT}/.mega-sdd/.gateguard-state.json"
+          if [ ! -f "$SC_GG" ]; then exit 0; fi
+          SC_GG_C=""
+          { SC_GG_C="$(<"$SC_GG")"; } 2>/dev/null || SC_GG_C=""
+          if [ -n "$SC_GG_C" ]; then
+            case "$SC_GG_C" in
+              *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) : ;;  # engaged_sessions map
+              *"\"session_id\": \"$SC_SID\""*|*"\"session_id\":\"$SC_SID\""*)
+                case "$SC_GG_C" in
+                  *'"chain_engaged": true'*|*'"chain_engaged":true'*) : ;;
+                  *) exit 0 ;;
+                esac ;;
+              *) exit 0 ;;
+            esac
+          fi
+        fi
+      fi
+    ;; esac
+    fi  # size cap
   fi
 fi
 
@@ -70,8 +119,10 @@ CFG="${PROJECT_ROOT}/.mega-sdd/config.yaml"
 # session (`mega-sdd-trace:session`, carried in every request body via history);
 # this stamp marks each iteration's LATEST message for gateways that index only
 # the newest delta. Opt-out: `trace_tag: false` in .mega-sdd/config.yaml.
-if [ ! -f "$CFG" ] || ! grep -qE "^[[:space:]]*trace_tag:[[:space:]]*false" "$CFG" 2>/dev/null; then
-  echo "mega-sdd-trace:turn"
+if [ "${V7_TAG_DONE:-0}" -eq 0 ]; then
+  if [ ! -f "$CFG" ] || ! grep -qE "^[[:space:]]*trace_tag:[[:space:]]*false" "$CFG" 2>/dev/null; then
+    echo "mega-sdd-trace:turn"
+  fi
 fi
 
 if [ -f "$CFG" ]; then

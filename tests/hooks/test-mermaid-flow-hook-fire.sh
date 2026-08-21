@@ -21,6 +21,9 @@ fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t mflowhook)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/.mega-sdd/memory"   # so telemetry append doesn't noise
+# v7: arm the chain (spec 2026-08-21 §3.1) — the fan-out below is chain-scoped;
+# this test pins VALIDATOR/telemetry behavior, so the fixture session is armed.
+printf '{"session_id": "no-session", "chain_engaged": true, "entries": {}}' > "$WORK/.mega-sdd/.gateguard-state.json"
 
 fire() {  # $1 = file path written
   python3 -c "import json,sys; print(json.dumps({'cwd':sys.argv[1],'tool_name':'Write','tool_input':{'file_path':sys.argv[2]}}))" "$WORK" "$1" \

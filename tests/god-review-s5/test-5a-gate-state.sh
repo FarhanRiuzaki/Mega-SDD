@@ -83,6 +83,10 @@ EOF
 note "== 5A: gate-state integrity (real hooks) =="
 
 F1="$WORK/f1"; mkdir -p "$F1/.mega-sdd/vaults/demo/units" "$F1/src"
+# v7: arm the chain (spec 2026-08-21-v7-weighted-routing-design.md §3.1) — the
+# validator fan-out is chain-scoped; this test pins VALIDATOR behavior, so the
+# fixture session must be armed the way a real chain session is.
+printf '{"session_id": "s5test", "chain_engaged": true, "entries": {}}' > "$F1/.mega-sdd/.gateguard-state.json"
 printf 'line1\nline2\n' > "$F1/src/billing.py"
 mk_bad_verify "$F1/.mega-sdd/vaults/demo/units/U-001.md"
 mk_clean_create "$F1/.mega-sdd/vaults/demo/units/U-002.md" "U-002"
@@ -116,6 +120,10 @@ echo "$OUT" | grep -q '"permissionDecision": "deny"' \
 
 # ── GU-HOOK-3: unit written via Bash (no Write dispatch) still gated ──
 F2="$WORK/f2"; mkdir -p "$F2/.mega-sdd/vaults/demo/units" "$F2/src"
+# v7: arm the chain (spec 2026-08-21-v7-weighted-routing-design.md §3.1) — the
+# validator fan-out is chain-scoped; this test pins VALIDATOR behavior, so the
+# fixture session must be armed the way a real chain session is.
+printf '{"session_id": "s5test", "chain_engaged": true, "entries": {}}' > "$F2/.mega-sdd/.gateguard-state.json"
 printf 'line1\n' > "$F2/src/billing.py"
 mk_clean_create "$F2/.mega-sdd/vaults/demo/units/U-001.md" "U-001"
 bash "$VUS" --cwd="$F2" --quiet >/dev/null 2>&1   # seed a PASS state
@@ -128,6 +136,10 @@ echo "$OUT" | grep -q '"permissionDecision": "deny"' \
 
 # ── GU-HOOK-5 (unit-spec side): violation in the SMALLER vault blocks ──
 F3="$WORK/f3"; mkdir -p "$F3/.mega-sdd/vaults/big/units" "$F3/.mega-sdd/vaults/small/units" "$F3/src"
+# v7: arm the chain (spec 2026-08-21-v7-weighted-routing-design.md §3.1) — the
+# validator fan-out is chain-scoped; this test pins VALIDATOR behavior, so the
+# fixture session must be armed the way a real chain session is.
+printf '{"session_id": "s5test", "chain_engaged": true, "entries": {}}' > "$F3/.mega-sdd/.gateguard-state.json"
 printf 'line1\n' > "$F3/src/billing.py"
 for i in 1 2 3; do mk_clean_create "$F3/.mega-sdd/vaults/big/units/U-00$i.md" "U-00$i"; done
 mk_bad_verify "$F3/.mega-sdd/vaults/small/units/U-001.md"
@@ -138,6 +150,10 @@ echo "$OUT" | grep -q '"permissionDecision": "deny"' \
 
 # ── regression: a fully clean project still passes the gate ──
 F4="$WORK/f4"; mkdir -p "$F4/.mega-sdd/vaults/demo/units"
+# v7: arm the chain (spec 2026-08-21-v7-weighted-routing-design.md §3.1) — the
+# validator fan-out is chain-scoped; this test pins VALIDATOR behavior, so the
+# fixture session must be armed the way a real chain session is.
+printf '{"session_id": "s5test", "chain_engaged": true, "entries": {}}' > "$F4/.mega-sdd/.gateguard-state.json"
 mk_clean_create "$F4/.mega-sdd/vaults/demo/units/U-001.md" "U-001"
 OUT=$(drive_hook "$PRE" "$F4" "Skill" '{"skill": "mega-sdd:execute-bolts"}')
 echo "$OUT" | grep -q '"permissionDecision": "deny"' \

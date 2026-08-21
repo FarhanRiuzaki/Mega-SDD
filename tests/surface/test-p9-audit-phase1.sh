@@ -180,9 +180,9 @@ else fail "D1: fast path missing or ordered after the python parse (fp=$fp py=$p
 if ! grep -q "SLIM_EOF" "$P/hooks/session-start" && ! grep -q 'MANDATORY development workflow' "$P/hooks/session-start"; then
   pass "D2: v7 — non-SDD slim block deleted (no SLIM_EOF heredoc, no MANDATORY phrase)"
 else fail "D2: v7 slim-block deletion regressed (SLIM_EOF or MANDATORY phrase back in session-start)"; fi
-grep -qF -- '-lt 3450' tests/token-efficiency/test-b3-anchor-and-panel.sh \
-  && pass "D3: anchor-core cap tightened to 3450 (headroom enforced)" \
-  || fail "D3: anchor cap not tightened"
+grep -qF -- '-lt 4000' tests/token-efficiency/test-b3-anchor-and-panel.sh \
+  && pass "D3: anchor-core cap enforced (v7: 4000 — S/M/L table joined the core, spec 2026-08-21)" \
+  || fail "D3: anchor cap missing/regressed"
 [ ! -f "$P/skills/scan-codebase/references/deep-scan-stage.md" ] \
   && pass "D5: deep-scan-stage.md tombstone deleted" \
   || fail "D5: tombstone still present"

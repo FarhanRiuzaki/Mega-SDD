@@ -85,7 +85,9 @@ CORE=$(awk 'BEGIN{dash=0;body=0}
 # with the SAME awk hooks/session-start uses for the full-core injection.
 # Re-baseline ONLY with a recorded decision (this is the census-budget moat).
 n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
-[ "$n" -eq 3415 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3415)"
+# v7.0.0 re-baseline (RECORDED decision — gate-1, spec 2026-08-21 §2.1): the S/M/L
+# weight table joined the core; 3415 → 3916. The pin still freezes the census budget.
+[ "$n" -eq 3916 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3916, v7)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without
@@ -95,7 +97,8 @@ CCORE=$(awk 'BEGIN{take=0}
   /ANCHOR-CORE ends/{exit}
   take==1{print}' "$UMS")
 cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
-[ "$cn" -eq 1187 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1187)"
+# v7.0.0 re-baseline: the M/L-scoped Hard rule block grew (tier-S prohibitions).
+[ "$cn" -eq 1564 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1564)"
 # C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
 printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"

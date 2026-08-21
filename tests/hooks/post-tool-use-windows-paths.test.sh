@@ -39,6 +39,10 @@ command -v "$PY" >/dev/null 2>&1 || { echo "SKIP (no python3)"; exit 0; }
 
 P="$TMP/proj"
 mkdir -p "$P/.mega-sdd/vaults/v1/units" "$P/.mega-sdd/codebase" "$P/src"
+# v7: arm the chain (spec 2026-08-21-v7-weighted-routing-design.md §3.1) — the
+# validator fan-out is chain-scoped; this test pins VALIDATOR behavior, so the
+# fixture session must be armed the way a real chain session is.
+printf '{"session_id": "s", "chain_engaged": true, "entries": {}}' > "$P/.mega-sdd/.gateguard-state.json"
 printf 'x\n' > "$P/.mega-sdd/vaults/v1/units/U-001.md"
 
 # exec tally: counts how far the hook actually got

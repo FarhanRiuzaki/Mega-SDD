@@ -69,6 +69,87 @@ if [ -n "$SC_CWD" ]; then
     . "$SC_RPR"
     SC_ROOT=$(resolve_project_root "$SC_CWD")
     if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+
+    # ── v7 tier-S fast path (spec 2026-08-21-v7-weighted-routing-design.md §3.2) ──
+    # Size cap (review R-6): the pure-bash substring/regex scans below are
+    # O(payload); a multi-MB Edit costs more in bash than the python it avoids.
+    # Oversized stdin takes the classic python path (correct, just not free).
+    if [ "${#STDIN_JSON}" -gt 262144 ]; then SC_SKIP_FAST=1; else SC_SKIP_FAST=0; fi
+    if [ "$SC_SKIP_FAST" -eq 0 ]; then
+    # In a mega-sdd project WITHOUT an active chain this session, an ordinary
+    # Edit/Write/Bash must cost ZERO forks. Pure-shell decision, FAIL-CLOSED:
+    # any extraction doubt, any protected-substring hit, or any armed/unknown
+    # state falls through to the authoritative python path below (old behavior).
+    # armed ⇔ .gateguard-state.json carries chain_engaged for THIS session_id —
+    # written by the Skill branch on the first mega-sdd:* dispatch (§3.1; the
+    # gate-0 factory-ledger AND was dropped: the ledger does not exist until the
+    # first phase handoff, which would have un-armed the whole first greenfield
+    # chain — see spec §7 amendment 1).
+    SC_TOOL=""
+    SC_REST2="$STDIN_JSON"
+    while [[ "$SC_REST2" =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+      SC_TOOL="${BASH_REMATCH[1]}"; SC_REST2="${BASH_REMATCH[2]}"
+    done
+    case "$SC_TOOL" in
+      Edit|Write|Bash)
+        # Protected-substring pre-filter — ONE union list for ALL tools. The
+        # fragments are a SUPERSET of every basename/path the FP_GUARD + Bash
+        # anti-self-bypass patterns can match (mega-sdd covers .mega-sdd/ +
+        # docs/mega-sdd/; -bound covers the legacy vault layout; the rest are
+        # the guarded state/evidence names). Deliberately NOT per-tool: the
+        # shell tool_name extraction is spoofable from inside tool_input (a
+        # command containing '"tool_name": "Edit"' would flip a last-match
+        # scan), so the filter must not depend on which tool we THINK this is —
+        # any fragment hit takes the full python path regardless. A false
+        # positive costs one python pass; a miss is impossible for the guarded set.
+        SC_PROT=0
+        case "$STDIN_JSON" in
+          *mega-sdd*|*-bound*|*validation-blockers*|*plan-pending*|*replan-budget*|*iter-classifier*|*-state.json*|*ui-quality-blockers*|*bolts/*|*uat/evidence*|*scan-stamp*|*pack-resolver*|*binding*) SC_PROT=1 ;;
+        esac
+        if [ "$SC_PROT" -eq 0 ]; then
+          # Subagent fail-closed rail (R2, gate-1): subagent-context tool calls
+          # ALWAYS take the full (armed) path — the docs guarantee agent_id /
+          # parent_tool_use_id / agent_transcript_path appear ONLY in subagent
+          # context (code.claude.com/docs/en/hooks "Common Subagent Context
+          # Fields"), while session_id semantics there are undocumented. Keying
+          # on the sentinels makes the session_id ambiguity moot: bolt
+          # implementer edits stay gated regardless. A chain paused in Plan
+          # mode also takes the full path.
+          case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) SC_PROT=1 ;; esac
+          [ -f "${SC_ROOT}/.mega-sdd/.plan-pending" ] && SC_PROT=1
+        fi
+        if [ "$SC_PROT" -eq 0 ]; then
+          SC_SID=""
+          SC_REST3="$STDIN_JSON"
+          while [[ "$SC_REST3" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+            SC_SID="${BASH_REMATCH[1]}"; SC_REST3="${BASH_REMATCH[2]}"
+          done
+          if [ -n "$SC_SID" ]; then
+            SC_GG="${SC_ROOT}/.mega-sdd/.gateguard-state.json"
+            if [ ! -f "$SC_GG" ]; then
+              exit 0   # no session gate-state at all → chain never engaged → tier S
+            fi
+            SC_GG_C=""
+            { SC_GG_C="$(<"$SC_GG")"; } 2>/dev/null || SC_GG_C=""
+            if [ -n "$SC_GG_C" ]; then
+              case "$SC_GG_C" in
+                *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) : ;;  # engaged_sessions map hit → armed → full path
+                *"\"session_id\": \"$SC_SID\""*|*"\"session_id\":\"$SC_SID\""*)
+                  case "$SC_GG_C" in
+                    *'"chain_engaged": true'*|*'"chain_engaged":true'*) : ;;  # armed → full path
+                    *) exit 0 ;;   # this session never engaged → tier S
+                  esac ;;
+                *) exit 0 ;;       # neither the map nor the top record knows this session → tier S
+              esac
+            fi
+            # unreadable/empty state → fail closed (fall through)
+          fi
+          # session_id not extractable → fail closed (fall through)
+        fi
+        ;;
+      *) : ;;  # Skill / unknown / unextractable → always the full path
+    esac
+    fi  # SC_SKIP_FAST
   fi
 fi
 
@@ -99,6 +180,7 @@ transcript_path = data.get("transcript_path", "")
 emit("CWD", cwd)
 emit("TOOL_NAME", tool_name)
 emit("TRANSCRIPT_PATH", transcript_path)
+emit("SESSION_ID", data.get("session_id", ""))
 
 if tool_name == "Skill":
     emit("SKILL_NAME", tool_input.get("skill", ""))
@@ -110,7 +192,6 @@ elif tool_name == "Bash":
 elif tool_name in ("Edit", "Write"):
     fp = tool_input.get("file_path", "")
     emit("FILE_PATH_B64", base64.b64encode(fp.encode()).decode())
-    emit("SESSION_ID", data.get("session_id", ""))
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then
@@ -194,6 +275,35 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
+# ─── v7 chain-armed probe (spec §3.1) ────────────────────────────────────────
+# armed ⇔ .gateguard-state.json carries chain_engaged for THIS session (the
+# Skill branch writes it on the first mega-sdd:* dispatch). Fork-free bash read.
+# Fail-CLOSED: an unreadable state, a missing session_id, a subagent-carrying
+# stdin, or a paused Plan chain all count as armed (gates run — moat-safe).
+v7_chain_armed() {
+  local sid="${SESSION_ID:-}" gg="${PROJECT_ROOT}/.mega-sdd/.gateguard-state.json" c=""
+  # Subagent sentinels (R2): subagent context is ALWAYS armed — see the fast-path rail.
+  case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) return 0 ;; esac
+  [ -f "${PROJECT_ROOT}/.mega-sdd/.plan-pending" ] && return 0
+  [ -n "$sid" ] || sid="no-session"
+  [ -f "$gg" ] || return 1
+  { c="$(<"$gg")"; } 2>/dev/null || return 0
+  [ -n "$c" ] || return 0
+  # v7 review R-2 (shared worktree): armed if MY sid is in the engaged_sessions
+  # map — a concurrent session re-stamping the top-level record never un-arms me.
+  case "$c" in
+    *"\"$sid\": true"*|*"\"$sid\":true"*) return 0 ;;
+  esac
+  case "$c" in
+    *"\"session_id\": \"$sid\""*|*"\"session_id\":\"$sid\""*) : ;;
+    *) return 1 ;;
+  esac
+  case "$c" in
+    *'"chain_engaged": true'*|*'"chain_engaged":true'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # Helper: emit block JSON to stdout and exit
 emit_block() {
   local reason="$1"
@@ -217,6 +327,53 @@ EOF
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
 case "${TOOL_NAME:-}" in
   Skill)
+    # ── v7 chain-engaged marker writer (spec §3.1) ──────────────────────────
+    # A mega-sdd:* Skill dispatch IS chain activity: record chain_engaged for
+    # this session in the EXISTING session-keyed .gateguard-state.json (one new
+    # field, no new file). From this moment the session is armed — GateGuard,
+    # the PostToolUse validator fan-out, and the compaction advisor all run
+    # exactly as before v7. using-mega-sdd is excluded (router, not a chain
+    # step — same exclusion Branch 1a has always used). Runs BEFORE any gate so
+    # even a blocked dispatch arms the session (conservative).
+    case "${SKILL_NAME:-}" in
+      mega-sdd:using-mega-sdd) : ;;
+      mega-sdd:*)
+        SESSION_ID="${SESSION_ID:-}" PROJECT_ROOT="$PROJECT_ROOT" python3 - <<'PYCE' 2>/dev/null || true
+import json, os
+sid = os.environ.get("SESSION_ID", "") or "no-session"
+p = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd", ".gateguard-state.json")
+# v7 review R-2 (shared worktree): arming is PER-SESSION via the engaged_sessions
+# map — a 2nd session's dispatch must never un-arm a concurrent session's chain.
+# Top-level session_id/chain_engaged stay for the latest dispatcher (and the
+# GateGuard entries LRU stays keyed to it, pre-v7 semantics); the map is the
+# durable multi-session arm record (capped at 50 sids, insertion order).
+state = {"session_id": sid, "chain_engaged": True, "entries": {}}
+engaged = {}
+try:
+    prev = json.load(open(p))
+    engaged = dict(prev.get("engaged_sessions") or {})
+    psid = prev.get("session_id")
+    if psid and prev.get("chain_engaged"):
+        engaged[psid] = True
+    if psid == sid:
+        prev["chain_engaged"] = True
+        state = prev
+except Exception:
+    pass
+engaged[sid] = True
+if len(engaged) > 50:
+    engaged = dict(list(engaged.items())[-50:])
+state["engaged_sessions"] = engaged
+tmp = p + ".tmp"
+try:
+    with open(tmp, "w") as f:
+        json.dump(state, f)
+    os.replace(tmp, p)
+except Exception:
+    pass
+PYCE
+        ;;
+    esac
     # Branch 1c: scope flag validation for orchestrate-flow (the /mega-sdd front
     # door) / generate-intent; the mega-sdd:auto case arm is inert since the
     # 6.0.0 alias cull (no auto skill exists) — kept as a harmless dead match.
@@ -380,6 +537,53 @@ except Exception:
       mega-sdd:*)
         if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
           HANDOFF_STATE="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
+          # ── v7 gate-time derivation (spec §3.4 as amended §7.4) ───────────
+          # Closes the fresh-session/TOCTOU gap ONLY: when NO handoff state
+          # exists (fresh clone/session — the case Stop cannot have covered),
+          # derive it here from the transcript. When a state EXISTS it is
+          # trusted as pre-v7 (Stop wrote it at turn end) — re-running the
+          # validator on the same text at every dispatch double-counts
+          # retry_count and prematurely escalates C1→C2 (review R-4), and the
+          # full always-recompute needs a validator-side content hash, which
+          # lands in Phase 2 together with the Stop-leg removal. The text must
+          # carry a REAL envelope (line-start emitted_by:) — a narration that
+          # merely mentions handoff: is not a handoff (review R-3).
+          if [ ! -f "$HANDOFF_STATE" ] && [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+            HV_LAST=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
+import json, os
+last_text = None
+with open(os.environ["TRANSCRIPT_PATH"]) as f:
+    for line in f:
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
+        if not msg or msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            last_text = content
+        elif isinstance(content, list):
+            parts = [b.get("text","") for b in content if isinstance(b, dict) and b.get("type") == "text"]
+            if parts:
+                last_text = "\n".join(parts)
+if last_text:
+    print(last_text)
+' 2>/dev/null)
+            if [ -n "$HV_LAST" ] && printf '%s' "$HV_LAST" | grep -q "handoff:" \
+               && printf '%s' "$HV_LAST" | grep -qE "^[[:space:]]*emitted_by:"; then
+              HV_VALIDATOR="${SCRIPT_DIR_RPR}/../scripts/validate-handoff-yaml.sh"
+              if [ -x "$HV_VALIDATOR" ]; then
+                HV_SKILL=$(printf '%s' "$HV_LAST" | python3 -c '
+import sys, re
+m = re.search(r"^\s*emitted_by:\s*(?:mega-sdd:)?([\w-]+)", sys.stdin.read(), re.MULTILINE)
+print(m.group(1) if m else "unknown")
+' 2>/dev/null)
+                printf '%s' "$HV_LAST" | bash "$HV_VALIDATOR" --cwd="$PROJECT_ROOT" --skill-name="mega-sdd:${HV_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
+              fi
+            fi
+          fi
           if [ -f "$HANDOFF_STATE" ]; then
             HSTATUS_AND_PRODUCER=$(STATE_PATH="$HANDOFF_STATE" python3 -c "
 import json, os
@@ -796,6 +1000,11 @@ if re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
 # forged PASS in any of them opened its execute-bolts hard block. .plan-pending /
 # .iter-classifier.json stay OUT (documented orchestrate-flow write paths).
 _GUARDED = (
+    # v7 review R-1: the ARM SWITCH joins the guard — .gateguard-state.json now
+    # decides whether every chain-scoped gate runs; its only legitimate writers
+    # are the hook-internal python (marker writer + GateGuard deny-once), never
+    # an agent tool call, so denying the agent lane costs nothing.
+    ".gateguard-state.json",
     ".stop-scan-stamp", ".ptu-scan-stamp",
     ".validation-blockers.json", ".unit-spec-state.json", ".flow-coverage-state.json",
     ".sibling-consistency-state.json", ".ui-quality-blockers.json",
@@ -849,6 +1058,12 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
       fi
     fi
 
+    # ── v7: GateGuard is CHAIN-SCOPED (gate-0/gate-1 decision, spec §3.2) ──
+    # Outside an armed chain session the LOCKED-investigation deny does not
+    # fire; the residual risk (hotfix edits of LOCKED-anchored files between
+    # chains) is accepted at gate-1 and re-caught by the gate-time re-derive +
+    # full re-bind at the next chain entry. FP_GUARD above stays ALWAYS-ON.
+    v7_chain_armed || exit 0
     if grep -qE "^[[:space:]]*gateguard:[[:space:]]*false" "$CONFIG_FILE" 2>/dev/null; then exit 0; fi
     GG_IDX="${PROJECT_ROOT}/.mega-sdd/.locked-files-index.json"
     # Lazy rebuild: index absent or older than the newest binding.md
@@ -895,6 +1110,14 @@ try:
     s = json.load(open(state_path))
     if s.get("session_id") == sid:
         state = s
+    else:
+        # v7 review R-2: a session reset must never drop the multi-session arm map
+        eng = dict(s.get("engaged_sessions") or {})
+        psid = s.get("session_id")
+        if psid and s.get("chain_engaged"):
+            eng[psid] = True
+        if eng:
+            state["engaged_sessions"] = eng
 except Exception:
     pass
 # M-07: session-LIFETIME dedup (was a 1800s window — any bolts run >30 min
@@ -909,7 +1132,10 @@ if rel in entries:
 entries[rel] = now
 if len(entries) > 500:
     entries = dict(sorted(entries.items(), key=lambda kv: kv[1])[-500:])
-state = {"session_id": sid, "entries": entries}
+# v7: preserve extra keys (chain_engaged) — this writer must never un-arm the session
+state = dict(state)
+state["session_id"] = sid
+state["entries"] = entries
 tmp = state_path + ".tmp"
 try:
     with open(tmp, "w") as f:
@@ -962,7 +1188,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -989,7 +1215,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
+    PROTECTED='\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.
