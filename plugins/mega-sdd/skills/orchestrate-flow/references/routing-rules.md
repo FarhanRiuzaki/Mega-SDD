@@ -2,6 +2,8 @@
 
 `orchestrate-flow` inspects CWD and proposes a chain of skills based on detected state. This document specifies the decision matrix.
 
+> **v7 task weight (upstream of every row here):** the S/M/L weight decision happens BEFORE orchestrate-flow — in the `using-mega-sdd` anchor's weight table and the front door's mechanical ownership check (spec `2026-08-21-v7-weighted-routing-design.md`). By the time any chain in this document is proposed, the task is already tier **M** (delta lane) or **L** (full chain); tier-S work never reaches orchestrate-flow at all. Nothing in this matrix changes per tier — M simply enters at the delta-lane row, and `--weight=S|M|L` on the front door overrides the anchor's call.
+
 > **`--lean` profile (tranche E):** when `.mega-sdd/config.yaml` carries `profile: lean`, the state engine (`scripts/_lib/state_probes.py`, `derived.profile`) appends `--no-advisor` (a `--lean` FLAG without the config key is applied by the orchestrator at dispatch time — the engine reads only the config) to the `generate-intent` and `bind-codebase` hops in every proposed chain below — the engine and this table are one contract (the 2a lesson). No other row changes; no gate reads the profile.
 
 ## Contents

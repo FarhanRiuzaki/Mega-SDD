@@ -175,11 +175,11 @@ py=$(grep -n 'shlex.quote() is load-bearing' "$UPS" | head -1 | cut -d: -f1)
 if [ -n "$fp" ] && [ -n "$py" ] && [ "$fp" -lt "$py" ]; then
   pass "D1: user-prompt-submit fast negative path precedes the python3 parse"
 else fail "D1: fast path missing or ordered after the python parse (fp=$fp py=$py)"; fi
-SLIM=$(awk "/<<'SLIM_EOF'/{f=1;next} /^SLIM_EOF/{f=0} f" "$P/hooks/session-start")
-slim_bytes=$(printf '%s' "$SLIM" | wc -c | tr -d ' ')
-if [ "$slim_bytes" -lt 550 ] && printf '%s' "$SLIM" | grep -q 'MANDATORY development workflow'; then
-  pass "D2: non-SDD slim block halved (<550 B, now $slim_bytes) and keeps its pin phrase"
-else fail "D2: slim block too large ($slim_bytes B) or pin phrase lost"; fi
+# D2 (v7.0.0): the slim MANDATORY block is DELETED entirely (gate-1 decision) —
+# a no-signal CWD gets zero injection. Assert the heredoc and its pin phrase are gone.
+if ! grep -q "SLIM_EOF" "$P/hooks/session-start" && ! grep -q 'MANDATORY development workflow' "$P/hooks/session-start"; then
+  pass "D2: v7 — non-SDD slim block deleted (no SLIM_EOF heredoc, no MANDATORY phrase)"
+else fail "D2: v7 slim-block deletion regressed (SLIM_EOF or MANDATORY phrase back in session-start)"; fi
 grep -qF -- '-lt 3450' tests/token-efficiency/test-b3-anchor-and-panel.sh \
   && pass "D3: anchor-core cap tightened to 3450 (headroom enforced)" \
   || fail "D3: anchor cap not tightened"
