@@ -403,13 +403,13 @@ note "  derive-state on f6: ${ms}ms"
 # ── 5. session-start staleness notice reads the digest (same strings) ───────
 note "== 5. session-start digest parity =="
 out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
-printf '%s' "$out" | grep -qF 'mega-sdd: codebase moved since last scan (3 journaled write(s)) — `/mega-sdd:sync` reconciles map → drift → binding → units.' \
-  && ok "f9: staleness notice (digest path) byte-matches the pre-P1 string" \
+printf '%s' "$out" | grep -qF 'mega-sdd: codebase moved since last scan (3 journaled write(s)) — sync tersedia saat masuk lane M/L (`/mega-sdd`).' \
+  && ok "f9: staleness notice (digest path) byte-matches the v7 notice-only string" \
   || fail "f9: staleness notice missing/reworded"
 printf -- '- [ ] decide A\n- [ ] decide B\n' > "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
 out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
-printf '%s' "$out" | grep -qF 'mega-sdd: 2 open sync decision(s) queued in .mega-sdd/vaults/v1/PENDING-SYNC.md — resolve the queue first. Code also moved since last scan (3 journaled write(s)) — re-run `/mega-sdd:sync` after.' \
-  && ok "f9+queue: PENDING-SYNC-first notice byte-matches the pre-P1 string" \
+printf '%s' "$out" | grep -qF 'mega-sdd: 2 open sync decision(s) queued in .mega-sdd/vaults/v1/PENDING-SYNC.md — resolve the queue first. Code also moved since last scan (3 journaled write(s)).' \
+  && ok "f9+queue: PENDING-SYNC-first notice byte-matches the v7 notice-only string" \
   || fail "f9+queue: PENDING-SYNC notice missing/reworded"
 rm -f "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
 out=$( cd "$WORK/f6-units-no-bolts" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )

@@ -1,6 +1,6 @@
 ---
 description: THE mega-sdd front door — any SDD lane phrase routes here. No arg → derive-state status view (position, vault, counts, staleness, foreign-SDD/adoption notices) + propose the next chain with ONE upfront confirmation. With an artifact arg (PRD / legacy dir / vault / brief) → input-shape detection + the adoption lane. Every gated phase stays Skill-dispatched. Legacy /mega-sdd:<command> typed forms no longer register — typed text still routes here or to its skill by phrase.
-argument-hint: "[input] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--advisor|--no-advisor] [--no-telemetry] [--plan|--act|--plan-then-act]"
+argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--advisor|--no-advisor] [--no-telemetry] [--plan|--act|--plan-then-act]"
 ---
 
 > **The command surface** — four public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents), `/mega-sdd:slice` (standalone UI slicing from a design reference — command-only, never auto-routed). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or reachable by natural-language phrase — the 5.x deprecation aliases were removed (a typed legacy form arrives as plain text and still routes to its skill).
@@ -9,6 +9,8 @@ This command THINLY WRAPS the orchestrate-flow machinery — it detects the inpu
 
 User arguments: $ARGUMENTS
 
+> `--weight=S|M|L` — the v7 task-weight override (the anchor's S/M/L table decides by default; this flag is the user's escape hatch and always wins). `--weight=S`: do NOT run Lane 0/1 — answer the request inline as plain Claude Code, zero mega-sdd scripts (for when a small question arrived via `/mega-sdd` anyway). `--weight=M`: force the delta lane (Lane 1 step 3) even if the ownership match is weak. `--weight=L`: force the full chain. No other alias exists for this flag.
+>
 > `--lean` / `--full` — the tranche-E profile switch (opt-in): lean trims the advisor legs (`--no-advisor`, recorded as `advisor: skipped`) + the advisory chain diagnostics; persistent form `profile: lean` in `.mega-sdd/config.yaml` (also governs the Stop-hook analyze aggregate — the flag alone does not). Never touches any gate. → orchestrate-flow SKILL §Auto-integrated diagnostics.
 
 ## Lane 0 — no argument: status view + next-chain proposal
@@ -46,8 +48,9 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 3. **Is `<input>` quoted free-text** (e.g., `"build a clinic appointment system"`)?
    - YES, and NO vault exists in CWD → Mode B brief. Propose chain starting with `generate-intent --from-prompt <input>` (greenfield brief — unchanged).
-   - YES, and a vault EXISTS whose docs own an entity/flow/screen the sentence names (prompt-scale ownership signal: heading/entity match against the vault's `00-index.md` roll-up) → **delta lane**: propose chain `diff-vault --from-prompt <input>` → claim-scoped re-bind (`--paths=@<vault>/.delta-changed-paths.txt`) → `generate-units --reconcile` → `execute-bolts` (stale/new). An epic-scale brief is forced out by the `delta_too_large` cap inside diff-vault.
-   - YES, vault(s) present but ownership UNSURE (nothing matches, or several vaults match) → ASK, one `AskUserQuestion` with keterangan per option: `Delta ke vault <name>` — perubahan kecil di vault existing (delta lane); `Epic baru` — vault baru via generate-intent (Mode B); `Batal` — tidak ada yang dijalankan.
+   - YES, and a vault EXISTS whose index owns an entity/flow/screen the sentence names — the tier-M ownership check is MECHANICAL, not felt: grep the sentence's nouns against each vault's `vault.json` (`entities[].name`, `flows[].title`, module names — the machine index; never a vault md file) → exactly ONE vault matches → **delta lane (tier M)**: propose chain `diff-vault --from-prompt <input>` → claim-scoped re-bind (`--paths=@<vault>/.delta-changed-paths.txt`) → `generate-units --reconcile` → `execute-bolts` (stale/new). An epic-scale brief is forced out by the `delta_too_large` cap inside diff-vault.
+   - YES, vault(s) present but NOTHING matches the vault.json index → **drop to tier S**: answer the request inline as plain Claude Code and end with the one-line offer (`mau masuk pipeline? → /mega-sdd "<brief>" --weight=M`) — do NOT interrogate with AskUserQuestion for a no-match.
+   - YES, and SEVERAL vaults match (ownership genuinely ambiguous) → ASK, one `AskUserQuestion` with keterangan per option: `Delta ke vault <name>` — perubahan kecil di vault existing (delta lane); `Epic baru` — vault baru via generate-intent (Mode B); `Batal` — tidak ada yang dijalankan.
 
 4. **Flag handling**:
    - `--deep` (default true; opt-out via `--shallow` to revert to 3-skill cap).

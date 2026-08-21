@@ -1,28 +1,34 @@
 ---
 name: using-mega-sdd
-version: 3.3.3
-description: Session-start router for spec-driven development — decides whether a task should go through a mega-sdd skill and which one. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang; or the CWD shows .mega-sdd/ signals.
+version: 4.0.0
+description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
 # Using Mega-SDD
 
-Route SDD work through mega-sdd phases, not inline answers. This anchor decides *whether* a mega-sdd skill applies and *which*; the skills own the work. (Routing core only — invoke `using-mega-sdd` for the pipeline map, phase-ownership, multi-PRD lifecycle, and red-flags detail.)
+Weigh the task FIRST; only tiers M and L route through a mega-sdd skill — the skills own the work. Default when unsure: **S** (answer inline). (Routing core only — invoke `using-mega-sdd` for the pipeline map, phase-ownership, and multi-PRD lifecycle.)
 
-## When this applies
+## Task weight — decide before responding
 
-Invoke a mega-sdd skill BEFORE responding when ANY hold: **(a)** the prompt types `/mega-sdd` or any `/mega-sdd:<verb>` (typed stage verbs retired — arrive as text; route to the skill); **(b)** it carries an SDD trigger keyword — the full EN + Indonesian keyword census lives in this skill's always-loaded description; or **(c)** the CWD shows SDD signals: a `.mega-sdd/` dir (vaults/, knowledge-base/, codebase-map) or a legacy layout (`docs/mega-sdd/`, `bound-vault/`, `binding.md` — the resolver handles them).
+| Tier | Signals (ONE strong signal is enough) | What runs |
+|---|---|---|
+| **S — direct** (DEFAULT when unsure) | bug hunt / fix / debug / local refactor (~1-3 files); questions about code; no PRD / vault / unit / bolt / spec / sync / binding / OQ mention; no artifact argument; continuation prompt (`lanjut`, `ok`, `next`) when no mega-sdd skill ran this session | NO pipeline — answer as plain Claude Code. May Read AT MOST ONE vault doc (read-only) if the prompt names a domain the vault owns; no ground, no derive-state, no status view, zero mega-sdd scripts. If relevant, end with ONE line: `mau masuk pipeline? → /mega-sdd` |
+| **M — delta** | a spec/feature change to existing scope — "tambah field", "ubah flow", "ganti validasi", "fitur baru di …", a 1-2 sentence feature brief | `/mega-sdd` front door → its MECHANICAL ownership check (vault.json entity/flow match) decides: match → delta lane with ONE confirmation; no match → drop to S + the one-line offer (do NOT interrogate) |
+| **L — full** | artifact argument (PRD/BRD file, legacy dir, vault); `--greenfield`; a new epic; explicit `/mega-sdd`; `sync` after the code moved | the full chain as today via the front door (→ `orchestrate-flow`) |
 
-### Auto-trigger on a strong signal
+Override always wins: `--weight=S|M|L` (the only weight flag — `--full` already means the diagnostics profile); "skip SDD" / "just write the code" → S — the user is in control.
 
-CWD signal strong AND the prompt carries SDD intent (or is an empty/continuation prompt — `lanjut`, `ok`, `proceed`, `go`) → propose `/mega-sdd` (→ `orchestrate-flow --deep --auto`) with one upfront confirmation. Strong CWD = one of: legacy code + no PRD + no vault; a PRD present + no vault; vault + no units; units + no bolts; **map+binding present + change signal** (dirty journal non-empty OR HEAD ≠ map stamp) → propose `/mega-sdd:sync --auto` instead. General questions ("what is an OQ?", "explain X", "fix this bug", "show unit U-005"), casual conversation, and debugging/refactoring unrelated to a vault do NOT auto-trigger — the prompt must carry mega-sdd intent. If the user says "skip binding" / "just write the code" / "ignore SDD", follow them — they are in control.
+## The front door (M/L only)
 
-## The front door (one rule)
+**Any M/L lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (reconcile after the code moved — OFFERED at the next M/L entry, never mandated after an inline fix), `/mega-sdd:emit <prd|fsd|sit|uat>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); ambiguity between several owning vaults → ASK.
 
-**Any SDD lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (after ANY out-of-pipeline change: manual/AI edit, hotfix, git pull), `/mega-sdd:emit <prd|fsd|sit|uat>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); **when unsure, ASK**.
+## Hard rule (tiers M and L only)
 
-## Hard rule
+For an M/L trigger: **STOP**, invoke the skill via the `Skill` tool, and announce which skill before continuing. Gated phases: Skill-dispatch only, never Agent-offload.
 
-For any trigger above: **STOP**, invoke the skill via the `Skill` tool (default route when unsure: `orchestrate-flow`), and announce which skill before continuing. Gated phases: Skill-dispatch only, never Agent-offload.
+**Tier S prohibitions: do NOT invoke any `mega-sdd:*` skill, do NOT open `/mega-sdd`, do NOT propose sync. Work inline.**
+
+A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice line) — never, by itself, a reason to invoke a skill. Prior chains exist in the project (factory-ledger present) + a continuation prompt → offer `/mega-sdd --resume` in one line; do not auto-invoke.
 
 **Observability tag:** every skill announce line MUST end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt MUST contain a `mega-sdd-trace:<skill>` line (fresh-context subagents are otherwise invisible to the AI-gateway/Langfuse filter). One token, verbatim, no variants.
 
@@ -37,7 +43,7 @@ Narrate (chat, halts, recommendations) in **Indonesian + English technical terms
 ## Priority order
 
 1. User instructions (CLAUDE.md, AGENTS.md, direct requests) — highest.
-2. Mega-SDD phase rails — override default behavior within SDD scope.
+2. Mega-SDD phase rails — override default behavior within SDD scope (tiers M/L).
 3. Default system prompt — lowest.
 
 ## The pipeline
@@ -54,9 +60,9 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
-Diagnostic & output lanes compress to the front-door rule — any SDD lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
+Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
 
-Maintenance lane (never-ending development): after ANY out-of-pipeline change (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. The session-start notice surfaces when the code moved since the last scan.
+Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start staleness notice is informational only.
 
 Standalone slicing lane (command-only): `/mega-sdd:slice` — implement UI from a design reference (Figma export / URL / image) with a Playwright-MCP render check; never auto-routed from free text, never writes the vault (spec 2026-08-12).
 
@@ -65,7 +71,7 @@ Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an e
 - **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → claim-scoped re-bind → `--reconcile` units; the `delta_too_large` cap forces an epic-in-disguise to the next row).
 - **New epic** on top of shipped work → **new vault** via `generate-intent`, then `bind-codebase` **brownfield** against the codebase that now contains PRD 1 (+ the project constitution) — the binding gate catches contradictions with shipped reality.
 - **Code moved** → `sync`.
-When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; **when unsure, ASK** (evolve-in-place vs new-epic diverge hard). `.mega-sdd/project.md` (the project index) lists every vault + status so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
+When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; several owning vaults plausible → **ASK** (evolve-in-place vs new-epic diverge hard). `.mega-sdd/project.md` (the project index) lists every vault + status so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
 
 ## Phase ownership
 
@@ -78,15 +84,6 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 | Vault → units | generate-units | read-only |
 | Unit → code | execute-bolts | write |
 | Design reference → UI code (standalone lane, command-only — not a pipeline phase) | slice-design | write (code + `.mega-sdd/slices/`; never the vault) |
-
-## Red flags (STOP — rationalizations)
-
-| Thought | Reality |
-|---|---|
-| "I'll draft the vault inline, faster" | Use `generate-intent` — the anti-hallucination rails matter |
-| "Binding is overkill here" | Run `bind-codebase` in brownfield anyway — the gate exists for a reason |
-| "Skip units, it's trivial" | Units encode grounding — don't skip in real pipelines |
-| "Execute inline, superpowers is heavy" | Bolts route through `execute-bolts` (vendored fallback OK) |
 
 ## Reference
 

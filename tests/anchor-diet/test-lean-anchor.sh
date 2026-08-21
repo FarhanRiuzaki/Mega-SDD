@@ -115,7 +115,10 @@ for dropped in "## Phase ownership" "## Red flags" "## Priority order"; do
 done
 
 # ---- 6) the dropped detail is still LOADABLE (present below the marker) ------
-for keep in "## Phase ownership" "## Red flags" "## The pipeline" "## Priority order"; do
+# v7.0.0: "## Red flags" is DELETED from the skill entirely (gate-1 decision —
+# the table shamed inline work and fought the S/M/L weight table), so it is no
+# longer in this keep list; §5 still asserts it never reappears in the core.
+for keep in "## Phase ownership" "## The pipeline" "## Priority order"; do
   if grep -qF "$keep" "$SKILL"; then ok "detail still loadable in full SKILL.md: $keep"
   else bad "detail LOST entirely from SKILL.md (not just trimmed): $keep"; fi
 done

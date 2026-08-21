@@ -103,28 +103,19 @@ done
 # install failure must never break anchor injection.
 bash "${SCRIPT_DIR}/../scripts/install-front-door.sh" >/dev/null 2>&1 || true
 
-# ─── No-signal CWD: mandatory-routing slim block (v5.2.6) ───────────────────
-# Installing the plugin makes mega-sdd the DEFAULT development workflow — every
-# session routes through it, whether or not the user types /mega-sdd. A CWD
-# without SDD signals no longer exits silently: it gets a SLIM routing rule
-# (token-diet — the full anchor stays signal-gated below) telling the model to
-# route dev tasks via using-mega-sdd / propose `/mega-sdd <input>` init.
-# Opt-out: ~/.claude/.mega-sdd-routing-off (user-level, all sessions) or
-# MEGA_SDD_ROUTING=off. Non-dev/casual sessions are exempt by the rule's own text.
+# ─── No-signal CWD: governance marker ONLY (v7.0.0) ─────────────────────────
+# The v5.2.6 mandatory-routing slim block is DELETED (gate-1 decision, spec
+# 2026-08-21-v7-weighted-routing-design.md): the v7 default is tier S — a CWD
+# without SDD signals gets ZERO injected routing text. What SURVIVES is the one
+# bare `mega-sdd-trace:session` line: it is the office AI-gateway governance
+# detection contract (v6.19.2 — the hard check keys on :session per NIP window;
+# specs/2026-08-17-artifact-publisher-gateway.md §2), and going fully silent
+# here would false-flag every non-SDD session under the warn→block policy. One
+# token, no routing pressure. The old opt-out file/env
+# (~/.claude/.mega-sdd-routing-off, MEGA_SDD_ROUTING) are obsolete: the routing
+# block they silenced no longer exists, and the marker is governance-mandated.
 if [ "$has_sdd_signal" -eq 0 ]; then
-  if [ -f "${HOME}/.claude/.mega-sdd-routing-off" ] || [ "${MEGA_SDD_ROUTING:-on}" = "off" ]; then
-    exit 0
-  fi
-  cat <<'SLIM_EOF'
-<<EXTREMELY_IMPORTANT>>
-mega-sdd-trace:session
-mega-sdd is installed: it is the MANDATORY development workflow. This CWD has no SDD context yet.
-
-Hard rule: BEFORE writing or modifying any production code, route through mega-sdd — invoke the `mega-sdd:using-mega-sdd` skill, or propose `/mega-sdd <input>` to initialize. Exempt: casual Q&A, reading/explaining code, non-code tasks.
-
-Opt-out (per user): create ~/.claude/.mega-sdd-routing-off
-<</EXTREMELY_IMPORTANT>>
-SLIM_EOF
+  echo "mega-sdd-trace:session"
   exit 0
 fi
 
@@ -825,11 +816,12 @@ if open_n > 0:
     line = ("mega-sdd: %d open sync decision(s) queued in %s — resolve the queue first."
             % (open_n, pending))
     if moved:
-        line += (" Code also moved since last scan (%s) — re-run `/mega-sdd:sync` after."
-                 % detail)
+        line += (" Code also moved since last scan (%s)." % detail)
     print(line)
 elif moved:
-    print("mega-sdd: codebase moved since last scan (%s) — `/mega-sdd:sync` reconciles map → drift → binding → units."
+    # v7: notice-only wording — sync is OFFERED at the next M/L entry (front
+    # door), never proposed from an ambient session-start line (gate-1 §4.3).
+    print("mega-sdd: codebase moved since last scan (%s) — sync tersedia saat masuk lane M/L (`/mega-sdd`)."
           % detail)
 else:
     print("CLEAN")
@@ -877,10 +869,11 @@ PYLV
   if [ "$LV_OPEN" -gt 0 ]; then
     STALENESS_NOTICE=$'\n\n'"mega-sdd: ${LV_OPEN} open sync decision(s) queued in ${LV_PENDING} — resolve the queue first."
     if [ "$LV_MOVED" -eq 1 ]; then
-      STALENESS_NOTICE="${STALENESS_NOTICE} Code also moved since last scan (${LV_DETAIL}) — re-run \`/mega-sdd:sync\` after."
+      STALENESS_NOTICE="${STALENESS_NOTICE} Code also moved since last scan (${LV_DETAIL})."
     fi
   elif [ "$LV_MOVED" -eq 1 ]; then
-    STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — \`/mega-sdd:sync\` reconciles map → drift → binding → units."
+    # v7: notice-only wording (same contract as the digest leg above).
+    STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — sync tersedia saat masuk lane M/L (\`/mega-sdd\`)."
   fi
   fi  # LV_FROM_DIGEST fallback (pre-P1 bash computation, unchanged)
 fi
