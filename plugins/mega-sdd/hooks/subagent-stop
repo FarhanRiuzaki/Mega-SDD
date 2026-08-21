@@ -25,6 +25,31 @@ set -uo pipefail
 
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 
+# ─── v7 fast negative short-circuit (spec §3.6) ──────────────────────────────
+# SubagentStop fires for every subagent in every project (~2 python spawns).
+# Same fork-free pattern as the Stop hook; doubt falls through to python.
+SC_CWD=""
+case "$STDIN_JSON" in
+  *'"cwd"'*)
+    _sc="${STDIN_JSON#*\"cwd\"}"
+    _sc="${_sc#*\"}"
+    SC_CWD="${_sc%%\"*}"
+    ;;
+esac
+if [ -n "$SC_CWD" ]; then
+  case "$0" in */*) SC_DIR="${0%/*}" ;; *) SC_DIR="." ;; esac
+  SC_RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
+  if [ -f "$SC_RPR" ]; then
+    # shellcheck disable=SC1090
+    . "$SC_RPR"
+    case "${OSTYPE:-}" in msys*|cygwin*|win32*) SC_CWD="${SC_CWD//\\\\//}"; SC_CWD="${SC_CWD//\\//}" ;; esac
+    if [ -d "$SC_CWD" ]; then
+      SC_ROOT=$(resolve_project_root "$SC_CWD")
+      if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+    fi
+  fi
+fi
+
 # Safely extract cwd (no eval — paths may contain spaces).
 CWD=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
 try: print(json.loads(sys.stdin.read()).get("cwd","") or "")

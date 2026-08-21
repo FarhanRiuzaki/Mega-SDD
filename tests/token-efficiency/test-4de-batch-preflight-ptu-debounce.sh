@@ -124,6 +124,8 @@ note "== 4e. PostToolUse debounce: skip on source writes, rescan on real input c
 PE="$WORK/pe"; mkrepo "$PE"
 mkunit "$PE" U-001 ''
 mkdir -p "$PE/.mega-sdd/codebase"
+# v7: the debounced scanners are chain-scoped — arm the fixture session (§3.1)
+printf '{"session_id": "s4de", "chain_engaged": true, "entries": {}}' > "$PE/.mega-sdd/.gateguard-state.json"
 printf 'framework: laravel\n' > "$PE/.mega-sdd/codebase/codebase-map.md"   # mapped repo: dirty-journal active
 ( cd "$PE" && git add -A && git commit -qm map ) >/dev/null 2>&1
 wfire() { # repo file — fire the hook as a Write PostToolUse

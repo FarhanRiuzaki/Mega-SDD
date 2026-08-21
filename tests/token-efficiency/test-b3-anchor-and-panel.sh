@@ -44,25 +44,25 @@ CMP=$(drive compact);  LCMP=${#CMP}
 CLR=$(drive clear);    LCLR=${#CLR}
 UNK=$(drive weird);    LUNK=${#UNK}
 
-echo "$FULL" | grep -q "When this applies" && ok "M-13b: startup injects the FULL routing core" || fail "M-13b: startup missing full core"
-# resume injects ZERO anchor: neither the FULL core marker ("When this applies")
+echo "$FULL" | grep -q "Task weight" && ok "M-13b: startup injects the FULL routing core" || fail "M-13b: startup missing full core"
+# resume injects ZERO anchor: neither the FULL core marker ("Task weight")
 # nor the SLIM core marker ("Hard gate"). Its length is env-dependent — dynamic
 # notices (dep_missing, superpowers WARN) fire regardless of source and legitimately
 # inflate it (CI has no tree-sitter/ast-grep/superpowers), so we check CONTENT, not
 # an absolute byte threshold. The dynamic notices are the intended "keep on resume".
-if ! echo "$RES" | grep -q "When this applies" && ! echo "$RES" | grep -q "Hard gate"; then
+if ! echo "$RES" | grep -q "Task weight" && ! echo "$RES" | grep -q "Hard gate"; then
   ok "M-13b: resume SKIPS the anchor entirely (no full core, no slim core — already in transcript; len=$LRES incl. dynamic notices)"
 else
   fail "M-13b: resume injected anchor content (len=$LRES)"
 fi
-if ! echo "$CMP" | grep -q "When this applies" && echo "$CMP" | grep -q "Hard gate" && echo "$CMP" | grep -q "Output language"; then
+if ! echo "$CMP" | grep -q "Task weight" && echo "$CMP" | grep -q "Hard gate" && echo "$CMP" | grep -q "Output language"; then
   ok "M-13b: compact injects the SLIM core (Hard rule + Output language, no keyword bullets; len=$LCMP)"
 else
   fail "M-13b: compact core wrong (len=$LCMP)"
 fi
 [ "$LCMP" -lt "$LFULL" ] && [ "$LCMP" -gt "$LRES" ] && ok "M-13b: slim < full and slim > resume (size ordering holds)" || fail "M-13b: size ordering wrong (full=$LFULL slim=$LCMP resume=$LRES)"
-echo "$CLR" | grep -q "When this applies" && ok "M-13b: clear injects the FULL core" || fail "M-13b: clear missing full core"
-echo "$UNK" | grep -q "When this applies" && ok "M-13b: unknown source FAILS OPEN to the full core" || fail "M-13b: unknown source did not fail open"
+echo "$CLR" | grep -q "Task weight" && ok "M-13b: clear injects the FULL core" || fail "M-13b: clear missing full core"
+echo "$UNK" | grep -q "Task weight" && ok "M-13b: unknown source FAILS OPEN to the full core" || fail "M-13b: unknown source did not fail open"
 # compact still carries the dynamic COMPACT_RESUME notice when a snapshot exists
 printf '{"phase":{"guess":"execute-bolts","units_total":3,"bolts_done":1}}' > "$WORK/.mega-sdd/.compaction-snapshot.json"
 CMP2=$(drive compact)
@@ -75,7 +75,9 @@ grep -qF 'HOOK_SOURCE" != "resume"' "$HOOK" && ok "M-13b: fail-open excludes res
 
 # ── M-13a: anchor-core slim, Hard rule + Output language kept ──
 CORE_CHARS=$(awk 'BEGIN{d=0;b=0} /^---[[:space:]]*$/{d++; if(d==2)b=1; next} b==0{next} /ANCHOR-CORE ends/{exit} {print}' "$ANCHOR" | wc -c | tr -d ' ')
-[ "$CORE_CHARS" -lt 3450 ] && ok "M-13a: injected core slimmed (<3450 chars — headroom enforced after the phase-1 diet; now $CORE_CHARS)" || fail "M-13a: core not slimmed ($CORE_CHARS)"
+# v7.0.0: cap raised 3450→4000 — the S/M/L weight table joined the core (gate-1
+# approved growth, spec 2026-08-21 §2.1; measured 3918). Still a hard ceiling.
+[ "$CORE_CHARS" -lt 4000 ] && ok "M-13a: injected core within the v7 cap (<4000 chars; now $CORE_CHARS)" || fail "M-13a: core over the v7 cap ($CORE_CHARS)"
 # the unioned keywords must live in the always-loaded description (not the core)
 DESC=$(awk 'BEGIN{d=0} /^---[[:space:]]*$/{d++; next} d==1 && /^description:/{print} d>=2{exit}' "$ANCHOR")
 for kw in "bound-vault" "legacy intelligence" "source of truth dari legacy"; do

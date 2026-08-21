@@ -79,9 +79,144 @@ if [ -n "$SC_CWD" ]; then
     if [ -d "$SC_CWD" ]; then
       SC_ROOT=$(resolve_project_root "$SC_CWD")
       if [ ! -d "${SC_ROOT}/.mega-sdd" ]; then exit 0; fi
+
+      # ── v7 tier-S fast path (spec 2026-08-21-v7-weighted-routing-design.md §3.3) ──
+      # Size cap (review R-6): oversized stdin takes the classic python path.
+      if [ "${#STDIN_JSON}" -le 262144 ]; then
+      # A mega-sdd project WITHOUT an active chain this session: the validator
+      # fan-out below is CHAIN-SCOPED (the PreToolUse gate aggregator re-derives
+      # every gate state at gate time, so the fan-out is early-warning, not the
+      # moat — audit 2026-08-21 §3.3). Here we settle the common case in pure
+      # shell: not armed → journal a Write|Edit (≤2 forks: date + wc) and exit;
+      # every other tool exits clean. FAIL-CLOSED: subagent sentinels, Plan
+      # mode, extraction doubt, or armed/unknown state fall through to the
+      # authoritative python path (which re-checks armed before any validator).
+      SC_V7_DONE=0
+      case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) SC_V7_DONE=1 ;; esac
+      [ -f "${SC_ROOT}/.mega-sdd/.plan-pending" ] && SC_V7_DONE=1
+      if [ "$SC_V7_DONE" -eq 0 ]; then
+        SC_SID=""
+        SC_R="$STDIN_JSON"
+        while [[ "$SC_R" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+          SC_SID="${BASH_REMATCH[1]}"; SC_R="${BASH_REMATCH[2]}"
+        done
+        SC_ARMED=unknown
+        if [ -n "$SC_SID" ]; then
+          SC_GG="${SC_ROOT}/.mega-sdd/.gateguard-state.json"
+          if [ ! -f "$SC_GG" ]; then
+            SC_ARMED=no
+          else
+            SC_GG_C=""
+            { SC_GG_C="$(<"$SC_GG")"; } 2>/dev/null || SC_GG_C=""
+            if [ -n "$SC_GG_C" ]; then
+              case "$SC_GG_C" in
+                *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) SC_ARMED=yes ;;  # engaged_sessions map
+                *"\"session_id\": \"$SC_SID\""*|*"\"session_id\":\"$SC_SID\""*)
+                  case "$SC_GG_C" in
+                    *'"chain_engaged": true'*|*'"chain_engaged":true'*) SC_ARMED=yes ;;
+                    *) SC_ARMED=no ;;
+                  esac ;;
+                *) SC_ARMED=no ;;
+              esac
+            fi
+          fi
+        fi
+        if [ "$SC_ARMED" = "no" ]; then
+          # tool_name via FIRST-match (top-level key precedes tool_input in the
+          # harness payload; a spoofed occurrence inside content comes later).
+          SC_TOOL=""
+          case "$STDIN_JSON" in
+            *'"tool_name"'*)
+              _sct="${STDIN_JSON#*\"tool_name\"}"
+              _sct="${_sct#*\"}"
+              SC_TOOL="${_sct%%\"*}"
+              ;;
+          esac
+          case "$SC_TOOL" in
+            Write|Edit)
+              # Dirty-journal append in pure shell (same row shape + gates as
+              # the python leg). Any doubt → fall through instead of guessing.
+              SC_FP=""
+              case "$STDIN_JSON" in
+                *'"file_path"'*)
+                  _scf="${STDIN_JSON#*\"file_path\"}"
+                  _scf="${_scf#*\"}"
+                  SC_FP="${_scf%%\"*}"
+                  ;;
+              esac
+              case "$SC_FP" in
+                *\\*) : ;;                       # escaped (Windows) → python leg
+                "${SC_ROOT}"/*)
+                  case "$SC_FP" in *"/.mega-sdd/"*) SC_V7_DONE=2 ;; *)
+                  # No [ -f ] existence check: the python leg never had one, and
+                  # PostToolUse fires after a SUCCESSFUL Write anyway — an
+                  # existence probe here silently dropped rows in harness/test
+                  # contexts. The SC_ROOT-prefix match above is the garbage guard.
+                  if [ -d "${SC_ROOT}/.mega-sdd/codebase" ]; then
+                    SC_CFG_C=""
+                    [ -f "${SC_ROOT}/.mega-sdd/config.yaml" ] && { SC_CFG_C="$(<"${SC_ROOT}/.mega-sdd/config.yaml")" 2>/dev/null || SC_CFG_C=""; }
+                    # anchored to line start (review R-5): a commented/prefixed key must not match
+                    SC_NL=$'\n'
+                    if [[ ! "$SC_CFG_C" =~ (^|$SC_NL)[[:space:]]*dirty_journal:[[:space:]]*false ]]; then
+                      SC_DJ="${SC_ROOT}/.mega-sdd/codebase/.dirty-paths.jsonl"
+                      SC_SZ=0
+                      [ -f "$SC_DJ" ] && SC_SZ=$(wc -c < "$SC_DJ" 2>/dev/null || echo 0)
+                      if [ "${SC_SZ:-0}" -lt 1048576 ]; then
+                        printf '{"ts":"%s","path":"%s","tool":"%s","session":"%s"}\n' \
+                          "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SC_FP#"${SC_ROOT}"/}" "$SC_TOOL" "${SC_SID:-unknown}" \
+                          >> "$SC_DJ" 2>/dev/null || true
+                      fi
+                    fi
+                    SC_V7_DONE=2
+                  fi
+                  # no journal gate dir → nothing to record (python leg matches)
+                  [ "$SC_V7_DONE" -eq 0 ] && SC_V7_DONE=2
+                  ;; esac
+                  ;;
+                "") : ;;                          # unextractable → python leg
+                *) SC_V7_DONE=2 ;;                # out-of-tree write → never journaled anyway
+              esac
+              [ "$SC_V7_DONE" -eq 2 ] && exit 0
+              ;;
+            "") : ;;                              # unextractable → python leg
+            *) exit 0 ;;                          # Read/Bash/Skill/Agent, not armed → nothing to do
+          esac
+        fi
+      fi
+      fi  # size cap
     fi
   fi
 fi
+
+# ─── v7 chain-armed probe (spec §3.1 — same contract as pre-tool-use) ────────
+# armed ⇔ .gateguard-state.json carries chain_engaged for THIS session. Called
+# by the Write|Edit and Bash branches below AFTER the dirty-journal append: not
+# armed → skip the validator fan-out (the PreToolUse gate-time re-derivation is
+# the moat; this fan-out is early-warning). Fail-CLOSED like its sibling.
+v7_chain_armed() {
+  local sid="${SESSION_ID:-}" gg="${PROJECT_ROOT}/.mega-sdd/.gateguard-state.json" c=""
+  case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) return 0 ;; esac
+  [ -f "${PROJECT_ROOT}/.mega-sdd/.plan-pending" ] && return 0
+  # absent-session normalization: this hook's parse defaults to "unknown-session",
+  # the pre-tool-use writer normalizes to "no-session" — map both to the writer's form.
+  case "$sid" in ""|unknown-session|unknown) sid="no-session" ;; esac
+  [ -f "$gg" ] || return 1
+  { c="$(<"$gg")"; } 2>/dev/null || return 0
+  [ -n "$c" ] || return 0
+  # v7 review R-2 (shared worktree): armed if MY sid is in the engaged_sessions
+  # map — a concurrent session re-stamping the top-level record never un-arms me.
+  case "$c" in
+    *"\"$sid\": true"*|*"\"$sid\":true"*) return 0 ;;
+  esac
+  case "$c" in
+    *"\"session_id\": \"$sid\""*|*"\"session_id\":\"$sid\""*) : ;;
+    *) return 1 ;;
+  esac
+  case "$c" in
+    *'"chain_engaged": true'*|*'"chain_engaged":true'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 # Parse stdin via python3. EVERY value is shell-quoted with shlex.quote() because
 # the consumer below is `eval` — a bare `KEY=value` line is re-parsed by the shell,
@@ -395,6 +530,11 @@ print(status)
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
 
+    # v7: the whole Bash leg (ref_loaded telemetry mining + the dispatch-prompt
+    # validator + pandoc-failure detection) is chain-scoped — advisory surfaces
+    # that only mean something while a chain is producing artifacts (spec §3.3).
+    v7_chain_armed || exit 0
+
     # Extract mega-sdd-relevant file paths from the command. Scan all tokens.
     PATHS_FOUND=$(BASH_CMD_B64="$BASH_CMD_B64" python3 -c '
 import os, re, base64, shlex
@@ -568,6 +708,12 @@ except Exception:
         fi
         ;;
     esac
+
+    # ── v7: everything below this line is VALIDATOR FAN-OUT — chain-scoped ──
+    # (spec §3.3; gate-0 decision). The journal above stays always-on; the
+    # validators run only in an armed session. Moat unaffected: the PreToolUse
+    # aggregator re-derives every one of these states at the execute-bolts gate.
+    v7_chain_armed || exit 0
 
     # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
     # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).

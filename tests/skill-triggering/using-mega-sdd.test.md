@@ -12,10 +12,10 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 - **Prompt:** `Tolong spec out fitur ini buat dev`
 - **Expect:** Skill tool call with `generate-intent` or `orchestrate-flow`
 
-### Case T3: CWD signal only
-- **Setup:** Run from a dir containing `docs/mega-sdd/`
+### Case T3: CWD signal only (v7: tier S — status, never a trigger)
+- **Setup:** Run from a dir containing `docs/mega-sdd/`; no mega-sdd skill dispatched this session
 - **Prompt:** `What's next?`
-- **Expect:** Hook injects anchor; agent suggests running `orchestrate-flow`
+- **Expect:** NO skill invocation, NO `/mega-sdd` proposal — the anchor injects (status), but a continuation prompt with no chain marker this session is tier S: the agent answers inline. When prior chains exist (factory-ledger), at most a ONE-LINE offer of `/mega-sdd --resume`.
 
 ### Case T4: Indonesian variant
 - **Prompt:** `pecah PRD ini buat AI dev`
@@ -45,4 +45,4 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 
 ## Pass criteria
 
-All T1-T6 invoke a mega-sdd skill. None of NT1-NT3 invokes one.
+T1, T2, T4–T6 invoke a mega-sdd skill; **T3 (v7) must NOT invoke one** (tier S — inline answer, optional one-line offer). None of NT1-NT3 invokes one.

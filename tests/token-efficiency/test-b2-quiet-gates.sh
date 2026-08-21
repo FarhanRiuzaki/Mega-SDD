@@ -102,7 +102,8 @@ touch "$F3/.mega-sdd/.locked-files-index.json"
 # entry investigated 3 HOURS ago in the SAME session → must still dedup (allow)
 python3 - "$F3" <<'PY'
 import json, sys, time
-json.dump({"session_id": "b2-session", "entries": {"src/locked.php": time.time() - 10800}},
+json.dump({"session_id": "b2-session", "chain_engaged": True,  # v7: armed session
+           "entries": {"src/locked.php": time.time() - 10800}},
           open(sys.argv[1] + "/.mega-sdd/.gateguard-state.json", "w"))
 PY
 # keep the index older than binding? GateGuard lazily rebuilds if binding newer; make index newest
@@ -115,6 +116,10 @@ import json, sys, time
 json.dump({"session_id": "OTHER-session", "entries": {"src/locked.php": time.time() - 10800}},
           open(sys.argv[1] + "/.mega-sdd/.gateguard-state.json", "w"))
 PY
+# v7: the new session arms on ITS first mega-sdd dispatch, which resets the
+# session-keyed state (new sid + chain_engaged + empty entries) — then the edit
+# gets the fresh first-touch deny. This also pins the marker-writer rollover.
+drive_pre "$F3" "Skill" "{\"skill\": \"mega-sdd:memory\", \"args\": \"\"}" >/dev/null
 OUT=$(drive_pre "$F3" "Edit" "{\"file_path\": \"$F3/src/locked.php\"}")
 echo "$OUT" | grep -q "GateGuard" && ok "M-07a: a NEW session still gets the first-touch deny + prescription" || fail "M-07a: cross-session re-gate lost"
 

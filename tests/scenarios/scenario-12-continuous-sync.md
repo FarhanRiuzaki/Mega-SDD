@@ -18,10 +18,10 @@ A project that already completed the pipeline: `.mega-sdd/codebase/codebase-map.
 Open a new session in the project. Session start prints ONE line:
 
 ```
-mega-sdd: codebase moved since last scan (1 journaled write(s); map stamp a1b2c3d4 ≠ HEAD f6e5d4c3) — `/mega-sdd:sync` reconciles map → drift → binding → units.
+mega-sdd: codebase moved since last scan (1 journaled write(s); map stamp a1b2c3d4 ≠ HEAD f6e5d4c3) — sync tersedia saat masuk lane M/L (`/mega-sdd`).
 ```
 
-Type `lanjut` (or anything continuation-shaped) — the anchor proposes `/mega-sdd:sync --auto` with ONE upfront confirmation. Or invoke it yourself.
+(v7: the notice is informational — a continuation prompt like `lanjut` with no chain marker this session stays tier S; the sync proposal appears when YOU enter an M/L lane. Open the front door or invoke sync yourself:)
 
 ## Act 3 — autonomous reconcile (one confirmation, zero mid-chain questions)
 
