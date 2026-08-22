@@ -22,8 +22,12 @@ PYEOF
 for H in hooks/post-tool-use hooks/session-start; do
   grep -q 'CLAUDE_PLUGIN_OPTION_TELEMETRY' "$P/$H" && ok "a2 $H reads the userConfig env" || fail "a2 $H env missing"
 done
+# v7 Fase 2: the C1 self-resolve telemetry site moved to scripts/ground.sh —
+# session-start keeps ONE site (the diagnostic layer), ground.sh carries the other.
 N=$(grep -c 'CLAUDE_PLUGIN_OPTION_TELEMETRY' "$P/hooks/session-start")
-[ "$N" -ge 2 ] && ok "a3 session-start covers BOTH telemetry sites ($N)" || fail "a3 only $N site(s)"
+[ "$N" -ge 1 ] && ok "a3 session-start diagnostic telemetry site ($N)" || fail "a3 only $N site(s)"
+grep -q 'CLAUDE_PLUGIN_OPTION_TELEMETRY' "$P/scripts/ground.sh" \
+  && ok "a3b ground.sh carries the moved C1-guard telemetry site" || fail "a3b ground.sh env missing"
 # precedence shape: env consulted only in the elif (project line absent)
 grep -F '&& grep -qE "^\s*telemetry:" "$CONFIG_FILE"' "$P/hooks/post-tool-use" >/dev/null \
   && ok "a4 project telemetry line always wins (presence-gated)" || fail "a4 precedence shape missing"

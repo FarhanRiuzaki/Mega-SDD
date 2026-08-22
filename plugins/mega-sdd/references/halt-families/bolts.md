@@ -32,7 +32,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### partial_state_corrupt
 
-- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (HOOK-LAYER ENFORCED via SessionStart):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. Emits `halt_self_resolved` telemetry with full payload (`unit_id`, `original_path`, `corrupt_path`). NEVER halts.
+- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. Emits `halt_self_resolved` telemetry with full payload (`unit_id`, `original_path`, `corrupt_path`). NEVER halts.
 
 ### hard_rule_violated
 
@@ -48,7 +48,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (HOOK-LAYER DETECTION via SessionStart, DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at session start, hook scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in anchor injection. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at SessionStart means the warning re-fires on every session until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit `halt_self_resolved` telemetry (`unit_id`, `unit_path`, `forbidden_operations`) + chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
 
 ### secret_in_code
 

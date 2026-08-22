@@ -56,3 +56,16 @@ __pycache__/
 **/.mega-sdd/.cache/
 **/.mega-sdd/.stop-scan-stamp
 **/.mega-sdd/.ptu-scan-stamp
+
+# mega-sdd runtime residue (v7 Fase 2 tree hygiene): per-session usage cursors +
+# rotated telemetry generations — same class as telemetry.jsonl above
+**/.mega-sdd/memory/.turn-usage-cursor-*.json
+**/.mega-sdd/memory/telemetry.jsonl.1
+
+# Local tooling residue — NOT part of this repo:
+# mega-code CLI npm-installed in-tree for gateway field tests, and the
+# playwright-MCP session logs from UAT evidence runs
+/node_modules/
+/package.json
+/package-lock.json
+/.playwright-mcp/

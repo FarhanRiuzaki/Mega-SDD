@@ -240,7 +240,7 @@ For project repo `.gitignore`:
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
-**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the SessionStart guard detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
+**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the GROUND-time guard in `scripts/ground.sh` detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
 
 ## References
 

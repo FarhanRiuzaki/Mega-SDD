@@ -3,13 +3,14 @@
 #   D1: ref_loaded records the ACTUAL Read range (read_offset/read_limit) and a
 #       proportional est_read_tokens, while estimated_tokens keeps meaning
 #       full-file (additive schema — consumers unbroken).
-#   D2: session-start rotates telemetry.jsonl past 20k rows (one generation).
+#   D2: telemetry.jsonl rotation past 20k rows (one generation) — moved to
+#       scripts/ground.sh in v7 Fase 2 (session-start no longer writes vault state).
 # Run </dev/null.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 PTU="$ROOT/plugins/mega-sdd/hooks/post-tool-use"
-SS="$ROOT/plugins/mega-sdd/hooks/session-start"
+GROUND="$ROOT/plugins/mega-sdd/scripts/ground.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 rc=0
@@ -102,14 +103,14 @@ assert p["read_limit"] is None, p
 assert p["est_read_tokens"]==p["estimated_tokens"], p
 ' 2>/dev/null && pass "a6 out-of-range limit → null, est==full" || fail "a6 wrong row: $(last_row)"
 
-echo "── r1: session-start rotates a >20k-row telemetry file ──"
+echo "── r1: GROUND rotates a >20k-row telemetry file ──"
 R="$TMP/rot"; mkdir -p "$R/.mega-sdd/memory"
 "$PY" -c "
 with open('$R/.mega-sdd/memory/telemetry.jsonl','w') as f:
     for i in range(20001):
         f.write('{\"event_type\":\"x\"}\n')
 "
-( cd "$R" && printf '{"source":"startup","session_id":"s"}' | bash "$SS" >/dev/null 2>&1 )
+bash "$GROUND" --cwd="$R" >/dev/null 2>&1
 # The fresh file is recreated lazily by the next append — absent-or-small both count.
 FRESH_ROWS=$(wc -l < "$R/.mega-sdd/memory/telemetry.jsonl" 2>/dev/null | tr -d ' '); FRESH_ROWS=${FRESH_ROWS:-0}
 if [ -f "$R/.mega-sdd/memory/telemetry.jsonl.1" ] && \
@@ -123,7 +124,7 @@ fi
 echo "── r2: a small file is untouched ──"
 R2="$TMP/rot2"; mkdir -p "$R2/.mega-sdd/memory"
 printf '{"event_type":"x"}\n{"event_type":"x"}\n' > "$R2/.mega-sdd/memory/telemetry.jsonl"
-( cd "$R2" && printf '{"source":"startup","session_id":"s"}' | bash "$SS" >/dev/null 2>&1 )
+bash "$GROUND" --cwd="$R2" >/dev/null 2>&1
 if [ ! -f "$R2/.mega-sdd/memory/telemetry.jsonl.1" ] && \
    [ "$(head -2 "$R2/.mega-sdd/memory/telemetry.jsonl" | grep -c '"x"')" -eq 2 ]; then
   pass "r2 small file untouched, no .1 minted"
@@ -137,7 +138,7 @@ with open('$R/.mega-sdd/memory/telemetry.jsonl','w') as f:
     for i in range(20001):
         f.write('{\"event_type\":\"y\"}\n')
 "
-( cd "$R" && printf '{"source":"startup","session_id":"s"}' | bash "$SS" >/dev/null 2>&1 )
+bash "$GROUND" --cwd="$R" >/dev/null 2>&1
 if [ ! -f "$R/.mega-sdd/memory/telemetry.jsonl.2" ] && \
    grep -q '"y"' "$R/.mega-sdd/memory/telemetry.jsonl.1" 2>/dev/null; then
   pass "r3 .1 replaced in place, no .2 generation"
@@ -152,13 +153,34 @@ with open('$R4/.mega-sdd/memory/telemetry.jsonl','w') as f:
     for i in range(20001):
         f.write('{\"event_type\":\"w\"}\n')
 "
-( cd "$R4" && printf '{"source":"startup","session_id":"s"}' | bash "$SS" >/dev/null 2>&1 ); ST=$?
+bash "$GROUND" --cwd="$R4" >/dev/null 2>&1; ST=$?
 if [ "$ST" -eq 0 ] && [ -f "$R4/.mega-sdd/memory/telemetry.jsonl" ] && \
    [ ! -e "$R4/.mega-sdd/memory/telemetry.jsonl.1/telemetry.jsonl" ]; then
-  pass "r4 dir at .1 → skip rotation, nothing buried, hook exit 0"
+  pass "r4 dir at .1 → skip rotation, nothing buried, ground exit 0"
 else
-  fail "r4 rotation into a directory (or hook died, rc=$ST)"
+  fail "r4 rotation into a directory (or ground died, rc=$ST)"
 fi
+
+echo "── r5: the C1 battery fires at GROUND (mode_migrate fixed + telemetry) ──"
+R5="$TMP/c1"; mkdir -p "$R5/.mega-sdd/vaults/demo" "$R5/.mega-sdd/memory"
+( cd "$R5" && git init -q . ) 2>/dev/null   # .git signal → expected_mode=existing
+printf '{"mode": "greenfield"}\n' > "$R5/.mega-sdd/vaults/demo/vault.json"
+C1_OUT=$(bash "$GROUND" --cwd="$R5" 2>&1)
+echo "$C1_OUT" | grep -q '\[self-resolved\] mode_migrate: demo mode greenfield → existing' \
+  && grep -q '"mode": "existing"' "$R5/.mega-sdd/vaults/demo/vault.json" \
+  && grep -q '"skill":"ground"' "$R5/.mega-sdd/memory/telemetry.jsonl" \
+  && grep -q '"original_emit_site":"ground-c1-guard"' "$R5/.mega-sdd/memory/telemetry.jsonl" \
+  && pass "r5 C1 self-resolve runs at GROUND (moved off session-start)" \
+  || fail "r5 C1-at-GROUND broken: out=[${C1_OUT:0:200}]"
+
+echo "── r6: session-start no longer writes vault artifacts (C1 moved) ──"
+R6="$TMP/nc1"; mkdir -p "$R6/.mega-sdd/vaults/demo"
+( cd "$R6" && git init -q . ) 2>/dev/null
+printf '{"mode": "greenfield"}\n' > "$R6/.mega-sdd/vaults/demo/vault.json"
+( cd "$R6" && printf '{"source":"startup","session_id":"s"}' | bash "$ROOT/plugins/mega-sdd/hooks/session-start" >/dev/null 2>&1 )
+grep -q '"mode": "greenfield"' "$R6/.mega-sdd/vaults/demo/vault.json" \
+  && pass "r6 session-start left vault.json untouched (no vault writes)" \
+  || fail "r6 session-start still mutates vault.json"
 
 echo "── z: opt-out also skips rotation (guard scope) ──"
 R3="$TMP/rot3"; mkdir -p "$R3/.mega-sdd/memory"
@@ -168,7 +190,7 @@ with open('$R3/.mega-sdd/memory/telemetry.jsonl','w') as f:
     for i in range(20001):
         f.write('{\"event_type\":\"z\"}\n')
 "
-( cd "$R3" && printf '{"source":"startup","session_id":"s"}' | bash "$SS" >/dev/null 2>&1 )
+bash "$GROUND" --cwd="$R3" >/dev/null 2>&1
 [ ! -f "$R3/.mega-sdd/memory/telemetry.jsonl.1" ] && pass "z opt-out project never rotated" || fail "z rotation ran under telemetry: false"
 
 echo
