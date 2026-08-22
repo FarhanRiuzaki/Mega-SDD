@@ -34,8 +34,22 @@
 # Touches no gate and no moat state. Exit 0 always (a report can never block a chain).
 #
 # Usage: report-token-cost.sh --cwd=<project-root> [--quiet] [--json]
+#                              [--price-table=<yaml>] [--vault=<vault-dir>]
 #   --quiet  suppress the one-line stdout summary (still writes the files)
 #   --json   print the state JSON to stdout instead of the human summary
+#   --price-table=<yaml>  gateway price list (per-MTok, any currency) -> adds a
+#            BILLED-cost section priced from the per-model raw token types. Only
+#            token types with a price key are billed; everything else is counted
+#            UNPRICED and said so — an absent price is never invented (v7.1
+#            routing gate: the flip decision needs gateway-price-weighted cost).
+#            YAML shape (2-level, no deps):  currency: USD
+#                                            <model-id>: {input:, output:,
+#                                              cache_read:, cache_creation:,
+#                                              cache_creation_5m:, cache_creation_1h:}
+#   --vault=<dir>  read <vault>/bolts/U-*/bolt-report.md and render a per-bolt
+#            model_used table (the v7.1 routing audit trail: model_used is copied
+#            verbatim from the implementer's own system prompt; escalated_from
+#            records a cascade hop).
 #
 # CI-safe: bash + python3 only.
 set -uo pipefail
@@ -43,11 +57,15 @@ set -uo pipefail
 CWD=""
 QUIET=0
 EMIT_JSON=0
+PRICE_TABLE=""
+VAULT=""
 for arg in "$@"; do
   case "$arg" in
     --cwd=*)  CWD="${arg#--cwd=}" ;;
     --quiet)  QUIET=1 ;;
     --json)   EMIT_JSON=1 ;;
+    --price-table=*) PRICE_TABLE="${arg#--price-table=}" ;;
+    --vault=*) VAULT="${arg#--vault=}" ;;
     *) ;;
   esac
 done
@@ -63,13 +81,16 @@ fi
 
 TELEMETRY="${CWD}/.mega-sdd/memory/telemetry.jsonl"
 
-CWD="$CWD" TELEMETRY="$TELEMETRY" QUIET="$QUIET" EMIT_JSON="$EMIT_JSON" python3 <<'PY'
-import json, os
+CWD="$CWD" TELEMETRY="$TELEMETRY" QUIET="$QUIET" EMIT_JSON="$EMIT_JSON" \
+PRICE_TABLE="$PRICE_TABLE" VAULT="$VAULT" python3 <<'PY'
+import glob, json, os, re
 
 cwd = os.environ["CWD"]
 telemetry = os.environ["TELEMETRY"]
 quiet = os.environ["QUIET"] == "1"
 emit_json = os.environ["EMIT_JSON"] == "1"
+price_table_path = os.environ.get("PRICE_TABLE") or ""
+vault_dir = os.environ.get("VAULT") or ""
 
 # Opus price ratios relative to 1 uncached input token.
 # NOTE: W["cache_creation_input_tokens"] is the FALLBACK weight only — it is used
@@ -162,6 +183,8 @@ if have_telemetry:
             turns += 1
             bucket["turns"] += 1
             event_cost = 0.0
+            event_types = {k: 0 for k in TOKKEYS}   # per-event, for by-model billing
+            event_cc = {"m5": 0, "m1": 0, "unknown": 0}
             for k in TOKKEYS:
                 v = usage.get(k, 0)
                 if not isinstance(v, (int, float)):
@@ -170,6 +193,7 @@ if have_telemetry:
                 raw_total += v
                 type_totals[k] += v
                 bucket[k] += v
+                event_types[k] += v
                 if k == "cache_creation_input_tokens":
                     # Price by the TTL the harness actually used, when it told us.
                     s5 = usage.get(SPLIT_5M, 0)
@@ -184,9 +208,13 @@ if have_telemetry:
                         cc_measured_5m += s5
                         cc_measured_1h += s1
                         cc_assumed += residual
+                        event_cc["m5"] += s5
+                        event_cc["m1"] += s1
+                        event_cc["unknown"] += residual
                         w = s5 * CC_5M + s1 * CC_1H + residual * CC_LANE_FALLBACK.get(etype, CC_1H)
                     else:
                         cc_assumed += v
+                        event_cc["unknown"] += v
                         w = v * CC_LANE_FALLBACK.get(etype, CC_1H)
                 else:
                     w = v * W[k]
@@ -195,10 +223,19 @@ if have_telemetry:
                 bucket["cost_weighted"] += w
                 bucket["raw"] += v
             mdl = payload.get("model")
-            if isinstance(mdl, str) and mdl:
-                mb = per_model.setdefault(mdl, {"turns": 0, "cost_weighted": 0.0})
-                mb["turns"] += 1
-                mb["cost_weighted"] += event_cost
+            # Billing needs EVERY event attributed — an event with no model field
+            # lands under "(model unknown)" and is always unpriced, never guessed.
+            mkey = mdl if isinstance(mdl, str) and mdl else "(model unknown)"
+            mb = per_model.setdefault(mkey, {"turns": 0, "cost_weighted": 0.0,
+                                             **{k: 0 for k in TOKKEYS},
+                                             "cc_5m": 0, "cc_1h": 0, "cc_unknown": 0})
+            mb["turns"] += 1
+            mb["cost_weighted"] += event_cost
+            for k in TOKKEYS:
+                mb[k] += event_types[k]
+            mb["cc_5m"] += event_cc["m5"]
+            mb["cc_1h"] += event_cc["m1"]
+            mb["cc_unknown"] += event_cc["unknown"]
 
 cost_total_i = int(round(cost_total))
 ratio = round(raw_total / cost_total, 2) if cost_total > 0 else 0.0
@@ -216,11 +253,117 @@ for sk, b in skills_sorted:
 cc_total = cc_measured_5m + cc_measured_1h + cc_assumed
 cc_pct_measured = round(100 * (cc_measured_5m + cc_measured_1h) / cc_total, 1) if cc_total > 0 else 0.0
 
+# "(model unknown)" rows exist for billing honesty; surface them in by_model only
+# when they sit NEXT TO real models (mixed telemetry) or a price table is in play —
+# pure pre-v5.13.0 telemetry keeps its historical empty by_model.
+have_real_model = any(m != "(model unknown)" for m in per_model)
 models_out = [
     {"model": m, "turns": b["turns"], "cost_weighted": int(round(b["cost_weighted"])),
      "pct_cost": round(100 * b["cost_weighted"] / cost_total, 1) if cost_total > 0 else 0.0}
     for m, b in sorted(per_model.items(), key=lambda kv: kv[1]["cost_weighted"], reverse=True)
+    if m != "(model unknown)" or have_real_model or price_table_path
 ]
+
+# ── Billed cost (price table) — v7.1: gateway-price-weighted, never invented ──
+def parse_price_table(path):
+    """Minimal 2-level YAML: top-level scalars (currency) + model blocks of
+    numeric prices per MTok. Returns (currency, {model: {key: float}}, error)."""
+    try:
+        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError as e:
+        return "", {}, "unreadable: %s" % e
+    currency, prices, current = "", {}, None
+    for ln in lines:
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        m = re.match(r"^(\s*)([^:#]+):\s*(.*?)\s*$", ln)
+        if not m:
+            continue
+        indent, key, val = len(m.group(1)), m.group(2).strip().strip("\"'"), m.group(3).strip().strip("\"'")
+        val = val.split("#", 1)[0].strip().strip("\"'")
+        if indent == 0:
+            if val == "":
+                current = prices.setdefault(key, {})
+            elif key == "currency":
+                currency, current = val, None
+            else:
+                current = None   # unknown top-level scalar — ignored
+        elif current is not None and val != "":
+            try:
+                current[key] = float(val)
+            except ValueError:
+                pass   # non-numeric price — ignored, stays unpriced
+    return currency, prices, None
+
+billed = None
+if price_table_path:
+    currency, prices, pt_err = parse_price_table(price_table_path)
+    if pt_err:
+        billed = {"status": "price_table_unreadable", "price_table": price_table_path,
+                  "error": pt_err}
+    else:
+        by_model_billed, billed_total, unpriced_total = [], 0.0, 0
+        for m, b in sorted(per_model.items(), key=lambda kv: kv[1]["cost_weighted"], reverse=True):
+            p = prices.get(m, {})
+            cost, unpriced = 0.0, 0
+            # flat-priced types
+            for tok_key, price_key in (("input_tokens", "input"),
+                                       ("output_tokens", "output"),
+                                       ("cache_read_input_tokens", "cache_read")):
+                v = b[tok_key]
+                if price_key in p:
+                    cost += v * p[price_key] / 1e6
+                else:
+                    unpriced += v
+            # cache_creation: TTL-split rates, falling back to a single
+            # cache_creation price; a token with no applicable key stays unpriced.
+            cc_base = p.get("cache_creation")
+            for split_key, price_key in (("cc_5m", "cache_creation_5m"),
+                                         ("cc_1h", "cache_creation_1h")):
+                v = b[split_key]
+                rate = p.get(price_key, cc_base)
+                if rate is not None:
+                    cost += v * rate / 1e6
+                else:
+                    unpriced += v
+            if cc_base is not None:
+                cost += b["cc_unknown"] * cc_base / 1e6
+            else:
+                unpriced += b["cc_unknown"]
+            billed_total += cost
+            unpriced_total += unpriced
+            by_model_billed.append({"model": m, "priced": m in prices,
+                                    "billed": round(cost, 4),
+                                    "unpriced_tokens": unpriced})
+        billed = {"status": "ok", "price_table": price_table_path,
+                  "currency": currency or "(currency unlabelled)",
+                  "total": round(billed_total, 4),
+                  "unpriced_tokens_total": unpriced_total,
+                  "by_model": by_model_billed}
+
+# ── Per-bolt model_used (v7.1 routing audit trail) — read from bolt-reports ──
+bolts_out = []
+if vault_dir:
+    for rp in sorted(glob.glob(os.path.join(vault_dir, "bolts", "U-*", "bolt-report.md"))):
+        try:
+            txt = open(rp, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        unit = os.path.basename(os.path.dirname(rp))
+        entry = {"unit": unit, "status": "", "model_used": "", "escalated_from": ""}
+        m = re.search(r"(?m)^unit:\s*[\"']?([\w.-]+)", txt)
+        if m:
+            entry["unit"] = m.group(1)
+        m = re.search(r"(?m)^status:\s*[\"']?([\w-]+)", txt)
+        if m:
+            entry["status"] = m.group(1)
+        m = re.search(r"(?m)^\s*model_used:\s*[\"']?(.*?)[\"']?\s*$", txt)
+        if m:
+            entry["model_used"] = m.group(1)
+        m = re.search(r"(?m)^\s*escalated_from:\s*[\"']?(.*?)[\"']?\s*$", txt)
+        if m:
+            entry["escalated_from"] = m.group(1)
+        bolts_out.append(entry)
 
 state = {
     "status": "PASS",   # report-only; always PASS so the analyze aggregate never trips
@@ -243,6 +386,10 @@ state = {
     "by_skill": skills_out,
     "by_model": models_out,   # empty for pre-v5.13.0 telemetry (no model field emitted)
 }
+if billed is not None:
+    state["billed"] = billed
+if vault_dir:
+    state["by_bolt"] = bolts_out
 
 def human(n):
     n = float(n)
@@ -307,6 +454,40 @@ else:
         lines.append("|---|---:|---:|---:|")
         for m in models_out:
             lines.append(f"| {m['model']} | {m['turns']} | {m['cost_weighted']:,} | {m['pct_cost']}% |")
+        lines.append("")
+    if billed is not None:
+        lines.append("## Billed cost (gateway price table)")
+        lines.append("")
+        if billed["status"] != "ok":
+            lines.append(f"> ⚠️ price table `{billed['price_table']}` unreadable — no billed "
+                         f"figures ({billed['error']}). Nothing was estimated in its place.")
+        else:
+            lines.append(f"_Prices: `{billed['price_table']}` (per MTok, {billed['currency']})._")
+            lines.append("")
+            lines.append("| Model | in table | billed | unpriced tokens |")
+            lines.append("|---|---|---:|---:|")
+            for mb in billed["by_model"]:
+                lines.append(f"| {mb['model']} | {'yes' if mb['priced'] else 'NO'} | "
+                             f"{mb['billed']:,} | {mb['unpriced_tokens']:,} |")
+            lines.append(f"| **TOTAL** | | **{billed['total']:,} {billed['currency']}** | "
+                         f"{billed['unpriced_tokens_total']:,} |")
+            if billed["unpriced_tokens_total"] > 0:
+                lines.append("")
+                lines.append("> ⚠️ **Unpriced tokens > 0 — the billed total is a LOWER BOUND.** "
+                             "A token type (or model) missing from the price table contributes "
+                             "0; add its price rather than reading this as the full bill.")
+        lines.append("")
+    if vault_dir:
+        lines.append("## By bolt (model_used — v7.1 routing audit trail)")
+        lines.append("")
+        if not bolts_out:
+            lines.append(f"_No `bolts/U-*/bolt-report.md` found under `{vault_dir}`._")
+        else:
+            lines.append("| Unit | status | model_used | escalated_from |")
+            lines.append("|---|---|---|---|")
+            for e in bolts_out:
+                lines.append(f"| {e['unit']} | {e['status'] or '?'} | "
+                             f"{e['model_used'] or '(not recorded)'} | {e['escalated_from'] or '—'} |")
         lines.append("")
     lines.append("## By skill (cost-weighted, descending)")
     lines.append("")
