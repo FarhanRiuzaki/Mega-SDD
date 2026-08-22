@@ -5,7 +5,7 @@
 # CI-safe: exercises the transform stages + the HTML path via --html (CI runners
 # have no Chrome), so it never depends on a browser. The load-bearing assertion is
 # the MOAT one: a citation-stamped source .md must be BYTE-IDENTICAL after render
-# (transforms run on a mktemp copy) — else check-citation-drift sees false drift.
+# (transforms run on a mktemp copy) — else the --check-drift reader sees false drift.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN="$HERE/../../plugins/mega-sdd"

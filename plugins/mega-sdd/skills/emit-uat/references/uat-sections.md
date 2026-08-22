@@ -158,7 +158,7 @@ inserted earlier (section-number-keyed parsers). The annex is the LAST section; 
 
 ## Drift callouts
 
-On re-emit, `check-citation-drift.sh --doc=uat` lines (`DRIFT`/`GONE`) mark sections for a callout block quote
+On re-emit, `build-citation-map.sh --check-drift --doc=uat` lines (`DRIFT`/`GONE`) mark sections for a callout block quote
 BEFORE the section content, using the script's `old12`/`new12` verbatim (same format as
 `emit-fsd/references/fsd-template.md §Drift callout format`). Typical UAT drift: `04-flows.md` changed after the
 last emit (scenarios / RTM stale) or a unit's `vault_source:` re-mapped (traceability superseded).
