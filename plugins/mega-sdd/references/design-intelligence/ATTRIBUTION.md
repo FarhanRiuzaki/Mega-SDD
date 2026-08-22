@@ -25,7 +25,7 @@ ui-ux-pro-max ships a Python + ~11MB CSV search engine. mega-sdd runs standalone
 
 ## Sync policy
 
-Run `scripts/sync-ui-ux.sh` to regenerate from the installed plugin. Review diffs before commit. Sync before each mega-sdd release.
+Run `scripts/sync-vendored.sh` (the ui-ux leg) to regenerate from the installed plugin. Review diffs before commit. Sync before each mega-sdd release.
 
 Copyright (c) nextlevelbuilder — original ui-ux-pro-max data.
 Copyright (c) 2026 Farhan Riuzaki — mega-sdd distillation + integration.
