@@ -169,6 +169,97 @@ grep -q "lane-assumed" "$ROOT4/.mega-sdd/TOKEN-COST-REPORT.md" 2>/dev/null \
   && pass "report flags the mixed measured/assumed state" || fail "report does not flag the mixed state"
 rm -rf "$ROOT4"
 
+# ── Case 5: --price-table → billed cost from raw types, unpriced NEVER invented ──
+# v7.1 routing gate: the flip decision needs gateway-price-weighted cost. The billed
+# section prices ONLY what the table covers; a model or token type missing from the
+# table lands in unpriced_tokens and the report says the total is a lower bound.
+ROOT5="$(mktemp -d)"; mkdir -p "$ROOT5/.mega-sdd/memory"
+cat > "$ROOT5/.mega-sdd/memory/telemetry.jsonl" <<'JSONL'
+{"event_type":"subagent_end_marker","skill":"mega-sdd:bolt-implementer","agent_type":"mega-sdd:bolt-implementer","hook_source":"SubagentStop","payload":{"model":"claude-sonnet-5","skill_name":"mega-sdd:bolt-implementer","usage":{"input_tokens":1000000,"cache_creation_input_tokens":2000000,"cache_creation_5m_input_tokens":2000000,"cache_creation_1h_input_tokens":0,"cache_read_input_tokens":10000000,"output_tokens":100000}}}
+{"event_type":"subagent_end_marker","skill":"mega-sdd:bolt-implementer","agent_type":"mega-sdd:bolt-implementer","hook_source":"SubagentStop","payload":{"model":"claude-haiku-4-5","skill_name":"mega-sdd:bolt-implementer","usage":{"input_tokens":500000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":200000}}}
+JSONL
+cat > "$ROOT5/prices.yaml" <<'YAML'
+# office gateway price list (per MTok)
+currency: USD
+claude-sonnet-5:
+  input: 3.0
+  output: 15.0
+  cache_read: 0.3
+  cache_creation_5m: 3.75
+YAML
+# sonnet: 1M*3/1M + 2M*3.75/1M + 10M*0.3/1M + 0.1M*15/1M = 3 + 7.5 + 3 + 1.5 = 15.0
+#         (no cache_creation_1h/unknown tokens; all types priced -> unpriced 0)
+# haiku : NOT in the table -> billed 0, ALL 700000 raw tokens unpriced
+bash "$REPORT" --cwd="$ROOT5" --price-table="$ROOT5/prices.yaml" --quiet >/dev/null 2>&1
+S5="$ROOT5/.mega-sdd/.token-cost-state.json"
+if [ -f "$S5" ]; then
+  BT="$(_field "$S5" "['billed']['total']")"
+  BC="$(_field "$S5" "['billed']['currency']")"
+  UP="$(_field "$S5" "['billed']['unpriced_tokens_total']")"
+  SONB="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((b['billed'] for b in d['billed']['by_model'] if b['model']=='claude-sonnet-5'),'MISSING'))" "$S5")"
+  HAIB="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));b=next((b for b in d['billed']['by_model'] if b['model']=='claude-haiku-4-5'),None);print('%s/%s'%(b['billed'],b['unpriced_tokens']) if b else 'MISSING')" "$S5")"
+  [ "$BT" = "15.0" ]  && pass "billed total = 15.0 (hand-computed from price table)" || fail "billed total = $BT (want 15.0)"
+  [ "$BC" = "USD" ]   && pass "currency label read from the table" || fail "currency = $BC (want USD)"
+  [ "$SONB" = "15.0" ] && pass "sonnet billed = 15.0" || fail "sonnet billed = $SONB (want 15.0)"
+  [ "$HAIB" = "0.0/700000" ] && pass "un-tabled model billed 0 with ALL tokens unpriced (never invented)" \
+                             || fail "haiku billed/unpriced = $HAIB (want 0.0/700000)"
+  [ "$UP" = "700000" ] && pass "unpriced_tokens_total = 700000" || fail "unpriced total = $UP (want 700000)"
+fi
+grep -q "LOWER BOUND" "$ROOT5/.mega-sdd/TOKEN-COST-REPORT.md" 2>/dev/null \
+  && pass "report flags the billed total as a lower bound when tokens are unpriced" \
+  || fail "report does not flag unpriced tokens as a lower bound"
+# unreadable table -> section says so, exit stays 0, nothing estimated
+bash "$REPORT" --cwd="$ROOT5" --price-table="$ROOT5/nope.yaml" --quiet >/dev/null 2>&1
+RC5=$?
+ST5="$(_field "$S5" "['billed']['status']")"
+[ "$RC5" = "0" ] && [ "$ST5" = "price_table_unreadable" ] \
+  && pass "unreadable price table -> status recorded, exit 0, no estimate" \
+  || fail "unreadable table: rc=$RC5 status=$ST5 (want 0 / price_table_unreadable)"
+rm -rf "$ROOT5"
+
+# ── Case 6: --vault → per-bolt model_used table from bolt-reports (v7.1 audit) ──
+ROOT6="$(mktemp -d)"; mkdir -p "$ROOT6/.mega-sdd/memory" "$ROOT6/vault/bolts/U-001" "$ROOT6/vault/bolts/U-002"
+cat > "$ROOT6/.mega-sdd/memory/telemetry.jsonl" <<'JSONL'
+{"event_type":"turn_end_marker","skill":"orchestrate-flow","hook_source":"Stop","payload":{"usage":{"input_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":10}}}
+JSONL
+cat > "$ROOT6/vault/bolts/U-001/bolt-report.md" <<'MD'
+---
+unit: U-001
+status: success
+---
+# Bolt Report — U-001
+bolt_self_report:
+  model_used: "Claude Haiku 4.5"
+  confidence: 0.9
+MD
+cat > "$ROOT6/vault/bolts/U-002/bolt-report.md" <<'MD'
+---
+unit: U-002
+status: success
+---
+# Bolt Report — U-002
+bolt_self_report:
+  model_used: "Sonnet 5"
+  escalated_from: "haiku"
+  confidence: 0.8
+MD
+bash "$REPORT" --cwd="$ROOT6" --vault="$ROOT6/vault" --quiet >/dev/null 2>&1
+S6="$ROOT6/.mega-sdd/.token-cost-state.json"
+if [ -f "$S6" ]; then
+  B1M="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((b['model_used'] for b in d['by_bolt'] if b['unit']=='U-001'),'MISSING'))" "$S6")"
+  B2E="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((b['escalated_from'] for b in d['by_bolt'] if b['unit']=='U-002'),'MISSING'))" "$S6")"
+  [ "$B1M" = "Claude Haiku 4.5" ] && pass "by_bolt U-001 model_used read verbatim" || fail "U-001 model_used = '$B1M'"
+  [ "$B2E" = "haiku" ] && pass "by_bolt U-002 escalated_from recorded (cascade hop)" || fail "U-002 escalated_from = '$B2E'"
+fi
+grep -q "By bolt (model_used" "$ROOT6/.mega-sdd/TOKEN-COST-REPORT.md" 2>/dev/null \
+  && pass "report renders the By bolt table" || fail "report missing the By bolt table"
+# no flags -> no new sections, no by_bolt/billed keys (backward compat)
+bash "$REPORT" --cwd="$ROOT6" --quiet >/dev/null 2>&1
+NOB="$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('billed' in d or 'by_bolt' in d)" "$S6")"
+[ "$NOB" = "False" ] && pass "without flags, state carries neither billed nor by_bolt (compat)" \
+                     || fail "flagless run leaked billed/by_bolt keys"
+rm -rf "$ROOT6"
+
 echo
 if [ "$fails" -eq 0 ]; then echo "ALL PASS (test-token-cost-report)"; exit 0
 else echo "FAILED: $fails assertion(s)"; exit 1; fi
