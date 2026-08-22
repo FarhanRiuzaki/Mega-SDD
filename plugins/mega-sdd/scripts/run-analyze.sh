@@ -88,8 +88,8 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   _has() { find "$@" 2>/dev/null | grep -q .; }
 
   # Validators FULL runs unconditionally (no file-existence SKIP) → always read from disk.
-  V1_RC="STATE_FILE"; V4_RC="STATE_FILE"; V6_RC="STATE_FILE"; V3B_RC="STATE_FILE"
-  V7S_RC="STATE_FILE"; V8_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
+  V1_RC="STATE_FILE"; V4_RC="STATE_FILE"; V3B_RC="STATE_FILE"
+  V7S_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
   V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
 
   # Discovery-gated validators — mirror FULL's SKIP-when-no-files (globs match FULL exactly).
@@ -376,7 +376,6 @@ run_family() {
 # We invoke each with --cwd and --quiet, capturing exit codes.
 # Validators excluded:
 #   validate-scope-flag.sh    — needs user-message stdin (not batch-able)
-#   validate-pandoc-render.sh — needs specific bash command context
 #   validate-starterkit-metrics.sh — needs transcript context
 #   validate-handoff-yaml.sh  — needs chat output text (Stop-hook context)
 
@@ -394,7 +393,6 @@ run_validator() {
 
 # 1a. Project-wide validators (no --file-path needed)
 V1_RC=$(run_validator "validate-handoff-binding-units.sh" --cwd="$CWD" --quiet)
-V6_RC=$(run_validator "validate-vault-binding-coverage.sh" --cwd="$CWD" --quiet)
 
 # 1b. Unit-spec validator — ONE project-wide invocation (S1). The validator
 # already scans ALL units on every call (S5 GU-HOOK-1; --file-path only picks
@@ -430,10 +428,6 @@ V3_RC=$( [ "$V3_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V3_WORST" )
 # bolt-report.md was never written — the per-file loop above cannot see a
 # file that does not exist). Writes .bolt-orphans-state.json.
 V3B_RC=$(run_validator "validate-bolt-artifacts.sh" --cwd="$CWD" --orphan-scan --quiet)
-
-# 1c3. Regenerate the project index (multi-PRD lifecycle — derived manifest of
-# every vault; cheap pure-read scan). Never blocks; advisory artifact only.
-bash "${SCRIPT_DIR}/build-project-index.sh" --cwd="$CWD" >/dev/null 2>&1 || true
 
 # 1d. Per-vault-doc OQ validator (S1: decision-driven; env-coupled family —
 # reuse requires the code fingerprint + sibling vault.json sha to match too).
@@ -482,9 +476,6 @@ for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not 
   if [ "$(_sev "$st")" -gt "$(_sev "$V7C_ST")" ]; then V7C_ST="$st"; fi
 done
 V7C_RC=$( [ "$V7C_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7C_WORST" )
-
-# 1g. Conflict classification validator (R3)
-V8_RC=$(run_validator "validate-conflict-classification.sh" --cwd="$CWD" --quiet)
 
 # 1h. Domain-rule gap detector (R4 — runs only when KB exists)
 V9_RC=$(run_validator "audit-domain-rules.sh" --cwd="$CWD" --quiet)
@@ -612,8 +603,8 @@ fi  # end of FULL vs AGGREGATE_ONLY branch
 
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" \
-  V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V6_RC="$V6_RC" V7_RC="$V7_RC" \
-  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V8_RC="$V8_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
+  V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V7_RC="$V7_RC" \
+  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   V3_ST="$V3_ST" V4_ST="$V4_ST" V5_ST="$V5_ST" V7_ST="$V7_ST" V7M_ST="$V7M_ST" V7F_ST="$V7F_ST" V7VF_ST="$V7VF_ST" V7C_ST="$V7C_ST" \
   SCOPE_MODE="$SCOPE_MODE" REUSED_FILES="$REUSED_FILES" RERUN_FILES="$RERUN_FILES" LEDGER_TS="$LEDGER_TS" \
   python3 <<'PYEOF'
@@ -647,14 +638,12 @@ validator_results = {
     "bolt_orphans": {"rc": os.environ.get("V3B_RC", "STATE_FILE"), "state_file": ".bolt-orphans-state.json"},
     "vault_oqs": {"rc": os.environ["V4_RC"], "state_file": ".vault-oqs-state.json", "st": os.environ.get("V4_ST", "")},
     "fsd_slots": {"rc": os.environ["V5_RC"], "state_file": ".fsd-slots-state.json", "st": os.environ.get("V5_ST", "")},
-    "vault_binding_coverage": {"rc": os.environ["V6_RC"], "state_file": ".vault-binding-coverage-state.json"},
     "kb_output": {"rc": os.environ["V7_RC"], "state_file": ".kb-output-state.json", "st": os.environ.get("V7_ST", "")},
     "kb_markers": {"rc": os.environ["V7M_RC"], "state_file": ".kb-markers-state.json", "st": os.environ.get("V7M_ST", "")},
     "kb_flows": {"rc": os.environ["V7F_RC"], "state_file": ".kb-flows-state.json", "st": os.environ.get("V7F_ST", "")},
     "vault_flows": {"rc": os.environ["V7VF_RC"], "state_file": ".vault-flows-state.json", "st": os.environ.get("V7VF_ST", "")},
     "starterkit_conformance": {"rc": os.environ["V7S_RC"], "state_file": ".starterkit-conformance-state.json"},
     "kb_citations": {"rc": os.environ["V7C_RC"], "state_file": ".kb-citations-state.json", "st": os.environ.get("V7C_ST", "")},
-    "conflict_classification": {"rc": os.environ["V8_RC"], "state_file": ".conflict-classification-state.json"},
     "domain_rules": {"rc": os.environ["V9_RC"], "state_file": ".domain-rules-state.json"},
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
     "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},

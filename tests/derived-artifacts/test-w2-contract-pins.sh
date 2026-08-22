@@ -34,9 +34,8 @@ BM="${P}/skills/resolve-oq/references/binding-mode.md"
 LIB="${P}/scripts/_lib/binding_md.py"
 DERIVE="${P}/scripts/derive-binding-json.sh"
 VALIDATE="${P}/scripts/validate-binding-json.sh"
-VCC="${P}/scripts/validate-conflict-classification.sh"
 FX="${P}/tests/graph/fixtures/derive-full"
-for f in "$SKILL" "$BMT" "$BJS" "$BM" "$DERIVE" "$VALIDATE" "$VCC"; do
+for f in "$SKILL" "$BMT" "$BJS" "$BM" "$DERIVE" "$VALIDATE"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -82,7 +81,7 @@ grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$VALIDATE"
 grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$DERIVE" \
   && ok "P5: generator imports the shared parser (import statement, not a comment)" \
   || fail "P5: generator does not IMPORT binding_md (comment-only reference?)"
-grep -qF -- '- **Claim**' "$VCC" && ok "P5: conflict-classification WARNs on a Claim-less ACTIVE block" || fail "P5: Claim-line WARN missing from validate-conflict-classification.sh"
+# (P5 removed v7 Fase 2 — validate-conflict-classification.sh deleted.)
 
 # ── P6: empirical — top-level CI exercises the shared lib ──
 V="$WORK/v1"; mkdir -p "$V"

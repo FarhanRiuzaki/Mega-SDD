@@ -12,7 +12,7 @@ When `memory_schema` version bumps in future iters, migration scripts ship here.
 
 - Memory schema version: **1** (unchanged since Iter 5)
 - No migrations yet shipped (single version only)
-- `template-migration.sh` is the scaffold for future migrations
+- (v7: the `template-migration.sh` scaffold was removed — copy a prior migration from git history when a new one is needed)
 
 ## Migration script contract
 

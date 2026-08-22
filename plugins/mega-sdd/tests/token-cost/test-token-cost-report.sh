@@ -64,7 +64,7 @@ if [ -f "$STATE" ]; then
   [ "$RAW" = "155200" ] && pass "raw total = 155200" || fail "raw total = $RAW (want 155200)"
   [ "$TURNS" = "3" ]   && pass "turns = 3 (incl. subagent marker)" || fail "turns = $TURNS (want 3)"
   # subagent_turns pins the fork-measurement integrity signal: exactly the count of
-  # subagent_end_markers (here 1). measure-fork-tokens.sh --require-subagent reads this;
+  # subagent_end_markers (here 1). (The fork-measurement comparator that read this was removed in v7;
   # 0 ⇒ SubagentStop never fired ⇒ fork cost uncapturable ⇒ verdict refused.
   SUBT="$(_field "$STATE" "['subagent_turns']")"
   [ "$SUBT" = "1" ]    && pass "subagent_turns = 1 (one subagent_end_marker)" || fail "subagent_turns = $SUBT (want 1)"

@@ -189,7 +189,6 @@ After the last unit: suggest `detect-drift` to verify the bolts honored the vaul
 - `references/halts-and-handoff.md` — halt protocol (blocker envelope), streaming + `_summary.md` formats, outputs detail, handoff YAML + the canonical bolt-halt enum + end-of-chain phasing, and the memory layer.
 - `references/halt-recovery.md` — full halt YAMLs (`test_fail`, `review_critical_unresolved`), propose-and-confirm UX + config, new-halt-types table, and the Property-Based Testing flow; load ONLY when a halt fires or a `properties:` unit is batched.
 - `references/bolt-contract.md` — bolt failure modes + the canonical blocker YAML envelope.
-- `references/replay.md` — replay + divergence detection for bolt outcomes (`scripts/replay.sh`: snapshot grounding, the fixed severity table, hand-off); relocated from `commands/replay.md` in the surface cull.
 - `references/migrate-rules.md` — the Hard Rule v1→v2 grammar migration procedure (`scripts/migrate-v1-rules.sh` detects; the skill transforms + validates per unit); relocated from `commands/migrate-rules.md` in the surface cull.
 
 ## Related skills

@@ -16,9 +16,9 @@ GI="$P/skills/generate-intent/SKILL.md"
 GU="$P/skills/generate-units/SKILL.md"
 
 # ── D1 — orchestrate-flow ──
-if ! grep -q 'Iter classifier EP' "$OF" && grep -q 'PARKED' "$P/skills/orchestrate-flow/references/chain-execution.md"; then
-  pass "D1: EP1/EP2 gone from the SKILL body; chain-execution keeps the PARKED note"
-else fail "D1: dead iter-classifier steps survive in the SKILL (or PARKED note lost)"; fi
+if ! grep -q 'Iter classifier EP' "$OF" && grep -q 'REMOVED (v7 Fase 2)' "$P/skills/orchestrate-flow/references/chain-execution.md"; then
+  pass "D1: EP1/EP2 gone from the SKILL body; chain-execution records the v7 removal"
+else fail "D1: dead iter-classifier steps survive in the SKILL (or removal note lost)"; fi
 grep -qF 'ONLY when an overlay applies' "$OF" \
   && grep -qF 'IS the default chain' "$OF" \
   && pass "D1b: Step 4 declares the engine authoritative; routing-rules is overlay-only" \

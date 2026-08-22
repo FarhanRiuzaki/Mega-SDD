@@ -46,7 +46,7 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | ~~`/mega-sdd:analyze`~~ | "cek konsistensi" |
 | ~~`/mega-sdd:extract-intelligence <dir>`~~ | `/mega-sdd <legacy-dir>` — or "pecah legacy ini" |
 | ~~`/mega-sdd:emit-fsd`~~ (and prd/sit) | `/mega-sdd:emit <fsd\|prd\|sit\|uat>` |
-| ~~`/mega-sdd:lint-units`, `:list-modules`, `:replay`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "replay U-001", "blast radius") |
+| ~~`/mega-sdd:lint-units`, `:list-modules`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "blast radius") |
 
 Full surface: **4 public verbs + 4 maintenance one-timers** — exactly the 8 files in [`commands/`](./commands/) (`/mega-sdd:slice` added 6.8.0 — standalone UI slicing, command-only). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after telemetry review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
 

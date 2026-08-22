@@ -62,9 +62,8 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 
 ## Conflicts (N) — BLOCKING
 > One canonical `### CONFLICT-N` detail heading per conflict — the ONLY carrier, machine-read
-> AND human-read (the Step 5 gate, `validate-handoff-binding-units.sh`, and
-> `validate-conflict-classification.sh` read the heading form; a conflict recorded anywhere
-> else is invisible to the validators). IDs use the canonical `CONFLICT-N` form
+> AND human-read (the Step 5 gate and `validate-handoff-binding-units.sh` read the
+> heading form; a conflict recorded anywhere else is invisible to the validators). IDs use the canonical `CONFLICT-N` form
 > (advisor-sourced ones may use `CONFLICT-ADV-N` — both are read by the validators).
 > Resolution markers are STRUCTURAL — grammar in §Authoring notes below.
 
@@ -74,7 +73,7 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 - **Claim**: <C-NNN — the State Map claim id this conflict binds to. MANDATORY on
   RESOLVED blocks (`derive-binding-json.sh` exits 2 on a RESOLVED block without a
   parsable Claim line, or on a Claim id absent from the State Map); recommended on
-  ACTIVE blocks (`validate-conflict-classification.sh` WARNs when it is missing)>
+  ACTIVE blocks>
 - **Vault doc**: <vault file §section>
 - **Codebase artifact**: <file path>
 - **conflict_class**: naming-collision | signature-drift | semantic | regulatory

@@ -85,11 +85,9 @@ RELOC="
 skills/orchestrate-flow/references/diagnostics-procedures.md:validate-unit-spec.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:analyze-parallelism.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:list-modules.sh
-skills/orchestrate-flow/references/diagnostics-procedures.md:enrich-workflows-staging.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:--mark-dod
 skills/orchestrate-flow/references/diagnostics-procedures.md:changed ∪ dependents
 skills/bind-codebase/references/handoff-validation.md:validate-handoff-binding-units
-skills/execute-bolts/references/replay.md:replay.sh
 skills/execute-bolts/references/migrate-rules.md:migrate-v1-rules.sh
 skills/analyze/SKILL.md:run-analyze.sh
 "
@@ -108,8 +106,7 @@ has "$P/skills/orchestrate-flow/SKILL.md" "references/diagnostics-procedures.md"
   && ok "orchestrate-flow routes diagnostics-procedures.md" || fail "diagnostics-procedures.md unrouted"
 has "$P/skills/bind-codebase/SKILL.md" "references/handoff-validation.md" \
   && ok "bind-codebase routes handoff-validation.md" || fail "handoff-validation.md unrouted"
-has "$P/skills/execute-bolts/SKILL.md" "references/replay.md" \
-  && ok "execute-bolts routes replay.md" || fail "replay.md unrouted"
+# (replay.md route removed v7 Fase 2 — the replay lane is deleted.)
 has "$P/skills/execute-bolts/SKILL.md" "references/migrate-rules.md" \
   && ok "execute-bolts routes migrate-rules.md" || fail "migrate-rules.md unrouted"
 # C5: phantom sweep — no runtime surface names a dead /mega-sdd:<alias> form

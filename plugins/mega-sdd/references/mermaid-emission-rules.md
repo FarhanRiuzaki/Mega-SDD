@@ -25,7 +25,7 @@
 
 Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. A fence-presence check alone does not catch this; the validators parse the block's syntax.
 
-This document is the producer-side contract. `validate-kb-flows.sh` (KB §3/§8) and `validate-vault-flows.sh` (vault `04-flows.md` flows) enforce a heuristic subset at the always-on hook layer, sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). For ground truth — "does this actually render?" — the opt-in `scripts/verify-mermaid.sh` runs the real mermaid grammar (`mermaid.parse()`, headless, no browser) and catches whatever the heuristic cannot; it SKIPs cleanly when Node/mermaid are unavailable.
+This document is the producer-side contract. `validate-kb-flows.sh` (KB §3/§8) and `validate-vault-flows.sh` (vault `04-flows.md` flows) enforce a heuristic subset at the always-on hook layer, sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). The opt-in ground-truth oracle (`verify-mermaid.sh`, real `mermaid.parse()`) was removed in v7 Fase 2 — the shared heuristic tokenizer is the enforced layer; for render ground truth, paste the block into mermaid.live or run `npx @mermaid-js/mermaid-cli` by hand.
 
 ---
 
@@ -180,11 +180,10 @@ Tier classification: **C2** (producer must fix). NOT C1 — auto-rewriting Merma
 - Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` (vault `04-flows.md` flow emission)
 - Shared tokenizer: `plugins/mega-sdd/scripts/_lib/mermaid_syntax.py` (Rule 0 + Rule 1-3 heuristics)
 - Heuristic gates (always-on hook): `validate-kb-flows.sh` (KB §3/§8), `validate-vault-flows.sh` (vault flows)
-- Ground-truth (opt-in): `plugins/mega-sdd/scripts/verify-mermaid.sh` + `_lib/mermaid_parse_oracle.mjs` — real `mermaid.parse()`, headless
 - KB schema: `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §3 Flow + §8 State Machine
 - Spec: `docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md`
 
 ## Not done (candidates)
 
-- **Full-render via `mmdc`**: `npx @mermaid-js/mermaid-cli` renders each block to SVG for pixel-level ground truth. Rejected for any gate: needs Chromium, slow, offline-flaky. `verify-mermaid.sh`'s headless `mermaid.parse()` gives grammar-level ground truth without a browser — sufficient for "does it render".
+- **Full-render via `mmdc`**: `npx @mermaid-js/mermaid-cli` renders each block to SVG for pixel-level ground truth. Rejected for any gate: needs Chromium, slow, offline-flaky. (The former in-repo headless `mermaid.parse()` oracle was removed in v7 — same conclusion stands: full-render stays rejected for any gate.)
 - **Auto-fix for unquoted shape text**: risk-graded tool that adds quotes only when unambiguous (no nested quotes / HTML entities). Opt-in; producer-side responsibility means it stays off by default.
