@@ -122,7 +122,7 @@ for fn in DOCS[1:]:
 
     # (a) `## §<id>` component/section claims — the same headings the
     # binding-coverage validator harvests, so ledger coverage == validator scope.
-    # DELIBERATELY fence-blind, in parity with validate-vault-binding-coverage.sh
+    # DELIBERATELY fence-blind (parity with the deleted binding-coverage validator's shape)
     # (equally fence-blind) — if one gains fence tracking, both must, together.
     for i, line in enumerate(lines, 1):
         sm = SECTION_RE.match(line)

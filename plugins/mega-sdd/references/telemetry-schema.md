@@ -23,7 +23,7 @@
 - Classifier output → ceremony gating
 - Anti-recursive guard → re-plan / re-validate caps
 - Plan/Act mode gating per complexity
-- All "Runtime SHIPPED" claims from Iter 65 + 67 are RETRACTED (audit §C, §D, §E). The scripts (`classify-iter.sh`, `check-recursion-budget.sh`) exist as advisory tools; no skill body actually Bash-invokes them. Retracting the claims is the honest move.
+- All "Runtime SHIPPED" claims from Iter 65 + 67 are RETRACTED (audit §C, §D, §E). The scripts (`classify-iter.sh`, `check-recursion-budget.sh`) were never Bash-invoked by any skill body and were DELETED in v7 Fase 2. Retracting the claims is the honest move.
 
 ## Storage location
 
@@ -160,9 +160,9 @@ These event types were declared in Iter 64's locked schema but never had working
 |---|---|---|
 | `tier_classification_decision` | Log declared_tier from manifest + loaded_this_session per ref | No skill body emits; tier enforcement is Fork-B |
 | `turn_loaded_summary` | Per-turn aggregate of ref_loaded events | Derived offline from `ref_loaded` + `turn_end_marker` in Fork A; no live emit needed |
-| `iter_classifier_output` | EP1/EP2 classifier output | `classify-iter.sh` exists but no skill body Bash-invokes it (audit §C). Wiring needs a non-prose control plane = Fork B |
+| `iter_classifier_output` | EP1/EP2 classifier output | the classifier script was deleted in v7 (never wired). A future wiring needs a non-prose control plane = Fork B |
 | `iter_classifier_drift` | EP1 != EP2 drift detection | Cascades from classifier — Fork B |
-| `replan_triggered` | Re-plan counter increment | `check-recursion-budget.sh` not referenced by any skill body (audit §D). Fork B |
+| `replan_triggered` | Re-plan counter increment | the recursion-budget script was deleted in v7 (never wired). Fork B |
 | `revalidate_triggered` | Re-validate counter increment | Same as above |
 | `replan_budget_exceeded` | max_replan_count cap hit | Same |
 | `revalidate_budget_exceeded` | max_revalidate_count cap hit | Same |
@@ -170,7 +170,7 @@ These event types were declared in Iter 64's locked schema but never had working
 | `act_mode_entered` | Act-mode entry | Same |
 | `plan_act_transition` | Plan→Act handoff | Same |
 
-**Status of advisory scripts:** `plugins/mega-sdd/scripts/classify-iter.sh` and `plugins/mega-sdd/scripts/check-recursion-budget.sh` remain in the repo as advisory tools (a developer can run them by hand, e.g., `bash classify-iter.sh --ep=EP1` to check what an iter would classify as). They are NOT wired into any chain. CLAUDE.md retracts the "Runtime SHIPPED" claim.
+**Status of advisory scripts:** `classify-iter.sh` and `check-recursion-budget.sh` were removed in v7 Fase 2 — they were never wired into any chain (hand-run only). CLAUDE.md retracts the "Runtime SHIPPED" claim; the historical implementations live in git.
 
 ## Iter 68 analysis prerequisites (REVISED for Fork A)
 

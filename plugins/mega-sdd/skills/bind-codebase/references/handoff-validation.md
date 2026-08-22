@@ -91,5 +91,5 @@ The procedure invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.s
 - ✅ Binding-doc presence backstop (`binding_missing` — units citing conflicts with zero binding docs fail closed)
 - ✅ Binding freshness RECERTIFY (`binding_stale_recertify` — `binding_metadata.head` vs non-unit-attributed commits in `<head>..HEAD` ∩ binding.json anchor paths; out-of-pipeline commits only — bolt commits ride B1/B3; migration-safe ladder for legacy artifacts)
 - ❌ Binding → units Hard Rule propagation (slice 3)
-- ➡ Vault → binding coverage lives in its own validator (`validate-vault-binding-coverage.sh`, dispatched on binding writes)
+- ➡ Vault → binding coverage: the dedicated validator was removed in v7 (advisory-only; the claims ledger + analyze cover the surface)
 - ❌ Units → bolts traceability (slice 5; partially covered by the bolt-orphans/postflight gates)

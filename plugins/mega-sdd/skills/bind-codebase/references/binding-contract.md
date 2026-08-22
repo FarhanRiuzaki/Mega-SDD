@@ -128,7 +128,7 @@ structural marker only).
   - `regulatory` — the conflict touches a `[LOCKED]` / compliance constraint.
 - `resolution_complexity` — `low` (rename/remove), `medium` (migration + code edit), `high` (data backfill / cross-module / regulatory sign-off).
 
-This enrichment is **advisory** — `validate-conflict-classification.sh` (PostToolUse on binding write) WARNs when an active CONFLICT omits these fields; it does NOT change the CONFLICT-blocking contract (which still blocks on `conflict > 0`, per the table above).
+This enrichment is **advisory** — omitting these fields on an active CONFLICT is tolerated (the dedicated classification validator was removed in v7); it does NOT change the CONFLICT-blocking contract (which still blocks on `conflict > 0`, per the table above).
 
 ## Tech-OQ Auto-Resolution
 

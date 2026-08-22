@@ -6,7 +6,7 @@
 #   M1  Mermaid mandate no longer keyed solely on `### F-<prefix>-NNN`: a non-F-prefix
 #       flow heading (`### User Login`) with no mermaid is now caught; structural
 #       headings (Notes/Sources) are not mistaken for flows.
-#   L1  validate-vault-binding-coverage advisory findings → WARN/exit 0 (was FAIL/exit 1).
+#   (L1 removed v7 Fase 2 — validate-vault-binding-coverage.sh deleted.)
 #
 # Run: bash tests/god-review-s2/test-2d-correctness.sh
 set -uo pipefail
@@ -15,8 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 OQ="${ROOT}/plugins/mega-sdd/scripts/validate-vault-oqs.sh"
 VF="${ROOT}/plugins/mega-sdd/scripts/validate-vault-flows.sh"
-BC="${ROOT}/plugins/mega-sdd/scripts/validate-vault-binding-coverage.sh"
-for f in "$OQ" "$VF" "$BC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$OQ" "$VF"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -96,19 +95,7 @@ case "$M1" in
   *) ok "M1: F-prefix flow with a mermaid diagram stays quiet";;
 esac
 
-# ── L1: binding-coverage advisory → WARN / exit 0 (was FAIL / exit 1) ──
-d="$WORK/l1/.mega-sdd/vaults/tv"; mkdir -p "$d"
-printf '# Architecture\n\n## §payment-service\n\nDetails.\n' > "$d/02-architecture.md"
-printf '# Binding\n\nNothing references that section id here.\n' > "$d/binding.md"
-BCOUT="$(bash "$BC" --cwd="$WORK/l1" 2>/dev/null)"; BCEXIT=$?
-BCSTATUS="$(OUT="$BCOUT" python3 -c "import json,os;print(json.loads(os.environ['OUT']).get('status'))" 2>/dev/null)"
-BCHALT="$(hset "$BCOUT")"
-case "$BCHALT" in
-  *vault_binding_coverage_gap*) ok "L1: coverage gap detected (advisory)";;
-  *) fail "L1: expected a coverage gap issue: '$BCHALT'";;
-esac
-[ "$BCEXIT" = "0" ] && ok "L1: advisory finding exits 0 (was 1)" || fail "L1: expected exit 0, got $BCEXIT"
-[ "$BCSTATUS" = "WARN" ] && ok "L1: status WARN (not FAIL)" || fail "L1: expected status WARN, got '$BCSTATUS'"
+# (L1 arm removed v7 Fase 2 — the validator is deleted.)
 
 # ── H2 round-2 (review): bare 'WCAG AA' (no version), Material-ERP non-fire, 05/06 corpus ──
 mkfull() {  # $1=sub  $2=02  $3=03  $4=05  $5=06  $6=vault.json

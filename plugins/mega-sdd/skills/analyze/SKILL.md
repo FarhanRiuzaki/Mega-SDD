@@ -104,15 +104,13 @@ handoff:
 | 3 | `validate-bolt-artifacts.sh` | bolt report structure |
 | 4 | `validate-vault-oqs.sh` | vault OQ structural integrity |
 | 5 | `validate-fsd-slots.sh` | FSD template slot fill |
-| 6 | `validate-vault-binding-coverage.sh` | vault→binding coverage |
-| 7 | `validate-kb-output.sh` | KB output completeness + frontmatter |
-| 8 | `validate-kb-markers.sh` | KB [VERIFIED] citation evidence |
-| 9 | `validate-kb-citations.sh` | KB §11 source file resolution |
-| 10 | `validate-conflict-classification.sh` | CONFLICT classification enrichment |
-| 11 | `audit-domain-rules.sh` | domain-rule gap detection (Mode B) |
-| 12 | `validate-constitution.sh` | constitution clause coverage |
-| 13 | `validate-constitution-propagation.sh` | constitution clause carry-over |
-| 14 | `validate-codebase-map.sh` | codebase-map schema |
+| 6 | `validate-kb-output.sh` | KB output completeness + frontmatter |
+| 7 | `validate-kb-markers.sh` | KB [VERIFIED] citation evidence |
+| 8 | `validate-kb-citations.sh` | KB §11 source file resolution |
+| 9 | `audit-domain-rules.sh` | domain-rule gap detection (Mode B) |
+| 10 | `validate-constitution.sh` | constitution clause coverage |
+| 11 | `validate-constitution-propagation.sh` | constitution clause carry-over |
+| 12 | `validate-codebase-map.sh` | codebase-map schema |
 
 Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
 

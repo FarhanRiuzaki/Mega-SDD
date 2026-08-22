@@ -32,8 +32,8 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    resolution is recorded by BOTH: (a) updating the `### CONFLICT-N` detail heading to
    `### ✅ CONFLICT-N RESOLVED (<ACTION>) — <original title>`, AND (b) appending a
    `- **Resolution**: ✅ RESOLVED (<ACTION>) <ISO date> — <one-line rationale>` line
-   inside the detail block. `validate-handoff-binding-units.sh` and
-   `validate-conflict-classification.sh` key ONLY on the heading-line marker or the
+   inside the detail block. `validate-handoff-binding-units.sh` keys
+   ONLY on the heading-line marker or the
    dedicated Resolution line — a marker anywhere else (prose, a legacy table) does
    NOT clear the gate. Ensure the detail block carries its `- **Claim**: C-NNN` line
    (legacy blocks resolved before the W2 grammar may lack it — ADD it during

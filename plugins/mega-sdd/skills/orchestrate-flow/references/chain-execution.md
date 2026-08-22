@@ -102,15 +102,11 @@ h. **No file writes** — purely resolution; resolved tiers live in handoff meta
 
 ## Iter classifier hooks (EP1 / EP2)
 
-> **STATUS — PARKED (not wired into the live chain).** `classify-iter.sh` exists as a hand-run advisory tool but **no skill body Bash-invokes it** and it is **not wired into any chain** (see `plugins/mega-sdd/references/telemetry-schema.md` + `plugins/mega-sdd/references/fork-a-recovery-map.md` §EP2 — "Not implemented; deferred"). The EP1/EP2 mechanism below documents the *intended* design for a future Fork-B; it is **not executed in the current pipeline**. Until it lands, the effective iter_type defaults to **PATCH** (the documented default branch in §Plan/Act gating below) and is steerable only by the explicit `--plan` / `--act` / `--plan-then-act` flags that §Plan/Act gating consumes directly.
-
-**EP1 (before chain build):** *(parked — see status above)* invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP1 [--explicit-flag=<patch|minor|major> if user passed --iter-type=<>] --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Output JSON parsed for `iter_type` (PATCH | MINOR | MAJOR). Used by downstream skills as input to complexity-gated decisions (Plan/Act gating; budget enforcement). Telemetry event `iter_classifier_output` emitted with EP=EP1.
-
-**EP2 (after chain completes, before final summary):** invoke `plugins/mega-sdd/scripts/classify-iter.sh --ep=EP2 --emit-telemetry=<project>/.mega-sdd/memory/telemetry.jsonl`. Compare EP2 vs EP1 — if mismatch, emit telemetry event `iter_classifier_drift` with both outputs + drift reason. If EP1=PATCH but EP2=MAJOR (scope grew), surface drift to user in final summary so future iter-ceremony decisions can adjust.
+> **REMOVED (v7 Fase 2).** The parked EP1/EP2 classifier design (`classify-iter.sh`) never wired into any chain and the script is deleted. iter_type is **PATCH by default** and steerable ONLY by the explicit `--plan` / `--act` / `--plan-then-act` flags that §Plan/Act gating consumes directly. (Historical design: git.)
 
 ## Plan/Act gating
 
-Read the EP1 classifier output (when present — see the PARKED status above). When absent (the current parked default), treat iter_type as **PATCH**, which routes to the PATCH branch below (Direct Act, overridable by `--plan`). Branch:
+iter_type defaults to **PATCH** (no classifier exists — v7), which routes to the PATCH branch below (Direct Act, overridable by `--plan`). Branch:
 
 - **iter_type=PATCH** → Direct Act mode. Continue. (Default; overridable by `--plan` → Plan mode first.)
 - **iter_type=MINOR** → Act mode default. If `--plan` → Plan mode first; else continue in Act.
@@ -118,10 +114,10 @@ Read the EP1 classifier output (when present — see the PARKED status above). W
   - Check for `<project>/.mega-sdd/.plan-pending` (JSON from prior Plan-mode invocation matching current task_id + session_id).
   - If absent OR stale (>24h old): enter Plan mode. Skill body LOADS but DOES NOT execute writes. Emit proposed actions + acceptance criteria + estimated scope to chat. Write `.plan-pending` JSON. STOP chain — user reviews + invokes `/mega-sdd --act` (the `--act` flag) to transition.
   - If `.plan-pending` present + fresh + matches current task: read it; continue in Act mode. Delete `.plan-pending` on Act completion.
-- **Explicit override:** `--act` flag forces direct Act regardless of classifier. For MAJOR: confirm via AskUserQuestion — question carries the risk context ("MAJOR = perubahan besar; tanpa Plan phase tidak ada review rencana sebelum eksekusi. Proceed?"); options: `Plan first` **(recommended)** — tulis rencana + STOP untuk review, lanjut via `--act`; `Proceed without plan` — langsung eksekusi tanpa rencana tertulis.
-- **Explicit Plan force:** `--plan-then-act` flag forces two-phase regardless of classifier.
+- **Explicit override:** `--act` flag forces direct Act. For MAJOR: confirm via AskUserQuestion — question carries the risk context ("MAJOR = perubahan besar; tanpa Plan phase tidak ada review rencana sebelum eksekusi. Proceed?"); options: `Plan first` **(recommended)** — tulis rencana + STOP untuk review, lanjut via `--act`; `Proceed without plan` — langsung eksekusi tanpa rencana tertulis.
+- **Explicit Plan force:** `--plan-then-act` flag forces two-phase.
 
-Stale-plan check: if `.plan-pending` exists from a prior session AND classifier output differs OR > 24h old → warn user "stale plan; rerun `/mega-sdd --plan` or delete `.plan-pending`".
+Stale-plan check: if `.plan-pending` exists from a prior session AND > 24h old → warn user "stale plan; rerun `/mega-sdd --plan` or delete `.plan-pending`".
 
 ## Chain optimization via binding provenance
 
@@ -179,7 +175,6 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
-| After `extract-intelligence` completes (or whenever a KB is present) AND `.mega-sdd/.kb-flows-state.json` carries a `kb_flow_staging_missing` advisory | `enrich-semantics` in **propose** mode (`scripts/enrich-workflows-staging.sh --vault=<vault> --semantic=staged-input`; `--legacy-root` AUTO-DISCOVERED from the KB README's "source codebase path" + common legacy dirs, or pass it explicitly) | Writes `<vault>/ENRICHMENT-PROPOSALS.md` and **PAUSES the chain** (`status: paused`) with a one-line summary: "staging-missing in N workflow(s) → proposals at ENRICHMENT-PROPOSALS.md; review + `enrich-semantics --apply`, then `--resume`". NEVER auto-applies. |
 | After `generate-units` completes | `lint-units --changed-only` (per `references/diagnostics-procedures.md §lint-units` Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
 | Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `references/diagnostics-procedures.md §analyze-parallelism`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --parallel` (the routing/handoff rows carry the flag — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
 | After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |

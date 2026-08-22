@@ -351,12 +351,11 @@ fi
 grep -q '| QA Lead | __________ | __________ | __________ | \[ \] Diterima · \[ \] Ditolak |' "$SITFRAG" \
   && ok "sign-off body rows are placeholder LITERALS (paper-out)" || bad "sign-off placeholders wrong"
 
-# ── S12.7 seed budget (P7 instrument): rank each consumer's CURRENT seed ──────
-# The ruler every slice-first cut is justified by, exercised on the real
-# pipeline vault. A codebase-map is materialized here (the binding frontmatter
-# already points at it) from the fixture's own PHP signatures so bind's dominant
-# seed component is measured, not omitted.
-stage "S12.7 measure-seeds: rank consumer seeds on the live vault"
+# ── S12.7 advisor seed bundle (P7 5.1.1) — measure-seeds itself was deleted in
+# v7 Fase 2 (one-shot measurement instrument; its verdicts are recorded in the
+# optimization spec). The advisor-bundle producer is live pipeline surface and
+# stays exercised on the real vault, with the map materialized as before.
+stage "S12.7 advisor bundle: seed producer on the live vault"
 MAPDIR="$PROJ/.mega-sdd/codebase"; mkdir -p "$MAPDIR"
 {
   echo "# Codebase Map"; echo "last_scanned_commit: $(git -C "$PROJ" rev-parse HEAD 2>/dev/null)"; echo
@@ -372,14 +371,7 @@ BOUT="$(bash "$SCR/build-advisor-bundle.sh" --vault "$VAULT" 2>&1)"; BRC=$?
 [ $BRC -eq 0 ] && [ -f "$VAULT/.advisor-bundle.md" ] && ok "advisor bundle built (seed, not whole-map paste)" || bad "build-advisor-bundle rc=$BRC: $BOUT"
 grep -qE 'codebase_map_sha256: [0-9a-f]{64}' "$VAULT/.advisor-bundle.md" && ok "bundle sha-stamps the map it points at" || bad "bundle sha missing"
 grep -qiF "autoApprove" "$VAULT/.advisor-bundle.md" 2>/dev/null && bad "bundle leaked whole-map content" || ok "bundle is a strict subset (no whole-map paste)"
-MOUT="$(bash "$SCR/measure-seeds.sh" --vault "$VAULT" --pack "$PLG/references/framework-conventions/laravel.md" 2>&1)"; MRC=$?
-[ $MRC -eq 0 ] && ok "measure-seeds ran on the pipeline vault" || bad "measure-seeds rc=$MRC: $MOUT"
-echo "$MOUT" | grep -q "bind-codebase" && ok "consumers ranked by cost-units (cache-weighted)" || bad "bind row missing: $MOUT"
-echo "$MOUT" | grep -qE "phase-advisor +fresh" && ok "phase-advisor weighted FRESH (1.0x); map is grep-on-demand" || bad "advisor not fresh-weighted: $MOUT"
-# JSON contract holds on the real vault (telemetry substrate, P10)
-bash "$SCR/measure-seeds.sh" --vault "$VAULT" --json </dev/null 2>/dev/null \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin); assert all("cost_units" in s for s in d["seeds"])' && ok "measure-seeds --json carries cost_units (P10 substrate)" || bad "measure-seeds JSON malformed / no cost_units"
-echo "$MOUT" | sed 's/^/    /'
+# (measure-seeds arms removed v7 Fase 2 — instrument deleted with _lib/seeding_budget.py.)
 
 # ── S13 verdict ──────────────────────────────────────────────────────────────
 stage "S13 verdict"

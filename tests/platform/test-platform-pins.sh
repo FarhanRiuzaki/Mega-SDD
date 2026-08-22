@@ -29,10 +29,13 @@ rm -rf "$T"
 case "$O1" in *'"decision": "block"'*) pass "P2a: UPE FAIL→block";; *) fail "P2a: expected block, got ${O1:0:50}";; esac
 [ -z "$O2" ] && pass "P2b: UPE PASS→silent" || fail "P2b: expected silent"
 
-# P3 — PostToolUseFailure wired; pandoc no longer relies on undocumented exit_code alone
-grep -q 'PostToolUseFailure' "$P/hooks/hooks.json" \
-  && grep -q 'PostToolUseFailure' "$P/hooks/post-tool-use" \
-  && pass "P3: pandoc failure path via PostToolUseFailure" || fail "P3: failure event unwired"
+# P3 — v7 Fase 2: the pandoc render-failure rung is DELETED (validator gone,
+# md2pdf's own HTML fallback covers the mode) and its PostToolUseFailure wiring
+# must be gone from hooks.json with it (zero-phantom).
+! grep -q 'PostToolUseFailure' "$P/hooks/hooks.json" \
+  && ! grep -q 'validate-pandoc-render.sh' "$P/hooks/post-tool-use" \
+  && pass "P3: pandoc rung + PostToolUseFailure wiring removed cleanly" \
+  || fail "P3: pandoc rung or its event wiring still present"
 
 # P4 — v7 Fase 2: the Stop handoff-validation leg is REMOVED; the verdict is
 # derived at gate time (PreToolUse Branch 1a, every guarded dispatch). Stop must

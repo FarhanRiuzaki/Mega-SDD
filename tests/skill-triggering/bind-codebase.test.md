@@ -207,7 +207,7 @@
 - **Expect:** "## Suggested Unit Hard Rules" section exists with both sub-tables empty (rather than omitted) — generate-units reads it; no rules to insert
 
 ### Canonical CONFLICT heading emission
-- On a blocking run: every ACTIVE conflict in `binding.md` is written as a canonical `### CONFLICT-N` detail heading (with `conflict_class` + `resolution_complexity`), not table-only — the heading form is the token `validate-handoff-binding-units.sh` and `validate-conflict-classification.sh` read.
+- On a blocking run: every ACTIVE conflict in `binding.md` is written as a canonical `### CONFLICT-N` detail heading (with `conflict_class` + `resolution_complexity`), not table-only — the heading form is the token `validate-handoff-binding-units.sh` reads.
 
 ## Sync-lane handoff — claim-scoped re-bind routes generate-units through reconcile
 

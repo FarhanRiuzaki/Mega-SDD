@@ -604,67 +604,11 @@ for h in sorted(hits):
       fi
     fi
 
-    # ── B.5-followup: pandoc render failure detection ──────────────────────
-    # PostToolUse fires only on SUCCESS and its Bash payload has no documented
-    # exit_code field — failures arrive via the PostToolUseFailure event (this
-    # same script, wired in hooks.json; stdin carries hook_event_name + error).
-    # Failure event + pandoc in the command → treat as render failure.
-    if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -qi "pandoc"; then
-      BASH_EXIT_CODE=$(printf '%s' "$STDIN_JSON" | python3 -c '
-import json, sys
-try:
-    data = json.loads(sys.stdin.read())
-    if data.get("hook_event_name") == "PostToolUseFailure":
-        print(1)  # tool failed; exact code unknown — non-zero is the signal
-    else:
-        tr = data.get("tool_response", {})
-        # legacy fallback for CC versions that exposed an exit code here
-        print(tr.get("exit_code", tr.get("exitCode", 0)) if isinstance(tr, dict) else 0)
-except Exception:
-    print(0)
-' 2>/dev/null)
-      if [ "${BASH_EXIT_CODE:-0}" != "0" ]; then
-        SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
-        VALIDATOR_PANDOC="${SCRIPT_DIR_HV}/../scripts/validate-pandoc-render.sh"
-        if [ -x "$VALIDATOR_PANDOC" ]; then
-          bash "$VALIDATOR_PANDOC" --cwd="$PROJECT_ROOT" --bash-command-b64="$BASH_CMD_B64" --exit-code="$BASH_EXIT_CODE" --quiet >/dev/null 2>&1 || true
-          STATE_PANDOC="${PROJECT_ROOT}/.mega-sdd/.pandoc-render-state.json"
-          if [ -f "$STATE_PANDOC" ]; then
-            PANDOC_STATUS=$(python3 -c "
-import json
-try:
-    print(json.load(open('$STATE_PANDOC')).get('status', '?'))
-except: print('?')
-" 2>/dev/null)
-            if [ "$PANDOC_STATUS" = "FAIL" ]; then
-              EVENT=$(STATE_PANDOC="$STATE_PANDOC" TS_ENV="$TS" SESSION_ID_ENV="${SESSION_ID:-unknown}" python3 -c '
-import json, os
-try:
-    d = json.load(open(os.environ["STATE_PANDOC"]))
-    print(json.dumps({
-        "ts": os.environ["TS_ENV"],
-        "skill": "orchestrate-flow",
-        "event_type": "halt_self_resolved",
-        "session_id": os.environ["SESSION_ID_ENV"],
-        "hook_source": "PostToolUse",
-        "payload": {
-            "halt_type": "pdf_render_failed",
-            "fix_applied": "detected pandoc/render failure; md2pdf falls back to GitHub-styled HTML; suggested install of mmdc/Chrome",
-            "original_emit_site": "PostToolUse-Bash-validate-pandoc-render",
-            "logged_at_chat": False,
-            "exit_code": d.get("exit_code"),
-            "quality_gate_subtype": "pdf_render_failed",
-        },
-    }, separators=(",", ":")))
-except Exception:
-    pass
-' 2>/dev/null)
-              [ -n "$EVENT" ] && echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
-            fi
-          fi
-        fi
-      fi
-    fi
+    # ── pandoc render-failure rung REMOVED (v7 Fase 2 delete batch) ────────
+    # The pandoc render validator is deleted; md2pdf's own GitHub-styled HTML
+    # fallback already covers the failure mode without a hook observer. The
+    # PostToolUseFailure hooks.json wiring existed only for this rung and is
+    # removed with it.
     ;;
 
   Write|Edit)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-4b-validator-correctness.sh — god-review stage 4, Batch 4B.
-# Pins validate-handoff-binding-units.sh + validate-conflict-classification.sh
+# Pins validate-handoff-binding-units.sh (conflict-classification validator removed v7 Fase 2)
 # correctness:
 #
 #   BC-GATE-2    resolution markers are STRUCTURAL — prose "resolved" / a benign
@@ -13,7 +13,7 @@
 #   BC-HANDOFF-2 OQ-IDs confined to the auto-resolved/recommendation sections are
 #                advisory extras, NOT blocking drops (killed the deterministic
 #                false-FAIL on clean brownfield runs).
-#   BC-ADV-ID    CONFLICT-ADV-N is visible to validate-conflict-classification.
+#   BC-ADV-ID    CONFLICT-ADV-N is visible to the handoff validator.
 #
 # Run: bash tests/god-review-s4/test-4b-validator-correctness.sh
 set -uo pipefail
@@ -21,8 +21,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 VBU="${ROOT}/plugins/mega-sdd/scripts/validate-handoff-binding-units.sh"
-VCC="${ROOT}/plugins/mega-sdd/scripts/validate-conflict-classification.sh"
-for f in "$VBU" "$VCC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$VBU"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -177,27 +176,9 @@ B_ADV='# Binding Manifest
 F=$(mkfix adv "$B_ADV" "  - CONFLICT-ADV-1")
 bash "$VBU" --cwd="$F" >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 1 ] && ok "BC-ADV-ID: handoff validator blocks on unresolved CONFLICT-ADV-1" || fail "BC-ADV-ID: handoff validator misses ADV form (rc=$RC)"
-bash "$VCC" --cwd="$F" --quiet >/dev/null 2>&1
-CCS="$F/.mega-sdd/.conflict-classification-state.json"
-python3 -c "
-import json, sys
-d = json.load(open('$CCS'))
-sys.exit(0 if d.get('status') == 'WARN' and d.get('conflicts_total') == 1 else 1)
-" && ok "BC-ADV-ID: classification validator sees CONFLICT-ADV-1 (WARN, total=1 — was SKIP/0)" || fail "BC-ADV-ID: classification still blind: $(cat "$CCS" 2>/dev/null | head -3)"
+# (classification-validator half removed v7 Fase 2 — validator deleted)
 
-# classification validator: prose 'resolved' no longer exempts (mirror rule)
-B_CCPROSE='# Binding Manifest
-### CONFLICT-3 — status vocabulary
-- **Vault doc**: 03-data-model.md
-- **Verdict**: CONFLICT (BLOCKING)
-- **Suggested action**: tickets can be marked resolved by the agent'
-F=$(mkfix ccprose "$B_CCPROSE" "  - CONFLICT-3")
-bash "$VCC" --cwd="$F" --quiet >/dev/null 2>&1
-python3 -c "
-import json, sys
-d = json.load(open('$F/.mega-sdd/.conflict-classification-state.json'))
-sys.exit(0 if d.get('conflicts_resolved') == 0 else 1)
-" && ok "BC-GATE-2 (mirror): classification validator no longer counts prose-'resolved' as resolved" || fail "BC-GATE-2 (mirror): prose still resolves in classification validator"
+# (BC-GATE-2 mirror arm removed v7 Fase 2 — validator deleted)
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 4B OK"; else note "4B had failures"; fi
 exit $FAILED
