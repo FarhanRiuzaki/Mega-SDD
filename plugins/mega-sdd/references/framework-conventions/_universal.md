@@ -167,7 +167,7 @@ tokens) — coarser, but never an error and never a crash on an undeclared stack
 ## Cross-cutting concerns
 
 > Universal reasoning core for code-delivery slice B (`validate-sibling-consistency.sh`)
-> + slice C (`validate-cross-cutting-registration.sh`). The PRINCIPLE is stack-neutral;
+> + slice C (`validate-sibling-consistency.sh --cross-cutting`). The PRINCIPLE is stack-neutral;
 > the SIGNATURES are not.
 
 Universal principle (holds across all backends): **when a concern cuts across a set of

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify.sh — fixture-verified DoD for validate-cross-cutting-registration.sh (Task C).
+# verify.sh — fixture-verified DoD for the --cross-cutting mode of validate-sibling-consistency.sh (Task C; merged v7 group 9).
 #
 # Asserts the validator FLAGS the bad/ fixture (5 model SOURCE files that reference the
 # BranchScoped global scope + carry branch_id but never call addGlobalScope(new BranchScoped)
@@ -11,11 +11,11 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$HERE/../../../.." && pwd)"
-VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-cross-cutting-registration.sh"
+VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-sibling-consistency.sh"
 FAILED=0
 note() { printf '%s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*"; FAILED=1; }
-if [ ! -f "$VALIDATOR" ]; then fail "validate-cross-cutting-registration.sh not found at $VALIDATOR"; exit 1; fi
+if [ ! -f "$VALIDATOR" ]; then fail "validate-sibling-consistency.sh not found at $VALIDATOR"; exit 1; fi
 read_state() { python3 -c "
 import json
 try:
@@ -25,7 +25,7 @@ except Exception as e:
 " 2>/dev/null; }
 
 note "=== BAD fixture (expect FAIL: 5 missing_registration, decoy NOT flagged) ==="
-bash "$VALIDATOR" --cwd="$HERE/bad" --quiet
+bash "$VALIDATOR" --cross-cutting --cwd="$HERE/bad" --quiet
 BAD_EXIT=$?
 BAD_STATE="$HERE/bad/.mega-sdd/.cross-cutting-state.json"
 [ -f "$BAD_STATE" ] || fail "bad: state file not written"
@@ -44,7 +44,7 @@ note "bad: status=$BAD_STATUS exit=$BAD_EXIT missing_registration=$BAD_MISS deco
 
 note ""
 note "=== GOOD fixture (expect PASS) ==="
-bash "$VALIDATOR" --cwd="$HERE/good" --quiet
+bash "$VALIDATOR" --cross-cutting --cwd="$HERE/good" --quiet
 GOOD_EXIT=$?
 GOOD_STATE="$HERE/good/.mega-sdd/.cross-cutting-state.json"
 [ -f "$GOOD_STATE" ] || fail "good: state file not written"

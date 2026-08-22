@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify.sh — fixture-verified DoD for validate-fanout-parity.sh (Iter-79 A2).
+# verify.sh — fixture-verified DoD for the --fanout-parity mode of validate-sibling-consistency.sh (Iter-79 A2; merged v7 group 9).
 #
 # Proves the fan-out parity gate catches "LC is always the survivor": among view-bearing
 # siblings, an obligation one sibling declares but a peer omits is flagged.
@@ -14,13 +14,13 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$HERE/../../../.." && pwd)"
-VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-fanout-parity.sh"
+VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-sibling-consistency.sh"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*"; FAILED=1; }
 
-[ -f "$VALIDATOR" ] || { fail "validate-fanout-parity.sh not found"; exit 1; }
+[ -f "$VALIDATOR" ] || { fail "validate-sibling-consistency.sh not found"; exit 1; }
 
 read_state() { python3 -c "
 import json,sys
@@ -32,7 +32,7 @@ except Exception as e:
 " 2>/dev/null; }
 
 note "=== BAD fixture (expect FAIL: 2 divergences on U-002) ==="
-bash "$VALIDATOR" --cwd="$HERE/bad" --quiet
+bash "$VALIDATOR" --fanout-parity --cwd="$HERE/bad" --quiet
 BAD_EXIT=$?
 BAD_STATE="$HERE/bad/.mega-sdd/.fanout-parity-state.json"
 [ -f "$BAD_STATE" ] || fail "bad: state file not written"
@@ -47,7 +47,7 @@ note "bad: status=$BAD_STATUS exit=$BAD_EXIT divergences=$BAD_CNT obligations=$B
 
 note ""
 note "=== GOOD fixture (expect PASS) ==="
-bash "$VALIDATOR" --cwd="$HERE/good" --quiet
+bash "$VALIDATOR" --fanout-parity --cwd="$HERE/good" --quiet
 GOOD_EXIT=$?
 GOOD_STATE="$HERE/good/.mega-sdd/.fanout-parity-state.json"
 [ -f "$GOOD_STATE" ] || fail "good: state file not written"

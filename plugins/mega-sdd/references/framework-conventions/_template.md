@@ -268,7 +268,7 @@ lines — if ANY `required_elements.regex` is absent. Findings are emitted as
 ## Cross-cutting concerns
 
 > Consumed by `validate-sibling-consistency.sh` (code-delivery slice B — decomposition)
-> and `validate-cross-cutting-registration.sh` (slice C — execution). Declares a
+> and `validate-sibling-consistency.sh --cross-cutting` (slice C — execution). Declares a
 > CROSS-CUTTING obligation that applies UNIFORMLY to every structurally-analogous
 > sibling unit (a set of units whose models share a column / role). The validator is
 > tech-agnostic: it reads these signatures, never hardcodes a stack. A pack that omits

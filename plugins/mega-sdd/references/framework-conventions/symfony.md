@@ -294,7 +294,7 @@ scaffold_tells:
 
 > Concrete Symfony fill of the universal §Cross-cutting concerns principle.
 > Consumed by `validate-sibling-consistency.sh` (slice B) and
-> `validate-cross-cutting-registration.sh` (slice C).
+> `validate-sibling-consistency.sh --cross-cutting` (slice C).
 > In Symfony, multi-tenant scope is typically enforced via a Doctrine extension
 > (query filter) or a base repository method; voter-based access control is the
 > idiomatic mechanism for per-resource authorization.
