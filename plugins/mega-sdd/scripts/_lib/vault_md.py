@@ -216,6 +216,11 @@ V2_SECTION_ANCHORS = {
     "decisions": "DC",
     "glossary": None,        # optional; ends the Decisions section
     "open questions": None,  # OQs are constraints.md-owned; treated as a fence
+    # 00-index residue sections migrate-paths moves VERBATIM into vault.md —
+    # fences, so their content never inherits a claim DOC_CODE:
+    "changelog": None,
+    "source documents": None,
+    "auto-classification review": None,
 }
 V2_REQUIRED_HEADERS = ("## Overview", "## Architecture", "## Decisions")
 
