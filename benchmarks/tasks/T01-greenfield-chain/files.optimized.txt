@@ -17,13 +17,12 @@ plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:
 plugins/mega-sdd/skills/generate-intent/references/self-check.md
 plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md
 plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md
-plugins/mega-sdd/skills/generate-intent/references/templates/00-index.md
-plugins/mega-sdd/skills/generate-intent/references/templates/01-overview.md
-plugins/mega-sdd/skills/generate-intent/references/templates/02-architecture.md
-plugins/mega-sdd/skills/generate-intent/references/templates/03-data-model.md
-plugins/mega-sdd/skills/generate-intent/references/templates/04-flows.md
-plugins/mega-sdd/skills/generate-intent/references/templates/05-decisions.md
-plugins/mega-sdd/skills/generate-intent/references/templates/06-constraints.md
+# v7 Fase 3 layout-2 (R5 re-derivation 2026-08-22): the 7 legacy templates
+# became 4; generation-guide still commands per-file template reads.
+plugins/mega-sdd/skills/generate-intent/references/templates/vault.md
+plugins/mega-sdd/skills/generate-intent/references/templates/model.md
+plugins/mega-sdd/skills/generate-intent/references/templates/flows.md
+plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md
 plugins/mega-sdd/skills/generate-units/SKILL.md
 plugins/mega-sdd/skills/generate-units/references/unit-schema.md
 plugins/mega-sdd/skills/generate-units/references/templates/unit.md
