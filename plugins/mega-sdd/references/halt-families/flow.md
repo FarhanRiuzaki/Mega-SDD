@@ -28,7 +28,7 @@ Registry one-liner (absorbed, same type):
 
 ### routing_outcome_corrupt
 
-- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (HOOK-LAYER ENFORCED via SessionStart):** at session start, hook checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing. NEVER halts.
+- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing. NEVER halts.
 
 ### predictive_check_failed
 

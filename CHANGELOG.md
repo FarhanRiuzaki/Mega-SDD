@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Stop / SubagentStop**: pure-shell non-mega-sdd short-circuit — **0 forks** in projects without `.mega-sdd/` (was 1-2 python spawns per turn / per subagent, every project).
 - Measured proof + before/after trace + the 4-lens adversarial round record: `research/2026-08-21-v7-phase1-proof.md`; spawn ceilings + arm-switch protection + shared-worktree arming locked by `tests/weighted-routing/test-tier-s-hooks.sh` (17 assertions).
 
+### Changed — Fase 2 script & hook diet (rolling; approved list in `research/2026-08-21-v7-gate0-decision.md`)
+
+- **session-start no longer writes vault artifacts** (gate-1 mandate): the C1 self-resolve battery — all 9 guards (mode_migrate, partial_state_corrupt, routing_outcome_corrupt, verify_unit_writable, pack integrity ×3, model_tier_unknown, memory_in_use) + the telemetry.jsonl rotation — moved verbatim to `scripts/ground.sh`, running at M/L entry BEFORE derive-state so the probes see repaired state (telemetry events now stamped `skill: ground` / `ground-c1-guard`). session-start spawn diet on top: `source`/`session_id` parsed with bash builtins (2 python forks gone), `install-front-door.sh` debounced behind a builtin marker check (the common wrapper-current case spawns nothing), the instincts harvester spawns only when an instincts dir exists. **Measured: no-signal CWD 0 forks, SDD CWD with live staleness leg 8 forks (was ±22–26)** — ceilings locked by `tests/weighted-routing/test-tier-s-hooks.sh` S17/S18 (now 19 assertions); C1-at-GROUND behavior + the no-vault-writes contract pinned by `tests/hooks/telemetry-range.test.sh` r5/r6.
+
 ## [6.20.0] - 2026-08-21 — graph code layer: the scan's function map becomes queryable knowledge
 
 User mandate: *"data scan codebase juga harus masuk ke graph sebagai fungsi mapping — di dalam codebase itu apa saja fungsinya dan untuk apa"*, so that *"data graph project itu bisa jadi source knowledge untuk gue tanya-tanya"*. Spec `docs/superpowers/specs/2026-08-21-graph-code-layer.md`.

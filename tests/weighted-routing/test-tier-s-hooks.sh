@@ -20,8 +20,9 @@ PLAIN="$WORK/plain"; mkdir -p "$PLAIN"
 
 SHIM="$WORK/shim"; mkdir -p "$SHIM"
 CNT="$WORK/counts"; mkdir -p "$CNT"
-for tool in python3 date wc git grep sed find ls; do
+for tool in python3 date wc git grep sed find ls awk; do
   real=$(command -v "$tool") || continue
+  case "$real" in /*) ;; *) continue ;; esac  # a shell function/alias hit would make the shim recurse
   printf '#!/bin/bash\necho 1 >> "%s/%s"\nexec "%s" "$@"\n' "$CNT" "$tool" "$real" > "$SHIM/$tool"
   chmod +x "$SHIM/$tool"
 done
@@ -138,6 +139,35 @@ printf '%s' "$OUT" | grep -q '"deny"' && ok "S15 Write of .gateguard-state.json 
 OUT=$(run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm $FIX/.mega-sdd/.gateguard-state.json\"}}")
 printf '%s' "$OUT" | grep -q '"deny"' && ok "S16 Bash rm of .gateguard-state.json DENIED" \
   || bad "S16 arm switch deletable by agent"
+
+# ── S17/S18: session-start spawn ceilings (v7 Fase 2 diet) ───────────────────
+# The C1 self-resolve battery + telemetry rotation moved to scripts/ground.sh;
+# source/session_id parse is bash-builtin; install-front-door is debounced
+# (marker checked with builtins); the instincts harvester spawns only when an
+# instincts dir exists. Measured 2026-08-22: no-signal = 0, SDD+index = 8
+# (BEFORE the diet: ±22–26). Ceilings, not exact counts.
+SSHOME="$WORK/sshome"; mkdir -p "$SSHOME/.claude/commands"
+printf '%s\n' '<!-- mega-sdd-front-door-wrapper v1 — managed by the mega-sdd plugin -->' \
+  > "$SSHOME/.claude/commands/mega-sdd.md"
+run_ss() { ( cd "$1" && printf '{"source":"startup","session_id":"s"}' \
+  | HOME="$SSHOME" PATH="$SHIM:$PATH" bash "$HOOKS/session-start" 2>/dev/null ); }
+
+reset_counts
+OUT=$(run_ss "$PLAIN")
+[ "$(total)" -eq 0 ] && [ "$OUT" = "mega-sdd-trace:session" ] \
+  && ok "S17 session-start no-signal CWD: ZERO forks, bare governance marker" \
+  || bad "S17 session-start no-signal: forks=$(total) out=[${OUT:0:60}]"
+
+SSP="$WORK/ssproj"; mkdir -p "$SSP/.mega-sdd/codebase"
+( cd "$SSP" && git init -q . && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m x ) 2>/dev/null
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"abc","symbols":[]}' \
+  > "$SSP/.mega-sdd/codebase/symbol-index.json"
+reset_counts
+OUT=$(run_ss "$SSP")
+printf '%s' "$OUT" | grep -q "EXTREMELY_IMPORTANT" && SS_ANCHOR=1 || SS_ANCHOR=0
+[ "$(total)" -le 12 ] && [ "$SS_ANCHOR" -eq 1 ] \
+  && ok "S18 session-start SDD+index CWD: ≤12 forks (measured 8, was ±22–26), anchor intact" \
+  || bad "S18 session-start SDD+index: forks=$(total) anchor=$SS_ANCHOR"
 
 echo
 if [ "$fail" -eq 0 ]; then echo "PASS v7 tier-S hook contract"; exit 0
