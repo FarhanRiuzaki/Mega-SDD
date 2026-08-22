@@ -63,7 +63,7 @@ bash -n "$HOOK" && pass "pre-tool-use: bash -n clean" || fail "pre-tool-use: syn
 echo "── PART B: behavioral deny/allow ──"
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
-# A unit must exist or predictive-preflight (Branch 0) blocks execute-bolts first,
+# A unit must exist or the predictive preflight (Branch 0) blocks execute-bolts first,
 # before the gate aggregator is reached. Preflight only globs for U-*.md presence.
 mkdir -p "$ROOT/.mega-sdd/vaults/v1/units"
 printf -- '---\nid: U-001\n---\n# U-001\n' > "$ROOT/.mega-sdd/vaults/v1/units/U-001.md"

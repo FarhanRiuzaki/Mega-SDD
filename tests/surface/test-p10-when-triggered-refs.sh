@@ -23,7 +23,7 @@ grep -qF 'ONLY when an overlay applies' "$OF" \
   && grep -qF 'IS the default chain' "$OF" \
   && pass "D1b: Step 4 declares the engine authoritative; routing-rules is overlay-only" \
   || fail "D1b: Step-4 overlay condition missing"
-grep -qF 'predictive-preflight.sh' "$OF" \
+grep -qF 'validate-preflight.sh --predictive' "$OF" \
   && grep -qF 'never to hand-run the loop' "$OF" \
   && grep -qF '§Cold-halt anticipation set whenever `execute-bolts` is chained' "$OF" \
   && pass "D1c: predictive preflight is script-run (2b S1 wiring; catalog = maintainer source of truth)" \
