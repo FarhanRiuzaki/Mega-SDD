@@ -7,11 +7,11 @@
 **Flow**:
 ```mermaid
 flowchart TD
-    A[/book: pilih dokter + service/] --> B[pilih tanggal + slot 15-menit]
-    B --> C[isi nama, email, phone, reason]
-    C --> D{konfirmasi}
-    D -->|ok| E[booked, booking_channel=online]
-    E --> F[email konfirmasi + link cancel/reschedule]
+    A[/"book: pilih dokter + service"/] --> B["pilih tanggal + slot 15-menit"]
+    B --> C["isi nama, email, phone, reason"]
+    C --> D{"konfirmasi"}
+    D -->|ok| E["booked, booking_channel=online"]
+    E --> F["email konfirmasi + link cancel/reschedule"]
 ```
 
 **Definition of Done**:
@@ -25,9 +25,9 @@ flowchart TD
 **Flow**:
 ```mermaid
 flowchart TD
-    A[klik link cancel di email] --> B{konfirmasi}
-    B -->|ok| C[status cancelled, slot freed]
-    C --> D[halaman konfirmasi]
+    A["klik link cancel di email"] --> B{"konfirmasi"}
+    B -->|ok| C["status cancelled, slot freed"]
+    C --> D["halaman konfirmasi"]
 ```
 
 **Definition of Done**:
@@ -42,8 +42,8 @@ flowchart TD
 **Flow**:
 ```mermaid
 flowchart TD
-    T(["cron"]) --> R[Query due reminders 24h ± 5 min]
-    R --> S[Send email + flip reminder_sent]
+    T(["cron"]) --> R["Query due reminders 24h ± 5 min"]
+    R --> S["Send email + flip reminder_sent"]
 ```
 
 **Definition of Done**:

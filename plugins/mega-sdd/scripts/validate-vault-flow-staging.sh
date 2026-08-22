@@ -120,7 +120,10 @@ vault_dirs = [d for d in vault_dirs
 
 for vault_dir in vault_dirs:
     vault_name = os.path.basename(vault_dir)
-    flows_doc = os.path.join(vault_dir, "04-flows.md")
+    # v7 Fase 3 dual layout: layout-2 flows.md first, legacy 04-flows.md fallback
+    flows_doc = os.path.join(vault_dir, "flows.md")
+    if not os.path.isfile(flows_doc):
+        flows_doc = os.path.join(vault_dir, "04-flows.md")
     if not os.path.isfile(flows_doc):
         continue
     content = read_text(flows_doc)
