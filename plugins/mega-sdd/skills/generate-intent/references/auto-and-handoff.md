@@ -1,9 +1,8 @@
-# generate-intent — `--auto`, handoff, memory & path resolution
+# generate-intent — `--auto`, handoff & path resolution
 
 ## Contents
 - `--auto` flag behavior
 - Handoff emission (`--auto`)
-- Memory layer
 - Path resolution
 - Outputs recap (multi-squad additions)
 
@@ -84,34 +83,6 @@ handoff:
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works; the user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.
-
-## Memory layer
-
-When memory is enabled (default; opt-out via `--memory-off`), participate in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
-
-### Writes
-
-| When | File | Content |
-|---|---|---|
-| At Step 0.5–0.7 flag setup | `~/.mega-sdd/memory/preferences.md` | Update flag tally: increment the count for the picked value (OUTPUT_MODE, PRD_STATUS, IMPLEMENTATION_MODE, PROJECT_SHAPE) |
-| After OQ auto-classifier runs (Step 3.5) | `<vault>/.memory/classifier-accuracy.json` | Append a run entry with tags_emitted + user_overrides (when the user flips a tag in review) + accuracy_estimate |
-
-Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<user|vault> --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue. The preferences flag tally is an in-place counter update, not a row append — read the file, recompute the tally line, and rewrite the whole (small) file via the SAME script with `--mode=overwrite` (still scanned, locked, atomic; never a bare `Write`/`Edit`).
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past flag picks for this user | `~/.mega-sdd/memory/preferences.md` | At Step 0.5–0.7: SUGGEST the default by pre-filling AskUserQuestion. Surface as "Past observed default: <value> (picked N/N times). Use? Y/N/Other" |
-| Project conventions (test framework, naming) | `<project>/.mega-sdd/memory/conventions.md` | At Step 2 extraction: when generating tech OQs about conventions, set `resolution_mode: scan` with `scan_query: codebase-map §<convention>` (instead of `recommend`) since the convention is already established |
-| Past classifier overrides on the same pattern | `<vault>/.memory/classifier-accuracy.json` | If a past pattern shows a consistent override `tech/recommend → business/blocking`, bias the new classifier toward `business/blocking` (per learning-rules.md §2.1) — SUGGEST not impose |
-
-### Anti-halu rails
-
-- All flag suggestions surface via AskUserQuestion; the user picks the final value.
-- Convention-derived OQ downgrades cite the convention entry in the OQ rationale.
-- Classifier biases never bypass the heuristic table; they pre-rank options for review.
-- `--memory-off` disables both reads and writes.
 
 ## Path resolution
 

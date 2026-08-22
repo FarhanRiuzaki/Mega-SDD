@@ -1,11 +1,10 @@
 # Chain Execution — Preflight, Routing Preflight, Diagnostics, Drift Gate
 
-Detailed procedure for the resolution + execution phases that the SKILL.md router summarizes. Covers: starterkit/mode classification, memory-informed routing preflight, model-tier resolution, iter-classifier hooks, Plan/Act gating, chain-optimization skip, the predictive preflight loop, auto-integrated diagnostics, and the hybrid drift gate.
+Detailed procedure for the resolution + execution phases that the SKILL.md router summarizes. Covers: starterkit/mode classification, model-tier resolution, iter-classifier hooks, Plan/Act gating, chain-optimization skip, the predictive preflight loop, auto-integrated diagnostics, and the hybrid drift gate.
 
 ## Contents
 
 - [Starterkit detection + mode classification](#starterkit-detection--mode-classification)
-- [Memory-informed routing preflight](#memory-informed-routing-preflight)
 - [Model-tier override resolution](#model-tier-override-resolution)
 - [Iter classifier hooks (EP1 / EP2)](#iter-classifier-hooks-ep1--ep2)
 - [Plan/Act gating](#planact-gating)
@@ -14,7 +13,6 @@ Detailed procedure for the resolution + execution phases that the SKILL.md route
 - [First-run pre-flight (execute-bolts)](#first-run-pre-flight-execute-bolts)
 - [Auto-integrated diagnostics](#auto-integrated-diagnostics)
 - [Hybrid drift gate phase](#hybrid-drift-gate-phase)
-- [End-of-chain routing-outcomes write](#end-of-chain-routing-outcomes-write)
 - [Final summary appendix (--deep)](#final-summary-appendix---deep)
 
 ## Starterkit detection + mode classification
@@ -51,29 +49,13 @@ generate-intent --kb=<kb> --scan=<codebase-map> → vault aware of BOTH legacy d
   ↓ bind → units → bolts
 ```
 
-**Memory hint**: user's last starterkit preference is saved to `~/.mega-sdd/memory/preferences.md` `last_used_starterkit:` — the next legacy-rebuild run prompts "Last 3 projects used `laravel-base-26`. Use same starterkit?" Y/N/other.
-
-## Memory-informed routing preflight
-
-Per `memory/references/routing-outcomes.md` (mega-sdd:memory skill) schema. Optional — falls through silently if memory file absent or insufficient history.
-
-a. Compute project fingerprint: `sha256(composer.json + package.json + framework_pack_path)[:16]`
-b. Read `<project>/.mega-sdd/memory/routing-outcomes.md` (if exists; else skip).
-c. Filter rows matching current fingerprint.
-d. Apply decision rules:
-   - **≥3 prior rows, converged=yes, same chain-used:** recommend that chain as default; LOG: "Routing recommendation from past N runs (all converged in avg X min)"
-   - **≥2 prior rows, converged=no, same chain-used:** WARN: "Past N runs of this chain failed (halts: <list>); consider alternate chain"; fall through to routing-rules.md default (user decides)
-   - **Mixed results OR <3 prior rows:** fall through to routing-rules.md default (no override)
-e. If file parse fails: emit SOFT halt `routing_outcome_corrupt` + auto-invalidate (rename to `.corrupt-<ISO8601>`); fall through to default; LOG: "routing-outcomes.md corrupt; auto-invalidated; chain proceeds with default routing"
-f. Update chain proposal with recommendation OR fall-through default.
-
 ## Model-tier override resolution
 
 Per `plugins/mega-sdd/references/model-tiers.md` override syntax. Resolves model tier per named subagent role from the override chain. Default-on; no flag needed.
 
 a. **Read CLI flags from invocation**: collect all `--model-tier=<role>:<tier>` flags into `cli_overrides`.
 b. **Read `<project>/.mega-sdd/config.yaml`**: parse `model_tiers:` section if present; build `project_overrides`.
-c. **Read `~/.mega-sdd/memory/preferences.md` `## Model tiers` section**: build `user_overrides`.
+c. (v7.3.0: the user-scope preferences source is removed — project `config.yaml model_tiers:` is the single override source.)
 d. **Compute final resolved tier per role** (precedence: CLI > project > user > catalog):
    - For each role mentioned in any override source: cli → project → user → catalog default (read from `plugins/mega-sdd/references/model-tiers.md §Catalog`).
 e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream skills:
@@ -180,7 +162,6 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 | After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |
 | After all phases complete | `emit-agents-md` (per the `emit-agents-md` skill, respecting `config.yaml defaults.emit_agents_md: true\|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc + Chrome md2pdf render + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
-| After all phases complete | Memory review check (per the `memory` skill review op if `~/.mega-sdd/memory/patterns.md` has ≥1 pending suggestion) | Surface in chain summary: "N pending learning suggestions → review via `/mega-sdd:memory review`" |
 | **After EACH phase completes (chain boundary)** | **Doc-control stamp refresh** (script-lane, ~0 tokens): for each ALREADY-EMITTED doc — `<vault>/fsd/FSD.md`, `<vault>/prd/PRD.md`, `<vault>/sit/SIT.md`, `<vault>/uat/UAT.md` — that exists, `Run: bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=<fsd\|prd\|sit\|uat> --position="<phase just completed> selesai; next: <next phase or chain end>"`. **`--position` ONLY** — maturity rungs are set at emit time (SIT via the `build-sit-evidence.sh` verdict; FSD via mode) or by humans (PRD `reviewed`/`final`); the chain never bumps maturity. Non-zero exit → log one line, never halt (the stamp is metadata, not a gate). Skip silently when no emitted doc exists. | Doc-control blocks stay current between full emissions (per `plugins/mega-sdd/references/emission-engine.md §Doc-control stamping`) |
 | After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit prd` (reverse mode). Pipeline lanjut via `generate-intent --kb` — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
 | After `execute-bolts` completes AND ≥1 `bolts/U-*/acceptance.json` exists | Chain-summary PROPOSAL (one line, never auto-run): "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan dokumen SIT dengan tabel bukti §4 script-derived (maturity dari coverage evidence)." | One line in the chain end summary |
@@ -227,19 +208,6 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 
 `detect-drift` standalone (no chain context) → fresh full scan; ignores bolt snapshots. The auto-gate path uses snapshot reuse per `plugins/mega-sdd/references/shared-snapshot-schema.md`.
 
-## End-of-chain routing-outcomes write
-
-Per `memory/references/routing-outcomes.md` (mega-sdd:memory skill) write protocol. Skip entirely if `--memory-off` set.
-
-a. Compute:
-   - `chain-used`: short label, e.g., "starterkit-first (scan→intent→bind→units→bolts)"
-   - `duration-min`: integer wall-clock from chain start → now
-   - `converged`: yes if final status==completed AND blockers==[]; no otherwise
-   - `halts-fired`: count of unique halt types fired during chain
-b. If the file does not exist: create with header per schema doc (Write, ONCE).
-c. Append the row via `bash <plugin>/scripts/memory-write.sh --file=<project>/.mega-sdd/memory/routing-outcomes.md --scope=project --cwd=<project-root>` — the script owns the lock (3-retry backoff, `memory_in_use` telemetry on exhaustion), the secret scan, and the atomic append; exit ≠ 0 → log and continue (never a halt).
-d. LOG: "routing-outcomes.md updated (entry: <chain-used> | <duration-min>min | converged=<yes/no>)"
-
 ## Final summary appendix (--deep)
 
 In `--deep` mode, append to the final summary:
@@ -269,4 +237,4 @@ In `--deep` mode, append to the final summary:
 
 ## See also
 
-SKILL.md §Specialist references indexes the related orchestrate-flow references: routing-rules (decision matrices the chain is built from), predictive-checks (the preflight catalog this loop consults), handoff-consumption (the per-skill validation gate inside the execution loop), and memory-layer (read/write batching during the chain).
+SKILL.md §Specialist references indexes the related orchestrate-flow references: routing-rules (decision matrices the chain is built from), predictive-checks (the preflight catalog this loop consults), and handoff-consumption (the per-skill validation gate inside the execution loop).

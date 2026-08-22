@@ -144,10 +144,6 @@ handoff:
     scopes: <csv or "-">
 ```
 
-## Memory layer
-
-Out of scope: emit-sit does NOT participate in the memory layer. SIT generation is deterministic from vault + evidence state.
-
 ## Anti-hallucination rails
 
 1. §4 evidence is SCRIPT-DERIVED (`build-sit-evidence.sh` reading the hook-guarded `acceptance.json`/`postflight.json`/`_batch-suite.json`) — the model NEVER authors an evidence cell; absent evidence stays `[Pending — bolt U-XXX belum dieksekusi]`, counts never fabricated (unknown runner output recorded raw).

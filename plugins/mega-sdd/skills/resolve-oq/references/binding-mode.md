@@ -17,7 +17,6 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    CONFLICT-N (BLOCKING)
    > Vault claim: <text from binding.md>
    > Codebase reality: <text from binding.md> (<evidence anchor file:line from binding.md — MANDATORY: the user judges code-vs-vault, so show WHERE in code>)
-   > Prior call (suggestion only, when decisions.md carries one for this claim pattern): <ACTION> on <date> — <rationale>
 
    Choose action:
      [K] KEEP_VAULT  — vault is correct; code patch will be required later (the CONFLICT re-raises on re-bind until the code change lands — by design)
@@ -26,7 +25,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
      [S] SPLIT       — break vault claim into sub-claims (user provides splits; each sub-claim re-binds separately)
    ```
 
-   The two claim texts + the evidence anchor are MANDATORY — a `CONFLICT-N` code alone is never a question (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`). Source them from the detail block's `- **Vault claim**:` and `- **Codebase reality**:` lines (the anchor rides the Codebase-reality line). **Legacy fallback (pre-P2 bindings):** when a block predates those two lines, read the claim/reality pair from the old summary table and the evidence anchor from the Implementation State Map `Anchor` column (via the block's `- **Claim**:` id). The `Prior call` line renders ONLY when memory has one; it is a suggestion, never a default (the CONFLICT verdict is not bypassable by memory).
+   The two claim texts + the evidence anchor are MANDATORY — a `CONFLICT-N` code alone is never a question (`plugins/mega-sdd/references/output-language.md §Prompt surfaces`). Source them from the detail block's `- **Vault claim**:` and `- **Codebase reality**:` lines (the anchor rides the Codebase-reality line). **Legacy fallback (pre-P2 bindings):** when a block predates those two lines, read the claim/reality pair from the old summary table and the evidence anchor from the Implementation State Map `Anchor` column (via the block's `- **Claim**:` id).
 
    **Resolution write-back grammar (S4 — the ONLY markers the gate reads).** A
    resolution is recorded by BOTH: (a) updating the `### CONFLICT-N` detail heading to
@@ -75,12 +74,12 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)
    - `binding.json` — refreshed by running `scripts/derive-binding-json.sh --vault <vault>` after the markdown write (script-derived from `binding.md`; never edited by hand)
    - `vault.json` — **Run** `scripts/derive-vault-json.sh --vault <vault> --event '{"event":"resolve-oq-binding","at":"<iso>","summary":"N conflicts resolved, M OQs resolved"}'` (+ `--patch <tmp-patch>` — a temp FILE carrying the DEFER-demoted `defer_to: binding` OQ entries per the table above; `--patch` never takes inline JSON). Run it AFTER `derive-binding-json.sh` (the W2 ordering — binding.json first, then the vault manifest event). Script-derived; never edited by hand
-   - `decisions.md` (memory layer) — each resolution recorded durably (survives re-binds; per resolve-oq's auto-memory-handoff reference)
+   - `vault.json` changelog (`--event` append per outcome) — each resolution recorded durably (survives re-binds)
 
 5. **Hand-off (S4 — differs per action mix; a blanket re-bind LOOPS on KEEP_VAULT).**
    - **Any KEEP_CODE or SPLIT chosen** (the vault was edited) → suggest `bind-codebase` re-run: the edited claims now match code and re-bind cleanly.
    - **Only KEEP_VAULT / DEFER chosen** (vault AND code unchanged) → do NOT suggest a re-bind: bind Step 2 re-derives verdicts from the unchanged vault-vs-code contradiction, so a re-bind RE-RAISES the same CONFLICT (by design — bind never consumes a prior resolution as evidence; memory only SUGGESTS). The resolved-marked `binding.md` already passes `validate-handoff-binding-units.sh`, so proceed to `generate-units`. For KEEP_VAULT, `<vault>/bound/` is produced only by a future re-bind AFTER the code change lands (typically via execute-bolts on the units carrying the CONFLICT-N reference).
-   - Mixed → re-bind (for the vault edits); expect KEEP_VAULT conflicts to re-raise and re-mark them (decisions.md carries the prior call as a suggestion).
+   - Mixed → re-bind (for the vault edits); expect KEEP_VAULT conflicts to re-raise and re-mark them (the binding carries the prior verdicts).
 
 ## Hard rails
 

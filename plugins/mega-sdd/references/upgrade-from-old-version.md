@@ -93,7 +93,7 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | Vault without `phase`/`phase_total` fields (pre-Iter-35) | Yes — defaults to `phase: 1, phase_total: 1` | None |
 | Pre-Iter-8 binding without `PARTIAL_FIELDS_*` states | Yes — unknown states default to `create` (conservative) | Consider re-binding for finer task_type granularity |
 | Pre-Iter-46 binding without `binding_metadata.codebase_map_provenance` field (Iter 57 fix-forward) | Yes — orchestrate-flow Step 3 falls through to "no-snapshot" branch (keeps scan-codebase in chain) | Optional: re-run bind-codebase to populate field for chain-optimization benefit |
-| Old `memory_schema:` version stamp | May halt `memory_schema_mismatch` | `/mega-sdd:memory migrate` |
+| Old `.mega-sdd/memory/` data | Ignored — the memory lane was removed in v7.3.0 | Delete the dir when convenient |
 | Pre-Iter-30 bolt-reports without provenance trailer | New bolts OK; re-running old bolts halts | Skip re-runs OR add trailer manually |
 | Pre-Iter-33 handoff YAML missing `scope:`/`mutability:` blocks | Halt `invalid_handoff` on re-run via orchestrate-flow Step 6.b validation gate | Edit handoff template OR regenerate vault (Path A) |
 | Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | Run with `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` flag for one chain run; fix handoff-contract.md TYPE annotations; remove flag |
@@ -107,7 +107,6 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 /mega-sdd:migrate-paths                  # actual move via git mv (preserves history)
 
 # 2. Migrate memory schema (auto-detects out-of-date stamps)
-/mega-sdd:memory migrate
 
 # 3. Migrate Hard Rules v1 grammar → v2 ast-grep YAML (per-unit confirm)
 #    (not a slash command since 6.0.0 — ask by phrase:)
@@ -142,7 +141,7 @@ All three are idempotent — safe to re-run.
 
 **Cause:** memory file has older `memory_schema:` stamp than current version expects.
 
-**Recovery:** `/mega-sdd:memory migrate` — auto-migrates with backup at `~/.mega-sdd/memory.backup.YYYYMMDD/`. Memory data fully preserved.
+**Recovery:** not needed since v7.3.0 — the memory subsystem is removed; old memory files are inert and can be deleted.
 
 ### `handoff_type_mismatch` (Iter 33 F4 type-check)
 
@@ -183,7 +182,6 @@ Start: I have an old mega-sdd project on v3.26.1+
         ↓
         /mega-sdd:migrate-paths           # canonicalize legacy paths
         ↓
-        /mega-sdd:memory migrate          # if memory_schema_mismatch fires
         ↓
         /mega-sdd --resume           # continues pipeline; halts on real schema gaps
         ↓

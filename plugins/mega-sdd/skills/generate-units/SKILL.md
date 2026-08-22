@@ -26,7 +26,7 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
 - `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass`
-- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; the flag keeps resolving through the 5.x cycle), `--memory-off`
+- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; the flag keeps resolving through the 5.x cycle)
 
 ## Output
 
@@ -144,7 +144,7 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 
 "Generated N units. Suggested next: `execute-bolts --all` to execute in order, or `execute-bolts U-001` to start with the first."
 
-Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema + the memory layer (read-mostly; bolt outcomes written by `execute-bolts`): `references/auto-and-memory.md` (its §Scope propagation and §_index.md sections are every-run reads at Steps 10–11; the memory layer is default-on).
+Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema: `references/auto-and-memory.md` (its §Scope propagation and §_index.md sections are every-run reads at Steps 10–11).
 
 ## Specialist references (load on demand)
 
@@ -155,7 +155,7 @@ Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit t
 - **`references/halt-protocol.md`** — every blocker's emitted YAML + recovery action, with a "which step fires which halt" index.
 - **`references/starterkit-derivation.md`** — Step 7.7 in full: relevance computation, starterkit Anchors + Hard Rules (with the mandatory citation), and frontmatter updates.
 - **`references/defensive-generation.md`** — the Step 0.5 pre-flight matrix, grounding_confidence labels (incl. the verify+HIGH per-AC grounding rail), per-anchor verification, and the halt-vs-warning matrix.
-- **`references/auto-and-memory.md`** — scope propagation into unit frontmatter, `_index.md` contents, the `--auto` handoff YAML, and the memory layer (reads / writes / anti-halu).
+- **`references/auto-and-memory.md`** — scope propagation into unit frontmatter, `_index.md` contents, and the `--auto` handoff YAML.
 - **`references/modules-schema.md`** — the modules layer schema (why modules ≠ bigger units, auto-derivation, modules.yaml format) for Step 4.5.
 - **`references/adversarial-test-prompt.md`** — the Step 9.5 adversarial review prompt (default + subagent modes) and the gap-merge logic.
 - **`references/pbt-integration.md`** — optional property-based-testing unit extension (`properties:` array; emitted only when a PBT framework is detected).

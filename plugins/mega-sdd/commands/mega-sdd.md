@@ -23,7 +23,7 @@ When `<input>` is empty:
    - **Vault(s)** — per vault: docs present, units count, bolts count, OQ P0/P1 open, binding state (CONFIRMED/CONFLICT/OQ counts), drift-report / PENDING-SYNC presence.
    - **Staleness** — `change_signal` (map stamp vs HEAD, dirty-journal rows). Change signal present → surface it and prefer proposing `/mega-sdd:sync`.
    - **Foreign-SDD / adoption** — `probes.foreign_sdd` non-empty → name the detected tool(s) (spec-kit / Kiro / OpenSpec / generic specs) and propose the adoption lane (certify + ingest), never silent.
-   - **Maintenance notices (auto-PROPOSED, never auto-run)** — when state demands, propose the matching maintenance one-timer with one keterangan line each: legacy scattered layout detected → `/mega-sdd:migrate-paths`; missing native deps limiting a proposed phase → `/mega-sdd:install-deps`; pending learning suggestions → `/mega-sdd:memory review`; plugin cache behind the marketplace clone → `/mega-sdd:update-plugin`.
+   - **Maintenance notices (auto-PROPOSED, never auto-run)** — when state demands, propose the matching maintenance one-timer with one keterangan line each: legacy scattered layout detected → `/mega-sdd:migrate-paths`; missing native deps limiting a proposed phase → `/mega-sdd:install-deps`; plugin cache behind the marketplace clone → `/mega-sdd:update-plugin`.
 3. Propose the next chain from `derived.proposed_next` and confirm ONCE (the same upfront-confirmation contract as orchestrate-flow — Run / Edit / Cancel covering ALL phases including execute-bolts), then invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` (+ user flags). No fixed starting phase; the digest decides.
 
 ## Lane 1 — with an artifact argument: input-shape detection
@@ -96,7 +96,7 @@ When PRD input has canonical `scopes:` frontmatter block, the front door invokes
 
 When PRD lacks scopes block → retrofit bridge fires per `skills/generate-intent/references/legacy-retrofit-prompt.md`.
 
-When memory has prior scope decision for this PRD + cwd matches → silent default with confirm-once UX.
+When an existing vault carries the same PRD sha256 + a scope (vault.json) → silent default with confirm-once UX.
 
 See `tests/scenarios/scenario-7-multi-architect.md` for walkthrough.
 

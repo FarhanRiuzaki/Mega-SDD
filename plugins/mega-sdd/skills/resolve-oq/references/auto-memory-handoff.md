@@ -1,8 +1,7 @@
-# resolve-oq — --auto, memory layer, auto-accept & handoff
+# resolve-oq — --auto, auto-accept & handoff
 
 ## Contents
 - --auto flag (logistical-only skip table)
-- Memory layer (reads / writes / anti-halu rails)
 - Non-interactive auto-accept mode (flags + logic + convergence-loop use)
 - Scope context in OQ resolution
 - Handoff emission (YAML)
@@ -34,53 +33,23 @@ The `--auto` skips remain **logistical only**. Nothing in the collapse converts 
 
 When this skill is invoked without `--auto`, behavior is the standard interactive walk.
 
-## Memory layer
-
-When memory is enabled (default; opt-out via `--memory-off`), this skill participates in the mega-sdd memory layer per `memory/references/memory-schema.md`.
-
-### Writes
-
-| When | File | Content |
-|---|---|---|
-| After each OQ resolved (standard mode) | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## OQ resolutions` table: date, oq-id, category, resolution-text, source-run |
-| After each CONFLICT resolved (--binding mode) | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## CONFLICT resolutions` table: date, conflict-id, claim, KEEP_CODE/KEEP_VAULT/DEFER/SPLIT, user-rationale, source-run |
-| After each recommend-mode OQ ACCEPT/OVERRIDE/REJECT | `<project>/.mega-sdd/memory/decisions.md` | Append row to `## Recommendation outcomes` table |
-
-Each row is appended **at emission time via `bash <plugin>/scripts/memory-write.sh --file=<project>/.mega-sdd/memory/decisions.md --scope=project --cwd=<project-root>`** (the script secret-scans, locks, and appends atomically). The handoff carries only the write receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}` — never row content. Write failure (exit ≠ 0) → log and continue; never a halt.
-
-The `## OQ resolutions` table gains an optional `scope` column when the vault has a `scope` field.
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past CONFLICT resolutions matching current conflict claim pattern | `<project>/.mega-sdd/memory/decisions.md` — under --auto the handoff passes a POINTER slice `metadata.memory_context.project_decisions_relevant` (`{file, rows: [date+conflict-id, …], digest}`). Consult the rows already in session context from the chain-start read; when they are NOT in context (typical for `/mega-sdd --resume` in a fresh session) **do a targeted Read of the pointed file's `## CONFLICT resolutions` table — the suggestion needs the actual resolution values + occurrence counts, never the digest alone** | SUGGEST a pre-filled action in `AskUserQuestion` (e.g., "Past pattern: 8/10 KEEP_CODE on auth conflicts. Default to KEEP_CODE? Y/N/Other"). User still confirms each time. |
-| Cross-project patterns (when project memory has no match) | `~/.mega-sdd/memory/patterns.md` | SUGGEST a per-pattern action with confidence + source observation count |
-
-### Anti-halu rails
-
-- Memory consultation surfaces as a SUGGESTION, never enforcement.
-- Every suggestion cites its source memory entry.
-- Current evidence (the current conflict's full context) always wins over memory.
-- `--memory-off` disables both reads and writes.
-
 ## Non-interactive auto-accept mode
 
-Enables `resolve-oq` to be invoked automatically by `orchestrate-flow --converge` without prompting the user, using memory-pre-filled recommendations.
+Enables `resolve-oq` to be invoked automatically by `orchestrate-flow --converge` without prompting the user, using recommendations grounded in KB / vault / codebase evidence (v7.3.0: the memory recommendation source was removed with the memory lane — grounded sources only).
 
 ### Flags
 
-- `--auto-accept-from-memory` — skip `AskUserQuestion`; auto-pick the recommendation when available
+- `--auto-accept` — skip `AskUserQuestion`; auto-pick the recommendation when available (renamed from `--auto-accept-from-memory` in v7.3.0; the old spelling no longer exists)
 - `--confidence-min=N` (default 0.80) — minimum recommendation confidence to auto-accept (≥0.80 standard)
-- `--non-interactive` — combined alias for `--auto-accept-from-memory --confidence-min=0.80` + suppresses any informational prompts
+- `--non-interactive` — combined alias for `--auto-accept --confidence-min=0.80` + suppresses any informational prompts
 
-### Logic when `--auto-accept-from-memory` set
+### Logic when `--auto-accept` set
 
 For each OQ/CONFLICT during the walk:
 
-1. Build the recommendation via the context-aware recommendation flow (KB / memory / vault / codebase / silent fallback) — per the recommendation reference the SKILL.md router lists.
+1. Build the recommendation via the context-aware recommendation flow (KB / vault / codebase / silent fallback) — per the recommendation reference the SKILL.md router lists.
 2. Check recommendation confidence:
-   - `confidence >= confidence-min` → auto-apply the recommendation; log to memory `decisions.md` with `source: ai_auto_accepted`; skip `AskUserQuestion`.
+   - `confidence >= confidence-min` → auto-apply the recommendation; skip `AskUserQuestion`. The audit trail is the PIPELINE record: the vault resolve markers + the `derive-vault-json.sh --event` changelog entry each outcome already writes.
    - `confidence < confidence-min` → escalate: surface the OQ as still-open; emit log "recommendation low-conf; deferred for manual resolve-oq".
 3. After the walk: emit a summary with auto-accepted count + deferred count.
 4. Status `paused` (not `completed`) if any OQs were deferred for manual resolution; the chain resumes after the user's manual walk.
@@ -90,10 +59,10 @@ For each OQ/CONFLICT during the walk:
 When `orchestrate-flow --converge` hits `bind_conflict`:
 
 ```
-🔁 Cycle 1/5: invoking resolve-oq --binding --auto-accept-from-memory --confidence-min=0.80
+🔁 Cycle 1/5: invoking resolve-oq --binding --auto-accept --confidence-min=0.80
 
 resolve-oq walking 3 conflicts:
-  ✓ C-007 (auth) → KEEP_CODE (memory 8/10; conf 0.95) → AUTO-ACCEPTED
+  ✓ C-007 (auth) → KEEP_CODE (codebase anchor evidence; conf 0.95) → AUTO-ACCEPTED
   ✓ C-009 (Sanctum) → KEEP_VAULT (constitution §B-001; conf 1.00) → AUTO-ACCEPTED
   ⏸ C-011 (audit schema) → recommendation conf 0.65 < 0.80 → DEFERRED for manual
 
@@ -102,17 +71,15 @@ resolve-oq walking 3 conflicts:
 
 ### Anti-halu rails
 
-- `--auto-accept-from-memory` requires `confidence-min` (default 0.80; no silent low-conf acceptance).
-- Audit trail: every auto-accepted decision logged to memory with the `source: ai_auto_accepted` marker.
-- Recurring same-pattern auto-accepts captured in pattern memory for review via `/mega-sdd:memory review`.
+- `--auto-accept` requires `confidence-min` (default 0.80; no silent low-conf acceptance).
+- Audit trail: every auto-accepted outcome lands in the vault markdown + the vault.json changelog event — the same record a manual walk writes.
 - The user CAN override auto-accepted decisions later via a standard interactive `resolve-oq` walk.
-- High-stakes business OQs (P1 + category: business) NEVER auto-accept; always require interactive review even with `--auto-accept-from-memory`.
+- High-stakes business OQs (P1 + category: business) NEVER auto-accept; always require interactive review even with `--auto-accept`.
 
 ### Backward compat
 
 - Invocations of `resolve-oq` without the new flags → unchanged interactive behavior.
-- `--auto-accept-from-memory` is opt-in; no default behavior change.
-- Memory consultation already exists in the base skill; the new flag just changes when to AUTO-APPLY recommendations.
+- `--auto-accept` is opt-in; no default behavior change.
 
 ## Scope context in OQ resolution
 
@@ -124,7 +91,7 @@ OQ-AR-7 [P1] [tech] (scope: BE — Backend API):
   ...
 ```
 
-This helps multi-architect scenarios where one OQ might involve cross-scope dependencies — the user knows which scope they are answering for. Decisions written to memory `<project>/.mega-sdd/memory/decisions.md` `## OQ resolutions` table get the optional `scope` column when applicable. The handoff YAML includes the `scope:` block (below) per `orchestrate-flow/references/handoff-contract.md` when the vault has scope.
+This helps multi-architect scenarios where one OQ might involve cross-scope dependencies — the user knows which scope they are answering for. The handoff YAML includes the `scope:` block (below) per `orchestrate-flow/references/handoff-contract.md` when the vault has scope.
 
 ## Handoff emission
 

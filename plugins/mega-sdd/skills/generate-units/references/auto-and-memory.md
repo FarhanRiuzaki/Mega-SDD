@@ -1,12 +1,11 @@
-# generate-units — --auto handoff, scope propagation & memory layer
+# generate-units — --auto handoff & scope propagation
 
 ## Contents
 - Scope propagation into unit frontmatter (Step 10)
 - _index.md contents (Step 11)
 - Handoff emission (--auto)
-- Memory layer (reads / writes / anti-halu)
 
-Loaded by `generate-units/SKILL.md` for write-out, handoff, and memory steps.
+Loaded by `generate-units/SKILL.md` for write-out and handoff steps.
 
 ## Scope propagation into unit frontmatter (Step 10)
 
@@ -74,28 +73,7 @@ handoff:
     # (rules pulled from incomplete framework slice — may cite missing conventions).
 ```
 
-Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing` / `memory_in_use`. Required ONLY under `--auto`.
+Status `halted` on `cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing`. Required ONLY under `--auto`.
 
 The `scope:` block is included in handoff YAML when vault.json has `scope` field, per `orchestrate-flow/references/handoff-contract.md`. Omit the entire `scope:` block when vault is legacy single-scope.
 
-## Memory layer
-
-When memory enabled (default; opt-out via `--memory-off`), participates in mega-sdd memory layer per `memory/references/memory-schema.md`.
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past Hard Rule violations on similar units | `<vault>/.memory/bolt-outcomes.json` — the handoff passes a POINTER slice `metadata.memory_context.vault_outcomes_relevant` (`{file, rows: [unit/rule ids], digest}`). Consult the rows already in session context from the chain-start read; when NOT in context, **do a targeted Read of the pointed JSON — the ≥3 threshold needs the actual per-rule violated+reverted counts, never the digest alone** | When generating a unit with Hard Rules pulled from binding suggestions: if rule was violated AND reverted ≥3 times → DOWNGRADE the rule to Anti-pattern (informational) per learning-rules.md §2.3 |
-| Project decision history | `<project>/.mega-sdd/memory/decisions.md` | When generating unit's `## Anti-patterns` section: include past CONFLICT KEEP_CODE files as "don't modify" Anti-patterns (informational guidance, NOT machine-validated Hard Rules) |
-| Classifier override patterns | `<vault>/.memory/classifier-accuracy.json` | When unit derives from a vault OQ that was overridden by user, surface in unit's `## Context` as note: "this OQ was reclassified manually; original heuristic may not match" |
-
-### Writes
-
-This skill does NOT write to memory directly. Unit generation is read-mostly; bolt-time outcomes (success / Hard Rule violation / acceptance test results) are written by `execute-bolts` to `<vault>/.memory/bolt-outcomes.json`.
-
-### Anti-halu rails
-
-- Memory consultation surfaces in unit body (Anti-patterns section or Context note); never modifies frontmatter without user review
-- Downgraded Hard Rules (memory-derived) cite the violation history in Anti-pattern line
-- `--memory-off` disables memory reads; units fall back to binding-only suggestions

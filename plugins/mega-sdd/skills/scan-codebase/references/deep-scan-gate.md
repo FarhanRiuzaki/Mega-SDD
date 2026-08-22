@@ -65,7 +65,7 @@ Mirrors the shared-snapshot reuse pattern (see `plugins/mega-sdd/references/shar
      source-only edit (a controller, a policy, tailwind.config) MUST invalidate the slice —
      lock digests alone served stale slices as FULL CACHE HIT forever.
    - detector = scan-codebase <skill version from SKILL.md frontmatter> (a detector upgrade
-     invalidates all slices — mirrors the memory-layer detector-versioning rail)
+     invalidates all slices)
    - auth_sig_input = app_locks_digest + framework_pack §auth section content + sha256(lib-patterns/<fw>/auth-libs.md) + src_component(auth) + detector
    - authz_sig_input = app_locks_digest + framework_pack §authz section content + sha256(lib-patterns/<fw>/rbac-libs.md) + src_component(authz) + detector
    - ui_ux_sig_input = frontend_locks_digest + framework_pack §ui section content + sha256(lib-patterns/<fw>/ui-libs.md) + src_component(ui_ux) + detector
@@ -106,7 +106,7 @@ Force full re-scan: `--no-cache` (existing flag; sets `stale_slices = [all]` reg
 
 ## Step 10.5.4 — Concurrency guard
 
-Use the existing memory file-lock pattern (per `mega-sdd:memory` SKILL.md §file-lock: backoff + retry 3x; fail with `memory_in_use` blocker if all retries fail) on `.mega-sdd/codebase/starterkit-context.yaml`:
+Use the mega-sdd advisory file-lock pattern (as specified in `generate-intent/references/vault-core.md §Concurrency contract`: atomic O_EXCL create, backoff + retry 3x; fail with `memory_in_use` blocker if all retries fail) on `.mega-sdd/codebase/starterkit-context.yaml`:
 - Acquire exclusive lock before write.
 - If lock held by concurrent scan-codebase invocation → fail fast with `memory_in_use` halt (existing halt type).
 - Release lock after write.

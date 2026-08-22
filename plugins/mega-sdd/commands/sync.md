@@ -1,6 +1,6 @@
 ---
 description: Reconcile mega-sdd state with the latest code — the never-ending-development lane. Detects what changed since the last scan (in-session AI edits via the dirty journal + manual/external edits via git), then chains changed-set derivation (incremental re-scan on map-bearing projects; a zero-token script on express-born ones) → drift detect → re-bind → unit reconcile. Use after manual edits, AI-prompted changes outside the pipeline, hotfixes, or a git pull — whenever "the code moved on" and the vault/map/binding/units must catch up.
-argument-hint: "[--dry-run] [--auto] [--auto-apply=safe] [--memory-off] [--no-drift-check]"
+argument-hint: "[--dry-run] [--auto] [--auto-apply=safe] [--no-drift-check]"
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--sync` (plus user flags below).
@@ -19,7 +19,7 @@ Flags:
 - `--dry-run` — show the change summary + proposed chain without executing
 - `--auto` — fully autonomous: ONE upfront confirmation, then NO mid-chain questions (decision deferral — see below)
 - `--auto-apply=safe` — opt-in: auto-apply the SAFE write-back class only (confidence HIGH + category ∈ name-drift/type-drift/missing-in-vault + claim NOT `[LOCKED]` + code side committed — definition OWNED by detect-drift Step 5; this line mirrors it); everything else queues
-- `--memory-off` / `--no-drift-check` — standard opt-outs (passed through)
+- `--no-drift-check` — standard opt-out (passed through)
 
 Autonomous behavior (`--auto` — decision deferral, per spec §3.7):
 - Safe operations run through: scan merge, claim-scoped re-bind, unit reconcile, stale/new bolt execution (every existing bolt gate intact).
@@ -27,7 +27,6 @@ Autonomous behavior (`--auto` — decision deferral, per spec §3.7):
 - Drift triage processes changed paths in **descending blast-radius order** when the graph is available (`query-graph.sh` — the call most likely to need a human lands earliest); graph absent → document order, unchanged (advisory ordering only, 6.12.0).
 - End of run: `<vault>/SYNC-REPORT.md` — change counts, per-phase outcomes, applied-vs-queued patches (with git provenance), conflicts raised, units reconciled/re-executed, the **verify-recommended (transitive impact)** list (task-typing.md step 2.6 — dependents of changed units the hash check cannot see; offered, never auto-run), and the closing staleness verification (`scripts/compute-unit-staleness.sh` re-run; stale count MUST be 0 or explained). One chat line summarizes; the report carries the detail; refreshes `.mega-sdd/graph.json` (cache-warm; non-blocking). When emitted `.claude/rules/mega-sdd-*` files exist and `constitution_hash` changed OR units were reconciled, the report PROPOSES `scripts/emit-claude-rules.sh --write` (offer-only — writing to `.claude/` is user config; never auto-run).
 - Next session, the staleness notice clears; if PENDING-SYNC.md has open items, the notice points there instead.
-- Memory (unless `--memory-off`): one `kind: sync` row appended to project-scope `outcomes.md` (channel mix, applied-vs-queued tally, accept/reject of safe write-backs, closing staleness); drift direction calls land in `<vault>/.memory/drift-history.md`. After ≥3 consistent runs the chain-end learning pass MAY suggest defaulting `--auto-apply=safe` — applied only on explicit ACCEPT via `/mega-sdd:memory review`.
 
 Hard rails:
 - Git state first: repo mid-rebase/merge (probe `git rev-parse --git-path rebase-merge` / `--git-path MERGE_HEAD` — worktree-safe; never the literal `.git/...` path) → STOP with "resolve the git state, then re-run sync" (a map scanned mid-conflict is garbage).

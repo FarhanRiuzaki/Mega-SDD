@@ -135,48 +135,6 @@ for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "b
         # Non-JSONDecodeError (file system error, encoding etc.) → skip; not a clean self-resolve
         continue
 
-# ─── Guard 3: routing_outcome_corrupt (Iter 67.7.3 — v3.52.0+) ─────────────
-# Scan <cwd>/.mega-sdd/memory/routing-outcomes.md
-# Format: markdown with `# Routing Outcomes` header + table-style entries.
-# Corruption detection (conservative):
-#   - File exists, non-empty, but not valid UTF-8 → corrupt
-#   - File exists, non-empty, but missing expected header in first 200 chars → corrupt
-# Empty file = initialization state, NOT corrupt (skip).
-# On corruption: rename to routing-outcomes.md.corrupt-<ISO8601>; chain proceeds
-# with default routing (no replacement file created; memory subsystem will rebuild
-# on next end-of-chain write).
-ROUTING_FILE = os.path.join(cwd, ".mega-sdd", "memory", "routing-outcomes.md")
-if os.path.isfile(ROUTING_FILE):
-    try:
-        with open(ROUTING_FILE, "rb") as fh:
-            raw = fh.read()
-    except Exception:
-        raw = None
-    if raw is not None and len(raw) > 0:
-        try:
-            content = raw.decode("utf-8")
-            header_ok = "Routing Outcomes" in content[:200]
-        except UnicodeDecodeError:
-            content = None
-            header_ok = False
-        if content is None or not header_ok:
-            corrupt_path = f"{ROUTING_FILE}.corrupt-{ts_fname}"
-            try:
-                os.rename(ROUTING_FILE, corrupt_path)
-                rel_orig = os.path.relpath(ROUTING_FILE, cwd)
-                rel_corrupt = os.path.relpath(corrupt_path, cwd)
-                reason = "non-utf8-binary" if content is None else "missing_schema_header"
-                emit_event(
-                    "routing_outcome_corrupt",
-                    f"renamed → {os.path.basename(corrupt_path)}; default routing used; memory rebuilds next end-of-chain",
-                    original_path=rel_orig,
-                    corrupt_path=rel_corrupt,
-                    corruption_reason=reason,
-                )
-                notices.append(f"[self-resolved] routing_outcome_corrupt: routing-outcomes.md renamed ({reason}); default routing used")
-            except Exception:
-                pass  # rename failed; don't claim resolve
-
 # ─── Guard 4: verify_unit_writable (Iter 67.7.4 — v3.52.0+) ────────────────
 # Scan units for task_type=verify with non-empty target_files (forbidden per
 # attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
@@ -438,9 +396,8 @@ if mt_catalog_path:
     config_paths = [
         os.path.join(cwd, ".mega-sdd", "config.yaml"),
     ]
-    user_pref = os.path.expanduser("~/.mega-sdd/memory/preferences.md")
-    if os.path.isfile(user_pref):
-        config_paths.append(user_pref)
+    # (v7.3.0: the user-scope preferences.md model-tier source died with the
+    # memory lane; project config.yaml is the single model_tiers source.)
 
     for cp in config_paths:
         if not os.path.isfile(cp):
@@ -477,34 +434,6 @@ if mt_catalog_path:
                             override_source=os.path.relpath(cp, cwd) if cp.startswith(cwd) else cp,
                         )
                         notices.append(f"[self-resolved] model_tier_unknown: role '{role}' unknown; chain uses catalog default")
-
-# ─── Guard 9: memory_in_use (edge-case track — GROUND stale-lock cleanup) ──
-# Reframe of Phase A flagged slice 6. Original was memory-write file-lock retry inside
-# skill body (no GROUND surface). Reframe: pre-emptive scan for stale lock files
-# at GROUND (M/L entry). Removes locks older than 60 seconds (likely from crashed/orphaned
-# writers). Reduces frequency of lock collisions at runtime.
-import time as _time_mil
-memory_dir = os.path.join(cwd, ".mega-sdd", "memory")
-if os.path.isdir(memory_dir):
-    stale_threshold_sec = 60
-    now = _time_mil.time()
-    for lock_pattern in ["*.lock", "*.lck", ".lock-*"]:
-        for lock_file in glob.glob(os.path.join(memory_dir, lock_pattern)):
-            try:
-                age = now - os.path.getmtime(lock_file)
-                if age > stale_threshold_sec:
-                    os.remove(lock_file)
-                    rel_lock = os.path.relpath(lock_file, cwd)
-                    emit_event(
-                        "memory_in_use",
-                        f"stale lock file {rel_lock} (age={age:.0f}s) removed at GROUND",
-                        lock_file=rel_lock,
-                        age_seconds=int(age),
-                        action="removed_stale_lock",
-                    )
-                    notices.append(f"[self-resolved] memory_in_use: stale lock {os.path.basename(lock_file)} removed (age {age:.0f}s)")
-            except Exception:
-                pass
 
 if notices:
     print("\n".join(notices))

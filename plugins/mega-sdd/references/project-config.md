@@ -35,7 +35,7 @@ Related-but-separate config surfaces (different scopes, documented where they li
 
 | Scope | File | Keys |
 |---|---|---|
-| USER (cross-project) | `~/.mega-sdd/memory/config.yaml` | `halt_auto_propose` block, model-tier overrides (`memory/references/memory-schema.md`) |
+| USER (cross-project) | `~/.mega-sdd/config.yaml` | `halt_auto_propose` block (see `execute-bolts/references/halt-recovery.md §Configuration override`). Relocated from `~/.mega-sdd/memory/config.yaml` in v7.3.0 (memory dir removed) — move the file if you had one |
 | PROJECT | `.mega-sdd/config.yaml` | this file |
 | VAULT | `<vault>/vault.json` + `_meta/` | per-vault state, squads, modules |
 

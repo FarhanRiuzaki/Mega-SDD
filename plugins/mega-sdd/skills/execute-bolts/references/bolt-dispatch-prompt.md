@@ -19,7 +19,6 @@ Canonical prompt template for the bolt-subagent dispatch. Implements the 10 AI-e
 - Framework pack rules (filtered by your target_files glob match)
 - Constitution clauses (cited in this unit, resolved in the constitution §C)
 - KB anti-patterns (filtered by your domain tags)
-- Historical memory (last 5 relevant patterns)
 - T2.3 — Starterkit context (relevant slice)
 - Confidence labels per claim
 - Validation hints (specific, not vague)
@@ -192,15 +191,6 @@ TIER 2 — Conditional context (target ≤10KB total)
 - KB <gotcha-id> from <kb-file>.md: <anti-pattern description>
   └─ DO NOT REPLICATE per <constitution clause OR explicit rationale>
 
-## Historical memory (last 5 relevant patterns)
-
-<from <project>/.mega-sdd/memory/outcomes.md, filtered by:>
-<- bolts touching similar files (overlap with this unit's target_files)>
-<- bolts with similar patterns (same unit type, same scope)>
-<show last 5 only, most-recent-first>
-
-Pattern: <pattern-description> → <past resolution>
-
 ## T2.3 — Starterkit context (relevant slice)
 
 This slot is populated by execute-bolts Step 4.5.b-starterkit ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists. The read/build/§patterns/code-slice/inject machinery, the emitted slice sections and their marker lines (`Auth:` / `Authz:` / `UI/UX:` / `Design tokens:` / `Design system:` / `Libs in scope:`, `### Starterkit code patterns`, `### Reference code example` with its `Pattern:` + `File:` lines), the slice budget, and the slice truncation cascade are defined ONCE in `starterkit-enrichment.md` (routed from SKILL.md; overall budgets + the T2 cascade stay in `context-enrichment.md`). This template MUST NOT restate them.
@@ -341,7 +331,6 @@ TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 - Full upstream bolt-reports: `<vault>/bolts/U-XXX/bolt-report.md`
 - Full constitution: `<vault>/constitution.md`
 - Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`
-- Full memory tables: `<project>/.mega-sdd/memory/`
 - Full framework pack: `plugins/mega-sdd/references/framework-conventions/<pack>.md`
 ```
 

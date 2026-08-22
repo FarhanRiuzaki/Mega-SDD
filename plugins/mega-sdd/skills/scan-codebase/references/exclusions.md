@@ -16,7 +16,6 @@ Loaded by `scan-codebase` Step 4 (build tree) and the Step 5 extraction walk. Th
 
 Orthogonal to the bulk-walk exclude list — these are read by name, not discovered via glob walk, so the exclusion does not block them:
 
-- `.mega-sdd/memory/conventions.md` — past convention detections (Memory layer; skip re-detect for `status: established`).
 - `.mega-sdd/codebase/starterkit-context.yaml` — deep-scan cache (Step 10.5.1; cache-hit short-circuit when lock files unchanged).
 
 Do NOT add other `.mega-sdd/` files as targeted reads without explicit spec amendment — the bias risk is real.

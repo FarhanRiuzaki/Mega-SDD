@@ -97,7 +97,7 @@ TRIGGERS=(
   "siapkan context" "rebuild di stack baru" "source of truth dari legacy"
   # natural-language diagnostic/output lanes
   "cek konsistensi" "consistency report" "blast radius" "apa yang kena kalau ubah ini"
-  "lihat memory" "buat FSD" "pasang tools"
+  "buat FSD" "pasang tools"
   # CWD signal
   ".mega-sdd/"
 )

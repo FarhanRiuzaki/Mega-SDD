@@ -1010,7 +1010,6 @@ sk_rule_idx() { awk -F'\t' -v want="$1" '$1=="starterkit_slice"{n++; if ($2==wan
 floor_ok() {  # floor_ok <priority> -> 0 when that priority sits at its DOCUMENTED floor
   case "$1" in
     1) [ "$P_HAS_VALIDATION" = "0" ] && has "$J_OMITTED" validation_hints ;;
-    2) [ "$P_HAS_MEMORY" = "0" ] && has "$J_OMITTED" historical_memory ;;
     # NEVER fully dropped: header + the literal hint line survive, zero entries
     3) [ "$P_REUSE_HEADER" = "1" ] && [ "$P_REUSE_SENTINEL" = "1" ] \
        && [ "$P_REUSE_ENTRIES" = "0" ] && ! has "$J_OMITTED" reuse_slice ;;
@@ -1026,7 +1025,6 @@ floor_ok() {  # floor_ok <priority> -> 0 when that priority sits at its DOCUMENT
 floor_label() {
   case "$1" in
     1) echo "validation_hints -> section dropped" ;;
-    2) echo "historical_memory -> section dropped" ;;
     3) echo "reuse_slice -> hint line only, NEVER dropped" ;;
     5) echo "confidence_labels -> section dropped" ;;
     6) echo "depends_on_summaries -> >=1 upstream kept" ;;
@@ -1077,7 +1075,7 @@ eq "$J_CAP_T2" "10240" "A0 cap_t2 is the canonical 10240"
 eq "$J_CAP_T1" "12288" "A0 cap_t1 is the AMENDED 12288 reporting threshold"
 eq "$J_CAP_TARGET" "9216" "A0 cap_target is the canonical 9216"
 
-for s in validation_hints historical_memory reuse_slice confidence_labels \
+for s in validation_hints reuse_slice confidence_labels \
          depends_on_summaries framework_pack_rules starterkit_slice constitution_clauses; do
   if has "$J_EMITTED" "$s"; then ok "A0 fixture supplies $s"; else
     nok "A0 fixture supplies $s — MISSING, the cascade walk below would be vacuous (emitted: $J_EMITTED)"; fi
@@ -1086,7 +1084,7 @@ eq "$J_NTRUNC" "0" "A0 minimum ballast starts UNDER cap_t2 — cascade has room 
 # EMIT order is the template's, NOT the cascade's — pinned so a "simplification"
 # that emits in priority order is caught even though byte totals would not move.
 eq "$P_SECTION_ORDER" \
-   "depends_on pack constitution memory reuse starterkit confidence validation" \
+   "depends_on pack constitution reuse starterkit confidence validation" \
    "A0 T2 sections are emitted in TEMPLATE order, not cascade-priority order"
 chk "$([ "$P_HAS_TRACE" = "0" ] && echo 1 || echo 0)" \
     "A0 emitted prompt carries NO trace marker (v7.3.0 observability removal)" "trace tag survived"
@@ -1123,7 +1121,7 @@ while [ "$STEP" -lt "$WALK_MAX" ]; do
       SEEN="$SEEN $p"
       # every LOWER priority present in this fixture must already be at its floor
       allfloor=1; why=""
-      for q in 1 2 3 5 6 7 8; do
+      for q in 1 3 5 6 7 8; do
         [ "$q" -lt "$p" ] || continue
         if ! floor_ok "$q"; then allfloor=0; why="$why  p$q expected [$(floor_label "$q")]"; fi
       done
@@ -1163,12 +1161,16 @@ chk "$CONST_OK" "A2 constitution_clauses NEVER appears in truncations[] (priorit
 eq "$J_UNKNOWN_SECTION" "0" "A2 every truncated section is a row of the documented 9-row table"
 eq "$J_ZERO_SAVE" "0" "A2 every logged rung saved >0 bytes (no no-op rung in the ladder)"
 
-for p in 1 2 3 5 6 7 8; do
+for p in 1 3 5 6 7 8; do
   if has "$SEEN" "$p"; then ok "A3 priority $p truncation level was reached and asserted"
   else nok "A3 priority $p was NEVER the deepest-truncated priority — its ladder is untested"; fi
 done
 if has "$SEEN" 4; then nok "A3 priority 4 fired — kb_anti_patterns must never be emitted"
 else ok "A3 priority 4 never fires (section is contractually omitted)"; fi
+if has "$SEEN" 2; then nok "A3 priority 2 fired — historical_memory was removed v7.3.0 and must never emit"
+else ok "A3 priority 2 never fires (memory lane removed v7.3.0; always sections_omitted)"; fi
+if has "$J_OMITTED" historical_memory; then ok "A3 historical_memory recorded in sections_omitted (v7.3.0 contract)"
+else nok "A3 historical_memory missing from sections_omitted"; fi
 if has "$SEEN" 9; then nok "A3 priority 9 fired — constitution must never truncate"
 else ok "A3 priority 9 never fires"; fi
 
@@ -1202,11 +1204,11 @@ chk "$([ "$J_HALT_NWARN" -gt 0 ] && echo 1 || echo 0)" \
 # the halt must be EARNED: priorities 1..8 must actually have been walked
 eq "$J_MAXPRI" "8" "B1 halt fired only after the cascade reached priority 8"
 allp=1
-for k in validation_hints historical_memory reuse_slice confidence_labels \
+for k in validation_hints reuse_slice confidence_labels \
          depends_on_summaries framework_pack_rules starterkit_slice; do
   has "$J_TRUNC_KEYS" "$k" || { allp=0; echo "   (missing rung: $k)"; }
 done
-chk "$allp" "B1 halt state covers a rung from EVERY truncatable priority 1..8" \
+chk "$allp" "B1 halt state covers a rung from EVERY truncatable priority (2 removed v7.3.0; 4/9 never fire)" \
     "all_1_to_8_at_floor was vacuously true over a thin section set"
 eq "$P_EXISTS" "1" "B1 dispatch-prompt.md is STILL WRITTEN on exit 1 (forensic evidence)"
 
@@ -1257,7 +1259,7 @@ eq "$P_HAS_CONFIDENCE" "0" "B6 priority 5 floor IS an empty section"
 # changes WHEN the cascade runs, and these floors are WHERE it is allowed to
 # stop. They are independent contracts and a cap amendment must not quietly move
 # a floor. No extra builder run — this reads section B's max-pressure probe.
-for p in 1 2 3 5 6 7 8; do
+for p in 1 3 5 6 7 8; do
   if floor_ok "$p"; then
     ok "B7 priority $p is at its documented drop floor at maximum pressure [$(floor_label "$p")] (caps: hard=$J_CAP_HARD t2=$J_CAP_T2 t1=$J_CAP_T1)"
   else
@@ -2067,14 +2069,14 @@ case "$P_CLAUSE_IDS" in *A-001*) ok "N0 term (c) genuinely holds on arm A — A-
 # by term (a) being FALSE, and the section would test nothing — the silent-green
 # class this suite exists to prevent. Asserted in aggregate so one failure names
 # the offending section instead of burying it in ten near-identical lines.
-T18="validation_hints historical_memory reuse_slice kb_anti_patterns confidence_labels \
+T18="validation_hints reuse_slice kb_anti_patterns confidence_labels \
      depends_on_summaries framework_pack_rules starterkit_slice map_patterns design_slice"
 # The list IS the assertion, so its own integrity is asserted first: TEN names —
 # priorities 1..7 one row each, plus tier 8 enumerated 8a/8b/8c. A name silently
 # dropping out of it (an edit, a lost line continuation) would shrink the vacuity
 # proof to a subset while both checks below still reported PASS.
 set -- $T18
-eq "$#" "10" "N1 the priority-1..8 name list is complete (7 rows + tier 8a/8b/8c)"
+eq "$#" "9" "N1 the priority name list is complete (6 rows + tier 8a/8b/8c — historical_memory removed v7.3.0)"
 vac_emitted=""; vac_unrecorded=""
 for s in $T18; do
   has "$J_EMITTED" "$s" && vac_emitted="$vac_emitted $s"

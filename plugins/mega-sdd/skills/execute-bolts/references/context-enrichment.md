@@ -92,7 +92,7 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 | Priority | T2 section | Truncation cascade | Drop floor |
 |---|---|---|---|
 | 1 | `validation_hints` | drop expected-output patterns; keep test commands only | drop section entirely |
-| 2 | `historical_memory` | last 5 → last 3 → last 1 → drop | drop section |
+| 2 | `historical_memory` | (REMOVED v7.3.0 — always `sections_omitted`; priority slot retained for order stability) | — |
 | 3a | `reuse_slice` | trim to top 5 entries by target_files overlap → top 3 → top 1 | "+N more — read reuse-index.yaml directly" (never fully dropped — at minimum 1 hint line survives) |
 | 3b | `symbol_slice` | LEVEL 0 already caps at 40 rows (spec R2) → top 20 → top 10 | "+N more — query via scripts/query-symbol-index.sh" (never fully dropped when the index exists and overlaps; index absent/unparseable/no-overlap → section OMITTED, recorded) |
 | 4 | `kb_anti_patterns` | top 3 → top 1 → drop | drop section (see the join-key note below — currently ALWAYS omitted) |
@@ -111,7 +111,7 @@ Ordered MOST disposable (priority 1) → MOST critical (priority 8). When budget
 - **Row order within tier 8** is pinned `starterkit_slice` (8a) → `map_patterns` (8b) → `design_slice` (8c); the builder steps ONE rung per pass in that order, re-measuring after each. 8b has no rung to step, so a pass over it is a no-op by contract, not by accident.
 - **Row 4 is currently unsatisfiable and its section is ALWAYS OMITTED.** "domain tags" is a **phantom field** — no unit schema, validator, or writer defines it, so there is no join key from a unit to a KB anti-pattern. Emitting the section (or the template's `DO NOT REPLICATE:` line) would require inventing the join → invariant #5 violation. The row stays because the cascade is the contract; it activates the day a real join key ships. Do not delete it, and do not populate the section from a guess.
 - **Row 7's "keep top 1 always" floor is vacuous on an empty set.** The pack HARD_RULEs in `_universal.md` carry `<…>` placeholder globs; the builder skips sentinel globs, and an empty filtered set OMITS the section rather than inventing a rule to satisfy the floor. Floor semantics: "never truncate BELOW 1 when ≥1 matched", not "always emit ≥1".
-- **`reuse_slice`, `symbol_slice`, `depends_on_summaries`, `framework_pack_rules` and `design_slice` never reach `""`** — their drop floor is a real surviving payload (`reuse_slice`'s floor is the literal `+N more — read reuse-index.yaml directly` line; `design_slice`'s is system+style only). `validation_hints`, `historical_memory` and `confidence_labels` do drop to empty. (Sections are named here rather than numbered — the old "rows 3, 6, 7, 8b" form silently re-pointed when tier 8 was enumerated.)
+- **`reuse_slice`, `symbol_slice`, `depends_on_summaries`, `framework_pack_rules` and `design_slice` never reach `""`** — their drop floor is a real surviving payload (`reuse_slice`'s floor is the literal `+N more — read reuse-index.yaml directly` line; `design_slice`'s is system+style only). `validation_hints` and `confidence_labels` do drop to empty; `historical_memory` is always omitted (v7.3.0). (Sections are named here rather than numbered — the old "rows 3, 6, 7, 8b" form silently re-pointed when tier 8 was enumerated.)
 
 ## Halt path + soft-budget warnings
 
@@ -136,7 +136,7 @@ The builder encodes this as one explicit three-term boolean, and reads term (c) 
 
   **Emitted heading — FIXED.** The section heading is `## Constitution clauses (cited in this unit, resolved in the constitution §C)`. A heading is a claim about provenance; it gets the same discipline as any other — it must state the selector that actually ran, never a source it did not use. (The retired heading it replaced, and why it was false: amendment history → the archive spec.)
 - KB anti-patterns: **not populated — the section is always OMITTED.** The documented selector ("filter the KB by this unit's domain tags") has no input: "domain tags" is a phantom field with no schema, validator or writer. Per invariant #5 an absent input omits the section; it is never invented. See the cascade note on row 4.
-- Historical memory: filter `<project>/.mega-sdd/memory/outcomes.md` for bolts touching similar files OR pattern — last 5 only. **This text is the contract, and the relevance filter IS implemented:** the builder joins on the unit id plus the `target_files` basenames, drops non-matching runs, records them in `sections_omitted`, and omits the section entirely on zero matches. The word *relevant* in the emitted header is therefore a claim the builder can back. (This says the filter exists and joins on those needles; it makes no claim about the join's recall. The struck round-3 status narrative: amendment history → the archive spec.) Active instincts (`memory/instincts/*.yaml`, confidence ≥0.7) whose `domain` matches the unit (ui → UI-bearing, security → risk-signal units, conventions/testing → all) join this slice as one line each — same budget, same truncation tier (per `memory/references/instincts.md`).
+- Historical memory: REMOVED (v7.3.0 — the memory lane was learn-from-runs machinery; the builder records the priority-2 slot in `sections_omitted` and emits nothing).
 - **Starterkit context slice:** the auth/authz/ui_ux/libs slices (the `Auth:` / `Authz:` / `UI/UX:` / `Design tokens:` / `Design system:` / `Libs in scope:` lines), the §patterns block, and the reference code exemplar — read/build/inject machinery per `starterkit-enrichment.md` (routed from SKILL.md), loaded ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists. When that file is absent, only the Map §6 fallback below applies.
 - **Confidence labels per claim — taxonomy DECIDED 2026-07-31.** The enum is exactly **`HIGH | MEDIUM | LOW | OQ`** and it is the same enum in this file and in `bolt-dispatch-prompt.md`; neither file may carry a different one.
   - **The label is the EVIDENCE-QUALITY axis and it reads the binding's recorded value first.** When the claim has a row in `binding.md ## Implementation State Map`, the label is that row's `Confidence` cell, mapped `high→HIGH`, `medium→MEDIUM`, `low→LOW`.
@@ -308,7 +308,7 @@ Applying the purpose-scoped rail:
 
 ## TIER 3 (reference-only — NOT embedded; read on demand)
 
-Full upstream bolt-reports, full constitution, full KB domain files, full memory tables, full framework pack.
+Full upstream bolt-reports, full constitution, full KB domain files, full framework pack.
 
 ## Size check
 
@@ -470,7 +470,7 @@ Five spec passages were amended during the wiring pass to match the new builder.
 - **Bind-time anchor excerpt/sha field** (`bind-codebase` schema) — the only way to close anchor content-drift detection without inventing an input.
 - **Structured static-analysis field in the framework packs** — until one exists, the template's static-analysis slot stays empty rather than guessing a tool per stack.
 - **Pack `## Forbidden patterns` is 772–2 044 B of NON-truncatable T1** (measured; 18.8 % of the max prompt). Making it truncatable would resolve the "pack silently vanished" failure by conceding it — a bolt shipping without pack governance through a sanctioned path that nobody blocks on. Recorded as a real tension; **do not resolve it by relocating the block to T2.**
-- **`## Prior failure context`** (Reflexion delivery into the dispatch) — **a NAMED GAP, not a closed question.** `halts-and-handoff.md §Memory layer` specifies the block and the builder does not emit it; under the pointer dispatch the implementer's entire context is the dispatch file, so a retry after `review_critical_unresolved` currently reaches the re-dispatched implementer without its own prior attempt's failure reflection. Closing it needs a priority row here and a truncation rung. The spec keeps the obligation; this entry is its tracking record.
+- **`## Prior failure context`** — CLOSED as REMOVED (v7.3.0): the Reflexion memory lane it depended on is deleted; the retry path's failure context rides the finding ledger (`findings.json`, pointer re-dispatch) instead — pipeline evidence, not memory.
 
 ## Known open (carried deliberately — named so they are not lost)
 

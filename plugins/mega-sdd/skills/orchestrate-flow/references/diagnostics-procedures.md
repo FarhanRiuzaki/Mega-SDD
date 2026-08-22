@@ -165,7 +165,7 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 1. Read the module's `dod:` checklist from `_meta/modules.yaml` (halt with the valid module IDs if the id is unknown).
 2. For each **unmarked** item, ask via `AskUserQuestion`: *"DoD item: `<text>` — mark passing?"* — options: (1) Mark passing, (2) Skip, (3) Run associated test command (when the item text looks like a command, e.g. `phpunit …`).
 3. On **Run** → invoke the command via Bash; exit code is the verdict (deterministic pass/fail — never "looks done"). On success, mark passing.
-4. On **Mark passing** → rewrite that `dod:` item in `modules.yaml` to `[x] <text>`; log the outcome to memory (`outcomes.md`).
+4. On **Mark passing** → rewrite that `dod:` item in `modules.yaml` to `[x] <text>`.
 5. After review, if **all** DoD items are marked AND all units are complete → the module is `completed`; congratulate and suggest the next module. (Re-run Step 1 to show the updated counts.)
 
 ### Step 3 — Hand-off (judgment, keyed on the script output)

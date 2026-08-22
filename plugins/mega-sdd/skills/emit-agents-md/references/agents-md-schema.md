@@ -211,7 +211,6 @@ This project uses mega-sdd (https://scm.bankmegadev.com/ai-rnd/mega-sdd) for spe
 - **Full vault**: `.mega-sdd/vaults/<slug>/` (canonical)
 - **Binding manifest**: `<vault>/binding.md` (vault claims validated against codebase; CONFIRMED / CONFLICT / OQ verdicts; Implementation State Map)
 - **Unit specs**: `<vault>/units/U-*.md` (atomic AI-coding-prompt units with Hard Rules pre/post-flight validation)
-- **Memory** (operational context across sessions): `<project>/.mega-sdd/memory/` (canonical)
 
 For tools that understand mega-sdd: consume the vault + binding directly for higher precision than this flattened view.
 

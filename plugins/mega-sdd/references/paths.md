@@ -22,7 +22,7 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 
 Every writer skill resolves output paths via this protocol:
 
-1. **Check user override**: `~/.mega-sdd/memory/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference)
+1. **Check user override**: `~/.mega-sdd/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference)
 2. **Check project override**: `<project-root>/.mega-sdd/config.yaml` `output_root: <abs-or-rel-path>` (per-repo override)
 3. **Default**: `<project-root>/.mega-sdd/`
 4. **Legacy detection**: if old-layout paths exist (e.g., `docs/mega-sdd/vaults/`, `.mega-sdd-memory/`, top-level `codebase-map.md`), skills WRITE to legacy paths for back-compat. User opts into new layout via `/mega-sdd:migrate-paths`.
@@ -62,12 +62,8 @@ Every writer skill resolves output paths via this protocol:
 │   │   │   ├── e2e/                               # Playwright skeletons (build-uat-e2e.sh, 6.10.0): UAT-NNN.spec.ts + config + package.json + .gitignore
 │   │   │   └── evidence/<UAT-id>/<run-ts>/        # auditor evidence packs (uat-run.sh, sole hook-guarded writer): result.json + screenshots/ + trace.zip
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
-│   │   ├── .memory/                               # Vault-scope memory
-│   │   │   ├── classifier-accuracy.json
-│   │   │   ├── bind-history.md
-│   │   │   ├── bolt-outcomes.json                 # + failure_reflection / concerns (learning loop)
-│   │   │   ├── drift-history.md                   # drift direction calls (learning loop)
-│   │   │   └── citation-failures.jsonl            # citation-failure audit log (emit-fsd)
+│   │   ├── .memory/                               # Vault-scope PIPELINE state (name is historical)
+│   │   │   └── bolt-outcomes.json                 # per-unit completion — read by query-graph --modules
 │   │   └── .internal/                             # Vault-internal state
 │   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
 │   ├── knowledge-base/                            # Legacy KB extraction (extract-intelligence)
@@ -77,14 +73,6 @@ Every writer skill resolves output paths via this protocol:
 │   ├── codebase/                                  # Codebase analysis outputs
 │   │   ├── codebase-map.md                        # scan-codebase output
 │   │   └── symbol-index.json                      # build-symbol-index.sh output (reuse substrate; recomputable, advisory)
-│   ├── memory/                                    # PROJECT-scope memory
-│   │   ├── decisions.md                           # OQ resolutions, CONFLICT actions
-│   │   ├── conventions.md                         # Detected conventions
-│   │   ├── outcomes.md                            # Pipeline run summaries
-│   │   ├── routing-outcomes.md                    # Orchestrator chain learning
-│   │   ├── install-outcomes.md                    # install-deps audit log
-│   │   ├── _index.md                              # derived scope index (regenerated; learning loop)
-│   │   └── archived-vaults/<slug>/                # Vault archive on delete (MEMORY-OQ-5)
 │   └── exports/                                   # Tool-agnostic exports
 │       └── (additional exports)
 ├── AGENTS.md                                       # Tool-agnostic interop at REPO ROOT (unchanged — must be discoverable by other tools)
@@ -113,12 +101,8 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 
 ```
 ~/.mega-sdd/
-├── memory/                                  # Cross-project user memory
-│   ├── preferences.md
-│   ├── patterns.md
-│   ├── learning-log.md
-│   └── config.yaml                          # User defaults (thresholds, opt-outs, default_output_root override)
-└── migrations/<from>-to-<to>.sh              # Memory schema migrations
+└── config.yaml                              # User defaults (halt_auto_propose, default_output_root override)
+                                             # (v7.3.0: relocated from ~/.mega-sdd/memory/config.yaml; the memory dir is removed)
 ```
 
 ## Per-skill path mapping (canonical → legacy)
@@ -138,7 +122,6 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
-| `orchestrate-flow` | routing-outcomes | `.mega-sdd/memory/routing-outcomes.md` | (no legacy back-compat) |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
 | memory (user) | patterns.md, etc. | `~/.mega-sdd/memory/` (UNCHANGED) | same |
 | memory (vault) | classifier-accuracy.json | `<vault>/.memory/` (UNCHANGED) | same |
@@ -258,7 +241,7 @@ For project repo `.gitignore`:
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
-**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the GROUND-time guard in `scripts/ground.sh` detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). Per-dev noise files (`outcomes.md`, `routing-outcomes.md`, `telemetry.jsonl`, `.dirty-paths.jsonl`) should always be gitignored.
+**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the GROUND-time guard in `scripts/ground.sh` detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). The per-dev noise file (`.dirty-paths.jsonl`) should always be gitignored.
 
 ## References
 

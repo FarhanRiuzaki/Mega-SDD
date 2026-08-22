@@ -565,7 +565,7 @@ want = {
     # neither the unit id nor any target-file basename is DROPPED, and zero
     # matches omits the section (it used to emit every run under a header that
     # claimed relevance). Section L below pins the filter's behavior directly.
-    "historical_memory":     "no outcomes.md run passed the relevance filter",
+    "historical_memory":     "the memory lane was removed in v7.3.0",
     "depends_on_summaries":  "no depends_on entries",
     "constitution_clauses":  "no constitution.md in",
     "kb_anti_patterns":      "phantom field",
@@ -948,12 +948,11 @@ bash "$BUILD" --cwd="$P_BARE" --vault="$P_BARE/.mega-sdd/vaults/v1" --unit=U-010
                 || fail "K7: --quiet --explain was accepted"
 
 # ══════════════════════════════════════════════════════════════════════════════
-note "== L. historical memory — the relevance filter is APPLIED, not decorated =="
-# ══════════════════════════════════════════════════════════════════════════════
-# The header says "last 5 RELEVANT patterns". That word is a CLAIM. The builder
-# used to emit EVERY run in outcomes.md and use the needle test only to decorate
-# the provenance string (`matched X` vs `recency-only`), so a zero-relevance run
-# consumed the priority-2 budget a section with a real join would have used.
+note "== L. historical memory — REMOVED (v7.3.0): never emitted, always recorded omitted =="
+# The memory lane (outcomes.md / instincts) was deleted with observability. Even
+# when a legacy outcomes.md file EXISTS on disk with a relevant-looking run, the
+# builder must not read it, must not emit a Historical-memory section, and must
+# record the priority-2 slot in sections_omitted with the removal reason.
 P_MEM="$(mkproj proj-memory)"
 mkdir -p "$P_MEM/.mega-sdd/memory"
 printf '{"vault_version":"v1"}\n' > "$P_MEM/.mega-sdd/vaults/v1/vault.json"
@@ -961,43 +960,21 @@ cp "$P_BARE/.mega-sdd/vaults/v1/units/U-010.md" "$P_MEM/.mega-sdd/vaults/v1/unit
 cat > "$P_MEM/.mega-sdd/memory/outcomes.md" <<'MD'
 ## Run #1
 
-- totally unrelated alpha work on the shipping label printer
-
-## Run #2
-
 - rounded the tax line inside InvoiceTotal.php and re-ran the suite
-
-## Run #3
-
-- totally unrelated gamma work bumping a lockfile
 MD
 build "$WORK/mem.json" "$P_MEM" U-010
 PR_MEM="$(promptof "$P_MEM" U-010)"
-[ "$RC" = "0" ] && ok "L1: builder exit 0 with an outcomes.md carrying 3 runs, 1 relevant" || fail "L1: exit $RC"
-{ [ "$(cntF '## Historical memory' "$PR_MEM")" -ge 1 ] \
-  && [ "$(cntF 'InvoiceTotal.php' "$PR_MEM")" -ge 1 ]; } \
-  && ok "L2: the RELEVANT run (target-file basename overlap) IS carried, with its match named" \
-  || fail "L2: the relevant outcomes.md run did not reach the prompt"
-{ [ "$(cntF 'totally unrelated alpha' "$PR_MEM")" = "0" ] \
-  && [ "$(cntF 'totally unrelated gamma' "$PR_MEM")" = "0" ]; } \
-  && ok "L3: ...and the 2 zero-relevance runs are DROPPED, not relabelled 'recency-only'" \
-  || fail "L3: a run matching neither the unit id nor any target basename shipped under a 'relevant' header"
-$PY - "$WORK/mem.json" <<'PY' && ok "L4: ...with the drop RECORDED (count + the filter that dropped them)" || fail "L4: the dropped runs are not recorded in sections_omitted"
+[ "$RC" = "0" ] && ok "L1: builder exit 0 with a legacy outcomes.md on disk" || fail "L1: exit $RC"
+{ [ "$(cntF '## Historical memory' "$PR_MEM")" = "0" ] \
+  && [ "$(cntF 'InvoiceTotal.php and re-ran' "$PR_MEM")" = "0" ]; } \
+  && ok "L2: a legacy outcomes.md is IGNORED — no Historical-memory section, no run text (v7.3.0)" \
+  || fail "L2: legacy outcomes.md content leaked into the prompt after the v7.3.0 removal"
+$PY - "$WORK/mem.json" <<'PY' && ok "L3: the removal is RECORDED in sections_omitted" || fail "L3: historical_memory not recorded omitted"
 import json, sys
 om = {o["section"]: o["reason"] for o in json.load(open(sys.argv[1]))["sections_omitted"]}
-k = "historical_memory.unmatched_runs"
-assert k in om, sorted(om)
-assert "2 run(s)" in om[k], om[k]
-assert "relevance filter" in om[k], om[k]
+assert "historical_memory" in om, sorted(om)
+assert "v7.3.0" in om["historical_memory"], om["historical_memory"]
 PY
-# Zero matches OMITS the section — an absent input, never an unfiltered dump.
-printf '## Run #1\n\n- totally unrelated alpha\n\n## Run #2\n\n- totally unrelated beta\n' \
-  > "$P_MEM/.mega-sdd/memory/outcomes.md"
-build "$WORK/mem0.json" "$P_MEM" U-010
-{ [ "$(cntF '## Historical memory' "$(promptof "$P_MEM" U-010)")" = "0" ] \
-  && [ "$(cntF 'totally unrelated' "$(promptof "$P_MEM" U-010)")" = "0" ]; } \
-  && ok "L5: an outcomes.md where NO run passes the filter omits the section entirely" \
-  || fail "L5: a zero-relevance outcomes.md still produced a 'Historical memory' section"
 
 # ══════════════════════════════════════════════════════════════════════════════
 note "== M. halted upstream — [<status>] is UNCONDITIONAL, and absence is not zero =="

@@ -64,12 +64,11 @@ grep -qiE 'Non-interactive \(forked|NEVER calls `AskUserQuestion`|never.*AskUser
 grep -qE 'drift_inputs_missing' "$SKILL" && grep -qE 'type: drift_inputs_missing' "$AUTO" \
   && pass "drift_inputs_missing blocker referenced + defined" || fail "drift_inputs_missing not wired"
 
-# 4. drift-history persists to disk even forked (no metadata.memory_writes hand-off branch).
-grep -qE 'orchestrated chains: emit via handoff `metadata.memory_writes` instead' "$SKILL" \
-  && fail "drift-history still routes via metadata.memory_writes (a fork can't harvest it)" \
-  || pass "drift-history hand-off branch removed (fork-safe)"
-grep -qiE 'always a direct on-disk write, even when forked' "$SKILL" \
-  && pass "drift-history is an unconditional on-disk write" || fail "drift-history not unconditional disk write"
+# 4 (v7.3.0): drift-history is REMOVED with the memory lane — the fork contract
+# no longer carries a memory write at all; pin the removal.
+grep -qE 'drift-history' "$SKILL" \
+  && fail "drift-history survives in the SKILL (memory lane was removed v7.3.0)" \
+  || pass "drift-history removed (v7.3.0 — fork carries no memory write)"
 
 # 5. report-format deprecation note.
 grep -qiE 'deprecated \(v3.0.0\)|deprecated \*\*\(v3.0.0\)' "$RPT" \

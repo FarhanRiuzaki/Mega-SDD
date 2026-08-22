@@ -2103,140 +2103,13 @@ omit("kb_anti_patterns",
      "fabricated inclusion. Section omitted until the spec designates a join key.")
 
 
-# ── Priority 2 — historical memory (outcomes.md + bolt-outcomes.json + instincts) ──
-memory_lines = []
-# Canonical path first, then the READ-SIDE legacy alias (memory-schema.md:85).
-for mp in (os.path.join(CWD, ".mega-sdd", "memory", "outcomes.md"),
-           os.path.join(CWD, ".mega-sdd-memory", "outcomes.md")):
-    otext = read_text(mp)
-    if otext is None:
-        continue
-    runs = re.split(r"(?m)^(?=## Run #)", otext)
-    runs = [r for r in runs if r.strip().startswith("## Run #")]
-    # THE FILTER IS APPLIED, not decorated. context-enrichment.md §TIER 2:
-    # "filter outcomes.md for bolts touching similar files OR pattern — last 5
-    # only". The builder used to emit EVERY run under the header "last 5 relevant
-    # patterns", using the needle test only to decorate the provenance string
-    # (`matched X` vs `recency-only`). The word *relevant* in that header is a
-    # CLAIM, and on a tight unit an unfiltered slice consumed the priority-2
-    # budget a section with a real join would have used. outcomes.md is a
-    # RUN-level log with no target_files field, so the join key available is a
-    # substring test on the unit id and on each target-file basename — that is
-    # the honest reading of "touching similar files OR pattern", and a run that
-    # matches NOTHING is not relevant to this unit and is dropped, not
-    # relabelled. Zero matches omits the section (an absent input, recorded).
-    needles = [unit_id] + [p.rsplit("/", 1)[-1] for p in TARGET_PATHS]
-    needles = [n for n in needles if n]
-    _mem_seen, _mem_dropped = 0, 0
-    for r in reversed(runs):                          # most-recent-first
-        hit = next((n for n in needles if n in r), None)
-        if hit is None:
-            _mem_dropped += 1
-            continue
-        _mem_seen += 1
-        head = re.sub(r"^#+\s*", "", r.splitlines()[0].strip())
-        detail = "; ".join(l.strip("- ").strip() for l in r.splitlines()[1:]
-                           if l.strip().startswith("-"))
-        if len(detail) > 220:
-            detail = detail[:220] + "…"
-        memory_lines.append("Pattern: %s → %s  (src: %s; matched `%s`)"
-                            % (head, detail or "(no bullets)", mp, hit))
-    if _mem_dropped:
-        omit("historical_memory.unmatched_runs",
-             "%d run(s) in %s matched neither %s nor any target-file basename — dropped by the "
-             "relevance filter rather than emitted under a header that claims relevance"
-             % (_mem_dropped, mp, unit_id))
-    break
-
-bo_path = os.path.join(VAULT, ".memory", "bolt-outcomes.json")
-bo_text = read_text(bo_path)
-if bo_text:
-    try:
-        bo = json.loads(bo_text) or {}
-        for b in (bo.get("bolts") or []):
-            if not isinstance(b, dict):
-                continue
-            if b.get("unit_id") != unit_id and (not unit_module or b.get("module") != unit_module):
-                continue
-            bits = [x for x in (b.get("status"), b.get("halt_reason"),
-                                b.get("failure_reflection")) if x]
-            if not bits:
-                continue
-            memory_lines.append("Pattern: prior bolt %s [%s] → %s  (src: %s)"
-                                % (b.get("unit_id"), b.get("task_type") or "?",
-                                   " · ".join(str(x) for x in bits), bo_path))
-    except ValueError:
-        # Memory is advisory context, never a gate — parse failures are silent
-        # by design (instincts.md:60). No halt, no synthesized history.
-        WARNINGS.append("bolt-outcomes.json unparseable — memory half skipped silently")
-
-instinct_lines = []
-for scope, root in (("project", os.path.join(CWD, ".mega-sdd", "memory", "instincts")),
-                    ("global", os.path.join(os.path.expanduser("~"), ".mega-sdd", "memory", "instincts"))):
-    for f in sorted(glob.glob(os.path.join(root, "*.yaml"))):
-        t = read_text(f)
-        if not t:
-            continue
-        d = {}
-        for ln in t.splitlines():
-            km = re.match(r"^(id|trigger|action|confidence|domain|scope|status)\s*:\s*(.*)$", ln)
-            if km:
-                d[km.group(1)] = _yl_scalar(km.group(2))
-        if d.get("status") != "active":
-            continue
-        try:
-            conf = float(d.get("confidence", ""))
-        except (TypeError, ValueError):
-            continue                                 # never default a confidence
-        if conf < 0.7:
-            continue
-        dom = (d.get("domain") or "").strip()
-        if dom == "ui" and not ui_bearing:
-            continue
-        if dom == "security" and unit_risk not in ("high", "critical"):
-            continue
-        if dom not in ("ui", "security", "conventions", "testing", "general", "workflow"):
-            continue
-        if not d.get("trigger") or not d.get("action"):
-            continue
-        instinct_lines.append((conf, 0 if scope == "project" else 1,
-                               "- Instinct [%s · conf %s] when %s → %s (source: memory/instincts/%s.yaml)"
-                               % (dom, d.get("confidence"), d["trigger"], d["action"], d.get("id") or "?")))
-instinct_lines.sort(key=lambda x: (-x[0], x[1], x[2]))
-INSTINCT_CAP = 6                                     # mirrors the sibling SessionStart cap
-
-
-def _render_memory(n):
-    parts = []
-    keep_mem = memory_lines[:n]
-    keep_ins = [x[2] for x in instinct_lines[:min(n, INSTINCT_CAP)]]
-    if not keep_mem and not keep_ins:
-        return ""
-    parts.append("## Historical memory (last %d relevant patterns)\n" % n)
-    parts.extend(keep_mem)
-    if keep_ins:
-        parts.append("")
-        parts.extend(keep_ins)
-        parts.append("(instincts are ADVISORY — a Hard rule, the spec, or the user always wins)")
-    return "\n".join(parts)
-
-
-if memory_lines or instinct_lines:
-    _lv, _rl = [_render_memory(5)], []
-    for n, label in ((3, "last 3"), (1, "last 1")):
-        cand = _render_memory(n)
-        if len(cand) < len(_lv[-1]):
-            _lv.append(cand)
-            _rl.append("%s only" % label)
-    _lv.append("")
-    _rl.append("drop section (drop floor)")
-    add_section("historical_memory", 2, _lv, _rl)
-else:
-    omit("historical_memory",
-         "no outcomes.md run passed the relevance filter (unit id / target-file basename "
-         "overlap), no matching bolt-outcomes.json entry and no eligible instinct. Memory "
-         "files are gitignored-by-default post-run artifacts, so absent is the normal state; "
-         "an unfiltered dump under a header that says 'relevant' is not the alternative.")
+# ── Priority 2 — historical memory: REMOVED (v7.3.0 observability cut) ──
+# The memory lane (outcomes.md / bolt-outcomes.json / instincts) was learn-from-
+# runs machinery, deleted with the rest of observability. The priority slot is
+# recorded as an omission so the cascade accounting stays honest.
+omit("historical_memory",
+     "the memory lane was removed in v7.3.0 (pipeline-only mandate) — no "
+     "historical-memory section exists to emit")
 
 
 # ── Priority 3 — reuse slice ─────────────────────────────────────────────────
@@ -3336,7 +3209,6 @@ t3_text = "\n".join([
     "- Full upstream bolt-reports: `%s/bolts/U-XXX/bolt-report.md`" % VAULT,
     "- Full constitution: `%s/constitution.md`" % VAULT,
     "- Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`",
-    "- Full memory tables: `%s/.mega-sdd/memory/`" % CWD,
     "- Full framework pack: `%s/references/framework-conventions/<pack>.md`" % PLUGIN_ROOT,
 ])
 

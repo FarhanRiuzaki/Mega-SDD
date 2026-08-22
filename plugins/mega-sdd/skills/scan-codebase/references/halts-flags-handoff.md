@@ -1,4 +1,4 @@
-# scan-codebase — halts, flags, handoff & memory
+# scan-codebase — halts, flags & handoff
 
 ## Contents
 - Anti-hallucination rails
@@ -12,9 +12,8 @@
 - Deterministic behavior (non-interactive; `--auto` selects the chain lane)
 - Flags catalog
 - Hand-off announcement + handoff YAML emission (UNCONDITIONAL)
-- Memory layer (reads / writes / anti-halu rails)
 
-Loaded by `scan-codebase` for failure handling, flag resolution, and chain/memory integration. The surface scan procedure and the deep-scan stage are separate references the SKILL.md router links to.
+Loaded by `scan-codebase` for failure handling, flag resolution, and chain integration. The surface scan procedure and the deep-scan stage are separate references the SKILL.md router links to.
 
 ## Anti-hallucination rails
 
@@ -173,7 +172,6 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
 - `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
 - `--changed-only`: incremental re-scan — resolve changed paths (dirty journal ∪ `git diff <last_scanned_commit>..HEAD` ∪ uncommitted), re-extract only those, merge into the prior map, consume the journal (rotate-and-delete per `references/scan-procedure.md` §Incremental step 4 — never truncate-in-place, which loses concurrent-session appends); auto-falls back to full scan when preconditions absent (per §Incremental mode). On incremental success with a vault present (sync lane) it ALSO writes the resolved changed set to `<vault>/.sync-changed-paths.txt` (one path per line, overwrite) — the durable scope channel for the two non-interactive downstream phases that accept a path scope (`detect-drift --scope=@…`, which IS forked, and `bind-codebase --paths=@…`, which is a fork candidate but not yet forked; `generate-units --reconcile` reconciles from the refreshed `binding.md`, not this file), which can't self-resolve because the journal is already consumed and the stamp advanced by the time they run (§Incremental step 5); the full-scan fallback writes no such file, deletes any stale one, and continues Mode D straight to a FULL re-bind (`bind-codebase <vault> --auto` — the `<vault>` is mandatory: with no changed-set file on this branch it is the only signal the non-interactive downstream bind receives) — detect-drift is skipped on that branch (§Hand-off; spec §3.8(b)(1))
-- `--memory-off`: disable memory-layer reads and writes
 
 ## Hand-off announcement
 
@@ -239,28 +237,3 @@ Status `halted` on: `dep_missing` | `scan_spawn_budget_exceeded` (STANDALONE lan
 
 The handoff is **required on every invocation**, not only under `--auto`.
 
-## Memory layer
-
-When memory enabled (default; opt-out via `--memory-off`), participates in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
-
-### Writes
-
-| When | File | Content |
-|---|---|---|
-| After scan completes | `<project>/.mega-sdd/memory/conventions.md` | Append detected conventions: test framework, naming case, file suffix, error format. Each entry includes detection count + `status: detected` (first time) or `status: established` (threshold per `mega-sdd:memory/references/learning-rules.md`) |
-
-Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=project --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue.
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Past convention detections | `<project>/.mega-sdd/memory/conventions.md` | SKIP re-detection for conventions marked `status: established` (per learning-rules.md §2.5); just confirm signal still present |
-
-### Anti-halu rails
-
-- Memory write happens AFTER `codebase-map.md` is written (memory is derivative).
-- Conventions marked `established` STILL get re-verified each scan; status only affects whether the verbose detection is re-emitted.
-- **Detector versioning** (cache-version-bump pattern): each convention entry records the scan-codebase version that detected it. The skip-re-detect privilege applies ONLY while the current skill version matches the recorded one — a detector upgrade forces full re-detection (the entry is then re-recorded under the new version).
-- `--memory-off` disables both reads and writes.
-- Skipped conventions are logged in scan output for transparency.

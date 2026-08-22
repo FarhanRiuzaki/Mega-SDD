@@ -47,7 +47,7 @@ SK="$P/skills/resolve-oq/SKILL.md"
 grep -qF '`Defer` (slot `[3]`) is ALWAYS visible' "$SK" && ok "SKILL.md conditional-display synced" || fail "SKILL.md: old binding-only conditional survives"
 BM="$P/skills/resolve-oq/references/binding-mode.md"
 has "$BM" "evidence anchor file:line" && ok "CONFLICT menu: evidence anchor mandated" || fail "CONFLICT menu: anchor missing"
-has "$BM" "Prior call (suggestion only" && ok "CONFLICT menu: prior-call slot present" || fail "CONFLICT menu: prior-call slot missing"
+has "$BM" "Prior call" && fail "CONFLICT menu: memory prior-call slot survives (removed v7.3.0)" || ok "CONFLICT menu: prior-call slot removed with the memory lane (v7.3.0)"
 RC="$P/skills/resolve-oq/references/recommendation-context.md"
 has "$RC" "NEVER left blank" && ok "recommend-mode: alternative descriptions mandatory + grounded" || fail "recommend-mode: alternatives still 'description: ...'"
 
@@ -80,8 +80,9 @@ has "$BT" "1-line rationale citing the evidence anchor" && ok "binding.md templa
 TT="$P/skills/generate-units/references/task-typing.md"
 has "$TT" "Apa status surplus ini?" && ok "PARTIAL_FIELDS_SURPLUS review: template authored (was unwritten)" || fail "surplus review: template still missing"
 has "$TT" "never a default" && ok "surplus review: destructive branch never defaulted" || fail "surplus review: deletion-default guard missing"
-LR="$P/skills/memory/references/learning-rules.md"
-has "$LR" "berlaku mulai run berikutnya" && ok "memory review: ACCEPT/REJECT/DEFER consequences" || fail "memory review: bare enum options"
+# (v7.3.0: the memory skill + learning-rules review prompt are removed — no
+# memory-review surface remains to carry keterangan.)
+[ ! -f "$P/skills/memory/references/learning-rules.md" ] && ok "memory review surface removed (v7.3.0)" || fail "memory review surface still present"
 EI="$P/skills/extract-intelligence/SKILL.md"
 has "$EI" "Lanjut wave N+1" && ok "extract per-wave confirm: shape defined" || fail "extract: per-wave confirm undefined"
 has "$EI" "Re-scope" && has "$EI" "KB partial disimpan" && ok "extract twice-failed gate: glossed menu" || fail "extract: gate menu undefined"
@@ -106,7 +107,6 @@ has "$P/skills/execute-bolts/references/bolt-contract.md" "quote the OQ question
 has "$P/skills/diff-vault/references/auto-and-chain.md" "{code: supersede" && ok "diff_conflict producer emits {code, keterangan} pairs (schema parity)" || fail "diff_conflict producer: bare strings survive"
 has "$P/skills/diff-vault/references/report-format.md" "oq_business_p1_unresolved" && ok "P1 gloss cites the canonical halt type" || fail "P1 gloss: nonexistent halt type survives"
 has "$SK" "nested deferral not supported" && ok "[B] ALWAYS-visible carve-out for the --binding propagated walk" || fail "[B]: absolute claim contradicts binding-mode step 3"
-has "$LR" "setelah lebih dari 3× defer" && ok "memory DEFER gloss matches step 5 (> 3)" || fail "memory: off-by-one defer gloss survives"
 has "$BT" "the DISPLAYER" && ok "binding.md legend stays English in the artifact (Tier-3); displayer localizes" || fail "binding template: hardcoded Indonesian in a durable artifact"
 
 if [ "$FAILED" -eq 0 ]; then echo "ALL KETERANGAN PINS OK"; else echo "keterangan pins FAILED"; fi

@@ -13,7 +13,6 @@ This contract is required ONLY when `--auto` is in effect. Standalone skill invo
 - [Handoff YAML schema](#handoff-yaml-schema)
 - [Field-level schema annotations](#field-level-schema-annotations)
 - [Per-skill expected emissions](#per-skill-expected-emissions)
-- [Memory layer integration](#memory-layer-integration)
 - [Orchestrator consumption logic](#orchestrator-consumption-logic)
 - [Anti-halu invariants for handoff YAML](#anti-halu-invariants-for-handoff-yaml)
 - [Backward compatibility](#backward-compatibility)
@@ -62,7 +61,7 @@ handoff:
     prd_sha256: <sha256>                # from vault.json (used by downstream skills to detect PRD changes)
   cycles:                               # when convergence loops active
     cycle_count: <N>                   # how many auto-recovery cycles ran
-    halts_auto_resolved: []             # halt types resolved via memory recommendations
+    halts_auto_resolved: []             # halt types resolved via grounded recommendations
     halts_escalated_to_user: []         # halt types deferred for manual review
   replay:                               # when replay capture active
     snapshot_path: <abs path to .internal/replays/*.jsonl>
@@ -74,22 +73,7 @@ handoff:
     authz_lib: <enum>                   # mirrors §authz.lib
     ui_stack: <string>                  # short-form summary, e.g., "alpine + tailwind + sweetalert2"
     libs_count: <int>                   # total libs detected in §libs
-  metadata:                             # memory layer integration; optional otherwise
-    memory_context:                     # IN — POINTER slice (M-16), never row text: the rows are already in
-                                        # session context from the chain-start read; a consumer not holding
-                                        # them (fresh/resumed session, forked skill) does a targeted Read
-      project_decisions_relevant:       # pointers into <project>/.mega-sdd/memory/decisions.md (canonical)
-        - {file: <path>, rows: [<date>+<oq-id|conflict-id>, …], digest: <one line>}
-      project_conventions_relevant: []  # same pointer shape, into conventions.md
-      vault_outcomes_relevant: []       # same shape, into <vault>/.memory/*.json (rows: unit/rule ids)
-      user_patterns_relevant: []        # same shape, into ~/.mega-sdd/memory/patterns.md
-      user_preferences_relevant: []     # same shape, into preferences.md
-    memory_writes:                      # OUT — write RECEIPT (M-16), never content: the skill has ALREADY
-                                        # appended its rows via scripts/memory-write.sh at emission time
-                                        # (the script secret-scans + locks + appends atomically)
-      files_written:                    # path LIST, not a bare count — the chain-end extract-learnings
-        - <absolute-path>               # pass and _index.md regen key off these paths
-      rows_appended: <int>
+  metadata:                             # optional; carries resolved model tiers when present
     model_tiers:                        # resolved model tier per named subagent role
       auth-extractor: sonnet            # example; actual entries depend on chain roles
       code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
@@ -197,9 +181,9 @@ TYPE: object — `{ cycle_count: int, halts_auto_resolved: array<string>, halts_
 
 TYPE: object — `{ snapshot_path: string (absolute path), divergence_classification: enum (clean | minor | high | n/a) }`. Required when replay capture was active for this run.
 
-### `metadata:` (OPTIONAL — memory layer integration; when active)
+### `metadata:` (OPTIONAL)
 
-TYPE: object — `{ memory_context: object (pointer slices), memory_writes: object ({ files_written: array<string>, rows_appended: int } — a write receipt, not content) }`. Optional — memory layer off (`--memory-off`) omits this block entirely.
+TYPE: object — carries `model_tiers:` (below) when orchestrate-flow resolved overrides. (v7.3.0: the memory_context / memory_writes fields are REMOVED with the memory lane; a handoff carrying them from an older producer is ignored, never validated against.)
 
 ### `model_tiers:` (CONDITIONAL — if orchestrate-flow resolved overrides)
 
@@ -270,7 +254,7 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 | `generate-intent` | completed \| paused (P1 business OQs — user triage; downstream still works) \| halted (`oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `memory_in_use`) | CWD-conditional on codebase-map presence (routing-rules.md :53/:55): brownfield + codebase-map PRESENT → `mega-sdd:bind-codebase` (the norm under the scan-first reorder); brownfield + NO codebase-map on disk yet → `mega-sdd:scan-codebase`; greenfield → `mega-sdd:generate-units` | `generate-intent/references/auto-and-handoff.md` |
 | `scan-codebase` | completed \| halted (`deep_scan_subagent_all_failed` / `dep_missing` / `memory_in_use`); soft-halt warn-only, chain continues (`deep_scan_subagent_failed` / `deep_scan_cache_corrupt`) | CWD-conditional: no vault yet → `mega-sdd:generate-intent --scan=<map> --auto` (starterkit-first — draft the vault scan-aware); vault already present → `mega-sdd:bind-codebase <vault> --auto`; sync lane (`--changed-only` under Mode D), incremental ran → `mega-sdd:detect-drift --vault=<vault> --scope=@<vault>/.sync-changed-paths.txt --auto`; sync-lane full-scan fallback → SKIP detect-drift, hand off mega-sdd:bind-codebase `<vault> --auto` (no changed set to scope; continue Mode D straight to a FULL re-bind per §3.8(b)(1) — a scope-less detect-drift null-terminates the chain before the re-bind) | `scan-codebase/references/halts-flags-handoff.md` |
 | `bind-codebase` | completed \| paused \| halted (`bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use`); tech-OQ recommendations are advisory — surfaced in binding.md, status stays `completed` (bind-codebase §2.7) | completed → `mega-sdd:generate-units` — args STATE-based on what this bind actually did, not the `--paths` flag: `["--auto"]` on a full re-bind (incl. a `--paths` run that fell back per binding-contract.md "Fallback to full re-bind"); `["--reconcile", "--auto"]` ONLY when a claim-scoped re-bind actually executed (S4 living-vault sync lane §3.3/§3.6) so generate-units reconciles in place; halted on conflict → `mega-sdd:resolve-oq` (args unchanged) | `bind-codebase/references/auto-memory-handoff.md` |
-| `generate-units` | completed \| halted (`cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing` / `memory_in_use`) | → `mega-sdd:execute-bolts --all --parallel --auto` (wave layering from the chain's analyze-parallelism JSON when in context; the overlap rail stays with the dispatcher) | `generate-units/references/auto-and-memory.md` |
+| `generate-units` | completed \| halted (`cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing`) | → `mega-sdd:execute-bolts --all --parallel --auto` (wave layering from the chain's analyze-parallelism JSON when in context; the overlap rail stays with the dispatcher) | `generate-units/references/auto-and-memory.md` |
 | `execute-bolts` | completed \| halted (any entry of the canonical bolt-halt enum — single owner, see pointer below) | → `mega-sdd:detect-drift` (never terminal — the DEFAULT-ON drift auto-gate); `suggested_args: ["--scope=<id>"]` when the batch ran scope-filtered so detect-drift inherits it (AUDIT L9), else `[]`; phase advance is an informational `next_action.hint`, never a `suggested_skill`; `metrics.acceptance_test_concerns` (array of `{unit, concern}`; empty when none) is consumed by the chain-end summary diagnostics (`chain-execution.md`) | `execute-bolts/references/halts-and-handoff.md` |
 | `diff-vault` | completed \| paused \| halted (`diff_conflict` / `memory_in_use` / `delta_too_large`) | clean apply → `mega-sdd:orchestrate-flow` (re-inspects CWD + re-plans; subsumes the brownfield re-bind hop and is the only valid hop for a greenfield vault; a from-prompt apply's `.delta-changed-paths.txt` is picked up by the router's §Delta lane row there); halted `delta_too_large` → `mega-sdd:orchestrate-flow` re-plan after the user's full_lane/split_ticket/cancel choice; completed + new `[ ]` OQ rows materialized (`OQ-{CODE}-{N+1}`) → `mega-sdd:resolve-oq` (its `[ ]`-walk can consume them); halted `diff_conflict` → re-invoke `mega-sdd:diff-vault` WITHOUT `--auto` (interactive Step 5) — NEVER resolve-oq, which cannot read a `VAULT-DIFF.md` conflict (its OQ is `[x]` resolved and lives only in `VAULT-DIFF.md`; per §Anti-halu invariants a halted `next_action` must point at the true resolution path) | `diff-vault/references/auto-and-chain.md` |
 | `resolve-oq` | completed \| paused \| halted (malformed vault / cycle protection in `--binding` mode / `memory_in_use`) | `--binding` action-mix (binding-mode.md Step 5): any KEEP_CODE or SPLIT → `mega-sdd:bind-codebase` (re-bind is clean); ONLY KEEP_VAULT/DEFER → `mega-sdd:generate-units` (a blanket re-bind would loop the same CONFLICT); intent mode → `mega-sdd:orchestrate-flow` (resume chain) | `resolve-oq/references/auto-memory-handoff.md` |
@@ -282,49 +266,6 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 **Canonical bolt-halt enum (single owner).** The 29-entry execute-bolts halt enum lives ONLY in `execute-bolts/references/halts-and-handoff.md §Handoff emission` (`halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft). This index deliberately carries NO copy — consult the owner; with a single home, copy-drift is impossible by construction.
 
 ---
-
-## Memory layer integration
-
-When `--auto` mode is active AND memory layer enabled (default; opt-out via `--memory-off`):
-
-### Orchestrator memory read (chain start, ONCE per chain per MEMORY-OQ-7)
-
-Before invoking the first skill in `--deep` mode:
-
-1. Read user-scope: `~/.mega-sdd/memory/preferences.md` + `~/.mega-sdd/memory/patterns.md`
-2. Read project-scope: `<cwd-project-root>/.mega-sdd/memory/decisions.md` + `conventions.md` + `outcomes.md`
-3. Read vault-scope (if vault path detected in CWD): `<vault>/.memory/classifier-accuracy.json` + `bind-history.md` + `bolt-outcomes.json`
-4. Build per-skill POINTER slices (file path + row keys + one-line digest per relevant row — no row text; the rows entered session context in steps 1–3)
-5. Pass the pointer slices to each skill via handoff YAML `metadata.memory_context` field at invocation
-
-### Skill memory writes (emission time, per M-16)
-
-Skills persist their own rows; the orchestrator receives a receipt:
-
-1. The skill appends each row via `scripts/memory-write.sh --file=<resolved-path> --scope=<scope> --cwd=<project-root>` at emission time — the script secret-scans the content (`[REDACTED-SECRET]` redaction), acquires the advisory lock, and appends atomically (MEMORY-OQ-6: append-only, race-tolerant). The skill resolves the absolute path per scope rules itself. An "update" is an append carrying a supersedes marker in the row text — memory files are append-only; nothing rewrites prior rows.
-2. The handoff carries only `metadata.memory_writes: {files_written: [<paths>], rows_appended: <int>}` — a receipt of writes already on disk, never content.
-3. `memory-write.sh` exit ≠ 0 → the skill logs and continues (memory is optional; never a chain halt); the failed path is omitted from the receipt.
-4. The orchestrator logs one chat line per `files_written` entry and unions the paths for the chain-end extract-learnings pass + `_index.md` regeneration.
-
-### Skill responsibilities
-
-Per the `§metadata` extension in this contract:
-
-- Skill consults the row text already in session context (chain-start read); when the pointed rows are not in context — fresh/resumed session, forked skill — it does a targeted Read of the pointed file/rows. Never infer row content from the digest alone.
-- Skill applies memory consultations per its own SKILL.md §Memory layer section
-- Skill appends its rows via `scripts/memory-write.sh` at emission time
-- Skill emits the write receipt in `metadata.memory_writes` at end
-
-This keeps autonomy mode FAST (row content transits chat once, at the chain-start read) and CONSISTENT (one deterministic writer script owns scan + lock + append for every memory file).
-
-### Schema mismatch handling (per MEMORY-OQ-1)
-
-If orchestrator detects memory schema version mismatch during chain-start read:
-
-1. Halt chain BEFORE first skill invocation
-2. Emit `memory_schema_mismatch` blocker YAML
-3. User runs migration helper via `mega-sdd:memory` skill
-4. Resume chain via `--resume` after migration
 
 ## Orchestrator consumption logic
 
