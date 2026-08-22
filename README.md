@@ -296,7 +296,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 ├── .mega-sdd/                              # ALL mega-sdd outputs
 │   ├── config.yaml                          # project-level config
 │   ├── vaults/<slug>/                       # vault per project
-│   │   ├── 00-index.md ... 06-constraints.md, vault.json
+│   │   ├── vault.md, model.md, flows.md, constraints.md, vault.json   # layout-2 (v7); legacy: 00-index.md ... 06-constraints.md
 │   │   ├── binding.md, bound/, units/, bolts/
 │   │   ├── _meta/squads.yaml, modules.yaml  # multi-squad + modules
 │   │   ├── interfaces/                      # cross-squad contracts

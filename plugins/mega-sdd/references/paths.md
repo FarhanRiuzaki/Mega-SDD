@@ -35,8 +35,9 @@ Every writer skill resolves output paths via this protocol:
 │   ├── config.yaml                                # Project-level config (output_root, opt-outs)
 │   ├── slices/<slug>/slice-report.md              # /mega-sdd:slice reports (slice-design, 6.8.0 — new artifact, no legacy location)
 │   ├── vaults/<slug>/                             # Vault content + per-vault state
-│   │   ├── 00-index.md ... 06-constraints.md     # 7-file vault
-│   │   ├── vault.json                             # Manifest
+│   │   ├── vault.md, model.md, flows.md,          # 4-file layout-2 vault (v7; legacy vaults:
+│   │   │   constraints.md                         #   00-index.md ... 06-constraints.md — see §Vault layout)
+│   │   ├── vault.json                             # Manifest (carries vault_layout: 2 on layout-2)
 │   │   ├── claims-ledger.json                     # Derived claim index (derive-claims-ledger.sh — bind --express input)
 │   │   ├── binding.md                             # Binding manifest (after bind-codebase)
 │   │   ├── bound/                                 # Bound-vault (after binding clean)
@@ -90,6 +91,23 @@ Every writer skill resolves output paths via this protocol:
 ├── CLAUDE.md                                       # Project AI context (unchanged)
 └── (project source: app/, routes/, src/, etc.)
 ```
+
+## Vault layout (v7 layout-2 ↔ legacy 7-file)
+
+Layout-2 (v7 default; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for one minor cycle (probe the layout-2 file first, fall back to the legacy name — floor v5.9.0 kantor). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
+
+| Layout-2 | Legacy (7-file) | Content |
+|---|---|---|
+| `vault.md` frontmatter | `00-index.md` §Vault Lock Status | the six lock values (+ `kb_module_graph`) |
+| `vault.md ## Overview` | `01-overview.md` | product, personas, problem, success criteria |
+| `vault.md ## Architecture` | `02-architecture.md` | layers, components, API contracts |
+| `vault.md ## Decisions` | `05-decisions.md` | `### D-NNN` ADRs |
+| `vault.md` Glossary/Auto-Classification/Source documents/Changelog | `00-index.md` sections | moved verbatim (roll-up + reading ceremony retired) |
+| `model.md` | `03-data-model.md` | DBML entities |
+| `flows.md` | `04-flows.md` | Mermaid flows + DoD (the hot surface — hook + locators dual-probe) |
+| `constraints.md` (+ `## Open Questions`, `[origin:]` tokens) | `06-constraints.md` + per-doc OQ sections + the roll-up | constraints + THE one authored OQ home |
+
+The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER CONTRACT — derive-vault-json + derive-claims-ledger exit 2 naming the missing header (DOC_CODE re-keys filename→section on layout-2).
 
 ## User-scope
 
