@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.16.1
+version: 2.17.0
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 4-file anti-hallucination vault (layout-2); Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -43,11 +43,11 @@ Do NOT use to validate a vault against live code (`bind-codebase` / `detect-drif
 
 `generate-intent` has TWO input modes (Mode A structured, Mode B free-text), a KB sub-mode under Mode B, and a starterkit-aware overlay that applies to ALL modes when scan-codebase ran first.
 
-- **Mode A — structured input (PRD / BRD / Figma).** `generate-intent ./prd.md`. Parse + decompose directly per `references/vault-contract.md` **§schema + §OQ-conventions + §id-stability** (the drafting core — §Starterkit-binding ONLY under `--scan`, §constitution ONLY at Step 3.4, §Multi-scope ONLY when the PRD carries a `scopes:` block or `--scope` is passed, concurrency detail ONLY on lock contention). No Q&A unless the source is critically incomplete.
+- **Mode A — structured input (PRD / BRD / Figma).** `generate-intent ./prd.md`. Parse + decompose directly per `references/vault-core.md` **§schema + §OQ-conventions + §id-stability** (the drafting core — §constitution ONLY at Step 3.4, concurrency detail ONLY on lock contention; `vault-contract.md` is the conditional overlay: §Starterkit-binding ONLY under `--scan`, §Multi-scope ONLY when the PRD carries a `scopes:` block or `--scope` is passed). No Q&A unless the source is critically incomplete.
 - **Mode B — free-text brief.** `generate-intent --from-prompt "<brief>"` (or detected when no structured path is given). Runs adaptive Q&A (≤10 questions) to fill gaps, then produces a seed-PRD + vault in one pass. Procedure → `references/from-prompt-mode.md`.
 - **Mode B (KB sub-mode) — `--kb=<path>`.** `generate-intent --kb=.mega-sdd/knowledge-base/`. Consumes an `extract-intelligence` knowledge base as a legacy-rebuild brief. KB is ANALYSIS INPUT, not a 1:1 spec: vault emphasizes reengineering goals + business intent; legacy detail surfaces only where the `[LOCKED]` tier requires 1:1 preservation. Full procedure (freshness preflight, tier-aware routing, ERD freedom, Q&A loop) → `references/kb-submode.md`.
 
-All three modes share the SAME vault contract (`references/vault-contract.md`); only input parsing differs.
+All three modes share the SAME vault contract (`references/vault-core.md` + `references/vault-contract.md`); only input parsing differs.
 
 ### Mode A / B detection rules (deterministic — no LLM judgment)
 
@@ -99,8 +99,8 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 └── vault.json           ← Machine-readable manifest (script-derived — `derive-vault-json.sh`; markdown stays human-authoritative)
 ```
 
-- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-contract.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the 7 markdown files, carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
-- An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-contract.md §constitution`.
+- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-core.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the 7 markdown files, carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
+- An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-core.md §constitution`.
 - Multi-squad mode (≥2 squads) additionally emits `_meta/squads.yaml`, `interfaces/_index.md`, and `.obsidian/graph.json` → `references/setup-flow.md`.
 - Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/multi-scope.md`.
 
@@ -108,7 +108,7 @@ The per-file content guide (output-mode policy, readability standards, the vault
 
 ## OQ classification (every OQ, every run)
 
-Every Open Question is tagged at generation time with `category: business | tech` + `resolution_mode` + `classification_confidence`, using the auto-classifier heuristics in `references/vault-contract.md §Auto-classifier heuristics`:
+Every Open Question is tagged at generation time with `category: business | tech` + `resolution_mode` + `classification_confidence`, using the auto-classifier heuristics in `references/vault-core.md §Auto-classifier heuristics`:
 
 - **`business`** OQs → `resolution_mode: blocking` (need a stakeholder decision).
 - **`tech`** OQs → `scan` (resolvable from a codebase-map; needs `scan_query`), `recommend` (Claude proposes a pick; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**), or `blocking`.
@@ -116,7 +116,7 @@ Every Open Question is tagged at generation time with `category: business | tech
 - Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the vault.md `## Auto-Classification Review` section.
 - **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. A user override recorded in `classifier-accuracy.json` always wins over re-classification (never silently overwrite a human correction).
 
-The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-contract.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`; `oq_recommend_citation_invalid` fires post-write via `validate-vault-oqs.sh`) → `references/generation-guide.md`.
+The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-core.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`; `oq_recommend_citation_invalid` fires post-write via `validate-vault-oqs.sh`) → `references/generation-guide.md`.
 
 ## Workflow skeleton
 
@@ -126,7 +126,7 @@ Run in order. Heavy detail for each step lives in the referenced files; the **ex
 2. **Step 1 — Inventory and read.** Locate inputs (sandbox `/mnt/user-data/uploads/` vs local CWD/ask); route each file to the right reader (PDF / DOCX / MD-TXT); for any Figma URL, load Figma MCP via `ToolSearch query:"figma"` — **if no MCP and no screenshots, ask before proceeding; never invent UI structure.** Read every input fully.
 3. **Step 2 — Extract before writing.** Build an internal map (product, project shape, components, entities, flows, decisions, constraints, gaps, optional design-system flags `HAS_UI_COMPONENTS` / `HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`). Infer + **confirm `PROJECT_SHAPE`** with the user (Project Shape Registry → `references/detection-and-shapes.md`). Gap-handling depends on `PRD_STATUS`: `draft` may pause when gaps > 10; `final` never pauses — every gap goes to OQs.
 4. **Step 3 — Generate the 4 files** into `<OUTPUT_DIR>`, per `references/generation-guide.md` — read §Step 3 + §Mandatory section template + §File-by-file content guide + §Readability standards (mandatory for all 4 files) + the constraints.md centralized-OQ structure + §Output mode policy (the ACTIVE mode's column); **the design-system content ONLY when a Step-2 `HAS_*` flag is set** (operator-surface + Design-Source OQ rules ride §Operator-workflow-UX capture). Then **Run** `mkdir -p <OUTPUT_DIR>/_meta && cp "$PLUGIN_ROOT/skills/generate-intent/references/templates/ai-consumer-guide.md" <OUTPUT_DIR>/_meta/ai-consumer-guide.md` — installs the static guide byte-identical (never model-rendered; `$PLUGIN_ROOT` per `references/generation-guide.md §Reading the templates`; the dedicated copy script was demoted to this one-liner in v7 Fase 2). Multi-squad artifacts if applicable. `vault.json` is NOT derived here — the single derive runs at Step 3.8, after constitution (3.4), classifier (3.5), and advisor (3.7) have produced the patch content.
-5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-contract.md §constitution`.
+5. **Step 3.4 — Write `constitution.md`** (§A–§F, every clause source-cited) unless `--no-constitution` → `references/vault-core.md §constitution`.
 6. **Step 3.5 — OQ auto-classification** on every generated OQ (see "OQ classification" above) → validation gate → `references/generation-guide.md`.
 7. **Step 3.7 — Phase-advisor pass (adversarial second-opinion; default-on, `--no-advisor` skips).**
    - Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus) + **the vault DIR path, the source file PATHS (PRD/brief/screenshot files/KB dir), the scope id + phase N/total when this is a `--scope`/`--phase` run, and the OQ counts (constraints.md `## Open Questions`)** — **NOT the pasted file contents** (the claims, OQ text, and classification brackets are on disk after Step 3; the advisor has `Read`/`Grep`/`Glob` and opens the corpus itself — the dispatch is a SEED it expands past, never its horizon).
@@ -169,7 +169,8 @@ Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over
 
 ## Specialist references (load on demand)
 
-- **`references/vault-contract.md`** — the shared contract: `vault.json` §schema, §OQ-conventions, §Auto-classifier heuristics, §constitution, §Starterkit-binding, §stages-propagation, §Concurrency contract. The halt machinery (§halt-protocol — the full `blocker` envelope + halt-type roster — and §halt-escalation-discipline) lives in `plugins/mega-sdd/references/halt-protocol.md`.
+- **`references/vault-core.md`** — the default-lane contract: `vault.json` §schema (incl. §stages-propagation + §Concurrency contract), §OQ-conventions + §Auto-classifier heuristics, §constitution, §boilerplate, §id-stability.
+- **`references/vault-contract.md`** — conditional overlays (load only on their condition): §Starterkit-binding (`--scan`), §Multi-scope pointer (scoped vaults). The halt machinery (§halt-protocol — the full `blocker` envelope + halt-type roster — and §halt-escalation-discipline) lives in `plugins/mega-sdd/references/halt-protocol.md`.
 - **`references/multi-scope.md`** — §Multi-scope vault scope-tagging schema (load when the PRD declares a `scopes:` block or `--scope=<id>` is passed).
 - **`references/setup-flow.md`** — Steps 0–0.9: output-path resolution + environment checks, `IMPLEMENTATION_MODE` / `PRD_STATUS` / `OUTPUT_MODE` flags, squad partition + multi-squad emission, Step 0.8 scan-aware loading, Step 0.9 scope picker + retrofit bridge + the three scope halt YAMLs, and the `--scan` / `--greenfield` / `--scope` / `--no-pre-scan` / `--no-constitution` flag mechanics.
 - **`references/kb-submode.md`** — Mode B KB sub-mode: freshness-snapshot preflight, the tier-aware routing table (`[VERIFIED]/[INFERRED]/[OPEN]` × `[LOCKED]/[INTENT]/[ARTIFACT]`), `--phase=N` parsing + phasing, ERD freedom, and the KB Q&A loop.

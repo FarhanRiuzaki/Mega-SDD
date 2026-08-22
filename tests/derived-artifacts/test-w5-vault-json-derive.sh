@@ -252,8 +252,8 @@ grep -q "derive-vault-json.sh" \
   && grep -q "derive-vault-json.sh" "$PLUGIN_ROOT/skills/diff-vault/SKILL.md" \
   && grep -q "derive-vault-json.sh" "$PLUGIN_ROOT/skills/bind-codebase/SKILL.md" \
   || { fail "5: a writer SKILL.md lost its derive-vault-json.sh Run instruction"; SWEEP_OK=0; }
-grep -q "SCRIPT-DERIVED" "$PLUGIN_ROOT/skills/generate-intent/references/vault-contract.md" \
-  || { fail "5: vault-contract.md lost the SCRIPT-DERIVED declaration"; SWEEP_OK=0; }
+grep -q "SCRIPT-DERIVED" "$PLUGIN_ROOT/skills/generate-intent/references/vault-core.md" \
+  || { fail "5: vault-core.md lost the SCRIPT-DERIVED declaration"; SWEEP_OK=0; }
 [ "$SWEEP_OK" -eq 1 ] && ok "5: all 4 writers run the script; no surface instructs a model-side vault.json write/lock (2-signature sweep)"
 
 # ── 6. OQ annotation position pins (vault_md.py mid-doc extraction) ──

@@ -122,7 +122,7 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 
 ## Pass criteria (Auto-classifier)
 
-All 7 cases above (CL1-CL7) classify correctly per `references/vault-contract.md` §Auto-classifier heuristics. No fabricated recommendation citations. Halt fires cleanly on validation failure. Conservative default (business/blocking/low) when no pattern matches.
+All 7 cases above (CL1-CL7) classify correctly per `references/vault-core.md` §Auto-classifier heuristics. No fabricated recommendation citations. Halt fires cleanly on validation failure. Conservative default (business/blocking/low) when no pattern matches.
 
 ## Iter 35 — Phase discoverability (v1.14+, v3.26+)
 

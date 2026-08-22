@@ -2,7 +2,7 @@
 # test-2b-constitution-citation.sh — god-review stage 2, Batch 2B (Critical).
 # Pins the per-clause source-citation check in validate-constitution.sh.
 #
-# The rail "constitution clauses MUST cite source" (vault-contract.md §constitution)
+# The rail "constitution clauses MUST cite source" (vault-core.md §constitution)
 # was enforced by NOTHING — the shipped schema example modelled ~17/20 clauses uncited
 # incl. invented NFRs (median < 200ms). Because a clause is injected into each unit's
 # `## Hard rules` as a severity:error BLOCKING gate at execute-bolts, an uncited /

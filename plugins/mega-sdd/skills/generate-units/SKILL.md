@@ -163,4 +163,4 @@ Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit t
 
 ## Related skills
 
-Upstream: `bind-codebase` (produces the binding manifest + Implementation State Map this skill reads). OQ conventions + `vault.json` field rules: `../generate-intent/references/vault-contract.md`. The halt-protocol contract: `plugins/mega-sdd/references/halt-protocol.md`. Downstream: `execute-bolts` (consumes units; enforces `target_files`, Hard rules, render tests, sibling-consistency). Orchestration: `orchestrate-flow` (auto-routes here and consumes the handoff YAML).
+Upstream: `bind-codebase` (produces the binding manifest + Implementation State Map this skill reads). OQ conventions + `vault.json` field rules: `../generate-intent/references/vault-core.md`. The halt-protocol contract: `plugins/mega-sdd/references/halt-protocol.md`. Downstream: `execute-bolts` (consumes units; enforces `target_files`, Hard rules, render tests, sibling-consistency). Orchestration: `orchestrate-flow` (auto-routes here and consumes the handoff YAML).

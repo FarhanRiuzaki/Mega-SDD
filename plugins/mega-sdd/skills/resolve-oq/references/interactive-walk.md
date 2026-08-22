@@ -470,7 +470,7 @@ Then:
 
 **If `Defer`** (the ONE sanctioned second prompt on this path — who/when is recorded state and may not be invented):
 
-There are TWO defer targets (per `vault-contract.md §OQ status tracking`, `defer_to` field — a
+There are TWO defer targets (per `vault-core.md §OQ status tracking`, `defer_to` field — a
 closed two-value set with **no declared default**):
 
 - **`defer_to: stakeholder`** — waiting on a human decision (legal review, PM, security, target date); also the only legal value in greenfield, where it is written explicitly rather than defaulted
@@ -485,7 +485,7 @@ one-call-many-questions shape anywhere else a follow-up needs more than one valu
 
 Q1 (`defer_to`) is present ONLY in brownfield (vault `mode: existing` AND repo signals). In
 greenfield the call carries Q2 alone and `defer_to` is written EXPLICITLY as `stakeholder` by the
-derive patch in step 5 below. **It is not a schema default — `vault-contract.md §OQ status
+derive patch in step 5 below. **It is not a schema default — `vault-core.md §OQ status
 tracking` declares none for `defer_to`** (it declares one only for `status`); `stakeholder` is the
 single LEGAL value in that context, because `binding` means "resolved at `bind-codebase` against a
 codebase-map" and greenfield has no repo to bind against. A determined value, not a derived answer.

@@ -46,6 +46,7 @@ for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
          "${ROOT}/tests/integration/e2e-iter6.test.md" \
          "${P}/skills/generate-intent/references/vault-contract.md" \
+         "${P}/skills/generate-intent/references/vault-core.md" \
          "${P}/references/halt-protocol.md" \
          "${P}/skills/orchestrate-flow/references/halt-taxonomy.md"; do
   [ -f "$f" ] || { fail "EB-GATE-3 scan target missing: $f"; BAD=1; continue; }

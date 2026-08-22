@@ -788,7 +788,7 @@ def flow_entity_tokens(header):
 from collections import defaultdict
 
 # Flow taxonomy is a documented mega-sdd vault-FORMAT convention (NOT a stack
-# signature) — generate-intent/references/vault-contract.md §Flow ID prefixes:
+# signature) — generate-intent/references/vault-core.md §Flow ID prefixes:
 #   F-U- = user-facing (accepts external input — needs input-validation artifacts)
 #   F-S- = system / backend (internal service method — no HTTP input boundary)
 #   F-C- = cross-cutting (multi-layer concern, not an entity CRUD/workflow surface)

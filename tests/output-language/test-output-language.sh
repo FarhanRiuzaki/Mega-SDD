@@ -74,7 +74,7 @@ else bad "census missing precedence section or Tier-3 per-artifact table"; fi
 CARRIERS=(
   "generate-intent/SKILL.md"
   "generate-intent/references/from-prompt-mode.md"
-  "generate-intent/references/vault-contract.md"
+  "generate-intent/references/vault-core.md"
   "orchestrate-flow/SKILL.md"
   "extract-intelligence/SKILL.md"
   "scan-codebase/SKILL.md"

@@ -36,7 +36,7 @@ grep -q 'PENDING-SYNC.archive.md' "$P/skills/orchestrate-flow/references/sync-di
 # D3 — binding.md serialization under the vault.json write path (W5: the lock
 # moved INTO derive-vault-json.sh — the contract must still name binding.md's
 # serialization story, not silently drop it)
-grep -q 'binding.md has no separate lock; the script-held derive is the serialization point' "$P/skills/generate-intent/references/vault-contract.md" \
+grep -q 'binding.md has no separate lock; the script-held derive is the serialization point' "$P/skills/generate-intent/references/vault-core.md" \
   && pass "D3: binding.md serialization named under the script-held vault lock" || fail "D3: binding lock coverage missing"
 
 # D4 — unit-count scale advisory

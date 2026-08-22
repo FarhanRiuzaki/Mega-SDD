@@ -49,7 +49,7 @@ Thresholds higher than 5 hits = conservative; lower thresholds = aggressive lear
 **Source**: `<vault>/.memory/classifier-accuracy.json` `user_overrides` array
 **Pattern key**: combination of (auto_tag, user_tag, regex over OQ text)
 **Aggregation**: per-vault initially; promoted to project when threshold hit; promoted to user via explicit `mega-sdd:memory promote`
-**Suggested action**: Update `generate-intent/references/vault-contract.md` heuristic table
+**Suggested action**: Update `generate-intent/references/vault-core.md` heuristic table
 
 Example:
 ```yaml
@@ -59,7 +59,7 @@ observation:
   projects: ["proj-a", "proj-b", "proj-c"]
   confidence: 0.875
 suggestion:
-  action: "Add to vault-contract.md heuristic table: 'should we (support|allow|enable)' → category: business, resolution_mode: blocking"
+  action: "Add to vault-core.md heuristic table: 'should we (support|allow|enable)' → category: business, resolution_mode: blocking"
   effective_after_accept: "next generate-intent runs"
 ```
 
@@ -117,7 +117,7 @@ observation:
   total_relevant: 3
   confidence: 1.00
 suggestion:
-  action: "Update vault-contract.md heuristic: 'which version of X' → category: business / blocking (was: tech / recommend)"
+  action: "Update vault-core.md heuristic: 'which version of X' → category: business / blocking (was: tech / recommend)"
   effective_after_accept: "next generate-intent runs"
 ```
 
@@ -204,7 +204,7 @@ suggestion:
        - `DEFER` — tetap pending; setelah lebih dari 3× defer otomatis di-prune (dianggap tidak relevan)
 3. On ACCEPT:
    - Write entry to `~/.mega-sdd/memory/learning-log.md`
-   - Update target heuristic file (e.g., add row to vault-contract.md auto-classifier table, set config.yaml `applied:` entry)
+   - Update target heuristic file (e.g., add row to vault-core.md auto-classifier table, set config.yaml `applied:` entry)
    - Mark suggestion in patterns.md as `status: accepted` (don't delete; audit trail)
 4. On REJECT:
    - Write entry to learning-log.md as `user_decision: REJECT` + capture `user_reason` if provided

@@ -21,7 +21,7 @@
 # no stack bound yet) operating on mega-sdd VAULT-FORMAT conventions (workflow
 # ceremony nouns + the design_system_flags block generate-intent emits for EVERY
 # vault). NO framework pack is needed by design — a new stack does not change
-# these vault conventions. Documented in generate-intent/references/vault-contract.md.
+# these vault conventions. Documented in generate-intent/references/vault-core.md.
 #
 # Per attestation risk-flag #2: KB cross-check gracefully SKIPS when KB absent
 # (not all projects have KB). NEVER halt on missing KB.
@@ -129,7 +129,7 @@ citation_pattern = re.compile(
 oq_pattern = vault_md.OQ_TAG_RE
 
 # Iter-79 U-GI: independently re-apply the deterministic Auto-classifier heuristic
-# text-pattern table (vault-contract.md §Auto-classifier heuristics) to detect an OQ
+# text-pattern table (vault-core.md §Auto-classifier heuristics) to detect an OQ
 # whose TEXT clearly reads as `tech` but is tagged `business`/untagged — the lazy-default
 # blind spot the prior validator missed (it only checked OQs ALREADY tagged [tech]).
 # These are the literal tech patterns from that table; matching is a text-pattern test,
@@ -192,7 +192,7 @@ for oq, window in oq_blocks:
         processed_oqs.add(oq)
 
         # ─── B.4-followup: detect OQ category for the advisory mis-tag check ──
-        # Category indicator keyed on the EMITTED grammar (vault-contract.md
+        # Category indicator keyed on the EMITTED grammar (vault-core.md
         # §Updated OQ schema): markdown inline bracket `[tech / scan]` / `[business]`,
         # or a quoted `"category": "tech"` when the window is vault.json. The pre-fix
         # regex required a bare `[tech]` / `category: tech` the vault NEVER emits, so
@@ -223,7 +223,7 @@ for oq, window in oq_blocks:
             })
 
 # ─── Structured OQ authority: co-located vault.json open_questions[] ──────────
-# The resolution_mode-dependent invariants (§Validation rules, vault-contract.md)
+# The resolution_mode-dependent invariants (§Validation rules, vault-core.md)
 # live in vault.json — the markdown carries the mode inline in the `[tech / scan]`
 # bracket, and scan_query / scan_citations / fallback_if_wrong are JSON-only. Read
 # the vault.json co-located with the written file as the structured authority, using
@@ -267,7 +267,7 @@ for oqe in vj_oqs:
             "resolution_mode": "scan",
         })
     # resolution_mode: recommend MUST carry recommendation + rationale + >=1
-    # scan_citations + fallback_if_wrong (vault-contract.md §Validation rules).
+    # scan_citations + fallback_if_wrong (vault-core.md §Validation rules).
     if rmode == "recommend":
         missing_fields = [f for f in ("recommendation", "rationale", "fallback_if_wrong")
                           if not str(oqe.get(f) or "").strip()]
@@ -297,14 +297,14 @@ for oqe in vj_oqs:
 # `design_system_flags` block that generate-intent emits for EVERY vault
 # regardless of target stack) — exactly like the F-U-/F-S- flow taxonomy that
 # flow-coverage hardcodes. A NEW STACK does not change these vault conventions, so
-# no pack section is needed. Documented in generate-intent/references/vault-contract.md.
+# no pack section is needed. Documented in generate-intent/references/vault-core.md.
 #
 # ANTI-HALLUCINATION: both rails demand an Open Question (operator surface req OR a
 # Design-Source OQ), NEVER a defaulted WCAG/Material/token value. The rails only
 # assert that the maker-checker miss was CAPTURED, not that a value was invented.
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Closed VAULT-FORMAT flow taxonomy (generate-intent/references/vault-contract.md
+# Closed VAULT-FORMAT flow taxonomy (generate-intent/references/vault-core.md
 # §Flow ID prefixes): F-U- user-facing; F-S- system; F-C- cross-cutting; F-X-
 # custom. A multi-stage approval (maker-checker) surface is user-facing, so we
 # scope to F-U-/prefix-less flows and EXCLUDE the internal classes.
@@ -367,7 +367,7 @@ def _split_flow_steps(body):
     return blocks
 
 
-# ── Language-invariant multi-stage markers (vault-contract.md §stages-propagation) ──
+# ── Language-invariant multi-stage markers (vault-core.md §stages-propagation) ──
 # A maker→checker / multi-step-APPROVAL flow is emitted with a `stages:` YAML block whose
 # per-stage `actor_role:` keys name the acting role, a Mermaid `stateDiagram`, and a
 # `_kb_source` stamp. The keys + diagram-type name are Tier-1 frozen (output-language.md
