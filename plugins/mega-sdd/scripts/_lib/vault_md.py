@@ -44,6 +44,14 @@ OQ_LINE_RE = re.compile(
 # `[P1]` / `[P2]` / `[P3]` priority bracket.
 OQ_PRIORITY_RE = re.compile(r"\[\s*(P[123])\s*\]")
 
+# v7 Fase 3 (gate 2026-08-22, tambahan 1): with OQs centralized in
+# constraints.md they lose the per-doc placement that used to carry locality
+# for free — every OQ line may carry an `[origin: <file>#<anchor>]` token
+# (e.g. `[origin: flows.md#F-U-002]`) naming where the question arose.
+# Parsed to the `origin` field (flows through to vault.json; consumed by
+# resolve-oq / bind for grounding locality). Absent token = absent field.
+OQ_ORIGIN_RE = re.compile(r"\[\s*origin:\s*([^\]]+?)\s*\]")
+
 # `[tech / scan]` / `[business]` classification bracket (vault-contract.md
 # §Updated OQ schema in markdown body). Closed enums.
 OQ_META_BRACKET_RE = re.compile(
@@ -123,6 +131,21 @@ VAULT_LOCK_KEYS = {
 }
 _LOCK_BULLET_RE = re.compile(r"^-\s*\*\*([^*]+)\*\*\s*:\s*(.+)$")
 
+# v7 Fase 3 layout-2 (vault.md): the six lock values live as YAML-frontmatter
+# scalars. Frontmatter is read ONLY when it carries `vault_layout: 2` — the
+# LEGACY 00-index.md frontmatter also has a `vault_version:` line, so an
+# ungated frontmatter-first read would silently re-source that one key on
+# every old vault (the zero-behavior-change rule for the dual-layout cycle).
+_VAULT_FM_RE = re.compile(r"\A---\n(.*?)\n---", re.DOTALL)
+_FM_LOCK_KEYS = {
+    "vault_version": "vault_version",
+    "project_shape": "project_shape",
+    "implementation_mode": "implementation_mode",
+    "mode_migration_trigger": "mode_migrate_after",
+    "prd_status": "prd_status",
+    "output_mode": "output_mode",
+}
+
 _FLOW_TYPE_BY_PREFIX = {
     "U": "user",
     "S": "system",
@@ -143,14 +166,49 @@ def _norm_lock_value(key, value):
     return value
 
 
-def parse_vault_lock(md):
-    """The six Vault Lock Status metadata values from 00-index.md.
+def _fm_scalar_value(fm, label):
+    """One top-level `label: value` scalar out of a frontmatter body, or None
+    when the line is absent. Strips a trailing `  #` comment and wrapping
+    quotes (the same tolerance as the sibling fm parsers)."""
+    m = re.search(r"(?m)^%s:[ \t]*(.*)$" % re.escape(label), fm)
+    if not m:
+        return None
+    v = m.group(1).strip()
+    if v.startswith("#"):
+        return None
+    v = v.split("  #", 1)[0].strip()
+    return v.strip("'\"")
 
-    Reads bullets inside the `## Vault Lock Status` section only. Returns a
-    dict containing ONLY the labels that were found (an explicit `null` value
-    is present with value None — distinct from a missing label). A missing
-    section/label is simply absent from the dict — the CALLER carries the
-    prior vault.json value forward and WARNs (never a fabricated enum)."""
+
+def vault_layout(md):
+    """2 when the doc's YAML frontmatter carries `vault_layout: 2`
+    (layout-2 vault.md), else 1 (legacy 00-index.md / no frontmatter)."""
+    m = _VAULT_FM_RE.match(md or "")
+    if m and (_fm_scalar_value(m.group(1), "vault_layout") or "") == "2":
+        return 2
+    return 1
+
+
+def parse_vault_lock(md):
+    """The six Vault Lock metadata values.
+
+    Layout-2 (frontmatter carries `vault_layout: 2`): the values are read
+    FRONTMATTER-FIRST from the vault.md scalars; any key absent there still
+    falls back to a `## Vault Lock Status` bullet section if one exists
+    (dual-layout read, one minor cycle). Legacy layout: bullets inside the
+    `## Vault Lock Status` section only — byte-identical to the pre-Fase-3
+    behavior. Returns a dict containing ONLY the labels that were found (an
+    explicit `null` value is present with value None — distinct from a
+    missing label). A missing section/label is simply absent from the dict —
+    the CALLER carries the prior vault.json value forward and WARNs (never a
+    fabricated enum)."""
+    fm_vals = {}
+    if vault_layout(md) == 2:
+        fm = _VAULT_FM_RE.match(md).group(1)
+        for label, key in _FM_LOCK_KEYS.items():
+            raw = _fm_scalar_value(fm, label)
+            if raw is not None:
+                fm_vals[key] = _norm_lock_value(key, raw)
     out = {}
     in_sec = False
     for line in md.splitlines():
@@ -167,6 +225,9 @@ def parse_vault_lock(md):
             if label in VAULT_LOCK_KEYS:
                 key = VAULT_LOCK_KEYS[label]
                 out[key] = _norm_lock_value(key, m.group(2))
+    # frontmatter WINS over any residual bullet section (fm_vals is empty on
+    # legacy input, so this is a no-op there — zero-behavior-change rule).
+    out.update(fm_vals)
     return out
 
 
@@ -412,7 +473,8 @@ def parse_open_questions(doc_name, md, errors):
     Each `- [ ]`/`- [x]`/`- [~]` checkbox OQ line yields an entry:
     tag / priority / doc / status (open|resolved|out_of_scope; deferred when
     the entry block carries a `**Deferred**` annotation) / category +
-    resolution_mode + classification_confidence (brackets, bracket-first) /
+    resolution_mode + classification_confidence + origin (brackets,
+    bracket-first; origin = `[origin: <file>#<anchor>]`, v7 Fase 3) /
     text / resolution / out_of_scope_reason / deferred_reason /
     resolver_owner. None values are OMITTED by the caller — absence is honest,
     never fabricated. Duplicate tags ACROSS docs are the caller's check."""
@@ -451,6 +513,9 @@ def parse_open_questions(doc_name, md, errors):
         cf = OQ_CONF_BRACKET_RE.search(rest)
         if cf:
             entry["classification_confidence"] = cf.group(1).lower()
+        og = OQ_ORIGIN_RE.search(rest)
+        if og:
+            entry["origin"] = og.group(1).strip()
         # question text: after the marker-bracket prefix's colon, up to the
         # `— resolve:` hint or the `→` outcome marker.
         tm = re.match(r"^(?:\s*\[[^\]]*\])*\s*:?\s*(.*)$", rest)

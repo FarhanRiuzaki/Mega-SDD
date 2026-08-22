@@ -314,17 +314,22 @@ for e in scaffold_entries:
     e["_re"] = compile_re(e["requires_flow_endpoint"])
 
 
-# ── Locate the active vault: a vault dir holding 04-flows.md AND a units/ dir ──
+# ── Locate the active vault: a vault dir holding the flows doc AND a units/ dir ──
 # Support both layouts: <vault>/units/ and <vault>-bound/units/. Prefer the vault
-# that has BOTH a 04-flows.md and units. If a -bound sibling holds the units, pair
-# it with the base vault's 04-flows.md.
+# that has BOTH a flows doc and units. If a -bound sibling holds the units, pair
+# it with the base vault's flows doc. v7 Fase 3 dual-layout read (one minor
+# cycle): probe the layout-2 `flows.md` FIRST, fall back to legacy `04-flows.md`.
+def _flows_path(d):
+    p2 = os.path.join(d, "flows.md")
+    return p2 if os.path.isfile(p2) else os.path.join(d, "04-flows.md")
+
 def find_flows_and_units():
     candidates = []
     for d in sorted(glob.glob(os.path.join(vault_root, "*"))):
         if not os.path.isdir(d):
             continue
         # S5 round-2 (ATK-1): a legacy `<vault>-bound/` sibling is an AMENDED COPY
-        # of its base vault (own 04-flows.md + units/). Treating it as its own
+        # of its base vault (own flows doc + units/). Treating it as its own
         # candidate while the base ALSO absorbs its units via the sibling probe
         # double-counted every artifact and mis-tagged the vault — flipping a real
         # shortfall to PASS at the execute-bolts gate. The base candidate owns the
@@ -332,7 +337,7 @@ def find_flows_and_units():
         base_name = os.path.basename(d)
         if base_name.endswith("-bound") and os.path.isdir(os.path.join(vault_root, base_name[:-6])):
             continue
-        flows = os.path.join(d, "04-flows.md")
+        flows = _flows_path(d)
         if not os.path.isfile(flows):
             continue
         # units may live in this dir or in a -bound sibling

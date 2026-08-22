@@ -76,6 +76,7 @@ DERIVED_OQ = {
     "tag", "priority", "doc", "status", "category", "resolution_mode",
     "classification_confidence", "text", "resolution", "out_of_scope_reason",
     "deferred_reason", "resolver_owner", "resolved_at", "deferred_at",
+    "origin",  # v7 Fase 3: `[origin: file#anchor]` locality token — md-owned
 }
 KEY_ORDER = [
     "vault_version", "generated_at", "title", "phase", "phase_total",
