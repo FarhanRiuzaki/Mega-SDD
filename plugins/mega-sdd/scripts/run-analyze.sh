@@ -142,7 +142,7 @@ if [ -f "$_PJ" ]; then
 fi
 
 # Per-family candidate lists (globs byte-identical to the pre-S1 loop finds).
-find "${CWD}/.mega-sdd/vaults" -name "0[0-6]-*.md" -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_oqs"
+find "${CWD}/.mega-sdd/vaults" \( -name "0[0-6]-*.md" -o -name "vault.md" -o -name "model.md" -o -name "flows.md" -o -name "constraints.md" \) -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_oqs"
 find "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.fsd_slots"
 { find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
   find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \

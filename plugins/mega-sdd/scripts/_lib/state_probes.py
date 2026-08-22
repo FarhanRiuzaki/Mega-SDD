@@ -144,12 +144,26 @@ def _canonical_vault_root(cwd):
     return os.path.join(cwd, ".mega-sdd", "vaults")
 
 
+# v7 Fase 3 layout-2 doc names (dual-layout probes, one minor cycle).
+V2_DOC_NAMES = ("vault.md", "model.md", "flows.md", "constraints.md")
+
+
+def _vault_docs(vdir):
+    """Vault markdown docs in EITHER layout: legacy 0[0-6]-*.md glob plus the
+    layout-2 fixed names present in vdir."""
+    docs = glob.glob(os.path.join(vdir, "0[0-6]-*.md"))
+    for n in V2_DOC_NAMES:
+        p = os.path.join(vdir, n)
+        if os.path.isfile(p):
+            docs.append(p)
+    return docs
+
+
 def has_vault(cwd):
     vault_root = _canonical_vault_root(cwd)
-    return bool(
-        glob.glob(os.path.join(vault_root, "*", "vault.json")) or
-        glob.glob(os.path.join(vault_root, "*", "0[0-6]-*.md"))
-    )
+    if glob.glob(os.path.join(vault_root, "*", "vault.json")):
+        return True
+    return any(_vault_docs(d) for d in glob.glob(os.path.join(vault_root, "*")))
 
 
 def has_bound_or_vault(cwd):
@@ -743,7 +757,7 @@ def probe_oq_counts(vdir):
     if rows is None:
         rows = []
         errors = []
-        for doc in sorted(glob.glob(os.path.join(vdir, "0[0-6]-*.md"))):
+        for doc in sorted(_vault_docs(vdir)):
             try:
                 with open(doc, encoding="utf-8", errors="replace") as f:
                     md = f.read()
@@ -770,7 +784,7 @@ def probe_oq_counts(vdir):
 
 def probe_vault_dir(cwd, vdir, layout):
     """Everything routing wants to know about ONE vault dir — plain data."""
-    docs = glob.glob(os.path.join(vdir, "0[0-6]-*.md"))
+    docs = _vault_docs(vdir)
     vj = os.path.join(vdir, "vault.json")
     mode = None
     if os.path.isfile(vj):
@@ -870,7 +884,7 @@ def probe_vaults(cwd):
             if not os.path.isdir(vdir):
                 continue
             has_json = os.path.isfile(os.path.join(vdir, "vault.json"))
-            has_docs = bool(glob.glob(os.path.join(vdir, "0[0-6]-*.md")))
+            has_docs = bool(_vault_docs(vdir))
             if layout == "canonical":
                 if not (has_json or has_docs):
                     continue

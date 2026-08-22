@@ -32,7 +32,9 @@ PATH_RX = re.compile(
 )
 
 sources = []
-for pat in ("vaults/*/binding.md", "vaults/*/bound/*.md", "vaults/*/0[0-6]-*.md", "vaults/*/constitution.md"):
+for pat in ("vaults/*/binding.md", "vaults/*/bound/*.md", "vaults/*/0[0-6]-*.md",
+            "vaults/*/vault.md", "vaults/*/model.md", "vaults/*/flows.md",
+            "vaults/*/constraints.md", "vaults/*/constitution.md"):
     sources += glob.glob(os.path.join(cwd, ".mega-sdd", pat))
 
 files = {}

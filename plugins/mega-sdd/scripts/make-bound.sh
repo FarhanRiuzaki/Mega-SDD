@@ -27,8 +27,10 @@ while [ $# -gt 0 ]; do case "$1" in --vault) VAULT="${2:-}"; shift 2;; --vault=*
 [ -n "$VAULT" ] || { echo "usage: make-bound.sh --vault <dir> [--strict]" >&2; exit 3; }
 [ -d "$VAULT" ] || { echo "FAIL: vault dir not found: $VAULT" >&2; exit 3; }
 [ -f "$VAULT/vault.json" ] || { echo "FAIL: $VAULT/vault.json missing — not a vault" >&2; exit 3; }
+# Dual layout (v7 Fase 3): legacy 0[0-6]-*.md OR layout-2 vault.md set.
 set -- "$VAULT"/0[0-6]-*.md
-[ -f "$1" ] || { echo "FAIL: no 0[0-6]-*.md vault docs in $VAULT" >&2; exit 3; }
+[ -f "$1" ] || set -- "$VAULT"/vault.md
+[ -f "$1" ] || { echo "FAIL: no vault docs (layout-2 vault.md or legacy 0[0-6]-*.md) in $VAULT" >&2; exit 3; }
 [ -f "$VAULT/binding.md" ] || { echo "FAIL: $VAULT/binding.md missing — re-run bind Step 4" >&2; exit 3; }
 [ -f "$VAULT/binding.json" ] || { echo "FAIL: $VAULT/binding.json missing — re-run bind Step 4.5 (derive-binding-json.sh)" >&2; exit 3; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
@@ -87,15 +89,18 @@ if strict:
         sys.exit(2)
 
 # (3) Copy set per binding-contract.md §bound-vault structure: the vault's
-# 0[0-6]-*.md markdown docs (sorted). vault.json is NOT copied.
+# markdown docs (sorted) — legacy 0[0-6]-*.md OR the layout-2 fixed names
+# (v7 Fase 3 dual read). vault.json is NOT copied.
 docs = sorted(f for f in os.listdir(vault)
-              if re.match(r"^0[0-6]-.+\.md$", f)
+              if (re.match(r"^0[0-6]-.+\.md$", f)
+                  or f in ("vault.md", "model.md", "flows.md", "constraints.md"))
               and os.path.isfile(os.path.join(vault, f)))
 
 # Annotation index: only the exact `<file>.md:<line>` vault_source form is
 # trusted; everything else (null / section-style / unmatched file) is SKIPPED
 # and counted — never guessed (no-fabrication invariant).
-SRC_RE = re.compile(r"^(\d{2}-[A-Za-z0-9._-]+\.md):(\d+)$")
+SRC_RE = re.compile(
+    r"^((?:\d{2}-[A-Za-z0-9._-]+|vault|model|flows|constraints)\.md):(\d+)$")
 index = {}   # file -> {line -> [(verdict_lower, claim_id)] in binding.json order}
 annotated = 0
 skipped = 0
