@@ -40,8 +40,8 @@ Modules are the strictly-better answer for the user's stated pain.
 
 ```
 <vault>/
-├── 00-index.md
-├── 01-overview.md ... 06-constraints.md
+├── vault.md
+├── model.md / flows.md / constraints.md
 ├── vault.json
 ├── _meta/
 │   ├── squads.yaml                  # multi-squad
@@ -61,7 +61,7 @@ modules:
     name: <human-readable display name>             # e.g., "Authentication & Authorization"
     description: <1-2 sentences>                    # optional
     vault_sections:                                  # which vault sections this module covers
-      - <vault-file>#<anchor>                       # e.g., 04-flows.md#F-U-001-login
+      - <vault-file>#<anchor>                       # e.g., flows.md#F-U-001-login
       - <vault-file>#<section-name>
     dod:                                             # Definition of Done (module-level)
       - <checklist item>                            # e.g., "All auth flows return RFC 7807 errors"
@@ -78,9 +78,9 @@ If user does NOT provide `_meta/modules.yaml`, `generate-units` auto-derives a m
 
 | Vault structure signal | Auto-derived module |
 |---|---|
-| Each `## F-U-*` section in `04-flows.md` (user flow) | One module per top-level user flow group |
-| Each component in `02-architecture.md` (named component) | One module per architectural component |
-| Each `## D-*` ADR group in `05-decisions.md` referencing same domain | Implicit grouping (advisory; doesn't generate module) |
+| Each `## F-U-*` section in `flows.md` (user flow) | One module per top-level user flow group |
+| Each component in `vault.md ## Architecture` (named component) | One module per architectural component |
+| Each `### D-*` ADR group in `vault.md ## Decisions` referencing same domain | Implicit grouping (advisory; doesn't generate module) |
 
 Auto-derivation produces a `_meta/modules.yaml.auto` file (note `.auto` suffix). User can rename to `modules.yaml` to lock in OR edit before re-running generate-units.
 
@@ -91,7 +91,7 @@ Auto-derivation produces a `_meta/modules.yaml.auto` file (note `.auto` suffix).
 id: U-007
 title: Add nama field to login endpoint
 module: M-auth                       # references _meta/modules.yaml
-vault_source: 04-flows.md#F-U-001-login
+vault_source: flows.md#F-U-001-login
 task_type: extend
 grounding_confidence: HIGH
 # ... existing fields ...
@@ -167,7 +167,7 @@ Units (dependency order):
 
 | ID | Title | vault_source |
 |---|---|---|
-| U-015 | Add audit log table | 03-data-model.md#AuditLog |
+| U-015 | Add audit log table | model.md#AuditLog |
 ```
 
 ## Module dependency graph

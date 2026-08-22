@@ -1,12 +1,12 @@
 ---
 type: prose
-doc_id: 04-flows
+doc_id: flows
 vault_version: "{{VAULT_VERSION}}"
 aliases: [Flows, User Flows, System Flows]
 tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 ---
 
-# 04 — Flows
+# Flows
 
 > **TL;DR**: Step-by-step user flows, system flows, and per-flow Definition of Done. Organized **per type** according to PROJECT_SHAPE.
 > **Audience**: Developers per layer (Mobile/FE/BE/Data), QA, UI/UX.
@@ -16,7 +16,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 
 ---
 
-> Sub-sections below are derived from `PROJECT_SHAPE` (see [[00-index]] Vault Lock Status).
+> Sub-sections below are derived from `PROJECT_SHAPE` (see the vault.md frontmatter lock values).
 > Replace section headers with the relevant flow types.
 >
 > Common flow type sets:
@@ -178,7 +178,7 @@ flowchart TD
 - <e.g. "Bulk import flow — not in v1">
 - <if unknown: "TBD - confirm with PO">
 
-## Open Questions
-
-- [ ] **OQ-FL-1** [P{1|2|3}]: <e.g. "PRD describes happy path only — what is the flow when payment fails after order creation?">
-- [ ] **OQ-FL-2** [P{1|2|3}]: <e.g. "Email notifications mentioned but content/template not specified">
+<!-- NO Open Questions section here (layout-2): ALL OQs live in
+     constraints.md `## Open Questions`, each line carrying
+     `[origin: flows.md#F-<prefix>-NNN]` — derive-vault-json exits 2 on an OQ
+     checkbox line found in this file. -->

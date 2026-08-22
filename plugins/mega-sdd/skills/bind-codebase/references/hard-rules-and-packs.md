@@ -55,14 +55,14 @@ e. **KB-derived Anti-pattern suggestions** (informational, not machine-validated
 ### Hard rules (machine-validated at bolt time)
 | Source | Suggested rule | Applies to units derived from |
 |---|---|---|
-| Implementation state | DO NOT modify app/Http/Controllers/UserController.php | 04-flows.md §read-endpoints |
-| KB [VERIFIED] gotcha | DO NOT modify app/Services/MT202Dispatcher.php | 05-decisions.md §IDR-routing |
+| Implementation state | DO NOT modify app/Http/Controllers/UserController.php | flows.md §read-endpoints |
+| KB [VERIFIED] gotcha | DO NOT modify app/Services/MT202Dispatcher.php | vault.md §Decisions IDR-routing |
 
 ### Anti-patterns (informational guidance)
 | Source | Suggested guidance | Applies to units derived from |
 |---|---|---|
-| KB gotcha G-002 | Don't replicate the IDR MT202 dispatch path — file written but never sent; see knowledge-base/10-domains/30-swift-messaging.md §G-002 | 04-flows.md §payment-settlement |
-| KB critical finding | Don't replicate cfkdhl→CFKDDL silent typo; see knowledge-base/10-domains/10-cif-customer.md §Edge Case 9 | 04-flows.md §customer-edit |
+| KB gotcha G-002 | Don't replicate the IDR MT202 dispatch path — file written but never sent; see knowledge-base/10-domains/30-swift-messaging.md §G-002 | flows.md §payment-settlement |
+| KB critical finding | Don't replicate cfkdhl→CFKDDL silent typo; see knowledge-base/10-domains/10-cif-customer.md §Edge Case 9 | flows.md §customer-edit |
 ```
 
 **Anti-halu rails:** NEVER promote `[INFERRED]`/`[OPEN]` KB items to Hard rules (Anti-patterns only). NEVER suggest a Hard rule whose anchor file isn't in the codebase-map (`hard_rule_unanchored` would fire at bolt time — surface it here). Suggestions are RECOMMENDATIONS — `generate-units` reviews + filters before inserting into units.

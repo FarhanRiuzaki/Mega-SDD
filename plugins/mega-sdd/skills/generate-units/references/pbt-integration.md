@@ -35,12 +35,12 @@ properties:
   - id: PROP-001
     description: For any valid nip+nama+password triple, login() is idempotent
     invariant: "login(nip, nama, password) == login(nip, nama, password)"
-    cites: 04-flows.md#F-U-001-login
+    cites: flows.md#F-U-001-login
     severity: error                    # error | warning
   - id: PROP-002
     description: nama is case-insensitive
     invariant: "login(nip, 'Budi', pw) == login(nip, 'BUDI', pw) == login(nip, 'budi', pw)"
-    cites: 04-flows.md#F-U-001-login + KB §security-nama-comparison
+    cites: flows.md#F-U-001-login + KB §security-nama-comparison
     severity: error
   - id: PROP-003
     description: Login response time < 200ms for valid input
@@ -94,7 +94,7 @@ class LoginExtensionPropertyTest extends TestCase
 
     /**
      * @property PROP-002: nama is case-insensitive
-     * Cites: 04-flows.md#F-U-001-login + KB §security-nama-comparison
+     * Cites: flows.md#F-U-001-login + KB §security-nama-comparison
      */
     public function testNamaCaseInsensitive()
     {
@@ -124,7 +124,7 @@ import * as fc from 'fast-check';
 describe('Login - PBT properties', () => {
   /**
    * PROP-001: login() is idempotent
-   * Cites: 04-flows.md#F-U-001-login
+   * Cites: flows.md#F-U-001-login
    */
   it('idempotent for valid input', () => {
     fc.assert(

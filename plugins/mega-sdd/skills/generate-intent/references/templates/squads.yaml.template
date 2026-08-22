@@ -3,7 +3,7 @@
 # Single-squad project: keep only one entry under `squads:`.
 #
 # partition_model:
-#   layer    — squads own architectural layers from 02-architecture.md
+#   layer    — squads own architectural layers from vault.md ## Architecture
 #   feature  — squads own feature tags (vault must tag flows/entities)
 #   hybrid   — feature wins over layer when both match
 
@@ -14,7 +14,7 @@ squads:
     label: "{{SQUAD_LABEL_1}}"            # e.g., Backend Squad
     owns_layers: []                       # e.g., [backend, data-model]
     owns_flow_prefixes: []                # e.g., [F-B-, F-C-] — flows with these prefixes belong here
-    owns_components: []                   # explicit named components from 02-architecture.md
+    owns_components: []                   # explicit named components from vault.md ## Architecture
     owns_feature_tags: []                 # feature tags (only used in partition_model: feature or hybrid)
 
 # Add additional squads by repeating the block above.

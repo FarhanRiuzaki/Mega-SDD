@@ -32,17 +32,17 @@ Emit `prd_sha256_changed: yes | no | n/a` in the VAULT-DIFF.md header for downst
 
 Build an internal diff model. For each axis, classify items into the diff outcome categories (see SKILL.md body table).
 
-### Entities (`03-data-model.md`)
+### Entities (`model.md`)
 - For each entity in old vault: present in new model? same fields? changed types? new constraints?
 - For each entity in new model: not in old vault? → Added.
 - Apply name-matching first; then field-level matching by name.
 
-### Flows (`04-flows.md`)
+### Flows (`flows.md`)
 - For each flow ID (`F-U-001`, `F-S-002`, etc.) in old vault: present in new model? same steps? same DoD? cross-cutting handoff still valid?
 - For each flow in new model: no analog in old vault? → Added.
 - For removed flows: do NOT delete the section; mark with banner `> **Removed in v{X.Y}**: not present in source as of <new PRD version>. Retained for history. See Changelog.`
 
-### Decisions (`05-decisions.md`)
+### Decisions (`vault.md ## Decisions`; legacy `05-decisions.md`)
 - For each ADR in old vault: source citation still resolvable in new PRD? If old PRD §X.Y was renumbered or moved, attempt to re-anchor to new §X.Y.
 - For each new decision-shaped statement in new PRD: not represented as an ADR in vault? → Added (new D-XXX).
 - For ADR that contradicts new PRD: → Decision conflict. **User must resolve.**
@@ -89,11 +89,11 @@ After applying approved changes, refresh `vault.json` by **running the derive sc
 
 ## Update vault metadata (Step 7)
 
-1. **Bump vault version** in `00-index.md` Vault Lock Status — the SINGLE OWNER of the bump grammar (SKILL Step 7 and auto-and-chain point here):
+1. **Bump vault version** in the lock home (vault.md frontmatter `vault_version:`; legacy: `00-index.md` Vault Lock Status) — the SINGLE OWNER of the bump grammar (SKILL Step 7 and auto-and-chain point here):
    - Small bump: vX.Y → vX.Y+1 (resolved OQs, minor changes, no scope shift).
    - Scope bump: vX.Y → vX+1.0 (significant additions/changes, e.g., new feature scope from a new PRD). Deterministic tiebreak (the same rule `--auto` applies): any conflict took user input OR added entities/flows ≥ 5 → scope bump; otherwise small bump.
    - Skill suggests; user confirms via `AskUserQuestion` — the question STATES the suggested bump + the rationale from this round's counts (e.g. "Suggest scope bump v1.1 → v2.0: 6 entitas baru + 2 conflicts resolved = scope shift"); options: `Small vX.Y+1` — perubahan kecil, tanpa scope shift; `Scope vX+1.0` — penambahan signifikan / scope baru; the suggested one marked **(recommended)**.
-2. **Append Changelog entry** to `00-index.md`:
+2. **Append Changelog entry** to the vault Changelog (`vault.md ## Changelog`; legacy: `00-index.md`):
 
 ```markdown
 ### v{X.Y} ({YYYY-MM-DD})

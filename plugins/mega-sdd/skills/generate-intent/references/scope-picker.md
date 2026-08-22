@@ -37,11 +37,11 @@ Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion 
 4. Filter PRD content per chosen scope
    - Include: universal_sections (from frontmatter) + chosen scope's declared sections
    - Include: cross_scope_dependencies (rendered as informational notes in vault)
-   - Exclude: other scopes' specific sections (still cited as "sibling scopes" in 00-index.md)
+   - Exclude: other scopes' specific sections (still cited as "sibling scopes" in vault.md)
 
 5. Tag vault with scope metadata
    - vault.json: scope, scope_metadata, prd_sha256
-   - 00-index.md: scope header + sibling scopes notes + locked contracts
+   - vault.md: scope header + sibling scopes notes + locked contracts
 
 6. Persist scope choice to memory
    - `<project>/.mega-sdd/memory/decisions.md` §PRD Scope Decisions
@@ -88,7 +88,7 @@ for section in PRD body:
         filtered_prd += section
     else:
         # Skip — sibling scope section
-        # Will be cited as informational in vault 00-index.md
+        # Will be cited as informational in vault.md
         pass
 
 # Always append cross_scope_dependencies as informational footer
@@ -102,7 +102,7 @@ for dep in PRD frontmatter.cross_scope_dependencies:
 
 When chosen_scope = BE and PRD has scopes = {BE, MW, FE}:
 
-00-index.md MUST include:
+vault.md MUST include:
 
 ```markdown
 ## Sibling scopes (managed externally — NOT in this vault)

@@ -34,7 +34,7 @@ if grep -qF 'substring the runner LITERALLY prints' "$UT" \
 else fail "b: expects contract pair broken (6.1.1 poison class can re-enter)"; fi
 
 # ── (c) staging-drop severity: advisory at BOTH template and teacher; NEITHER halts ──
-FT="$P/skills/generate-intent/references/templates/04-flows.md"
+FT="$P/skills/generate-intent/references/templates/flows.md"
 VC="$P/skills/generate-intent/references/vault-contract.md"
 grep -q 'advisory `vault_flow_staging_drop`' "$FT" \
   && pass "c1: 04-flows template says advisory vault_flow_staging_drop" \

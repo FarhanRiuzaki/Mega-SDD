@@ -18,7 +18,7 @@ For each vault OQ with `category: tech` AND `resolution_mode: scan` AND `classif
 a. Read the OQ's `scan_query` (a codebase-map section reference or grep pattern).
 b. Execute the scan against the codebase-map (and KB if present).
 c. Apply the outcome (markdown is the write surface; the Step-6 derive carries it into `vault.json`):
-   - **Single unambiguous match** → record the auto-resolution in the vault markdown: flip the OQ checkbox `[ ]` → `[x]` in the origin doc AND the `00-index.md` roll-up, and append the annotation `→ **Resolved v{vault version}** (YYYY-MM-DD): <found value>` to the OQ line (the exact grammar the deriver parses — it derives `status: resolved` + `resolution` from it and script-stamps `resolved_at` on the transition). Supply `scan_citations: [<found at>]` via `--patch <tmp-patch>` on the same Step-6 derive run (non-derived JSON-only key — allowed on md-homed OQs).
+   - **Single unambiguous match** → record the auto-resolution in the vault markdown: flip the OQ checkbox `[ ]` → `[x]` in its OQ line (layout-2: constraints.md — the one home; legacy: origin doc AND the 00-index roll-up), and append the annotation `→ **Resolved v{vault version}** (YYYY-MM-DD): <found value>` to the OQ line (the exact grammar the deriver parses — it derives `status: resolved` + `resolution` from it and script-stamps `resolved_at` on the transition). Supply `scan_citations: [<found at>]` via `--patch <tmp-patch>` on the same Step-6 derive run (non-derived JSON-only key — allowed on md-homed OQs).
    - **No match** → status stays `open` (checkbox unchanged); flip the OQ line's classification bracket `[tech / scan]` → `[tech / blocking]` in the origin doc + roll-up (the deriver mirrors `resolution_mode` from the bracket); note "scan returned no match" in the `binding.md` `## Open Questions` row. User reviews.
    - **Multiple ambiguous matches** → status stays `open`; same `[tech / scan]` → `[tech / blocking]` bracket edit; list the candidates in the `binding.md` `## Open Questions` row.
 d. Append to `binding.md` under `## Tech-OQ Auto-Resolved (Scan)`:
@@ -27,7 +27,7 @@ d. Append to `binding.md` under `## Tech-OQ Auto-Resolved (Scan)`:
    |---|---|---|---|---|---|
    | OQ-AR-1 | tech / scan | which test framework? | codebase-map §test_frameworks | phpunit | phpunit.xml:1 |
    ```
-e. **Medium/low confidence** tech-scan OQs → skip auto-resolution; pass through unchanged (already listed in `00-index.md` "## Auto-Classification Review").
+e. **Medium/low confidence** tech-scan OQs → skip auto-resolution; pass through unchanged (already listed in the vault.md "## Auto-Classification Review"; legacy: 00-index.md).
 
 ## 2.7 Tech-OQ recommendation surfacing
 
@@ -57,7 +57,7 @@ Logical position: after Hard Rules emission, since it processes user-deferred OQ
 a. **Extract** the OQ text + section context.
 b. **Search the codebase-map for evidence:** entity name → §4 (data models); endpoint path → §3 (routes); file/symbol → §2 (public interfaces); otherwise string-search all sections with a conservative fuzzy threshold.
 c. **High-confidence match** (single unambiguous hit) — record it where the OQ lives:
-   - **md-homed deferred OQ** (the normal case — the OQ line sits in a vault doc as `[ ]` + `**Deferred (v{X.Y})**: …`): flip the checkbox `[ ]` → `[x]` in the origin doc AND the `00-index.md` roll-up, and replace the `**Deferred (v{X.Y})**: …` annotation with `→ **Resolved v{vault version}** (YYYY-MM-DD): Auto-resolved by bind-codebase. Evidence: <codebase-map citation>` — the Step-6 derive mirrors `status: resolved` + `resolution` from these edits and script-stamps `resolved_at` on the transition.
+   - **md-homed deferred OQ** (the normal case — the OQ line sits in a vault doc as `[ ]` + `**Deferred (v{X.Y})**: …`): flip the checkbox `[ ]` → `[x]` in its OQ line (layout-2: constraints.md; legacy: origin doc AND the 00-index roll-up), and replace the `**Deferred (v{X.Y})**: …` annotation with `→ **Resolved v{vault version}** (YYYY-MM-DD): Auto-resolved by bind-codebase. Evidence: <codebase-map citation>` — the Step-6 derive mirrors `status: resolved` + `resolution` from these edits and script-stamps `resolved_at` on the transition.
    - **md-homeless orphan** (a `defer_to: binding` entry with no vault-md line — e.g. a DEFER-demoted binding conflict): there is no markdown to edit; record the resolution via `--patch <tmp-patch>` on the Step-6 derive run — file content `{"open_questions":{"OQ-XXX":{"status":"resolved","resolution":"Auto-resolved by bind-codebase. Evidence: <codebase-map citation>"}}}` (the deriver accepts patch keys on `defer_to: binding` orphans and preserves the entry on every future derive).
    Append to `binding.md` `## Auto-Resolved Deferred OQs`:
    ```markdown

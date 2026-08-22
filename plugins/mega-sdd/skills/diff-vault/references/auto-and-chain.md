@@ -102,7 +102,7 @@ handoff:
   artifacts:
     - <absolute path to <vault>/VAULT-DIFF.md>            # primary output artifact
     - <absolute path to <vault>/vault.json (updated)>
-    - <absolute path to <vault>/00-index.md (updated)>
+    - <absolute path to <vault>/vault.md (updated; legacy: 00-index.md)>
     - <absolute path to <vault>/.mega-sdd/vault-diffs/<ISO8601>.patch>
   scope:                                  # when vault has scope_metadata
     id: <scope id>

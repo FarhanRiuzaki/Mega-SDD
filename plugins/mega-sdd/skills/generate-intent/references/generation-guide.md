@@ -1,46 +1,45 @@
 # generate-intent — Generation guide (Step 3 + 3.5)
 
 ## Contents
-- Step 3 — Generate the 7 files (conditional sections)
+- Step 3 — Generate the 4 files (layout-2; conditional sections)
 - Operator-workflow-UX capture + Design-Source OQ
 - `vault.json` machine-readable manifest
 - Reading the templates
 - Step 3.5 — OQ auto-classification + halt YAML
 - Output mode policy
 - Readability standards
-- File-by-file content guide (00–06)
+- File-by-file content guide (vault/model/flows/constraints)
 - Mandatory section template + OQ tagging
-- 00-index.md Open Questions roll-up structure
+- constraints.md centralized Open Questions structure
 
-## Step 3 — Generate the 7 files
+## Step 3 — Generate the 4 files
 
-Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The 7-file layout is in the SKILL body (The 7-file vault output contract).
+Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The layout-2 vault is **4 files** (SKILL body, The vault output contract): `vault.md` (frontmatter lock + `## Overview` / `## Architecture` / `## Decisions` — EXACT hard-header strings, see the template) · `model.md` · `flows.md` · `constraints.md` (+ script-derived `vault.json`). Vaults generated before v7 use the legacy 7-file layout (00–06); every reader is dual-layout for one minor cycle (`references/paths.md §vault layout`).
 
 **Conditional sections** (driven by the Step 2 detection flags `HAS_UI_COMPONENTS` / `HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`):
 
-- `02-architecture.md > UI components & patterns` sub-section: appears **only if** `HAS_UI_COMPONENTS = true`. Otherwise omitted entirely (no header, no placeholder, no OQ).
-- `06-constraints.md > Design system` top-level section: appears **only if** at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`. Within it, sub-blocks (Tokens / Accessibility / Voice & brand) appear only for the `true` flags.
-- `00-index.md > Reading paths`: the "UI/UX or FE Dev" path appears **only if** `02-architecture#ui-components` or `06-constraints#design-system` is present.
-- `00-index.md > Glossary`: product-specific PRD terms only. The generic + design-system standard rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, design tokens, design system, WCAG, a11y, semantic HTML) live in the static `_meta/ai-consumer-guide.md` (installed by the Step-3 `cp` of the shipped template) — never re-emitted per vault.
+- `vault.md ## Architecture > UI components & patterns` sub-section: appears **only if** `HAS_UI_COMPONENTS = true`. Otherwise omitted entirely (no header, no placeholder, no OQ).
+- `constraints.md > Design system` section: appears **only if** at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`. Within it, sub-blocks (Tokens / Accessibility / Voice & brand) appear only for the `true` flags.
+- `vault.md ## Glossary`: product-specific PRD terms only. The generic + design-system standard rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, design tokens, design system, WCAG, a11y, semantic HTML) live in the static `_meta/ai-consumer-guide.md` (installed by the Step-3 `cp` of the shipped template) — never re-emitted per vault.
 
 **No shape-based defaulting.** A `PROJECT_SHAPE=mobile-app` project with no source coverage of design-system content produces a vault with no design-system sections. The skill never injects WCAG levels, color palettes, spacing scales, or component lists from prior knowledge.
 
-> Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag drives the content of the `00-index.md` "Implementation Notes for AI Consumers" section, not the file count.
+> Vault structure is the same regardless of `IMPLEMENTATION_MODE`. The mode flag lives in the vault.md frontmatter (`implementation_mode:`), not in the file count.
 
 ## Operator-workflow-UX capture + Design-Source OQ
 
 > `validate-vault-oqs.sh` re-validates every vault doc write (PostToolUse) and surfaces a capture-stage miss as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks `mega-sdd:execute-bolts`). This prose is the real win — get it right at generation time.
 
-**Rule 1 — model the operator surface when the flows show a workflow.** When the flows in `04-flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
+**Rule 1 — model the operator surface when the flows show a workflow.** When the flows in `flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
 
 - **Worklist / inbox** — where each actor (checker, confirmer, …) finds the items awaiting *their* decision, filtered by role + current workflow state.
 - **Decision affordance** — the approve / reject (and any return-to-prior-stage) actions available to the actor in the entity's current state.
 - **Human-readable state labels** — a label map from the raw `workflow_state` enum to operator-facing text (e.g. `SUBMITTED` → "Awaiting Checker").
 - **Audit timeline** — the append-only transition history rendered for the operator (who acted, when, prior → next state).
 
-Capture these in `02-architecture.md` (and the component/view inventory) and reflect them in `vault.json`. **Grounded, not invented:** every operator-surface requirement must trace to a flow step / actor / state in `04-flows.md`. If the surface design is genuinely undecided, capture it as an OQ instead of inventing it (Rule 2). The validator FAILs with `operator_surface_missing` when a workflow flow exists but the vault models no operator surface AND carries no Design-Source OQ.
+Capture these in `vault.md ## Architecture` (and the component/view inventory) and reflect them in `vault.json`. **Grounded, not invented:** every operator-surface requirement must trace to a flow step / actor / state in `flows.md`. If the surface design is genuinely undecided, capture it as an OQ instead of inventing it (Rule 2). The validator FAILs with `operator_surface_missing` when a workflow flow exists but the vault models no operator surface AND carries no Design-Source OQ.
 
-> **Same workflow-flow signal also governs staging.** The maker→checker / multi-stage pattern that triggers operator-surface modeling here is also the staged-input pattern: if the source KB workflow carries a `## 3a` `stages:` block, PRESERVE it verbatim into this flow's `**Stages**` block + `_kb_source` per the 04-flows generation step (`generate-intent/references/vault-contract.md §stages-propagation`). Modeling the operator surface and preserving the staging are two halves of the same workflow fidelity — don't do one and flatten the other.
+> **Same workflow-flow signal also governs staging.** The maker→checker / multi-stage pattern that triggers operator-surface modeling here is also the staged-input pattern: if the source KB workflow carries a `## 3a` `stages:` block, PRESERVE it verbatim into this flow's `**Stages**` block + `_kb_source` per the flows.md generation step (`generate-intent/references/vault-contract.md §stages-propagation`). Modeling the operator surface and preserving the staging are two halves of the same workflow fidelity — don't do one and flatten the other.
 
 **Rule 2 — design system: template-first, then recommend, never a defaulted value.** When `HAS_UI_COMPONENTS = true` (UI components exist) but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`** (no design source in PRD/Figma/KB), resolve the design system by **precedence** — never by silently defaulting WCAG levels, Material/Tailwind palettes, spacing scales, or brand voice from prior knowledge. (These three flags reflect the **PRD/Figma/KB source only**; a scanned starterkit is a SEPARATE input, evaluated in path 1 below — so this rule still fires when the PRD has no design source even though a template was scanned.)
 
@@ -53,11 +52,11 @@ Capture these in `02-architecture.md` (and the component/view inventory) and ref
    - `fallback_if_wrong`: "blocking — request an explicit design source from the PO".
    Only when the user accepts is the `design_system` block written (with `source: design-intelligence-recommend`).
 
-In both cases the `design_system` block (vault-contract.md §design_system) is written into the authored patch (it lands in `vault.json` via `derive-vault-json.sh`) + the `06-constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
+In both cases the `design_system` block (vault-contract.md §design_system) is written into the authored patch (it lands in `vault.json` via `derive-vault-json.sh`) + the `constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
 
 ## `vault.json` machine-readable manifest
 
-Alongside the 7 markdown files, `vault.json` is a structured manifest AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index. **The model NEVER writes `vault.json`** — it is script-derived:
+Alongside the 4 markdown files, `vault.json` is a structured manifest AI dev consumers (Claude Code, Cursor, automated agents) load for fast, reliable context without parsing prose markdown. Markdown remains the human-authoritative source; JSON is a derived index. **The model NEVER writes `vault.json`** — it is script-derived:
 
 - **Run** `bash $PLUGIN_ROOT/scripts/derive-vault-json.sh --vault <OUTPUT_DIR> --patch <patch-file>` at Step 3.8 — after `constitution.md` (Step 3.4), the Step-3.5 classifier, and the Step-3.7 advisor pass complete, so the authored patch carries their records and `constitution.md` is on disk for the hash pin. The script derives every structural mirror from the markdown: `entities[]`, `flows[]`, `adrs[]`, `open_questions[]` skeletons, `open_questions_summary`, `vault_version` + the five Vault Lock enums; it computes `constitution_hash` fresh at initial generation and carries it forward thereafter.
 - **The model still authors** (via the `--patch` JSON, a scratchpad temp file): `title`, `source_documents`, `design_system_flags` [+ `design_system`], `advisor` provenance, scope block (`scope`/`scope_metadata`/`prd_sha256`/`prd_path_at_generation`), `phase`/`phase_total`, and the per-OQ JSON-only classifier fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`). Setting a derived key in the patch exits 2 (anti-laundering).
@@ -84,9 +83,9 @@ Read the relevant template (Claude Code: `Read` tool; Claude.ai sandbox: `view` 
 
 ## Step 3.5 — OQ auto-classification
 
-After Step 3 writes the 7 files but BEFORE the Step 4 self-check, run the auto-classifier on every generated OQ:
+After Step 3 writes the 4 files but BEFORE the Step 4 self-check, run the auto-classifier on every generated OQ (they all live in `constraints.md ## Open Questions`):
 
-1. **For each OQ in docs 01–06**, apply the heuristic table from `generate-intent/references/vault-contract.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`.
+1. **For each OQ in `constraints.md ## Open Questions`**, apply the heuristic table from `generate-intent/references/vault-contract.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`.
 2. **For `resolution_mode: scan`:** populate `scan_query` from the OQ's "Resolves:" hint or infer the codebase-map section to probe (e.g., "what test framework?" → `scan_query: "codebase-map §test_frameworks"`).
 3. **For `resolution_mode: recommend`:** populate the four required fields:
    - `recommendation` — Claude's pick (1–2 sentences).
@@ -96,7 +95,7 @@ After Step 3 writes the 7 files but BEFORE the Step 4 self-check, run the auto-c
    - **Anti-halu rail:** NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
 4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
 5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-contract.md §Updated OQ schema` — never hand-edit `vault.json`.
-6. **Generate the `00-index.md` "## Auto-Classification Review" section** before the main OQ roll-up. List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
+6. **Generate the `vault.md` "## Auto-Classification Review" section.** List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
 7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-contract.md §Validation rules`:
    - Tech OQ missing `resolution_mode` → halt `oq_tech_missing_mode`.
    - `recommend` OQ missing any of `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong` → halt `oq_recommend_underspecified`.
@@ -130,7 +129,7 @@ Driven by `OUTPUT_MODE` (Step 0.7):
 | Glossary (doc 00) | Product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms. | Same — the generic-rows drop is unconditional (both modes); the static guide carries the standard rows |
 | Open Questions per doc | 1-line: `OQ-{CODE}-{N} [P{1\|2\|3}]: <question> — resolve: <PIC/source>` | Multi-line: question + reasoning + impact + resolution path |
 | Sources section | Bullet list, no prose intro. | Same |
-| "Note" / "Why X" asides in body | Cut. Reasoning belongs in `05-decisions.md`. | Allowed when it adds context. |
+| "Note" / "Why X" asides in body | Cut. Reasoning belongs in `vault.md ## Decisions`. | Allowed when it adds context. |
 | Cross-ref to other doc | 1 anchor link, no quote duplication. | Inline quote of cited doc allowed. |
 
 **Hard invariants — preserved in BOTH modes:** every claim cites a source (PRD §, Figma frame, uploaded file); every OQ tagged `OQ-{CODE}-{N}` with priority `P1|P2|P3`; every flow has a Definition of Done as an observable checklist; every decision has an explicit source; Out of Scope never empty (`TBD - confirm with PO` if genuinely unknown).
@@ -141,7 +140,7 @@ Driven by `OUTPUT_MODE` (Step 0.7):
 
 Cut filler. No padding to look thorough. No amputation to look minimal. Output mode adjusts the **granularity of context**, not the completeness of facts.
 
-## Readability standards (mandatory for all 7 files)
+## Readability standards (mandatory for all 4 files)
 
 **Output language convention** (generated docs match the input PRD language):
 - Code-level terms always in English: entity names (`mega_rencana_account`), field names (`source_account_id`), types (`bigint`, `varchar`), enum values (`active | dormant`), HTTP methods, protocol names, framework names.
@@ -153,13 +152,13 @@ Cut filler. No padding to look thorough. No amputation to look minimal. Output m
 
 **Placement discipline:** Every generated artifact leads with its densest load-bearing content — TL;DR, verdict/OQ counts, markers, citations, DoD, hard constraints — and pushes exposition, glossary, and append-only history to the tail. LLM consumers weight the start and end of a document most; the middle is the weakest position. Never let a growing history section or generic boilerplate occupy the opening region, and never dilute a load-bearing table with narrative between its header and its rows. Summaries with counts go first; anything a reader could skip goes last.
 
-**Glossary policy:** first-use acronym/jargon in any doc → define it inline at first occurrence (e.g., "DBML (Database Markup Language)"). `00-index.md` MUST have a **Glossary** carrying **product-specific PRD terms only** (e.g., MPIN, CIF, OTP, parameterized) plus one pointer line to the **Standard terms** table in `_meta/ai-consumer-guide.md`. Never re-emit the generic rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, or the design-system terms) into 00-index — they ship in the static guide, both output modes.
+**Glossary policy:** first-use acronym/jargon in any doc → define it inline at first occurrence (e.g., "DBML (Database Markup Language)"). `vault.md` MUST have a **Glossary** section carrying **product-specific PRD terms only** (e.g., MPIN, CIF, OTP, parameterized) plus one pointer line to the **Standard terms** table in `_meta/ai-consumer-guide.md`. Never re-emit the generic rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, or the design-system terms) into vault.md — they ship in the static guide, both output modes.
 
 **Cross-reference budget:** max 2 cross-refs to other section/doc per section. If more are needed, inline the essential information or move to an appendix. Cross-refs must be self-contained.
 
 **Date format convention:** `Last updated:` → `YYYY-MM-DD`; decision dates, PRD versions, sprint/milestone refs → `YYYY-MM`.
 
-**Per-doc TL;DR (mandatory header for docs 01–06)** — format depends on `OUTPUT_MODE`:
+**Per-doc TL;DR (mandatory: the vault.md `## Overview`/`## Architecture` sections + model.md, flows.md, constraints.md)** — format depends on `OUTPUT_MODE`:
 
 ```markdown
 # OUTPUT_MODE=compact (default) — 1 line:
@@ -173,14 +172,17 @@ Cut filler. No padding to look thorough. No amputation to look minimal. Output m
 
 > TL;DR placeholders shown in English for clarity. At runtime, render them in the PRD's language.
 
-## File-by-file content guide (00–06)
+## File-by-file content guide (vault / model / flows / constraints)
 
-### 00-index.md
-Required sections, **in this order**:
+### vault.md
 
-1. **Project header** — project name + 1-sentence product description.
+Frontmatter first (machine-read by `vault_md.parse_vault_lock`): `vault_layout: 2` + the six lock scalars (`vault_version`, `project_shape`, `implementation_mode`, `mode_migration_trigger`, `prd_status`, `output_mode`) + `prd_source` / `locked_at` / `locked_by` (+ `kb_module_graph:` in KB sub-mode — read by generate-units decomposition).
 
-1.5. **Phase context** — emit immediately after the Project header. generate-intent MUST write this block after the header:
+Body sections, **in this order** (the three anchors are EXACT strings — hard-header contract, deriver + ledger exit 2 when one is missing):
+
+1. **Project header** — `# <Project Name> — Grand Design` + 1-sentence description.
+
+1.5. **Phase context** — emit immediately after the header:
 
 ```markdown
 ## Phase context
@@ -190,104 +192,33 @@ Required sections, **in this order**:
 **This vault covers:** <1-line summary from suggested-phasing.md §Phase N "scope" or "deliverables" — first sentence wins>
 ```
 
-When `phase_total > 1` AND `N < phase_total`, additionally emit:
+When `phase_total > 1` AND `N < phase_total`, additionally emit the upcoming-phases list + the next-phase command (`generate-intent --kb=<KB-path> --phase=<N+1>`) + the pointer to `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`. When `phase_total == 1`: `**Phase:** 1 of 1` + `**Project type:** single-phase`.
 
-```markdown
-**Upcoming phases:**
-- Phase <N+1>: <1-line from suggested-phasing.md §Phase N+1>
-- Phase <N+2>: <1-line from suggested-phasing.md §Phase N+2>
-- ...
+2. **`## Overview`** — what the 01 doc used to carry: Product (2–3 sentences) · Target users/personas (PRD-named only) · Problem · Success criteria (PRD-sourced, else an OQ in constraints.md). Section tail: `### Sources` + `### Out of Scope` (H3 — the H2 tails belong to the standalone files).
+3. **`## Architecture`** — what the 02 doc used to carry: System overview (1 paragraph + text diagram) · per-layer sub-sections derived from `PROJECT_SHAPE` (each role deep-links `vault.md#<layer-anchor>`) · conditional `#### UI components & patterns` (`HAS_UI_COMPONENTS=true` only) · API contracts (`compact`: table per group; `full`: JSON per endpoint) · Tech stack per layer. Tail: `### Sources` + `### Out of Scope`.
+4. **`## Decisions`** — ADR-lite `### D-NNN:` entries, format per `OUTPUT_MODE` (see the template). Only decisions with an explicit source; PRD silent → an OQ in constraints.md, never an ADR.
+5. **`## Glossary`** — product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms.
+6. **`## Auto-Classification Review`** — written by Step 3.5 (tech-tagged + flipped OQs).
+7. **`## Source documents`** — files consumed (PRD provenance).
+8. **`## Changelog`** — append-only version history (newest first), at the TAIL — history must never push load-bearing content out of the opening region.
+9. **`## Last updated`** — YYYY-MM-DD.
 
-**To start the next phase** (after this phase's bolts complete):
+> The legacy 00-index ceremony (Executive Summary mirror, Project Readiness table, Reading paths/order, generic anti-hallucination restatement, OQ roll-up) is NOT emitted in layout-2 — the generic protocol lives in `_meta/ai-consumer-guide.md`, the OQ universe lives in constraints.md + vault.json.
 
-\`\`\`bash
-generate-intent --kb=<KB-path> --phase=<N+1>
-\`\`\`
+### model.md
+- **TL;DR header** · default format **DBML** — per entity: `// Purpose:` comment (machine-read into `entities[].purpose`), key fields + types, relations with FK direction, constraints. `compact`: DBML + 1-line Purpose only; `full`: + per-entity prose. NO Open Questions section (centralized).
 
-**Full phased plan:** `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`
-```
-
-When `phase_total == 1` (greenfield / single-phase), omit upcoming phases + next-phase command; emit only:
-
-```markdown
-## Phase context
-
-**Phase:** 1 of 1
-**Project type:** single-phase (greenfield OR Mode A PRD-driven OR Mode B without legacy-rebuild phasing)
-```
-
-Source for "This vault covers": first sentence of the `## Phase N` section in `suggested-phasing.md`. When `suggested-phasing.md` is absent or `phase_total=1` → use "Single-phase project".
-
-2. **Executive Summary** — 3–4 sentences: what + why + current state.
-3. **Project Readiness Status** — checklist: PRD (complete/draft/pending); Figma (complete/pending review/not consumed); Tech stack (defined/TBD); Sign-off (X/Y stakeholders); Open Questions count (P1/P2/P3).
-4. **Reading paths by role** — Architect: 02 → 03 → 05 → 06; Dev (FE/BE): 02 → 03 → 04; QA: 04 (focus DoD); PM / Business Owner: 00 → 01 → 05.
-5. **Reading order** (full sequence with a 1-line purpose per doc).
-6. **Anti-hallucination rules** for dev / dev-AI consumers.
-
-6.5. **Implementation Notes for AI Consumers** — vault metadata + the PER-VAULT specialization only (which unresolved P1 OQ clusters block which work areas + the layer-routing anchors for THIS vault) + the MANDATORY guide pointer; the generic protocol (halt YAML envelopes, mode cross-check checklists, parallel-work guidance, companion skills) is NEVER re-stated — it lives in `_meta/ai-consumer-guide.md`, installed by the Step-3 `cp`.
-
-7. **Glossary** — product-specific PRD terms only, BOTH modes, plus the pointer line to the guide's Standard-terms table; standard/generic terms live in `_meta/ai-consumer-guide.md`.
-8. **Open Questions roll-up** — categorized, sorted P1 → P2 → P3 within each (see roll-up structure below). `compact`: 1-line per OQ; `full`: multi-line per OQ.
-9. **Source documents** — files consumed.
-
-9.5. **Changelog** — append-only version history (newest first). Lives at the TAIL, never above the Executive Summary: it grows every resolve-oq / diff-vault round and history must not push load-bearing content out of the opening region. The current version stays early in Vault Lock Status.
-
-10. **Last updated** — YYYY-MM-DD.
-
-### 01-overview.md
-- **TL;DR header** · **Product** (2–3 sentences max) · **Target users / personas** (only what the PRD names) · **Problem & motivation** · **Success criteria** (KPIs/metrics — only if the PRD specifies, else → OQs).
-
-### 02-architecture.md
-- **TL;DR header** · **System overview** (1-paragraph high-level + text/ASCII diagram, all layers in one view).
-- **By component layer** — sub-sections **derived from `PROJECT_SHAPE`** (Step 2). Each role deep-links to its section. Examples: `mobile-app` → `### Mobile / Frontend`, `### Backend`, `### Integrations`; `api-only` → `### Backend`, `### Integrations`; `multi-platform` → `### Web Frontend`, `### Mobile`, `### Backend`, `### Integrations`; `data-pipeline` → `### Source connectors`, `### Processors`, `### Sinks`, `### Integrations`; `custom` → layers from the user's description.
-- **API contracts** (only if applicable to the shape): endpoint, method, req/res shape, error code — only what's explicit or directly derivable, else → OQs. Group under the consuming layer. `compact`: table by default (endpoint · method · purpose · auth · errors · source); inline JSON example only for a non-trivial payload. `full`: full request/response JSON per endpoint incl. error envelope.
-- **Tech stack** — only what's stated/constrained; group per layer.
-
-> **Why per-layer:** the vault is consumed by multiple roles; per-layer sub-sections let each role anchor directly. Reading paths in `00-index.md` can deep-link to `02-architecture.md#<layer-anchor>`.
-
-### 03-data-model.md
-- **TL;DR header** · default format **DBML** (fall back to entity tables if DBML doesn't fit).
-- Per entity: name, purpose, key fields + types, mandatory/optional. Relations: 1-1, 1-N, M-N with FK direction. Constraints: uniqueness, indexes, soft-delete, audit fields — only what's specified.
-- `compact`: DBML block with inline `note:` per field + max 1 line `Purpose:` per entity; skip the prose "Entity descriptions" section; field-level validation table only for non-obvious constraints (min/max, enum, format). `full`: DBML + per-entity prose (Purpose / Key fields / Relations) + field-level validation table.
-
-### 04-flows.md
+### flows.md
 > **Exception to the simplicity policy:** this doc is allowed to be reasonably complete.
 
-- **TL;DR header** · **By flow type** — sub-sections **derived from `PROJECT_SHAPE`**. Examples: `mobile-app` → `### User flows (mobile-facing)`, `### Backend / system flows`, `### Cross-cutting flows`; `api-only` → `### Backend / system flows`, `### Consumer-facing flows`; `multi-platform` → `### User flows (web)`, `### User flows (mobile)`, `### Backend / system flows`, `### Cross-cutting flows`; `data-pipeline` → `### Pipeline flows`, `### Error/recovery flows`, `### Operational flows`; `custom` → categories from the user's description.
-- For each flow: the flow body is a **Mermaid flowchart** — never a prose numbered Steps list (Mermaid-flows hard rule; each flow entry MUST carry a ` ```mermaid ` block or the vault-flows surface (`validate-kb.sh --surface=vault-flows`) FAILs it). Open the block with a diagram-type line (`flowchart TD`), quote every node text, and paraphrase branches per `plugins/mega-sdd/references/mermaid-emission-rules.md` (reference Figma frame if available). Plus **per-flow Definition of Done** (observable behavior, bullet list — **required in BOTH modes**, it's the QA contract; never cut). `compact`: skip Preconditions/Postconditions (derivable from the diagram + DoD); skip Failure handling unless the failure path is non-trivial; the diagram stays detailed. `full`: full structured blocks (Actor, Preconditions, Mermaid flow, Postconditions, DoD, Failure handling, Source).
-- **Staged inputs (multi-step workflows) — PRESERVE, never flatten.** When the source is a KB workflow domain (`--kb` mode) whose `## 3a. Staged inputs` carries a `stages:` block, copy that block **verbatim** into this flow's `**Stages**` block, emit the matching Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]` (the deterministic back-reference `validate-vault-flow-staging.sh` follows to prove staging was not dropped). Do NOT collapse the staged fields into one flat input list / single form — that destroys the multi-step wizard intent (the captured trade-finance regression). The flow body renders as the Mermaid `stateDiagram` (staged) / flowchart; the `stages:` block is authoritative for the staging. (No `--kb`? If the PRD itself describes a multi-step / maker-checker flow, author the `**Stages**` block from the PRD and omit `_kb_source`.) See `generate-intent/references/vault-contract.md §stages-propagation`. Surface the count in the handoff as `metrics.flows_with_stages`.
-- For cross-cutting flows (or any multi-layer flow), show explicit handoff points **inside the Mermaid diagram** — group each layer in a `subgraph`, handoffs are labelled edges (e.g. Mobile → BE → Mobile). **Required in BOTH modes.**
+- **TL;DR header** · **By flow type** — sub-sections derived from `PROJECT_SHAPE`. For each flow: the flow body is a **Mermaid flowchart** — never a prose numbered Steps list (Mermaid-flows hard rule; each entry MUST carry a ` ```mermaid ` block or `validate-kb.sh --surface=vault-flows` FAILs it). Per-flow **Definition of Done** required in BOTH modes (the QA contract). Staged inputs (multi-step workflows): PRESERVE the KB `stages:` block verbatim + Mermaid `stateDiagram` + `_kb_source` per `vault-contract.md §stages-propagation` — never flatten. Cross-cutting flows show handoffs inside the Mermaid diagram (`subgraph` per layer). NO Open Questions section (centralized — use `[origin: flows.md#F-<prefix>-NNN]`).
 
-> **Why per-type:** same rationale as `02-architecture.md` — multiple consumers, deep-link navigation. QA uses the DoD per flow; layer-specific devs focus on their flow type.
+### constraints.md
+- **TL;DR header** · Technical constraints · Business constraints · **NFR table** (| Category | Requirement | Source |) · conditional **Design system** section (flags-driven) · **`## Open Questions` — THE one authored OQ surface** (structure below).
 
-### 05-decisions.md
-- **TL;DR header** · format depends on `OUTPUT_MODE`:
+## Mandatory section template (model.md / flows.md; vault.md uses H3 tails per section)
 
-```markdown
-# OUTPUT_MODE=compact (default) — 1 paragraph per ADR:
-### D-001: <short title>
-<Context in one sentence>. **Decision**: <what was decided, 1–2 sentences>. **Consequences**: <pros + tradeoffs, comma-separated, max 2 lines>. **Source**: <PRD §X>.
-
-# OUTPUT_MODE=full — multi-section per ADR:
-### D-001: <short decision title>
-**Status**: Proposed | Accepted | Superseded by D-XXX
-**Date**: YYYY-MM
-**Context**: <why this decision is needed, 2–3 sentences>
-**Decision**: <what was decided, 1–3 sentences>
-**Consequences**:
-- ✅ <positive>
-- ⚠️ <trade-off>
-**Source**: <PRD §X / explicit user instruction / meeting note>
-```
-
-Only decisions with an explicit source. PRD silent → not an ADR; it's an Open Question. Applies in both modes.
-
-### 06-constraints.md
-- **TL;DR header** · **Technical constraints** (stack lock-ins, infra limits, integration boundaries) · **Business constraints** (timeline, budget, regulatory, compliance, contractual) · **NFR** (performance, scalability, security, availability, observability — only what the PRD/stakeholder states).
-
-## Mandatory section template (every doc 01–06)
-
-Append at the bottom of every numbered doc:
+Append at the bottom of model.md and flows.md (vault.md sections carry `### Sources` / `### Out of Scope` per anchor section):
 
 ```markdown
 ---
@@ -295,33 +226,23 @@ Append at the bottom of every numbered doc:
 ## Sources
 - PRD §X.Y (page Z)
 - Figma: <frame-name or URL fragment>
-- <other inputs>
 
 ## Out of Scope
 - <explicit non-goals>
 - <if unknown: "TBD - confirm with PO">
-
-## Open Questions
-- [ ] **OQ-{DOC_CODE}-{N}** [P{1|2|3}]: <ambiguity, with what's needed to resolve it>
-- [ ] **OQ-{DOC_CODE}-{N+1}** [P{1|2|3}]: <next ambiguity>
 ```
 
-**Open Question tagging convention:** see `generate-intent/references/vault-contract.md §OQ-conventions` for the tag format, doc-code table, and priority definitions. Every Open Question generated by this skill MUST follow that convention.
+**NO per-doc Open Questions section** — every OQ lives in constraints.md (below). **Open Question tagging convention:** see `generate-intent/references/vault-contract.md §OQ-conventions` for the tag format, topic-prefix table, and priority definitions.
 
-## 00-index.md Open Questions roll-up structure
+## constraints.md centralized Open Questions structure
 
-The roll-up aggregates all OQs from docs 01–06. Categorize by topic (not by doc), with the category's overall priority as the section header; within each category sort P1 → P2 → P3.
+ALL OQs live in ONE `## Open Questions` section in constraints.md (`derive-vault-json.sh` exits 2 on an OQ checkbox line in any other doc). Sort P1 → P2 → P3. Every non-constraints-native OQ carries `[origin: <file>#<anchor>]` naming where the question arose; the `[tech / <mode>]` / `[business]` bracket is MANDATORY (bracket-first is the only category source — there is no roll-up fallback).
 
 ```markdown
-## Open Questions roll-up
+## Open Questions
 
-> Total: **{N} Open Questions** across 6 docs. Sorted by category, then P1 → P2 → P3 within each category.
-
-### {Category 1 — e.g. "PRD inconsistencies"} (PRIORITY-1)
-- [ ] **OQ-DM-1** [P1]: <text> `[03-data-model.md]`
-- [ ] **OQ-FL-1** [P1]: <text> `[04-flows.md]`
-
-### {Category 2 — e.g. "Tech stack & architecture"} (PRIORITY-1)
-- [ ] **OQ-AR-1** [P1]: <text> `[02-architecture.md]`
-...
+- [ ] **OQ-DM-1** [P1] [business] [origin: model.md#Entities]: <text>
+- [ ] **OQ-FL-1** [P1] [business] [origin: flows.md#F-U-001]: <text>
+- [ ] **OQ-AR-1** [P2] [tech / scan] [conf: high] [origin: vault.md#Architecture]: <text> — resolve: <hint>
+- [ ] **OQ-CN-1** [P2] [business]: <constraints-native — no origin>
 ```

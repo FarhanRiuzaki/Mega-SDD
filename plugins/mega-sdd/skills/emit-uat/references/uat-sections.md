@@ -51,7 +51,7 @@ pair 1:1).
 ## Section 1 — Ruang Lingkup & Kriteria
 
 **Slot:** `{{section-1-narrative}}` + fragment block §1
-**Source:** `<vault>/04-flows.md` (F-* flows in scope) + the SIT doc-control maturity probe (`<vault>/sit/SIT.md`)
+**Source:** `<vault>/flows.md` (F-* flows in scope) + the SIT doc-control maturity probe (`<vault>/sit/SIT.md`)
 **Fragment carries:** the flows-in-scope table (UAT ↔ TS ↔ F-id ↔ judul ↔ tipe) + the entry-criteria table
 (incl. the SEOJK berita-acara-SIT gate row + the probed SIT maturity) + the exit-criteria table + citation footer.
 **Narrative (model):** 2–4 kalimat Indonesia — cakupan uji (flow apa saja, scope mana), siapa yang mengeksekusi
@@ -63,12 +63,12 @@ PREPEND this block quote to the narrative verbatim:
 > ⚠ **SIT belum executed** — SEOJK 21/2017 §2.3.1.5: UAT hanya boleh dimulai setelah berita acara SIT diterima dari pengembang. Dokumen ini boleh DISIAPKAN lebih awal, tetapi eksekusi menunggu gate tersebut.
 ```
 
-**Missing source:** fragment emits `[Pending — vault/04-flows.md belum berisi flow F-* — jalankan generate-intent dulu]` — keep verbatim.
+**Missing source:** fragment emits `[Pending — vault/flows.md belum berisi flow F-* — jalankan generate-intent dulu]` — keep verbatim.
 
 ## Section 2 — Skenario UAT
 
 **Slot:** `{{section-2-narrative}}` + fragment block §2
-**Source:** `<vault>/04-flows.md` — one `### UAT-NNN` block per `F-*-NNN` flow (1:1)
+**Source:** `<vault>/flows.md` — one `### UAT-NNN` block per `F-*-NNN` flow (1:1)
 **Fragment carries per UAT scenario:** heading `### UAT-NNN — <judul> (F-id)`, a metadata table (Flow / Unit
 terkait / Prioritas / Prasyarat / Data uji), the flow's **Mermaid diagram VERBATIM** (the Mermaid-flows hard
 rule extends to UAT — never redrawn, never prose-ified), the flow's **DoD items VERBATIM** as expected outcomes,
@@ -98,7 +98,7 @@ without DoD → the `[Pending — Definition of Done …]` line. Keep those verb
 ## Section 3 — Matriks Traceability (RTM)
 
 **Slot:** `{{section-3-narrative}}` + fragment block §3 (VERBATIM — no edits)
-**Source:** `<vault>/04-flows.md` + each unit's `vault_source:` F-id (unit ↔ flow join)
+**Source:** `<vault>/flows.md` + each unit's `vault_source:` F-id (unit ↔ flow join)
 **Fragment carries:** one row per flow joining `Flow (F-id) ↔ Judul ↔ UAT ↔ TS (SIT) ↔ Unit terkait ↔ Status UAT`;
 the **Status UAT cell is a placeholder LITERAL** (`__________`) — filled by hand during execution, never by the model.
 **Narrative (model):** 1–2 kalimat — apa itu RTM, bagaimana traceability F-id ↔ UAT ↔ TS dibaca, dan bahwa kolom
@@ -160,5 +160,5 @@ inserted earlier (section-number-keyed parsers). The annex is the LAST section; 
 
 On re-emit, `build-citation-map.sh --check-drift --doc=uat` lines (`DRIFT`/`GONE`) mark sections for a callout block quote
 BEFORE the section content, using the script's `old12`/`new12` verbatim (same format as
-`emit-fsd/references/fsd-template.md §Drift callout format`). Typical UAT drift: `04-flows.md` changed after the
+`emit-fsd/references/fsd-template.md §Drift callout format`). Typical UAT drift: `flows.md` changed after the
 last emit (scenarios / RTM stale) or a unit's `vault_source:` re-mapped (traceability superseded).

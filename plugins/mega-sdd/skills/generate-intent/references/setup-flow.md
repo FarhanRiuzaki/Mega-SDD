@@ -69,11 +69,11 @@ The vault is a **lock against requirements** (PRD/BRD), not against an existing 
    - **`new`** — greenfield, no existing codebase to reconcile.
    - **`existing`** — extending/modifying live code. Downstream AI consumers must verify with the user before touching existing code.
 
-2. **Persist:** echo `IMPLEMENTATION_MODE=new | existing`. Recorded in `00-index.md` Vault Lock Status; drives the "Implementation Notes for AI Consumers" section.
+2. **Persist:** echo `IMPLEMENTATION_MODE=new | existing`. Recorded in the vault.md frontmatter lock (`implementation_mode:`).
 
 3. **Do NOT ask** for codebase path, repo URL, or existing entity names — that is the downstream consumer's job. This skill stays focused on requirement → vault.
 
-4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture in Vault Lock Status field `mode_migrate_after`. Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit `00-index.md` + Changelog + bump version) OR runs `diff-vault` with `mode=existing`. After the flip, `detect-drift` becomes applicable. For `mode=existing`, set `mode_migrate_after = null`.
+4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture in Vault Lock Status field `mode_migrate_after`. Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit the vault.md frontmatter + Changelog + bump version) OR runs `diff-vault` with `mode=existing`. After the flip, `detect-drift` becomes applicable. For `mode=existing`, set `mode_migrate_after = null`.
 
 > Never proceed to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
 
@@ -85,7 +85,7 @@ Controls whether the skill pauses for clarification or generates straight throug
    - **`final`** — signed off by stakeholder, no more edits. Skill **does NOT pause** to ask "should we clarify first?" — every gap, ambiguity, or contradiction goes straight to the Open Questions roll-up; the user triages offline post-vault.
    - **`draft`** — still in flux. Skill **may pause** when gap count is large (>10) and ask whether to proceed or send back for clarification. Default behavior.
 
-2. **Persist:** echo `PRD_STATUS=final | draft`. Recorded in `00-index.md` Vault Lock Status; drives Step 2 gap-handling + push-back.
+2. **Persist:** echo `PRD_STATUS=final | draft`. Recorded in the vault.md frontmatter lock; drives Step 2 gap-handling + push-back.
 
 3. **Implications when `PRD_STATUS=final`:** MUST NOT ask "Proceed or clarify first?" when gaps are high — proceed, dump everything to OQs. MUST NOT refuse to generate due to PRD inconsistencies — surface contradictions in OQs with both quotes side-by-side. MUST still refuse "just guess the rest" — `final` means the PRD is locked, NOT that Claude may invent; gaps stay OQs. Vault Lock Status reflects: `PRD source: <filename> (FINAL, signed-off)`.
 
@@ -99,7 +99,7 @@ Two verbosity tiers of the same vault. **Compact is the default** — token-effi
    - **`compact`** (default) — table-first, prose-cut, 1-line TL;DR, no boilerplate API JSON, OQ as single-line entries, decisions as 1-paragraph blurbs. **Anti-halu invariants preserved:** every source citation, every OQ tag with priority, every DoD checklist still required.
    - **`full`** — prose-rich, 3-line TL;DR header, full request/response JSON per endpoint, prose entity descriptions alongside DBML, multi-bullet ✅⚠️ consequences per ADR. For audiences with non-technical reviewers (BO, legal, compliance).
 
-2. **Persist:** echo `OUTPUT_MODE=compact | full`. Recorded in `00-index.md` Vault Lock Status; drives Step 3 generation per the output-mode policy in the generation guide (routed from the SKILL router).
+2. **Persist:** echo `OUTPUT_MODE=compact | full`. Recorded in the vault.md frontmatter lock; drives Step 3 generation per the output-mode policy in the generation guide (routed from the SKILL router).
 
 3. **Auto-default to `compact` without asking** when: the user explicitly requested terse/minimal/token-efficient output; or runs in autonomous / no-pause mode ("proceed without asking", "lanjut tanpa nanya"). Echo: *"Auto-defaulting to `OUTPUT_MODE=compact` because <reason>. Override with `full` if you need prose."*
 
@@ -116,7 +116,7 @@ If answer is `1`: skip remaining squad questions; do NOT emit `_meta/squads.yaml
 If answer is `≥2`:
 
 > **Q (partition model):** "How should squads be partitioned?
->   1. layer-based  — each squad owns architectural layers from `02-architecture.md` (e.g., Backend Squad, Frontend Squad, Integrations Squad)
+>   1. layer-based  — each squad owns architectural layers from `vault.md ## Architecture` (e.g., Backend Squad, Frontend Squad, Integrations Squad)
 >   2. feature-based — each squad owns one or more feature tags (e.g., Auth Squad, Billing Squad, Leave-Mgmt Squad)
 >   3. hybrid       — feature wins over layer when both match"
 
@@ -156,7 +156,7 @@ Vault generation produces fewer fabricated entities + tighter OQ classification 
 | Step | Usage |
 |---|---|
 | Step 2 (PRD/brief extraction) | Cross-reference PRD-mentioned entities against the codebase entity list; mark existing entities with `[CODEBASE: exists]` annotation in the vault body |
-| Step 3 (write 7 files) | Conventions section in `06-constraints.md` auto-populated from `conventions.md` memory; tech stack pre-filled (see the generation guide via the SKILL router) |
+| Step 3 (write the 4 files) | Conventions section in `constraints.md` auto-populated from `conventions.md` memory; tech stack pre-filled (see the generation guide via the SKILL router) |
 | Step 3.5 (OQ auto-classifier) | OQs matching codebase signals (test framework, naming, file location, error format) auto-resolved as `tech/scan` with `status: resolved` + citation; NOT surfaced as open. **Map-less (express default): the SAME resolution runs from manifest/index/file probes** — `scan_query` names the probe target (e.g. `manifest phpunit.xml`, `symbol-index LeaveRequest`), citations are real `file:line`. This matters beyond quality: an unresolved P1 tech/scan OQ trips the `oq_gate` position and inserts an interactive resolve-oq ahead of bind — the classifier resolving from probes is what keeps the express path non-stop. |
 | Step 4 (self-check) | Validate entity claims don't fabricate new entities for already-existing codebase entities |
 
@@ -175,7 +175,7 @@ b. **Canonical scope handling:**
      - Else if `<project>/.mega-sdd/memory/decisions.md` has a prior choice for this PRD sha256 + same cwd basename → silent default with confirm-once UX (5s timeout).
      - Else → `AskUserQuestion` with a lead line ("Memilih satu scope memfilter PRD ke bagian scope itu; scope lain bisa digenerate sebagai vault terpisah nanti."): one option per declared scope rendered as `<id> — <name/1-line summary from the PRD scopes: block>` (smart-default flagged per cwd heuristic) + "All scopes — satu vault gabungan (legacy; tidak ada filter per scope)" + "Cancel".
      - If the user chose `--scope=all` (legacy) → emit a warning, proceed with all content.
-   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `00-index.md`.
+   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `vault.md`.
 
 c. **Legacy PRD retrofit bridge:**
    - `AskUserQuestion`: "Yes, propose retrofit (recommended)" (dispatches an AI subagent per the legacy-retrofit-prompt ref, routed from the SKILL router) / "Treat as single-scope PRD" (legacy single-vault) / "Cancel — manual fix first" (**halt `prd_no_scopes_block_user_rejected_retrofit`**).
@@ -205,7 +205,7 @@ Per `generate-intent/references/vault-contract.md §constitution`. Write the 8th
 3. **Cite a source for every clause** (anti-halu rail): `(per PRD §<section>)` OR `(per KB §<file>:<line>)` OR `(per .mega-sdd/memory/decisions.md row <N>)`.
 4. **Hash pin:** `constitution_version` + `constitution_hash` land in `vault.json` via the Step-3.8 `derive-vault-json.sh` run (which runs AFTER this step, so `constitution.md` is on disk) — the script computes them fresh at initial generation (sha256 of `constitution.md` + its `**Version**` line) and CARRIES THEM FORWARD on every later derive (at-generation pin, like `prd_sha256`); never hand-write them. If constitution.md was somehow written AFTER a derive already ran (out-of-order re-run), re-run `derive-vault-json.sh --vault <OUTPUT_DIR>` so the pin is computed.
 5. **Surface for sign-off:** one-line chat summary — "Constitution.md written with N clauses. Review before bolts begin: <path>".
-6. **`--no-constitution`** skips this step (7-file vault); for one-off greenfield demos.
+6. **`--no-constitution`** skips this step (vault md files only); for one-off greenfield demos.
 
 ## Scope-detection halt conditions
 

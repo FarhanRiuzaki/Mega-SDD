@@ -66,10 +66,10 @@ If a knowledge-base exists at (priority order, first hit wins) `.mega-sdd/knowle
 
 Current vault context:
 
-- ADRs in `05-decisions.md` that relate to the OQ's domain
-- Flows in `04-flows.md` that touch the same area
-- Constraints in `06-constraints.md` that may dictate the answer
-- Citation: `.mega-sdd/vaults/<slug>/05-decisions.md §D-XXX` (canonical)
+- ADRs in `vault.md ## Decisions` (legacy `05-decisions.md`) that relate to the OQ's domain
+- Flows in `flows.md` that touch the same area
+- Constraints in `constraints.md` that may dictate the answer
+- Citation: `.mega-sdd/vaults/<slug>/vault.md §D-XXX` (legacy: `05-decisions.md §D-XXX`) (canonical)
 - Confidence: MEDIUM (vault is locked spec; recommendation extrapolates from related decisions)
 
 ### 5. Codebase-map (medium, brownfield only)
@@ -141,7 +141,7 @@ For each citation in the recommendation:
 | KB section (`<kb-path>/<file>.md §<section>:<line>`) | `Bash test -f <file>` + `Bash grep -n "<section>" <file>` to verify section exists |
 | Memory entry (`.mega-sdd/memory/<file>.md row N` canonical; legacy `.mega-sdd-memory/` honored) | `Read <file>` + count rows in target table; verify N within range |
 | User patterns (`~/.mega-sdd/memory/patterns.md §<section>`) | `Read patterns.md` + grep for section header |
-| Vault ADR (`.mega-sdd/vaults/<slug>/05-decisions.md §D-XXX` canonical) | `Read 05-decisions.md` + grep for D-XXX heading |
+| Vault ADR (`.mega-sdd/vaults/<slug>/vault.md §D-XXX` canonical; legacy `05-decisions.md`) | `Read` the decisions doc + grep for D-XXX heading |
 | Codebase-map line (`.mega-sdd/codebase/codebase-map.md §N + <file>:<line>`) | `Read codebase-map.md` + verify referenced file path exists |
 
 ### Outcomes

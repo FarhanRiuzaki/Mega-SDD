@@ -116,7 +116,7 @@ n_ocv=$(grep -c 'oq_recommend_citation_invalid' "$GI")
 [ "$n_ocv" -ge 2 ] \
   && pass "M5: both generate-intent halt rosters carry oq_recommend_citation_invalid (round fold)" \
   || fail "M5: twin halt rosters disagree (count: $n_ocv)"
-grep -qF '§Readability standards (mandatory for all 7 files)' "$GI" \
+grep -qF '§Readability standards (mandatory for all 4 files)' "$GI" \
   && grep -qF "the ACTIVE mode's column" "$GI" \
   && pass "M6: generation-guide core includes the mandatory sections + active-mode column (round fold)" \
   || fail "M6: generation-guide core still orphans a mandatory section"

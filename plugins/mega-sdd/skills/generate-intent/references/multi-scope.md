@@ -47,9 +47,9 @@ When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scope
 | `prd_sha256` | Yes | generate-intent | For memory-driven scope default on re-invocation |
 | `prd_path_at_generation` | Yes | generate-intent | For PRD change tracking via diff-vault |
 
-### 00-index.md header structure
+### vault.md header structure
 
-When vault has scope metadata, `00-index.md` header MUST include:
+When vault has scope metadata, the `vault.md` header MUST include:
 
 ```markdown
 # Vault: <Project Name> — <Scope ID>

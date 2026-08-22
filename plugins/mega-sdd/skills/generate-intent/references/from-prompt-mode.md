@@ -278,7 +278,7 @@ Per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol. Caller (orch
 
 - ❌ Generate vault content. Only seed-PRD.
 - ❌ Invoke generate-intent or any other sub-skill (orchestrate-flow does that).
-- ❌ Modify any vault docs (`00-index.md` through `06-constraints.md`).
+- ❌ Modify any vault docs (layout-2: `vault.md`/`model.md`/`flows.md`/`constraints.md`; legacy: `00-index.md` …).
 - ❌ Push to remote.
 - ❌ Persist state beyond the seed-PRD.md file (no `.gds-state.json`).
 - ❌ Re-ask topics already covered in the brief.

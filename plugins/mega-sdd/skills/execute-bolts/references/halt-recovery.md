@@ -154,7 +154,7 @@ blocker:
       password: "secret"
     expected: case-insensitive match
     actual: response codes differ for 'müller' vs 'Müller'
-    cites: 04-flows.md#F-U-001-login
+    cites: flows.md#F-U-001-login
   next_action: "Property violated. Either fix code to satisfy the property OR adjust the property statement OR add explicit edge-case handling. See <vault>/bolts/<unit>/bolt-report.md PBT section for the full counterexample."
 ```
 

@@ -39,7 +39,7 @@
 
 ## Source-of-truth priority
 
-1. **Vault files** (`<vault>/00-index.md`, `01-overview.md`, ..., `vault.json`) — declarative intent
+1. **Vault files** (layout-2: `<vault>/vault.md`, `model.md`, `flows.md`, `constraints.md`, `vault.json`; legacy: `00-index.md` … `06-constraints.md`) — declarative intent
 2. **Binding** (`<vault>/binding.md`, `<vault>-bound/` OR `bound-vault/`) — code-validated state
 3. **Codebase map** (`<project>/.mega-sdd/codebase/codebase-map.md`) — actual codebase facts
 4. **Units** (`<vault>/units/U-NNN.md`) — decomposition
@@ -58,18 +58,18 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 ## Section 1 — Overview
 
 **Slot:** `{{section-1-content}}`
-**Source:** `<vault>/01-overview.md` §Purpose/§Product + §Scope/§Target users (the generate-intent template emits §Product/§Problem/§Success criteria/§Out of Scope — the builder accepts BOTH vocabularies, numbered headings tolerated)
+**Source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose/§Product + §Scope/§Target users (the generate-intent template emits §Product/§Problem/§Success criteria/§Out of Scope — the builder accepts BOTH vocabularies, numbered headings tolerated)
 **Extraction:** Read entire §Purpose|§Product block + §Scope|§Target-users block; preserve markdown formatting; strip vault-internal anchors.
-**Citation:** `[¹] Source: vault/01-overview.md:L<purpose_start>-L<scope_end> (sha256: pending)`
-**Missing source:** emit `[Pending — vault/01-overview.md not yet generated]`
+**Citation:** `[¹] Source: vault/<resolved overview doc>:L<purpose_start>-L<scope_end> (sha256: pending)` — the builder stamps the doc it actually read (`vault.md` on layout-2, `01-overview.md` legacy)
+**Missing source:** emit `[Pending — vault/<resolved overview doc> not yet generated]`
 
 ## Section 2 — Goals & Non-Goals
 
 **Slots:** `{{section-2-goals-content}}`, `{{section-2-non-goals-content}}`
-**Source:** `<vault>/01-overview.md` §Goals/§Success criteria + §Non-Goals/§Out of Scope (both vocabularies accepted)
+**Source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Goals/§Success criteria + §Non-Goals/§Out of Scope (both vocabularies accepted)
 **Extraction:** Per §Goals: extract bulleted/numbered list as-is. Per §Non-Goals: same.
 **Citation:** inline footnote per sub-section.
-**Missing source:** emit per sub-section `[Pending — vault/01-overview.md §Goals not yet generated]`
+**Missing source:** emit per sub-section `[Pending — vault/<resolved overview doc> §Goals not yet generated]`
 
 ## Section 3 — Stakeholders / Owners
 
@@ -105,7 +105,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Slots:** `{{section-5-fr-table}}`, `{{section-5-fr-details}}`
 **Source priority (P4 repair — modern-first via legacy-first-hit):**
 1. `<vault>/02-functional.md` — every FR-NNN heading (the legacy vault generation; wins when the file exists)
-2. `<vault>/04-flows.md` — every `### F-*` flow heading (the MODERN vault generation — today's generate-intent emits no 02-functional.md; the flows + per-flow DoD are its functional enumeration, the same substrate SIT builds from). Description = the flow's Definition-of-Done bullets; **priority stays an honest `—`** (flows carry no Priority field — never default one).
+2. `<vault>/flows.md` — every `### F-*` flow heading (the MODERN vault generation — today's generate-intent emits no 02-functional.md; the flows + per-flow DoD are its functional enumeration, the same substrate SIT builds from). Description = the flow's Definition-of-Done bullets; **priority stays an honest `—`** (flows carry no Priority field — never default one).
 **Extraction (legacy branch):**
 - Parse markdown headings matching `^#{2,3}\s+FR-\d+` pattern
 - Per FR: extract title (text after FR-NNN), description (body until next heading), priority (look for `**Priority:**` line; default `MEDIUM`)
@@ -122,7 +122,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 
 **Detail block:** emit per-FR detail block from `fsd-template.md` Section 5 template.
 
-**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: pending)]` — or `vault/04-flows.md:L<start>-L<end>` on the flows branch
+**Citation:** per-FR `[Source: vault/02-functional.md:L<start>-L<end> (sha256: pending)]` — or `vault/flows.md:L<start>-L<end>` on the flows branch
 **Missing source (NEITHER file yields rows):** emit `[Pending — vault/02-functional.md (legacy) / vault/04-flows.md not yet generated]`
 
 ## Section 6 — Non-Functional Requirements
@@ -130,7 +130,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Slots:** `{{section-6-performance-content}}`, `{{section-6-security-content}}`, `{{section-6-availability-content}}`, `{{section-6-other-constitution-content}}`
 **Source priority:**
 1. `<vault>/02-functional.md` §NFR (if section exists — the legacy generation)
-2. `<vault>/06-constraints.md` `## Non-functional requirements` table (the MODERN generation — P4 repair; rows keyword-routed per category, an unmatched row lands in Other, never dropped; labeled `_Dari 06-constraints §Non-functional requirements:_`)
+2. `<vault>/constraints.md` `## Non-functional requirements` table (the MODERN generation — P4 repair; rows keyword-routed per category, an unmatched row lands in Other, never dropped; labeled `_Dari 06-constraints §Non-functional requirements:_`)
 3. `<vault>/_meta/constitution.md` LOCKED clauses (filter by category: performance / security / availability / compliance)
 
 **Extraction:**
@@ -139,7 +139,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - From constitution.md: filter LOCKED clauses by category tag; extract clause body
 - ~~De-dup if both sources mention same constraint (prefer constitution.md as canonical)~~ **AMENDED (5e, see header):** both sources are emitted under labeled sub-blocks — deterministic, duplicates are not fabrication
 
-**Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/06-constraints.md` AND/OR `[³] vault/_meta/constitution.md §LOCKED:<category>`
+**Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/constraints.md` AND/OR `[³] vault/_meta/constitution.md §LOCKED:<category>`
 **Missing source:** per sub-category emit `(not specified)` line; do NOT halt.
 
 ## Section 7 — Design / Architecture
@@ -197,14 +197,14 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Source:**
 1. `<vault>/03-open-questions.md` (or `vault.json.open_questions[]`) — filter where `status != resolved`
 2. Bolt-reports `acceptance_test_concern:` aggregated
-3. `<vault>/01-overview.md` §Non-Goals (out-of-scope items)
+3. the vault Overview §Non-Goals (`vault.md ## Overview`; legacy `01-overview.md`) — out-of-scope items
 
 **Extraction:**
 - OQs: per unresolved OQ emit row `| {oq_id} | {question} | {priority} | {category} |`
 - Bolt concerns: per concern emit `**{unit_id}:** {concern_text} (raised by {bolt_subagent_id})`
 - Out-of-scope: extract from 01-overview §Non-Goals (re-used from Section 2 but reformatted as risk-framing)
 
-**Citation:** per source `[¹] vault/03-open-questions.md` AND `[²] bolts/<unit_id>/bolt-report.md` AND `[³] vault/01-overview.md §Non-Goals`
+**Citation:** per source `[¹] vault/03-open-questions.md` AND `[²] bolts/<unit_id>/bolt-report.md` AND `[³] vault/<resolved overview doc> §Non-Goals`
 **Missing source:** empty arrays emit `(none)`; do NOT halt.
 
 ## Citation slot extraction

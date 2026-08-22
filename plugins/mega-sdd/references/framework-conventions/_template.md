@@ -122,7 +122,7 @@ Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:
 ## Flow-artifact derivation
 
 > Consumed by `validate-flow-coverage.sh` (code-delivery slice A). Declares how an
-> input-accepting state-transition step in `04-flows.md` maps to a REQUIRED code
+> input-accepting state-transition step in `flows.md` maps to a REQUIRED code
 > artifact. The validator is tech-agnostic: it reads these signatures, never
 > hardcodes a stack. A pack that omits this section → the validator writes
 > `status: SKIP` (graceful, never errors). NOTE: `target_files` is parsed from a

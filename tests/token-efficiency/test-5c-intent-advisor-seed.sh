@@ -38,7 +38,7 @@ note "== INTENT leg: paths-not-paste dispatch + expansion contract =="
 grep -qF 'NOT the pasted file contents' "$GI_SK" && ok "Step 3.7 dispatches PATHS, not the pasted corpus" || fail "Step 3.7 still pastes"
 if grep -qF 'the drafted 7 vault files, and the source (PRD/brief/KB)' "$GI_SK"; then fail "old pasted-corpus dispatch wording survives"; else ok "old pasted-corpus wording gone"; fi
 grep -qF 'a SEED it expands past, never its horizon' "$GI_SK" && ok "SKILL.md names the seed-not-horizon invariant" || fail "invariant missing from SKILL.md"
-grep -qF 'the OQ roll-up counts' "$GI_SK" && ok "dispatch carries the OQ roll-up counts (the compact seed)" || fail "seed content unnamed"
+grep -qF 'the OQ counts (constraints.md' "$GI_SK" && ok "dispatch carries the OQ counts (the compact seed; layout-2 home)" || fail "seed content unnamed"
 grep -qF 'The seed is never your horizon' "$GI_CL" && ok "checklist opens with the expansion contract" || fail "checklist contract missing"
 grep -qF 'Evidence that is NOT in the dispatch is IN SCOPE' "$GI_CL" && ok "checklist: outside-the-seed evidence is IN SCOPE (a bounded review is a moat regression)" || fail "in-scope rule missing"
 grep -qF 'you MUST sweep the WHOLE source' "$GI_CL" && ok "coverage_gap REQUIRES the whole-source sweep (the case a seed cannot contain)" || fail "whole-source sweep mandate missing"
