@@ -20,7 +20,7 @@
 #   toolchain detection (detect-toolchain.sh; detect, never impose)
 #   1  format          detected check_cmd; on fail run fix_cmd then re-check
 #   2  lint+typecheck  detected check_cmds                      (findings only)
-#   3  secrets         scan-secrets-code.sh          exit 1 → BLOCKING (always runs)
+#   3  secrets         secret-scan.sh --code         exit 1 → BLOCKING (always runs)
 #   4  SAST            run-code-scan.sh              exit 2 → BLOCKING
 #   5  new-dep exist   validate-new-deps.sh          exit 2 → BLOCKING (always runs)
 #   6  dep-auth        validate-new-deps.sh --unit=  advisory, never blocks (one
@@ -361,11 +361,11 @@ def main():
                 result["gates"]["lint_typecheck"] = {"ran": True, "results": entries, "findings": findings}
 
     # --- gate 3 — secrets (ALWAYS runs; rc set {0,1} — anything else is exit 2)
-    rc, out, err, to = gate_script("scan-secrets-code.sh", ["--base=" + base, "--head=" + head, "--cwd=" + cwd])
+    rc, out, err, to = gate_script("secret-scan.sh", ["--code", "--base=" + base, "--head=" + head, "--cwd=" + cwd])
     if to:
-        die_env("secret gate (scan-secrets-code.sh) timed out — the always-run gate was NOT completed; never treat as clean")
+        die_env("secret gate (secret-scan.sh --code) timed out — the always-run gate was NOT completed; never treat as clean")
     if rc not in (0, 1):
-        die_env("scan-secrets-code.sh exited %s — the always-run gate did not complete; never treat as clean. stderr: %s"
+        die_env("secret-scan.sh --code exited %s — the always-run gate did not complete; never treat as clean. stderr: %s"
                 % (rc, err.strip()[-500:] or "(empty)"))
     data = parse_json(out)
     result["gates"]["secrets"] = {"ran": True, "rc": rc, "result": data}
