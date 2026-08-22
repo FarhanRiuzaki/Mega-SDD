@@ -85,7 +85,7 @@ Behavior changes require: a spec amendment (or new spec), updated `tests/skill-t
 
 - **Plugin:** SemVer in `plugin.json` (single source of truth; `marketplace.json` must match). Major bump for breaking renames, rails changes, or marketplace incompatibility.
 - **Skills:** per-skill `version:` in frontmatter; bump on content change.
-- **Release:** run `scripts/sync-superpowers.sh` and review vendored diffs → run trigger tests + fixtures → add a `CHANGELOG.md` entry → bump versions → tag.
+- **Release:** run `scripts/sync-vendored.sh` (superpowers + ui-ux legs) and review vendored diffs → run trigger tests + fixtures → add a `CHANGELOG.md` entry → bump versions → tag.
 - **MCP pins:** `.mcp.json` pins EVERY bundled server (`@playwright/mcp`, `@upstash/context7-mcp`) to an exact version — review each pin (registry-rot check) at each plugin version bump, like the marketplace.json parity check. Never a floating tag. The `@playwright/test` pin in `scripts/build-uat-e2e.sh` (the generated e2e `package.json`) is the same review class.
 
 ## Co-author attribution

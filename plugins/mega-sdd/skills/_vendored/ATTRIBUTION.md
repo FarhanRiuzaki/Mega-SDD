@@ -25,7 +25,7 @@ Mega-SDD requires superpowers' execution skills for the `bolts` phase. When the 
 
 ## Sync policy
 
-Run `scripts/sync-superpowers.sh` to refresh from upstream. Sync should be performed before each mega-sdd release. Manual review of diffs is mandatory — vendored skills may shape agent behavior in unexpected ways.
+Run `scripts/sync-vendored.sh` (the superpowers leg) to refresh from upstream. Sync should be performed before each mega-sdd release. Manual review of diffs is mandatory — vendored skills may shape agent behavior in unexpected ways.
 
 ## MIT License notice
 
