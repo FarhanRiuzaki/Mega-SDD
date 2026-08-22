@@ -14,10 +14,18 @@
 #   full     = ANY signal fired
 #   standard = everything else
 # Output: one JSON line {"tier","signals_fired":[],"signals_evaluated":[],
-# "target_files":N,"task_type":...}. The override chain (--review-panel= >
-# config review_panel: > auto) is applied by the CALLER — this script always
-# reports the auto verdict. Exit 0 = verdict printed; 2 = usage/unreadable
-# unit (caller falls back to `standard`, never minimal — unknown rc != low).
+# "target_files":N,"task_type":...,"implementer_model","effort"}. The two
+# v7.1 fields are DERIVED from the SAME signals (per-unit model routing spec
+# 2026-08-22 — rail A5: deterministic evidence, never model self-assessment):
+#   implementer_model: opus  <- tier full (any risk signal)
+#                      haiku <- tier minimal AND task_type verify ONLY
+#                      sonnet<- everything else (unknown never lowers a tier)
+#   effort:            low for haiku, high otherwise (recorded for telemetry;
+#                      no per-dispatch effort mechanism exists today — honest)
+# The override chain (--review-panel= / --model-tier= > config > auto) is
+# applied by the CALLER — this script always reports the auto verdict.
+# Exit 0 = verdict printed; 2 = usage/unreadable unit (caller falls back to
+# `standard`/`sonnet`, never minimal/haiku — unknown rc != low).
 set -u
 UNIT=""
 PACK_FILE=""
@@ -176,9 +184,22 @@ elif task_type == "":
 else:
     tier = "standard"
 
+# v7.1 per-unit model routing — derived from the SAME verdict, no new inputs.
+# haiku is verify-only (the catalog's own haiku rubric almost never fits
+# code-writing units); a parse_note/unknown never lowers the model tier —
+# the same doctrine as the panel tier above.
+if tier == "full":
+    implementer_model = "opus"
+elif tier == "minimal" and task_type == "verify":
+    implementer_model = "haiku"
+else:
+    implementer_model = "sonnet"
+effort = "low" if implementer_model == "haiku" else "high"
+
 out = {"tier": tier, "signals_fired": fired,
        "signals_evaluated": signals_evaluated,
-       "target_files": n_files, "task_type": task_type}
+       "target_files": n_files, "task_type": task_type,
+       "implementer_model": implementer_model, "effort": effort}
 if parse_note:
     out["parse_note"] = parse_note
 print(json.dumps(out, separators=(",", ":")))

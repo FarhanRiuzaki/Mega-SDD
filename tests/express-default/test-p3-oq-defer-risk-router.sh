@@ -58,6 +58,17 @@ OUT=$(bash "$RT" --unit "$WORK/u-manifest.md")
 echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'manifest' in d['signals_fired']" \
   && pass "dependency manifest in target_files -> full" || fail "manifest: $OUT"
 
+# ── 1b. v7.1 implementer_model + effort (derived from the SAME verdict) ─────
+MODEL_OF() { bash "$RT" --unit "$1" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['implementer_model'],d['effort'])"; }
+M=$(MODEL_OF "$WORK/u-verify.md")
+[ "$M" = "haiku low" ] && pass "verify/minimal -> implementer haiku + effort low" || fail "verify model=$M"
+M=$(MODEL_OF "$WORK/u-small.md")
+[ "$M" = "sonnet high" ] && pass "minimal NON-verify -> sonnet (haiku is verify-only)" || fail "small model=$M"
+M=$(MODEL_OF "$WORK/u-3file.md")
+[ "$M" = "sonnet high" ] && pass "standard -> sonnet high" || fail "3file model=$M"
+M=$(MODEL_OF "$WORK/u-vocab.md")
+[ "$M" = "opus high" ] && pass "full (signal fired) -> opus high" || fail "vocab model=$M"
+
 mkunit "$WORK/u-risk.md" create high "app/Anything.php" "Netral."
 OUT=$(bash "$RT" --unit "$WORK/u-risk.md")
 echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'risk_field' in d['signals_fired']" \
