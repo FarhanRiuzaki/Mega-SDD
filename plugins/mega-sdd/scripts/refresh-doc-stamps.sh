@@ -3,7 +3,7 @@
 # research §4 "Maturity + freshness"): the doc-control state-stamp refresher
 # for emitted docs (<vault>/<doc>/<DOC>.md — fsd today; prd/sit in P5).
 #
-# Contract (stamp-binding-boilerplate.sh precedent):
+# Contract (the binding-boilerplate stamp precedent — now derive-binding-json.sh PHASE 0):
 #   - SCRIPT-OWNED block: the doc-control/state-stamp block between the
 #     delimiters `<!-- mega-sdd:doc-control` and `-->` is written ONLY by this
 #     script — the model never types it. It carries exactly three fields:

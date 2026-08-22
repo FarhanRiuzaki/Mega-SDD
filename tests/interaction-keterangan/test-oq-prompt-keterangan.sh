@@ -68,9 +68,9 @@ has "$DV" "tanpa commit, tidak ada rollback point" && ok "diff-vault git-safety:
 has "$P/skills/diff-vault/references/report-format.md" "P1 = blocking" && ok "diff-vault OQ priority: P1/P2 tier gloss" || fail "diff-vault: bare P1/P2 codes"
 has "$P/skills/diff-vault/references/diff-procedure.md" "STATES the suggested bump" && ok "diff-vault version bump: rationale + glossed options" || fail "diff-vault bump: shape unmandated"
 BT="$P/skills/bind-codebase/references/binding-md-template.md"
-SB="$P/scripts/stamp-binding-boilerplate.sh"
+SB="$P/scripts/derive-binding-json.sh"
 has "$BT" "Enum legend (keterangan contract" && ok "binding.md template: enum-legend note (single source named)" || fail "binding template: legend note missing"
-# P2b: the 4-code gloss text single-sources in the stamp script (stamped into every emitted binding.md)
+# P2b/v7: the 4-code gloss text single-sources in derive-binding-json.sh PHASE 0 (stamped into every emitted binding.md)
 has "$SB" "Enum legend (keterangan contract" && ok "stamp script: legend blockquote carried (stamped post-write)" || fail "stamp script: legend blockquote missing"
 has "$SB" "the vault is right; code must change to match" && ok "stamp script: KEEP_VAULT gloss" || fail "stamp script: KEEP_VAULT gloss missing"
 has "$SB" "the vault is wrong; the vault is updated to match code reality" && ok "stamp script: KEEP_CODE gloss" || fail "stamp script: KEEP_CODE gloss missing"

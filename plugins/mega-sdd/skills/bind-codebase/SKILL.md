@@ -89,14 +89,14 @@ When the gate (or `--advisor`) says run: first **Run** `bash <plugin>/scripts/bu
 
 **3. Aggregate counts.** `claims_total`, `confirmed`, `conflict`, `oq`.
 
-**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs). The model writes NO banner and NO enum legend — both are stamped by the Step 4.5 script. Conflicts render as `### CONFLICT-N` detail blocks ONLY (each opening with its `- **Vault claim**:` / `- **Codebase reality**:` pair) — the machine-read form is the only form; there is no summary table. The frontmatter's `binding_metadata` block carries `codebase_map_provenance` (Step 1) AND `head` — the current `git rev-parse HEAD` (or `null` outside git), written ONCE here; Step 4.5 copies both into `binding.json` verbatim. State Map rows whose state comes from a truncation/heuristic condition end their Anchor cell with the `[reason: <enum>]` token (S4 — `truncated_section` is mandatory when the truncation exception fired; generate-units keys its direct-probe rule on the derived `state_reason`), and RESOLVED `### CONFLICT-N` blocks carry their `- **Claim**: C-NNN` line — both per the template grammar.
+**4. Write `binding.md`** using the template in `references/binding-md-template.md` (Summary · Confirmed Claims · Implementation State Map · Tech-OQ Auto-Resolved · Tech-OQ Recommendations · Suggested Unit Hard Rules · Conflicts [BLOCKING] · Open Questions · Auto-Resolved Deferred OQs). The model writes NO banner and NO enum legend — both are stamped by the Step 4.5 script's PHASE 0. Conflicts render as `### CONFLICT-N` detail blocks ONLY (each opening with its `- **Vault claim**:` / `- **Codebase reality**:` pair) — the machine-read form is the only form; there is no summary table. The frontmatter's `binding_metadata` block carries `codebase_map_provenance` (Step 1) AND `head` — the current `git rev-parse HEAD` (or `null` outside git), written ONCE here; Step 4.5 copies both into `binding.json` verbatim. State Map rows whose state comes from a truncation/heuristic condition end their Anchor cell with the `[reason: <enum>]` token (S4 — `truncated_section` is mandatory when the truncation exception fired; generate-units keys its direct-probe rule on the derived `state_reason`), and RESOLVED `### CONFLICT-N` blocks carry their `- **Claim**: C-NNN` line — both per the template grammar.
 
-**4.5. Stamp boilerplate, then derive `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
-**Run** `scripts/stamp-binding-boilerplate.sh --vault <vault>` FIRST — injects the
-do-not-hand-edit banner + the keterangan enum legend into `binding.md` (static,
-idempotent, parser-invisible — the legend gloss text single-sources in that
-script; the model never types either block). THEN
-**Run** `scripts/derive-binding-json.sh --vault <vault>` — deterministic
+**4.5. Stamp boilerplate + derive `binding.json`** (structured State Map sidecar; schema → `references/binding-json-schema.md`).
+**Run** `scripts/derive-binding-json.sh --vault <vault>` — its PHASE 0 stamps
+the do-not-hand-edit banner + the keterangan enum legend into `binding.md`
+(static, idempotent, parser-invisible — the legend gloss text single-sources
+in that script; the model never types either block; merged from the former
+stamp-binding-boilerplate.sh in v7 Fase 2), then it runs the deterministic
 generator: `binding.json` is derived FROM `binding.md` (never hand-written —
 the State Map rows, Confirmed Claims list, CONFLICT blocks, and
 `binding_metadata` frontmatter you wrote in Step 4 are the single source of
