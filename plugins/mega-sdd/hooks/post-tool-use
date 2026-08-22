@@ -851,8 +851,10 @@ for h in sorted(hits):
       local validator="$1"        # absolute path to script
       local state_file="$2"        # absolute path to state file the script writes
       local script_label="$3"      # human label for original_emit_site
+      local extra="${4:-}"         # optional single mode flag (e.g. --deferral)
       [ -x "$validator" ] || return 0
-      bash "$validator" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
+      # shellcheck disable=SC2086
+      bash "$validator" $extra --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
       [ -f "$state_file" ] || return 0
       local v_status
       v_status=$(python3 -c "
@@ -973,9 +975,10 @@ except Exception:
     # PreToolUse reads .ui-deferral-state.json — it is surfaced via analyze.
     if [ "$NEED_PTU_SCAN" = "1" ]; then
     run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-ui-deferral.sh" \
+      "${SCRIPT_DIR}/../scripts/validate-ui-quality.sh" \
       "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \
-      "PostToolUse-Write-validate-ui-deferral"
+      "PostToolUse-Write-validate-ui-deferral" \
+      "--deferral"
     fi
 
     # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────

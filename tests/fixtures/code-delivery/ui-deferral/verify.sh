@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify.sh — fixture-verified DoD for validate-ui-deferral.sh (Iter-79 B1).
+# verify.sh — fixture-verified DoD for the --deferral mode of validate-ui-quality.sh (Iter-79 B1; merged v7 Fase 2 group 7).
 #
 # Proves the gate catches the sanctioned UI-deferral bypass — a bolt-report that defers a
 # unit's `## UI contract` to a future polish unit ("scaffold kept; UI polish deferred").
@@ -13,13 +13,13 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$HERE/../../../.." && pwd)"
-VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-ui-deferral.sh"
+VALIDATOR="${PLUGIN_ROOT}/plugins/mega-sdd/scripts/validate-ui-quality.sh"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*"; FAILED=1; }
 
-[ -f "$VALIDATOR" ] || { fail "validate-ui-deferral.sh not found"; exit 1; }
+[ -f "$VALIDATOR" ] || { fail "validate-ui-quality.sh not found"; exit 1; }
 
 read_state() { python3 -c "
 import json,sys
@@ -31,7 +31,7 @@ except Exception as e:
 " 2>/dev/null; }
 
 note "=== BAD fixture (expect FAIL: 1 ui_obligation_deferred on U-001) ==="
-bash "$VALIDATOR" --cwd="$HERE/bad" --quiet
+bash "$VALIDATOR" --deferral --cwd="$HERE/bad" --quiet
 BAD_EXIT=$?
 BAD_STATE="$HERE/bad/.mega-sdd/.ui-deferral-state.json"
 [ -f "$BAD_STATE" ] || fail "bad: state file not written"
@@ -46,7 +46,7 @@ note "bad: status=$BAD_STATUS exit=$BAD_EXIT deferrals=$BAD_CNT unit=$BAD_UNIT"
 
 note ""
 note "=== GOOD fixture (expect PASS) ==="
-bash "$VALIDATOR" --cwd="$HERE/good" --quiet
+bash "$VALIDATOR" --deferral --cwd="$HERE/good" --quiet
 GOOD_EXIT=$?
 GOOD_STATE="$HERE/good/.mega-sdd/.ui-deferral-state.json"
 [ -f "$GOOD_STATE" ] || fail "good: state file not written"
