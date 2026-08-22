@@ -14,7 +14,8 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 OQ="${ROOT}/plugins/mega-sdd/scripts/validate-vault-oqs.sh"
-VF="${ROOT}/plugins/mega-sdd/scripts/validate-vault-flows.sh"
+VF="${ROOT}/plugins/mega-sdd/scripts/validate-kb.sh"
+VF_FLAGS="--surface=vault-flows"
 for f in "$OQ" "$VF"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
@@ -76,7 +77,7 @@ flowchart TD
 ## Sources
 - some ref
 MD
-M1OUT="$(bash "$VF" --cwd="$WORK/m1" --file-path="$d/04-flows.md" 2>/dev/null)"
+M1OUT="$(bash "$VF" $VF_FLAGS --cwd="$WORK/m1" --file-path="$d/04-flows.md" 2>/dev/null)"
 M1="$(OUT="$M1OUT" python3 -c "
 import json,os
 st=json.loads(os.environ['OUT'])

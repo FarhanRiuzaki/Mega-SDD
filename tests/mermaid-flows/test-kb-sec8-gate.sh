@@ -2,7 +2,7 @@
 # test-kb-sec8-gate.sh — Inc-1 of the Mermaid-flows hard rule
 # (docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md; subsumes god-review L7).
 #
-# PROVES: validate-kb-flows.sh §8 State Machine treats a non-N/A §8 with raw
+# PROVES: the kb flows surface (validate-kb.sh) §8 State Machine treats a non-N/A §8 with raw
 # transition arrows but NO ```mermaid fence as a FAIL (kb_flow_not_mermaid) —
 # mirroring the §3 Flow branch — instead of the old silent PASS ("consider
 # mermaid fence for consistency"). N/A §8 still SKIPs; fenced §8 still PASSes.
@@ -14,7 +14,8 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-VALIDATOR="${ROOT}/plugins/mega-sdd/scripts/validate-kb-flows.sh"
+VALIDATOR="${ROOT}/plugins/mega-sdd/scripts/validate-kb.sh"
+VFLAGS="--surface=flows"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -67,7 +68,7 @@ $2
 - app/order.rb:10" > "$1"
 }
 
-run() { bash "$VALIDATOR" --cwd="$WORK" --file-path="$1" --quiet >/dev/null 2>&1; }
+run() { bash "$VALIDATOR" $VFLAGS --cwd="$WORK" --file-path="$1" --quiet >/dev/null 2>&1; }
 STATE="$WORK/.mega-sdd/.kb-flows-state.json"
 
 # ── 1. BAD: §8 raw ASCII transitions, no mermaid fence → must FAIL ─────────────

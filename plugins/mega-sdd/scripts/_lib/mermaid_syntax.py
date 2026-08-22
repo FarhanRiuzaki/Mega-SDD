@@ -4,10 +4,10 @@ Single source of truth for the heuristic Mermaid syntax checks enforced by
 plugins/mega-sdd/references/mermaid-emission-rules.md (Rule 1 quote node text,
 Rule 2 <br/> not literal backslash-n, Rule 3 escape embedded quotes). No
 external deps. Imported by:
-  - validate-kb-flows.sh    (KB §3 Flow + §8 State Machine)
-  - validate-vault-flows.sh (vault 04-flows.md F-xxx flows)
+  - validate-kb.sh --surface=flows       (KB §3 Flow + §8 State Machine)
+  - validate-kb.sh --surface=vault-flows (vault 04-flows.md F-xxx flows)
 
-Extracted verbatim from validate-kb-flows.sh so both KB and vault flow gates
+Extracted verbatim from the KB flows validator so both KB and vault flow gates
 apply IDENTICAL syntax rules — never fork the tokenizer per surface (that is the
 one-codebase-divergence class the god-review repeatedly flags).
 

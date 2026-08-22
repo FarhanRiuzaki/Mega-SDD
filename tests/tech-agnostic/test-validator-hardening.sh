@@ -11,8 +11,10 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 S="${ROOT}/plugins/mega-sdd/scripts"
-CIT="$S/validate-kb-citations.sh"
-MRK="$S/validate-kb-markers.sh"
+CIT="$S/validate-kb.sh"
+CIT_FLAGS="--surface=citations"
+MRK="$S/validate-kb.sh"
+MRK_FLAGS="--surface=markers"
 LEAK="$S/kb-leak-scan.sh"
 
 FAILED=0
@@ -35,7 +37,7 @@ printf '%s\n' '# 1. Purpose [VERIFIED]
 - `Services/OrderService.cs:45`
 - `ui/App.tsx:3`
 - `Model.kt:9`' > "$H/order.md"
-R=$(bash "$CIT" --cwd="$WORK/h1" --file-path="$H/order.md" 2>/dev/null)
+R=$(bash "$CIT" $CIT_FLAGS --cwd="$WORK/h1" --file-path="$H/order.md" 2>/dev/null)
 TC=$(jget "$R" "json.load(sys.stdin).get('total_citations')")
 ST=$(jget "$R" "json.load(sys.stdin).get('status')")
 note "  status=$ST total_citations=$TC"
@@ -47,12 +49,12 @@ NA="$WORK/h1b/.mega-sdd/knowledge-base/10-domains"; mkdir -p "$NA"
 printf '%s\n' '# 1. Purpose [VERIFIED]
 ## 11. Source References
 per BI Regulation 23.2:2021 (no file)' > "$NA/x.md"
-W=$(jget "$(bash "$CIT" --cwd="$WORK/h1b" --file-path="$NA/x.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
+W=$(jget "$(bash "$CIT" $CIT_FLAGS --cwd="$WORK/h1b" --file-path="$NA/x.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
 [ "$W" = "WARN" ] && ok "0-citations-in-grounded-KB → WARN (not silent SKIP)" || fail "expected WARN, got '$W'"
 printf '%s\n' '# 1. Purpose [VERIFIED]
 ## 11. Source References
 _None detected_' > "$NA/y.md"
-NAS=$(jget "$(bash "$CIT" --cwd="$WORK/h1b" --file-path="$NA/y.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
+NAS=$(jget "$(bash "$CIT" $CIT_FLAGS --cwd="$WORK/h1b" --file-path="$NA/y.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
 [ "$NAS" = "SKIP" ] && ok "N/A §11 exempt → SKIP (not WARN)" || fail "expected SKIP on N/A, got '$NAS'"
 
 # ── M7: per-claim gate rejects regulation/version/time tokens ──────────────────
@@ -67,7 +69,7 @@ printf '%s\n' '# 1. Purpose
 | R2 | Fee logic in Services/Fee.cs:45 [VERIFIED] |  | [VERIFIED] |
 ## 11. Source References
 - `Services/Fee.cs:45`' > "$M/r.md"
-R=$(bash "$MRK" --cwd="$WORK/m7" --file-path="$M/r.md" 2>/dev/null)
+R=$(bash "$MRK" $MRK_FLAGS --cwd="$WORK/m7" --file-path="$M/r.md" 2>/dev/null)
 UC=$(jget "$R" "json.load(sys.stdin).get('verified_uncited')")
 CI=$(jget "$R" "json.load(sys.stdin).get('verified_cited')")
 note "  cited=$CI uncited=$UC"
@@ -113,14 +115,14 @@ touch "$G/_source/go.mod" "$G/_source/internal/order/handler.go"
 printf '%s\n' '# 1. Purpose [VERIFIED]
 ## 11. Source References
 - `handler.go:12`' > "$G/.mega-sdd/knowledge-base/10-domains/o.md"
-GS=$(jget "$(bash "$CIT" --cwd="$G" --file-path="$G/.mega-sdd/knowledge-base/10-domains/o.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
+GS=$(jget "$(bash "$CIT" $CIT_FLAGS --cwd="$G" --file-path="$G/.mega-sdd/knowledge-base/10-domains/o.md" 2>/dev/null)" "json.load(sys.stdin).get('status')")
 [ "$GS" = "PASS" ] && ok "Go legacy (go.mod) auto-detected + nested basename resolved" || fail "Go resolve expected PASS, got '$GS'"
 A="$WORK/m4amb"; mkdir -p "$A/_source/a" "$A/_source/b" "$A/.mega-sdd/knowledge-base/10-domains"
 touch "$A/_source/composer.json" "$A/_source/a/User.php" "$A/_source/b/User.php"
 printf '%s\n' '# 1. Purpose [VERIFIED]
 ## 11. Source References
 - `User.php:10`' > "$A/.mega-sdd/knowledge-base/10-domains/u.md"
-AR=$(bash "$CIT" --cwd="$A" --file-path="$A/.mega-sdd/knowledge-base/10-domains/u.md" 2>/dev/null)
+AR=$(bash "$CIT" $CIT_FLAGS --cwd="$A" --file-path="$A/.mega-sdd/knowledge-base/10-domains/u.md" 2>/dev/null)
 AMB=$(jget "$AR" "json.load(sys.stdin).get('ambiguous')")
 AST=$(jget "$AR" "json.load(sys.stdin).get('status')")
 [ "$AMB" = "1" ] && [ "$AST" = "FAIL" ] && ok "ambiguous basename (2 paths) → NOT resolved (FAIL)" || fail "ambiguous expected FAIL/1, got status=$AST amb=$AMB"
@@ -136,7 +138,7 @@ printf '%s\n' '## 7. Rules
 - Real `Services/Fee.cs:45` [VERIFIED]
 ## 11. Source References
 - `Services/Fee.cs:45`' > "$BK/r.md"
-R=$(bash "$MRK" --cwd="$WORK/r1" --file-path="$BK/r.md" 2>/dev/null)
+R=$(bash "$MRK" $MRK_FLAGS --cwd="$WORK/r1" --file-path="$BK/r.md" 2>/dev/null)
 [ "$(jget "$R" "json.load(sys.stdin).get('verified_uncited')")" = "1" ] && ok "backtick-wrapped reg token flagged uncited (dominant path)" || fail "backtick reg token wrongly CITED (check-3 hole)"
 
 note ''
@@ -144,7 +146,7 @@ note '=== R2: extensionless source citation (Gemfile:3) resolves ==='
 EX="$WORK/r2"; mkdir -p "$EX/_source" "$EX/.mega-sdd/knowledge-base/10-domains"
 printf 'gem rails\n\n\n' > "$EX/_source/Gemfile"
 printf '# P [VERIFIED]\n## 11. Source References\n- `Gemfile:3`\n' > "$EX/.mega-sdd/knowledge-base/10-domains/g.md"
-R=$(bash "$CIT" --cwd="$EX" --file-path="$EX/.mega-sdd/knowledge-base/10-domains/g.md" 2>/dev/null)
+R=$(bash "$CIT" $CIT_FLAGS --cwd="$EX" --file-path="$EX/.mega-sdd/knowledge-base/10-domains/g.md" 2>/dev/null)
 [ "$(jget "$R" "json.load(sys.stdin).get('status')")" = "PASS" ] && ok "Gemfile:3 extensionless citation resolves (tech-agnostic)" || fail "extensionless source citation not resolved"
 
 note ''
@@ -152,7 +154,7 @@ note '=== R3: §11 prose-wrapped citation extracts the PATH, not the first word 
 PW="$WORK/r3"; mkdir -p "$PW/_source" "$PW/.mega-sdd/knowledge-base/10-domains"
 touch "$PW/_source/config.yaml"
 printf '# P [VERIFIED]\n## 11. Source References\n- see `config.yaml:3` for detail\n' > "$PW/.mega-sdd/knowledge-base/10-domains/p.md"
-R=$(bash "$CIT" --cwd="$PW" --file-path="$PW/.mega-sdd/knowledge-base/10-domains/p.md" 2>/dev/null)
+R=$(bash "$CIT" $CIT_FLAGS --cwd="$PW" --file-path="$PW/.mega-sdd/knowledge-base/10-domains/p.md" 2>/dev/null)
 [ "$(jget "$R" "len(json.load(sys.stdin).get('broken_citations',[]))")" = "0" ] && ok "prose-wrapped span extracts config.yaml (not 'see')" || fail "prose span mis-extracted → false broken"
 
 note ''

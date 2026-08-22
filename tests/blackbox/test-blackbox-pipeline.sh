@@ -45,7 +45,7 @@ git -C "$PROJ" add -A && git -C "$PROJ" commit -qm "chore: legacy baseline"
 stage "S2 vault write + validate-vault-flows/oqs"
 mkdir -p "$VAULT"
 cp "$GFIX/derive-vault/"*.md "$VAULT/"
-OUT="$(bash "$SCR/validate-vault-flows.sh" --cwd="$PROJ" --file-path="$VAULT/04-flows.md" </dev/null 2>&1)"; RC=$?
+OUT="$(bash "$SCR/validate-kb.sh" --surface=vault-flows --cwd="$PROJ" --file-path="$VAULT/04-flows.md" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "validate-vault-flows PASS" || bad "validate-vault-flows rc=$RC: $OUT"
 OUT="$(bash "$SCR/validate-vault-oqs.sh" --cwd="$PROJ" --file-path="$VAULT/04-flows.md" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "validate-vault-oqs PASS" || bad "validate-vault-oqs rc=$RC: $OUT"

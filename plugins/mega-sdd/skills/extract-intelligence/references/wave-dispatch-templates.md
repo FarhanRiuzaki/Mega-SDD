@@ -211,7 +211,7 @@ SCOPE: Produce files in {out}/knowledge-base/20-workflows/ for each cross-cuttin
 CONTEXT:
 - Don't enumerate every workflow yet — only the cross-cutting patterns that span multiple domains.
 - Per-domain transactional workflows belong to Wave 3, not here.
-- State-machine docs use a state-diagram table or mermaid stateDiagram. When using Mermaid blocks, MANDATORY follow `plugins/mega-sdd/references/mermaid-emission-rules.md` (quote all node text, `<br/>` for newlines, escape `<>&"`, paraphrase raw code) — `validate-kb-flows.sh` v2 enforces a heuristic subset.
+- State-machine docs use a state-diagram table or mermaid stateDiagram. When using Mermaid blocks, MANDATORY follow `plugins/mega-sdd/references/mermaid-emission-rules.md` (quote all node text, `<br/>` for newlines, escape `<>&"`, paraphrase raw code) — the kb flows surface (`validate-kb.sh --surface=flows`) v2 enforces a heuristic subset.
 ```
 
 **Gate before Wave 2:**
@@ -307,7 +307,7 @@ A 6th file — `40-business-rules/hidden-gotchas.md` — is produced by the main
 
 **Gate before Wave 4:** all 11 sections per workflow file; `## 8. State Machine` non-empty for workflow-classified domains; `## 9. Edge Cases & Gotchas` ≥3 entries per workflow file (≥1 was too lenient — shallow extraction passed the gate with trivial entries).
 
-**Advisory (non-blocking, P1 provenance):** for each workflow agent that reports `provenance_anomalies > 0`, confirm the file carries a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. If a workflow file documents state transitions but its body never references the read-side (no predicate / filter / condition language consuming the state) → surface an advisory `provenance_read_side_thin` and re-dispatch the agent with the P1 discipline as feedback. **This is a MANUAL between-wave grep nudge, NOT a validator-emitted state-file signal** (unlike `kb_flow_staging_missing`, which `validate-kb-flows.sh` emits on its `advisories[]` channel) — do not grep for it in a state file. It NEVER blocks the wave; genuinely unpaired states are legitimate `[OPEN]`s.
+**Advisory (non-blocking, P1 provenance):** for each workflow agent that reports `provenance_anomalies > 0`, confirm the file carries a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. If a workflow file documents state transitions but its body never references the read-side (no predicate / filter / condition language consuming the state) → surface an advisory `provenance_read_side_thin` and re-dispatch the agent with the P1 discipline as feedback. **This is a MANUAL between-wave grep nudge, NOT a validator-emitted state-file signal** (unlike `kb_flow_staging_missing`, which the kb flows surface (`validate-kb.sh --surface=flows`) emits on its `advisories[]` channel) — do not grep for it in a state file. It NEVER blocks the wave; genuinely unpaired states are legitimate `[OPEN]`s.
 
 ---
 

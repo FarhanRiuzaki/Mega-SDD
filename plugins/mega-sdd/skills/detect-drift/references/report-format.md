@@ -79,7 +79,7 @@ return $accounts->where('status', '!=', 'dormant')
 
 ## Flow drift
 
-> When a suggested action **adds or amends a flow in `04-flows.md`**, author the flow body as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — `validate-vault-flows.sh` gates it. Read vault flows as their Mermaid nodes/edges.
+> When a suggested action **adds or amends a flow in `04-flows.md`**, author the flow body as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it. Read vault flows as their Mermaid nodes/edges.
 
 ### Missing in code: F-S-004 `account_closure_runner` (confidence: medium)
 

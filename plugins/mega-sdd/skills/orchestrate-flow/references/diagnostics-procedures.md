@@ -183,4 +183,4 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 
 ## enrich-semantics
 
-**REMOVED (v7 Fase 2).** The staged-input retrofit helper (`enrich-workflows-staging.sh`) is deleted; the `kb_flow_staging_missing` advisory remains (validate-kb-flows.sh) and the remediation is a scoped re-run of `extract-intelligence` on the affected domain, reviewed as usual. Historical procedure: git.
+**REMOVED (v7 Fase 2).** The staged-input retrofit helper (`enrich-workflows-staging.sh`) is deleted; the `kb_flow_staging_missing` advisory remains (the kb flows surface of validate-kb.sh) and the remediation is a scoped re-run of `extract-intelligence` on the affected domain, reviewed as usual. Historical procedure: git.
