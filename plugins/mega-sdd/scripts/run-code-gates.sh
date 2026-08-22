@@ -23,7 +23,8 @@
 #   3  secrets         scan-secrets-code.sh          exit 1 → BLOCKING (always runs)
 #   4  SAST            run-code-scan.sh              exit 2 → BLOCKING
 #   5  new-dep exist   validate-new-deps.sh          exit 2 → BLOCKING (always runs)
-#   6  dep-auth        check-dep-authorization.sh    advisory, never blocks
+#   6  dep-auth        validate-new-deps.sh --unit=  advisory, never blocks (one
+#                      manifest-diff pass with gate 5 — v7 Fase 2 merge group 3)
 #
 # SHORT-CIRCUIT (the spec's hard constraint): a BLOCKING result STOPS the
 # sequence — later gates are listed in `not_run[]` and their subprocesses are
@@ -389,8 +390,15 @@ def main():
             if rc == 2:
                 block("sast_critical_finding", "sast", data)
 
-    # --- gate 5 — new-dep existence (ALWAYS runs; rc set {0,2}) ---------------
-    rc, out, err, to = gate_script("validate-new-deps.sh", ["--base=" + base, "--head=" + head, "--cwd=" + cwd])
+    # --- gates 5+6 — ONE manifest-diff pass (v7 Fase 2 merge group 3) --------
+    # gate 5 (new-dep existence) ALWAYS runs; gate 6 (dep authorization,
+    # advisory) rides the same invocation via --unit when its preconditions
+    # hold — the exit code stays gate-5-only (0/2), authorization never blocks.
+    run_auth = bool(toolchain_on and unit and not unit_missing)
+    vnd_args = ["--base=" + base, "--head=" + head, "--cwd=" + cwd]
+    if run_auth:
+        vnd_args.append("--unit=" + unit)
+    rc, out, err, to = gate_script("validate-new-deps.sh", vnd_args)
     if to:
         die_env("new-dep gate (validate-new-deps.sh) timed out — the always-run gate was NOT completed; never treat as clean")
     if rc not in (0, 2):
@@ -399,19 +407,20 @@ def main():
     data = parse_json(out)
     if rc == 2 and data is None:
         die_env("validate-new-deps.sh failed: " + (err.strip() or "bad invocation"))
-    result["gates"]["new_deps"] = {"ran": True, "rc": rc, "result": data}
+    gate5 = dict(data) if isinstance(data, dict) else data
+    auth = gate5.pop("authorization", None) if isinstance(gate5, dict) else None
+    result["gates"]["new_deps"] = {"ran": True, "rc": rc, "result": gate5}
     if rc == 2:
-        block("dep_not_found", "new_deps", data)
+        block("dep_not_found", "new_deps", gate5)
 
-    # --- gate 6 — dep authorization (advisory; runs only with a resolved unit)
-    if toolchain_on and unit and not unit_missing:
-        rc, out, err, to = gate_script("check-dep-authorization.sh",
-                                       ["--unit=" + unit, "--base=" + base, "--head=" + head, "--cwd=" + cwd])
-        if to or rc != 0:
-            result["skips"].append({"gate": "dep_authorization", "reason": "check-dep-authorization.sh failed/timed out (advisory gate — recorded, never blocks)"})
-            result["gates"]["dep_authorization"] = {"ran": False}
+    # gate-6 accounting: same shape as before the merge (ran:True + result,
+    # or a recorded skip — a gate can never silently vanish).
+    if run_auth:
+        if auth is not None:
+            result["gates"]["dep_authorization"] = {"ran": True, "result": auth}
         else:
-            result["gates"]["dep_authorization"] = {"ran": True, "result": parse_json(out)}
+            result["skips"].append({"gate": "dep_authorization", "reason": "authorization section missing from validate-new-deps.sh output (advisory gate — recorded, never blocks)"})
+            result["gates"]["dep_authorization"] = {"ran": False}
 
     print(json.dumps(result, indent=2))
     sys.exit(0)

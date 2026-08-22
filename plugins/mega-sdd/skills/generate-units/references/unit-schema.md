@@ -92,7 +92,7 @@ consumes_interfaces: []            # OPTIONAL — list of vault interface IDs th
                                    # interface has status: draft.
 allowed_new_deps: []               # OPTIONAL (v5 P9) — the ALLOWLIST of new third-party
                                    # dependencies this unit sanctions. execute-bolts code gate 6
-                                   # (check-dep-authorization.sh) flags any dep the bolt ADDED that is
+                                   # (the `validate-new-deps.sh --unit=` authorization concern) flags any dep the bolt ADDED that is
                                    # NOT in this list as `dep_unauthorized` (anti-over-engineering /
                                    # scope-creep, the WAJIB "pas" bar) — a deterministic ADVISORY finding
                                    # fed to the panel, never a halt. `[]` = "no new deps sanctioned".
