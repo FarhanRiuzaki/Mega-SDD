@@ -30,8 +30,6 @@ For an M/L trigger: **STOP**, invoke the skill via the `Skill` tool, and announc
 
 A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice line) — never, by itself, a reason to invoke a skill. Prior chains exist in the project (factory-ledger present) + a continuation prompt → offer `/mega-sdd --resume` in one line; do not auto-invoke.
 
-**Observability tag:** every skill announce line MUST end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt MUST contain a `mega-sdd-trace:<skill>` line (fresh-context subagents are otherwise invisible to the AI-gateway/Langfuse filter). One token, verbatim, no variants.
-
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 
 ## Output language

@@ -31,7 +31,7 @@ for ev,ms in d['hooks'].items():
         for h in m['hooks']:
             if h.get('async'): async_msgs += 1 if 'statusMessage' in h else 0
             else: sync_msgs += 1 if 'statusMessage' in h else 0
-assert sync_msgs >= 5, f"sync hooks with statusMessage: {sync_msgs}"
+assert sync_msgs >= 3, f"sync hooks with statusMessage: {sync_msgs}"  # v7.3.0: 3 sync events remain (SessionStart, PreToolUse, UserPromptExpansion)
 assert async_msgs == 0, f"async hooks must not carry statusMessage: {async_msgs}"
 print(f"sync={sync_msgs} async=0")
 PYEOF

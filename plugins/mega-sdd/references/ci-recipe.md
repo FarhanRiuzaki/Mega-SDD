@@ -46,7 +46,6 @@ bash plugins/mega-sdd/scripts/compute-unit-staleness.sh --vault=.mega-sdd/vaults
 ## CI environment checklist
 
 - `--auto` on EVERY mega-sdd invocation (interactive steps otherwise hang the runner; every phase has an `--auto` path — decisions queue to PENDING-SYNC.md / the OQ roll-up).
-- `.mega-sdd/config.yaml`: `telemetry: false` (silences diagnostics in throwaway checkouts).
 - git identity set (`user.name`/`user.email`) when the job runs `execute-bolts` (bolts commit); read-only gates (drift, binding validation) need none.
 - `python3` on the runner (hooks + validators use it; the moat additionally fails CLOSED without it — see `hooks/pre-tool-use` fallback — but CI should just install it).
 - Worktree runners: all probes are worktree-safe (`git rev-parse --git-path …`); nothing assumes `.git` is a directory.

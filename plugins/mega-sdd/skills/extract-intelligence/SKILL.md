@@ -8,7 +8,7 @@ description: Tech-agnostic domain extractor for legacy codebases targeted for re
 
 Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowledge base organized by **business domain**, not by code structure. Output describes WHAT the system does in tech-agnostic terms, not HOW the legacy stack implements it. Source-of-truth for rebuild planning on a different stack.
 
-**Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase. `mega-sdd-trace:extract-intelligence`"
+**Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase."
 
 > **Skill instruction language:** this skill reasons in English; KB content stays tech-agnostic per the `[VERIFIED]`/`[INFERRED]`/`[OPEN]` schema. Narrate (the announce, wave progress, summaries) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens (markers, citations, `sha256:`) stay English (→ `plugins/mega-sdd/references/output-language.md`).
 

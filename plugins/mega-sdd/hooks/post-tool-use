@@ -1,31 +1,11 @@
 #!/usr/bin/env bash
-# PostToolUse hook for mega-sdd plugin — Iter 67.5 v3.48.0+.
+# PostToolUse hook for mega-sdd — PIPELINE validators + living-vault journal
+# (v7.3.0: observability removed — no telemetry emission of any kind).
 #
-# AUDIT RESPONSE (audit 2026-05-27 §A2): Iter 66a shipped this hook with
-# matcher `Read|Skill`, producing ONE ref_loaded event across a full real
-# chain run that read dozens of files. Most reference loading happens via
-# Bash (cat / head / tail / grep) inside skill bodies, invisible to a
-# Read-only matcher.
-#
-# Iter 67.5 changes:
-# 1. Matcher broadened to Read|Skill|Bash in hooks.json
-# 2. Bash branch added below — detects `cat|head|tail|grep|less|more|rg <mega-sdd-path>`
-#    and emits one ref_loaded per detected path
-# 3. HONEST limitation: ref_loaded UNDER-COUNTS true loads — but NOT because
-#    subagent calls are invisible. PostToolUse DOES fire on subagent (fg+bg)
-#    tool calls (settled empirically by a 3-sentinel telemetry probe; see the
-#    archived audit record docs/superpowers/audits/2026-06-05-audit-md-rounds-1-3-ARCHIVED.md
-#    Round-2 L1). The under-count is because emission is intentionally
-#    LOSSY: this hook is async (hooks.json) and every append is best-effort
-#    (`>> ... 2>/dev/null || true`, exit-0-always), so events can drop under
-#    load; the Bash branch also can't parse complex pipelines (redirection,
-#    awk/sed-via-stdin, find-exec, xargs). Detail:
-#    plugins/mega-sdd/references/telemetry-schema.md §Emission mechanism.
-#
-# Emission:
-# - Honors --no-telemetry suppression via <cwd>/.mega-sdd/config.yaml
-# - Appends to <cwd>/.mega-sdd/memory/telemetry.jsonl
-# - Exit 0 always (hook must never block tool execution)
+# Legs: Skill → starterkit-metrics cross-check (validator, state file);
+# Bash → dispatch-prompt validator on build-dispatch-prompt.sh runs;
+# Write|Edit → dirty-paths journal (always-on) + chain-scoped validator fan-out.
+# Exit 0 always (hook must never block tool execution).
 
 set -uo pipefail
 
@@ -253,7 +233,7 @@ emit("TOOL_NAME", tool_name)
 if tool_name == "Read":
     emit("FILE_PATH", tool_input.get("file_path", ""))
     # D1 (spec 2026-08-17-token-lard-cuts-p1): the ACTUAL read range, so
-    # ref_loaded can tell a §-scoped read from a full load. Empty when absent.
+    # Read range fields (kept: harmless extraction; no consumer since v7.3.0).
     # Sanity bound 10^9 (round catch: a 21-digit int passes isinstance and the
     # bash digit-guard, landing verbatim in the JSON row) — out-of-range = absent.
     def _rng(v):
@@ -336,87 +316,12 @@ else
   PROJECT_ROOT="$CWD"
 fi
 
-# Opt-out: <project-root>/.mega-sdd/config.yaml `telemetry: false`
 CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
-# Precedence (A7, spec 2026-08-17-a7-userconfig): project config.yaml `telemetry:`
-# ALWAYS wins; the install-time userConfig (CLAUDE_PLUGIN_OPTION_TELEMETRY) is the
-# user-global DEFAULT consulted only when the project file carries no telemetry line.
-if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
-  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
-    exit 0
-  fi
-elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
-  exit 0
-fi
-
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
-
-# Helper: emit one ref_loaded event for a path (computes lines/bytes/est_tokens).
-# D1 (spec 2026-08-17-token-lard-cuts-p1): optional $3=offset $4=limit record the
-# ACTUAL Read range; est_read_tokens is the line-proportional estimate so a
-# §-scoped read is distinguishable from a full load. lines/bytes/estimated_tokens
-# keep their full-file meaning (additive schema — existing consumers unbroken).
-emit_ref_loaded() {
-  local file_path="$1"
-  local source_tool="$2"  # "Read" or "Bash"
-  local read_offset="${3:-}"
-  local read_limit="${4:-}"
-  local lines bytes est_tokens file_path_json off_json lim_json est_read
-  if [ -f "$file_path" ]; then
-    lines=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
-    bytes=$(wc -c < "$file_path" 2>/dev/null | tr -d ' ' || echo 0)
-    est_tokens=$((bytes / 4))
-  else
-    lines=0; bytes=0; est_tokens=0
-  fi
-  off_json="null"; lim_json="null"; est_read=$est_tokens
-  case "$read_offset" in (*[!0-9]*|"") ;; (*) off_json=$read_offset ;; esac
-  case "$read_limit" in
-    (*[!0-9]*|"") ;;
-    (*)
-      lim_json=$read_limit
-      if [ "$lines" -gt 0 ] && [ "$read_limit" -lt "$lines" ]; then
-        est_read=$((est_tokens * read_limit / lines))
-      fi
-      ;;
-  esac
-  file_path_json=$(printf '%s' "$file_path" | sed 's|\\|\\\\|g; s|"|\\"|g')
-  mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || return 0
-  echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"ref_loaded\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"file_path\":\"$file_path_json\",\"lines\":$lines,\"bytes\":$bytes,\"estimated_tokens\":$est_tokens,\"read_offset\":$off_json,\"read_limit\":$lim_json,\"est_read_tokens\":$est_read,\"source_tool\":\"$source_tool\"}}" \
-    >> "$TELEMETRY_FILE" 2>/dev/null || true
-}
-
-# Helper: is the path mega-sdd-relevant?
-is_megasdd_path() {
-  case "$1" in
-    *plugins/mega-sdd/skills/*/SKILL.md|*plugins/mega-sdd/skills/*/references/*|*plugins/mega-sdd/references/*|*plugins/mega-sdd/CLAUDE.md|*.mega-sdd/vaults/*|*.mega-sdd/codebase/*|*.mega-sdd/knowledge-base/*)
-      return 0 ;;
-    *) return 1 ;;
-  esac
-}
 
 case "${TOOL_NAME:-}" in
-  Read)
-    FILE_PATH="${FILE_PATH:-}"
-    [ -z "$FILE_PATH" ] && exit 0
-    if is_megasdd_path "$FILE_PATH"; then
-      emit_ref_loaded "$FILE_PATH" "Read" "${READ_OFFSET:-}" "${READ_LIMIT:-}"
-    fi
-    ;;
-
   Skill)
     SKILL_NAME="${SKILL_NAME:-}"
     [ -z "$SKILL_NAME" ] && exit 0
-    case "$SKILL_NAME" in
-      mega-sdd:*|using-mega-sdd)
-        skill_name_json=$(printf '%s' "$SKILL_NAME" | sed 's|\\|\\\\|g; s|"|\\"|g')
-        mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || exit 0
-        echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"skill_invoked\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"skill_full_name\":\"$skill_name_json\"}}" \
-          >> "$TELEMETRY_FILE" 2>/dev/null || true
-        ;;
-    esac
-
     # ── Edge-case: starterkit_metrics_inconsistent cross-check ──────────────
     # Only fire for mega-sdd:generate-units completion. Read transcript for handoff,
     # cross-check against starterkit-context.yaml.
@@ -434,142 +339,21 @@ except Exception:
         SCRIPT_DIR_HV2="$(cd "$(dirname "$0")" && pwd)"
         VALIDATOR_SKM="${SCRIPT_DIR_HV2}/../scripts/validate-starterkit-metrics.sh"
         if [ -x "$VALIDATOR_SKM" ] && [ -n "$TRANSCRIPT_PATH" ]; then
+          # The state file (.starterkit-metrics-state.json) is the record;
+          # analyze surfaces a FAIL. No re-read here.
           bash "$VALIDATOR_SKM" --cwd="$PROJECT_ROOT" --transcript-path="$TRANSCRIPT_PATH" --quiet >/dev/null 2>&1 || true
-          STATE_SKM="${PROJECT_ROOT}/.mega-sdd/.starterkit-metrics-state.json"
-          if [ -f "$STATE_SKM" ]; then
-            SKM_STATUS=$(python3 -c "
-import json
-try: print(json.load(open('$STATE_SKM')).get('status', '?'))
-except: print('?')
-" 2>/dev/null)
-            if [ "$SKM_STATUS" = "FAIL" ]; then
-              EVENT=$(STATE_SKM="$STATE_SKM" TS_ENV="$TS" SESSION_ID_ENV="${SESSION_ID:-unknown}" python3 -c '
-import json, os
-try:
-    d = json.load(open(os.environ["STATE_SKM"]))
-    payload = {
-        "halt_type": "starterkit_metrics_inconsistent",
-        "fix_applied": "detection only; suggest scan-codebase --force-deep + regenerate units",
-        "original_emit_site": "PostToolUse-Skill-validate-starterkit-metrics",
-        "logged_at_chat": False,
-        "quality_gate_subtype": "starterkit_metrics_inconsistent",
-        "units_with_starterkit_rules": d.get("units_with_starterkit_rules"),
-        "starterkit_partial": d.get("starterkit_partial"),
-    }
-    print(json.dumps({
-        "ts": os.environ["TS_ENV"],
-        "skill": "orchestrate-flow",
-        "event_type": "halt_self_resolved",
-        "session_id": os.environ["SESSION_ID_ENV"],
-        "hook_source": "PostToolUse",
-        "payload": payload,
-    }, separators=(",", ":")))
-except Exception:
-    pass
-' 2>/dev/null)
-              [ -n "$EVENT" ] && echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
-            fi
-          fi
-        fi
-        ;;
-    esac
-    ;;
-
-  Agent)
-    # ── Edge-case: deep_scan_subagent_failed telemetry ──────────────────────
-    # PostToolUse fires after Agent completes. We can't auto-retry from here
-    # (hooks can't invoke tools), but we CAN emit warning telemetry if subagent
-    # returned a failure response. The tool_response shape may vary; check for
-    # common failure indicators.
-    AGENT_SUBAGENT_TYPE="${AGENT_SUBAGENT_TYPE:-}"
-    [ -z "$AGENT_SUBAGENT_TYPE" ] && exit 0
-    # Only act on mega-sdd-relevant subagent dispatches (scan-codebase deep-scan agents)
-    case "$AGENT_SUBAGENT_TYPE" in
-      *scan*|*starterkit*|*deep*)
-        # Extract tool_response status — best effort, response shape varies
-        AGENT_FAIL=$(printf '%s' "$STDIN_JSON" | python3 -c '
-import json, sys
-status = "OK"
-try:
-    d = json.loads(sys.stdin.read())
-    tr = d.get("tool_response", {})
-    if isinstance(tr, dict):
-        if tr.get("is_error") or tr.get("error") or tr.get("status") == "failed":
-            status = "FAIL"
-    if status == "OK":
-        text = str(tr) if not isinstance(tr, str) else tr
-        if any(kw in text.lower() for kw in ["error:", "failed", "exception", "timeout", "cannot"]):
-            count = sum(1 for kw in ["error", "failed", "exception", "timeout", "cannot"] if kw in text.lower())
-            if count >= 2:
-                status = "FAIL"
-except Exception:
-    pass
-print(status)
-' 2>/dev/null)
-        if [ "$AGENT_FAIL" = "FAIL" ]; then
-          subagent_json=$(printf '%s' "$AGENT_SUBAGENT_TYPE" | sed 's|\\|\\\\|g; s|"|\\"|g')
-          desc_json=$(printf '%s' "${AGENT_DESCRIPTION:-}" | sed 's|\\|\\\\|g; s|"|\\"|g')
-          mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null
-          echo "{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"halt_self_resolved\",\"session_id\":\"${SESSION_ID:-unknown}\",\"hook_source\":\"PostToolUse\",\"payload\":{\"halt_type\":\"deep_scan_subagent_failed\",\"fix_applied\":\"detected via Agent tool failure response; warning emitted (auto-retry remains skill-body responsibility)\",\"original_emit_site\":\"PostToolUse-Agent-failure-detect\",\"logged_at_chat\":false,\"subagent_type\":\"$subagent_json\",\"description\":\"$desc_json\"}}" \
-            >> "$TELEMETRY_FILE" 2>/dev/null || true
         fi
         ;;
     esac
     ;;
 
   Bash)
-    # Iter 67.5: scan Bash command for obvious file-read patterns targeting mega-sdd paths.
-    # HONEST LIMITATIONS:
-    # - Only catches cat/head/tail/grep/less/more/rg as command verb
-    # - Misses: shell redirection (`< file`), command substitution, awk/sed reading via stdin,
-    #   complex pipelines, find-exec, xargs, anything in shell functions/aliases
-    # - (Subagent-internal Bash calls ARE visible — PostToolUse fires inside subagents; see the
-    #   archived audit record docs/superpowers/audits/2026-06-05-audit-md-rounds-1-3-ARCHIVED.md
-    #   Round-2 L1. The under-count is async/lossy emission + the unparseable patterns above.)
-    # - This is a best-effort approximation; ref_loaded UNDER-COUNTS true reads.
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
 
-    # v7: the whole Bash leg (ref_loaded telemetry mining + the dispatch-prompt
-    # validator + pandoc-failure detection) is chain-scoped — advisory surfaces
-    # that only mean something while a chain is producing artifacts (spec §3.3).
+    # v7: the Bash leg (the dispatch-prompt validator) is chain-scoped —
+    # it only means something while a chain is producing artifacts (spec §3.3).
     v7_chain_armed || exit 0
-
-    # Extract mega-sdd-relevant file paths from the command. Scan all tokens.
-    PATHS_FOUND=$(BASH_CMD_B64="$BASH_CMD_B64" python3 -c '
-import os, re, base64, shlex
-cmd = base64.b64decode(os.environ["BASH_CMD_B64"]).decode("utf-8", errors="replace")
-# Quick verb filter — skip entirely if no read-like verb present
-read_verbs = ("cat", "head", "tail", "grep", "less", "more", "rg", "bat", "view", "awk", "sed")
-lowered = cmd.lower()
-if not any(re.search(rf"\b{v}\b", lowered) for v in read_verbs):
-    raise SystemExit(0)
-# Path patterns we care about
-patterns = (
-    r"plugins/mega-sdd/skills/[^\s]+/SKILL\.md",
-    r"plugins/mega-sdd/skills/[^\s]+/references/[^\s]+",
-    r"plugins/mega-sdd/references/[^\s]+",
-    r"plugins/mega-sdd/CLAUDE\.md",
-    r"\.mega-sdd/vaults/[^\s]+",
-    r"\.mega-sdd/codebase/[^\s]+",
-    r"\.mega-sdd/knowledge-base/[^\s]+",
-)
-hits = set()
-for pat in patterns:
-    for m in re.finditer(pat, cmd):
-        hits.add(m.group(0).rstrip(",;|>)"))
-for h in sorted(hits):
-    print(h)
-' 2>/dev/null)
-
-    if [ -n "$PATHS_FOUND" ]; then
-      while IFS= read -r p; do
-        [ -z "$p" ] && continue
-        # Resolve to absolute path if relative — relative to CWD
-        if [ "${p#/}" = "$p" ]; then abs_path="${CWD}/${p}"; else abs_path="$p"; fi
-        emit_ref_loaded "$abs_path" "Bash"
-      done <<< "$PATHS_FOUND"
-    fi
 
     # ── Code-delivery slice F (Bash leg): builder-written dispatch prompt ───
     # PARITY RESTORE, not a new gate. The Write|Edit leg below dispatches
@@ -835,57 +619,16 @@ for h in sorted(hits):
         ;;
     esac
 
-    # Helper: run a validator script + emit telemetry breadcrumb on FAIL.
+    # Helper: run a validator script; its STATE FILE is the record (analyze +
+    # the PreToolUse aggregator read states — v7.3.0: no telemetry breadcrumb).
     run_validator_and_emit() {
       local validator="$1"        # absolute path to script
-      local state_file="$2"        # absolute path to state file the script writes
-      local script_label="$3"      # human label for original_emit_site
+      local state_file="$2"        # kept for call-site compatibility (unused)
+      local script_label="$3"      # kept for call-site compatibility (unused)
       local extra="${4:-}"         # optional single mode flag (e.g. --deferral)
       [ -x "$validator" ] || return 0
       # shellcheck disable=SC2086
       bash "$validator" $extra --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
-      [ -f "$state_file" ] || return 0
-      local v_status
-      v_status=$(python3 -c "
-import json
-try:
-    d = json.load(open('$state_file'))
-    print(d.get('status', 'UNKNOWN'))
-except: print('?')
-" 2>/dev/null)
-      [ "$v_status" = "FAIL" ] || return 0
-      local events
-      events=$(STATE_FILE_V="$state_file" TS_ENV="$TS" SESSION_ID_ENV="${SESSION_ID:-unknown}" LABEL_ENV="$script_label" python3 -c '
-import json, os
-try:
-    d = json.load(open(os.environ["STATE_FILE_V"]))
-    for issue in d.get("issues", []):
-        payload = {
-            "halt_type": issue["halt_type"],
-            "fix_applied": "detection-only at hook layer; manual review or skill-body fix required",
-            "original_emit_site": os.environ["LABEL_ENV"],
-            "logged_at_chat": False,
-            "detail": issue.get("detail", ""),
-            "checked_file": d.get("checked_file"),
-        }
-        for k in ("unit_id", "task_type", "missing_fields", "missing_sections",
-                  "missing_decisions", "expected_marker", "expected_key",
-                  "bolt_report_path", "unit_path", "unparseable_lines",
-                  "missing_citations_excerpts"):
-            if k in issue:
-                payload[k] = issue[k]
-        print(json.dumps({
-            "ts": os.environ["TS_ENV"],
-            "skill": "orchestrate-flow",
-            "event_type": "halt_self_resolved",
-            "session_id": os.environ["SESSION_ID_ENV"],
-            "hook_source": "PostToolUse",
-            "payload": payload,
-        }, separators=(",", ":")))
-except Exception:
-    pass
-' 2>/dev/null)
-      [ -n "$events" ] && echo "$events" >> "$TELEMETRY_FILE" 2>/dev/null || true
     }
 
     # ── Input-keyed debounce for the 4 unconditional PROJECT-WIDE scanners ──
@@ -935,13 +678,12 @@ except Exception:
               \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
                  -o -name .analyze-freshness.json \
                  -o -name claims-ledger.json \
-                 -o -name TOKEN-COST-REPORT.md -o -name .token-cost-state.json \
                  -o -name '.*-state.json' -o -name .validation-blockers.json \
                  -o -name .ui-quality-blockers.json -o -name .stop-scan-stamp \
                  -o -name .ptu-scan-stamp -o -name .dirty-paths.jsonl \
                  -o -name state.json -o -name graph.json \
                  -o -name .locked-files-index.json \
-                 -o -name .compaction-snapshot.json \) -prune -o \
+                 \) -prune -o \
               -newer "$PTU_SCAN_STAMP" -print 2>/dev/null)
             FIND_RC_PTU=$?
             [ "$FIND_RC_PTU" -eq 0 ] && [ -z "$CHANGED_PTU" ] && NEED_PTU_SCAN=0

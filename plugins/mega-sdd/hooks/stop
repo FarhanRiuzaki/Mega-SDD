@@ -1,23 +1,10 @@
 #!/usr/bin/env bash
-# Stop hook for mega-sdd plugin — Iter 67.5 v3.48.0+.
+# Stop hook for mega-sdd — PIPELINE detection legs only (v7.3.0: observability
+# removed — no telemetry, no debug log, no usage extraction).
 #
-# AUDIT RESPONSE (audit 2026-05-27 §A3): Iter 66a shipped Stop hook, smoke test
-# passed, but ZERO turn_end_marker events appeared in real-run telemetry.jsonl
-# despite the gate condition (telemetry.jsonl exists) being met.
-#
-# This version (67.5):
-# 1. ALWAYS writes a one-line entry to <cwd>/.mega-sdd/memory/hook-debug.log
-#    on every invocation, regardless of gates. This is the diagnostic layer —
-#    proves the harness is invoking us for this CWD.
-# 2. THEN applies opt-out + telemetry-exists gate and emits turn_end_marker
-#    with REAL transcript-usage data (input_tokens / cache_read_input_tokens /
-#    output_tokens / cache_creation_input_tokens) when available.
-#
-# Per Claude Code Stop-hook spec, stdin includes transcript_path. We sum the
-# `message.usage` blocks of every assistant message THIS TURN appended (v5.13.0 —
-# was last-message-only, which under-reported the turn ~11.6x; see the extraction
-# block below for the cursor + dedup contract and the measurement).
-#
+# Legs: (1) bolt-artifact orphan/evidence scan (B1/B2/B3/B4 detection-only;
+# the PreToolUse execute-bolts aggregator blocks the NEXT run on FAIL),
+# (2) auto-analyze aggregate (classic/full opt-in), (3) artifact publisher.
 # Exit 0 always (hook must never block turn completion).
 
 set -uo pipefail
@@ -100,7 +87,7 @@ HOOK_EVENT="${HOOK_EVENT:-}"
 STOP_HOOK_ACTIVE="${STOP_HOOK_ACTIVE:-False}"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 
-# ─── OPT-OUT (suppresses BOTH diagnostic + telemetry) ────────────────────────
+# ─── OPT-OUT (no cwd = nothing to do) ────────────────────────────────────────
 if [ -z "$CWD" ]; then
   exit 0
 fi
@@ -108,7 +95,7 @@ fi
 # ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
 # CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
 # during a chain step). Walk UP to outermost .mega-sdd/ parent so state files,
-# debug log, and telemetry land in the canonical location instead of nested.
+# and state files land in the canonical location instead of nested.
 # Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
 # absolute in the shipped dispatch; the subshell fallback covers relative $0.
 SCRIPT_DIR_RPR="${0%/*}"
@@ -123,26 +110,6 @@ if [ -f "$RPR_HELPER" ]; then
   PROJECT_ROOT=$(resolve_project_root "$CWD")
 else
   PROJECT_ROOT="$CWD"
-fi
-
-CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
-if [ -f "$CONFIG_FILE" ]; then
-  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
-    exit 0
-  fi
-fi
-
-# ─── DIAGNOSTIC LAYER (Iter 67.5 — verify harness invocation) ────────────────
-# Per audit response: prove the harness is invoking us for the project CWD.
-# If hook-debug.log doesn't grow on every Stop event, the hook is not being called.
-# Only writes for mega-sdd projects (avoids polluting unrelated CWDs).
-if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
-  DEBUG_DIR="${PROJECT_ROOT}/.mega-sdd/memory"
-  mkdir -p "$DEBUG_DIR" 2>/dev/null || true
-  DEBUG_LOG="${DEBUG_DIR}/hook-debug.log"
-  DEBUG_LINE="$(printf '{"ts":"%s","hook":"stop","session_id":"%s","cwd":"%s","transcript_path":"%s","stop_hook_active":"%s","stdin_bytes":%s}' \
-    "$TS" "$SESSION_ID" "$CWD" "$TRANSCRIPT_PATH" "$STOP_HOOK_ACTIVE" "${#STDIN_JSON}")"
-  echo "$DEBUG_LINE" >> "$DEBUG_LOG" 2>/dev/null || true
 fi
 
 # ─── HANDOFF VALIDATION: leg REMOVED (v7 Fase 2 №2) ─────────────────────────
@@ -191,7 +158,7 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
         # Excluded from the probe (round-1 F1): the four auto-analyze/report
         # OUTPUTS this hook's own tail rewrites every firing — they are derived
         # FROM the scan states, never inputs to the scans; without the exclusion
-        # the gate never skips in any telemetry-active project. Round-1 F2:
+        # the gate never skips. Round-1 F2:
         # capture find's rc — a failed probe is DOUBT and must scan, never read
         # as "no change" (no head, so no SIGPIPE rc distortion; output size is
         # bounded by the .mega-sdd tree listing).
@@ -209,13 +176,11 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
           \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
              -o -name .analyze-freshness.json \
              -o -name claims-ledger.json \
-             -o -name TOKEN-COST-REPORT.md -o -name .token-cost-state.json \
              -o -name '.*-state.json' -o -name .validation-blockers.json \
              -o -name .ui-quality-blockers.json -o -name .stop-scan-stamp \
              -o -name .ptu-scan-stamp -o -name .dirty-paths.jsonl \
              -o -name state.json -o -name graph.json \
-             -o -name .locked-files-index.json \
-             -o -name .compaction-snapshot.json \) -prune -o \
+             -o -name .locked-files-index.json \) -prune -o \
           -newer "$STOP_SCAN_STAMP" -print 2>/dev/null)
         FIND_RC_SS=$?
         [ "$FIND_RC_SS" -eq 0 ] && [ -z "$CHANGED_SS" ] && NEED_ARTIFACT_SCAN=0
@@ -240,183 +205,6 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
     fi
   fi
 fi
-
-# ─── TELEMETRY GATE (turn_end_marker only) ──────────────────────────────────
-TELEMETRY_FILE="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
-if [ ! -f "$TELEMETRY_FILE" ]; then
-  exit 0
-fi
-
-# ─── TRANSCRIPT USAGE EXTRACTION (v5.13.0 — per-turn window, deduped) ────────
-# Stop hook stdin includes `transcript_path` (per Claude Code spec).
-#
-# WHY THIS IS NOT "read the last message" (the Iter 67.5 shape, fixed here):
-# a turn is MANY assistant messages (one per tool round trip), and the last one
-# carries only the FINAL message's usage. Measured over 10 real session
-# transcripts / 547 turns, last-message-only under-reports the turn by ~11.6x
-# aggregate (median 9.5x, range 2.8-18.3x). `hooks/subagent-stop` already carried
-# the same correction for the subagent lane; this is the main lane catching up.
-#
-# WHY A CURSOR AND NOT "sum the file": the subagent transcript is read ONCE at the
-# subagent boundary, so summing it whole is correct there. The MAIN transcript is
-# append-only for the whole session and this hook fires at EVERY turn end — summing
-# the file each time would re-emit the cumulative total every turn (O(N^2)). So we
-# keep a per-session byte cursor and sum only what was appended since last firing.
-# The cursor is per-session (never shared) so two concurrent sessions cannot
-# ping-pong one offset between their two transcripts.
-#
-# WHY DEDUP BY message.id: the harness writes ONE JSONL record per content block,
-# all sharing one message.id and REPEATING the same usage object. Measured 2.47x
-# aggregate over-count if summed blindly (verified: duplicate records are usage-
-# identical, 0 divergent out of 56 duplicated ids in a 548-record transcript).
-#
-# NOTE on `usage.iterations` — do NOT "fix" the top-level read to sum it. Top-level
-# usage is already the sum of the `type:"message"` iterations; the extra
-# `type:"advisor_message"` iterations are a DIFFERENT model lane the harness
-# deliberately excludes. Verified exact on multi-iteration messages.
-#
-# Also captured: the exact cache_creation TTL split (`usage.cache_creation.
-# ephemeral_{5m,1h}_input_tokens`) so report-token-cost.sh can price cache creation
-# at its real rate instead of assuming a TTL, and `message.model` for per-turn model
-# attribution. Pass paths via env var (not shell interpolation) to avoid quoting bugs.
-PAYLOAD_FIELDS='"usage":{}'
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-  PF_OUT=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" PROJECT_ROOT="$PROJECT_ROOT" SESSION_ID="$SESSION_ID" python3 -c '
-import json, os, sys
-
-path = os.environ.get("TRANSCRIPT_PATH", "")
-root = os.environ.get("PROJECT_ROOT", "")
-sid = os.environ.get("SESSION_ID", "")
-KEYS = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
-
-def out(frag):
-    print(frag)
-    sys.exit(0)
-
-try:
-    safe = "".join(c if (c.isalnum() or c in "-_") else "-" for c in sid)[:64] or "unknown"
-    cursor_path = os.path.join(root, ".mega-sdd", "memory", ".turn-usage-cursor-" + safe + ".json")
-    cur = {}
-    try:
-        with open(cursor_path) as cf:
-            cur = json.load(cf)
-    except Exception:
-        cur = {}
-    if not isinstance(cur, dict):
-        cur = {}
-    offset = cur.get("offset", 0)
-    if not isinstance(offset, int) or offset < 0:
-        offset = 0
-    prev_ids = cur.get("last_ids", [])
-    if not isinstance(prev_ids, list):
-        prev_ids = []
-    if cur.get("transcript_path") != path:
-        offset = 0
-        prev_ids = []
-    size = os.path.getsize(path)
-    # Truncated / rewritten transcript: skip to the new EOF rather than re-counting
-    # from 0. For an instrument, one under-reported turn beats one fabricated spike.
-    if size < offset:
-        offset = size
-    with open(path, "rb") as tf:
-        tf.seek(offset)
-        data = tf.read()
-    consumed = len(data)
-    lines = data.split(b"\n")
-    if data and not data.endswith(b"\n"):
-        # A partially flushed trailing line stays for the next firing.
-        consumed -= len(lines.pop())
-    tot = {k: 0 for k in KEYS}
-    cc5 = 0
-    cc1 = 0
-    model = ""
-    prev = set(prev_ids)
-    seen = []
-    seen_set = set()
-    nameless = 0
-    for raw in lines:
-        if not raw.strip():
-            continue
-        try:
-            rec = json.loads(raw.decode("utf-8", "replace"))
-        except Exception:
-            continue
-        # A sidechain turn is billed by SubagentStop against the subagent OWN nested
-        # transcript. Counting it here too would double-count the bolt/panel lane.
-        if rec.get("isSidechain"):
-            continue
-        msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
-        if not (msg and isinstance(msg.get("usage"), dict)):
-            continue
-        mid = msg.get("id")
-        # Dedup only on a REAL id. A message with no id has no identity to dedup on,
-        # so collapsing those would silently drop distinct turns.
-        # prev_ids: a window boundary can split at most one message (all records for
-        # one id are written contiguously), so carrying the previous window ids is
-        # enough to stop a straddling message being counted in both windows.
-        if isinstance(mid, str) and mid:
-            if mid in seen_set or mid in prev:
-                continue
-            seen_set.add(mid)
-            seen.append(mid)
-        else:
-            nameless += 1
-        u = msg["usage"]
-        if not model and isinstance(msg.get("model"), str):
-            model = msg["model"]
-        for k in KEYS:
-            v = u.get(k, 0)
-            if isinstance(v, (int, float)):
-                tot[k] += int(v)
-        cc = u.get("cache_creation")
-        if isinstance(cc, dict):
-            v5 = cc.get("ephemeral_5m_input_tokens", 0)
-            v1 = cc.get("ephemeral_1h_input_tokens", 0)
-            if isinstance(v5, (int, float)):
-                cc5 += int(v5)
-            if isinstance(v1, (int, float)):
-                cc1 += int(v1)
-    try:
-        with open(cursor_path, "w") as cf:
-            json.dump({"transcript_path": path, "offset": offset + consumed,
-                       "last_ids": seen if seen else prev_ids}, cf)
-    except Exception:
-        pass
-    if not seen and not nameless:
-        out("\"usage\":{}")
-    usage = dict(tot)
-    usage["cache_creation_5m_input_tokens"] = cc5
-    usage["cache_creation_1h_input_tokens"] = cc1
-    frag = "\"usage\":" + json.dumps(usage, separators=(",", ":"))
-    frag = frag + ",\"messages\":" + str(len(seen) + nameless)
-    if model:
-        frag = frag + ",\"model\":" + json.dumps(model)
-    out(frag)
-except Exception:
-    out("\"usage\":{}")
-' 2>/dev/null)
-  if [ -n "$PF_OUT" ]; then PAYLOAD_FIELDS="$PF_OUT"; fi
-fi
-
-# Default fallback
-if [ -z "$PAYLOAD_FIELDS" ]; then PAYLOAD_FIELDS='"usage":{}'; fi
-
-# ─── EMIT turn_end_marker ────────────────────────────────────────────────────
-# Schema (Iter 67.5): payload carries real usage from transcript.
-# Build the event via plain shell — USAGE_JSON is already valid JSON, embed inline.
-STOP_HOOK_ACTIVE_LOWER=$(printf '%s' "$STOP_HOOK_ACTIVE" | tr '[:upper:]' '[:lower:]')
-# Normalize Python's "True/False" → JSON "true/false"
-case "$STOP_HOOK_ACTIVE_LOWER" in
-  true|false) ;;
-  *) STOP_HOOK_ACTIVE_LOWER="false" ;;
-esac
-
-# Escape SESSION_ID for JSON (rare edge case)
-SESSION_ID_JSON=$(printf '%s' "$SESSION_ID" | sed 's|\\|\\\\|g; s|"|\\"|g')
-
-EVENT="{\"ts\":\"$TS\",\"skill\":\"orchestrate-flow\",\"event_type\":\"turn_end_marker\",\"session_id\":\"$SESSION_ID_JSON\",\"hook_source\":\"Stop\",\"payload\":{$PAYLOAD_FIELDS,\"stop_hook_active\":$STOP_HOOK_ACTIVE_LOWER}}"
-
-echo "$EVENT" >> "$TELEMETRY_FILE" 2>/dev/null || true
 
 # (Removed 2026-06-11: a second, older copy of the handoff-validation block —
 # pre-Iter-74 regex — lived here and RE-RAN the validator after the primary
@@ -463,12 +251,5 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ] || [ -f "${PROJECT_ROOT}/.mega-sdd/
     bash "$PUBLISH_SCRIPT" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
   fi
 fi
-
-# NOTE: the compaction advisor was RELOCATED out of this Stop hook (doc audit
-# 2026-06-12). Per code.claude.com/docs/en/hooks, plain stdout on a Stop hook is
-# debug-log-only (Stop is NOT one of the stdout→context events), and this hook is
-# async — so an advisory printed here reached no one. It now lives in
-# hooks/user-prompt-submit, where stdout IS added to context per the docs. The
-# PreCompact snapshot + SessionStart resume line (both doc-correct) are unchanged.
 
 exit 0

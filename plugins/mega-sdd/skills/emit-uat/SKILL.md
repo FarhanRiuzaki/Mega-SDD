@@ -6,7 +6,7 @@ description: Generate a UAT test-script document for the business UAT team — b
 
 # Emit-UAT — User Acceptance Test Script Generator
 
-**Announce at start:** "I'm using the emit-uat skill to generate the UAT test-script from the current vault flows + DoD. `mega-sdd-trace:emit-uat`"
+**Announce at start:** "I'm using the emit-uat skill to generate the UAT test-script from the current vault flows + DoD."
 
 > **Output language (Tier-3 artifact):** UAT body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — flow titles, DoD items — and every `[Source: sha256:…]` citation are reproduced in their source language / raw bytes, never translated** (citation discipline, moat invariant #3). Tier-1 structural tokens stay English. Full rules → `plugins/mega-sdd/references/output-language.md`.
 

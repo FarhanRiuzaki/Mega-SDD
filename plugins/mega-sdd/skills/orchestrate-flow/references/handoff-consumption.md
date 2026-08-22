@@ -59,7 +59,7 @@ For specific producers, validate that their emitted metrics are consistent with 
 - **IF sub-skill == `generate-units`** AND handoff `metrics.units_with_starterkit_rules > 0`:
   - Read `<project>/.mega-sdd/codebase/starterkit-context.yaml` → `starterkit_context.partial` flag (written by scan-codebase per `plugins/mega-sdd/references/starterkit-context-schema.md`).
   - IF `starterkit_context.partial == true` AND `units_with_starterkit_rules > 0` → emit halt `quality_gate_failed` with details `{subtype: starterkit_metrics_inconsistent, failing_skill: generate-units, units_with_starterkit_rules: <N>, starterkit_partial: true, evidence: "generate-units pulled Hard Rules from a partial starterkit slice — rules may reference incomplete framework conventions"}`; STOP chain.
-  - IF consistent (partial=false OR rules=0) → log telemetry line `"✓ starterkit metrics consistent: rules=<N>, partial=false"` + continue.
+  - IF consistent (partial=false OR rules=0) → log one line `"✓ starterkit metrics consistent: rules=<N>, partial=false"` + continue.
 - Extensible: future producers MAY add their own consistency rules here following the same `IF sub-skill == <name>` gating pattern.
 
 ## Propagation

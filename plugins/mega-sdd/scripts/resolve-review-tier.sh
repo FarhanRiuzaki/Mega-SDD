@@ -20,7 +20,7 @@
 #   implementer_model: opus  <- tier full (any risk signal)
 #                      haiku <- tier minimal AND task_type verify ONLY
 #                      sonnet<- everything else (unknown never lowers a tier)
-#   effort:            low for haiku, high otherwise (recorded for telemetry;
+#   effort:            low for haiku, high otherwise (recorded in the bolt-report;
 #                      no per-dispatch effort mechanism exists today — honest)
 # The override chain (--review-panel= / --model-tier= > config > auto) is
 # applied by the CALLER — this script always reports the auto verdict.

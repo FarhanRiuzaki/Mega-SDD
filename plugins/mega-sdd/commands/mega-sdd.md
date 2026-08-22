@@ -1,6 +1,6 @@
 ---
 description: THE mega-sdd front door — any SDD lane phrase routes here. No arg → derive-state status view (position, vault, counts, staleness, foreign-SDD/adoption notices) + propose the next chain with ONE upfront confirmation. With an artifact arg (PRD / legacy dir / vault / brief) → input-shape detection + the adoption lane. Every gated phase stays Skill-dispatched. Legacy /mega-sdd:<command> typed forms no longer register — typed text still routes here or to its skill by phrase.
-argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--advisor|--no-advisor] [--no-telemetry] [--plan|--act|--plan-then-act]"
+argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--advisor|--no-advisor] [--plan|--act|--plan-then-act]"
 ---
 
 > **The command surface** — four public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents), `/mega-sdd:slice` (standalone UI slicing from a design reference — command-only, never auto-routed). Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or reachable by natural-language phrase — the 5.x deprecation aliases were removed (a typed legacy form arrives as plain text and still routes to its skill).
@@ -109,7 +109,6 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 **Opt-in only:**
 - `--with-fsd` — OPT-IN auto FSD generation at chain end (default: off; pandoc + Chrome md2pdf render; user can invoke `/mega-sdd:emit fsd` manually for one-off)
 - `--no-fsd` — legacy alias / no-op (FSD is opt-in via `--with-fsd`)
-- `--no-telemetry` — suppress telemetry.jsonl writes for this chain. Persistent opt-out via `defaults.telemetry: false` in `<project>/.mega-sdd/config.yaml`. Read schema: `plugins/mega-sdd/references/telemetry-schema.md`
 - `--plan` — Plan mode FIRST. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via the `--act` flag (`/mega-sdd --act`).
 - `--act` — direct Act mode (the default). Used in the Plan-then-Act transition.
 - `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. (Gating is flag-driven — the automatic iter classifier is PARKED.)

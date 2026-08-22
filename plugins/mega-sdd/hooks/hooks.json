@@ -8,7 +8,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" session-start",
             "async": false,
-            "statusMessage": "mega-sdd: anchor + state\u2026"
+            "statusMessage": "mega-sdd: anchor + state…"
           }
         ]
       }
@@ -21,14 +21,14 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-tool-use",
             "async": false,
-            "statusMessage": "mega-sdd: gate checks\u2026"
+            "statusMessage": "mega-sdd: gate checks…"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Read|Skill|Bash|Write|Edit|Agent",
+        "matcher": "Skill|Bash|Write|Edit",
         "hooks": [
           {
             "type": "command",
@@ -50,18 +50,6 @@
         ]
       }
     ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" subagent-stop",
-            "async": true
-          }
-        ]
-      }
-    ],
     "UserPromptExpansion": [
       {
         "matcher": "execute-bolts|mega-sdd:execute-bolts|^mega-sdd$|mega-sdd:mega-sdd|/mega-sdd($|[^:])",
@@ -70,33 +58,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-expansion",
             "async": false,
-            "statusMessage": "mega-sdd: prompt expansion\u2026"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-submit",
-            "async": false,
-            "statusMessage": "mega-sdd: routing\u2026"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-compact",
-            "async": false,
-            "statusMessage": "mega-sdd: compaction snapshot\u2026"
+            "statusMessage": "mega-sdd: prompt expansion…"
           }
         ]
       }

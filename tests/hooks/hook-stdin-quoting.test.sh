@@ -3,7 +3,7 @@
 #
 # Pins the 2026-07-29 `eval "$PARSE_OUTPUT"` fix across the four hooks that parse
 # their stdin JSON in python and hand the result to `eval`: pre-tool-use,
-# post-tool-use, stop, user-prompt-submit.
+# post-tool-use, stop.
 #
 # The defect: python printed a BARE `KEY=value` line and bash `eval` re-parsed it,
 # so the value went through word-splitting, backslash removal, globbing and
@@ -144,7 +144,7 @@ if [ -e "$TMP/PWNED" ]; then pass "control: pre-fix producer DID execute it (sen
 else fail "control: sentinel never fires — C is vacuous"; fi
 
 echo "── D. every hook's real producer is quoted (no bare KEY= left) ──"
-for h in pre-tool-use post-tool-use stop user-prompt-submit; do
+for h in pre-tool-use post-tool-use stop; do
   f="$HOOKS/$h"
   [ -f "$f" ] || { fail "$h missing"; continue; }
   # A bare `print(f"KEY={...}")` / `print("KEY=%s" % ...)` inside the parse block is

@@ -1,7 +1,7 @@
 ---
 name: analyze
 version: 2.4.0
-description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md + cost-weighted TOKEN-COST-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "token cost", "token usage", "how much did this cost", "cek konsistensi", "berapa cost token", or paraphrases.
+description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "cek konsistensi", or paraphrases.
 ---
 
 # mega-sdd:analyze — Unified Consistency Analyzer
@@ -39,7 +39,7 @@ Parse the JSON output:
 
 ### Step 3: Read and present the report
 
-Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat. It ends with a **Token Cost (cost-weighted)** section; the full per-skill breakdown is in `<cwd>/.mega-sdd/TOKEN-COST-REPORT.md`. When the user asks about token usage / cost, present the **cost-weighted** number, not the raw count — raw overstates real cost ~5–8x because cache_read bills ~0.1x (input ×1, cache_creation ×1.25, cache_read ×0.1, output ×5). If `turns == 0`, telemetry captured no usage-bearing turns (the subagent blind-spot) — say so rather than implying zero cost.
+Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat. (Token/cost reporting was REMOVED in v7.3.0 — mega-sdd is pipeline-only; usage accounting is the gateway/harness's concern. If the user asks about token cost, say the plugin no longer measures it.)
 
 ### Step 4: Interpret results
 
@@ -80,7 +80,6 @@ handoff:
   artifacts:
     - <cwd>/.mega-sdd/CONSISTENCY-REPORT.md
     - <cwd>/.mega-sdd/.analyze-state.json
-    - <cwd>/.mega-sdd/TOKEN-COST-REPORT.md
   next_action:
     suggested_skill: null
     suggested_args: []

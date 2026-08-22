@@ -904,7 +904,7 @@ for u in units:
 # 6-stage F-U-008 owned by one unit in the tradefinance run). Signal computed from data
 # already parsed: one matched unit + a flow with n_input_steps ≥ K. ADVISORY ONLY — it does
 # NOT flip status (the symptom gates above already neutralize the damage; the per-stage
-# under-coverage shows up as missing_artifacts). Surfaced as telemetry so a coarse unit is
+# under-coverage shows up as missing_artifacts). Surfaced via analyze so a coarse unit is
 # visible without over-blocking a legitimately-single-unit flow that DOES cover every step.
 ALTITUDE_K = 4
 altitude_concentration = []

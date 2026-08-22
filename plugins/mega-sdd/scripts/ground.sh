@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 # ─── C1 self-resolve battery (moved here from hooks/session-start, v7 Fase 2) ─
 # session-start must never write vault artifacts (gate-1 mandate); the 9-guard
 # battery runs at M/L entry instead — BEFORE derive-state so the probes see
-# repaired state. Same guards, same telemetry events, same opt-out.
+# repaired state. (v7.3.0: guards emit CHAT notices only — no telemetry.)
 # ─── C1 self-resolve: mode_migrate (Iter 67.7.1, script-layer since v7) ─────
 # Gate B response (reviewer 2026-05-27): C1 protocol shipped as prose has
 # audit-failed 4×. Hook-layer enforcement deterministically detects + fixes
@@ -33,57 +33,14 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 #           build.gradle, pom.xml, requirements.txt, pyproject.toml} present
 #     → expected_mode = "existing"
 #   none present → expected_mode = "greenfield"
-# Honors opt-out: <cwd>/.mega-sdd/config.yaml `telemetry: false` (treats this
-# guard as part of telemetry surface; user opting out of telemetry also opts
-# out of auto-fix to avoid stealth mutations).
-
 SELF_RESOLVE_NOTICES=""
 CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
-GUARD_ENABLED=1
-# A7 precedence: project config.yaml telemetry line wins; else the install-time
-# userConfig default (CLAUDE_PLUGIN_OPTION_TELEMETRY) applies.
-if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
-  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
-    GUARD_ENABLED=0
-  fi
-elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
-  GUARD_ENABLED=0
-fi
-
-if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${CWD}/.mega-sdd" ]; then
-  TELEMETRY_FILE="${CWD}/.mega-sdd/memory/telemetry.jsonl"
-  mkdir -p "$(dirname "$TELEMETRY_FILE")" 2>/dev/null || true
-
-  # D2 (spec 2026-08-17-token-lard-cuts-p1): rotate an unbounded telemetry file
-  # once per session — NOT in the per-event append path (that must stay O(1)).
-  # One generation survives (.1 clobbered in place, never a .2); opt-out projects
-  # never reach this block, matching the guard's existing scope.
-  if [ -f "$TELEMETRY_FILE" ]; then
-    TELEMETRY_ROWS=$(wc -l < "$TELEMETRY_FILE" 2>/dev/null | tr -d ' ' || echo 0)
-    case "$TELEMETRY_ROWS" in (*[!0-9]*|"") TELEMETRY_ROWS=0 ;; esac
-    # Round catch: a pre-existing DIRECTORY at .1 would make mv bury the file
-    # INSIDE it (telemetry.jsonl.1/telemetry.jsonl) — fail open (skip rotation,
-    # file keeps growing) rather than silently break the single-generation shape.
-    if [ "$TELEMETRY_ROWS" -gt 20000 ] && [ ! -d "${TELEMETRY_FILE}.1" ]; then
-      mv -f "$TELEMETRY_FILE" "${TELEMETRY_FILE}.1" 2>/dev/null || true
-    fi
-  fi
-
-  # v7 Fase 2 №3: hook-debug.log gets the SAME single-generation rotation —
-  # it was the one unbounded memory/ file left (audit v7 flag: "never rotated").
-  # Writers (session-start / stop / subagent-stop diagnostics) stay O(1) appends.
-  DEBUG_LOG_GD="${CWD}/.mega-sdd/memory/hook-debug.log"
-  if [ -f "$DEBUG_LOG_GD" ]; then
-    DEBUG_ROWS_GD=$(wc -l < "$DEBUG_LOG_GD" 2>/dev/null | tr -d ' ' || echo 0)
-    case "$DEBUG_ROWS_GD" in (*[!0-9]*|"") DEBUG_ROWS_GD=0 ;; esac
-    if [ "$DEBUG_ROWS_GD" -gt 20000 ] && [ ! -d "${DEBUG_LOG_GD}.1" ]; then
-      mv -f "$DEBUG_LOG_GD" "${DEBUG_LOG_GD}.1" 2>/dev/null || true
-    fi
-  fi
-
-  # Run C1 self-resolve guards via python (deterministic detection + fix).
+# v7.3.0: the guards are pipeline self-resolve — always on for a mega-sdd
+# project (the old `telemetry: false` opt-out died with telemetry itself).
+if [ -d "${CWD}/.mega-sdd" ]; then
+    # Run C1 self-resolve guards via python (deterministic detection + fix).
   # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
-  SELF_RESOLVE_NOTICES=$(CWD="$CWD" TELEMETRY_FILE="$TELEMETRY_FILE" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." python3 <<'PYEOF' 2>/dev/null
+  SELF_RESOLVE_NOTICES=$(CWD="$CWD" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." python3 <<'PYEOF' 2>/dev/null
 import json
 import os
 import sys
@@ -91,31 +48,14 @@ import glob
 from datetime import datetime, timezone
 
 cwd = os.environ["CWD"]
-telemetry_file = os.environ["TELEMETRY_FILE"]
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 session_id = os.environ.get("CLAUDE_SESSION_ID", "ground-script")  # not a documented hook env var; label-only fallback (stdin session_id is the real source if ever needed)
 notices = []
 
 def emit_event(halt_type, fix_applied, **payload_extras):
-    event = {
-        "ts": ts,
-        "skill": "ground",
-        "event_type": "halt_self_resolved",
-        "session_id": session_id,
-        "hook_source": "ground",
-        "payload": {
-            "halt_type": halt_type,
-            "fix_applied": fix_applied,
-            "original_emit_site": "ground-c1-guard",
-            "logged_at_chat": True,
-            **payload_extras,
-        },
-    }
-    try:
-        with open(telemetry_file, "a") as f:
-            f.write(json.dumps(event, separators=(",", ":")) + "\n")
-    except Exception:
-        pass  # telemetry write fail; chat notice still records the resolve
+    # v7.3.0: telemetry removed — the chat notice (appended by each guard) is
+    # the only record. Kept as a no-op so guard call sites stay unchanged.
+    return
 
 # ─── Guard 1: mode_migrate (vault.json mode vs CWD signals) ─────────────────
 signals = [
@@ -240,7 +180,7 @@ if os.path.isfile(ROUTING_FILE):
 # ─── Guard 4: verify_unit_writable (Iter 67.7.4 — v3.52.0+) ────────────────
 # Scan units for task_type=verify with non-empty target_files (forbidden per
 # attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
-# emit warning telemetry + chat notice; DO NOT modify on-disk unit (preserves
+# emit a chat notice; DO NOT modify on-disk unit (preserves
 # bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
 # (separate concern).
 #
@@ -408,7 +348,7 @@ if pack_dir:
 # ─── Guard 6: dep_missing (B.11 — non-interactive only) ────────────────────
 # Check required binaries on PATH. Per reviewer 2026-05-27 refinement R2:
 # DETECTION only at GROUND. Auto-install is NOT performed here (would
-# risk hanging on sudo/network). Emit warning telemetry + chat notice.
+# risk hanging on sudo/network). Emit a chat notice.
 # install-deps subsystem invocation is left to explicit user action.
 import shutil as _shutil
 required_bins = ["tree-sitter", "ast-grep"]  # optional but useful

@@ -101,8 +101,6 @@ LEGACY FILES TO READ (explicit list, with file sizes):
 OUTPUT TO: <absolute path to MD file>
 
 USE TEMPLATE: see `references/knowledge-base-schema.md` §per-domain-11-section-template.
-
-mega-sdd-trace:extract-intelligence
 ```
 
 **What used to be typed here, and where it lives now** (the relocation is 1:1 — no rule was dropped):

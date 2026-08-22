@@ -15,7 +15,7 @@ Halts are classified into THREE operational categories. Categorization is per-ha
 
 | Cat | Behavior | When applicable |
 |---|---|---|
-| **C1 — Self-resolve** | Skill fixes own output, emits `halt_self_resolved` telemetry + chat one-liner, NEVER halts. | Skill emitted bad output (missing field, parse error, citation typo) AND can re-derive from in-context info. NO ground-truth fabrication. NO silent failure hiding (every fix logged). |
+| **C1 — Self-resolve** | Skill fixes own output, logs the `[self-resolved]` chat one-liner, NEVER halts. | Skill emitted bad output (missing field, parse error, citation typo) AND can re-derive from in-context info. NO ground-truth fabrication. NO silent failure hiding (every fix logged). |
 | **C2 — Business gate** | Halt + PROPOSE recommendation + sign-off. No raw "what should I do?" questions. | Resolution needs domain/stakeholder intent (scope choice, conflict resolution, business rule). Skill emits halt envelope with `recommendation:` field populated. |
 | **C3 — Grounding gate** | Halt — enforce via [HOOK-VALIDATE] slice (deterministic validator), not prose. | Continuing would require hallucinating ground truth (vault↔code conflict, traceability ID drop). Enforced by hook + state file, not skill body text. |
 
@@ -25,19 +25,7 @@ When a skill detects a C1 condition during execution:
 
 1. **Apply the documented fix** (per the halt's `C1 SELF-RESOLVE` description in this file).
 2. **Emit chat one-liner:** `[self-resolved] <halt_type>: <fix_applied>` (single line, not a halt envelope).
-3. **Emit telemetry event:**
-   ```json
-   {
-     "event_type": "halt_self_resolved",
-     "payload": {
-       "halt_type": "<halt name>",
-       "fix_applied": "<short description>",
-       "original_emit_site": "<skill_name>:<step_id>",
-       "logged_at_chat": true
-     }
-   }
-   ```
-4. **Continue execution.** Do NOT emit a `blocker:` envelope. Do NOT pause the chain. Do NOT prompt the human.
+3. **Continue execution.** Do NOT emit a `blocker:` envelope. Do NOT pause the chain. Do NOT prompt the human.
 
 ### Escalation paths from C1 → C2
 

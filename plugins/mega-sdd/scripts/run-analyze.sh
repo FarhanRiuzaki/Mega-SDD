@@ -914,39 +914,6 @@ with open(os.path.join(cwd, ".mega-sdd", ".analyze-freshness.json"), "w", encodi
 PYEOF
 fi
 
-# ─── Token cost (cost-weighted) — report-only, NEVER affects overall ──────────
-# Rolls up telemetry.jsonl into a price-faithful view: raw counts overstate real
-# cost ~5-8x because cache_read bills 0.1x (field audit: 176M raw ~= 37M cost-equiv).
-# Writes TOKEN-COST-REPORT.md + .token-cost-state.json and appends a headline +
-# pointer to CONSISTENCY-REPORT.md. Cannot flip overall status (it is a report).
-if [ -f "${SCRIPT_DIR}/report-token-cost.sh" ]; then
-  bash "${SCRIPT_DIR}/report-token-cost.sh" --cwd="$CWD" --quiet >/dev/null 2>&1 || true
-  TC_STATE="${CWD}/.mega-sdd/.token-cost-state.json"
-  TC_REPORT="${CWD}/.mega-sdd/CONSISTENCY-REPORT.md"
-  if [ -f "$TC_STATE" ] && [ -f "$TC_REPORT" ]; then
-    TC_STATE="$TC_STATE" TC_REPORT="$TC_REPORT" python3 - <<'PYTC' || true
-import json, os
-try:
-    st = json.load(open(os.environ["TC_STATE"]))
-except Exception:
-    raise SystemExit(0)
-sec = ["", "## Token Cost (cost-weighted)", ""]
-if not st.get("have_telemetry"):
-    sec.append("*No telemetry.jsonl yet — run a chain to populate.*")
-elif st.get("turns", 0) == 0:
-    sec.append("*telemetry present but no usage-bearing turns captured (subagent telemetry blind-spot — see TOKEN-COST-REPORT.md).*")
-else:
-    raw = st["raw_total"]; cw = st["cost_weighted_total"]; r = st["overstatement_ratio"]
-    sec.append(f"- Raw: {raw:,} | **Cost-weighted: {cw:,}** cost-equiv input tokens | raw overstates **{r}x**.")
-    sec.append("- Judge spend by the cost-weighted number (cache_read bills 0.1x, output 5x).")
-    sec.append("- Full breakdown + per-skill attribution: `TOKEN-COST-REPORT.md`.")
-sec.append("")
-with open(os.environ["TC_REPORT"], "a") as f:
-    f.write("\n".join(sec) + "\n")
-PYTC
-  fi
-fi
-
 OVERALL=$(echo "$ANALYZE_OUTPUT" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('overall','ERROR'))" 2>/dev/null)
 case "$OVERALL" in
   PASS|WARN) exit 0 ;;

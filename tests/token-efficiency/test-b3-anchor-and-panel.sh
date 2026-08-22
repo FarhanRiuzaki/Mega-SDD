@@ -63,10 +63,12 @@ fi
 [ "$LCMP" -lt "$LFULL" ] && [ "$LCMP" -gt "$LRES" ] && ok "M-13b: slim < full and slim > resume (size ordering holds)" || fail "M-13b: size ordering wrong (full=$LFULL slim=$LCMP resume=$LRES)"
 echo "$CLR" | grep -q "Task weight" && ok "M-13b: clear injects the FULL core" || fail "M-13b: clear missing full core"
 echo "$UNK" | grep -q "Task weight" && ok "M-13b: unknown source FAILS OPEN to the full core" || fail "M-13b: unknown source did not fail open"
-# compact still carries the dynamic COMPACT_RESUME notice when a snapshot exists
+# v7.3.0: the COMPACT_RESUME notice (PreCompact snapshot) is REMOVED with
+# observability — a compact source must NOT emit it even when a stale snapshot
+# file exists on disk.
 printf '{"phase":{"guess":"execute-bolts","units_total":3,"bolts_done":1}}' > "$WORK/.mega-sdd/.compaction-snapshot.json"
 CMP2=$(drive compact)
-echo "$CMP2" | grep -qi "resumed after a compaction" && ok "M-13b: compact still emits the dynamic COMPACT_RESUME notice" || fail "M-13b: compact lost COMPACT_RESUME"
+echo "$CMP2" | grep -qi "resumed after a compaction" && fail "M-13b: COMPACT_RESUME survived the v7.3.0 removal" || ok "M-13b: compact no longer emits COMPACT_RESUME (v7.3.0)"
 rm -f "$WORK/.mega-sdd/.compaction-snapshot.json"
 
 # ── M-13b: hook source-parse + fail-open guard present in source ──

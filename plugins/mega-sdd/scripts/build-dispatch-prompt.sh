@@ -1256,8 +1256,6 @@ t1 = []
 t1.append("═══════════════════════════════════════════")
 t1.append("BOLT SUBAGENT DISPATCH — %s" % unit_id)
 t1.append("═══════════════════════════════════════════")
-t1.append("mega-sdd-trace:execute-bolts:%s" % unit_id)
-t1.append("")
 t1.append('UNIT: %s "%s"' % (unit_id, unit_title))
 # scope_id/scope_name are NEVER inferred. With no scope the SCOPE: parenthetical
 # is omitted rather than invented, and the framework token gets its own line.
@@ -3589,7 +3587,6 @@ INLINE_CAP = 700                     # ABS_PROMPT is resolved with PROMPT_PATH, 
 def _core(title, whitelist_mode):
     """whitelist_mode: 'full' | 'count' | 'none'."""
     lines = [
-        "mega-sdd-trace:execute-bolts:%s" % unit_id,
         'UNIT: %s "%s"' % (unit_id, title),
         "READ FIRST, IN FULL: %s" % ABS_PROMPT,
         "That file is your COMPLETE dispatch — read it before any other action.",
@@ -3616,11 +3613,11 @@ if len(inline_core.encode("utf-8")) > INLINE_CAP:
     inline_core = _core(short_title, "none")
     inline_degraded.append("whitelist dropped entirely")
 if len(inline_core.encode("utf-8")) > INLINE_CAP:
-    # The irreducible minimum is the trace tag + the read directive; both are
-    # mandatory and are NEVER dropped. Over-budget here means an extreme absolute
-    # path — recorded honestly rather than silently truncated.
-    WARNINGS.append("inline_core is %d bytes (> %d) after full degradation — the trace tag and "
-                    "the read directive are mandatory and were never dropped"
+    # The irreducible minimum is the read directive; it is mandatory and is
+    # NEVER dropped. Over-budget here means an extreme absolute path — recorded
+    # honestly rather than silently truncated.
+    WARNINGS.append("inline_core is %d bytes (> %d) after full degradation — the "
+                    "read directive is mandatory and was never dropped"
                     % (len(inline_core.encode("utf-8")), INLINE_CAP))
 else:
     assert len(inline_core.encode("utf-8")) <= INLINE_CAP

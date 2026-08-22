@@ -23,7 +23,7 @@
 # (at-generation pin; recompute would silently re-baseline a hand-edited
 # constitution) — computed fresh ONLY when absent (initial generation); a WARN
 # fires when the carried hash differs from the current constitution.md (free
-# drift telemetry — the enforced halt stays binding.md-anchored in detect-drift).
+# drift advisory — the enforced halt stays binding.md-anchored in detect-drift).
 # run-analyze.sh's entities/OQ count-sync checks stay UNTOUCHED as independent
 # loose-parse cross-checks of this deriver.
 # Exit 0 = derived (ONE PASS line; WARNs to stderr); 2 = derive/parse/patch
@@ -348,7 +348,7 @@ try:
         if cur_hash and prior["constitution_hash"] != cur_hash:
             warn("constitution.md content differs from the pinned "
                  "constitution_hash (at-generation pin carried forward — "
-                 "drift telemetry only; detect-drift owns the enforced halt)")
+                 "drift advisory only; detect-drift owns the enforced halt)")
     elif cur_hash:
         out["constitution_hash"] = cur_hash
     if "constitution_version" in prior:

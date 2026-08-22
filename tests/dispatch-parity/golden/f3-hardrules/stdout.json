@@ -10,7 +10,7 @@
   "soft_halts": [],
   "warnings": [],
   "halt": null,
-  "inline_core": "mega-sdd-trace:execute-bolts:U-003\nUNIT: U-003 \"Refactor the interest calculator with locked signatures\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-003/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): app/Services/InterestCalculator.php, app/Services/RateTable.php, tests/Unit/InterestCalculatorTest.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
+  "inline_core": "UNIT: U-003 \"Refactor the interest calculator with locked signatures\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-003/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): app/Services/InterestCalculator.php, app/Services/RateTable.php, tests/Unit/InterestCalculatorTest.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
   "caps": {
     "cap_hard": 12288,
     "cap_target": 9216,

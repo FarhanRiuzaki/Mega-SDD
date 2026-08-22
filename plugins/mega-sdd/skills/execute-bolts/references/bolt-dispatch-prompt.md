@@ -33,8 +33,6 @@ Canonical prompt template for the bolt-subagent dispatch. Implements the 10 AI-e
 ═══════════════════════════════════════════
 BOLT SUBAGENT DISPATCH — U-XXX
 ═══════════════════════════════════════════
-mega-sdd-trace:execute-bolts:<unit-id>   ← observability tag, verbatim (AI-gateway/Langfuse filter; subagent context is fresh, so the session tag never reaches it)
-
 UNIT: <id> "<title>"
 SCOPE: <scope_id> (<scope_name>) — framework: <framework_pack>
 
