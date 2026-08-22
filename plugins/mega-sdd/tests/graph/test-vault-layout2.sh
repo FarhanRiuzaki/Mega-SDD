@@ -145,5 +145,126 @@ for f in "$P/scripts/validate-vault-oqs.sh" "$P/scripts/validate-flow-coverage.s
     || fail "L9: $(basename "$f") dual-probe missing"
 done
 
+# ── commit (b) arms: consumer re-key ─────────────────────────────────────────
+
+# B1 — full derive on the layout-2 fixture: layout marker + doc fields + origin
+T=$(mktemp -d)
+cp -R "$FIX/derive-vault-v2" "$T/v2"
+cp -R "$FIX/derive-vault" "$T/v1"; rm -f "$T/v1/vault.json"
+if bash "$P/scripts/derive-vault-json.sh" --vault="$T/v2" </dev/null >/dev/null 2>&1 \
+   && bash "$P/scripts/derive-vault-json.sh" --vault="$T/v1" </dev/null >/dev/null 2>&1; then
+  pass "B1: derive-vault-json exits 0 on BOTH layouts"
+else
+  fail "B1: derive failed on a layout"
+fi
+B_OUT=$("$PY" - "$T" <<'EOF'
+import json, sys
+t = sys.argv[1]
+v2 = json.load(open(t + "/v2/vault.json")); v1 = json.load(open(t + "/v1/vault.json"))
+ok = []
+ok.append(("B1-layout", v2.get("vault_layout") == 2 and "vault_layout" not in v1))
+ok.append(("B1-docs", {e["doc"] for e in v2["entities"]} == {"model.md"}
+           and {f["doc"] for f in v2["flows"]} == {"flows.md"}
+           and {a["doc"] for a in v2["adrs"]} == {"vault.md"}
+           and {o["doc"] for o in v2["open_questions"]} == {"constraints.md"}))
+ok.append(("B1-origin", next(o for o in v2["open_questions"] if o["tag"] == "OQ-FL-2")
+           .get("origin") == "flows.md#F-U-001"))
+# B2 — cross-layout parity: same content modulo layout-carried fields.
+# category is popped ONLY because the legacy roll-up fallback dies by design
+# on layout-2 (bracket-first is the primary contract there).
+def norm(d):
+    d = dict(d)
+    for k in ("generated_at", "vault_layout", "changelog", "sources"):
+        d.pop(k, None)
+    for cls in ("entities", "flows", "adrs", "open_questions"):
+        for e in d.get(cls, []):
+            for k in ("doc", "origin", "resolved_at", "deferred_at", "category"):
+                e.pop(k, None)
+    return d
+ok.append(("B2-parity", norm(v1) == norm(v2)))
+print(json.dumps(ok))
+EOF
+)
+"$PY" - "$B_OUT" <<'EOF'
+import json, sys
+for name, v in json.loads(sys.argv[1]):
+    print(("PASS: " if v else "FAIL: ") + name)
+EOF
+echo "$B_OUT" | grep -q 'false' && rc=1
+
+# B3 — hard-header contract: a vault.md missing `## Decisions` FAILS loud
+# (exit 2, message names the header) in BOTH the deriver and the ledger
+cp -R "$FIX/derive-vault-v2" "$T/bad"
+"$PY" - "$T/bad/vault.md" <<'EOF'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace("## Decisions", "## Keputusan")
+open(p, "w").write(s)
+EOF
+OUT3=$(bash "$P/scripts/derive-vault-json.sh" --vault="$T/bad" </dev/null 2>&1); R3=$?
+OUT3L=$(bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/bad" </dev/null 2>&1); R3L=$?
+[ "$R3" -eq 2 ] && echo "$OUT3" | grep -q '## Decisions' \
+  && pass "B3: deriver hard-header FAIL (rc=2, names ## Decisions)" \
+  || fail "B3: deriver hard-header (rc=$R3)"
+[ "$R3L" -eq 2 ] && echo "$OUT3L" | grep -q '## Decisions' \
+  && pass "B3: ledger hard-header FAIL (rc=2, names ## Decisions)" \
+  || fail "B3: ledger hard-header (rc=$R3L)"
+
+# B4 — OQ centralization rail: a stray OQ checkbox outside constraints.md FAILS
+cp -R "$FIX/derive-vault-v2" "$T/stray"
+printf -- '\n- [ ] **OQ-FL-9** [P2]: stray question\n' >> "$T/stray/flows.md"
+OUT4=$(bash "$P/scripts/derive-vault-json.sh" --vault="$T/stray" </dev/null 2>&1); R4=$?
+[ "$R4" -eq 2 ] && echo "$OUT4" | grep -q 'centralizes' \
+  && pass "B4: stray OQ outside constraints.md FAILS loud (rc=2)" \
+  || fail "B4: stray OQ rail (rc=$R4)"
+
+# B5 — claims-ledger: same claim-id SET across layouts (DOC_CODE via section)
+bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/v2" </dev/null >/dev/null 2>&1
+bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/v1" </dev/null >/dev/null 2>&1
+B5_OUT=$("$PY" - "$T" <<'EOF'
+import json, sys
+t = sys.argv[1]
+a = {c["id"] for c in json.load(open(t + "/v1/claims-ledger.json"))["claims"]}
+b = {c["id"] for c in json.load(open(t + "/v2/claims-ledger.json"))["claims"]}
+srcs = {c["source"].rsplit(":", 1)[0] for c in json.load(open(t + "/v2/claims-ledger.json"))["claims"]}
+print(("PASS: " if a == b else "FAIL: ") + "B5-idset")
+print(("PASS: " if srcs <= {"vault.md", "model.md", "flows.md", "constraints.md"} else "FAIL: ") + "B5-sources")
+EOF
+)
+echo "$B5_OUT"
+echo "$B5_OUT" | grep -q '^FAIL' && rc=1
+
+# B6 — vault-flows Mermaid mandate fires on a layout-2 flows.md write
+PRJ="$T/proj"; mkdir -p "$PRJ/.mega-sdd/vaults/v"
+cp "$FIX/derive-vault-v2/"*.md "$PRJ/.mega-sdd/vaults/v/"
+"$PY" - "$PRJ/.mega-sdd/vaults/v/flows.md" <<'EOF'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+# strip the mermaid fence from F-U-001 -> prose flow, the mandate must FAIL it
+s = s.replace("""**Flow**:
+```mermaid
+flowchart TD
+    A["Fill form"] --> B["Validate dates"]
+    B --> C["Create leave_request"]
+```""", "**Flow**: fill form, validate dates, create leave_request")
+open(p, "w").write(s)
+EOF
+bash "$P/scripts/validate-kb.sh" --surface=vault-flows --cwd="$PRJ" \
+  --file-path="$PRJ/.mega-sdd/vaults/v/flows.md" </dev/null >"$T/vf.json" 2>&1
+grep -q '"FAIL"\|missing_mermaid\|prose' "$T/vf.json" \
+  && pass "B6: Mermaid mandate fires on layout-2 flows.md (prose flow flagged)" \
+  || fail "B6: mandate did not fire on flows.md ($(head -c 150 "$T/vf.json"))"
+
+# B7 — structural pins: hook case glob + validate-kb basename accept flows.md
+grep -q '\*04-flows.md|\*/flows.md)' "$P/hooks/post-tool-use" \
+  && pass "B7: post-tool-use case dispatches */flows.md" \
+  || fail "B7: hook case glob missing flows.md"
+grep -q '== "flows.md"' "$P/scripts/validate-kb.sh" \
+  && pass "B7: validate-kb basename accepts flows.md" \
+  || fail "B7: validate-kb basename missing flows.md"
+
+rm -rf "$T"
+
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"
 exit $rc

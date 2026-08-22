@@ -1029,7 +1029,8 @@ _NON_FLOW_HEAD = re.compile(
     r"^(sources?|out[\s-]of[\s-]scope|open\s+questions?|notes?|legend|glossary|"
     r"definition\s+of\s+done|dod|changelog|references?|see\s+also|assumptions?|"
     r"non[\s-]goals?)\b", re.IGNORECASE)
-if os.path.basename(file_path).endswith("04-flows.md"):
+if (os.path.basename(file_path).endswith("04-flows.md")
+        or os.path.basename(file_path) == "flows.md"):   # v7 Fase 3 layout-2
     _HEAD_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
     heads = []
     for m in _HEAD_RE.finditer(content):

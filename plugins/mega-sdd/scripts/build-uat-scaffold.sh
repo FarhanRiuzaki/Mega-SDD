@@ -90,6 +90,13 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_md  # FLOW_HEADING_RE / DOD_ITEM_RE / FLOW_DOD_LABEL_RE — one grammar
 
+def _flpath(root):
+    # v7 Fase 3 dual-layout read (one minor cycle): layout-2 flows.md first.
+    return vault_md.resolve_doc(root, "04-flows.md")
+
+def _flname(root):
+    return os.path.basename(_flpath(root))
+
 vaults = [os.path.abspath(v) for v in os.environ["VAULTS_JOINED"].splitlines() if v.strip()]
 cwd = os.path.abspath(os.environ["CWD"]) if os.environ.get("CWD") else None
 out_override = os.environ.get("OUT") or None
@@ -412,7 +419,7 @@ def parse_vault(vroot):
                 data["project_name"] = pn
         except (OSError, ValueError):
             pass
-    flows_path = os.path.join(vroot, "04-flows.md")
+    flows_path = _flpath(vroot)
     if os.path.isfile(flows_path):
         lines = open(flows_path, encoding="utf-8", errors="surrogateescape").read().split("\n")
         heads = []
@@ -557,7 +564,7 @@ if any(p["flows"] for p in parsed):
                 row = "| %s %s" % (scope_label(p), row)
             L.append(row)
 else:
-    L.append("[Pending — vault/04-flows.md belum berisi flow F-* — jalankan generate-intent dulu]")
+    L.append("[Pending — flows doc vault (flows.md / 04-flows.md) belum berisi flow F-* — jalankan generate-intent dulu]")
 L.append("")
 L.append("**Kriteria masuk (entry):**")
 L.append("")
@@ -579,8 +586,8 @@ L.append("")
 L.append("**Sources for this section:**")
 cited1 = False
 for p in parsed:
-    if os.path.isfile(os.path.join(p["root"], "04-flows.md")):
-        L.append("- [¹] `vault/04-flows.md` (sha256: `pending`)")
+    if os.path.isfile(_flpath(p["root"])):
+        L.append("- [¹] `vault/%s` (sha256: `pending`)" % _flname(p["root"]))
         cited1 = True
 if os.path.isfile(os.path.join(vaults[0], "sit", "SIT.md")):
     L.append("- [²] `sit/SIT.md` (sha256: `pending`)")
@@ -614,14 +621,14 @@ for p in parsed:
                 L.append(mm)
                 L.append("")
         else:
-            L.append("[Pending — diagram Mermaid untuk %s belum ada di vault/04-flows.md]" % f["id"])
+            L.append("[Pending — diagram Mermaid untuk %s belum ada di flows doc vault]" % f["id"])
             L.append("")
         L.append("**Expected outcome (DoD — verbatim dari vault):**")
         L.append("")
         if f["dod"]:
             L.extend(f["dod"])
         else:
-            L.append("- [Pending — Definition of Done untuk %s belum ada di vault/04-flows.md]" % f["id"])
+            L.append("- [Pending — Definition of Done untuk %s belum ada di flows doc vault]" % f["id"])
         L.append("")
         L.append("**Langkah uji (isi baris di bawah marker — hasil eksekusi diisi MANUSIA):**")
         L.append("")
@@ -635,8 +642,8 @@ for p in parsed:
 L.append("**Sources for this section:**")
 cited2 = False
 for p in parsed:
-    if os.path.isfile(os.path.join(p["root"], "04-flows.md")):
-        L.append("- [¹] `vault/04-flows.md` (sha256: `pending`)")
+    if os.path.isfile(_flpath(p["root"])):
+        L.append("- [¹] `vault/%s` (sha256: `pending`)" % _flname(p["root"]))
         cited2 = True
 if not cited2:
     L.append("_(no source artifacts cited — see [Pending] markers above for missing sources)_")
@@ -668,8 +675,8 @@ L.append("")
 L.append("**Sources for this section:**")
 cited3 = False
 for p in parsed:
-    if os.path.isfile(os.path.join(p["root"], "04-flows.md")):
-        L.append("- [¹] `vault/04-flows.md` (sha256: `pending`)")
+    if os.path.isfile(_flpath(p["root"])):
+        L.append("- [¹] `vault/%s` (sha256: `pending`)" % _flname(p["root"]))
         cited3 = True
     for u in p["units"]:
         rel = os.path.relpath(u["file"], p["root"])

@@ -57,14 +57,25 @@ PLUGIN_VER=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "
 DRIFT_OUT=$(bash "${SCRIPT_DIR}/build-citation-map.sh" --check-drift --vault="$OUTROOT" --cwd="$CWD" --doc=prd 2>/dev/null || true)
 
 OUTROOT="$OUTROOT" CWD="$CWD" MODE="$MODE" VAULT="$VAULT" KB="$KB" QUIET="$QUIET" \
-TPL="$TPL" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" python3 <<'PYEOF'
+TPL="$TPL" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" \
+MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib" python3 <<'PYEOF'
 import glob, json, os, re, sys
 from datetime import datetime, timezone
 
 outroot = os.path.abspath(os.environ["OUTROOT"])
 cwd = os.path.abspath(os.environ["CWD"])
 mode = os.environ["MODE"]
-vault = os.path.abspath(os.environ["VAULT"]) if os.environ.get("VAULT") else None
+vault = os.path.abspath(os.environ["VAULT"])
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_md
+
+def vdoc(name):
+    # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file when present.
+    return vault_md.resolve_doc(vault, name)
+
+def vdoc_name(name):
+    return os.path.basename(vdoc(name)) if os.environ.get("VAULT") else None
 kb = os.environ.get("KB") or ""
 tpl_path = os.environ["TPL"]
 drift_out = os.environ.get("DRIFT_OUT", "")
@@ -147,9 +158,9 @@ slots["section-1-background"] = "{{section-1-background}}"
 slots["section-1-purpose"] = "{{section-1-purpose}}"
 model_slots += ["section-1-background", "section-1-purpose"]
 if mode == "forward":
-    ov = read(os.path.join(vault, "01-overview.md"))
+    ov = read(vdoc("01-overview.md"))
     if ov:
-        cite(1, "vault/01-overview.md")
+        cite(1, "vault/" + vdoc_name("01-overview.md"))
 else:
     for c in ("README.md",):
         if os.path.isfile(os.path.join(kb_root, c)):
@@ -179,8 +190,8 @@ else:
 
 # §3 — functional requirements
 if mode == "forward":
-    fn = read(os.path.join(vault, "02-functional.md"))
-    fl = read(os.path.join(vault, "04-flows.md"))
+    fn = read(vdoc("02-functional.md"))
+    fl = read(vdoc("04-flows.md"))
     parts = []
     if fn:
         heads = list(re.finditer(r"(?m)^(#{2,3})\s+(FR-\d+)\s*[—:-]?\s*(.*)$", fn))
@@ -191,13 +202,13 @@ if mode == "forward":
             ln = fn[:h.start()].count("\n") + 1
             parts.append("- **%s — %s**: %s [Source: vault/02-functional.md:L%d (sha256: pending)]"
                          % (h.group(2), h.group(3).strip() or "(untitled)", first_para, ln))
-        cite(3, "vault/02-functional.md")
+        cite(3, "vault/" + vdoc_name("02-functional.md"))
     if fl:
         finv = ["- %s — %s" % (m.group(1), m.group(2).strip())
                 for m in re.finditer(r"(?m)^#{2,3}\s+(F-[\w-]+)\s*[—:-]?\s*(.*)$", fl)]
         if finv:
             parts.append("\n**Inventori flow (diagram di §4):**\n" + "\n".join(finv))
-            cite(3, "vault/04-flows.md")
+            cite(3, "vault/" + vdoc_name("04-flows.md"))
     slots["section-3-fr-content"] = "\n".join(parts) if parts else "[Pending — vault/02-functional.md not yet generated]"
     if not parts:
         pending_count += 1
@@ -226,7 +237,7 @@ def mermaid_blocks(text):
 journeys = []
 jn = 0
 if mode == "forward":
-    fl = read(os.path.join(vault, "04-flows.md"))
+    fl = read(vdoc("04-flows.md"))
     if fl:
         flows = list(re.finditer(r"(?ms)^#{2,3}\s+(F-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,3}\s+F-|\Z)", fl))
         flows.sort(key=lambda m: (0 if m.group(1).startswith("F-U-") else 1))
@@ -234,13 +245,16 @@ if mode == "forward":
             blocks = mermaid_blocks(m.group(3))
             jn += 1
             if blocks:
-                journeys.append("### UJ-%d — %s\n\nAlur berikut dibawa VERBATIM dari `vault/04-flows.md` (%s).\n\n%s\n\n[Source: vault/04-flows.md (sha256: pending)]"
+                journeys.append(("### UJ-%d — %s\n\nAlur berikut dibawa VERBATIM dari `vault/"
+                                 + vdoc_name("04-flows.md") + "` (%s).\n\n%s\n\n[Source: vault/"
+                                 + vdoc_name("04-flows.md") + " (sha256: pending)]")
                                 % (jn, m.group(2).strip() or m.group(1), m.group(1), blocks[0]))
             else:
-                journeys.append("### UJ-%d — %s\n\n[Pending — flow %s belum punya diagram Mermaid di 04-flows.md]"
+                journeys.append(("### UJ-%d — %s\n\n[Pending — flow %s belum punya diagram Mermaid di "
+                                 + vdoc_name("04-flows.md") + "]")
                                 % (jn, m.group(2).strip() or m.group(1), m.group(1)))
                 pending_count += 1
-        cite(4, "vault/04-flows.md")
+        cite(4, "vault/" + vdoc_name("04-flows.md"))
 else:
     for wf in sorted(glob.glob(os.path.join(kb_root, "20-workflows", "*.md"))):
         t = read(wf) or ""
@@ -272,7 +286,7 @@ CATS = (("section-5-performance", ("performance", "latency", "throughput", "p95"
         ("section-5-availability", ("availability", "uptime", "sla", "failover")),
         ("section-5-other", ("compliance", "regulat", "audit", "ojk", "bi-")))
 if mode == "forward":
-    fn = read(os.path.join(vault, "02-functional.md"))
+    fn = read(vdoc("02-functional.md"))
     const = read(os.path.join(vault, "_meta", "constitution.md"))
     nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
     for slot, words in CATS:
@@ -288,7 +302,7 @@ if mode == "forward":
                 parts.append("_Dari constitution [LOCKED]:_\n\n" + "\n".join(cc))
         slots[slot] = "\n\n".join(parts) if parts else "(belum terspesifikasi di sumber)"
     if nfr:
-        cite(5, "vault/02-functional.md")
+        cite(5, "vault/" + vdoc_name("02-functional.md"))
     if const:
         cite(5, "vault/_meta/constitution.md")
 else:
@@ -307,7 +321,7 @@ else:
 # §6 — open items
 rows6 = []
 if mode == "forward":
-    oq = read(os.path.join(vault, "03-open-questions.md"))
+    oq = read(vdoc("03-open-questions.md"))
     if oq:
         for m in re.finditer(r"(?ms)^#{2,4}\s+(OQ-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,4}\s|\Z)", oq):
             if re.search(r"(?mi)^\s*\**status\**\s*:\s*\**\s*resolved", m.group(3)):
@@ -316,7 +330,7 @@ if mode == "forward":
             rows6.append("| %s | %s | %s | `vault/03-open-questions.md` |"
                          % (m.group(1), m.group(2).strip() or "(untitled)", pr.group(1) if pr else "—"))
         if rows6:
-            cite(6, "vault/03-open-questions.md")
+            cite(6, "vault/" + vdoc_name("03-open-questions.md"))
     if not rows6:
         # the canonical OQ home is vault.json.open_questions[] (ADV-009 — a
         # real vault has no 03-open-questions.md; "(tidak ada)" would be false)

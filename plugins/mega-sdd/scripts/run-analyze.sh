@@ -108,7 +108,7 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*"; } \
     && V7F_RC="STATE_FILE" || V7F_RC="SKIP"
-  _has "${CWD}/.mega-sdd/vaults" -name "04-flows.md" -not -path "*/.archived/*" \
+  _has "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" \
     && V7VF_RC="STATE_FILE" || V7VF_RC="SKIP"
   _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     && V7C_RC="STATE_FILE" || V7C_RC="SKIP"
@@ -150,7 +150,7 @@ find "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" 2>/dev/
 find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.kb_markers"
 { find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
   find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_flows"
-find "${CWD}/.mega-sdd/vaults" -name "04-flows.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_flows"
+find "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_flows"
 # unit_baseline drives NO reuse in analyze (unit_spec always re-runs, single
 # invocation below) — it is the changed-set baseline for lint-units --changed-only.
 find "${CWD}/.mega-sdd/vaults" -path "*/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.unit_baseline"
@@ -525,8 +525,14 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
     # with a DIFFERENT, looser grammar than _lib/vault_md.py and are the
     # detectors for deriver-parser bugs. Do NOT cull them as "tautological
     # now that vault.json is script-derived".
-    # Check 1: vault.json entities count vs 03-data-model.md entity blocks
-    dm_path = os.path.join(vault_dir, "03-data-model.md")
+    # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file first.
+    def _vdoc(v2_name, legacy_name):
+        p2 = os.path.join(vault_dir, v2_name)
+        return p2 if os.path.isfile(p2) else os.path.join(vault_dir, legacy_name)
+    LAYOUT2 = os.path.isfile(os.path.join(vault_dir, "vault.md"))
+
+    # Check 1: vault.json entities count vs data-model doc entity blocks
+    dm_path = _vdoc("model.md", "03-data-model.md")
     if os.path.isfile(dm_path):
         dm_content = open(dm_path).read()
         entity_patterns = len(re.findall(
@@ -536,31 +542,36 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
         vj_entities = len(vj.get("entities", []))
         if entity_patterns > 0 and abs(vj_entities - entity_patterns) > 2:
             checks.append({"check": "entities_count_sync", "status": "WARN",
-                          "detail": f"vault.json={vj_entities} entities; 03-data-model.md~={entity_patterns} (delta>{2})"})
+                          "detail": f"vault.json={vj_entities} entities; {os.path.basename(dm_path)}~={entity_patterns} (delta>{2})"})
         else:
             checks.append({"check": "entities_count_sync", "status": "PASS",
                           "detail": f"vault.json={vj_entities}, md~={entity_patterns}"})
     else:
         checks.append({"check": "entities_count_sync", "status": "SKIP",
-                       "detail": "03-data-model.md not found"})
+                       "detail": "data-model doc (model.md / 03-data-model.md) not found"})
 
-    # Check 2: OQ count in vault.json vs 00-index.md OQ tag count
-    idx_path = os.path.join(vault_dir, "00-index.md")
+    # Check 2: OQ count in vault.json vs the authored OQ surface's tag count
+    # (legacy: the 00-index roll-up; layout-2: constraints.md, the sole home)
+    idx_path = _vdoc("constraints.md", "00-index.md")
     if os.path.isfile(idx_path):
         idx_content = open(idx_path).read()
         oq_tags = set(re.findall(r"\bOQ-[A-Z]+-(?:P\d+-)?(?:\d+)\b", idx_content))
         vj_oqs = len(vj.get("open_questions", []))
         if len(oq_tags) > 0 and abs(vj_oqs - len(oq_tags)) > 3:
             checks.append({"check": "oq_count_sync", "status": "WARN",
-                          "detail": f"vault.json={vj_oqs} OQs; 00-index.md={len(oq_tags)} unique tags (delta>{3})"})
+                          "detail": f"vault.json={vj_oqs} OQs; {os.path.basename(idx_path)}={len(oq_tags)} unique tags (delta>{3})"})
         else:
             checks.append({"check": "oq_count_sync", "status": "PASS",
                           "detail": f"vault.json={vj_oqs}, idx_tags={len(oq_tags)}"})
 
-    # Check 3: 7+1 required vault files present
-    expected_files = ["00-index.md", "01-overview.md", "02-architecture.md",
-                      "03-data-model.md", "04-flows.md", "05-decisions.md",
-                      "06-constraints.md", "vault.json"]
+    # Check 3: required vault files present (per layout)
+    if LAYOUT2:
+        expected_files = ["vault.md", "model.md", "flows.md",
+                          "constraints.md", "vault.json"]
+    else:
+        expected_files = ["00-index.md", "01-overview.md", "02-architecture.md",
+                          "03-data-model.md", "04-flows.md", "05-decisions.md",
+                          "06-constraints.md", "vault.json"]
     missing = [ef for ef in expected_files if not os.path.isfile(os.path.join(vault_dir, ef))]
     if missing:
         checks.append({"check": "vault_files_complete", "status": "FAIL",
@@ -579,14 +590,14 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
                                "detail": f"source_documents path not found: {sd_path}"})
 
     # Check 5: flows count sync
-    flows_path = os.path.join(vault_dir, "04-flows.md")
+    flows_path = _vdoc("flows.md", "04-flows.md")
     if os.path.isfile(flows_path):
         flows_content = open(flows_path).read()
         flow_ids = set(re.findall(r"\bF-[A-Z]-\d{3}\b", flows_content))
         vj_flows = len(vj.get("flows", []))
         if len(flow_ids) > 0 and abs(vj_flows - len(flow_ids)) > 2:
             checks.append({"check": "flows_count_sync", "status": "WARN",
-                          "detail": f"vault.json={vj_flows} flows; 04-flows.md={len(flow_ids)} flow IDs"})
+                          "detail": f"vault.json={vj_flows} flows; {os.path.basename(flows_path)}={len(flow_ids)} flow IDs"})
         else:
             checks.append({"check": "flows_count_sync", "status": "PASS",
                           "detail": f"vault.json={vj_flows}, md_ids={len(flow_ids)}"})

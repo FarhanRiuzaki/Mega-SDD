@@ -1025,8 +1025,10 @@ except Exception:
     # Mermaid diagram (not a prose Steps list); reuses the shared
     # _lib/mermaid_syntax.py tokenizer. Advisory (detection-only at hook layer).
     # See docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md.
+    # v7 Fase 3 dual layout: `*/flows.md` is the layout-2 vault flows doc
+    # (slash-anchored so e.g. `workflows.md` cannot false-trigger).
     case "$FILE_PATH" in
-      *04-flows.md)
+      *04-flows.md|*/flows.md)
         run_validator_and_emit \
           "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.vault-flows-state.json" \
