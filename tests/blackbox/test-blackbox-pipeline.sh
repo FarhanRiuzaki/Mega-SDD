@@ -67,17 +67,14 @@ cp "$VAULT/vault.json" "$WORK/v1.json"
 bash "$SCR/derive-vault-json.sh" --vault "$VAULT" --patch "$WORK/patch.json" </dev/null >/dev/null 2>&1
 cmp -s "$VAULT/vault.json" "$WORK/v1.json" && ok "re-derive byte-identical (generated_at preserved)" || bad "re-derive not idempotent"
 
-# ── S4 consumer guide ────────────────────────────────────────────────────────
-stage "S4 copy-consumer-guide"
-# HOME isolated: resolve-plugin-root.sh prefers the newest LOCAL plugin cache
-# (~/.claude/plugins/cache), which can lag this repo — the blackbox proof must
-# pin THIS repo's bytes, not whatever version the machine has cached
-OUT="$(HOME="$WORK" bash "$SCR/copy-consumer-guide.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
+# ── S4 consumer guide (v7: script demoted to the documented cp one-liner) ────
+stage "S4 consumer guide cp"
 SHIPPED="$PLG/skills/generate-intent/references/templates/ai-consumer-guide.md"
-if [ $RC -eq 0 ] && [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
+mkdir -p "$VAULT/_meta" && cp "$SHIPPED" "$VAULT/_meta/ai-consumer-guide.md"
+if [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
    && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ]; then
-  ok "guide installed, cksum-identical to shipped template"
-else bad "consumer guide rc=$RC: $OUT"; fi
+  ok "guide installed via cp, cksum-identical to shipped template"
+else bad "consumer guide cp failed"; fi
 
 # ── S5 binding (model-sim, ACTIVE CONFLICT) + stamp + derive + parity ────────
 stage "S5 binding write -> stamp -> derive -> parity"

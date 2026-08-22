@@ -107,12 +107,13 @@ handoff:
 | 6 | `validate-kb-output.sh` | KB output completeness + frontmatter |
 | 7 | `validate-kb-markers.sh` | KB [VERIFIED] citation evidence |
 | 8 | `validate-kb-citations.sh` | KB §11 source file resolution |
-| 9 | `audit-domain-rules.sh` | domain-rule gap detection (Mode B) |
-| 10 | `validate-constitution.sh` | constitution clause coverage |
-| 11 | `validate-constitution-propagation.sh` | constitution clause carry-over |
-| 12 | `validate-codebase-map.sh` | codebase-map schema |
+| 9 | `validate-constitution.sh` | constitution clause coverage |
+| 10 | `validate-constitution-propagation.sh` | constitution clause carry-over |
+| 11 | `validate-codebase-map.sh` | codebase-map schema |
 
 Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
+
+**Domain-rule gap check (Mode B — LLM, v7):** when a KB exists, READ `knowledge-base/40-business-rules/*.md` against the vault's rules/flows and report any domain rule with no vault counterpart (and vice versa) as an advisory finding in the report. This is semantic-gap detection — judgment work; the old keyword-overlap script (`audit-domain-rules.sh`) was demoted and removed in v7 Fase 2.
 
 ### Code-delivery gates (surfaced read-only)
 

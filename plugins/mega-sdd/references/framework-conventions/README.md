@@ -30,7 +30,6 @@ Fallback when no framework match → `_universal.md` (universal good practices t
 | Script | Purpose |
 |---|---|
 | `../../scripts/validate-pack.sh` | Pack linter — validates one pack or all packs against the `_lint.md` contract |
-| `../../scripts/scaffold-pack.sh` | Scaffold generator — produces a linter-valid pack skeleton from `_template.md` |
 
 ## Opt-out
 
@@ -39,7 +38,7 @@ Fallback when no framework match → `_universal.md` (universal good practices t
 
 ## Adding a new pack
 
-1. Run `scripts/scaffold-pack.sh <framework>` to generate the skeleton — it copies `_template.md` → `<framework>.md`, fills in a frontmatter stub, and prints next steps. Do not copy `_template.md` by hand.
+1. Copy the template by hand: `cp _template.md <framework>.md` (the scaffold script was demoted in v7 Fase 2), then fill the frontmatter stub — set `framework:`, `framework_version_range:`, a real `detection_signature:` (manifest + dependency marker), and rewrite the `extends:` placeholder (usually `_universal`). NOTE: the template's illustrative examples use Laravel tokens — rewrite EVERY example row/path for your framework; the step-4 linter's cross-framework leak check blocks any leftovers (this is the safety net the old scaffold's auto-neutralizer used to provide).
 2. Fill in frontmatter (detection signature) + body sections, following the `<!-- REQUIRED -->` markers the scaffold leaves in place.
 3. Test detection by running `scan-codebase` against a known project of that framework.
 4. Lint the pack: run `scripts/validate-pack.sh <framework>.md` (checklist in `references/framework-conventions/_lint.md`). Fix all reported violations. The CI gate is `validate-pack.sh --all && validate-pack.sh --check-registry` — `--all` is tier-aware: `pack_tier: full` packs must lint completely clean; `thin` proof-packs and untiered packs block only on structural errors (invalid YAML or cross-framework token leak), so missing-section gaps are reported but non-blocking for in-progress thin packs.

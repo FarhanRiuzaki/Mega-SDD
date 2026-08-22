@@ -21,7 +21,7 @@ Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The 7-fil
 - `02-architecture.md > UI components & patterns` sub-section: appears **only if** `HAS_UI_COMPONENTS = true`. Otherwise omitted entirely (no header, no placeholder, no OQ).
 - `06-constraints.md > Design system` top-level section: appears **only if** at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`. Within it, sub-blocks (Tokens / Accessibility / Voice & brand) appear only for the `true` flags.
 - `00-index.md > Reading paths`: the "UI/UX or FE Dev" path appears **only if** `02-architecture#ui-components` or `06-constraints#design-system` is present.
-- `00-index.md > Glossary`: product-specific PRD terms only. The generic + design-system standard rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, design tokens, design system, WCAG, a11y, semantic HTML) live in the static `_meta/ai-consumer-guide.md` (installed by `scripts/copy-consumer-guide.sh` in Step 3) — never re-emitted per vault.
+- `00-index.md > Glossary`: product-specific PRD terms only. The generic + design-system standard rows (ADR, DBML, DoD, FK, NFR, OQ, RTO, RPO, SLO, design tokens, design system, WCAG, a11y, semantic HTML) live in the static `_meta/ai-consumer-guide.md` (installed by the Step-3 `cp` of the shipped template) — never re-emitted per vault.
 
 **No shape-based defaulting.** A `PROJECT_SHAPE=mobile-app` project with no source coverage of design-system content produces a vault with no design-system sections. The skill never injects WCAG levels, color palettes, spacing scales, or component lists from prior knowledge.
 
@@ -224,7 +224,7 @@ Source for "This vault covers": first sentence of the `## Phase N` section in `s
 5. **Reading order** (full sequence with a 1-line purpose per doc).
 6. **Anti-hallucination rules** for dev / dev-AI consumers.
 
-6.5. **Implementation Notes for AI Consumers** — vault metadata + the PER-VAULT specialization only (which unresolved P1 OQ clusters block which work areas + the layer-routing anchors for THIS vault) + the MANDATORY guide pointer; the generic protocol (halt YAML envelopes, mode cross-check checklists, parallel-work guidance, companion skills) is NEVER re-stated — it lives in `_meta/ai-consumer-guide.md`, installed by `copy-consumer-guide.sh`.
+6.5. **Implementation Notes for AI Consumers** — vault metadata + the PER-VAULT specialization only (which unresolved P1 OQ clusters block which work areas + the layer-routing anchors for THIS vault) + the MANDATORY guide pointer; the generic protocol (halt YAML envelopes, mode cross-check checklists, parallel-work guidance, companion skills) is NEVER re-stated — it lives in `_meta/ai-consumer-guide.md`, installed by the Step-3 `cp`.
 
 7. **Glossary** — product-specific PRD terms only, BOTH modes, plus the pointer line to the guide's Standard-terms table; standard/generic terms live in `_meta/ai-consumer-guide.md`.
 8. **Open Questions roll-up** — categorized, sorted P1 → P2 → P3 within each (see roll-up structure below). `compact`: 1-line per OQ; `full`: multi-line per OQ.
