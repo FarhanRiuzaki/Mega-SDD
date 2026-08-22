@@ -61,6 +61,7 @@ __pycache__/
 # rotated telemetry generations — same class as telemetry.jsonl above
 **/.mega-sdd/memory/.turn-usage-cursor-*.json
 **/.mega-sdd/memory/telemetry.jsonl.1
+**/.mega-sdd/memory/hook-debug.log.1
 
 # Local tooling residue — NOT part of this repo:
 # mega-code CLI npm-installed in-tree for gateway field tests, and the

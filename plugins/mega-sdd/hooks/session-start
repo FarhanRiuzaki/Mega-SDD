@@ -239,9 +239,9 @@ fi
 # scripts/derive-state.sh → .mega-sdd/state.json (shared _lib/state_probes.py,
 # the same library routing + validate-preflight read) — so this notice can
 # never diverge from what routing sees. Gated behind the existing map-present
-# condition (no new latency on non-SDD CWDs). Stale-plugin-cache tolerance:
-# when derive-state.sh is absent or fails, the pre-P1 bash computation below
-# runs unchanged (byte-identical notice strings).
+# condition (no new latency on non-SDD CWDs). derive-state.sh absent/failing
+# → the advisory notice is skipped (v7 Fase 2 №3: the duplicated bash
+# fallback is deleted — one probe engine, no divergence).
 STALENESS_NOTICE=""
 LV_MAP="${project_root}/.mega-sdd/codebase/codebase-map.md"
 # P2 (round F3 — the index leg was DEAD CODE behind a map-only gate):
@@ -312,48 +312,11 @@ PYLV
       fi
     fi
   fi
-  if [ "$LV_FROM_DIGEST" -eq 0 ]; then
-  LV_JOURNAL="${project_root}/.mega-sdd/codebase/.dirty-paths.jsonl"
-  LV_DIRTY=0
-  if [ -s "$LV_JOURNAL" ]; then
-    LV_DIRTY=$(grep -c . "$LV_JOURNAL" 2>/dev/null || echo 0)
-  fi
-  LV_STAMP=$(sed -n 's/^last_scanned_commit:[[:space:]]*//p' "$LV_MAP" 2>/dev/null | head -1)
-  LV_HEAD=""
-  if [ -n "$LV_STAMP" ] && command -v git >/dev/null 2>&1; then
-    LV_HEAD=$(git -C "$project_root" rev-parse HEAD 2>/dev/null || true)
-  fi
-  LV_DETAIL="${LV_DIRTY} journaled write(s)"
-  if [ -n "$LV_STAMP" ] && [ -n "$LV_HEAD" ] && [ "$LV_HEAD" != "$LV_STAMP" ]; then
-    LV_DETAIL="${LV_DETAIL}; map stamp ${LV_STAMP:0:8} ≠ HEAD ${LV_HEAD:0:8}"
-  fi
-  # Deferred-decision queue (PENDING-SYNC.md): when open items exist, the
-  # notice points at the queue FIRST (sync-digest contract) — a fresh sync
-  # would just re-queue the same decisions.
-  LV_OPEN=0
-  LV_PENDING=""
-  for lv_ps in "${project_root}/.mega-sdd/vaults"/*/PENDING-SYNC.md "${project_root}/docs/mega-sdd/vaults"/*/PENDING-SYNC.md; do
-    [ -f "$lv_ps" ] || continue
-    lv_n=$(grep -c '^- \[ \]' "$lv_ps" 2>/dev/null || echo 0)
-    if [ "${lv_n:-0}" -gt 0 ]; then
-      LV_OPEN=$((LV_OPEN + lv_n))
-      LV_PENDING="${lv_ps#"${project_root}"/}"
-    fi
-  done
-  LV_MOVED=0
-  if [ "$LV_DIRTY" -gt 0 ] || { [ -n "$LV_STAMP" ] && [ -n "$LV_HEAD" ] && [ "$LV_HEAD" != "$LV_STAMP" ]; }; then
-    LV_MOVED=1
-  fi
-  if [ "$LV_OPEN" -gt 0 ]; then
-    STALENESS_NOTICE=$'\n\n'"mega-sdd: ${LV_OPEN} open sync decision(s) queued in ${LV_PENDING} — resolve the queue first."
-    if [ "$LV_MOVED" -eq 1 ]; then
-      STALENESS_NOTICE="${STALENESS_NOTICE} Code also moved since last scan (${LV_DETAIL})."
-    fi
-  elif [ "$LV_MOVED" -eq 1 ]; then
-    # v7: notice-only wording (same contract as the digest leg above).
-    STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — sync tersedia saat masuk lane M/L (\`/mega-sdd\`)."
-  fi
-  fi  # LV_FROM_DIGEST fallback (pre-P1 bash computation, unchanged)
+  # v7 Fase 2 №3: the pre-P1 bash fallback (a byte-for-byte duplicate of the
+  # digest leg's intent, keyed map-only) is DELETED — derive-state.sh is the
+  # ONE probe engine (audit §hooks duplication flag). When the script is
+  # absent/fails, the advisory notice is simply skipped (fail-open silent).
+  : # LV_FROM_DIGEST intentionally unused beyond the digest leg above
 fi
 
 # ─── Resumed-after-compaction notice (ECC Batch 2) ──────────────────────────

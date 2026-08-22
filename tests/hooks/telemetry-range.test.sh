@@ -182,6 +182,21 @@ grep -q '"mode": "greenfield"' "$R6/.mega-sdd/vaults/demo/vault.json" \
   && pass "r6 session-start left vault.json untouched (no vault writes)" \
   || fail "r6 session-start still mutates vault.json"
 
+echo "── r7: GROUND rotates a >20k-row hook-debug.log (same shape as telemetry) ──"
+R7="$TMP/dbg"; mkdir -p "$R7/.mega-sdd/memory"
+"$PY" -c "
+with open('$R7/.mega-sdd/memory/hook-debug.log','w') as f:
+    for i in range(20001):
+        f.write('{\"hook\":\"stop\"}\n')
+"
+bash "$GROUND" --cwd="$R7" >/dev/null 2>&1
+if [ -f "$R7/.mega-sdd/memory/hook-debug.log.1" ] && \
+   [ "$(wc -l < "$R7/.mega-sdd/memory/hook-debug.log.1" | tr -d ' ')" -eq 20001 ]; then
+  pass "r7 hook-debug.log rotated to .1 (unbounded-growth flag closed)"
+else
+  fail "r7 hook-debug.log not rotated: $(ls "$R7/.mega-sdd/memory/" 2>/dev/null | tr '\n' ' ')"
+fi
+
 echo "── z: opt-out also skips rotation (guard scope) ──"
 R3="$TMP/rot3"; mkdir -p "$R3/.mega-sdd/memory"
 printf 'telemetry: false\n' > "$R3/.mega-sdd/config.yaml"
