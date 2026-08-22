@@ -8,7 +8,7 @@ description: Memory + self-learning layer across user / project / vault scopes; 
 
 Markdown-driven memory that persists pipeline outcomes across sessions. Skills WRITE outcomes to memory at natural checkpoints; skills READ memory for informed suggestions at decision points. Self-learning surfaces threshold-based suggestions to the user — never auto-applied without explicit ACCEPT.
 
-**Announce at start:** "I'm using the memory skill to inspect / manage mega-sdd's persistent memory. `mega-sdd-trace:memory`"
+**Announce at start:** "I'm using the memory skill to inspect / manage mega-sdd's persistent memory."
 
 **Core principle:** Memory is SUGGESTION-ONLY, never enforcement. Every suggestion cites its source. Current evidence wins over memory. Cross-project propagation requires explicit user `promote` action.
 

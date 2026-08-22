@@ -6,7 +6,7 @@ description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes
 
 # Orchestrate-Flow — Lifecycle Orchestrator
 
-**Announce at start:** "I'm using the orchestrate-flow skill to inspect CWD and propose the next phases. `mega-sdd-trace:orchestrate-flow`"
+**Announce at start:** "I'm using the orchestrate-flow skill to inspect CWD and propose the next phases."
 
 The orchestrator inspects the working directory, infers where you are in the mega-sdd pipeline, proposes a chain of sub-skills, confirms once, then dispatches them with `--auto`. It generates no content itself — it routes. Heavy detail (decision matrices, preflight catalogs, handoff validation, convergence, halt taxonomy) lives in the references below; this file is the router.
 
@@ -126,7 +126,6 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--factory` — enable state-driven factory routing: read the whole checkpoint ledger and route forward OR backward to re-run an unresolved phase, looping to convergence under the retry cap (`references/factory-routing.md`). Implied by `--deep`.
 - `--express` / `--classic`: the spine switch — **express is the DEFAULT (P2)**. Express: the state engine renders chains WITHOUT a scan phase (GROUND ran as a script) and appends `--express` to every `bind-codebase` hop (bind enumerates claims from the script-derived `claims-ledger.json` PLUS a model completeness sweep of the vault docs, and retrieves evidence via symbol-index queries + targeted Reads, zero codebase-map load; honest fallback to the standard lane when the index/ledger is unavailable — `bind-codebase/references/express-bind.md`). `--classic` (this run) or `spine: classic` in `.mega-sdd/config.yaml` (persistent — the engine reads only the config; the FLAG is applied by the orchestrator at dispatch time, the `--lean` precedent) restores the scan-first chains verbatim. No gate or verdict-grammar change on either spine.
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
-- `--no-telemetry`: disable telemetry event emission for this chain
 - Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
 
 ## Greenfield vs brownfield routing

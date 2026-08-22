@@ -1088,8 +1088,8 @@ eq "$J_NTRUNC" "0" "A0 minimum ballast starts UNDER cap_t2 — cascade has room 
 eq "$P_SECTION_ORDER" \
    "depends_on pack constitution memory reuse starterkit confidence validation" \
    "A0 T2 sections are emitted in TEMPLATE order, not cascade-priority order"
-chk "$([ "$P_HAS_TRACE" = "1" ] && echo 1 || echo 0)" \
-    "A0 emitted prompt carries the mega-sdd-trace marker" "trace tag missing"
+chk "$([ "$P_HAS_TRACE" = "0" ] && echo 1 || echo 0)" \
+    "A0 emitted prompt carries NO trace marker (v7.3.0 observability removal)" "trace tag survived"
 
 # priority 4 is contractually always-omitted (phantom join key)
 if has "$J_OMITTED" kb_anti_patterns && ! has "$J_EMITTED" kb_anti_patterns; then

@@ -20,15 +20,15 @@ Registry one-liner (absorbed, same type):
 
 ### memory_in_use
 
-- `memory_in_use` — memory: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE:** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). Emits `halt_self_resolved` telemetry event with `fix_applied: "retry_exhausted_memory_skipped"`. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
+- `memory_in_use` — memory: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE:** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). The chat one-liner is the record. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
 
 ### mode_migrate
 
-- `mode_migrate` — orchestrate-flow: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE:** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. Emits `halt_self_resolved` telemetry with `fix_applied: "mode_redetected: <old> → <new>"`. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
+- `mode_migrate` — orchestrate-flow: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE:** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. The chat one-liner is the record. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
 
 ### routing_outcome_corrupt
 
-- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; emit `halt_self_resolved` telemetry with `corruption_reason` (`non-utf8-binary` or `missing_schema_header`); chain proceeds with default routing. NEVER halts.
+- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; log the corruption reason (`non-utf8-binary` or `missing_schema_header`) in the chat notice; chain proceeds with default routing. NEVER halts.
 
 ### predictive_check_failed
 
@@ -44,7 +44,7 @@ Registry one-liner (absorbed, same type):
 
 ### model_tier_unknown
 
-- `model_tier_unknown` — orchestrate-flow: model-tier override references a role not in plugins/mega-sdd/references/model-tiers.md catalog. **C1 SELF-RESOLVE (formalizing pre-existing SOFT semantics):** log + ignore override; chain proceeds with catalog default for unknown roles. Emits `halt_self_resolved` telemetry with `fix_applied: "unknown_role_catalog_default_used"`. Forward-compat for future role additions. NEVER halts.
+- `model_tier_unknown` — orchestrate-flow: model-tier override references a role not in plugins/mega-sdd/references/model-tiers.md catalog. **C1 SELF-RESOLVE (formalizing pre-existing SOFT semantics):** log + ignore override; chain proceeds with catalog default for unknown roles. The chat one-liner is the record. Forward-compat for future role additions. NEVER halts.
 
 ### handoff_missing
 

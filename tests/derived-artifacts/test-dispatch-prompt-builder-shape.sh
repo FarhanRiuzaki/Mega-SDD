@@ -437,11 +437,11 @@ n = len(core.encode("utf-8"))
 assert n <= 700, "inline_core is %d bytes" % n
 assert d["inline_core_bytes"] == n, (d["inline_core_bytes"], n)
 PY
-$PY - "$WORK/ui.json" <<'PY' && ok "C3: inline_core carries the literal mega-sdd-trace:execute-bolts:<unit-id> line" || fail "C3: trace tag missing/misspelled"
+$PY - "$WORK/ui.json" <<'PY' && ok "C3: inline_core starts at the UNIT line, no trace tag (v7.3.0)" || fail "C3: inline_core head wrong / trace tag survived"
 import json, sys
 d = json.load(open(sys.argv[1]))
-want = "mega-sdd-trace:execute-bolts:%s" % d["unit"]
-assert want in d["inline_core"].splitlines()[0], d["inline_core"].splitlines()[0]
+assert "mega-sdd-trace" not in d["inline_core"], d["inline_core"].splitlines()[0]
+assert d["inline_core"].splitlines()[0].startswith("UNIT: "), d["inline_core"].splitlines()[0]
 assert d["unit"] == "U-002", d["unit"]
 PY
 $PY - "$WORK/ui.json" <<'PY' && ok "C4: inline_core carries the ABSOLUTE path of the written dispatch-prompt.md" || fail "C4: absolute prompt path missing from inline_core"
@@ -478,7 +478,7 @@ printf '{"vault_version":"v1"}\n' > "$P_IN/.mega-sdd/vaults/v1/vault.json"
 
 build "$WORK/inline.json" "$P_IN" U-030
 [ "$RC" = "0" ] && ok "C6a: builder exit 0 on the 12-target-file unit" || fail "C6a: builder exit $RC"
-$PY - "$WORK/inline.json" <<'PY' && ok "C6b: whitelist degraded to count+pointer, still <=700B, trace tag + abs path never dropped" || fail "C6b: inline_core degradation path wrong"
+$PY - "$WORK/inline.json" <<'PY' && ok "C6b: whitelist degraded to count+pointer, still <=700B, abs path never dropped" || fail "C6b: inline_core degradation path wrong"
 import json, sys
 d = json.load(open(sys.argv[1]))
 core = d["inline_core"]
@@ -487,7 +487,7 @@ assert "12 file(s)" in core, core
 assert "PerTenantBatchWorkerPart01.php" not in core, "raw whitelist survived the degradation"
 assert "target_files:" in core, "the pointer INTO the file is missing"
 assert len(core.encode("utf-8")) <= 700, len(core.encode("utf-8"))
-assert core.splitlines()[0] == "mega-sdd-trace:execute-bolts:U-030", core.splitlines()[0]
+assert core.splitlines()[0].startswith('UNIT: U-030'), core.splitlines()[0]
 assert d["prompt_path"] in core, core
 PY
 
@@ -865,10 +865,11 @@ DRC=$?
                  || fail "J1: default-plugin-root build exit $DRC (stderr: $(head -1 "$WORK/def.err"))"
 [ -s "$(promptof "$P_DEF" U-010)" ] && ok "J2: ...and still writes the dispatch prompt" \
                                     || fail "J2: no prompt written on the default-plugin-root path"
-$PY - "$WORK/def.json" <<'PY' && ok "J3: ...and still emits a capped inline_core with the trace tag" || fail "J3: inline_core broken on the default-plugin-root path"
+$PY - "$WORK/def.json" <<'PY' && ok "J3: ...and still emits a capped inline_core (UNIT-first, v7.3.0)" || fail "J3: inline_core broken on the default-plugin-root path"
 import json, sys
 d = json.load(open(sys.argv[1]))
-assert d["inline_core"].splitlines()[0] == "mega-sdd-trace:execute-bolts:U-010", d["inline_core"]
+assert d["inline_core"].splitlines()[0].startswith("UNIT: U-010"), d["inline_core"]
+assert "mega-sdd-trace" not in d["inline_core"]
 assert len(d["inline_core"].encode("utf-8")) <= 700
 PY
 
@@ -2016,7 +2017,7 @@ alarm = [w for w in d["warnings"] if "absent-value smoke alarm" in w]
 assert not alarm, "the pair-level detector fired on a verbatim file blob: %s" % alarm
 # Dispatchable means the controller has what it needs to dispatch.
 core = d["inline_core"]
-assert core.splitlines()[0] == "mega-sdd-trace:execute-bolts:U-090", core.splitlines()[0]
+assert core.splitlines()[0].startswith("UNIT: U-090"), core.splitlines()[0]
 assert d["prompt_path"] in core and os.path.isfile(d["prompt_path"]), core
 PY
 

@@ -16,12 +16,12 @@ fail() { echo "FAIL: $1" >&2; exit 1; }
 
 [ -x "$HOOK" ] || fail "hook not executable: $HOOK"
 
-# Test 1 (v7): no-signal CWD → the bare governance marker ONLY (no slim block,
+# Test 1 (v7.3.0): no-signal CWD → NOTHING (observability removed: the old
 # no anchor, no routing text). The marker survives for the AI-gateway v6.19.2
 # detection contract (:session per NIP window).
 tmp1="$(mktemp -d)"; home1="$(mktemp -d)"
 out="$(cd "$tmp1" && HOME="$home1" bash "$HOOK")"
-[ "$out" = "mega-sdd-trace:session" ] || fail "v7: a no-signal CWD must emit EXACTLY the bare governance marker, got: $out"
+[ -z "$out" ] || fail "v7.3.0: a no-signal CWD must emit NOTHING, got: $out"
 echo "$out" | grep -q "MANDATORY\|Hard rule\|using-mega-sdd" && fail "v7: routing text leaked into the no-signal path: $out"
 rm -rf "$tmp1" "$home1"
 
@@ -30,7 +30,7 @@ tmp2="$(mktemp -d)"
 mkdir -p "${tmp2}/docs/mega-sdd"
 out="$(cd "$tmp2" && bash "$HOOK")"
 echo "$out" | grep -q "EXTREMELY_IMPORTANT" || fail "anchor wrapper missing from signal CWD output"
-echo "$out" | grep -q "mega-sdd-trace:session" || fail "full anchor block missing the mega-sdd-trace:session observability tag"
+echo "$out" | grep -q "mega-sdd-trace" && fail "v7.3.0: the anchor must not carry a trace tag" 
 echo "$out" | grep -q "mega-sdd" || fail "anchor body missing 'mega-sdd' mention"
 rm -rf "$tmp2"
 

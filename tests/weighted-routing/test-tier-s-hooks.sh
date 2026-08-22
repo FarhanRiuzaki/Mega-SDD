@@ -91,12 +91,11 @@ reset_counts
 run_hook post-tool-use "{\"session_id\":\"other-sess\",\"cwd\":\"$FIX\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\"}}" >/dev/null
 [ "$(total)" -eq 0 ] && ok "S8 un-armed Read: ZERO forks" || bad "S8 un-armed Read forked: $(total)"
 
-# ── S9: UserPromptSubmit, un-armed → tag only, 0 forks ───────────────────────
-reset_counts
-OUT=$(run_hook user-prompt-submit "{\"session_id\":\"other-sess\",\"cwd\":\"$FIX\",\"transcript_path\":\"/nonexistent\"}")
-[ "$OUT" = "mega-sdd-trace:turn" ] && [ "$(total)" -eq 0 ] \
-  && ok "S9 un-armed prompt: trace tag only, ZERO forks (no transcript scan)" \
-  || bad "S9 un-armed prompt: forks=$(total) out=[$OUT]"
+# ── S9 (v7.3.0): the UserPromptSubmit hook is REMOVED (trace tag + compaction
+# advisor were its only legs — both observability). Pin the removal.
+[ ! -f "$HOOKS/user-prompt-submit" ] \
+  && ok "S9 user-prompt-submit hook removed (v7.3.0 observability cut)" \
+  || bad "S9 user-prompt-submit still exists"
 
 # ── S10/S11: Stop + SubagentStop in a NON-mega-sdd project → 0 forks ─────────
 reset_counts
@@ -154,8 +153,8 @@ run_ss() { ( cd "$1" && printf '{"source":"startup","session_id":"s"}' \
 
 reset_counts
 OUT=$(run_ss "$PLAIN")
-[ "$(total)" -eq 0 ] && [ "$OUT" = "mega-sdd-trace:session" ] \
-  && ok "S17 session-start no-signal CWD: ZERO forks, bare governance marker" \
+[ "$(total)" -eq 0 ] && [ -z "$OUT" ] \
+  && ok "S17 session-start no-signal CWD: ZERO forks, ZERO output (v7.3.0)" \
   || bad "S17 session-start no-signal: forks=$(total) out=[${OUT:0:60}]"
 
 SSP="$WORK/ssproj"; mkdir -p "$SSP/.mega-sdd/codebase"

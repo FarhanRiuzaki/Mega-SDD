@@ -15,7 +15,7 @@ STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 #   (dynamic state notices below still fire).
 # compact: compaction REPLACES context with a summary, so the anchor is gone —
 #   but the harness re-lists every skill's frontmatter description (the keyword
-#   census) and PreCompact wrote COMPACT_RESUME. Inject only the SLIM core
+#   census). Inject only the SLIM core
 #   (Hard rule + Output language — the two things NOT in any description).
 # startup|clear: fresh/empty context → inject the FULL routing core.
 # Unparseable/absent source → FAIL OPEN to the full core (never break routing to
@@ -59,33 +59,6 @@ else
   project_root="$cwd"
 fi
 
-# ─── DIAGNOSTIC LAYER (Iter 68 — verify harness invocation) ──────────────────
-# Mirror of Stop-hook 67.5 diagnostic. Proves the harness is invoking SessionStart
-# for this project CWD. Only writes when .mega-sdd/ exists (avoids polluting
-# unrelated CWDs). If hook-debug.log lacks `"hook":"session-start"` lines after
-# a fresh session in a mega-sdd project, the hook is NOT being invoked — that's
-# an install/registration issue, not a hook bug.
-#
-# Honors --no-telemetry opt-out via <project_root>/.mega-sdd/config.yaml (same as Stop).
-if [ -d "${project_root}/.mega-sdd" ]; then
-  CONFIG_FILE="${project_root}/.mega-sdd/config.yaml"
-  TELEMETRY_OFF=0
-  if [ -f "$CONFIG_FILE" ] && grep -qE "^\s*telemetry:" "$CONFIG_FILE" 2>/dev/null; then
-    if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
-      TELEMETRY_OFF=1
-    fi
-  elif [ "${CLAUDE_PLUGIN_OPTION_TELEMETRY:-}" = "false" ]; then
-    TELEMETRY_OFF=1
-  fi
-  if [ "$TELEMETRY_OFF" -eq 0 ]; then
-    TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-    SESSION_ID_DBG="$SESSION_ID_SS"  # bash-extracted above (v7 Fase 2 — no python fork)
-    DEBUG_DIR="${project_root}/.mega-sdd/memory"
-    mkdir -p "$DEBUG_DIR" 2>/dev/null || true
-    echo "{\"ts\":\"$TS\",\"hook\":\"session-start\",\"session_id\":\"$SESSION_ID_DBG\",\"cwd\":\"$cwd\",\"project_root\":\"$project_root\",\"stdin_bytes\":${#STDIN_JSON}}" \
-      >> "$DEBUG_DIR/hook-debug.log" 2>/dev/null || true
-  fi
-fi
 for signal in ".mega-sdd" "docs/mega-sdd" "vaults" "bound-vault" "units" "binding.md" "codebase-map.md"; do
   if [ -e "${project_root}/${signal}" ]; then
     has_sdd_signal=1
@@ -119,19 +92,11 @@ else
   esac
 fi
 
-# ─── No-signal CWD: governance marker ONLY (v7.0.0) ─────────────────────────
-# The v5.2.6 mandatory-routing slim block is DELETED (gate-1 decision, spec
-# 2026-08-21-v7-weighted-routing-design.md): the v7 default is tier S — a CWD
-# without SDD signals gets ZERO injected routing text. What SURVIVES is the one
-# bare `mega-sdd-trace:session` line: it is the office AI-gateway governance
-# detection contract (v6.19.2 — the hard check keys on :session per NIP window;
-# specs/2026-08-17-artifact-publisher-gateway.md §2), and going fully silent
-# here would false-flag every non-SDD session under the warn→block policy. One
-# token, no routing pressure. The old opt-out file/env
-# (~/.claude/.mega-sdd-routing-off, MEGA_SDD_ROUTING) are obsolete: the routing
-# block they silenced no longer exists, and the marker is governance-mandated.
+# ─── No-signal CWD: fully silent (v7.3.0) ────────────────────────────────────
+# The trace/governance marker is REMOVED with the rest of observability — a CWD
+# without SDD signals gets zero injected text. Gateway-side session detection,
+# if the gateway team still wants it, is a gateway concern, not this plugin.
 if [ "$has_sdd_signal" -eq 0 ]; then
-  echo "mega-sdd-trace:session"
   exit 0
 fi
 
@@ -213,7 +178,6 @@ if [ -f "$PY_LIB_SS" ]; then
     # the wasted stub invocations, each of which is a process spawn.
     cat <<EOF
 <<EXTREMELY_IMPORTANT>>
-mega-sdd-trace:session
 You have mega-sdd skills available. SDD context detected in CWD.
 
 ${ANCHOR_CONTENT}${WARN}${PY_WARN}
@@ -226,7 +190,7 @@ fi
 # ─── C1 self-resolve battery: MOVED to scripts/ground.sh (v7 Fase 2) ─────────
 # The 9-guard block (mode_migrate, partial_state_corrupt, routing_outcome_corrupt,
 # verify_unit_writable, pack integrity ×3, model_tier_unknown dep_missing
-# memory_in_use) + the telemetry.jsonl rotation now run at GROUND (M/L entry):
+# memory_in_use) now runs at GROUND (M/L entry):
 # session-start must never write vault artifacts (gate-1 mandate, spec
 # 2026-08-21-v7-weighted-routing-design.md §7 backlog).
 
@@ -319,93 +283,13 @@ PYLV
   : # LV_FROM_DIGEST intentionally unused beyond the digest leg above
 fi
 
-# ─── Resumed-after-compaction notice (ECC Batch 2) ──────────────────────────
-# When a fresh compaction snapshot exists (PreCompact wrote it) and the source
-# is a compact/resume, surface one line so the next window re-orients to the
-# in-flight phase instead of re-deriving it. Advisory; shares telemetry opt-out.
-COMPACT_RESUME=""
-SNAP="${project_root}/.mega-sdd/.compaction-snapshot.json"
-if [ -f "$SNAP" ]; then
-  COMPACT_RESUME=$(SNAP="$SNAP" python3 -c '
-import json, os
-try:
-    d = json.load(open(os.environ["SNAP"]))
-except Exception:
-    raise SystemExit(0)
-ph = d.get("phase", {})
-guess = ph.get("guess", "unknown")
-ut, bd = ph.get("units_total", 0), ph.get("bolts_done", 0)
-pend = d.get("pending_sync_open", 0)
-extra = (" — %d open sync decision(s)" % pend) if pend else ""
-print("mega-sdd: resumed after a compaction at phase [%s] — %d unit(s), %d bolt(s) done%s. Re-orient from .mega-sdd/.compaction-snapshot.json." % (guess, ut, bd, extra))
-' 2>/dev/null)
-  if [ -n "$COMPACT_RESUME" ]; then
-    COMPACT_RESUME=$'\n\n'"${COMPACT_RESUME}"
-  fi
-fi
-
-# ─── Instinct injection (continuous learning, ECC-adoption Batch 1) ─────────
-# Bounded re-injection of confidence-scored learnings: top 6 with confidence
-# ≥0.7, project scope before global, hard budget 1200 chars. Opt-out:
-# `instincts: false` in .mega-sdd/config.yaml. Schema + lifecycle:
-# skills/memory/references/instincts.md. Fail-open: any parse error = no block.
-INSTINCT_BLOCK=""
-# v7 Fase 2: spawn the python harvester only when an instincts dir exists at
-# all (project or global) — the common no-instincts session paid a python fork
-# for a guaranteed-empty result.
-if { [ -d "${project_root}/.mega-sdd/memory/instincts" ] || [ -d "${HOME}/.mega-sdd/memory/instincts" ]; } \
-   && ! grep -qE "^[[:space:]]*instincts:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
-  INSTINCT_BLOCK=$(PROJ="$project_root" python3 - 2>/dev/null <<'PYINST'
-import glob, os
-
-proj = os.environ["PROJ"]
-dirs = [
-    (0, os.path.join(proj, ".mega-sdd", "memory", "instincts")),
-    (1, os.path.join(os.path.expanduser("~"), ".mega-sdd", "memory", "instincts")),
-]
-cands = []
-for rank, d in dirs:
-    for p in sorted(glob.glob(os.path.join(d, "*.yaml"))):
-        kv = {}
-        try:
-            for line in open(p, encoding="utf-8", errors="replace"):
-                if ":" in line and not line.startswith((" ", "\t", "-", "#")):
-                    k, _, v = line.partition(":")
-                    kv[k.strip()] = v.strip().strip("'\"")
-        except OSError:
-            continue
-        try:
-            conf = float(kv.get("confidence", "0"))
-        except ValueError:
-            continue
-        if kv.get("status", "active") != "active" or conf < 0.7:
-            continue
-        trig, act = kv.get("trigger", ""), kv.get("action", "")
-        if trig and act:
-            cands.append((rank, -conf, "- [%.1f|%s] WHEN %s -> %s" % (conf, kv.get("domain", "general"), trig, act)))
-cands.sort()
-out, total = [], 0
-for _, _, line in cands[:6]:
-    if total + len(line) > 1200:
-        break
-    out.append(line)
-    total += len(line)
-print("\n".join(out))
-PYINST
-)
-  if [ -n "$INSTINCT_BLOCK" ]; then
-    INSTINCT_BLOCK=$'\n\n<learned-instincts>\n'"Learned instincts (confidence-scored from this project + global memory — apply unless the user, spec, or a Hard rule says otherwise):"$'\n'"${INSTINCT_BLOCK}"$'\n</learned-instincts>'
-  fi
-fi
-
 # NOTE: ${PY_WARN} is empty on every path that reaches here — the branch that sets
 # it exits early (see the missing-interpreter block above). Interpolated anyway so
 # the notice still renders if that early exit is ever made conditional.
 cat <<EOF
 <<EXTREMELY_IMPORTANT>>
-mega-sdd-trace:session
 You have mega-sdd skills available. SDD context detected in CWD.
 
-${ANCHOR_CONTENT}${WARN}${PY_WARN}${STALENESS_NOTICE}${COMPACT_RESUME}${INSTINCT_BLOCK}
+${ANCHOR_CONTENT}${WARN}${PY_WARN}${STALENESS_NOTICE}
 <</EXTREMELY_IMPORTANT>>
 EOF

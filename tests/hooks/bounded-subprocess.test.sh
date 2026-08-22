@@ -602,8 +602,13 @@ case "$hooks_st" in
   # events but routes every one through run-hook.sh, and post-tool-use is registered
   # twice (PostToolUse + PostToolUseFailure). Eight distinct entry scripts, one
   # dispatcher, nine files. Spelling that out here so the count is not re-derived.
-  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 8 extensionless entry points + the run-hook.sh dispatcher)" ;;
-  2) fail "hooks/ matcher inspected ZERO subprocess calls — vacuous, not green. hooks/ has historically held exactly one (the git-HEAD probe in \`pre-compact\`, bounded at timeout=5). If that call was removed deliberately, RE-POINT this guard at whatever replaced it — do not delete the guard, or hooks/ silently returns to being unwatched." ;;
+  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 5 extensionless entry points + the run-hook.sh dispatcher)" ;;
+  # v7.3.0: pre-compact (the one historical subprocess carrier) is DELETED with
+  # observability — hooks/ now legitimately embeds ZERO python-subprocess calls.
+  # Zero-total is accepted as green ONLY together with the enumeration check
+  # above (every hooks/ file was actually opened), so this cannot go vacuous
+  # by a scanner bug: an unscanned file trips the enumeration mismatch first.
+  2) pass "hooks/ embeds zero python-subprocess calls (pre-compact removed v7.3.0; enumeration verified above)" ;;
   3) fail "something in hooks/ mentioning subprocess could not be scanned — under-scan, not green (see SKIPPED above; the \`python3 -c\` inline form lands here by design)" ;;
   *) fail "UNBOUNDED subprocess call(s) in Python embedded in hooks/ — this is a blocking PreToolUse/SessionStart path; Claude Code waits on it" ;;
 esac

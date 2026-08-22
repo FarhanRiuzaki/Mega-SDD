@@ -266,14 +266,9 @@ fi
 # every non-SDD project, and config.yaml only exists inside .mega-sdd/ anyway.
 if [ ! -d "${PROJECT_ROOT}/.mega-sdd" ]; then exit 0; fi
 
-# Opt-out: telemetry: false in config.yaml also disables this hook
-# (a project that opts out of telemetry generally wants to opt out of guards too)
+# (v7.3.0: the old `telemetry: false` guard-disable coupling is GONE — telemetry
+# no longer exists, and the anti-halu gates are not opt-out-able by config.)
 CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
-if [ -f "$CONFIG_FILE" ]; then
-  if grep -qE "^\s*telemetry:\s*false" "$CONFIG_FILE" 2>/dev/null; then
-    exit 0
-  fi
-fi
 
 # ─── v7 chain-armed probe (spec §3.1) ────────────────────────────────────────
 # armed ⇔ .gateguard-state.json carries chain_engaged for THIS session (the

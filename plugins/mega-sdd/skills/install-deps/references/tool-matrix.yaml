@@ -9,7 +9,7 @@ schema_version: "1.0"
 tools:
   - id: python3
     used_by: [hooks]
-    purpose: "Every mega-sdd hook parses its stdin JSON through python3 — the gate aggregator, the validators, and the telemetry layer all depend on it"
+    purpose: "Every mega-sdd hook parses its stdin JSON through python3 — the gate aggregator and the validators depend on it"
     fallback_behavior: "NONE. This is the one genuinely REQUIRED tool: without a usable interpreter the hooks fail closed (execute-bolts is blocked) and SessionStart emits a degraded-mode notice. It is not optional and has no graceful path."
     matrix:
       - os: macos

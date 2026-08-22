@@ -8,7 +8,7 @@
 #
 # Per attestation: all 3 are C1 detection-only at hook layer (auto-fix needs
 # bolt context which only skill body has). Hook detects + emits warning
-# telemetry + chat notice. Skill body / human resolves.
+# chat notice. Skill body / human resolves.
 #
 # Inputs: --cwd=<project> --file-path=<written-file>
 # Outputs: JSON report to stdout; writes .mega-sdd/.bolt-artifacts-state.json

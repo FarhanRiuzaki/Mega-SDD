@@ -16,13 +16,5 @@
     "intent-unit-bolt",
     "superpowers"
   ],
-  "displayName": "Mega-SDD",
-  "userConfig": {
-    "telemetry": {
-      "type": "boolean",
-      "default": true,
-      "description": "User-global default for mega-sdd telemetry (telemetry.jsonl). Per-project .mega-sdd/config.yaml `telemetry:` always takes precedence.",
-      "title": "Telemetry (user-global default)"
-    }
-  }
+  "displayName": "Mega-SDD"
 }
