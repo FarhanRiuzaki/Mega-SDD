@@ -6,6 +6,7 @@
 
 ## Contents
 
+- Upgrading to 7.0.0 (the vault layout-2 major)
 - Upgrading to 6.0.0 (the alias-removal major)
 - TL;DR — two paths
 - Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
@@ -17,6 +18,17 @@
 - Per-iter behavior changes (what changed between iters affects you)
 - Pre-flight checklist before upgrade
 - See also
+
+## Upgrading to 7.0.0 (the vault layout-2 major)
+
+**What changed:** `generate-intent` now emits the **4-file layout-2 vault** (`vault.md` / `model.md` / `flows.md` / `constraints.md` + `vault.json`) instead of the 7-file `00-index.md … 06-constraints.md` set. The six Vault Lock values live as `vault.md` YAML frontmatter; ALL Open Questions live in `constraints.md ## Open Questions` (per-line `[origin: <file>#<anchor>]` keeps locality; the 00-index roll-up is retired); `## Overview` / `## Architecture` / `## Decisions` are EXACT hard-header anchors (deriver + claims-ledger exit 2 when missing). Mapping table: `references/paths.md §Vault layout`.
+
+**What did NOT break:** every EXISTING 7-file vault keeps working — every reader (deriver, ledger, validators, hook dispatch, emission builders, skills) is **dual-layout for one minor cycle** (probes the layout-2 file first, falls back to the legacy name; floor v5.9.0). Binding, units, bolts, gates: untouched.
+
+**Migrating an existing vault (optional, recommended):**
+1. `bash $PLUGIN_ROOT/scripts/migrate-paths.sh --vault-layout --cwd=<project>` — DRY-RUN preview (names what moves and what ceremony drops).
+2. Commit your tree, then re-run with `--apply` (dirty tree is refused). The rung concatenates verbatim, stamps `[origin:]` on moved OQs, rewrites unit doc-name refs, runs `derive-vault-json`.
+3. **MANDATORY next step: full re-bind** — the merge shifted line numbers, so `binding.md`/`binding.json`/`.citation-map.json` anchors are stale; they are REGENERATED (run bind again), never patched. Graph + emissions self-heal on the next run.
 
 ## Upgrading to 6.0.0 (the alias-removal major)
 
