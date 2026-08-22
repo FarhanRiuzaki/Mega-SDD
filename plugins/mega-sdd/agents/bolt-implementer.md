@@ -83,6 +83,7 @@ blocker:
 
 ```yaml
 bolt_self_report:
+  model_used: "<copied VERBATIM from your own system prompt's 'You are powered by the model named ...' line — deterministic evidence of which model actually ran (v7.1 routing audit trail); never guessed>"
   confidence: <0.0-1.0>
   certain_decisions:
     - "<decision with HIGH confidence>"
