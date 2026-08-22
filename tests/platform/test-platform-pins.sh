@@ -34,11 +34,15 @@ grep -q 'PostToolUseFailure' "$P/hooks/hooks.json" \
   && grep -q 'PostToolUseFailure' "$P/hooks/post-tool-use" \
   && pass "P3: pandoc failure path via PostToolUseFailure" || fail "P3: failure event unwired"
 
-# P4 — stop hook: ONE handoff-validation pass (fossil removed) + stdin-first
-n=$(grep -c 'validate-handoff-yaml.sh' "$P/hooks/stop")
-[ "$n" -le 2 ] && grep -q 'last_assistant_message' "$P/hooks/stop" \
+# P4 — v7 Fase 2: the Stop handoff-validation leg is REMOVED; the verdict is
+# derived at gate time (PreToolUse Branch 1a, every guarded dispatch). Stop must
+# no longer INVOKE the validator (the tombstone comment may name it).
+! grep -q 'VALIDATOR_HV' "$P/hooks/stop" \
+  && ! grep -q 'LAST_ASSISTANT_TEXT' "$P/hooks/stop" \
+  && grep -q 'FULL gate-time recompute' "$P/hooks/pre-tool-use" \
   && grep -q 'Removed 2026-06-11' "$P/hooks/stop" \
-  && pass "P4: stop fossil removed + stdin-first extraction" || fail "P4: stop hook (validator refs=$n)"
+  && pass "P4: stop leg removed; gate-time recompute is the sole handoff writer" \
+  || fail "P4: stop still carries the handoff leg (or gate-time recompute missing)"
 
 # P5 — SessionStart matcher includes resume
 grep -q 'startup|resume|clear|compact' "$P/hooks/hooks.json" \

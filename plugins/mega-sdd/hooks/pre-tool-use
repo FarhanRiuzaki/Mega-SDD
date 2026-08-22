@@ -537,18 +537,20 @@ except Exception:
       mega-sdd:*)
         if [ "${SKILL_NAME:-}" != "mega-sdd:using-mega-sdd" ]; then
           HANDOFF_STATE="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
-          # ── v7 gate-time derivation (spec §3.4 as amended §7.4) ───────────
-          # Closes the fresh-session/TOCTOU gap ONLY: when NO handoff state
-          # exists (fresh clone/session — the case Stop cannot have covered),
-          # derive it here from the transcript. When a state EXISTS it is
-          # trusted as pre-v7 (Stop wrote it at turn end) — re-running the
-          # validator on the same text at every dispatch double-counts
-          # retry_count and prematurely escalates C1→C2 (review R-4), and the
-          # full always-recompute needs a validator-side content hash, which
-          # lands in Phase 2 together with the Stop-leg removal. The text must
-          # carry a REAL envelope (line-start emitted_by:) — a narration that
-          # merely mentions handoff: is not a handoff (review R-3).
-          if [ ! -f "$HANDOFF_STATE" ] && [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+          # ── v7 Fase 2: FULL gate-time recompute (spec §7.5, landed) ───────
+          # The verdict derives from the transcript at EVERY guarded dispatch
+          # when the last assistant message carries a REAL handoff envelope
+          # (line-start emitted_by: — narration that merely mentions handoff:
+          # is not a handoff, review R-3). Idempotence lives in the validator:
+          # identical text short-circuits on content_sha256, so retry_count
+          # can never double-count across repeated dispatches (review R-4).
+          # When the last message is NOT a handoff, the existing state (written
+          # by a previous gate-time run) stays authoritative — the producer's
+          # handoff may be several turns back. The Stop leg is REMOVED in this
+          # same change: this branch is the handoff verdict's ONLY writer, and
+          # a forged/stale state is overwritten the moment a real handoff is
+          # in view.
+          if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
             HV_LAST=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
 import json, os
 last_text = None

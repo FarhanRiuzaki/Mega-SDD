@@ -68,6 +68,7 @@ mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: cannot create 
 
 # Run validator via python3 (yaml parsing + schema check)
 CWD="$CWD" SKILL_NAME="$SKILL_NAME" STATE_FILE="$STATE_FILE" QUIET="$QUIET" RESPONSE_TEXT="$RESPONSE_TEXT" python3 <<'PYEOF'
+import hashlib
 import json
 import os
 import re
@@ -80,6 +81,7 @@ state_file = os.environ["STATE_FILE"]
 quiet = os.environ.get("QUIET", "0") == "1"
 response = os.environ["RESPONSE_TEXT"]
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+content_sha256 = hashlib.sha256(response.encode("utf-8", "replace")).hexdigest()
 
 # No-deps YAML-subset parser. Handles the handoff schema shapes we need:
 #   key: scalar
@@ -171,6 +173,19 @@ try:
         prior_state = json.load(f)
 except Exception:
     prior_state = {}
+
+# ─── Content-hash dedup (v7 Fase 2 — review R-4) ────────────────────────────
+# The gate-time recompute (PreToolUse Branch 1a) re-validates the transcript's
+# last handoff at EVERY guarded dispatch. Re-validating the SAME text must be
+# idempotent: without this, each dispatch after one bad handoff bumps
+# retry_count and prematurely escalates C1→C2. Identical text → the prior
+# state IS the verdict; re-emit it untouched (state file not rewritten).
+# A re-emitted/fixed handoff always differs (emitted_at at minimum) → full run.
+if prior_state.get("content_sha256") == content_sha256 \
+        and prior_state.get("status") in ("PASS", "FAIL"):
+    if not quiet:
+        print(json.dumps(prior_state, indent=2))
+    sys.exit(0 if prior_state.get("status") == "PASS" else 1)
 
 # ─── Step 1: Extract handoff: block from response text ──────────────────────
 # Two patterns:
@@ -616,6 +631,7 @@ state = {
     "skill_name": skill_name,
     "status": result["status"],
     "halt_type": result["halt_type"],
+    "content_sha256": content_sha256,
     "retry_count": retry_count,
     "details": result["details"],
     "escalate_to_c2": retry_count >= 2 and result["status"] == "FAIL",

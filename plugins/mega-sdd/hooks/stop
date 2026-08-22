@@ -145,113 +145,13 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
   echo "$DEBUG_LINE" >> "$DEBUG_LOG" 2>/dev/null || true
 fi
 
-# ─── HANDOFF VALIDATION (Phase B slice B.1, v3.53.0+) ───────────────────────
-# Runs BEFORE telemetry gate — state file is the primary artifact (independent
-# of telemetry). Telemetry emission is conditional on telemetry.jsonl existing.
-# Only runs if .mega-sdd/ exists (already implicitly true at this point since
-# we wrote hook-debug.log above which has the same guard).
-if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-  # Prefer the documented stdin field (Stop input carries last_assistant_message —
-  # no transcript parse needed); fall back to transcript scan for older CC versions.
-  LAST_ASSISTANT_TEXT=$(printf '%s' "$STDIN_JSON" | python3 -c 'import json,sys
-try:
-    print(json.loads(sys.stdin.read()).get("last_assistant_message") or "")
-except Exception:
-    pass' 2>/dev/null)
-  if [ -z "$LAST_ASSISTANT_TEXT" ]; then
-  LAST_ASSISTANT_TEXT=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
-import json, os
-last_text = None
-with open(os.environ["TRANSCRIPT_PATH"]) as f:
-    for line in f:
-        try:
-            rec = json.loads(line)
-        except Exception:
-            continue
-        msg = rec.get("message") if isinstance(rec.get("message"), dict) else None
-        if not msg:
-            continue
-        if msg.get("role") != "assistant":
-            continue
-        content = msg.get("content")
-        if isinstance(content, str):
-            last_text = content
-        elif isinstance(content, list):
-            parts = []
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    parts.append(block.get("text", ""))
-            if parts:
-                last_text = "\n".join(parts)
-if last_text:
-    print(last_text)
-' 2>/dev/null)
-  fi
-
-  # Only invoke validator if response contains "handoff:" marker (skip otherwise — skill may not be expected to emit)
-  if [ -n "$LAST_ASSISTANT_TEXT" ] && echo "$LAST_ASSISTANT_TEXT" | grep -q "handoff:"; then
-    SCRIPT_DIR_HV="$(cd "$(dirname "$0")" && pwd)"
-    VALIDATOR_HV="${SCRIPT_DIR_HV}/../scripts/validate-handoff-yaml.sh"
-    if [ -x "$VALIDATOR_HV" ]; then
-      # Iter 74 fix (audit 2026-05-29 §post-3.65.0 doubled-prefix bug):
-      # handoff-contract.md says `emitted_by: <skill-name>` should be the bare
-      # skill (e.g., "extract-intelligence"), but producers in the wild emit
-      # both forms — `emitted_by: extract-intelligence` AND `emitted_by:
-      # mega-sdd:extract-intelligence`. The pre-Iter-74 regex `[\w-]+` stopped
-      # at the colon, captured just "mega-sdd", then prepended "mega-sdd:"
-      # again → "mega-sdd:mega-sdd". This (a) breaks Iter 70 producer-self-fix
-      # matching (SKILL_NAME never equals "mega-sdd:mega-sdd"), (b) shows up
-      # cosmetically in PreToolUse block messages. Match both forms now:
-      # extended regex tolerates optional "mega-sdd:" prefix on the value;
-      # downstream code unconditionally prepends.
-      INFERRED_SKILL=$(echo "$LAST_ASSISTANT_TEXT" | python3 -c '
-import sys, re
-text = sys.stdin.read()
-m = re.search(r"^\s*emitted_by:\s*(?:mega-sdd:)?([\w-]+)", text, re.MULTILINE)
-print(m.group(1) if m else "unknown")
-' 2>/dev/null)
-      printf '%s' "$LAST_ASSISTANT_TEXT" | bash "$VALIDATOR_HV" --cwd="$PROJECT_ROOT" --skill-name="mega-sdd:${INFERRED_SKILL:-unknown}" --quiet >/dev/null 2>&1 || true
-      # Emit telemetry event ONLY if telemetry.jsonl already exists (consistent with turn_end_marker gate)
-      STATE_FILE_HV="${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json"
-      TELEMETRY_FILE_PRECHECK="${PROJECT_ROOT}/.mega-sdd/memory/telemetry.jsonl"
-      if [ -f "$STATE_FILE_HV" ] && [ -f "$TELEMETRY_FILE_PRECHECK" ]; then
-        HANDOFF_EVENT=$(STATE_FILE_HV="$STATE_FILE_HV" TS_ENV="$TS" SESSION_ID_ENV="$SESSION_ID" python3 -c '
-import json, os
-try:
-    d = json.load(open(os.environ["STATE_FILE_HV"]))
-    status = d["status"]
-    ht = d.get("halt_type") or "handoff_validated_pass"
-    rc = d.get("retry_count", 0)
-    esc = d.get("escalate_to_c2", False)
-    et = "halt_self_resolved" if status == "PASS" else ("halt_fired" if esc else "halt_self_resolved")
-    fix_applied = "handoff validator ran" if status == "PASS" else f"detected {ht}; retry={rc}"
-    payload = {
-        "halt_type": ht,
-        "fix_applied": fix_applied,
-        "original_emit_site": "Stop-hook-handoff-validator",
-        "logged_at_chat": False,
-        "retry_count": rc,
-        "escalate_to_c2": esc,
-        "skill_name": d.get("skill_name"),
-    }
-    print(json.dumps({
-        "ts": os.environ["TS_ENV"],
-        "skill": "orchestrate-flow",
-        "event_type": et,
-        "session_id": os.environ["SESSION_ID_ENV"],
-        "hook_source": "Stop",
-        "payload": payload,
-    }, separators=(",", ":")))
-except Exception:
-    pass
-' 2>/dev/null)
-        if [ -n "$HANDOFF_EVENT" ]; then
-          echo "$HANDOFF_EVENT" >> "$TELEMETRY_FILE_PRECHECK" 2>/dev/null || true
-        fi
-      fi
-    fi
-  fi
-fi
+# ─── HANDOFF VALIDATION: leg REMOVED (v7 Fase 2 №2) ─────────────────────────
+# The Stop-side handoff-validation leg (v3.53.0 → v7.0.0 transitional) is gone:
+# PreToolUse Branch 1a now derives the verdict at EVERY guarded mega-sdd:*
+# dispatch (full gate-time recompute; validate-handoff-yaml.sh dedups identical
+# text by content_sha256 so retry_count never double-counts). Gate-time is the
+# only writer — a turn-end scan here validated text nothing was about to
+# consume, at 2-3 python spawns per turn.
 
 # ─── BOLT ORPHAN SCAN (clinic-project audit 2026-06-12) ─────────────────────
 # Runs on EVERY Stop for a mega-sdd git project — unconditionally, NOT only when
