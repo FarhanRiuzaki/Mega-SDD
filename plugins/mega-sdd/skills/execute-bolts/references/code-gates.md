@@ -22,7 +22,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 3 | Secrets in code | `scripts/scan-secrets-code.sh --base= --head=` | gitleaks → plugin regex fallback | fallback regex set (never unscanned) |
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
-| 6 | Dep authorization (ADVISORY) | `scripts/check-dep-authorization.sh --unit= --base= --head=` | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
+| 6 | Dep authorization (ADVISORY) | `scripts/validate-new-deps.sh --unit= --base= --head=` (rides gate 5 — one manifest-diff pass, `authorization` JSON section) | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
 **Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller no longer runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned — on a blocking run it does strictly less work than the per-turn flow it replaced), and emits ONE merged JSON on stdout — the payload the controller Writes to `<vault>/lens-inputs/U-XXX/l0-results.json` for the panel (spec D5). It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in SKILL.md Procedure step 3 — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
 
