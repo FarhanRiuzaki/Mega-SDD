@@ -27,7 +27,8 @@
 # Inputs:  --cwd=<project> [--quiet]
 # Outputs: writes <cwd>/.mega-sdd/.vault-flow-staging-state.json (OVERWRITE-NOT-APPEND)
 # Exit:    0=PASS/SKIP, 1=FAIL (>=1 drop), 2=error
-# Gated by: PreToolUse Branch 14 (blocks mega-sdd:execute-bolts on status==FAIL).
+# Enforcement: ADVISORY via the analyze skill (v4 Hybrid demotion — the old
+# PreToolUse "Branch 14" block no longer exists; header fixed v7 Fase 2).
 
 set -uo pipefail
 
