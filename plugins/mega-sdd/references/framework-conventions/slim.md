@@ -277,7 +277,7 @@ required_elements:
 ## Cross-cutting concerns
 
 > Consumed by `validate-sibling-consistency.sh` (slice B) and
-> `validate-cross-cutting-registration.sh` (slice C).
+> `validate-sibling-consistency.sh --cross-cutting` (slice C).
 > In Slim, auth/authz is enforced via PSR-15 middleware added to routes or groups.
 
 ```yaml

@@ -683,7 +683,7 @@ except Exception as e:
         # re-running acceptance tests in a hook is the forbidden inflation).
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-cross-cutting-registration.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cross-cutting --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
       fi
       GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '

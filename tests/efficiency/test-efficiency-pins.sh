@@ -16,8 +16,9 @@ cfg_line=$(grep -nF 'telemetry:' "$P/hooks/pre-tool-use" | head -1 | cut -d: -f1
   || fail "E1: guard ordering wrong (mega=$mega_line cfg=$cfg_line)"
 
 # E2 — post-tool-use: unit-write validators parallelized + wait
+# (v7 group 9: the FOP invocation now carries the --fanout-parity mode flag.)
 grep -q '( bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &' "$P/hooks/post-tool-use" \
-  && grep -B2 -A8 'VALIDATOR_FOP" --cwd' "$P/hooks/post-tool-use" | grep -q 'wait' \
+  && grep -B2 -A8 'VALIDATOR_FOP" --fanout-parity --cwd' "$P/hooks/post-tool-use" | grep -q 'wait' \
   && pass "E2: unit-write validators parallel + wait" \
   || fail "E2: parallel validator pattern missing"
 

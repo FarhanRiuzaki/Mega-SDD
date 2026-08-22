@@ -276,7 +276,7 @@ sys.exit(0 if d['status'] == 'ERROR' else 1)
   || fail "SKC-INDENT: unparseable block still SKIPs silently (rc=$RC)"
 
 # ── GU-STATE-ATOMIC: no bare-open state writes remain in the two validators ──
-if grep -qE 'with open\(state_file, "w"\)' "${ROOT}/plugins/mega-sdd/scripts/validate-fanout-parity.sh"; then
+if grep -qE 'with open\(state_file, "w"\)' "${ROOT}/plugins/mega-sdd/scripts/validate-sibling-consistency.sh"; then
   fail "ATOMIC: fanout-parity still writes non-atomically"
 else
   ok "ATOMIC: fanout-parity uses tmp+os.replace"

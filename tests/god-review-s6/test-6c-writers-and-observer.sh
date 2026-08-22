@@ -21,7 +21,7 @@ P="${ROOT}/plugins/mega-sdd"
 RPF="${P}/scripts/run-postflight-scan.sh"
 RFS="${P}/scripts/run-full-suite.sh"
 VBA="${P}/scripts/validate-bolt-artifacts.sh"
-VCC="${P}/scripts/validate-cross-cutting-registration.sh"
+VCC="${P}/scripts/validate-sibling-consistency.sh"
 MIG="${P}/skills/execute-bolts/scripts/migrate-v1-rules.sh"
 for f in "$RPF" "$RFS" "$VBA" "$VCC" "$MIG"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
@@ -112,7 +112,7 @@ cat > "$C/app/Models/Order.php" <<'PHP'
 <?php
 class Order extends Model { protected $table = 'orders'; }
 PHP
-OUT=$(bash "$VCC" --cwd="$C" 2>/dev/null || true)
+OUT=$(bash "$VCC" --cross-cutting --cwd="$C" 2>/dev/null || true)
 printf '%s' "$OUT" | python3 -c "
 import json,sys; d=json.load(sys.stdin)
 assert d['status']=='FAIL' and d['summary']['missing_registration_count']==1, d['summary']
@@ -125,7 +125,7 @@ class Order extends Model {
   protected static function booted() { static::addGlobalScope(new BranchScoped); }
 }
 PHP
-OUT=$(bash "$VCC" --cwd="$C" 2>/dev/null || true)
+OUT=$(bash "$VCC" --cross-cutting --cwd="$C" 2>/dev/null || true)
 printf '%s' "$OUT" | python3 -c "
 import json,sys; d=json.load(sys.stdin)
 assert d['status']=='PASS', d['status']
@@ -134,7 +134,7 @@ print('  ✓ registered model → PASS')
 S="$WORK/slim"; mkdir -p "$S/.mega-sdd/codebase" "$S/src/Middleware" "$S/config"
 printf 'framework_pack: slim\n' > "$S/.mega-sdd/codebase/starterkit-context.yaml"
 printf '<?php // owner_id middleware\n' > "$S/src/Middleware/Jwt.php"; printf '<?php\n' > "$S/config/routes.php"
-OUT=$(bash "$VCC" --cwd="$S" 2>/dev/null || true)
+OUT=$(bash "$VCC" --cross-cutting --cwd="$S" 2>/dev/null || true)
 printf '%s' "$OUT" | python3 -c "
 import json,sys; d=json.load(sys.stdin)
 assert d['status']=='SKIP' and d['summary']['concerns_not_evaluable']>=1, (d['status'], d['summary'])

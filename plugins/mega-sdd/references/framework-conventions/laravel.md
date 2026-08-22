@@ -364,7 +364,7 @@ scaffold_tells:
 
 > Concrete Laravel fill of the universal §Cross-cutting concerns principle
 > (`_universal.md`). Consumed by `validate-sibling-consistency.sh` (slice B —
-> decomposition) and `validate-cross-cutting-registration.sh` (slice C — execution).
+> decomposition) and `validate-sibling-consistency.sh --cross-cutting` (slice C — execution).
 > Proven against the `new-tradefinance-import` Phase-2 fixture: the LetterOfCredit
 > exemplar (U-017) declares the `BranchScoped` trait + a `branch()` relation, but
 > sibling models carrying the same `branch_id` key diverged — some declared the trait
@@ -399,7 +399,7 @@ cross_cutting_concerns:
 `source_decl_regex` / `target_decl_regex` (S6 EB-VAL-4) carry the stack's container-discovery
 signatures INTO the pack — capture group 1 of `source_decl_regex` extracts the table a migration
 declares (with the `applies_when` column), capture group 1 of `target_decl_regex` extracts the
-table a model binds to (`protected $table = '…'`). `validate-cross-cutting-registration.sh`
+table a model binds to (`protected $table = '…'`). `validate-sibling-consistency.sh --cross-cutting`
 hardcodes NO stack signature: a `has_column` concern missing these keys is reported
 `not_evaluable` (never silently PASSed). Add a stack = add the two regexes to its pack.
 
@@ -410,7 +410,7 @@ resolve users across branches). Add other genuine exceptions here as a comma-sep
 globs — never by editing the validator. (Slice C resolves this glob against the project root and
 skips matching files before the registration scan.)
 
-`registration_target_glob` tells slice C (`validate-cross-cutting-registration.sh`) WHERE
+`registration_target_glob` tells slice C (`validate-sibling-consistency.sh --cross-cutting`) WHERE
 the concern's generated source lives (Eloquent models). The scan flags a model that
 references `BranchScoped` and carries `branch_id` but never calls
 `addGlobalScope(new BranchScoped)` in `booted()` — the silent cross-branch leak repaired in
