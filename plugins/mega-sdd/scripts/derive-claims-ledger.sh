@@ -36,12 +36,25 @@ import vault_md
 vault = os.environ.get("V_VAULT") or ""
 ledger_path = os.path.join(vault, "claims-ledger.json")
 
-DOCS = ["00-index.md", "01-overview.md", "02-architecture.md",
-        "03-data-model.md", "04-flows.md", "05-decisions.md",
-        "06-constraints.md"]
-DOC_CODE = {"01-overview.md": "OV", "02-architecture.md": "AR",
-            "03-data-model.md": "DM", "04-flows.md": "FL",
-            "05-decisions.md": "DC", "06-constraints.md": "CN"}
+# Layout-aware doc set + DOC_CODE (v7 Fase 3 dual read): on layout-2 the
+# per-file codes OV/AR/DC re-key to vault.md SECTIONS (the hard-header
+# contract — vault_md.V2_SECTION_ANCHORS is the one mapping).
+LAYOUT2 = vault_md.is_layout2_vault(vault)
+if LAYOUT2:
+    DOCS = ["vault.md", "model.md", "flows.md", "constraints.md"]
+    DOC_CODE = {"model.md": "DM", "flows.md": "FL", "constraints.md": "CN"}
+    DOC_IDX, DOC_DM, DOC_FL, DOC_DC = "vault.md", "model.md", "flows.md", "vault.md"
+    DOC_CN = "constraints.md"
+else:
+    DOCS = ["00-index.md", "01-overview.md", "02-architecture.md",
+            "03-data-model.md", "04-flows.md", "05-decisions.md",
+            "06-constraints.md"]
+    DOC_CODE = {"01-overview.md": "OV", "02-architecture.md": "AR",
+                "03-data-model.md": "DM", "04-flows.md": "FL",
+                "05-decisions.md": "DC", "06-constraints.md": "CN"}
+    DOC_IDX, DOC_DM, DOC_FL, DOC_DC = ("00-index.md", "03-data-model.md",
+                                       "04-flows.md", "05-decisions.md")
+    DOC_CN = "06-constraints.md"
 SECTION_RE = re.compile(r"^##\s+§([\w-]+)\b\s*(.*)$")   # binding-coverage harvest form
 MODE_RE = re.compile(r"^-\s*\*\*Implementation[ _]mode\*\*\s*:", re.IGNORECASE)
 NFR_HEAD_RE = re.compile(r"^##\s+Non-functional requirements\b", re.IGNORECASE)
@@ -54,7 +67,8 @@ for fn in DOCS:
         doc_shas[fn] = hashlib.sha256(raw).hexdigest()
         docs[fn] = raw.decode("utf-8", errors="replace")
 if not docs:
-    print(f"FAIL: no vault docs (00-06) found in {vault}")
+    print(f"FAIL: no vault docs found in {vault} "
+          f"(layout-2: vault.md/model.md/flows.md/constraints.md; legacy: 00-06)")
     sys.exit(3)
 
 def name_variants(snake):
@@ -85,8 +99,8 @@ errors = []
 claims = []
 counters = {}
 
-def add(doc, line_no, ctype, text, extra=None):
-    code = DOC_CODE.get(doc, "MODE")
+def add(doc, line_no, ctype, text, extra=None, code=None):
+    code = code or DOC_CODE.get(doc, "MODE")
     counters[code] = counters.get(code, 0) + 1
     c = {
         "id": "C-%s-%02d" % (code, counters[code]),
@@ -98,27 +112,70 @@ def add(doc, line_no, ctype, text, extra=None):
         c.update(extra)
     claims.append(c)
 
-# ── 00-index: implementation mode — Vault Lock SECTION only (a prose example
-# line elsewhere in the doc must never become the mode claim) ──
-lock_vals = vault_md.parse_vault_lock(docs.get("00-index.md", ""))
-_ix_lines = docs.get("00-index.md", "").splitlines()
-_in_lock = False
-for i, line in enumerate(_ix_lines, 1):
-    if line.startswith("## "):
-        _in_lock = line.lstrip("# ").lower().startswith("vault lock")
-        continue
-    if _in_lock and MODE_RE.match(line.strip()):
-        mode_val = lock_vals.get("implementation_mode")
-        add("00-index.md", i, "mode", line.strip(),
-            {"hints": {"terms": [mode_val.lower()] if mode_val else []}})
-        break
+# ── implementation mode claim ──
+# Legacy: the Vault Lock SECTION bullet only (a prose example line elsewhere in
+# the doc must never become the mode claim). Layout-2: the frontmatter scalar
+# line in vault.md (gate addition 2 — the residue moved, it did not die).
+lock_vals = vault_md.parse_vault_lock(docs.get(DOC_IDX, ""))
+_ix_lines = docs.get(DOC_IDX, "").splitlines()
+if LAYOUT2:
+    # hard-header contract: fail LOUD (exit != 0, naming the header) before
+    # any claim math can produce a silently thin ledger
+    for _h in vault_md.v2_missing_headers(docs.get("vault.md", "")):
+        errors.append(
+            f"vault.md is missing the mandatory section header `{_h}` "
+            f"(layout-2 hard-header contract — DOC_CODE re-keys from filename "
+            f"to section, so the anchors are a contract, not a convention)"
+        )
+    _in_fm = False
+    for i, line in enumerate(_ix_lines, 1):
+        if i == 1 and line.strip() == "---":
+            _in_fm = True
+            continue
+        if _in_fm and line.strip() == "---":
+            break
+        if _in_fm and re.match(r"^implementation_mode\s*:", line):
+            mode_val = lock_vals.get("implementation_mode")
+            add("vault.md", i, "mode", line.strip(),
+                {"hints": {"terms": [mode_val.lower()] if mode_val else []}},
+                code="MODE")
+            break
+else:
+    _in_lock = False
+    for i, line in enumerate(_ix_lines, 1):
+        if line.startswith("## "):
+            _in_lock = line.lstrip("# ").lower().startswith("vault lock")
+            continue
+        if _in_lock and MODE_RE.match(line.strip()):
+            mode_val = lock_vals.get("implementation_mode")
+            add("00-index.md", i, "mode", line.strip(),
+                {"hints": {"terms": [mode_val.lower()] if mode_val else []}})
+            break
 
-# ── per numbered doc, in document order, one ordinal stream per doc ──
-for fn in DOCS[1:]:
+# ── per doc, in document order, one ordinal stream per doc/section-code ──
+_CLAIM_DOCS = DOCS if LAYOUT2 else DOCS[1:]
+for fn in _CLAIM_DOCS:
     md = docs.get(fn, "")
     if not md:
         continue
     lines = md.splitlines()
+    # Layout-2 vault.md: per-line section attribution (OV/AR/DC) — the ONE
+    # mapping in vault_md.v2_section_codes; a claim heading outside every
+    # anchor section cannot be attributed and fails loud (no fabricated code).
+    sec_codes = (vault_md.v2_section_codes(lines)
+                 if (LAYOUT2 and fn == "vault.md") else None)
+
+    def _code_at(i):
+        if sec_codes is None:
+            return None                     # add() falls back to DOC_CODE
+        c = sec_codes.get(i)
+        if c is None:
+            errors.append(
+                f"vault.md:{i}: claim heading sits outside the "
+                f"Overview/Architecture/Decisions anchor sections — it cannot "
+                f"be attributed a DOC_CODE (move it under an anchor header)"
+            )
+        return c
 
     # (a) `## §<id>` component/section claims — the same headings the
     # binding-coverage validator harvests, so ledger coverage == validator scope.
@@ -127,11 +184,15 @@ for fn in DOCS[1:]:
     for i, line in enumerate(lines, 1):
         sm = SECTION_RE.match(line)
         if sm:
+            _c = _code_at(i)
+            if sec_codes is not None and _c is None:
+                continue
             add(fn, i, "component", line.lstrip("# ").strip(),
                 {"native_id": sm.group(1),
-                 "hints": {"terms": terms_of(sm.group(2) or sm.group(1))}})
+                 "hints": {"terms": terms_of(sm.group(2) or sm.group(1))}},
+                code=_c)
 
-    if fn == "03-data-model.md":
+    if fn == DOC_DM:
         # (b) DBML entities, line-aware (shared regexes; fields at depth 1)
         in_fence, depth, pending_purpose, pending_line = False, 0, None, None
         current = None
@@ -158,7 +219,7 @@ for fn in DOCS[1:]:
                     # is blind to shared misses), dropping every later table.
                     if "}" in line:
                         errors.append(
-                            f"03-data-model.md:{i}: one-line Table block "
+                            f"{fn}:{i}: one-line Table block "
                             f"(`Table X {{ ... }}` on a single line) is outside "
                             f"the vault DBML grammar — put fields on their own "
                             f"lines, or the following tables are silently lost."
@@ -177,7 +238,7 @@ for fn in DOCS[1:]:
                     # grammar cannot name would be dropped by BOTH passes
                     # (guard-blind). Fail closed instead.
                     errors.append(
-                        f"03-data-model.md:{i}: Table line does not match the "
+                        f"{fn}:{i}: Table line does not match the "
                         f"vault DBML grammar (name must be [A-Za-z0-9_]+): "
                         f"{stripped[:80]}"
                     )
@@ -199,7 +260,7 @@ for fn in DOCS[1:]:
             if depth <= 0:
                 depth, current = 0, None
 
-    elif fn == "04-flows.md":
+    elif fn == DOC_FL:
         for i, line in enumerate(lines, 1):
             fm = vault_md.FLOW_HEADING_RE.match(line)
             if fm:
@@ -207,15 +268,19 @@ for fn in DOCS[1:]:
                     {"native_id": fm.group(1),
                      "hints": {"terms": terms_of(fm.group(2))}})
 
-    elif fn == "05-decisions.md":
+    elif fn == DOC_DC:
         for i, line in enumerate(lines, 1):
             am = vault_md.ADR_HEADING_RE.match(line)
             if am:
+                _c = _code_at(i)
+                if sec_codes is not None and _c is None:
+                    continue                # attribution error already recorded
                 add(fn, i, "decision", am.group(2).strip(),
                     {"native_id": am.group(1),
-                     "hints": {"terms": terms_of(am.group(2))}})
+                     "hints": {"terms": terms_of(am.group(2))}},
+                    code=_c)
 
-    elif fn == "06-constraints.md":
+    elif fn == DOC_CN:
         # (c) NFR table rows: | Category | Requirement | Source |
         in_nfr = False
         for i, line in enumerate(lines, 1):
@@ -237,9 +302,10 @@ for fn in DOCS[1:]:
 # Lib parse errors are VAULT defects; a count fork with a clean lib parse is a
 # DERIVER defect — the two failure messages must not blame the wrong side. ──
 lib_errors = []
-lib_entities = vault_md.parse_data_model(docs.get("03-data-model.md", ""), lib_errors)
-lib_flows = vault_md.parse_flows(docs.get("04-flows.md", ""), lib_errors)
-lib_adrs = vault_md.parse_adrs(docs.get("05-decisions.md", ""), lib_errors)
+lib_entities = vault_md.parse_data_model(docs.get(DOC_DM, ""), lib_errors,
+                                         doc_name=DOC_DM)
+lib_flows = vault_md.parse_flows(docs.get(DOC_FL, ""), lib_errors, doc_name=DOC_FL)
+lib_adrs = vault_md.parse_adrs(docs.get(DOC_DC, ""), lib_errors, doc_name=DOC_DC)
 errors.extend(lib_errors)
 mine = {
     "entities": sum(1 for c in claims if c["type"] == "entity"),

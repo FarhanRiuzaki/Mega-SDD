@@ -61,11 +61,22 @@ PLUGIN_VER=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "
 DRIFT_OUT=$(bash "${SCRIPT_DIR}/build-citation-map.sh" --check-drift --vault="$VAULT" --cwd="$CWD" 2>/dev/null || true)
 
 VAULT="$VAULT" CWD="$CWD" MODE="$MODE" SECTIONS="$SECTIONS" QUIET="$QUIET" \
-TPL="$TPL" STYD="$STYD" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" python3 <<'PYEOF'
+TPL="$TPL" STYD="$STYD" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" \
+MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib" python3 <<'PYEOF'
 import glob, json, os, re, sys
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_md
+
 vault = os.path.abspath(os.environ["VAULT"])
+
+def vdoc(name):
+    # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file when present.
+    return vault_md.resolve_doc(vault, name)
+
+def vdoc_name(name):
+    return os.path.basename(vdoc(name))
 cwd = os.path.abspath(os.environ["CWD"])
 mode_arg = os.environ["MODE"]
 sections_arg = os.environ["SECTIONS"]
@@ -171,8 +182,8 @@ def pend(src):
     return "[Pending — %s not yet generated]" % src
 
 # ── Source loaders ──
-ov = read(os.path.join(vault, "01-overview.md"))
-fn = read(os.path.join(vault, "02-functional.md"))
+ov = read(vdoc("01-overview.md"))
+fn = read(vdoc("02-functional.md"))
 binding_rel = "binding.md"
 binding = read(os.path.join(vault, "binding.md"))
 if binding is None:
@@ -276,19 +287,19 @@ if ov and (purpose or scope_b):
     lr1 = line_range(ov, purpose) if purpose else None
     lr2 = line_range(ov, scope_b) if scope_b else None
     span = (min(x[0] for x in (lr1, lr2) if x), max(x[1] for x in (lr1, lr2) if x)) if (lr1 or lr2) else None
-    cite(1, "vault/01-overview.md", span)
+    cite(1, "vault/" + vdoc_name("01-overview.md"), span)
 else:
-    slots["section-1-content"] = pend("vault/01-overview.md")
+    slots["section-1-content"] = pend("vault/" + vdoc_name("01-overview.md"))
 
 # ── §2 Goals / Non-Goals ──
 goals = md_section(ov, "Goals|Success criteria") if ov else None
 nongoals = md_section(ov, "Non-Goals|Out of Scope") if ov else None
-slots["section-2-goals-content"] = goals or "[Pending — vault/01-overview.md §Goals not yet generated]"
-slots["section-2-non-goals-content"] = nongoals or "[Pending — vault/01-overview.md §Non-Goals not yet generated]"
+slots["section-2-goals-content"] = goals or "[Pending — vault/%s §Goals not yet generated]" % vdoc_name("01-overview.md")
+slots["section-2-non-goals-content"] = nongoals or "[Pending — vault/%s §Non-Goals not yet generated]" % vdoc_name("01-overview.md")
 if goals is None and nongoals is None:
     pending_count += 1
 else:
-    cite(2, "vault/01-overview.md", line_range(ov, goals or nongoals))
+    cite(2, "vault/" + vdoc_name("01-overview.md"), line_range(ov, goals or nongoals))
 
 # ── §3 Stakeholders ──
 rows3 = []
@@ -397,13 +408,13 @@ if fn:
                      ("fr_line_start", str(ln1)), ("fr_line_end", str(ln2))):
             d = d.replace("{{%s}}" % k, v)
         fr_details.append(d.strip())
-    cite(5, "vault/02-functional.md")
+    cite(5, "vault/" + vdoc_name("02-functional.md"))
 if not fr_rows:
     # Modern-vault fallback (P4 repair): today's generate-intent emits no
     # 02-functional.md — the functional enumeration of a modern vault is its
     # flows (04-flows.md `### F-*` + per-flow DoD; SIT already builds from
     # exactly this). Legacy FR-heading vaults keep the branch above.
-    fl = read(os.path.join(vault, "04-flows.md"))
+    fl = read(vdoc("04-flows.md"))
     if fl:
         # id must END at the match (round: `F-U_002` half-matched as id "F-U";
         # a heading the grammar cannot parse whole is DROPPED, never truncated)
@@ -447,7 +458,7 @@ if not fr_rows:
             # line (round: `(?s)` swallowed the whole flow body incl. mermaid)
             dod = re.search(r"(?m)^\*\*Definition of Done\*\*[^\n]*\n((?:[ \t]*[-*] .*\n)+)", body + "\n")
             desc = (dod.group(1).strip() if dod
-                    else "(flow spec — see vault/04-flows.md)")
+                    else "(flow spec — see vault/%s)" % vdoc_name("04-flows.md"))
             ln1 = fl[:h.start()].count("\n") + 1
             ln2 = fl[:body_end].count("\n") + 1
             # priority stays honest: flows carry no Priority field — never default one
@@ -466,13 +477,13 @@ if not fr_rows:
             # the flows branch MUST rewrite both (round blocker: every modern
             # FSD stamped [Source: vault/02-functional.md:<04-flows line>] — a
             # fabricated citation the citation gate then failed on)
-            d = d.replace("vault/02-functional.md", "vault/04-flows.md")
+            d = d.replace("vault/02-functional.md", "vault/" + vdoc_name("04-flows.md"))
             d = d.replace("FR-%s" % fid, fid)
             fr_details.append(d.strip())
         if fr_rows:
-            cite(5, "vault/04-flows.md")
+            cite(5, "vault/" + vdoc_name("04-flows.md"))
 if not fr_rows:
-    p = pend("vault/02-functional.md (legacy) / vault/04-flows.md")
+    p = pend("vault/02-functional.md (legacy) / vault/%s" % vdoc_name("04-flows.md"))
     fr_rows, fr_details = ["| — | %s | — | — |" % p], [p]
     pending_count -= 1  # counted once, not twice
     pending_count += 1
@@ -483,7 +494,7 @@ slots["section-5-fr-details"] = "\n\n".join(fr_details)
 nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
 # Modern-vault fallback (P4 repair): the modern NFR home is
 # 06-constraints.md `## Non-functional requirements` (the table vault_md parses)
-cons_doc = read(os.path.join(vault, "06-constraints.md"))
+cons_doc = read(vdoc("06-constraints.md"))
 nfr_cons = md_section(cons_doc, "Non-functional requirements|Non-Functional Requirements") if cons_doc else None
 def const_clauses(cat_words):
     if not const:
@@ -534,9 +545,9 @@ for slot, cat, words in (("section-6-performance-content", "Performance", ("perf
         parts.append("_Dari constitution [LOCKED]:_\n\n" + cc)
     slots[slot] = "\n\n".join(parts) if parts else "(not specified)"
 if nfr:
-    cite(6, "vault/02-functional.md")
+    cite(6, "vault/" + vdoc_name("02-functional.md"))
 if cons_by_cat:
-    cite(6, "vault/06-constraints.md")
+    cite(6, "vault/" + vdoc_name("06-constraints.md"))
 if const and any("[LOCKED]" in (slots[s] or "") or "constitution" in (slots[s] or "") for s in
                  ("section-6-performance-content", "section-6-security-content",
                   "section-6-availability-content", "section-6-other-constitution-content")):
@@ -606,7 +617,7 @@ else:
     slots["section-9-acceptance-concerns-content"] = "\n".join(concerns) if concerns else "(none)"
 
 # ── §10 Risks & open issues ──
-oq = read(os.path.join(vault, "03-open-questions.md"))
+oq = read(vdoc("03-open-questions.md"))
 rows10 = []
 if oq:
     for m in re.finditer(r"(?ms)^#{2,4}\s+(OQ-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,4}\s|\Z)", oq):
@@ -620,7 +631,7 @@ if oq:
         rows10.append("| %s | %s | %s | %s |" % (m.group(1), m.group(2).strip() or "(untitled)",
                                                  pr.group(1) if pr else "—", ct.group(1) if ct else "—"))
     if rows10:
-        cite(10, "vault/03-open-questions.md")
+        cite(10, "vault/" + vdoc_name("03-open-questions.md"))
     elif oq.strip():
         # the file EXISTS with content but no `## OQ-...` heading parsed — a
         # sourced "(none)" would hide open risks (F7); surface the format gap
@@ -644,7 +655,7 @@ if not rows10:
     # honesty backstop (round doc-16): a vault whose OQs live only in the
     # 00-index roll-up (no 03-open-questions.md, no readable vault.json) must
     # never render a sourced-looking "(none)" — surface the gap instead
-    idx10 = read(os.path.join(vault, "00-index.md")) or ""
+    idx10 = read(vdoc("00-index.md")) or ""
     if re.search(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b", idx10):
         rows10.append("| — | [Pending — OQ ada di 00-index roll-up tetapi vault.json tidak terbaca — jalankan derive-vault-json.sh lalu re-emit] | — | — |")
         pending_count += 1
@@ -656,7 +667,7 @@ for uid in sorted(bolts):
         cite(10, "bolts/%s/bolt-report.md" % uid)
 if nongoals:
     slots["section-10-out-of-scope-content"] = ("Item berikut dinyatakan di luar lingkup (dari §Non-Goals) — risiko scope creep bila diminta belakangan:\n\n" + nongoals)
-    cite(10, "vault/01-overview.md")
+    cite(10, "vault/" + vdoc_name("01-overview.md"))
 else:
     slots["section-10-out-of-scope-content"] = "(none)"
 

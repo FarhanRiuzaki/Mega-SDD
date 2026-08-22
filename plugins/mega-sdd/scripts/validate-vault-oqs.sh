@@ -514,8 +514,16 @@ if active_vault_dir:
         # + frozen OQ-DESIGN tokens), so it runs unconditionally (H4 — it was wrongly
         # gated behind the English workflow detector, so an Indonesian vault could never
         # reach it). Rail 1 (operator_surface) needs the workflow verdict.
+        # v7 Fase 3 dual layout: on layout-2 the 01/02 prose lives in vault.md
+        # and the data model in model.md (same corpus, relocated files).
+        if os.path.isfile(os.path.join(active_vault_dir, "vault.md")):
+            _prose_docs = ("vault.md", "model.md")
+            _design_docs = ("constraints.md",)
+        else:
+            _prose_docs = ("02-architecture.md", "01-overview.md", "03-data-model.md")
+            _design_docs = ("05-decisions.md", "06-constraints.md")
         prose_corpus = flows_text
-        for fn in ("02-architecture.md", "01-overview.md", "03-data-model.md"):
+        for fn in _prose_docs:
             prose_corpus += "\n" + _read(os.path.join(active_vault_dir, fn))
         vault_json_text = _read(os.path.join(active_vault_dir, "vault.json"))
         # H2 (defaulted-standard scan) + the Design-Source-OQ escape hatch must ALSO see
@@ -523,9 +531,9 @@ if active_vault_dir:
         # canonical a11y / NFR home) — the natural place a WCAG/Material/token value lands.
         # prose_corpus stays 04/02/01/03 (Rail 1 operator-surface + vault_looks_english keep
         # their original scope, unperturbed); design_corpus adds 05/06 for H2 + escape hatch.
-        design_corpus = (prose_corpus
-                         + "\n" + _read(os.path.join(active_vault_dir, "05-decisions.md"))
-                         + "\n" + _read(os.path.join(active_vault_dir, "06-constraints.md")))
+        design_corpus = prose_corpus
+        for fn in _design_docs:
+            design_corpus += "\n" + _read(os.path.join(active_vault_dir, fn))
         full_corpus = design_corpus + "\n" + vault_json_text
         vault_name = os.path.basename(active_vault_dir)
         has_design_source_oq = bool(DESIGN_SOURCE_OQ_RE.search(full_corpus))

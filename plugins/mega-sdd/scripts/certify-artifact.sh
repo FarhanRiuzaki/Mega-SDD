@@ -280,8 +280,8 @@ EOF
       ;;
     3)
       emit "REJECTED" 4 <<EOF
-Direktori ini bukan vault mega-sdd — 00-index.md (wajib) tidak ada / direktori
-tidak terbaca (derive-vault-json.sh exit 3).
+Direktori ini bukan vault mega-sdd — vault.md (layout-2) maupun 00-index.md
+(legacy) tidak ada / direktori tidak terbaca (derive-vault-json.sh exit 3).
 $(printf '%s\n' "$DERIVE_OUT" | sed 's/^/  | /')
 Selanjutnya: kalau ini kumpulan dokumen spec, masuk lewat rung PRD —
 \`certify-artifact --rung=prd --path=<file>\` per dokumen, lalu \`generate-intent\`.

@@ -13,6 +13,7 @@ that is not in the markdown — absent purpose/source_acs/resolver_owner stay
 None/omitted (vault-contract.md §Field rules; anti-halu invariant 5).
 """
 
+import os
 import re
 
 # ── Shared with validate-vault-oqs.sh (constant-only refactor) ──────────────
@@ -189,6 +190,80 @@ def vault_layout(md):
     return 1
 
 
+# ── v7 Fase 3 layout-2 shared surface (ONE mapping — consumers must not fork) ─
+# 4-file layout: vault.md (00 residue as frontmatter + Overview/Architecture/
+# Decisions) / model.md (03) / flows.md (04) / constraints.md (06 + ALL OQs).
+V2_DOC_OF = {
+    "00-index.md": "vault.md",
+    "01-overview.md": "vault.md",
+    "02-architecture.md": "vault.md",
+    "03-data-model.md": "model.md",
+    "04-flows.md": "flows.md",
+    "05-decisions.md": "vault.md",
+    "06-constraints.md": "constraints.md",
+}
+
+# Hard section-header contract (gate addition 2): DOC_CODE re-keys from
+# filename to SECTION on layout-2, so these three H2 strings are a CONTRACT,
+# not a convention — consumers FAIL loud (exit != 0, naming the missing
+# header) instead of silently producing an empty ledger. `## Glossary` is
+# optional. An UNKNOWN H2 does NOT end a section (merged source docs keep
+# their own H2s verbatim — e.g. `## §<id>` component headings, `## Goals`);
+# only the anchor set switches sections.
+V2_SECTION_ANCHORS = {
+    "overview": "OV",
+    "architecture": "AR",
+    "decisions": "DC",
+    "glossary": None,        # optional; ends the Decisions section
+    "open questions": None,  # OQs are constraints.md-owned; treated as a fence
+}
+V2_REQUIRED_HEADERS = ("## Overview", "## Architecture", "## Decisions")
+
+
+def is_layout2_vault(vault_dir):
+    """Layout-2 probe used by every dual-layout consumer: vault.md exists."""
+    return os.path.isfile(os.path.join(vault_dir, "vault.md"))
+
+
+def resolve_doc(vault_dir, legacy_name):
+    """Dual-layout doc read-resolution (one minor cycle, floor v5.9.0):
+    on a layout-2 vault return the layout-2 file that carries the legacy
+    doc's content; else the legacy path. Callers that need the doc NAME for
+    a citation should use os.path.basename() of this return value so
+    emitted citations always name the file that was actually read."""
+    if is_layout2_vault(vault_dir):
+        v2 = V2_DOC_OF.get(legacy_name)
+        if v2:
+            return os.path.join(vault_dir, v2)
+    return os.path.join(vault_dir, legacy_name)
+
+
+def v2_section_codes(lines):
+    """Per-line DOC_CODE attribution for layout-2 vault.md: {line_no: code}.
+    Lines before the first anchor and lines inside Glossary/Open Questions
+    map to None. Unknown H2s keep the current section (see V2_SECTION_ANCHORS
+    note)."""
+    codes = {}
+    cur = None
+    for i, line in enumerate(lines, 1):
+        if line.startswith("## ") and not line.startswith("### "):
+            head = line[3:].strip().lower()
+            if head in V2_SECTION_ANCHORS:
+                cur = V2_SECTION_ANCHORS[head]
+        codes[i] = cur
+    return codes
+
+
+def v2_missing_headers(md):
+    """The V2_REQUIRED_HEADERS absent from a layout-2 vault.md body, in
+    contract order — [] when the hard-header contract is satisfied."""
+    heads = set()
+    for line in (md or "").splitlines():
+        if line.startswith("## "):
+            heads.add(line[3:].strip().lower())
+    return [h for h in V2_REQUIRED_HEADERS if h[3:].strip().lower() not in heads]
+
+
 def parse_vault_lock(md):
     """The six Vault Lock metadata values.
 
@@ -231,8 +306,9 @@ def parse_vault_lock(md):
     return out
 
 
-def parse_data_model(md, errors):
-    """entities[] mirror rows from 03-data-model.md ```dbml fences.
+def parse_data_model(md, errors, doc_name="03-data-model.md"):
+    """entities[] mirror rows from the data-model doc's ```dbml fences
+    (legacy 03-data-model.md; layout-2 callers pass doc_name="model.md").
 
     Per entity: name (Table token), fields_count (depth-1 field lines,
     excluding comments / blanks / Note / indexes / nested-block regions),
@@ -282,7 +358,7 @@ def parse_data_model(md, errors):
                 name = tm.group(1)
                 if name in seen:
                     errors.append(
-                        f"duplicate DBML table name in 03-data-model.md: {name}"
+                        f"duplicate DBML table name in {doc_name}: {name}"
                     )
                 else:
                     seen.add(name)
@@ -290,7 +366,7 @@ def parse_data_model(md, errors):
                         "name": name,
                         "purpose": pending_purpose
                         or full_mode_purpose.get(name),
-                        "doc": "03-data-model.md",
+                        "doc": doc_name,
                         "fields_count": 0,
                     }
                     entities.append(current)
@@ -317,8 +393,9 @@ def parse_data_model(md, errors):
     return entities
 
 
-def parse_flows(md, errors):
-    """flows[] mirror rows from 04-flows.md `### F-*-NNN:` headings.
+def parse_flows(md, errors, doc_name="04-flows.md"):
+    """flows[] mirror rows from the flows doc's `### F-*-NNN:` headings
+    (legacy 04-flows.md; layout-2 callers pass doc_name="flows.md").
 
     Per flow: id, title, type (prefix letter map; prefix-less → user), doc,
     dod_count (col-0 checkbox items under `**Definition of Done**:`),
@@ -341,7 +418,7 @@ def parse_flows(md, errors):
                 j = k
                 break
         if fid in seen:
-            errors.append(f"duplicate flow id in 04-flows.md: {fid}")
+            errors.append(f"duplicate flow id in {doc_name}: {fid}")
             continue
         seen.add(fid)
         pm = re.match(r"^F-([A-Z])-", fid)
@@ -350,7 +427,7 @@ def parse_flows(md, errors):
             "id": fid,
             "title": title,
             "type": ftype,
-            "doc": "04-flows.md",
+            "doc": doc_name,
         }
         dod_count = 0
         in_dod = False
@@ -386,8 +463,9 @@ def parse_flows(md, errors):
     return flows
 
 
-def parse_adrs(md, errors):
-    """adrs[] mirror rows from 05-decisions.md `### D-NNN:` headings.
+def parse_adrs(md, errors, doc_name="05-decisions.md"):
+    """adrs[] mirror rows from the decisions doc's `### D-NNN:` headings
+    (legacy 05-decisions.md; layout-2 callers pass doc_name="vault.md").
 
     status from a `Status:`/`**Status**:` line in the block (token starting
     'supersed' → superseded, 'propos' → proposed, 'accept' → accepted);
@@ -408,7 +486,7 @@ def parse_adrs(md, errors):
                 j = k
                 break
         if did in seen:
-            errors.append(f"duplicate ADR id in 05-decisions.md: {did}")
+            errors.append(f"duplicate ADR id in {doc_name}: {did}")
             continue
         seen.add(did)
         status = "accepted"
@@ -424,7 +502,7 @@ def parse_adrs(md, errors):
                     status = "accepted"
                 break
         adrs.append(
-            {"id": did, "title": title, "doc": "05-decisions.md", "status": status}
+            {"id": did, "title": title, "doc": doc_name, "status": status}
         )
     return adrs
 
