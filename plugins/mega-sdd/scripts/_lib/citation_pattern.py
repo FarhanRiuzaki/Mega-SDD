@@ -1,7 +1,7 @@
 """Canonical source-citation grammar shared by the KB grounding validators.
 
-ONE place for "what is a real file citation", so validate-kb-citations.sh (§11
-resolution — god-review H1) and validate-kb-markers.sh (per-[VERIFIED]-claim inline
+ONE place for "what is a real file citation", so the citations surface (§11
+resolution — god-review H1) and the markers surface of validate-kb.sh (per-[VERIFIED]-claim inline
 anchor — god-review M7) cannot drift. This is the same divergence class the moat
 keeps flagging: two validators, one grammar.
 

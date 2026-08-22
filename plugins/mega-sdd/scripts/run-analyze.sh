@@ -329,13 +329,13 @@ _slot_status() { # zero-spawn status read from a state slot just written
   [ -f "$1" ] && c=$(<"$1")
   if [[ "$c" =~ \"status\"[[:space:]]*:[[:space:]]*\"([A-Z_]+)\" ]]; then echo "${BASH_REMATCH[1]}"; else echo ""; fi
 }
-# run_family <family> <validator-script> <state-slot-basename>
+# run_family <family> <validator-script> <state-slot-basename> [<extra-flag>]
 # Iterates the family's decision rows; REUSE folds the recorded verdict (no
 # spawn), RUN invokes the validator and captures the fresh slot status. Sets
 # FAM_RC (worst numeric rc), FAM_ST (severity-max status), FAM_HAS (0/1), and
 # appends result rows for the ledger writer.
 run_family() {
-  local fam="$1" script="$2" slot="$3"
+  local fam="$1" script="$2" slot="$3" extra="${4:-}"
   local p sha dec rc st sib
   FAM_RC=0; FAM_ST=""; FAM_HAS=0
   [ -f "${TMPD}/decisions.${fam}" ] || return 0
@@ -351,7 +351,8 @@ run_family() {
     if [ "$dec" = "REUSE" ]; then
       REUSED_FILES=$((REUSED_FILES + 1))
     else
-      rc=$(run_validator "$script" --cwd="$CWD" --file-path="$p" --quiet)
+      # shellcheck disable=SC2086
+      rc=$(run_validator "$script" $extra --cwd="$CWD" --file-path="$p" --quiet)
       [ "$rc" = "SKIP" ] && continue
       RERUN_FILES=$((RERUN_FILES + 1))
       st=$(_slot_status "${CWD}/.mega-sdd/${slot}")
@@ -440,19 +441,19 @@ run_family "fsd_slots" "validate-fsd-slots.sh" ".fsd-slots-state.json"
 V5_RC=$( [ "$FAM_HAS" -eq 0 ] && echo "SKIP" || echo "$FAM_RC" ); V5_ST=$FAM_ST
 
 # 1f. Per-KB-domain-file validator (R2) (S1: decision-driven, pure family)
-run_family "kb_output" "validate-kb-output.sh" ".kb-output-state.json"
+run_family "kb_output" "validate-kb.sh" ".kb-output-state.json" "--surface=output"
 V7_RC=$( [ "$FAM_HAS" -eq 0 ] && echo "SKIP" || echo "$FAM_RC" ); V7_ST=$FAM_ST
 
 # 1f2. Per-KB-domain-file marker-accuracy validator (Track 1) (S1: pure family)
-run_family "kb_markers" "validate-kb-markers.sh" ".kb-markers-state.json"
+run_family "kb_markers" "validate-kb.sh" ".kb-markers-state.json" "--surface=markers"
 V7M_RC=$( [ "$FAM_HAS" -eq 0 ] && echo "SKIP" || echo "$FAM_RC" ); V7M_ST=$FAM_ST
 
 # 1f3. Per-KB-domain-file flow format validator (Mermaid consistency) (S1: pure)
-run_family "kb_flows" "validate-kb-flows.sh" ".kb-flows-state.json"
+run_family "kb_flows" "validate-kb.sh" ".kb-flows-state.json" "--surface=flows"
 V7F_RC=$( [ "$FAM_HAS" -eq 0 ] && echo "SKIP" || echo "$FAM_RC" ); V7F_ST=$FAM_ST
 
 # 1f3b. Per-vault-flows Mermaid mandate (04-flows.md bodies) (S1: pure family)
-run_family "vault_flows" "validate-vault-flows.sh" ".vault-flows-state.json"
+run_family "vault_flows" "validate-kb.sh" ".vault-flows-state.json" "--surface=vault-flows"
 V7VF_RC=$( [ "$FAM_HAS" -eq 0 ] && echo "SKIP" || echo "$FAM_RC" ); V7VF_ST=$FAM_ST
 
 # 1f4. Starterkit pattern conformance validator
@@ -466,7 +467,7 @@ V7C_HAS_FILES=0
 # --legacy-root lets that run instead of a narrower duplicate here shadowing it.
 for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null); do
   V7C_HAS_FILES=1
-  rc=$(run_validator "validate-kb-citations.sh" --cwd="$CWD" --file-path="$kf" --legacy-root="" --quiet)
+  rc=$(run_validator "validate-kb.sh" --surface=citations --cwd="$CWD" --file-path="$kf" --legacy-root="" --quiet)
   [ "$rc" = "SKIP" ] && continue
   RERUN_FILES=$((RERUN_FILES + 1))
   [ "$rc" -gt "$V7C_WORST" ] 2>/dev/null && V7C_WORST=$rc
@@ -734,8 +735,8 @@ for vc in vault_consistency:
             vault_statuses.append(chk["status"])
 
 has_fail = "FAIL" in all_statuses or "FAIL" in vault_statuses
-# `or "WARN" in all_statuses` so a KB-grounding WARN (validate-kb-citations
-# 0-cites) also flips the overall banner to WARN — it was
+# `or "WARN" in all_statuses` so a KB-grounding WARN (the kb citations
+# surface, 0-cites) also flips the overall banner to WARN — it was
 # only rendered in the per-boundary row, not the summary. Never escalates a FAIL.
 has_warn = ("WARN" in vault_statuses) or ("FAIL" in advisory_statuses) \
     or ("WARN" in advisory_statuses) or ("WARN" in all_statuses)

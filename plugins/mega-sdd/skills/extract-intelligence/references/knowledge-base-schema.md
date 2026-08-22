@@ -144,7 +144,7 @@ flowchart LR
     Validate -- "no" --> Skip(["No amend processing"])
 ```
 
-`validate-kb-flows.sh` enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
+the kb flows surface (`validate-kb.sh --surface=flows`) enforces a heuristic subset of these rules at the validator layer; producer responsibility to author parser-valid syntax (validator catches the obvious failures, not all).
 
 ## 3a. Staged inputs (multi-step workflows)
 
@@ -196,7 +196,7 @@ stages:                          # staged-input block. REQUIRED when source is m
 - a maker→checker / multi-role hand-off (different roles supply different fields in sequence),
 - a state field whose transitions gate which inputs are accepted next (`status: draft → pending → approved`).
 
-**Carry-over:** `stages:` propagates KB → vault `04-flows.md` → units — the SAME class of stable-identifier propagation as OQ-IDs and constitution clauses (see `generate-intent/references/vault-contract.md §stages-propagation`). `generate-intent` MUST copy the block verbatim and emit the matching Mermaid `stateDiagram`, never re-flatten it. `validate-vault-flow-staging.sh` checks non-loss across the KB→vault boundary (advisory via `analyze` in v4 Hybrid — no longer a hard-block); `validate-kb-flows.sh` raises an advisory (`kb_flow_staging_missing`) when a workflow looks multi-step but carries no `stages:` block, pointing the user to `enrich-semantics`.
+**Carry-over:** `stages:` propagates KB → vault `04-flows.md` → units — the SAME class of stable-identifier propagation as OQ-IDs and constitution clauses (see `generate-intent/references/vault-contract.md §stages-propagation`). `generate-intent` MUST copy the block verbatim and emit the matching Mermaid `stateDiagram`, never re-flatten it. `validate-vault-flow-staging.sh` checks non-loss across the KB→vault boundary (advisory via `analyze` in v4 Hybrid — no longer a hard-block); the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory (`kb_flow_staging_missing`) when a workflow looks multi-step but carries no `stages:` block, pointing the user to `enrich-semantics`.
 
 > **Walking-skeleton scope:** only the staged-input dimension is enforced. Other semantic-depth dimensions (rich per-stage conditional logic beyond `conditions:`, fine-grained role matrices, full transition guards) are captured best-effort here but not yet validator-enforced (Fork-B-future — `conditional` / `role-stage` / `transition` dimensions follow in a later iter).
 

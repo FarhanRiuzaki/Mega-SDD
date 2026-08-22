@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-kb-flows-syntax-lock.sh — behavior lock for the Mermaid Rule 1-3 syntax
-# tokenizer in validate-kb-flows.sh, so the shared-lib extraction (Inc-2 of the
+# tokenizer in the kb flows surface (validate-kb.sh), so the shared-lib extraction (Inc-2 of the
 # Mermaid-flows hard rule) cannot silently change what the KB flow validator
 # detects. Pins the committed kb-flows-mermaid fixtures:
 #   01-bad-mermaid.md  → FAIL, sec3_mermaid_syntax FAIL, >=1 mermaid_syntax_invalid
@@ -11,7 +11,8 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-VALIDATOR="${ROOT}/plugins/mega-sdd/scripts/validate-kb-flows.sh"
+VALIDATOR="${ROOT}/plugins/mega-sdd/scripts/validate-kb.sh"
+VFLAGS="--surface=flows"
 FXROOT="${ROOT}/tests/fixtures/kb-flows-mermaid"
 FX="${FXROOT}/.mega-sdd/knowledge-base/10-domains"
 
@@ -30,7 +31,7 @@ trap 'rm -rf "$WORK"' EXIT
 cp -R "$FXROOT"/. "$WORK"/
 WFX="$WORK/.mega-sdd/knowledge-base/10-domains"
 
-jrun() { bash "$VALIDATOR" --cwd="$WORK" --file-path="$1" 2>/dev/null; }
+jrun() { bash "$VALIDATOR" $VFLAGS --cwd="$WORK" --file-path="$1" 2>/dev/null; }
 
 note "=== 01-bad-mermaid.md -> FAIL with sec3 syntax issues (tokenizer lock) ==="
 BAD=$(jrun "$WFX/01-bad-mermaid.md")

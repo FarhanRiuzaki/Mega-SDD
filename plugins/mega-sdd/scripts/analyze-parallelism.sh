@@ -168,7 +168,7 @@ def list_field(fm, key):
     """Parse a frontmatter list in BOTH forms:
        inline   `key: [U-001, U-002]`  (also `key: []`)
        block    `key:\n  - U-001\n  - U-002`
-    Mirrors validate-kb-output.sh dual-format handling."""
+    Mirrors the kb output surface's dual-format handling (validate-kb.sh)."""
     m = re.search(r"(?m)^%s:[ \t]*(.*)$" % re.escape(key), fm)
     if not m:
         return []

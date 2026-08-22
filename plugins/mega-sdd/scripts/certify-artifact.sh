@@ -30,9 +30,9 @@
 #           arbitrary-text vs non-text; it gates NOTHING downstream)
 #   map   → validate-codebase-map.sh
 #   vault → derive-vault-json.sh (exit-2 KETERANGAN echoed verbatim)
-#   kb    → validate-kb-output.sh + validate-kb-markers.sh over the SAME file
+#   kb    → validate-kb.sh --surface=output + --surface=markers over the SAME file
 #           selection run-analyze.sh uses (10-domains/20-workflows/40-business-rules;
-#           markers over 10-domains) — validate-kb-citations.sh needs
+#           markers over 10-domains) — the citations surface needs
 #           --legacy-root and stays in the extract/bind lane
 #   units → validate-unit-spec.sh (file staged into a scratch vault layout so
 #           the validator's path filter accepts it)
@@ -299,7 +299,7 @@ EOF
   esac
 fi
 
-# ── kb — validate-kb-output/markers over run-analyze's file selection ────────
+# ── kb — validate-kb.sh output/markers surfaces over run-analyze's selection ─
 if [ "$RUNG" = "kb" ]; then
   [ -d "$APATH" ] || { echo "certify-artifact: --rung=kb needs a directory, got a file: $APATH" >&2; exit 2; }
   KB_FILES="$SCRATCH/kb-files.txt"
@@ -332,13 +332,13 @@ EOF
   TOTAL=0; FAILED=0; NOFM=0; DETAILS="$SCRATCH/kb-details.txt"; : > "$DETAILS"
   while IFS= read -r kf; do
     TOTAL=$((TOTAL + 1))
-    OUT_ALL="$(bash "${SCRIPT_DIR}/validate-kb-output.sh" --cwd="$SCRATCH" --file-path="$kf" </dev/null 2>/dev/null)"
+    OUT_ALL="$(bash "${SCRIPT_DIR}/validate-kb.sh" --surface=output --cwd="$SCRATCH" --file-path="$kf" </dev/null 2>/dev/null)"
     ORC=$?
     OUT_JSON="$(printf '%s\n' "$OUT_ALL" | tail -n 1)"
     MRC=0
     case "$kf" in
       */10-domains/*)
-        bash "${SCRIPT_DIR}/validate-kb-markers.sh" --cwd="$SCRATCH" --file-path="$kf" </dev/null >/dev/null 2>&1
+        bash "${SCRIPT_DIR}/validate-kb.sh" --surface=markers --cwd="$SCRATCH" --file-path="$kf" </dev/null >/dev/null 2>&1
         MRC=$? ;;
     esac
     FM_FAIL=$(printf '%s' "$OUT_JSON" | python3 -c "
@@ -365,10 +365,10 @@ Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
 EOF
   elif [ "$FAILED" -eq 0 ]; then
     emit "CERTIFIED" 0 <<EOF
-Knowledge base lolos validator KB ($TOTAL domain file: validate-kb-output +
-validate-kb-markers untuk 10-domains) — marker grounding + struktur 11-section OK.
+Knowledge base lolos validator KB ($TOTAL domain file: validate-kb.sh
+surface output + markers untuk 10-domains) — marker grounding + struktur 11-section OK.
 Siap dikonsumsi \`generate-intent --kb=$APATH\` dan \`bind-codebase\` (ground truth
-sekunder). Catatan: cek citation-ke-legacy (validate-kb-citations) butuh
+sekunder). Catatan: cek citation-ke-legacy (surface citations) butuh
 --legacy-root dan jalan di lane extract/bind, bukan di certify.
 EOF
   else

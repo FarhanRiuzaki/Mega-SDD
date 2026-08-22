@@ -104,9 +104,9 @@ handoff:
 | 3 | `validate-bolt-artifacts.sh` | bolt report structure |
 | 4 | `validate-vault-oqs.sh` | vault OQ structural integrity |
 | 5 | `validate-fsd-slots.sh` | FSD template slot fill |
-| 6 | `validate-kb-output.sh` | KB output completeness + frontmatter |
-| 7 | `validate-kb-markers.sh` | KB [VERIFIED] citation evidence |
-| 8 | `validate-kb-citations.sh` | KB §11 source file resolution |
+| 6 | `validate-kb.sh --surface=output` | KB output completeness + frontmatter |
+| 7 | `validate-kb.sh --surface=markers` | KB [VERIFIED] citation evidence |
+| 8 | `validate-kb.sh --surface=citations` | KB §11 source file resolution |
 | 9 | `validate-constitution.sh` | constitution clause coverage |
 | 10 | `validate-constitution-propagation.sh` | constitution clause carry-over |
 | 11 | `validate-codebase-map.sh` | codebase-map schema |

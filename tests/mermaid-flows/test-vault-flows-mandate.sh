@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-vault-flows-mandate.sh — Inc-2 of the Mermaid-flows hard rule.
 # Vault 04-flows.md: each F-<prefix>-NNN flow MUST be a Mermaid diagram, not a
-# prose Steps list. validate-vault-flows.sh FAILs a prose-only flow, PASSes a
+# prose Steps list. The vault-flows surface (validate-kb.sh) FAILs a prose-only flow, PASSes a
 # Mermaid one, catches a header-less block (diagram-type reuse), and allows an
 # explicit N/A entry.
 #
@@ -10,7 +10,8 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-V="${ROOT}/plugins/mega-sdd/scripts/validate-vault-flows.sh"
+V="${ROOT}/plugins/mega-sdd/scripts/validate-kb.sh"
+VFLAGS="--surface=vault-flows"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -27,7 +28,7 @@ import json,sys
 try: print($2)
 except Exception as e: print('ERR:'+str(e))
 " <<< "$1" 2>/dev/null; }
-run() { bash "$V" --cwd="$WORK" --file-path="$F" 2>/dev/null; }
+run() { bash "$V" $VFLAGS --cwd="$WORK" --file-path="$F" 2>/dev/null; }
 
 # ── 1. BAD: prose numbered Steps, no mermaid -> FAIL vault_flow_not_mermaid ────
 note '=== 1. prose Steps flow (no mermaid) -> FAIL (vault_flow_not_mermaid) ==='

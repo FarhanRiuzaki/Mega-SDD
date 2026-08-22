@@ -819,19 +819,8 @@ for h in sorted(hits):
         if [ -x "$VALIDATOR_CP2" ]; then
           bash "$VALIDATOR_CP2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
         fi
-        # Also re-run vault→binding coverage (current-truth)
-        VALIDATOR_VBC="${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh"
-        if [ -x "$VALIDATOR_VBC" ]; then
-          bash "$VALIDATOR_VBC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        # Iter-79 X-1: conflict-classification enrichment (advisory WARN; was
-        # previously wired to NO hook + greped a structure the producer never
-        # emits → vacuous. Now dispatched on binding write, detects the real
-        # `### CONFLICT-N` markdown form).
-        VALIDATOR_CCL="${SCRIPT_DIR}/../scripts/validate-conflict-classification.sh"
-        if [ -x "$VALIDATOR_CCL" ]; then
-          bash "$VALIDATOR_CCL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
+        # (v7 Fase 2: the vault-binding-coverage + conflict-classification
+        # advisory rungs died with their validators — DELETE batch.)
         # S4 BC-GATE-1: refresh the MOAT state on the PRODUCER side too. The
         # moat-state writer (validate-handoff-binding-units.sh) was keyed to
         # unit writes only, so a re-bind/sync writing binding.md with fresh
@@ -999,14 +988,7 @@ except Exception:
       "${PROJECT_ROOT}/.mega-sdd/.fsd-slots-state.json" \
       "PostToolUse-Write-validate-fsd-slots"
 
-    # ── Validator 6 (Phase C slices 4+5): vault→binding + units→bolts ──────
-    # Project-wide scan; runs on any Write|Edit (script self-skips when no vaults).
-    if [ "$NEED_PTU_SCAN" = "1" ]; then
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-vault-binding-coverage.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.vault-binding-coverage-state.json" \
-      "PostToolUse-Write-validate-vault-binding-coverage"
-    fi
+    # (v7 Fase 2: Validator 6 — vault-binding-coverage — removed with its script.)
 
     # ── Validator 6b (semantic-depth): staged-input non-loss KB→vault ──────
     # Follows each 04-flows.md flow's `_kb_source` back-reference; FAILs with
@@ -1046,9 +1028,10 @@ except Exception:
     case "$FILE_PATH" in
       *04-flows.md)
         run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-vault-flows.sh" \
+          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.vault-flows-state.json" \
-          "PostToolUse-Write-validate-vault-flows"
+          "PostToolUse-Write-validate-vault-flows" \
+          "--surface=vault-flows"
         ;;
     esac
 
@@ -1057,31 +1040,29 @@ except Exception:
     case "$FILE_PATH" in
       *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md|*.mega-sdd/knowledge-base/99-rebuild-architecture/*.md)
         run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb-output.sh" \
+          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-output-state.json" \
-          "PostToolUse-Write-validate-kb-output"
-        # Iter-79 U-EI: reengineering-synthesis presence (the phase's REASONING output,
-        # vs the transcription checks above). Advisory; self-SKIPs when no mutability
-        # markers / no 99-rebuild-architecture/.
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb-reengineering.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.kb-reengineering-state.json" \
-          "PostToolUse-Write-validate-kb-reengineering"
+          "PostToolUse-Write-validate-kb-output" \
+          "--surface=output"
+        # (v7 Fase 2: the kb-reengineering rung died with its validator.)
         # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
         run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb-markers.sh" \
+          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-markers-state.json" \
-          "PostToolUse-Write-validate-kb-markers"
+          "PostToolUse-Write-validate-kb-markers" \
+          "--surface=markers"
         # Mermaid-consistency for flow sections
         run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb-flows.sh" \
+          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-flows-state.json" \
-          "PostToolUse-Write-validate-kb-flows"
+          "PostToolUse-Write-validate-kb-flows" \
+          "--surface=flows"
         # Iter 68: KB §11 citation resolution (auto-detects legacy root)
         run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb-citations.sh" \
+          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
           "${PROJECT_ROOT}/.mega-sdd/.kb-citations-state.json" \
-          "PostToolUse-Write-validate-kb-citations"
+          "PostToolUse-Write-validate-kb-citations" \
+          "--surface=citations"
         ;;
     esac
 

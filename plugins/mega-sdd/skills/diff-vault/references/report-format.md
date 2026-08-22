@@ -76,7 +76,7 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 
 ## Added entities / flows / decisions
 
-> A flow added or changed in `04-flows.md` is authored as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — `validate-vault-flows.sh` gates it.
+> A flow added or changed in `04-flows.md` is authored as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it.
 
 ### Entity (added): `redemption_request`
 
@@ -104,7 +104,7 @@ Table redemption_request {
 > `BE["BE entry"] --> KYC["BE: validate KYC freshness"]` <br/> `KYC --> Host["Host: buka rekening + debit setoran awal"]`
 
 **Diff**: a `validate KYC freshness` node inserted between the BE-entry and Host-call nodes.
-**Action on apply**: update the corresponding node/edge in the flow's Mermaid diagram in `04-flows.md` (the flow body is a Mermaid diagram, never a prose Steps list — `validate-vault-flows.sh` gates it). Optionally surface as a new OQ if KYC freshness logic isn't specified elsewhere.
+**Action on apply**: update the corresponding node/edge in the flow's Mermaid diagram in `04-flows.md` (the flow body is a Mermaid diagram, never a prose Steps list — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it). Optionally surface as a new OQ if KYC freshness logic isn't specified elsewhere.
 
 <...>
 
