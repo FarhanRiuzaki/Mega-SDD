@@ -69,6 +69,18 @@ if [ "$GUARD_ENABLED" -eq 1 ] && [ -d "${CWD}/.mega-sdd" ]; then
     fi
   fi
 
+  # v7 Fase 2 №3: hook-debug.log gets the SAME single-generation rotation —
+  # it was the one unbounded memory/ file left (audit v7 flag: "never rotated").
+  # Writers (session-start / stop / subagent-stop diagnostics) stay O(1) appends.
+  DEBUG_LOG_GD="${CWD}/.mega-sdd/memory/hook-debug.log"
+  if [ -f "$DEBUG_LOG_GD" ]; then
+    DEBUG_ROWS_GD=$(wc -l < "$DEBUG_LOG_GD" 2>/dev/null | tr -d ' ' || echo 0)
+    case "$DEBUG_ROWS_GD" in (*[!0-9]*|"") DEBUG_ROWS_GD=0 ;; esac
+    if [ "$DEBUG_ROWS_GD" -gt 20000 ] && [ ! -d "${DEBUG_LOG_GD}.1" ]; then
+      mv -f "$DEBUG_LOG_GD" "${DEBUG_LOG_GD}.1" 2>/dev/null || true
+    fi
+  fi
+
   # Run C1 self-resolve guards via python (deterministic detection + fix).
   # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
   SELF_RESOLVE_NOTICES=$(CWD="$CWD" TELEMETRY_FILE="$TELEMETRY_FILE" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." python3 <<'PYEOF' 2>/dev/null
