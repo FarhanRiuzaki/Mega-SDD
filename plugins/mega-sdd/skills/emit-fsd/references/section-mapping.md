@@ -280,7 +280,7 @@ Schema 2.0 notes (v1.4.0 — every hash originates from `hashlib.sha256` over ac
 
 ## Drift detection
 
-On re-emit (SKILL.md Step 2): run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<project-root>` and consume ONLY its output lines — the model does not read the map:
+On re-emit (SKILL.md Step 2): run `bash <plugin-root>/scripts/build-citation-map.sh --check-drift --vault=<vault> --cwd=<project-root>` and consume ONLY its output lines — the model does not read the map:
 
 - `DRIFT <section> <path> <old12> <new12>` / `GONE <section> <path> <old12>` → flag that section for a drift callout, using `old12`/`new12` in the callout text
 - `UNVERIFIED <section> <path>` → informational (a prior entry that cannot be re-verified — e.g. a legacy schema-1.0 display-form path that no longer resolves); no callout

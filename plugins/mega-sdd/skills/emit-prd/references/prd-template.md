@@ -163,4 +163,4 @@ Citation footers use the engine format:
 > ⚠ **Updated since last emit** — `<source_path>` was sha256 `<old-prefix>`, now `<new-prefix>`. Section regenerated.
 ```
 
-Prefixes from `check-citation-drift.sh --doc=prd` output verbatim, never model-recalled.
+Prefixes from `build-citation-map.sh --check-drift --doc=prd` output verbatim, never model-recalled.

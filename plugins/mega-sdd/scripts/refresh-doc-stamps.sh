@@ -20,7 +20,7 @@
 #   - Parser-invisible: the block is an HTML comment placed right after the
 #     YAML frontmatter (or at file top when none). It contains no `## N.`
 #     heading, no `(sha256: …)` stamp, no `[Source: …]` citation, no `[Pending`
-#     marker and no `{{slot}}` — build-citation-map.sh, check-citation-drift.sh
+#     marker and no `{{slot}}` — build-citation-map.sh, build-citation-map.sh --check-drift
 #     and validate-fsd-slots.sh all read regions the block sits outside of.
 #   - Idempotent: re-running with the same flags is a byte-identical no-op.
 #   - Atomic write (tmp + os.replace) — a crash never truncates the doc.

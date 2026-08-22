@@ -54,7 +54,7 @@ case "$MODE" in forward|reverse) ;; *) echo "ERROR: --mode=forward|reverse requi
 TPL="${SCRIPT_DIR}/../skills/emit-prd/references/prd-template.md"
 [ -f "$TPL" ] || { echo "ERROR: prd-template.md missing at $TPL" >&2; exit 2; }
 PLUGIN_VER=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${SCRIPT_DIR}/../.claude-plugin/plugin.json" 2>/dev/null | head -1)
-DRIFT_OUT=$(bash "${SCRIPT_DIR}/check-citation-drift.sh" --vault="$OUTROOT" --cwd="$CWD" --doc=prd 2>/dev/null || true)
+DRIFT_OUT=$(bash "${SCRIPT_DIR}/build-citation-map.sh" --check-drift --vault="$OUTROOT" --cwd="$CWD" --doc=prd 2>/dev/null || true)
 
 OUTROOT="$OUTROOT" CWD="$CWD" MODE="$MODE" VAULT="$VAULT" KB="$KB" QUIET="$QUIET" \
 TPL="$TPL" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" python3 <<'PYEOF'

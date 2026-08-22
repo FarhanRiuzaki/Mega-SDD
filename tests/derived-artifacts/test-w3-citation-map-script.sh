@@ -11,7 +11,7 @@
 #   4  missing_sources[] carries {section, expected_source} from [Pending —] markers
 #   5  clean re-run: exit 0, ONE stdout line (quiet-gates diet), idempotent
 #      (second run leaves FSD.md byte-identical)
-#   6  check-citation-drift.sh: exactly one DRIFT line, old12/new12 match the
+#   6  build-citation-map.sh --check-drift: exactly one DRIFT line, old12/new12 match the
 #      pre/post hashes; stdout has neither '"sections"' nor any 64-hex string
 #   7  deleted source → GONE line
 #   8  no map → NO_PRIOR; corrupt JSON → PRIOR_UNREADABLE; both exit 0
@@ -26,7 +26,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 BUILD="${ROOT}/plugins/mega-sdd/scripts/build-citation-map.sh"
-DRIFT="${ROOT}/plugins/mega-sdd/scripts/check-citation-drift.sh"
+DRIFT="${ROOT}/plugins/mega-sdd/scripts/build-citation-map.sh"
 SKILL="${ROOT}/plugins/mega-sdd/skills/emit-fsd/SKILL.md"
 SM="${ROOT}/plugins/mega-sdd/skills/emit-fsd/references/section-mapping.md"
 for f in "$BUILD" "$DRIFT" "$SKILL" "$SM"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
@@ -167,7 +167,7 @@ B2=$(sha_of "$V/fsd/FSD.md")
 PRE=$(sha_of "$V/02-functional.md")
 echo "drifted line" >> "$V/02-functional.md"
 POST=$(sha_of "$V/02-functional.md")
-OUT=$(bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null); RC=$?
+OUT=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null); RC=$?
 N_DRIFT=$(printf '%s\n' "$OUT" | grep -c '^DRIFT ')
 if [ "$RC" -eq 0 ] && [ "$N_DRIFT" -eq 1 ] \
    && echo "$OUT" | grep -q "^DRIFT 5 vault/02-functional.md ${PRE:0:12} ${POST:0:12}$"; then
@@ -184,7 +184,7 @@ fi
 # ── 7: deleted source → GONE ──
 U001_BAK=$(cat "$V/units/U-001.md"); HU=$(sha_of "$V/units/U-001.md")
 rm "$V/units/U-001.md"
-OUT=$(bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null); RC=$?
+OUT=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null); RC=$?
 if [ "$RC" -eq 0 ] && echo "$OUT" | grep -q "^GONE 5 units/U-001.md ${HU:0:12}$"; then
   ok "7: deleted source prints GONE with the prior 12-char prefix"
 else
@@ -194,11 +194,11 @@ printf '%s\n' "$U001_BAK" > "$V/units/U-001.md"
 
 # ── 8: NO_PRIOR + PRIOR_UNREADABLE, both exit 0 ──
 mv "$MAP" "$MAP.bak"
-OUT=$(bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null); RC=$?
+OUT=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null); RC=$?
 [ "$RC" -eq 0 ] && [ "$OUT" = "NO_PRIOR" ] && ok "8: absent map → NO_PRIOR, exit 0" \
   || fail "8: NO_PRIOR path wrong (rc=$RC out=$OUT)"
 echo '{broken json' > "$MAP"
-OUT=$(bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null); RC=$?
+OUT=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null); RC=$?
 [ "$RC" -eq 0 ] && [ "$OUT" = "PRIOR_UNREADABLE" ] && ok "8: corrupt map → PRIOR_UNREADABLE, exit 0" \
   || fail "8: PRIOR_UNREADABLE path wrong (rc=$RC out=$OUT)"
 mv "$MAP.bak" "$MAP"
@@ -214,7 +214,7 @@ for s in m["sections"]:
         s["source_sha256"] = os.environ["JUNK"]
 json.dump(m, open(p, "w"), indent=2)
 PY
-OUT=$(bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null)
+OUT=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null)
 echo "$OUT" | grep -q "^DRIFT 1 vault/01-overview.md ${JUNK:0:12} ${HOV:0:12}$" \
   && ok "9: forged prior hash surfaces as DRIFT (forgery never passes silently)" \
   || fail "9: forged hash did not surface as DRIFT: $OUT"
@@ -245,7 +245,7 @@ if [ -n "$STEP3" ]; then
 else
   fail "10: Step 3 section not found (heading renamed? — negative pin would be vacuous)"
 fi
-grep -q 'build-citation-map.sh' "$SKILL" && grep -q 'check-citation-drift.sh' "$SKILL" \
+grep -q 'build-citation-map.sh' "$SKILL" && grep -q 'build-citation-map.sh --check-drift' "$SKILL" \
   && ok "10: SKILL.md names both scripts" || fail "10: SKILL.md missing a script name"
 grep -q '"schema_version": "2.0"' "$SM" \
   && ok "10: section-mapping.md schema says 2.0" || fail "10: section-mapping schema not 2.0"

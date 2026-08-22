@@ -8,7 +8,7 @@
 # (docs/superpowers/specs/2026-07-20-md2pdf-render-engine.md).
 #
 # Pipeline (all on a THROWAWAY copy — the source .md is NEVER modified, so a
-# citation-stamped FSD.md keeps its sha256 and check-citation-drift stays clean):
+# citation-stamped FSD.md keeps its sha256 and the --check-drift reader stays clean):
 #   1. YAML frontmatter -> a visible ```yaml block (renders, not swallowed).
 #   2. ```mermaid blocks -> SVG via mmdc (only if present + mmdc on PATH).
 #   3. pandoc -f markdown-implicit_figures -> HTML (implicit_figures OFF so

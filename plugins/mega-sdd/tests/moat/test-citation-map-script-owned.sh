@@ -16,7 +16,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD="${PLUGIN_ROOT}/scripts/build-citation-map.sh"
-DRIFT="${PLUGIN_ROOT}/scripts/check-citation-drift.sh"
+DRIFT="${PLUGIN_ROOT}/scripts/build-citation-map.sh"
 SKILL="${PLUGIN_ROOT}/skills/emit-fsd/SKILL.md"
 HP="${PLUGIN_ROOT}/references/halt-protocol.md"
 
@@ -48,8 +48,8 @@ EOF
 
 bash "$BUILD" --vault="$V" --cwd="$F" --mode=pre-dev </dev/null >/dev/null 2>&1; code=$?
 [ "$code" = "0" ] || { echo "FAIL: build-citation-map.sh did not run clean under bash (exit $code)"; exit 1; }
-bash "$DRIFT" --vault="$V" --cwd="$F" </dev/null >/dev/null 2>&1; code=$?
-[ "$code" = "0" ] || { echo "FAIL: check-citation-drift.sh did not run under bash (exit $code)"; exit 1; }
+bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" </dev/null >/dev/null 2>&1; code=$?
+[ "$code" = "0" ] || { echo "FAIL: build-citation-map.sh --check-drift did not run under bash (exit $code)"; exit 1; }
 echo "PASS (both scripts exist + run under bash)"
 
 # --- Case 2: forged map hash is OVERWRITTEN with the hashlib-true value ---

@@ -316,7 +316,7 @@ if grep -qE '\(sha256: `?[0-9a-f]{12}' "$VAULT/fsd/FSD.md" && ! grep -q "sha256:
   ok "all stamps are real 12-hex (model wrote zero hash chars)"
 else bad "pending stamps remain or no real hashes"; fi
 echo "" >> "$PROJ/docs/PRD-leave.md"; echo "- Amendment: in-app notification chosen." >> "$PROJ/docs/PRD-leave.md"
-OUT="$(bash "$SCR/check-citation-drift.sh" --vault="$VAULT" --cwd="$PROJ" </dev/null 2>&1)"; RC=$?
+OUT="$(bash "$SCR/build-citation-map.sh" --check-drift --vault="$VAULT" --cwd="$PROJ" </dev/null 2>&1)"; RC=$?
 if [ $RC -eq 0 ] && echo "$OUT" | grep -q "^DRIFT "; then
   ok "GATE FIRED: source drift detected — $(echo "$OUT" | grep -m1 '^DRIFT ')"
 else bad "drift not detected rc=$RC: $OUT"; fi

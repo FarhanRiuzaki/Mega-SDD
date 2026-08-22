@@ -2,7 +2,7 @@
 # test-p3-emission-parity.sh — P3 emission engine (v5 spec
 # docs/superpowers/specs/2026-07-19-v5-execution-spec.md P3 row; research §4):
 # THE BYTE-PARITY PHASE GATE. The --doc parameterization of
-# build-citation-map.sh / check-citation-drift.sh is a PURE parameterization —
+# build-citation-map.sh / build-citation-map.sh --check-drift is a PURE parameterization —
 # the FSD lane is byte-identical with the flag absent and with --doc=fsd
 # (invariant-3 machinery; the fixture flow mirrors the pre-P3 baseline capture).
 #
@@ -24,7 +24,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 BUILD="${ROOT}/plugins/mega-sdd/scripts/build-citation-map.sh"
-DRIFT="${ROOT}/plugins/mega-sdd/scripts/check-citation-drift.sh"
+DRIFT="${ROOT}/plugins/mega-sdd/scripts/build-citation-map.sh"
 ENGINE="${ROOT}/plugins/mega-sdd/references/emission-engine.md"
 SLOTS="${ROOT}/plugins/mega-sdd/scripts/validate-fsd-slots.sh"
 for f in "$BUILD" "$DRIFT" "$ENGINE" "$SLOTS"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
@@ -117,22 +117,22 @@ run_flow() {
   out=$(bash "$BUILD" --vault="$V" --cwd="$F" --mode=pre-dev $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/03-stdout.txt"; cp "$V/fsd/FSD.md" "$CAP/03-FSD.md"
   # 04 drift clean (no output)
-  out=$(bash "$DRIFT" --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
+  out=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/04-drift.txt"
   # 05 source drifted
   printf 'drifted line\n' >> "$V/02-functional.md"
-  out=$(bash "$DRIFT" --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
+  out=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/05-drift.txt"
   # 06 source deleted → GONE (then restore)
   cp "$V/units/U-001.md" "$CAP/.u001.bak"; rm "$V/units/U-001.md"
-  out=$(bash "$DRIFT" --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
+  out=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/06-drift.txt"; mv "$CAP/.u001.bak" "$V/units/U-001.md"
   # 07 no map → NO_PRIOR; corrupt map → PRIOR_UNREADABLE
   mv "$MAP" "$MAP.bak"
-  out=$(bash "$DRIFT" --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
+  out=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/07-drift.txt"
   printf '{broken json\n' > "$MAP"
-  out=$(bash "$DRIFT" --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
+  out=$(bash "$DRIFT" --check-drift --vault="$V" --cwd="$F" $EXTRA </dev/null 2>&1); rc=$?
   printf 'rc=%s\n%s\n' "$rc" "$out" > "$CAP/08-drift.txt"
   mv "$MAP.bak" "$MAP"
 }
@@ -181,7 +181,7 @@ if [ "$RC" -eq 0 ] && [ -f "$V3/prd/.citation-map.json" ] && grep -q "(sha256: $
 else
   fail "3: prd lane rc=$RC out: $OUT"
 fi
-OUT=$(bash "$DRIFT" --vault="$V3" --cwd="$F3" --doc=prd </dev/null 2>&1); RC=$?
+OUT=$(bash "$DRIFT" --check-drift --vault="$V3" --cwd="$F3" --doc=prd </dev/null 2>&1); RC=$?
 [ "$RC" -eq 0 ] && [ -z "$OUT" ] && ok "3: drift --doc=prd reads the prd map (clean → no output)" \
   || fail "3: prd drift rc=$RC out: $OUT"
 OUT=$(bash "$BUILD" --vault="$V3" --cwd="$F3" --mode=pre-dev --doc=sit </dev/null 2>&1); RC=$?

@@ -29,6 +29,12 @@
 #
 # Usage:
 #   build-citation-map.sh --vault=<vault-dir> --cwd=<project-root> --mode=<mode> [--doc=<name>]
+#   build-citation-map.sh --check-drift --vault=<vault-dir> --cwd=<project-root> [--doc=<name>]
+#     (--check-drift = the SANCTIONED reader mode, merged verbatim from the
+#      former check-citation-drift.sh in v7 Fase 2 group 4: reads the prior
+#      map, recomputes each source sha256 from bytes, prints ONLY drift lines —
+#      DRIFT/GONE/UNVERIFIED/NO_PRIOR/PRIOR_UNREADABLE, exit 0 for all
+#      informational outcomes. The model still never Reads the map itself.)
 #     (--mode is recorded into the map only; it changes no computation)
 #     (--doc names the doc lane, default fsd — it parameterizes ONLY the doc
 #      subdir <vault>/<doc>/<DOC>.md, the map path <vault>/<doc>/.citation-map.json,
@@ -52,12 +58,14 @@ VAULT=""
 CWD=""
 MODE=""
 DOC="fsd"
+CHECK_DRIFT=0
 for arg in "$@"; do
   case "$arg" in
     --vault=*) VAULT="${arg#*=}" ;;
     --cwd=*)   CWD="${arg#*=}" ;;
     --mode=*)  MODE="${arg#*=}" ;;
     --doc=*)   DOC="${arg#*=}" ;;
+    --check-drift) CHECK_DRIFT=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
@@ -66,6 +74,91 @@ done
 case "$DOC" in
   ''|*[!a-z0-9-]*) echo "--doc must be lowercase alnum/hyphen (got: $DOC)" >&2; exit 2 ;;
 esac
+# ─── --check-drift: sanctioned reader mode (never builds) ────────────────────
+if [ "$CHECK_DRIFT" -eq 1 ]; then
+MAP="$VAULT/$DOC/.citation-map.json"
+if [ ! -f "$MAP" ]; then
+  echo "NO_PRIOR"
+  exit 0
+fi
+
+VAULT="$VAULT" CWD="$CWD" MAP="$MAP" python3 <<'PYDRIFT'
+import hashlib, json, os, sys
+
+vault = os.path.abspath(os.environ["VAULT"])
+cwd = os.path.abspath(os.environ["CWD"])
+
+try:
+    with open(os.environ["MAP"], "rb") as f:
+        prior = json.load(f)
+    entries = prior.get("sections")
+    assert isinstance(entries, list)
+except Exception:
+    print("PRIOR_UNREADABLE")
+    sys.exit(0)
+
+def sha256_file(p):
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+def resolve(cited):
+    """Same vault/-prefix → vault → project → codebase-map order as the builder
+    (build-citation-map.sh) — the schema-1.0 fallback for display-form paths."""
+    c = str(cited).strip().strip("`")
+    cands = []
+    if c.startswith("vault/"):
+        cands.append(os.path.join(vault, c[len("vault/"):]))
+    cands.append(os.path.join(vault, c))
+    cands.append(os.path.join(cwd, c))
+    cands.append(os.path.join(cwd, ".mega-sdd", "codebase", c))
+    for p in cands:
+        if os.path.isfile(p):
+            return os.path.abspath(p)
+    return None
+
+seen = set()
+for e in entries:
+    if not isinstance(e, dict):
+        continue
+    sec = str(e.get("fsd_section") or "?").split(".")[0]
+    sp = str(e.get("source_path") or "?")
+    key = (sec, sp)
+    if key in seen:
+        continue
+    seen.add(key)
+
+    prior_h = e.get("source_sha256")
+    old12 = str(prior_h)[:12] if prior_h else ""
+    rp = e.get("resolved_path")  # schema 2.0; absent in legacy 1.0 maps
+
+    if not prior_h:
+        # Prior entry carried no hash (unresolved at build time) — nothing to compare.
+        print(f"UNVERIFIED {sec} {sp}")
+        continue
+
+    if rp:
+        path_abs = os.path.join(cwd, rp)
+        if not os.path.isfile(path_abs):
+            print(f"GONE {sec} {sp} {old12}")
+            continue
+    else:
+        path_abs = resolve(sp)
+        if path_abs is None:
+            print(f"UNVERIFIED {sec} {sp}")
+            continue
+
+    cur = sha256_file(path_abs)
+    if cur != prior_h:
+        print(f"DRIFT {sec} {sp} {old12} {cur[:12]}")
+
+sys.exit(0)
+PYDRIFT
+exit $?
+fi
+
 DOC_UPPER=$(printf '%s' "$DOC" | tr '[:lower:]' '[:upper:]')
 [ -f "$VAULT/$DOC/$DOC_UPPER.md" ] || { echo "$DOC_UPPER.md not found at $VAULT/$DOC/$DOC_UPPER.md — run emit-$DOC Step 4 first" >&2; exit 2; }
 

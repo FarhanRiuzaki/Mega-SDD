@@ -14,7 +14,7 @@
 # Discipline carried from the mapping (grammar-identical to the model-authored era):
 #   - every citation stamp is the LITERAL `(sha256: pending)` — never a hash
 #   - absent source → `[Pending — <source> not yet generated]`, never fabrication
-#   - drift callouts are inserted HERE (this script runs check-citation-drift.sh
+#   - drift callouts are inserted HERE (this script runs build-citation-map.sh --check-drift
 #     and splices the block quotes with old12/new12 VERBATIM — hash prefixes are
 #     exactly the value class a model mistypes) and the drift lines are printed
 #     so the SKILL change-note derivation consumes them without a second run
@@ -58,7 +58,7 @@ PLUGIN_VER=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "
 
 # Drift lines from the sanctioned reader (first emit → NO_PRIOR); consumed below
 # for callout insertion, then re-printed for the SKILL change-note derivation.
-DRIFT_OUT=$(bash "${SCRIPT_DIR}/check-citation-drift.sh" --vault="$VAULT" --cwd="$CWD" 2>/dev/null || true)
+DRIFT_OUT=$(bash "${SCRIPT_DIR}/build-citation-map.sh" --check-drift --vault="$VAULT" --cwd="$CWD" 2>/dev/null || true)
 
 VAULT="$VAULT" CWD="$CWD" MODE="$MODE" SECTIONS="$SECTIONS" QUIET="$QUIET" \
 TPL="$TPL" STYD="$STYD" PLUGIN_VER="${PLUGIN_VER:-unknown}" DRIFT_OUT="$DRIFT_OUT" python3 <<'PYEOF'

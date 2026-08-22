@@ -269,4 +269,4 @@ Stamped by `scripts/build-citation-map.sh` before PDF render (SKILL.md Step 4.6)
 > ⚠ **Updated since last emit** — `<source_path>` was sha256 `<old-prefix>`, now `<new-prefix>`. Section regenerated.
 ```
 
-Inserted as block quote BEFORE the regenerated section content. `<old-prefix>`/`<new-prefix>` come from `scripts/check-citation-drift.sh` output (`DRIFT <section> <path> <old12> <new12>` — SKILL.md Step 2), never model-recalled.
+Inserted as block quote BEFORE the regenerated section content. `<old-prefix>`/`<new-prefix>` come from `scripts/build-citation-map.sh (--check-drift mode)` output (`DRIFT <section> <path> <old12> <new12>` — SKILL.md Step 2), never model-recalled.

@@ -55,7 +55,7 @@ Announce: `"SIT maturity: <verdict> (script-derived — <executed>/<units> units
 
 ### Step 1: Prior-emit drift check (script-run)
 
-Run `bash <plugin-root>/scripts/check-citation-drift.sh --vault=<vault> --cwd=<project-root> --doc=sit` and consume ONLY its output lines (`DRIFT` / `GONE` / `UNVERIFIED` / `NO_PRIOR` / `PRIOR_UNREADABLE`). Flagged sections get a drift callout block quote on re-emit using the script's `old12`/`new12` prefixes verbatim. NEVER read `.citation-map.json` directly.
+Run `bash <plugin-root>/scripts/build-citation-map.sh --check-drift --vault=<vault> --cwd=<project-root> --doc=sit` and consume ONLY its output lines (`DRIFT` / `GONE` / `UNVERIFIED` / `NO_PRIOR` / `PRIOR_UNREADABLE`). Flagged sections get a drift callout block quote on re-emit using the script's `old12`/`new12` prefixes verbatim. NEVER read `.citation-map.json` directly.
 
 ### Step 2: Per-section emission loop
 

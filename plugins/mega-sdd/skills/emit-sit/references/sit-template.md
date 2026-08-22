@@ -121,4 +121,4 @@ per `plugins/mega-sdd/references/emission-engine.md §P5 seams`).
 ```
 
 Inserted as block quote BEFORE the affected section. Prefixes come from
-`check-citation-drift.sh --doc=sit` output verbatim, never model-recalled.
+`build-citation-map.sh --check-drift --doc=sit` output verbatim, never model-recalled.

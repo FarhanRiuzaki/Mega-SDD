@@ -113,7 +113,7 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 | 🔄 Pending sync decisions | `<vault>/PENDING-SYNC.md` | Human-only decisions an autonomous sync deferred (CONFLICTs, drift direction calls, vault patch drafts) |
 | Dirty-paths journal (ambient) | `.mega-sdd/codebase/.dirty-paths.jsonl` | Which files changed in-session since the last scan (consumed by sync; not for manual editing) |
 | ⭐ Corporate FSD (after emit-fsd) | `<vault>/fsd/FSD.pdf` + `FSD.md` | Confluence-format FSD for stakeholder sign-off; upload PDF manually to Confluence |
-| FSD citation trace (after emit-fsd) | `<vault>/fsd/.citation-map.json` | Audit which vault/units/bolts source each FSD section was grounded on. Writer: `scripts/build-citation-map.sh`; sanctioned reader: `scripts/check-citation-drift.sh` (the model consumes its drift lines, never the file) |
+| FSD citation trace (after emit-fsd) | `<vault>/fsd/.citation-map.json` | Audit which vault/units/bolts source each FSD section was grounded on. Writer: `scripts/build-citation-map.sh`; sanctioned reader: `scripts/build-citation-map.sh (--check-drift mode)` (the model consumes its drift lines, never the file) |
 | Install outcomes (after install-deps) | `<project>/.mega-sdd/memory/install-outcomes.md` | Per-tool install audit log; skip re-audit next session unless --force-recheck |
 
 ## Phase 2+ workflow (after Phase 1 completes)

@@ -140,5 +140,5 @@ Slot inventory:
 > ⚠ **Updated since last emit** — `<source_path>` was sha256 `<old-prefix>`, now `<new-prefix>`. Section regenerated.
 ```
 
-Inserted as block quote BEFORE the affected section. Prefixes come from `check-citation-drift.sh --doc=uat`
+Inserted as block quote BEFORE the affected section. Prefixes come from `build-citation-map.sh --check-drift --doc=uat`
 output verbatim, never model-recalled.
