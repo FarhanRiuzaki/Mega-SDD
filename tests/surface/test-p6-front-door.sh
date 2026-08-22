@@ -84,7 +84,7 @@ done
 RELOC="
 skills/orchestrate-flow/references/diagnostics-procedures.md:validate-unit-spec.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:analyze-parallelism.sh
-skills/orchestrate-flow/references/diagnostics-procedures.md:list-modules.sh
+skills/orchestrate-flow/references/diagnostics-procedures.md:query-graph.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:--mark-dod
 skills/orchestrate-flow/references/diagnostics-procedures.md:changed ∪ dependents
 skills/bind-codebase/references/handoff-validation.md:validate-handoff-binding-units

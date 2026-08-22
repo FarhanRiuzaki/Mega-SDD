@@ -208,7 +208,7 @@ After each unit completes:
 
 - `<vault>/.memory/bolt-outcomes.json` already tracks per-unit outcomes (existing)
 - Module progress derived: `units in module M-X where status=completed / total units in M-X`
-- `list-modules` reads this for live progress display
+- the list-modules diagnostic (`query-graph.sh --modules`) reads this for live progress display
 
 ## Halt protocol additions
 

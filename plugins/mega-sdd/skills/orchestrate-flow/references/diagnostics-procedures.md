@@ -144,14 +144,14 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ## list-modules
 
-Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script: `scripts/list-modules.sh`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
+Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules` (the former list-modules.sh, merged in v7 Fase 2). This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
 
 Flags: `[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]`.
 
 ### Step 1 — Display the rollup
 
 ```bash
-bash <plugin-root>/scripts/list-modules.sh <flags> --cwd="$(pwd)"
+bash <plugin-root>/scripts/query-graph.sh --modules <flags> --cwd="$(pwd)"
 ```
 
 The script resolves the vault (positional `[vault-path]`, else auto-probe `.mega-sdd/vaults/` then legacy `docs/mega-sdd/vaults/`), reads `_meta/modules.yaml` (or `modules.yaml.auto`, or falls back to a single implicit `M-default`), and emits per module: ID, name, status (`not-started` / `in-progress` / `units-complete` / `completed`), units `completed/total`, DoD `done/total`, priority, and `blocked_by` resolution — plus an `M-unassigned` warning for units whose `module:` matches no defined module, and the deterministic `Unblocked & actionable:` set. `--format=json` emits the same structured. Relay the output.
