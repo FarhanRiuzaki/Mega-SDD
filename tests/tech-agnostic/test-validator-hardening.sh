@@ -14,13 +14,12 @@ S="${ROOT}/plugins/mega-sdd/scripts"
 CIT="$S/validate-kb-citations.sh"
 MRK="$S/validate-kb-markers.sh"
 LEAK="$S/kb-leak-scan.sh"
-AUD="$S/audit-domain-rules.sh"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
-for f in "$CIT" "$MRK" "$LEAK" "$AUD"; do [ -f "$f" ] || { fail "missing $f"; exit 1; }; done
+for f in "$CIT" "$MRK" "$LEAK"; do [ -f "$f" ] || { fail "missing $f"; exit 1; }; done
 
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t vhard)"
 trap 'rm -rf "$WORK"' EXIT
@@ -126,23 +125,7 @@ AMB=$(jget "$AR" "json.load(sys.stdin).get('ambiguous')")
 AST=$(jget "$AR" "json.load(sys.stdin).get('status')")
 [ "$AMB" = "1" ] && [ "$AST" = "FAIL" ] && ok "ambiguous basename (2 paths) → NOT resolved (FAIL)" || fail "ambiguous expected FAIL/1, got status=$AST amb=$AMB"
 
-# ── M5: honesty-fix — GDPR WARN, non-regulatory PASS ──────────────────────────
-note ''
-note '=== M5: GDPR/HIPAA → WARN (no false all-clear); non-regulatory → PASS ==='
-GD="$WORK/m5gdpr"; mkdir -p "$GD/.mega-sdd/knowledge-base/40-business-rules" "$GD/.mega-sdd/vaults/demo"
-printf '%s\n' '# Regulatory Rules
-| ID | Rule | Src | Mut |
-|---|---|---|---|
-| R1 | PII encrypted per GDPR Art.32 mandated by regulation [LOCKED] | eu | [LOCKED] |' > "$GD/.mega-sdd/knowledge-base/40-business-rules/regulatory-rules.md"
-GST=$(jget "$(bash "$AUD" --cwd="$GD" 2>/dev/null)" "json.load(sys.stdin).get('status')")
-[ "$GST" = "WARN" ] && ok "GDPR regulatory content → WARN (was PASS 0/0)" || fail "expected WARN, got '$GST'"
-ND="$WORK/m5plain"; mkdir -p "$ND/.mega-sdd/knowledge-base/40-business-rules" "$ND/.mega-sdd/vaults/demo"
-printf '%s\n' '# Business Rules
-| ID | Rule | Src | Mut |
-|---|---|---|---|
-| R1 | Order total equals sum of lines [VERIFIED] | app/O.php:5 | [LOCKED] |' > "$ND/.mega-sdd/knowledge-base/40-business-rules/rules.md"
-NST=$(jget "$(bash "$AUD" --cwd="$ND" 2>/dev/null)" "json.load(sys.stdin).get('status')")
-[ "$NST" = "PASS" ] && ok "non-regulatory domain → PASS (no false WARN)" || fail "expected PASS, got '$NST'"
+# (M5 arms removed v7 Fase 2 — audit-domain-rules.sh demoted to an analyze LLM instruction.)
 
 # ── Review-round fixes (adversarial pass) ─────────────────────────────────────
 note ''
@@ -184,10 +167,7 @@ OUT=$(bash "$LEAK" --kb-dir="$WORK/r4" --stack=all 2>&1)
 echo "$OUT" | grep -q "VARCHAR2" && ok "leak in later row NOT hidden by data-row 'source' (header needs separator)" || fail "data-row 'source' hijacked source_col and HID the leak"
 
 note ''
-note '=== R5: M5 stub regulatory-rules.md (heading only) -> PASS (no cry-wolf WARN) ==='
-ST="$WORK/r5"; mkdir -p "$ST/.mega-sdd/knowledge-base/40-business-rules" "$ST/.mega-sdd/vaults/demo"
-printf '# Regulatory Rules\n_None detected_\n' > "$ST/.mega-sdd/knowledge-base/40-business-rules/regulatory-rules.md"
-[ "$(jget "$(bash "$AUD" --cwd="$ST" 2>/dev/null)" "json.load(sys.stdin).get('status')")" = "PASS" ] && ok "stub reg-file heading does not trigger false WARN" || fail "stub reg-file → false WARN (filename/heading keying)"
+# (R5 arm removed with M5 — same demoted validator.)
 
 note ''
 [ "$FAILED" -eq 0 ] && note "tech-agnostic hardening: all assertions passed." || note "tech-agnostic hardening: FAILURES above."

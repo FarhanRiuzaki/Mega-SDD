@@ -8,9 +8,9 @@
 #   2  templates/00-index.md no longer carries the moved blocks (negative pins) but
 #      keeps Anti-hallucination rules + the Implementation Notes heading + the
 #      _meta/ai-consumer-guide.md pointer
-#   3  SKILL.md + generation-guide name copy-consumer-guide.sh; self-check pins
+#   3  SKILL.md carries the Step-3 cp one-liner (v7: script demoted); self-check pins
 #      rewritten (all three spine pins → guide-existence + pointer checks)
-#   4  EMPIRICAL: copy-consumer-guide.sh installs a cksum-identical copy; second
+#   4  EMPIRICAL: the Step-3 cp installs a cksum-identical copy; second
 #      run idempotent (byte-identical); exit 0
 #
 # Run: bash tests/boilerplate-diet/test-p2a-consumer-guide.sh
@@ -24,7 +24,6 @@ IDX="$P/skills/generate-intent/references/templates/00-index.md"
 SKILL="$P/skills/generate-intent/SKILL.md"
 GG="$P/skills/generate-intent/references/generation-guide.md"
 SC="$P/skills/generate-intent/references/self-check.md"
-CP="$P/scripts/copy-consumer-guide.sh"
 
 FAILED=0
 ok()   { printf '  \342\234\223 %s\n' "$*"; }
@@ -62,8 +61,8 @@ grep -qF 'kb_module_graph' "$IDX" && ok "2: kb_module_graph slot survives" || fa
 if grep -qF '| ADR |' "$IDX"; then fail "2: generic glossary rows survive in template"; else ok "2: generic glossary rows gone (guide pointer instead)"; fi
 
 # ── 3: workflow + self-check wiring ──
-grep -qF 'copy-consumer-guide.sh' "$SKILL" && ok "3: SKILL Step 3 runs copy-consumer-guide.sh" || fail "3: SKILL does not name the copy script"
-grep -qF 'copy-consumer-guide.sh' "$GG" && ok "3: generation-guide names the copy script" || fail "3: generation-guide does not name the copy script"
+grep -qF 'cp "$PLUGIN_ROOT/skills/generate-intent/references/templates/ai-consumer-guide.md"' "$SKILL" && ok "3: SKILL Step 3 carries the cp one-liner (script demoted v7)" || fail "3: SKILL cp one-liner missing"
+grep -qF 'the Step-3 `cp` of the shipped template' "$GG" && ok "3: generation-guide names the Step-3 cp" || fail "3: generation-guide cp note missing"
 grep -qF 'ai-consumer-guide.md' "$SKILL" && ok "3: SKILL output contract shows _meta/ai-consumer-guide.md" || fail "3: output contract missing the guide"
 grep -qF '_meta/ai-consumer-guide.md' "$SC" && ok "3: self-check pins guide existence" || fail "3: self-check guide-existence pin missing"
 grep -qF 'resolver_route' "$SC" && ok "3: self-check carries the no-halt-YAML-in-00-index regression check" || fail "3: self-check regression check missing"
@@ -76,16 +75,13 @@ grep -qF 'contains "Companion skills for vault evolution"' "$SC" && { fail "3: l
 # generation-guide no longer mandates the generic glossary rows per-vault
 if grep -qE 'MUST have a \*\*Glossary\*\* for cross-doc terms: DBML' "$GG"; then fail "3: generation-guide still mandates generic rows in 00-index"; else ok "3: generation-guide glossary policy rewritten (no re-emitted generic rows)"; fi
 
-# ── 4: EMPIRICAL — deterministic install, cksum identity, idempotent ──
-V="$WORK/vault"; mkdir -p "$V"
-FAKE_HOME="$WORK/home"; mkdir -p "$FAKE_HOME"   # neutralize any real plugin cache (resolver falls back to repo root)
-HOME="$FAKE_HOME" bash "$CP" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] && ok "4: copy script exit 0" || fail "4: copy script failed (rc=$RC)"
-[ -f "$V/_meta/ai-consumer-guide.md" ] && ok "4: _meta/ai-consumer-guide.md installed" || fail "4: guide not installed"
+# ── 4: EMPIRICAL — the SKILL's cp one-liner installs a byte-identical copy ──
+# (v7: copy-consumer-guide.sh demoted to this cp; run the documented command.)
+V="$WORK/vault"; mkdir -p "$V/_meta"
+cp "$GUIDE" "$V/_meta/ai-consumer-guide.md" && ok "4: cp install exit 0" || fail "4: cp failed"
 S1="$(cksum < "$GUIDE")"; S2="$(cksum < "$V/_meta/ai-consumer-guide.md" 2>/dev/null || echo differ)"
 [ "$S1" = "$S2" ] && ok "4: installed copy cksum-identical to shipped guide" || fail "4: copy differs from shipped guide"
-HOME="$FAKE_HOME" bash "$CP" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
-S3="$(cksum < "$V/_meta/ai-consumer-guide.md" 2>/dev/null || echo differ)"
-[ "$RC" -eq 0 ] && [ "$S1" = "$S3" ] && ok "4: second run idempotent (byte-identical, exit 0)" || fail "4: re-run not idempotent (rc=$RC)"
+cp "$GUIDE" "$V/_meta/ai-consumer-guide.md" && [ "$S1" = "$(cksum < "$V/_meta/ai-consumer-guide.md")" ] \
+  && ok "4: second run idempotent (byte-identical)" || fail "4: re-run not idempotent"
 
 if [ "$FAILED" -eq 0 ]; then echo "ALL P2A PINS OK"; exit 0; else echo "P2A pins FAILED"; exit 1; fi

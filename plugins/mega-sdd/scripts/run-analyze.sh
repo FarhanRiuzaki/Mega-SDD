@@ -89,7 +89,7 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
 
   # Validators FULL runs unconditionally (no file-existence SKIP) → always read from disk.
   V1_RC="STATE_FILE"; V4_RC="STATE_FILE"; V3B_RC="STATE_FILE"
-  V7S_RC="STATE_FILE"; V9_RC="STATE_FILE"; V10_RC="STATE_FILE"
+  V7S_RC="STATE_FILE"; V10_RC="STATE_FILE"
   V11_RC="STATE_FILE"; V12_RC="STATE_FILE"
 
   # Discovery-gated validators — mirror FULL's SKIP-when-no-files (globs match FULL exactly).
@@ -477,9 +477,6 @@ for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not 
 done
 V7C_RC=$( [ "$V7C_HAS_FILES" -eq 0 ] && echo "SKIP" || echo "$V7C_WORST" )
 
-# 1h. Domain-rule gap detector (R4 — runs only when KB exists)
-V9_RC=$(run_validator "audit-domain-rules.sh" --cwd="$CWD" --quiet)
-
 # 1i. Constitution enforcement validator (R5)
 V10_RC=$(run_validator "validate-constitution.sh" --cwd="$CWD" --quiet)
 
@@ -604,7 +601,7 @@ fi  # end of FULL vs AGGREGATE_ONLY branch
 # --- Phase 3: Aggregate and write report ---
 ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V7_RC="$V7_RC" \
-  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V9_RC="$V9_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
+  V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   V3_ST="$V3_ST" V4_ST="$V4_ST" V5_ST="$V5_ST" V7_ST="$V7_ST" V7M_ST="$V7M_ST" V7F_ST="$V7F_ST" V7VF_ST="$V7VF_ST" V7C_ST="$V7C_ST" \
   SCOPE_MODE="$SCOPE_MODE" REUSED_FILES="$REUSED_FILES" RERUN_FILES="$RERUN_FILES" LEDGER_TS="$LEDGER_TS" \
   python3 <<'PYEOF'
@@ -644,7 +641,6 @@ validator_results = {
     "vault_flows": {"rc": os.environ["V7VF_RC"], "state_file": ".vault-flows-state.json", "st": os.environ.get("V7VF_ST", "")},
     "starterkit_conformance": {"rc": os.environ["V7S_RC"], "state_file": ".starterkit-conformance-state.json"},
     "kb_citations": {"rc": os.environ["V7C_RC"], "state_file": ".kb-citations-state.json", "st": os.environ.get("V7C_ST", "")},
-    "domain_rules": {"rc": os.environ["V9_RC"], "state_file": ".domain-rules-state.json"},
     "constitution": {"rc": os.environ["V10_RC"], "state_file": ".constitution-state.json"},
     "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},
     "codebase_map": {"rc": os.environ["V12_RC"], "state_file": ".codebase-map-state.json"},
@@ -738,8 +734,8 @@ for vc in vault_consistency:
             vault_statuses.append(chk["status"])
 
 has_fail = "FAIL" in all_statuses or "FAIL" in vault_statuses
-# `or "WARN" in all_statuses` so a KB-grounding WARN (validate-kb-citations 0-cites,
-# audit-domain-rules 0-rules-parsed) also flips the overall banner to WARN — it was
+# `or "WARN" in all_statuses` so a KB-grounding WARN (validate-kb-citations
+# 0-cites) also flips the overall banner to WARN — it was
 # only rendered in the per-boundary row, not the summary. Never escalates a FAIL.
 has_warn = ("WARN" in vault_statuses) or ("FAIL" in advisory_statuses) \
     or ("WARN" in advisory_statuses) or ("WARN" in all_statuses)

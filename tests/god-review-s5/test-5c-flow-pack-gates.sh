@@ -220,9 +220,26 @@ echo "$PK_OUT" | grep -q "unrewritten template placeholder" \
   && ok "PACKLINT: unrewritten extends placeholder is a lint violation (chain-walk break caught)" \
   || fail "PACKLINT: extends placeholder passes"
 bash "$VPK" "$LARAVEL" >/dev/null 2>&1 && ok "PACKLINT: shipped laravel pack still lints clean" || fail "PACKLINT: laravel pack regressed"
-SCF="${ROOT}/plugins/mega-sdd/scripts/scaffold-pack.sh"
-SCAFFOLD_DEST_DIR="$WORK" bash "$SCF" r2teststack >/dev/null 2>&1
-bash "$VPK" "$WORK/r2teststack.md" >/dev/null 2>&1 && ok "r2 S5R-2: scaffolded skeleton passes its own lint (extends: _universal default)" || fail "r2 S5R-2: skeleton fails its own lint"
+# v7: scaffold-pack.sh demoted — the README documents a hand-copy of
+# _template.md + fill; the LINTER is the safety net on that path. Two arms:
+# (a) a raw copy that still carries the template's Laravel example tokens
+#     must FAIL lint (leak back-stop alive on the README path);
+# (b) a filled skeleton (frontmatter set + example tokens rewritten, as the
+#     README instructs) must PASS.
+TPL="${ROOT}/plugins/mega-sdd/references/framework-conventions/_template.md"
+sed -e 's/^framework:.*/framework: r2teststack/' \
+    -e 's/^framework_version_range:.*/framework_version_range: "1.x"/' \
+    -e 's/^extends:.*/extends: _universal/' \
+    "$TPL" > "$WORK/r2raw.md"
+bash "$VPK" "$WORK/r2raw.md" >/dev/null 2>&1 \
+  && fail "r2 S5R-2a: raw hand-copy with Laravel example tokens passed lint (leak back-stop dead)" \
+  || ok "r2 S5R-2a: raw hand-copy FAILS lint — leak back-stop guards the README path"
+sed -e 's|app/Http/Controllers/|src/controllers/|g' -e 's|app/Http/|src/|g' \
+    -e 's|\.blade\.php|.tpl.html|g' -e 's|Eloquent|the ORM|g' \
+    -e 's|artisan|the cli|g' -e 's|blade|tpl|g' -e 's|Blade|Tpl|g' \
+    -e 's|composer\.json|the manifest|g' -e 's|app/Models/|src/models/|g' \
+    "$WORK/r2raw.md" > "$WORK/r2teststack.md"
+bash "$VPK" "$WORK/r2teststack.md" >/dev/null 2>&1 && ok "r2 S5R-2b: filled hand-scaffold (README path) passes lint" || fail "r2 S5R-2b: filled hand-scaffold fails lint — README authoring path broken"
 
 # ── GU-SKC-INDENT ──
 F2="$WORK/skc"; mkdir -p "$F2/.mega-sdd/codebase" "$F2/.mega-sdd/vaults/demo/units"

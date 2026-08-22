@@ -58,7 +58,7 @@ Verify every doc has:
 - [ ] The authored patch carried every field the model owns: metadata + `source_documents` + `design_system_flags` (matching the Step 3 conditional-generation values) [+ `design_system`] [+ scope block] + the per-OQ recommend/scan records (Step 3.5) + the advisor provenance record (Step 3.7) — the validator's `oq_recommend_underspecified` is the tripwire for a recommend-OQ whose JSON-only fields went missing.
 
 **Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
-- [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the `copy-consumer-guide.sh` Run in Step 3 installed it — script-copied, never model-rendered).
+- [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the Step-3 `cp` Run installed it — copied from the shipped template, never model-rendered).
 - [ ] `00-index.md` Implementation Notes carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in 00-index is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
 - [ ] `00-index.md` Glossary carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
 

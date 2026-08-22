@@ -1,6 +1,6 @@
 # AI Consumer Guide — mega-sdd vault protocol
 
-> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (by `scripts/copy-consumer-guide.sh` at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `00-index.md` §Implementation Notes — this file carries the GENERIC consumer protocol only.
+> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `00-index.md` §Implementation Notes — this file carries the GENERIC consumer protocol only.
 
 This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (`00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
 
