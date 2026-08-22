@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.2.0] - 2026-08-22 — v7 Fase 4 markdown diet (R-series; tracer-measured per R)
+
+Scoping `research/2026-08-22-v7-fase4-scoping.md` (user GO, order R5→R4→R2→R1→R3; rule: every R must show a measured token reduction on the same static tracer or be reverted). R5 (trace re-derivation + T10 bolts-per-unit lane + `benchmarks/results/optimized/context-v7-pre-fase4.json` baseline) shipped pre-bump.
+
+### Changed — R4: execute-bolts loading contract (bolts-per-unit −3,951 est tok, −7.8% measured)
+- **`batch-and-fanout.md` is now conditional** — loaded ONLY for a multi-unit invocation (`--all`/`--parallel`/`--per-squad`/`--squad=`/`--module=`); a single-unit run never loads it. The two per-invocation sections it carried moved verbatim to `halts-and-handoff.md` (already in every lane): **§Per-bolt drift check** and **§Batch completion — full-suite gate (B2)** — single owners, the batch ref keeps a no-copy pointer.
+- **`execute-bolts/SKILL.md` 47.0→41.4 KB** — duplicated essays compressed to pointer + ≤5-line summary at their single owners: `--parallel`/`--per-squad` detail → `batch-and-fanout.md §--all`; post-flight mechanics + the B1 evidence contract → `hard-rule-scan.md` (the `OVERWRITES the artifact` recompute-truth pin stays in SKILL per s7a); B2 detail → `halts-and-handoff.md`; the Step-4.5 T1/T2/T3 tier inventory → `context-enrichment.md` (script-owned spec; the controller never needed it at run time). All operative rails stay in SKILL verbatim (whitelist B3 wording, detect-after topology, exit-code discriminators, anti-bypass policy, halt names).
+- **§Specialist references is now an explicit load-conditions contract** (always-set / conditional / script-owned), including the **verify-unit lane**: a `task_type: verify` unit never loads `code-gates.md`, `hard-rule-scan.md`, or batch material (it commits no code; pre-flight self-skips, post-flight is skipped by contract) — and its skip of the Step-3 L0 gate call is now stated explicitly.
+- Benchmark T10 trace re-derived to the new contract. Measured (chars÷4 static tracer, vs pre-Fase-4 baseline +127 tok doc-noise corrected): **T10 50,397→46,573 (−3,951, −7.8%)**; T01 −2,732. Below the scoping's −5–8k estimate band — reported honestly; the revert rule required a measured reduction, not the estimate.
+
+### Added
+- `report-token-cost.sh --price-table=<yaml>` (billed gateway cost per model; unpriced tokens counted + flagged, never estimated) and `--vault=<dir>` (per-bolt `model_used`/`escalated_from` table) — the v7.1 field-pilot flip metric in one command (A-path gate decision; runbook `model-tiers.md §v7.1 office rollout` step 4).
+
 ## [7.1.0] - 2026-08-22 — per-unit implementer model routing + cascade (ship default: OFF)
 
 Spec `docs/superpowers/specs/2026-08-22-per-unit-model-routing-design.md` (user GO 2026-08-22). **Ship kode ≠ ship default:** config `model_tiers.bolt_implementer:` defaults to `inherit` — byte-for-byte today's behavior (no `model` param on the Agent call, zero office regression). `auto` activates the router; the default flips only after the clinic A/B passes its gate (≥25% token saving AND panel P1 ≤ baseline AND acceptance pass rate equal — user decision).
