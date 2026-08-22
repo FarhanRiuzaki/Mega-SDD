@@ -54,15 +54,15 @@ fallback on a numeric collision (deterministic, script-owned).
 ## Section 1 — Ruang Lingkup Uji
 
 **Slot:** `{{section-1-narrative}}` + fragment block §1
-**Source:** `<vault>/04-flows.md` (F-* flows in scope) + `<vault>/_meta/modules.yaml` (module DoD)
+**Source:** `<vault>/flows.md` (F-* flows in scope) + `<vault>/_meta/modules.yaml` (module DoD)
 **Fragment carries:** the TS ↔ F-id ↔ judul ↔ tipe ↔ DoD-count table + the per-module DoD list.
 **Narrative (model):** 2–4 kalimat Indonesia — cakupan uji (flow apa saja, scope mana), dasar penurunannya (vault flows + module DoD), dan apa yang di luar cakupan.
-**Missing source:** fragment emits `[Pending — vault/04-flows.md belum berisi flow F-*]` / the honest no-modules note — keep verbatim.
+**Missing source:** fragment emits `[Pending — vault/flows.md belum berisi flow F-*]` / the honest no-modules note — keep verbatim.
 
 ## Section 2 — Skenario Uji
 
 **Slot:** `{{section-2-narrative}}` + fragment block §2
-**Source:** `<vault>/04-flows.md` — one `TS-NNN` block per `F-*-NNN` flow (1:1)
+**Source:** `<vault>/flows.md` — one `TS-NNN` block per `F-*-NNN` flow (1:1)
 **Fragment carries per TS:** heading `### TS-NNN — <judul> (F-id)`, the flow's **Mermaid diagram VERBATIM** (the Mermaid-flows hard rule extends to SIT — never redrawn, never prose-ified), and the flow's **DoD items VERBATIM** as expected outcomes (checkbox states preserved).
 **Narrative (model):** 1–2 kalimat pembuka bagian (cara membaca skenario; hubungan TS ↔ flow). TIDAK per-TS — the TS blocks are self-contained.
 **Missing source:** a flow without a Mermaid body → fragment's `[Pending — diagram Mermaid untuk F-X belum ada]`; without DoD → `[Pending — Definition of Done …]`. Keep verbatim.
@@ -107,4 +107,4 @@ fallback on a numeric collision (deterministic, script-owned).
 
 ## Drift callouts
 
-On re-emit, `build-citation-map.sh --check-drift --doc=sit` lines (`DRIFT`/`GONE`) mark sections for a callout block quote BEFORE the section content, using the script's `old12`/`new12` verbatim (same format as `emit-fsd/references/fsd-template.md §Drift callout format`). Typical SIT drift: `04-flows.md` changed after the last emit (scenarios stale) or an `acceptance.json` re-recorded (evidence superseded).
+On re-emit, `build-citation-map.sh --check-drift --doc=sit` lines (`DRIFT`/`GONE`) mark sections for a callout block quote BEFORE the section content, using the script's `old12`/`new12` verbatim (same format as `emit-fsd/references/fsd-template.md §Drift callout format`). Typical SIT drift: `flows.md` changed after the last emit (scenarios stale) or an `acceptance.json` re-recorded (evidence superseded).

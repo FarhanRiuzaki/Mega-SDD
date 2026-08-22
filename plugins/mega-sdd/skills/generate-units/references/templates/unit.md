@@ -1,7 +1,7 @@
 ---
 id: U-XXX
 title: <imperative title>
-vault_source: <e.g., 02-architecture.md#auth>
+vault_source: <e.g., vault.md#Architecture — legacy vaults: 02-architecture.md#auth>
 task_type: create                  # create | extend | verify — from the binding Implementation State Map when present (unit-schema.md)
 grounding_confidence: HIGH         # HIGH | MEDIUM | LOW per unit-schema.md — required on newly generated units
 module: M-default                  # M-<kebab> per _meta/modules.yaml; M-default when no modules.yaml

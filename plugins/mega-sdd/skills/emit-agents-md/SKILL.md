@@ -57,7 +57,7 @@ Per `plugins/mega-sdd/references/paths.md`:
    - If exists AND has mega-sdd marker → safe to regenerate (marker-detected)
 3. **Read vault sources**:
    - `vault.json` for structured metadata (project shape, mode, OQ counts)
-   - `00-index.md`, `01-overview.md`, `02-architecture.md`, `04-flows.md`, `05-decisions.md`, `06-constraints.md` for prose
+   - `vault.md`, `flows.md`, `constraints.md` (legacy: `00-index.md`/`01-overview.md`/`02-architecture.md`/`05-decisions.md` + siblings) for prose
    - `binding.md` (if exists) for implementation state
    - `<project>/.mega-sdd/memory/conventions.md` (if exists) for detected conventions
 4. **Read user-authored AGENTS.md** (if `--mode=append`):

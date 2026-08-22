@@ -49,13 +49,13 @@ The generation marker (HTML comment) is MANDATORY. Re-emission detects existing 
 ```markdown
 ## Project overview
 
-<2-3 sentences from vault's 01-overview.md TL;DR>
+<2-3 sentences from the vault Overview TL;DR (vault.md ## Overview; legacy 01-overview.md)>
 
 **Project shape**: <from vault.json `project_shape`>
 **Implementation mode**: <from vault.json `implementation_mode`>
 ```
 
-Cite source: `<!-- from 01-overview.md L<N> -->`
+Cite source: `<!-- from vault.md L<N> -->` (legacy: `01-overview.md L<N>`)
 
 ## Section 2 — Build commands
 
@@ -63,7 +63,7 @@ Cite source: `<!-- from 01-overview.md L<N> -->`
 ## Build commands
 
 \`\`\`bash
-<build commands from vault 06-constraints.md tech-stack OR memory conventions.md>
+<build commands from vault constraints.md tech-stack OR memory conventions.md>
 \`\`\`
 
 If unknown → omit section.
@@ -75,7 +75,7 @@ If unknown → omit section.
 ## Test commands
 
 \`\`\`bash
-<test framework invocations from memory conventions.md OR vault 04-flows.md DoD>
+<test framework invocations from memory conventions.md OR vault flows.md DoD>
 \`\`\`
 
 Example:
@@ -92,7 +92,7 @@ If no test framework detected → "No test framework detected. Run tests manuall
 ```markdown
 ## Code style + conventions
 
-- **File naming**: <from conventions.md OR vault 06-constraints.md>
+- **File naming**: <from conventions.md OR vault constraints.md>
 - **Class naming**: <from conventions.md>
 - **Test file convention**: <from conventions.md>
 - **Error format**: <from conventions.md error envelope section>
@@ -105,9 +105,9 @@ Cite source per row: `<!-- from conventions.md §<section> -->`
 ```markdown
 ## Architecture overview
 
-<top-level system overview from vault 02-architecture.md (the high-level paragraph, not the deep dive)>
+<top-level system overview from the vault Architecture section (vault.md ## Architecture; legacy 02-architecture.md) — the high-level paragraph, not the deep dive>
 
-**Layers** (from vault 02-architecture.md):
+**Layers** (from the vault Architecture section):
 - <layer 1>: <1-sentence description>
 - <layer 2>: <1-sentence description>
 - ...
@@ -116,7 +116,7 @@ Cite source per row: `<!-- from conventions.md §<section> -->`
 - <integration 1>: <how it's consumed>
 - ...
 
-For detailed architecture, see: `.mega-sdd/vaults/<slug>/02-architecture.md`
+For detailed architecture, see: `.mega-sdd/vaults/<slug>/vault.md` §Architecture (legacy: `02-architecture.md`)
 ```
 
 ## Section 6 — Key decisions
@@ -124,12 +124,12 @@ For detailed architecture, see: `.mega-sdd/vaults/<slug>/02-architecture.md`
 ```markdown
 ## Key decisions
 
-<list of ADR titles from vault 05-decisions.md, with 1-sentence summary each>
+<list of ADR titles from the vault Decisions section (vault.md ## Decisions; legacy 05-decisions.md), with 1-sentence summary each>
 
 - **D-001 \<title\>**: <Decision in 1 sentence>. Source: <PRD § or context>
 - **D-002 ...**: ...
 
-For full ADR details, see: `.mega-sdd/vaults/<slug>/05-decisions.md`
+For full ADR details, see: `.mega-sdd/vaults/<slug>/vault.md` §Decisions (legacy: `05-decisions.md`)
 ```
 
 ## Section 7 — Open questions
@@ -145,7 +145,7 @@ P2 (Feature blockers):
 
 These items are unresolved at vault generation time. AI tools should NOT make assumptions about them.
 
-For full OQ roll-up: `.mega-sdd/vaults/<slug>/00-index.md` §Open Questions roll-up
+For the full OQ list: `.mega-sdd/vaults/<slug>/constraints.md` §Open Questions (legacy: the `00-index.md` roll-up)
 ```
 
 ## Section 7.5 — Constitution
@@ -222,12 +222,12 @@ For tools that consume only AGENTS.md: this section + above sections are everyth
 
 | Section | Required when |
 |---|---|
-| Project overview | Always (always have 01-overview.md) |
+| Project overview | Always (the vault always has an Overview) |
 | Build commands | Detected build tooling (composer/npm/cargo/gradle/etc.) |
-| Test commands | Test framework detected in conventions.md OR DoD in 04-flows.md |
-| Code style + conventions | conventions.md exists OR 06-constraints.md has style section |
-| Architecture overview | Always (always have 02-architecture.md) |
-| Key decisions | 05-decisions.md has ≥1 ADR |
+| Test commands | Test framework detected in conventions.md OR DoD in flows.md |
+| Code style + conventions | conventions.md exists OR constraints.md has style section |
+| Architecture overview | Always (the vault always has an Architecture section) |
+| Key decisions | the Decisions section has ≥1 ADR |
 | Open questions | vault.json `open_questions_summary.total > 0` |
 | Mega-sdd interop notes | Always (signals mega-sdd presence to AGENTS.md-aware tools) |
 

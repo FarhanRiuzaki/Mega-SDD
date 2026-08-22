@@ -48,13 +48,13 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/`
 
 | What | Where | Read when |
 |---|---|---|
-| ⭐ Vault entrypoint + Phase context | `00-index.md` | Start here every session |
-| Feature scope (Phase N) | `01-overview.md` | What you're building NOW |
-| Components + APIs | `02-architecture.md` | Component contracts |
-| Data shape | `03-data-model.md` | Per-entity fields + relations |
-| User flows | `04-flows.md` | Happy paths + edge cases |
-| Decisions log | `05-decisions.md` | Why decisions were made |
-| Constraints | `06-constraints.md` | NFRs + compliance + technical |
+| ⭐ Vault entrypoint + Phase context | `vault.md` (legacy vaults: `00-index.md`) | Start here every session |
+| Feature scope (Phase N) | `vault.md ## Overview` | What you're building NOW |
+| Components + APIs | `vault.md ## Architecture` | Component contracts |
+| Data shape | `model.md` | Per-entity fields + relations |
+| User flows | `flows.md` | Happy paths + edge cases |
+| Decisions log | `vault.md ## Decisions` | Why decisions were made |
+| Constraints | `constraints.md` | NFRs + compliance + technical |
 | Project rules | `constitution.md` (v1.8+, if present) | Security/compliance/anti-patterns |
 | Open questions | `vault.json` `oqs[]` | What needs answering |
 | Phase manifest | `vault.json` `phase` + `phase_total` | Which phase this vault covers (v3.26+) |
@@ -125,7 +125,7 @@ When Phase 1 vault's bolts complete:
 3. Pipeline proceeds: bind-codebase → generate-units → execute-bolts (for Phase 2 scope)
 4. Repeat for Phase 3+
 
-`vault.json.phase` tells you which phase the current vault represents. `00-index.md` §Phase context surfaces this at the top of the vault for at-a-glance discovery.
+`vault.json.phase` tells you which phase the current vault represents. The vault.md §Phase context surfaces this at the top of the vault for at-a-glance discovery.
 
 ## E2E one-liner
 

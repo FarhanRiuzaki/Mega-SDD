@@ -63,7 +63,7 @@ blocker:
   #   not_found                → run generate-intent (no vault yet), or pass --vault=<path>
   #   vault_outside_glob_root  → run /mega-sdd:migrate-paths (legacy layout → canonical .mega-sdd/vaults/)
   #   codebase_map (missing)   → run scan-codebase first
-  #   vault_index (malformed)  → repair <vault>/00-index.md / vault.json, then re-bind
+  #   vault_index (malformed)  → repair <vault>/vault.md (legacy 00-index.md) / vault.json, then re-bind
 ```
 
 The `vault_outside_glob_root` branch is a **moat-visibility** rail, not a tidiness rule: `validate-handoff-binding-units.sh` scans four non-recursive globs rooted at `<cwd>/.mega-sdd/vaults/` — `vaults/binding.md`, `vaults/binding-*.md`, `vaults/*/binding.md`, `vaults/*/binding-*.md` — whose deepest reach is that single `*` level. A `binding.md` outside the root, OR under a vault nested deeper than one level inside it, is invisible to the validator and the gate reports PASS with an active CONFLICT. The blocker's name is historical; its condition is "not a direct child", which is strictly tighter than "outside". Absence of a vault is separately hook-blocked upstream (`validate-preflight.sh` FATAL `binding_input_vault_missing`); this blocker exists for the ambiguity and location cases that hook does not see.

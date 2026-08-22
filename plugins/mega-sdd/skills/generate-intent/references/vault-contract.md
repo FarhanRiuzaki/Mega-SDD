@@ -22,7 +22,7 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
 
 **`vault.json` is SCRIPT-DERIVED by `scripts/derive-vault-json.sh` — a model/hand write is an authoring bug.** Three lanes:
 
-- **Derive lane (md-authoritative):** `entities[]` (DBML `Table` blocks + the `// Purpose:` comment), `flows[]` (`### F-*-NNN:` headings + DoD + `**Source**:` AC harvest + `**_kb_source**:`), `adrs[]` (`### D-NNN:` + `Status:` line, absent → `accepted`), `open_questions[]` skeletons (the checkbox grammar + brackets; roll-up header as legacy category fallback), `open_questions_summary`, `vault_version` + the five Vault Lock enums. md is authoritative for existence — an OQ tag absent from the markdown is dropped (WARN), EXCEPT entries carrying `defer_to: binding` (no md home — preserved with a WARN, never dropped).
+- **Derive lane (md-authoritative):** `entities[]` (DBML `Table` blocks + the `// Purpose:` comment), `flows[]` (`### F-*-NNN:` headings + DoD + `**Source**:` AC harvest + `**_kb_source**:`), `adrs[]` (`### D-NNN:` + `Status:` line, absent → `accepted`), `open_questions[]` skeletons (the checkbox grammar + brackets incl. `[origin: <file>#<anchor>]`; the legacy 00-index roll-up header is a category fallback on 7-file vaults only), `open_questions_summary`, `vault_version` + the five Vault Lock enums. md is authoritative for existence — an OQ tag absent from the markdown is dropped (WARN), EXCEPT entries carrying `defer_to: binding` (no md home — preserved with a WARN, never dropped).
 - **Carry-forward lane (at-generation pins + unknown-key tolerance):** `prd_sha256`, `prd_path_at_generation`, `constitution_hash`/`constitution_version` (pinned at generation — recomputing would silently re-baseline; the script computes them fresh ONLY when absent and WARNs when the carried hash differs from the current `constitution.md`), legacy `mode` (carried verbatim even when it contradicts the md-derived `implementation_mode` — never reconciled), `title`, `scope`/`scope_metadata`, `source_documents`, `phase`/`phase_total`, `design_system_flags`, `design_system`, `advisor`, `changelog`, per-OQ JSON-only fields — and ANY prior key the deriver does not own, verbatim.
 - **Patch lane (`--patch <file.json>`):** the fields the model still authors — the carry-forward roster above when NEW values are being supplied (initial generation metadata, diff-vault `source_documents` replacement) + the per-OQ classifier records (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) + `defer_to`. Setting a derived key in a patch exits 2 (anti-laundering — the markdown stays the single grammar). `--event '<json>'` appends one changelog event under the same lock. **Md-hint fallback (field-test hardening):** when a patch never supplied those five per-OQ fields but they exist as hint lines inside the OQ's markdown block (`` `scan_query: "…"` `` etc.), the deriver picks them up at the LOWEST precedence — a patched/carried value always wins; the patch remains the authoring lane.
 
@@ -43,16 +43,16 @@ Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The ma
     {"type": "PRD", "path": "examples/timeoff/PRD.pdf", "version": "1.0", "date": "YYYY-MM-DD"}
   ],
   "entities": [
-    {"name": "leave_request", "purpose": "Lifecycle entity for a leave request", "doc": "03-data-model.md", "fields_count": 13}
+    {"name": "leave_request", "purpose": "Lifecycle entity for a leave request", "doc": "model.md", "fields_count": 13}
   ],
   "flows": [
-    {"id": "F-U-001", "title": "Submit leave request", "type": "user", "doc": "04-flows.md", "dod_count": 7, "source_acs": ["AC1-1","AC1-2","AC1-3","AC1-4","AC1-5"]}
+    {"id": "F-U-001", "title": "Submit leave request", "type": "user", "doc": "flows.md", "dod_count": 7, "source_acs": ["AC1-1","AC1-2","AC1-3","AC1-4","AC1-5"]}
   ],
   "adrs": [
-    {"id": "D-001", "title": "Multi-tenant SaaS-only deployment", "doc": "05-decisions.md", "status": "accepted"}
+    {"id": "D-001", "title": "Multi-tenant SaaS-only deployment", "doc": "vault.md", "status": "accepted"}
   ],
   "open_questions": [
-    {"tag": "OQ-AR-1", "priority": "P1", "doc": "02-architecture.md", "status": "open", "category": "tech", "resolver_owner": "Mike Patel"}
+    {"tag": "OQ-AR-1", "priority": "P1", "doc": "constraints.md", "origin": "vault.md#Architecture", "status": "open", "category": "tech", "resolver_owner": "Mike Patel"}
   ],
   "open_questions_summary": {
     "total": 48,
@@ -96,10 +96,10 @@ phase_total: <int>    # total phases planned (parsed from suggested-phasing.md `
 ### Field rules
 
 - `phase` + `phase_total`: REQUIRED. Defaults `phase: 1, phase_total: 1` for back-compat (greenfield + Mode A PRD-driven + single-phase Mode B). Mode B with `--kb` parses `<KB>/99-rebuild-architecture/suggested-phasing.md` for phase count. Missing field on an older vault.json → treat as `phase: 1, phase_total: 1`.
-- Every entity in `03-data-model.md` DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`). The deriver enforces this by construction (md-authoritative existence).
+- Every entity in the data-model doc (`model.md`; legacy `03-data-model.md`) DBML must have a row in `entities[]`. Same for `flows[]` (one per `F-{prefix}-NNN`), `adrs[]` (one per `D-NNN`), `open_questions[]` (one per `OQ-{CODE}-{N}`). The deriver enforces this by construction (md-authoritative existence).
 - **G1 — entities mirror rule:** each `Table` block carries a `// Purpose: <1 line>` DBML comment immediately above it (the compact-mode Purpose line, machine-read into `entities[].purpose`); the parser falls back to the full-mode `### <entity>` + `- **Purpose**:` block, else `null` — never fabricated.
 - `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
-- `open_questions[].category` is **bracket-first**: the `[tech / scan]` / `[business]` marker on the OQ line wins (`tech` / `business`); the `00-index.md` roll-up category header is the legacy fallback only (startswith-tolerant, exactly as the validator reads it).
+- `open_questions[].category` is **bracket-first**: the `[tech / scan]` / `[business]` marker on the OQ line wins (`tech` / `business`); the legacy 00-index roll-up category header is the fallback on 7-file vaults only (startswith-tolerant); layout-2 has no roll-up — the bracket is mandatory there.
 - `open_questions[].resolver_owner` is best-effort — extracted from the OQ entry's `— resolve: ...` hint when present; otherwise `null`.
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
 - Re-run `scripts/derive-vault-json.sh` after every markdown round (regeneration / `diff-vault` / `resolve-oq`). The markdown is canonical; `vault.json` is a derived index — never hand-synced.
@@ -110,7 +110,7 @@ Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` (PostToolUse re-valid
 
 - **Workflow flow signal (closed grammar).** A user-facing flow (`F-U-` prefix, or prefix-less; the `F-S-` / `F-C-` / `F-X-` internal classes are excluded) is a **multi-stage approval / maker-checker / workflow** flow when EITHER its actor/title line shows a maker→checker hand-off chain (a `maker … checker|approver|confirmer|reviewer|…` chain joined by `->` / `→` arrows) OR its step body carries **≥ 2 distinct decision transition steps** (approve / reject / review / confirm). One decision step alone is a simple submit; two or more is multi-stage.
 
-- **Operator-surface requirement (the four first-class surfaces).** When a workflow flow exists, the vault MUST model the operator-facing surface as requirements **grounded in the flows** (never invented): (1) **worklist / inbox**, (2) **decision affordance** (approve/reject actions in the current state), (3) **human-readable workflow-state labels**, (4) **audit timeline** of transitions. Presence is detected by the operator-surface vocabulary in the vault's prose docs (`02-architecture.md`, `01-overview.md`, `03-data-model.md`, `04-flows.md`). (The Design-Source OQ check below additionally scans `vault.json`.)
+- **Operator-surface requirement (the four first-class surfaces).** When a workflow flow exists, the vault MUST model the operator-facing surface as requirements **grounded in the flows** (never invented): (1) **worklist / inbox**, (2) **decision affordance** (approve/reject actions in the current state), (3) **human-readable workflow-state labels**, (4) **audit timeline** of transitions. Presence is detected by the operator-surface vocabulary in the vault's prose docs (layout-2: `vault.md`, `model.md`, `flows.md`; legacy: 02/01/03/04). (The Design-Source OQ check below additionally scans `vault.json`.)
   - **Halt `operator_surface_missing`** — workflow flow present AND no operator-surface requirement AND no Design-Source OQ → FAIL.
 
 - **Design-Source OQ (anti-hallucination escape hatch).** When `design_system_flags.HAS_UI_COMPONENTS = true` but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`**, the vault MUST carry a high-priority Design-Source Open Question (recommended tag shape `OQ-DESIGN-SOURCE-{N} [P1]`, or any OQ whose tag/text names a design-source concern — tokens / a11y / voice-brand source). **DO NOT default WCAG/Material/token values** — capture the gap as an OQ only.
@@ -123,7 +123,7 @@ A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the
 A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its inputs: which fields enter at which step, in what order, by which role, gated by which transition. When that structure is flattened to a single "Inputs: A,B,C,D,E,F" list, the downstream bolt builds ONE form instead of the multi-step wizard (the captured trade-finance regression). To prevent it, staging is carried as a **stable structured field** and propagated the SAME way as OQ-IDs (§id-stability) and constitution clauses — copied verbatim, never re-derived:
 
 - **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/knowledge-base-schema.md §3a`). Each stage cites its own `_source` anchor.
-- **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `04-flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flow body itself is the Mermaid `stateDiagram` / flowchart — never a prose Steps list, per the Mermaid-flows hard rule; the `stages:` block is authoritative for the staged fields.)
+- **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flow body itself is the Mermaid `stateDiagram` / flowchart — never a prose Steps list, per the Mermaid-flows hard rule; the `stages:` block is authoritative for the staged fields.)
 - **Enriched-stages preservation.** The KB `stages:` block MAY carry an enriched form: `input_fields` as objects (`{name, mutability, visibility, conditional}`) instead of bare strings, plus per-stage delta fields (`new_fields_vs_prior`, `hidden_fields_vs_prior`, `promoted_to_mutable_vs_prior`, `dynamic_disclosures`) — see `extract-intelligence/references/knowledge-base-schema.md §3a`. "Verbatim" **includes these**: generate-intent MUST preserve whichever form the KB used and MUST NOT downgrade enriched `input_fields` objects to bare strings (a silent drop of the maker→checker field-promotion / show-hide intent the extractor captured). generate-intent does not itself *act on* the delta semantics — those are consumed at UI/bolt time per the UI/UX-design-intelligence integration (`docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`); carrying them through unmodified is precisely what makes that downstream consumption possible. Bare-string KBs are unaffected (nothing to preserve).
 - **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
 - **Advisory at the source.** the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, pointing the user to `enrich-semantics` to retro-fit staging without a full re-extract.
@@ -214,12 +214,12 @@ Every Open Question MUST have a unique tag and priority marker.
 
 | Doc | Code |
 |-----|------|
-| `01-overview.md` | `OV` |
-| `02-architecture.md` | `AR` |
-| `03-data-model.md` | `DM` |
-| `04-flows.md` | `FL` |
-| `05-decisions.md` | `DC` |
-| `06-constraints.md` | `CN` |
+| `vault.md ## Overview` (legacy `01-overview.md`) | `OV` |
+| `vault.md ## Architecture` (legacy `02-architecture.md`) | `AR` |
+| `model.md` (legacy `03-data-model.md`) | `DM` |
+| `flows.md` (legacy `04-flows.md`) | `FL` |
+| `vault.md ## Decisions` (legacy `05-decisions.md`) | `DC` |
+| `constraints.md` (legacy `06-constraints.md`) | `CN` |
 
 `N` is sequential within each doc (1, 2, 3 …). Tags are stable identifiers — once assigned, do not renumber when adding new questions.
 
@@ -264,7 +264,7 @@ Auto-classification (per the auto-classifier heuristics below) carries a confide
 - `medium` — partial match (some signal, but not unambiguous)
 - `low` — fallback default; classifier defaulted to `business/blocking` because no strong signal
 
-**Auto-resolve gate**: only `high`-confidence tech OQs auto-resolve in `bind-codebase`. `medium`/`low` confidence OQs go to `00-index.md` "## Auto-Classification Review" section. User reviews tags one-pass before binding runs; any OQ user flips from tech-to-business stays human-decided.
+**Auto-resolve gate**: only `high`-confidence tech OQs auto-resolve in `bind-codebase`. `medium`/`low` confidence OQs go to the vault.md "## Auto-Classification Review" section (legacy: 00-index.md). User reviews tags one-pass before binding runs; any OQ user flips from tech-to-business stays human-decided.
 
 ### Auto-classifier heuristics
 
@@ -287,9 +287,9 @@ Auto-classification (per the auto-classifier heuristics below) carries a confide
 
 **Conservative default**: when no heuristic matches → `business / blocking / low`. Safe — preserves current blocking behavior.
 
-### Auto-Classification Review section in `00-index.md`
+### Auto-Classification Review section in `vault.md`
 
-After OQ classification, `00-index.md` MUST include a new section before the main OQ roll-up:
+After OQ classification, `vault.md` MUST include the section (layout-2 — there is no roll-up; on a legacy 7-file vault it sits in 00-index.md before the roll-up):
 
 ```markdown
 ## Auto-Classification Review
@@ -304,7 +304,7 @@ After OQ classification, `00-index.md` MUST include a new section before the mai
 | OQ-FL-3 | does cancellation refund? | business / blocking | high | blocking — needs stakeholder |
 ```
 
-User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "what error envelope" actually needs a product call, not a tech recommendation). Override mechanism: user edits `00-index.md` OR `vault.json`; `bind-codebase` re-reads at run time.
+User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "what error envelope" actually needs a product call, not a tech recommendation). Override mechanism: user edits `vault.md` (legacy: 00-index.md) OR `vault.json`; `bind-codebase` re-reads at run time.
 
 ### Updated OQ schema in markdown body
 
@@ -324,7 +324,7 @@ User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "w
   "resolution_mode": "scan",
   "classification_confidence": "high",
   "scan_query": "codebase-map §test_frameworks",
-  "doc": "02-architecture.md",
+  "doc": "constraints.md",
   "status": "open"
 }
 ```
@@ -341,7 +341,7 @@ For `resolution_mode: recommend`:
   "rationale": "Industry standard; integrates with most HTTP clients. Existing pattern at app/Http/Resources/ErrorResource.php uses ad-hoc shape — recommendation moves toward consistency.",
   "scan_citations": ["app/Http/Resources/ErrorResource.php:12"],
   "fallback_if_wrong": "If RFC 7807 doesn't fit client expectations, revisit and consider JSON:API error format",
-  "doc": "02-architecture.md",
+  "doc": "constraints.md",
   "status": "open"
 }
 ```
@@ -394,7 +394,7 @@ Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing
 - B-001: <input-validation rule — where/how untrusted input is validated> (source: PRD §<security>)
 - B-002: <data-access rule — ORM/query-layer boundary> (source: binding §scan_results)
 - B-003: <secret-handling rule — no secrets in code; config/env abstraction> (source: PRD §<security>)
-- B-004: <PII-at-rest rule> (source: 06-constraints.md §regulatory — mandated by <regulation>)
+- B-004: <PII-at-rest rule> (source: constraints.md §regulatory — mandated by <regulation>)
 
 ## §C. Architecture invariants
 
@@ -415,9 +415,9 @@ Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing
 
 ## §F. Compliance
 
-- F-001: <audit-logging rule — what is logged, where> (source: 06-constraints.md §regulatory)
+- F-001: <audit-logging rule — what is logged, where> (source: constraints.md §regulatory)
 - F-002: <PII-access-logging rule> (source: PRD §<compliance>)
-- F-003: <data-retention rule — period FROM a source> (source: 06-constraints.md §regulatory — mandated by <regulation>)
+- F-003: <data-retention rule — period FROM a source> (source: constraints.md §regulatory — mandated by <regulation>)
 ```
 
 > **Every clause carries an inline `(source: …)`.** This is not decoration — `validate-constitution.sh`
@@ -457,8 +457,8 @@ Constitution version pinned to vault:
 ### Backward compatibility
 
 - v3.9 vaults without `constitution.md` → skill detects absence; auto-routes to user prompt "constitution.md missing; create from PRD constraints? Y/n"
-- Existing 7-file vault structure unchanged; constitution is 8th additive file
-- Tools that hardcoded 7-file count → graceful fallback (treat missing constitution as empty list)
+- Existing vault file structure unchanged (layout-2: 4 files; legacy: 7); constitution is an additive file
+- Tools that hardcoded the file count → graceful fallback (treat missing constitution as empty list)
 
 ## §Starterkit-binding — Dual-citation format
 
@@ -468,9 +468,9 @@ When `generate-intent` runs with `--scan=<codebase-map-path>` (orchestrate-flow 
 
 | Vault file | When dual-citation applies | What "Intent" describes | What "Starterkit binding" describes |
 |---|---|---|---|
-| `02-architecture.md` | Always when `--scan` set | Conceptual architecture (auth strategy, layering, integration points) | Concrete scaffold-mapped choices (base classes, framework helpers, package selection) |
-| `03-data-model.md` | When framework pack defines DB conventions | Conceptual ERD (entities, relationships, business rules) | Schema realization (PK type, FK convention, timestamps, soft-delete strategy) |
-| `06-constraints.md` | Always when `--scan` set | Tech-agnostic constraints (style, naming, idioms inferred from PRD/brief) | Pack-specific Hard Rules + forbidden patterns inherited from framework conventions |
+| `vault.md ## Architecture` | Always when `--scan` set | Conceptual architecture (auth strategy, layering, integration points) | Concrete scaffold-mapped choices (base classes, framework helpers, package selection) |
+| `model.md` | When framework pack defines DB conventions | Conceptual ERD (entities, relationships, business rules) | Schema realization (PK type, FK convention, timestamps, soft-delete strategy) |
+| `constraints.md` | Always when `--scan` set | Tech-agnostic constraints (style, naming, idioms inferred from PRD/brief) | Pack-specific Hard Rules + forbidden patterns inherited from framework conventions |
 
 ### Format
 
@@ -518,7 +518,7 @@ Within each affected section, every architectural decision gets TWO sub-fields:
 
 ## §Multi-scope vault — Scope tagging schema
 
-PRD declares a `scopes:` block (or `--scope=<id>` passed)? Read `references/multi-scope.md` (this directory) before scaffolding — it carries the full scope-tagging schema (vault.json extension, field rules, 00-index.md header structure, validation rules, backward compatibility), relocated verbatim from this section. Single-scope PRDs without a `scopes:` block use the current single-vault schema (no scope tagging).
+PRD declares a `scopes:` block (or `--scope=<id>` passed)? Read `references/multi-scope.md` (this directory) before scaffolding — it carries the full scope-tagging schema (vault.json extension, field rules, vault.md header structure, validation rules, backward compatibility), relocated verbatim from this section. Single-scope PRDs without a `scopes:` block use the current single-vault schema (no scope tagging).
 
 ## §boilerplate — Skill instruction language
 

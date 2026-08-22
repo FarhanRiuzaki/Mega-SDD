@@ -20,7 +20,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
 GUIDE="$P/skills/generate-intent/references/templates/ai-consumer-guide.md"
-IDX="$P/skills/generate-intent/references/templates/00-index.md"
+IDX="$P/skills/generate-intent/references/templates/vault.md"   # v7 Fase 3 layout-2
 SKILL="$P/skills/generate-intent/SKILL.md"
 GG="$P/skills/generate-intent/references/generation-guide.md"
 SC="$P/skills/generate-intent/references/self-check.md"
@@ -49,13 +49,14 @@ grep -qF '| ADR |' "$GUIDE" && grep -qF '| DBML |' "$GUIDE" && grep -qF '| SLO |
   && ok "1: standard-terms generic rows moved" || fail "1: standard-terms rows lost"
 grep -qF 'do not hand-edit' "$GUIDE" && ok "1: static-copy header note present" || fail "1: static header note missing"
 
-# ── 2: 00-index template diet landed ──
-if grep -qF 'resolver_route' "$IDX"; then fail "2: 00-index template still carries the halt-YAML spine (resolver_route)"; else ok "2: halt-YAML spine gone from 00-index template"; fi
-if grep -qF 'blockers:' "$IDX"; then fail "2: blockers: fence survives in 00-index template"; else ok "2: no blockers: fence in 00-index template"; fi
+# ── 2: vault.md template diet landed (v7 layout-2: the 00-index ceremony —
+#      incl. the generic anti-halu restatement — lives ONLY in the guide now) ──
+if grep -qF 'resolver_route' "$IDX"; then fail "2: vault.md template still carries the halt-YAML spine (resolver_route)"; else ok "2: halt-YAML spine gone from vault.md template"; fi
+if grep -qF 'blockers:' "$IDX"; then fail "2: blockers: fence survives in vault.md template"; else ok "2: no blockers: fence in vault.md template"; fi
 if grep -qF 'Parallel-work guidance while P1s are unresolved' "$IDX"; then fail "2: parallel-work section survives in template"; else ok "2: parallel-work section gone from template"; fi
 if grep -qF 'Companion skills for vault evolution' "$IDX"; then fail "2: companion-skills section survives in template"; else ok "2: companion-skills section gone from template"; fi
-grep -qF 'Anti-hallucination rules' "$IDX" && ok "2: Anti-hallucination rules KEPT in template" || fail "2: Anti-hallucination rules lost from template"
-grep -qF 'Implementation Notes for AI Consumers' "$IDX" && ok "2: Implementation Notes heading KEPT (kb_module_graph home)" || fail "2: Implementation Notes heading lost"
+grep -qF 'Do not inject requirements' "$GUIDE" && ok "2: anti-halu consumer rules live in the guide (template restatement retired v7)" || fail "2: anti-halu rules missing from the guide"
+grep -qF 'vault_layout: 2' "$IDX" && ok "2: template is layout-2 (frontmatter marker)" || fail "2: vault.md template missing the layout marker"
 grep -qF '_meta/ai-consumer-guide.md' "$IDX" && ok "2: guide pointer present in template" || fail "2: guide pointer missing from template"
 grep -qF 'kb_module_graph' "$IDX" && ok "2: kb_module_graph slot survives" || fail "2: kb_module_graph slot lost"
 if grep -qF '| ADR |' "$IDX"; then fail "2: generic glossary rows survive in template"; else ok "2: generic glossary rows gone (guide pointer instead)"; fi

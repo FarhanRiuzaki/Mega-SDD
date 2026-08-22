@@ -37,7 +37,7 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 ### Resolved-OQ conflict #1: OQ-DC-2
 
 **Original question** (vault v1.0): "Idempotency strategy for buka rekening?"
-**Resolved as** (vault v1.1, on YYYY-MM-DD via resolve-oq): "Idempotency key with 24h TTL, captured as D-010 in 05-decisions.md."
+**Resolved as** (vault v1.1, on YYYY-MM-DD via resolve-oq): "Idempotency key with 24h TTL, captured as D-010 in vault.md ## Decisions."
 **Source of resolution**: stakeholder meeting (BE Lead — Indra), no PRD reference.
 **New PRD says** (§X.Y, page Z): "Idempotency must use 7-day TTL per security review."
 
@@ -60,7 +60,7 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 
 **Original**: "Target NoA = 4.197 — per bulan or cumulative?"
 **New PRD answer** (§E.2): "NoA target 4.197 cumulative by Q2 2026."
-**Action on apply**: mark `[x]` in `01-overview.md`, append `→ Resolved v1.2 (auto, from new PRD §E.2): cumulative by Q2 2026`.
+**Action on apply**: mark `[x]` in its OQ line (constraints.md; legacy: origin doc), append `→ Resolved v1.2 (auto, from new PRD §E.2): cumulative by Q2 2026`.
 
 <...all auto-resolved OQs in this format...>
 
@@ -76,7 +76,7 @@ Write a structured diff report to `<VAULT_DIR>/VAULT-DIFF.md` (overwrites if exi
 
 ## Added entities / flows / decisions
 
-> A flow added or changed in `04-flows.md` is authored as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it.
+> A flow added or changed in `flows.md` is authored as a Mermaid diagram (never a prose Steps list) per the Mermaid-flows hard rule — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it.
 
 ### Entity (added): `redemption_request`
 
@@ -89,7 +89,7 @@ Table redemption_request {
   ...
 }
 ```
-**Action on apply**: append to `03-data-model.md` Entities section.
+**Action on apply**: append to `model.md` Entities section.
 
 <...>
 
@@ -104,7 +104,7 @@ Table redemption_request {
 > `BE["BE entry"] --> KYC["BE: validate KYC freshness"]` <br/> `KYC --> Host["Host: buka rekening + debit setoran awal"]`
 
 **Diff**: a `validate KYC freshness` node inserted between the BE-entry and Host-call nodes.
-**Action on apply**: update the corresponding node/edge in the flow's Mermaid diagram in `04-flows.md` (the flow body is a Mermaid diagram, never a prose Steps list — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it). Optionally surface as a new OQ if KYC freshness logic isn't specified elsewhere.
+**Action on apply**: update the corresponding node/edge in the flow's Mermaid diagram in `flows.md` (the flow body is a Mermaid diagram, never a prose Steps list — the vault-flows surface (`validate-kb.sh --surface=vault-flows`) gates it). Optionally surface as a new OQ if KYC freshness logic isn't specified elsewhere.
 
 <...>
 
@@ -114,7 +114,7 @@ Table redemption_request {
 
 **Source in old vault**: PRD v1.0 §G AC16-1.
 **Status in new PRD**: §G AC16-1 no longer mentions Appsflyer; only Insider + Firebase remain.
-**Action on apply**: in `04-flows.md`, mark F-S-007 with banner `> **Removed in v1.2**: Appsflyer dropped from new PRD §G AC16-1. Insider + Firebase retained as new flow F-S-007a.`. Don't delete F-S-007 — keep for history.
+**Action on apply**: in `flows.md`, mark F-S-007 with banner `> **Removed in v1.2**: Appsflyer dropped from new PRD §G AC16-1. Insider + Firebase retained as new flow F-S-007a.`. Don't delete F-S-007 — keep for history.
 
 <...>
 
@@ -127,7 +127,7 @@ Table redemption_request {
 
 ## Doc-literal mandate (delta-lane load-bearing)
 
-EVERY entry that applies a vault edit MUST name its target vault doc (`0N-*.md` literal) in its body — **in every category**: Added/Changed/Removed action lines already do; Auto-resolved-OQ action lines name the doc holding the OQ (e.g. "mark `[x]` in `01-overview.md`, append …"); Conflict entries carry the doc of the decision/OQ they rewrite (the resolved-as line's "captured as D-010 in `05-decisions.md`" form, or an explicit `**Applies to**: 05-decisions.md` line). `scripts/derive-delta-paths.sh` derives the claim-scoped re-bind scope from these literals (fence-stripped, section-based, Unchanged excluded) and `binding-contract.md §Claim-scoped re-bind` rule 4 reads the same rows — a row with no doc literal narrows verification.
+EVERY entry that applies a vault edit MUST name its target vault doc (the doc-file literal — layout-2: `vault.md`/`model.md`/`flows.md`/`constraints.md`; legacy: `0N-*.md`) in its body — **in every category**: Added/Changed/Removed action lines already do; Auto-resolved-OQ action lines name the doc holding the OQ (e.g. "mark `[x]` in `constraints.md`, append …"); Conflict entries carry the doc of the decision/OQ they rewrite (the resolved-as line's "captured as D-010 in `vault.md`" form, or an explicit `**Applies to**: vault.md` line). `scripts/derive-delta-paths.sh` derives the claim-scoped re-bind scope from these literals (fence-stripped, section-based, Unchanged excluded) and `binding-contract.md §Claim-scoped re-bind` rule 4 reads the same rows — a row with no doc literal narrows verification.
 
 ## Interactive walkthrough (Step 5)
 

@@ -66,7 +66,7 @@ truncated_sections: ["2"]
 
 ## 6. Pattern signatures
 
-> Consumers: `bind-codebase` validates `06-constraints.md` claims against these rows (binding-contract §Claim categories); `execute-bolts` injects them as the `Codebase patterns:` dispatch line when `starterkit-context.yaml` is absent (context-enrichment §Map §6 fallback) — the section is never write-only.
+> Consumers: `bind-codebase` validates `constraints.md` claims against these rows (binding-contract §Claim categories); `execute-bolts` injects them as the `Codebase patterns:` dispatch line when `starterkit-context.yaml` is absent (context-enrichment §Map §6 fallback) — the section is never write-only.
 - Auth pattern: middleware|session|jwt|none
 - Error handling: try-catch|result-monad|throw
 - State: redux|context|none|composer-event

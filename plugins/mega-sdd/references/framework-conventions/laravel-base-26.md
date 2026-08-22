@@ -414,5 +414,5 @@ This pack reflects the **starterkit's** opinions. If the user's actual project (
 - Use Vue / React frontend → significant deviation; needs ADR
 
 Document deviations in:
-- Vault `05-decisions.md` (ADR for architectural choices)
+- Vault `vault.md ## Decisions` (legacy `05-decisions.md`) — ADR for architectural choices
 - `constitution.md` (Iter 17) for project-wide rules that override this pack

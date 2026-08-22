@@ -55,16 +55,16 @@ with the KB citation:
 ## Section 1 — Latar Belakang & Tujuan
 
 **Slots:** `{{section-1-background}}`, `{{section-1-purpose}}`
-**Forward source:** `<vault>/01-overview.md` §Purpose + §Scope (+ §Goals for tujuan)
+**Forward source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose + §Scope (+ §Goals for tujuan)
 **Reverse source:** KB `README.md` (domain summary) + `00-overview/` or the KB's overview doc; system purpose claims with markers
 **Extraction:** narasi Indonesia yang menganyam klaim sumber; reverse mode: claim lines keep markers per the rule above.
 **Citation:** per-paragraph `[Source: <path>[:Ln] (sha256: pending)]`
-**Missing:** `[Pending — vault/01-overview.md not yet generated]` / `[Pending — KB overview belum ada]`
+**Missing:** `[Pending — vault/<resolved overview doc> not yet generated]` / `[Pending — KB overview belum ada]`
 
 ## Section 2 — Aktor
 
 **Slot:** `{{section-2-actors-table}}`
-**Forward source:** `<vault>/01-overview.md` actors/roles + `<vault>/04-flows.md` flow participants; `_meta/squads.yaml` when present
+**Forward source:** the vault Overview actors/roles + `<vault>/flows.md` flow participants; `_meta/squads.yaml` when present
 **Reverse source:** KB domain files' actor/role claims (roles named in workflows, auth models)
 **Extraction:** table `| Aktor | Deskripsi | Sumber |` — one row per actor actually named in a source; reverse rows carry markers in the Deskripsi cell.
 **Missing:** `[Pending — belum ada aktor teridentifikasi di sumber]` (never invent an actor).
@@ -72,7 +72,7 @@ with the KB citation:
 ## Section 3 — Kebutuhan Fungsional
 
 **Slot:** `{{section-3-fr-content}}`
-**Forward source:** `<vault>/02-functional.md` FR-NNN headings (verbatim ids) + `04-flows.md` flow inventory
+**Forward source:** `<vault>/02-functional.md` FR-NNN headings (verbatim ids) + `flows.md` flow inventory
 **Reverse source:** KB domain claim lists (per domain file) — requirement-shaped claims WITH markers
 **Extraction:**
 - Forward: per FR — id + title + 1–3 kalimat ringkas; per flow — id + judul (bukan diagram; §4 punya diagram).
@@ -83,7 +83,7 @@ with the KB citation:
 ## Section 4 — User Journey
 
 **Slot:** `{{section-4-journeys}}`
-**Forward source:** `<vault>/04-flows.md` — user-type flows (`F-U-*` first, then others)
+**Forward source:** `<vault>/flows.md` — user-type flows (`F-U-*` first, then others)
 **Reverse source:** KB workflow files (`stages:` blocks, mermaid diagrams)
 **Extraction (MERMAID MANDATE — the Mermaid-flows hard rule):**
 - A source diagram exists (vault flow body / KB workflow mermaid) → carry it **VERBATIM** — never redrawn.

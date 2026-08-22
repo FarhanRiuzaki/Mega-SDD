@@ -1,6 +1,6 @@
 # Mermaid Emission Rules — every generated flow / state diagram
 
-> Anti-hallucination + parser-safety contract for **every** skill that emits a process/flow or state diagram. Under the Mermaid-flows hard rule, any generated flow IS a Mermaid diagram (never a prose step list or ASCII arrows), and that diagram must actually render. Surfaces: `extract-intelligence` KB §3 Flow + §8 State Machine; `generate-intent` vault `04-flows.md` flows; any flow `detect-drift` / `diff-vault` write into a vault; and any future flow-emitting skill.
+> Anti-hallucination + parser-safety contract for **every** skill that emits a process/flow or state diagram. Under the Mermaid-flows hard rule, any generated flow IS a Mermaid diagram (never a prose step list or ASCII arrows), and that diagram must actually render. Surfaces: `extract-intelligence` KB §3 Flow + §8 State Machine; `generate-intent` vault `flows.md` flows; any flow `detect-drift` / `diff-vault` write into a vault; and any future flow-emitting skill.
 >
 > A model writing a diagram from natural-language node text (often verbatim from legacy code) tends to leave an unquoted comma / parenthesis / colon inside a shape, or omit the diagram-type header — producing a fenced ` ```mermaid ` block that LOOKS valid but renders as an error. These rules prevent that at the producer side.
 
@@ -25,7 +25,7 @@
 
 Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. A fence-presence check alone does not catch this; the validators parse the block's syntax.
 
-This document is the producer-side contract. the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8) and the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault `04-flows.md` flows) enforce a heuristic subset at the always-on hook layer, sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). The opt-in ground-truth oracle (`verify-mermaid.sh`, real `mermaid.parse()`) was removed in v7 Fase 2 — the shared heuristic tokenizer is the enforced layer; for render ground truth, paste the block into mermaid.live or run `npx @mermaid-js/mermaid-cli` by hand.
+This document is the producer-side contract. the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8) and the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault `flows.md` flows) enforce a heuristic subset at the always-on hook layer, sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). The opt-in ground-truth oracle (`verify-mermaid.sh`, real `mermaid.parse()`) was removed in v7 Fase 2 — the shared heuristic tokenizer is the enforced layer; for render ground truth, paste the block into mermaid.live or run `npx @mermaid-js/mermaid-cli` by hand.
 
 ---
 
@@ -177,7 +177,7 @@ Tier classification: **C2** (producer must fix). NOT C1 — auto-rewriting Merma
 ## Cross-references
 
 - Producer skills: `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` §3 Flow + §8 State Machine emission steps
-- Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` (vault `04-flows.md` flow emission)
+- Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` (vault `flows.md` flow emission)
 - Shared tokenizer: `plugins/mega-sdd/scripts/_lib/mermaid_syntax.py` (Rule 0 + Rule 1-3 heuristics)
 - Heuristic gates (always-on hook): the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8), the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault flows)
 - KB schema: `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §3 Flow + §8 State Machine

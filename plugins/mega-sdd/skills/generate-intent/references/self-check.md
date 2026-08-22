@@ -19,9 +19,9 @@ Verify every doc has:
 - [ ] **TL;DR header** present in every doc 01–06. Format: 1-line if `OUTPUT_MODE=compact`, 3-line if `OUTPUT_MODE=full`.
 - [ ] Output language convention consistent — code-level terms in English (entity names, field names, types, enum values, HTTP methods, framework names); prose narrative in PRD language. Avoid mixing English and PRD language in the same prose sentence except for code-term references.
 - [ ] Read-aloud test: the first paragraph of each doc does not sound like AI translation.
-- [ ] First-use acronym/jargon defined inline; cross-doc terms are in the Glossary at `00-index.md`.
+- [ ] First-use acronym/jargon defined inline; cross-doc terms are in the `vault.md ## Glossary`.
 - [ ] Cross-ref ≤ 2 per section.
-- [ ] `00-index.md` has: Executive Summary, Project Readiness Status, Reading paths by role, Glossary, OQ roll-up.
+- [ ] `vault.md` has: the frontmatter lock (`vault_layout: 2` + 6 scalars), Phase context, the EXACT anchors `## Overview` / `## Architecture` / `## Decisions`, Glossary, Auto-Classification Review, Source documents, Changelog. ALL OQs sit in `constraints.md ## Open Questions` (an OQ checkbox anywhere else fails the derive).
 
 **Output mode compliance (driven by `OUTPUT_MODE` from Step 0.7):**
 - [ ] If `compact`: TL;DR header is 1-line in docs 01–06.
@@ -42,14 +42,14 @@ Verify every doc has:
 - [ ] Cross-cutting flow handoff points present.
 - [ ] Every OQ carries `category` + (if tech) `resolution_mode` + `classification_confidence`.
 - [ ] Every `recommend`-mode OQ has at least one `scan_citations` entry; no fabricated citations.
-- [ ] `00-index.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
+- [ ] `vault.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
 - [ ] **`constitution.md`** (the 8th file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
 
 **Each doc must be readable in <10 minutes by an architect (BOTH modes).**
 
 **Output integrity:**
 - [ ] All files written to `<OUTPUT_DIR>` (not the default sandbox path).
-- [ ] Folder structure matches the 7-file spec.
+- [ ] Folder structure matches the layout-2 4-file spec (vault.md / model.md / flows.md / constraints.md).
 - [ ] Language matches source (PRD ID → docs ID; PRD EN → docs EN).
 
 **`vault.json` manifest (script-derived — never hand-checked field-by-field):**
@@ -59,8 +59,8 @@ Verify every doc has:
 
 **Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
 - [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the Step-3 `cp` Run installed it — copied from the shipped template, never model-rendered).
-- [ ] `00-index.md` Implementation Notes carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in 00-index is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
-- [ ] `00-index.md` Glossary carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
+- [ ] `vault.md` carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in vault.md is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
+- [ ] `vault.md ## Glossary` carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
 
 **Design-system grounding (only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.

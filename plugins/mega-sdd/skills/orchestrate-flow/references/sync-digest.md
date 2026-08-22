@@ -19,7 +19,7 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
       (source: DRIFT-REPORT.md §N3; anchor app/models/account.rb:42)
 
 ## 3. Write-back drafts awaiting human triage
-- [ ] PATCH-2 → 03-data-model.md §Account — proposed_patch preserved on its PENDING-SYNC.md entry
+- [ ] PATCH-2 → model.md §Account — proposed_patch preserved on its PENDING-SYNC.md entry
       (provenance: a1b2c3 "hotfix rounding" — <author>, <date>)
 ```
 
@@ -42,7 +42,7 @@ Consumers: the session-start staleness notice points HERE (instead of suggesting
 | full-suite gate (B2) | green\|red (P passed / F failed); bolts/_batch-suite.json (source: sync) |
 
 ## Applied patches (provenance)
-- 03-data-model.md §Account — name-drift (synced from code: a1b2c3 "…" — author, date)
+- model.md §Account — name-drift (synced from code: a1b2c3 "…" — author, date)
 
 ## Queued (see PENDING-SYNC.md)
 - 1 CONFLICT, 2 drift calls, 1 draft

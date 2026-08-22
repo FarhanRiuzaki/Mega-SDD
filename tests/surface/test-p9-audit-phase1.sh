@@ -44,7 +44,7 @@ if ! grep -q 'classification conflict' "$HT" \
 else fail "A2: halt-taxonomy conflicts not resolved"; fi
 
 # ── A3 — staging drop advisory in the emitted template ──
-T4="$P/skills/generate-intent/references/templates/04-flows.md"
+T4="$P/skills/generate-intent/references/templates/flows.md"
 if grep -qF 'advisory `vault_flow_staging_drop`' "$T4" && ! grep -qF 'staging_drop` halt' "$T4"; then
   pass "A3: 04-flows template teaches advisory, not a halt"
 else fail "A3: template still stamps a staging-drop halt"; fi

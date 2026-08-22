@@ -30,11 +30,11 @@ If critical inputs are missing or unclear, **ask before generating**. Better 5 u
 
 ## Project Shape Registry
 
-This skill is **general-purpose** — it works for any kind of project, not just mobile banking. Project shape determines the sub-sections inside `02-architecture.md` and `04-flows.md`, and the reading paths inside `00-index.md`. The skill **infers** the shape from PRD content during Step 2 (extract), then **confirms** it with the user before generating files.
+This skill is **general-purpose** — it works for any kind of project, not just mobile banking. Project shape determines the sub-sections inside `vault.md ## Architecture` and `flows.md`. The skill **infers** the shape from PRD content during Step 2 (extract), then **confirms** it with the user before generating files.
 
 ### Pre-templated shapes (most common)
 
-| Shape | When to use | Layers (for `02-architecture.md`) | Flow types (for `04-flows.md`) | Roles (for `00-index.md` reading paths) |
+| Shape | When to use | Layers (for `vault.md ## Architecture`) | Flow types (for `flows.md`) | Roles (deep-link anchors) |
 |-------|-------------|-----------------------------------|--------------------------------|----------------------------------------|
 | `mobile-app` | Mobile-first product with backend (e.g. M-Smile, e-wallet) | Mobile / Frontend, Backend, Integrations | User flows (mobile), Backend / system flows, Cross-cutting | Architect, Mobile Dev, BE Dev, QA, PM, UI/UX |
 | `web-app` | Web-based product (SaaS, dashboard) with backend | Web Frontend, Backend, Integrations | User flows (web), Backend / system flows, Cross-cutting | Architect, FE Dev, BE Dev, QA, PM, UI/UX |

@@ -19,12 +19,12 @@ The binding contract specifies how vault claims are validated against `codebase-
 
 | Vault section | Claim type | Map section consulted |
 |---|---|---|
-| 01-overview.md | mode (greenfield/existing) | repo signals (`.git`, package.json) |
-| 02-architecture.md | components, file paths | top-level structure, public interfaces |
-| 03-data-model.md | entities, fields | data models / schemas |
-| 04-flows.md | endpoints, handlers | routes / endpoints |
-| 05-decisions.md | tech stack | languages, frameworks |
-| 06-constraints.md | naming conventions | naming conventions, pattern signatures |
+| vault.md ## Overview (legacy 01-overview.md) | mode (greenfield/existing) | repo signals (`.git`, package.json) |
+| vault.md ## Architecture (legacy 02-architecture.md) | components, file paths | top-level structure, public interfaces |
+| model.md | entities, fields | data models / schemas |
+| flows.md | endpoints, handlers | routes / endpoints |
+| vault.md ## Decisions (legacy 05-decisions.md) | tech stack | languages, frameworks |
+| constraints.md | naming conventions | naming conventions, pattern signatures |
 
 ## Verdicts
 
@@ -113,7 +113,7 @@ structural marker only).
 - **Vault claim**: <the claim text — verbatim what the vault asserts>
 - **Codebase reality**: <what the code shows> (<evidence anchor file:line>)
 - **Claim**: C-NNN
-- **Vault doc**: 03-data-model.md §Product
+- **Vault doc**: model.md §Product
 - **Codebase artifact**: app/Models/Product.php
 - **conflict_class**: naming-collision      # naming-collision | signature-drift | semantic | regulatory
 - **resolution_complexity**: low            # low | medium | high
@@ -158,7 +158,7 @@ rows emit `classification_confidence: medium`):
 - **Scan mode**: ONLY `classification_confidence: high` auto-resolves. `medium`/`low` → skip auto-resolution, pass through unchanged.
 - **Recommend mode**: surfaced at `high` AND `medium` (surfacing is advisory and never blocks — restricting to `high` made the entire Recommendations feature dead code). `low` → skip surfacing, pass through unchanged.
 - In BOTH modes, a skipped OQ's `resolution_mode` is NEVER mutated (no flip to `blocking` on confidence grounds — only a failed scan flips to blocking, per §Scan mode).
-- Medium/low OQs are already listed in `00-index.md` "## Auto-Classification Review" for manual user attention before binding runs.
+- Medium/low OQs are already listed in the vault.md "## Auto-Classification Review" (legacy: 00-index.md) for manual user attention before binding runs.
 
 ### Anti-halu enforcement
 
@@ -179,14 +179,14 @@ Invoked by `orchestrate-flow --sync` (spec `2026-06-10-living-vault-continuous-s
 1. Load the PREVIOUS `binding.md`; build the reverse index: for each claim, the set of files appearing in its evidence/anchor citations (Confirmed list + Implementation State Map `Anchor` column) plus its `vault file:line` source.
 2. `affected_claims` = claims whose anchor files intersect the changed-paths set, PLUS claims whose vault source section changed (vault edited), PLUS **every ACTIVE CONFLICT from the previous binding regardless of path intersection** (a suspected hole in the moat is never carried on trust).
 3. Claims in the codebase-map whose rows were re-extracted by `scan-codebase --changed-only` but that match no prior claim → candidate NEW evidence; run normal Step 2 verdict logic for any vault claim still OQ/NEW.
-4. **Vault-section leg, concrete detection:** when `<vault>/VAULT-DIFF.md` exists and is newer than the previous `binding.md` (a diff-vault apply), the "vault source section changed" selection reads ALL its diff-body rows — **Conflicts (PRIORITY-1) and Auto-resolved OQs included, not just Added/Changed/Removed** (a Supersede rewrites `05-decisions.md`; an auto-resolve mutates an OQ section — both are vault edits; every applied row names its target doc per `diff-vault/references/report-format.md §Doc-literal mandate`) — claims whose `vault_source` doc appears there join `affected_claims`. An ADDED vault section has no prior claim: its claims are authored fresh on this run (changed vault source by definition). An AFFECTED claim that cannot be matched to the current vault text keeps the express rule-3 full-re-bind fallback — never a guessed mapping.
+4. **Vault-section leg, concrete detection:** when `<vault>/VAULT-DIFF.md` exists and is newer than the previous `binding.md` (a diff-vault apply), the "vault source section changed" selection reads ALL its diff-body rows — **Conflicts (PRIORITY-1) and Auto-resolved OQs included, not just Added/Changed/Removed** (a Supersede rewrites the Decisions section; an auto-resolve mutates the OQ surface — both are vault edits; every applied row names its target doc per `diff-vault/references/report-format.md §Doc-literal mandate`) — claims whose `vault_source` doc appears there join `affected_claims`. An ADDED vault section has no prior claim: its claims are authored fresh on this run (changed vault source by definition). An AFFECTED claim that cannot be matched to the current vault text keeps the express rule-3 full-re-bind fallback — never a guessed mapping.
 
 **Verdict assembly:**
 - `affected_claims` → full Step 2 (+2.5–2.12) verdict logic, fresh citations.
 - All other claims → carried forward VERBATIM with `provenance: carried_forward` + the prior bind timestamp on the row. A carried-forward verdict is never silently upgraded or downgraded.
 - Counts (`claims_total`/`confirmed`/`conflict`/`oq`) are recomputed over the FULL set (fresh + carried). `binding.md` is rewritten whole — including the canonical `### CONFLICT-N` headings for EVERY active conflict (fresh or re-validated) — so the Step 5 gate, `validate-handoff-binding-units.sh`, and `.validation-blockers.json` see exactly the same surface as a full re-bind.
 
-**Fallback to full re-bind (one-line note, no halt):** previous `binding.md` absent/unparseable; the vault itself was regenerated (version bump since last bind **without a diff-vault patch record** — a bump whose `00-index.md` Changelog entry was written by a diff-vault apply AND whose `VAULT-DIFF.md` is present AND with **no vault doc newer than `VAULT-DIFF.md`** is a PATCH, not a regeneration: its changed claims arrive via the `--paths` set + the vault-section leg above, active CONFLICTs are still ALWAYS re-validated, and carry-forward stays safe because a diff-vault apply preserves untouched IDs/text by contract; a vault doc modified AFTER the diff report re-fires this fallback — the patch record cannot vouch for post-patch edits); changed paths exceed 40% of anchored files; or any carried-forward claim's anchor file no longer exists (provenance can't be trusted → full re-run).
+**Fallback to full re-bind (one-line note, no halt):** previous `binding.md` absent/unparseable; the vault itself was regenerated (version bump since last bind **without a diff-vault patch record** — a bump whose vault Changelog entry (vault.md; legacy 00-index.md) was written by a diff-vault apply AND whose `VAULT-DIFF.md` is present AND with **no vault doc newer than `VAULT-DIFF.md`** is a PATCH, not a regeneration: its changed claims arrive via the `--paths` set + the vault-section leg above, active CONFLICTs are still ALWAYS re-validated, and carry-forward stays safe because a diff-vault apply preserves untouched IDs/text by contract; a vault doc modified AFTER the diff report re-fires this fallback — the patch record cannot vouch for post-patch edits); changed paths exceed 40% of anchored files; or any carried-forward claim's anchor file no longer exists (provenance can't be trusted → full re-run).
 
 **Anti-halu rails:** carried-forward rows keep their original citations untouched (no re-stamping); the phase-advisor pass (Step 2.12) runs per its SCOPE GATE, which is evaluated over the FULL verdict set — fresh AND carried-forward (a carried IMPLEMENTED claim keeps the advisor in scope; 6.15.0); when it runs, it reviews the FRESH verdicts at minimum and may sample carried ones; bound-vault production rules are unchanged (no `bound/` while any conflict — fresh OR carried — is active).
 
@@ -211,5 +211,5 @@ The full file template is the binding-md-template reference listed in `bind-code
 
 `<vault>/bound/` (nested in the vault dir, beside `units/` and `bolts/`) is DERIVED by `scripts/make-bound.sh` (bind Step 5) from the vault docs + `binding.json` — never hand-written by the model. It is a copy of the vault's 7 markdown files (the `0[0-6]-*.md` docs; `vault.json` is NOT copied) with two augmentations:
 
-1. **Inline binding annotations** — for each `binding.json` claim whose `vault_source` has the exact `<file>.md:<line>` form, a standalone HTML-comment line is inserted immediately AFTER the cited line: `<!-- BIND: <verdict>=<claim-id> -->`, verdict lowercase from `binding.json` — e.g. `<!-- BIND: confirmed=C-001 -->` / `<!-- BIND: oq=C-012 -->` (OQ rows use the claim-id form, never OQ-NN). Multiple claims citing the same line merge into ONE comment joined with `, ` in `binding.json` claim order (`<!-- BIND: confirmed=C-001, confirmed=C-004 -->`). `conflict=` never appears in practice — bound/ exists only at `conflict == 0`. Claims with a null / section-style (`03-data-model.md §Product`) / out-of-bounds / unmatched-file `vault_source` are SKIPPED and counted in the script's summary line — never guessed. Annotations are ADVISORY reading context only: nothing machine-parses them; `binding.md` / `binding.json` stay the authoritative surfaces. Docs with no annotations are byte-identical copies.
+1. **Inline binding annotations** — for each `binding.json` claim whose `vault_source` has the exact `<file>.md:<line>` form, a standalone HTML-comment line is inserted immediately AFTER the cited line: `<!-- BIND: <verdict>=<claim-id> -->`, verdict lowercase from `binding.json` — e.g. `<!-- BIND: confirmed=C-001 -->` / `<!-- BIND: oq=C-012 -->` (OQ rows use the claim-id form, never OQ-NN). Multiple claims citing the same line merge into ONE comment joined with `, ` in `binding.json` claim order (`<!-- BIND: confirmed=C-001, confirmed=C-004 -->`). `conflict=` never appears in practice — bound/ exists only at `conflict == 0`. Claims with a null / section-style (`model.md §Product`) / out-of-bounds / unmatched-file `vault_source` are SKIPPED and counted in the script's summary line — never guessed. Annotations are ADVISORY reading context only: nothing machine-parses them; `binding.md` / `binding.json` stay the authoritative surfaces. Docs with no annotations are byte-identical copies.
 2. `<vault>/bound/binding.md` mirrors the vault-root `<vault>/binding.md` byte-identically.

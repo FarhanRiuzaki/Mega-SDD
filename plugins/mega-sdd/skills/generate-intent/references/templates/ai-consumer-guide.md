@@ -1,13 +1,13 @@
 # AI Consumer Guide — mega-sdd vault protocol
 
-> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `00-index.md` §Implementation Notes — this file carries the GENERIC consumer protocol only.
+> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `vault.md` (legacy: 00-index.md §Implementation Notes) — this file carries the GENERIC consumer protocol only.
 
-This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (`00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
+This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (layout-2: `vault.md` + `model.md` + `flows.md` + `constraints.md`; legacy: `00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
 
 ## MANDATORY before writing/modifying any code
 
 1. **Confirm project shape & mode with the user**:
-   - Ask: *"This vault states shape `<shape>` and mode `<mode>` (see `00-index.md` §Vault Lock Status). Are you working in a project that matches?"*
+   - Ask: *"This vault states shape `<shape>` and mode `<mode>` (see the vault.md frontmatter lock; legacy: `00-index.md` §Vault Lock Status). Are you working in a project that matches?"*
    - On mismatch → STOP, escalate.
 
 2. **For mode `existing`** — additional MANDATORY steps:
@@ -32,9 +32,9 @@ This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read 
 
 ## During implementation
 
-- **Do not inject requirements** that aren't in the vault. If a new requirement is needed → STOP, append it to `## Open Questions` in the relevant doc and ask the user.
+- **Do not inject requirements** that aren't in the vault. If a new requirement is needed → STOP, append it to the vault's `## Open Questions` (layout-2: constraints.md, with an `[origin:]` token; legacy: the relevant doc) and ask the user.
 - **Do not skip Definition of Done**. For each flow you implement, validate DoD before marking it complete.
-- **Cite the vault** in commit messages when touching business logic — e.g., `feat: cap tenor per vault 04-flows.md F-U-001 step 5`. Never put a vault claim/flow/OQ id in a CODE COMMENT — those id strings rot into misinformation and no validator consumes them there; trace lives in commits, unit specs, and reports.
+- **Cite the vault** in commit messages when touching business logic — e.g., `feat: cap tenor per vault flows.md F-U-001 step 5`. Never put a vault claim/flow/OQ id in a CODE COMMENT — those id strings rot into misinformation and no validator consumes them there; trace lives in commits, unit specs, and reports.
 
 ## When you encounter an inconsistency
 
@@ -111,7 +111,7 @@ These skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX
 
 ## Standard terms
 
-Generic cross-doc terms and acronyms (product-specific PRD terms live in `00-index.md` §Glossary):
+Generic cross-doc terms and acronyms (product-specific PRD terms live in `vault.md ## Glossary`; legacy: 00-index.md):
 
 | Term | Definition |
 |------|----------|

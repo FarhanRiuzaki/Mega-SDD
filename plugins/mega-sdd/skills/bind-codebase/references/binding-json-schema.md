@@ -33,7 +33,7 @@ set and shapes are unchanged; only value provenance and `generated_by` changed.
       "anchor": "UserController.php:45 + routes/api.php:12 | null",
       "confidence": "high | medium | low | null",
       "field_diff": "ADD: [...] · KEEP: [...] · REMOVE: [...] | (exact match) | n/a",
-      "vault_source": "03-data-model.md:42 | null",
+      "vault_source": "model.md:42 | null",
       "resolution": "KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null"
     }
   ]

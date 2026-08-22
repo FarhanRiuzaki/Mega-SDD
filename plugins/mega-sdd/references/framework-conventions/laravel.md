@@ -430,7 +430,7 @@ At runtime the model's `booted()` must call `addGlobalScope(new BranchScoped)` �
 `branch-scoping` keys on `has_column` (a static schema fact). `inbox-surfacing` keys on
 `flow_step:workflow_assignments` — the maker-checker `applies_when` operator added in
 Iter-79: the concern applies to any sibling unit whose flow cites the assignment-row update
-step (`04-flows.md` "Update workflow_assignments …"). Such a unit MUST declare the
+step (`flows.md` "Update workflow_assignments …"). Such a unit MUST declare the
 implementation obligation — calling `advanceAssignments` (or going through
 `WorkflowEngine::transition`, which calls it) — so the cross-module Approval Inbox surfaces
 its items. This closes the Phase-2 `af49ede` repair: `lc_amendments` + `doc_examinations`

@@ -8,7 +8,7 @@ Defines how `_meta/squads.yaml` ownership rules route vault artifacts (entities,
 
 Default for `web-app` and most multi-component shapes.
 
-Routing: a vault artifact's primary layer (from `02-architecture.md`) matches a squad's `owns_layers` list.
+Routing: a vault artifact's primary layer (from `vault.md ## Architecture`) matches a squad's `owns_layers` list.
 
 | Vault layer hint | Routes to squad with `owns_layers` containing |
 |---|---|

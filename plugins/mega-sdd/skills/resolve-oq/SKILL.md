@@ -44,9 +44,9 @@ The 4-option cap is **per question, not per call** — one `AskUserQuestion` tak
 
 Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start of each major step. Full per-step procedure, display formats, templates, and the self-check list are in **`references/interactive-walk.md`** — load it before running the walk.
 
-**Step 0 — Vault location & integrity (MANDATORY).** Get the vault path (`AskUserQuestion`: use auto-detected / specify / cancel). Auto-detect = the CWD directory containing all of `00-index.md` through `06-constraints.md`. Verify integrity: all 7 files exist; `00-index.md` has `## Open Questions roll-up`; ≥1 `[ ]` OQ exists. Any failure → **STOP**, surface the issue, suggest `generate-intent`. **Lock check:** parse `00-index.md` Vault Lock Status `Status:` — if `🔒 LOCKED`, ask to unlock (record unlock in this round's Changelog; user re-locks after); if `⚠️ DRAFT`, continue. Never proceed without a verified vault and lock-state acknowledged.
+**Step 0 — Vault location & integrity (MANDATORY).** Get the vault path (`AskUserQuestion`: use auto-detected / specify / cancel). Auto-detect = the CWD directory containing `vault.md` (layout-2) or the legacy `00-index.md` set. Verify integrity: the layout's files exist (4 or 7); the authored OQ surface exists (`constraints.md ## Open Questions`; legacy: the 00-index roll-up); ≥1 `[ ]` OQ exists. Any failure → **STOP**, surface the issue, suggest `generate-intent`. **Lock check:** parse the lock home (vault.md frontmatter; legacy: `00-index.md` Vault Lock Status) — if `🔒 LOCKED`, ask to unlock (record unlock in this round's Changelog; user re-locks after); if `⚠️ DRAFT`, continue. Never proceed without a verified vault and lock-state acknowledged.
 
-**Step 0.5 — Resume detection (MANDATORY).** Parse `00-index.md` `## Changelog` for prior `resolve-oq` rounds. If found → show current version + last-round stats, ask continue / fresh / cancel. If none → first pass.
+**Step 0.5 — Resume detection (MANDATORY).** Parse the vault Changelog (`vault.md ## Changelog`; legacy: `00-index.md`) for prior `resolve-oq` rounds. If found → show current version + last-round stats, ask continue / fresh / cancel. If none → first pass.
 
 **Step 0.6 — Resolution scope (MANDATORY).**
 - Ask which OQs to walk: `all-priorities` (**recommended — ONE walk, P1→P2→P3 in order so the blocking tier is still resolved first; avoids re-entering and re-reading the whole vault for a separate P2 pass**) | `p1-only` (unblock-the-chain-fast — only when you will defer P2/P3 to a later session) | `p1-then-p2` | `by-category` | `single-oq <tag>`. Persist `RESOLUTION_SCOPE`; echo it back.
@@ -55,7 +55,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 - The DEFER tier (P2/P3) is AUTO-DEFERRED on the record — the shipped Defer plumbing verbatim (`[ ]` + `**Deferred (v{X.Y})**` marker, `status: deferred`, `defer_to: stakeholder`, script-stamped `deferred_at`) with the mechanical reason `auto-deferred (P<n>, express) — bukan blocker delivery pertama; muncul lagi di delivery report`; per OQ, one derive run carrying BOTH the `--event '{"event":"oq-deferred",…,"action":"B"}'` AND the stakeholder `--patch` file `{"open_questions":{"OQ-XXX":{"defer_to":"stakeholder"}}}` — `defer_to` is patch-lane-only (the deriver never parses it from markdown), so an event alone records an INCOMPLETE defer.
 - NEVER silent: the walk summary + the handoff `metrics.items_deferred` id list + the delivery-report surfaces re-surface every auto-deferred tag. A standalone/explicit invocation (any spine) and every classic-spine invocation keep the fully interactive walk — auto-defer NEVER applies there.
 
-**Step 1 — Parse OQ list.** Read all 7 files; from each numbered doc (01–06) extract still-`[ ]` entries (skip `[x]` / `[~]`). Per OQ capture tag, priority, doc origin, question text, generator resolution hint. Cross-reference `00-index.md` roll-up for the **category**. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
+**Step 1 — Parse OQ list.** Layout-2: read `constraints.md ## Open Questions` (every OQ lives there; `[origin: <file>#<anchor>]` is the locality). Legacy: read the 7 files' per-doc OQ sections + cross-reference the 00-index roll-up for **category** (layout-2 category = the mandatory bracket). Extract still-`[ ]` entries (skip `[x]` / `[~]`); per OQ capture tag, priority, origin, question text, generator resolution hint. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
 
 **Step 2 — Loop per OQ.**
 - Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`).
@@ -63,11 +63,11 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 - The considered alternatives are listed as prose in the question text, each with its source or an explicit `tanpa sumber` marker — never invented.
 - The answer option's description carries its keterangan AND discloses where the answer lands (target doc, inline vs promoted, cross-cutting cross-refs), so the choice IS the destination confirmation — **do NOT ask for the answer or the destination in separate prompts.** Only Defer and Out of scope spend a second prompt (Defer = ONE call carrying two questions, sub-target + reason; OOS = the rationale).
 - Apply the chosen outcome's markdown edits, then run the derive script immediately (it recomputes the vault.json mirror from the markdown and appends the round event).
-- Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Update the roll-up in `00-index.md` to mirror the marker.
+- Resolve density = **inline** (short) or **promoted** (substantial → new ADR / constraint / flow step, OQ points to it). Legacy vaults only: update the 00-index roll-up to mirror the marker (layout-2 has no roll-up).
 - Bail-out is reachable on every prompt via Esc; each derive is atomic, so a bail leaves the last consistent state.
 - **The prompt's verbatim shape, the no-recommendation shape, the "Other" parse order, the Defer/OOS follow-up templates, all outcomes' markdown edits, the per-action `--event`/`--patch` args, and promoted-entry formatting per target doc are in `references/interactive-walk.md`.**
 
-**Step 3 — Update vault metadata.** Patch-bump the vault version in `00-index.md` Vault Lock Status (one shared `v{X.Y}` for the whole round). Append a Changelog entry listing Resolved / Out of Scope / Deferred / Still-open counts (template in `references/interactive-walk.md`). Update `Last updated` to today.
+**Step 3 — Update vault metadata.** Patch-bump the vault version in the lock home (vault.md frontmatter `vault_version:`; legacy: `00-index.md` Vault Lock Status) — one shared `v{X.Y}` for the whole round. Append a Changelog entry listing Resolved / Out of Scope / Deferred / Still-open counts (template in `references/interactive-walk.md`). Update `Last updated` to today.
 
 **Step 4 — Self-check before exit.** Every resolved OQ `[x]` with a `→ Resolved v{X.Y}` pointer in BOTH origin doc and roll-up; every OOS `[~]` present in the target Out of Scope section; every Deferred `[ ]` with a defer note; no OQ silently dropped; version bumped; Changelog accurate; `Last updated` set; promoted entries exist (grep the cross-reference); no invented answers; `vault.json` summary + per-OQ `status` match the markdown. Full checklist in `references/interactive-walk.md`.
 
@@ -87,7 +87,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 
 **Always:** vault not found / malformed → STOP (do not generate one — that's `generate-intent`); OQ list empty → tell the user, suggest another scope/vault; "answer all OQs for me" → refuse (offer Defer); `idk`/`whatever`/`any default` → push back, offer Defer.
 
-**Conditional:** a resolution contradicts an existing `05-decisions.md` ADR → STOP, ask whether to supersede (`Status: Supersedes D-XXX`) or reformulate; a resolution depends on another still-open OQ → flag, resolve the dependency first or Defer; the answer expands beyond the OQ scope → ask whether to split across OQs or capture the expansion as new OQs.
+**Conditional:** a resolution contradicts an existing ADR (`vault.md ## Decisions`; legacy `05-decisions.md`) → STOP, ask whether to supersede (`Status: Supersedes D-XXX`) or reformulate; a resolution depends on another still-open OQ → flag, resolve the dependency first or Defer; the answer expands beyond the OQ scope → ask whether to split across OQs or capture the expansion as new OQs.
 
 ## Quality bar
 
@@ -102,4 +102,4 @@ No invention; tag preservation; full auditability (Changelog + per-OQ markers = 
 
 ## Related skills
 
-Source vault must be a `mega-sdd` vault with the standard 7-file structure and OQ tagging convention (`OQ-{DOC_CODE}-{N}` with `P1|P2|P3`). OQ conventions, status-marker semantics, the `defer_to` field, and `vault.json` field + concurrency rules: `../generate-intent/references/vault-contract.md`. Memory schema + scope architecture: `../memory/references/memory-schema.md`. Self-learning thresholds + rollback path: `../memory/references/learning-rules.md`. Conflicts to resolve come from `bind-codebase`; binding re-runs after `--binding` clears them.
+Source vault must be a `mega-sdd` vault with the standard structure (layout-2 4-file or legacy 7-file) and OQ tagging convention (`OQ-{DOC_CODE}-{N}` with `P1|P2|P3`). OQ conventions, status-marker semantics, the `defer_to` field, and `vault.json` field + concurrency rules: `../generate-intent/references/vault-contract.md`. Memory schema + scope architecture: `../memory/references/memory-schema.md`. Self-learning thresholds + rollback path: `../memory/references/learning-rules.md`. Conflicts to resolve come from `bind-codebase`; binding re-runs after `--binding` clears them.
