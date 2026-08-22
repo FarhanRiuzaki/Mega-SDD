@@ -26,7 +26,7 @@ BR="${P}/skills/execute-bolts/references/superpowers-bridge.md"
 HR="${P}/skills/execute-bolts/references/halt-recovery.md"
 MT="${P}/references/model-tiers.md"
 SEC="${P}/agents/security-reviewer.md"
-SSC="${P}/scripts/scan-secrets-code.sh"
+SSC="${P}/scripts/secret-scan.sh"
 FAILED=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
@@ -47,7 +47,7 @@ mkdir -p "$R/config files"
 printf 'aws_key = "AKIAIOSFODNN7EXAMPLE"\n' > "$R/config files/prod settings.py"
 ( cd "$R" && git add -A && git commit -qm "feat: leak in spaced path" )
 H=$(git -C "$R" rev-parse HEAD)
-OUT=$(PATH="$STUB:$PATH" bash "$SSC" --base="$B" --head="$H" --cwd="$R" 2>/dev/null); RC=$?
+OUT=$(PATH="$STUB:$PATH" bash "$SSC" --code --base="$B" --head="$H" --cwd="$R" 2>/dev/null); RC=$?
 if [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q 'prod settings.py'; then
   ok "GATES-9: spaced filename SCANNED and the planted key caught (was: word-split → silently unscanned)"
 else
@@ -58,13 +58,13 @@ fi
 printf 'aws2 = "AKIAIOSFODNN7EXAMPLE"\n' > "$R/naïve-config.py"
 ( cd "$R" && git add -A && git commit -qm "feat: leak in quoted path" )
 H2=$(git -C "$R" rev-parse HEAD)
-OUT=$(PATH="$STUB:$PATH" bash "$SSC" --base="$H" --head="$H2" --cwd="$R" 2>/dev/null); RC=$?
+OUT=$(PATH="$STUB:$PATH" bash "$SSC" --code --base="$H" --head="$H2" --cwd="$R" 2>/dev/null); RC=$?
 [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q 'na.*ve-config.py' \
   && ok "r2-2: git-C-quoted (non-ASCII) filename SCANNED (core.quotepath=off)" \
   || fail "r2-2: quoted filename still silently unscanned (rc=$RC)"
 
 # ── review r1-5: a failed git diff in the fallback is a VISIBLE error, never clean ──
-OUT=$(PATH="$STUB:$PATH" bash "$SSC" --base=deadbeefdeadbeefdeadbeefdeadbeefdeadbeef --head="$H2" --cwd="$R" 2>"$W/.e12"); RC=$?
+OUT=$(PATH="$STUB:$PATH" bash "$SSC" --code --base=deadbeefdeadbeefdeadbeefdeadbeefdeadbeef --head="$H2" --cwd="$R" 2>"$W/.e12"); RC=$?
 [ "$RC" -eq 2 ] && grep -q 'CANNOT run' "$W/.e12" && printf '%s' "$OUT" | grep -q '"skipped": true' \
   && ok "r1-5: unresolvable revision range → exit 2 + skipped:true (was: zero-file clean scan)" \
   || fail "r1-5: dead range still reads as clean (rc=$RC)"

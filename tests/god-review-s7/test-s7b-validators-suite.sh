@@ -22,7 +22,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 VBA="${ROOT}/plugins/mega-sdd/scripts/validate-bolt-artifacts.sh"
 RFS="${ROOT}/plugins/mega-sdd/scripts/run-full-suite.sh"
-SSC="${ROOT}/plugins/mega-sdd/scripts/scan-secrets-code.sh"
+SSC="${ROOT}/plugins/mega-sdd/scripts/secret-scan.sh"
 FAILED=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
@@ -198,7 +198,7 @@ B=$(git -C "$R11" rev-parse HEAD)
 printf 'aws_key = "AKIAIOSFODNN7EXAMPLE"\n' >> "$R11/app.py"
 ( cd "$R11" && git add -A && git commit -qm "feat: leak" )
 H=$(git -C "$R11" rev-parse HEAD)
-OUT=$(PATH="$STUB:$PATH" bash "$SSC" --base="$B" --head="$H" --cwd="$R11" 2>"$W/.e11"); RC=$?
+OUT=$(PATH="$STUB:$PATH" bash "$SSC" --code --base="$B" --head="$H" --cwd="$R11" 2>"$W/.e11"); RC=$?
 if [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q 'aws-access-key' && grep -q 'WARN: gitleaks runtime failure' "$W/.e11"; then
   ok "GATES-1: gitleaks crash (exit 3) → WARN + regex fallback CATCHES the planted key (was: silent clean)"
 else
@@ -207,7 +207,7 @@ fi
 # clean diff under a crashed gitleaks → exit 0 but the note discloses the fallback
 ( cd "$R11" && printf 'more = 2\n' > extra.py && git add -A && git commit -qm "feat: clean" )
 H2=$(git -C "$R11" rev-parse HEAD)
-OUT=$(PATH="$STUB:$PATH" bash "$SSC" --base="$H" --head="$H2" --cwd="$R11" 2>/dev/null); RC=$?
+OUT=$(PATH="$STUB:$PATH" bash "$SSC" --code --base="$H" --head="$H2" --cwd="$R11" 2>/dev/null); RC=$?
 [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'runtime failure' \
   && ok "GATES-1: clean result under a crashed gitleaks DISCLOSES the fallback in the JSON note" \
   || fail "GATES-1: fallback not disclosed on the clean path (rc=$RC)"

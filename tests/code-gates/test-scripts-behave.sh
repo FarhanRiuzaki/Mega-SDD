@@ -3,7 +3,7 @@
 set -u
 err=0
 S=plugins/mega-sdd/scripts
-for f in detect-toolchain.sh run-code-scan.sh scan-secrets-code.sh validate-new-deps.sh; do
+for f in detect-toolchain.sh run-code-scan.sh secret-scan.sh validate-new-deps.sh; do
   [ -x "$S/$f" ] || { echo "missing or non-executable: $f"; err=1; }
 done
 [ $err -eq 0 ] || exit $err
@@ -17,16 +17,16 @@ echo "$out" | grep -q '"tsc"' || { echo "detect: tsc not detected from tsconfig.
 empty=$(mktemp -d); out=$("$S/detect-toolchain.sh" --cwd="$empty"); rm -rf "$empty"
 echo "$out" | grep -q '"formatters": \[\]' || { echo "detect: empty repo must yield no formatters (never impose)"; err=1; }
 
-# scan-secrets-code: fixture repo with a planted AWS-shaped key in the diff → exit 1
+# secret-scan --code: fixture repo with a planted AWS-shaped key in the diff → exit 1
 repo=$(mktemp -d)
 ( cd "$repo" && git init -q . \
   && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m base \
   && printf 'key = "AKIA%s"\n' "ABCDEFGHIJKLMNOP" > app.py \
   && git add . && git -c user.email=t@t -c user.name=t commit -qm leak )
-"$S/scan-secrets-code.sh" --base=HEAD~1 --head=HEAD --cwd="$repo" >/dev/null 2>&1
+"$S/secret-scan.sh" --code --base=HEAD~1 --head=HEAD --cwd="$repo" >/dev/null 2>&1
 [ $? -eq 1 ] || { echo "secrets: planted AWS key in diff must exit 1"; err=1; }
 # secret value must never be echoed in full
-outj=$("$S/scan-secrets-code.sh" --base=HEAD~1 --head=HEAD --cwd="$repo" 2>/dev/null)
+outj=$("$S/secret-scan.sh" --code --base=HEAD~1 --head=HEAD --cwd="$repo" 2>/dev/null)
 echo "$outj" | grep -q "AKIAABCDEFGHIJKLMNOP" && { echo "secrets: full secret value echoed in report"; err=1; }
 rm -rf "$repo"
 

@@ -19,7 +19,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 |---|---|---|---|---|
 | 1 | Format check | per `detect-toolchain.sh` output (`check_cmd`; run `fix_cmd` then re-check when only formatting fails) | the repo's own formatter | SKIP (note) |
 | 2 | Lint + typecheck | per `detect-toolchain.sh` output | the repo's own linter/typechecker | SKIP (note) |
-| 3 | Secrets in code | `scripts/scan-secrets-code.sh --base= --head=` | gitleaks → plugin regex fallback | fallback regex set (never unscanned) |
+| 3 | Secrets in code | `scripts/secret-scan.sh --code --base= --head=` | gitleaks → plugin regex fallback | fallback regex set (never unscanned) |
 | 4 | SAST | `scripts/run-code-scan.sh --base= --head=` | semgrep | SKIP (note) |
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
 | 6 | Dep authorization (ADVISORY) | `scripts/validate-new-deps.sh --unit= --base= --head=` (rides gate 5 — one manifest-diff pass, `authorization` JSON section) | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
@@ -54,7 +54,7 @@ Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is 
 Per the gates-doctrine (blocking only for critical + un-promptable):
 
 - **BLOCKING (halt before the panel dispatches — the bolt commit already landed):**
-  - a secret in the diff (`scan-secrets-code.sh` exit 1) → halt `secret_in_code`
+  - a secret in the diff (`secret-scan.sh --code` exit 1) → halt `secret_in_code`
   - an ERROR-severity SAST finding (`run-code-scan.sh` exit 2) → halt `sast_critical_finding`
   - a new dependency the registry definitively 404s (`validate-new-deps.sh` exit 2) → halt `dep_not_found` (hallucinated/slopsquat package — never install)
 - **FINDINGS (non-blocking, fed to the panel + bolt-report):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline), **`dep_unauthorized`** (gate 6 — the bolt added a dependency the unit's `allowed_new_deps` did not sanction; anti-over-engineering per the WAJIB bar). Gate 6 is **advisory-first by design** (always exit 0): the future blocking escalation is deferred and, when it lands, is commit-keyed like B4 so legacy bolts never retro-block. A unit with no `allowed_new_deps:` key (v4/pre-v5) is `enforced:false` — never a finding.
