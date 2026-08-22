@@ -479,13 +479,19 @@ def vault_looks_english(text):
     return (len(_EN_FUNC_RE.findall(text)) / len(words)) >= 0.08
 
 
-# Locate the active vault under --cwd that holds 04-flows.md (the workflow source).
+# Locate the active vault under --cwd that holds the flows doc (the workflow
+# source). v7 Fase 3 dual-layout read (one minor cycle): probe the layout-2
+# `flows.md` FIRST, fall back to the legacy `04-flows.md`.
+def _flows_path(d):
+    p2 = os.path.join(d, "flows.md")
+    return p2 if os.path.isfile(p2) else os.path.join(d, "04-flows.md")
+
 vault_root = os.path.join(cwd, ".mega-sdd", "vaults")
 active_vault_dir = None
 if os.path.isdir(vault_root):
     cands = []
     for d in sorted(glob.glob(os.path.join(vault_root, "*"))):
-        if os.path.isdir(d) and os.path.isfile(os.path.join(d, "04-flows.md")):
+        if os.path.isdir(d) and os.path.isfile(_flows_path(d)):
             # prefer the vault the written file belongs to; else most-recent flows
             cands.append(d)
     if cands:
@@ -495,13 +501,13 @@ if os.path.isdir(vault_root):
             None,
         )
         if active_vault_dir is None:
-            # Fallback: the vault with the largest 04-flows (the phase under work).
+            # Fallback: the vault with the largest flows doc (the phase under work).
             active_vault_dir = max(
-                cands, key=lambda d: os.path.getsize(os.path.join(d, "04-flows.md"))
+                cands, key=lambda d: os.path.getsize(_flows_path(d))
             )
 
 if active_vault_dir:
-    flows_text = _read(os.path.join(active_vault_dir, "04-flows.md"))
+    flows_text = _read(_flows_path(active_vault_dir))
     if flows_text:
         # Gather the surfaces-evidence corpus + design_system_flags ONCE. Rail 2
         # (design_source) reads only language-invariant inputs (design_system_flags JSON
