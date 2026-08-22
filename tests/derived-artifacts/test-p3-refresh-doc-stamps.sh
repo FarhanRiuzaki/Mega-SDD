@@ -2,7 +2,7 @@
 # test-p3-refresh-doc-stamps.sh — P3 (v5 spec P3 row; research §4 "Maturity +
 # freshness"): refresh-doc-stamps.sh updates ONLY the script-owned doc-control
 # state-stamp block in an emitted doc — every other byte untouched
-# (stamp-binding-boilerplate.sh precedent: parser-invisible block).
+# (the binding-boilerplate stamp precedent: parser-invisible block).
 #
 #   1  first stamp: block inserted after frontmatter; STAMP-ONLY-CHANGE PIN —
 #      removing the exact inserted block restores the original file
