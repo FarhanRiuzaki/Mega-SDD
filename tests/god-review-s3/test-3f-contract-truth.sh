@@ -42,8 +42,8 @@ SSS="$P/references/shared-snapshot-schema.md"
 SCS="$P/references/starterkit-context-schema.md"
 PTH="$P/references/paths.md"
 PRT="$P/skills/generate-units/references/pagerank-targeting.md"
-MEM="$P/skills/memory/SKILL.md"
-for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$MEM"; do  # PRT removed 5.29.0 (D1) — its ABSENCE is asserted below
+VCORE="$P/skills/generate-intent/references/vault-core.md"
+for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$VCORE"; do  # PRT removed 5.29.0 (D1) — its ABSENCE is asserted below
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -116,9 +116,12 @@ grep -qF '_source: ["<manifest filename of the ecosystem block' "$DSP" && ok "AH
 grep -qF '_source: ["composer.json"]' "$SCS" && ok "AH-4: schema §libs carries _source" || fail "AH-4: schema §libs _source missing"
 grep -qF 'names the MANIFEST whose ecosystem block produced the entry' "$SCS" && ok "AH-4: citation rail defines the libs _source grammar" || fail "AH-4: rail grammar missing"
 
-# ── DS-3 ──
-grep -qF '### file-lock' "$MEM" && ok "DS-3: memory/SKILL.md now has the §file-lock anchor" || fail "DS-3: §file-lock anchor still dangling"
-grep -qF 'memory-write.sh' "$MEM" && ok "DS-3: anchor points at the deterministic implementation" || fail "DS-3: anchor lacks the script pointer"
+# ── DS-3 (v7.3.0: the memory skill is REMOVED; the canonical lock spec is
+# vault-core §Concurrency contract, and its deterministic implementation is
+# derive-vault-json.sh's script-held lock) ──
+grep -qF 'Concurrency contract' "$VCORE" && ok "DS-3: vault-core carries the canonical lock spec" || fail "DS-3: lock spec anchor dangling"
+grep -qF 'derive-vault-json.sh' "$VCORE" && ok "DS-3: lock spec points at the deterministic implementation" || fail "DS-3: lock spec lacks the script pointer"
+grep -qF 'single advisory-lock pattern' "$VCORE" && ok "DS-3: vault-core declares itself the canonical spec (post-memory-skill)" || fail "DS-3: canonical-spec declaration missing"
 
 # ── DS-4 ──
 grep -qF 'the same 4 rails verbatim' "$DSP" && grep -qF 'Untrusted-data fence' "$DSP" \

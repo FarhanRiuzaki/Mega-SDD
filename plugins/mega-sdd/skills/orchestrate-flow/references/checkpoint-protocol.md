@@ -34,7 +34,7 @@ Checkpoint protocol adds per-step persistence inside each skill invocation.
 └── ...
 ```
 
-Format: **JSONL** (one JSON object per line; append-only; race-tolerant per memory layer convention).
+Format: **JSONL** (one JSON object per line; append-only; race-tolerant).
 
 ### Per-checkpoint schema
 
@@ -83,7 +83,7 @@ For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/m
 
 - Keep checkpoints for last 3 runs in `<vault>/.internal/checkpoints/`
 - Older checkpoints moved to `<vault>/.internal/checkpoints-archive/`
-- `mega-sdd:memory prune` cleans archive older than 180 days
+- Archive older than 180 days may be deleted manually (v7.3.0: the memory maintenance command was removed)
 - "Run" boundaries detected by timestamp gaps >5 minutes between checkpoints
 
 ## Integration with handoff YAML
@@ -117,8 +117,7 @@ Resume command: /mega-sdd --resume (re-enters chain at bind-codebase claim-46)
 ## Privacy + cleanup
 
 - Checkpoints contain cursor state ONLY (no sensitive payloads)
-- For sensitive-info contexts, `--memory-off` flag suppresses checkpoints
-- `mega-sdd:memory clear --scope=vault` deletes checkpoints with vault
+- Checkpoints live under the vault (`.internal/checkpoints/`); deleting the vault deletes them
 
 ## Anti-hallucination rails
 

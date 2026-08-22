@@ -76,8 +76,8 @@ fi
 # surface growth, spec 2026-08-12-playwright-embed-design.md; never re-shrink
 # this count without its own recorded decision)
 n_cmd=$(ls "$C"/*.md | wc -l | tr -d ' ')
-[ "$n_cmd" -eq 8 ] && ok "exactly 8 command files (4 verbs + 4 one-timers)" || fail "command count wrong: $n_cmd (expected 8)"
-for f in mega-sdd.md sync.md emit.md slice.md install-deps.md memory.md migrate-paths.md update-plugin.md; do
+[ "$n_cmd" -eq 7 ] && ok "exactly 7 command files (4 verbs + 3 one-timers — memory removed v7.3.0)" || fail "command count wrong: $n_cmd (expected 7)"
+for f in mega-sdd.md sync.md emit.md slice.md install-deps.md migrate-paths.md update-plugin.md; do
   [ -f "$C/$f" ] || fail "kept command MISSING: $f"
 done
 # C3: relocated procedures — new home exists + old dispatch marker survived

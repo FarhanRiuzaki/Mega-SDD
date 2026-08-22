@@ -16,24 +16,20 @@ description: Detect OS + package manager and install missing optional native dep
 - After fresh mega-sdd install — bootstrap optional native binaries
 - After predictive-checks warn (e.g., `pandoc_installed: warn` from emit-fsd predictive checks)
 - Before generating emit PDFs — pandoc + a detected Chrome (mmdc for mermaid) via md2pdf.sh
-- Cross-machine re-sync (memory layer skips already-installed tools)
+- Cross-machine re-sync (probes are cheap and idempotent)
 
 ## Inputs
 
 - `--dry-run` (show install plan; don't execute)
 - `--tools=<csv>` (limit to subset, e.g., `--tools=pandoc,mmdc` for emit-PDF-only)
-- `--force-recheck` (ignore memory; re-audit every tool from scratch)
+- `--force-recheck` (re-audit every tool from scratch — kept as an accepted no-op modifier; every run already re-probes since v7.3.0)
 - `--pkg-mgr=<name>` (override auto-detected manager; e.g., force `cargo` instead of `brew`)
 - `--manual` (print install commands but skip Bash invocation — user runs commands themselves)
 - `--auto` (orchestrator-invoked; emit handoff YAML in chat per orchestrate-flow handoff-contract)
 
 ## Outputs
 
-```
-<project>/.mega-sdd/memory/install-outcomes.md   # memory log of install runs
-```
-
-Plus chat-only output: detected OS, tool inventory, install plan, per-tool verify result.
+Chat-only: detected OS, tool inventory, install plan, per-tool verify result. (v7.3.0: the install-outcomes memory log is removed — every run re-probes; probes are bounded and cheap.)
 
 ## Playwright browser (detect-and-offer — deliberately NO tool-matrix row)
 
@@ -44,7 +40,7 @@ The plugin bundles the Playwright MCP server (one of the two pinned servers in `
    - Linux: `~/.cache/ms-playwright/`
    - Windows: `%USERPROFILE%\AppData\Local\ms-playwright\`
 2. **Offer** (never auto-run): print `npx playwright install chromium` with the size estimate (~130MB) and let the human run it — on gov/office networks the download may be blocked; absence is ALWAYS graceful (every Playwright consumer SKIPs with a reason; nothing gates).
-3. Record the outcome in the install memory like any other tool (detected / offered / declined) — never "installed" without the cache dir appearing.
+3. Record the outcome in the chat summary like any other tool (detected / offered / declined) — never "installed" without the cache dir appearing.
 
 The MCP server itself can also fail to start (npx cold-cache package fetch on a blocked registry) — that is a DISTINCT rung; the mitigation is the `/mcp` per-server disable, documented in the README.
 
@@ -52,7 +48,6 @@ The MCP server itself can also fail to start (npx cold-cache package fetch on a 
 
 1. **pkg_mgr_detected**: at least one of (brew | apt | dnf | pacman | apk | winget | scoop | choco | cargo | npm | go | pipx) is on PATH
    - If none → halt `pkg_mgr_not_found`
-2. **memory_writable**: `<project>/.mega-sdd/memory/` exists and writable (or can be created)
 
 ## Procedure
 
@@ -73,7 +68,6 @@ If detection yields `OS = unknown` OR `PKG_MGR = none` AND no fallbacks → emit
 
 Read `references/tool-matrix.yaml`. For each tool:
 
-1. Check memory file `<project>/.mega-sdd/memory/install-outcomes.md` (if exists) for prior install entry within last 30 days.
 2. **Pre-filter with `command -v` FIRST — this ordering is mandatory, not an optimisation.**
    - Not on PATH → mark `missing` immediately. **Do not run the exec probe.** A name absent from PATH is conclusively missing, and `command -v` is a shell builtin: zero forks, ~5 ms for all tools combined.
    - On PATH → continue to the exec probe below. Only tools that are actually present pay its cost.
@@ -81,7 +75,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 4. **A `command -v` hit is never sufficient on its own** (WindowsApps alias stubs resolve yet exit 49 — `references/audit-and-verify.md §command -v is never sufficient`). Presence ≠ usability; the pre-filter may only ever produce `missing`, never `present`.
 5. **`python3` is the named exception** — verdict via the shared resolver (`scripts/_lib/resolve-python.sh`), not a bare `verify_cmd`; same bound, same carve-outs. Exact invocation + remedy rule: `references/audit-and-verify.md §python3 — the named exception`.
 
-`--force-recheck` flag skips memory cache; re-audits every tool.
+(v7.3.0: every run re-audits — there is no cache to skip; `--force-recheck` is an accepted no-op.)
 
 Emit chat output:
 
@@ -172,15 +166,7 @@ Verifying...
 
 If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`, or subtype `path_stale_pending_restart` when the probe succeeded but this shell cannot see it.
 
-### Step 7: Memory write
-
-After all installs + verifies complete:
-
-1. Append the run record to `<project>/.mega-sdd/memory/install-outcomes.md` (schema in spec §9) via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/memory-write.sh" --file=<resolved-path> --scope=project --cwd=<project-root>` — the script owns the secret scan, the file lock (backoff + retry 3x; exhaustion → `memory_in_use` telemetry), and the atomic append.
-
-If the write fails (exit ≠ 0 — lock contention, disk full, permissions) → log warning to chat; don't halt (memory is convenience, not correctness).
-
-### Step 8: Summary + handoff
+## Step 7: Summary + handoff
 
 Emit chat summary:
 
@@ -202,7 +188,6 @@ Per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. install-deps
 
 - **`pkg_mgr_not_found`**: no compatible package manager detected for OS. Details `{os, distro, attempted_pkg_mgrs, fallbacks_attempted}`. Resolution: install brew (macOS) / verify apt-on-PATH (Linux) / install WSL Ubuntu (Windows native) → re-run.
 - **`install_failed`**: install command exited non-zero OR verify_cmd failed post-install. Details `{tool, install_cmd, verify_cmd, exit_code, stderr_tail, subtype: <install_command_failed | verify_after_install_failed>}`. Resolution: inspect stderr_tail, fix root cause (PATH / repo signing / network), re-run `/mega-sdd:install-deps --tools=<failed-tool>` to retry single tool.
-- **`memory_in_use`**: install-outcomes.md write lock collision. Resolution: retry after backoff; if persistent, manually remove stale `.lock` file.
 
 ## Handoff emission
 
@@ -213,8 +198,7 @@ handoff:
   emitted_by: install-deps
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
-  artifacts:
-    - <absolute path to <project>/.mega-sdd/memory/install-outcomes.md>
+  artifacts: []                      # chat-only skill; no files written (v7.3.0)
   next_action:
     suggested_skill: null
     suggested_args: []
@@ -231,24 +215,6 @@ handoff:
 ```
 
 Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under `--auto`.
-
-## Memory layer
-
-Participates in mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
-
-### Writes
-
-| When | File | Content |
-|---|---|---|
-| After successful install + verify | `<project>/.mega-sdd/memory/install-outcomes.md` | Append run record with timestamp, OS detection, per-tool status (✓ installed / ⊘ skipped / ✗ failed / ⊕ sudo-pending) |
-
-### Reads
-
-| What | Source | How used |
-|---|---|---|
-| Prior install outcomes | `install-outcomes.md` | Step 2 audit skips re-verify of tools marked "installed" within last 30 days AND still present on PATH |
-
-`--force-recheck` flag disables memory reads; always re-audit from scratch.
 
 ## Anti-hallucination rails
 

@@ -127,7 +127,6 @@ TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 - Full upstream bolt-reports: `@PROJ@/.mega-sdd/vaults/v1/bolts/U-XXX/bolt-report.md`
 - Full constitution: `@PROJ@/.mega-sdd/vaults/v1/constitution.md`
 - Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`
-- Full memory tables: `@PROJ@/.mega-sdd/memory/`
 - Full framework pack: `@PLUGIN@/references/framework-conventions/<pack>.md`
 
 ═══════════════════════════════════════════
@@ -142,7 +141,7 @@ Every absent or unresolvable input is recorded here rather than invented (invari
 - framework_pack_rules: no pack rule path_glob matched this unit's target_files (chain: _universal.md) — the 'keep top 1' floor is vacuous on an empty set, no rule invented
 - constitution_clauses: no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)
 - kb_anti_patterns: the join key 'domain tags' (context-enrichment.md:76) is a phantom field — no unit schema, validator or writer defines it; substituting module:/vault_source would be a fabricated inclusion. Section omitted until the spec designates a join key.
-- historical_memory: no outcomes.md run passed the relevance filter (unit id / target-file basename overlap), no matching bolt-outcomes.json entry and no eligible instinct. Memory files are gitignored-by-default post-run artifacts, so absent is the normal state; an unfiltered dump under a header that says 'relevant' is not the alternative.
+- historical_memory: the memory lane was removed in v7.3.0 (pipeline-only mandate) — no historical-memory section exists to emit
 - reuse_slice: reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the UNCONDITIONAL T1 path line still ships)
 - symbol_slice: symbol-index.json absent at @PROJ@/.mega-sdd/codebase/symbol-index.json (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)
 - starterkit_slice: no starterkit-context.yaml at @PROJ@/.mega-sdd/codebase/starterkit-context.yaml — the Map §6 fallback applies instead

@@ -1,6 +1,6 @@
 # execute-bolts — Halt recovery: full halt YAMLs, propose-and-confirm, PBT violation flow
 
-Cold companion to `halts-and-handoff.md` (which keeps the always-hot halt protocol, the canonical bolt-halt enum, streaming/summary formats, the handoff schema, and the memory layer). Load this file ONLY when a halt actually fires (or is about to be emitted) or when a batched unit carries a non-empty `properties:` field (Property-Based Testing) — per the SKILL.md routing.
+Cold companion to `halts-and-handoff.md` (which keeps the always-hot halt protocol, the canonical bolt-halt enum, streaming/summary formats, and the handoff schema). Load this file ONLY when a halt actually fires (or is about to be emitted) or when a batched unit carries a non-empty `properties:` field (Property-Based Testing) — per the SKILL.md routing.
 
 ## Contents
 - `test_fail` halt YAML
@@ -53,7 +53,7 @@ blocker:
 
 Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt halts with an eligible halt type, dispatch an AI fix-proposer subagent → render the proposal via `AskUserQuestion` → on accept, apply the fix + re-execute → on reject, the chain pauses.
 
-**Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/memory/config.yaml` `halt_auto_propose`):
+**Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/config.yaml` `halt_auto_propose` (user-scope; relocated from the removed memory dir in v7.3.0)):
 - `test_fail` (after the default 3 retries via `--max-retries`).
 - `hard_rule_violated` (with framework-pack provenance evidence).
 - `pbt_property_violated` (counterexample preserved in postflight).
@@ -82,11 +82,11 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 4. Render to the user via `AskUserQuestion` (4 options — the platform caps options at 4: Apply / Alt / Reject / Override; Cancel rides the built-in "Other"/Esc escape).
 5. On Apply: write `proposed_fix` to `<vault>/bolts/U-XXX/proposed-fix.md` → apply diff → re-execute the single bolt → continue the batch.
 6. On Reject: write `proposed_fix` to `<vault>/bolts/U-XXX/proposed-fix.md` (preserved for the next session) → the chain pauses.
-7. On Override: record to memory `decisions.md` as `forced_pass` → continue the batch (audit-significant).
+7. On Override: the `forced_pass` status lands in the bolt-report (the audit record) → continue the batch.
 
 **Halt-cycle safety:** if the same halt fires twice on the same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop).
 
-**Configuration override** (`~/.mega-sdd/memory/config.yaml`):
+**Configuration override** (`~/.mega-sdd/config.yaml`):
 
 ```yaml
 halt_auto_propose:

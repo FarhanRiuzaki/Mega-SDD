@@ -84,10 +84,6 @@ On completion, announce: "Codebase map written to `<path>`." + the CWD-condition
 
 Emit a handoff YAML record per your local template on **every** invocation — chain (`--auto`, typically from `orchestrate-flow --deep` or `/mega-sdd`) *and* standalone. It is NOT `--auto`-gated: a direct `scan-codebase` run never injects `--auto`, and the caller of a non-interactive skill has no other channel for `next_action` / `artifacts[]` / `blockers[]`. The record, the conditional `starterkit_context:` block, metrics, and the `halted` status conditions are in **`references/halts-flags-handoff.md`** (operative; `orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index).
 
-## Memory layer
-
-When memory is enabled (default; opt-out `--memory-off`), participates in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`: writes detected conventions to `.mega-sdd/memory/conventions.md` AFTER the map is written, and skips re-detection for conventions marked `status: established` (still re-verified each scan). Read/write tables + anti-halu rails are in **`references/halts-flags-handoff.md`**.
-
 ## Specialist references (load on demand)
 
 - **`references/scan-procedure.md`** — full surface scan (Steps 0–10): probe-scan-engine.sh engine digest, per-file invalidation gate, tree-sitter + ast-grep + regex/ripgrep extraction code, routes/models/naming/pattern heuristics, framework-detection table + pack-resolution YAML.
@@ -97,7 +93,7 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 - **`references/codebase-map-schema.md`** — the full `codebase-map.md` output schema (frontmatter + §1–§7), how `bind-codebase` consumes it, and detection-precision caveats.
 - **`references/tree-sitter-integration.md`** — tree-sitter detection, query-file schema, per-language coverage, precision tiers, `dep_missing` install guidance, and graceful regex fallback.
 - **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.
-- **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, the `--auto` handoff YAML, and the memory layer.
+- **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, and the `--auto` handoff YAML.
 - **`queries/`** — `astgrep/<lang>.yml` rule packs (20 languages — the AUTO tier-1 glossary Step 5 consumes; one pack per ast-grep language, `jsx` aliases to the javascript lane) + tree-sitter `tags-<lang>.scm` capture queries (9 languages: TS/JS/PHP/Python/Go/Rust/Ruby/Java/C# — opt-in `--engine=tree-sitter` lane only); registry + tested versions in `queries/VERSIONS.md`.
 
 ## Related skills

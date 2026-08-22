@@ -1,6 +1,6 @@
 # Halt guidance — flow family
 
-Per-type guidance for halts emitted by: orchestrate-flow / front door / sync (detect-drift) / memory / install-deps (+ anti-recursive guards).
+Per-type guidance for halts emitted by: orchestrate-flow / front door / sync (detect-drift) / install-deps (+ anti-recursive guards).
 Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 (spec 2026-08-17-halt-registry-family-split.md) — the registry keeps the envelope
 schema, escalation discipline, subtype enums, and the per-type index that routes
@@ -26,10 +26,6 @@ Registry one-liner (absorbed, same type):
 
 - `mode_migrate` — orchestrate-flow: vault.json `mode` field (greenfield | existing) doesn't match CWD signals (.git present, package.json present, etc.). **C1 SELF-RESOLVE:** re-detect from CWD signals deterministically (.git present + composer.json/package.json/etc. → `existing`; absence → `greenfield`); update `vault.json.mode`; log change to chat. The chat one-liner is the record. NEVER halts. User can override by passing explicit `--mode=<value>` flag on next chain invocation. CWD signals are ground truth — no fabrication risk.
 
-### routing_outcome_corrupt
-
-- `routing_outcome_corrupt` — orchestrate-flow: routing-outcomes.md fails parse. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script checks `<cwd>/.mega-sdd/memory/routing-outcomes.md` for UTF-8 validity + schema header presence (`# Routing Outcomes` marker in first 200 chars). If corrupt → rename to `.corrupt-<ISO8601>`; log the corruption reason (`non-utf8-binary` or `missing_schema_header`) in the chat notice; chain proceeds with default routing. NEVER halts.
-
 ### predictive_check_failed
 
 - `predictive_check_failed` — orchestrate-flow: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. Resolution: user fixes precondition (install dep / add framework pack / etc.) per `next_action.hint`; re-run chain.
@@ -53,10 +49,6 @@ Registry one-liner (absorbed, same type):
 ### artifact_missing
 
 - `artifact_missing` — orchestrate-flow: handoff YAML lists `artifacts: [paths]` and one or more paths fail existence check (`test -f` for files, `test -d` for directories). ALWAYS STOP. Resolution: re-run producer skill standalone to confirm artifacts actually written; inspect producer chat for mid-write crash logs.
-
-### memory_schema_mismatch
-
-- `memory_schema_mismatch` — memory subsystem: persisted memory file schema_version differs from current code's expected schema. ALWAYS STOP (presents migration prompt). Resolution: user opts in to migration via `/mega-sdd:memory migrate`.
 
 ### install_failed
 

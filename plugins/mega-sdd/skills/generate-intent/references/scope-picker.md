@@ -31,7 +31,7 @@ Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion 
 
 3. Determine scope choice (if multi-scope detected)
    - If `--scope=<id>` flag set → use that scope; halt `scope_not_declared_in_prd` if id not in scopes
-   - Else if memory has prior choice for this PRD sha256 + cwd basename matches → silent default + confirm-once
+   - Else if an EXISTING vault in this project carries the same `prd_sha256` + a `scope` (vault.json — the pipeline record) → suggest that scope as default + confirm-once
    - Else → AskUserQuestion with smart default (see §Smart default heuristic)
 
 4. Filter PRD content per chosen scope
@@ -43,9 +43,7 @@ Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion 
    - vault.json: scope, scope_metadata, prd_sha256
    - vault.md: scope header + sibling scopes notes + locked contracts
 
-6. Persist scope choice to memory
-   - `<project>/.mega-sdd/memory/decisions.md` §PRD Scope Decisions
-   - Increment override_count if user switched scope on same PRD
+6. The scope choice is persisted in the vault itself (step 5: vault.json `scope` + `prd_sha256`) — no side record (v7.3.0).
 ```
 
 ## Smart default heuristic
@@ -58,11 +56,11 @@ When asking the user, recommend a scope based on signal strength:
 | cwd basename matches `<scope>-<project>` | HIGH | `be-order-mgmt/` → BE |
 | cwd parent dir matches scope id | MEDIUM | `~/projects/order/be/` → BE |
 | Composer/package.json filename hints | MEDIUM | composer.json + Laravel → likely BE |
-| Memory: last scope used on this PRD sha256 | HIGH (if same cwd) | matches BE → suggest BE |
+| Existing vault with same prd_sha256 carries a scope | HIGH (if same cwd) | vault.json scope: BE → suggest BE |
 
 Conflict resolution:
 - If multiple signals match → use highest-confidence
-- If signals contradict (memory says BE, cwd says FE) → surface BOTH options to user
+- If signals contradict (existing vault says BE, cwd says FE) → surface BOTH options to user
 - If no signals → present full scope list without "recommended" marker
 
 ## --scope flag semantics
@@ -114,13 +112,13 @@ vault.md MUST include:
 > Locked contracts cross-referenced below for awareness, NOT enforcement.
 ```
 
-## Memory hit UX
+## Prior-vault hit UX
 
-When PRD sha256 found in memory + cwd matches last invocation:
+When an existing vault carries the same PRD sha256 + a scope:
 
 ```
 ▶ PRD ./<path> recognized (sha256: <hash>...)
-  Last scope used: <scope> (<date>)
+  Existing vault scope: <scope> (vault.json)
 
 ❓ Same scope this run?
    [Enter] <scope> (default after 5s; confirm-once)
@@ -130,13 +128,12 @@ When PRD sha256 found in memory + cwd matches last invocation:
 
 Confirm-once timeout default: 5 seconds. Configurable via `--scope-confirm-timeout=N` (rarely needed).
 
-When `--auto` flag set AND memory hit → silent default; do not prompt at all.
+When `--auto` flag set AND a prior-vault hit → silent default; do not prompt at all.
 
 ## Anti-halu rails
 
-- NEVER silently re-use memory's scope choice without showing it to user (except `--auto` mode)
+- NEVER silently re-use a prior vault's scope choice without showing it to user (except `--auto` mode)
 - NEVER auto-substitute retrofit file path — user explicitly invokes with retrofit file
-- NEVER write to memory if user cancels picker
 - ALWAYS include cross_scope_dependencies notes when chosen_scope is involved (publisher OR consumer)
 - ALWAYS preserve original PRD when generating retrofit; new file written, original untouched
 

@@ -49,7 +49,7 @@
     },
     {
       "section": "historical_memory",
-      "reason": "no outcomes.md run passed the relevance filter (unit id / target-file basename overlap), no matching bolt-outcomes.json entry and no eligible instinct. Memory files are gitignored-by-default post-run artifacts, so absent is the normal state; an unfiltered dump under a header that says 'relevant' is not the alternative."
+      "reason": "the memory lane was removed in v7.3.0 (pipeline-only mandate) \u2014 no historical-memory section exists to emit"
     },
     {
       "section": "reuse_slice",

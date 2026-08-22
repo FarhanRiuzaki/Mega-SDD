@@ -1,6 +1,6 @@
 # /mega-sdd:install-deps Trigger + Behavior Test
 
-Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Linux distro / WSL / Windows-bash). Safety rails: NEVER auto-sudo / NEVER curl|bash / mandatory verify / memory-cached outcomes.
+Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Linux distro / WSL / Windows-bash). Safety rails: NEVER auto-sudo / NEVER curl|bash / mandatory verify. (v7.3.0: no memory cache — every run re-probes.)
 
 ## Trigger cases
 
@@ -37,22 +37,22 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 ### ID7: Memory cache skips re-audit
 - **Setup:** install-outcomes.md exists with `ast-grep: ✓ installed v0.31.0 (2026-05-26)`; `command -v ast-grep` still passes
 - **Prompt:** `/mega-sdd:install-deps`
-- **Expect:** ast-grep marked `⊘ cached-installed`; verify_cmd NOT run for ast-grep (memory cache hit); other tools audited normally
+- **Expect:** ast-grep re-probed like every tool (v7.3.0: no cache); all tools audited normally
 
-### ID8: --force-recheck ignores memory cache
+### ID8: --force-recheck accepted as a no-op modifier (v7.3.0)
 - **Setup:** same as ID7
 - **Prompt:** `/mega-sdd:install-deps --force-recheck`
-- **Expect:** ast-grep re-audited from scratch; memory cache ignored
+- **Expect:** ast-grep re-audited from scratch (identical to a bare run)
 
 ### ID9: --dry-run prints plan without execution
 - **Setup:** vault stable; pandoc + mmdc missing
 - **Prompt:** `/mega-sdd:install-deps --dry-run`
-- **Expect:** Skill prints install plan (commands, sizes) but does NOT invoke Bash tool to run them; memory file NOT written
+- **Expect:** Skill prints install plan (commands, sizes) but does NOT invoke Bash tool to run them
 
 ### ID10: --manual flag prints commands as instructions
 - **Setup:** any OS
 - **Prompt:** `/mega-sdd:install-deps --manual`
-- **Expect:** Skill prints install_cmd values as numbered instructions for user to run themselves; does NOT invoke Bash; memory NOT written; informational only
+- **Expect:** Skill prints install_cmd values as numbered instructions for user to run themselves; does NOT invoke Bash; informational only
 
 ### ID11: --tools=<csv> filters subset
 - **Setup:** all 8 tools missing

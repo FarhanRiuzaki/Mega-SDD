@@ -76,10 +76,9 @@ When the user invokes `generate-intent <arg>`, evaluate rules **in order; first 
 | `--scope=<id>` | Select one scope (BE/MW/FE/custom id, or `all` for legacy single vault) of a multi-scope PRD. When the PRD has a `scopes:` block and the flag is unset, the interactive picker fires (Step 0.9). Invalid id → halt `scope_not_declared_in_prd`. | `references/setup-flow.md` |
 | `--scan=<codebase-map-path>` | Starterkit overlay — read `codebase-map.md` before drafting so vault sections use dual-citation (Intent + Starterkit binding) per `vault-contract.md §Starterkit-binding`. Auto-applied when a codebase-map exists and `--greenfield` is unset (confirm first unless `--auto`). | `references/setup-flow.md` |
 | `--greenfield` | Explicit opt-in for stack-agnostic generation — skips scan reading; vault stays generic. Required when no starterkit is present. | `references/setup-flow.md` |
-| `--auto` | Skip logistical prompts (set by orchestrate-flow); emit a handoff YAML; participate in the memory layer. NEVER bypasses the anti-halu rails. | `references/auto-and-handoff.md` |
+| `--auto` | Skip logistical prompts (set by orchestrate-flow); emit a handoff YAML. NEVER bypasses the anti-halu rails. | `references/auto-and-handoff.md` |
 | `--no-pre-scan` | Skip Step 0.8 scan-aware context loading. | `references/setup-flow.md` |
 | `--no-constitution` | Skip Step 3.4 (`constitution.md`) — vault md files only. | `references/setup-flow.md` |
-| `--memory-off` | Disable memory-layer reads + writes. | `references/auto-and-handoff.md` |
 | `--no-advisor` | Skip the phase-advisor adversarial pass before finalize. Default-on; still runs under `--auto` unless this flag is set. | `references/advisor-checklist.md` |
 
 When BOTH `--scan` AND `--kb` are set (legacy-rebuild on a target scaffold): the vault synthesizes legacy domain intent (from the KB) with target scaffold conventions (from the scan). `[LOCKED]` KB items are preserved 1:1; `[INTENT]` items are rendered using starterkit conventions; `[ARTIFACT]` items are discarded.
@@ -114,7 +113,7 @@ Every Open Question is tagged at generation time with `category: business | tech
 - **`tech`** OQs → `scan` (resolvable from a codebase-map; needs `scan_query`), `recommend` (Claude proposes a pick; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**), or `blocking`.
 - **Conservative default** when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low` (preserves blocking behavior — safe).
 - Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the vault.md `## Auto-Classification Review` section.
-- **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. A user override recorded in `classifier-accuracy.json` always wins over re-classification (never silently overwrite a human correction).
+- **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. An existing vault classification IS the record of any human correction — reuse-verbatim protects it (never silently overwrite a human-edited bracket).
 
 The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-core.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`; `oq_recommend_citation_invalid` fires post-write via `validate-vault-oqs.sh`) → `references/generation-guide.md`.
 
@@ -178,8 +177,8 @@ Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over
 - **`references/detection-and-shapes.md`** — Mode A/B detection edge cases + the full Project Shape Registry (pre-templated shapes, custom fallback, inference rules).
 - **`references/generation-guide.md`** — Step 3 file-by-file content guide, output-mode policy, readability standards, the vault.md section order + Phase-context block, the mandatory section template + OQ tagging, operator-surface + Design-Source OQ capture, and the Step 3.5 classifier procedure + halt YAML.
 - **`references/self-check.md`** — Step 4 self-check checklist, Step 5 present, and the full push-back matrix.
-- **`references/auto-and-handoff.md`** — `--auto` behavior table + anti-halu carve-outs, handoff YAML, memory layer, and path resolution.
-- **`references/scope-picker.md`** — scope filter logic + memory write rules (used by Step 0.9).
+- **`references/auto-and-handoff.md`** — `--auto` behavior table + anti-halu carve-outs, handoff YAML, and path resolution.
+- **`references/scope-picker.md`** — scope filter logic + prior-vault default rules (used by Step 0.9).
 - **`references/legacy-retrofit-prompt.md`** — the AI subagent prompt for the legacy-PRD scope retrofit bridge.
 - **`references/squad-partition.md`** — squad-declaration validation rules.
 - **`references/templates/`** — scaffolds for the 4 files + `squads.yaml`, `interfaces-index`, `obsidian-graph.json` (`vault.json` has NO template — it is script-derived, never hand-written). Read ONLY the template for the file currently being drafted, never the whole set.

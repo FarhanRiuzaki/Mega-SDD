@@ -36,7 +36,7 @@ Show its output (the per-artifact `FROM → TO` plan, reference rewrites, config
 Unless `--auto-confirm` is set, ask via AskUserQuestion:
 
 ```
-Proposed migration: <N> vaults + KB / memory / codebase-map moved to ./.mega-sdd/
+Proposed migration: <N> vaults + KB / codebase-map moved to ./.mega-sdd/
 
 Options:
   1. Proceed (git mv where in git; otherwise mv)

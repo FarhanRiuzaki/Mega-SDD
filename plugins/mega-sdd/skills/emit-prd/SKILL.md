@@ -121,10 +121,6 @@ handoff:
     open_items_count: <int>
 ```
 
-## Memory layer
-
-Out of scope: emit-prd does NOT participate in the memory layer.
-
 ## Anti-hallucination rails
 
 1. Every section traces to sources via the SCRIPT-COMPUTED citation map (`--doc=prd`); missing source → `[Pending — X]`, never fabrication.

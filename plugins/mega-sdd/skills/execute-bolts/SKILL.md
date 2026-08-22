@@ -27,7 +27,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--max-retries=N` — default 3.
   - `--dry-run` — walk steps, do not commit.
   - `--force` — re-execute completed units / proceed on a dirty tree.
-  - `--auto` — non-interactive (emit handoff YAML; participate in the memory layer).
+  - `--auto` — non-interactive (emit handoff YAML).
   - `--per-squad` — fan out across all squads in `_meta/squads.yaml` (main-thread loop, depth-1, NO squad subagent) — procedure in `references/batch-and-fanout.md` + `references/squad-subagent.md`.
   - `--review-panel=minimal|standard|full|auto` — force the review-panel tier; default `auto` (risk-based selection per `references/review-panel.md`). Forcing `minimal` on a unit with risk signals logs a warning in the bolt-report — never silent.
   - `--model-tier=inherit|auto|haiku|sonnet|opus` — v7.1 per-unit implementer model. Override chain: this flag > `config.yaml model_tiers.bolt_implementer:` > the config DEFAULT `inherit`. `inherit` = today's behavior (session model; NO `model` param passed on the Agent call). `auto` = the router's `implementer_model` from the SAME `resolve-review-tier.sh` JSON the panel tier uses (spec `docs/superpowers/specs/2026-08-22-per-unit-model-routing-design.md`); a hard value pins every unit. Whatever the source, the decision is recorded in the bolt-report (`model_used` + `signals_fired`).
@@ -42,7 +42,6 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--no-drift-check` — opt out of the end-of-chain detect-drift auto-gate (per `references/halts-and-handoff.md` / `../orchestrate-flow/references/chain-execution.md`).
   - `--resume` — resume a partially-completed bolt from `<vault>/bolts/U-XXX/partial-state.json` (forward-only from `current_step`).
   - `--rollback <unit-id-or-vault-path>` — saga compensating actions: replay `rollback_hints[]` in reverse to undo a crashed bolt.
-  - `--memory-off` — disable memory reads + writes.
 - **Unit selection (living-vault lifecycle):** units with `status: superseded` are SKIPPED with a one-line warning (claim no longer exists); units with `status: stale` are ELIGIBLE for re-execution (treated as not-yet-completed — the sync lane's "stale/new units only" semantics). Absent `status` = legacy behavior unchanged.
   - `--force-skip-postflight` — **DISCOURAGED** escape hatch that skips the ast-grep Hard Rule **postflight** validation for THIS run only. Use only when the ast-grep binary is broken or a known false-positive pattern blocks otherwise-valid work; document the reason in the bolt-report self-assessment. It does **NOT** downgrade the rail — BLOCKING remains BLOCKING per the plugin's "no bypassing anti-hallucination" rule. Any use is logged in the handoff YAML `notes.postflight_skipped: true` and surfaces in `<vault>/bolts/_summary.md`; a follow-up bolt re-run WITHOUT the flag is required before drift-detect / merge.
 
@@ -156,7 +155,7 @@ Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure S
 
 ## Hand-off
 
-After the last unit: suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block) and participate in the memory layer. End-of-chain phase advancement (multi-phase rebuild), the full handoff YAML schema, and the memory-layer read/write tables → `references/halts-and-handoff.md`.
+After the last unit: suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block). End-of-chain phase advancement (multi-phase rebuild) and the full handoff YAML schema → `references/halts-and-handoff.md`.
 
 ## Specialist references (load on the stated condition — v7 R4 loading contract)
 
@@ -166,7 +165,7 @@ After the last unit: suggest `detect-drift` to verify the bolts honored the vaul
 - `references/code-gates.md` — L0 deterministic floor: gate order, halt YAMLs, blocking-vs-advisory split, `code_gates:` config.
 - `references/hard-rule-scan.md` — Hard Rule pre/post-flight: grammars, snapshot formats, per-rule checks, B1 evidence contract, `hard_rule_*` / `verify_unit_writable` halt YAMLs. (Skippable when NO batched unit has `## Hard rules`.)
 - `references/bolt-contract.md` — bolt failure modes, commit trailers + the canonical blocker YAML envelope.
-- `references/halts-and-handoff.md` — halt protocol, per-bolt drift check, streaming + `_summary.md`, B2 full-suite gate detail, outputs, handoff YAML + the canonical bolt-halt enum, memory layer.
+- `references/halts-and-handoff.md` — halt protocol, per-bolt drift check, streaming + `_summary.md`, B2 full-suite gate detail, outputs, handoff YAML + the canonical bolt-halt enum.
 
 **Only when the condition holds (do NOT load otherwise):**
 - `references/batch-and-fanout.md` — multi-unit invocations only (`--all`/`--parallel`/`--per-squad`/`--squad=`/`--module=`): the batch procedures + wave/overlap rails.

@@ -336,10 +336,11 @@ if has "$SKILL" '`claims_total == 0` → **not an error and not a halt**' \
 else
   fail "claims_total == 0 is not recorded durably — a fork's chat is swallowed"
 fi
-# C6 — a fork has no conversation history, so a pointer slice is not enough.
-has "$AMH" 'or any forked skill — no conversation history' \
-  && pass "the memory-read fallback names the fork case (targeted Read is unconditional)" \
-  || fail "the memory-read fallback does not name the fork case (C6)"
+# C6 (v7.3.0): the memory pointer-slice machinery is REMOVED — a fork no longer
+# depends on any memory read at all; pin the removal instead.
+has "$AMH" 'memory_context' \
+  && fail "auto-memory-handoff still carries memory_context (removed v7.3.0)" \
+  || pass "no memory_context dependency left for a fork to miss (C6 closed by removal)"
 
 # ── 7b. The handoff is UNCONDITIONAL — asserted POSITIVELY at both sites ─────
 # Assertion 9's HANDOFF_GATED branch only detects the OLD gating strings; deleting the

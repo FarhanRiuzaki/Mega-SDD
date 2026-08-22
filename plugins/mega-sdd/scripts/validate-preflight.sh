@@ -281,10 +281,6 @@ def c_network(_):
     return False
 
 
-def c_install_memory_writable(_):
-    return writable_target(os.path.join(cwd, ".mega-sdd", "memory"))
-
-
 def c_pandoc(_):
     return which_any("pandoc")
 
@@ -297,42 +293,6 @@ def c_chrome_mmdc(_):
             "/Applications/Chromium.app/Contents/MacOS/Chromium"))
     return chrome and which_any("mmdc")
 
-
-def c_memory_dirs_writable(_):
-    return (writable_target(os.path.expanduser("~/.mega-sdd"))
-            and writable_target(os.path.join(cwd, ".mega-sdd")))
-
-
-def c_memory_schema(_):
-    files = (glob.glob(os.path.expanduser("~/.mega-sdd/memory/*.json"))
-             + glob.glob(os.path.join(cwd, ".mega-sdd", "memory", "*.json")))
-    for f in files:
-        try:
-            with open(f, encoding="utf-8") as fh:
-                json.load(fh)
-        except Exception:
-            return False
-    return True
-
-
-def c_no_recent_locks(_):
-    cutoff = time.time() - 86400
-    for base in (os.path.expanduser("~/.mega-sdd"),
-                 os.path.join(cwd, ".mega-sdd")):
-        if not os.path.isdir(base):
-            continue
-        for root, _dirs, files in os.walk(base):
-            for fn in files:
-                if fn.endswith(".lock"):
-                    try:
-                        if os.path.getmtime(os.path.join(root, fn)) > cutoff:
-                            return False
-                    except OSError:
-                        pass
-    return True
-
-
-# ── Cold-halt anticipation checks (ride execute-bolts membership) ────────────
 
 def c_dag_acyclic(_):
     graph, WHITE, GRAY, BLACK = {}, 0, 1, 2
@@ -494,11 +454,6 @@ CHECKS = {
          "Network unreachable; package manager install will fail. Check "
          "connectivity OR set --manual to skip install (print commands "
          "only)."),
-        ("memory_writable_for_install_outcomes", False,
-         c_install_memory_writable,
-         "install-deps writes install-outcomes.md to "
-         "<project>/.mega-sdd/memory/. Directory not writable. Check "
-         "permissions."),
     ],
     "emit-fsd": [
         ("vault_present_for_fsd", True, c_vault_json,
@@ -513,17 +468,6 @@ CHECKS = {
          "from a browser) instead of PDF; mmdc absent -> mermaid stays "
          "code. Install Chrome (detect-only) + run /mega-sdd:install-deps "
          "--tools=mmdc. PDF is NEVER LaTeX."),
-    ],
-    "memory": [
-        ("memory_dir_writable", True, c_memory_dirs_writable,
-         "memory subsystem cannot write to ~/.mega-sdd/ OR "
-         "<project>/.mega-sdd/. Check permissions."),
-        ("schema_version_match", False, c_memory_schema,
-         "One or more memory files have schema_version drift OR JSON parse "
-         "failure. Run `/mega-sdd:memory migrate` to repair."),
-        ("concurrent_writer_check", False, c_no_recent_locks,
-         "Active or orphaned lock files detected. If no other mega-sdd "
-         "skill is running, rm the stale .lock files manually."),
     ],
 }
 

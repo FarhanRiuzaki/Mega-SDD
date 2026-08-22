@@ -1,6 +1,6 @@
 # Convergence Loops — Auto-Recovery Cycling
 
-Formalizes iteration cycles between skills that were previously manual (`--resume` driven) — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via memory-pre-filled recommendations and re-run, up to `--max-cycles`. Every other halt follows its taxonomy class (`halt-taxonomy.md`: always-stop = human required; self-resolve C1 = handled without stopping; soft = warn-only).
+Formalizes iteration cycles between skills that were previously manual (`--resume` driven) — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via grounded (KB/vault/codebase) recommendations and re-run, up to `--max-cycles`. Every other halt follows its taxonomy class (`halt-taxonomy.md`: always-stop = human required; self-resolve C1 = handled without stopping; soft = warn-only).
 
 ## Contents
 
@@ -19,9 +19,9 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 
 | Halt type | Auto-loop action | Safety condition |
 |---|---|---|
-| `bind_conflict` | Auto-invoke `resolve-oq --binding` with memory-pre-filled recommendations → next step is ACTION-MIX dependent (S4): KEEP_CODE/SPLIT resolutions → re-run `bind-codebase`; KEEP_VAULT/DEFER-only → proceed to `generate-units` (a re-bind re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — looping it burns every cycle; per `resolve-oq/references/binding-mode.md` Step 5) | Recommendation confidence ≥ 0.80; else stop |
+| `bind_conflict` | Auto-invoke `resolve-oq --binding` with grounded recommendations → next step is ACTION-MIX dependent (S4): KEEP_CODE/SPLIT resolutions → re-run `bind-codebase`; KEEP_VAULT/DEFER-only → proceed to `generate-units` (a re-bind re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — looping it burns every cycle; per `resolve-oq/references/binding-mode.md` Step 5) | Recommendation confidence ≥ 0.80; else stop |
 | `module_blocked_by` | Auto-run prerequisite module first → resume requested module | All prerequisites identifiable + non-circular |
-| `cross_squad_interface_draft` | Wait (with backoff: 30s, 60s, 120s) for producer to lock interface; retry up to 3 times | Producer squad has lock-in-progress signal in memory |
+| `cross_squad_interface_draft` | Wait (with backoff: 30s, 60s, 120s) for producer to lock interface; retry up to 3 times | Producer squad interface still `draft` after retries → stop |
 | `oq_recommend_underspecified` | Auto-regenerate recommendation fields from binding context → re-run generate-intent | Memory has fallback rationale template |
 
 ## `--converge` flag
@@ -47,7 +47,7 @@ loop until clean OR max-cycles reached:
 
     invoke resolver skill (resolve-oq / module-runner / interface-wait / regen):
       - resolver MUST have HIGH confidence recovery path
-      - resolver writes resolution to vault.json + memory
+      - resolver writes resolution to vault.json
       - resolver returns success or "needs manual"
 
     if resolver success:
@@ -81,14 +81,14 @@ loop until clean OR max-cycles reached:
 ▶ Phase 3 of 5: bind-codebase
 ⛔ Halt: bind_conflict (3 conflicts detected)
 🔁 Cycle 1/5: auto-resolving via resolve-oq...
-   ↳ C-007 (auth conflict) → recommendation: KEEP_CODE (memory pattern 8/10; conf: 0.95) → ACCEPTED
+   ↳ C-007 (auth conflict) → recommendation: KEEP_CODE (vault D-004 + code anchor; conf: 0.95) → ACCEPTED
    ↳ C-009 (sanctum vs passport) → recommendation: KEEP_VAULT (per constitution §B-001) → ACCEPTED
    ↳ C-011 (audit table schema) → recommendation: SPLIT (per past pattern) → ACCEPTED
 ✓ Cycle 1 complete: 3 conflicts resolved. Re-running bind-codebase...
 
 ▶ Phase 3 of 5: bind-codebase (re-run)
 ✓ Phase 3 of 5: bind-codebase → status: completed, items: 24 claims, blocked: 0
-   Convergence: 1 cycle (3 conflicts auto-resolved via memory; 0 manual)
+   Convergence: 1 cycle (3 conflicts auto-resolved from grounded evidence; 0 manual)
 ```
 
 ## convergence_max_reached halt YAML
@@ -106,8 +106,8 @@ blocker:
       - cycle: 1, halt: bind_conflict, auto-resolved: yes
       - cycle: 2, halt: bind_conflict (different conflicts), auto-resolved: yes
       - cycle: 3, halt: bind_conflict (recurring), auto-resolved: no — recommendation confidence dropped to 0.65
-    last_halt: bind_conflict (C-019, auth-related; memory has 2 conflicting patterns)
-  next_action: "Recurring conflict detected after 5 cycles. Run resolve-oq --binding manually OR re-configure vault claim. Memory has 2 conflicting patterns for this conflict type — review via /mega-sdd:memory show patterns"
+    last_halt: bind_conflict (C-019, auth-related; sources disagree)
+  next_action: "Recurring conflict detected after 5 cycles. Run resolve-oq --binding manually OR re-configure vault claim."
 ```
 
 ## Anti-halu rails
@@ -115,7 +115,7 @@ blocker:
 - Auto-loop ONLY for eligible halt types listed above (closed set; never expanded silently)
 - Resolver MUST have HIGH-confidence recovery path (≥0.80); else escalate
 - `--max-cycles` hard limit prevents runaway
-- Every cycle logged in chain summary + memory `outcomes.md` (audit trail)
+- Every cycle logged in the chain summary (audit trail)
 - If same halt recurs after auto-resolution → escalate (don't loop on identical recurring failure)
 - `--no-converge` flag preserves legacy behavior (stop on any halt)
 
@@ -142,7 +142,7 @@ Cycle counter respects `--max-cycles` (default 3). One cycle = 1 propose + 1 use
 
 **Cycle escalation**: if same halt fires twice on same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop). Prevents propose-and-confirm from looping on a structurally-broken unit.
 
-**Configuration** (`~/.mega-sdd/memory/config.yaml`):
+**Configuration** (`~/.mega-sdd/config.yaml` — user-scope; relocated from the removed memory dir in v7.3.0):
 ```yaml
 halt_auto_propose:
   test_fail: propose

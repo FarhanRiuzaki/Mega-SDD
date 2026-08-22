@@ -185,10 +185,6 @@ handoff:
 
 Status `halted` on `quality_gate_failed`. Required ONLY under `--auto`.
 
-## Memory layer
-
-Out of scope: emit-fsd does NOT participate in mega-sdd memory layer (no reads, no writes). FSD generation is deterministic from vault state; no learning needed.
-
 ## Anti-hallucination rails
 
 1. EVERY section text MUST trace to a source artifact via `.citation-map.json` entry — the map is SCRIPT-COMPUTED by `scripts/build-citation-map.sh` (Step 4.6); the model never writes the map

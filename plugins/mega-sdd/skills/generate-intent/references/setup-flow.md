@@ -137,7 +137,6 @@ Validate per the squad-partition rules ref (routed from the SKILL router). If va
 Vault generation produces fewer fabricated entities + tighter OQ classification when codebase context is available at gen-time. Probe for existing scan artifacts BEFORE Step 1 (vault structure read) and BEFORE Step 2 (extraction):
 
 1. **Probe codebase-map.md:** `<project>/.mega-sdd/codebase/codebase-map.md` (canonical) AND `<project>/codebase-map.md` (legacy).
-2. **Probe conventions memory:** `<project>/.mega-sdd/memory/conventions.md`.
 3. **Probe knowledge-base:** `<project>/.mega-sdd/knowledge-base/README.md` (canonical) AND `<project>/docs/knowledge-base/README.md` (legacy).
 
 **Detection outcomes:**
@@ -172,7 +171,6 @@ b. **Canonical scope handling:**
    - Only one scope declared → silent route to legacy single-vault flow (no picker).
    - Multiple scopes declared:
      - `--scope=<id>` set → validate against declared scopes; **halt `scope_not_declared_in_prd`** if invalid (surface the PRD-declared scope list + cancel).
-     - Else if `<project>/.mega-sdd/memory/decisions.md` has a prior choice for this PRD sha256 + same cwd basename → silent default with confirm-once UX (5s timeout).
      - Else → `AskUserQuestion` with a lead line ("Memilih satu scope memfilter PRD ke bagian scope itu; scope lain bisa digenerate sebagai vault terpisah nanti."): one option per declared scope rendered as `<id> — <name/1-line summary from the PRD scopes: block>` (smart-default flagged per cwd heuristic) + "All scopes — satu vault gabungan (legacy; tidak ada filter per scope)" + "Cancel".
      - If the user chose `--scope=all` (legacy) → emit a warning, proceed with all content.
    - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `vault.md`.
@@ -200,9 +198,9 @@ After emission, suggest the next step with the squad count: "Generated vault for
 
 Per `generate-intent/references/vault-core.md §constitution`. Write the 8th vault file with project-facing rules unless `--no-constitution` is set.
 
-1. **Extract from PRD/KB:** coding standards (PRD tech-stack + KB conventions); security baselines (PRD non-functional + KB business rules); architecture invariants (PRD architecture + KB design-decisions); anti-patterns (KB critical findings + `.mega-sdd/memory/patterns.md`); performance constraints (PRD non-functional + KB perf hints); compliance (PRD constraints + regulatory KB sections).
+1. **Extract from PRD/KB:** coding standards (PRD tech-stack + KB conventions); security baselines (PRD non-functional + KB business rules); architecture invariants (PRD architecture + KB design-decisions); anti-patterns (KB critical findings); performance constraints (PRD non-functional + KB perf hints); compliance (PRD constraints + regulatory KB sections).
 2. **Write `<vault>/constitution.md`** with 6 sections §A–§F (Coding standards / Security baselines / Architecture invariants / Anti-patterns / Performance constraints / Compliance).
-3. **Cite a source for every clause** (anti-halu rail): `(per PRD §<section>)` OR `(per KB §<file>:<line>)` OR `(per .mega-sdd/memory/decisions.md row <N>)`.
+3. **Cite a source for every clause** (anti-halu rail): `(per PRD §<section>)` OR `(per KB §<file>:<line>)` 
 4. **Hash pin:** `constitution_version` + `constitution_hash` land in `vault.json` via the Step-3.8 `derive-vault-json.sh` run (which runs AFTER this step, so `constitution.md` is on disk) — the script computes them fresh at initial generation (sha256 of `constitution.md` + its `**Version**` line) and CARRIES THEM FORWARD on every later derive (at-generation pin, like `prd_sha256`); never hand-write them. If constitution.md was somehow written AFTER a derive already ran (out-of-order re-run), re-run `derive-vault-json.sh --vault <OUTPUT_DIR>` so the pin is computed.
 5. **Surface for sign-off:** one-line chat summary — "Constitution.md written with N clauses. Review before bolts begin: <path>".
 6. **`--no-constitution`** skips this step (vault md files only); for one-off greenfield demos.

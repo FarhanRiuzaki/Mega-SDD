@@ -161,7 +161,6 @@ When a future iter introduces a new subagent dispatch:
 
 - `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` §Step 2.8 (override resolution)
 - `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` §`model_tiers:` (handoff metadata schema)
-- `plugins/mega-sdd/skills/memory/references/memory-schema.md` §preferences.md (user-scope override location)
 - `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol (`model_tier_unknown` halt definition)
 
 ## v7.1 office rollout runbook (per-unit routing)

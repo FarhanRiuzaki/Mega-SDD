@@ -125,8 +125,6 @@ ALLOW = [
   "Indonesian prohibition inside the scan_primary_app_ambiguous keterangan"),
  ("references/halts-flags-handoff.md", "**Never:** calls `AskUserQuestion`",
   "the table's Never: prohibition line (assertion 8 asserts its presence)"),
- ("references/halts-flags-handoff.md", "just confirm signal still present",
-  "memory-read table: re-verify a stored convention against the CODE, no human"),
  ("references/scan-procedure.md", "bind is non-interactive on this lane, so it cannot ask",
   "attribution to bind-codebase, and it states bind CANNOT ask"),
  ("references/scan-procedure.md", "Monorepo rail (deterministic precedence — NEVER ask)",

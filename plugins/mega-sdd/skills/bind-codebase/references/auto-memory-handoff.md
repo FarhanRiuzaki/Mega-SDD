@@ -7,7 +7,6 @@
 - Scope propagation (Step 1)
 - vault.json audit append (Step 6)
 - Handoff emission (UNCONDITIONAL)
-- Memory layer
 
 ## Extraction-scorecard preflight (advisory)
 
@@ -161,12 +160,3 @@ The `scope:` / `mutability:` / `constitution:` blocks are CONDITIONAL — emit o
 
 The handoff is **required on every invocation**, not only under `--auto` — see the section intro for why (a standalone run injects no `--auto`, and a non-interactive skill has no other channel to its caller).
 
-## Memory layer
-
-When memory is enabled (default; opt-out `--memory-off`), participate per `mega-sdd:memory/references/memory-schema.md`.
-
-**Writes:** after binding completes → append a run summary (claims/confirmed/conflict/oq counts + Implementation State Map distribution + Tech-OQ resolution counts) to `<vault>/.memory/bind-history.md`; new convention detected → append (additive) to `<project>/.mega-sdd/memory/conventions.md`. Each append goes **directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<vault|project> --cwd=<project-root>` at emission time** (scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Write failure → log and continue.
-
-**Reads:** past CONFLICT resolutions matching the current conflict pattern (`<project>/.mega-sdd/memory/decisions.md`) → SUGGEST the same resolution via the blocker YAML `next_action.suggested_resolution` (user still picks via resolve-oq); cross-project CONFLICT patterns (`~/.mega-sdd/memory/patterns.md`) → suggest when project memory has no match AND ≥3 cross-project matches exist; past Hard Rule violation patterns (`<vault>/.memory/bolt-outcomes.json`) → when emitting Suggested Unit Hard Rules, DOWNGRADE rules violated+reverted ≥3 times to Anti-patterns. Under `--auto` the handoff passes POINTER slices (`{file, rows, digest}`) — consult the rows already in session context from the chain-start read; when they are NOT in context (fresh-session `--resume` re-entry, **or any forked skill — no conversation history, so the pointed rows are never in context and the targeted Read is unconditional**), **do a targeted Read of the pointed files — both ≥3 thresholds need the actual match/violation counts, never the digest alone.** The three pointed paths are canonical and named in the same sentence, so a fork can reach them without the handoff; and per the rails below memory only ever *suggests* — a missing read degrades suggestion quality, never a CONFLICT verdict.
-
-**Anti-halu rails:** memory suggestions surface in `binding.md` `## Past Resolution Suggestions` AND the halt blocker YAML; every suggestion cites its source entry; the CONFLICT verdict is NEVER bypassed by memory (memory only suggests a resolution direction); `--memory-off` disables reads + writes; suggestions never override current codebase-map evidence.

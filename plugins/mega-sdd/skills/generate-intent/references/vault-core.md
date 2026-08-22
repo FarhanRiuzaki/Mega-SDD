@@ -139,7 +139,7 @@ Every writer regenerates by **running the script** — never by editing the JSON
 
 ### Concurrency contract (closes audit D3-012)
 
-The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics REUSE the memory file-lock pattern (per `mega-sdd:memory`) — no new mechanism.
+The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics: atomic `O_EXCL` create, bounded backoff + retry, release on all exit paths — the plugin's single advisory-lock pattern (this section is its canonical spec since v7.3.0).
 
 **Writers (4 total — each invokes the script; none touches the lock directly):**
 - `generate-intent` Step 3.8 (initial derive, `--patch`)

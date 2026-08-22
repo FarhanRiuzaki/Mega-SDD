@@ -184,7 +184,7 @@ Average bolt run with 1 halt + propose-and-confirm: ~30s additional vs pure paus
 
 ## Backward compatibility
 
-Without propose-and-confirm, halts always pause for manual `--resume`. Propose-and-confirm is opt-IN via halt type eligibility + user config (`~/.mega-sdd/memory/config.yaml` `halt_auto_propose` block). Disable per-type via config:
+Without propose-and-confirm, halts always pause for manual `--resume`. Propose-and-confirm is opt-IN via halt type eligibility + user config (`~/.mega-sdd/config.yaml` `halt_auto_propose` block). Disable per-type via config:
 
 ```yaml
 halt_auto_propose:

@@ -22,7 +22,6 @@
 - [Cold-halt anticipation checks](#cold-halt-anticipation-checks)
 - [install-deps preflight checks](#install-deps-preflight-checks)
 - [emit-fsd preflight checks](#emit-fsd-preflight-checks)
-- [memory preflight checks](#memory-preflight-checks)
 - [Read protocol (Step 3.5)](#read-protocol-step-35)
 - [Anti-halu rails](#anti-halu-rails)
 - [Adding new checks](#adding-new-checks)
@@ -279,13 +278,6 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   fatal: no
   predicts_halt: install_failed (network failure subtype)
 
-- **check_id: `memory_writable_for_install_outcomes`**
-  command: `mkdir -p <project>/.mega-sdd/memory/.test-write && rmdir <project>/.mega-sdd/memory/.test-write`
-  expected: exit 0
-  on_fail: "install-deps writes install-outcomes.md to <project>/.mega-sdd/memory/. Directory not writable. Check permissions."
-  fatal: no
-  predicts_halt: memory_in_use (memory write would fail)
-
 ## emit-fsd preflight checks
 
 - **check_id: `vault_present_for_fsd`**
@@ -308,29 +300,6 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   on_fail: "Chrome absent -> md2pdf emits GitHub-styled HTML (print-to-PDF from a browser) instead of PDF; mmdc absent -> mermaid stays code. Install Chrome (detect-only) + run /mega-sdd:install-deps --tools=mmdc. PDF is NEVER LaTeX."
   fatal: no
   predicts_halt: (no halt; degraded — HTML fallback)
-
-## memory preflight checks
-
-- **check_id: `memory_dir_writable`**
-  command: `mkdir -p ~/.mega-sdd/.test-write && rmdir ~/.mega-sdd/.test-write && mkdir -p <project>/.mega-sdd/.test-write && rmdir <project>/.mega-sdd/.test-write`
-  expected: exit 0 for BOTH user-scope + project-scope dirs
-  on_fail: "memory subsystem cannot write to ~/.mega-sdd/ OR <project>/.mega-sdd/. Check permissions."
-  fatal: yes
-  predicts_halt: memory_in_use (lock acquisition would fail)
-
-- **check_id: `schema_version_match`**
-  command: `python3 -c "import json,glob; [json.load(open(f)) for f in glob.glob('~/.mega-sdd/memory/*.json') + glob.glob('<project>/.mega-sdd/memory/*.json')]" 2>&1`
-  expected: all memory files parse cleanly
-  on_fail: "One or more memory files have schema_version drift OR JSON parse failure. Run `/mega-sdd:memory migrate` to repair."
-  fatal: no
-  predicts_halt: memory_schema_mismatch
-
-- **check_id: `concurrent_writer_check`**
-  command: `find ~/.mega-sdd <project>/.mega-sdd -name "*.lock" -mtime -1`
-  expected: empty output (no recent lock files)
-  on_fail: "Active or orphaned lock files detected. If no other mega-sdd skill is running, rm the stale .lock files manually."
-  fatal: no
-  predicts_halt: memory_in_use (lock collision)
 
 ---
 

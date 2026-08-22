@@ -1,6 +1,6 @@
-# execute-bolts — Halts, streaming, handoff + memory
+# execute-bolts — Halts, streaming + handoff
 
-Everything downstream of the per-unit gates: the halt protocol (blocker envelope), compact streaming + the aggregate `_summary.md`, outputs detail, the handoff YAML + the canonical bolt-halt enum + end-of-chain phasing, and the memory layer. The full halt YAML bodies, propose-and-confirm UX, the new-halt-types table, and the PBT violation flow live in `halt-recovery.md` (routed from SKILL.md; loaded only when a halt fires or a `properties:` unit is batched).
+Everything downstream of the per-unit gates: the halt protocol (blocker envelope), compact streaming + the aggregate `_summary.md`, outputs detail, and the handoff YAML + the canonical bolt-halt enum + end-of-chain phasing. The full halt YAML bodies, propose-and-confirm UX, the new-halt-types table, and the PBT violation flow live in `halt-recovery.md` (routed from SKILL.md; loaded only when a halt fires or a `properties:` unit is batched).
 
 ## Contents
 - Halt protocol
@@ -14,7 +14,7 @@ Everything downstream of the per-unit gates: the halt protocol (blocker envelope
 - Outputs detail
 - Hand-off + end-of-chain phasing
 - Handoff emission (`--auto`) — incl. the canonical bolt-halt enum
-- Memory layer
+- Bolt-outcomes state (pipeline)
 
 ## Halt protocol
 
@@ -325,38 +325,11 @@ Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `
 
 Required ONLY under `--auto`.
 
-## Memory layer
+## Bolt-outcomes state (pipeline)
 
-When memory is enabled (default; opt-out via `--memory-off`), this skill participates in the mega-sdd memory layer per `mega-sdd:memory/references/memory-schema.md`.
+`<vault>/.memory/bolt-outcomes.json` is PIPELINE STATE, not the removed learning lane: `query-graph.sh --modules` derives per-unit completion for the module/DoD rollup from it (latest entry per unit wins), and the analyze cross-unit checks read it for context. The controller appends one entry per bolt outcome:
 
-**Writes:**
+- After a bolt completes: `{unit_id, run_at, task_type, status: "completed", duration_ms}`.
+- After a bolt halts: `{unit_id, run_at, task_type, status: "halted_<type>", halt_reason}`.
 
-| When | File | Content |
-|---|---|---|
-| After each bolt commits (success) | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, run_at, task_type, status=completed, duration_ms, tests_passed=true, hard_rules_validated=[rule strings that passed], concerns=[the bolt's `acceptance_test_concern` strings, if any — persisted here so cross-vault recurrence can reach a learning threshold instead of dying with the handoff] |
-| After each bolt halts (failure) OR retries | `<vault>/.memory/bolt-outcomes.json` | Append: unit_id, status=halted_*, halt_reason, violated_rules=[with evidence], resolution=pending, **failure_reflection** — ONE line of root-cause from the fix-proposer (the *why*, e.g. "Hard Rule predates the binding's extend verdict — unit was mis-typed create"), not just the resolution enum |
-| After a user resolves a halt (next session) | `<vault>/.memory/bolt-outcomes.json` | Update the prior entry: resolution=(user_reverted_code \| user_edited_unit \| user_force_committed \| user_skipped), resolution_at, resolution_note |
-| After a chain run completes | `<project>/.mega-sdd/memory/outcomes.md` | Append a run summary: phases run, halts encountered, total duration, hard rule violation count |
-
-Each append goes directly via `bash <plugin>/scripts/memory-write.sh --file=<resolved-path> --scope=<vault|project> --cwd=<project-root>` at emission time (secret scan + lock + atomic append inside the script); the handoff carries only the receipt `metadata.memory_writes: {files_written: [...], rows_appended: N}`. Exit ≠ 0 → log and continue. The "update the prior entry" row (halt resolution) is an append carrying a supersedes marker — bolt-outcomes.json entries stay append-only.
-
-**Reads:**
-
-| What | Source | How used |
-|---|---|---|
-| Past bolt outcomes for the same unit | `<vault>/.memory/bolt-outcomes.json` | Before executing U-X: if a past run halted with violation Y → surface to the user pre-execution: "U-X previously halted on rule Y. Same risk now. Continue?" (informational; not blocking) |
-| Past failure reflections (Reflexion) | `<vault>/.memory/bolt-outcomes.json` `bolts[].failure_reflection` | Before executing U-X: surface the reflections of (a) U-X's own past attempts and (b) sibling units in the same module, **as a `## Prior failure context` block in the bolt dispatch prompt** — retry N+1 and neighboring bolts start with the *why*, not just the *what*. **This obligation is RESTORED and is the contract; it is a NAMED GAP, not a closed question — see the note below** |
-
-> **`## Prior failure context` — specified, NOT implemented. Recorded as a gap 2026-07-31 (round 3).**
-> A previous pass DELETED the obligation above from this row and replaced it with "delivery is the row above's chat surface, not the dispatch prompt", on the grounds that `scripts/build-dispatch-prompt.sh` assembles the prompt and has no such section. That was the spec being loosened to match the code, in the round convened to stop exactly that — so the obligation is restored and the divergence is recorded instead.
->
-> **What the deletion would have cost:** under the pointer dispatch the implementer's entire context is `dispatch-prompt.md` (`agents/bolt-implementer.md` Rule 0). A chat surface reaches the human controller, not the subagent. So on a re-dispatch after `review_critical_unresolved` the retrying implementer receives none of its own prior attempt's failure reflection — which is the whole point of the feature.
->
-> **Status:** the builder emits no `## Prior failure context` section today, and the controller MUST NOT hand-inject one (it does not assemble the prompt, and a hand-injected block would diverge from the byte accounting and the truncation cascade). Closing it is a spec amendment to `context-enrichment.md` — the section needs a priority row and a truncation rung before it can exist — plus the builder change. Tracked at `context-enrichment.md §Named backlog`. Until then this row states what is owed, and the gap is visible rather than absorbed.
-| Past Hard Rule violation+revert patterns | `<vault>/.memory/bolt-outcomes.json` | Pre-flight: if rule R has been violated AND reverted ≥3 times → emit a one-line chat warning before scanning: "Rule R has been overridden 3+ times. Validation will still fire; consider removing the rule from the unit" |
-
-**Anti-halu rails:**
-- Memory consultation NEVER bypasses pre/post-flight Hard Rule validation.
-- Past-halt warnings are INFORMATIONAL only; the user decides to proceed.
-- The `bolt_outcomes.json` write happens AFTER commit (or after halt) — memory is derivative of `bolt-report.md` (the source-of-truth artifact).
-- `--memory-off` disables both reads and writes.
+Append-only JSON (`{"bolts": [...]}`); a later successful re-run simply appends — consumers take the latest entry per unit. Write it directly (small python/Bash append at the Step-0 artifact layer; v7.3.0 removed the memory-write helper — this file stayed because SCRIPTS read it). The v6-era learning fields (`failure_reflection`, concern thresholds, Reflexion reads) are REMOVED with the memory lane; do not write them.

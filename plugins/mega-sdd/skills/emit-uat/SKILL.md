@@ -174,10 +174,6 @@ handoff:
     scopes: <csv or "-">
 ```
 
-## Memory layer
-
-Out of scope: emit-uat does NOT participate in the memory layer. UAT generation is deterministic from vault flows + DoD.
-
 ## Anti-hallucination rails
 
 1. Execution results are NEVER model-authored — the xlsx workbook + berita acara UAT are the HUMAN capture surfaces; a filled §2 execution cell / §3 RTM status / §4 berita-acara or sign-off cell is a fabricated record → deterministic `execution_fabricated` halt (Step 4.7), never a prose-trusted check. The §5 annex is script territory the same way: model-typed annex content (anything but the placeholder literal) fails the byte-compare recompute (`ANNEX_FORGED`), and `result.json` itself is hook-guarded — `uat-run.sh` is its sole writer.

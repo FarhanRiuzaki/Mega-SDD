@@ -37,7 +37,7 @@ for ln in idx.split('\n'):
     m = re.match(r'- `([a-z0-9_]+)`( \*\(subtype of `quality_gate_failed`\)\*)? — ', ln)
     if m and cur: rows.setdefault(cur, []).append(m.group(1))
 n_rows = sum(len(v) for v in rows.values())
-assert n_rows >= 80, f"index shrank: only {n_rows} rows"
+assert n_rows >= 78, f"index shrank: only {n_rows} rows"  # v7.3.0: routing_outcome_corrupt + memory_schema_mismatch removed with the memory lane
 missing = []
 for fam, types in rows.items():
     ft = open(os.path.join(fd, fam + '.md')).read()
