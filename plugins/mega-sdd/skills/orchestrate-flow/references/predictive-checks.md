@@ -336,7 +336,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 
 ## Read protocol (Step 3.5)
 
-> **IMPLEMENTED by `scripts/predictive-preflight.sh`** — the orchestrator runs the script (`--cwd --chain`), never this loop by hand; the loop below is the maintainer's spec of what the script does, and this catalog is the script's declared source of truth.
+> **IMPLEMENTED by `scripts/validate-preflight.sh --predictive`** (the merged predictive mode, v7 Fase 2) — the orchestrator runs the script (`--predictive --cwd --chain`), never this loop by hand; the loop below is the maintainer's spec of what the script does, and this catalog is the script's declared source of truth.
 
 ```
 For each skill in proposed chain:
