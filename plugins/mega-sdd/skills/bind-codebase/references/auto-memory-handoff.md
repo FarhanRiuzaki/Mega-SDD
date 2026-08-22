@@ -87,7 +87,7 @@ When `vault.json` has a `scope` field (multi-scope vault), persist `scope_metada
 
 ## vault.json audit append (Step 6)
 
-The `bind` event is appended by **running** `derive-vault-json.sh --vault <vault> --event '{"event":"bind","at":"<iso>",…}'` — the script acquires and releases the `<vault>/vault.json.lock` itself (per `generate-intent/references/vault-contract.md §Concurrency contract`) and re-derives the structural mirror from the vault markdown in the same pass. Exit 4 (lock held after backoff) → surface the `memory_in_use` halt. Never append to vault.json by hand — concurrent-tab hand-writes are exactly the corruption the script-held lock closes.
+The `bind` event is appended by **running** `derive-vault-json.sh --vault <vault> --event '{"event":"bind","at":"<iso>",…}'` — the script acquires and releases the `<vault>/vault.json.lock` itself (per `generate-intent/references/vault-core.md §Concurrency contract`) and re-derives the structural mirror from the vault markdown in the same pass. Exit 4 (lock held after backoff) → surface the `memory_in_use` halt. Never append to vault.json by hand — concurrent-tab hand-writes are exactly the corruption the script-held lock closes.
 
 ## Handoff emission (UNCONDITIONAL)
 

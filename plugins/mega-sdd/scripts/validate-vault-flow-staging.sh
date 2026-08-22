@@ -12,7 +12,7 @@
 #
 # DETERMINISTIC MATCH (no fuzzy title matching):
 #   Each vault flow that derives from a KB workflow carries a `_kb_source: [20-workflows/<f>.md]`
-#   back-reference (the OQ-ID-class stable identifier per vault-contract.md §stages-propagation).
+#   back-reference (the OQ-ID-class stable identifier per vault-core.md §stages-propagation).
 #   This validator FOLLOWS that link:
 #     - vault flow has `_kb_source` -> resolve the cited KB workflow file
 #     - cited KB workflow HAS a `stages:` block AND the vault flow does NOT -> vault_flow_staging_drop
@@ -178,7 +178,7 @@ for vault_dir in vault_dirs:
                                "steps) but has no stages: block AND no _kb_source back-reference — staging "
                                "likely flattened wholesale (or PRD-only multi-step). Non-blocking signal."),
                     "suggested_fix": ("author a **Stages** block (+ _kb_source if KB-derived) per "
-                                      "vault-contract.md §stages-propagation, or run enrich-semantics"),
+                                      "vault-core.md §stages-propagation, or run enrich-semantics"),
                 })
             continue  # no back-reference -> blocking drop-check N/A; advisory handled above
         flows_with_kb_source += 1
@@ -200,7 +200,7 @@ for vault_dir in vault_dirs:
                                f"but dropped it — staging flattened (single-form risk)"),
                     "suggested_fix": ("copy the `stages:` block from the cited KB §3a verbatim into this "
                                       "flow's `**Stages**` block + emit the Mermaid stateDiagram "
-                                      "(see vault-contract.md §stages-propagation), then re-save 04-flows.md"),
+                                      "(see vault-core.md §stages-propagation), then re-save 04-flows.md"),
                     "severity": "blocking",
                 })
                 break  # one drop per flow is enough
@@ -230,7 +230,7 @@ report = {
          "Staged-input preserved across KB->vault boundary (or no staged workflows present).")
         if status == "PASS"
         else f"{len(issues)} vault flow(s) dropped a `stages:` block that the cited KB workflow carried. "
-             f"Restore the stages: block per vault-contract.md §stages-propagation, then re-save 04-flows.md."
+             f"Restore the stages: block per vault-core.md §stages-propagation, then re-save 04-flows.md."
     ),
 }
 

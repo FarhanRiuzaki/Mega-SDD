@@ -5,7 +5,7 @@
 # deterministic script. Skills invoke via Bash instead of relying on the
 # model to follow lock-acquisition prose instructions.
 #
-# Per vault-contract.md §Concurrency contract: advisory file lock, 3 retries
+# Per vault-core.md §Concurrency contract: advisory file lock, 3 retries
 # with backoff (100ms / 500ms / 1500ms), atomic write (temp + rename).
 #
 # Usage:

@@ -1,6 +1,6 @@
 # bind-codebase — Constitution-aware CONFLICT surfacing (Step 2.10)
 
-Per `generate-intent/references/vault-contract.md` §constitution. When `<vault>/constitution.md` exists:
+Per `generate-intent/references/vault-core.md` §constitution. When `<vault>/constitution.md` exists:
 
 a. **Read `constitution.md`** at the start of Step 2 (binding); cache for cross-referencing.
 b. **For each CONFLICT detected**, scan constitution §A–F clauses for relevant rules.

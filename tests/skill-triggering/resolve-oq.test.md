@@ -47,7 +47,7 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 ### B2: Defer is ALWAYS visible (greenfield)
 - **Setup:** vault.mode=greenfield
 - **Expect:** Slot `[3]` Defer still shown — a stakeholder defer must be reachable in every context. What changes is the FOLLOW-UP: it carries the reason question only (no `defer_to` sub-target question), and `defer_to` is written EXPLICITLY as `stakeholder` by the derive patch
-- **Critical:** `stakeholder` is NOT a schema default — `generate-intent/references/vault-contract.md §OQ status tracking` declares no default for `defer_to`. It is the only LEGAL value in greenfield (`binding` requires a repo to bind against), so it is determined, not derived. A doc that cites a "schema default" here is the defect
+- **Critical:** `stakeholder` is NOT a schema default — `generate-intent/references/vault-core.md §OQ status tracking` declares no default for `defer_to`. It is the only LEGAL value in greenfield (`binding` requires a repo to bind against), so it is determined, not derived. A doc that cites a "schema default" here is the defect
 - **Critical:** because Q1 is omitted, Q2 must carry the OQ tag AND the verbatim question text in its own body — a bare "alasan defer-nya apa?" with no question in front of it is a keterangan rule-1 breach on every greenfield Defer
 
 ### B3: Defer sub-target hidden (no repo signals)

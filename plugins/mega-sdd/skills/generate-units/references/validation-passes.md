@@ -26,7 +26,7 @@ Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirat
 
 ## 12.4 — Inject constitution clauses
 
-Per `generate-intent/references/vault-contract.md §constitution`.
+Per `generate-intent/references/vault-core.md §constitution`.
 
 For each unit, read `<vault>/constitution.md` + identify clauses relevant to the unit's:
 - target_files paths (matches §A clauses for files in those paths)
@@ -148,7 +148,7 @@ g. **OQ-ID propagation check** (audit response 2026-05-27 §F):
      # An OQ is "implementation-relevant" to this unit when:
      # - the OQ's resolution touches files in unit.target_files, OR
      # - the OQ's resolution text appears semantically in unit.body (anchors, hard rules, migration notes), OR
-     # - the OQ's `priority: P1` (P1 OQs are always implementation-critical per vault-contract)
+     # - the OQ's `priority: P1` (P1 OQs are always implementation-critical per vault-core)
 
      relevant_oqs = filter oq_ids_in_table by above criteria
      missing = relevant_oqs - oq_ids_in_binding_refs

@@ -24,4 +24,4 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### oq_recommend_underspecified
 
-- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `scan_citations` ≥1, `fallback_if_wrong`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-contract.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
+- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `scan_citations` ≥1, `fallback_if_wrong`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-core.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).

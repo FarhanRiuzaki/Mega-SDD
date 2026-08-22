@@ -23,6 +23,7 @@ DSG="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-gate.md"
 DSD="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md"
 SCS="${ROOT}/plugins/mega-sdd/references/starterkit-context-schema.md"
 VC="${ROOT}/plugins/mega-sdd/skills/generate-intent/references/vault-contract.md"
+VCORE="${ROOT}/plugins/mega-sdd/skills/generate-intent/references/vault-core.md"
 # starterkit_metrics_inconsistent remediation text relocated (verbatim) from
 # vault-contract.md §halt-protocol to the plugin-root canonical halt registry:
 HPR="${ROOT}/plugins/mega-sdd/references/halt-protocol.md"
@@ -100,7 +101,7 @@ grep -qF 'do NOT write a per_slice entry for a domain listed in' "$DSD" && ok "D
 HFR="${ROOT}/plugins/mega-sdd/references/halt-families/flow.md"
 grep -qF 'belt-and-braces option' "$HFR" && grep -qF 'failed slices — they carry no per_slice cache signature' "$HFR" \
   && ok "DS-2: remediation states the post-fix truth (plain re-run heals; --no-cache = belt-and-braces)" || fail "DS-2: remediation wording stale"
-if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR" || grep -rqF 're-run `scan-codebase --force-deep`' "${ROOT}/plugins/mega-sdd/references/halt-families/"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
+if grep -qF 're-run `scan-codebase --force-deep`' "$VC" || grep -qF 're-run `scan-codebase --force-deep`' "$VCORE" || grep -qF 're-run `scan-codebase --force-deep`' "$HPR" || grep -rqF 're-run `scan-codebase --force-deep`' "${ROOT}/plugins/mega-sdd/references/halt-families/"; then fail "DS-2: stale --force-deep remediation survives"; else ok "DS-2: no stale --force-deep remediation"; fi
 
 # ── DS-6: canonical schema documents 5 slices incl. reuse ──
 python3 - "$SCS" <<'PY' && ok "DS-6: schema per_slice block lists all 5 domains (incl. reuse)" || fail "DS-6: schema per_slice incomplete"

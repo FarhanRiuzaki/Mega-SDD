@@ -119,7 +119,7 @@ for const_path in const_files:
         continue
 
     # ─── Per-clause source-citation check (anti-fabrication rail) ─────────────
-    # vault-contract.md §constitution: "Constitution clauses MUST cite source". A
+    # vault-core.md §constitution: "Constitution clauses MUST cite source". A
     # clause is injected into each unit's `## Hard rules` at execute-bolts as a
     # severity:error BLOCKING gate, so an uncited/defaulted clause (e.g. an invented
     # NFR "median < 200ms") would enforce fabrication as ground truth — the moat

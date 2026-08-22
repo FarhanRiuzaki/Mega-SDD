@@ -224,8 +224,8 @@ grep -qF 'DEFAULT (express spine, P2): proceed map-less' "$SF" \
 grep -qF 'keeps the express path non-stop' "$SF" \
   && pass "oq_gate trap: classifier resolves tech/scan OQs from probes" \
   || fail "oq_gate classifier re-key missing"
-grep -qF 'symbol-index LeaveRequest' "$P/skills/generate-intent/references/vault-contract.md" \
-  && pass "vault-contract scan_query re-keyed to probe targets" \
+grep -qF 'symbol-index LeaveRequest' "$P/skills/generate-intent/references/vault-core.md" \
+  && pass "vault-core scan_query re-keyed to probe targets" \
   || fail "scan_query re-key missing"
 grep -qF 'the lane the express spine dispatches by default' "$P/skills/bind-codebase/references/express-bind.md" \
   && grep -qF 'Lane default:' "$P/skills/bind-codebase/SKILL.md" \

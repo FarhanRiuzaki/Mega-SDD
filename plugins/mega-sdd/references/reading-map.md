@@ -135,4 +135,4 @@ When Phase 1 vault's bolts complete:
 
 - `paths.md` — implementer-facing per-skill write paths (this doc's inverse)
 - `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` — KB structure spec
-- `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — vault structure spec
+- `plugins/mega-sdd/skills/generate-intent/references/vault-core.md` — vault structure spec (§schema/§OQ/§constitution/§id-stability); conditional overlays (§Starterkit-binding/§Multi-scope) in `vault-contract.md`

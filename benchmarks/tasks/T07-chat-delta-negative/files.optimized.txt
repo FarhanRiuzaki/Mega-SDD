@@ -13,7 +13,10 @@ plugins/mega-sdd/references/multi-prd-lifecycle.md
 plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
 plugins/mega-sdd/skills/generate-intent/SKILL.md
 plugins/mega-sdd/skills/generate-intent/references/from-prompt-mode.md
-plugins/mega-sdd/skills/generate-intent/references/vault-contract.md [SECTION:schema+OQ+id-stability]
+# v7 R2a: the default-lane contract is now its own file (vault-core.md, whole —
+# no more section upper-bound on the 41.6KB vault-contract); vault-contract.md is a
+# conditional overlay (--scan starterkit / multi-scope) and does NOT load here.
+plugins/mega-sdd/skills/generate-intent/references/vault-core.md
 plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:Step3+templates+readability]
 plugins/mega-sdd/skills/generate-intent/references/self-check.md
 plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md

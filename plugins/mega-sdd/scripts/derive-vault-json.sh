@@ -108,7 +108,7 @@ KEY_ORDER = [
 def warn(msg):
     print("WARN:", msg, file=sys.stderr)
 
-# ── 1. Advisory lock (script-held; vault-contract.md §Concurrency contract) ──
+# ── 1. Advisory lock (script-held; vault-core.md §Concurrency contract) ──
 fd = None
 for attempt in range(4):
     try:

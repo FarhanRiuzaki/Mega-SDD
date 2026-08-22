@@ -35,7 +35,7 @@ else fail "b: expects contract pair broken (6.1.1 poison class can re-enter)"; f
 
 # ── (c) staging-drop severity: advisory at BOTH template and teacher; NEITHER halts ──
 FT="$P/skills/generate-intent/references/templates/flows.md"
-VC="$P/skills/generate-intent/references/vault-contract.md"
+VC="$P/skills/generate-intent/references/vault-core.md"
 grep -q 'advisory `vault_flow_staging_drop`' "$FT" \
   && pass "c1: 04-flows template says advisory vault_flow_staging_drop" \
   || fail "c1: 04-flows template lost the advisory severity (A3 re-drift)"

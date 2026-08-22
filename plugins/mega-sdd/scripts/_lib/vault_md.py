@@ -10,7 +10,7 @@ validator and the generator (two-validators-one-grammar).
 Pure parsing. No __main__; no side effects. Parsers collect problems into a
 caller-supplied `errors` list (the exit-2 lane) and NEVER fabricate a value
 that is not in the markdown — absent purpose/source_acs/resolver_owner stay
-None/omitted (vault-contract.md §Field rules; anti-halu invariant 5).
+None/omitted (vault-core.md §Field rules; anti-halu invariant 5).
 """
 
 import os
@@ -33,7 +33,7 @@ CATEGORY_BRACKET_BUSINESS_RE = re.compile(
     CATEGORY_BRACKET_PATTERN.format(cat="business"), re.IGNORECASE
 )
 
-# ── Deriver grammar (G1–G3 obligations; vault-contract.md §schema mirrors) ──
+# ── Deriver grammar (G1–G3 obligations; vault-core.md §schema mirrors) ──
 # OQ checkbox line. Tag capture is ALIGNED with the loose OQ_TAG_RE (amendment
 # §3) so a numeric `OQ-001` tag parses instead of tripping the cross-count
 # guard. Group 1 = checkbox state, group 2 = tag, group 3 = remainder
@@ -53,7 +53,7 @@ OQ_PRIORITY_RE = re.compile(r"\[\s*(P[123])\s*\]")
 # resolve-oq / bind for grounding locality). Absent token = absent field.
 OQ_ORIGIN_RE = re.compile(r"\[\s*origin:\s*([^\]]+?)\s*\]")
 
-# `[tech / scan]` / `[business]` classification bracket (vault-contract.md
+# `[tech / scan]` / `[business]` classification bracket (vault-core.md
 # §Updated OQ schema in markdown body). Closed enums.
 OQ_META_BRACKET_RE = re.compile(
     r"\[\s*(tech|business)\s*(?:/\s*(scan|recommend|hard_rule|blocking)\s*)?\]",
@@ -78,7 +78,7 @@ OQ_RESOLUTION_RE = re.compile(
 OQ_OOS_REASON_RE = re.compile(r"→\s*Out of Scope v[\d.]+\s*:\s*(.+)$", re.M)
 
 # `**Deferred (v1.1)**: reason` annotation (marks status deferred while the
-# checkbox stays `[ ]` — vault-contract.md §Status markers). Position-anchored
+# checkbox stays `[ ]` — vault-core.md §Status markers). Position-anchored
 # to the FULL annotation shape — bold-closed marker + `:` + a non-empty reason
 # (symmetric with the Resolved annotation, which requires its full
 # `→ … Resolved vX.Y …:` shape) — so ordinary bold `**Deferred**` wording
@@ -516,7 +516,7 @@ def parse_rollup_categories(index_md):
     """{tag: category} legacy fallback from the 00-index.md
     `## Open Questions roll-up` section headers (`### <Category> (PRIORITY-N)`).
     Used ONLY when an OQ line carries no `[tech|business]` bracket
-    (bracket-first precedence — vault-contract.md §Field rules)."""
+    (bracket-first precedence — vault-core.md §Field rules)."""
     out = {}
     in_sec = False
     cur_cat = None

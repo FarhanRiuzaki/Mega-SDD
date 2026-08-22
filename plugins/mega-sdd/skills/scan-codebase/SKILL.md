@@ -102,4 +102,4 @@ When memory is enabled (default; opt-out `--memory-off`), participates in the me
 
 ## Related skills
 
-Output `codebase-map.md` is consumed by `bind-codebase` (vault validation) and `generate-intent --scan=` (pack-aware vault generation in starterkit-first mode). Dual-citation convention + `vault.json` field rules: `../generate-intent/references/vault-contract.md`.
+Output `codebase-map.md` is consumed by `bind-codebase` (vault validation) and `generate-intent --scan=` (pack-aware vault generation in starterkit-first mode). Dual-citation convention: `../generate-intent/references/vault-contract.md §Starterkit-binding`; `vault.json` field rules: `../generate-intent/references/vault-core.md §schema`.

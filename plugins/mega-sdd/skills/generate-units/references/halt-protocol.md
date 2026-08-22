@@ -113,7 +113,7 @@ blocker:
   next_action: "Resolve manually then re-run generate-units."
 ```
 
-**Second trigger (reconcile lane):** `--reconcile`'s claim↔unit matching reuses this halt type when a refreshed claim matches MULTIPLE existing units ambiguously (per the canonical registry entry in `generate-intent/references/vault-contract.md`). Its details block differs: `candidate_units: [U-XXX, U-YYY]` + `claim: <id>`; resolution = user picks the canonical unit OR confirms creating a new one (the rename-target_files resolutions above do NOT apply). A SPLIT pair sharing one `vault_source` is matched by `binding_refs` first (the primary reconcile match key), `vault_source` as fallback — so normal SPLIT output does not false-trigger this.
+**Second trigger (reconcile lane):** `--reconcile`'s claim↔unit matching reuses this halt type when a refreshed claim matches MULTIPLE existing units ambiguously (per the canonical registry entry in `generate-intent/references/vault-core.md`). Its details block differs: `candidate_units: [U-XXX, U-YYY]` + `claim: <id>`; resolution = user picks the canonical unit OR confirms creating a new one (the rename-target_files resolutions above do NOT apply). A SPLIT pair sharing one `vault_source` is matched by `binding_refs` first (the primary reconcile match key), `vault_source` as fallback — so normal SPLIT output does not false-trigger this.
 
 ## `verify` without anchor (binding gap)
 

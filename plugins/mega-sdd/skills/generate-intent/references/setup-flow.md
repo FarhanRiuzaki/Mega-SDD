@@ -198,7 +198,7 @@ After emission, suggest the next step with the squad count: "Generated vault for
 
 ## Step 3.4 — Write constitution.md
 
-Per `generate-intent/references/vault-contract.md §constitution`. Write the 8th vault file with project-facing rules unless `--no-constitution` is set.
+Per `generate-intent/references/vault-core.md §constitution`. Write the 8th vault file with project-facing rules unless `--no-constitution` is set.
 
 1. **Extract from PRD/KB:** coding standards (PRD tech-stack + KB conventions); security baselines (PRD non-functional + KB business rules); architecture invariants (PRD architecture + KB design-decisions); anti-patterns (KB critical findings + `.mega-sdd/memory/patterns.md`); performance constraints (PRD non-functional + KB perf hints); compliance (PRD constraints + regulatory KB sections).
 2. **Write `<vault>/constitution.md`** with 6 sections §A–§F (Coding standards / Security baselines / Architecture invariants / Anti-patterns / Performance constraints / Compliance).
