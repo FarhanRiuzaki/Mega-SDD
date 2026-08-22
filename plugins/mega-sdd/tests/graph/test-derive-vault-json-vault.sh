@@ -31,7 +31,7 @@
 #   9  consumer-green sweep: build-graph flow nodes; validate-preflight
 #      bind-codebase; validate-vault-oqs PASS on good / FAIL
 #      oq_recommend_underspecified on stripped-recommend variant;
-#      list-modules + analyze-parallelism do not die
+#      the --modules rollup + analyze-parallelism do not die
 #  10  grammar parity: vault_md.OQ_TAG_RE / CATEGORY_BRACKET_RE patterns
 #      byte-identical to the validator's pre-refactor strings; numeric OQ-001
 #      tag parses (amendment §3); validator behavior unchanged on the
@@ -313,8 +313,8 @@ import json,sys; s=json.load(open('$PROJ/.mega-sdd/.vault-oqs-state.json'))
 sys.exit(0 if any(i['halt_type']=='oq_recommend_underspecified' for i in s['issues']) else 1)" \
   && [ "$RC" -eq 1 ] && ok "9: stripped recommend fields → oq_recommend_underspecified fires (structured-authority tripwire for a lossy merge)" \
   || fail "9: lossy-merge tripwire dead (rc=$RC)"
-bash "${PLUGIN_ROOT}/scripts/list-modules.sh" "$PROJ/.mega-sdd/vaults/demo" --cwd="$PROJ" --format=json </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] && ok "9: list-modules does not die on the derived json" || fail "9: list-modules died (rc=$RC)"
+bash "${PLUGIN_ROOT}/scripts/query-graph.sh" --modules "$PROJ/.mega-sdd/vaults/demo" --cwd="$PROJ" --format=json </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 0 ] && ok "9: the --modules rollup does not die on the derived json" || fail "9: the --modules rollup died (rc=$RC)"
 bash "${PLUGIN_ROOT}/scripts/analyze-parallelism.sh" "$PROJ/.mega-sdd/vaults/demo" --cwd="$PROJ" --format=json </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 0 ] && ok "9: analyze-parallelism does not die on the derived json" || fail "9: analyze-parallelism died (rc=$RC)"
 

@@ -209,7 +209,7 @@ def parse_acceptance_entries(full_text):
 
 def parse_modules_yaml(path):
     """Minimal reader for the machine-written modules.yaml shape
-    (modules: [- id/name/dod list]) — mirrors list-modules.sh fields."""
+    (modules: [- id/name/dod list]) — mirrors the --modules rollup fields (query-graph.sh)."""
     mods = []
     cur = None
     in_dod = False

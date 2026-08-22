@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fixture test for plugins/mega-sdd/scripts/list-modules.sh (audit batch E).
+# Fixture test for the --modules rollup of query-graph.sh (former list-modules.sh; v7 group 6).
 # Builds a throwaway vault with a real modules.yaml (dod as a YAML list mixing a
 # [x]-marked item and a plain canonical string), units carrying `module:`
 # frontmatter, and a bolt-outcomes.json — then asserts the read-only rollup:
@@ -14,7 +14,7 @@ set -u
 err=0
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SCRIPT="$ROOT/plugins/mega-sdd/scripts/list-modules.sh"
+SCRIPT="$ROOT/plugins/mega-sdd/scripts/query-graph.sh"
 [ -f "$SCRIPT" ] || { echo "FATAL: script not found at $SCRIPT"; exit 1; }
 
 # mk_vault DIR — populate DIR with a vault under .mega-sdd/vaults/leave-management.
@@ -83,7 +83,7 @@ EOF
 # ---- Scenario A: table rollup ----
 A=$(mktemp -d); trap 'rm -rf "$A"' EXIT
 mk_vault "$A"
-outA=$(bash "$SCRIPT" --cwd="$A" 2>&1); rcA=$?
+outA=$(bash "$SCRIPT" --modules --cwd="$A" 2>&1); rcA=$?
 [ $rcA -eq 0 ] || { echo "A: expected exit 0, got $rcA"; err=1; }
 echo "$outA" | grep -E '^M-auth' | grep -q '2/3'            || { echo "A: M-auth units != 2/3"; err=1; }
 echo "$outA" | grep -E '^M-auth' | grep -q 'in-progress'    || { echo "A: M-auth not in-progress"; err=1; }
@@ -97,7 +97,7 @@ echo "$outA" | grep -qi 'actionable: .*M-auth'              || { echo "A: M-auth
 # ---- Scenario B: --format=json ----
 B=$(mktemp -d); trap 'rm -rf "$A" "$B"' EXIT
 mk_vault "$B"
-outB=$(bash "$SCRIPT" --cwd="$B" --format=json 2>&1); rcB=$?
+outB=$(bash "$SCRIPT" --modules --cwd="$B" --format=json 2>&1); rcB=$?
 [ $rcB -eq 0 ] || { echo "B: json expected exit 0, got $rcB"; err=1; }
 OUT_JSON="$outB" python3 <<'PY' || err=1
 import json, os, sys
@@ -130,7 +130,7 @@ echo "$outA" | grep -E '^M-auth' | grep -q '1/2' \
 # ---- Scenario D: positional [vault-path] (blocker #1 — parity) ----
 D=$(mktemp -d); trap 'rm -rf "$A" "$B" "$D"' EXIT
 mk_vault "$D"
-outD=$(bash "$SCRIPT" "$D/.mega-sdd/vaults/leave-management" 2>&1); rcD=$?
+outD=$(bash "$SCRIPT" --modules "$D/.mega-sdd/vaults/leave-management" 2>&1); rcD=$?
 [ $rcD -eq 0 ] || { echo "D: positional path expected exit 0, got $rcD"; err=1; }
 echo "$outD" | grep -E '^M-auth' | grep -q '2/3' || { echo "D: positional vault-path not honored"; err=1; }
 [ $rcD -eq 0 ] && echo "D PASS (positional vault-path honored — command argument-hint parity)"
@@ -141,7 +141,7 @@ echo "$outA" | grep -i 'M-unassigned' | grep -q 'U-099' \
   || { echo "E: M-unassigned did not name U-099"; err=1; }
 
 # ---- Scenario F: PyYAML fallback parser ----
-outF=$(MEGA_SDD_FORCE_YAML_FALLBACK=1 bash "$SCRIPT" --cwd="$A" 2>&1); rcF=$?
+outF=$(MEGA_SDD_FORCE_YAML_FALLBACK=1 bash "$SCRIPT" --modules --cwd="$A" 2>&1); rcF=$?
 [ $rcF -eq 0 ] || { echo "F: fallback expected exit 0, got $rcF"; err=1; }
 echo "$outF" | grep -E '^M-auth' | grep -q '2/3' || { echo "F: fallback unit count wrong"; err=1; }
 echo "$outF" | grep -E '^M-auth' | grep -q '1/2' || { echo "F: fallback DoD count wrong"; err=1; }
@@ -150,10 +150,10 @@ echo "$outF" | grep -E '^M-leave'| grep -q 'M-auth (pending)' || { echo "F: fall
 
 # ---- Scenario G: usage / refusal exit codes ----
 errG=0
-bash "$SCRIPT" --cwd="$A" --bogus        >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: --bogus should exit 2"; errG=1; }
-bash "$SCRIPT" --cwd="$A" --format=xml   >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: bad --format should exit 2"; errG=1; }
-bash "$SCRIPT" --cwd="$A" --module=M-nope >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: unknown --module should exit 2"; errG=1; }
-EMPTY=$(mktemp -d); bash "$SCRIPT" --cwd="$EMPTY" >/dev/null 2>&1; [ $? -eq 1 ] || { echo "G: no vault should exit 1"; errG=1; }
+bash "$SCRIPT" --modules --cwd="$A" --bogus        >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: --bogus should exit 2"; errG=1; }
+bash "$SCRIPT" --modules --cwd="$A" --format=xml   >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: bad --format should exit 2"; errG=1; }
+bash "$SCRIPT" --modules --cwd="$A" --module=M-nope >/dev/null 2>&1; [ $? -eq 2 ] || { echo "G: unknown --module should exit 2"; errG=1; }
+EMPTY=$(mktemp -d); bash "$SCRIPT" --modules --cwd="$EMPTY" >/dev/null 2>&1; [ $? -eq 1 ] || { echo "G: no vault should exit 1"; errG=1; }
 rm -rf "$EMPTY"
 [ $errG -eq 0 ] && echo "G PASS (unknown flag/format/module → 2; no vault → 1)" || err=1
 
