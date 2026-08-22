@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.1.0] - 2026-08-22 — per-unit implementer model routing + cascade (ship default: OFF)
+
+Spec `docs/superpowers/specs/2026-08-22-per-unit-model-routing-design.md` (user GO 2026-08-22). **Ship kode ≠ ship default:** config `model_tiers.bolt_implementer:` defaults to `inherit` — byte-for-byte today's behavior (no `model` param on the Agent call, zero office regression). `auto` activates the router; the default flips only after the clinic A/B passes its gate (≥25% token saving AND panel P1 ≤ baseline AND acceptance pass rate equal — user decision).
+
+### Added
+- **`resolve-review-tier.sh` emits `implementer_model` + `effort`** — derived from the SAME six deterministic risk signals as the panel tier (rail A5: never model self-assessment): opus←full, **haiku←`task_type: verify` only**, sonnet←everything else; unknown/parse-miss never lowers a tier. Additive JSON keys; 4 new test arms (p3).
+- **execute-bolts Step-2 model routing + cascade**: override chain `--model-tier=` > config > `inherit`; when routed, the model rides the Agent call's `model` parameter (**empirically verified live**: a `model: "haiku"` dispatch births an agent whose own system prompt says Haiku 4.5 — the param exists and switches the model on this build). **Cascade:** 2 consecutive failures at the current model on a TRUSTED signal (acceptance red / L0 red / fix-round P1) → next attempt one tier up, at most once per unit, `--no-escalate` opts out, no auto-de-escalation. Audit trail: `bolt_self_report.model_used` copied VERBATIM from the implementer's own system prompt (also the param-vs-frontmatter precedence probe) + controller-written `escalated_from` in `## Review panel`.
+- **`parallel_max:` config (default 4)** caps `--parallel` wave width (Claude Code's 20-subagent default × an ~80-turn implementer is a fleet hazard).
+- Front-door plumbing: `--model-tier=` / `--no-escalate` forwarded VERBATIM to the execute-bolts hop.
+
+### Changed
+- `references/model-tiers.md` row 22 AMENDED on record (the old `inherit` rationale now governs the `inherit` default; routing answers its hard-pin objection with per-unit evidence) + v7.1 office rollout runbook (1-line build probe; gateway alias note; flip = config line, not a release).
+- MCP pins reviewed at this bump (release rule): `@playwright/mcp@0.0.79` = latest; `@upstash/context7-mcp@4.0.2` exists (4.0.3 available, not taken — no identified need). No agent-file variants built (fallback documented in the spec, gated on a build where the param loses).
+
 ## [7.0.0] - 2026-08-21 — v7 diet MAJOR: weighted routing S/M/L (Fase 1 of 3)
 
 **BREAKING — the routing default inverts.** Pre-v7, `.mega-sdd/` in the CWD pulled every prompt toward the pipeline (front door → ground → status view → chain proposal; a small bug hunt cost ±30-65k tokens / 15-25 minutes — measured baseline in `research/2026-08-21-v7-diet-audit.md` §4). v7 weighs every task **S / M / L** first and the default when unsure is **S: answer inline as plain Claude Code**. Spec: `docs/superpowers/specs/2026-08-21-v7-weighted-routing-design.md` (+ §7 implementation amendments). Fase 2 (script diet) and Fase 3 (vault 7→3-4) land in follow-up minors under this major.
