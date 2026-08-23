@@ -1,10 +1,10 @@
 # Mega-SDD Optional Native Tooling — Install Guide
 
-> **Auto-install:** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify + memory-cache outcomes), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
+> **Auto-install:** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify; every run re-probes — the outcome cache was removed in v7.3.0), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
 
 ## Platform support matrix
 
-How much of mega-sdd works per environment (verified 2026-06-11 against the shipped hooks/scripts — all 5 hooks are bash and spawn `python3`; no `.ps1` ports ship yet):
+How much of mega-sdd works per environment (verified 2026-08-23 against the shipped hooks/scripts — all 6 hooks are bash; 4 of them (session-start, pre-tool-use, post-tool-use, user-prompt-expansion) parse stdin through python3, while stop and user-prompt-submit are pure shell; no `.ps1` ports ship yet):
 
 | Environment | Skills & commands | Hooks (gates, journal, staleness) | Scripts/validators | Moat enforcement | Verdict |
 |---|---|---|---|---|---|
@@ -24,9 +24,9 @@ How much of mega-sdd works per environment (verified 2026-06-11 against the ship
 > } }
 > ```
 >
-> This is a Claude Code setting, not a plugin setting — mega-sdd invokes `bash` explicitly in all 9 `hooks.json` entries and ships no `.ps1`.
+> This is a Claude Code setting, not a plugin setting — mega-sdd invokes `bash` explicitly in all 6 `hooks.json` entries and ships no `.ps1`.
 
-`/mega-sdd:install-deps` detects winget/scoop/choco on Windows (best-effort) and apt inside WSL. PowerShell ports of the 5 hooks are a tracked roadmap item — tell us if your team needs native cmd.
+`/mega-sdd:install-deps` detects winget/scoop/choco on Windows (best-effort) and apt inside WSL. PowerShell ports of the 6 hooks are a tracked roadmap item — tell us if your team needs native cmd.
 
 Centralized install commands for all native binaries mega-sdd can leverage. **All are OPTIONAL** — mega-sdd has graceful fallbacks for every tool. Install for higher precision + better UX; skip for minimal-footprint setup.
 
@@ -46,12 +46,13 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 
 | Tool | Used by | Fallback if absent | Install |
 |---|---|---|---|
+| `python3` | **REQUIRED** — the hooks' stdin parsers + the deterministic gate validators | none — without a usable interpreter the PreToolUse gates fail CLOSED | per-OS install per `install-deps/references/tool-matrix.yaml` (`/mega-sdd:install-deps`) |
 | `ast-grep` (alias `sg`) | scan-codebase (TIER-1 AST extraction — zero-compilation, one spawn), execute-bolts, generate-units, detect-drift (Hard Rule v2 grammar) | scan falls to regex tier; v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
-| `jd` | diff-vault (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
+| `jd` | diff-vault, execute-bolts (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
 | `pandoc` | emit-fsd/prd/sit/uat (md2pdf HTML render for the PDF lanes) | Markdown-only output (no PDF) | macOS: `brew install pandoc` · apt: `apt install pandoc` · win: `winget install JohnMacFarlane.Pandoc` |
 | `mmdc` (`@mermaid-js/mermaid-cli`) | emit-fsd/prd/sit/uat (pre-render mermaid to SVG for the PDF lane) | mermaid stays a code block (quality drop) | `npm install -g @mermaid-js/mermaid-cli` (all platforms) |
-| `markdownlint-cli2` | lint-units (vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
+| `markdownlint-cli2` | orchestrate-flow (vault prose lint, optional) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
 | `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
 | `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
 | `superpowers` plugin | execute-bolts (optional technique enhancement) | Not needed — the first-class agents encode the discipline (no vendored fallback since v7.4.0) | `/plugin install superpowers` |
@@ -120,11 +121,13 @@ command -v gitleaks && echo "✓ gitleaks ready"
 
 ## Minimal-footprint setup (skip everything optional)
 
-Mega-sdd works WITHOUT any of these. You get:
+REQUIRED: `python3` — the one hard dependency; without a usable interpreter the PreToolUse gates fail CLOSED.
+
+Mega-sdd works WITHOUT any of the optional tools. You get:
 - scan-codebase: regex engine (precision_tier: regex; documented in codebase-map.md frontmatter)
 - execute-bolts: Hard Rule v1 grammar (5 closed types)
 - diff-vault: skill-internal compare
-- lint-units: internal heuristic checks
+- orchestrate-flow vault prose lint: internal heuristic checks
 
 For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the AST tier (zero-compilation, one spawn; the tree-sitter opt-in lane was removed in v7.4.0).
 

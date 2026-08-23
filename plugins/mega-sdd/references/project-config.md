@@ -12,10 +12,14 @@ auto_verify_on_edit: false # true → editing a file listed in a unit's target_f
                            # acceptance (one line, never auto-run). Default false = zero extra cost.
 layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:migrate-paths writes);
                            #   legacy → outputs at pre-migration scattered paths (see plugins/mega-sdd/references/paths.md)
-output_root: .mega-sdd/    # where all outputs live, relative to project root (or absolute)
+                           #   (reserved — written by migrate-paths' scaffold; no reader today: layout
+                           #   selection is dual-layout probing in `_lib/vault_layouts.py`)
+output_root: .mega-sdd/    # read by `extract-intelligence` only (KB output root); hooks and scripts
+                           #   hard-code `.mega-sdd/`
 spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
 # profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
+                           #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 model_tiers:
   bolt_implementer: inherit  # v7.1 per-unit model routing: inherit (DEFAULT — today's behavior,
                              # session model, no model param passed) | auto (router: the same
@@ -24,14 +28,14 @@ model_tiers:
 parallel_max: 4              # execute-bolts --parallel wave cap (Claude Code's own default is 20
                              # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
                              # a fleet Windows laptop responsive)
-                           #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
                            #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse
                            #   Edit/Write; inert anyway when no [LOCKED] anchors exist in any vault)
-preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — when set, the design
-                           #   lens captures live screenshots via capture-views.sh to judge the
-                           #   rendered ceiling, not just code. Empty → design lens is code-only.
+preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — read by
+                           #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
+                           #   the URL into the capture ladder as an argument — `capture-views.sh`
+                           #   never reads config. Empty → design lens is code-only.
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):
@@ -52,5 +56,7 @@ Related-but-separate config surfaces (different scopes, documented where they li
 
 - **Defaults when absent** — a missing file or missing key NEVER errors; behavior is the documented default.
 - **Validation** — unknown keys are ignored (forward-compat); a malformed YAML file is treated as absent (hooks fail-open to defaults, one debug-log line).
-- **Restart required for hook-read keys** — `dirty_journal` / `staleness_notice` are read by hooks at event time, so edits apply on the next tool event / session start (no full restart needed); skill-read keys apply on next skill invocation.
+- **Restart required for hook-read keys** — the hook-read keys are `dirty_journal` and `staleness_notice` (session-start), `gateguard` (pre-tool-use), `auto_verify_on_edit` (post-tool-use), and `spine` / `profile` (stop); all are read at event time, so edits apply on the next tool event / session start (no full restart needed); skill-read keys apply on next skill invocation.
+- `halt_auto_propose` exists as a USER-scope key in `~/.mega-sdd/config.yaml` — shape and semantics in `execute-bolts/references/halt-recovery.md §Configuration override`.
+- REQUIRED interpreter: `python3` — without a usable interpreter the PreToolUse gates fail CLOSED (see tooling-install.md).
 - **Git:** the file is safe to commit (team-shared posture) OR gitignore it for per-developer preferences — your call; it contains no secrets by design. Do NOT put credentials here.

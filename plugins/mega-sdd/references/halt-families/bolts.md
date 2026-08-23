@@ -28,11 +28,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### pbt_citation_invalid
 
-- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault `decisions/` directory. ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
+- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault's decisions surface (`vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
 
 ### partial_state_corrupt
 
-- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts.
+- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts. Limitation: the GROUND C1 battery globs the legacy `*-bound/` sibling only; canonical-layout vaults are not scanned by this self-resolve rung (tracked).
 
 ### hard_rule_violated
 
@@ -48,7 +48,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`. Limitation: the GROUND C1 battery globs the legacy `*-bound/` sibling only; canonical-layout vaults are not scanned by this self-resolve rung (tracked).
 
 ### secret_in_code
 
@@ -114,7 +114,14 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user picks one grammar. ALWAYS STOP.
 
+### verify_grounding_untrusted
+
+- `verify_grounding_untrusted` — execute-bolts (A1 verify-grounding gate): a `task_type: verify` unit with HIGH `grounding_confidence` whose acceptance criteria lack a non-test source anchor; blocking at the execute-bolts gate. ALWAYS STOP. Resolution: user adds a non-test source anchor to the unit's acceptance criteria (or downgrades `grounding_confidence`), then re-runs execute-bolts.
+
 ### pbt_property_violated
 
 - `pbt_property_violated` — execute-bolts post-flight (properties born in generate-units `references/pbt-integration.md`): a property-based test failure with `severity: error` halts (severity `warning` → log + commit anyway, per pbt-integration.md Step 3); the counterexample input + failing property definition are preserved in the envelope. Bridged via propose-and-confirm in convergence loops (`orchestrate-flow/references/convergence-loops.md` — propose fix → user approve → re-execute → continue).
 
+### test_fail
+
+- `test_fail` — execute-bolts: a bolt's acceptance test still fails after the max retry budget (the attempt loop stops instead of thrashing). ALWAYS STOP. Details `{unit_id, attempts, failing_test, last_error}` (registry §Type-specific schemas). Resolution: read `<vault>/bolts/U-XXX/bolt-report.md` for the failure trail; common causes are a missing test runner (`install-deps`), an unmigrated database, or a unit missing a `target_files` dependency — fix, then `/mega-sdd --resume`.

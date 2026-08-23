@@ -8,6 +8,7 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 
 - Path resolution algorithm
 - Canonical layout
+- Root state surface (`.mega-sdd/` dot-files)
 - User-scope
 - Per-skill path mapping (canonical → legacy)
 - Detection logic
@@ -22,7 +23,7 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 
 Every writer skill resolves output paths via this protocol:
 
-1. **Check user override**: `~/.mega-sdd/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference)
+1. **Check user override**: `~/.mega-sdd/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference) *(documented-only — no code reads `default_output_root` today)*
 2. **Check project override**: `<project-root>/.mega-sdd/config.yaml` `output_root: <abs-or-rel-path>` (per-repo override)
 3. **Default**: `<project-root>/.mega-sdd/`
 4. **Legacy detection**: if old-layout paths exist (e.g., `docs/mega-sdd/vaults/`, `.mega-sdd-memory/`, top-level `codebase-map.md`), skills WRITE to legacy paths for back-compat. User opts into new layout via `/mega-sdd:migrate-paths`.
@@ -72,12 +73,31 @@ Every writer skill resolves output paths via this protocol:
 │   ├── codebase/                                  # Codebase analysis outputs
 │   │   ├── codebase-map.md                        # scan-codebase output
 │   │   └── symbol-index.json                      # build-symbol-index.sh output (reuse substrate; recomputable, advisory)
-│   └── exports/                                   # Tool-agnostic exports
+│   └── exports/                                   # Tool-agnostic exports — reserved, no writer today
 │       └── (additional exports)
 ├── AGENTS.md                                       # Tool-agnostic interop at REPO ROOT (unchanged — must be discoverable by other tools)
 ├── CLAUDE.md                                       # Project AI context (unchanged)
 └── (project source: app/, routes/, src/, etc.)
 ```
+
+## Root state surface (`.mega-sdd/` dot-files)
+
+Live state files at the `.mega-sdd/` root (writers in parentheses):
+
+- `.validation-blockers.json` — gate aggregator (PreToolUse gate)
+- `.locked-files-index.json` — `build-locked-index.sh`; read by GateGuard + the v7.5.0 LOCKED-edit notice
+- `codebase/.dirty-paths.jsonl` — PostToolUse journal; read by the session-start notice + the completion census
+- `state.json` — routing digest (`derive-state.sh` / `ground.sh`)
+- `graph.json` — `build-graph.sh`; gates the Stop-hook publisher leg
+- `factory-ledger.json` — Factory Line ledger
+- `CONSISTENCY-REPORT.md` — analyze output
+- `codebase/reuse-index.yaml` + `codebase/symbol-index.json` — reuse substrate
+- `codebase/starterkit-context.yaml` — deep-scan cache
+- `codebase/framework-conventions/` — resolved framework packs
+- `.cache/pack-resolver/` — derived cache (see §Derived caches)
+- `.stop-scan-stamp` — Stop-hook turn-gate stamp (see §Derived caches)
+
+Plus ~35 `.*-state.json` validator/gate state files (one per validator; written by their deterministic writers, re-derived at gates).
 
 ## Vault layout (v7 layout-2 ↔ legacy 7-file)
 
@@ -119,11 +139,10 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
-| memory (project) | decisions.md, etc. | `.mega-sdd/memory/` | `.mega-sdd-memory/` |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
-| memory (user) | patterns.md, etc. | `~/.mega-sdd/memory/` (UNCHANGED) | same |
-| memory (vault) | classifier-accuracy.json | `<vault>/.memory/` (UNCHANGED) | same |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
+
+The project `.mega-sdd/memory/` dir is still honored as a project-root MARKER by `scripts/_lib/resolve-project-root.sh` and rewritten by migrate-paths, but nothing writes it since v7.3.0. The only live vault-memory artifact is `<vault>/.memory/bolt-outcomes.json` (documented in the canonical-layout tree above).
 
 ## Detection logic
 
@@ -133,22 +152,17 @@ Each writer skill resolves `OUTPUT_ROOT`:
 # Pseudo-code for OUTPUT_ROOT resolution
 OUTPUT_ROOT=""
 
-# 1. User override (cross-project)
-if [ -f ~/.mega-sdd/memory/config.yaml ] && grep -q "default_output_root:" ~/.mega-sdd/memory/config.yaml; then
-  OUTPUT_ROOT=$(yaml_get ~/.mega-sdd/memory/config.yaml default_output_root)
-fi
-
-# 2. Project override
+# 1. Project override
 if [ -f "<project>/.mega-sdd/config.yaml" ] && grep -q "output_root:" "<project>/.mega-sdd/config.yaml"; then
   OUTPUT_ROOT=$(yaml_get "<project>/.mega-sdd/config.yaml" output_root)
 fi
 
-# 3. Default (canonical)
+# 2. Default (canonical)
 if [ -z "$OUTPUT_ROOT" ]; then
   OUTPUT_ROOT="<project>/.mega-sdd"
 fi
 
-# 4. Back-compat detection: if legacy paths exist AND new paths don't, WRITE to legacy
+# 3. Back-compat detection: if legacy paths exist AND new paths don't, WRITE to legacy
 # (Skills that detect old layout continue using it; user explicitly migrates via /mega-sdd:migrate-paths)
 if [ -d "<project>/docs/mega-sdd/vaults" ] && [ ! -d "$OUTPUT_ROOT/vaults" ]; then
   LEGACY_LAYOUT=true
@@ -172,13 +186,14 @@ for candidate in \
 done
 ```
 
-Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` → `<project>/codebase-map.md`), KB (`<project>/.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`), and project memory (`<project>/.mega-sdd/memory/` → `<project>/.mega-sdd-memory/`).
+Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` → `<project>/codebase-map.md`) and KB (`<project>/.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`).
 
 ## Config file format
 
 `<project-root>/.mega-sdd/config.yaml` (full key reference: `plugins/mega-sdd/references/project-config.md`):
 
 ```yaml
+# scaffold defaults written by migrate-paths.sh; `layout:`, `defaults:`, `probe_paths:`, `mega_sdd_schema:` have NO reader today — live keys are documented in references/project-config.md
 # Project-level mega-sdd config
 mega_sdd_schema: 1
 
@@ -250,4 +265,4 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 
 - `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Never committed (gitignored), never read as project state.
 - `<root>/.mega-sdd/.stop-scan-stamp` — the Stop hook's turn-gate stamp (HEAD sha at the last artifact scan). Absence simply means the next Stop scans; never committed.
-- `<root>/.mega-sdd/.ptu-scan-stamp` — the PostToolUse debounce stamp for the 4 unconditional project-wide scanners (HEAD sha at their last run). Absence simply means the next Write|Edit scans; never committed.
+- `<root>/.mega-sdd/.ptu-scan-stamp` — legacy name — the PostToolUse debounce and its 4 scanners were removed in v7; retained only in the anti-forge guard + probe-prune lists, never written.

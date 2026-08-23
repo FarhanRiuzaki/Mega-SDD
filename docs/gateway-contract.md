@@ -17,4 +17,20 @@
 - `mega-sdd-trace:session` (marker per-sesi lama) dan deteksi governance v6.19.2 ("sesi mega-code wajib mega-sdd") TIDAK dikembalikan — deteksi sesi sepenuhnya urusan gateway memakai tag di atas.
 - `publish-artifacts.sh` (Stop hook) tetap mengirim dokumen pipeline ke gateway dengan manifest `plugin_version` — itu output pipeline, bukan observability, dan bukan bagian dari kontrak tag ini.
 
+## Baris kedua census (№G, v7.5.0)
+
+Baris kedua dari `hooks/user-prompt-submit` hanya muncul kalau DUA kondisi terpenuhi sekaligus: (a) `.mega-sdd/codebase/.dirty-paths.jsonl` tidak kosong, DAN (b) prompt user match set keyword census pada word boundary — Udah/Sudah/Selesai/Beres/Kelar/Commit/Push/Merge[d]/Done/PR. Teks baris kedua, verbatim:
+
+```
+mega-sdd: user menyiratkan pekerjaan selesai dan ada perubahan kode ter-journal — TAWARKAN /mega-sdd:sync dalam SATU baris (jangan auto-invoke; kalau user menolak, lanjut tanpa mengungkit lagi).
+```
+
+Baris ini TIDAK memakai prefix `mega-sdd-trace` (namespace tag eksklusif; filter gateway tetap key pada baris pertama).
+
+## Publisher (Stop hook)
+
+- **Gate publish:** leg publisher di Stop hook jalan hanya kalau `.mega-sdd/vaults/` ada ATAU `.mega-sdd/graph.json` ada — vault sentinel `_codebase` meng-cover project tahap scan (belum ber-vault, sudah ber-graph/codemap).
+- **Field manifest** (`manifest.json`, entry root PERTAMA di tar.gz): `{schema: "mega-sdd-publish/1", project_id (git remote ter-normalisasi — kredensial/userinfo dibuang, port ssh dibuang, `.git` dipotong; tanpa remote → `local/<work_dir>`), vault, git_head, generated_at, files (map path→sha256), graph_meta, work_dir (basename saja), plugin_version}`.
+- **Perilaku:** fail-open by contract (kegagalan network/kredensial exit 0, tidak pernah blokir pipeline) + sha-self-debounce via `.mega-sdd/.publish-state.json` (hanya file yang sha-nya berubah yang dikirim; manifest selalu FULL, gateway self-heal via respons `{"missing":[...]}`).
+
 Pin test: `tests/surface/test-p9-audit-phase1.sh` (kelengkapan announce + template), `tests/derived-artifacts/test-dispatch-prompt-builder-shape.sh` + `plugins/mega-sdd/tests/moat/test-dispatch-prompt-cascade.sh` (tag di prompt/inline_core), `tests/weighted-routing/test-tier-s-hooks.sh` (echo turn = 0 fork; non-SDD hening).
