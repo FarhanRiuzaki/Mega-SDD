@@ -17,7 +17,7 @@ flowchart TD
     end
     subgraph B2["Babak 2 — Konstruksi (spec-driven build)"]
         KB --> GI["generate-intent --kb<br/>(--phase=N bila multi-phase)"]
-        GI --> VAULT["vault 7-file<br/>+ OQ roll-up"]
+        GI --> VAULT["vault layout-2 (4 file)<br/>+ OQ di constraints.md"]
         VAULT --> ROQ["resolve-oq<br/>(P1 business — keputusan manusia)"]
         ROQ --> BIND["bind-codebase (express)<br/>CONFIRMED / CONFLICT / OQ"]
         BIND -- "CONFLICT unresolved = GATE" --> ROQ
@@ -159,6 +159,6 @@ flowchart LR
 | Dokumen tim | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` |
 | Kode berubah setelah "jadi" | `/mega-sdd:sync` |
 | Blast radius sebuah perubahan | tanya "apa yang kena kalau ubah X" (graph lens) |
-| Rawat memory / deps / layout | `/mega-sdd:memory`, `/mega-sdd:install-deps`, `/mega-sdd:migrate-paths` |
+| Rawat deps / layout | `/mega-sdd:install-deps`, `/mega-sdd:migrate-paths` |
 
 Arsitektur plugin & moat: [architecture.md](architecture.md) · Kontrak kontributor: [`plugins/mega-sdd/CLAUDE.md`](../../plugins/mega-sdd/CLAUDE.md).

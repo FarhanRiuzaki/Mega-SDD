@@ -2,9 +2,9 @@
 
 This document is the durable architecture record. For implementation details, see `plugins/mega-sdd/` directly. For design rationale, see `docs/superpowers/specs/2026-05-13-mega-sdd-revamp-design.md`.
 
-## The 3-layer model
+## The 4-layer model
 
-**Intent → Unit → Bolt**
+**Intent → Bind → Unit → Bolt** (Bind is brownfield-only)
 
 Each layer has a different audience, different anti-hallucination rails, and different artifacts. They compose into a single pipeline.
 
@@ -12,7 +12,7 @@ Each layer has a different audience, different anti-hallucination rails, and dif
 
 - **Audience:** Architects, product engineers
 - **Input:** PRD, BRD, Figma, or free-text brief
-- **Output:** 7-file vault + vault.json
+- **Output:** 4-file layout-2 vault (`vault.md` / `model.md` / `flows.md` / `constraints.md`) + `vault.json` (legacy 7-file vaults are still read)
 - **Repo access:** Not required
 - **Rails:** Open Question promotion, source citation, halt-on-ambiguity
 
@@ -50,9 +50,11 @@ Bolt phase routes through [superpowers](https://github.com/obra/superpowers) ski
 
 The pipeline is self-contained: the first-class agents in `plugins/mega-sdd/agents/` encode the execution discipline, so no superpowers install (and, since v7.4.0, no vendored copy) is required.
 
-## Anchor + hook
+## Anchor + hooks
 
-`SessionStart` hook detects SDD signals in CWD and injects `using-mega-sdd` anchor skill content. Anchor is scoped — only mandates skill invocation when SDD keywords or signals present.
+The `SessionStart` hook detects SDD signals in CWD and injects `using-mega-sdd` anchor skill content, weighted S/M/L (slim anchor for small contexts). The anchor is scoped — it only mandates skill invocation when SDD keywords or signals are present.
+
+Six hook events total, each dispatched DIRECTLY from `hooks/hooks.json` (`bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>"` — the run-hook.sh dispatcher was deleted in v7.5.0): `SessionStart` (anchor + state notice), `PreToolUse` (the gate aggregator — CONFLICT gate, anti-self-bypass, bolt evidence gates; matcher `Skill|Bash|Edit|Write`), `PostToolUse` (dirty-paths journal + advisory notices; matcher `Write|Edit`), `Stop` (bolt-artifact detection + analyze aggregate + gateway publisher), `UserPromptExpansion` (front-door routing), `UserPromptSubmit` (the `mega-sdd-trace:turn` gateway tag + completion-census sync offer). Everything observability-shaped beyond the gateway tag was removed in v7.3.0; the memory/advisor/slice lanes died in v7.3.0–v7.4.0.
 
 ## Pipeline diagram
 
