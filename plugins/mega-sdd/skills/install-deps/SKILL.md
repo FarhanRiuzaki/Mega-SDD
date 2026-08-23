@@ -53,14 +53,7 @@ The MCP server itself can also fail to start (npx cold-cache package fetch on a 
 
 ### Step 1: Detect environment
 
-**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-os.sh"` — the canonical detection algorithm, script-owned (never transcribe it; outcome table + special cases live in `references/os-detection.md`, open on an odd result). Emit chat output:
-
-```
-Detecting environment...
-  OS: <macos|linux|wsl|windows-bash> <version> [<distro>]
-  Package manager: <brew|apt|dnf|...> [v<version>]
-  Fallbacks available: <cargo|npm|go>
-```
+**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/detect-os.sh"` — the canonical detection algorithm, script-owned (never transcribe it; outcome table + special cases live in `references/os-detection.md`, open on an odd result). Emit one compact chat block: OS + version/distro, package manager, available fallbacks.
 
 If detection yields `OS = unknown` OR `PKG_MGR = none` AND no fallbacks → emit halt `pkg_mgr_not_found` with details `{os, distro, attempted_pkg_mgrs}`; STOP.
 
@@ -77,15 +70,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 
 (v7.3.0: every run re-audits — there is no cache to skip; `--force-recheck` is an accepted no-op.)
 
-Emit chat output:
-
-```
-Auditing tool inventory...
-  bound: <timeout -k 2 10 | gtimeout -k 2 10 | none — probes unbounded, `brew install coreutils` to bound them>
-  ✓ <tool> <version>             # present
-  ⊘ <tool>                       # cached-installed (skipped audit)
-  ✗ <tool> (missing — <fallback_behavior>)
-```
+Emit one compact chat block: the resolved bound prefix, then one line per tool — ✓ present (version) / ✗ missing (its `fallback_behavior`).
 
 ### Step 3: Build install plan
 
@@ -109,21 +94,7 @@ If `--dry-run` flag passed → emit plan + exit (don't execute).
 
 If `--manual` flag passed → print all install commands as instructions + exit (don't execute via Bash tool).
 
-Otherwise emit chat plan:
-
-```
-Proposing install plan...
-
-<N> tools to install via <pkg_mgr> (total ~<size>MB download):
-  1. <tool_1>      <size>MB    <install_cmd>
-  2. <tool_2>      <size>MB    <install_cmd>
-  ...
-
-Manual install required (sudo / no auto):
-  - <tool_X>       <size>MB    <install_cmd>   (run manually after this skill)
-
-[Install all (<N> tools)] [Pick subset] [Cancel]
-```
+Otherwise emit the chat plan: the numbered auto-install list (tool · size · exact `install_cmd`, total MB, the pkg manager), then the sudo/manual list separately with explicit run-yourself instructions.
 
 `AskUserQuestion` — question text restates what's at stake (the `<N>`-tool list, total `~<size>MB`, `<pkg_mgr>`, and the exact `install_cmd`s already shown in the plan above). Every option carries its keterangan per `plugins/mega-sdd/references/output-language.md §Prompt surfaces` — what choosing it does + the consequence, Indonesian-mix by default:
 
@@ -133,14 +104,7 @@ Manual install required (sudo / no auto):
 
 ### Step 5: Execute install (only for auto-executable tools — never sudo-required)
 
-For each tool in approved plan:
-
-```
-Installing (estimated <minutes> min)...
-  [<i>/<N>] <install_cmd> ...
-```
-
-Invoke Bash tool with the `install_cmd` from matrix. Capture stdout/stderr/exit_code per tool. Emit per-tool progress line on completion: `✓ (Xs)` on success OR `✗ (exit <code>)` on failure.
+For each tool in the approved plan (with a `[i/N] <install_cmd>` progress line): invoke Bash with the `install_cmd` from the matrix. Capture stdout/stderr/exit_code per tool. Emit per-tool progress line on completion: `✓ (Xs)` on success OR `✗ (exit <code>)` on failure.
 
 If ANY install fails:
 - Continue with remaining tools (don't abort entire batch).
@@ -153,32 +117,15 @@ For each successfully-installed tool:
 
 1. Run `verify_cmd` from the matrix entry via the SAME script as Step 2 — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/probe-tool.sh" --verify-cmd='<verify_cmd>' --tool=<id>` — its verdict line is final; NEVER hand-run the prelude. Verdict rules mirror Step 2 with `verified` in place of `present` (124/137 → `verified` + `slow-verify`; **127 → `verified` + `probe-inconclusive`, never `unverified`**): `references/audit-and-verify.md §Verify after install`.
 2. Exit 0 + version capture → mark `verified`.
-3. Exit non-zero with any code other than 124/137/127 → **on `OS = windows-bash`, do NOT mark `unverified` yet** — a stale PATH is not a failed install; run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/fix-windows-path.sh" --probe=<binary>` and follow the rc ladder in `references/audit-and-verify.md §Windows branch` (rc 0 = `verified` + "restart terminal", NOT a halt). Full PATH triage table + the destructive methods that must never be used: `references/windows-path.md`. Manual per-tool install commands (the non-skill path): `plugins/mega-sdd/references/tooling-install.md`. On every other OS, mark `unverified` and add to the halt list.
+3. Exit non-zero with any code other than 124/137/127 → **on `OS = windows-bash`, do NOT mark `unverified` yet** — a stale PATH is not a failed install; run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/fix-windows-path.sh" --probe=<binary>` and follow the rc ladder in `references/audit-and-verify.md §Windows branch` (rc 0 = `verified` + "restart terminal", NOT a halt; full triage: `references/windows-path.md`; manual per-tool commands: `plugins/mega-sdd/references/tooling-install.md`). On every other OS, mark `unverified` and add to the halt list.
 
-Emit chat output:
-
-```
-Verifying...
-  ✓ <tool> v<version>
-  ↻ <tool> (installed — resolves in a new shell; restart the terminal)
-  ✗ <tool> (install ran but verify failed — try `hash -r` and re-run; OR check PATH)
-```
+Emit one line per tool: ✓ verified (version) / ↻ installed-but-resolves-in-a-new-shell (restart the terminal) / ✗ verify failed (`hash -r` then re-run, or check PATH).
 
 If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`, or subtype `path_stale_pending_restart` when the probe succeeded but this shell cannot see it.
 
 ## Step 7: Summary + handoff
 
-Emit chat summary:
-
-```
-✅ Install complete: <N> verified, <M> failed, <K> skipped
-  Verified: <tool list>
-  Failed: <tool list with one-line reason>
-  Skipped: <sudo-required tool list — instructed user to run manually>
-
-Memory: outcomes written to <path>
-Re-run check anytime: /mega-sdd:install-deps --force-recheck
-```
+Emit the chat summary: verified / failed (one-line reason each) / skipped-sudo counts + tool lists, and the re-run hint (`/mega-sdd:install-deps`).
 
 If `--auto` flag → emit handoff YAML per §Handoff emission.
 
@@ -226,8 +173,6 @@ Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under 
 6. Memory write happens AFTER verify pass — never record "installed" on partial state.
 7. Skip tools with no matching matrix entry AND no working fallback — emit warning, don't halt entire batch.
 8. NEVER treat `command -v <tool>` as proof a tool works — it may only ever yield `missing`. A Windows App Execution Alias stub resolves on PATH and exits 49. Promotion to `present` requires an execution probe.
-9. NEVER write PATH with `reg add` from Git Bash — the `reg` parser mangles backslashes and semicolons, prints `ERROR: Invalid syntax` **while returning RC=0**, and writes nothing or writes partially.
-10. NEVER hand-write a `.reg` file for `reg import` — a wrong `hex(2)` UTF-16LE encoding imports "successfully" while storing a corrupt value (observed: a 798-char USER PATH truncated to 92). NEVER use `setx PATH` either — it truncates at 1024 chars and expands `%VAR%`, destroying `REG_EXPAND_SZ`. The only sanctioned path writer is `scripts/fix-windows-path.sh`.
-11. ALWAYS back up the current PATH before modifying it — `fix-windows-path.sh` refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
-12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent. An execution probe can block where a builtin cannot; `semgrep --version` alone measures 3.9 s warm on macOS, and v5.8.0 shipped these probes with no timeout and no pre-filter, which stalled an audit on a corporate Windows machine. Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
-13. NEVER hard-code that bound as a literal at a probe site, and NEVER let its absence become a verdict about a tool. Stock macOS ships neither `timeout` nor `gtimeout`, so a literal prefix exits 127 on every probe there and would report every installed tool `missing` — the exact false-`missing` class rule 12 exists to prevent. Keep `-k 2` whenever a bound *does* resolve: GNU `timeout` alone sends SIGTERM and then WAITS for the child. Under Git Bash (MSYS2) that SIGTERM still lands — the runtime injects an `ExitProcess` thread and escalates to `TerminateProcess` after ~10 s, so the unescalated worst case is a bounded overshoot, not a hang — but `-k 2` is what makes the ceiling a number this procedure owns rather than an MSYS2 runtime implementation detail.
+9. The ONLY sanctioned Windows PATH writer is `scripts/fix-windows-path.sh` — `reg add` / hand-written `.reg` imports / `setx PATH` each corrupt or truncate the value while REPORTING success (full failure catalog: `references/windows-path.md`); the script refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
+12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent (the v5.8.0 unbounded-probe stall class). Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
+13. NEVER hard-code the bound as a literal at a probe site, and NEVER let its absence become a verdict about a tool (stock macOS ships neither `timeout` nor `gtimeout` — a literal prefix would mint the exact false-`missing` class rule 12 prevents). Bound-resolution + the `-k 2` rationale: `references/audit-and-verify.md §Probe contract`.
