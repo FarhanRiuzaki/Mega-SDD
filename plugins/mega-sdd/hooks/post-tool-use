@@ -140,7 +140,64 @@ if [ -n "$SC_CWD" ]; then
                 "") : ;;                          # unextractable → python leg
                 *) SC_V7_DONE=2 ;;                # out-of-tree write → never journaled anyway
               esac
-              [ "$SC_V7_DONE" -eq 2 ] && exit 0
+              if [ "$SC_V7_DONE" -eq 2 ]; then
+                # ── №G (v7.5.0) auto-aware tier S: LOCKED-edit notice, 0 fork ──
+                # Path probed against .locked-files-index.json with builtins —
+                # a hit emits ONE additionalContext line so an inline edit of a
+                # claim-anchored file never drifts silently; no match → silent.
+                # Non-blocking by construction (PostToolUse cannot deny).
+                SC_CTX=""
+                SC_NIDX="${SC_ROOT}/.mega-sdd/.locked-files-index.json"
+                if [ -f "$SC_NIDX" ] && [ -n "$SC_FP" ]; then
+                  case "$SC_FP" in
+                    "${SC_ROOT}"/*)
+                      SC_NREL="${SC_FP#"${SC_ROOT}"/}"
+                      SC_NC=""
+                      { SC_NC="$(<"$SC_NIDX")"; } 2>/dev/null || SC_NC=""
+                      case "$SC_NC" in
+                        *"\"${SC_NREL}\""*)
+                          _snr="${SC_NC#*\"${SC_NREL}\"}"
+                          _snr="${_snr#*[}"
+                          _snr="${_snr#*\"}"
+                          SC_NREF="${_snr%%\"*}"
+                          SC_NREF="${SC_NREF//\\/}"; SC_NREF="${SC_NREF//\"/}"
+                          SC_NRELC="${SC_NREL//\\/}"; SC_NRELC="${SC_NRELC//\"/}"
+                          SC_CTX="mega-sdd: ${SC_NRELC} terikat ke claim [LOCKED] (ref: ${SC_NREF}). Kalau kontrak/skema ikut berubah → tawarkan /mega-sdd:sync ke user; kalau hanya bug fix internal → lanjut."
+                          ;;
+                      esac
+                      ;;
+                  esac
+                fi
+                # ── №G auto_verify_on_edit (config opt-in, DEFAULT FALSE) ──
+                # true + the edited file appears in a unit's target_files with an
+                # acceptance_test → one-line offer to run that unit's acceptance.
+                # The opt-in path pays ≤2 forks (grep) — the default path pays 0.
+                if [ -n "${SC_NREL:-}" ] || [ -n "$SC_FP" ]; then
+                  SC_AVE=0
+                  if [ -f "${SC_ROOT}/.mega-sdd/config.yaml" ]; then
+                    while IFS= read -r _avl || [ -n "$_avl" ]; do
+                      if [[ "$_avl" =~ ^[[:space:]]*auto_verify_on_edit:[[:space:]]*true ]]; then SC_AVE=1; break; fi
+                    done < "${SC_ROOT}/.mega-sdd/config.yaml" 2>/dev/null
+                  fi
+                  if [ "$SC_AVE" -eq 1 ]; then
+                    SC_AREL="${SC_FP#"${SC_ROOT}"/}"
+                    SC_AUNIT=""
+                    SC_AUNIT=$(grep -l -- "$SC_AREL" "${SC_ROOT}/.mega-sdd/vaults"/*/units/U-*.md 2>/dev/null) || SC_AUNIT=""
+                    if [ -n "$SC_AUNIT" ]; then
+                      IFS=$'\n' read -r SC_AUNIT1 <<< "$SC_AUNIT"
+                      if grep -q "acceptance_test" "$SC_AUNIT1" 2>/dev/null; then
+                        SC_AUID="${SC_AUNIT1##*/}"; SC_AUID="${SC_AUID%.md}"
+                        SC_AV_MSG="mega-sdd (auto_verify_on_edit): file yang di-edit ada di target_files unit ${SC_AUID} yang punya acceptance_test — tawarkan ke user: jalankan \\`bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<root> --unit=${SC_AUID}\\`? (tawaran satu baris, jangan auto-run)."
+                        if [ -n "$SC_CTX" ]; then SC_CTX="${SC_CTX} ${SC_AV_MSG}"; else SC_CTX="$SC_AV_MSG"; fi
+                      fi
+                    fi
+                  fi
+                fi
+                if [ -n "$SC_CTX" ]; then
+                  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' "$SC_CTX"
+                fi
+                exit 0
+              fi
               ;;
             "") : ;;                              # unextractable → python leg
             *) exit 0 ;;                          # non-Write|Edit cannot arrive via the matcher (№C) — nothing to do

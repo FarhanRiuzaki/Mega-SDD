@@ -138,16 +138,86 @@ if [ -n "$SC_CWD" ]; then
             fi
             SC_GG_C=""
             { SC_GG_C="$(<"$SC_GG")"; } 2>/dev/null || SC_GG_C=""
+            SC_ARMED_HIT=0
             if [ -n "$SC_GG_C" ]; then
               case "$SC_GG_C" in
-                *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) : ;;  # engaged_sessions map hit → armed → full path
+                *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) SC_ARMED_HIT=1 ;;  # engaged_sessions map hit → armed
                 *"\"session_id\": \"$SC_SID\""*|*"\"session_id\":\"$SC_SID\""*)
                   case "$SC_GG_C" in
-                    *'"chain_engaged": true'*|*'"chain_engaged":true'*) : ;;  # armed → full path
+                    *'"chain_engaged": true'*|*'"chain_engaged":true'*) SC_ARMED_HIT=1 ;;  # armed
                     *) exit 0 ;;   # this session never engaged → tier S
                   esac ;;
                 *) exit 0 ;;       # neither the map nor the top record knows this session → tier S
               esac
+            fi
+            # ── №G Option B (v7.5.0, user-approved): 0-python ARMED fast path ──
+            # An ARMED session used to always fall through to python. The union
+            # protected-fragment filter above is a spoof-proof SUPERSET of every
+            # moat pattern, so an innocent payload that reaches here can only
+            # need one more thing: the GateGuard LOCKED-file check. That probe
+            # is a builtin substring match against .locked-files-index.json —
+            # FAIL-CLOSED on every doubt (unreadable index, stale index vs a
+            # newer binding.md, unextractable/relative/backslashed file path):
+            # doubt falls through to the full python path, never exits silently.
+            # A LOCKED-indexed file also falls through — GateGuard's deny-once
+            # (and its state write) stays python, exactly as before.
+            if [ "$SC_ARMED_HIT" -eq 1 ]; then
+              if [ "$SC_TOOL" = "Bash" ]; then
+                # Innocent armed Bash: the anti-self-bypass battery only ever
+                # acts on protected-fragment commands — none present — exit.
+                exit 0
+              fi
+              # gateguard disabled by config → the LOCKED check is off entirely
+              SC_GG_OFF=0
+              if [ -f "${SC_ROOT}/.mega-sdd/config.yaml" ]; then
+                while IFS= read -r _obl || [ -n "$_obl" ]; do
+                  if [[ "$_obl" =~ ^[[:space:]]*gateguard:[[:space:]]*false ]]; then SC_GG_OFF=1; break; fi
+                done < "${SC_ROOT}/.mega-sdd/config.yaml" 2>/dev/null
+              fi
+              [ "$SC_GG_OFF" -eq 1 ] && exit 0
+              SC_IDX="${SC_ROOT}/.mega-sdd/.locked-files-index.json"
+              # lazy-rebuild parity: a binding newer than the index (or an
+              # absent index while bindings exist) must take the python path
+              # so build-locked-index runs exactly as before
+              SC_NEWEST=""
+              for _obb in "${SC_ROOT}/.mega-sdd/vaults"/*/binding.md; do
+                [ -f "$_obb" ] || continue
+                if [ -z "$SC_NEWEST" ] || [ "$_obb" -nt "$SC_NEWEST" ]; then SC_NEWEST="$_obb"; fi
+              done
+              if [ -n "$SC_NEWEST" ]; then
+                if [ ! -f "$SC_IDX" ] || [ "$SC_NEWEST" -nt "$SC_IDX" ]; then
+                  SC_ARMED_HIT=2   # stale/missing index → python (rebuild + check)
+                fi
+              fi
+              if [ "$SC_ARMED_HIT" -eq 1 ]; then
+                if [ ! -f "$SC_IDX" ]; then
+                  exit 0   # no bindings, no index → GateGuard inert (greenfield)
+                fi
+                SC_IDX_C=""
+                { SC_IDX_C="$(<"$SC_IDX")"; } 2>/dev/null || SC_IDX_C=""
+                if [ -n "$SC_IDX_C" ]; then
+                  SC_FP2=""
+                  case "$STDIN_JSON" in
+                    *'"file_path"'*)
+                      _obf="${STDIN_JSON#*\"file_path\"}"
+                      _obf="${_obf#*\"}"
+                      SC_FP2="${_obf%%\"*}"
+                      ;;
+                  esac
+                  case "$SC_FP2" in
+                    *\\*) : ;;                     # escaped (Windows) → python
+                    "${SC_ROOT}"/*)
+                      SC_REL2="${SC_FP2#"${SC_ROOT}"/}"
+                      case "$SC_IDX_C" in
+                        *"\"${SC_REL2}\""*) : ;;   # LOCKED-indexed → python (GateGuard deny-once)
+                        *) exit 0 ;;                # not locked → 0-python allow
+                      esac
+                      ;;
+                    *) : ;;                         # relative/unextractable → python (fail-closed)
+                  esac
+                fi
+                # unreadable/empty index → fall through (fail-closed)
+              fi
             fi
             # unreadable/empty state → fail closed (fall through)
           fi

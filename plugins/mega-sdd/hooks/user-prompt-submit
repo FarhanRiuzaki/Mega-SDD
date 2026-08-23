@@ -49,5 +49,30 @@ fi
 [ -d "${ROOT_SS}/.mega-sdd" ] || exit 0
 
 # The gateway filter marker — one token, verbatim, unconditional in SDD projects.
+# CONTRACT NOTE (docs/gateway-contract.md, amended v7.5.0 №G): the tag stays
+# the FIRST line, byte-verbatim — the completion-census offer below appends a
+# SECOND line only when it fires; the gateway filter keys on line 1.
 echo "mega-sdd-trace:turn"
+
+# ── №G (v7.5.0) census kalimat "selesai" → TAWARAN sync (bukan invoke) ───────
+# Pure shell, 0 forks (contract intact). Fires only when BOTH hold:
+#  (a) change signal — the dirty journal has rows ([ -s ]);
+#  (b) the prompt carries a completion keyword on a word boundary (the census;
+#      tuned by tests/hooks/completion-census.test.sh — 'mudah' must NOT hit
+#      'udah'). The line instructs the model to OFFER /mega-sdd:sync in one
+#      line — never to auto-invoke (the :13(c) lesson stands).
+if [ -s "${ROOT_SS}/.mega-sdd/codebase/.dirty-paths.jsonl" ]; then
+  UP_PROMPT=""
+  case "$STDIN_JSON" in
+    *'"prompt"'*)
+      _up="${STDIN_JSON#*\"prompt\"}"
+      _up="${_up#*\"}"
+      UP_PROMPT="${_up%%\"*}"
+      ;;
+  esac
+  if [ -n "$UP_PROMPT" ] \
+     && [[ "$UP_PROMPT" =~ (^|[^[:alnum:]])([Uu]dah|[Ss]udah|[Ss]elesai|[Bb]eres|[Kk]elar|[Cc]ommit|[Pp]ush|[Mm]erge[d]?|[Dd]one|PR)([^[:alnum:]]|$) ]]; then
+    echo "mega-sdd: user menyiratkan pekerjaan selesai dan ada perubahan kode ter-journal — TAWARKAN /mega-sdd:sync dalam SATU baris (jangan auto-invoke; kalau user menolak, lanjut tanpa mengungkit lagi)."
+  fi
+fi
 exit 0
