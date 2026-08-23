@@ -214,7 +214,7 @@ For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce
 
 ## See also
 
-- `plugins/mega-sdd/references/reading-map.md` — where to read at each pipeline stage (Iter 35)
+- `docs/mega-sdd/reading-map.md` — where to read at each pipeline stage (Iter 35)
 - `plugins/mega-sdd/references/paths.md` — canonical write paths (v3.4+ Iter 10)
 - `CHANGELOG.md` — per-iter behavior changes
 - `tests/scenarios/scenario-6-recovery-from-halt.md` — generic halt recovery walkthrough

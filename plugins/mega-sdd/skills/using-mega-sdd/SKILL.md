@@ -85,4 +85,4 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 
 ## Reference
 
-Pipeline-stage reading guide → `plugins/mega-sdd/references/reading-map.md`. Upgrade / compatibility → `plugins/mega-sdd/references/upgrade-from-old-version.md`.
+Pipeline-stage reading guide + upgrade/compatibility → repo docs (`docs/mega-sdd/reading-map.md`, `docs/mega-sdd/upgrade-from-old-version.md` — maintainer-facing, moved out of the shipped references/ in v7.4.0).

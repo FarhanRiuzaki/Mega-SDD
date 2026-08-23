@@ -56,7 +56,7 @@ Implementation deferred to Phase D after Phase A real-run proof. Current C2 halt
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
-C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `plugins/mega-sdd/references/fork-a-recovery-map.md`. Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The binding→units OQ-ID slice is hook-enforced today; CONFLICT-IDs / Hard Rules / vault→binding / units→bolts follow the same pattern.
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The binding→units OQ-ID slice is hook-enforced today; CONFLICT-IDs / Hard Rules / vault→binding / units→bolts follow the same pattern.
 
 ### Backward compatibility
 

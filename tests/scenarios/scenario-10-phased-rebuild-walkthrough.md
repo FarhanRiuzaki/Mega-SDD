@@ -135,7 +135,7 @@ Run pipeline again. Repeat for Phase 3.
 
 ## Related artifacts
 
-- `plugins/mega-sdd/references/reading-map.md` §Stage 2 (vault) — where to read at each phase
+- `docs/mega-sdd/reading-map.md` §Stage 2 (vault) — where to read at each phase
 - `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §suggested-phasing.md — KB phase plan format
 - `plugins/mega-sdd/skills/generate-intent/SKILL.md` Step 2.5 — --phase flag parsing
 
@@ -144,4 +144,4 @@ Run pipeline again. Repeat for Phase 3.
 - [scenario-4 — Legacy rebuild](scenario-4-legacy-rebuild.md) — single-phase legacy rebuild
 - [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md) — the end-to-end revamp concept guide (extraction → build → hand-off → sync)
 - [scenario-6 — Recovery from halt](scenario-6-recovery-from-halt.md) — if bind_conflict fires
-- `plugins/mega-sdd/references/upgrade-from-old-version.md` — if upgrading from older mega-sdd
+- `docs/mega-sdd/upgrade-from-old-version.md` — if upgrading from older mega-sdd

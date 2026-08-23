@@ -25,7 +25,7 @@ Each scenario:
 | **Legacy rebuild with phased plan (multi-phase)** | **[Scenario 10 — Phased rebuild walkthrough](scenario-10-phased-rebuild-walkthrough.md)** | **~3 hr** |
 | **Model tier override (cost/quality control)** | **[Scenario 11 — Model tier override](scenario-11-model-tier-override.md)** | **~5 min** |
 | **Code changed after "done" — continuous sync** | **[Scenario 12 — Continuous sync](scenario-12-continuous-sync.md)** | **~10 min** |
-| Upgrading from older mega-sdd | (not a scenario) See `plugins/mega-sdd/references/upgrade-from-old-version.md` | — |
+| Upgrading from older mega-sdd | (not a scenario) See `docs/mega-sdd/upgrade-from-old-version.md` | — |
 
 ## Before you start — install check
 

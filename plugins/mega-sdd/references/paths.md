@@ -244,7 +244,7 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 ## References
 
 - `commands/migrate-paths.md` — migration helper
-- `plugins/mega-sdd/references/upgrade-from-old-version.md` — legacy-layout upgrade guide
+- `docs/mega-sdd/upgrade-from-old-version.md` (repo docs, maintainer-facing since v7.4.0) — legacy-layout upgrade guide
 
 ## Derived caches (never state)
 

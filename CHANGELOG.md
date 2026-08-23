@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
 
+### №7 — maintainer references MOVED to `docs/mega-sdd/`
+- `fork-a-recovery-map.md`, `upgrade-from-old-version.md`, `reading-map.md` (±38 KB) moved out of the shipped `references/` — no skill Reads them at run time (grep-proven in the placement table); readers are humans/maintainers, and the installed plugin cache never shipped usable copies of repo-docs anyway. 11 pointers repointed (paths.md, halt-protocol.md, anchor body, plugin+repo README, scenarios ×4, platform-pins + s7a tests, the moved file's own cross-ref); in-plugin pointers now say "repo docs, maintainer-facing". Also fixed the repo README's stale "(4 since 6.8.0)" verb count.
+
 ### №2 — slice-design + `/mega-sdd:slice` REMOVED (BREAKING; owner decision at gate8)
 - Deleted: `skills/slice-design/` (SKILL + slice-procedure + refs, ≈40 KB), `commands/slice.md`, `tests/skill-triggering/slice.test.md`. Surface = **3 public verbs + 3 one-timers, exactly 6 command files**. `mega-sdd-extras` is NOT created — a second plugin gets built only if real demand appears (no-gimmick rail; git history preserves everything).
 - Ladder note: slice was a standalone NON-pipeline lane (command-only, no census — 6.8.0 record), so the pipeline-command demotion ladder does not govern it; the removal is an explicit owner decision recorded at the Fase 5 gate.
