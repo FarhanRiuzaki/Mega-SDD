@@ -135,4 +135,4 @@ handoff metadata.model_tiers + model_tier_sources blocks have the provenance tra
 ## See also
 
 - `plugins/mega-sdd/references/model-tiers.md` — full catalog (17 roles × tier + rationale)
-- `plugins/mega-sdd/references/reading-map.md` — Stage 7 cross-cutting (where overrides live)
+- `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

@@ -235,7 +235,7 @@ fi
 
 # ── doc pins ──
 SK="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
-UP="${ROOT}/plugins/mega-sdd/references/upgrade-from-old-version.md"
+UP="${ROOT}/docs/mega-sdd/upgrade-from-old-version.md"
 US="${ROOT}/plugins/mega-sdd/skills/generate-units/references/unit-schema.md"
 grep -qF 'files:` globs MUST be `**/`-prefixed' "$GR" && ok "HR-1: grammar doc mandates **/-prefixed globs" || fail "HR-1: grammar doc still shows the inert form"
 grep -qF 'NONE — stays v1.' "$GR" && ok "HR-2: mapping routes stateless-impossible types back to v1" || fail "HR-2: mapping still claims impossible v2 equivalents"

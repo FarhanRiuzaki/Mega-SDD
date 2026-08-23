@@ -268,7 +268,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | PRD revision arrived | `/mega-sdd ./new-prd.md` (routes to diff-vault) — or say "PRD revisi" |
 | Code drift periodic check | say "cek drift" |
 
-> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the public verbs (4 since 6.8.0) + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](plugins/mega-sdd/references/upgrade-from-old-version.md).
+> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the public verbs (3 since v7.4.0) + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](docs/mega-sdd/upgrade-from-old-version.md).
 
 </details>
 
