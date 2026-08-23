@@ -16,7 +16,7 @@ For solo developers or single-team: skip this scenario. Use default squad mode (
 
 ## Prerequisites
 
-- Mega-sdd v6+
+- Mega-sdd v7.4+
 - Existing project OR new project
 - Recommended: ast-grep installed
 - Clear understanding of team partition (which team owns what)
@@ -73,10 +73,8 @@ When mega-sdd detects `_meta/squads.yaml`, it:
 After generate-units:
 
 ```
-▶ Phase 4 of 5: invoking generate-units
-✓ Phase 4 of 5: generate-units → 18 units across 3 squads
-  [auto] lint-units: 18 HIGH grounding | all anchors verified
-  [auto] analyze-parallelism: max width per squad — be:5, fe:4, int:3 | total speedup 4.1x
+▶ Phase 3 of 4: invoking generate-units
+✓ Phase 3 of 4: generate-units → 18 units across 3 squads
 
 Squad partition:
   squad-be:           7 units (backend logic, models, migrations, API)
@@ -139,7 +137,7 @@ Cross-squad coupling REQUIRES interface notes — direct `depends_on` between sq
 When `auto` invokes `execute-bolts`, multi-squad mode auto-fires:
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts --per-squad --parallel
+▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel
   Spawning 3 Claude subagents (one per declared squad):
     • squad-be subagent (background)
     • squad-fe-web subagent (background)
@@ -191,7 +189,7 @@ After locking all 3 interfaces, resume the chain:
 Frontend + integrations subagents proceed:
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts --per-squad --parallel (resumed)
+▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel (resumed)
   squad-be subagent: continuing... 7 bolts processed
   squad-fe-web subagent: 6 bolts queued; consumer interfaces NOW locked → execute
   squad-integrations subagent: 3 bolts queued; execute
@@ -202,9 +200,7 @@ Frontend + integrations subagents proceed:
 ✓ squad-fe-web subagent: 6/6 bolts complete (wave-1: 4 parallel, wave-2: 2 sequential)
 ✓ squad-integrations subagent: 3/3 bolts complete (wave-1: 3 parallel)
 
-✓ Phase 5 of 5: execute-bolts → 16/16 complete (squad-unassigned 2 deferred per warning)
-  [auto] list-modules: 4/4 modules with squad-explicit units complete
-  [auto] emit-agents-md: AGENTS.md updated
+✓ Phase 4 of 4: execute-bolts → 16/16 complete (squad-unassigned 2 deferred per warning)
 ```
 
 ## Step 6 — Verify per squad
@@ -302,8 +298,8 @@ Fix: producer squad reviews + locks (`status: draft` → `status: locked`); add 
 
 Units that didn't match any partition rule. Either:
 - Refine squads.yaml to claim them (add new owns_* rule)
-- Manually edit unit frontmatter: `squad: <existing-squad-id>`
-- Accept and run them with `--squad=default` (single squad mode)
+- Assign them explicitly: edit unit frontmatter `squad: <existing-squad-id>`
+- Or run them with `execute-bolts --all` after the squad fan-out
 
 ## What you learned
 

@@ -21,7 +21,6 @@ Each scenario:
 | Something halted; need to recover | [Scenario 6 — Recovery from halt](scenario-6-recovery-from-halt.md) | 15 min |
 | Multi-architect (BE/FE/MW shared PRD) | [Scenario 7 — Multi-architect](scenario-7-multi-architect.md) | 60 min |
 | Starterkit-aware generation (auto-detected stack) | [Scenario 8 — Starterkit-aware generation](scenario-8-starterkit-aware-generation.md) | 30 min |
-| End-to-end intelligence layer test | [Scenario 9 — Flawless seamless intelligence](scenario-9-flawless-seamless-intelligence.md) | 30-40 min |
 | **Legacy rebuild with phased plan (multi-phase)** | **[Scenario 10 — Phased rebuild walkthrough](scenario-10-phased-rebuild-walkthrough.md)** | **~3 hr** |
 | **Model tier override (cost/quality control)** | **[Scenario 11 — Model tier override](scenario-11-model-tier-override.md)** | **~5 min** |
 | **Code changed after "done" — continuous sync** | **[Scenario 12 — Continuous sync](scenario-12-continuous-sync.md)** | **~10 min** |
@@ -69,7 +68,7 @@ Most users never invoke them directly. They're auto-invoked by the `/mega-sdd` c
 - Phase skills (chain-run): `generate-intent`, `scan-codebase` (on-demand), `bind-codebase`, `generate-units`, `execute-bolts`
 - Event-driven: "resolve OQ", "PRD revisi" (diff-vault), "cek drift"
 - Diagnostics (auto-run on classic; on-demand otherwise): "lint units", "cek parallelism", "status module", "generate AGENTS.md"
-- Maintenance verbs (still typed): `/mega-sdd:memory`, `/mega-sdd:migrate-paths` — plus "migrate hard rules" by phrase
+- Maintenance verbs (still typed): `/mega-sdd:migrate-paths`, `/mega-sdd:install-deps`, `/mega-sdd:update-plugin` — plus "migrate hard rules" by phrase
 
 Full migration map: [plugin README §Commands](../../plugins/mega-sdd/README.md#commands-youll-actually-use).
 
@@ -84,7 +83,7 @@ For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ## Feedback + questions
 
-Scenario walkthroughs written before 6.0.0 may show `/mega-sdd:<stage>` typed forms — those still route as plain text, but the registered commands are only the 4 verbs + 4 one-timers. If steps don't match your behavior:
+Scenario walkthroughs written before 6.0.0 may show `/mega-sdd:<stage>` typed forms — those still route as plain text, but the registered commands are only the 3 verbs + 3 one-timers. If steps don't match your behavior:
 1. Check your installed version: type `/plugin` in Claude Code (works in any project)
 2. Update plugin: `/mega-sdd:update-plugin`
 3. Report mismatches with concrete steps reproduced

@@ -5,7 +5,7 @@
 
 ## Prerequisites
 
-- Mega-sdd v6+
+- Mega-sdd v7.4+
 - Existing PHP/Laravel project with at least one model + endpoint
 - `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
 
@@ -98,15 +98,15 @@ All other login behavior unchanged.
 /mega-sdd ./prd-login-extension.md
 ```
 
-Chain proposal: 5 phases (generate-intent → scan → bind → units → bolts). Click **Run**.
+Chain proposal: 4 phases (generate-intent → bind-codebase --express → generate-units → execute-bolts); `--classic` inserts scan-codebase (5). Click **Run**.
 
 ## Step 2 — Watch the field-level magic
 
 After `bind-codebase` completes:
 
 ```
-▶ Phase 3 of 5: invoking bind-codebase
-✓ Phase 3 of 5: bind-codebase → 2 claims, 0 conflicts
+▶ Phase 2 of 4: invoking bind-codebase
+✓ Phase 2 of 4: bind-codebase → 2 claims, 0 conflicts
   Implementation State Map:
     C-001 (POST /api/login endpoint exists)            | CONFIRMED | IMPLEMENTED | LoginController.php:12 | high
     C-002 (POST /api/login accepts {nip, nama, password}) | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:15 | high
@@ -118,9 +118,8 @@ The KEY moment: bind-codebase detected that **endpoint exists but is missing the
 ## Step 3 — Generated unit knows EXACTLY what to do
 
 ```
-▶ Phase 4 of 5: invoking generate-units
-✓ Phase 4 of 5: generate-units → 1 unit
-  [auto] lint-units: 1 HIGH grounding | anchors 2/2 verified
+▶ Phase 3 of 4: invoking generate-units
+✓ Phase 3 of 4: generate-units → 1 unit
 ```
 
 Inspect the unit:
@@ -137,7 +136,7 @@ id: U-001
 title: Add nama field to login endpoint
 module: M-auth
 task_type: extend                                # ← from PARTIAL_FIELDS_MISSING state
-vault_source: 04-flows.md#POST-login
+vault_source: flows.md#POST-login
 grounding_confidence: HIGH
 target_files:
   - path: app/Http/Controllers/Api/LoginController.php
@@ -234,7 +233,7 @@ The unit is COMPLETE and CONTEXTUAL. Bolt knows:
 ## Step 4 — Execute bolt
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts
+▶ Phase 4 of 4: invoking execute-bolts
   Pre-flight: snapshot LoginController.php sha256, snapshot token gen pattern
   Running superpowers TDD...
   ✓ Test added (tests/Feature/LoginExtensionTest.php)
@@ -242,7 +241,7 @@ The unit is COMPLETE and CONTEXTUAL. Bolt knows:
   Post-flight: Hard Rule do-not-modify-token-generation → PASS (token gen unchanged)
   Post-flight: response-shape-locked → PASS (401 response preserved)
   ✓ Commit: "feat: validate nama field on POST /api/login (extend)"
-✓ Phase 5 of 5: execute-bolts → 1/1 complete
+✓ Phase 4 of 4: execute-bolts → 1/1 complete
 ```
 
 ## Step 5 — Verify
@@ -285,13 +284,7 @@ With field-level detection: the skill DETECTS the gap, generates an extend unit 
 
 ### Field-level diff not firing
 
-Check `codebase-map.md` frontmatter:
-
-```bash
-head -10 .mega-sdd/codebase/codebase-map.md
-```
-
-Need `precision_tier: ast` (ast-grep engine). If `precision_tier: regex`, field-level analysis disabled; falls back to v1.6 binary (IMPLEMENTED or NEW).
+On the express default there is no `codebase-map.md` — check the GROUND digest (`.mega-sdd/state.json`) instead; `codebase-map.md` + `precision_tier` exist only on the `--classic` spine. Without ast-grep, field-level analysis is disabled; falls back to binary (IMPLEMENTED or NEW).
 
 Install ast-grep, then re-run the scan → bind → units hops (typed skill commands were removed at 6.0.0 — use phrases, or `/mega-sdd --resume` to let the chain re-propose):
 

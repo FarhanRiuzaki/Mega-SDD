@@ -16,14 +16,14 @@
   - `app/Models/User.php` uses `HasRoles` trait (Spatie/permission)
   - `database/seeders/RoleSeeder.php` creates `admin` and `user` roles
 - PRD at `<project_root>/prd.md` describing "User management feature with CRUD page"
-- mega-sdd plugin v6+ installed
+- mega-sdd plugin v7.4+ installed
 
 ## Scenario steps
 
 ### Step 1: Invoke the front door on the classic spine
 
 ```
-/mega-sdd --classic
+/mega-sdd ./prd.md --classic
 ```
 
 The front door detects PRD + starterkit + no vault → classic starterkit-first chain (Phase 1: scan-codebase).
@@ -41,7 +41,7 @@ test -f .mega-sdd/codebase/starterkit-context.yaml && cat .mega-sdd/codebase/sta
 - `starterkit_context.authz.lib` == `spatie/permission`
 - `starterkit_context.ui_ux.notification_lib` == `sweetalert2`
 - `starterkit_context.libs[]` includes ≥3 entries (laravel/sanctum, spatie/laravel-permission, sweetalert2)
-- `cache_key.composer_lock_sha256` is a 64-char hex string
+- `cache_signatures.locks_sha256.php` is a 64-char hex string; `cache_signatures.app_ecosystem` == `php` (the `cache_key.composer_lock_sha256` form is the deprecated v1.0 schema, treated fully-stale on read)
 - `_source:` arrays present for each block (anti-halu citation rail)
 
 Deep-scan is triggered automatically by scan-codebase Step 10.5 when framework confidence ≥ MEDIUM.
@@ -121,7 +121,7 @@ ALL of:
 Run this scenario against the user's actual starterkit (spec §6.4 acceptance criterion #10):
 
 ```bash
-cd /Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/base-laravel-26
+cd <your-starterkit-repo>
 # in Claude Code: say "scan codebase ini"
 cat .mega-sdd/codebase/starterkit-context.yaml
 ```

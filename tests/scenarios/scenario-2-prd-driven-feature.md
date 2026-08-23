@@ -53,7 +53,7 @@ Halts may re-engage you on conflicts, business OQs, hard-rule violations.
 ## Step 3 — Generate-intent reads the PRD
 
 Mega-sdd extracts vault from PRD. Most info auto-parsed; minimal Q&A. Outputs:
-- 7 vault files
+- 4 vault files (vault.md, model.md, flows.md, constraints.md) + vault.json
 - ~8 OQs (per PRD's "Open questions" section + auto-classifier additions)
 
 ```
@@ -79,7 +79,7 @@ OQ-001 [P1] [business / blocking]:
     4. Defer to legal team
 ```
 
-Pick based on your context. Memory writes decision; future similar OQs in this project will reference this.
+Pick based on your context.
 
 After all P1 resolved:
 
@@ -87,15 +87,9 @@ After all P1 resolved:
 ✓ Phase 1 resumed: all P1 business OQs resolved (4 resolved)
 ```
 
-## Step 5 — Scan codebase + bind
+## Step 5 — Bind (express)
 
-Mega-sdd inspects existing code:
-
-```
-  Found: 47 classes, 142 methods, 12 routes, 6 models
-  Test framework: vitest + playwright
-  Naming: PascalCase classes; kebab-case routes
-```
+GROUND already ran at the front door: derive-state + symbol index (script, seconds). No scan phase on the express default — `--classic` restores it.
 
 Then binding:
 
@@ -118,8 +112,6 @@ Two PARTIAL_FIELDS_MISSING claims signal the field-level diff the binding pass c
 ```
 ▶ Phase 3 of 4: invoking generate-units
 ✓ Phase 3 of 4: generate-units → 12 units
-  [auto] lint-units: 11 HIGH | 1 MEDIUM | 0 LOW grounding; anchors 28/28 verified
-  [auto] analyze-parallelism: max width 4 | speedup 2.4x
 
 Module breakdown:
   M-auth (3 units)         — extends existing User model for patient role
@@ -142,7 +134,7 @@ id: U-001
 title: Extend User model with patient fields
 module: M-auth
 task_type: extend                        # ← key: PARTIAL_FIELDS_MISSING
-vault_source: 03-data-model.md#Patient
+vault_source: model.md#Patient
 grounding_confidence: HIGH
 target_files:
   - path: app/Models/User.php
@@ -180,7 +172,7 @@ The unit knows exactly what fields to ADD (phone, role) while preserving existin
 ## Step 7 — Execute bolts
 
 ```
-▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel
+▶ Phase 4 of 4: invoking execute-bolts --all --parallel
   Wave 1 (4 parallel): U-001 U-005 U-008 U-010
   ✓ Wave 1 complete
   Wave 2 (3 parallel): U-002 U-006 U-009
@@ -190,8 +182,6 @@ The unit knows exactly what fields to ADD (phone, role) while preserving existin
   Wave 4 (2 sequential): U-004 U-012
   ✓ Wave 4 complete
 ✓ Phase 4 of 4: execute-bolts → 12/12 complete (0 halts; 8 min total)
-  [auto] list-modules: 4/4 modules completed
-  [auto] emit-agents-md: AGENTS.md regenerated
 ```
 
 Atomic git commits, one per unit. Each commit:
@@ -216,7 +206,7 @@ bun dev
 # Visit / — clinic app live
 ```
 
-Open `AGENTS.md` — tool-agnostic export listing project shape, test commands, conventions, key decisions.
+Want the tool-agnostic `AGENTS.md` export (project shape, test commands, conventions, key decisions)? Run "generate AGENTS.md" on demand — auto-emit is classic-spine only.
 
 ## Common pitfalls
 

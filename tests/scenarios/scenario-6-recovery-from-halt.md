@@ -18,7 +18,6 @@ Halts are mega-sdd's safety net — they fire when anti-hallucination rails dete
 | `hard_rule_unparseable` | Bolt's Hard Rule has bad syntax | execute-bolts pre-flight |
 | `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad |
 | `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X |
-| `memory_schema_mismatch` | Memory file version differs from skill version | any phase reading memory |
 | `oq_business_p1_unresolved` | P1 business OQ blocking downstream | bind-codebase (strict mode) |
 | `quality_gate_failed` | extract-intelligence wave failed quality checks twice | extract-intelligence |
 
@@ -154,9 +153,10 @@ If unit isn't critical:
 
 ```bash
 git checkout app/Http/Controllers/Api/LoginController.php   # revert
-echo "U-001: skipped per user; recovery 2026-05-21" >> .mega-sdd/vaults/login-extension/.memory/bolt-outcomes.json
 /mega-sdd --resume    # continues from next unit
 ```
+
+`/mega-sdd --resume` skips a reverted unit on its own.
 
 ## Scenario walkthrough — `bind_conflict`
 
@@ -191,6 +191,8 @@ blocker:
 resolve-oq --binding
 ```
 
+(A converging `--deep` chain — the default — enters resolve-oq itself on `bind_conflict`; the manual walk below applies under `--no-converge`.)
+
 Interactive walker:
 
 ```
@@ -198,13 +200,9 @@ CONFLICT C-007:
   Vault: "Auth uses Bearer tokens"
   Code:  "Auth uses session cookies"
   
-  Context from memory:
-    Past auth conflicts in this project: 3/3 resolved as SPLIT
-    Cross-project pattern: 8/10 prefer KEEP_CODE for established auth
-  
   Recommendation: SPLIT — Sanctum for /api/*; sessions for web (recommended)
-  Rationale: Past project pattern + Laravel best practice + minimal churn
-  Source: .mega-sdd/memory/decisions.md rows 12,18 + ~/.mega-sdd/memory/patterns.md §auth
+  Rationale: Laravel best practice (framework pack §auth) + minimal churn
+  Source: scan citation routes/api.php:12 + config/sanctum.php:1 (KB/vault/codebase-grounded)
   Fallback-if-wrong: If client requires single-auth uniformity, revisit
   Confidence: HIGH
   
@@ -215,7 +213,7 @@ CONFLICT C-007:
     4. DEFER — handle later
 ```
 
-Pick (1). Memory writes the decision. Resume:
+Pick (1). The resolution lands in the vault (binding annotation + `constraints.md ## Open Questions`). Resume:
 
 ```
 /mega-sdd --resume
@@ -255,15 +253,7 @@ Option A: Re-dispatch the wave (one more try):
 
 Wave checkpoints let it re-run only Wave 3 (not start from Wave 1).
 
-Option B: Accept partial coverage:
-
-```
-extract-intelligence ~/projects/legacy/ --allow-gaps --resume
-```
-
-Wave proceeds with thinner citations. Surface in chat as warning; user reviews KB README for gaps.
-
-Option C: Manually inspect partial output, decide accept/reject:
+Option B: Manually inspect partial output, decide accept/reject:
 
 ```bash
 ls .mega-sdd/knowledge-base/10-domains/
@@ -322,16 +312,6 @@ Same halt fires after `--resume`. You haven't fixed the underlying issue. Read t
 - For `bind_conflict`: did `resolve-oq --binding` actually save the resolution? Check vault.json changelog.
 - For `dedup_ambiguous`: did you actually update target_files in the unit?
 
-### `--memory-off` to bypass memory schema halt
-
-If `memory_schema_mismatch` halts the chain + you don't want to run migration immediately:
-
-```
-/mega-sdd --resume --memory-off
-```
-
-Disables memory layer for this run. Chain proceeds. Migrate later via `mega-sdd:memory` skill.
-
 ### Force-commit after `hard_rule_violated`
 
 ```bash
@@ -344,7 +324,7 @@ execute-bolts U-XXX --force-skip-postflight
 
 # Additional halt walkthroughs
 
-These 10 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the 46+ halt types in the canonical registry (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+These 10 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the halt families in `references/halt-families/` (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
 
 ## Scenario walkthrough — `handoff_missing`
 
@@ -381,7 +361,7 @@ details:
   failing_skill: generate-units
   missing_paths: ["<vault>/units/U-007.md", "<vault>/units/U-008.md"]
   present_paths: ["<vault>/units/U-001.md", ..., "<vault>/units/U-006.md"]
-  handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"
+  handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"  # optional replay copy; the orchestrator reads chat output
 next_action:
   type: re_run_producer
   hint: "Producer declared 8 unit files but only wrote 6. Re-run generate-units standalone to reproduce. Likely cause: crash mid-loop."
@@ -418,7 +398,7 @@ Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §part
 ```bash
 resolve-oq <vault-path>       # interactive Q&A walk through unresolved OQs
 # OR
-# Edit 03-open-questions.md directly + add "status: resolved" + answer; then re-run upstream skill
+# Edit constraints.md ## Open Questions directly + add "status: resolved" + answer; then re-run upstream skill
 ```
 
 If the OQ is `category: tech` and can be auto-resolved via codebase scan: re-run `bind-codebase` (it auto-resolves tech OQs with HIGH classification_confidence).
@@ -439,7 +419,7 @@ conflict_new: "new PRD says: payment provider = Adyen"
 options: ["supersede", "keep_vault", "capture_both"]
 ```
 
-**Recovery:** review the conflict context, pick one of the 3 options, then re-run `diff-vault` with `--resolve=<option>` OR edit vault markdown directly + re-run.
+**Recovery:** review the conflict context, pick one of the 3 options, then edit the vault markdown directly and re-run `diff-vault`.
 
 ## Scenario walkthrough — `dispatch_prompt_too_large`
 
@@ -506,20 +486,6 @@ execute-bolts U-<producer-unit> --squad=producer-squad
 ```
 
 Cross-refs: `generate-units/references/cross-squad-interfaces.md`.
-
-## Scenario walkthrough — `memory_schema_mismatch`
-
-**When you'll see it.** A persisted memory file's `schema_version` doesn't match the current code's expected schema. Mega-sdd's memory subsystem detected the drift and refuses to read without explicit migration consent.
-
-**Recovery:**
-
-```bash
-/mega-sdd:memory migrate         # interactive migration walk; shows diff + asks confirm
-# OR
-/mega-sdd:memory --memory-off    # one-off: ignore memory for this run
-```
-
-For new projects: this halt should never fire on first run. If it fires after a plugin upgrade: that's expected — run `memory migrate`.
 
 ---
 
@@ -607,14 +573,13 @@ which <tool>                  # verify path
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Recovery forks on subtype.
 
-### `subtype: pdf_render_failed` (emit-fsd)
+### `type: pdf_render_failed` (emit-fsd)
 
 ```yaml
 blocker:
-  type: quality_gate_failed
+  type: pdf_render_failed
   source_skill: emit-fsd
   details:
-    subtype: pdf_render_failed
     md2pdf_stderr_tail: "md2pdf: pandoc HTML render failed"
 ```
 
@@ -635,7 +600,7 @@ Internal bug — fsd-template.md has a slot marker that section-mapping.md has n
 /mega-sdd:emit fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
 ```
 
-### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
+### `type: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
 
 generate-units emitted `units_with_starterkit_rules > 0` BUT scan-codebase's starterkit-context.yaml flags `partial: true`. Rules may cite incomplete framework conventions.
 
@@ -707,11 +672,11 @@ Recovery: user explicitly rejected the AI retrofit (auto-add scopes block). 3 pa
 # Then re-run
 generate-intent ./prd.md
 
-# Option 2: opt-out of multi-scope; run as single-scope (legacy)
-generate-intent ./prd.md --single-scope
+# Option 2: opt-out of multi-scope; run with all scopes as one
+generate-intent ./prd.md --scope=all
 
-# Option 3: accept retrofit (changed mind)
-generate-intent ./prd.md --retrofit-scopes
+# Option 3: accept retrofit (changed mind) — re-run plainly; the retrofit bridge re-offers
+generate-intent ./prd.md
 ```
 
 ### `prd_retrofit_low_confidence`
@@ -732,10 +697,10 @@ Recovery: AI retrofit subagent unsure about scope inference. User reviews:
 cat <project>/.mega-sdd/retrofit-preview.md
 
 # Then choose:
-# (a) Accept anyway despite LOW confidence:
-generate-intent ./prd.md --accept-low-confidence-retrofit
-# (b) Fall back to single-scope:
-generate-intent ./prd.md --single-scope
+# (a) Accept anyway despite LOW confidence — re-run and accept at the interactive prompt:
+generate-intent ./prd.md
+# (b) Fall back to all scopes as one:
+generate-intent ./prd.md --scope=all
 # (c) Cancel + manually retrofit PRD frontmatter:
 # Edit PRD; re-run
 ```
@@ -844,8 +809,8 @@ cat <vault>/units/U-012.md
 # Step 3: edit unit OR escalate
 # If acceptance_test wrong: edit acceptance_test field; re-run
 # If target_files too broad: tighten scope; re-run
-# If genuinely blocked: emit OQ-blocker for human review:
-resolve-oq --emit-blocker "U-012 cannot pass acceptance test as specified"
+# If genuinely blocked: author the OQ into `constraints.md ## Open Questions`
+# for human review (e.g. "U-012 cannot pass acceptance test as specified")
 ```
 
 ### `bolt_introduces_locked_drift`
@@ -872,7 +837,7 @@ git checkout <pre-bolt-state>
 # Option 2: amend constitution to allow drift (requires explicit user approval)
 # Edit <vault>/_meta/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
 # Re-run bolt:
-execute-bolts U-007 --confirm-locked-drift
+execute-bolts U-007 --force   # audit-logged
 ```
 
 ### `self_assessment_missing`
@@ -894,8 +859,8 @@ Recovery (bolt subagent skipped mandatory output):
 # Inspect what bolt-report.md actually contains
 cat <vault>/bolts/U-009/bolt-report.md
 
-# Re-run bolt with explicit self-assessment instruction:
-execute-bolts U-009 --strict-self-assessment
+# Re-run the bolt:
+execute-bolts U-009
 
 # If repeat failure: likely bolt subagent prompt drift; file plugin bug
 ```
@@ -909,18 +874,10 @@ execute-bolts U-009 --strict-self-assessment
 - `--resume` is universal recovery (CWD-driven + checkpoint-aware)
 - A failed bolt's commit already landed (detect-after); the gate blocks further bolts until the user fixes forward or `git revert`s it
 - Multiple recovery paths per halt type; choose based on context
-- Memory captures recovery decisions for future similar halts
 
 ## Wrap-up
 
-You've now covered all 6 scenarios:
-
-1. ✅ [Greenfield from idea](scenario-1-greenfield-from-idea.md) — single sentence → working code
-2. ✅ [PRD-driven feature](scenario-2-prd-driven-feature.md) — PRD file → vault → bolts
-3. ✅ [Field-level extension](scenario-3-field-extension.md) — add field to existing model
-4. ✅ [Legacy rebuild](scenario-4-legacy-rebuild.md) — extract KB + rebuild on new stack
-5. ✅ [Multi-squad parallel](scenario-5-multi-squad-parallel.md) — partition work across teams
-6. ✅ [Recovery from halt](scenario-6-recovery-from-halt.md) — when things go wrong
+For the full scenario catalog, see the [chooser table in the scenarios README](README.md#quick-chooser--which-scenario-fits-you).
 
 Mega-sdd is now your friend for spec-driven AI development. The pipeline is opinionated, anti-hallucinating, and atomic. `/mega-sdd` is THE command; everything else exists for power users.
 

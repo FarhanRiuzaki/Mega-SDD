@@ -9,7 +9,7 @@ This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-financ
 
 ## Prerequisites
 
-- Mega-sdd v6+ (the public surface is 4 verbs; typed forms like `/mega-sdd:auto` were removed at 6.0.0 — the front door `/mega-sdd` replaces them)
+- Mega-sdd v7.4+ (the public surface is 3 verbs + 3 one-timers; typed forms like `/mega-sdd:auto` were removed at 6.0.0 — the front door `/mega-sdd` replaces them)
 - Legacy codebase available (at least 50-100 files; ideally 500+ for meaningful extraction)
 - New target project directory ready
 - `ast-grep` recommended for both legacy scan + new build
@@ -59,7 +59,7 @@ Proposed pipeline (--deep):
   2. generate-intent --kb=~/projects/rebuild-target/.mega-sdd/knowledge-base/                    ← ~30 min
   3. bind-codebase --express                                                                       ← ~15 min
   4. generate-units                                                                                  ← ~20 min
-  5. execute-bolts --per-squad --parallel                                                            ← variable (bolt count × ~1-3 min each)
+  5. execute-bolts --all --parallel                                                                  ← variable (bolt count × ~1-3 min each)
 
 Total estimated: 4-6 hours
 Halts may re-engage you (extract-intelligence quality gates, bind conflicts, Hard Rule violations).
@@ -128,7 +128,7 @@ Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + 
 
 ```
 ✓ Phase 2 of 5: generate-intent → 30 OQs (12 P1 business, 10 P2 tech, 8 P3)
-  + Auto-Classification Review section in 00-index.md (5 tech OQs flagged for review)
+  + Auto-Classification Review section in vault.md (5 tech OQs flagged for review)
 ```
 
 ## Step 4 — Phase 2.5: Resolve P1 business OQs (~30 min)
@@ -163,7 +163,7 @@ OQ-CN-005 [P1] [business / blocking]:
     3. Defer to operations team
 ```
 
-Pick + memory captures. Resume:
+Pick; the resolution lands in the vault. Resume:
 
 ```
 /mega-sdd --resume
@@ -196,8 +196,6 @@ Greenfield-ish — most claims are NEW since target is empty Laravel.
 ```
 ▶ Phase 4 of 5: invoking generate-units
 ✓ Phase 4 of 5: generate-units → 47 units in 8 modules
-  [auto] lint-units: 44 HIGH | 3 MEDIUM | 0 LOW | anchors 89/89 verified
-  [auto] analyze-parallelism: max width 7 | speedup 3.2x
 
 Modules:
   M-cif-customer     (8 units)   — customer master CRUD + RBAC
@@ -215,7 +213,7 @@ Modules:
 ## Step 7 — Phase 5: Execute bolts (~1-3 hours)
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts --per-squad --parallel
+▶ Phase 5 of 5: invoking execute-bolts --all --parallel
   Squad partition: single squad (no _meta/squads.yaml declared); intra-squad parallel
   
   Wave 1 (7 parallel): U-001 U-008 U-015 U-022 U-030 U-038 U-045
@@ -227,14 +225,10 @@ Modules:
   ✓ Wave 9 complete in 3 min
 
 ✓ Phase 5 of 5: execute-bolts → 47/47 complete (3 halts resolved; total ~2 hr)
-  [auto] list-modules: 8/8 modules completed
-  [auto] emit-agents-md: AGENTS.md generated
 
 📋 Final summary:
    Phases: 5/5 completed
    Quality: HIGH grounding throughout
-   Parallelism: 3.2x speedup (real wall-clock 2 hr vs sequential ~6.5 hr)
-   Memory: 4 learning suggestions pending → /mega-sdd:memory review
 ```
 
 ## Step 8 — Verify
@@ -253,7 +247,7 @@ php artisan serve
 # Visit / — rebuild functional with all legacy domain logic preserved
 ```
 
-Check the AGENTS.md tool-agnostic export:
+Want the AGENTS.md tool-agnostic export? Run "generate AGENTS.md" on demand (auto-emit is classic-spine only):
 
 ```bash
 cat AGENTS.md
@@ -301,33 +295,18 @@ blocker:
 
 Options:
 - Re-dispatch wave with `/mega-sdd --resume` (wave checkpoints let it re-run only that wave)
-- Manually inspect the partial output; if good enough, accept gap with `--allow-gaps` flag (loses some rigor)
+- Manually inspect the partial output; if good enough, accept the gap manually (loses some rigor)
 
 ### Generate-intent --kb produces too many OQs
 
 If 30+ OQs feels overwhelming:
 - P1 business → triage carefully; these need stakeholder
 - P2 tech → most auto-resolve at bind-codebase via scan mode
-- P3 refinement → defer to next milestone via `--allow-deferred`
+- P3 refinement → auto-deferred on the express chain; the chain summary re-surfaces the id list
 
 ### Bolt halt on hard_rule_violated in legacy-rebuild
 
 Likely cause: unit attempted to replicate a legacy gotcha that's in Anti-patterns. Mega-sdd correctly halted. Resolve by editing unit's Hard rules OR reverting the offending change.
-
-### Memory growth concerns
-
-After legacy rebuild, your memory directories have significant content:
-
-```bash
-du -sh .mega-sdd/memory/ ~/.mega-sdd/memory/
-# Project: ~5MB; User: ~500KB
-```
-
-This is normal. To clean up old runs:
-
-```bash
-/mega-sdd:memory prune --older-than=90d
-```
 
 ## What you learned
 

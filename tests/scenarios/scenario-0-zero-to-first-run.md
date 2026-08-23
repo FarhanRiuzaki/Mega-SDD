@@ -80,7 +80,7 @@ In the Claude Code session, type:
 /mega-sdd:
 ```
 
-You should see an autocomplete list with `/mega-sdd` at the top plus its companion verbs (`/mega-sdd:sync`, `/mega-sdd:emit`). If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
+You should see `/mega-sdd:sync`, `/mega-sdd:emit`, and the three one-timers. The bare `/mega-sdd` front door is installed by the SessionStart hook on your first session — before that, use `/mega-sdd:mega-sdd`. If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
 
 Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`ast-grep`, `ripgrep`, …) for higher precision. Mega-sdd works fine without them — every tool has a graceful fallback.
 
@@ -91,6 +91,8 @@ Still inside the Claude Code session, in your empty practice folder:
 ```
 /mega-sdd "build a simple todo API — create a task, list tasks, mark a task complete"
 ```
+
+On an empty directory, mega-sdd first asks whether to proceed greenfield (halt `no_starterkit_detected` — no framework manifest found); pick 'Proceed as greenfield'. Or skip the question upfront: `/mega-sdd --greenfield "build a simple todo API…"`.
 
 What you'll see, in order:
 
