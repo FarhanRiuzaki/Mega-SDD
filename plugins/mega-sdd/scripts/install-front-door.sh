@@ -17,7 +17,7 @@
 
 set -u
 
-WRAPPER_VERSION="1"
+WRAPPER_VERSION="2"
 MARKER="mega-sdd-front-door-wrapper v${WRAPPER_VERSION}"
 TARGET_DIR="${HOME}/.claude/commands"
 TARGET="${TARGET_DIR}/mega-sdd.md"
@@ -50,13 +50,17 @@ Thin user-level wrapper for the mega-sdd front door. Plugin commands are always 
 Do exactly this:
 
 1. Resolve the ACTIVE plugin install path (never hardcode a version):
-   read `~/.claude/plugins/installed_plugins.json` → `plugins["mega-sdd@mega-sdd"][0].installPath`.
-   If that key is absent, use the first plugins key matching `mega-sdd@*`.
+   read `~/.claude/plugins/installed_plugins.json` → the array under `plugins["mega-sdd@mega-sdd"]`
+   (if that key is absent, the first plugins key matching `mega-sdd@*`). Do NOT blindly take
+   entry `[0]` — machines with stale/dormant installs can list several entries. Pick the entry
+   with `scope: "user"` whose `version` is HIGHEST (compare numerically per dotted segment, so
+   7.10.0 > 7.9.0); if versions tie or are missing, prefer the newest `lastUpdated`. Use that
+   entry's `installPath`.
 2. Read `<installPath>/commands/mega-sdd.md` and follow it EXACTLY as if the user had invoked that command directly, passing through these user arguments verbatim: $ARGUMENTS
 3. Do NOT print any deprecation notice for this wrapper — it is the canonical bare front door, not a deprecated alias.
 4. If the install path cannot be resolved (plugin uninstalled), say so and suggest `/plugin install mega-sdd` — do not guess a path.
 
-<!-- mega-sdd-front-door-wrapper v1 — managed by the mega-sdd plugin (hooks/session-start → scripts/install-front-door.sh). Edits here are preserved only if you remove this marker line. -->
+<!-- mega-sdd-front-door-wrapper v2 — managed by the mega-sdd plugin (hooks/session-start → scripts/install-front-door.sh). Edits here are preserved only if you remove this marker line. -->
 WRAPPER_EOF
 
 mv -f "$TMP" "$TARGET" 2>/dev/null || { rm -f "$TMP" 2>/dev/null; exit 0; }

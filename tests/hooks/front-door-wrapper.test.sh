@@ -9,6 +9,11 @@
 #   2. re-run → no rewrite (idempotent; mtime stable)
 #   3. user-authored file (no marker) → NEVER overwritten
 #   4. --force → overwrites regardless
+#   5. resolution is VERSION-AWARE (team feedback 2026-08, rec №2): the wrapper
+#      must instruct picking the scope:"user" entry with the HIGHEST version —
+#      never a blind [0] index (on machines with dormant installs, [0] resolved
+#      to a stale 6.6.0 and the bare verb ran an old plugin)
+#   6. an older-marker wrapper (v1) on disk → refreshed to the current version
 # All runs use a sandbox HOME — the real user HOME is never touched.
 
 set -euo pipefail
@@ -44,4 +49,23 @@ bash "$INSTALLER"
 bash "$INSTALLER" --force
 grep -q "mega-sdd-front-door-wrapper v" "$TARGET" || fail "--force did not reinstall the managed wrapper"
 
-echo "OK: front-door wrapper installer honors create / idempotent / respect-user / force"
+# 5 — version-aware resolution instruction (never a blind [0] index)
+grep -q 'scope: "user"' "$TARGET" \
+  || fail "wrapper does not instruct scope:\"user\" selection"
+grep -qi "version.*HIGHEST\|HIGHEST.*version" "$TARGET" \
+  || fail "wrapper does not instruct highest-version selection"
+grep -q "lastUpdated" "$TARGET" \
+  || fail "wrapper has no tie-breaker instruction (lastUpdated)"
+# Negative pin: the old buggy form — [0].installPath as THE resolution step.
+grep -q '\[0\]\.installPath' "$TARGET" \
+  && fail "wrapper still resolves via blind [0].installPath (stale-install bug)"
+
+# 6 — an older-marker wrapper is refreshed to the current version
+printf 'old body\n<!-- mega-sdd-front-door-wrapper v1 — managed -->\n' > "$TARGET"
+bash "$INSTALLER"
+grep -q "mega-sdd-front-door-wrapper v1" "$TARGET" \
+  && fail "v1 wrapper was not refreshed"
+grep -q "mega-sdd-front-door-wrapper v" "$TARGET" \
+  || fail "refresh removed the managed marker entirely"
+
+echo "OK: front-door wrapper installer honors create / idempotent / respect-user / force / version-aware / refresh"

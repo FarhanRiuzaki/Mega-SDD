@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.5.1] - 2026-08-23 — front-door wrapper: version-aware install resolution
+
+Fixes the stale-install bug the office team measured (feedback doc, rec №2): the bare `/mega-sdd` wrapper resolved its plugin path via a blind `installed_plugins.json[0]` index, so on machines with dormant installs it could run an old version (theirs: 6.6.0). Wrapper v2 now instructs picking the `scope: "user"` entry with the HIGHEST version (numeric per dotted segment; tie → newest `lastUpdated`). `WRAPPER_VERSION` bumped to 2, so existing v1 wrappers refresh automatically on the next session start. Contract test extended with the version-aware pin (negative pin on `[0].installPath`) and the v1→v2 refresh arm (`tests/hooks/front-door-wrapper.test.sh`). Companion doc: `docs/mega-sdd/feedback-response-2026-08-23.md` (complaint→status map at 7.5.x, with the measured validator-roster reproduction 26→23).
+
 ## [7.5.0] - 2026-08-23 — v7 Fase 7: spawn budget + auto-aware tier S (8 commits, each CI-gated)
 
 **Program (user-approved gate `research/2026-08-23-v7-fase7-spawn-audit.md`): the hook layer's process-spawn tax is cut to the floor for the Windows+Falcon fleet (~220 ms/spawn), and tier S becomes vault-AWARE without re-entering the pipeline. Measured end-to-end on the production dispatch path (the audit's standing lesson: pins must measure the production path, not the body called directly).**
