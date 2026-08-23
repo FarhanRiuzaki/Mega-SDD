@@ -33,8 +33,8 @@ ok()   { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
 has()  { grep -qF -- "$2" "$1"; }
 
-echo "── A: the four public verbs + the front door wraps, not forks ──"
-for f in mega-sdd.md sync.md emit.md slice.md; do
+echo "── A: the three public verbs + the front door wraps, not forks ──"
+for f in mega-sdd.md sync.md emit.md; do
   [ -f "$C/$f" ] && ok "public verb file: $f" || fail "public verb MISSING: $f"
 done
 FD="$C/mega-sdd.md"
@@ -72,12 +72,12 @@ if grep -l "DEPRECATED (5.x alias)" "$C"/*.md >/dev/null 2>&1; then
 else
   ok "zero DEPRECATED (5.x alias) files remain"
 fi
-# C2: the kept-8 enumerate exactly (slice.md ADDED 6.8.0 — deliberate on-record
-# surface growth, spec 2026-08-12-playwright-embed-design.md; never re-shrink
-# this count without its own recorded decision)
+# C2: the kept-6 enumerate exactly (slice.md removed v7.4.0 — the recorded
+# owner decision at the Fase 5 gate, research/2026-08-23-v7-gate7-accept-730.md;
+# memory removed v7.3.0; never change this count without a recorded decision)
 n_cmd=$(ls "$C"/*.md | wc -l | tr -d ' ')
-[ "$n_cmd" -eq 7 ] && ok "exactly 7 command files (4 verbs + 3 one-timers — memory removed v7.3.0)" || fail "command count wrong: $n_cmd (expected 7)"
-for f in mega-sdd.md sync.md emit.md slice.md install-deps.md migrate-paths.md update-plugin.md; do
+[ "$n_cmd" -eq 6 ] && ok "exactly 6 command files (3 verbs + 3 one-timers)" || fail "command count wrong: $n_cmd (expected 6)"
+for f in mega-sdd.md sync.md emit.md install-deps.md migrate-paths.md update-plugin.md; do
   [ -f "$C/$f" ] || fail "kept command MISSING: $f"
 done
 # C3: relocated procedures — new home exists + old dispatch marker survived
@@ -119,11 +119,13 @@ else
 fi
 
 echo "── D: maintenance one-timers + sync stay first-class ──"
-for f in memory install-deps migrate-paths update-plugin sync slice; do
-  if grep -q '^description:.*DEPRECATED' "$C/$f.md"; then
+for f in install-deps migrate-paths update-plugin sync; do
+  if [ ! -f "$C/$f.md" ]; then
+    fail "$f.md MISSING (the loop used to fail-open on absent files — memory/slice hid there)"
+  elif grep -q '^description:.*DEPRECATED' "$C/$f.md"; then
     fail "$f.md wrongly aliased (must stay first-class)"
   else
-    ok "$f.md not aliased"
+    ok "$f.md present + not aliased"
   fi
 done
 

@@ -33,7 +33,6 @@ Every writer skill resolves output paths via this protocol:
 <project-root>/
 ├── .mega-sdd/                                    # ALL mega-sdd outputs (default; configurable)
 │   ├── config.yaml                                # Project-level config (output_root, opt-outs)
-│   ├── slices/<slug>/slice-report.md              # /mega-sdd:slice reports (slice-design, 6.8.0 — new artifact, no legacy location)
 │   ├── vaults/<slug>/                             # Vault content + per-vault state
 │   │   ├── vault.md, model.md, flows.md,          # 4-file layout-2 vault (v7; legacy vaults:
 │   │   │   constraints.md                         #   00-index.md ... 06-constraints.md — see §Vault layout)
@@ -110,7 +109,6 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 | Skill | Artifact | Default canonical path | Legacy path |
 |---|---|---|---|
 | `extract-intelligence` | knowledge-base/ | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
-| `slice-design` | slice-report.md | `.mega-sdd/slices/<slug>/slice-report.md` | — (new artifact 6.8.0, no legacy location) |
 | `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
 | `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | `docs/codebase/starterkit-context.yaml` (legacy back-compat probe only) |
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |

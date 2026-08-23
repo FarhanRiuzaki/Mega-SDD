@@ -151,7 +151,7 @@ else fail "A11c: design-reviewer still expects the forbidden traits/anti-pattern
 
 # ── C — gateway-tag completion (v7.3.1 restore, docs/gateway-contract.md):
 # EVERY announce-bearing skill + every dispatch template carries the tag.
-for s in emit-prd emit-sit emit-fsd emit-agents-md emit-uat bind-codebase execute-bolts extract-intelligence generate-units install-deps orchestrate-flow scan-codebase slice-design; do
+for s in emit-prd emit-sit emit-fsd emit-agents-md emit-uat bind-codebase execute-bolts extract-intelligence generate-units install-deps orchestrate-flow scan-codebase; do
   grep -qF "mega-sdd-trace:$s" "$P/skills/$s/SKILL.md" \
     && pass "C: $s carries its gateway tag" \
     || fail "C: $s gateway tag missing"

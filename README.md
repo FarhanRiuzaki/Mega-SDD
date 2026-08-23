@@ -187,7 +187,7 @@ flowchart TB
     classDef moat fill:#fce8e6,stroke:#d93025,color:#a50e0e
     classDef out fill:#188038,color:#fff,stroke:none
 
-    CMD["🎛️ Surface — 4 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat · /mega-sdd:slice"]:::surface
+    CMD["🎛️ Surface — 3 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat"]:::surface
 
     subgraph ORCH["🧭 Orchestration layer"]
         OF["orchestrate-flow<br/>state engine · smart routing · predictive preflight · --lean profile"]:::phase
@@ -259,7 +259,6 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
 | Generate UAT doc-pack (incl. SEOJK berita acara) | `/mega-sdd:emit uat` |
-| Slice a design reference (Figma export / URL / image) into UI code | `/mega-sdd:slice --image=./ref.png` (6.8.0 — works without a vault) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
@@ -282,7 +281,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 4 maintenance one-timers; the 5.x deprecation aliases were removed in 6.0.0 (typed legacy forms route as plain text). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 3 maintenance one-timers; the 5.x deprecation aliases were removed in 6.0.0 (typed legacy forms route as plain text). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User memory at `~/.mega-sdd/`. Project source unchanged. |
@@ -375,7 +374,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # skills (lean routers + progressive disclosure)
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
-│   ├── commands/                           # exactly 8: 4 public verbs + 4 maintenance one-timers (slice added 6.8.0; the 24 5.x aliases were removed in 6.0.0)
+│   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers (slice removed v7.4.0, memory removed v7.3.0; the 24 5.x aliases were removed in 6.0.0)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
 │   ├── hooks/                              # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
 │   ├── scripts/                            # sync-superpowers + migrations + validators

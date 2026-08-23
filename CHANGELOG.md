@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
 
+### №2 — slice-design + `/mega-sdd:slice` REMOVED (BREAKING; owner decision at gate8)
+- Deleted: `skills/slice-design/` (SKILL + slice-procedure + refs, ≈40 KB), `commands/slice.md`, `tests/skill-triggering/slice.test.md`. Surface = **3 public verbs + 3 one-timers, exactly 6 command files**. `mega-sdd-extras` is NOT created — a second plugin gets built only if real demand appears (no-gimmick rail; git history preserves everything).
+- Ladder note: slice was a standalone NON-pipeline lane (command-only, no census — 6.8.0 record), so the pipeline-command demotion ladder does not govern it; the removal is an explicit owner decision recorded at the Fase 5 gate.
+- Anchor body: slicing-lane paragraph + write-surfaces row removed (anchor CORE unchanged — slice never lived above the marker, C1a/C1b baselines hold); also swept two v7.3.0 leaks caught here: the anchor's phantom `memory` side-lane mention and the scenario README's phantom `memory` one-timer.
+- Repins: playwright-embed §B → negative pin (skill/command stay deleted), C3 flipped negative, E2/E3b retired (E1/E3 keep the bolt-implementer Context7 arms); p9 tag list 13 → 12 skills; p6 front-door → 3 verbs / 6 files (its §D loop also gained an existence check — it used to fail-OPEN on missing command files, which is how the dead `memory`/`slice` rows kept passing). using-mega-sdd → 4.1.0.
+
 ### №1 — `_vendored` superpowers tree REMOVED (BREAKING)
 - Deleted: `skills/_vendored/` (4 skills, 49 KB), `scripts/sync-vendored.sh`, `tests/vendoring/`. First-class agents are the ONLY dispatch path; the vendored fallback + its `dep_missing` bridge halt are gone (nothing to be missing — the agents ship in the plugin tree). Failing-first TDD + plan-then-execute inlined into `superpowers-bridge.md` (≤ a few lines, per gate7).
 - Plumbing out: execute-bolts preflight-1 (now "dispatch readiness" — broken Agent tool = untyped blocker, never an install halt), orchestrate first-run pre-flight + routing-rules dependency check, `superpowers_available` predictive check (`validate-preflight.sh` + catalog row). `dep_missing` halt TYPE survives (test-runner absent / ast-grep under v2 grammar); the bridge schema block replaced.
