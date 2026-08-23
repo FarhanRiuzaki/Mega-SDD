@@ -9,7 +9,7 @@
 #                      gate reads; CONFIRMED_PENDING_CODE_UPDATE is gone plugin-wide.
 #   RSOQ-LIVELOCK      KEEP_VAULT/DEFER hand-off no longer prescribes the re-bind
 #                      that re-raises the same CONFLICT forever.
-#   BC-ADVISOR-RO-1    phase-advisor's tool list delivers its read-only attestation.
+#   BC-ADVISOR-RO-1    retired v7.4.0 — the phase-advisor agent was removed (Fase 5).
 #   BC-ANCHOR-ATTEST-1 binding-json-schema states the honest enforcement story.
 #   BC-RECOMMEND-CONF-1 recommend-mode confidence gate is consistent across files
 #                      and matches generate-intent's shipped heuristics.
@@ -22,7 +22,6 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 VBJ="${ROOT}/plugins/mega-sdd/scripts/validate-binding-json.sh"
-PA="${ROOT}/plugins/mega-sdd/agents/phase-advisor.md"
 HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
 BM="${ROOT}/plugins/mega-sdd/skills/resolve-oq/references/binding-mode.md"
 CR="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/conflict-resolution.md"
@@ -32,7 +31,7 @@ BC="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md
 BMT="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md"
 COQ="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/constitution-and-oq.md"
 VH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/handoff-validation.md"
-for f in "$VBJ" "$PA" "$HC" "$BM" "$CR" "$BJS" "$OQR" "$BC" "$BMT" "$COQ" "$VH"; do
+for f in "$VBJ" "$HC" "$BM" "$CR" "$BJS" "$OQR" "$BC" "$BMT" "$COQ" "$VH"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -92,12 +91,11 @@ grep -qF 'a re-bind BEFORE the code change re-raises this CONFLICT' "$CR" && ok 
 if grep -qF 'generated units include "update code to match" task as a prerequisite' "$CR"; then fail "RESOLVE-TOKEN: unimplemented unit-prerequisite promise survives"; else ok "RESOLVE-TOKEN: unimplemented promise replaced with the real carrier (binding_refs)"; fi
 grep -qF '"resolution": "KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null"' "$BJS" && ok "RESOLVE-TOKEN: binding.json schema defines the resolution field" || fail "RESOLVE-TOKEN: resolution field undefined"
 
-# ── BC-ADVISOR-RO-1 ──
-grep -qE '^tools: Read, Grep, Glob$' "$PA" && ok "ADVISOR-RO: tool list is Read/Grep/Glob (read-only delivered by tooling)" || fail "ADVISOR-RO: tool list still grants write capability"
-if grep -qE '^tools:.*Bash' "$PA"; then fail "ADVISOR-RO: Bash survives in the advisor tool list"; else ok "ADVISOR-RO: no shell capability"; fi
+# ── BC-ADVISOR-RO-1 (retired v7.4.0) — the agent must STAY deleted ──
+if [ -e "${ROOT}/plugins/mega-sdd/agents/phase-advisor.md" ]; then fail "ADVISOR-RO: phase-advisor.md is back (removed v7.4.0)"; else ok "ADVISOR-RO: phase-advisor stays removed"; fi
 
 # ── BC-ANCHOR-ATTEST-1 ──
-grep -qF 'bind-time authoring obligation' "$BJS" && ok "ANCHOR-ATTEST: honest enforcement story (authoring obligation, advisor sampling, A1 rail scope)" || fail "ANCHOR-ATTEST: attestation still claims unimplemented enforcement"
+grep -qF 'bind-time authoring obligation' "$BJS" && ok "ANCHOR-ATTEST: honest enforcement story (authoring obligation, A1 rail scope)" || fail "ANCHOR-ATTEST: attestation still claims unimplemented enforcement"
 if grep -qF 'anchor accuracy is enforced at bind time' "$BJS"; then fail "ANCHOR-ATTEST: old positive attestation survives"; else ok "ANCHOR-ATTEST: old attestation removed"; fi
 
 # ── BC-RECOMMEND-CONF-1 ──

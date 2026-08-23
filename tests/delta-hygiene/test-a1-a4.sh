@@ -40,7 +40,7 @@ PYEOF
 echo "── A4: maxTurns on all 9 plugin agents with spec values ──"
 "$PY" - "$P/agents" <<'PYEOF'
 import re,sys,os
-CAPS={'bolt-implementer':80,'domain-extractor':60,'resolution-verifier':30,'spec-reviewer':25,'code-quality-reviewer':25,'security-reviewer':25,'standards-reviewer':25,'design-reviewer':25,'phase-advisor':25}
+CAPS={'bolt-implementer':80,'domain-extractor':60,'resolution-verifier':30,'spec-reviewer':25,'code-quality-reviewer':25,'security-reviewer':25,'standards-reviewer':25,'design-reviewer':25}
 for name,cap in CAPS.items():
     t=open(os.path.join(sys.argv[1],name+'.md')).read()
     m=re.search(r'^maxTurns: (\d+)$', t, re.M)

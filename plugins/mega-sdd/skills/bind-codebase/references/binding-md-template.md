@@ -64,7 +64,7 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 > One canonical `### CONFLICT-N` detail heading per conflict — the ONLY carrier, machine-read
 > AND human-read (the Step 5 gate and `validate-handoff-binding-units.sh` read the
 > heading form; a conflict recorded anywhere else is invisible to the validators). IDs use the canonical `CONFLICT-N` form
-> (advisor-sourced ones may use `CONFLICT-ADV-N` — both are read by the validators).
+> (legacy `CONFLICT-ADV-N` headings from pre-7.4 advisor-sourced conflicts are still read by the validators — tolerated on re-bind, never newly written).
 > Resolution markers are STRUCTURAL — grammar in §Authoring notes below.
 
 ### CONFLICT-1 — <short title>

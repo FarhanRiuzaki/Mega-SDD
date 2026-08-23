@@ -53,9 +53,9 @@ Verify every doc has:
 - [ ] Language matches source (PRD ID → docs ID; PRD EN → docs EN).
 
 **`vault.json` manifest (script-derived — never hand-checked field-by-field):**
-- [ ] `derive-vault-json.sh` ran at Step 3.8 (the single derive, AFTER constitution/classifier/advisor completed) and printed its `PASS: derived vault.json (…)` line (the structural arrays, summary, Vault Lock enums, and constitution pin are the SCRIPT's job — a hand-written vault.json is an authoring bug).
+- [ ] `derive-vault-json.sh` ran at Step 3.8 (the single derive, AFTER constitution/classifier completed) and printed its `PASS: derived vault.json (…)` line (the structural arrays, summary, Vault Lock enums, and constitution pin are the SCRIPT's job — a hand-written vault.json is an authoring bug).
 - [ ] The counts in the PASS line (`E entities, F flows, A adrs, Q oqs`) match the doc counts you generated (DBML `Table` blocks, `F-*-NNN` headings, `D-NNN` headings, checkbox OQs).
-- [ ] The authored patch carried every field the model owns: metadata + `source_documents` + `design_system_flags` (matching the Step 3 conditional-generation values) [+ `design_system`] [+ scope block] + the per-OQ recommend/scan records (Step 3.5) + the advisor provenance record (Step 3.7) — the validator's `oq_recommend_underspecified` is the tripwire for a recommend-OQ whose JSON-only fields went missing.
+- [ ] The authored patch carried every field the model owns: metadata + `source_documents` + `design_system_flags` (matching the Step 3 conditional-generation values) [+ `design_system`] [+ scope block] + the per-OQ recommend/scan records (Step 3.5) — the validator's `oq_recommend_underspecified` is the tripwire for a recommend-OQ whose JSON-only fields went missing.
 
 **Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
 - [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the Step-3 `cp` Run installed it — copied from the shipped template, never model-rendered).

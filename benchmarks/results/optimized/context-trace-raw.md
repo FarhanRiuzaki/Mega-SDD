@@ -66,8 +66,8 @@ plugins/mega-sdd/skills/generate-intent/references/setup-flow.md | "Full procedu
 plugins/mega-sdd/skills/generate-intent/references/self-check.md | "Step 4 — Self-check before delivery. Full anti-halu + readability + output-mode + `vault.json` integrity checklist → `references/self-check.md`."
 plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md | "(Full `--auto` behavior → `references/auto-and-handoff.md`.)"
 plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md | "Infer + confirm `PROJECT_SHAPE` with the user (Project Shape Registry → `references/detection-and-shapes.md`)."
-plugins/mega-sdd/skills/generate-intent/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus)"
-plugins/mega-sdd/references/advisor-findings-schema.md | "Focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`."
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/skills/generate-intent/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus)" -->
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/references/advisor-findings-schema.md | "Focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`." -->
 plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md | "Emission rules + flag behavior: `references/decomposition-rails.md §Dependency-graph`."
 plugins/mega-sdd/skills/generate-units/references/defensive-generation.md | "Open the decision matrix in `references/defensive-generation.md §Step 0.5` ONLY when a probe is missing/stale/contradictory"
 plugins/mega-sdd/skills/execute-bolts/references/hard-rule-scan.md | "Snapshot formats, grammar detail, and full halt YAMLs → `references/hard-rule-scan.md`."
@@ -101,8 +101,8 @@ scripts/derive-state.sh, scripts/build-symbol-index.sh, scripts/predictive-prefl
 UNCERTAIN:
 plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md | "2.6 Tech-OQ auto-resolution (scan) + 2.7 recommendation surfacing → ... → `references/oq-resolution.md`."
 plugins/mega-sdd/skills/bind-codebase/references/constitution-and-oq.md | "2.10 Constitution-aware CONFLICT surfacing → cite constitution §A–F clauses on relevant conflicts ... → `references/constitution-and-oq.md`."
-plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)"
-plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`."
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)" -->
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`." -->
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md | "**Resolution preflight** (per `references/chain-execution.md`). Run in order"
 plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md | "opens at the b.iv conditional-field check ... never for the rest of a clean hop"
 plugins/mega-sdd/references/output-language.md | "Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`)."
@@ -174,8 +174,8 @@ plugins/mega-sdd/skills/orchestrate-flow/references/sync-digest.md | "Mode D aut
 plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md | "opens at the b.iv conditional-field check ... never for the rest of a clean hop"
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md | "**Resolution preflight** (per `references/chain-execution.md`). Run in order"
 plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md | "2.6 Tech-OQ auto-resolution (scan) + 2.7 recommendation surfacing → ... `references/oq-resolution.md`."
-plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)"
-plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`."
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)" -->
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`." -->
 plugins/mega-sdd/references/output-language.md | "Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`)."
 CHAIN-END: `sync-intersect.sh` exits 4 (intersection) → scan (incremental) → detect-drift (scoped) → `bind-codebase --paths --express`; trace stops at re-bind complete (zero CONFLICT), before `generate-units --reconcile`.
 
@@ -263,9 +263,9 @@ plugins/mega-sdd/skills/generate-intent/references/setup-flow.md | "Full procedu
 plugins/mega-sdd/skills/generate-intent/references/self-check.md | "Full anti-halu + readability + output-mode + `vault.json` integrity checklist → `references/self-check.md`."
 plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md | "Infer + confirm `PROJECT_SHAPE` with the user (Project Shape Registry → `references/detection-and-shapes.md`)."
 plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md | "(Full `--auto` behavior → `references/auto-and-handoff.md`.)"
-plugins/mega-sdd/skills/generate-intent/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus)"
-plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)"
-plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`."
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/skills/generate-intent/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (intent focus)" -->
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/skills/bind-codebase/references/advisor-checklist.md | "Dispatch the `mega-sdd:phase-advisor` agent with `references/advisor-checklist.md` (binding focus)" -->
+<!-- v7.4.0 №5: file deleted with the phase-advisor removal — plugins/mega-sdd/references/advisor-findings-schema.md | "Full focus + materialization → `references/advisor-checklist.md` + `plugins/mega-sdd/references/advisor-findings-schema.md`." -->
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md | "**Resolution preflight** (per `references/chain-execution.md`). Run in order"
 plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md | "opens at the b.iv conditional-field check ... never for the rest of a clean hop"
 plugins/mega-sdd/references/output-language.md | "Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`)."

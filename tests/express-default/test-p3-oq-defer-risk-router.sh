@@ -6,7 +6,7 @@
 #      A6 resurface surfaces (metrics id list, _summary section, Step 9 +
 #      appendix bullets).
 #   3. Lean-by-default — orchestrate paragraph, Stop-aggregate condition
-#      (classic|full fires, lean never), advisor stays default-on.
+#      (classic|full fires, lean never). (The advisor legs died v7.4.0.)
 # CI-safe: bash + python3 only.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -231,12 +231,13 @@ grep -qF 'unknown rc is never a LOW tier' "$P/skills/execute-bolts/references/re
 OF="$P/skills/orchestrate-flow/SKILL.md"
 grep -qF 'Diagnostics are LEAN-BY-DEFAULT on the express spine (P3)' "$OF" \
   && pass "diagnostics lean-by-default under express" || fail "lean default missing"
-# 6.15.0 (USER-DECIDED, spec 2026-08-17-advisor-scope-gate.md): the bind leg is
-# now SCOPE-GATED — the stated-deviation rationale must survive in its new form
-# (rail 1 wording + the gate), not the superseded blanket DEFAULT-ON sentence.
-grep -qF 'advisor legs stay default-on on every spine, with the bind leg SCOPE-GATED' "$OF" \
-  && grep -qF 'speed cuts inventory, never verification' "$OF" \
-  && pass "advisor default-on rationale survives in scope-gated form (rail 1)" || fail "advisor deviation missing"
+# v7.4.0 (Fase 5 №5): the phase-advisor was REMOVED — the scope-gated
+# default-on sentence must be GONE, not merely reworded (negative pin).
+if grep -qF 'advisor legs stay default-on' "$OF"; then
+  fail "advisor default-on sentence is back — the phase-advisor was removed v7.4.0"
+else
+  pass "advisor legs stay removed from the chain loop (v7.4.0)"
+fi
 grep -qF 'spine:' "$P/hooks/stop" && grep -qF 'profile:[[:space:]]*[\"'"'"']?full' "$P/hooks/stop" \
   && pass "Stop aggregate keyed to classic|full opt-in" || fail "stop condition missing"
 grep -qF 'HONESTY NOTE (P3)' "$P/scripts/_lib/state_probes.py" \

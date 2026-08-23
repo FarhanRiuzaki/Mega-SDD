@@ -96,7 +96,6 @@ plugins/mega-sdd/
 │   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md, design-reviewer.md
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── domain-extractor.md       # extract-intelligence wave worker
-│   └── phase-advisor.md          # adversarial second-opinion at the bind/intent gates
 ├── commands/                     # exactly 8: 4 public verbs (mega-sdd · sync · emit · slice) + 4 maintenance one-timers (5.x aliases removed in 6.0.0)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # SessionStart anchor · Hybrid PreToolUse gate · PostToolUse validators · Stop
