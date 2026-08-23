@@ -10,7 +10,9 @@ Harness = perluasan PATH-shim counter milik `tests/weighted-routing/test-tier-s-
 1. **Diukur LEWAT `run-hook.sh`** (test yang dipin memanggil body hook langsung — pajak dispatcher tidak pernah terukur sebelumnya).
 2. **Shim diperluas**: `bash dirname uname base64 cat head mktemp cp rm mv sort cut stat` ikut dihitung, bukan hanya `python3 date wc git grep sed find ls awk`.
 
-Yang dihitung = **exec eksternal via PATH**. Tidak terhitung: builtin, subshell `$( )` tanpa exec, exec via path absolut. Di Git Bash + Falcon, fork subshell juga kena pajak proses → **semua proyeksi Windows di bawah adalah LOWER BOUND**. Skrip harness: scratchpad sesi (bisa di-rerun; deterministik).
+Yang dihitung = **exec eksternal via PATH**. Tidak terhitung: builtin, subshell `$( )` tanpa exec, exec via path absolut. Di Git Bash + Falcon, fork subshell juga kena pajak proses → **semua proyeksi Windows di bawah adalah LOWER BOUND**. Skrip harness: scratchpad sesi (bisa di-rerun; deterministik); versi standing = `tests/weighted-routing/test-spawn-ceilings.sh` (Fase 7 commit 1, dispatch diturunkan dari hooks.json).
+
+**PELAJARAN STANDING (user-mandated, gate Fase 7):** *pin harus mengukur JALUR PRODUKSI, bukan fungsi yang dipanggil langsung.* Kontrak "tier S 0 fork" dipin di test yang memanggil body hook langsung — jalur produksi (`bash run-hook.sh → dirname → uname → bash body`) membayar 4 proses per event yang tidak pernah terlihat pin mana pun: 0,88 s/event di Falcon untuk no-op. Kelas yang sama: S11 lama nge-exercise hook yang filenya sudah dihapus → pass hampa. Setiap pin performa/keamanan baru wajib lewat titik masuk yang sama dengan yang dieksekusi harness aslinya (hooks.json, command surface, dispatcher script), dan wajib gagal kalau titik masuknya hilang.
 
 ## §1 Tabel terukur: event × jalur × spawn (v7.4.0)
 

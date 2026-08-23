@@ -104,15 +104,14 @@ OUT=$(run_hook user-prompt-submit "{\"session_id\":\"s\",\"cwd\":\"$PLAIN\"}")
   && ok "S9b non-SDD prompt: silent, ZERO forks" \
   || bad "S9b non-SDD: forks=$(total) out=[$OUT]"
 
-# ── S10/S11: Stop + SubagentStop in a NON-mega-sdd project → 0 forks ─────────
+# ── S10: Stop in a NON-mega-sdd project → 0 forks ────────────────────────────
+# (S11 retired in Fase 7: it exercised hooks/subagent-stop, deleted in v7.3.0 —
+# run_hook on a missing file errors silently → 0 forks → the pass was VACUOUS.
+# The Fase-7 audit's lesson: a pin must exercise a path that actually exists.)
 reset_counts
 run_hook stop "{\"session_id\":\"x\",\"cwd\":\"$PLAIN\",\"transcript_path\":\"/nonexistent\"}" >/dev/null
 [ "$(total)" -eq 0 ] && ok "S10 Stop non-SDD project: ZERO forks (was 1-2 python/turn)" \
   || bad "S10 Stop non-SDD forked: $(total)"
-reset_counts
-run_hook subagent-stop "{\"session_id\":\"x\",\"cwd\":\"$PLAIN\"}" >/dev/null
-[ "$(total)" -eq 0 ] && ok "S11 SubagentStop non-SDD project: ZERO forks" \
-  || bad "S11 SubagentStop non-SDD forked: $(total)"
 
 # ── S12: ARMED unit write → validator fan-out restored (mutation proof) ──────
 mkdir -p "$FIX/.mega-sdd/vaults/v1/units"
