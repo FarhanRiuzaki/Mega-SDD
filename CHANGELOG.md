@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.5.0] - 2026-08-23 — v7 Fase 7: spawn budget + auto-aware tier S (8 commits, each CI-gated)
+
+**Program (user-approved gate `research/2026-08-23-v7-fase7-spawn-audit.md`): the hook layer's process-spawn tax is cut to the floor for the Windows+Falcon fleet (~220 ms/spawn), and tier S becomes vault-AWARE without re-entering the pipeline. Measured end-to-end on the production dispatch path (the audit's standing lesson: pins must measure the production path, not the body called directly).**
+
+### Measured (production-path harness, `tests/weighted-routing/test-spawn-ceilings.sh`)
+
+| Path | v7.4.0 | v7.5.0 | Windows proj. |
+|---|---|---|---|
+| UserPromptSubmit (every prompt, blocking) | 4 | **1** | 0.88s → 0.22s |
+| PreToolUse Edit tier-S | 4 | **1** | idem |
+| PostToolUse Write tier-S (journal) | 5 | **2** | 1.1s → 0.44s |
+| PreToolUse Edit/Bash ARMED innocent | 8–9 (3 py) | **1 (0 py)** | ~1.8s → 0.22s |
+| PostToolUse ARMED unit write | 93–96 (20 py) | **1 (0 py)** | ~17.6s → 0.22s |
+| execute-bolts gate (blocking) | 107–110 | **82** (parallel re-derives; wall ≈ slowest validator) | ~24s → ~18s CPU, wall ~5–8s |
+| Stop SDD steady | 13 | **4** | 2.9s → 0.88s |
+| SessionStart SDD | 16 | **2** | 3.5s → 0.44s |
+
+### Changed
+- **№A direct dispatch (`b1ec253`, BREAKING for anyone exec'ing run-hook.sh):** hooks.json runs each extensionless body directly; `run-hook.sh` (bash→dirname→uname→bash = 4 procs/event, zero `.ps1` ports ever shipped) is DELETED. Each body normalizes a backslashed `$0` itself (`HOOK_SELF`); ntpath-style functional proof in `tests/hooks/direct-dispatch.test.sh` (forged-verdict deny byte-identical under `\`-separated `$0`). **Office Git-Bash verification PENDING (isolated commit — revert path documented).**
+- **№B Stop + session-start diet (`4409e3b`):** Stop's python stdin parse deleted (every emitted var was unread); analyze-leg config gate = builtin line scan (11-case parity-proofed). session-start: awk anchor extraction → pure-bash loops (byte-parity golden `tests/hooks/session-start-extraction-parity.test.sh`), superpowers probe → builtin glob walk, `derive-state.sh` spawn chain leaves the hook — the staleness notice is a builtin-only SUBSET (journal rows + HEAD-vs-stamp incl. packed-refs walk); the PENDING-SYNC leg moved to M/L entry (disclosed, negative-pinned). Fixes the №1-Fase-5 phantom ("vendored fallback" warning).
+- **№C matcher narrow (`0b7766a`, BREAKING):** PostToolUse matcher `Skill|Bash|Write|Edit` → `Write|Edit`. Skill leg's `validate-starterkit-metrics.sh` DELETED — **evidence-flip vs the Fase-5 №15 audit:** its state file had ZERO readers anywhere; the `starterkit_metrics_inconsistent` halt is in-skill prose recomputation and stands unchanged. Bash leg (dispatch-prompt parity) covered by analyze FULL, which now RE-RUNS the 4 fan-out-orphaned advisories (fanout-parity, ui-deferral, vault-flow-staging, dispatch-prompt).
+- **№D fan-out deleted (`48e0a08`, BREAKING):** the PostToolUse validator fan-out (12 validators/armed write) is gone — every gate-read state re-derives at its gate (S4/S5/S6 + bind-gate INT-1), Stop keeps the detection scans, analyze FULL re-runs the rest. The PTU debounce + `.ptu-scan-stamp` writer died with it (name stays anti-forge-guarded). Honest delta: per-write early warning → next gate dispatch / analyze run (gate-0 doctrine). S12 mutation-proof INVERTED (fan-out must STAY dead).
+- **№E single-interpreter armed path (`1369970`):** FP_GUARD + Bash GUARD_SKIP fold into the parse interpreter (SC_ROOT equivalence = the pinned extraction-agreement arm); dedicated interpreters remain as the extraction-doubt fallback; deny strings untouched. GateGuard config/newest-binding probes → builtins. Scope note: the ~14-pattern Bash deny battery stays bash (POSIX-class regex translation = highest parity risk, guarding an Option-B-rare path).
+- **№F gate diet (`2b01141`):** `resolve-framework-pack.sh` prologue → parameter expansion (was 26 of the gate's 43 dirname spawns); the nine gate re-derives run in PARALLEL (the pre-№D fan-out's own `( … ) &`+wait pattern at the gate; distinct state files, aggregator reads after wait). Full heredoc-extraction driver stays evidence-gated on the v6.7.1 parity harness (disclosed follow-up lever).
+- **№G Option B + auto-aware (`89238f1`):** ARMED innocent Edit/Write/Bash = 0 python via a FAIL-CLOSED builtin locked-index probe (stale index / unreadable / path doubt / LOCKED hit → full python path; GateGuard deny-once stays python — disclosed). Auto-aware tier S: LOCKED-edit `additionalContext` notice (0 fork), completion-census sync OFFER on UserPromptSubmit (word-boundary census, 10 kalimat kantor pinned, `mudah`≠`udah`; gateway tag stays the verbatim first line — `docs/gateway-contract.md` amended), `auto_verify_on_edit` config (default false).
+
+### Tests
+- NEW `tests/weighted-routing/test-spawn-ceilings.sh` (production-path ceilings derived from hooks.json, measure-last tightening per commit), `tests/hooks/direct-dispatch.test.sh`, `tests/hooks/session-start-extraction-parity.test.sh`, `tests/hooks/completion-census.test.sh`. S11 (vacuous subagent-stop) retired; ~15 suites repinned to the surviving dispatchers. Suite 219/219 both trees; every commit CI-green.
+
 ## [7.4.0] - 2026-08-23 — v7 Fase 5: pipeline-only placement (per-surface series, 7 commits, each CI-gated)
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
