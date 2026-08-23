@@ -52,7 +52,7 @@ Balasan untuk *Arsitektur — Mega-SDD Artifact Gateway (ingest + MCP + graph :8
 
 Publisher (`publish-artifacts.sh` + leg Stop-hook, fail-open, delta-by-sha + manifest lengkap + `work_dir`) dibangun setelah spec plugin final direview — kontraknya tidak akan berubah dari yang kalian pegang: `POST <ANTHROPIC_BASE_URL>/mega-sdd/ingest`, `Bearer` dari `mega-code get-token`, idempoten, self-heal via `missing`, `5xx` → antre + retry.
 
-Referensi: guide utama `docs/mega-sdd/gateway-mcp-guide.md` (kontrak ingest §1, makna artifact + kontrak kejujuran §2, desain MCP §3, registrasi §4, mega-code §5, checklist §6).
+Referensi: guide utama `docs/mega-sdd/gateway-mcp-guide.md` (kontrak ingest §1, makna artifact + kontrak kejujuran §2, desain MCP §3, registrasi §4, mega-code §5, checklist §7).
 
 ## Layer code di graph + vault sentinel `_codebase` (keputusan arsitek, 2026-08-21)
 
@@ -86,7 +86,7 @@ Satu file settings dari laptop tim dipakai sebagai referensi. Hasilnya:
 flowchart LR
     DEV[Developer] -->|mega-code login/install| MC[mega-code CLI]
     MC -->|"1. get-token guard:\nverifikasi plugin enabled\n→ auto-repair → refuse"| CC[Claude Code + mega-sdd]
-    CC -->|"request body membawa\nmega-sdd-trace:session/:turn"| GW[AI Gateway]
+    CC -->|"request body membawa\nmega-sdd-trace:turn / :<skill>"| GW[AI Gateway]
     GW -->|"2. marker check middleware:\nwarn → block"| API[Anthropic API]
     GW -->|"3. compliance report:\nClickHouse/Langfuse + ingest"| OBS[Dashboard governance]
 ```
@@ -94,12 +94,12 @@ flowchart LR
 **Enforcement ladder (urut dari yang paling tajam):**
 
 1. **`mega-code get-token` guard (build kalian — gerbang utama).** apiKeyHelper dipanggil untuk setiap token; sebelum mengembalikan token, verifikasi mega-sdd terinstall + enabled di Claude Code. Urutan wajib: **auto-repair dulu** (mega-code sudah auto-manage plugin via `mega_sdd_latest` di login response — re-install/re-enable saja), **refuse token hanya kalau repair gagal**, dengan pesan yang menjelaskan kenapa (keterangan, bukan kode error telanjang). Tanpa plugin → tanpa token → Claude Code tidak jalan sama sekali. Ini titik enforce termurah dan terkeras.
-2. **Marker check di gateway middleware (build kalian — defense-in-depth, rollout warn → block).** Kontrak deteksi (string STABIL, tidak akan pernah kami rename — dipin test `tests/hooks/trace-governance-contract.test.sh` + `session-start.test.sh`):
-   - `mega-sdd-trace:session` — di-emit session-start di SEMUA path (termasuk CWD tanpa konteks SDD), terbawa di setiap request body via history, di-re-inject setelah compaction, tetap fire di `claude -p` (headless).
-   - `mega-sdd-trace:turn` — satu per prompt user, hanya di project `.mega-sdd`.
-   - **Hard check WAJIB keyed ke `:session`, bukan `:turn`** — `trace_tag: false` di config project hanya mematikan `:turn`; `:session` tetap ada. Satu-satunya celah `:session`: opt-out routing user (`~/.claude/.mega-sdd-routing-off` / `MEGA_SDD_ROUTING=off`) di CWD tanpa konteks SDD — dan celah ini self-correcting di bawah policy warn→block (dev yang opt-out kena warn/block → mencabut opt-out).
+2. **Marker check di gateway middleware (build kalian — defense-in-depth, rollout warn → block).** Kontrak deteksi — AMANDEMEN v7.3.0: `mega-sdd-trace:session` DIHAPUS dan sengaja tidak dikembalikan (dipin NEGATIF oleh `tests/hooks/session-start.test.sh` — deteksi sesi = urusan gateway, dari tag yang tersisa). Kontrak yang hidup (`docs/gateway-contract.md`; dipin `tests/weighted-routing/test-tier-s-hooks.sh` + goldens dispatch-parity):
+   - `mega-sdd-trace:turn` — BARIS PERTAMA output UserPromptSubmit, satu per prompt user, hanya di project `.mega-sdd`. TIDAK ada opt-out config (`trace_tag` tidak pernah ada di kode). Sejak v7.5.0 hook yang sama boleh menambah SATU baris kedua non-tag (tawaran sync) — filter WAJIB key ke baris pertama, byte-verbatim.
+   - `mega-sdd-trace:<skill>` — announce line + ditanam deterministik di dispatch prompt subagent pipeline.
+   - **Hard check keyed ke `:turn` (+ `:<skill>`), dievaluasi AGREGAT per NIP per window.** Sesi di CWD non-SDD memang hening total by design — perlakukan netral, bukan pelanggaran; kombinasikan dengan sinyal ladder 1 (get-token guard) untuk coverage sesi non-SDD.
    - Scope: traffic Claude Code dari token per-NIP. Fase 1 = WARN (log per NIP + tampil di dashboard), Fase 2 = BLOCK (403 + pesan "aktifkan mega-sdd / jalankan `mega-code login` ulang") setelah coverage stabil.
-   - **Bentuk block = AGREGAT per NIP per window, BUKAN per-request.** Subagent (sidechain) berjalan fresh-context → tidak membawa `:session`; subagent pipeline mega-sdd tetap bermarker (`mega-sdd-trace:<skill>` ditanam deterministik di dispatch prompt), tapi subagent generik Claude Code yang sah TIDAK bermarker. Block per-request keyed `:session` akan false-positive membunuh sidechain sah — evaluasi per NIP per window (window tanpa satu pun `:session` = pelanggaran; sidechain tanpa marker di window yang ada `:session` = netral). Detail di guide §8.
+   - **Bentuk block = AGREGAT per NIP per window, BUKAN per-request.** Subagent (sidechain) berjalan fresh-context → tidak membawa tag `:turn` parent; subagent pipeline mega-sdd tetap bermarker (`mega-sdd-trace:<skill>` di dispatch prompt), tapi subagent generik Claude Code yang sah TIDAK bermarker. Block per-request akan false-positive membunuh sidechain sah — evaluasi per NIP per window (window tanpa satu pun `:turn`/`:<skill>` = pelanggaran; sidechain tanpa marker di window yang ada tag = netral). Detail di guide §8.
 3. **Compliance reporting (ClickHouse/Langfuse + data ingest).** Coverage marker per NIP; repo dengan commit aktif tapi tanpa publish artifacts (drift list); **version floor** — mulai publisher v6.19.2 manifest membawa `plugin_version`, jadi dashboard bisa menandai NIP/project yang jalan di versi plugin lama (mega-code auto-update saat login, jadi drift harusnya sempit; kalau lebar berarti ada yang tidak login).
 
 **Keputusan tegas yang menyertai:** (a) enforcement TIDAK diletakkan di request-parsing berat — marker check cukup substring match di body, murah; (b) auto-repair selalu didahulukan sebelum refuse — governance yang baik memperbaiki, bukan cuma menghukum; (c) traffic non-Claude-Code (SDK apps, service account) di luar scope rule ini — itu keputusan governance terpisah kalau muncul.

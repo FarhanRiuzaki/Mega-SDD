@@ -7,6 +7,7 @@
 ## Contents
 
 - Upgrading to 7.0.0 (the vault layout-2 major)
+- Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
 - Upgrading to 6.0.0 (the alias-removal major)
 - TL;DR — two paths
 - Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
@@ -30,13 +31,23 @@
 2. Commit your tree, then re-run with `--apply` (dirty tree is refused). The rung concatenates verbatim, stamps `[origin:]` on moved OQs, rewrites unit doc-name refs, runs `derive-vault-json`.
 3. **MANDATORY next step: full re-bind** — the merge shifted line numbers, so `binding.md`/`binding.json`/`.citation-map.json` anchors are stale; they are REGENERATED (run bind again), never patched. Graph + emissions self-heal on the next run.
 
+## Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
+
+**v7.3.0 — observability/memory removed (pipeline-only).** The whole memory/telemetry/advisor lane is gone: `/mega-sdd:memory` no longer registers, there is no token-cost report, no compaction advisor, no PreCompact/SubagentStop hooks. Old `.mega-sdd/memory/` and `~/.mega-sdd/memory/` dirs are inert — delete when convenient; user defaults moved to `~/.mega-sdd/config.yaml`. The only observability artifact left is the `mega-sdd-trace:*` gateway tag family (`docs/gateway-contract.md`).
+
+**v7.4.0 — surface cull.** `/mega-sdd:slice` + the slice-design skill are removed (owner decision), the vendored superpowers tree is removed (first-class `agents/` are the only path), and the tree-sitter slice engine is removed (`ast-grep → regex` is the scan ladder). Surface = 3 verbs + 3 one-timers.
+
+**v7.5.x — direct dispatch + auto-aware.** Hooks dispatch DIRECTLY from `hooks.json` — `run-hook.sh` is deleted (a local fork of it is dead code); the PostToolUse matcher narrowed to `Write|Edit` and its validator fan-out is deleted (every gate-read state re-derives at its own gate). New ambient behaviors: a LOCKED-edit context notice, a "selesai" census → one-line sync OFFER, and opt-in `auto_verify_on_edit` (default false). The bare-verb wrapper is v2 (version-aware resolution) and refreshes itself at session start.
+
+**What did NOT break:** every artifact and every gate/hook contract. No migration commands needed for 7.3→7.5 — update the plugin and reload.
+
 ## Upgrading to 6.0.0 (the alias-removal major)
 
 **What broke (the ONLY break):** the 24 `/mega-sdd:<stage>` typed deprecation aliases no longer register as slash commands (`generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault`, `analyze`, `graph`, `lint-units`, `list-modules`, `replay`, `migrate-rules`, `validate-handoff`, `enrich-semantics`, `analyze-parallelism`, `extract-intelligence`, `orchestrate-flow`, `auto`, `emit-fsd`, `emit-prd`, `emit-sit`, `emit-agents-md`). Removal per policy: demoted at 5.0.0, removable the following major after telemetry review (performed 2026-08-04; honest scope: the telemetry corpus records skill events + ref-loads and has NO channel that logs typed command invocations, so it can attest no alias usage — the review is discharged procedurally, and the field floor is covered by this guide, not by the corpus).
 
 **What did NOT break:** every artifact (vault, binding.md, units, bolts), every gate and hook contract, the classic spine (`--classic` / `spine: classic`), all legacy read-side paths (`docs/mega-sdd/…`, `.mega-sdd-memory/` — deliberately KEPT, they cost one glob each), and all four maintenance one-timers. **Typing an old form still works in practice:** an unregistered legacy form (say, the old typed analyze alias) arrives as plain text and routes to the matching skill — you lose only the registered slash-command autocompletion.
 
-**The 6.0.0 surface:** `/mega-sdd` (front door) · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>` + one-timers `install-deps` / `update-plugin` / `memory` / `migrate-paths`. Everything else: natural-language phrase ("cek konsistensi", "lint units", "cek drift", "blast radius"). The full 24-row old-form → new-way map lives in the plugin `README.md §Commands you'll actually use`.
+**The 6.0.0 surface:** `/mega-sdd` (front door) · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>` + one-timers `install-deps` / `update-plugin` / `memory` / `migrate-paths` (v7.3.0 removed `memory` → three one-timers; v7.4.0 removed `/mega-sdd:slice` → three public verbs). Everything else: natural-language phrase ("cek konsistensi", "lint units", "cek drift", "blast radius"). The full 24-row old-form → new-way map lives in the plugin `README.md §Commands you'll actually use`.
 
 **Where the alias content went (nothing was deleted blind):** `lint-units`/`analyze-parallelism`/`list-modules`/`enrich-semantics` procedures → `skills/orchestrate-flow/references/diagnostics-procedures.md`; `validate-handoff` → `skills/bind-codebase/references/handoff-validation.md`; `migrate-rules` → `skills/execute-bolts/references/` (the relocated `replay` lane was later removed entirely in v7 — git history); `analyze` modes → `skills/analyze/SKILL.md`.
 
@@ -52,7 +63,7 @@ Keep your original PRD or KB; regenerate vault + binding + units fresh on the ne
 **Path B (preserve existing vault + binding + bolts):**
 Run migrations → expect 1-2 schema halts → recover via halt envelope hints. ~15-30 min.
 
-> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
+> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.5.x — see the 7.0.0 and 7.3–7.5 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
 
 ## Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
 
@@ -70,19 +81,19 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | 57 | v3.38.1 | CRITICAL fix-forward (B-P1 + D1 + F-E-2) | binding.md gains `binding_metadata:` block (additive); `--rollback` menu default flipped to `[I] interactive` (safer) |
 | 58 | v3.39.0 | Halt taxonomy: +9 enum entries + `quality_gate_failed` subtypes | downstream consumers branch on `details.subtype` for `quality_gate_failed` |
 | 59 | v3.39.1 | Contract sweep: emit-fsd + install-deps Per-skill blocks | adds TYPE annotations (advisory until Iter 60) |
-| 60 | v3.40.0 | **F4 bypass tightening — anti-halu rail behavior change** | fields without TYPE annotation halt-against-author; migration via `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` for one chain run |
+| 60 | v3.40.0 | **F4 bypass tightening — anti-halu rail behavior change** | fields without TYPE annotation halt-against-author; migration via `--legacy-type-bypass` (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed) for one chain run |
 | 61 | v3.40.1 | Catch-all P2/P3 closure | emit-fsd citation slot extraction wired (Iter 54 dead-code fixed); test fixtures added |
 | 62 | v3.41.0 | Remaining Iter 56 audit closure (scenario sweep + doc bulk) | scenario-6 +8 walkthroughs; predictive-check coverage extended; `next_action` canonical shape documented |
 
 ## Recommended upgrade paths
 
-- **v3.0-v3.25 → v3.41.0:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
-- **v3.26-v3.37 → v3.41.0:** use Path B with `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` flag for first chain run; remove flag after handoff TYPE annotations are in place.
-- **v3.38-v3.40 → v3.41.0:** seamless upgrade; existing chains compatible.
+- **v3.0-v3.25 → 7.5.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
+- **v3.26-v3.37 → 7.5.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
+- **v3.38-v3.40 → 7.5.x:** seamless upgrade; existing chains compatible.
 
 ## Compatibility matrix
 
-| Old artifact | Works on v3.41.0? | What to do |
+| Old artifact | Works on 7.5.x? | What to do |
 |---|---|---|
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |
@@ -96,7 +107,7 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 | Old `.mega-sdd/memory/` data | Ignored — the memory lane was removed in v7.3.0 | Delete the dir when convenient |
 | Pre-Iter-30 bolt-reports without provenance trailer | New bolts OK; re-running old bolts halts | Skip re-runs OR add trailer manually |
 | Pre-Iter-33 handoff YAML missing `scope:`/`mutability:` blocks | Halt `invalid_handoff` on re-run via orchestrate-flow Step 6.b validation gate | Edit handoff template OR regenerate vault (Path A) |
-| Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | Run with `--legacy-type-bypass (RETIRED in v4.75.0 — un-annotated fields are warn-only under the deterministic validator; no migration flag needed)` flag for one chain run; fix handoff-contract.md TYPE annotations; remove flag |
+| Pre-Iter-60 skill handoffs with fields lacking TYPE annotation | Halt `handoff_type_mismatch` (strict default v3.40.0+) | No flag needed (`--legacy-type-bypass` RETIRED v4.75.0 — warn-only now); fix handoff-contract.md TYPE annotations at leisure |
 | Pre-Iter-58 chain emitting halt names from the 9 newly-enumerated orphans | Now accepted (Iter 58 closed enum gap) | None — no action needed |
 
 ## Migration commands — run in this order
@@ -106,14 +117,12 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 /mega-sdd:migrate-paths --dry-run        # preview only
 /mega-sdd:migrate-paths                  # actual move via git mv (preserves history)
 
-# 2. Migrate memory schema (auto-detects out-of-date stamps)
-
-# 3. Migrate Hard Rules v1 grammar → v2 ast-grep YAML (per-unit confirm)
+# 2. Migrate Hard Rules v1 grammar → v2 ast-grep YAML (per-unit confirm)
 #    (not a slash command since 6.0.0 — ask by phrase:)
 #    "/mega-sdd" → "migrate hard rules <vault-path>"
 ```
 
-All three are idempotent — safe to re-run.
+Both are idempotent — safe to re-run. (The old "migrate memory schema" step is gone — the memory lane was removed in v7.3.0.)
 
 ## Common halts after upgrade + recovery
 
@@ -195,7 +204,7 @@ Start: I have an old mega-sdd project on v3.26.1+
 For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce migration-relevant changes:
 
 - **Iter 8 (v3.x)** — Implementation-State Map adds `PARTIAL_FIELDS_*` states; old binding.md still parses (unknown states → `create`)
-- **Iter 9 (v3.x)** — memory schema stamping; auto-migrate via `memory migrate`
+- **Iter 9 (v3.x)** — memory schema stamping; auto-migrate via `memory migrate` (the whole memory lane was later removed in v7.3.0)
 - **Iter 10 (v3.4+)** — path consolidation under `.mega-sdd/`; `migrate-paths` command introduced
 - **Iter 22 (v3.14+)** — KB mutability tiers `[LOCKED]/[INTENT]/[ARTIFACT]`; pre-Iter-22 KBs default all claims to `[INTENT]`
 - **Iter 27 (v3.19+)** — starterkit-first pipeline reorder (scan-codebase runs FIRST in brownfield); old chains still work via routing-rules.md back-compat
@@ -208,7 +217,7 @@ For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce
 1. ✅ Commit your current work (`git status`; commit any uncommitted changes)
 2. ✅ Note current plugin version (compare against the latest in `CHANGELOG.md` after)
 3. ✅ Decide: Path A (regenerate) OR Path B (preserve)
-4. ✅ If Path B: backup `~/.mega-sdd/memory/` to a safe location (memory migrate creates its own backup but extra safety is cheap)
+4. ✅ If Path B: nothing to back up for memory — the lane was removed in v7.3.0; old `.mega-sdd/memory/` dirs are inert and deletable
 5. ✅ Update plugin: `/mega-sdd:update-plugin` → `/plugin marketplace update mega-sdd` → restart / `/reload-plugins`
 6. ✅ Run the migration sequence per above
 
