@@ -190,7 +190,11 @@ printf '%s' "$OUT" | grep -q '"deny"' && ok "S16 Bash rm of .gateguard-state.jso
 # instincts dir exists. Measured 2026-08-22: no-signal = 0, SDD+index = 8
 # (BEFORE the diet: ±22–26). Ceilings, not exact counts.
 SSHOME="$WORK/sshome"; mkdir -p "$SSHOME/.claude/commands"
-printf '%s\n' '<!-- mega-sdd-front-door-wrapper v1 — managed by the mega-sdd plugin -->' \
+# Seed the wrapper CURRENT — derive the marker version from the installer so
+# this fixture can never re-encode a stale literal (the v7.5.2 regression class:
+# the fixture pinned "v1" and masked the hook/installer version mismatch).
+_FDWV=$(grep -m1 '^WRAPPER_VERSION=' "$REPO/plugins/mega-sdd/scripts/install-front-door.sh" | tr -dc '0-9')
+printf '%s\n' "<!-- mega-sdd-front-door-wrapper v${_FDWV} — managed by the mega-sdd plugin -->" \
   > "$SSHOME/.claude/commands/mega-sdd.md"
 run_ss() { ( cd "$1" && printf '{"source":"startup","session_id":"s"}' \
   | HOME="$SSHOME" PATH="$SHIM:$PATH" bash "$HOOKS/session-start" 2>/dev/null ); }

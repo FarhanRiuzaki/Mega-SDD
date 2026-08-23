@@ -86,7 +86,11 @@ run_ev() {
 # ── fixtures ─────────────────────────────────────────────────────────────────
 PLAIN="$WORK/plain"; mkdir -p "$PLAIN"
 SSHOME="$WORK/sshome"; mkdir -p "$SSHOME/.claude/commands"
-printf '%s\n' '<!-- mega-sdd-front-door-wrapper v1 — managed by the mega-sdd plugin -->' \
+# Seed the wrapper CURRENT — derive the marker version from the installer so
+# this fixture can never re-encode a stale literal (the v7.5.2 regression class:
+# the fixture pinned "v1" and masked the hook/installer version mismatch).
+_FDWV=$(grep -m1 '^WRAPPER_VERSION=' "$REPO/plugins/mega-sdd/scripts/install-front-door.sh" | tr -dc '0-9')
+printf '%s\n' "<!-- mega-sdd-front-door-wrapper v${_FDWV} — managed by the mega-sdd plugin -->" \
   > "$SSHOME/.claude/commands/mega-sdd.md"
 mkfix() {
   mkdir -p "$1/.mega-sdd/codebase" "$1/src"
