@@ -12,7 +12,6 @@ ui-ux-pro-max ships a Python + ~11MB CSV search engine. mega-sdd runs standalone
 |---|---|
 | `product-style-map.yaml` | `products.csv` + `colors.csv` |
 | `style-principles.md` | `styles.csv` |
-| `palette-principles.md` | `colors.csv` |
 | `typography-pairings.md` | `typography.csv` |
 | `ux-rules.md` | `ux-guidelines.csv` |
 

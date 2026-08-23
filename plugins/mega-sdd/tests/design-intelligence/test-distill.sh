@@ -12,9 +12,11 @@ OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 python3 "${PLUGIN_ROOT}/scripts/_lib/distill-ui-ux.py" --data="$DATA" --out="$OUT" || { echo "FAIL: distiller errored"; exit 1; }
 fail=0
-for f in product-style-map.yaml style-principles.md palette-principles.md typography-pairings.md ux-rules.md; do
+for f in product-style-map.yaml style-principles.md typography-pairings.md ux-rules.md; do
   [ -s "${OUT}/${f}" ] || { echo "FAIL: ${f} missing/empty"; fail=1; }
 done
+# v7.4.0: palette-principles.md emit removed (zero runtime consumers) — stays dead
+[ -e "${OUT}/palette-principles.md" ] && { echo "FAIL: palette-principles.md re-emitted (removed v7.4.0)"; fail=1; }
 # product-style-map.yaml must parse as YAML and carry >=10 product entries each with the 4 required keys.
 python3 - "$OUT/product-style-map.yaml" <<'PY' || fail=1
 import sys, re
