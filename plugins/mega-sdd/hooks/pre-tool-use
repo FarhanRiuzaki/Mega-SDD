@@ -165,11 +165,21 @@ fi
 # a backslash is eaten (destroying every Windows path, so CWD became `C:proj` and
 # PROJECT_ROOT was garbage), and $(…) is EXECUTED. file_path/command/args stay on
 # the base64 channel; `emit()` covers everything else.
-PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
+# №E (v7.5.0): when the fast path resolved SC_ROOT (its last-match cwd
+# extraction is pinned equivalent to this parse's json cwd — the quoting
+# suite's agreement arm), the FP_GUARD classification (Edit/Write) and the
+# Bash GUARD_SKIP decision fold INTO this one interpreter — the armed common
+# path pays 1 python instead of 2-3. The folded logic is VERBATIM (the prot
+# regex + _GUARDED tuple + evidence regexes are byte-copies) from the
+# dedicated interpreters below, which remain the fallback when SC_ROOT is
+# absent (extraction doubt) — same code, same verdicts.
+PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | MEGA_SDD_SC_ROOT="${SC_ROOT:-}" python3 -c '
 import json
 import shlex
 import sys
 import base64
+import os
+import re
 
 def emit(key, value):
     print(key + "=" + shlex.quote(str(value)))
@@ -189,6 +199,9 @@ emit("TOOL_NAME", tool_name)
 emit("TRANSCRIPT_PATH", transcript_path)
 emit("SESSION_ID", data.get("session_id", ""))
 
+sc_root = os.environ.get("MEGA_SDD_SC_ROOT", "")
+plugin_dev = bool(cwd) and os.path.isdir(os.path.join(cwd, "plugins/mega-sdd/hooks"))
+
 if tool_name == "Skill":
     emit("SKILL_NAME", tool_input.get("skill", ""))
     args = tool_input.get("args", "") or ""
@@ -196,9 +209,55 @@ if tool_name == "Skill":
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
+    if sc_root:
+        # GUARD_SKIP fold — the prot regex below is a byte-copy of the
+        # dedicated interpreter'"'"'s (kept in lockstep by the parity pin).
+        root = sc_root.rstrip("/")
+        prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance)\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+        def _rel(t):
+            if root and t.startswith(root + "/"):
+                return t[len(root) + 1:]
+            return t
+        toks = prot.findall(cmd)
+        if not toks:
+            skip = "1"
+        elif all(re.search(r"(?:^|/)(?:tests|examples|fixtures)/", _rel(t)) for t in toks):
+            skip = "1"
+        else:
+            skip = "0"
+        emit("GUARD_SKIP_PRE", skip)
+        emit("GUARD_SKIP_DONE", "1")
 elif tool_name in ("Edit", "Write"):
     fp = tool_input.get("file_path", "")
     emit("FILE_PATH_B64", base64.b64encode(fp.encode()).decode())
+    if sc_root and not plugin_dev:
+        # FP_GUARD fold — verbatim classification of the dedicated interpreter.
+        verdict = ""
+        p2 = os.path.abspath(fp) if os.path.isabs(fp) else os.path.abspath(os.path.join(sc_root, fp))
+        rel = os.path.relpath(p2, sc_root) if sc_root else p2
+        if os.sep != "/":
+            rel = rel.replace(os.sep, "/")
+        if not re.search(r"(?:^|/)(?:tests|examples|fixtures)/", rel):
+            _GUARDED = (
+                ".gateguard-state.json",
+                ".stop-scan-stamp", ".ptu-scan-stamp",
+                ".validation-blockers.json", ".unit-spec-state.json", ".flow-coverage-state.json",
+                ".sibling-consistency-state.json", ".ui-quality-blockers.json",
+                ".cross-cutting-state.json", ".bolt-orphans-state.json",
+                ".batch-suite-gate-state.json", ".bolt-postflight-state.json",
+                ".factory-ledger-state.json", ".bolt-whitelist-state.json",
+                ".bolt-acceptance-state.json",
+            )
+            if any(rel == ".mega-sdd/" + g or rel.endswith("/.mega-sdd/" + g) for g in _GUARDED):
+                verdict = "protected"
+            elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
+                verdict = "evidence"
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance)\.json|_batch-suite\.json)$", rel):
+                verdict = "evidence"
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/uat/evidence/(?:[^/]+/)*result\.json$", rel):
+                verdict = "evidence"
+        emit("FP_GUARD_PRE", verdict)
+        emit("FP_GUARD_DONE", "1")
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then
@@ -975,6 +1034,11 @@ if d and d.get("status") == "FAIL":
     #    RELATIVE to PROJECT_ROOT — a real project living under a path segment
     #    named examples/ must not silently lose the guard.
     if [ ! -d "${CWD}/plugins/mega-sdd/hooks" ]; then
+      if [ "${FP_GUARD_DONE:-}" = "1" ]; then
+      # №E: the verdict was folded into the parse interpreter (SC_ROOT ==
+      # PROJECT_ROOT by the pinned extraction agreement) — no second python.
+      FP_GUARD="${FP_GUARD_PRE:-}"
+      else
       FP_GUARD=$(printf '%s' "$FILE_PATH_B64" | PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import base64, os, re, sys
 try:
@@ -1053,6 +1117,7 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
     # bolts evidence class (EB-VAL-7).
     print("evidence")
 ' 2>/dev/null)
+      fi
       if [ "$FP_GUARD" = "protected" ]; then
         emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger — plus the derived scan stamps .stop-scan-stamp / .ptu-scan-stamp) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
       fi
@@ -1067,10 +1132,19 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
     # chains) is accepted at gate-1 and re-caught by the gate-time re-derive +
     # full re-bind at the next chain entry. FP_GUARD above stays ALWAYS-ON.
     v7_chain_armed || exit 0
-    if grep -qE "^[[:space:]]*gateguard:[[:space:]]*false" "$CONFIG_FILE" 2>/dev/null; then exit 0; fi
+    # №E: config probe + newest-binding probe are builtins now (were grep + ls|head).
+    if [ -f "$CONFIG_FILE" ]; then
+      while IFS= read -r _ggl || [ -n "$_ggl" ]; do
+        if [[ "$_ggl" =~ ^[[:space:]]*gateguard:[[:space:]]*false ]]; then exit 0; fi
+      done < "$CONFIG_FILE" 2>/dev/null || true
+    fi
     GG_IDX="${PROJECT_ROOT}/.mega-sdd/.locked-files-index.json"
     # Lazy rebuild: index absent or older than the newest binding.md
-    GG_NEWEST=$(ls -t "${PROJECT_ROOT}/.mega-sdd/vaults"/*/binding.md 2>/dev/null | head -1)
+    GG_NEWEST=""
+    for _ggb in "${PROJECT_ROOT}/.mega-sdd/vaults"/*/binding.md; do
+      [ -f "$_ggb" ] || continue
+      if [ -z "$GG_NEWEST" ] || [ "$_ggb" -nt "$GG_NEWEST" ]; then GG_NEWEST="$_ggb"; fi
+    done
     if [ -n "$GG_NEWEST" ]; then
       if [ ! -f "$GG_IDX" ] || [ "$GG_NEWEST" -nt "$GG_IDX" ]; then
         bash "${SCRIPT_DIR_RPR}/../scripts/build-locked-index.sh" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
@@ -1172,6 +1246,18 @@ PYGG
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
 
+    # №E: the parse interpreter already computed the GUARD_SKIP decision on the
+    # armed common path — an innocent command exits here with ZERO further
+    # python. A protected-reference command (skip=0) still decodes for the
+    # battery below (rare path). Fallback: no folded decision → the dedicated
+    # decode + GUARD_SKIP interpreters below run exactly as before.
+    if [ "${GUARD_SKIP_DONE:-}" = "1" ]; then
+      GUARD_SKIP="${GUARD_SKIP_PRE:-0}"
+      # Plugin-dev-mode: CWD is the plugin source repo, not a target project.
+      [ -d "${CWD}/plugins/mega-sdd/hooks" ] && GUARD_SKIP=1
+      if [ "$GUARD_SKIP" = "1" ]; then exit 0; fi
+    fi
+
     # Decode command
     BASH_CMD=$(printf '%s' "$BASH_CMD_B64" | python3 -c '
 import base64, sys
@@ -1179,6 +1265,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 ' 2>/dev/null)
     [ -z "$BASH_CMD" ] && exit 0
 
+    if [ "${GUARD_SKIP_DONE:-}" != "1" ]; then
     # ── Scope exclusion: skip guard for test/fixture/plugin-dev paths ──────
     # S4 BC-BYPASS-2: the old check skipped the guard when "tests/" (etc.)
     # appeared ANYWHERE in the command — so `rm .mega-sdd/.validation-blockers.json
@@ -1212,6 +1299,7 @@ else:
     if [ "$GUARD_SKIP" -eq 1 ]; then
       exit 0
     fi
+    fi  # №E: end of the un-folded GUARD_SKIP fallback
 
     # Protected state files (S5 GU-HOOK-2: quality-gate states added — a single
     # `rm` cleared any execute-bolts hard block except the moat; absent = allow.
