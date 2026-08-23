@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [7.4.0] - UNRELEASED — v7 Fase 5: pipeline-only placement (per-surface series; bump lands at series end)
+## [7.4.0] - 2026-08-23 — v7 Fase 5: pipeline-only placement (per-surface series, 7 commits, each CI-gated)
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
+
+### Measured (series total)
+- Tracer, 10 lanes: **666,156 → 655,709 est tok (−10,447, −1.6%)**; every lane down or flat (largest: T04 −2,465, T07 −2,199; T10 +147 = the inlined failing-first TDD lines). Pipeline-1-unit lane T10 = 45,601 tok — **under the Fase-5 ≤120k target**; the full chains (T01 106.6k / T07 109.2k) are under it too. New baseline: `benchmarks/results/optimized/context-v7.4.0-fase5.json`.
+- Net code across the series: **−3,146 lines** (№5 −567, №1 −1,634, №2 −155, №7 +3, №3 −162, №4 −809, №6 −48 — insertions netted). Package fat vs run context split confirmed the placement thesis: most deletions (vendored tree, .scm queries, slice-design) never loaded per-run, so the win is package size + surface honesty more than per-run tokens.
+- Housekeeping caught this release: the v7.3.1 commit never bumped the MANIFESTS (CHANGELOG/commit only; CI parity held at 7.3.0==7.3.0) — manifests go 7.3.0 → 7.4.0 directly here, and plugin.json's stale description (tree-sitter, persistent memory) is rewritten. MCP pins reviewed: unchanged since the 6.9.0 registry check (`@playwright/mcp`, `@upstash/context7-mcp` — exact pins intact).
 
 ### №15 — PostToolUse validator audit: ZERO deletions (every validator has a knife-test consumer)
 - Audit (grep, per state file): **gate feeders** — `.validation-blockers.json` (handoff-binding-units), codebase-map / factory-ledger / flow-coverage / sibling-consistency+cross-cutting / unit-spec / batch-suite+acceptance states are all READ by `pre-tool-use` (4–16 hits each). **Advisory validators** (dispatch-prompt, fanout-parity, ui-deferral/ui-quality, constitution-propagation, starterkit-conformance) are all READ by `run-analyze.sh` → CONSISTENCY-REPORT.md — a dev artifact, so they pass the knife test. **starterkit-metrics** backs the chain-stopping `starterkit_metrics_inconsistent` halt (generate-units + handoff-consumption). The v7-Fase-2 prune already removed the true orphans (vault-binding-coverage, kb-reengineering); nothing is left to cut without breaking a gate or an emitted artifact.
