@@ -13,6 +13,8 @@ A project that already completed the pipeline: `.mega-sdd/codebase/codebase-map.
 2. **Manual edit** — a teammate renames `failed_debit_count` → `failed_attempts` in a model and commits.
 3. **git pull** — upstream merges land. (2 and 3 are caught by the git channel: HEAD ≠ the map's `last_scanned_commit`.)
 
+Since v7.5.0, an inline edit of a `[LOCKED]`-anchored file gets an immediate one-line context notice (0 fork), before the session-start notice.
+
 ## Act 2 — the system notices (ambient, zero effort)
 
 Open a new session in the project. Session start prints ONE line:
@@ -45,6 +47,8 @@ End of run: `<vault>/SYNC-REPORT.md` (per-phase outcomes + closing staleness ver
 ## Act 4 — clear the queue (when you're ready)
 
 Open `PENDING-SYNC.md`: the rename drift asks *vault stale (code is right) vs code regressed (vault is right)*. Decide → `UPDATE_VAULT` drafts the patch with git provenance (`f6e5d4 "rename to failed_attempts" — <teammate>, <date>`); ACCEPT applies it, bumps the vault version, regenerates `vault.json` under the lock. Or run with `--auto-apply=safe` next time to auto-apply this exact class.
+
+`auto_verify_on_edit: true` (default false) offers the touched unit's acceptance run.
 
 ## Pass criteria
 

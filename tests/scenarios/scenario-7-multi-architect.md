@@ -4,7 +4,7 @@
 **When to use**: Project where PRD is shared across multiple IT architects (BE, MW, FE) — each architect generates their own vault for their scope only
 
 **Prerequisites**:
-- Mega-sdd v6+ (multi-scope picker)
+- Mega-sdd v7.4+ (multi-scope picker)
 - Canonical PRD with `scopes:` frontmatter (or legacy PRD via retrofit bridge)
 - Three separate repos (BE, MW, FE) — or three separate folders within one monorepo
 - Each architect operating in their own session
@@ -66,14 +66,14 @@ User picks `[1] BE`.
 ▶ Phase 1: generate-intent --scope=BE ./prd.md
   Output: .mega-sdd/vaults/order-management-be/
   - vault.json: scope=BE, scope_metadata declared, prd_sha256 recorded
-  - 00-index.md: scope header + sibling scopes (MW, FE) noted + locked contracts listed
+  - vault.md: scope header + sibling scopes (MW, FE) noted + locked contracts listed
 
 ▶ Phase 2: bind-codebase --express
 ▶ Phase 3: generate-units
 ▶ Phase 4: execute-bolts (auto, with halts on conflict)
 ```
 
-BE architect's vault is at `.mega-sdd/vaults/order-management-be/`. 00-index.md shows:
+BE architect's vault is at `.mega-sdd/vaults/order-management-be/`. vault.md shows:
 
 ```markdown
 # Vault: Order Management System — BE
@@ -91,11 +91,7 @@ BE architect's vault is at `.mega-sdd/vaults/order-management-be/`. 00-index.md 
 - be-fe-orders-api
 ```
 
-Memory entry written:
-```
-<project>/.mega-sdd/memory/decisions.md
-| sha256 abc... | Order Mgmt v1.0 | 2026-05-23 | BE | order-management-be | 0 |
-```
+Recorded in vault.json: prd_sha256 + scope + scope_metadata.
 
 ## Phase 2 — Architect FE generates vault (20 min, different session)
 
@@ -108,7 +104,7 @@ Same PRD, different cwd. Smart default suggests FE.
 
 User picks `[3] FE`.
 
-Vault filtered to §Frontend + universal sections. 00-index.md shows:
+Vault filtered to §Frontend + universal sections. vault.md shows:
 
 ```markdown
 # Vault: Order Management System — FE
@@ -125,7 +121,7 @@ Vault filtered to §Frontend + universal sections. 00-index.md shows:
 - mw-fe-realtime-channels → see PRD §Cross-scope contracts
 ```
 
-## Phase 3 — Architect BE re-runs (memory hit demo)
+## Phase 3 — Architect BE re-runs (vault.json sha256 recognition)
 
 BE architect adds a unit, re-runs:
 
@@ -189,7 +185,7 @@ PM updates PRD to add new endpoint:
 /mega-sdd ./prd.md
 ```
 
-Memory check:
+vault.json check:
 ```
 ▶ PRD ./prd.md recognized (sha256: NEW_HASH... — content changed since last invocation)
 

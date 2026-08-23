@@ -2,30 +2,29 @@
 
 **Time:** ~5 minutes
 **When to use:** override default model tiers per subagent role (cost control OR quality boost)
-**Prerequisites:** plugin v6+
+**Prerequisites:** plugin v7.1+
 
 ## What you'll learn
 
-- mega-sdd uses a curated catalog (17 named roles × tier) for subagent dispatches
-- 3 ways to override: CLI flag, project config, user preference
+- mega-sdd uses a curated catalog (23 named roles × tier) for subagent dispatches
+- 2 ways to override: CLI flag, project config
 - When to escalate (opus) vs. when to drop (haiku)
 
 ## The catalog
 
 By default mega-sdd picks tier per role per `plugins/mega-sdd/references/model-tiers.md`:
 
-- 3 roles default **opus**: `extract-intelligence-wave-5` (synthesis), `pipeline-audit-consolidator`, `code-quality-reviewer`
-- 12 roles default **sonnet**: deep-scan extractors, early waves, audit-per-skill, implementers, etc.
+- 4 roles default **opus**: `extract-intelligence-wave-5` (synthesis), `pipeline-audit-consolidator`, `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
+- 16 roles default **sonnet**: deep-scan extractors, early waves, audit-per-skill, implementers, etc.
 - 2 roles default **haiku**: `intelligence-audit-probe`, `domain-research`
 
 Distribution is sonnet-dominant by design (rubric in catalog file).
 
-## Override mechanism — 4 levels (highest precedence first)
+## Override mechanism — 3 levels (highest precedence first)
 
 1. **CLI flag** (per-run): `--model-tier=<role>:<tier>`
-2. **Per-project config**: `<project>/.mega-sdd/config.yaml` `model_tiers:` section
-3. **User-scope preference**: `~/.mega-sdd/memory/preferences.md` `## Model tiers` section
-4. **Catalog default**: `references/model-tiers.md §Catalog`
+2. **Per-project config**: `<project>/.mega-sdd/config.yaml` `model_tiers:` section (the single persistent override surface — the user-scope rung was removed in v7.3.0)
+3. **Catalog default**: `references/model-tiers.md §Catalog`
 
 ## Example 1 — Cost-sensitive run (one-off)
 
@@ -61,28 +60,16 @@ model_tiers:
 
 Applies to every mega-sdd run in this project. Doesn't affect other projects.
 
-## Example 3 — User-scope quality boost
+## Example 3 — Persistent quality boost
 
-You always want deep audit consolidator on opus (the catalog default; you want to ensure it stays opus even if a project config tries to drop it):
-
-```markdown
-# ~/.mega-sdd/memory/preferences.md
-
-## Model tiers
-
-- `pipeline-audit-consolidator`: opus  # personal default — keep even if project overrides
-```
-
-Wait — but project config wins over user preference per precedence chain. So this preference only applies when project doesn't override.
+The user-scope model-tier rung was removed in v7.3.0 — the override surface is the per-project `.mega-sdd/config.yaml` (single source) + the CLI flag. A persistent boost therefore lives in the project config.
 
 The real use case: bumping intelligence-audit-probe from haiku to sonnet because you want more thorough scoring:
 
-```markdown
-# ~/.mega-sdd/memory/preferences.md
-
-## Model tiers
-
-- `intelligence-audit-probe`: sonnet  # default haiku is fine, but I prefer higher signal
+```yaml
+# <project>/.mega-sdd/config.yaml
+model_tiers:
+  intelligence-audit-probe: sonnet  # default haiku is fine, but I prefer higher signal
 ```
 
 ## Example 4 — Unknown role tolerance
@@ -98,6 +85,25 @@ model_tiers:
 The chain emits SOFT halt `model_tier_unknown` + log: "Role 'future-unreleased-role' not in catalog; override ignored. Chain proceeds." 
 
 Forward-compat: when a future iter adds `future-unreleased-role` to catalog, this override auto-applies on next run.
+
+## Example 5 — per-unit implementer routing (v7.1)
+
+The bolt implementer gets its own routing knob:
+
+```yaml
+# <project>/.mega-sdd/config.yaml
+model_tiers:
+  bolt_implementer: inherit   # or: auto
+```
+
+- `inherit` (default): the implementer tracks the operator's session tier.
+- `auto`: the router picks the `implementer_model` per unit from resolve-review-tier's six risk signals; haiku is verify-only.
+
+Front-door flags: `--model-tier=inherit|auto|haiku|sonnet|opus` + `--no-escalate`.
+
+Cascade: 2 consecutive failed attempts → the next attempt runs ONE tier higher, at most once per unit; never auto-de-escalate.
+
+Audit fields in `bolt-report.md`: `model_used`, `escalated_from`, `signals_fired`.
 
 ## When to escalate to opus
 
@@ -134,5 +140,5 @@ handoff metadata.model_tiers + model_tier_sources blocks have the provenance tra
 
 ## See also
 
-- `plugins/mega-sdd/references/model-tiers.md` — full catalog (17 roles × tier + rationale)
+- `plugins/mega-sdd/references/model-tiers.md` — full catalog (23 roles × tier + rationale)
 - `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

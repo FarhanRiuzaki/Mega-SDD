@@ -2,7 +2,7 @@
 
 **Time:** ~3 hours wall-clock (mostly idle while extract-intelligence runs in waves; user-active time ~30 min spread across 3 sessions)
 **When to use:** legacy codebase rebuild with a multi-phase plan
-**Prerequisites:** plugin v6+; existing legacy codebase OR willingness to use sample
+**Prerequisites:** plugin v7.4+; existing legacy codebase OR willingness to use sample
 
 > Concept guide for the whole journey (including hand-off + sync after the last phase): [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
 
@@ -60,7 +60,7 @@ generate-intent --kb=.mega-sdd/knowledge-base/ --phase=1
 
 (Note: `--phase=1` is default; flag is for documentation clarity here.)
 
-Expected: vault at `.mega-sdd/vaults/<slug>/`. Open `00-index.md`:
+Expected: vault at `.mega-sdd/vaults/<slug>/`. Open `vault.md`:
 
 ```markdown
 ## Phase context
@@ -115,14 +115,14 @@ Say "generate intent from the KB, phase 2" (the typed skill commands were remove
 generate-intent --kb=.mega-sdd/knowledge-base/ --phase=2
 ```
 
-NEW vault at `.mega-sdd/vaults/<slug-phase-2>/` scoped to Phase 2 deliverables. `00-index.md` Phase context now shows "Phase 2 of 3" + "Phase 3" upcoming.
+NEW vault at `.mega-sdd/vaults/<slug-phase-2>/` scoped to Phase 2 deliverables. `vault.md` Phase context now shows "Phase 2 of 3" + "Phase 3" upcoming.
 
 Run pipeline again. Repeat for Phase 3.
 
 ## Pass criteria
 
 - `suggested-phasing.md` has ≥2 `## Phase` headers
-- Phase 1 vault `00-index.md` has §Phase context block with phase 1 of N + upcoming phases listed + next-phase command verbatim
+- Phase 1 vault `vault.md` has §Phase context block with phase 1 of N + upcoming phases listed + next-phase command verbatim
 - vault.json has `phase: 1`, `phase_total: N` fields
 - execute-bolts end-of-Phase-1 surfaces "Phase 2 next" hint
 - Phase 2 vault is distinct from Phase 1 vault (separate `.mega-sdd/vaults/` subdirectory)
@@ -137,7 +137,7 @@ Run pipeline again. Repeat for Phase 3.
 
 - `docs/mega-sdd/reading-map.md` §Stage 2 (vault) — where to read at each phase
 - `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §suggested-phasing.md — KB phase plan format
-- `plugins/mega-sdd/skills/generate-intent/SKILL.md` Step 2.5 — --phase flag parsing
+- `plugins/mega-sdd/skills/generate-intent/SKILL.md` §Inputs & flags + `references/kb-submode.md` §--phase — --phase flag parsing
 
 ## See also
 

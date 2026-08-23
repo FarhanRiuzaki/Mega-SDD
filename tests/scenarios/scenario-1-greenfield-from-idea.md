@@ -29,8 +29,10 @@ git init
 In Claude Code session at the new dir:
 
 ```
-/mega-sdd "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
+/mega-sdd --greenfield "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
 ```
+
+(Without `--greenfield`, a `no_starterkit_detected` confirmation comes first — the flag skips that question upfront.)
 
 Mega-sdd detects:
 - Input is quoted free-text → Mode B brief
@@ -67,8 +69,10 @@ Mega-sdd opens an interactive Q&A (≤10 questions) to extract concrete spec fro
 Answer based on the [sample PRD](sample-prd-clinic.md) if you want exact reproduction. Or improvise — mega-sdd accepts your choices.
 
 After Q&A, mega-sdd writes vault to `.mega-sdd/vaults/clinic-app/` (or similar slug):
-- `00-index.md` — navigation + OQ roll-up
-- `01-overview.md` through `06-constraints.md` — 7-file spec
+- `vault.md` — frontmatter lock scalars + Overview/Architecture/Decisions
+- `model.md` — entities
+- `flows.md` — Mermaid flows + DoD
+- `constraints.md` — constraints + the one authored `## Open Questions` home (`[origin:]` tokens)
 - `vault.json` — manifest
 
 You'll see chat output:
@@ -95,7 +99,6 @@ OQ-FL-002 [P1] [business / blocking]:
   
   Recommendation: No — show only "Booked" for occupied slots (recommended)
   Rationale: Privacy default; common pattern for booking systems.
-  Source: ~/.mega-sdd/memory/patterns.md §privacy-booking (3/3 past projects)
   Fallback-if-wrong: If clinic explicitly wants visible names (small-team
     practice), revisit with privacy lawyer.
   Confidence: HIGH
@@ -106,7 +109,7 @@ OQ-FL-002 [P1] [business / blocking]:
     3. Defer (revisit later)
 ```
 
-Pick (1). Memory writes decision. Resume:
+Pick (1). The resolution lands in the vault (`constraints.md ## Open Questions`, status: resolved). Resume:
 
 ```
 /mega-sdd --resume
@@ -121,8 +124,6 @@ After OQ resolution, mega-sdd generates atomic units. For clinic system, expect 
 ```
 ▶ Phase 2 of 3: invoking generate-units
 ✓ Phase 2 of 3: generate-units → 14 units
-  [auto] lint-units: 13 HIGH | 1 MEDIUM | 0 LOW grounding; anchors 14/14 verified
-  [auto] analyze-parallelism: max width 5 | speedup 2.8x | wave plan ready
 ```
 
 Mega-sdd auto-invokes lint + analyze. Each unit:
@@ -159,8 +160,6 @@ Mega-sdd auto-runs `execute-bolts --all --parallel` (single squad in this scenar
   Wave 3 (4 parallel): U-011 U-012 U-013 U-014
   ✓ Wave 3 complete in 4 min
 ✓ Phase 3 of 3: execute-bolts → 14/14 bolts complete (0 halts, 13 min total)
-  [auto] list-modules: 5/5 modules completed; DoD all passing
-  [auto] emit-agents-md: AGENTS.md updated at repo root
 ```
 
 Total wall-clock for execution: ~13 minutes (vs ~40 min sequential).
@@ -176,31 +175,13 @@ bun test && bunx playwright test
 # Or if Next.js not scaffolded yet, mega-sdd will have run via superpowers TDD
 # in isolated environment
 
-# View tool-agnostic export
-cat AGENTS.md
+# Tool-agnostic export: run "generate AGENTS.md" on demand if you want it
 ```
 
 You should see:
 - 14 atomic commits (one per unit)
 - All Vitest/Playwright tests passing
-- `AGENTS.md` at root with project overview, build commands, test commands, conventions
-
-## Step 8 — Memory review (if pending)
-
-```
-📋 Final summary:
-   Phases: 3/3 completed
-   Quality: HIGH across all units
-   Memory: 1 learning suggestion pending → /mega-sdd:memory review
-```
-
-If memory pending:
-
-```
-/mega-sdd:memory review
-```
-
-Walks any pending learning suggestions (e.g., "OUTPUT_MODE: compact picked 1/1 times — make default?"). User accepts/rejects.
+- If you want the tool-agnostic `AGENTS.md` export, run "generate AGENTS.md" on demand (auto-emit is classic-spine only)
 
 ## Common pitfalls
 
@@ -235,7 +216,7 @@ Acceptable for greenfield. Optimization targets:
 
 - `/mega-sdd` runs the FULL pipeline from a single sentence
 - Auto-detect handles greenfield (no PRD, no code)
-- Memory + recommendations help with OQs
+- Weighted routing + batched OQs keep interaction minimal
 - Anti-halu rails fire on real issues; auto-continues otherwise
 - ONE command + minimal interaction = working code with tests
 
