@@ -2,9 +2,9 @@
 # PostToolUse hook for mega-sdd — PIPELINE validators + living-vault journal
 # (v7.3.0: observability removed — no telemetry emission of any kind).
 #
-# Legs: Skill → starterkit-metrics cross-check (validator, state file);
-# Bash → dispatch-prompt validator on build-dispatch-prompt.sh runs;
-# Write|Edit → dirty-paths journal (always-on) + chain-scoped validator fan-out.
+# Legs (№C v7.5.0 — matcher narrowed to Write|Edit; the Skill/Bash legs are
+# deleted, see the case comment below): Write|Edit → dirty-paths journal
+# (always-on) + chain-scoped validator fan-out.
 # Exit 0 always (hook must never block tool execution).
 
 set -uo pipefail
@@ -176,7 +176,7 @@ fi
 
 # ─── v7 chain-armed probe (spec §3.1 — same contract as pre-tool-use) ────────
 # armed ⇔ .gateguard-state.json carries chain_engaged for THIS session. Called
-# by the Write|Edit and Bash branches below AFTER the dirty-journal append: not
+# by the Write|Edit branch below AFTER the dirty-journal append: not
 # armed → skip the validator fan-out (the PreToolUse gate-time re-derivation is
 # the moat; this fan-out is early-warning). Fail-CLOSED like its sibling.
 v7_chain_armed() {
@@ -236,34 +236,11 @@ emit("SESSION_ID", session_id)
 emit("CWD", cwd)
 emit("TOOL_NAME", tool_name)
 
-if tool_name == "Read":
-    emit("FILE_PATH", tool_input.get("file_path", ""))
-    # D1 (spec 2026-08-17-token-lard-cuts-p1): the ACTUAL read range, so
-    # Read range fields (kept: harmless extraction; no consumer since v7.3.0).
-    # Sanity bound 10^9 (round catch: a 21-digit int passes isinstance and the
-    # bash digit-guard, landing verbatim in the JSON row) — out-of-range = absent.
-    def _rng(v):
-        return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 10**9 else ""
-    emit("READ_OFFSET", _rng(tool_input.get("offset", "")))
-    emit("READ_LIMIT", _rng(tool_input.get("limit", "")))
-elif tool_name == "Skill":
-    emit("SKILL_NAME", tool_input.get("skill", ""))
-elif tool_name == "Bash":
-    # Pass command via base64 to avoid shell-quoting nightmares with multi-line commands.
-    import base64
-    cmd = tool_input.get("command", "")
-    emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
-elif tool_name in ("Write", "Edit"):
+# №C: the matcher is Write|Edit — every other tool_name is unreachable here
+# (a hand-piped payload with another tool falls to the *) exit below).
+if tool_name in ("Write", "Edit"):
     # Iter 67.6: [HOOK-VALIDATE] trigger for binding→units handoff validator.
     emit("FILE_PATH", tool_input.get("file_path", ""))
-elif tool_name == "Agent":
-    # Edge-case track: detect subagent failures (deep_scan_subagent_failed reframe).
-    # Pass subagent_type + description for context. `description` is arbitrary model
-    # prose — the value most likely to carry spaces, quotes, newlines and $(…).
-    subagent_type = tool_input.get("subagent_type", "")
-    description = tool_input.get("description", "")
-    emit("AGENT_SUBAGENT_TYPE", subagent_type)
-    emit("AGENT_DESCRIPTION", description[:200])
 ' 2>/dev/null)
 
 if [ -z "$PARSE_OUTPUT" ]; then exit 0; fi
@@ -325,82 +302,18 @@ fi
 CONFIG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
 
 case "${TOOL_NAME:-}" in
-  Skill)
-    SKILL_NAME="${SKILL_NAME:-}"
-    [ -z "$SKILL_NAME" ] && exit 0
-    # ── Edge-case: starterkit_metrics_inconsistent cross-check ──────────────
-    # Only fire for mega-sdd:generate-units completion. Read transcript for handoff,
-    # cross-check against starterkit-context.yaml.
-    case "$SKILL_NAME" in
-      mega-sdd:generate-units)
-        # Extract transcript_path from STDIN_JSON
-        TRANSCRIPT_PATH=$(printf '%s' "$STDIN_JSON" | python3 -c '
-import json, sys
-try:
-    d = json.loads(sys.stdin.read())
-    print(d.get("transcript_path", ""))
-except Exception:
-    print("")
-' 2>/dev/null)
-        SCRIPT_DIR_HV2="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
-        VALIDATOR_SKM="${SCRIPT_DIR_HV2}/../scripts/validate-starterkit-metrics.sh"
-        if [ -x "$VALIDATOR_SKM" ] && [ -n "$TRANSCRIPT_PATH" ]; then
-          # The state file (.starterkit-metrics-state.json) is the record;
-          # analyze surfaces a FAIL. No re-read here.
-          bash "$VALIDATOR_SKM" --cwd="$PROJECT_ROOT" --transcript-path="$TRANSCRIPT_PATH" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-    ;;
-
-  Bash)
-    BASH_CMD_B64="${BASH_CMD_B64:-}"
-    [ -z "$BASH_CMD_B64" ] && exit 0
-
-    # v7: the Bash leg (the dispatch-prompt validator) is chain-scoped —
-    # it only means something while a chain is producing artifacts (spec §3.3).
-    v7_chain_armed || exit 0
-
-    # ── Code-delivery slice F (Bash leg): builder-written dispatch prompt ───
-    # PARITY RESTORE, not a new gate. The Write|Edit leg below dispatches
-    # validate-dispatch-prompt.sh on any write of
-    # `*.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md`. Before the builder
-    # existed, execute-bolts materialized that file with Write, so the validator
-    # fired automatically, per bolt, with zero model cooperation. The builder
-    # now writes it from inside Python — no Write tool event, so that leg went
-    # dead and the only replacement was a prose line in SKILL.md telling the
-    # model to run the validator itself. `gates > rules > hooks` is one-way:
-    # an existing deterministic hook is never downgraded into prose. This leg
-    # restores the automatic firing on the Bash call that runs the builder.
-    #
-    # Matches on the BASENAME so it catches both the ${CLAUDE_PLUGIN_ROOT} house
-    # form and an absolute path. Deliberately does NOT read the builder's stdout
-    # (a hook cannot see it) and does NOT reconstruct the prompt path from the
-    # command string: validate-dispatch-prompt.sh's scan is project-wide /
-    # current-truth, so --cwd alone is both correct and sufficient — the same
-    # shape as the cross-cutting + ui-quality dispatches below.
-    #
-    # Fires once per builder invocation = once per bolt. That is PARITY with the
-    # pre-builder Write cadence, not fan-out: the per-item spawn prohibition is
-    # about spawns multiplied INSIDE one logical operation, and per-bolt firing
-    # is the only cadence that survives a 40-unit run halting at unit 12.
-    # Advisory (S6 EB-HONEST-3): nothing in PreToolUse reads
-    # .dispatch-prompt-state.json — it is surfaced via analyze.
-    if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -q "build-dispatch-prompt\.sh"; then
-      SCRIPT_DIR_BDP="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
-      VALIDATOR_DP_B="${SCRIPT_DIR_BDP}/../scripts/validate-dispatch-prompt.sh"
-      if [ -x "$VALIDATOR_DP_B" ]; then
-        bash "$VALIDATOR_DP_B" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-      fi
-    fi
-
-    # ── pandoc render-failure rung REMOVED (v7 Fase 2 delete batch) ────────
-    # The pandoc render validator is deleted; md2pdf's own GitHub-styled HTML
-    # fallback already covers the failure mode without a hook observer. The
-    # PostToolUseFailure hooks.json wiring existed only for this rung and is
-    # removed with it.
-    ;;
-
+  # ── №C (v7.5.0, Fase-7 audit §4): the Skill and Bash legs are DELETED and the
+  # hooks.json matcher narrowed to Write|Edit — this hook no longer fires at all
+  # on Skill/Bash/Read events. Evidence, per leg:
+  #  · Skill → validate-starterkit-metrics: its state file had ZERO readers
+  #    anywhere (run-analyze excluded it explicitly; no PreToolUse read; no test)
+  #    — the starterkit_metrics_inconsistent halt is produced by in-skill prose
+  #    recomputation (orchestrate-flow handoff-consumption.md / generate-units
+  #    auto-and-memory.md), which stands unchanged. Validator deleted with it.
+  #  · Bash → the build-dispatch-prompt.sh parity leg: advisory-only state
+  #    (.dispatch-prompt-state.json — nothing in PreToolUse reads it), now
+  #    written fresh by run-analyze FULL (№C twin change), so the per-Bash-call
+  #    hook firing bought nothing the analyze lane does not already cover.
   Write|Edit)
     # Iter 67.6 [HOOK-VALIDATE] + Phase B B.2: on Write|Edit of mega-sdd-relevant
     # paths, run validators. Multiple validators may fire per path.
@@ -589,8 +502,8 @@ except Exception:
 
     # ── Iter 68 path-scoped dispatch: starterkit-context.yaml write ─────────
     # Triggers validate-starterkit-conformance against current units (if any).
-    # Note: validate-starterkit-metrics (cross-check vs generate-units handoff)
-    # remains on Skill matcher — it needs --transcript-path.
+    # (№C: validate-starterkit-metrics — the old Skill-matcher cross-check —
+    # was deleted with the Skill leg; its state file had zero readers.)
     case "$FILE_PATH" in
       *.mega-sdd/codebase/starterkit-context.yaml)
         VALIDATOR_SKC2="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"

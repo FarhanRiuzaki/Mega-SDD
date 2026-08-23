@@ -115,6 +115,8 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
 
   # Advisory checks not re-run in aggregate-only mode
   REUSE_DUP_OUTPUT=""
+  # №C (v7.5.0): the 4 fan-out-orphaned advisories read from disk here; FULL re-runs them.
+  V13_RC="STATE_FILE"; V14_RC="STATE_FILE"; V15_RC="STATE_FILE"; V16_RC="STATE_FILE"
 
   # Vault internal consistency: run inline (cheap, pure reads, no validators)
   VAULT_CONSISTENCY="[]"
@@ -377,8 +379,10 @@ run_family() {
 # We invoke each with --cwd and --quiet, capturing exit codes.
 # Validators excluded:
 #   validate-scope-flag.sh    — needs user-message stdin (not batch-able)
-#   validate-starterkit-metrics.sh — needs transcript context
-#   validate-handoff-yaml.sh  — needs chat output text (Stop-hook context)
+#   validate-handoff-yaml.sh  — needs chat output text (gate-time context)
+# (validate-starterkit-metrics.sh was DELETED in v7.5.0 №C — its state file had
+#  zero readers anywhere; the starterkit_metrics_inconsistent halt lives in the
+#  generate-units/orchestrate-flow prose recomputation, not in a validator.)
 
 run_validator() {
   local script="$1"
@@ -486,6 +490,15 @@ V11_RC=$(run_validator "validate-constitution-propagation.sh" --cwd="$CWD" --qui
 
 # 1k. Codebase-map schema validation (R6)
 V12_RC=$(run_validator "validate-codebase-map.sh" --cwd="$CWD" --quiet)
+
+# 1k2 (v7.5.0 №C, Fase-7 audit §5c): the four advisory surfaces whose ONLY
+# writer was the PostToolUse Write|Edit fan-out join the FULL re-run set —
+# the fan-out dies in №D, and re-running them here keeps the advisory lane
+# loss-free. All four self-SKIP cheaply when their inputs are absent.
+V13_RC=$(run_validator "validate-sibling-consistency.sh" --fanout-parity --cwd="$CWD" --quiet)
+V14_RC=$(run_validator "validate-ui-quality.sh" --deferral --cwd="$CWD" --quiet)
+V15_RC=$(run_validator "validate-vault-flow-staging.sh" --cwd="$CWD" --quiet)
+V16_RC=$(run_validator "validate-dispatch-prompt.sh" --cwd="$CWD" --quiet)
 
 # 1l. Reuse-duplication advisory heuristic (R8 — ADVISORY; never blocks; NOT in PreToolUse)
 REUSE_DUP_OUTPUT=""
@@ -615,6 +628,7 @@ ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUS
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V7_RC="$V7_RC" \
   V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   V3_ST="$V3_ST" V4_ST="$V4_ST" V5_ST="$V5_ST" V7_ST="$V7_ST" V7M_ST="$V7M_ST" V7F_ST="$V7F_ST" V7VF_ST="$V7VF_ST" V7C_ST="$V7C_ST" \
+  V13_RC="$V13_RC" V14_RC="$V14_RC" V15_RC="$V15_RC" V16_RC="$V16_RC" \
   SCOPE_MODE="$SCOPE_MODE" REUSED_FILES="$REUSED_FILES" RERUN_FILES="$RERUN_FILES" LEDGER_TS="$LEDGER_TS" \
   python3 <<'PYEOF'
 import json
@@ -663,13 +677,14 @@ validator_results = {
     "sibling_consistency": {"rc": "STATE_FILE", "state_file": ".sibling-consistency-state.json"},
     "cross_cutting_registration": {"rc": "STATE_FILE", "state_file": ".cross-cutting-state.json"},
     "ui_quality": {"rc": "STATE_FILE", "state_file": ".ui-quality-blockers.json"},
-    # v4 Phase 2 (Hybrid) — code-delivery checks DEMOTED from PreToolUse hard-block to
-    # advisory. Surfaced here read-only from their PostToolUse-written state files (no
-    # re-run); "NOT_RUN" until a real chain writes them. They no longer block execute-bolts.
-    "dispatch_prompt (advisory)": {"rc": "STATE_FILE", "state_file": ".dispatch-prompt-state.json"},
-    "fanout_parity (advisory)": {"rc": "STATE_FILE", "state_file": ".fanout-parity-state.json"},
-    "ui_deferral (advisory)": {"rc": "STATE_FILE", "state_file": ".ui-deferral-state.json"},
-    "vault_flow_staging (advisory)": {"rc": "STATE_FILE", "state_file": ".vault-flow-staging-state.json"},
+    # v4 Phase 2 (Hybrid) — code-delivery checks DEMOTED from PreToolUse hard-block
+    # to advisory. №C (v7.5.0): analyze FULL is now their WRITER (re-run above) —
+    # the PostToolUse fan-out that used to write them dies in №D; aggregate-only
+    # still reads the state files (STATE_FILE sentinel via the env default).
+    "dispatch_prompt (advisory)": {"rc": os.environ.get("V16_RC", "STATE_FILE"), "state_file": ".dispatch-prompt-state.json"},
+    "fanout_parity (advisory)": {"rc": os.environ.get("V13_RC", "STATE_FILE"), "state_file": ".fanout-parity-state.json"},
+    "ui_deferral (advisory)": {"rc": os.environ.get("V14_RC", "STATE_FILE"), "state_file": ".ui-deferral-state.json"},
+    "vault_flow_staging (advisory)": {"rc": os.environ.get("V15_RC", "STATE_FILE"), "state_file": ".vault-flow-staging-state.json"},
 }
 
 # Read state files for detail
