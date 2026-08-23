@@ -7,7 +7,7 @@
 #
 # Other B.5 subtypes deferred to follow-up slices:
 #   - pdf_render_failed: needs PostToolUse Bash matcher with pandoc detection
-#   - starterkit_metrics_inconsistent: cross-skill mid-chain check (Skill matcher)
+#   - starterkit_metrics_inconsistent: in-skill prose recomputation (orchestrate-flow / generate-units; the old Skill-matcher validator was deleted v7.5.0 №C)
 #
 # Per attestation: this is detection-only at hook layer; auto-fix is emit-fsd's
 # template-mapping responsibility.

@@ -28,7 +28,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Skill|Bash|Write|Edit",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
