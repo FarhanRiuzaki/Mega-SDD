@@ -75,6 +75,24 @@ jobs:
           )
           exit $rc
 
+      - name: Check manifest version matches latest CHANGELOG tag
+        # Fase 5 lesson: v7.3.1 shipped in CHANGELOG + commit title but the
+        # manifests were never bumped — the plugin.json==marketplace.json parity
+        # check passed by COINCIDENCE (7.3.0==7.3.0). This step anchors both
+        # manifests to the newest `## [X.Y.Z]` entry in CHANGELOG.md, so a
+        # release entry without a manifest bump (or vice versa) goes red.
+        # Runs on every push, docs-only included — CHANGELOG.md is a root *.md.
+        run: |
+          set -e
+          CH=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | tr -d '#[] ')
+          PJ=$(python3 -c "import json; print(json.load(open('plugins/mega-sdd/.claude-plugin/plugin.json'))['version'])")
+          MP=$(python3 -c "import json; print(json.load(open('.claude-plugin/marketplace.json'))['plugins'][0]['version'])")
+          echo "CHANGELOG=$CH plugin.json=$PJ marketplace.json=$MP"
+          if [ -z "$CH" ] || [ "$CH" != "$PJ" ] || [ "$CH" != "$MP" ]; then
+            echo "FAIL: manifest version != latest CHANGELOG tag (the v7.3.1 class)"
+            exit 1
+          fi
+
       - name: Validate plugin manifests (claude plugin validate)
         # A1 (spec 2026-08-17-delta-hygiene-a1-a4): blocks on manifest field/schema
         # ERRORS (the misspelled-plugin.json class). Plain mode, NOT --strict: the
