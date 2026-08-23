@@ -189,9 +189,18 @@ grep -q "codebase-map-state.json" "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
   && grep -q '! "$CM_STATE" -nt "$CM_MAP"' "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
   && ok "INT-1: pre-tool-use lazy re-validate — state must be STRICTLY newer (tie re-validates)" \
   || fail "INT-1: pre-tool-use self-heal wiring missing/weakened"
-grep -q '\*/codebase-map.md|codebase-map.md' "$ROOT/plugins/mega-sdd/hooks/post-tool-use" \
-  && ok "V7: post-tool-use dispatch widened to the legacy root path" \
-  || fail "V7: post-tool-use legacy dispatch missing"
+# v7.5.0 №D repin: the PostToolUse map dispatch died with the fan-out. The
+# surviving dispatchers: the bind-gate INT-1 lazy re-validate (pinned above)
+# and run-analyze FULL (V12). Negative + positive pins:
+if grep -q 'codebase-map.md' "$ROOT/plugins/mega-sdd/hooks/post-tool-use"; then
+  fail "V7: a codebase-map dispatch grew back into post-tool-use (№D)"
+else
+  ok "V7: post-tool-use carries no map dispatch (fan-out stays dead)"
+fi
+grep -q 'validate-codebase-map.sh' "$ROOT/plugins/mega-sdd/scripts/run-analyze.sh" \
+  && grep -q 'validate-codebase-map.sh' "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
+  && ok "V7: map validator dispatched by analyze FULL + the bind gate (surviving writers)" \
+  || fail "V7: a surviving map-validator dispatcher is missing"
 
 # ── round-2 (fix-review): TRUE legacy layout — root map, NO .mega-sdd/ dir yet ──
 # Pre-fix: every state write failed silently (ENOENT swallowed) → gate read nothing.

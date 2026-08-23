@@ -92,8 +92,11 @@ mk_bad_verify "$F1/.mega-sdd/vaults/demo/units/U-001.md"
 mk_clean_create "$F1/.mega-sdd/vaults/demo/units/U-002.md" "U-002"
 
 # ── GU-HOOK-1: validate the CLEAN unit LAST (the old mask), then gate ──
-drive_hook "$POST" "$F1" "Write" "{\"file_path\": \"$F1/.mega-sdd/vaults/demo/units/U-002.md\"}" >/dev/null
-sleep 1  # PostToolUse backgrounds validators
+# v7.5.0 №D repin: the PostToolUse fan-out is deleted — the validator run below
+# is exactly what the execute-bolts gate executes (S5 GU-HOOK-1 re-derive at
+# pre-tool-use). The pinned property is unchanged: a clean-sibling validation
+# must MERGE, not last-writer-win, U-001's violation out of the state.
+bash "$ROOT/plugins/mega-sdd/scripts/validate-unit-spec.sh" --cwd="$F1" --file-path="$F1/.mega-sdd/vaults/demo/units/U-002.md" --quiet >/dev/null 2>&1 || true
 ST="$F1/.mega-sdd/.unit-spec-state.json"
 python3 -c "
 import json, sys

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # post-tool-use-windows-paths.test.sh
 #
-# Pins D2 (2026-07-29): hooks/post-tool-use dispatches everything through
-# `case "$FILE_PATH"` globs written with "/". Claude Code hands hooks NATIVE paths
-# on Windows, which match NONE of them — so on the team's machines the 6 background
-# unit-write validators, the KB validators, codebase-map, binding, ui-quality,
-# cross-cutting and factory-ledger dispatch never fired, the own-output
-# anti-feedback guard leaked (mega-sdd journalled its own writes), and DIRTY_REL's
-# prefix strip against an already-normalized PROJECT_ROOT left an absolute path.
+# Pins D2 (2026-07-29; repinned v7.5.0 No.D): hooks/post-tool-use matches paths
+# with "/"-written globs, and Claude Code hands hooks NATIVE paths on Windows.
+# The validator fan-out this file originally counted is DELETED (No.D) — the
+# SURVIVING D2 surface is the dirty-paths JOURNAL: without normalization a
+# Windows write is never journaled (or journaled with an absolute/garbage
+# DIRTY_REL), and the own-output anti-feedback guard leaks. The arms below pin
+# journal-row parity between a POSIX payload and its backslash twin.
 #
 # HOW A WINDOWS PATH IS SIMULATED ON POSIX: the fixture is built at a real POSIX
 # path, then the payload sends that same path with "/" replaced by "\" — exactly
@@ -68,44 +68,53 @@ tally() { # $1=payload $2=OSTYPE value -> prints exec count
 }
 bslash() { printf '%s' "$1" | tr '/' '\\'; }
 
+SRC="$P/src/app.js"
+printf 'x\n' > "$SRC"
+DJ="$P/.mega-sdd/codebase/.dirty-paths.jsonl"
+jrow() { tail -1 "$DJ" 2>/dev/null; }
+jcount() { [ -f "$DJ" ] && wc -l < "$DJ" | tr -d ' ' || echo 0; }
+fire() { # $1=payload $2=OSTYPE
+  printf '%s' "$1" | OSTYPE="$2" bash "$HOOK" >/dev/null 2>&1
+}
+FWD=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$SRC")" "$P")
+WIN=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$(bslash "$SRC")")" "$(bslash "$P")")
+
+echo "-- A. a Windows-shaped source write journals exactly like a POSIX one --"
+rm -f "$DJ"
+fire "$FWD" "darwin24"
+ROW_FWD=$(jrow)
+rm -f "$DJ"
+fire "$WIN" "msys"
+ROW_WIN=$(jrow)
+echo "   posix row : $ROW_FWD"
+echo "   win row   : $ROW_WIN"
+if printf '%s' "$ROW_FWD" | grep -q '"path":"src/app.js"' \
+   && printf '%s' "$ROW_WIN" | grep -q '"path":"src/app.js"'; then
+  pass "Windows payload journals the same repo-relative row as POSIX"
+else
+  fail "Windows path journaled wrong/no row (posix=[$ROW_FWD] win=[$ROW_WIN])"
+fi
+
+echo "-- B. CONTROL: without normalization the same payload journals NOTHING --"
+rm -f "$DJ"
+fire "$WIN" "darwin24"   # pre-fix behavior: no OSTYPE normalization
+N_RAW=$(jcount)
+if [ "$N_RAW" -eq 0 ]; then
+  pass "control: un-normalized Windows payload journals 0 rows - A is not vacuous"
+else
+  fail "control: un-normalized payload journaled $N_RAW row(s) - A no longer pins a real defect"
+fi
+
+echo "-- B2. own-output guard holds under Windows separators --"
 UNIT="$P/.mega-sdd/vaults/v1/units/U-001.md"
-FWD=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$UNIT")" "$P")
-WIN=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$(bslash "$UNIT")")" "$(bslash "$P")")
-
-echo "── A. a Windows-shaped unit write dispatches exactly like a POSIX one ──"
-N_FWD=$(tally "$FWD" "darwin24")
-N_WIN=$(tally "$WIN" "msys")
-echo "   forward-slash payload : $N_FWD execs"
-echo "   backslash payload     : $N_WIN execs (OSTYPE=msys)"
-if [ "$N_FWD" -gt 5 ] && [ "$N_WIN" -eq "$N_FWD" ]; then
-  pass "Windows path reaches the same dispatch tree ($N_WIN == $N_FWD)"
+WUNIT=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$(bslash "$UNIT")")" "$(bslash "$P")")
+rm -f "$DJ"
+fire "$WUNIT" "msys"
+N_OWN=$(jcount)
+if [ "$N_OWN" -eq 0 ]; then
+  pass "a Windows-shaped write UNDER .mega-sdd is never journaled (anti-feedback guard normalized)"
 else
-  fail "Windows path dispatched $N_WIN vs POSIX $N_FWD — globs still separator-bound"
-fi
-
-echo "── B. CONTROL: without normalization the same payload goes nowhere ──"
-# OSTYPE left non-Windows, so the hook does NOT normalize — this is the pre-fix
-# behavior on a Windows machine, reproduced exactly.
-N_RAW=$(tally "$WIN" "darwin24")
-echo "   backslash payload, no normalization : $N_RAW execs"
-if [ "$N_RAW" -lt "$N_FWD" ]; then
-  pass "control: un-normalized Windows path dispatches less ($N_RAW < $N_FWD) — A is not vacuous"
-else
-  fail "control: un-normalized path dispatched $N_RAW (>= $N_FWD) — A no longer pins a real defect"
-fi
-
-echo "── B2. ISOLATION: how much of that collapse is the FILE_PATH globs alone ──"
-# cwd forward-slash (so PROJECT_ROOT resolves fine) but file_path backslash, with
-# normalization off. Whatever is lost here is attributable to the case-globs and
-# nothing else — the honest number for D2, separate from the cwd/PROJECT_ROOT path
-# that v5.5.0 addressed at the eval layer.
-MIXED=$(mk Write "$("$PY" -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1]}))' "$(bslash "$UNIT")")" "$P")
-N_MIX=$(tally "$MIXED" "darwin24")
-echo "   cwd normalized, FILE_PATH raw       : $N_MIX execs (vs $N_FWD when both are clean)"
-if [ "$N_MIX" -lt "$N_FWD" ]; then
-  pass "the globs alone account for $((N_FWD - N_MIX)) of $N_FWD dispatch steps"
-else
-  fail "isolating the globs showed no loss ($N_MIX vs $N_FWD) — the D2 claim is unsupported"
+  fail "own-output guard leaked under backslashes ($N_OWN row(s))"
 fi
 
 echo "── C. the hook SURVIVES tool calls where FILE_PATH is unset (bash>=4.4 trap) ──"

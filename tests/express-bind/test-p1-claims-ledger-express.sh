@@ -450,9 +450,8 @@ grep -qF 'claims-ledger.json' "$PM" \
   && grep -qF 'derive-claims-ledger.sh' "$PM" \
   && pass "claims-ledger.json registered in paths.md (layout + per-skill row)" \
   || fail "paths.md registration missing"
-grep -qF 'claims-ledger.json' "$P/hooks/post-tool-use" \
-  && pass "claims-ledger.json in the PostToolUse prune list" \
-  || fail "PTU prune list missing claims-ledger.json"
+# (v7.5.0 №D: the PostToolUse debounce probe died with the validator fan-out —
+# the Stop-hook probe below is the surviving prune list.)
 grep -qF 'claims-ledger.json' "$P/hooks/stop" \
   && pass "claims-ledger.json in the Stop-hook prune list" \
   || fail "Stop prune list missing claims-ledger.json"

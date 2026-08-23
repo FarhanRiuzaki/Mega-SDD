@@ -120,97 +120,50 @@ else
   ok "postflight/acceptance writers stay single-unit (the L3-6 boundary)"
 fi
 
-note "== 4e. PostToolUse debounce: skip on source writes, rescan on real input change =="
+note "== 4e (repinned v7.5.0 No.D): the PTU scanners + debounce are DELETED =="
+# The four project-wide scanners and their .ptu-scan-stamp debounce died with
+# the PostToolUse validator fan-out (Fase-7 audit §5): gate-time re-derivation
+# + the Stop-hook detection lane + run-analyze FULL own the coverage. These
+# arms pin that the machinery STAYS dead - and that the Stop-side §4c turn-gate
+# (a separate mechanism, still live) keeps skipping/rescanning correctly.
 PE="$WORK/pe"; mkrepo "$PE"
 mkunit "$PE" U-001 ''
 mkdir -p "$PE/.mega-sdd/codebase"
-# v7: the debounced scanners are chain-scoped — arm the fixture session (§3.1)
 printf '{"session_id": "s4de", "chain_engaged": true, "entries": {}}' > "$PE/.mega-sdd/.gateguard-state.json"
-printf 'framework: laravel\n' > "$PE/.mega-sdd/codebase/codebase-map.md"   # mapped repo: dirty-journal active
+printf 'framework: laravel\n' > "$PE/.mega-sdd/codebase/codebase-map.md"
 ( cd "$PE" && git add -A && git commit -qm map ) >/dev/null 2>&1
-wfire() { # repo file — fire the hook as a Write PostToolUse
+wfire() { # repo file - fire the hook as a Write PostToolUse
   python3 -c 'import json,sys; print(json.dumps({"session_id":"s4de","cwd":sys.argv[1],"tool_name":"Write","tool_input":{"file_path":sys.argv[2]}}))' "$1" "$2" \
     | bash "$PTU" >/dev/null 2>&1
 }
 mt() { python3 -c 'import os,sys; print(os.stat(sys.argv[1]).st_mtime_ns if os.path.exists(sys.argv[1]) else "absent")' "$1"; }
-printf 'code\n' > "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # firing 1: cold — scans + stamp
 STAMP="$PE/.mega-sdd/.ptu-scan-stamp"
-DSTATE="$PE/.mega-sdd/.bolt-artifacts-state.json"       # debounced scanner's state
-FSTATE="$PE/.mega-sdd/.unit-spec-state.json"            # file-scoped (NOT debounced)
-[ -f "$STAMP" ] && ok "stamp written after the cold firing (holds HEAD sha)" || fail "stamp missing after cold firing"
-[ -f "$DSTATE" ] || note "  (note: bolt-artifacts state absent on this fixture — stamp mtime carries the skip proof)"
-# The stamp is rewritten ONLY when the four scans ran — it is the ran/skip proof.
-ST1=$(mt "$STAMP"); D1=$(mt "$DSTATE"); F1=$(mt "$FSTATE")
+printf 'code\n' > "$PE/src/b.js"
+wfire "$PE" "$PE/src/b.js"
+wfire "$PE" "$PE/.mega-sdd/vaults/v1/units/U-001.md"
 sleep 1
-printf 'more\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # firing 2: source write, inputs unchanged
-ST2=$(mt "$STAMP"); D2=$(mt "$DSTATE"); F2=$(mt "$FSTATE")
-[ "$ST1" = "$ST2" ] && [ "$D1" = "$D2" ] && ok "source-write firing SKIPPED the project-wide scanners (stamp + scanner state unchanged — dirty-journal append did not defeat it)" || fail "source write re-scanned (ST $ST1->$ST2, D $D1->$D2)"
-if [ "$F1" != "absent" ]; then
-  [ "$F1" != "$F2" ] && ok "file-scoped validator still fired on the skipped firing (unit-spec state refreshed)" || fail "file-scoped validator was debounced too"
-fi
-sleep 1
-printf -- '- extra line\n' >> "$PE/.mega-sdd/vaults/v1/units/U-001.md"
-wfire "$PE" "$PE/.mega-sdd/vaults/v1/units/U-001.md"    # firing 3: write INTO .mega-sdd
-ST3=$(mt "$STAMP")
-[ "$ST3" != "$ST2" ] && ok "write INTO .mega-sdd -> scans re-ran (stamp refreshed)" || fail "mega-sdd write did not re-scan"
-sleep 1
-( cd "$PE" && printf 'y\n' >> f2 && git add f2 && git commit -qm c2 ) >/dev/null 2>&1
-printf 'z\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # firing 4: HEAD moved
-ST4=$(mt "$STAMP")
-[ "$ST4" != "$ST3" ] && ok "HEAD moved -> scans re-ran on the next firing" || fail "HEAD move did not re-scan"
-sleep 1
-rm -f "$STAMP"
-printf 'w\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # firing 5: stamp absent
-[ -f "$STAMP" ] && ok "absent stamp -> scanned and re-stamped (fail toward scanning)" || fail "absent stamp did not re-scan"
+[ ! -f "$STAMP" ] && [ ! -f "$PE/.mega-sdd/.bolt-artifacts-state.json" ] && [ ! -f "$PE/.mega-sdd/.unit-spec-state.json" ] \
+  && ok "armed writes mint NO scanner state and NO ptu-stamp (fan-out stays dead)" \
+  || fail "PTU scanner machinery grew back"
+grep -q '"path":"src/b.js"' "$PE/.mega-sdd/codebase/.dirty-paths.jsonl" 2>/dev/null \
+  && ok "the dirty journal still records the armed source write (journal survives No.D)" \
+  || fail "journal row missing for the armed source write"
 
-note "== 4e. mutual-prune: neither lane's outputs defeat the other =="
+note "== 4e. Stop-side turn-gate (4c) still skips and rescans =="
 mkstdin_stop() { python3 -c 'import json,sys; print(json.dumps({"session_id":"s4de","cwd":sys.argv[1],"transcript_path":"","hook_event_name":"Stop","stop_hook_active":False}))' "$1"; }
-mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1        # Stop 1: scans + stop-stamp
+mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1
 SSTAMP="$PE/.mega-sdd/.stop-scan-stamp"
 [ -f "$SSTAMP" ] || fail "stop stamp missing"
 S1=$(mt "$SSTAMP")
 sleep 1
-# Direction 1 must be NON-vacuous (round-1 static finding 5): force the four
-# project-wide scanners to genuinely RUN and rewrite their states, WITHOUT
-# touching any real Stop-scan input — delete the ptu-stamp (fail toward
-# scanning) and fire a plain source write.
-rm -f "$STAMP"
-D_PRE=$(mt "$DSTATE")
-printf 'v\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # PTU firing: scanners RUN (stamp absent)
-D_POST=$(mt "$DSTATE")
-if [ "$D_PRE" != "absent" ]; then
-  [ "$D_PRE" != "$D_POST" ] && ok "forced PTU firing genuinely re-ran the project-wide scanners (state rewritten — direction-1 proof is live, not vacuous)" || fail "forced PTU firing did not rewrite the scanner state (direction-1 arm vacuous)"
-fi
-mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1        # Stop 2: must STILL skip
+mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1
 S2=$(mt "$SSTAMP")
-[ "$S1" = "$S2" ] && ok "PTU scanner-state rewrites + ptu-stamp do NOT defeat the 4c Stop skip (mutual prune, direction 1)" || fail "Stop re-scanned after a PTU scan firing"
+[ "$S1" = "$S2" ] && ok "Stop turn-gate skips when nothing changed (stamp untouched)" || fail "Stop re-scanned with no input change"
 sleep 1
-P_BEFORE=$(mt "$STAMP")
-printf 'u\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"                      # PTU firing after Stop wrote its stamp
-P_AFTER=$(mt "$STAMP")
-[ "$P_BEFORE" = "$P_AFTER" ] && ok "Stop stamp write does NOT defeat the PTU skip (mutual prune, direction 2)" || fail "PTU re-scanned after a Stop firing"
-
-note "== 4e. legacy trees are probed (docs/mega-sdd + root *-bound) =="
-sleep 1
-mkdir -p "$PE/docs/mega-sdd/vaults/lv-bound/units"
-printf 'legacy unit\n' > "$PE/docs/mega-sdd/vaults/lv-bound/units/U-900.md"
-printf 't\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"
-L1=$(mt "$STAMP")
-[ "$L1" != "$P_AFTER" ] && ok "shell write under docs/mega-sdd -> next firing re-scanned" || fail "docs/mega-sdd change missed by the probe"
-sleep 1
-mkdir -p "$PE/x-bound/units"
-printf 'legacy bound\n' > "$PE/x-bound/units/U-901.md"
-printf 's\n' >> "$PE/src/b.js"
-wfire "$PE" "$PE/src/b.js"
-L2=$(mt "$STAMP")
-[ "$L2" != "$L1" ] && ok "shell write under a root *-bound tree -> next firing re-scanned" || fail "root *-bound change missed by the probe"
+( cd "$PE" && printf 'y\n' >> f2 && git add f2 && git commit -qm c2 ) >/dev/null 2>&1
+mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1
+S3=$(mt "$SSTAMP")
+[ "$S3" != "$S2" ] && ok "HEAD move -> Stop re-scanned (stamp rewritten)" || fail "Stop missed the HEAD move"
 
 note "== 4d/anchor-regex parity: builder copy pinned byte-identical =="
 RE1=$(python3 -c 'import re,sys; s=open(sys.argv[1]).read(); m=re.search(r"TOKEN = re\.compile\(r\"([^\"]+)\"\)", s); print(m.group(1) if m else "MISS1")' "$ANC")
@@ -225,7 +178,7 @@ PN="$WORK/pn"; mkdir -p "$PN/src"
 wfire "$PN" "$PN/src/a.js"
 [ ! -e "$PN/.mega-sdd" ] && ok "no .mega-sdd minted in a non-adopted project (EB-GATE-6 lesson holds)" || fail ".mega-sdd minted"
 
-note "== 4e. guard surfaces: stamp registered everywhere =="
+note "== 4e. guard surfaces: stamp stays a guarded LEGACY name (No.D: nothing writes it) =="
 grep -q '"\.ptu-scan-stamp"' "${ROOT}/plugins/mega-sdd/hooks/pre-tool-use" \
   || grep -q '\.ptu-scan-stamp' "${ROOT}/plugins/mega-sdd/hooks/pre-tool-use" \
   && ok "pre-tool-use deny surfaces carry .ptu-scan-stamp" || fail "deny surface missing"
