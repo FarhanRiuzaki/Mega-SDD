@@ -325,9 +325,8 @@ case "${TOOL_NAME:-}" in
     # ── v7 chain-engaged marker writer (spec §3.1) ──────────────────────────
     # A mega-sdd:* Skill dispatch IS chain activity: record chain_engaged for
     # this session in the EXISTING session-keyed .gateguard-state.json (one new
-    # field, no new file). From this moment the session is armed — GateGuard,
-    # the PostToolUse validator fan-out, and the compaction advisor all run
-    # exactly as before v7. using-mega-sdd is excluded (router, not a chain
+    # field, no new file). From this moment the session is armed — GateGuard and
+    # the PostToolUse validator fan-out run exactly as before v7. using-mega-sdd is excluded (router, not a chain
     # step — same exclusion Branch 1a has always used). Runs BEFORE any gate so
     # even a blocked dispatch arms the session (conservative).
     case "${SKILL_NAME:-}" in

@@ -1047,15 +1047,9 @@ def derive(probes):
 
     def finish(position, chain):
         derived["position"] = position
-        if profile == "lean":
-            # Tranche E cut 1: the advisor legs already ship --no-advisor with
-            # the honest `advisor: skipped` provenance — lean only routes it.
-            chain = [
-                (h + " --no-advisor")
-                if (h.split()[0] in ("generate-intent", "bind-codebase")
-                    and "--no-advisor" not in h) else h
-                for h in chain
-            ]
+        # (v7.4.0: the tranche-E --no-advisor hop transform died with the
+        # phase-advisor's removal; lean now governs only diagnostics + the
+        # Stop-hook aggregate, which read derived.profile directly.)
         if spine == "express":
             # P2 flip: every bind hop retrieves claim-scoped by default (the
             # lean-injection pattern — ONE site, never per return). classic

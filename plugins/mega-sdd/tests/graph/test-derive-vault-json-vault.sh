@@ -18,7 +18,7 @@
 #      OQ tag across docs; patch setting a derived key; patch setting a
 #      derived per-OQ key; invalid --event; cross-count guard trip
 #   4  lock: stale vault.json.lock → exit 4; lock released after a normal run
-#   5  carry-forward: design_system_flags / design_system / advisor / title /
+#   5  carry-forward: design_system_flags / design_system / legacy advisor (no writer since v7.4.0) / title /
 #      legacy mode (contradicting md implementation_mode — carried verbatim,
 #      never reconciled) / scope block / prd_sha256 / recommend-OQ JSON-only
 #      fields / changelog ALL preserved verbatim

@@ -141,11 +141,6 @@ Per ledger claim, in order, stopping at the first rung that yields decisive evid
   template's form). A map§ scan hint from the generator (e.g. `codebase-map
   §test_frameworks`) is re-targeted to its underlying ground truth (the manifest /
   config file) — never answered from a map this lane did not read.
-- **2.12 advisor pass**: the Step 2.12 SCOPE GATE applies identically in this lane (evaluated over the full draft verdict set + the KB probe); when the gate — or `--advisor` — says run, the pass is NOT skipped by the express lane. Express changes retrieval, never the advisor contract. `build-advisor-bundle.sh`
-  already records `codebase_map_present: false` honestly when no map exists. The
-  dispatch prompt additionally names `.mega-sdd/codebase/symbol-index.json` +
-  `<vault>/claims-ledger.json` as evidence surfaces; the advisor's `missed_match`
-  sweep greps the repo SOURCE (its horizon was never the bundle).
 - **`--paths` composition** (`binding-contract.md §Claim-scoped re-bind`):
   `--paths` keeps selecting WHICH claims re-verdict; `--express` selects HOW the
   affected set retrieves evidence. Three explicit rules:

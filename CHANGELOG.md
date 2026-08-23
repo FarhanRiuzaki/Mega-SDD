@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.4.0] - UNRELEASED — v7 Fase 5: pipeline-only placement (per-surface series; bump lands at series end)
+
+Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
+
+### №5 — phase-advisor REMOVED (BREAKING)
+- Deleted: `agents/phase-advisor.md`, `scripts/build-advisor-bundle.sh`, `references/advisor-findings-schema.md`, both `advisor-checklist.md` refs, `tests/phase-advisor/` (6 suites) + fixtures + `test-5c-intent-advisor-seed.sh`.
+- Plumbing out: `--advisor`/`--no-advisor` (front door + orchestrate forwarding + bind flags), bind Step 2.12 (scope gate + pass), generate-intent Step 3.7, the tranche-E `--no-advisor` hop transform in `state_probes.py` (lean now governs only diagnostics + the Stop aggregate). Rail 1 ("speed cuts inventory, never verification") restated at the chain loop's never-touch list.
+- Legacy tolerance kept: vault.json `advisor` provenance + `CONFLICT-ADV-N` headings are carried/read verbatim (no writer remains). Fork RUN 2 (depth-2 Agent probe) is MOOT — bind dispatches no agent; only RUN 1 still gates the `context: fork` flip.
+- Tests repinned: bind-fork (8 moat strings + agent-free body pin), e-lean-profile (transform stays dead), p3 (negative default-on pin), 4d (agent stays deleted), blackbox S12.7 removed, delta-hygiene caps. Suite 219/219 both trees; tracer 10 lanes 666,156 → 658,066 est tok (−8,090).
+
 ## [7.3.0] - 2026-08-23 — BREAKING: observability REMOVED ENTIRELY (pipeline-only mandate)
 
 User amendment 2026-08-22 (final, supersedes amend-no-telemetry): mega-sdd is a DEVELOPMENT PIPELINE — PRD/idea → intent → vault → bind → units → bolts → review → test/e2e → documents. Everything observability-class is DELETED, not slimmed. Knife test: "if this disappears, does an anti-hallucination gate break, or does a dev artifact become unbuildable?" No → gone. Full audit + before/after: `research/2026-08-23-v7.3.0-observability-removal.md`.

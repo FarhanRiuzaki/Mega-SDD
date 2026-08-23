@@ -347,27 +347,8 @@ fi
 grep -q '| QA Lead | __________ | __________ | __________ | \[ \] Diterima · \[ \] Ditolak |' "$SITFRAG" \
   && ok "sign-off body rows are placeholder LITERALS (paper-out)" || bad "sign-off placeholders wrong"
 
-# ── S12.7 advisor seed bundle (P7 5.1.1) — measure-seeds itself was deleted in
-# v7 Fase 2 (one-shot measurement instrument; its verdicts are recorded in the
-# optimization spec). The advisor-bundle producer is live pipeline surface and
-# stays exercised on the real vault, with the map materialized as before.
-stage "S12.7 advisor bundle: seed producer on the live vault"
-MAPDIR="$PROJ/.mega-sdd/codebase"; mkdir -p "$MAPDIR"
-{
-  echo "# Codebase Map"; echo "last_scanned_commit: $(git -C "$PROJ" rev-parse HEAD 2>/dev/null)"; echo
-  for f in $(find "$PROJ/src" -name '*.php' 2>/dev/null | sort); do
-    echo "## ${f#$PROJ/}"
-    grep -nE 'class |function |const ' "$f" 2>/dev/null | sed 's/^/    /'; echo
-  done
-} > "$MAPDIR/codebase-map.md"
-# P7 5.1.1: build the advisor SEED bundle (replaces the whole-map paste into the
-# FRESH advisor subagent) — the top real-dollar lever. It is a strict subset that
-# points at the on-disk map; the advisor greps past it.
-BOUT="$(bash "$SCR/build-advisor-bundle.sh" --vault "$VAULT" 2>&1)"; BRC=$?
-[ $BRC -eq 0 ] && [ -f "$VAULT/.advisor-bundle.md" ] && ok "advisor bundle built (seed, not whole-map paste)" || bad "build-advisor-bundle rc=$BRC: $BOUT"
-grep -qE 'codebase_map_sha256: [0-9a-f]{64}' "$VAULT/.advisor-bundle.md" && ok "bundle sha-stamps the map it points at" || bad "bundle sha missing"
-grep -qiF "autoApprove" "$VAULT/.advisor-bundle.md" 2>/dev/null && bad "bundle leaked whole-map content" || ok "bundle is a strict subset (no whole-map paste)"
-# (measure-seeds arms removed v7 Fase 2 — instrument deleted with _lib/seeding_budget.py.)
+# (S12.7 advisor-bundle stage removed v7.4.0 — the phase-advisor and its seed
+# producer were deleted in Fase 5 №5.)
 
 # ── S13 verdict ──────────────────────────────────────────────────────────────
 stage "S13 verdict"

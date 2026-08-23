@@ -11,7 +11,7 @@ layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:m
                            #   legacy → outputs at pre-migration scattered paths (see plugins/mega-sdd/references/paths.md)
 output_root: .mega-sdd/    # where all outputs live, relative to project root (or absolute)
 spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
-# profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisor legs (opt-in)
+# profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
 model_tiers:
   bolt_implementer: inherit  # v7.1 per-unit model routing: inherit (DEFAULT — today's behavior,

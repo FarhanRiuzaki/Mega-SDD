@@ -11,17 +11,15 @@
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # DO NOT "FIX" THIS TEST BY ADDING `context: fork` TO THE FRONTMATTER.
-# bind is NO-GO until the depth-2 probe returns. The flip is gated on two INTERACTIVE
-# runs, per docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md
-# §"5a amendment":
+# bind is NO-GO until the pilot run returns. The flip is gated on an INTERACTIVE
+# run, per docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md
+# §"5a amendment" (as amended by the v7.4.0 advisor removal):
 #   RUN 1 (pilot)   — /mega-sdd:sync on a Mode-D brownfield repo from a SUB-DIRECTORY:
 #                     token before/after (Precondition 0, plugins/mega-sdd/CLAUDE.md),
 #                     handoff survival, CWD inheritance.
-#   RUN 2 (depth-2) — a `context: fork` skill attempting exactly one `Agent` dispatch.
-#                     bind dispatches `phase-advisor` BY DEFAULT (SKILL.md Step 2.12) and
-#                     that is a moat-RECALL layer; detect-drift dispatches no subagent at
-#                     all, so the live fork pilot proves nothing about it. RUN 1 does NOT
-#                     clear RUN 2's question.
+#   RUN 2 (depth-2) — MOOT since v7.4.0: the phase-advisor was removed (Fase 5 №5),
+#                     so bind dispatches NO agent and the depth-2 `Agent` probe has
+#                     nothing left to prove. Only RUN 1 still gates the flip.
 # Headless does not count: under `claude -p`, `context: fork` silently NO-OPS
 # (research/2026-07-20-fork-ab-headless-attempt.md). Audit item C9 owns the flip + bump.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -267,8 +265,6 @@ VB="$(python3 - "$BC" <<'PY'
 import os, sys, glob
 root = sys.argv[1]
 ALLOW = [
- ("SKILL.md", "the exact token the Step 5 gate AND `validate-handoff-binding-units.sh`",
-  "descriptive: names the token the gate + validator READ when materializing advisor findings"),
  ("references/binding-contract.md", "see exactly the same surface as a full re-bind",
   "descriptive: a claim-scoped re-bind rewrites binding.md whole so the READERS see the full set"),
  ("references/handoff-validation.md", "OVERWRITE-NOT-APPEND",
@@ -317,15 +313,12 @@ Found but contradicts → **CONFLICT** (NEVER overridden by KB — codebase-map 
 **KB consultation fires ONLY when the codebase-map is silent**
 **Never override a codebase-map CONFLICT via the KB.**
 Project constitution gate (multi-PRD lifecycle)
-This is fail-safe blocking
-may NEVER auto-remove or auto-downgrade a CONFLICT (downgrade is human-only — invariant #2)
-OR `advisor: unavailable` (agent error — NEVER reported as clean)
 **5. Decision gate — non-negotiable:**
 **DO NOT write `<vault>/bound/`.**
 make-bound.sh independently refuses while any CONFLICT verdict is in binding.json
   type: bind_conflict
 EOF
-[ "$MOAT_OK" -eq 1 ] && pass "Steps 2–5 CONFLICT/OQ decision path intact (11 load-bearing verdict strings)"
+[ "$MOAT_OK" -eq 1 ] && pass "Steps 2–5 CONFLICT/OQ decision path intact (8 load-bearing verdict strings; the advisor-context strings died with Step 2.12 in v7.4.0 — the human-only-downgrade rail is pinned by the never-auto-resolve assertion below)"
 has "$SKILL" 'Never auto-resolve CONFLICTs — always human-in-the-loop.' \
   && pass "the never-auto-resolve rail is intact" \
   || fail "the never-auto-resolve rail was removed"
@@ -439,10 +432,13 @@ PY
     else
       pass "forked bind emits its handoff unconditionally"
     fi
-    # C8 — a fork that cannot dispatch Agent must not ship a silent --no-advisor fallback.
-    has "$SKILL" 'NEVER reported as clean' \
-      && pass "advisor: unavailable is still never reported as clean under fork (C8 rail)" \
-      || fail "the advisor-unavailable rail is gone — a forked bind could silently lose moat recall"
+    # C8 (v7.4.0 form) — the forked body must not have grown an Agent dispatch:
+    # the advisor removal made bind agent-free, which is what makes depth-2 moot.
+    if grep -qE 'Dispatch the .mega-sdd:[a-z-]+. agent' "$SKILL"; then
+      fail "forked bind body dispatches an agent again — the depth-2 probe question is back (re-gate the flip)"
+    else
+      pass "forked bind body dispatches no agent (depth-2 stays moot)"
+    fi
     ;;
   *)
     fail "unexpected frontmatter context: '$CTX' (expected absent, or 'fork' once C9 lands)"

@@ -12,7 +12,7 @@
 #                        deriver does not own, verbatim (unknown-key tolerance).
 #   PATCH lane         — --patch <file.json>: model-authored values only
 #                        (metadata, source_documents, design_system_flags,
-#                        advisor, per-OQ scan_query/recommendation/rationale/
+#                        legacy advisor (carried), per-OQ scan_query/recommendation/rationale/
 #                        scan_citations/fallback_if_wrong/defer_to). Setting a
 #                        derived key exits 2 (anti-laundering).
 #   --event '<json>'   — append ONE changelog event under the same lock

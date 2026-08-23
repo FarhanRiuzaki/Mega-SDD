@@ -1392,7 +1392,7 @@ _locked_entries = []                                 # [(path, source-label)]
 
 # (a) data-mutation-policy.md — a real artifact: extract-intelligence Wave 5
 # writes it, generate-intent reads it, and the dispatch prompt carries it
-# forward. KB root candidates mirror scripts/build-advisor-bundle.sh.
+# forward. KB root candidates mirror the bind-codebase KB probe order.
 DMP_PATH = None
 for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "old-reference/knowledge-base"):
     _cand = os.path.join(CWD, _kb.replace("/", os.sep), "99-rebuild-architecture",
