@@ -12,7 +12,9 @@ HOOK_SELF="${0//\\//}"
 
 # Drain stdin opportunistically — SessionStart spec provides JSON with session_id,
 # source, transcript_path, hook_event_name. We capture session_id for the diagnostic.
-STDIN_JSON=$(cat 2>/dev/null || echo '{}')
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true   # №B: builtin read, no cat fork
+[ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Source-aware anchor injection (M-13 token-efficiency B3) ────────────────
 # The anchor is re-injected on EVERY SessionStart (startup|resume|clear|compact).
@@ -40,8 +42,14 @@ if [[ "$STDIN_JSON" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; t
   SESSION_ID_SS="${BASH_REMATCH[1]}"
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
-PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# №B: parameter expansion (no dirname exec); $0 is absolute in the shipped
+# dispatch — the subshell fallback covers a relative $0.
+SCRIPT_DIR="${HOOK_SELF%/*}"
+case "$SCRIPT_DIR" in
+  /*) ;;
+  *) SCRIPT_DIR="$(cd "$(dirname "$HOOK_SELF")" && pwd)" ;;
+esac
+PLUGIN_ROOT="${SCRIPT_DIR}/.."
 ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
 
 # Detect SDD signals in CWD (purely heuristic, no false positives in casual sessions).
@@ -120,6 +128,29 @@ fi
 # the ANCHOR-CORE marker.
 #
 # M-13: what we inject depends on HOOK_SOURCE (computed above).
+# №B: the two awk programs became pure-bash read loops (0 forks; the anchor
+# body is ≤~200 lines). Byte-parity with the awk originals is pinned by
+# tests/hooks/session-start-extraction-parity.test.sh, which carries the awk
+# programs as the golden reference.
+anchor_core_full() {  # skip to after the 2nd ---, print until ANCHOR-CORE ends
+  local line dash=0 body=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [[ "$line" =~ ^---[[:space:]]*$ ]]; then
+      dash=$((dash+1)); [ "$dash" -eq 2 ] && body=1; continue
+    fi
+    [ "$body" -eq 0 ] && continue
+    case "$line" in *"ANCHOR-CORE ends"*) return 0 ;; esac
+    printf '%s\n' "$line"
+  done < "$ANCHOR_SKILL"
+}
+anchor_core_slim() {  # print from ^## Hard rule until ANCHOR-CORE ends
+  local line take=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in "## Hard rule"*) take=1 ;; esac
+    case "$line" in *"ANCHOR-CORE ends"*) return 0 ;; esac
+    [ "$take" -eq 1 ] && printf '%s\n' "$line"
+  done < "$ANCHOR_SKILL"
+}
 if [ "$HOOK_SOURCE" = "resume" ]; then
   # Anchor is already in the reloaded transcript — do not re-inject it.
   ANCHOR_CONTENT=""
@@ -127,36 +158,32 @@ elif [ "$HOOK_SOURCE" = "compact" ]; then
   # SLIM core: only the sections NOT reloadable from skill descriptions — the
   # Hard rule (STOP + invoke + the bind→units gate) and Output language — plus a
   # one-line pointer to load the rest on demand.
-  ANCHOR_CONTENT="$(awk 'BEGIN{take=0}
-    /^## Hard rule/{take=1}
-    /ANCHOR-CORE ends/{exit}
-    take==1{print}' "$ANCHOR_SKILL")"
+  ANCHOR_CONTENT="$(anchor_core_slim)"
   if [ -n "$ANCHOR_CONTENT" ]; then
     ANCHOR_CONTENT="Post-compaction routing anchor (slim). Full router: invoke the \`using-mega-sdd\` skill; the keyword census is in every mega-sdd skill's description."$'\n\n'"${ANCHOR_CONTENT}"
   fi
 else
   # startup | clear | unknown (fail-open) → FULL routing core.
-  ANCHOR_CONTENT="$(awk 'BEGIN{dash=0;body=0}
-    /^---[[:space:]]*$/{dash++; if(dash==2)body=1; next}
-    body==0{next}
-    /ANCHOR-CORE ends/{exit}
-    {print}' "$ANCHOR_SKILL")"
+  ANCHOR_CONTENT="$(anchor_core_full)"
 fi
 # Fail-open: if the source-selected extraction yields nothing (frontmatter/marker
 # drift on a NON-resume source), inject the full skill rather than nothing — never
 # break routing to save tokens. (resume legitimately yields empty; leave it empty.)
-if [ -z "$ANCHOR_CONTENT" ] && [ "$HOOK_SOURCE" != "resume" ]; then ANCHOR_CONTENT="$(cat "$ANCHOR_SKILL")"; fi
+if [ -z "$ANCHOR_CONTENT" ] && [ "$HOOK_SOURCE" != "resume" ]; then ANCHOR_CONTENT="$(<"$ANCHOR_SKILL")"; fi
 
 # Check superpowers presence
 sp_cache="${HOME}/.claude/plugins/cache"
 sp_present=0
-if find "$sp_cache" -maxdepth 4 -type d -name "superpowers" 2>/dev/null | grep -q .; then
-  sp_present=1
-fi
+# №B: builtin glob walk replaces `find -maxdepth 4 | grep` (2 forks). Depths
+# 1-4 under the cache root — the same set the find enumerated.
+for _spd in "$sp_cache"/superpowers "$sp_cache"/*/superpowers \
+            "$sp_cache"/*/*/superpowers "$sp_cache"/*/*/*/superpowers; do
+  if [ -d "$_spd" ]; then sp_present=1; break; fi
+done
 
 WARN=""
 if [ "$sp_present" -eq 0 ]; then
-  WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Bolts phase will use vendored fallback. For full features run: `/plugin install superpowers`</important-reminder>'
+  WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Mega-SDD runs standalone; superpowers adds optional technique enhancements to the bolts phase. To enable them run: `/plugin install superpowers`</important-reminder>'
 fi
 
 # ─── Missing-interpreter notice (Windows alias-stub class, 2026-07-28) ───────
@@ -200,93 +227,96 @@ fi
 # session-start must never write vault artifacts (gate-1 mandate, spec
 # 2026-08-21-v7-weighted-routing-design.md §7 backlog).
 
-# ─── Living-vault staleness notice (advisory; spec 2026-06-10-living-vault) ──
-# One line, counts only — ambient awareness that the code moved since the last
-# scan. Signals: dirty-paths journal non-empty OR git HEAD ≠ the map's
-# last_scanned_commit stamp. Never blocks; absent when clean.
-#
-# P1 (v4.93.0, decision 8): the signals come from the ONE probe engine —
-# scripts/derive-state.sh → .mega-sdd/state.json (shared _lib/state_probes.py,
-# the same library routing + validate-preflight read) — so this notice can
-# never diverge from what routing sees. Gated behind the existing map-present
-# condition (no new latency on non-SDD CWDs). derive-state.sh absent/failing
-# → the advisory notice is skipped (v7 Fase 2 №3: the duplicated bash
-# fallback is deleted — one probe engine, no divergence).
+# ─── Living-vault staleness notice (advisory) — №B builtin edition ───────────
+# v7.5.0 Fase 7 №B: the derive-state.sh spawn chain (bash+python+git on every
+# SDD session start) is gone from THIS hook — the full probe engine runs at
+# M/L entry (front door / GROUND) only, per the Fase-7 audit §3. What remains
+# here is a deliberately SIMPLER, builtin-only SUBSET of the routing probes
+# (disclosed divergence; fail-open advisory): two signals — dirty-journal rows,
+# and git HEAD vs the freshness stamp (map last_scanned_commit, or the
+# symbol-index head_commit when no map exists — the substrate rule, round F4).
+# The PENDING-SYNC open-count leg moved to the front door with the probe engine.
 STALENESS_NOTICE=""
 LV_MAP="${project_root}/.mega-sdd/codebase/codebase-map.md"
-# P2 (round F3 — the index leg was DEAD CODE behind a map-only gate):
-# express-born projects have an index and no map; either substrate opens
-# the staleness computation.
 LV_IDX="${project_root}/.mega-sdd/codebase/symbol-index.json"
-if { [ -f "$LV_MAP" ] || [ -f "$LV_IDX" ]; } && \
-   ! grep -qE "^[[:space:]]*staleness_notice:[[:space:]]*false" "${project_root}/.mega-sdd/config.yaml" 2>/dev/null; then
-  LV_FROM_DIGEST=0
-  LV_DS="${SCRIPT_DIR}/../scripts/derive-state.sh"
-  if [ -f "$LV_DS" ] && bash "$LV_DS" --cwd="$project_root" >/dev/null 2>&1 \
-     && [ -f "${project_root}/.mega-sdd/state.json" ]; then
-    # Build the SAME notice strings from the digest. Prints "CLEAN" when no
-    # notice is due, the notice line otherwise; empty output = parse failure
-    # → the bash fallback below engages.
-    LV_OUT=$(STATE="${project_root}/.mega-sdd/state.json" python3 - 2>/dev/null <<'PYLV'
-import json, os
-try:
-    s = json.load(open(os.environ["STATE"]))
-    p = s["probes"]
-except Exception:
-    raise SystemExit(0)  # empty output -> bash fallback
-dirty = p.get("dirty_journal_rows", 0)
-cmap = p.get("codebase_map") or {}
-stamp = cmap.get("last_scanned_commit")
-head = (p.get("git") or {}).get("head")
-# P2: express-born projects have no map — the symbol-index head_commit is
-# their freshness stamp. SUBSTRATE RULE (round F4): the index leg counts
-# ONLY when the map is absent — map-bearing projects key on the map (the
-# index is rebuilt every execute-bolts batch and briefly-stale by design).
-sidx = p.get("symbol_index") or {}
-istamp = sidx.get("head_commit") if not cmap.get("present") else None
-detail = "%d journaled write(s)" % dirty
-if stamp and head and head != stamp:
-    detail += "; map stamp %s ≠ HEAD %s" % (stamp[:8], head[:8])
-if istamp and head and head != istamp:
-    detail += "; index stamp %s ≠ HEAD %s" % (istamp[:8], head[:8])
-moved = (dirty > 0 or bool(stamp and head and head != stamp)
-         or bool(istamp and head and head != istamp))
-open_n = 0
-pending = ""
-for v in p.get("vaults") or []:
-    if v.get("layout") not in ("canonical", "legacy-docs"):
-        continue  # parity with the pre-P1 glob set
-    n = v.get("pending_sync_open", 0)
-    if n > 0:
-        open_n += n
-        pending = "%s/PENDING-SYNC.md" % v.get("path", "")
-if open_n > 0:
-    line = ("mega-sdd: %d open sync decision(s) queued in %s — resolve the queue first."
-            % (open_n, pending))
-    if moved:
-        line += (" Code also moved since last scan (%s)." % detail)
-    print(line)
-elif moved:
-    # v7: notice-only wording — sync is OFFERED at the next M/L entry (front
-    # door), never proposed from an ambient session-start line (gate-1 §4.3).
-    print("mega-sdd: codebase moved since last scan (%s) — sync tersedia saat masuk lane M/L (`/mega-sdd`)."
-          % detail)
-else:
-    print("CLEAN")
-PYLV
-)
-    if [ -n "$LV_OUT" ]; then
-      LV_FROM_DIGEST=1
-      if [ "$LV_OUT" != "CLEAN" ]; then
-        STALENESS_NOTICE=$'\n\n'"$LV_OUT"
-      fi
+if { [ -f "$LV_MAP" ] || [ -f "$LV_IDX" ]; }; then
+  LV_CFG_OFF=0
+  if [ -f "${project_root}/.mega-sdd/config.yaml" ]; then
+    while IFS= read -r _lvl || [ -n "$_lvl" ]; do
+      if [[ "$_lvl" =~ ^[[:space:]]*staleness_notice:[[:space:]]*false ]]; then LV_CFG_OFF=1; break; fi
+    done < "${project_root}/.mega-sdd/config.yaml" || true
+  fi
+  if [ "$LV_CFG_OFF" -eq 0 ]; then
+    # Dirty-journal row count — builtin loop (the writer caps the file at 1 MB).
+    LV_DIRTY=0
+    LV_DJ="${project_root}/.mega-sdd/codebase/.dirty-paths.jsonl"
+    if [ -f "$LV_DJ" ]; then
+      while IFS= read -r _lvrow || [ -n "$_lvrow" ]; do LV_DIRTY=$((LV_DIRTY+1)); done < "$LV_DJ" || true
+    fi
+    # HEAD — builtin .git/HEAD walk incl. packed-refs; an unresolvable symbolic
+    # ref falls back to ONE git fork (correctness beats the fork; worktrees and
+    # exotic layouts land here).
+    LV_HEAD=""
+    if [ -f "${project_root}/.git/HEAD" ]; then
+      IFS= read -r LV_HEAD < "${project_root}/.git/HEAD" || LV_HEAD=""
+      case "$LV_HEAD" in
+        ref:*)
+          _lvref="${LV_HEAD#ref: }"
+          if [ -f "${project_root}/.git/${_lvref}" ]; then
+            IFS= read -r LV_HEAD < "${project_root}/.git/${_lvref}" || LV_HEAD=""
+          else
+            LV_HEAD=""
+            if [ -f "${project_root}/.git/packed-refs" ]; then
+              while IFS= read -r _lvpr || [ -n "$_lvpr" ]; do
+                case "$_lvpr" in
+                  *" ${_lvref}") LV_HEAD="${_lvpr%% *}"; break ;;
+                esac
+              done < "${project_root}/.git/packed-refs" || true
+            fi
+            [ -n "$LV_HEAD" ] || LV_HEAD=$(git -C "$project_root" rev-parse HEAD 2>/dev/null || printf '')
+          fi
+          ;;
+      esac
+    elif [ -e "${project_root}/.git" ]; then
+      # .git file (worktree/submodule) — builtin walk not worth replicating: one fork.
+      LV_HEAD=$(git -C "$project_root" rev-parse HEAD 2>/dev/null || printf '')
+    fi
+    # Freshness stamp — map frontmatter wins; index only when no map (F4).
+    LV_STAMP=""
+    if [ -f "$LV_MAP" ]; then
+      _lvn=0
+      while IFS= read -r _lvml || [ -n "$_lvml" ]; do
+        _lvn=$((_lvn+1)); [ "$_lvn" -gt 40 ] && break
+        case "$_lvml" in
+          last_scanned_commit:*)
+            LV_STAMP="${_lvml#last_scanned_commit:}"
+            LV_STAMP="${LV_STAMP//\"/}"; LV_STAMP="${LV_STAMP//\'/}"; LV_STAMP="${LV_STAMP// /}"
+            break ;;
+        esac
+      done < "$LV_MAP" || true
+    elif [ -f "$LV_IDX" ]; then
+      _lvc=""
+      { _lvc="$(<"$LV_IDX")"; } 2>/dev/null || _lvc=""
+      case "$_lvc" in
+        *'"head_commit"'*)
+          _lvt="${_lvc#*\"head_commit\"}"
+          _lvt="${_lvt#*\"}"
+          LV_STAMP="${_lvt%%\"*}"
+          ;;
+      esac
+    fi
+    LV_DETAIL="${LV_DIRTY} journaled write(s)"
+    LV_MOVED=0
+    [ "$LV_DIRTY" -gt 0 ] && LV_MOVED=1
+    if [ -n "$LV_STAMP" ] && [ -n "$LV_HEAD" ] && [ "$LV_HEAD" != "$LV_STAMP" ]; then
+      LV_MOVED=1
+      LV_DETAIL="${LV_DETAIL}; stamp ${LV_STAMP:0:8} ≠ HEAD ${LV_HEAD:0:8}"
+    fi
+    if [ "$LV_MOVED" -eq 1 ]; then
+      # v7 notice-only wording (gate-1 §4.3): sync is OFFERED at M/L entry.
+      STALENESS_NOTICE=$'\n\n'"mega-sdd: codebase moved since last scan (${LV_DETAIL}) — sync tersedia saat masuk lane M/L (\`/mega-sdd\`)."
     fi
   fi
-  # v7 Fase 2 №3: the pre-P1 bash fallback (a byte-for-byte duplicate of the
-  # digest leg's intent, keyed map-only) is DELETED — derive-state.sh is the
-  # ONE probe engine (audit §hooks duplication flag). When the script is
-  # absent/fails, the advisory notice is simply skipped (fail-open silent).
-  : # LV_FROM_DIGEST intentionally unused beyond the digest leg above
 fi
 
 # NOTE: ${PY_WARN} is empty on every path that reaches here — the branch that sets

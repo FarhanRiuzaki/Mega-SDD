@@ -408,9 +408,17 @@ printf '%s' "$out" | grep -qF 'mega-sdd: codebase moved since last scan (3 journ
   || fail "f9: staleness notice missing/reworded"
 printf -- '- [ ] decide A\n- [ ] decide B\n' > "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
 out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
-printf '%s' "$out" | grep -qF 'mega-sdd: 2 open sync decision(s) queued in .mega-sdd/vaults/v1/PENDING-SYNC.md — resolve the queue first. Code also moved since last scan (3 journaled write(s)).' \
-  && ok "f9+queue: PENDING-SYNC-first notice byte-matches the v7 notice-only string" \
-  || fail "f9+queue: PENDING-SYNC notice missing/reworded"
+# v7.5.0 №B (Fase-7 audit §3): the PENDING-SYNC open-count leg LEFT session-start
+# with the probe engine — the notice is builtin-only (journal + stamp signals);
+# the queue surfaces at M/L entry, where derive-state's pending_sync_open probe
+# (pinned by the digest arms above) is actually read. Negative pin: the queue
+# text must NOT come back to session-start.
+printf '%s' "$out" | grep -qF 'open sync decision(s) queued' \
+  && fail "f9+queue: session-start re-grew the PENDING-SYNC leg (№B moved it to M/L entry)" \
+  || ok "f9+queue: session-start stays queue-silent (notice-only; queue lives at M/L entry)"
+printf '%s' "$out" | grep -qF 'codebase moved since last scan (3 journaled write(s))' \
+  && ok "f9+queue: the plain moved-notice still fires alongside an open queue" \
+  || fail "f9+queue: moved-notice lost when a queue exists"
 rm -f "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
 out=$( cd "$WORK/f6-units-no-bolts" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
 printf '%s' "$out" | grep -qF 'codebase moved since last scan' \
