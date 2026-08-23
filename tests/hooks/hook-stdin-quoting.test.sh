@@ -144,7 +144,11 @@ if [ -e "$TMP/PWNED" ]; then pass "control: pre-fix producer DID execute it (sen
 else fail "control: sentinel never fires — C is vacuous"; fi
 
 echo "── D. every hook's real producer is quoted (no bare KEY= left) ──"
-for h in pre-tool-use post-tool-use stop; do
+# v7.5.0 №B: `stop` dropped from this loop — its python stdin parse is DELETED
+# (every emitted var was unread; cwd comes from the builtin extraction, which
+# never eval's). A python-free hook has nothing for shlex to quote; the guard
+# below pins that it STAYS python-free instead.
+for h in pre-tool-use post-tool-use; do
   f="$HOOKS/$h"
   [ -f "$f" ] || { fail "$h missing"; continue; }
   # A bare `print(f"KEY={...}")` / `print("KEY=%s" % ...)` inside the parse block is
@@ -154,6 +158,12 @@ for h in pre-tool-use post-tool-use stop; do
   else fail "$h: $bare unquoted KEY= emission(s) remain"; fi
   grep -q 'import shlex\|,shlex' "$f" || fail "$h: shlex not imported"
 done
+# stop must stay free of the eval'd-python-parse pattern entirely (№B pin):
+if grep -qE 'PARSE_OUTPUT|eval "\$' "$HOOKS/stop"; then
+  fail "stop: an eval'd stdin parse came back — №B deleted it (unread vars, spawn tax)"
+else
+  pass "stop: no eval'd stdin parse (builtin extraction only, №B)"
+fi
 
 echo "── E. eval'd CWD and the raw-JSON short-circuit agree on a Windows payload ──"
 # Both must resolve to the same project root. Before the fix they could not

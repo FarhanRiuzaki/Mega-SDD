@@ -132,16 +132,16 @@ grep -q '"path":"src/app.js"' "$FIXA/.mega-sdd/codebase/.dirty-paths.jsonl" 2>/d
 run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"transcript_path\":\"/nonexistent\"}" >/dev/null
 reset_counts
 run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"transcript_path\":\"/nonexistent\"}" >/dev/null
-[ "$(total)" -le 12 ] \
-  && ok "C4 Stop SDD steady (turn-gated): ≤12 spawns ($(total))" \
+[ "$(total)" -le 6 ] \
+  && ok "C4 Stop SDD steady (turn-gated): ≤6 spawns ($(total))" \
   || bad "C4 Stop SDD steady: spawns=$(total)"
 
 # ── C5: SessionStart SDD — anchor injection budget ───────────────────────────
 reset_counts
 OUT=$(run_ev SessionStart '{"source":"startup","session_id":"s"}' "$FIXA")
 printf '%s' "$OUT" | grep -q "EXTREMELY_IMPORTANT" && ANCH=1 || ANCH=0
-[ "$(total)" -le 15 ] && [ "$ANCH" -eq 1 ] \
-  && ok "C5 SessionStart SDD: ≤15 spawns ($(total)), anchor intact" \
+[ "$(total)" -le 4 ] && [ "$ANCH" -eq 1 ] \
+  && ok "C5 SessionStart SDD: ≤4 spawns ($(total)), anchor intact" \
   || bad "C5 SessionStart SDD: spawns=$(total) anchor=$ANCH"
 
 # ── C6: PreToolUse Edit ARMED — the gated path still fires ───────────────────

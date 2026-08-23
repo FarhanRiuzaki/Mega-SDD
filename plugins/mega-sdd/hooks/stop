@@ -50,53 +50,18 @@ if [ -n "$SC_CWD" ]; then
   fi
 fi
 
-# Parse stdin via python3 (pipe in; script via -c).
-# NOTE: emission goes through emit()/shlex.quote, not an f-string — the consumer is
-# `eval`, so an unquoted value would be re-parsed by the shell (see the block below).
-PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | python3 -c '
-import json
-import shlex
-import sys
-
-def emit(key, value):
-    print(key + "=" + shlex.quote(str(value)))
-
-try:
-    data = json.loads(sys.stdin.read())
-except Exception:
-    sys.exit(0)
-
-session_id = data.get("session_id", "unknown-session")
-cwd = data.get("cwd", "")
-transcript_path = data.get("transcript_path", "")
-hook_event = data.get("hook_event_name", "")
-stop_hook_active = data.get("stop_hook_active", False)
-
-emit("SESSION_ID", session_id)
-emit("CWD", cwd)
-emit("TRANSCRIPT_PATH", transcript_path)
-emit("HOOK_EVENT", hook_event)
-emit("STOP_HOOK_ACTIVE", stop_hook_active)
-' 2>/dev/null)
-
-# The gating the old comment here asked for is now done at the SOURCE: every value
-# above is shlex.quote()d, so eval cannot word-split, strip backslashes (which
-# destroyed every Windows cwd/transcript path) or execute an embedded $(…).
-if [ -n "$PARSE_OUTPUT" ]; then
-  eval "$PARSE_OUTPUT" 2>/dev/null || true
-fi
-
-CWD="${CWD:-}"
-SESSION_ID="${SESSION_ID:-unknown}"
-TRANSCRIPT_PATH="${TRANSCRIPT_PATH:-}"
-HOOK_EVENT="${HOOK_EVENT:-}"
-STOP_HOOK_ACTIVE="${STOP_HOOK_ACTIVE:-False}"
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
-
-# ─── OPT-OUT (no cwd = nothing to do) ────────────────────────────────────────
-if [ -z "$CWD" ]; then
+# ─── (v7.5.0 №B) python stdin parse DELETED ──────────────────────────────────
+# Every value the parse emitted (SESSION_ID / TRANSCRIPT_PATH / HOOK_EVENT /
+# STOP_HOOK_ACTIVE, plus the TS date fork) was assigned and never read by any
+# surviving leg (Fase-7 audit, temuan sampingan), and CWD is already extracted
+# by the builtin short-circuit above. On extraction doubt this DETECTION-ONLY
+# hook now exits instead of paying an interpreter: a skipped turn is re-covered
+# by the execute-bolts gate re-derive (S6 EB-GATE-1) — fail-open is the
+# documented shape of every Stop leg.
+if [ -z "$SC_CWD" ] || [ ! -d "$SC_CWD" ]; then
   exit 0
 fi
+CWD="$SC_CWD"
 
 # ─── Resolve project root (Iter 71 — class-bug fix) ──────────────────────────
 # CWD from stdin may be a sub-folder (model cd'd into .mega-sdd/knowledge-base/
@@ -110,7 +75,9 @@ case "$SCRIPT_DIR_RPR" in
   *) SCRIPT_DIR_RPR="$(cd "$(dirname "$HOOK_SELF")" && pwd 2>/dev/null)" ;;
 esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
-if [ -f "$RPR_HELPER" ]; then
+if [ -n "${SC_ROOT:-}" ]; then
+  PROJECT_ROOT="$SC_ROOT"   # №B: the short-circuit already walked up — reuse it
+elif [ -f "$RPR_HELPER" ]; then
   # shellcheck disable=SC1090
   . "$RPR_HELPER"
   PROJECT_ROOT=$(resolve_project_root "$CWD")
@@ -227,10 +194,28 @@ fi
 # are re-derivable on demand via analyze; no gate reads them — the
 # four outputs are already pruned from both scan probes). The old opt-OUT
 # (`profile: lean` skips) is subsumed: absent config = express spine = skip.
-if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \
-   { grep -m1 -E "^spine:" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null | grep -qE "^spine:[[:space:]]*[\"']?classic[\"']?[[:space:]]*(\r)?(#.*)?$" || \
-     grep -m1 -E "^profile:" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null | grep -qE "^profile:[[:space:]]*[\"']?full[\"']?[[:space:]]*(\r)?(#.*)?$"; } && \
-   ! { grep -m1 -E "^profile:" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null | grep -qE "^profile:[[:space:]]*[\"']?lean[\"']?[[:space:]]*(\r)?(#.*)?$"; }; then
+# №B: the 4-grep pipeline became a single builtin line scan — FIRST matching
+# line per key (grep -m1 parity), then the same anchored value regex via
+# [[ =~ ]]. Config absent/unreadable → no opt-in → skip (unchanged).
+STOP_CFG_FILE="${PROJECT_ROOT}/.mega-sdd/config.yaml"
+STOP_CFG_SPINE=""; STOP_CFG_PROFILE=""
+if [ -f "$STOP_CFG_FILE" ]; then
+  while IFS= read -r _scl || [ -n "$_scl" ]; do
+    case "$_scl" in
+      spine:*)   [ -z "$STOP_CFG_SPINE" ]   && STOP_CFG_SPINE="$_scl" ;;
+      profile:*) [ -z "$STOP_CFG_PROFILE" ] && STOP_CFG_PROFILE="$_scl" ;;
+    esac
+  done < "$STOP_CFG_FILE" 2>/dev/null
+fi
+_SC_CR=$'\r'
+_RE_CLASSIC="^spine:[[:space:]]*[\"']?classic[\"']?[[:space:]]*(${_SC_CR})?(#.*)?\$"
+_RE_FULL="^profile:[[:space:]]*[\"']?full[\"']?[[:space:]]*(${_SC_CR})?(#.*)?\$"
+_RE_LEAN="^profile:[[:space:]]*[\"']?lean[\"']?[[:space:]]*(${_SC_CR})?(#.*)?\$"
+STOP_AGG_OPTIN=0
+if [[ "$STOP_CFG_SPINE" =~ $_RE_CLASSIC ]] || [[ "$STOP_CFG_PROFILE" =~ $_RE_FULL ]]; then
+  [[ "$STOP_CFG_PROFILE" =~ $_RE_LEAN ]] || STOP_AGG_OPTIN=1
+fi
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && [ "$STOP_AGG_OPTIN" -eq 1 ]; then
   STATE_COUNT=$(find "${PROJECT_ROOT}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$STATE_COUNT" -gt 0 ]; then
     SCRIPT_DIR_AZ="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
