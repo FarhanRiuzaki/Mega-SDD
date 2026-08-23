@@ -14,6 +14,12 @@
 # Fail-open on anything undeterminable — the PreToolUse gate remains the backstop.
 set -uo pipefail
 
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
+# run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.
+# On Windows $0 can arrive with backslash separators (the dispatcher used to
+# normalize them); one builtin substitution keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
 CWD=""
 if command -v python3 >/dev/null 2>&1; then
@@ -27,7 +33,7 @@ else
 fi
 [ -n "$CWD" ] || exit 0
 
-SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)"
+SCRIPT_DIR_RPR="$(cd "$(dirname "$HOOK_SELF")" && pwd 2>/dev/null)"
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 PROJECT_ROOT="$CWD"
 if [ -f "$RPR_HELPER" ]; then

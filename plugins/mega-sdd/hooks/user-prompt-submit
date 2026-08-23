@@ -14,6 +14,12 @@
 #   executed — a hostile cwd value can only make the directory probe fail closed.
 set -u
 
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
+# run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.
+# On Windows $0 can arrive with backslash separators (the dispatcher used to
+# normalize them); one builtin substitution keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
 STDIN_JSON=""
 IFS= read -r -d '' STDIN_JSON || true
 [ -n "$STDIN_JSON" ] || exit 0
@@ -32,7 +38,7 @@ case "${OSTYPE:-}" in msys*|cygwin*|win32*) CWD_SS="${CWD_SS//\\\\//}"; CWD_SS="
 [ -d "$CWD_SS" ] || exit 0
 
 # Walk up to the outermost .mega-sdd/ parent (shared shell resolver; sourced, no fork).
-case "$0" in */*) SC_DIR="${0%/*}" ;; *) SC_DIR="." ;; esac
+case "$HOOK_SELF" in */*) SC_DIR="${HOOK_SELF%/*}" ;; *) SC_DIR="." ;; esac
 RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
 ROOT_SS="$CWD_SS"
 if [ -f "$RPR" ]; then

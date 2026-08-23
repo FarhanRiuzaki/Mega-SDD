@@ -8,7 +8,7 @@
 # plugin by `git clone` into the marketplace cache, and that clone inherits the
 # machine's `core.autocrlf`. The DEFAULT Git for Windows installer option is
 # `core.autocrlf=true`. Without a `.gitattributes` that opts out, every shipped
-# script is checked out CRLF and `hooks/run-hook.sh:13` (`set -euo pipefail`)
+# script is checked out CRLF and any hook body's `set -uo pipefail` line
 # parses as `set -e -u -o $'pipefail\r'` -> `set: pipefail: invalid option name`,
 # RC=2, dispatching NOTHING. Blocking hooks kill the session; async hooks fail
 # INVISIBLY and the whole moat evaporates while the model still believes it is
@@ -35,21 +35,22 @@ CR=$'\r'
 # rule would miss, so it is the exact set we interrogate.
 HOOK_ENTRIES="pre-tool-use post-tool-use session-start stop user-prompt-submit user-prompt-expansion"
 
-# Two more real paths beyond the hooks, so a future narrowing to something like
+# One more real path beyond the hooks, so a future narrowing to something like
 # `**/hooks/* text eol=lf` cannot keep this test green while re-opening the
-# hazard: run-hook.sh is the literal evidence line in the audit, and
-# resolve-project-root.sh is the audit's SECOND, independent hard-failure site
-# under CRLF (`_rpr_has_bound_vault() {` -> syntax error -> resolve_project_root
-# undefined for every script that sources it).
-EXTRA_PATHS="$P/hooks/run-hook.sh $P/scripts/_lib/resolve-project-root.sh"
+# hazard: resolve-project-root.sh is the audit's SECOND, independent hard-failure
+# site under CRLF (`_rpr_has_bound_vault() {` -> syntax error ->
+# resolve_project_root undefined for every script that sources it).
+# (run-hook.sh — the audit's literal evidence line — was DELETED in v7.5.0 №A:
+# hooks.json dispatches each extensionless body directly.)
+EXTRA_PATHS="$P/scripts/_lib/resolve-project-root.sh"
 
 # A path that does NOT exist. `git check-attr` answers for it anyway, so it
 # asserts the rule is a CATCH-ALL and not an enumeration of today's files —
 # every file added tomorrow must be covered too.
 FUTURE_PATH="$P/scripts/zz-future-file-that-does-not-exist.sh"
 
-# 8 hooks + 2 extra + 1 future = the vacuity floor for L2.
-EXPECT_CHECKED=9  # v7.3.1: 6 hook entry points (user-prompt-submit restored as gateway marker) + run-hook.sh + hooks.json + plugin.json
+# 6 hooks + 1 extra + 1 future = the vacuity floor for L2.
+EXPECT_CHECKED=8  # v7.5.0: 6 hook entry points + resolve-project-root.sh + the future-file probe (run-hook.sh deleted, direct dispatch)
 
 have_git=0
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -101,7 +102,7 @@ if [ "$have_git" -eq 1 ]; then
   elif [ "$checked" -ne "$EXPECT_CHECKED" ]; then
     fail "L2: VACUOUS-ish — inspected $checked of $EXPECT_CHECKED paths"
   elif [ "$rc" -eq 0 ]; then
-    pass "L2: git check-attr reports eol=lf for all $EXPECT_CHECKED paths (8 extensionless hooks + run-hook.sh + resolve-project-root.sh + a future file)"
+    pass "L2: git check-attr reports eol=lf for all $EXPECT_CHECKED paths (6 extensionless hooks + resolve-project-root.sh + a future file)"
   fi
 else
   # Fallback: reason over the rules when git is unavailable. Weaker than
@@ -208,10 +209,10 @@ rm -rf "$TMPL"
 
 # ── L4 — the WHY comment survives ──────────────────────────────────────────────
 # A bare dotfile invites deletion; the rationale is load-bearing documentation.
-if [ -f .gitattributes ] && grep -q 'run-hook' .gitattributes; then
-  pass "L4: .gitattributes carries the run-hook.sh rationale"
+if [ -f .gitattributes ] && grep -q 'hooks/pre-tool-use' .gitattributes; then
+  pass "L4: .gitattributes carries the extensionless-hook CRLF rationale"
 else
-  fail "L4: .gitattributes has no rationale comment naming run-hook — it will get deleted as noise"
+  fail "L4: .gitattributes has no rationale comment naming an extensionless hook — it will get deleted as noise"
 fi
 
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"

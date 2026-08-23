@@ -8,15 +8,17 @@
 # `core.autocrlf=true`. Without the rules below, every shipped script is checked
 # out with CRLF on such a machine, and then:
 #
-#   plugins/mega-sdd/hooks/run-hook.sh:13   set -euo pipefail
+#   plugins/mega-sdd/hooks/pre-tool-use   set -uo pipefail
 #
-# parses as `set -e -u -o $'pipefail\r'` -> `set: pipefail: invalid option name`.
-# The dispatcher exits RC=2 and dispatches NOTHING. Both branches are severe:
+# parses as `set -u -o $'pipefail\r'` -> `set: pipefail: invalid option name`.
+# The hook exits RC=2 and evaluates NOTHING (v7.5.0: hooks.json dispatches each
+# body DIRECTLY — there is no run-hook.sh dispatcher anymore, so every entry
+# point is its own single point of failure). Both branches are severe:
 #   * blocking hooks (PreToolUse, SessionStart, UserPromptExpansion,
-#     UserPromptSubmit, PreCompact) fail the session outright;
-#   * async hooks (PostToolUse, Stop, SubagentStop, PostToolUseFailure) fail
-#     INVISIBLY — the dirty journal, postflight scan and batch-suite gate all
-#     evaporate while the model still believes it is gated.
+#     UserPromptSubmit) fail the session outright;
+#   * async hooks (PostToolUse, Stop) fail INVISIBLY — the dirty journal,
+#     postflight scan and batch-suite gate all evaporate while the model still
+#     believes it is gated.
 # Independently, `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh` takes a
 # hard syntax error under CRLF, leaving `resolve_project_root` undefined for
 # every script that sources it.
@@ -24,9 +26,9 @@
 # `crlf-no-gitattributes` (severity: hang, skills: ALL).
 #
 # WHY THE CATCH-ALL MUST STAY `*`
-# The eight hook entry points have NO file extension —
-#   hooks/pre-tool-use, post-tool-use, session-start, stop, subagent-stop,
-#   pre-compact, user-prompt-submit, user-prompt-expansion
+# The six hook entry points have NO file extension —
+#   hooks/pre-tool-use, post-tool-use, session-start, stop,
+#   user-prompt-submit, user-prompt-expansion
 # — so a `*.sh` rule misses every single one of them, i.e. it would miss exactly
 # the files whose corruption kills the plugin.
 #
@@ -36,7 +38,7 @@
 #
 # ENFORCEMENT (gates > rules > hooks)
 # tests/platform/test-line-endings.sh asks Git itself, via `git check-attr text
-# eol`, whether eol=lf actually reaches all eight extensionless entry points, and
+# eol`, whether eol=lf actually reaches all six extensionless entry points, and
 # fails if any tracked file under plugins/mega-sdd/ carries a CR byte.
 
 * text=auto eol=lf

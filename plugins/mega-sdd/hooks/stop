@@ -9,6 +9,12 @@
 
 set -uo pipefail
 
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
+# run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.
+# On Windows $0 can arrive with backslash separators (the dispatcher used to
+# normalize them); one builtin substitution keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
 # Always read stdin first
 # stdin read with a BUILTIN (spec §4b): read -d '' consumes to EOF (JSON has no
 # NUL); rc non-zero at EOF by design, hence `|| true`.
@@ -31,7 +37,7 @@ case "$STDIN_JSON" in
     ;;
 esac
 if [ -n "$SC_CWD" ]; then
-  case "$0" in */*) SC_DIR="${0%/*}" ;; *) SC_DIR="." ;; esac
+  case "$HOOK_SELF" in */*) SC_DIR="${HOOK_SELF%/*}" ;; *) SC_DIR="." ;; esac
   SC_RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
   if [ -f "$SC_RPR" ]; then
     # shellcheck disable=SC1090
@@ -98,10 +104,10 @@ fi
 # and state files land in the canonical location instead of nested.
 # Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
 # absolute in the shipped dispatch; the subshell fallback covers relative $0.
-SCRIPT_DIR_RPR="${0%/*}"
+SCRIPT_DIR_RPR="${HOOK_SELF%/*}"
 case "$SCRIPT_DIR_RPR" in
   /*) ;;
-  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$HOOK_SELF")" && pwd 2>/dev/null)" ;;
 esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 if [ -f "$RPR_HELPER" ]; then
@@ -129,7 +135,7 @@ fi
 # written). Detection-only here (Stop must never block); the PreToolUse
 # execute-bolts aggregator blocks the NEXT run on the FAIL state.
 if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
-  SCRIPT_DIR_OS="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+  SCRIPT_DIR_OS="$(cd "$(dirname "$HOOK_SELF")" 2>/dev/null && pwd)"
   VALIDATOR_OS="${SCRIPT_DIR_OS}/../scripts/validate-bolt-artifacts.sh"
   if [ -f "$VALIDATOR_OS" ]; then
     # ── Turn-gate (spec §4c): run the scans only on turns that could change their
@@ -227,7 +233,7 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && \
    ! { grep -m1 -E "^profile:" "${PROJECT_ROOT}/.mega-sdd/config.yaml" 2>/dev/null | grep -qE "^profile:[[:space:]]*[\"']?lean[\"']?[[:space:]]*(\r)?(#.*)?$"; }; then
   STATE_COUNT=$(find "${PROJECT_ROOT}/.mega-sdd" -maxdepth 1 -name ".*-state.json" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$STATE_COUNT" -gt 0 ]; then
-    SCRIPT_DIR_AZ="$(cd "$(dirname "$0")" && pwd)"
+    SCRIPT_DIR_AZ="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
     ANALYZE_SCRIPT="${SCRIPT_DIR_AZ}/../scripts/run-analyze.sh"
     if [ -x "$ANALYZE_SCRIPT" ]; then
       bash "$ANALYZE_SCRIPT" --cwd="$PROJECT_ROOT" --aggregate-only --quiet >/dev/null 2>&1 || true
@@ -245,7 +251,7 @@ fi
 # code layer — it publishes under the `_codebase` sentinel vault, so the gate can
 # no longer be vault-only.
 if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ] || [ -f "${PROJECT_ROOT}/.mega-sdd/graph.json" ]; then
-  SCRIPT_DIR_PUB="$(cd "$(dirname "$0")" && pwd)"
+  SCRIPT_DIR_PUB="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
   PUBLISH_SCRIPT="${SCRIPT_DIR_PUB}/../scripts/publish-artifacts.sh"
   if [ -f "$PUBLISH_SCRIPT" ]; then
     bash "$PUBLISH_SCRIPT" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
