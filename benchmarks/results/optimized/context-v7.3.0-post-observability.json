@@ -1,0 +1,1132 @@
+{
+ "arm": "optimized",
+ "summary": {
+  "tasks_measured": 10,
+  "avg_est_tokens": 66616,
+  "median_est_tokens": 59310,
+  "peak_est_tokens": 111363,
+  "peak_task": "T07-chat-delta-negative"
+ },
+ "tasks": {
+  "T01-greenfield-chain": {
+   "files_loaded": 31,
+   "bytes_loaded": 434295,
+   "chars_loaded": 429956,
+   "est_tokens": 107489,
+   "section_upper_bound_files": 6,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/commands/mega-sdd.md",
+     "chars": 17253,
+     "bytes": 17473,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md",
+     "chars": 3795,
+     "bytes": 3848,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md",
+     "chars": 2522,
+     "bytes": 2529,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md",
+     "chars": 6507,
+     "bytes": 6555,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/SKILL.md",
+     "chars": 25574,
+     "bytes": 25928,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/vault-core.md",
+     "chars": 36752,
+     "bytes": 37117,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+     "chars": 26234,
+     "bytes": 26504,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/self-check.md",
+     "chars": 10795,
+     "bytes": 10888,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md",
+     "chars": 6958,
+     "bytes": 7006,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md",
+     "chars": 5329,
+     "bytes": 5365,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/vault.md",
+     "chars": 4594,
+     "bytes": 4660,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/model.md",
+     "chars": 1739,
+     "bytes": 1749,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/flows.md",
+     "chars": 6393,
+     "bytes": 6418,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md",
+     "chars": 4960,
+     "bytes": 5002,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/SKILL.md",
+     "chars": 27543,
+     "bytes": 27867,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/unit-schema.md",
+     "chars": 26987,
+     "bytes": 27149,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/templates/unit.md",
+     "chars": 1592,
+     "bytes": 1608,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/modules-schema.md",
+     "chars": 10048,
+     "bytes": 10172,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md",
+     "chars": 5884,
+     "bytes": 5906,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md",
+     "chars": 5096,
+     "bytes": 5123,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md",
+     "chars": 15239,
+     "bytes": 15341,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/SKILL.md",
+     "chars": 40812,
+     "bytes": 41294,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+     "chars": 14763,
+     "bytes": 15000,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md",
+     "chars": 10507,
+     "bytes": 10588,
+     "section_upper_bound": true
+    }
+   ]
+  },
+  "T02-brownfield-bind": {
+   "files_loaded": 16,
+   "bytes_loaded": 250080,
+   "chars_loaded": 247579,
+   "est_tokens": 61895,
+   "section_upper_bound_files": 2,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/SKILL.md",
+     "chars": 28512,
+     "bytes": 28891,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/express-bind.md",
+     "chars": 13450,
+     "bytes": 13626,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md",
+     "chars": 18429,
+     "bytes": 18600,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md",
+     "chars": 5776,
+     "bytes": 5880,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md",
+     "chars": 8633,
+     "bytes": 8728,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md",
+     "chars": 6406,
+     "bytes": 6478,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md",
+     "chars": 7762,
+     "bytes": 7840,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+     "chars": 13983,
+     "bytes": 14102,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/framework-conventions/laravel.md",
+     "chars": 32548,
+     "bytes": 32730,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T03-sync-no-intersection": {
+   "files_loaded": 11,
+   "bytes_loaded": 229367,
+   "chars_loaded": 226906,
+   "est_tokens": 56726,
+   "section_upper_bound_files": 4,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md",
+     "chars": 32355,
+     "bytes": 32776,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/commands/sync.md",
+     "chars": 6155,
+     "bytes": 6244,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/scan-codebase/SKILL.md",
+     "chars": 20267,
+     "bytes": 20496,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md",
+     "chars": 56049,
+     "bytes": 56646,
+     "section_upper_bound": true
+    }
+   ]
+  },
+  "T04-sync-with-intersection": {
+   "files_loaded": 24,
+   "bytes_loaded": 406254,
+   "chars_loaded": 401957,
+   "est_tokens": 100489,
+   "section_upper_bound_files": 5,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md",
+     "chars": 32355,
+     "bytes": 32776,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/commands/sync.md",
+     "chars": 6155,
+     "bytes": 6244,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/sync-digest.md",
+     "chars": 4413,
+     "bytes": 4483,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/scan-codebase/SKILL.md",
+     "chars": 20267,
+     "bytes": 20496,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md",
+     "chars": 56049,
+     "bytes": 56646,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/SKILL.md",
+     "chars": 15036,
+     "bytes": 15232,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/references/report-format.md",
+     "chars": 10968,
+     "bytes": 11073,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/references/auto-and-chain.md",
+     "chars": 9135,
+     "bytes": 9224,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/SKILL.md",
+     "chars": 28512,
+     "bytes": 28891,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md",
+     "chars": 18429,
+     "bytes": 18600,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/express-bind.md",
+     "chars": 13450,
+     "bytes": 13626,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md",
+     "chars": 5776,
+     "bytes": 5880,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md",
+     "chars": 8633,
+     "bytes": 8728,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md",
+     "chars": 6406,
+     "bytes": 6478,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/framework-conventions/laravel.md",
+     "chars": 32548,
+     "bytes": 32730,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md",
+     "chars": 7762,
+     "bytes": 7840,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+     "chars": 13983,
+     "bytes": 14102,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T05-resolve-oq-walk": {
+   "files_loaded": 11,
+   "bytes_loaded": 206415,
+   "chars_loaded": 204259,
+   "est_tokens": 51065,
+   "section_upper_bound_files": 2,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/resolve-oq/SKILL.md",
+     "chars": 18624,
+     "bytes": 18819,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/resolve-oq/references/interactive-walk.md",
+     "chars": 50196,
+     "bytes": 50797,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md",
+     "chars": 13086,
+     "bytes": 13209,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/resolve-oq/references/auto-memory-handoff.md",
+     "chars": 10273,
+     "bytes": 10385,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T06-emit-fsd-control": {
+   "files_loaded": 8,
+   "bytes_loaded": 129290,
+   "chars_loaded": 127898,
+   "est_tokens": 31974,
+   "section_upper_bound_files": 2,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/emit-fsd/SKILL.md",
+     "chars": 15818,
+     "bytes": 16085,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T07-chat-delta-negative": {
+   "files_loaded": 30,
+   "bytes_loaded": 450141,
+   "chars_loaded": 445453,
+   "est_tokens": 111363,
+   "section_upper_bound_files": 4,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md",
+     "chars": 32355,
+     "bytes": 32776,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/commands/mega-sdd.md",
+     "chars": 17253,
+     "bytes": 17473,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/multi-prd-lifecycle.md",
+     "chars": 4539,
+     "bytes": 4599,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/SKILL.md",
+     "chars": 25574,
+     "bytes": 25928,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/from-prompt-mode.md",
+     "chars": 14399,
+     "bytes": 14576,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/vault-core.md",
+     "chars": 36752,
+     "bytes": 37117,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/generation-guide.md",
+     "chars": 26234,
+     "bytes": 26504,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/self-check.md",
+     "chars": 10795,
+     "bytes": 10888,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md",
+     "chars": 5329,
+     "bytes": 5365,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md",
+     "chars": 6958,
+     "bytes": 7006,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/vault.md",
+     "chars": 4594,
+     "bytes": 4660,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/model.md",
+     "chars": 1739,
+     "bytes": 1749,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/flows.md",
+     "chars": 6393,
+     "bytes": 6418,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md",
+     "chars": 4960,
+     "bytes": 5002,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/SKILL.md",
+     "chars": 28512,
+     "bytes": 28891,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/express-bind.md",
+     "chars": 13450,
+     "bytes": 13626,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md",
+     "chars": 18429,
+     "bytes": 18600,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md",
+     "chars": 5776,
+     "bytes": 5880,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md",
+     "chars": 8633,
+     "bytes": 8728,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md",
+     "chars": 6406,
+     "bytes": 6478,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md",
+     "chars": 7762,
+     "bytes": 7840,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+     "chars": 13983,
+     "bytes": 14102,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/framework-conventions/laravel.md",
+     "chars": 32548,
+     "bytes": 32730,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T08-post-bolt-drift-gate": {
+   "files_loaded": 3,
+   "bytes_loaded": 35529,
+   "chars_loaded": 35139,
+   "est_tokens": 8785,
+   "section_upper_bound_files": 0,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/SKILL.md",
+     "chars": 15036,
+     "bytes": 15232,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/references/report-format.md",
+     "chars": 10968,
+     "bytes": 11073,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/detect-drift/references/auto-and-chain.md",
+     "chars": 9135,
+     "bytes": 9224,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T09-delta-lane": {
+   "files_loaded": 24,
+   "bytes_loaded": 367502,
+   "chars_loaded": 363664,
+   "est_tokens": 90916,
+   "section_upper_bound_files": 4,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/using-mega-sdd/SKILL.md",
+     "chars": 8545,
+     "bytes": 8675,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/commands/mega-sdd.md",
+     "chars": 17253,
+     "bytes": 17473,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/multi-prd-lifecycle.md",
+     "chars": 4539,
+     "bytes": 4599,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/SKILL.md",
+     "chars": 23210,
+     "bytes": 23460,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md",
+     "chars": 22212,
+     "bytes": 22459,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/model-tiers.md",
+     "chars": 11799,
+     "bytes": 11879,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/references/output-language.md",
+     "chars": 8685,
+     "bytes": 8766,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md",
+     "chars": 8547,
+     "bytes": 8641,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md",
+     "chars": 29082,
+     "bytes": 29325,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md",
+     "chars": 32355,
+     "bytes": 32776,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/diff-vault/SKILL.md",
+     "chars": 18544,
+     "bytes": 18764,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/diff-vault/references/diff-procedure.md",
+     "chars": 12660,
+     "bytes": 12786,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/diff-vault/references/report-format.md",
+     "chars": 7508,
+     "bytes": 7568,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/diff-vault/references/auto-and-chain.md",
+     "chars": 8827,
+     "bytes": 8880,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/generate-intent/references/from-prompt-mode.md",
+     "chars": 14399,
+     "bytes": 14576,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/SKILL.md",
+     "chars": 28512,
+     "bytes": 28891,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md",
+     "chars": 18429,
+     "bytes": 18600,
+     "section_upper_bound": true
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/express-bind.md",
+     "chars": 13450,
+     "bytes": 13626,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/implementation-state.md",
+     "chars": 5776,
+     "bytes": 5880,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md",
+     "chars": 8633,
+     "bytes": 8728,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md",
+     "chars": 6406,
+     "bytes": 6478,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/references/framework-conventions/laravel.md",
+     "chars": 32548,
+     "bytes": 32730,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md",
+     "chars": 7762,
+     "bytes": 7840,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md",
+     "chars": 13983,
+     "bytes": 14102,
+     "section_upper_bound": false
+    }
+   ]
+  },
+  "T10-bolts-per-unit": {
+   "files_loaded": 12,
+   "bytes_loaded": 183962,
+   "chars_loaded": 181817,
+   "est_tokens": 45454,
+   "section_upper_bound_files": 0,
+   "missing_paths": [],
+   "files": [
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/SKILL.md",
+     "chars": 40812,
+     "bytes": 41294,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/review-panel.md",
+     "chars": 28498,
+     "bytes": 28787,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md",
+     "chars": 14763,
+     "bytes": 15000,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md",
+     "chars": 25453,
+     "bytes": 25927,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/code-gates.md",
+     "chars": 11614,
+     "bytes": 11737,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/hard-rule-scan.md",
+     "chars": 19528,
+     "bytes": 19695,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/skills/execute-bolts/references/bolt-contract.md",
+     "chars": 3534,
+     "bytes": 3560,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/agents/bolt-implementer.md",
+     "chars": 19623,
+     "bytes": 19762,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/agents/spec-reviewer.md",
+     "chars": 3910,
+     "bytes": 3950,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/agents/code-quality-reviewer.md",
+     "chars": 4918,
+     "bytes": 4988,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/agents/security-reviewer.md",
+     "chars": 4867,
+     "bytes": 4919,
+     "section_upper_bound": false
+    },
+    {
+     "path": "plugins/mega-sdd/agents/standards-reviewer.md",
+     "chars": 4297,
+     "bytes": 4343,
+     "section_upper_bound": false
+    }
+   ]
+  }
+ }
+}

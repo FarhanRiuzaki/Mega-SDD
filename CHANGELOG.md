@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.3.0] - 2026-08-23 — BREAKING: observability REMOVED ENTIRELY (pipeline-only mandate)
+
+User amendment 2026-08-22 (final, supersedes amend-no-telemetry): mega-sdd is a DEVELOPMENT PIPELINE — PRD/idea → intent → vault → bind → units → bolts → review → test/e2e → documents. Everything observability-class is DELETED, not slimmed. Knife test: "if this disappears, does an anti-hallucination gate break, or does a dev artifact become unbuildable?" No → gone. Full audit + before/after: `research/2026-08-23-v7.3.0-observability-removal.md`.
+
+### Removed (BREAKING)
+- **Telemetry**: telemetry.jsonl + every writer/marker (`turn_end_marker`/`subagent_end_marker`/`skill_invoked`/`ref_loaded`/`halt_self_resolved`), transcript-usage extraction + per-session cursors, hook-debug.log, `telemetry-schema.md`, `--no-telemetry`, config `telemetry:` + the plugin.json userConfig. The old `telemetry: false` coupling that ALSO disabled gates/validators is gone — **the anti-halu gates are no longer config-opt-out-able**.
+- **Cost/usage reporting**: `report-token-cost.sh` (incl. the day-old `--price-table`/`--vault`), the run-analyze token-cost leg, TOKEN-COST-REPORT.md, the analyze "token cost" triggers. Usage/billing is the gateway/harness's concern.
+- **Hooks**: `SubagentStop`, `PreCompact` (+ `.compaction-snapshot.json` and the resume notice), `UserPromptSubmit` (trace tag + compaction advisor) — hooks.json is down to **5 events**; PostToolUse matcher narrowed to `Skill|Bash|Write|Edit` (the Read/Agent legs were pure telemetry). Hook line count 3,924 → 2,810 (−28%).
+- **Trace tag `mega-sdd-trace:*`** on every surface (15 announce lines, dispatch builder/templates, lens rule, session/turn echoes) and the v6.19.2 gateway-governance detection contract — session detection, if still wanted, is a gateway-side concern. Dispatch-parity goldens regenerated (delta = the tag lines + memory section only).
+- **The memory lane**: `skills/memory/` + `/mega-sdd:memory` (surface = 4 verbs + **3** one-timers, 7 command files), `memory-write.sh` + migrations, orchestrate `memory-layer.md`, every §Memory layer, `metadata.memory_context`/`memory_writes`, memory-informed routing, chain-end outcomes/extract-learnings, instincts, drift-history, classifier-accuracy, install-outcomes (install-deps re-probes every run), `--memory-off` everywhere, halts `routing_outcome_corrupt`/`memory_schema_mismatch`.
+
+### Kept (pipeline consumers — reported per the mandate)
+- All anti-halu gates + evidence artifacts; bolt-report `model_used`/`escalated_from`/`signals_fired`; `publish-artifacts.sh` (payload checked: manifest `plugin_version` only); front-door status view; the staleness notice (pipeline state); the dirty journal (sync changed-set); `benchmarks/` context tracer (maintainer tool).
+- **`<vault>/.memory/bolt-outcomes.json`** — pipeline state READ BY SCRIPTS (`query-graph.sh --modules`); minimal write spec restored in halts-and-handoff (learning fields removed).
+- Convergence `--converge` survives on grounded (KB/vault/codebase) recommendations; **flag renamed `--auto-accept-from-memory` → `--auto-accept`** (breaking). `halt_auto_propose` user-scope config relocated `~/.mega-sdd/memory/config.yaml` → `~/.mega-sdd/config.yaml` (breaking). `memory_in_use` stays (it names the vault.json/starterkit LOCK class; canonical lock spec re-homed to vault-core §Concurrency contract).
+
+### Measured
+- Tracer, all 10 lanes vs the pre-Fase-4 baseline: **728,322 → 666,156 est tok (−62,166, −8.5%)** — cumulative R4 + R2a + this removal; new Fase-4 baseline recorded at `benchmarks/results/optimized/context-v7.3.0-post-observability.json`.
+- Net code: **−6,299 lines** across seri-1+2; 13 dead-feature test suites deleted, ~20 repinned to REMOVAL contracts (negative assertions); tier-S spawn ceilings re-pinned (no-signal session-start = 0 forks AND 0 output).
+
 ## [7.2.0] - 2026-08-22 — v7 Fase 4 markdown diet (R-series; tracer-measured per R)
 
 Scoping `research/2026-08-22-v7-fase4-scoping.md` (user GO, order R5→R4→R2→R1→R3; rule: every R must show a measured token reduction on the same static tracer or be reverted). R5 (trace re-derivation + T10 bolts-per-unit lane + `benchmarks/results/optimized/context-v7-pre-fase4.json` baseline) shipped pre-bump.

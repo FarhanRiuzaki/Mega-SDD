@@ -192,8 +192,8 @@ grep -qiF "Skill" "$FD" && grep -qiF "Agent" "$FD" \
   && ok "front door text covers Skill-vs-Agent dispatch" || fail "front door missing dispatch doctrine"
 
 echo "── G: contract amendment + manifests ──"
-grep -qiF "telemetry review" "$P/CLAUDE.md" \
-  && ok "CLAUDE.md carries the decision-2 alias/removal amendment" || fail "CLAUDE.md amendment missing"
+grep -qiF "usage review" "$P/CLAUDE.md" \
+  && ok "CLAUDE.md carries the decision-2 alias/removal amendment (v7.3.0 wording: usage review)" || fail "CLAUDE.md amendment missing"
 V1=$(grep -oE '"version": "[^"]+"' "$P/.claude-plugin/plugin.json" | head -1)
 V2=$(grep -oE '"version": "[^"]+"' "$ROOT/.claude-plugin/marketplace.json" | head -1)
 # The alias removal landed in the 6.x MAJOR; assert major>=6 (not a frozen

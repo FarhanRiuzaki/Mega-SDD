@@ -6,7 +6,7 @@ Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-
 
 **Version:** see [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) (single source of truth) · **License:** MIT
 
-> **This page's job**: per-command reference + plugin internals (defense layers, memory, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
+> **This page's job**: per-command reference + plugin internals (defense layers, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
 ## Install / update
 
@@ -34,7 +34,6 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | `/mega-sdd:slice <ref>` | Standalone UI slicing (6.8.0) — Figma export / URL / image → UI code per your framework conventions + Playwright-MCP render check; works without a vault, never writes vault/binding |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
-| `/mega-sdd:memory review` | Review what mega-sdd learned across runs (accept / reject) |
 | **Migration table — the 5.x typed forms → how to do it in 6.0.0** | |
 | ~~`/mega-sdd:generate-intent <prd>`~~ | `/mega-sdd ./prd.md` — or say "pecah PRD ini" |
 | ~~`/mega-sdd:scan-codebase`~~ | on-demand: ask "scan codebase ini" (the express spine needs no map) |
@@ -90,7 +89,7 @@ plugins/mega-sdd/
 │   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
 │   ├── generate-units/  execute-bolts/          # the core pipeline
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
-│   ├── memory/  emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
+│   ├── emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
 │   └── _vendored/                # superpowers fallback (optional technique skills)
 ├── agents/                       # 8 first-class subagents
 │   ├── bolt-implementer.md       # execute-bolts implementer
@@ -118,7 +117,6 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
 7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn; tree-sitter as an explicit opt-in lane — no regex guessing of structure)
 8. **Reuse-first write loop** — a script-built full-repo symbol index feeds every bolt dispatch an "Existing symbols — REUSE, don't recreate" slice at write time, and a post-write duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) hands mechanical evidence rows to the code-quality review lens
-9. **Memory** — suggestion-only, with a mandatory audit log
 10. **Drift detection** — committed code reconciled against the vault
 11. **Interface lock** — cross-squad consumed interfaces must be locked
 12. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
@@ -132,16 +130,6 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 20. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 
 > The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); the analyze skill ("cek konsistensi") surfaces the advisory ones.
-
-## Memory
-
-Three scopes of markdown + JSON memory persist context across sessions (complementary to Claude Code's own memory):
-
-- `~/.mega-sdd/memory/` — **USER** (opt-in, cross-project)
-- `<project>/.mega-sdd/memory/` — **PROJECT** (per-repo, git-trackable per file)
-- `<vault>/.memory/` — **VAULT** (per-vault, ephemeral)
-
-Self-learning via threshold-based suggestions, reviewed through `/mega-sdd:memory review`. **Never auto-applied** — mandatory audit log + rollback path. Disable with `--memory-off`.
 
 ## Per-project config
 
