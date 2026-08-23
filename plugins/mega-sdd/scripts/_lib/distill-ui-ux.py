@@ -1,7 +1,8 @@
 # plugins/mega-sdd/scripts/_lib/distill-ui-ux.py
 """Sync-time distiller: ui-ux-pro-max CSVs -> mega-sdd design-intelligence references.
 
-Runs ONLY at sync/release time (invoked by sync-ui-ux.sh). mega-sdd runtime never
+Runs ONLY at sync/release time (standalone since v7.4.0 — the sync-vendored.sh
+wrapper was removed). mega-sdd runtime never
 calls this — it reads the committed markdown/YAML output instead. No third-party deps
 beyond PyYAML (already used by other mega-sdd sync tooling); falls back to a minimal
 hand-rolled YAML emitter so the distiller never hard-depends on PyYAML at sync time.

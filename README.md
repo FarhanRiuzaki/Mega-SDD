@@ -373,7 +373,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── .claude-plugin/marketplace.json         # marketplace manifest
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
-│   ├── skills/                             # 20 skills (lean routers + progressive disclosure) + _vendored/
+│   ├── skills/                             # skills (lean routers + progressive disclosure)
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
 │   ├── commands/                           # exactly 8: 4 public verbs + 4 maintenance one-timers (slice added 6.8.0; the 24 5.x aliases were removed in 6.0.0)
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
@@ -405,4 +405,4 @@ For human contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md) — SDD invariants,
 
 MIT — see [`LICENSE`](LICENSE).
 
-Vendored superpowers skills retain their original MIT license; see [`plugins/mega-sdd/skills/_vendored/ATTRIBUTION.md`](plugins/mega-sdd/skills/_vendored/ATTRIBUTION.md). Acknowledges [superpowers](https://github.com/obra/superpowers) by Jesse Vincent for plugin pattern inspiration. Tree-sitter `.scm` query patterns adapted from [Aider](https://github.com/Aider-AI/aider) (Apache 2.0).
+Acknowledges [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT) for plugin pattern inspiration (the vendored copies were removed in v7.4.0). Tree-sitter `.scm` query patterns adapted from [Aider](https://github.com/Aider-AI/aider) (Apache 2.0).

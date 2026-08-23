@@ -141,9 +141,9 @@ next_action: "Install an AST engine (brew install ast-grep — zero-compilation 
 
 ## First-run pre-flight (execute-bolts)
 
-Only if the chain includes execute-bolts:
-- Check superpowers OR `_vendored/` availability.
-- If neither → propose install command, halt chain proposal.
+Removed v7.4.0: the first-class agents ship in the plugin tree, so there is no
+superpowers/vendored dependency to probe — nothing halts here. A broken Agent
+tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
 
 ## Auto-integrated diagnostics
 

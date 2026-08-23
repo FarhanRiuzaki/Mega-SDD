@@ -95,13 +95,6 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
   fatal: yes
   predicts_halt: (chain order error — invokes generate-units instead)
 
-- **check_id: `superpowers_available`**
-  command: check superpowers plugin presence (existing check from current Step 4)
-  expected: superpowers plugin loadable OR vendored fallback present
-  on_fail: "execute-bolts dispatches via superpowers.executing-plans; superpowers plugin not available"
-  fatal: no (vendored fallback exists)
-  predicts_halt: (no specific halt; degraded operation)
-
 ## generate-intent preflight checks
 
 - **check_id: `prd_or_kb_input_present`**

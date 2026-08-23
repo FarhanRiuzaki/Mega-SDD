@@ -242,6 +242,5 @@ If detection conflicts with vault `mode:`, halt with mode-migration prompt.
 
 ## First-run dependency check
 
-On first invocation in a session that will reach `execute-bolts`, perform pre-flight:
-- If neither superpowers nor `_vendored/` is ready → halt, offer install
-- Defer the check until bolt phase is actually proposed (cheap check, runs once)
+Removed v7.4.0 — the first-class agents ship in the plugin tree; no
+superpowers/vendored probe exists and nothing halts on it.

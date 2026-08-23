@@ -84,11 +84,8 @@
 
 ## Pre-flight
 
-### PF1: Chain includes execute-bolts, no superpowers, no vendored
-- **Expect:** Halt with install offer; do NOT propose chain
-
-### PF2: Chain includes execute-bolts, vendored ready
-- **Expect:** Chain proposed; pre-flight passes
+### PF1: Chain includes execute-bolts, no superpowers installed (v7.4.0)
+- **Expect:** Chain proposed — NO dependency halt (first-class agents ship in the plugin; the vendored probe was removed)
 
 ## Pass criteria
 
