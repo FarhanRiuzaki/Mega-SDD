@@ -14,6 +14,12 @@
 #      never a blind [0] index (on machines with dormant installs, [0] resolved
 #      to a stale 6.6.0 and the bare verb ran an old plugin)
 #   6. an older-marker wrapper (v1) on disk → refreshed to the current version
+#   7. PRODUCTION PATH (the standing lesson — pin the dispatch path, not the
+#      body): the session-start hook's builtin debounce literal must match the
+#      installer's WRAPPER_VERSION. Regression class: v7.5.1 bumped the
+#      installer to v2 but left the hook checking "v1", so a v1 wrapper was
+#      never upgraded through the debounced path. Proven by RUNNING the hook:
+#      v1 wrapper → upgraded to current; current wrapper → untouched.
 # All runs use a sandbox HOME — the real user HOME is never touched.
 
 set -euo pipefail
@@ -68,4 +74,23 @@ grep -q "mega-sdd-front-door-wrapper v1" "$TARGET" \
 grep -q "mega-sdd-front-door-wrapper v" "$TARGET" \
   || fail "refresh removed the managed marker entirely"
 
-echo "OK: front-door wrapper installer honors create / idempotent / respect-user / force / version-aware / refresh"
+# 7 — production path: session-start's debounce upgrades a v1 wrapper
+HOOK="${SCRIPT_DIR}/../../plugins/mega-sdd/hooks/session-start"
+# 7a: static parity — the hook's literal names the installer's current version
+WV=$(grep -m1 '^WRAPPER_VERSION=' "$INSTALLER" | tr -dc '0-9')
+grep -q "mega-sdd-front-door-wrapper v${WV}\"\*) : ;;" "$HOOK" \
+  || fail "session-start debounce literal is not v${WV} (drifted from WRAPPER_VERSION)"
+# 7b: behavioral — run the HOOK (not the installer) against a v1 wrapper
+printf 'old body\n<!-- mega-sdd-front-door-wrapper v1 — managed -->\n' > "$TARGET"
+printf '{"session_id":"fdw","cwd":"%s","source":"startup"}' "$SANDBOX" \
+  | bash "$HOOK" >/dev/null 2>&1 || true
+grep -q "mega-sdd-front-door-wrapper v${WV}" "$TARGET" \
+  || fail "session-start did not upgrade a v1 wrapper to v${WV} (production-path regression)"
+# 7c: a current wrapper stays untouched (mtime stable through the hook)
+m1=$($MTIME "$TARGET"); sleep 1
+printf '{"session_id":"fdw","cwd":"%s","source":"startup"}' "$SANDBOX" \
+  | bash "$HOOK" >/dev/null 2>&1 || true
+m2=$($MTIME "$TARGET")
+[ "$m1" = "$m2" ] || fail "session-start rewrote an up-to-date v${WV} wrapper (debounce broken)"
+
+echo "OK: front-door wrapper installer honors create / idempotent / respect-user / force / version-aware / refresh / production-path parity"

@@ -90,8 +90,9 @@ done
 # builtins — zero forks. The script is spawned only when the wrapper is absent
 # or carries an OLDER marker version. A marker-less existing file is
 # user-authored: skipped here, exactly as the script's ownership rail would.
-# The "v1" literal below MUST match WRAPPER_VERSION in install-front-door.sh —
-# bump them together.
+# The "v2" literal below MUST match WRAPPER_VERSION in install-front-door.sh —
+# bump them together (parity-pinned by tests/hooks/front-door-wrapper.test.sh
+# contract 7, which runs THIS hook, not the installer directly).
 FD_TARGET="${HOME}/.claude/commands/mega-sdd.md"
 if [ ! -f "$FD_TARGET" ]; then
   bash "${SCRIPT_DIR}/../scripts/install-front-door.sh" >/dev/null 2>&1 || true
@@ -99,7 +100,7 @@ else
   FD_CUR=""
   { FD_CUR="$(<"$FD_TARGET")"; } 2>/dev/null || FD_CUR=""
   case "$FD_CUR" in
-    *"mega-sdd-front-door-wrapper v1"*) : ;;  # current — skip the spawn
+    *"mega-sdd-front-door-wrapper v2"*) : ;;  # current — skip the spawn
     *"mega-sdd-front-door-wrapper"*)
       bash "${SCRIPT_DIR}/../scripts/install-front-door.sh" >/dev/null 2>&1 || true ;;
     *) : ;;  # user-authored file — never overwritten (ownership rail)
