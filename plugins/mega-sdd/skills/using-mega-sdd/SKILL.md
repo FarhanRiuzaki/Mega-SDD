@@ -30,6 +30,8 @@ For an M/L trigger: **STOP**, invoke the skill via the `Skill` tool, and announc
 
 A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice line) — never, by itself, a reason to invoke a skill. Prior chains exist in the project (factory-ledger present) + a continuation prompt → offer `/mega-sdd --resume` in one line; do not auto-invoke.
 
+**Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
+
 **Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
 
 ## Output language

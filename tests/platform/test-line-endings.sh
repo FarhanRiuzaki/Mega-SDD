@@ -33,7 +33,7 @@ CR=$'\r'
 
 # The eight hook entry points have NO extension — this is the exact set a `*.sh`
 # rule would miss, so it is the exact set we interrogate.
-HOOK_ENTRIES="pre-tool-use post-tool-use session-start stop user-prompt-expansion"
+HOOK_ENTRIES="pre-tool-use post-tool-use session-start stop user-prompt-submit user-prompt-expansion"
 
 # Two more real paths beyond the hooks, so a future narrowing to something like
 # `**/hooks/* text eol=lf` cannot keep this test green while re-opening the
@@ -49,7 +49,7 @@ EXTRA_PATHS="$P/hooks/run-hook.sh $P/scripts/_lib/resolve-project-root.sh"
 FUTURE_PATH="$P/scripts/zz-future-file-that-does-not-exist.sh"
 
 # 8 hooks + 2 extra + 1 future = the vacuity floor for L2.
-EXPECT_CHECKED=8  # v7.3.0: 5 hook entry points + run-hook.sh + hooks.json + plugin.json (3 hooks removed)
+EXPECT_CHECKED=9  # v7.3.1: 6 hook entry points (user-prompt-submit restored as gateway marker) + run-hook.sh + hooks.json + plugin.json
 
 have_git=0
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then

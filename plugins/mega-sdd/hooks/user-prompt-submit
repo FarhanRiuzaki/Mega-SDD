@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# UserPromptSubmit hook for mega-sdd — GATEWAY CONTRACT ONLY (v7.3.1).
+#
+# Restored after the v7.3.0 observability removal by owner decision 2026-08-23
+# (research/2026-08-23-v7-gate7b-trace-restore.md): the office AI gateway filters
+# mega-sdd sessions on the `mega-sdd-trace:*` tag family. This hook's ENTIRE job
+# is one echo of `mega-sdd-trace:turn` per user prompt in an adopted (SDD) project.
+#
+# Contract (docs/gateway-contract.md):
+# - Pure shell, ZERO subprocess spawns (no python, no transcript scan, no advisor —
+#   none of the removed observability comes back through this file).
+# - Non-SDD cwd → exit silently with no output.
+# - stdin is parsed with bash string ops only and NOTHING from it is eval'd or
+#   executed — a hostile cwd value can only make the directory probe fail closed.
+set -u
+
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true
+[ -n "$STDIN_JSON" ] || exit 0
+
+# First-match cwd extraction (same fork-free pattern as the other hooks).
+CWD_SS=""
+case "$STDIN_JSON" in
+  *'"cwd"'*)
+    _t="${STDIN_JSON#*\"cwd\"}"
+    _t="${_t#*\"}"
+    CWD_SS="${_t%%\"*}"
+    ;;
+esac
+[ -n "$CWD_SS" ] || exit 0
+case "${OSTYPE:-}" in msys*|cygwin*|win32*) CWD_SS="${CWD_SS//\\\\//}"; CWD_SS="${CWD_SS//\\//}" ;; esac
+[ -d "$CWD_SS" ] || exit 0
+
+# Walk up to the outermost .mega-sdd/ parent (shared shell resolver; sourced, no fork).
+case "$0" in */*) SC_DIR="${0%/*}" ;; *) SC_DIR="." ;; esac
+RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
+ROOT_SS="$CWD_SS"
+if [ -f "$RPR" ]; then
+  # shellcheck disable=SC1090
+  . "$RPR"
+  ROOT_SS=$(resolve_project_root "$CWD_SS")
+fi
+[ -d "${ROOT_SS}/.mega-sdd" ] || exit 0
+
+# The gateway filter marker — one token, verbatim, unconditional in SDD projects.
+echo "mega-sdd-trace:turn"
+exit 0

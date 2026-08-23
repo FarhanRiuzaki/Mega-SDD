@@ -10,7 +10,7 @@
   "soft_halts": [],
   "warnings": [],
   "halt": null,
-  "inline_core": "UNIT: U-001 \"Add the npwp column handler\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-001/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): app/Handlers/NpwpHandler.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
+  "inline_core": "mega-sdd-trace:execute-bolts:U-001\nUNIT: U-001 \"Add the npwp column handler\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-001/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): app/Handlers/NpwpHandler.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
   "caps": {
     "cap_hard": 12288,
     "cap_target": 9216,

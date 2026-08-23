@@ -10,7 +10,7 @@ description: Heuristic codebase scanner for brownfield SDD — produces codebase
 
 Builds a structured map of an existing repository for use by the SDD binding gate.
 
-**Announce at start:** "I'm using the scan-codebase skill to map the repository."
+**Announce at start:** "I'm using the scan-codebase skill to map the repository. `mega-sdd-trace:scan-codebase`"
 
 > **Instruction language:** this skill reasons in English. Detected symbols, paths, and line numbers are recorded verbatim from the codebase. Narrate (the announce, progress, summary) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`). *(This skill is greenfield-reachable — direct invocation on a raw brownfield repo runs before any `.mega-sdd/` signal exists, so it carries the policy itself rather than relying on the anchor.)*
 

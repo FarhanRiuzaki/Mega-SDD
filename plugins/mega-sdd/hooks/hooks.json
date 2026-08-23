@@ -62,6 +62,19 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-submit",
+            "async": false,
+            "statusMessage": "mega-sdd: gateway marker…"
+          }
+        ]
+      }
     ]
   }
 }

@@ -6,7 +6,7 @@ Manual-run fixture for the `/mega-sdd:slice` → `slice-design` lane.
 
 ### SL1: Explicit command with a URL reference
 - **Prompt:** `/mega-sdd:slice --url=https://example.com/pricing`
-- **Expect:** `slice-design` skill invocation; capture via Playwright MCP; report at `.mega-sdd/slices/<slug>/slice-report.md`
+- **Expect:** `slice-design` skill invocation; announce carries `mega-sdd-trace:slice-design`; capture via Playwright MCP; report at `.mega-sdd/slices/<slug>/slice-report.md`
 
 ### SL2: Explicit command with an image
 - **Prompt:** `/mega-sdd:slice --image=./design/dashboard.png`

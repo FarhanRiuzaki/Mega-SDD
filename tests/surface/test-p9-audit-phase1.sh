@@ -149,20 +149,32 @@ if ! grep -q "traits/anti-patterns" "$DRV" && grep -qF 'best-for / avoid-for' "$
   pass "A11c: design-reviewer speaks the delivered slice vocabulary"
 else fail "A11c: design-reviewer still expects the forbidden traits/anti-patterns lines"; fi
 
-# ── C — trace-tag REMOVAL completion (v7.3.0 observability cut): no surface
-# may still carry the tag.
-n_tagged=$(grep -rl 'mega-sdd-trace' "$P/skills" "$P/agents" "$P/commands" "$P/scripts" "$P/hooks" 2>/dev/null | wc -l | tr -d ' ')
-[ "$n_tagged" -eq 0 ] \
-  && pass "C: zero mega-sdd-trace sites across skills/agents/commands/scripts/hooks (removal complete)" \
-  || fail "C: $n_tagged file(s) still carry mega-sdd-trace"
-# C3/C4 (v7.3.0): the per-template tag rules are gone with the tag itself —
-# covered by the zero-site sweep above.
+# ── C — gateway-tag completion (v7.3.1 restore, docs/gateway-contract.md):
+# EVERY announce-bearing skill + every dispatch template carries the tag.
+for s in emit-prd emit-sit emit-fsd emit-agents-md emit-uat bind-codebase execute-bolts extract-intelligence generate-units install-deps orchestrate-flow scan-codebase slice-design; do
+  grep -qF "mega-sdd-trace:$s" "$P/skills/$s/SKILL.md" \
+    && pass "C: $s carries its gateway tag" \
+    || fail "C: $s gateway tag missing"
+done
+n_untagged=$(grep -l '\*\*Announce at start:\*\*' "$P"/skills/*/SKILL.md | while read -r f; do
+  grep '\*\*Announce at start:\*\*' "$f" | grep -q 'mega-sdd-trace:' || echo "$f"
+done | wc -l | tr -d ' ')
+[ "$n_untagged" -eq 0 ] \
+  && pass "C1b: zero announce templates without the gateway tag (completion holds)" \
+  || fail "C1b: $n_untagged announce template(s) untagged"
+grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/references/wave-dispatch-templates.md" \
+  && pass "C2: wave dispatch template carries the tag" || fail "C2: wave dispatch tag missing"
+grep -qF 'mega-sdd-trace:scan-codebase' "$P/skills/scan-codebase/references/deep-scan-prompts.md" \
+  && pass "C3: deep-scan dispatch contract mandates the tag" || fail "C3: deep-scan tag rule missing"
+grep -qF 'mega-sdd-trace:execute-bolts' "$P/skills/execute-bolts/references/review-panel.md" \
+  && pass "C4: lens/verifier dispatch rule mandates the tag" || fail "C4: review-panel tag rule missing"
 
 # ── D — infra batch ──
-# D1 (v7.3.0): the user-prompt-submit hook is REMOVED (trace + advisor only).
-[ ! -f "$P/hooks/user-prompt-submit" ] \
-  && pass "D1: user-prompt-submit hook removed (v7.3.0)" \
-  || fail "D1: user-prompt-submit still exists"
+# D1 (v7.3.1): user-prompt-submit is RESTORED as the pure-shell gateway-marker
+# echo — it must exist and contain ZERO python spawns.
+if [ -f "$P/hooks/user-prompt-submit" ] && ! grep -q "python3" "$P/hooks/user-prompt-submit"; then
+  pass "D1: user-prompt-submit exists and is pure shell (gateway marker only)"
+else fail "D1: user-prompt-submit missing or spawns python"; fi
 # D2 (v7.0.0): the slim MANDATORY block is DELETED entirely (gate-1 decision) —
 # a no-signal CWD gets zero injection. Assert the heredoc and its pin phrase are gone.
 if ! grep -q "SLIM_EOF" "$P/hooks/session-start" && ! grep -q 'MANDATORY development workflow' "$P/hooks/session-start"; then

@@ -6,7 +6,7 @@ description: Generate a bank-style SIT — TS scenarios from F-* flows (Mermaid 
 
 # Emit-SIT — System Integration Test Document Generator
 
-**Announce at start:** "I'm using the emit-sit skill to generate the SIT from the current vault + bolt evidence."
+**Announce at start:** "I'm using the emit-sit skill to generate the SIT from the current vault + bolt evidence. `mega-sdd-trace:emit-sit`"
 
 > **Output language (Tier-3 artifact):** SIT body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — flow titles, DoD items, raw runner output in evidence cells — and every `[Source: sha256:…]` citation are reproduced in their source language / raw bytes, never translated** (citation discipline, moat invariant #3). Terse/technical source notation is quoted verbatim in code spans with an Indonesian gloss — never translated in place. Tier-1 structural tokens stay English. Full rules → `plugins/mega-sdd/references/output-language.md`.
 
