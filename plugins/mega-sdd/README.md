@@ -105,6 +105,10 @@ plugins/mega-sdd/
 └── LICENSE
 ```
 
+## Gateway contract
+
+The `mega-sdd-trace:*` tag family is the plugin's ONLY observability artifact — the office AI gateway filters mega-sdd sessions on it; all token/cost/session accounting lives gateway-side. Spec: [`../../docs/gateway-contract.md`](../../docs/gateway-contract.md).
+
 ## How it prevents hallucination
 
 Mega-sdd's reason for existing is that it **won't let an agent invent what isn't grounded**. Defense is layered across every handoff — uncertain claims become Open Questions, never guesses; the binding gate blocks on unresolved CONFLICTs; units carry a `target_files` whitelist + acceptance test + cited anchors; Hard Rules are AST-validated at bolt time. The full defense in depth:

@@ -32,6 +32,8 @@ Canonical prompt template for the bolt-subagent dispatch. Implements the 10 AI-e
 ═══════════════════════════════════════════
 BOLT SUBAGENT DISPATCH — U-XXX
 ═══════════════════════════════════════════
+mega-sdd-trace:execute-bolts:<unit-id>   ← gateway filter tag, verbatim (subagent context is fresh; docs/gateway-contract.md)
+
 UNIT: <id> "<title>"
 SCOPE: <scope_id> (<scope_name>) — framework: <framework_pack>
 

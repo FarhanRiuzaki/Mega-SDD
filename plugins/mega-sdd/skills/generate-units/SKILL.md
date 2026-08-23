@@ -8,7 +8,7 @@ description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task
 
 Turns intent into actionable atomic specs for AI dev execution. Each unit corresponds to one bolt — one PR-sized code commit handed off to `execute-bolts`.
 
-**Announce at start:** "I'm using the generate-units skill to decompose the vault into atomic units."
+**Announce at start:** "I'm using the generate-units skill to decompose the vault into atomic units. `mega-sdd-trace:generate-units`"
 
 ## When to use
 

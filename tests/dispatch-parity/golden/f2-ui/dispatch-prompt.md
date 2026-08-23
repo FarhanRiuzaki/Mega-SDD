@@ -1,6 +1,8 @@
 ═══════════════════════════════════════════
 BOLT SUBAGENT DISPATCH — U-002
 ═══════════════════════════════════════════
+mega-sdd-trace:execute-bolts:U-002
+
 UNIT: U-002 "Render the nasabah detail view"
 SCOPE: S-01 (Nasabah) — framework: _universal.md
 
@@ -193,7 +195,7 @@ T2 BUDGET TRACKER (informational)
 ### T2 budget tracker
 consumed_t1: @N@ bytes (cap 12288)
 consumed_t2: 5427 bytes (cap 10240, hard 12288)
-total: 9218 bytes  # T1 + T2 ONLY — the budgeted, truncatable content
+total: 9254 bytes  # T1 + T2 ONLY — the budgeted, truncatable content
 file_total: @N@    bytes  # THIS WHOLE FILE. The difference from `total` is
                             # exactly four blocks plus the blank lines joining
                             # them: the TIER 2 banner, this tracker block, the

@@ -30,7 +30,7 @@ tmp2="$(mktemp -d)"
 mkdir -p "${tmp2}/docs/mega-sdd"
 out="$(cd "$tmp2" && bash "$HOOK")"
 echo "$out" | grep -q "EXTREMELY_IMPORTANT" || fail "anchor wrapper missing from signal CWD output"
-echo "$out" | grep -q "mega-sdd-trace" && fail "v7.3.0: the anchor must not carry a trace tag" 
+echo "$out" | grep -qE "^mega-sdd-trace:session$" && fail "v7.3.1: the :session marker must NOT return (gateway contract covers turn + skill tags only)" 
 echo "$out" | grep -q "mega-sdd" || fail "anchor body missing 'mega-sdd' mention"
 rm -rf "$tmp2"
 

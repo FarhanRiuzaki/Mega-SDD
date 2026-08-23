@@ -6,7 +6,7 @@ description: Standalone UI slicing — implement components from a design refere
 
 # Slice-Design — reference → UI code → verified render
 
-**Announce at start:** "I'm using the slice-design skill to slice this reference into UI code."
+**Announce at start:** "I'm using the slice-design skill to slice this reference into UI code. `mega-sdd-trace:slice-design`"
 
 > **Instruction language:** this skill reasons in English. Narrate (announce, clarifying questions, the report summary) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`). *(Greenfield-reachable: /mega-sdd:slice runs with no `.mega-sdd/` signal, so it carries the policy itself.)*
 

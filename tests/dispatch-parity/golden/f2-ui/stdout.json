@@ -10,7 +10,7 @@
   "soft_halts": [],
   "warnings": [],
   "halt": null,
-  "inline_core": "UNIT: U-002 \"Render the nasabah detail view\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): resources/views/nasabah/show.blade.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
+  "inline_core": "mega-sdd-trace:execute-bolts:U-002\nUNIT: U-002 \"Render the nasabah detail view\"\nREAD FIRST, IN FULL: @PROJ@/.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md\nThat file is your COMPLETE dispatch \u2014 read it before any other action.\nTARGET FILES (whitelist): resources/views/nasabah/show.blade.php\nAnti-context DO-NOTs and the Provenance values block are in that file and are BINDING.",
   "design_slice_path": "@PROJ@/.mega-sdd/vaults/v1/lens-inputs/U-002/design-slice.md",
   "caps": {
     "cap_hard": 12288,

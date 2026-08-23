@@ -6,7 +6,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 
 # Emit-PRD — Product Requirements Document Generator
 
-**Announce at start:** "I'm using the emit-prd skill to generate the PRD (mode: <forward|reverse>)."
+**Announce at start:** "I'm using the emit-prd skill to generate the PRD (mode: <forward|reverse>). `mega-sdd-trace:emit-prd`"
 
 > **Output language (Tier-3 artifact):** PRD body prose + headings the plugin authors → **Indonesian + English technical terms by default** (precedence: explicit request > the language the user writes in > Indonesian). **Quoted / flattened source content — KB claim text, vault excerpts, constitution clauses — and every `[Source: sha256:…]` citation are reproduced in their source language, never translated** (citation discipline, moat invariant #3). Terse/technical source notation is quoted verbatim in code spans with an Indonesian gloss — never translated in place. Tier-1 structural tokens stay English — including the `[VERIFIED]/[INFERRED]/[OPEN]` markers. Full rules → `plugins/mega-sdd/references/output-language.md`.
 

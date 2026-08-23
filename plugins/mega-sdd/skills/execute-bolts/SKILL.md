@@ -8,7 +8,7 @@ description: Executes units into code commits (bolts) via the superpowers bridge
 
 The terminal phase of the SDD pipeline — turns units into code. It is also an anti-hallucination gate: every unit's `## Hard rules` are validated against the real codebase before and after the bolt. **Commit topology (one truth):** the `bolt-implementer` subagent commits after its tests pass; the controller's L0 gates, review panel, and post-flight Hard-rule scan run **after that commit** (detect-after). A violation therefore never claims the code is "uncommitted" — it records the failure (`postflight.json` / halt YAML), blocks further bolts via the PreToolUse gates, and the remediation is fix-forward or revert of the flagged commit.
 
-**Announce at start:** "I'm using the execute-bolts skill to implement units via the mega-sdd bolt agents (parallel review panel)."
+**Announce at start:** "I'm using the execute-bolts skill to implement units via the mega-sdd bolt agents (parallel review panel). `mega-sdd-trace:execute-bolts`"
 
 > **Instruction language:** this skill reasons in English. Code, commit messages, and provenance trailers are emitted verbatim against the codebase.
 
@@ -94,7 +94,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-dispatch-prompt.sh" \
 
 **Pass `--plugin-root` — it is required, not optional.** You already have the value; passing it skips the plugin-root resolver spawn and its internal `ls | grep | sort | tail` pipeline — 6 process creations per bolt, ≈53 s over a 40-unit run on a CrowdStrike-scanned Windows laptop, at zero behavioral cost.
 
-It writes the full tiered prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` — provenance, and the advisory validator's ONLY input — and prints ONE JSON object. **Never pass `--quiet`:** stdout is the sole channel carrying `inline_core` and `design_slice_path`. Dispatch `mega-sdd:bolt-implementer` with that `inline_core` **VERBATIM** as the Agent prompt (≤700B: unit id + title, an absolute READ-FIRST pointer to the written file, the `target_files` whitelist, the binding anti-context/provenance pointer). **The subagent Reads `dispatch-prompt.md` itself** — the controller never re-types, paraphrases, or summarizes the assembled prompt into the Agent call.
+It writes the full tiered prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md` — provenance, and the advisory validator's ONLY input — and prints ONE JSON object. **Never pass `--quiet`:** stdout is the sole channel carrying `inline_core` and `design_slice_path`. Dispatch `mega-sdd:bolt-implementer` with that `inline_core` **VERBATIM** as the Agent prompt (≤700B: trace tag, unit id + title, an absolute READ-FIRST pointer to the written file, the `target_files` whitelist, the binding anti-context/provenance pointer). **The subagent Reads `dispatch-prompt.md` itself** — the controller never re-types, paraphrases, or summarizes the assembled prompt into the Agent call.
 
 - **Exit 0** → dispatch. `status: ok_with_soft_halts` carries `soft_halts[]` with their existing meanings (`deep_scan_cache_corrupt` = unparseable `starterkit-context.yaml`; the starterkit slice is skipped, the bolt proceeds) — log them in the bolt-report.
 - **Exit 1 AND stdout carries a `halt` object** → **halt `dispatch_prompt_too_large`**; that object IS the blocker payload (`cap_hard`, `total`, `t1_bytes`, `t2_bytes`, `warnings`, `truncation_exhausted`). The prompt is still written — forensic evidence, never a dispatchable artifact.

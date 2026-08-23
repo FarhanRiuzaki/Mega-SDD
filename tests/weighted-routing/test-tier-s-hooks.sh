@@ -91,11 +91,18 @@ reset_counts
 run_hook post-tool-use "{\"session_id\":\"other-sess\",\"cwd\":\"$FIX\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\"}}" >/dev/null
 [ "$(total)" -eq 0 ] && ok "S8 un-armed Read: ZERO forks" || bad "S8 un-armed Read forked: $(total)"
 
-# ── S9 (v7.3.0): the UserPromptSubmit hook is REMOVED (trace tag + compaction
-# advisor were its only legs — both observability). Pin the removal.
-[ ! -f "$HOOKS/user-prompt-submit" ] \
-  && ok "S9 user-prompt-submit hook removed (v7.3.0 observability cut)" \
-  || bad "S9 user-prompt-submit still exists"
+# ── S9 (v7.3.1): UserPromptSubmit restored as the pure-shell gateway marker —
+# SDD project: tag only, ZERO forks; non-SDD: silent.
+reset_counts
+OUT=$(run_hook user-prompt-submit "{\"session_id\":\"other-sess\",\"cwd\":\"$FIX\",\"transcript_path\":\"/nonexistent\"}")
+[ "$OUT" = "mega-sdd-trace:turn" ] && [ "$(total)" -eq 0 ] \
+  && ok "S9 prompt in SDD project: gateway tag only, ZERO forks" \
+  || bad "S9 prompt: forks=$(total) out=[$OUT]"
+reset_counts
+OUT=$(run_hook user-prompt-submit "{\"session_id\":\"s\",\"cwd\":\"$PLAIN\"}")
+[ -z "$OUT" ] && [ "$(total)" -eq 0 ] \
+  && ok "S9b non-SDD prompt: silent, ZERO forks" \
+  || bad "S9b non-SDD: forks=$(total) out=[$OUT]"
 
 # ── S10/S11: Stop + SubagentStop in a NON-mega-sdd project → 0 forks ─────────
 reset_counts

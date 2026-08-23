@@ -1,6 +1,8 @@
 # Deep-Scan Subagent Prompts
 
 ## Contents
+
+> **Gateway tag (contract):** the dispatcher appends `mega-sdd-trace:scan-codebase` as the final line of every assembled dispatch prompt (fresh-context subagents never see the session — one token, verbatim, no variants; `docs/gateway-contract.md`).
 - Common dispatch contract
 - Variable substitution + `<MANIFEST_FACTS>` injection format
 - auth-extractor prompt
