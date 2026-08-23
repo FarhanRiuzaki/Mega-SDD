@@ -45,7 +45,7 @@ In your Claude Code session, type:
 /mega-sdd:
 ```
 
-You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, `/mega-sdd:slice` (6.8.0+), and the four maintenance one-timers (`install-deps`, `update-plugin`, `memory`, `migrate-paths`) — the surface is exactly these plus the bare `/mega-sdd` front door (the SessionStart hook installs its wrapper on your first session; before that, `/mega-sdd:mega-sdd` works). If NOTHING autocompletes, restart the Claude Code session OR run `/plugin marketplace update`.
+You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, and the three maintenance one-timers (`install-deps`, `update-plugin`, `migrate-paths`) — the surface is exactly these plus the bare `/mega-sdd` front door (the SessionStart hook installs its wrapper on your first session; before that, `/mega-sdd:mega-sdd` works). If NOTHING autocompletes, restart the Claude Code session OR run `/plugin marketplace update`.
 
 ## The ONE command (most users)
 

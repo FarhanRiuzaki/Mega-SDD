@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.0.0
+version: 4.1.0
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -60,11 +60,10 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
-Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `memory` "review learnings", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
+Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
 
 Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start staleness notice is informational only.
 
-Standalone slicing lane (command-only): `/mega-sdd:slice` — implement UI from a design reference (Figma export / URL / image) with a Playwright-MCP render check; never auto-routed from free text, never writes the vault (spec 2026-08-12).
 
 Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):
 - Same source **revised** (PRD v1 → v1.1) → `diff-vault` (one vault evolves; history preserved).
@@ -83,7 +82,6 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 | Validation gate | bind-codebase | read-only |
 | Vault → units | generate-units | read-only |
 | Unit → code | execute-bolts | write |
-| Design reference → UI code (standalone lane, command-only — not a pipeline phase) | slice-design | write (code + `.mega-sdd/slices/`; never the vault) |
 
 ## Reference
 

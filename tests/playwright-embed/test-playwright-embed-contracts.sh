@@ -52,26 +52,11 @@ else
   fail "A4 release checklist missing the .mcp.json pin review"
 fi
 
-echo "── B: slice-design containment (D1) ──"
-SD="$P/skills/slice-design/SKILL.md"
-# B1: skill exists
-if [ -f "$SD" ]; then
-  ok "B1 slice-design SKILL.md exists"
-  # B2: description declares command-invocation-only and carries NO census list
-  DESC=$(grep '^description:' "$SD" | head -1)
-  echo "$DESC" | grep -qF "Command-invocation only" && ok "B2a description declares command-invocation only" || fail "B2a missing command-only declaration"
-  echo "$DESC" | grep -qF "never auto-triggers" && ok "B2b description disclaims auto-trigger" || fail "B2b missing auto-trigger disclaimer"
-  echo "$DESC" | grep -qF 'Triggers —' && fail "B2c description carries a trigger census (census leak)" || ok "B2c no trigger census in description"
-  # B3: the binding containment sentences exist in the body
-  has "$SD" "NEVER writes the vault" && ok "B3a no-vault-write pin" || fail "B3a no-vault-write sentence missing"
-  has "$SD" "NEVER starts, installs, or backgrounds a dev server" && ok "B3b server-ownership pin" || fail "B3b server-ownership sentence missing"
-  has "$SD" "cap: 3 compare rounds" && ok "B3c compare-round cap pin" || fail "B3c round-cap sentence missing"
-  has "$SD" "render was NOT verified" && ok "B3d honest-skip wording pin" || fail "B3d honest-skip sentence missing"
-  has "$SD" ".mega-sdd/slices/" && ok "B3e report-location pin" || fail "B3e report location missing"
-  # B4: reference routed one level deep
-  has "$SD" "references/slice-procedure.md" && ok "B4 slice-procedure routed from SKILL" || fail "B4 reference unrouted"
+echo "── B: slice-design removal (v7.4.0 — stays deleted) ──"
+if [ -e "$P/skills/slice-design" ] || [ -e "$P/commands/slice.md" ]; then
+  fail "B1 slice-design skill/command is back (removed v7.4.0 by owner decision)"
 else
-  fail "B1 slice-design SKILL.md missing (B2-B4 skipped)"
+  ok "B1 slice-design + /mega-sdd:slice stay removed"
 fi
 
 echo "── C: anchor-core budget guard (D1 containment) ──"
@@ -103,8 +88,8 @@ cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
 # C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
 printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"
-# C3: the body mention exists (below the marker)
-grep -qF "/mega-sdd:slice" "$UMS" && ok "C3 body mentions /mega-sdd:slice" || fail "C3 body mention missing"
+# C3 (v7.4.0): the body mention is GONE with the command
+grep -qF "/mega-sdd:slice" "$UMS" && fail "C3 anchor body still advertises the removed /mega-sdd:slice" || ok "C3 anchor body slice-mention removed"
 
 echo "── D: install-deps Playwright detect-and-offer (D0) ──"
 ID="$P/skills/install-deps/SKILL.md"
@@ -118,13 +103,11 @@ grep -qE '^  - id: *playwright' "$P/skills/install-deps/references/tool-matrix.y
 
 echo "── E: context7 consult wiring (6.9.0) ──"
 BI="$P/agents/bolt-implementer.md"
-SP="$P/skills/slice-design/references/slice-procedure.md"
-# E1/E2: both code-emitting surfaces carry the optional consult guidance
+# E1: the remaining code-emitting surface carries the optional consult guidance
+# (E2/E3b retired v7.4.0 — slice-procedure died with the slice-design skill)
 grep -qi "context7" "$BI" && ok "E1 bolt-implementer carries the Context7 consult guidance" || fail "E1 bolt-implementer guidance missing"
-grep -qi "context7" "$SP" && ok "E2 slice-procedure carries the Context7 consult guidance" || fail "E2 slice-procedure guidance missing"
-# E3/E3b: the guidance is non-gating on BOTH wired surfaces
+# E3: the guidance is non-gating
 grep -qF "never load-bearing" "$BI" && ok "E3 bolt-implementer guidance is non-gating (never load-bearing)" || fail "E3 non-gating wording missing"
-grep -qF "never load-bearing" "$SP" && ok "E3b slice-procedure guidance is non-gating" || fail "E3b non-gating wording missing on slice surface"
 # E4: the dispatch builder is context7-FREE — the golden-corpus firewall
 # (existence-guarded: grep of a missing path would land in the ok branch — fail-open)
 if [ -f "$P/scripts/build-dispatch-prompt.sh" ]; then

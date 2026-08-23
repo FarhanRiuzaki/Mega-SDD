@@ -40,11 +40,11 @@ flowchart TD
 | 1 — Ekstraksi | `/mega-sdd <legacy-dir> --out=<path>` | `knowledge-base/` bermarker + rencana phasing |
 | 2 — Konstruksi | (chain otomatis dari front door) | vault → binding → units → bolts (kode + commit atomik) |
 | 3 — Serah terima | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | 4 dokumen tim + evidence pack UAT |
-| 4 — Hidup terus | `/mega-sdd:sync`, delta lane, `/mega-sdd:slice` | vault/binding/units tetap sinkron dengan kode |
+| 4 — Hidup terus | `/mega-sdd:sync`, delta lane | vault/binding/units tetap sinkron dengan kode |
 
 ## Prasyarat
 
-- **mega-sdd v6+** — surface publiknya **4 verb**: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit`, `/mega-sdd:slice`. Typed command lama (`/mega-sdd:auto`, `/mega-sdd:extract-intelligence`, `/mega-sdd:resolve-oq`, dst.) **sudah dihapus di v6.0.0** — frasa natural ("extract domain knowledge", "jawab OQ list") tetap route ke skill-nya.
+- **mega-sdd v7.4+** — surface publiknya **3 verb**: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit` (`/mega-sdd:slice` dihapus di v7.4.0). Typed command lama (`/mega-sdd:auto`, `/mega-sdd:extract-intelligence`, `/mega-sdd:resolve-oq`, dst.) **sudah dihapus di v6.0.0** — frasa natural ("extract domain knowledge", "jawab OQ list") tetap route ke skill-nya.
 - Legacy codebase yang bisa dibaca (idealnya 100+ file agar ekstraksinya bermakna).
 - Direktori target rebuild yang **terpisah** dari legacy, sudah `git init` + scaffold framework tujuan (starterkit wajib; tanpa manifest framework harus opt-in `--greenfield`).
 - Native deps opsional mempertajam hasil: `/mega-sdd:install-deps` (tree-sitter, ast-grep, dll.) — degradasi tetap jujur bila absen.
@@ -91,9 +91,9 @@ OQ business P1 (mis. "gotcha legacy ini dipertahankan atau diperbaiki?", "aturan
 
 `generate-units` memecah bound-vault jadi unit atomik seukuran PR (task_type, anchors, dependency DAG, Hard rules dari framework pack — mis. aturan UUID PK atau SweetAlert2 dari pack Laravel). `execute-bolts` mengeksekusinya per wave paralel: tiap bolt = implementasi + acceptance test + commit atomik, dilewatkan **review panel** (spec/quality/security/standards, + design untuk unit UI) dan gerbang evidence pre/post-flight. Halt (`hard_rule_violated`, `quality_gate_failed`) muncul dengan blocker YAML + `next_action` — resolve, lalu `/mega-sdd --resume`.
 
-### Sisi UI revamp: slice
+### Sisi UI revamp
 
-Kalau revamp-nya punya desain baru (Figma / referensi web), **`/mega-sdd:slice`** adalah jalur terpisah untuk mengimplementasikan komponen dari design reference dan memverifikasi render lewat Playwright MCP yang sudah ter-bundle. Ia tidak menulis vault dan tidak menyalakan dev server — murni lane slicing; hasil kodenya nanti tertangkap `/mega-sdd:sync` seperti perubahan manual lain.
+(`/mega-sdd:slice` dihapus di v7.4.0 — implementasi UI dari design reference sekarang jalan lewat pipeline biasa: unit UI + design lens di review panel; perubahan manual tetap tertangkap `/mega-sdd:sync`.)
 
 ## Babak 3 — Serah terima: dokumen tim + bukti
 
@@ -157,7 +157,6 @@ flowchart LR
 | Lanjut setelah halt / review | `/mega-sdd --resume` |
 | Phase berikutnya (multi-phase) | `generate-intent --kb=<kb> --phase=N` (diusulkan otomatis di akhir phase) |
 | Dokumen tim | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` |
-| Slicing UI dari desain | `/mega-sdd:slice <referensi>` |
 | Kode berubah setelah "jadi" | `/mega-sdd:sync` |
 | Blast radius sebuah perubahan | tanya "apa yang kena kalau ubah X" (graph lens) |
 | Rawat memory / deps / layout | `/mega-sdd:memory`, `/mega-sdd:install-deps`, `/mega-sdd:migrate-paths` |

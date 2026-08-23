@@ -22,16 +22,16 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 
 ## Commands you'll actually use
 
-`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents; `/mega-sdd:slice` (6.8.0) slices a design reference into UI code standalone — no vault needed. **6.0.0 removed the 5.x deprecation aliases** — everything below the kept table is reachable by natural-language phrase through the front door (a typed legacy form still arrives as plain text and routes to its skill).
 
 > **How the bare verb works**: Claude Code registers plugin commands only as `/mega-sdd:<command>`, so `/mega-sdd` itself is a user-level wrapper (`~/.claude/commands/mega-sdd.md`) that the SessionStart hook auto-installs on your first session and keeps current across plugin updates (`scripts/install-front-door.sh`, version-marker idempotent — a hand-edited wrapper without the marker is never touched). Before that first session, use `/mega-sdd:mega-sdd`.
+
+`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. **6.0.0 removed the 5.x deprecation aliases** — everything below the kept table is reachable by natural-language phrase through the front door (a typed legacy form still arrives as plain text and routes to its skill).
 
 | Command | What it does |
 |---|---|
 | `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end |
 | `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
 | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity. The uat lane (6.10.0) also generates Playwright e2e skeletons + OFFERS an automated evidence run (§5 annex — human execution surfaces untouched) |
-| `/mega-sdd:slice <ref>` | Standalone UI slicing (6.8.0) — Figma export / URL / image → UI code per your framework conventions + Playwright-MCP render check; works without a vault, never writes vault/binding |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 | **Migration table — the 5.x typed forms → how to do it in 6.0.0** | |
@@ -47,7 +47,8 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 | ~~`/mega-sdd:emit-fsd`~~ (and prd/sit) | `/mega-sdd:emit <fsd\|prd\|sit\|uat>` |
 | ~~`/mega-sdd:lint-units`, `:list-modules`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "blast radius") |
 
-Full surface: **4 public verbs + 4 maintenance one-timers** — exactly the 8 files in [`commands/`](./commands/) (`/mega-sdd:slice` added 6.8.0 — standalone UI slicing, command-only). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after telemetry review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
+Full surface: **3 public verbs + 3 maintenance one-timers** — exactly the 6 files in [`commands/`](./commands/) (`/mega-sdd:slice` was removed in v7.4.0 by owner decision; the `memory` one-timer died with the v7.3.0 observability removal). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after a usage review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`references/upgrade-from-old-version.md`](./references/upgrade-from-old-version.md).
+
 
 ## First time? Start with a scenario
 
