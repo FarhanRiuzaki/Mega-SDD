@@ -13,9 +13,10 @@ fail() { FAIL=$((FAIL+1)); echo "  FAIL: $1"; }
 
 [ -f "$R" ] && ok "ref file exists" || fail "audit-and-verify.md missing"
 
-# 1) byte cap — the diet must not silently regrow (spec-amended cap 19,000).
+# 1) byte cap — the diet must not silently regrow (v7.4.0 №6 ratchet: 16,000;
+#    was 19,000 at the v6.13.0 diet).
 B=$(wc -c < "$S" | tr -d ' ')
-[ "$B" -le 19000 ] && ok "body $B <= 19000 bytes" || fail "body regrew to $B bytes (> 19000)"
+[ "$B" -le 16000 ] && ok "body $B <= 16000 bytes" || fail "body regrew to $B bytes (> 16000)"
 
 # 2) SKILL routes to the new ref (no orphan — install-deps-audit-lesson class).
 grep -q 'references/audit-and-verify.md' "$S" && ok "SKILL routes to audit-and-verify.md" || fail "orphan ref: SKILL never names audit-and-verify.md"
