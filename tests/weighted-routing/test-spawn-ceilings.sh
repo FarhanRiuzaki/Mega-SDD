@@ -171,8 +171,8 @@ sleep 2
 # ── C8: PreToolUse Skill execute-bolts — gate aggregator budget + moat proof ─
 reset_counts
 run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Skill\",\"tool_input\":{\"skill\":\"mega-sdd:execute-bolts\",\"args\":\"\"}}" >/dev/null
-[ "$(total)" -le 120 ] && [ -f "$FIXB/.mega-sdd/.validation-blockers.json" ] \
-  && ok "C8 PRE execute-bolts gate: ≤120 spawns ($(total)), moat state re-derived at gate" \
+[ "$(total)" -le 90 ] && [ -f "$FIXB/.mega-sdd/.validation-blockers.json" ] \
+  && ok "C8 PRE execute-bolts gate: ≤90 spawns ($(total)), moat state re-derived at gate" \
   || bad "C8 PRE execute-bolts gate: spawns=$(total) moat=$([ -f "$FIXB/.mega-sdd/.validation-blockers.json" ] && echo yes || echo no)"
 
 # ── C9: PreToolUse Edit non-SDD cwd — the everywhere-else floor ──────────────

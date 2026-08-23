@@ -72,7 +72,13 @@ fi
 # Resolve project root via the sibling helper in this same _lib/ dir.
 # NOTE: this script lives in scripts/_lib/, so the sibling is "<dir>/resolve-project-root.sh"
 # — NOT "<dir>/_lib/resolve-project-root.sh" (that path applies to scripts in scripts/).
-_RPR_HELPER="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/resolve-project-root.sh"
+# №F1 (v7.5.0): parameter expansion — every caller execs this script with an
+# absolute path (bash "$PACK_RESOLVER"), so ${0%/*} is safe; the subshell
+# fallback covers a relative $0. Was 2 forks (dirname + cd/pwd) per call, ×3
+# sites, ×9 executions per execute-bolts gate ≈ 26 dirname spawns.
+_RFP_SELF_DIR="${0%/*}"
+case "$_RFP_SELF_DIR" in /*) ;; *) _RFP_SELF_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" ;; esac
+_RPR_HELPER="${_RFP_SELF_DIR}/resolve-project-root.sh"
 if [ -f "$_RPR_HELPER" ]; then
   # shellcheck disable=SC1090
   . "$_RPR_HELPER"
@@ -80,7 +86,8 @@ if [ -f "$_RPR_HELPER" ]; then
 fi
 
 # Pack root is RELATIVE TO THE PLUGIN, not the project: scripts/_lib/ -> ../../references/framework-conventions
-PACK_ROOT="$(cd "$(dirname "$0")/../../references/framework-conventions" 2>/dev/null && pwd)"
+PACK_ROOT="${_RFP_SELF_DIR}/../../references/framework-conventions"
+[ -d "$PACK_ROOT" ] || PACK_ROOT="$(cd "$(dirname "$0")/../../references/framework-conventions" 2>/dev/null && pwd)"
 if [ -z "$PACK_ROOT" ] || [ ! -d "$PACK_ROOT" ]; then
   [ "$QUIET" -eq 0 ] && echo "ERROR: pack root not found (expected scripts/_lib/../../references/framework-conventions)" >&2
   exit 3
@@ -175,7 +182,7 @@ fi
 # exports MEGA_SDD_PY); otherwise resolve it here via the shared helper.
 # $MEGA_SDD_PY MUST be expanded UNQUOTED — `py -3` is two words.
 if [ -z "${MEGA_SDD_PY:-}" ]; then
-  _RPY_FP="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/resolve-python.sh"
+  _RPY_FP="${_RFP_SELF_DIR}/resolve-python.sh"
   if [ -f "$_RPY_FP" ]; then
     # shellcheck disable=SC1090
     . "$_RPY_FP"

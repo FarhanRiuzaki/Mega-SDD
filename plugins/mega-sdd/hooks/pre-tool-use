@@ -714,7 +714,13 @@ except Exception as e:
       # handles the empty case gracefully (PASS/SKIP), so run unconditionally
       # (the hook already exited for non-mega-sdd projects).
       if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        # №F (v7.5.0): the nine re-derives run in PARALLEL — the exact
+        # `( … ) &` + wait pattern the pre-№D fan-out used, applied at the
+        # gate. Each validator writes its own distinct state file and none
+        # reads another's output; the aggregator below runs only after wait,
+        # so it reads a complete, settled set. Wall-clock on the blocking
+        # gate drops to the slowest single validator instead of the sum.
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         # ── S5 GU-HOOK-1/3/4: re-derive the three unit-stage gate states at gate
         # time too. Their PostToolUse dispatch is (a) keyed to the Write|Edit tool
         # path only (a unit written via Bash heredoc never re-validates — stale
@@ -722,9 +728,9 @@ except Exception as e:
         # last unit write can read one-write-stale state). validate-unit-spec in
         # project mode + the two project-wide scanners are sub-second; current
         # truth beats a stale cache at the gate that launches a multi-minute run.
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-unit-spec.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-flow-coverage.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-unit-spec.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-flow-coverage.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         # ── S6 EB-GATE-1: re-derive the SIX bolt-stage/quality states at gate
         # time too. Their producers are Stop-hook keyed (orphans/batch-suite/
         # postflight: one-turn lag, and NONE exist on a fresh session/clone) or
@@ -741,10 +747,11 @@ except Exception as e:
         # — a forged/stale evidence artifact cannot open the gate) and B4 acceptance
         # evidence (commit-keyed; the artifact is READ, never re-executed here —
         # re-running acceptance tests in a hook is the forbidden inflation).
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cross-cutting --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cross-cutting --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        wait  # settle all nine state files before the aggregator reads
       fi
       GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
 import json, os
