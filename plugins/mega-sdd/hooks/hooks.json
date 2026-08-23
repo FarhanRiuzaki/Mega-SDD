@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" session-start",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start\"",
             "async": false,
             "statusMessage": "mega-sdd: anchor + state…"
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-tool-use",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use\"",
             "async": false,
             "statusMessage": "mega-sdd: gate checks…"
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" post-tool-use",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use\"",
             "async": true
           }
         ]
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" stop",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop\"",
             "async": true
           }
         ]
@@ -56,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-expansion",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-expansion\"",
             "async": false,
             "statusMessage": "mega-sdd: prompt expansion…"
           }
@@ -69,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" user-prompt-submit",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit\"",
             "async": false,
             "statusMessage": "mega-sdd: gateway marker…"
           }

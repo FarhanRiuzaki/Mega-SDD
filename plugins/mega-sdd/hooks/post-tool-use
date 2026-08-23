@@ -9,6 +9,12 @@
 
 set -uo pipefail
 
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
+# run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.
+# On Windows $0 can arrive with backslash separators (the dispatcher used to
+# normalize them); one builtin substitution keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
 # stdin read with a BUILTIN (spec §4b): read -d '' consumes to EOF (JSON has no
 # NUL); rc non-zero at EOF by design, hence `|| true`.
 STDIN_JSON=""
@@ -40,7 +46,7 @@ case "$STDIN_JSON" in
     ;;
 esac
 if [ -n "$SC_CWD" ]; then
-  case "$0" in */*) SC_DIR="${0%/*}" ;; *) SC_DIR="." ;; esac
+  case "$HOOK_SELF" in */*) SC_DIR="${HOOK_SELF%/*}" ;; *) SC_DIR="." ;; esac
   SC_RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
   if [ -f "$SC_RPR" ]; then
     # shellcheck disable=SC1090
@@ -302,10 +308,10 @@ if [ -z "${CWD:-}" ]; then exit 0; fi
 # land in the canonical location instead of a nested .mega-sdd/<sub>/.mega-sdd/.
 # Script-dir via parameter expansion (spec §4b — no dirname exec); $0 is
 # absolute in the shipped dispatch; the subshell fallback covers relative $0.
-SCRIPT_DIR_RPR="${0%/*}"
+SCRIPT_DIR_RPR="${HOOK_SELF%/*}"
 case "$SCRIPT_DIR_RPR" in
   /*) ;;
-  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$0")" && pwd 2>/dev/null)" ;;
+  *) SCRIPT_DIR_RPR="$(cd "$(dirname "$HOOK_SELF")" && pwd 2>/dev/null)" ;;
 esac
 RPR_HELPER="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-project-root.sh"
 if [ -f "$RPR_HELPER" ]; then
@@ -336,7 +342,7 @@ try:
 except Exception:
     print("")
 ' 2>/dev/null)
-        SCRIPT_DIR_HV2="$(cd "$(dirname "$0")" && pwd)"
+        SCRIPT_DIR_HV2="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
         VALIDATOR_SKM="${SCRIPT_DIR_HV2}/../scripts/validate-starterkit-metrics.sh"
         if [ -x "$VALIDATOR_SKM" ] && [ -n "$TRANSCRIPT_PATH" ]; then
           # The state file (.starterkit-metrics-state.json) is the record;
@@ -381,7 +387,7 @@ except Exception:
     # Advisory (S6 EB-HONEST-3): nothing in PreToolUse reads
     # .dispatch-prompt-state.json — it is surfaced via analyze.
     if echo "$BASH_CMD_B64" | base64 -d 2>/dev/null | grep -q "build-dispatch-prompt\.sh"; then
-      SCRIPT_DIR_BDP="$(cd "$(dirname "$0")" && pwd)"
+      SCRIPT_DIR_BDP="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
       VALIDATOR_DP_B="${SCRIPT_DIR_BDP}/../scripts/validate-dispatch-prompt.sh"
       if [ -x "$VALIDATOR_DP_B" ]; then
         bash "$VALIDATOR_DP_B" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -402,7 +408,7 @@ except Exception:
     FILE_PATH="${FILE_PATH:-}"
     [ -z "$FILE_PATH" ] && exit 0
 
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    SCRIPT_DIR="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
 
     # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
     # Source-file writes in a GROUNDED repo are journaled so /mega-sdd:sync +

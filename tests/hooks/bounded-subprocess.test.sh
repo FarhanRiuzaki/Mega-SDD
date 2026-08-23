@@ -46,7 +46,7 @@
 # be silently skipped.
 #
 # Note on what covers the `python3 -c '…'` INLINE form, which is most of the python
-# in hooks/ (`post-tool-use` has 14 invocations and zero heredocs). Those bodies are
+# in hooks/ (`post-tool-use` historically had 14 invocations and zero heredocs). Those bodies are
 # NOT extracted — they are covered by the residual guard, which fails the run on any
 # `subprocess.<attr>` sitting outside every extracted block. Coverage there is
 # by-refusal, not by-parse. Do not read the green as "the -c bodies were scanned".
@@ -598,11 +598,10 @@ else
 fi
 
 case "$hooks_st" in
-  # "8 entry points + 1 dispatcher", not "9 entry points": hooks.json registers NINE
-  # events but routes every one through run-hook.sh, and post-tool-use is registered
-  # twice (PostToolUse + PostToolUseFailure). Eight distinct entry scripts, one
-  # dispatcher, nine files. Spelling that out here so the count is not re-derived.
-  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 5 extensionless entry points + the run-hook.sh dispatcher)" ;;
+  # v7.5.0 №A: hooks.json dispatches each of the SIX extensionless entry bodies
+  # DIRECTLY — run-hook.sh (the old dispatcher) is deleted. Six entry scripts,
+  # no dispatcher. Spelling that out here so the count is not re-derived.
+  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 6 extensionless entry points, direct dispatch)" ;;
   # v7.3.0: pre-compact (the one historical subprocess carrier) is DELETED with
   # observability — hooks/ now legitimately embeds ZERO python-subprocess calls.
   # Zero-total is accepted as green ONLY together with the enumeration check

@@ -4,6 +4,12 @@
 
 set -euo pipefail
 
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
+# run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.
+# On Windows $0 can arrive with backslash separators (the dispatcher used to
+# normalize them); one builtin substitution keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
 # Drain stdin opportunistically — SessionStart spec provides JSON with session_id,
 # source, transcript_path, hook_event_name. We capture session_id for the diagnostic.
 STDIN_JSON=$(cat 2>/dev/null || echo '{}')
@@ -34,7 +40,7 @@ if [[ "$STDIN_JSON" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; t
   SESSION_ID_SS="${BASH_REMATCH[1]}"
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANCHOR_SKILL="${PLUGIN_ROOT}/skills/using-mega-sdd/SKILL.md"
 

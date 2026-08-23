@@ -109,46 +109,46 @@ printf '{"message":{"role":"user","content":"lanjut"}}\n{"message":{"role":"assi
 # ── C1: UserPromptSubmit, SDD project — gateway tag through the real dispatch ─
 reset_counts
 OUT=$(run_ev UserPromptSubmit "{\"session_id\":\"s\",\"cwd\":\"$FIXA\"}")
-[ "$(total)" -le 5 ] && [ "$OUT" = "mega-sdd-trace:turn" ] \
-  && ok "C1 UPS SDD: ≤5 spawns via production dispatch ($(total)), tag intact" \
+[ "$(total)" -le 2 ] && [ "$OUT" = "mega-sdd-trace:turn" ] \
+  && ok "C1 UPS SDD: ≤2 spawns via production dispatch ($(total)), tag intact" \
   || bad "C1 UPS SDD: spawns=$(total) out=[$OUT]"
 
 # ── C2: PreToolUse Edit tier-S — the '0 fork' contract, dispatcher included ──
 reset_counts
 OUT=$(run_ev PreToolUse "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIXA/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}")
-[ "$(total)" -le 5 ] && [ -z "$OUT" ] \
-  && ok "C2 PRE Edit tier-S: ≤5 spawns incl dispatcher ($(total))" \
+[ "$(total)" -le 2 ] && [ -z "$OUT" ] \
+  && ok "C2 PRE Edit tier-S: ≤2 spawns incl dispatcher ($(total))" \
   || bad "C2 PRE Edit tier-S: spawns=$(total) out=[${OUT:0:60}]"
 
 # ── C3: PostToolUse Write tier-S — journal leg ───────────────────────────────
 reset_counts
 run_ev PostToolUse "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$FIXA/src/app.js\"}}" >/dev/null
 grep -q '"path":"src/app.js"' "$FIXA/.mega-sdd/codebase/.dirty-paths.jsonl" 2>/dev/null && ROW=1 || ROW=0
-[ "$(total)" -le 6 ] && [ "$ROW" -eq 1 ] \
-  && ok "C3 POST Write tier-S: ≤6 spawns ($(total)), journal row intact" \
+[ "$(total)" -le 3 ] && [ "$ROW" -eq 1 ] \
+  && ok "C3 POST Write tier-S: ≤3 spawns ($(total)), journal row intact" \
   || bad "C3 POST Write tier-S: spawns=$(total) row=$ROW"
 
 # ── C4: Stop SDD, turn-gated steady state (2nd fire) ─────────────────────────
 run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"transcript_path\":\"/nonexistent\"}" >/dev/null
 reset_counts
 run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXA\",\"transcript_path\":\"/nonexistent\"}" >/dev/null
-[ "$(total)" -le 15 ] \
-  && ok "C4 Stop SDD steady (turn-gated): ≤15 spawns ($(total))" \
+[ "$(total)" -le 12 ] \
+  && ok "C4 Stop SDD steady (turn-gated): ≤12 spawns ($(total))" \
   || bad "C4 Stop SDD steady: spawns=$(total)"
 
 # ── C5: SessionStart SDD — anchor injection budget ───────────────────────────
 reset_counts
 OUT=$(run_ev SessionStart '{"source":"startup","session_id":"s"}' "$FIXA")
 printf '%s' "$OUT" | grep -q "EXTREMELY_IMPORTANT" && ANCH=1 || ANCH=0
-[ "$(total)" -le 18 ] && [ "$ANCH" -eq 1 ] \
-  && ok "C5 SessionStart SDD: ≤18 spawns ($(total)), anchor intact" \
+[ "$(total)" -le 15 ] && [ "$ANCH" -eq 1 ] \
+  && ok "C5 SessionStart SDD: ≤15 spawns ($(total)), anchor intact" \
   || bad "C5 SessionStart SDD: spawns=$(total) anchor=$ANCH"
 
 # ── C6: PreToolUse Edit ARMED — the gated path still fires ───────────────────
 reset_counts
 run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIXB/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
-[ "$(total)" -le 11 ] \
-  && ok "C6 PRE Edit armed: ≤11 spawns ($(total), python=$(count python3))" \
+[ "$(total)" -le 8 ] \
+  && ok "C6 PRE Edit armed: ≤8 spawns ($(total), python=$(count python3))" \
   || bad "C6 PRE Edit armed: spawns=$(total)"
 
 # ── C7: PostToolUse ARMED unit write — validator fan-out era ceiling ─────────
@@ -169,8 +169,8 @@ run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"transcript_path\
 # ── C9: PreToolUse Edit non-SDD cwd — the everywhere-else floor ──────────────
 reset_counts
 run_ev PreToolUse "{\"session_id\":\"s\",\"cwd\":\"$PLAIN\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PLAIN/x.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
-[ "$(total)" -le 5 ] \
-  && ok "C9 PRE Edit non-SDD: ≤5 spawns ($(total))" \
+[ "$(total)" -le 2 ] \
+  && ok "C9 PRE Edit non-SDD: ≤2 spawns ($(total))" \
   || bad "C9 PRE Edit non-SDD: spawns=$(total)"
 
 echo
