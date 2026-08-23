@@ -16,10 +16,8 @@ grep -q 'claude plugin validate plugins/mega-sdd' "$CI" && ok "a1a validate step
 grep -q '@anthropic-ai/claude-code@2\.1\.' "$CI" && ok "a1b CLI install version-pinned" || fail "a1b pin missing"
 grep -q 'claude plugin validate --strict' "$CI" && fail "a1c --strict crept in (baseline warning would fail CI)" || ok "a1c plain mode (strict rejected on record)"
 
-echo "── A2: no BARE TodoWrite left in vendored (sync backstop) ──"
-BARE=$(grep -rn 'TodoWrite' "$P/skills/_vendored/" | grep -v 'legacy TodoWrite where available' || true)
-[ -z "$BARE" ] && ok "a2a zero bare TodoWrite sites" || fail "a2a bare TodoWrite reintroduced: $BARE"
-grep -rq 'TaskCreate/TaskUpdate' "$P/skills/_vendored/" && ok "a2b current task tools named" || fail "a2b replacement phrase missing"
+echo "── A2: retired v7.4.0 — the vendored tree was removed (Fase 5 №1) ──"
+[ -d "$P/skills/_vendored" ] && fail "a2 _vendored/ is back (removed v7.4.0)" || ok "a2 _vendored stays removed"
 
 echo "── A3: statusMessage on sync hooks, absent on async ──"
 "$PY" - "$P/hooks/hooks.json" <<'PYEOF'

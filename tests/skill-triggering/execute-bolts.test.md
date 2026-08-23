@@ -16,17 +16,13 @@
 
 ## Pre-flight checks
 
-### P1: No superpowers, no vendored
-- **Setup:** delete `_vendored/`; uninstall superpowers
-- **Expect:** halt with install instructions
+### P1: No superpowers installed (v7.4.0 — no vendored fallback exists)
+- **Setup:** uninstall superpowers
+- **Expect:** dispatch proceeds on the first-class agents; NO halt, NO install demand
 
-### P2: Vendored present, no real install
-- **Setup:** `_vendored/` populated; no superpowers plugin
-- **Expect:** uses vendored skills
-
-### P3: Both present
-- **Setup:** both available
-- **Expect:** uses real install (vendored dormant)
+### P2: Superpowers installed
+- **Setup:** real install present
+- **Expect:** implementer may use its technique skills; dispatch path unchanged (first-class agents)
 
 ## Behavior
 

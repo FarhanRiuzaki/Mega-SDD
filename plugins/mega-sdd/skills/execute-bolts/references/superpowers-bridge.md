@@ -1,6 +1,6 @@
 # Dispatch Bridge
 
-How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by default**, with superpowers (or its vendored copy) as optional technique skills + a legacy fallback.
+How `execute-bolts` dispatches each unit — **first-class mega-sdd agents, the ONLY dispatch path** (v7.4.0: the vendored superpowers fallback and its bridge halt were removed; a real superpowers install remains an optional technique enhancement, never a requirement).
 
 ## Contents
 
@@ -27,21 +27,17 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents by de
 
    `execute-bolts` runs in the **main thread as the controller** and dispatches these via the **Agent tool** — one fresh implementer per unit, then the **review panel** (parallel blind lenses per `references/review-panel.md`). Fully self-contained; no external plugin required. (Subagents cannot spawn subagents — that's why the controller stays in the main thread.)
 
-1. **Superpowers technique skills (optional enhancement).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts. A legacy unit's optional `superpowers_skills` frontmatter is treated as a technique hint (no longer written; the agents encode the discipline regardless).
+1. **Superpowers technique skills (optional enhancement, real install only).** If superpowers is installed (`~/.claude/plugins/cache/**/superpowers/`), the implementer may additionally use its `test-driven-development`, `using-git-worktrees`, and `executing-plans` skills. They sharpen technique but are not required — the agents encode the same discipline in their own prompts, and the core of it is inlined here (v7.4.0, replacing the deleted `_vendored/` copies):
+   - **Failing-first TDD**: write the acceptance test FIRST, run it, and SEE IT FAIL before writing any implementation — a test that never failed proves nothing; then implement until it passes, and never weaken the test to make it pass.
+   - **Plan-then-execute**: follow the unit's implementation steps in order; a deviation from the written plan is surfaced, never silent.
 
-2. **Vendored fallback.** If superpowers is absent, the same technique skills are available under `$PLUGIN_ROOT/skills/_vendored/`, where `$PLUGIN_ROOT` resolves to the **LATEST cached version** (not whatever version path is in context — that may be stale; see `plugins/mega-sdd/references/plugin-root-resolution.md`):
-   ```bash
-   DERIVED="<this reference file's absolute path, truncated before /skills/>"
-   RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-plugin-root.sh 2>/dev/null | tail -1)"
-   PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
-   [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
-   ```
+   A legacy unit's optional `superpowers_skills` frontmatter is treated as a technique hint (no longer written; the agents encode the discipline regardless). **There is no vendored fallback and no `dep_missing` bridge halt** — the first-class agents ship in this plugin tree, so there is no dependency to be missing.
 
 3. **Legacy path — CLOSED 2026-07-31.** This used to read: *"If the first-class agents are somehow unavailable (older install), fall back to dispatching superpowers `subagent-driven-development` directly, as before."* That fallback is retired for `bolt-implementer`, because its premise is not reachable: **`scripts/build-dispatch-prompt.sh` and `agents/bolt-implementer.md` ship in the SAME plugin tree**, and the builder fills the version on its `## Contracts (agent-carried)` line from the very plugin root it resolved — so if the builder ran, the agent file exists at that root at that version. There is no state where the builder is present and the first-class agents are not.
 
    The path also could not be made honest cheaply: `bolt-dispatch-prompt.md` specified that on this path the prompt must inline the agent's §Halt vocabulary / §Self-report / §Rollback hints / §Provenance trailer verbatim, the builder has no flag for it and never did, and on that path the emitted contracts line asserts the executor's system prompt carries contracts it does not have — a bolt running with no halt vocabulary, no rollback hints and no provenance-trailer shape, silently. Neither the builder, the skill, nor the validator can detect the branch.
 
-   **If the Agent tool genuinely cannot dispatch `mega-sdd:bolt-implementer`, that is a broken install: STOP and surface it to the human** (untyped blocker → pure-pause, per `agents/bolt-implementer.md §Halt vocabulary`). Never substitute a generic executor while telling it that its system prompt carries contracts it does not hold. Items 1 and 2 above are unaffected — superpowers *technique* skills remain an optional enhancement with a vendored fallback.
+   **If the Agent tool genuinely cannot dispatch `mega-sdd:bolt-implementer`, that is a broken install: STOP and surface it to the human** (untyped blocker → pure-pause, per `agents/bolt-implementer.md §Halt vocabulary`). Never substitute a generic executor while telling it that its system prompt carries contracts it does not hold. Item 1 above is unaffected — superpowers *technique* skills remain an optional enhancement (real install only).
 
 ## Per-unit flow (review panel)
 

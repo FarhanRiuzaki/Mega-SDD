@@ -44,6 +44,6 @@ grep -q 'security-reviewer' "$mt" || { echo "model-tiers missing security-review
 grep -q 'standards-reviewer' "$mt" || { echo "model-tiers missing standards-reviewer row"; err=1; }
 
 # no stale "two-stage" wording left in execute-bolts surfaces or plugin CLAUDE.md
-stale=$(grep -rl 'two-stage' plugins/mega-sdd/skills/execute-bolts plugins/mega-sdd/CLAUDE.md 2>/dev/null | grep -v '_vendored' || true)
+stale=$(grep -rl 'two-stage' plugins/mega-sdd/skills/execute-bolts plugins/mega-sdd/CLAUDE.md 2>/dev/null || true)
 [ -n "$stale" ] && { echo "stale two-stage wording in: $stale"; err=1; }
 exit $err

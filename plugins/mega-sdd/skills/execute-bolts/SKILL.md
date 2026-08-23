@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.37.0
+version: 2.38.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -51,7 +51,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 
 Each check below can HALT before any code is written. Snapshot formats, grammar detail, and full halt YAMLs → `references/hard-rule-scan.md`.
 
-1. **Superpowers bridge.** Detect per `references/superpowers-bridge.md`: real install → plugin namespace; else vendored fallback in `_vendored/`; else **halt `dep_missing`** with install instructions (the dispatch fails closed when neither executing-plans / subagent-driven-development / test-driven-development is available).
+1. **Dispatch readiness.** The first-class agents ship in this plugin tree (`agents/`) — no external plugin, no vendored fallback (removed v7.4.0), nothing to probe. If the Agent tool cannot dispatch `mega-sdd:bolt-implementer`, that is a broken install: STOP and surface it (untyped blocker → pure-pause), per `references/superpowers-bridge.md §Dispatch order`.
 2. **Unit validity.** For each target unit: frontmatter parses + matches `unit-schema.md`; `target_files` non-empty (EXCEPT `task_type: verify`, which requires empty / `operation: none`); `acceptance_test` has ≥1 `type: test` entry; `depends_on` references resolve (no dangling). A `task_type: verify` unit with any `target_files` carrying `operation: create | modify | delete` → **halt `verify_unit_writable`** (verify units are read-only — verified, never written).
 3. **Repo state.** Working tree clean (or `--force`). Bolts produce commits, so a dirty tree could lose work. Each bolt is an **atomic commit** with a provenance trailer (see the per-unit procedure). Repo mid-rebase/merge → STOP: resolve the git state first. Probe worktree-safely via `git rev-parse --git-path rebase-merge` / `--git-path MERGE_HEAD` (in a linked worktree `.git` is a FILE and the state lives under `.git/worktrees/<name>/` — never test the literal `.git/...` path).
 3.5. **Test framework present.** Probe the manifest/lockfile for the project's test runner (phpunit/pest, jest/vitest, pytest, go test, cargo test, rspec/minitest — per the detected ecosystem). Absent → **halt `dep_missing`** naming the runner + install command. NEVER proceed by fabricating "green" tests against a runner that doesn't exist — TDD without a runner is fiction.

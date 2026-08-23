@@ -55,7 +55,7 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 | `markdownlint-cli2` | lint-units (vault prose quality) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
 | `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
 | `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
-| `superpowers` plugin | execute-bolts (TDD bridge) | Vendored fallback at `plugins/mega-sdd/skills/_vendored/` | `/plugin install superpowers` |
+| `superpowers` plugin | execute-bolts (optional technique enhancement) | Not needed — the first-class agents encode the discipline (no vendored fallback since v7.4.0) | `/plugin install superpowers` |
 
 > `pandoc` + `mmdc` power the emit PDF lanes; the PDF printer is a detected Chrome/Chromium (GUI app, detect-only — never installed by mega-sdd). Absent Chrome → GitHub-styled HTML fallback.
 

@@ -200,10 +200,6 @@ def c_units_dir(_):
     return bool(unit_files())
 
 
-def c_superpowers(_):
-    return os.path.isdir(os.path.join(plugin_root, "skills", "_vendored"))
-
-
 def c_vault_json(_):
     return os.path.isfile(os.path.join(VAULT, "vault.json"))
 
@@ -386,9 +382,6 @@ CHECKS = {
     "execute-bolts": [
         ("units_directory_present", True, c_units_dir,
          "execute-bolts requires generated units. Run generate-units first."),
-        ("superpowers_available", False, c_superpowers,
-         "execute-bolts dispatches via superpowers.executing-plans; "
-         "superpowers plugin not available"),
     ],
     "generate-intent": [
         # prd_or_kb_input_present is flag/positional-dependent (header

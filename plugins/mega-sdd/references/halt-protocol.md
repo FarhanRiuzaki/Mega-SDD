@@ -168,7 +168,7 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `deep_scan_subagent_failed` — scan-codebase: a deep-scan slice subagent (auth/authz/ui-ux/libs/reuse) failed once. So… **[Soft halt — auto-retried, warn-only]**
 - `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache au…
 - `deep_scan_subagent_all_failed` — scan-codebase: ALL 5 deep-scan slice subagents failed (likely API outage). ALWAYS STOP:…
-- `dep_missing` — scan-codebase: a FORCED engine's binary not found (tree-sitter under --engine=tree-sitt… *(also emitted by execute-bolts — bridge/vendored absent — and the emit lane; the §Type-specific schemas block below carries the execute-bolts fields)*
+- `dep_missing` — scan-codebase: a FORCED engine's binary not found (tree-sitter under --engine=tree-sitt… *(also emitted by execute-bolts — test runner absent (preflight 3.5) or ast-grep absent under v2 grammar — and the emit lane)*
 
 **bind** (`halt-families/bind.md`):
 
@@ -328,12 +328,11 @@ details:
       suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
       suggested_action_rationale: <one line — why, citing the evidence>   # keterangan contract: the enum never surfaces bare; the displayer also renders the 4-code legend (KEEP_VAULT = code harus diubah mengikuti vault; KEEP_CODE = vault di-update mengikuti kenyataan code; DEFER = jadi OQ — gate binding terbuka, unit digenerate membawa OQ-nya, execute-bolts prompt sebelum bolt final; SPLIT = claim dipecah jadi sub-claim)
 
-# dep_missing — emitted by execute-bolts when superpowers AND vendored fallback both absent
+# dep_missing — emitted by execute-bolts when the project's test runner is absent
+# (preflight 3.5) or ast-grep is absent under v2 Hard-rule grammar (preflight 4)
 details:
-  required_skills: [executing-plans, subagent-driven-development, test-driven-development, using-git-worktrees]
-  missing_real: [...]
-  missing_vendored: [...]
-  install_command: "/plugin install superpowers"
+  missing_tool: <runner-or-binary>
+  install_command: <one command>
 
 # test_fail — emitted by execute-bolts after max retries
 details:

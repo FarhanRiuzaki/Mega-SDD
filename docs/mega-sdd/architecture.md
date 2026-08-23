@@ -48,7 +48,7 @@ Bolt phase routes through [superpowers](https://github.com/obra/superpowers) ski
 - `test-driven-development` — acceptance test discipline
 - `using-git-worktrees` — isolation per parallel bolt
 
-Vendored copies under `plugins/mega-sdd/skills/_vendored/` ensure the pipeline works even when superpowers plugin is not installed.
+The pipeline is self-contained: the first-class agents in `plugins/mega-sdd/agents/` encode the execution discipline, so no superpowers install (and, since v7.4.0, no vendored copy) is required.
 
 ## Anchor + hook
 

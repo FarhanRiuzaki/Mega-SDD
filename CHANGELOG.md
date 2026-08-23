@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
 
+### №1 — `_vendored` superpowers tree REMOVED (BREAKING)
+- Deleted: `skills/_vendored/` (4 skills, 49 KB), `scripts/sync-vendored.sh`, `tests/vendoring/`. First-class agents are the ONLY dispatch path; the vendored fallback + its `dep_missing` bridge halt are gone (nothing to be missing — the agents ship in the plugin tree). Failing-first TDD + plan-then-execute inlined into `superpowers-bridge.md` (≤ a few lines, per gate7).
+- Plumbing out: execute-bolts preflight-1 (now "dispatch readiness" — broken Agent tool = untyped blocker, never an install halt), orchestrate first-run pre-flight + routing-rules dependency check, `superpowers_available` predictive check (`validate-preflight.sh` + catalog row). `dep_missing` halt TYPE survives (test-runner absent / ast-grep under v2 grammar); the bridge schema block replaced.
+- Superpowers real install stays an optional technique enhancement; credit stands in `CLAUDE.md §Co-author attribution` (the `_vendored/ATTRIBUTION.md` pointer died with the tree). `distill-ui-ux.py` runs standalone (the sync-vendored ui-ux leg wrapper is gone).
+- Tests: A2 vendored sweep → negative pin (tree stays removed); trigger scenarios P1/P2 + PF1 rewritten (no halt, no install demand). execute-bolts SKILL → 2.38.0.
+
 ### №5 — phase-advisor REMOVED (BREAKING)
 - Deleted: `agents/phase-advisor.md`, `scripts/build-advisor-bundle.sh`, `references/advisor-findings-schema.md`, both `advisor-checklist.md` refs, `tests/phase-advisor/` (6 suites) + fixtures + `test-5c-intent-advisor-seed.sh`.
 - Plumbing out: `--advisor`/`--no-advisor` (front door + orchestrate forwarding + bind flags), bind Step 2.12 (scope gate + pass), generate-intent Step 3.7, the tranche-E `--no-advisor` hop transform in `state_probes.py` (lean now governs only diagnostics + the Stop aggregate). Rail 1 ("speed cuts inventory, never verification") restated at the chain loop's never-touch list.

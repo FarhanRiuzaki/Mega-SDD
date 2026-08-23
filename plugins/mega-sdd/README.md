@@ -90,7 +90,6 @@ plugins/mega-sdd/
 │   ├── generate-units/  execute-bolts/          # the core pipeline
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
 │   ├── emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
-│   └── _vendored/                # superpowers fallback (optional technique skills)
 ├── agents/                       # 8 first-class subagents
 │   ├── bolt-implementer.md       # execute-bolts implementer
 │   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md, design-reviewer.md
@@ -191,4 +190,4 @@ If you're an AI agent submitting a PR, read [`CLAUDE.md`](./CLAUDE.md) first —
 
 ## License
 
-MIT. Vendored superpowers skills retain their original MIT license — see [`skills/_vendored/ATTRIBUTION.md`](./skills/_vendored/ATTRIBUTION.md). Tree-sitter `.scm` query patterns adapted from [Aider](https://github.com/Aider-AI/aider) (Apache 2.0) — see `skills/scan-codebase/queries/`.
+MIT. (The vendored superpowers skills were removed in v7.4.0; design inspiration remains credited in `CLAUDE.md §Co-author attribution`.) Tree-sitter `.scm` query patterns adapted from [Aider](https://github.com/Aider-AI/aider) (Apache 2.0) — see `skills/scan-codebase/queries/`.
