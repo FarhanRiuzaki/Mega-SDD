@@ -147,9 +147,16 @@ printf '%s' "$OUT" | grep -q "EXTREMELY_IMPORTANT" && ANCH=1 || ANCH=0
 # ── C6: PreToolUse Edit ARMED — the gated path still fires ───────────────────
 reset_counts
 run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIXB/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
-[ "$(total)" -le 8 ] \
-  && ok "C6 PRE Edit armed: ≤8 spawns ($(total), python=$(count python3))" \
-  || bad "C6 PRE Edit armed: spawns=$(total)"
+[ "$(total)" -le 3 ] && [ "$(count python3)" -le 1 ] \
+  && ok "C6 PRE Edit armed: ≤3 spawns, ≤1 python ($(total)/$(count python3)) — №E fold" \
+  || bad "C6 PRE Edit armed: spawns=$(total) python=$(count python3)"
+
+# ── C6b: PreToolUse innocent Bash ARMED — the №E folded skip ─────────────────
+reset_counts
+run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm test -- --watch=false\"}}" >/dev/null
+[ "$(total)" -le 3 ] && [ "$(count python3)" -le 1 ] \
+  && ok "C6b PRE Bash armed innocent: ≤3 spawns, ≤1 python ($(total)/$(count python3))" \
+  || bad "C6b PRE Bash armed innocent: spawns=$(total) python=$(count python3)"
 
 # ── C7: PostToolUse ARMED unit write — the fan-out STAYS DEAD (№D) ───────────
 # Was 93 spawns / 20 python (validator fan-out). The moat lives at the gate:

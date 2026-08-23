@@ -155,8 +155,10 @@ for tok in 'os.sep != "/"' 'rel = rel.replace(os.sep, "/")' 'rel == ".mega-sdd/"
   else fail "hook no longer carries [$tok] — transcription in this test is stale"; fi
 done
 n=$(grep -cF 'rel = rel.replace(os.sep, "/")' "$HOOK")
-if [ "$n" -eq 2 ]; then pass "both guards normalize (found $n sites)"
-else fail "expected 2 normalization sites in the hook, found $n"; fi
+# v7.5.0 №E: a THIRD site joined — the parse-folded FP_GUARD copy (armed
+# common path) normalizes exactly like the dedicated interpreter + GateGuard.
+if [ "$n" -eq 3 ]; then pass "all guards normalize (found $n sites: folded FP_GUARD + dedicated FP_GUARD + GateGuard)"
+else fail "expected 3 normalization sites in the hook, found $n"; fi
 
 echo "── D. LOCKED-index keys are platform-neutral end to end ──"
 if grep -qF 'rel_src = rel_src.replace(os.sep, "/")' "$BUILDER"; then
