@@ -3,14 +3,16 @@ plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
 plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
-plugins/mega-sdd/skills/memory/references/routing-outcomes.md
+# v7.3.0: removed with the observability/memory cut — no longer loads:
+# plugins/mega-sdd/skills/memory/references/routing-outcomes.md
 plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
 plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
 plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
 plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md [SECTION:decision-matrix]
 plugins/mega-sdd/commands/mega-sdd.md
 plugins/mega-sdd/references/multi-prd-lifecycle.md
-plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
+# v7.3.0: removed with the observability/memory cut — no longer loads:
+# plugins/mega-sdd/skills/orchestrate-flow/references/memory-layer.md [SECTION:Chain-end]
 plugins/mega-sdd/skills/generate-intent/SKILL.md
 plugins/mega-sdd/skills/generate-intent/references/from-prompt-mode.md
 # v7 R2a: the default-lane contract is now its own file (vault-core.md, whole —
