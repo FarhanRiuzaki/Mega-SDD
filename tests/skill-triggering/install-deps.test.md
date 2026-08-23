@@ -22,7 +22,7 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 ### ID4: Cross-platform cargo fallback
 - **Setup:** Alpine Linux; default `apk` has no ast-grep package; cargo present
 - **Prompt:** `/mega-sdd:install-deps --tools=ast-grep`
-- **Expect:** Skill falls through apk (no ast-grep entry) → tries cargo fallback → install_cmd: `cargo install ast-grep`
+- **Expect:** Skill falls through apk (no ast-grep entry) → tries cargo fallback → install_cmd: `cargo install ast-grep --locked`
 
 ### ID5: pkg_mgr_not_found halt
 - **Setup:** macOS without brew installed; no cargo/npm/go on PATH
@@ -61,8 +61,8 @@ Iter 55 — OS-aware dependency installer. Cross-platform detection (macOS / Lin
 
 ### ID12: --pkg-mgr override
 - **Setup:** macOS with brew available; user prefers cargo for Rust tools
-- **Prompt:** `/mega-sdd:install-deps --tools=tree-sitter --pkg-mgr=cargo`
-- **Expect:** Skill uses cargo entry from tool-matrix instead of brew entry; install_cmd: `cargo install tree-sitter-cli`
+- **Prompt:** `/mega-sdd:install-deps --tools=ast-grep --pkg-mgr=cargo`
+- **Expect:** Skill uses cargo entry from tool-matrix instead of brew entry; install_cmd: `cargo install ast-grep --locked`
 
 ## Anti-halu rail verification (mandatory checks)
 

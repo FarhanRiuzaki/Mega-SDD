@@ -9,11 +9,11 @@ You'll start with just a sentence ("build a clinic appointment system") and end 
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
 - Empty (or new) Next.js project (or just an empty directory — `bunx create-next-app` not strictly required for this scenario; mega-sdd can scaffold structure)
-- Recommended: `tree-sitter` + `ast-grep` installed (optional; precision boost)
+- Recommended: `ast-grep` installed (optional; precision boost)
 
 ```bash
 # Verify install
-command -v tree-sitter && command -v ast-grep && echo "✓ ready"
+command -v ast-grep && echo "✓ ready"
 ```
 
 ## Step 1 — Create empty project dir

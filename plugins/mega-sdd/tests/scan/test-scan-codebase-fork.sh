@@ -64,12 +64,13 @@ else
   fail "SKILL.md is missing the non-interactive declaration (B1)"
 fi
 # Each named blocker must point at the file where its YAML actually lives. dep_missing is
-# defined in tree-sitter-integration.md, NOT halts-flags-handoff.md — a pointer that names
+# defined in halts-flags-handoff.md since v7.4.0 (it moved there when the
+# tree-sitter lane + its integration ref were removed) — a pointer that names
 # the wrong file sends a forked body looking for a shape it will not find.
-grep -qE '`dep_missing` \(YAML in `references/tree-sitter-integration\.md`\)' "$SKILL" \
-  && grep -qE '^\s*type: dep_missing$' "$SC/references/tree-sitter-integration.md" \
-  && pass "dep_missing points at tree-sitter-integration.md, where its type: shape lives" \
-  || fail "SKILL.md misdirects dep_missing's YAML location (it is not in halts-flags-handoff.md)"
+grep -qE '`dep_missing` \(YAML in `references/halts-flags-handoff\.md`\)' "$SKILL" \
+  && grep -qE '^type: dep_missing$' "$SC/references/halts-flags-handoff.md" \
+  && pass "dep_missing points at halts-flags-handoff.md, where its type: shape lives (v7.4.0 home)" \
+  || fail "SKILL.md misdirects dep_missing's YAML location (shape + pointer must agree)"
 has "$SKILL" 'the body IS the subagent prompt' \
   && pass "declaration states WHY it is local (forked body = subagent prompt)" \
   || fail "declaration does not say why the contract is stated locally"

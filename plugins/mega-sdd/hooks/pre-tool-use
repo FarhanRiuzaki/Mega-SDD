@@ -486,7 +486,7 @@ print(
     # Branch 0: predictive preflight — fatal INPUT-precondition check for the skill
     # about to run, BEFORE it burns minutes and halts mid-way. Conservative: only
     # GENUINELY-FATAL preconditions block (a skill that cannot do anything useful
-    # without the missing input). scan-codebase tree-sitter is WARN-only (never
+    # without the missing input). scan-codebase ast-grep is WARN-only (never
     # FATAL). State recomputed each invocation → self-clears (no deadlock).
     case "${SKILL_NAME:-}" in
       mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)

@@ -59,54 +59,6 @@ tools:
         size_mb: 110
         notes: "Needs an elevated shell; same missing-python3 caveat as winget"
 
-  - id: tree-sitter
-    used_by: [scan-codebase]
-    purpose: "scan-codebase OPT-IN lane only (--engine=tree-sitter; auto uses ast-grep)"
-    fallback_behavior: "auto is unaffected — ast-grep serves tier ast; without it, regex"
-    matrix:
-      - os: macos
-        pkg_mgr: brew
-        install_cmd: "brew install tree-sitter-cli"
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 5
-        notes: "The brew tree-sitter formula is library-only; the CLI ships as tree-sitter-cli (binary name: tree-sitter)"
-      - os: [linux, wsl]
-        pkg_mgr: apt
-        install_cmd: "sudo apt install -y tree-sitter-cli"
-        requires_sudo: true
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 5
-        notes: "Ubuntu 24.04+/Debian 13+ only; older releases use the cargo/npm fallback rows"
-      - os: [linux, wsl]
-        pkg_mgr: dnf
-        install_cmd: "sudo dnf install -y tree-sitter-cli"
-        requires_sudo: true
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 5
-      - os: windows-bash
-        pkg_mgr: winget
-        install_cmd: "winget install --source winget tree-sitter.tree-sitter-cli"
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 6
-      - os: windows-bash
-        pkg_mgr: scoop
-        install_cmd: "scoop install tree-sitter"
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 6
-        notes: "scoop is a native Windows source for tree-sitter (per tree-sitter docs); winget tree-sitter.tree-sitter-cli also available"
-      - os: any
-        pkg_mgr: cargo
-        install_cmd: "cargo install tree-sitter-cli"
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 8
-        notes: "Cross-platform fallback when no native pkg available (incl. Windows w/ Rust)"
-      - os: any
-        pkg_mgr: npm
-        install_cmd: "npm install -g tree-sitter-cli"
-        verify_cmd: "tree-sitter --version || tree-sitter-cli --version"
-        size_mb: 6
-        notes: "Cross-platform fallback (incl. Windows w/ Node)"
-
   - id: ast-grep
     used_by: [scan-codebase, execute-bolts, generate-units, detect-drift]
     purpose: "scan-codebase tier-2 AST extraction (zero-compilation — the OOM-safe tier) + Hard Rule v2 grammar (5-10x expressivity vs v1)"
@@ -334,7 +286,7 @@ defaults:
   required_tools: [python3]                                   # python3 is the ONE hard dependency: every hook parses stdin JSON through it,
                                                               # and without a usable interpreter the gates fail closed. Every OTHER tool is
                                                               # optional and has a documented graceful fallback.
-  recommended_minimum: [ast-grep, ripgrep]                     # baseline for brownfield projects (D2: ast-grep IS the auto AST tier; tree-sitter only for the --engine=tree-sitter opt-in lane)
+  recommended_minimum: [ast-grep, ripgrep]                     # baseline for brownfield projects (D2: ast-grep IS the AST tier; the tree-sitter lane was removed v7.4.0)
   fsd_extension: [pandoc, mmdc]                              # emit PDF: pandoc HTML + Chrome print (mmdc for mermaid); Chrome detect-only
   code_gates: [semgrep, gitleaks]                              # execute-bolts L0 code gates (secret + SAST); gate 5 dep-existence uses python3 urllib
-  full_stack: [python3, tree-sitter, ast-grep, ripgrep, jd, pandoc, mmdc, markdownlint-cli2, semgrep, gitleaks]
+  full_stack: [python3, ast-grep, ripgrep, jd, pandoc, mmdc, markdownlint-cli2, semgrep, gitleaks]

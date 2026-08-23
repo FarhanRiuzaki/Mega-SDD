@@ -15,7 +15,7 @@
 #   bind-codebase   : needs a vault AND a codebase-map.md         → FATAL if absent
 #   generate-units  : needs a (bound) vault                        → FATAL if absent
 #   execute-bolts   : needs units/U-*.md                           → FATAL if absent
-#   scan-codebase   : tree-sitter present (else regex fallback)    → WARN
+#   scan-codebase   : ast-grep present (else regex fallback)       → WARN
 #
 # Usage: validate-preflight.sh --cwd=<root> --skill=<mega-sdd:NAME> [--quiet]
 # Output: stdout JSON (suppressed by --quiet); OVERWRITE <cwd>/.mega-sdd/.preflight-state.json
@@ -174,7 +174,9 @@ def as_list(val):
 # ── check functions: return True (pass) / False (mismatch); raise = probe err ─
 
 def c_ast_engine(_):
-    return which_any("tree-sitter", "tree-sitter-cli", "ast-grep")
+    # v7.4.0: the tree-sitter lane is gone — ast-grep IS the AST engine, but a
+    # legacy tree-sitter binary on PATH is still not an error (just irrelevant).
+    return which_any("ast-grep")
 
 
 def c_framework_pack(_):
@@ -360,14 +362,10 @@ def c_verify_no_targets(_):
 CHECKS = {
     "scan-codebase": [
         ("ast_engine_present", False, c_ast_engine,
-         "no AST engine installed (tree-sitter AND ast-grep both absent); "
-         "scan-codebase will fall back to the regex engine (lower precision). "
-         "Install: brew install ast-grep (zero-compilation tier) / brew "
-         "install tree-sitter-cli — OR run `/mega-sdd:install-deps` for "
-         "auto-install. tree-sitter absent with ast-grep present is the "
-         "NORMAL D2 state (no warning): auto extraction runs at the ast-grep "
-         "tier, precision stays ast; tree-sitter is an explicit --engine "
-         "opt-in."),
+         "ast-grep not installed; scan-codebase will fall back to the regex "
+         "engine (lower precision). Install: brew install ast-grep / scoop "
+         "install ast-grep — OR run `/mega-sdd:install-deps` for "
+         "auto-install. (The tree-sitter lane was removed in v7.4.0.)"),
         ("framework_pack_present", False, c_framework_pack,
          "no framework pack for <framework>; scan-codebase will use "
          "_universal.md fallback patterns (lower starterkit detection "
@@ -544,12 +542,8 @@ if [ ! -d "${CWD}/.mega-sdd" ]; then
 fi
 
 # Probe AST-engine availability for the scan warn-check (cheap; no file scan).
-# D2 ladder: auto = ast-grep -> regex (tree-sitter is an explicit opt-in lane);
-# the warn fires only when NO AST engine is present at all.
-TS_PRESENT=0
-if command -v tree-sitter >/dev/null 2>&1 || command -v tree-sitter-cli >/dev/null 2>&1; then
-  TS_PRESENT=1
-fi
+# D2 ladder: ast-grep -> regex (the tree-sitter lane was removed v7.4.0);
+# the warn fires only when ast-grep is absent.
 AG_PRESENT=0
 command -v ast-grep >/dev/null 2>&1 && AG_PRESENT=1
 
@@ -562,7 +556,7 @@ command -v ast-grep >/dev/null 2>&1 && AG_PRESENT=1
 # pre-migration project whose map bind would happily consume).
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
-CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" TS_PRESENT="$TS_PRESENT" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
+CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
 import base64, json, os, re, sys
 from datetime import datetime, timezone
 
@@ -577,7 +571,6 @@ from state_probes import (
 
 cwd = os.environ["CWD"]
 skill = os.environ.get("SKILL", "")
-ts_present = os.environ.get("TS_PRESENT", "0") == "1"
 ag_present = os.environ.get("AG_PRESENT", "0") == "1"
 quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -647,13 +640,12 @@ elif name == "execute-bolts":
     checks.append({"check": "units_directory_present", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "scan-codebase":
-    if not ts_present and not ag_present:
+    if not ag_present:
         warnings.append({"check_id": "ast_engine_present",
-                         "detail": "no AST engine installed (tree-sitter AND ast-grep both absent); "
-                                   "scan-codebase falls back to the regex engine (lower precision; "
-                                   "bind-codebase field-level diff will degrade). Install via "
-                                   "/mega-sdd:install-deps or `brew install ast-grep` (zero-compilation "
-                                   "tier) / `brew install tree-sitter-cli`."})
+                         "detail": "ast-grep not installed; scan-codebase falls back to the regex "
+                                   "engine (lower precision; bind-codebase field-level diff will "
+                                   "degrade). Install via /mega-sdd:install-deps or `brew install "
+                                   "ast-grep` / `scoop install ast-grep`."})
     # tree-sitter absence is the NORMAL D2 happy path (auto = ast-grep -> regex;
     # tree-sitter is an explicit opt-in lane) — not warn-worthy.
     checks.append({"check": "ast_engine_present", "status": "WARN" if warnings else "PASS"})

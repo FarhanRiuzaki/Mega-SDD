@@ -309,7 +309,7 @@ if pack_dir:
 # risk hanging on sudo/network). Emit a chat notice.
 # install-deps subsystem invocation is left to explicit user action.
 import shutil as _shutil
-required_bins = ["tree-sitter", "ast-grep"]  # optional but useful
+required_bins = ["ast-grep"]  # optional but useful (tree-sitter lane removed v7.4.0)
 missing_bins = [b for b in required_bins if _shutil.which(b) is None]
 if missing_bins:
     emit_event(

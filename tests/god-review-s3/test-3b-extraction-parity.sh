@@ -11,8 +11,9 @@
 #   SP-1   widened patterns match export-default-async / final class / async def /
 #          Go receiver / pub async fn (the forms the originals missed).
 #   SP-5   @remix-run/ and @sveltejs/kit precede "express" in the detection table.
-#   V8     the three language-coverage lists agree (SKILL.md 9 langs; integration
-#          ref lists tags-csharp.scm; VERSIONS.md pins C#).
+#   V8     retired v7.4.0 — the tree-sitter opt-in lane (integration ref +
+#          tags-*.scm) was removed in Fase 5 №4; ast-grep pack glossary is
+#          pinned by tests/scan/test-astgrep-pack-glossary.sh instead.
 #
 # Run: bash tests/god-review-s3/test-3b-extraction-parity.sh
 set -uo pipefail
@@ -20,10 +21,9 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SP="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md"
-TS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/tree-sitter-integration.md"
 VM="${ROOT}/plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md"
 SK="${ROOT}/plugins/mega-sdd/skills/scan-codebase/SKILL.md"
-for f in "$SP" "$TS" "$VM" "$SK"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$SP" "$VM" "$SK"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -124,13 +124,17 @@ sys.exit(0 if ok_order else 1)
 PY
 grep -qF 'meta-frameworks precede the server substrates' "$SP" && ok "SP-5: ordering rule documented" || fail "SP-5: ordering rule prose missing"
 
-# ── V8: the three coverage lists agree ──
-grep -qF '9 languages: TS/JS/PHP/Python/Go/Rust/Ruby/Java/C#' "$SK" && ok "V8: SKILL.md queries note lists 9 languages" || fail "V8: SKILL.md queries note stale"
-grep -qF 'tags-csharp.scm' "$TS" && ok "V8: integration ref lists tags-csharp.scm" || fail "V8: integration ref missing C#"
-grep -qF 'tree-sitter-c-sharp' "$VM" && ok "V8: VERSIONS.md pins the C# grammar" || fail "V8: C# grammar unpinned"
-N_SCM=$(ls "$ROOT/plugins/mega-sdd/skills/scan-codebase/queries/"tags-*.scm | wc -l | tr -d ' ')
-N_TS=$(grep -c '^- `tags-.*\.scm`' "$TS")
-[ "$N_SCM" = "$N_TS" ] && ok "V8: integration ref lists all $N_SCM shipped query files" || fail "V8: ref lists $N_TS of $N_SCM query files"
+# ── V8 (v7.4.0 form): the tree-sitter lane stays removed ──
+if ls "$ROOT/plugins/mega-sdd/skills/scan-codebase/queries/"tags-*.scm >/dev/null 2>&1; then
+  fail "V8: tags-*.scm query files are back (tree-sitter lane removed v7.4.0)"
+else
+  ok "V8: no tags-*.scm query files (tree-sitter lane stays removed)"
+fi
+if [ -e "$ROOT/plugins/mega-sdd/skills/scan-codebase/references/tree-sitter-integration.md" ]; then
+  fail "V8: tree-sitter-integration.md is back (removed v7.4.0)"
+else
+  ok "V8: tree-sitter-integration.md stays removed"
+fi
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 3B OK"; else note "3B had failures"; fi
 exit $FAILED

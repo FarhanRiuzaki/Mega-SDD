@@ -37,7 +37,7 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
         "function_definitions": ["<function name>", "..."],
         "imports": ["<import path>", "..."]
       },
-      "captured_via": "tree-sitter | ast-grep | regex-fallback"
+      "captured_via": "ast-grep | regex-fallback"   // legacy snapshots may carry "tree-sitter" (pre-7.4 producer)
     }
   ],
   "rules_validated": [

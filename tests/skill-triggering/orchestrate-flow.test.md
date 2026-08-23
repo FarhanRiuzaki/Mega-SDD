@@ -253,10 +253,10 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - No "routing recommendation" message displayed
 - Chain executes; Step 7.5 creates routing-outcomes.md + appends first row
 
-### OF-PH1 — Predictive check (non-fatal): tree-sitter warning
+### OF-PH1 — Predictive check (non-fatal): AST-engine warning
 
 **Setup:**
-- tree-sitter AND ast-grep binaries NOT installed
+- ast-grep binary NOT installed
 - Project has Laravel composer.json (framework detected)
 - Chain proposes scan-codebase
 
@@ -264,8 +264,8 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 
 **Expected:**
 - Step 3.5 runs predictive checks for scan-codebase
-- `ast_engine_present` check fails (non-fatal; fires only when tree-sitter AND ast-grep are BOTH absent)
-- Warning displayed to user BEFORE chain starts: "⚠️ no AST engine installed; scan-codebase will fall back to regex engine. Install: brew install ast-grep / brew install tree-sitter-cli..."
+- `ast_engine_present` check fails (non-fatal; fires only when ast-grep is absent — v7.4.0)
+- Warning displayed to user BEFORE chain starts: "⚠️ ast-grep not installed; scan-codebase will fall back to regex engine. Install: brew install ast-grep..."
 - Chain proceeds normally (scan-codebase uses regex)
 - handoff metrics.predictive_warnings_count = 1; metrics.predictive_halts_count = 0
 

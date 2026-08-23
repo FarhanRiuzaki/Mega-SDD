@@ -10,7 +10,7 @@
 #          generate-units owns the build + the paths.md cache row.
 #   V3     "read-only enforced at dispatch" fiction → honest rules-tier wording.
 #   V4     §3(routes)/§4(data models) numbering agrees across schema, validator,
-#          implementation-state.md, oq-resolution.md, tree-sitter-integration.md.
+#          implementation-state.md, oq-resolution.md. (tree-sitter-integration.md arm retired v7.4.0.)
 #   AH-3   truncation gets a schema marker + absence-in-truncated-section→UNKNOWN;
 #          the ghost "file scan log" pointer is gone.
 #   AH-4   libs slice carries _source under a manifest grammar on all surfaces.
@@ -34,7 +34,6 @@ DSG="$P/skills/scan-codebase/references/deep-scan-gate.md"
 DSD="$P/skills/scan-codebase/references/deep-scan-dispatch.md"
 DSP="$P/skills/scan-codebase/references/deep-scan-prompts.md"
 CMS="$P/skills/scan-codebase/references/codebase-map-schema.md"
-TSI="$P/skills/scan-codebase/references/tree-sitter-integration.md"
 IMS="$P/skills/bind-codebase/references/implementation-state.md"
 OQR="$P/skills/bind-codebase/references/oq-resolution.md"
 HC="$P/skills/orchestrate-flow/references/handoff-contract.md"
@@ -43,7 +42,7 @@ SCS="$P/references/starterkit-context-schema.md"
 PTH="$P/references/paths.md"
 PRT="$P/skills/generate-units/references/pagerank-targeting.md"
 VCORE="$P/skills/generate-intent/references/vault-core.md"
-for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$TSI" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$VCORE"; do  # PRT removed 5.29.0 (D1) — its ABSENCE is asserted below
+for f in "$SK" "$SP" "$HFH" "$DSG" "$DSD" "$DSP" "$CMS" "$IMS" "$OQR" "$HC" "$SSS" "$SCS" "$PTH" "$VCORE"; do  # PRT removed 5.29.0 (D1) — its ABSENCE is asserted below
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -70,7 +69,7 @@ grep -qF 'reuse-index.yaml>          # only when deep-scan ran' "$HFH" \
 if grep -qF 'reuse_index: { path:' "$DSG" "$DSD"; then fail "INT-4: phantom reuse_index handoff field survives"; else ok "INT-4: phantom reuse_index handoff field removed"; fi
 
 # ── INT-6 ──
-grep -qF 'NOT persisted by scan-codebase' "$SP" && ok "INT-6: scan-procedure — reference captures not persisted" || fail "INT-6: scan-procedure still claims a symbol-graph channel"
+grep -qF '`name.reference.*` captures do NOT exist in this lane' "$SP" && ok "INT-6: scan-procedure — no reference captures exist/persist (v7.4.0 wording: the tree-sitter lane that once produced them is gone)" || fail "INT-6: scan-procedure still claims a symbol-graph channel"
 if [ -e "$PRT" ]; then fail "INT-6: pagerank-targeting.md resurrected (removed 5.29.0 §D1)"; else ok "INT-6: pagerank-targeting.md removed — the build-attribution question is moot"; fi
 if grep -v 'inert' "$PTH" | grep -q 'symbol-graph'; then fail "INT-6: paths.md still registers the removed symbol-graph artifact"; else ok "INT-6: paths.md symbol-graph registration removed (only the inert-cache note remains)"; fi
 # round-2: sibling generate-units surface (task-typing) must not re-attribute to scan
@@ -90,7 +89,7 @@ grep -qF 'Route in codebase-map §3' "$IMS" && grep -qF 'Entity in §4' "$IMS" &
   && ok "V4: implementation-state.md un-inverted (routes=§3, entities=§4)" || fail "V4: implementation-state still inverted"
 grep -qF 'entity name → §4 (data models); endpoint path → §3 (routes)' "$OQR" && grep -qF '§4 entry: User table line 42' "$OQR" \
   && ok "V4: oq-resolution.md un-inverted" || fail "V4: oq-resolution still inverted"
-grep -qF '§3 (routes) + §4 (data models)' "$TSI" && ok "V4: tree-sitter-integration.md un-inverted" || fail "V4: tree-sitter ref still inverted"
+# (V4 tree-sitter-integration arm retired v7.4.0 — the file died with its lane; the class-wide inverted-reference grep below still covers the plugin.)
 # round-2: NO inverted reference anywhere in the plugin (the class, not the instances)
 if rtk proxy grep -rn --include="*.md" -e '§4 (routes)' -e '§3 (data models)' "$P" >/dev/null 2>&1 || \
    grep -rn --include="*.md" -e '§4 (routes)' -e '§3 (data models)' "$P" >/dev/null 2>&1; then
