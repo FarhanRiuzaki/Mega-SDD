@@ -70,11 +70,38 @@ grep -q '"chain_engaged": true' "$FIX/.mega-sdd/.gateguard-state.json" 2>/dev/nu
   && ok "S5 Skill dispatch writes chain_engaged for this session" \
   || bad "S5 chain_engaged marker not written: $(cat "$FIX/.mega-sdd/.gateguard-state.json" 2>/dev/null)"
 
-# ── S6: ARMED session Edit takes the FULL path again (python parse runs) ─────
+# ── S6 (repinned v7.5.0 №G Option B): armed-session Edit semantics ───────────
+# Option B (user-approved, fail-closed): an ARMED innocent Edit exits in the
+# 0-python fast path — the builtin locked-index probe decides. "Armed" is now
+# proven by the GateGuard deny on a LOCKED-anchored file, not by interpreter
+# count. Four arms: (a) a binding newer than the index forces the python path
+# (fail-closed lazy rebuild); (b) once the index is fresh, an innocent Edit is
+# ZERO python; (c) a LOCKED-file Edit takes the python path and is DENIED
+# (deny-once, spawn counter proves the python is spent ONLY there); (d) the
+# retry passes (deny-once contract intact).
+mkdir -p "$FIX/.mega-sdd/vaults/v1"
+printf '%s\n' '## Claim C-001 [LOCKED]' 'anchor: src/app.js:1' \
+  '## Claim C-002 [LOCKED]' 'anchor: src/other.js:1' > "$FIX/.mega-sdd/vaults/v1/binding.md"
+echo "y" > "$FIX/src/other.js"
+echo "z" > "$FIX/src/free.js"
 reset_counts
-run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
-[ "$(count python3)" -ge 1 ] && ok "S6 armed Edit re-enters the full gate path (python=$(count python3))" \
-  || bad "S6 armed Edit still skipped the gates — arming is broken"
+run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/free.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
+[ "$(count python3)" -ge 1 ] && [ -f "$FIX/.mega-sdd/.locked-files-index.json" ] \
+  && ok "S6a stale/absent index forces the python path + lazy rebuild (fail-closed)" \
+  || bad "S6a index rebuild skipped (python=$(count python3), idx=$([ -f "$FIX/.mega-sdd/.locked-files-index.json" ] && echo yes || echo no))"
+reset_counts
+run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/free.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
+[ "$(total)" -eq 0 ] && ok "S6b armed innocent Edit: ZERO forks (Option B fast path)" \
+  || bad "S6b armed innocent Edit forked: $(total) (python=$(count python3))"
+reset_counts
+OUT=$(run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}")
+printf '%s' "$OUT" | grep -q '"deny"' && [ "$(count python3)" -ge 1 ] \
+  && ok "S6c armed LOCKED-file Edit: python path + GateGuard DENY (moat intact under Option B)" \
+  || bad "S6c LOCKED edit not denied (python=$(count python3) out=[${OUT:0:60}])"
+OUT=$(run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}")
+printf '%s' "$OUT" | grep -q '"deny"' \
+  && bad "S6d deny-once broken: the retry was denied again" \
+  || ok "S6d retry passes (deny-once contract intact)"
 
 # ── S7: PostToolUse Write, un-armed session → shell journal, ≤2 forks, 0 python ──
 reset_counts
@@ -136,13 +163,17 @@ run_hook pre-tool-use "{\"session_id\":\"never-engaged\",\"agent_id\":\"sub-1\",
 [ "$(count python3)" -ge 1 ] && ok "S13 subagent-context Edit takes the full (armed) path — R2 fail-closed" \
   || bad "S13 subagent sentinel ignored (python=$(count python3)) — bolt edits would be un-gated"
 
-# ── S14: shared worktree — a 2nd session's dispatch must NOT un-arm the 1st ──
+# ── S14 (repinned №G): shared worktree — B's dispatch must NOT un-arm A ──────
+# "Still armed" is observable as the GateGuard deny on a LOCKED file A has not
+# touched this session (src/other.js — C-002). An un-armed session would pass
+# silently (GateGuard is chain-scoped).
 SID_B="sess-v7-second"
 run_hook pre-tool-use "{\"session_id\":\"$SID_B\",\"cwd\":\"$FIX\",\"tool_name\":\"Skill\",\"tool_input\":{\"skill\":\"mega-sdd:memory\",\"args\":\"\"}}" >/dev/null
 reset_counts
-run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/app.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}" >/dev/null
-[ "$(count python3)" -ge 1 ] && ok "S14 session A stays ARMED after session B dispatches (engaged_sessions map)" \
-  || bad "S14 shared-worktree un-arm regression: A lost its gates after B's dispatch (python=$(count python3))"
+OUT=$(run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$FIX/src/other.js\",\"old_string\":\"a\",\"new_string\":\"b\"}}")
+printf '%s' "$OUT" | grep -q '"deny"' \
+  && ok "S14 session A stays ARMED after B's dispatch (LOCKED deny still fires)" \
+  || bad "S14 shared-worktree un-arm regression: A lost GateGuard after B's dispatch"
 
 # ── S15/S16: the ARM SWITCH itself is anti-forge protected ───────────────────
 OUT=$(run_hook pre-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$FIX/.mega-sdd/.gateguard-state.json\",\"content\":\"{}\"}}")

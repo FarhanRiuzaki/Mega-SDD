@@ -7,6 +7,9 @@ One config surface per project (NOT `.claude/*.local.md` — mega-sdd predates t
 dirty_journal: true        # false → living-vault dirty-paths journaling off (git channel still works;
                            #   /mega-sdd:sync falls back to the last_scanned_commit diff alone)
 staleness_notice: true     # false → suppress the session-start "codebase moved" line
+auto_verify_on_edit: false # true → editing a file listed in a unit's target_files (unit with an
+                           # acceptance_test) makes the PostToolUse hook OFFER running that unit's
+                           # acceptance (one line, never auto-run). Default false = zero extra cost.
 layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:migrate-paths writes);
                            #   legacy → outputs at pre-migration scattered paths (see plugins/mega-sdd/references/paths.md)
 output_root: .mega-sdd/    # where all outputs live, relative to project root (or absolute)

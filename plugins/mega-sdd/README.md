@@ -134,6 +134,10 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 
 > The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); the analyze skill ("cek konsistensi") surfaces the advisory ones.
 
+## Apa yang otomatis, apa yang tidak (v7.5.0)
+
+Tanpa mengetik `/mega-sdd` sekalipun: **(a)** kalimat berniat M/L ("tambah field NIK di form", "kode berubah, sync") di-route otomatis oleh anchor + front door; **(b)** guard anti-forge selalu aktif di tier apa pun; **(c)** begitu satu skill mega-sdd jalan, seluruh gate chain arm sendiri; **(d)** edit inline file yang ter-anchor ke claim `[LOCKED]` memunculkan SATU baris notice (0 fork) — kontrak berubah → tawarkan `/mega-sdd:sync`, bug fix internal → lanjut; **(e)** kalimat "selesai" (`udah`/`commit`/`push`/`PR`/`merge`, census di test) saat ada perubahan ter-journal memunculkan satu baris TAWARAN sync — bukan auto-run. Yang **sengaja tidak** otomatis: pipeline tidak pernah auto-invoke dari keberadaan `.mega-sdd/` atau dari sembarang prompt (pelajaran bug-hunt 20 menit, klausa :13(c) dihapus permanen); acceptance auto-offer per-edit hanya hidup kalau `auto_verify_on_edit: true` di config (default false).
+
 ## Per-project config
 
 Optional `.mega-sdd/config.yaml` at the project root — every key has a default (missing file = all defaults, never an error):
