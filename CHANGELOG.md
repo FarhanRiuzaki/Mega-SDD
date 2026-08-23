@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Gate: `research/2026-08-23-v7-gate7-accept-730.md` + the user's answers (gate8) over the placement table `research/2026-08-23-v7-fase5-placement-table.md`. One commit per surface, bisectable; measured against `context-v7.3.0-post-observability.json`.
 
+### №3 — design-intelligence pruned by per-file consumer grep (user rule: "default hapus")
+- **DELETED `palette-principles.md`** (17.8 KB) — zero runtime consumers (only the distiller that emitted it + its test); distiller emit leg removed (the colors.csv JOIN feeding `product-style-map.yaml`'s palette field stays), test list repinned + negative pin.
+- **KEPT by grep evidence**: `modern-baseline.md` + `style-principles.md` + `ux-rules.md` (design lens slice: context/starterkit-enrichment + dispatch builder + design-reviewer), `product-style-map.yaml` (Design-Source OQ recommend — the feature stays per the gate8 answer; also read by `validate-vault-oqs.sh`).
+- **Evidence-flip reported**: `typography-pairings.md` was on gate7's delete list but 161 rows of the KEPT `product-style-map.yaml` point at it ("see typography-pairings.md — match by product mood/keywords") — a transitive runtime consumer via the recommend lane, and the map cannot be regenerated without the upstream CSVs → KEEP per the user's own grep rule.
+
 ### №7 — maintainer references MOVED to `docs/mega-sdd/`
 - `fork-a-recovery-map.md`, `upgrade-from-old-version.md`, `reading-map.md` (±38 KB) moved out of the shipped `references/` — no skill Reads them at run time (grep-proven in the placement table); readers are humans/maintainers, and the installed plugin cache never shipped usable copies of repo-docs anyway. 11 pointers repointed (paths.md, halt-protocol.md, anchor body, plugin+repo README, scenarios ×4, platform-pins + s7a tests, the moved file's own cross-ref); in-plugin pointers now say "repo docs, maintainer-facing". Also fixed the repo README's stale "(4 since 6.8.0)" verb count.
 

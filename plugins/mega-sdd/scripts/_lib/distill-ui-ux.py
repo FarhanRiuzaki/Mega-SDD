@@ -79,9 +79,8 @@ def main():
     emit_md_table(a.out, "style-principles.md", "Style Principles", "styles.csv",
                   ["Style", "Best For", "Avoid For", "CSS Keywords"], styles,
                   ["Style Category", "Best For", "Do Not Use For", "CSS/Technical Keywords"])
-    emit_md_table(a.out, "palette-principles.md", "Palette Principles", "colors.csv",
-                  ["Product", "Primary", "Accent", "Background", "Text", "Notes"], colors,
-                  ["Product Type", "Primary", "Accent", "Background", "Foreground", "Notes"])
+    # (palette-principles.md emit removed v7.4.0 — zero runtime consumers; the
+    # colors.csv palette JOIN above still feeds product-style-map.yaml.)
     emit_md_table(a.out, "typography-pairings.md", "Typography Pairings", "typography.csv",
                   ["Pairing", "Heading", "Body", "Mood", "Best For", "CSS Import"], typo,
                   ["Font Pairing Name", "Heading Font", "Body Font", "Mood/Style Keywords", "Best For", "CSS Import"])
