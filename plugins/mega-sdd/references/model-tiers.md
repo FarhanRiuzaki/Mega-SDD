@@ -5,7 +5,7 @@
 **Version:** 1.0
 **Introduced:** v3.25.0 (Iter 34)
 **Consumed by:** all SKILL.md subagent dispatch sites (cite via `references/model-tiers.md §<role-name>`)
-**Resolved by:** `mega-sdd:orchestrate-flow` v3.1.0+ Step 2.8 (override chain: CLI > project config > user preference > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
+**Resolved by:** `mega-sdd:orchestrate-flow` v3.1.0+ Step 2.8 (override chain: CLI > project config > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
 
 ---
 
@@ -92,7 +92,7 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 21b | `resolution-verifier` | sonnet | Fix-round verification: per-finding resolved/unresolved against new-head evidence + delta review of the fix range — bounded judgment against an explicit finding ledger, known output schema (review-panel §Attempt rounds) |
 | 22 | `bolt-implementer` | **inherit → v7.1 per-unit routed** | AMENDED v7.1 (spec 2026-08-22-per-unit-model-routing-design.md): config `model_tiers.bolt_implementer:` default `inherit` keeps the operator-tier behavior below verbatim; `auto` routes per unit from the SAME deterministic risk signals as the review-panel tier (opus←full, haiku←verify-only, sonnet←else) + a one-step evidence-gated cascade — NOT the hard pin the old rationale rejected (the pin follows per-unit evidence, both directions of the old cost argument are answered). Ship default stays `inherit` until the clinic A/B passes (≥25% token saving, panel quality equal — user gate). ORIGINAL rationale (still governs `inherit`): Deliberately operator-tiered, not unpinned: the implementer writes the code the LOCKED "akurasi code WAJIB" mandate is about, so it tracks the tier the operator chose for the session — a session run on a stronger model gets a stronger implementer with no plugin edit. A hard pin would also cut the wrong way in both directions: pinning down risks paying more via panel rejections + re-dispatches than the per-token saving, pinning up taxes every routine bolt. `inherit` is an EXPLICIT frontmatter value (`agents/bolt-implementer.md`), and any catalog↔frontmatter parity check must accept it as such (spec `2026-07-30-token-and-latency-optimization.md` §Phase 1a, amended) |
 
-**Distribution:** 4 opus + 15 sonnet + 3 haiku + 1 inherit (23 rows). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
+**Distribution:** 4 opus + 16 sonnet + 2 haiku + 1 inherit (23 rows). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
 
 ---
 
@@ -108,9 +108,13 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 ### CLI flag (per-run override)
 
 ```bash
+# Primary (shipped) grammar — bare tier, forwarded to execute-bolts:
+/mega-sdd --model-tier=sonnet ./prd.md     # inherit | auto | haiku | sonnet | opus
+
+# orchestrate-flow-scoped grammar — <role>:<tier> per catalog role:
 /mega-sdd --model-tier=intelligence-audit-probe:sonnet ./prd.md
 # multiple overrides allowed:
-/mega-sdd --model-tier=audit-consolidator:opus --model-tier=audit-probe:sonnet
+/mega-sdd --model-tier=pipeline-audit-consolidator:opus --model-tier=intelligence-audit-probe:sonnet
 ```
 
 ### Per-project config
@@ -122,19 +126,9 @@ model_tiers:
   intelligence-audit-probe: sonnet  # bump from haiku to sonnet for higher signal
 ```
 
-### User-scope preference
-
-`~/.mega-sdd/memory/preferences.md`:
-```markdown
-## Model tiers
-
-- `audit-consolidator`: opus  # personal preference (overrides catalog default)
-- `extract-intelligence-wave-5`: sonnet  # cost-sensitive default
-```
-
 ### Override chain precedence
 
-CLI flag > per-project config > user-scope preference > catalog default.
+CLI flag > per-project config > catalog default.
 
 Highest applicable override wins. If no override applies, catalog default is used.
 

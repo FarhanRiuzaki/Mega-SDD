@@ -12,7 +12,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### dedup_ambiguous
 
-- `dedup_ambiguous` — generate-units: dedupe step finds multiple existing units that could match a new claim (target_files overlap >threshold). ALWAYS STOP. Resolution: user picks the canonical unit OR confirms creating a new one. Previously emitted but missing from canonical halt registry —
+- `dedup_ambiguous` — generate-units: dedupe step finds multiple existing units that could match a new claim (target_files overlap >threshold). ALWAYS STOP. Resolution: user picks the canonical unit OR confirms creating a new one.
 
 ### hard_rule_unparseable
 
@@ -21,3 +21,23 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### unit_underspecified
 
 - `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
+
+### cycle_detected
+
+- `cycle_detected` — generate-units: the unit dependency DAG has a cycle. ALWAYS STOP. Details `{cycle_path: [U-001, U-002, U-001]}` (registry §Type-specific schemas). Resolution: user breaks the cycle by editing the offending units' `depends_on`, then re-runs generate-units.
+
+### cross_squad_dep_invalid
+
+- `cross_squad_dep_invalid` — generate-units (multi-squad mode): a unit's `depends_on` references a unit in a different squad. ALWAYS STOP. Details `{unit_id, unit_squad, dependency_id, dependency_squad}` (registry §Type-specific schemas). Resolution: user re-partitions the squads in `_meta/squads.yaml` or replaces the cross-squad dependency with an interface.
+
+### cross_squad_ambiguous
+
+- `cross_squad_ambiguous` — generate-units (multi-squad mode): two or more squads in `_meta/squads.yaml` claim ownership of the same artifact at the same precedence level. ALWAYS STOP. Details `{artifact, artifact_kind, claimed_by_squads, matched_via}` (registry §Type-specific schemas). Resolution: user disambiguates ownership in `_meta/squads.yaml`, then re-runs generate-units.
+
+### interface_ref_missing
+
+- `interface_ref_missing` — generate-units: a unit's `produces_interfaces` or `consumes_interfaces` references an interface ID with no corresponding file in `<vault>/interfaces/`. ALWAYS STOP. Details `{unit_id, missing_interface_id, referenced_in}` (registry §Type-specific schemas). Resolution: user creates the interface note (or fixes the ID), then re-runs generate-units.
+
+### cross_squad_interface_draft
+
+- `cross_squad_interface_draft` — generate-units / execute-bolts: a consumed cross-squad interface is still `status: draft` — the consumer squad is waiting for the producer to lock it. ALWAYS STOP for the consuming unit. Details `{unit_id, interface_id, producer_squad, consumer_squad}` (registry §Type-specific schemas). Resolution: the producer squad locks the interface (`status: locked` in `<vault>/interfaces/`), then the consumer re-runs; predictive preflight surfaces this before dispatch when possible.

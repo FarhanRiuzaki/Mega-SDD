@@ -12,4 +12,4 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 As a `quality_gate_failed` subtype (the wave default — registry §`quality_gate_failed` subtypes):
 
-- *(omitted OR `wave_quality_threshold_unmet`)* — extract-intelligence: wave-based KB extraction quality threshold (citation density / hallucination floor / canonicalization completeness) not met. Resolution: user reviews wave output + accepts (with QA notes) OR re-runs wave with adjusted prompt.
+- *(omitted OR `wave_quality_threshold_unmet`)* — extract-intelligence: wave-based KB extraction quality threshold (citation density / hallucination floor / canonicalization completeness) not met. Resolution: user reviews wave output + accepts (with QA notes) OR re-runs wave with adjusted prompt. The wave default emits with `subtype` ABSENT; `wave_quality_threshold_unmet` is a documentation label only, never written into an envelope.

@@ -59,7 +59,11 @@ PYEOF
 
 echo "── b: size budgets (spec-amended) ──"
 B=$(wc -c < "$HP" | tr -d ' ')
-[ "$B" -le 30000 ] && ok "b1 registry $B <= 30000" || fail "b1 registry regrew to $B"
+# Cap 30000 -> 32000 (doc-audit 2026-08-23): the enum<->index two-way sync
+# restored 20 live types + 7 schema-only index rows the registry itself
+# mandates (":147 rejects undeclared types") — correctness bytes, not guidance
+# regrowth (z1 still pins that guidance bodies stay out).
+[ "$B" -le 32000 ] && ok "b1 registry $B <= 32000" || fail "b1 registry regrew to $B"
 OVER=""
 for f in "$FD"/*.md; do
   FB=$(wc -c < "$f" | tr -d ' ')
@@ -102,7 +106,9 @@ echo "── d2: subtype enum restored + dispatch rule canonical (round B1) ─�
 grep -q '#### `quality_gate_failed` subtypes' "$HP" && ok "d2a subtype section heads the registry" || fail "d2a subtype section missing"
 grep -qF 'Consumer dispatch logic MUST branch on `details.subtype`' "$HP" && ok "d2b dispatch rule canonical" || fail "d2b dispatch rule lost"
 N9=$(grep -c '^- `[a-z0-9_]*` \*(subtype of `quality_gate_failed`)\*' "$HP")
-[ "$N9" -eq 9 ] && ok "d2c all 9 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+# 9 -> 7 (doc-audit 2026-08-23): replan_budget_exceeded + revalidate_budget_exceeded
+# deleted — zero emitters anywhere (never shipped); the count pins the LIVE set.
+[ "$N9" -eq 7 ] && ok "d2c all 7 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
 
 echo "── d3: stop-class floor across family files (semantic-flip tripwire) ──"
 NSTOP=$(cat "$FD"/*.md | grep -o 'ALWAYS STOP' | wc -l | tr -d ' ')

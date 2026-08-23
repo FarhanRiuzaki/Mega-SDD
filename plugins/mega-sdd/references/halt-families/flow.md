@@ -20,7 +20,7 @@ Registry one-liner (absorbed, same type):
 
 ### memory_in_use
 
-- `memory_in_use` — memory: file lock collision; concurrent writer holds lock. **C1 SELF-RESOLVE:** retry budget extended to 10 attempts with exponential backoff (250ms → 500ms → 1s → 2s → 4s → 8s → 8s → 8s → 8s → 8s, total ~40s). If still locked after 10x → log + skip memory update (memory writes are advisory; chain proceeds). The chat one-liner is the record. Human visible via chat one-liner `[self-resolved] memory_in_use: skipped after 10 retries`. NEVER halts the chain.
+- `memory_in_use` — pipeline file-lock collision (the halt NAME is historical): the lock is `vault.json.lock` (`derive-vault-json.sh`) or the starterkit-context lock; a concurrent writer holds it. The writer retries 3 times with backoff (0.1s → 0.5s → 1.5s, ~2.1s total); still locked → exit 4 and the skill surfaces the envelope. Resolution: wait 5s + retry; remove an orphaned `.lock` older than 30s manually.
 
 ### mode_migrate
 
@@ -86,16 +86,4 @@ Registry one-liner (absorbed, same type):
 
 *Subtype of `quality_gate_failed` (`details.subtype: starterkit_metrics_inconsistent`) — enum + dispatch rule live in the registry §`quality_gate_failed` subtypes.*
 
-- `starterkit_metrics_inconsistent` — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase` (since the failed-slice fix, a plain re-run re-dispatches failed slices — they carry no per_slice cache signature; `--no-cache` is the belt-and-braces option that re-dispatches everything; `--force-deep` is only needed when a LOW-confidence trigger skipped deep-scan entirely) then regenerate units.
-
-### replan_budget_exceeded
-
-*Subtype of `quality_gate_failed` (`details.subtype: replan_budget_exceeded`) — enum + dispatch rule live in the registry §`quality_gate_failed` subtypes.*
-
-- `replan_budget_exceeded` — anti-recursive guard: a task's re-plan count exceeded `max_replan_count` cap (default 2; configurable). Details `{task_id, max_replan_count, actual_replan_count, trigger_history: [<closed-enum triggers per RULE 1>]}`. Resolution: user reviews trigger history; if hitting same trigger repeatedly, root-cause the underlying issue (don't just raise the cap); if scope grew beyond original task, restart task with corrected scope.
-
-### revalidate_budget_exceeded
-
-*Subtype of `quality_gate_failed` (`details.subtype: revalidate_budget_exceeded`) — enum + dispatch rule live in the registry §`quality_gate_failed` subtypes.*
-
-- `revalidate_budget_exceeded` — anti-recursive guard: a task's re-validate count exceeded `max_revalidate_count` cap (default 3). Details `{task_id, max_revalidate_count, actual_revalidate_count}`. Resolution: validators are LEAF NODES — repeated validation failure means root issue is in validated artifact, not validation logic. Fix artifact; do not validate the validation.
+- `starterkit_metrics_inconsistent` — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase` (since the failed-slice fix, a plain re-run re-dispatches failed slices — they carry no per_slice cache signature; `--no-cache` is the belt-and-braces option that re-dispatches everything; `--force-deep` is only needed when a LOW-confidence trigger skipped deep-scan entirely) then regenerate units. Detection is in-skill prose since v7.5.0 №C (the Skill-matcher validator was deleted) — it fires at the orchestrate-flow handoff-consumption step, not at write time.

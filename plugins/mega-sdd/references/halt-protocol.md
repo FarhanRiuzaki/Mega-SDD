@@ -36,7 +36,7 @@ A C1 halt MUST escalate to C2 (with proposal) when:
 
 When escalating, emit standard C2 halt envelope WITH the C1 attempt history in `details.retry_attempts: [...]` for forensics.
 
-### C2 propose-and-confirm discipline (future candidate — not yet active)
+### C2 propose-and-confirm discipline
 
 Every C2 halt envelope MUST include a `recommendation:` field with the skill's best-effort guess + rationale. The halt should not pose a raw question. Format:
 
@@ -52,7 +52,7 @@ blocker:
   user_response_required: true
 ```
 
-Implementation deferred to Phase D after Phase A real-run proof. Current C2 halts emit options but rarely propose; Phase D doc-only pass formalizes this.
+This discipline is LIVE: the auto-propose flow and its `halt_auto_propose` config live in `execute-bolts/references/halt-recovery.md §Configuration override`, and the prompt template in `execute-bolts/references/propose-and-confirm-prompt.md`.
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
@@ -60,7 +60,7 @@ C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` valida
 
 ### Backward compatibility
 
-Halts not yet classified (or in older skill bodies) default to legacy behavior (ALWAYS STOP). Phase A formalizes 6 already-soft halts as C1. Phase B (separate iter, contingent on Phase A real-run proof + attestation audit sign-off) expands to remaining 22 C1 candidates.
+Halts not yet classified (or in older skill bodies) default to legacy behavior (ALWAYS STOP). The current C1 census is carried inline in the registry — each C1 halt's index row and family entry is marked **C1 SELF-RESOLVE**; a row without that mark is not C1.
 
 ## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
 
@@ -72,14 +72,14 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | hard_rule_unanchored | unit_underspecified | verify_unit_writable | adoption_demote_confirm | delta_too_large
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | dep_missing | test_fail | cycle_detected | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | hard_rule_unanchored | unit_underspecified | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
   resolver_owner: "<name or role, e.g. 'Mike Patel (Eng Lead)'>"
   resolver_route: "<where to find them, e.g. 'ask in #timeoff-team'>"
   vault_version: "<current vault version, e.g. '1.1'>"
-  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | orchestrate-flow | emit-agents-md | emit-fsd | install-deps | memory
+  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | orchestrate-flow | emit-agents-md | emit-fsd | emit-prd | emit-sit | emit-uat | install-deps
   # type-specific fields below
   conflict_old: "<vault state>"            # diff_conflict only
   conflict_new: "<new PRD state>"          # diff_conflict only
@@ -177,6 +177,7 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `framework_pack_cycle` — bind-codebase: pack inheritance has cycle (A extends B ex…
 - `framework_pack_unparseable` — bind-codebase: pack file fails YAML/markdown parse. ALWAY…
 - `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or…
+- `bind_conflict` — bind-codebase: binding produced ≥1 CONFLICT verdict; downstream generation is hook-blocked until each is resolved. Schema + resolution-code legend: §Type-specific schemas (`bind_conflict`); guidance: `halt-families/bind.md`.
 
 **units** (`halt-families/units.md`):
 
@@ -184,6 +185,11 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `dedup_ambiguous` — generate-units: dedupe step finds multiple existing units that could match a new claim…
 - `hard_rule_unparseable` — generate-units: a unit's `## Hard Rules` block contains ast-grep YAML that fails parse…
 - `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`…
+- `cycle_detected` — generate-units: the unit dependency DAG has a cycle. Schema: §Type-specific schemas (`cycle_detected`); guidance: `halt-families/units.md`.
+- `cross_squad_dep_invalid` — generate-units (multi-squad): a unit's `depends_on` references a unit in a different squad. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `cross_squad_ambiguous` — generate-units (multi-squad): two or more squads claim the same artifact at the same precedence. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `cross_squad_interface_draft` — execute-bolts (`--per-squad`/`--squad=`): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `interface_ref_missing` — generate-units: `produces_interfaces`/`consumes_interfaces` references an interface ID with no file in `<vault>/interfaces/`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 
 **bolts** (`halt-families/bolts.md`):
 
@@ -215,6 +221,8 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS S…
 - `bolt_artifacts_missing` — execute-bolts: a `completed` unit emitted no `bolts/U-XXX/bolt-report.md`; structural s…
 - `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user p…
+- `test_fail` — execute-bolts: a unit's tests still fail after max retries. Schema: §Type-specific schemas (`test_fail`); guidance: `halt-families/bolts.md`.
+- `verify_grounding_untrusted` — execute-bolts (A1 verify-grounding gate): a `verify` unit with HIGH `grounding_confidence` whose acceptance criteria lack a non-test source anchor; blocking at the execute-bolts gate.
 
 **flow** (`halt-families/flow.md`):
 
@@ -237,8 +245,6 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default…
 - `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop s…
 - `starterkit_metrics_inconsistent` *(subtype of `quality_gate_failed`)* — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but…
-- `replan_budget_exceeded` *(subtype of `quality_gate_failed`)* — anti-recursive guard: a task's re-plan count exceeded `max_replan_count` cap (default 2…
-- `revalidate_budget_exceeded` *(subtype of `quality_gate_failed`)* — anti-recursive guard: a task's re-validate count exceeded `max_revalidate_count` cap (d…
 
 **emit** (`halt-families/emit.md`):
 
@@ -253,7 +259,7 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum — these are emitted as `type: quality_gate_failed` + `details.subtype: <name>`, **NOT** as standalone halt types:
 
-*(omitted / `wave_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped` · `replan_budget_exceeded` · `revalidate_budget_exceeded`
+*(omitted / `wave_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped`
 
 Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the original `wave_quality_threshold_unmet` semantic (extract-intelligence). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; starterkit/budget guards → `halt-families/flow.md`; the wave default → `halt-families/extract.md`).
 

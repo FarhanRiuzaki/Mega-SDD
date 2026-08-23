@@ -6,6 +6,10 @@ Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 schema, escalation discipline, subtype enums, and the per-type index that routes
 here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
+## Scope
+
+The `pdf_render_failed` / `template_slot_unfilled` / `citation_unresolvable` subtypes are shared by all FOUR doc-pack emitters — emit-fsd / emit-prd / emit-sit / emit-uat — via the emission engine (the entries below say "emit-fsd" because that is the originating emitter; the guidance applies to each emitter's own doc).
+
 ### pdf_render_failed
 
 - `pdf_render_failed` — emit-fsd: pandoc exited non-zero during PDF render in §Step 5.3. Details include `pandoc_stderr_tail` (last 500 chars). Resolution: inspect md2pdf stderr; md2pdf uses pandoc+Chrome (GitHub style, never LaTeX) and falls back to HTML without Chrome — install pandoc/mmdc via `/mega-sdd:install-deps`, re-run emit-fsd.
@@ -20,7 +24,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### signoff_fabricated
 
-- `signoff_fabricated` — emit-sit: a §5 Sign-off body row in `SIT.md` carries non-placeholder text in the Nama / Tanggal / Tanda-tangan / Status cells, detected deterministically by `scripts/build-sit-evidence.sh --check-signoff` (exit 1). Details carry the script's verbatim `SIGNOFF_*` lines + keterangan. A model/AI-filled sign-off row is a FABRICATED RECORD (paper-out): approval is written by hand on the printed document. Resolution: restore the placeholder literals (`__________` cells; `[ ] Diterima · [ ] Ditolak` status), re-run emit-sit. The emitter NEVER "fixes" a row by re-filling it. (The `template_slot_unfilled` / `citation_unresolvable` / `pdf_render_failed` subtypes above are shared by all three doc-pack emitters — emit-fsd / emit-prd / emit-sit — via the emission engine.)
+- `signoff_fabricated` — emit-sit: a §5 Sign-off body row in `SIT.md` carries non-placeholder text in the Nama / Tanggal / Tanda-tangan / Status cells, detected deterministically by `scripts/build-sit-evidence.sh --check-signoff` (exit 1). Details carry the script's verbatim `SIGNOFF_*` lines + keterangan. A model/AI-filled sign-off row is a FABRICATED RECORD (paper-out): approval is written by hand on the printed document. Resolution: restore the placeholder literals (`__________` cells; `[ ] Diterima · [ ] Ditolak` status), re-run emit-sit. The emitter NEVER "fixes" a row by re-filling it.
 
 ### execution_fabricated
 

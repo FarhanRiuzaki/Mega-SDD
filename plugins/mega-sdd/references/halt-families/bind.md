@@ -6,6 +6,10 @@ Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 schema, escalation discipline, subtype enums, and the per-type index that routes
 here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
+### bind_conflict
+
+- `bind_conflict` — bind-codebase: the CONFLICT-gate halt (moat invariant #2). Binding produced ≥1 CONFLICT verdict (`conflict_count > 0`); downstream unit/bolt generation is hook-blocked until each conflict is resolved. Details per the registry §Type-specific schemas (`bind_conflict`): `{vault, conflict_count, conflicts: [{id, vault_claim, codebase_reality, suggested_action, suggested_action_rationale}]}`. Resolution codes (the displayer renders this legend — the enum never surfaces bare): KEEP_VAULT = code harus diubah mengikuti vault; KEEP_CODE = vault di-update mengikuti kenyataan code; DEFER = jadi OQ — gate binding terbuka, unit digenerate membawa OQ-nya, execute-bolts prompt sebelum bolt final; SPLIT = claim dipecah jadi sub-claim.
+
 ### bind_conflict_constitution_violation
 
 - `bind_conflict_constitution_violation` — bind-codebase: claim conflicts with constitution.md security clause. ALWAYS STOP. Resolution: review constitution clauses + reject/accept conflict.
